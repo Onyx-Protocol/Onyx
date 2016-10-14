@@ -21,7 +21,6 @@ import (
 	"chain/generated/doc"
 	"chain/net/http/authn"
 	"chain/net/http/gzip"
-	"chain/net/http/httpjson"
 	"chain/net/http/limit"
 	"chain/net/http/reqid"
 	"chain/net/http/static"
@@ -200,8 +199,8 @@ type requestQuery struct {
 
 	// AscLongPoll and Timeout are used by /list-transactions
 	// to facilitate notifications.
-	AscLongPoll bool              `json:"ascending_with_long_poll,omitempty"`
-	Timeout     httpjson.Duration `json:"timeout"`
+	AscLongPoll bool          `json:"ascending_with_long_poll,omitempty"`
+	Timeout     json.Duration `json:"timeout"`
 
 	After string `json:"after"`
 

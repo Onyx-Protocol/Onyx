@@ -1,4 +1,4 @@
-package httpjson
+package json
 
 import (
 	"encoding/json"
@@ -26,20 +26,20 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 		var str string
 		err = json.Unmarshal(b, &str)
 		if err != nil {
-			return errors.New("invalid httpjson.Duration")
+			return errors.New("invalid json.Duration")
 		}
 
 		d0, err := time.ParseDuration(str)
 		if err != nil {
-			return errors.New("invalid httpjson.Duration")
+			return errors.New("invalid json.Duration")
 		}
 		if d0 < 0 {
-			return errors.New("invalid httpjson.Duration: Duration cannot be less than 0")
+			return errors.New("invalid json.Duration: Duration cannot be less than 0")
 		}
 		d.Duration = d0
 	} else {
 		if dMS < 0 {
-			return errors.New("invalid httpjson.Duration: Duration cannot be less than 0")
+			return errors.New("invalid json.Duration: Duration cannot be less than 0")
 		}
 		d.Duration = time.Duration(dMS) * time.Millisecond
 	}

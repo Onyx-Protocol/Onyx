@@ -1,4 +1,4 @@
-package httpjson
+package json
 
 import (
 	"encoding/json"
@@ -35,7 +35,7 @@ func TestUnmarshalDuration(t *testing.T) {
 
 	for _, c := range negativeCases {
 		var dur Duration
-		wantErr := "invalid httpjson.Duration: Duration cannot be less than 0"
+		wantErr := "invalid json.Duration: Duration cannot be less than 0"
 		err := json.Unmarshal([]byte(c), &dur)
 		if err.Error() != wantErr {
 			t.Errorf("wanted error %s, got %s", wantErr, err)
