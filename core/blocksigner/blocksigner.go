@@ -51,7 +51,7 @@ func (s *Signer) String() string {
 // and, if valid, computes and returns a signature for the block.  It
 // is used as the httpjson handler for /rpc/signer/sign-block.
 //
-// This function fails if this node has ever signed a block at the
+// This function fails if this node has ever signed a different block at the
 // same height as b.
 func (s *Signer) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	err := s.c.WaitForBlockSoon(ctx, b.Height-1)
