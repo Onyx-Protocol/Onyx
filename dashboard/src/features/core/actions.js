@@ -15,7 +15,7 @@ const fetchCoreInfo = (options = {}) => {
         if (options.throw) {
           throw err
         } else {
-          dispatch({type: 'ERROR', payload: err})
+          dispatch({type: 'CORE_DISCONNECT'})
         }
       })
   }

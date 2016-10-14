@@ -103,7 +103,7 @@ export const replicationLagClass = (state = null, action) => {
 
 export const onTestNet = (state = false, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    return action.param.generator_url == testNetUrl
+    return action.param.generator_url.indexOf(testNetUrl) >= 0
   }
 
   return state
@@ -134,11 +134,19 @@ export const validToken = (state = false, action) => {
   return state
 }
 
+export const connected = (state = true, action) => {
+  if      (action.type == 'UPDATE_CORE_INFO') return true
+  else if (action.type == 'CORE_DISCONNECT')  return false
+
+  return state
+}
+
 export default combineReducers({
   blockchainID,
   blockHeight,
   buildCommit,
   buildDate,
+  connected,
   clientToken,
   configured,
   configuredAt,

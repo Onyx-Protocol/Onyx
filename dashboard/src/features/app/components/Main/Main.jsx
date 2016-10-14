@@ -91,7 +91,7 @@ class Main extends React.Component {
             <ul className={styles.navigation}>
               <li className={styles.navigationTitle}>developers</li>
               <li>
-                <a href="/doc" target="_blank">
+                <a href='/doc' target='_blank'>
                   <span className={`glyphicon glyphicon-book ${styles.glyphicon}`} />
                   Documentation
                 </a>
@@ -113,6 +113,10 @@ class Main extends React.Component {
         </div>
 
         <div className={styles.content}>
+          {!this.props.connected && <div className={styles.connectionIssue}>
+            There was an issue connecting to Chain Core. Please check your connection while dashboard attempts to reconnect.
+          </div>}
+
           <Flash messages={this.props.flashMessages}
             markFlashDisplayed={this.props.markFlashDisplayed}
             dismissFlash={this.props.dismissFlash}
@@ -128,7 +132,8 @@ class Main extends React.Component {
 export default connect(
   (state) => ({
     flashMessages: state.app.flashMessages,
-    canLogOut: state.core.requireClientToken
+    canLogOut: state.core.requireClientToken,
+    connected: state.core.connected,
   }),
   (dispatch) => ({
     markFlashDisplayed: (key) => dispatch(actions.app.displayedFlash(key)),

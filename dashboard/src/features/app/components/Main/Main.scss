@@ -100,3 +100,11 @@ $sidebar-width: 220px;
   padding-right: 12px;
   vertical-align: middle;
 }
+
+.connectionIssue {
+  padding: $gutter-size/2;
+  text-align: center;
+  background: $highlight-danger-background;
+  color: $highlight-danger;
+  border-bottom: 1px solid $highlight-danger;
+}
