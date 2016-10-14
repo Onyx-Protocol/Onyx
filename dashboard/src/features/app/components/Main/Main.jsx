@@ -88,6 +88,15 @@ class Main extends React.Component {
                 </Link>
               </li>
             </ul>
+            <ul className={styles.navigation}>
+              <li className={styles.navigationTitle}>developers</li>
+              <li>
+                <a href="/doc" target="_blank">
+                  <span className={`glyphicon glyphicon-book ${styles.glyphicon}`} />
+                  Documentation
+                </a>
+              </li>
+            </ul>
 
             {this.props.canLogOut &&
               <ul className={styles.navigation}>
