@@ -37,7 +37,7 @@ const Form = class Form extends React.Component {
       onSubmit={handleSubmit(this.submitWithErrors)}
       submitting={submitting} >
 
-      <TextField title='Token ID' placeholder='Token ID' fieldProps={id} />
+      <TextField title='Token ID' placeholder='Token ID' fieldProps={id} autoFocus={true} />
       <HiddenField fieldProps={type} />
 
     </FormContainer>)

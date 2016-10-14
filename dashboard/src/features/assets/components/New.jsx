@@ -36,7 +36,7 @@ class Form extends React.Component {
         onSubmit={handleSubmit(this.submitWithErrors)}
         submitting={submitting} >
 
-        <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
+        <TextField title='Alias' placeholder='Alias' fieldProps={alias} autoFocus={true} />
         <JsonField title='Tags' fieldProps={tags} />
         <JsonField title='Definition' fieldProps={definition} />
         <KeyConfiguration
