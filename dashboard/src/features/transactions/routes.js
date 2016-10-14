@@ -11,7 +11,6 @@ export default (store) => {
     Show,
     {
       childRoutes: [
-        transactionFeeds(store),
         {
           path: 'generated/:id',
           component: GeneratedTxHex,

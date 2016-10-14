@@ -1,0 +1,31 @@
+.main {
+  a {
+    display: block;
+    padding: 3px 0;
+    color: $highlight-inverse-color;
+  }
+
+  .active {
+    color: $highlight-default;
+  }
+}
+
+.navigation {
+  padding: 0;
+  list-style-type: none;
+  margin-top: $gutter-size/2;
+  margin-bottom: 0;
+  padding: 0 $gutter-size;
+}
+
+.navigationTitle {
+  font-variant: small-caps;
+  padding: 3px 0;
+}
+
+.glyphicon {
+  font-size: 10px;
+  padding-bottom: 5px;
+  padding-right: 12px;
+  vertical-align: middle;
+}

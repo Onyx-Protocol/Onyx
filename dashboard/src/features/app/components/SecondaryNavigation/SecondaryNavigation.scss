@@ -1,0 +1,47 @@
+.main {
+  background: $background-color;
+  border-radius: $border-radius-standard;
+  position: absolute;
+  top: $title-height - 8px;
+  right: $gutter-size/2;
+  width: $sidebar-width - $gutter-size;
+  z-index: 11;
+
+  a {
+    display: block;
+    padding: 3px 0;
+    color: $text-color;
+  }
+
+  .active {
+    color: $highlight-default;
+  }
+}
+
+.navigation {
+  padding: 0;
+  list-style-type: none;
+  margin-top: 5px;
+  margin-bottom: 8px;
+
+  li {
+    padding: 0 20px;
+  }
+}
+
+.navigationTitle {
+  font-variant: small-caps;
+  padding: 3px 20px;
+}
+
+.glyphicon {
+  font-size: 10px;
+  padding-bottom: 5px;
+  padding-right: 12px;
+  vertical-align: middle;
+}
+
+.logOut {
+  margin-top: 5px;
+  border-top: 1px solid $border-color;
+}

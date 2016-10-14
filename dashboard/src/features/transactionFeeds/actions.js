@@ -4,11 +4,11 @@ const type = 'transactionFeed'
 
 export default {
   ...baseFormActions(type, {
-    listPath: 'transactions/feeds',
+    listPath: 'transaction-feeds',
     className: 'TransactionFeed',
   }),
   ...baseListActions(type, {
-    listPath: 'transactions/feeds',
+    listPath: 'transaction-feeds',
     className: 'TransactionFeed',
   }),
 }

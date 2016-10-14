@@ -56,7 +56,18 @@ export const modal = (state = { isShowing: false }, action) => {
   return state
 }
 
+export const dropdownState = (state = '', action) => {
+  if (action.type == 'TOGGLE_DROPDOWN') {
+    return state === '' ? 'open' : ''
+  } else if (action.type == 'CLOSE_DROPDOWN') {
+    return ''
+  }
+
+  return state
+}
+
 export default combineReducers({
   flashMessages,
-  modal
+  modal,
+  dropdownState,
 })

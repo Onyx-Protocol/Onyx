@@ -8,6 +8,12 @@ const actions = {
     ({ payload: { body, accept, cancel, options }})),
   hideModal: actionCreator('HIDE_MODAL'),
   showRoot: push('/transactions'),
+  toggleDropdown: { type: 'TOGGLE_DROPDOWN' },
+  closeDropdown: (dispatch, getState) => {
+    if (getState().app.dropdownState === 'open') {
+      dispatch({ type: 'CLOSE_DROPDOWN' })
+    }
+  },
   showConfiguration: () => {
     return (dispatch, getState) => {
       let pathname = getState().routing.locationBeforeTransitions.pathname

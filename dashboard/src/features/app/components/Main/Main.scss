@@ -1,5 +1,3 @@
-$sidebar-width: 220px;
-
 .main {
   display: flex;
   flex-direction: column;
@@ -29,44 +27,6 @@ $sidebar-width: 220px;
   -ms-overflow-style: none; // MS Edge fix
 
   z-index: 10;
-
-  a {
-    display: block;
-    padding: 3px 0;
-    color: $highlight-inverse-color;
-  }
-
-  .active {
-    color: $highlight-default;
-
-    svg {
-      polygon {
-        stroke: $highlight-default;
-        fill: transparentize($highlight-default, 0.85);
-      }
-
-      polyline, path, ellipse {
-        stroke: $highlight-default;
-      }
-
-      rect {
-        fill: $highlight-default;
-      }
-    }
-  }
-}
-
-.icon {
-  display: inline-block;
-  height: 12px;
-  margin-right: 14px;
-  width: 12px;
-
-  svg {
-    display: block;
-    height: 100%;
-    width: 100%;
-  }
 }
 
 .logo {
@@ -81,24 +41,13 @@ $sidebar-width: 220px;
   }
 }
 
-.navigation {
-  padding: 0;
-  list-style-type: none;
-  margin-top: $gutter-size/2;
-  margin-bottom: 0;
-  padding: 0 $gutter-size;
-}
-
-.navigationTitle {
-  font-variant: small-caps;
-  padding: 3px 0;
-}
-
-.glyphicon {
-  font-size: 10px;
-  padding-bottom: 5px;
-  padding-right: 12px;
-  vertical-align: middle;
+.settings {
+  cursor: pointer;
+  line-height: $title-height;
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 0 20px;
 }
 
 .connectionIssue {

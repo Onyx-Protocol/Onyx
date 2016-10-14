@@ -4,111 +4,43 @@ import { Flash } from 'features/shared/components'
 import { Link } from 'react-router'
 import { connect } from 'react-redux'
 import actions from 'actions'
-import { NavigationItem as CoreNavigationItem } from 'features/core/components'
+import { Navigation, SecondaryNavigation } from '../'
 
 class Main extends React.Component {
+
+  constructor(props) {
+    super(props)
+
+    this.toggleDropdown = this.toggleDropdown.bind(this)
+  }
+
+  toggleDropdown(event) {
+    event.stopPropagation()
+    this.props.toggleDropdown()
+  }
+
   render() {
     let logo = require('assets/images/logo-white.png')
 
-    const logOut = (event) => {
-      event.preventDefault()
-      this.props.logOut()
-    }
-
     return (
-      <div className={styles.main}>
+      <div className={styles.main}
+           onClick={this.props.closeDropdown} >
         <div className={styles.sidebar}>
           <div className={styles.sidebarContent}>
             <div className={styles.logo}>
               <Link to={'/'}>
                 <img src={logo} className={styles.brand_image} />
               </Link>
+
+              <span>
+                <span
+                  className={`glyphicon glyphicon-cog ${styles.settings}`}
+                  onClick={this.toggleDropdown} />
+                {this.props.showDropwdown && <SecondaryNavigation />}
+              </span>
             </div>
 
-            <ul className={styles.navigation}>
-              <li className={styles.navigationTitle}>blockchain data</li>
-              <li>
-                <Link to='/transactions' activeClassName={styles.active}>
-                  <span className={`glyphicon glyphicon-transfer ${styles.glyphicon}`} />
-                  Transactions
-                </Link>
-              </li>
-              <li>
-                <Link to='/assets' activeClassName={styles.active}>
-                  <span className={`glyphicon glyphicon-file ${styles.glyphicon}`} />
-                  Assets
-                </Link>
-              </li>
-              <li>
-                <Link to='/accounts' activeClassName={styles.active}>
-                  <span className={`glyphicon glyphicon-user ${styles.glyphicon}`} />
-                  Accounts
-                </Link>
-              </li>
-              <li>
-                <Link to='/balances' activeClassName={styles.active}>
-                  <span className={`glyphicon glyphicon-stats ${styles.glyphicon}`} />
-                  Balances
-                </Link>
-              </li>
-              <li>
-                <Link to='/unspents' activeClassName={styles.active}>
-                  <span className={`glyphicon glyphicon-th-list ${styles.glyphicon}`} />
-                  Unspent Outputs
-                </Link>
-              </li>
-            </ul>
-
-            <ul className={styles.navigation}>
-              <li className={styles.navigationTitle}>configuration</li>
-              <li>
-                <Link to='/mockhsms' activeClassName={styles.active}>
-                  <span className={`glyphicon glyphicon-lock ${styles.glyphicon}`} />
-                  Mock HSM
-                </Link>
-              </li>
-              <li>
-                <Link to='/core' activeClassName={styles.active}>
-                  <CoreNavigationItem externalStyles={styles.glyphicon}/>
-                </Link>
-              </li>
-            </ul>
-            <ul className={styles.navigation}>
-              <li className={styles.navigationTitle}>security</li>
-              <li>
-                <Link to='/access_tokens/client' activeClassName={styles.active}>
-                  <span className={`glyphicon glyphicon-user ${styles.glyphicon}`} />
-                  Client Tokens
-                </Link>
-              </li>
-              <li>
-                <Link to='/access_tokens/network' activeClassName={styles.active}>
-                  <span className={`glyphicon glyphicon-globe ${styles.glyphicon}`} />
-                  Network Tokens
-                </Link>
-              </li>
-            </ul>
-            <ul className={styles.navigation}>
-              <li className={styles.navigationTitle}>developers</li>
-              <li>
-                <a href='/doc' target='_blank'>
-                  <span className={`glyphicon glyphicon-book ${styles.glyphicon}`} />
-                  Documentation
-                </a>
-              </li>
-            </ul>
-
-            {this.props.canLogOut &&
-              <ul className={styles.navigation}>
-                <li className={styles.navigationTitle}>session</li>
-                <li>
-                  <a href='#' onClick={logOut}>
-                    <span className={`glyphicon glyphicon-log-out ${styles.glyphicon}`} />
-                    Log Out
-                  </a>
-                </li>
-              </ul>}
-
+            <Navigation />
           </div>
         </div>
 
@@ -134,10 +66,13 @@ export default connect(
     flashMessages: state.app.flashMessages,
     canLogOut: state.core.requireClientToken,
     connected: state.core.connected,
+    showDropwdown: state.app.dropdownState == 'open',
   }),
   (dispatch) => ({
     markFlashDisplayed: (key) => dispatch(actions.app.displayedFlash(key)),
     dismissFlash: (key) => dispatch(actions.app.dismissFlash(key)),
+    toggleDropdown: () => dispatch(actions.app.toggleDropdown),
+    closeDropdown: () => dispatch(actions.app.closeDropdown),
     logOut: () => dispatch(actions.core.clearSession())
   })
 )(Main)
