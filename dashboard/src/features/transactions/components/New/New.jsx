@@ -113,7 +113,10 @@ class Form extends React.Component {
             <tr>
               <td></td>
               <td><label htmlFor='submit_action_generate' className={styles.submitDescription}>
-                These actions will be signed by the Mock HSM and returned as a transaction hex string, which should be used as the base transaction in a multi-party swap.
+                These actions will be signed by the Mock HSM and returned as a
+                transaction hex string, which should be used as the base
+                transaction in a multi-party swap. This transaction will be
+                valid for one hour.
               </label></td>
             </tr>
           </tbody>

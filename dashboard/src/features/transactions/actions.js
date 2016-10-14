@@ -21,20 +21,25 @@ function preprocessTransaction(formParams) {
 
   for (let i in builder.actions) {
     let a = builder.actions[i]
+
+    // HACK: issuances use `ttl` as a parameter name, spends/controls use
+    // `reservation_ttl`. Set both.
+    if (formParams.submit_action == 'generate') {
+      a.ttl = '1h' // 1 hour
+      a.reservation_ttl = '1h' // 1 hour
+    }
+
+    // HACK: Check for retire actions and replace with OP_FAIL control programs.
+    // TODO: update JS SDK to support Java SDK builder style.
+    if (a.type == 'retire_asset') {
+      a.type = 'control_program'
+      a.control_program = '6a' // OP_FAIL hex byte
+    }
+
     try {
       a.reference_data = parseNonblankJSON(a.reference_data)
     } catch (err) {
       throw new Error(`Action ${parseInt(i)+1} reference data should be valid JSON, or blank.`)
-    }
-  }
-
-  // HACK: Check for retire actions and replace with OP_FAIL control programs.
-  // TODO: update JS SDK to support Java SDK builder style.
-  for (let i = 0; i < builder.actions.length; i++) {
-    let a = builder.actions[i]
-    if (a.type == 'retire_asset') {
-      a.type = 'control_program'
-      a.control_program = '6a' // OP_FAIL hex byte
     }
   }
 
