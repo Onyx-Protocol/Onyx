@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"runtime"
 	"strings"
+
+	"golang.org/x/sync/errgroup"
 
 	"chain/errors"
 	"chain/protocol/bc"
@@ -40,38 +43,58 @@ func ValidateBlockForSig(ctx context.Context, snapshot *state.Snapshot, prevBloc
 }
 
 func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error, runScript bool) error {
-	var prev *bc.BlockHeader
-	if prevBlock != nil {
-		prev = &prevBlock.BlockHeader
-	}
-	err := validateBlockHeader(prev, block, runScript)
-	if err != nil {
-		return err
-	}
-	snapshot.PruneIssuances(block.TimestampMS)
 
-	// TODO: Check that other block headers are valid.
-	// TODO(erykwalder): consider writing to a copy of the state tree
-	// of the one provided and make the caller call ApplyBlock as well
+	var g errgroup.Group
+	// Do all of the unparallelizable work, plus validating the block
+	// header in one goroutine.
+	g.Go(func() error {
+		var prev *bc.BlockHeader
+		if prevBlock != nil {
+			prev = &prevBlock.BlockHeader
+		}
+		err := validateBlockHeader(prev, block, runScript)
+		if err != nil {
+			return err
+		}
+		snapshot.PruneIssuances(block.TimestampMS)
+
+		// TODO: Check that other block headers are valid.
+		// TODO(erykwalder): consider writing to a copy of the state tree
+		// of the one provided and make the caller call ApplyBlock as well
+		for _, tx := range block.Transactions {
+			err = ConfirmTx(snapshot, block, tx)
+			if err != nil {
+				return err
+			}
+			err = ApplyTx(snapshot, tx)
+			if err != nil {
+				return err
+			}
+		}
+		if block.AssetsMerkleRoot != snapshot.Tree.RootHash() {
+			return ErrBadStateRoot
+		}
+		return nil
+	})
+
+	// Distribute checking well-formedness of the transactions across
+	// GOMAXPROCS goroutines.
+	ch := make(chan *bc.Tx, len(block.Transactions))
+	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
+		g.Go(func() error {
+			for tx := range ch {
+				if err := validateTx(tx); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	}
 	for _, tx := range block.Transactions {
-		err := validateTx(tx)
-		if err != nil {
-			return err
-		}
-		err = ConfirmTx(snapshot, block, tx)
-		if err != nil {
-			return err
-		}
-		err = ApplyTx(snapshot, tx)
-		if err != nil {
-			return err
-		}
+		ch <- tx
 	}
-
-	if block.AssetsMerkleRoot != snapshot.Tree.RootHash() {
-		return ErrBadStateRoot
-	}
-	return nil
+	close(ch)
+	return g.Wait()
 }
 
 // ApplyBlock applies the transactions in the block to the state tree.
