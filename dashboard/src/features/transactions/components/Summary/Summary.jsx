@@ -1,12 +1,12 @@
 import React from 'react'
+import { Link } from 'react-router'
 import styles from './Summary.scss'
 
 const INOUT_TYPES = {
-  issue: 'Issued',
-  control: 'Received',
-  spend: 'Spent',
-  receive: 'Received',
-  retire: 'Retired',
+  issue: 'Issue',
+  spend: 'Spend',
+  control: 'Control',
+  retire: 'Retire',
 }
 
 class Summary extends React.Component {
@@ -29,7 +29,7 @@ class Summary extends React.Component {
         if (!account) account = asset[accountKey] = {
           alias: inout.account_alias,
           spend: 0,
-          receive: 0
+          control: 0
         }
 
         if (inout.type == 'spend') {
@@ -37,7 +37,7 @@ class Summary extends React.Component {
         } else if (inout.type == 'control' && inout.purpose == 'change') {
           account.spend -= inout.amount
         } else if (inout.type == 'control') {
-          account.receive += inout.amount
+          account.control += inout.amount
         }
       }
     })
@@ -60,7 +60,8 @@ class Summary extends React.Component {
             type: INOUT_TYPES[type],
             rawAction: type,
             amount: asset[type],
-            asset: asset.alias ? asset.alias : <code className={styles.asset_id}>{asset_id}</code>,
+            asset: asset.alias ? asset.alias : <code className={styles.rawId}>{asset_id}</code>,
+            assetId: asset_id,
           })
         }
       })
@@ -71,47 +72,55 @@ class Summary extends React.Component {
         const account = asset[account_id]
         if (!account) return
 
-        const accountTypes = ['spend', 'receive']
+        if (account_id == 'external') {
+          account.alias= 'external'
+          account_id = null
+        }
+
+        const accountTypes = ['spend', 'control']
         accountTypes.forEach((type) => {
           if (account[type] > 0) {
             items.push({
               type: INOUT_TYPES[type],
               rawAction: type,
               amount: account[type],
-              asset: asset.alias ? asset.alias : <code className={styles.asset_id}>{asset_id}</code>,
+              asset: asset.alias ? asset.alias : <code className={styles.rawId}>{asset_id}</code>,
+              assetId: asset_id,
               direction: type == 'spend' ? 'from' : 'to',
-              account: account.alias ? account.alias : account_id,
+              account: account.alias ? account.alias : <code className={styles.rawId}>{account_id}</code>,
+              accountId: account_id,
             })
           }
         })
       })
     })
 
-    const ordering = ['issue', 'spend', 'receive', 'retire']
+    const ordering = ['issue', 'spend', 'control', 'retire']
     items.sort((a,b) => {
       return ordering.indexOf(a.rawAction) - ordering.indexOf(b.rawAction)
     })
 
     return(<table className={styles.main}>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Amount</th>
-          <th>Asset</th>
-          <th></th>
-        </tr>
-      </thead>
       <tbody>
         {items.map((item, index) =>
           <tr key={index} className={index % 2 == 0 ? '' : styles.odd}>
             <td className={styles.colAction}>{item.type}</td>
+            <td className={styles.colLabel}>amount</td>
             <td className={styles.colAmount}>
-              <code className={`${styles.amount} ${styles[item.rawAction]}`}>{item.amount}</code>
+              <code className={styles.amount}>{item.amount}</code>
             </td>
-            <td>{item.asset}</td>
+            <td className={styles.colLabel}>asset</td>
             <td className={styles.colAccount}>
-              <span className={styles.direction}>{item.direction}</span>
-              {item.account}
+              <Link to={`/assets/${item.assetId}`}>
+                {item.asset}
+              </Link>
+            </td>
+            <td className={styles.colLabel}>{item.account && 'account'}</td>
+            <td className={styles.colAccount}>
+              {item.accountId && <Link to={`/accounts/${item.accountId}`}>
+                {item.account}
+              </Link>}
+              {!item.accountId && item.account}
             </td>
           </tr>
         )}

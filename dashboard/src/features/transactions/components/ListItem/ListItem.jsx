@@ -7,19 +7,21 @@ import styles from './ListItem.scss'
 class ListItem extends React.Component {
   render() {
     const item = this.props.item
+    const chevron = require('assets/images/chevron-green.png')
 
     return(
       <div className={styles.main}>
         <div className={styles.titleBar}>
           <div className={styles.title}>
-            <label>Transaction ID</label>
-            <code>{item.id}</code>
+            <label>Transaction ID:</label>
+            <code>{item.id.slice(0,16) + '…'}</code>
+            <span className={styles.timestamp}>
+              <RelativeTime timestamp={item.timestamp} />
+            </span>
           </div>
-          <span className={styles.timestamp}>
-            <RelativeTime timestamp={item.timestamp} />
-          </span>
           <Link className={styles.viewLink} to={`/transactions/${item.id}`}>
-            View Transaction →
+            View Details
+            <img src={chevron} className={styles.chevron} />
           </Link>
         </div>
 

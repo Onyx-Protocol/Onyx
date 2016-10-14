@@ -7,47 +7,55 @@
   }
 
   td, th {
-    padding: 6px 15px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-right: 10px;
   }
 }
 
-.colAction, .colAmount {
+.colAction {
+  color: $text-strong-color;
+  font-weight: bold;
+  padding-left: $gutter-size * 1.5;
+}
+
+.colAction, .colAmount, .colAsset, .colAccount {
   width: 20%;
 }
 
-.colAccount {
-  text-align: right;
+.amount {
+  background: none;
+  color: $text-strong-color;
 }
 
 .odd td {
   background: $background-emphasis-color;
 }
 
-.amount {
-  color: $text-color;
-  background: $background-emphasis-color;
-}
-
-.amount.issue, .amount.spend {
-  color: $highlight-danger;
-  background: $highlight-danger-background;
-}
-
-.amount.receive {
-  color: $highlight-success;
-  background: $highlight-success-background;
-}
-
-.direction {
+.colLabel {
   color: $text-light-color;
-  padding-right: 20px;
+  font-size: 12px;
+  text-align: right;
+  width: 5%;
 }
 
-.asset_id {
-  background: $background-emphasis-color;
+.rawId {
+  background: transparentize($text-color, 0.85);
   color: $text-color;
-  display: block;
+  display: inline-block;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 150px;
+  max-width: 150px;
+  vertical-align: middle;
+}
+
+a {
+  .rawId {
+    background: transparentize($highlight-default, 0.95);
+    color: $highlight-default;
+  }
+
+  &:hover .rawId {
+    text-decoration: underline;
+  }
 }

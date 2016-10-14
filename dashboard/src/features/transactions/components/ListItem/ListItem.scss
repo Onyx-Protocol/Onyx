@@ -4,16 +4,16 @@
 }
 
 .titleBar {
-  background: $background-emphasis-color;
+  background: $background-color;
   border-bottom: 1px solid $border-color;
   display: flex;
   align-items: center;
-  padding: 15px;
+  padding: 20px 25px;
 
   code {
-    padding: 0;
-    background: none;
+    background: $background-content-color;
     color: $text-color;
+    padding: 4px 6px;
   }
 }
 
@@ -21,21 +21,27 @@
   flex-grow: 1;
 
   label {
-    display: block;
-    font-size: 11px;
-    margin: 0;
-    text-transform: uppercase;
+    color: $text-strong-color;
+    font-size: 13px;
+    font-weight: bold;
+    margin: 0 8px 0 0;
   }
 }
 
 .timestamp {
-  display: block;
-  padding-right: 15px;
-  border-right: 1px solid $border-color;
-  margin-right: 15px;
+  margin-left: $gutter-size;
 }
 
 .viewLink {
   margin: -15px 0;
-  padding: 15px 0;
+  padding: 15px;
+  position: relative;
+}
+
+.chevron {
+  width: 5px;
+  height: 9px;
+  position: absolute;
+  right: 0;
+  top: calc(50% - 5px;)
 }
