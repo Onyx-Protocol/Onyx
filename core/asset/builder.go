@@ -17,7 +17,7 @@ import (
 func (reg *Registry) NewIssueAction(assetAmount bc.AssetAmount, referenceData chainjson.Map) txbuilder.Action {
 	return &issueAction{
 		assets:        reg,
-		TTL:           24 * time.Hour,
+		TTL:           chainjson.Duration{24 * time.Hour},
 		AssetAmount:   assetAmount,
 		ReferenceData: referenceData,
 	}
@@ -32,7 +32,7 @@ func (reg *Registry) DecodeIssueAction(data []byte) (txbuilder.Action, error) {
 type issueAction struct {
 	assets *Registry
 	bc.AssetAmount
-	TTL           time.Duration
+	TTL           chainjson.Duration
 	ReferenceData chainjson.Map `json:"reference_data"`
 }
 
@@ -44,7 +44,7 @@ func (a *issueAction) Build(ctx context.Context) (*txbuilder.BuildResult, error)
 	// transaction.
 	minTime := now.Add(-5 * time.Minute)
 
-	ttl := a.TTL
+	ttl := a.TTL.Duration
 	if ttl == 0 {
 		ttl = time.Minute
 	}

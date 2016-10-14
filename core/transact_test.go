@@ -11,6 +11,7 @@ import (
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	chainjson "chain/encoding/json"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/testutil"
@@ -47,7 +48,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	// Submit the transaction but w/o waiting long for confirmation.
 	// The outputs should be indexed because the transaction template
 	// indicates that the transaction is completely local to this Core.
-	_, _ = h.submitSingle(ctx, c, submitSingleArg{tpl: tmpl, wait: time.Millisecond})
+	_, _ = h.submitSingle(ctx, c, submitSingleArg{tpl: tmpl, wait: chainjson.Duration{time.Millisecond}})
 
 	// Add a new source, spending the change output produced above.
 	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)

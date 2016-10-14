@@ -35,16 +35,16 @@ func (m *Manager) DecodeSpendAction(data []byte) (txbuilder.Action, error) {
 type spendAction struct {
 	accounts *Manager
 	bc.AssetAmount
-	AccountID     string        `json:"account_id"`
-	TxHash        *bc.Hash      `json:"transaction_id"`
-	TxOut         *uint32       `json:"position"`
-	TTL           time.Duration `json:"reservation_ttl"`
-	ReferenceData chainjson.Map `json:"reference_data"`
-	ClientToken   *string       `json:"client_token"`
+	AccountID     string             `json:"account_id"`
+	TxHash        *bc.Hash           `json:"transaction_id"`
+	TxOut         *uint32            `json:"position"`
+	TTL           chainjson.Duration `json:"reservation_ttl"`
+	ReferenceData chainjson.Map      `json:"reference_data"`
+	ClientToken   *string            `json:"client_token"`
 }
 
 func (a *spendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
-	ttl := a.TTL
+	ttl := a.TTL.Duration
 	if ttl == 0 {
 		ttl = time.Minute
 	}
@@ -106,7 +106,7 @@ func (m *Manager) NewSpendUTXOAction(outpoint bc.Outpoint, ttl time.Duration) tx
 		accounts: m,
 		TxHash:   outpoint.Hash,
 		TxOut:    outpoint.Index,
-		TTL:      ttl,
+		TTL:      chainjson.Duration{ttl},
 	}
 }
 
@@ -118,16 +118,16 @@ func (m *Manager) DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
 
 type spendUTXOAction struct {
 	accounts *Manager
-	TxHash   bc.Hash       `json:"transaction_id"`
-	TxOut    uint32        `json:"position"`
-	TTL      time.Duration `json:"reservation_ttl"`
+	TxHash   bc.Hash            `json:"transaction_id"`
+	TxOut    uint32             `json:"position"`
+	TTL      chainjson.Duration `json:"reservation_ttl"`
 
 	ReferenceData chainjson.Map `json:"reference_data"`
 	ClientToken   *string       `json:"client_token"`
 }
 
 func (a *spendUTXOAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
-	ttl := a.TTL
+	ttl := a.TTL.Duration
 	if ttl == 0 {
 		ttl = time.Minute
 	}

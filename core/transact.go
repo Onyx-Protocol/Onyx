@@ -9,6 +9,7 @@ import (
 	"chain/core/fetch"
 	"chain/core/txbuilder"
 	"chain/database/pg"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/reqid"
@@ -87,7 +88,7 @@ func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interfa
 
 type submitSingleArg struct {
 	tpl  *txbuilder.Template
-	wait time.Duration
+	wait chainjson.Duration
 }
 
 func (h *Handler) submitSingle(ctx context.Context, c *protocol.Chain, x submitSingleArg) (interface{}, error) {
@@ -95,7 +96,7 @@ func (h *Handler) submitSingle(ctx context.Context, c *protocol.Chain, x submitS
 	// function, perhaps in handler.ServeHTTPContext, and perhaps
 	// initialize the timeout from the HTTP Timeout field.  (Or just
 	// switch to gRPC.)
-	timeout := x.wait
+	timeout := x.wait.Duration
 	if timeout <= 0 {
 		timeout = 30 * time.Second
 	}
@@ -248,7 +249,7 @@ func waitBlock(ctx context.Context, c *protocol.Chain, height uint64) <-chan str
 
 type submitArg struct {
 	Transactions []*txbuilder.Template
-	wait         time.Duration
+	wait         chainjson.Duration
 }
 
 // POST /v3/transact/submit
