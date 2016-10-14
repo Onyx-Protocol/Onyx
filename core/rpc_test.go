@@ -12,19 +12,19 @@ import (
 	"chain/testutil"
 )
 
-func TestGetBlocks(t *testing.T) {
+func TestGetBlock(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(db)
 	chain := prottest.NewChainWithStorage(t, store, pool)
 	h := &Handler{Chain: chain, Store: store}
 
-	blocks, err := h.getBlocksRPC(ctx, 0)
+	block, err := h.getBlockRPC(ctx, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(blocks) != 1 {
-		t.Errorf("expected 1 (initial) block, got %d", len(blocks))
+	if block == nil {
+		t.Error("expected 1 (initial) block, got none")
 	}
 
 	newBlock := prottest.MakeBlock(ctx, t, chain)
@@ -34,15 +34,15 @@ func TestGetBlocks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	blocks, err = h.getBlocksRPC(ctx, 1)
+	block, err = h.getBlockRPC(ctx, 2)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	if len(blocks) != 1 {
-		t.Errorf("expected 1 block, got %d", len(blocks))
+	if block == nil {
+		t.Error("expected 1 block, got none")
 	}
-	if !bytes.Equal(blocks[0], buf.Bytes()) {
-		t.Errorf("got=%x, want=%s", blocks[0], buf.Bytes())
+	if !bytes.Equal(block, buf.Bytes()) {
+		t.Errorf("got=%x, want=%s", block, buf.Bytes())
 	}
 }

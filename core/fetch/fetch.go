@@ -63,7 +63,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 				height = prevBlock.Height
 			}
 
-			blocks, err := getBlocks(ctx, peer, height, timeoutBackoffDur(ntimeouts))
+			block, err := getBlock(ctx, peer, height+1, timeoutBackoffDur(ntimeouts))
 			if err != nil {
 				health(err)
 				log.Error(ctx, err)
@@ -71,7 +71,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 				time.Sleep(backoffDur(nfailures))
 				continue
 			}
-			if len(blocks) == 0 {
+			if block == nil {
 				// Request time out. There might not have been any blocks published,
 				// or there was a network error or it just took too long to process the
 				// request.
@@ -79,7 +79,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 				continue
 			}
 
-			prevSnapshot, prevBlock, err = applyBlocks(ctx, c, prevSnapshot, prevBlock, blocks)
+			prevSnapshot, prevBlock, err = applyBlock(ctx, c, prevSnapshot, prevBlock, block)
 			if err != nil {
 				health(err)
 				log.Error(ctx, err)
@@ -122,20 +122,17 @@ func updateGeneratorHeight(ctx context.Context, peer *rpc.Client) {
 	generatorHeightFetchedAt = time.Now()
 }
 
-func applyBlocks(ctx context.Context, c *protocol.Chain, snap *state.Snapshot, block *bc.Block, blocks []*bc.Block) (*state.Snapshot, *bc.Block, error) {
-	for _, b := range blocks {
-		ss, err := c.ValidateBlock(ctx, snap, block, b)
-		if err != nil {
-			return snap, block, err
-		}
-
-		err = c.CommitBlock(ctx, b, ss)
-		if err != nil {
-			return snap, block, err
-		}
-
-		snap, block = ss, b
+func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot, prev *bc.Block, block *bc.Block) (*state.Snapshot, *bc.Block, error) {
+	snap, err := c.ValidateBlock(ctx, prevSnap, prev, block)
+	if err != nil {
+		return prevSnap, prev, err
 	}
+
+	err = c.CommitBlock(ctx, block, snap)
+	if err != nil {
+		return prevSnap, prev, err
+	}
+
 	return snap, block, nil
 }
 
@@ -156,18 +153,18 @@ func timeoutBackoffDur(n uint) time.Duration {
 	return baseTimeout + time.Duration(d)
 }
 
-// getBlocks sends a get-blocks RPC request to another Core
-// for all blocks since the highest-known one.
-func getBlocks(ctx context.Context, peer *rpc.Client, height uint64, timeout time.Duration) ([]*bc.Block, error) {
+// getBlock sends a get-block RPC request to another Core
+// for the next block.
+func getBlock(ctx context.Context, peer *rpc.Client, height uint64, timeout time.Duration) (*bc.Block, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var blocks []*bc.Block
-	err := peer.Call(ctx, "/rpc/get-blocks", height, &blocks)
+	var block *bc.Block
+	err := peer.Call(ctx, "/rpc/get-block", height, &block)
 	if ctx.Err() == context.DeadlineExceeded {
 		return nil, nil
 	}
-	return blocks, errors.Wrap(err, "get blocks rpc")
+	return block, errors.Wrap(err, "get blocks rpc")
 }
 
 // getHeight sends a get-height RPC request to another Core for
@@ -213,28 +210,28 @@ func Snapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, db *sql.D
 	}
 
 	// Next, get the genesis block.
-	blocks, err := getBlocks(ctx, peer, 0, getSnapshotTimeout)
+	block, err := getBlock(ctx, peer, 1, getSnapshotTimeout)
 	if err != nil {
 		return err
 	}
 
-	if len(blocks) < 1 {
+	if block == nil {
 		// Something seriously funny is afoot.
 		return errors.New("could not get initial block from generator")
 	}
 
-	err = s.SaveBlock(ctx, blocks[0])
+	err = s.SaveBlock(ctx, block)
 
 	// Also get the corresponding block.
-	blocks, err = getBlocks(ctx, peer, snapResp.Height-1, getSnapshotTimeout) // because we get the NEXT block
+	block, err = getBlock(ctx, peer, snapResp.Height, getSnapshotTimeout)
 	if err != nil {
 		return err
 	}
 
-	if len(blocks) < 1 {
+	if block == nil {
 		// Something seriously funny is still afoot.
 		return errors.New("generator provided snapshot but could not provide block")
 	}
 
-	return s.SaveBlock(ctx, blocks[0])
+	return s.SaveBlock(ctx, block)
 }
