@@ -13,12 +13,8 @@ import (
 	"chain/errors"
 )
 
-const (
-	commitmentMaxByteLength = 1000000 // 1mb
-
-	// MaxProgramByteLength is the maximum length in bytes of a COS program.
-	MaxProgramByteLength = 1000000
-)
+// MaxProgramByteLength is the maximum length in bytes of a COS program.
+const MaxProgramByteLength = 1000000
 
 const (
 	SerBlockWitness      = 1

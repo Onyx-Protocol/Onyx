@@ -54,7 +54,6 @@ var (
 	listenAddr = env.String("LISTEN", ":1999")
 	dbURL      = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
 	target     = env.String("TARGET", "sandbox")
-	samplePer  = env.Duration("SAMPLEPER", 10*time.Second)
 	splunkAddr = os.Getenv("SPLUNKADDR")
 	logFile    = os.Getenv("LOGFILE")
 	logSize    = env.Int("LOGSIZE", 5e6) // 5MB

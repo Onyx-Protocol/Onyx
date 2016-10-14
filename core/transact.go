@@ -17,10 +17,6 @@ import (
 	"chain/protocol/bc"
 )
 
-const (
-	defaultTxTTL = 5 * time.Minute
-)
-
 func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
 	err := h.filterAliases(ctx, req)
 	if err != nil {

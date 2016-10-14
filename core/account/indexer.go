@@ -271,7 +271,3 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 	)
 	return errors.Wrap(err)
 }
-
-func toKeyIndex(i []uint32) int64 {
-	return int64(i[0])<<31 | int64(i[1]&0x7fffffff)
-}

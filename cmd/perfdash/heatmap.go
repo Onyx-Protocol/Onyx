@@ -30,18 +30,6 @@ var (
 		Src:  image.NewUniform(labelColor),
 		Face: inconsolata.Regular8x16,
 	}
-
-	xLabels = map[int]bool{
-		0:   true,
-		100: true,
-		200: true,
-		300: true,
-		400: true,
-		500: true,
-		600: true,
-		700: true,
-		790: true,
-	}
 )
 
 func heatmap(w http.ResponseWriter, req *http.Request) {
