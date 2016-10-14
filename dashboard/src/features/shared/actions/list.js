@@ -78,6 +78,7 @@ export default function(type, options = {}) {
       let latestResponse = list.cursor || {}
       let promise
       let refresh = requestOptions.refresh || false
+      let filter = query.filter || ''
 
       if (!refresh && latestResponse && latestResponse.last_page) {
         return Promise.resolve({last: true})
@@ -86,7 +87,7 @@ export default function(type, options = {}) {
       } else {
         let params = {}
 
-        if (query.filter) params.filter = query.filter
+        if (query.filter) params.filter = filter
         if (query.sum_by) params.sum_by = query.sum_by.split(',')
 
         promise = dispatch(fetchItems(params))
@@ -99,7 +100,7 @@ export default function(type, options = {}) {
           refresh: refresh,
         })
       }).catch(err => {
-        if (options.defaultKey && query.filter.indexOf('\'') < 0 && query.filter.indexOf('=') < 0) {
+        if (options.defaultKey && filter.indexOf('\'') < 0 && filter.indexOf('=') < 0) {
           dispatch(pushList({
             filter: `${options.defaultKey}='${query.filter}'`
           }))

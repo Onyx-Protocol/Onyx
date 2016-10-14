@@ -103,7 +103,7 @@ export const replicationLagClass = (state = null, action) => {
 
 export const onTestNet = (state = false, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    return action.param.generator_url.indexOf(testNetUrl) >= 0
+    return (action.param.generator_url || '').indexOf(testNetUrl) >= 0
   }
 
   return state
