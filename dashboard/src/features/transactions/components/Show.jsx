@@ -2,8 +2,9 @@ import React from 'react'
 import {
   BaseShow,
   PageTitle,
+  PageContent,
   Table,
-  Container,
+  Section,
 } from 'features/shared/components'
 import { Summary } from './'
 
@@ -41,43 +42,44 @@ class Show extends BaseShow {
     if (item) {
       const title = <span>
         {'Transaction '}
-        <code>{item.id}</code>
+        <code>{item.id.substring(0,8) + '…'}</code>
       </span>
 
       view = <div>
         <PageTitle title={title} />
 
-        <Container title='Summary'>
-          <Summary transaction={item} />
-        </Container>
+        <PageContent>
+          <Section title='Summary'>
+            <Summary transaction={item} />
+          </Section>
 
-        <Table
-          title='Details'
-          items={[
-            {label: 'ID', value: item.id},
-            {label: 'Timestamp', value: item.timestamp},
-            {label: 'Block ID', value: item.block_id},
-            {label: 'Position', value: item.position},
-            {label: 'Reference Data', value: item.reference_data},
-          ]}
-        />
-
-        {item.inputs.map((input, index) =>
           <Table
-            key={index}
-            title={index == 0 ? 'Inputs' : ''}
-            items={this.inoutDetails(input)}
+            title='Details'
+            items={[
+              {label: 'ID', value: item.id},
+              {label: 'Timestamp', value: item.timestamp},
+              {label: 'Block ID', value: item.block_id},
+              {label: 'Position', value: item.position},
+              {label: 'Reference Data', value: item.reference_data},
+            ]}
           />
-        )}
 
-        {item.outputs.map((output, index) =>
-          <Table
-            key={index}
-            title={index == 0 ? 'Outputs' : ''}
-            items={this.inoutDetails(output)}
-          />
-        )}
+          {item.inputs.map((input, index) =>
+            <Table
+              key={index}
+              title={index == 0 ? 'Inputs' : ''}
+              items={this.inoutDetails(input)}
+            />
+          )}
 
+          {item.outputs.map((output, index) =>
+            <Table
+              key={index}
+              title={index == 0 ? 'Outputs' : ''}
+              items={this.inoutDetails(output)}
+            />
+          )}
+        </PageContent>
       </div>
     }
     return this.renderIfFound(view)

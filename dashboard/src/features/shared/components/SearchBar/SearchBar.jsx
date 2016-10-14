@@ -112,10 +112,9 @@ class SearchBar extends React.Component {
     }
 
     return (
-      <div className={styles.search_bar}>
+      <div className={styles.main}>
         <form onSubmit={this.handleSubmit}>
           <span className={searchFieldClass}>
-            <label>Filter</label>
             <input
               value={this.state.query}
               onKeyDown={this.filterKeydown}

@@ -2,7 +2,7 @@ import React from 'react'
 import actions from 'actions'
 import { connect as reduxConnect } from 'react-redux'
 import { pluralize, humanize } from 'utility/string'
-import { PageTitle, Pagination, SearchBar } from './'
+import { PageContent, PageTitle, Pagination, SearchBar } from './'
 import { pageSize } from 'utility/environment'
 
 export class ItemList extends React.Component {
@@ -41,13 +41,15 @@ export class ItemList extends React.Component {
         <div>
           {header}
 
-          {this.props.children}
+          <PageContent>
+            {this.props.children}
 
-          {this.props.items.map((item) =>
-            <this.props.listItemComponent key={item.id} item={item} {...this.props.itemActions}/>
-          )}
+            {this.props.items.map((item) =>
+              <this.props.listItemComponent key={item.id} item={item} {...this.props.itemActions}/>
+            )}
 
-          {pagination}
+            {pagination}
+          </PageContent>
         </div>
        )
     } else {
@@ -57,9 +59,11 @@ export class ItemList extends React.Component {
 
           {this.props.children}
 
-          <div className='jumbotron text-center'>
-            <p>No results</p>
-          </div>
+          <PageContent>
+            <div className='jumbotron text-center'>
+              <p>No results</p>
+            </div>
+          </PageContent>
         </div>
       )
     }

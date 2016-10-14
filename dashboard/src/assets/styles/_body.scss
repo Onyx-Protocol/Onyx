@@ -21,19 +21,29 @@ html {
 }
 
 body {
+  display: flex;
+  flex-direction: column;
+
   position: relative;
-  margin: 0;
+  margin: 0 auto;
   min-height: 100%;
-  min-width: 910px;
+  min-width: $minWidth;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
 }
 
 :focus, .focus {
     outline: none !important;
-}
-
-.form-container {
-  max-width: 50%;
-  margin: 0 auto;
 }
 
 .panel-body pre {

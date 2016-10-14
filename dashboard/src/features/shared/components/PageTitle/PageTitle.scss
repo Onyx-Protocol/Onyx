@@ -1,16 +1,43 @@
 .main {
-  height: $title-height;
+  background: $background-color;
   padding: $gutter-size;
   border-bottom: 1px solid $border-color;
-  margin: -$gutter-size;
-  margin-bottom: 15px;
+
+  height: $title-height;
 
   display: flex;
   align-items: center;
 }
 
+.title {
+  color: $text-strong-color;
+}
+
 .navigation {
   flex-grow: 1;
+}
+
+.crumbs {
+  display: flex;
+  font-size: 24px;
+  font-weight: bold;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.crumb a {
+  position: relative;
+  padding-right: $gutter-size/2;
+  margin-right: $gutter-size/2;
+
+  .chevron {
+    width: 5px;
+    height: 10px;
+    position: absolute;
+    right: -2px;
+    top: calc(50% - 5px;)
+  }
 }
 
 .actions {

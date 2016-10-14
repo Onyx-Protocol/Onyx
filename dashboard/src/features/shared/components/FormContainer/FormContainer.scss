@@ -1,4 +1,9 @@
 .main {
-  max-width: 50%;
-  margin: 0 auto;
+  background: $background-color;
+
+  min-width: 600px;
+  width: 50%;
+  padding: $gutter-size;
+  margin: $gutter-size auto 0;
+
 }

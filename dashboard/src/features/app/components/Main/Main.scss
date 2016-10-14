@@ -1,13 +1,21 @@
-$sidebar-width: 180px;
+$sidebar-width: 220px;
+
+.main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
 
 .sidebar {
   width: $sidebar-width;
 }
 
 .content {
+  flex: 1;
+
   width: 100%;
-  padding: $gutter-size;
-  padding-left: $sidebar-width + $gutter-size;
+  background: $background-content-color;
+  padding-left: $sidebar-width;
 }
 
 .sidebarContent {
@@ -30,13 +38,41 @@ $sidebar-width: 180px;
 
   .active {
     color: $highlight-default;
+
+    svg {
+      polygon {
+        stroke: $highlight-default;
+        fill: transparentize($highlight-default, 0.85);
+      }
+
+      polyline, path, ellipse {
+        stroke: $highlight-default;
+      }
+
+      rect {
+        fill: $highlight-default;
+      }
+    }
+  }
+}
+
+.icon {
+  display: inline-block;
+  height: 12px;
+  margin-right: 14px;
+  width: 12px;
+
+  svg {
+    display: block;
+    height: 100%;
+    width: 100%;
   }
 }
 
 .logo {
   border-bottom: 1px solid $border-inverse-color;
   height: $title-height;
-  padding-left: 16px;
+  padding-left: $gutter-size;
   display: flex;
   align-items: center;
 
@@ -48,9 +84,9 @@ $sidebar-width: 180px;
 .navigation {
   padding: 0;
   list-style-type: none;
-  margin-top: 24px;
+  margin-top: $gutter-size/2;
   margin-bottom: 0;
-  padding: 0 12px;
+  padding: 0 $gutter-size;
 }
 
 .navigationTitle {

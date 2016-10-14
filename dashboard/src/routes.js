@@ -10,7 +10,7 @@ import { routes as transactions } from 'features/transactions'
 import { routes as unspents } from 'features/unspents'
 import { routes as mockhsm } from 'features/mockhsm'
 
-export default (store) => ({
+const makeRoutes = (store) => ({
   path: '/',
   component: Container,
   childRoutes: [
@@ -29,3 +29,5 @@ export default (store) => ({
     }
   ]
 })
+
+export default makeRoutes

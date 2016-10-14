@@ -10,8 +10,10 @@
 @import 'node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_mixins';
 
 $background-color: #ffffff;
+$background-content-color: #f2f2f2;
 $background-emphasis-color: #f7f9fb;
-$border-color: #e7ebf3;
+
+$border-color: #d5d9e0;
 $text-color: #8c8e94;
 $text-light-color: #dbdcde;
 $text-strong-color: #3b4046;
@@ -23,10 +25,13 @@ $highlight-danger: #EB4D5C;
 $highlight-danger-background: #fdedef;
 
 $background-inverse-color: #20252D;
-$border-inverse-color: lighten($text-strong-color, 10%);
+$border-inverse-color: #303638;
 $highlight-inverse-color: #a3a9b8;
 
 $border-radius-standard: 5px;
 
-$title-height: 65px;
-$gutter-size: 25px;
+$title-height: 75px;
+$gutter-size: 30px;
+
+$minWidth: 900px;
+$maxWidth: 1240px;

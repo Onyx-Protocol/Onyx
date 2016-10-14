@@ -1,6 +1,6 @@
 import React from 'react'
 import styles from './Table.scss'
-import { Container } from 'features/shared/components'
+import { Section } from 'features/shared/components'
 
 class Table extends React.Component {
   isPlainObject(value) {
@@ -9,7 +9,7 @@ class Table extends React.Component {
 
   render() {
     return(
-      <Container
+      <Section
         title={this.props.title}
         actions={this.props.actions} >
         <table className={styles.table}>
@@ -27,7 +27,7 @@ class Table extends React.Component {
             )}
           </tbody>
         </table>
-      </Container>
+      </Section>
     )
   }
 }

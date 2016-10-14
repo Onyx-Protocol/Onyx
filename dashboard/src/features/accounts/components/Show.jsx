@@ -1,6 +1,7 @@
 import React from 'react'
 import {
   BaseShow,
+  PageContent,
   PageTitle,
   Table,
 } from 'features/shared/components'
@@ -42,33 +43,35 @@ class Show extends BaseShow {
           ]}
         />
 
-        <Table
-          title='details'
-          actions={[
-            <button className='btn btn-link' onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>,
-            <button className='btn btn-link' onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
-          ]}
-          items={[
-            {label: 'ID', value: item.id},
-            {label: 'Alias', value: item.alias},
-            {label: 'Tags', value: item.tags},
-            {label: 'Keys', value: item.keys.length},
-            {label: 'Quorum', value: item.quorum},
-
-          ]}
-        />
-
-        {item.keys.map((key, index) =>
+        <PageContent>
           <Table
-            key={index}
-            title={index == 0 ? 'Keys' : ''}
+            title='details'
+            actions={[
+              <button className='btn btn-link' onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>,
+              <button className='btn btn-link' onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
+            ]}
             items={[
-              {label: 'Root Xpub', value: key.root_xpub},
-              {label: 'Account Xpub', value: key.account_xpub},
-              {label: 'Account Derivation Path', value: key.account_derivation_path},
+              {label: 'ID', value: item.id},
+              {label: 'Alias', value: item.alias},
+              {label: 'Tags', value: item.tags},
+              {label: 'Keys', value: item.keys.length},
+              {label: 'Quorum', value: item.quorum},
+
             ]}
           />
-        )}
+
+          {item.keys.map((key, index) =>
+            <Table
+              key={index}
+              title={index == 0 ? 'Keys' : ''}
+              items={[
+                {label: 'Root Xpub', value: key.root_xpub},
+                {label: 'Account Xpub', value: key.account_xpub},
+                {label: 'Account Derivation Path', value: key.account_derivation_path},
+              ]}
+            />
+          )}
+        </PageContent>
       </div>
     }
     return this.renderIfFound(view)
@@ -78,7 +81,6 @@ class Show extends BaseShow {
 // Container
 
 import { connect } from 'react-redux'
-import { push } from 'react-router-redux'
 import actions from 'actions'
 
 const mapStateToProps = (state, ownProps) => ({

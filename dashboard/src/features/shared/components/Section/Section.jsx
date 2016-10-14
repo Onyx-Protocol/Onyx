@@ -1,7 +1,7 @@
 import React from 'react'
-import styles from './Container.scss'
+import styles from './Section.scss'
 
-class Container extends React.Component {
+class Section extends React.Component {
   render() {
     return (
       <div className={styles.main}>
@@ -21,4 +21,4 @@ class Container extends React.Component {
   }
 }
 
-export default Container
+export default Section

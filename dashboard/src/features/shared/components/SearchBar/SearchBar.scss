@@ -1,5 +1,7 @@
-.search_bar {
-  margin: 15px 0 50px 0;
+.main {
+  background: $background-color;
+  padding: $gutter-size/2 $gutter-size;
+  border-bottom: 1px solid $border-color;
 }
 
 .search_field_full, .search_field_half, .sum_by_field {

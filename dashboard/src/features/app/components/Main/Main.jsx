@@ -16,7 +16,7 @@ class Main extends React.Component {
     }
 
     return (
-      <div>
+      <div className={styles.main}>
         <div className={styles.sidebar}>
           <div className={styles.sidebarContent}>
             <div className={styles.logo}>
@@ -30,7 +30,7 @@ class Main extends React.Component {
               <li>
                 <Link to='/transactions' activeClassName={styles.active}>
                   <span className={`glyphicon glyphicon-transfer ${styles.glyphicon}`} />
-                   Transactions
+                  Transactions
                 </Link>
               </li>
               <li>

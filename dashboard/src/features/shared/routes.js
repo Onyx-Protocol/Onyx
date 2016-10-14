@@ -1,4 +1,5 @@
 import { RoutingContainer } from 'features/shared/components'
+import { humanize } from 'utility/string'
 import actions from 'actions'
 
 const makeRoutes = (store, type, List, New, Show, options = {}) => {
@@ -39,6 +40,7 @@ const makeRoutes = (store, type, List, New, Show, options = {}) => {
   return {
     path: options.path || type + 's',
     component: RoutingContainer,
+    name: options.name || humanize(type + 's'),
     indexRoute: {
       component: List,
       onEnter: (nextState, replace) => { loadPage(nextState, replace) },

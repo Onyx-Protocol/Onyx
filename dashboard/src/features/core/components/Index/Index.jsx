@@ -2,8 +2,7 @@ import { connect } from 'react-redux'
 import { context } from 'utility/environment'
 import { getUpcomingReset, getNetworkMismatch } from 'features/configuration/reducers'
 import chain from 'chain'
-import { ErrorBanner } from 'features/shared/components'
-import PageHeader from 'components/PageHeader/PageHeader'
+import { PageContent, ErrorBanner, PageTitle } from 'features/shared/components'
 import React from 'react'
 import styles from './Index.scss'
 import moment from 'moment-timezone'
@@ -154,14 +153,16 @@ class Index extends React.Component {
 
     return (
       <div>
-        <PageHeader additionalStyles={styles.page_header} title='Core'/>
+        <PageTitle title='Core' />
 
-        <div className={`${styles.top} ${styles.flex}`}>
-          {configBlock}
-          {!this.props.core.generator && networkStatusBlock}
-        </div>
+        <PageContent>
+          <div className={`${styles.top} ${styles.flex}`}>
+            {configBlock}
+            {!this.props.core.generator && networkStatusBlock}
+          </div>
 
-        {resetDataBlock}
+          {resetDataBlock}
+        </PageContent>
       </div>
     )
   }
