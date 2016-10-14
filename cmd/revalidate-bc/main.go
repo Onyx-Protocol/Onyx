@@ -92,14 +92,13 @@ func main() {
 }
 
 func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
-	dbCtx, cancel := context.WithCancel(pg.NewContext(context.Background(), db))
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	blocks := streamBlocks(dbCtx)
+	blocks := streamBlocks(ctx, db)
 
 	// Setup a Chain backed with a memstore.
 	// TODO(jackson): Don't keep everything in memory so that we can validate
 	// larger blockchains in the future.
-	ctx := context.Background()
 	c, err := protocol.NewChain(ctx, memstore.New(), mempool.New(), nil)
 	if err != nil {
 		fatalf("unable to construct protocol.Chain: %s\n", err)
@@ -127,7 +126,7 @@ func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
 	return blocksValidated, nil
 }
 
-func streamBlocks(ctx context.Context) <-chan *bc.Block {
+func streamBlocks(ctx context.Context, db pg.DB) <-chan *bc.Block {
 	const q = `
 		SELECT data FROM blocks WHERE height>=$1::bigint
 		ORDER BY height ASC LIMIT $2
@@ -140,7 +139,7 @@ func streamBlocks(ctx context.Context) <-chan *bc.Block {
 		for {
 			// Get a new page of blocks and send them out over the channel.
 			var batch []*bc.Block
-			err := pg.ForQueryRows(ctx, q, next, batchBlockCount, func(b bc.Block) {
+			err := pg.ForQueryRows(ctx, db, q, next, batchBlockCount, func(b bc.Block) {
 				batch = append(batch, &b)
 			})
 			if err != nil {

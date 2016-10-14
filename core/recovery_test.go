@@ -36,7 +36,6 @@ func TestRecovery(t *testing.T) {
 	ctx := context.Background()
 	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	store, pool := txdb.New(db)
-	setupCtx := pg.NewContext(ctx, db)
 	c := prottest.NewChainWithStorage(t, store, pool)
 	indexer := query.NewIndexer(db, c)
 	assets := asset.NewRegistry(db, c, bc.Hash{})
@@ -52,19 +51,19 @@ func TestRecovery(t *testing.T) {
 	// Create two assets (USD & apples) and two accounts (Alice & Bob).
 	var (
 		usdTags = map[string]interface{}{"currency": "usd"}
-		usd     = coretest.CreateAsset(setupCtx, t, assets, nil, "usd", usdTags)
-		apple   = coretest.CreateAsset(setupCtx, t, assets, nil, "apple", nil)
-		alice   = coretest.CreateAccount(setupCtx, t, accounts, "alice", nil)
-		bob     = coretest.CreateAccount(setupCtx, t, accounts, "bob", nil)
+		usd     = coretest.CreateAsset(ctx, t, assets, nil, "usd", usdTags)
+		apple   = coretest.CreateAsset(ctx, t, assets, nil, "apple", nil)
+		alice   = coretest.CreateAccount(ctx, t, accounts, "alice", nil)
+		bob     = coretest.CreateAccount(ctx, t, accounts, "bob", nil)
 	)
 	// Issue some apples to Alice and a dollar to Bob.
-	_ = coretest.IssueAssets(setupCtx, t, c, assets, accounts, apple, 10, alice)
-	_ = coretest.IssueAssets(setupCtx, t, c, assets, accounts, usd, 1, bob)
+	_ = coretest.IssueAssets(ctx, t, c, assets, accounts, apple, 10, alice)
+	_ = coretest.IssueAssets(ctx, t, c, assets, accounts, usd, 1, bob)
 
-	prottest.MakeBlock(setupCtx, t, c)
+	prottest.MakeBlock(ctx, t, c)
 
 	// Submit a transfer between Alice and Bob but don't publish it in a block.
-	coretest.Transfer(setupCtx, t, c, []txbuilder.Action{
+	coretest.Transfer(ctx, t, c, []txbuilder.Action{
 		accounts.NewControlAction(bc.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
 		accounts.NewControlAction(bc.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
 		accounts.NewSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil, nil, nil),
@@ -73,7 +72,7 @@ func TestRecovery(t *testing.T) {
 
 	// Save a copy of the pool txs
 	var poolTxs []*bc.TxData
-	err := pg.ForQueryRows(setupCtx, `SELECT data FROM pool_txs`, func(tx bc.TxData) {
+	err := pg.ForQueryRows(ctx, db, `SELECT data FROM pool_txs`, func(tx bc.TxData) {
 		poolTxs = append(poolTxs, &tx)
 	})
 	if err != nil {

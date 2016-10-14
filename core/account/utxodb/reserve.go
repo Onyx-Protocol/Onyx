@@ -226,7 +226,7 @@ func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c
 			change = append(change, Change{source, reservedAmount - source.Amount})
 		}
 
-		err = pg.ForQueryRows(ctx, utxosQ, reservationID, func(
+		err = pg.ForQueryRows(ctx, pg.FromContext(ctx), utxosQ, reservationID, func(
 			hash bc.Hash,
 			index uint32,
 			amount uint64,

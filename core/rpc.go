@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 
-	"chain/core/txdb"
 	"chain/encoding/json"
 	"chain/errors"
 )
@@ -21,7 +20,7 @@ func (h *Handler) getBlocksRPC(ctx context.Context, afterHeight uint64) ([]json.
 		return nil, errors.Wrapf(err, "waiting for block at height %d", afterHeight+1)
 	}
 
-	rawBlocks, err := txdb.GetRawBlocks(ctx, afterHeight, 10)
+	rawBlocks, err := h.Store.GetRawBlocks(ctx, afterHeight, 10)
 	if err != nil {
 		return nil, err
 	}

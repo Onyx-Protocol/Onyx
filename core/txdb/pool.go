@@ -37,7 +37,7 @@ func (p *Pool) Insert(ctx context.Context, tx *bc.Tx) error {
 func (p *Pool) Dump(ctx context.Context) ([]*bc.Tx, error) {
 	const q = `DELETE FROM pool_txs RETURNING tx_hash, data`
 	var txs []*bc.Tx
-	err := pg.ForQueryRows(pg.NewContext(ctx, p.db), q, func(hash bc.Hash, data bc.TxData) {
+	err := pg.ForQueryRows(ctx, p.db, q, func(hash bc.Hash, data bc.TxData) {
 		txs = append(txs, &bc.Tx{TxData: data, Hash: hash})
 	})
 	if err != nil {

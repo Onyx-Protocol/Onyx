@@ -15,13 +15,13 @@ var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 // ForQueryRows encapsulates a lot of boilerplate when making db queries.
 // Call it like this:
 //
-//   err = ForQueryRows(ctx, query, queryArg1, queryArg2, ..., func(scanVar1 type1, scanVar2 type2, ...) {
+//   err = ForQueryRows(ctx, db, query, queryArg1, queryArg2, ..., func(scanVar1 type1, scanVar2 type2, ...) {
 //     ...process a row from the result...
 //   })
 //
 // This is equivalent to:
 //
-//   rows, err = pg.FromContext(ctx).Query(ctx, query, queryArg1, queryArg2, ...)
+//   rows, err = db.Query(ctx, query, queryArg1, queryArg2, ...)
 //   if err != nil {
 //     return err
 //   }
@@ -47,8 +47,7 @@ var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 // arguments is not reused between calls.  The callback may return a
 // single error-type value.  If any invocation yields a non-nil
 // result, ForQueryRows will abort and return it.
-func ForQueryRows(ctx context.Context, query string, args ...interface{}) error {
-	// TODO(kr): take a pg.DB here: ForQueryRows(context.Context, pg.DB, string, ...)
+func ForQueryRows(ctx context.Context, db DB, query string, args ...interface{}) error {
 	if len(args) == 0 {
 		return errors.Wrap(ErrBadRequest, "too few arguments")
 	}
@@ -67,7 +66,7 @@ func ForQueryRows(ctx context.Context, query string, args ...interface{}) error 
 		return errors.Wrap(ErrBadRequest, "fn arg return type must be error")
 	}
 
-	rows, err := Query(ctx, query, queryArgs...)
+	rows, err := db.Query(ctx, query, queryArgs...)
 	if err != nil {
 		return errors.Wrap(err, "query")
 	}

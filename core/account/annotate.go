@@ -72,8 +72,7 @@ func (m *Manager) AnnotateTxs(ctx context.Context, txs []map[string]interface{})
 		aliases     []sql.NullString
 		tags        []*json.RawMessage
 	)
-	dbctx := pg.NewContext(ctx, m.db)
-	err := pg.ForQueryRows(dbctx, q, pq.ByteaArray(controlPrograms), func(accountID string, program []byte, change bool, alias sql.NullString, accountTags []byte) {
+	err := pg.ForQueryRows(ctx, m.db, q, pq.ByteaArray(controlPrograms), func(accountID string, program []byte, change bool, alias sql.NullString, accountTags []byte) {
 		ids = append(ids, accountID)
 		programs = append(programs, program)
 		changeFlags = append(changeFlags, change)

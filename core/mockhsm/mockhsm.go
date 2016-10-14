@@ -152,7 +152,7 @@ func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, s
 		WHERE ($1=0 OR $1 < sort_id) AND key_type='chain_kd'
 		ORDER BY sort_id DESC LIMIT $2
 	`
-	err = pg.ForQueryRows(ctx, q, zafter, limit, func(b []byte, alias sql.NullString, sortID int64) {
+	err = pg.ForQueryRows(ctx, pg.FromContext(ctx), q, zafter, limit, func(b []byte, alias sql.NullString, sortID int64) {
 		var hdxpub chainkd.XPub
 		copy(hdxpub[:], b)
 		xpub := &XPub{XPub: hdxpub}

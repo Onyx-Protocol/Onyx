@@ -201,7 +201,7 @@ func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, 
 	`
 
 	var signers []*Signer
-	err := pg.ForQueryRows(ctx, q, typ, prev, limit,
+	err := pg.ForQueryRows(ctx, pg.FromContext(ctx), q, typ, prev, limit,
 		func(id, typ string, xpubs pq.StringArray, quorum int, keyIndex uint64) error {
 			keys, err := ConvertKeys(xpubs)
 			if err != nil {

@@ -155,8 +155,7 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]
 		FROM account_control_programs
 		WHERE control_program IN (SELECT unnest($1::bytea[]))
 	`
-	dbctx := pg.NewContext(ctx, m.db)
-	err := pg.ForQueryRows(dbctx, q, scripts, func(accountID string, keyIndex uint64, program []byte) {
+	err := pg.ForQueryRows(ctx, m.db, q, scripts, func(accountID string, keyIndex uint64, program []byte) {
 		for _, out := range outsByScript[string(program)] {
 			newOut := &output{
 				Output:    *out,

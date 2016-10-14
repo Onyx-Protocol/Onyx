@@ -112,7 +112,7 @@ func List(ctx context.Context, typ, after string, limit int) ([]*Token, string, 
 		LIMIT $3
 	`
 	var tokens []*Token
-	err := pg.ForQueryRows(ctx, q, typ, after, limit, func(id, typ, sortID string, created time.Time) {
+	err := pg.ForQueryRows(ctx, pg.FromContext(ctx), q, typ, after, limit, func(id, typ, sortID string, created time.Time) {
 		tokens = append(tokens, &Token{
 			ID:      id,
 			Type:    typ,
