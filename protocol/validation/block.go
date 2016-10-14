@@ -109,17 +109,6 @@ func ApplyBlock(snapshot *state.Snapshot, block *bc.Block) error {
 	return nil
 }
 
-// ValidateBlockHeader validates all pieces of the header
-// that can be checked before processing the transactions.
-// This includes the previous block hash, height, timestamp,
-// output script, and signature script.
-//
-// If block is the genesis block, prev should be the zero value block
-// header.
-func ValidateBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
-	return validateBlockHeader(prev, block, true)
-}
-
 func validateBlockHeader(prev *bc.BlockHeader, block *bc.Block, runScript bool) error {
 	if prev == nil && block.Height != 1 {
 		return ErrBadHeight

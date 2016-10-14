@@ -93,7 +93,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}}
 	for i, c := range cases {
 		block := &bc.Block{BlockHeader: c.header}
-		got := ValidateBlockHeader(&prevHeader, block)
+		got := validateBlockHeader(&prevHeader, block, true)
 		if errors.Root(got) != c.want {
 			t.Errorf("%d", i)
 			t.Errorf("%s: got %q want %q", c.desc, got, c.want)
