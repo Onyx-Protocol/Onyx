@@ -7,29 +7,22 @@ import (
 	"chain/errors"
 )
 
-// getBlocksRPC returns contiguous blocks
-// with heights larger than afterHeight,
-// in block-height order.
+// getBlockRPC returns the block at the requested height.
 // If successful, it always returns at least one block,
 // waiting if necessary until one is created.
-// It is not guaranteed to return all available blocks.
 // It is an error to request blocks very far in the future.
-func (h *Handler) getBlocksRPC(ctx context.Context, afterHeight uint64) ([]json.HexBytes, error) {
-	err := h.Chain.WaitForBlockSoon(ctx, afterHeight+1)
+func (h *Handler) getBlockRPC(ctx context.Context, height uint64) (json.HexBytes, error) {
+	err := h.Chain.WaitForBlockSoon(ctx, height)
 	if err != nil {
-		return nil, errors.Wrapf(err, "waiting for block at height %d", afterHeight+1)
+		return nil, errors.Wrapf(err, "waiting for block at height %d", height)
 	}
 
-	rawBlocks, err := h.Store.GetRawBlocks(ctx, afterHeight, 10)
+	rawBlock, err := h.Store.GetRawBlock(ctx, height)
 	if err != nil {
 		return nil, err
 	}
 
-	jsonBlocks := make([]json.HexBytes, 0, len(rawBlocks))
-	for _, rb := range rawBlocks {
-		jsonBlocks = append(jsonBlocks, rb)
-	}
-	return jsonBlocks, nil
+	return rawBlock, nil
 }
 
 // Data is a []byte because it's being funneled from the

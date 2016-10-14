@@ -123,7 +123,7 @@ func (h *Handler) init() {
 	m.Handle("/reset", needConfig(h.reset))
 
 	m.Handle(networkRPCPrefix+"submit", needConfig(h.Chain.AddTx))
-	m.Handle(networkRPCPrefix+"get-blocks", needConfig(h.getBlocksRPC))
+	m.Handle(networkRPCPrefix+"get-block", needConfig(h.getBlockRPC))
 	m.Handle(networkRPCPrefix+"get-snapshot", needConfig(h.getSnapshotRPC))
 	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(h.leaderSignHandler(h.Signer)))
 	m.Handle(networkRPCPrefix+"block-height", needConfig(func(ctx context.Context) map[string]uint64 {
