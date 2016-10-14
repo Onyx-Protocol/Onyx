@@ -20,6 +20,11 @@ export default function(type, options = {}) {
         data[fieldName] = parseNonblankJSON(data[fieldName])
       })
 
+      const intFields = options.intFields || []
+      intFields.map(fieldName => {
+        data[fieldName] = parseInt(data[fieldName])
+      })
+
       return function(dispatch) {
         let object = new chain[className](data)
 
