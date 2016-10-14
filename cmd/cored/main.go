@@ -199,7 +199,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		indexer.RegisterAnnotator(accounts.AnnotateTxs)
 		assets.IndexAssets(indexer)
 		accounts.IndexAccounts(indexer)
-		indexer.IndexTransactions()
+		c.AddBlockCallback(indexer.IndexTransactions)
 	}
 
 	hsm := mockhsm.New(db)

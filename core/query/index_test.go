@@ -17,7 +17,7 @@ func TestIndexBlock(t *testing.T) {
 	b := &bc.Block{
 		Transactions: []*bc.Tx{},
 	}
-	indexer.indexBlockCallback(ctx, b)
+	indexer.IndexTransactions(ctx, b)
 
 	var blockCount int
 	err := db.QueryRow(ctx, "SELECT COUNT(*) FROM query_blocks").Scan(&blockCount)

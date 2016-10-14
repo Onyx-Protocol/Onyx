@@ -20,7 +20,3 @@ type Indexer struct {
 	c          *protocol.Chain
 	annotators []Annotator
 }
-
-func (ind *Indexer) IndexTransactions() {
-	ind.c.AddBlockCallback(ind.indexBlockCallback)
-}

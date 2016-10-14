@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
+	"math"
 
 	"chain/core/query"
 	"chain/core/query/filter"
 	"chain/errors"
 	"chain/net/http/httpjson"
-	"chain/protocol/bc"
 )
 
 // These types enforce the ordering of JSON fields in API output.
@@ -75,7 +74,7 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 	}
 
 	if in.EndTimeMS == 0 {
-		in.EndTimeMS = bc.Millis(time.Now())
+		in.EndTimeMS = math.MaxInt64
 	}
 
 	var (
@@ -271,7 +270,7 @@ func (h *Handler) listAccounts(ctx context.Context, in requestQuery) (page, erro
 // POST /list-balances
 func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
 	if in.TimestampMS == 0 {
-		in.TimestampMS = bc.Millis(time.Now())
+		in.TimestampMS = math.MaxInt64
 	}
 
 	var p filter.Predicate
@@ -330,7 +329,7 @@ type utxoResp struct {
 // POST /list-unspent-outputs
 func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
 	if in.TimestampMS == 0 {
-		in.TimestampMS = bc.Millis(time.Now())
+		in.TimestampMS = math.MaxInt64
 	}
 	var p filter.Predicate
 	p, err = filter.Parse(in.Filter)

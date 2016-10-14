@@ -204,7 +204,7 @@ func TestTransfer(t *testing.T) {
 	handler.Accounts.IndexAccounts(handler.Indexer)
 	handler.Indexer.RegisterAnnotator(handler.Accounts.AnnotateTxs)
 	handler.Indexer.RegisterAnnotator(handler.Assets.AnnotateTxs)
-	handler.Indexer.IndexTransactions()
+	c.AddBlockCallback(handler.Indexer.IndexTransactions)
 	handler.init()
 
 	assetAlias := "some-asset"
