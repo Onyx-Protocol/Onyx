@@ -41,8 +41,9 @@ class Show extends BaseShow {
           {item.keys.map((key, index) =>
             <Table
               key={index}
-              title={index == 0 ? 'Keys' : ''}
+              title={`Key ${index + 1}`}
               items={[
+                {label: 'Index', value: index},
                 {label: 'Root Xpub', value: key.root_xpub},
                 {label: 'Asset Pubkey', value: key.asset_pubkey},
                 {label: 'Asset Derivation Path', value: key.asset_derivation_path},

@@ -3,8 +3,8 @@ import styles from './Table.scss'
 import { Section } from 'features/shared/components'
 
 class Table extends React.Component {
-  isPlainObject(value) {
-    return value != null && (typeof value == 'object') && !Array.isArray(value)
+  renderPre(value) {
+    return value != null && (typeof value == 'object')
   }
 
   render() {
@@ -17,7 +17,7 @@ class Table extends React.Component {
             {this.props.items.map((item) =>
               <tr key={`${item.label}`}>
                 <td className={styles.label}>{item.label}</td>
-                {this.isPlainObject(item.value) ?
+                {this.renderPre(item.value) ?
                   <td>
                     <pre className={styles.pre}>{JSON.stringify(item.value, null, '  ')}</pre>
                   </td> :
