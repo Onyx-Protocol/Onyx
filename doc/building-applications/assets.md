@@ -6,7 +6,7 @@ An asset is a set of fungible units that can be issued on a blockchain to repres
 
 Each asset has a globally unique asset ID that is derived from an issuance program. The issuance program defines a set of private keys and a quorum of signatures that must be provided to issue units of the assets. Chain Core automatically creates the issuance program when the asset is created.
 
-Each asset can optionally include an asset definition, consisting of arbitrary key-value data. The asset definition is committed to the blockchain for all participants to see. Additionally, an asset can be tagged locally with private data for convenient queries and operations. For more information, see [Global vs. Local Data](/doc/learn-more/global-vs-local-data).
+Each asset can optionally include an asset definition, consisting of arbitrary key-value data. The asset definition is committed to the blockchain for all participants to see. Additionally, an asset can be tagged locally with private data for convenient queries and operations. For more information, see [Global vs. Local Data](../learn-more/global-vs-local-data).
 
 ## Overview
 
@@ -21,7 +21,7 @@ This guide will walk you through the basic functions of an asset:
 * List transactions (for issuance, transfer, and retirement)
 * Get asset circulation
 
-This guide assumes you know the basic functions presented in the [5-Minute Guide](/doc/getting-started/five-minute-guide).
+This guide assumes you know the basic functions presented in the [5-Minute Guide](../getting-started/five-minute-guide).
 
 ## Create asset
 
@@ -34,11 +34,11 @@ Creating an asset defines the asset object locally in the Chain Core. It does no
 
 Create an asset for Acme Common stock:
 
-$code /doc/examples/java/Assets.java create-asset-acme-common
+$code ../examples/java/Assets.java create-asset-acme-common
 
 Create an asset for Acme Preferred stock:
 
-$code /doc/examples/java/Assets.java create-asset-acme-preferred
+$code ../examples/java/Assets.java create-asset-acme-preferred
 
 ## List assets
 
@@ -46,11 +46,11 @@ Chain Core keeps a list of all assets in the blockchain, whether or not they wer
 
 To list all assets created in the Core, we build an assets query, filtering to the `origin` tag.
 
-$code /doc/examples/java/Assets.java list-local-assets
+$code ../examples/java/Assets.java list-local-assets
 
 To list all assets defined as preferred stock of a private security, we build an assets query, filtering to several tags.
 
-$code /doc/examples/java/Assets.java list-private-preferred-securities
+$code ../examples/java/Assets.java list-private-preferred-securities
 
 ## Issue asset units to a local account
 
@@ -58,15 +58,15 @@ To issue units of an asset into an account within the Chain Core, we can build a
 
 We first build a transaction issuing 1000 units of Acme Common stock to the Acme treasury account.
 
-$code /doc/examples/java/Assets.java build-issue
+$code ../examples/java/Assets.java build-issue
 
 Once we have built the transaction, we need to sign it with the key used to create the Acme Common stock asset.
 
-$code /doc/examples/java/Assets.java sign-issue
+$code ../examples/java/Assets.java sign-issue
 
 Once we have signed the transaction, we can submit it for inclusion in the blockchain.
 
-$code /doc/examples/java/Assets.java submit-issue
+$code ../examples/java/Assets.java submit-issue
 
 ## Issue asset units to an external party
 
@@ -74,7 +74,7 @@ If you wish to issue asset units to an external party, you must first request a 
 
 We will issue 2000 units of Acme Common stock to an external party.
 
-$code /doc/examples/java/Assets.java external-issue
+$code ../examples/java/Assets.java external-issue
 
 ## Trade asset units by issuing to an external party
 
@@ -89,23 +89,23 @@ Chain Core enables risk-free bilateral trades. The steps are as follows:
 
 We first build a transaction whereby Acme proposes to issue 1000 units of Acme Common stock to Bob for $50,000. Note: the USD asset is denominated in cents, so the amount is 5,000,000.
 
-$code /doc/examples/java/Assets.java build-trade-a
+$code ../examples/java/Assets.java build-trade-a
 
 The transaction builder constructs the transaction such that issuing 1000 units of Acme Common stock *requires* 5,000,000 units of USD (cents) to simultaneously be received into Acme's account. We can then sign this transaction with the key used to create the Acme Common stock asset to authorize Acme's portion of the proposed trade.
 
-$code /doc/examples/java/Assets.java sign-trade-a
+$code ../examples/java/Assets.java sign-trade-a
 
 The partial transaction can now be sent to Bob. Bob builds onto the transaction to satisfy the trade offer. Note: Bob has locally aliased the Acme Common stock asset as `acme_common-stock`.
 
-$code /doc/examples/java/Assets.java build-trade-b
+$code ../examples/java/Assets.java build-trade-b
 
 The complete transaction can now be signed with the key used to create Bob's account.
 
-$code /doc/examples/java/Assets.java sign-trade-b
+$code ../examples/java/Assets.java sign-trade-b
 
 Finally, Bob can submit the transaction to the blockchain to execute the trade.
 
-$code /doc/examples/java/Assets.java submit-trade
+$code ../examples/java/Assets.java submit-trade
 
 ### Retire asset units
 
@@ -113,15 +113,15 @@ To retire units of an asset from an account, we can build a transaction using an
 
 We first build a transaction retiring 50 units of Acme Common stock from Acme's treasury account.
 
-$code /doc/examples/java/Assets.java build-retire
+$code ../examples/java/Assets.java build-retire
 
 Once we have built the transaction, we need to sign it with the key used to create Acme's treasury account.
 
-$code /doc/examples/java/Assets.java sign-retire
+$code ../examples/java/Assets.java sign-retire
 
 Once we have signed the transaction, we can submit it for inclusion in the blockchain.
 
-$code /doc/examples/java/Assets.java submit-retire
+$code ../examples/java/Assets.java submit-retire
 
 ## List asset transactions
 
@@ -131,19 +131,19 @@ Chain Core keeps a time-ordered list of all transactions in the blockchain. Thes
 
 To list transactions where Acme Common stock was issued, we build an assets query, filtering to inputs with the `issue` action and the Acme Common stock `asset_alias`.
 
-$code /doc/examples/java/Assets.java list-issuances
+$code ../examples/java/Assets.java list-issuances
 
 ### Transfer transactions
 
 To list transactions where Acme Common stock was transferred, we build an assets query, filtering to inputs with the `spend` action and the Acme Common stock `asset_alias`.
 
-$code /doc/examples/java/Assets.java list-transfers
+$code ../examples/java/Assets.java list-transfers
 
 ### Retirement transactions
 
 To list transactions where Acme Common stock was retired, we build an assets query, filtering to outputs with the `retire` action and the Acme Common stock `asset_alias`.
 
-$code /doc/examples/java/Assets.java list-retirements
+$code ../examples/java/Assets.java list-retirements
 
 ## Get asset circulation
 
@@ -151,14 +151,14 @@ The circulation of an asset is the sum of all asset units controlled by any cont
 
 To list the circulation of Acme Common stock, we build a balance query, filtering to the Acme Common stock `asset_alias`.
 
-$code /doc/examples/java/Assets.java list-acme-common-balance
+$code ../examples/java/Assets.java list-acme-common-balance
 
 To list the circulation of all classes of Acme stock, we build a balance query, filtering to the `issuer` field in the `definition`.
 
-$code /doc/examples/java/Assets.java list-acme-balance
+$code ../examples/java/Assets.java list-acme-balance
 
 To list all the control programs that hold a portion of the circulation of Acme Common stock, we build an unspent outputs query, filtering to the Acme Common stock `asset_alias`.
 
-$code /doc/examples/java/Assets.java list-acme-common-unspents
+$code ../examples/java/Assets.java list-acme-common-unspents
 
-[Download Code](/doc/examples/java/Assets.java)
+[Download Code](../examples/java/Assets.java)

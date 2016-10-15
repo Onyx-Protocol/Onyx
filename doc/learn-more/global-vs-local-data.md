@@ -6,7 +6,7 @@ There are two types of data in Chain Core - global data that is committed to the
 
 Additionally, Chain Core privately annotates global transaction and asset objects with relevant local data.
 
-For field-specific details, see [API Objects](/doc/reference/api-objects).
+For field-specific details, see [API Objects](../reference/api-objects).
 
 ## User-supplied global data
 
@@ -49,7 +49,7 @@ Aliases are user-supplied, unique identifiers. They enable convenient operations
 
 ### Account tags
 
-Accounts tags are local data that provide convenient storage and enable [complex queries](/doc/building-applications/query-filters). For example:
+Accounts tags are local data that provide convenient storage and enable [complex queries](../building-applications/query-filters). For example:
 
 ```
 {
@@ -63,7 +63,7 @@ Accounts tags are local data that provide convenient storage and enable [complex
 
 ### Asset tags
 
-Asset tags are a local asset definition used to [query the blockchain](/doc/building-applications/query-filters). This is useful if you do not wish to publish the asset definition on the blockchain, but rather distribute it out of band to relevant parties. It also enables you to add additional local data about an asset that you didn't create. For example:
+Asset tags are a local asset definition used to [query the blockchain](../building-applications/query-filters). This is useful if you do not wish to publish the asset definition on the blockchain, but rather distribute it out of band to relevant parties. It also enables you to add additional local data about an asset that you didn't create. For example:
 
 ```
 {
@@ -75,18 +75,18 @@ Asset tags are a local asset definition used to [query the blockchain](/doc/buil
 
 ### Create accounts with tags
 
-$code /doc/examples/java/GlobalVsLocalData.java create-accounts-with-tags
+$code ../examples/java/GlobalVsLocalData.java create-accounts-with-tags
 
 ### Create assets with tags and definition
 
-$code /doc/examples/java/GlobalVsLocalData.java create-asset-with-tags-and-definition
+$code ../examples/java/GlobalVsLocalData.java create-asset-with-tags-and-definition
 
 ### Create transaction with transaction-level reference data
 
-$code /doc/examples/java/GlobalVsLocalData.java build-tx-with-tx-ref-data
+$code ../examples/java/GlobalVsLocalData.java build-tx-with-tx-ref-data
 
 ### Create transaction with action-level reference data
 
-$code /doc/examples/java/GlobalVsLocalData.java build-tx-with-action-ref-data
+$code ../examples/java/GlobalVsLocalData.java build-tx-with-action-ref-data
 
-[Download Code](/doc/examples/java/GlobalVsLocalData.java)
+[Download Code](../examples/java/GlobalVsLocalData.java)

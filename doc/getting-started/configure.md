@@ -12,7 +12,7 @@ Once you configure your Chain Core, you can reset it at any time in the dashboar
 
 ## Create a new blockchain
 
-This creates a new blockchain with the Core as the block generator and single block signer. The block generator key is automatically created in the MockHSM. For more information, see [operating a blockchain](/doc/learn-more/blockchain-operators).
+This creates a new blockchain with the Core as the block generator and single block signer. The block generator key is automatically created in the MockHSM. For more information, see [operating a blockchain](../learn-more/blockchain-operators).
 
 ## Connect to an existing blockchain
 
@@ -24,7 +24,7 @@ This connects to an existing blockchain by providing the following:
 
 Once configured, Chain Core will begin downloading all existing blocks from the block generator, in order of creation. Once all blocks are downloaded, Chain Core will open a persistent connection with the block generator to receive new blocks as they are created.
 
-For more information, see [participating in a blockchain](/doc/learn-more/blockchain-participants).
+For more information, see [participating in a blockchain](../learn-more/blockchain-participants).
 
 ## Connect to the Chain testnet
 

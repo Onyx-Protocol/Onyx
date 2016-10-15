@@ -34,7 +34,7 @@ as well as a few examples of different transactions:
 * Asset trade
 * Asset retirement
 
-This guide assumes you know the basic functions presented in the [5-Minute Guide](/doc/getting-started/five-minute-guide).
+This guide assumes you know the basic functions presented in the [5-Minute Guide](../getting-started/five-minute-guide).
 
 ## Create Transaction
 
@@ -94,17 +94,17 @@ The `Transaction.QueryBuilder` retrieves transactions from the blockchain. By de
 
 ### Filters
 
-The `setFilter` method allows filtering `Transaction.QueryBuilder` results by any field in the [transaction object](/doc/reference/api-objects#transaction). For more information, see [Query Filters](/doc/building-applications/query-filters).
+The `setFilter` method allows filtering `Transaction.QueryBuilder` results by any field in the [transaction object](../reference/api-objects#transaction). For more information, see [Query Filters](../building-applications/query-filters).
 
 ### Examples
 
 List all transactions involving Alice's account:
 
-$code /doc/examples/java/Transactions.java list-alice-transactions
+$code ../examples/java/Transactions.java list-alice-transactions
 
 List all transactions involving the Core:
 
-$code /doc/examples/java/Transactions.java list-local-transactions
+$code ../examples/java/Transactions.java list-local-transactions
 
 ## Transaction consumers
 
@@ -126,11 +126,11 @@ We will process new payments into Alice's account as they arrive.
 
 First, create a new transaction feed:
 
-$code /doc/examples/java/Transactions.java create-feed
+$code ../examples/java/Transactions.java create-feed
 
 Then, process and acknowledge each new transaction as it arrives:
 
-$code /doc/examples/java/Transactions.java process-feed
+$code ../examples/java/Transactions.java process-feed
 
 ## Basic transaction examples
 
@@ -140,17 +140,17 @@ Issue 1000 units of gold to Alice.
 
 #### Within a Chain Core
 
-$code /doc/examples/java/Transactions.java issue-within-core
+$code ../examples/java/Transactions.java issue-within-core
 
 #### Between two Chain Cores
 
 First Bob creates a control program in his account, which he can send to the issuer of gold.
 
-$code /doc/examples/java/Transactions.java create-bob-issue-program
+$code ../examples/java/Transactions.java create-bob-issue-program
 
 The issuer then builds, signs, and submits a transaction, sending gold to Bob's control program.
 
-$code /doc/examples/java/Transactions.java issue-to-bob-program
+$code ../examples/java/Transactions.java issue-to-bob-program
 
 ### Simple payment
 
@@ -158,17 +158,17 @@ Alice pays 10 units of gold to Bob.
 
 #### Within a Chain Core
 
-$code /doc/examples/java/Transactions.java pay-within-core
+$code ../examples/java/Transactions.java pay-within-core
 
 #### Between two Chain Cores
 
 First Bob creates a control program in his account, which he can send to Alice.
 
-$code /doc/examples/java/Transactions.java create-bob-payment-program
+$code ../examples/java/Transactions.java create-bob-payment-program
 
 Alice then builds, signs, and submits a transaction, sending gold to Bob's control program.
 
-$code /doc/examples/java/Transactions.java pay-between-cores
+$code ../examples/java/Transactions.java pay-between-cores
 
 ### Multi-asset payment
 
@@ -176,16 +176,16 @@ Alice pays 10 units of gold and 20 units of silver to Bob.
 
 #### Within a Chain Core
 
-$code /doc/examples/java/Transactions.java multiasset-within-core
+$code ../examples/java/Transactions.java multiasset-within-core
 
 #### Between two Chain Cores
 First Bob creates a control program in his account, which he can send to Alice.
 
-$code /doc/examples/java/Transactions.java create-bob-multiasset-program
+$code ../examples/java/Transactions.java create-bob-multiasset-program
 
 Alice then builds, signs, and submits a transaction, sending gold and silver to Bob's control program.
 
-$code /doc/examples/java/Transactions.java multiasset-between-cores
+$code ../examples/java/Transactions.java multiasset-between-cores
 
 ### Asset trade
 
@@ -193,34 +193,34 @@ Alice trades 10 units of gold with Bob in return for 20 units of silver.
 
 #### Within a Chain Core
 
-$code /doc/examples/java/Transactions.java trade-within-core
+$code ../examples/java/Transactions.java trade-within-core
 
 #### Between two Chain Cores
 
 We first build a transaction whereby Alice proposes to trade 10 units of gold for 20 units of silver.
 
-$code /doc/examples/java/Transactions.java build-trade-a
+$code ../examples/java/Transactions.java build-trade-a
 
 The transaction builder constructs the transaction such that spending 10 units of gold from Alice's account *requires* 20 units of silver to simultaneously be received into Alice's account. We can then sign this transaction with the key used to create Alice's account to authorize Alice's portion of the proposed trade.
 
-$code /doc/examples/java/Transactions.java sign-trade-a
+$code ../examples/java/Transactions.java sign-trade-a
 
 The partial transaction can now be sent to Bob. Bob builds onto the transaction to satisfy the trade offer.
 
-$code /doc/examples/java/Transactions.java build-trade-b
+$code ../examples/java/Transactions.java build-trade-b
 
 The complete transaction can now be signed with the key used to create Bob's account.
 
-$code /doc/examples/java/Transactions.java sign-trade-a
+$code ../examples/java/Transactions.java sign-trade-a
 
 Finally, Bob can submit the transaction to the blockchain to execute the trade.
 
-$code /doc/examples/java/Transactions.java submit-trade
+$code ../examples/java/Transactions.java submit-trade
 
 ### Asset retirement
 
 Alice retires 50 units of gold from her account.
 
-$code /doc/examples/java/Transactions.java retire
+$code ../examples/java/Transactions.java retire
 
-[Download Code](/doc/examples/java/Transactions.java)
+[Download Code](../examples/java/Transactions.java)

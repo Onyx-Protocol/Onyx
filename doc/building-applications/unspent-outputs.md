@@ -15,11 +15,11 @@ All asset units on the blockchain exist in the unspent output set. Any balance o
 
 List all unspent outputs in Alice's account:
 
-$code /doc/examples/java/UnspentOutputs.java alice-unspent-outputs
+$code ../examples/java/UnspentOutputs.java alice-unspent-outputs
 
 List all unspent outputs of the Gold asset:
 
-$code /doc/examples/java/UnspentOutputs.java gold-unspent-outputs
+$code ../examples/java/UnspentOutputs.java gold-unspent-outputs
 
 ## Spend unspent outputs
 
@@ -46,7 +46,7 @@ Given the following unspent output in Alice's account:
 
 Build a transaction spending all units of gold in the unspent output to Bob's account:
 
-$code /doc/examples/java/UnspentOutputs.java build-transaction-all
+$code ../examples/java/UnspentOutputs.java build-transaction-all
 
 ### Spend partial unspent output
 
@@ -67,4 +67,4 @@ Given the following unspent output in Alice's account:
 
 Build a transaction spending 40 units of gold in the unspent output to Bob's account, and spending 60 units back to Alice's account as change:
 
-$code /doc/examples/java/UnspentOutputs.java build-transaction-partial
+$code ../examples/java/UnspentOutputs.java build-transaction-partial

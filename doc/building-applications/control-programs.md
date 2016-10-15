@@ -16,11 +16,11 @@ Although all control programs in one account are controlled by keys derived from
 
 If Alice wishes to be paid gold by an external party (Bob), she first creates a new control program in her account:
 
-$code /doc/examples/java/ControlPrograms.java create-control-program
+$code ../examples/java/ControlPrograms.java create-control-program
 
 She can then deliver the control program to Bob (out of band), who will provide it to the Transaction.QueryBuilder:
 
-$code /doc/examples/java/ControlPrograms.java build-transaction
+$code ../examples/java/ControlPrograms.java build-transaction
 
 ## Retirement control programs
 
@@ -30,10 +30,10 @@ A retirement control program is a very simple control program with a single pred
 
 To retire units of gold from Alice's account, we use the `SpendFromAccount` and `Retire` actions on the `Transaction.QueryBuilder`, which prompts Chain Core to create the retirement control program and spent to it from Alice's account.
 
-$code /doc/examples/java/ControlPrograms.java retire
+$code ../examples/java/ControlPrograms.java retire
 
 ## Custom control programs
 
-The Chain Core virtual machine supports custom control programs built from the supported set of [program predicates](#). We are [currently developing](/doc/getting-started/product-roadmap) a high level language that will enable developers to write custom control programs in Chain Core. Additionally, we work directly with our enterprise customers to design, audit, and implement custom control programs for production deployment. For more information, visit [Chain Core for Enterprise](#) or [contact us](#).
+The Chain Core virtual machine supports custom control programs built from the supported set of [program predicates](#). We are [currently developing](../getting-started/product-roadmap) a high level language that will enable developers to write custom control programs in Chain Core. Additionally, we work directly with our enterprise customers to design, audit, and implement custom control programs for production deployment. For more information, visit [Chain Core for Enterprise](#) or [contact us](#).
 
-[Download Code](/doc/examples/java/ControlPrograms.java)
+[Download Code](../examples/java/ControlPrograms.java)

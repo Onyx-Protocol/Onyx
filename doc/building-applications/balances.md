@@ -14,7 +14,7 @@ The `setSumBy` method enables more complex summations of balances. For example, 
 
 #### Query
 
-$code /doc/examples/java/Balances.java account-balance
+$code ../examples/java/Balances.java account-balance
 
 #### Response
 
@@ -55,7 +55,7 @@ $code /doc/examples/java/Balances.java account-balance
 
 #### Query
 
-$code /doc/examples/java/Balances.java usd-iou-circulation
+$code ../examples/java/Balances.java usd-iou-circulation
 
 #### Response
 
@@ -76,7 +76,7 @@ $code /doc/examples/java/Balances.java usd-iou-circulation
 
 #### Query
 
-$code /doc/examples/java/Balances.java account-balance-sum-by-currency
+$code ../examples/java/Balances.java account-balance-sum-by-currency
 
 #### Response
 
@@ -97,4 +97,4 @@ $code /doc/examples/java/Balances.java account-balance-sum-by-currency
 ]
 ```
 
-[Download Code](/doc/examples/java/Balances.java)
+[Download Code](../examples/java/Balances.java)

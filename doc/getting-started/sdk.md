@@ -2,7 +2,7 @@
 
 ### Java
 
-[Download](/doc/java/chain-sdk-latest.jar)
+[Download](../java/chain-sdk-latest.jar)
 
 ## Ruby
 
