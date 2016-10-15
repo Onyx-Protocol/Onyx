@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"chain/crypto/ed25519"
 	"chain/errors"
 	"chain/log"
@@ -118,11 +120,16 @@ func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 		c.queueSnapshot(ctx, block.Height, block.Time(), snapshot)
 	}
 
+	var g errgroup.Group
 	for _, cb := range c.blockCallbacks {
-		err := cb(ctx, block)
-		if err != nil {
-			return errors.Wrap(err, "executing block callback")
-		}
+		cb := cb // https://golang.org/doc/faq#closures_and_goroutines
+		g.Go(func() error {
+			return cb(ctx, block)
+		})
+	}
+	err = g.Wait()
+	if err != nil {
+		return errors.Wrap(err, "executing block callback")
 	}
 
 	err = c.store.FinalizeBlock(ctx, block.Height)

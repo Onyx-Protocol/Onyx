@@ -22,12 +22,12 @@ import (
 
 func TestAccountSourceReserve(t *testing.T) {
 	var (
-		dbtx     = pgtest.NewTx(t)
-		ctx      = pg.NewContext(context.Background(), dbtx)
+		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx      = pg.NewContext(context.Background(), db)
 		c        = prottest.NewChain(t)
-		accounts = account.NewManager(dbtx, c)
-		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
-		indexer  = query.NewIndexer(dbtx, c)
+		accounts = account.NewManager(db, c)
+		assets   = asset.NewRegistry(db, c, bc.Hash{})
+		indexer  = query.NewIndexer(db, c)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
@@ -65,19 +65,19 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Errorf("expected change amount to be 1")
 	}
 
-	if !programInAccount(ctx, t, dbtx, buildResult.Outputs[0].ControlProgram, accID) {
+	if !programInAccount(ctx, t, db, buildResult.Outputs[0].ControlProgram, accID) {
 		t.Errorf("expected change control program to belong to account")
 	}
 }
 
 func TestAccountSourceUTXOReserve(t *testing.T) {
 	var (
-		dbtx     = pgtest.NewTx(t)
-		ctx      = pg.NewContext(context.Background(), dbtx)
+		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx      = pg.NewContext(context.Background(), db)
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
-		accounts = account.NewManager(dbtx, c)
-		indexer  = query.NewIndexer(dbtx, c)
+		assets   = asset.NewRegistry(db, c, bc.Hash{})
+		accounts = account.NewManager(db, c)
+		indexer  = query.NewIndexer(db, c)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
@@ -105,12 +105,12 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 func TestAccountSourceReserveIdempotency(t *testing.T) {
 	var (
-		dbtx     = pgtest.NewTx(t)
-		ctx      = pg.NewContext(context.Background(), dbtx)
+		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx      = pg.NewContext(context.Background(), db)
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
-		accounts = account.NewManager(dbtx, c)
-		indexer  = query.NewIndexer(dbtx, c)
+		assets   = asset.NewRegistry(db, c, bc.Hash{})
+		accounts = account.NewManager(db, c)
+		indexer  = query.NewIndexer(db, c)
 
 		accID        = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset        = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
@@ -163,12 +163,12 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 
 func TestAccountSourceWithTxHash(t *testing.T) {
 	var (
-		dbtx     = pgtest.NewTx(t)
-		ctx      = pg.NewContext(context.Background(), dbtx)
+		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx      = pg.NewContext(context.Background(), db)
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
-		accounts = account.NewManager(dbtx, c)
-		indexer  = query.NewIndexer(dbtx, c)
+		assets   = asset.NewRegistry(db, c, bc.Hash{})
+		accounts = account.NewManager(db, c)
+		indexer  = query.NewIndexer(db, c)
 
 		acc      = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset    = coretest.CreateAsset(ctx, t, assets, nil, "", nil)

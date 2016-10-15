@@ -31,8 +31,8 @@ import (
 // source, and then building two different txs with that same source,
 // but destinations w/ different addresses.
 func TestConflictingTxsInPool(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	info, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
@@ -95,8 +95,8 @@ func TestConflictingTxsInPool(t *testing.T) {
 }
 
 func TestTransferConfirmed(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 
 	info, err := bootdb(ctx, t)
 	if err != nil {
@@ -119,8 +119,8 @@ func TestTransferConfirmed(t *testing.T) {
 }
 
 func BenchmarkTransferWithBlocks(b *testing.B) {
-	dbtx := pgtest.NewTx(b)
-	ctx := pg.NewContext(context.Background(), dbtx)
+	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	info, err := bootdb(ctx, b)
 	if err != nil {
 		b.Fatal(err)
@@ -204,8 +204,8 @@ func BenchmarkGenerateBlock(b *testing.B) {
 
 func benchGenBlock(b *testing.B) {
 	b.StopTimer()
-	dbtx := pgtest.NewTx(b)
-	ctx := pg.NewContext(context.Background(), dbtx)
+	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	pgtest.Exec(ctx, b, `
 		INSERT INTO pool_txs (tx_hash, data, sort_id)
 		VALUES (

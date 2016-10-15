@@ -23,12 +23,12 @@ import (
 )
 
 func TestBuildFinal(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(dbtx, c, bc.Hash{})
-	accounts := account.NewManager(dbtx, c)
-	accounts.IndexAccounts(query.NewIndexer(dbtx, c))
+	assets := asset.NewRegistry(db, c, bc.Hash{})
+	accounts := account.NewManager(db, c)
+	accounts.IndexAccounts(query.NewIndexer(db, c))
 
 	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
@@ -129,12 +129,12 @@ func TestBuildFinal(t *testing.T) {
 }
 
 func TestAccountTransfer(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(dbtx, c, bc.Hash{})
-	accounts := account.NewManager(dbtx, c)
-	accounts.IndexAccounts(query.NewIndexer(dbtx, c))
+	assets := asset.NewRegistry(db, c, bc.Hash{})
+	accounts := account.NewManager(db, c)
+	accounts.IndexAccounts(query.NewIndexer(db, c))
 
 	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
@@ -191,15 +191,15 @@ func TestMux(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
 	handler := &Handler{
 		Chain:    c,
-		Assets:   asset.NewRegistry(dbtx, c, bc.Hash{}),
-		Accounts: account.NewManager(dbtx, c),
-		Indexer:  query.NewIndexer(dbtx, c),
-		DB:       dbtx,
+		Assets:   asset.NewRegistry(db, c, bc.Hash{}),
+		Accounts: account.NewManager(db, c),
+		Indexer:  query.NewIndexer(db, c),
+		DB:       db,
 	}
 	handler.Assets.IndexAssets(handler.Indexer)
 	handler.Accounts.IndexAccounts(handler.Indexer)
