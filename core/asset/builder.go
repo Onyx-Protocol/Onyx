@@ -37,18 +37,12 @@ type issueAction struct {
 }
 
 func (a *issueAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
-	now := time.Now()
-
-	// Auto-supply a nonzero mintime that allows for some clock skew
-	// between this computer and whatever machine validates the
-	// transaction.
-	minTime := now.Add(-5 * time.Minute)
-
+	minTime := time.Now()
 	ttl := a.TTL.Duration
 	if ttl == 0 {
 		ttl = time.Minute
 	}
-	maxTime := now.Add(ttl)
+	maxTime := minTime.Add(ttl)
 
 	asset, err := a.assets.findByID(ctx, a.AssetID)
 	if errors.Root(err) == pg.ErrUserInputNotFound {
