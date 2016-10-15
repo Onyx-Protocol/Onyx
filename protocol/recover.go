@@ -15,7 +15,7 @@ import (
 // and the corresponding state snapshot.
 //
 // If the blockchain is empty (missing initial block), this function
-// returns a nil block and a nil snapshot.
+// returns a nil block and an empty snapshot.
 func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error) {
 	snapshot, snapshotHeight, err := c.store.LatestSnapshot(ctx)
 	if err != nil {
@@ -28,6 +28,9 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 			return nil, nil, errors.Wrap(err, "getting snapshot block")
 		}
 		c.lastQueuedSnapshot = b.Time()
+	}
+	if snapshot == nil {
+		snapshot = state.Empty()
 	}
 
 	// The true height of the blockchain might be higher than the

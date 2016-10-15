@@ -200,38 +200,41 @@ func Snapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, db *sql.D
 		return err
 	}
 
+	// Next, get the initial block.
+	initialBlock, err := getBlock(ctx, peer, 1, getSnapshotTimeout)
+	if err != nil {
+		return err
+	}
+	if initialBlock == nil {
+		// Something seriously funny is afoot.
+		return errors.New("could not get initial block from generator")
+	}
+
+	// Also get the corresponding block.
+	snapshotBlock, err := getBlock(ctx, peer, snapResp.Height, getSnapshotTimeout)
+	if err != nil {
+		return err
+	}
+	if snapshotBlock == nil {
+		// Something seriously funny is still afoot.
+		return errors.New("generator provided snapshot but could not provide block")
+	}
+
+	// Commit everything to the database. The order here is important. The
+	// snapshot needs to be last. If there's a failure at any point, the
+	// Core will end up recovering back to the empty blockchain state.
+	err = s.SaveBlock(ctx, initialBlock)
+	if err != nil {
+		return errors.Wrap(err, "saving the initial block")
+	}
+	err = s.SaveBlock(ctx, snapshotBlock)
+	if err != nil {
+		return errors.Wrap(err, "saving bootstrap block")
+	}
 	const snapQ = `
 		INSERT INTO snapshots (height, data) VALUES ($1, $2)
 		ON CONFLICT DO NOTHING
 	`
 	_, err = db.Exec(ctx, snapQ, snapResp.Height, snapResp.Data)
-	if err != nil {
-		return err
-	}
-
-	// Next, get the genesis block.
-	block, err := getBlock(ctx, peer, 1, getSnapshotTimeout)
-	if err != nil {
-		return err
-	}
-
-	if block == nil {
-		// Something seriously funny is afoot.
-		return errors.New("could not get initial block from generator")
-	}
-
-	err = s.SaveBlock(ctx, block)
-
-	// Also get the corresponding block.
-	block, err = getBlock(ctx, peer, snapResp.Height, getSnapshotTimeout)
-	if err != nil {
-		return err
-	}
-
-	if block == nil {
-		// Something seriously funny is still afoot.
-		return errors.New("generator provided snapshot but could not provide block")
-	}
-
-	return s.SaveBlock(ctx, block)
+	return errors.Wrap(err, "saving bootstrap snaphot")
 }
