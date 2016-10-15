@@ -31,6 +31,9 @@ func (s *Snapshot) PruneIssuances(timestampMS uint64) {
 // O(n) operation where n is the number of issuance hashes in the
 // snapshot's issuance memory.
 func Copy(original *Snapshot) *Snapshot {
+	// TODO(kr): consider making type Snapshot truly immutable.
+	// We already handle it that way in many places (with explicit
+	// calls to Copy to get the right behavior).
 	c := &Snapshot{
 		Tree:      patricia.Copy(original.Tree),
 		Issuances: make(PriorIssuances, len(original.Issuances)),

@@ -1,10 +1,12 @@
 package validation
 
 import (
+	"context"
 	"testing"
 
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/state"
 	"chain/protocol/vm"
 )
 
@@ -12,12 +14,13 @@ import (
 var emptyMerkleRoot = mustParseHash("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")
 
 func TestValidateBlockHeader(t *testing.T) {
-	prevHeader := bc.BlockHeader{
+	ctx := context.Background()
+	prev := &bc.Block{BlockHeader: bc.BlockHeader{
 		Height:           1,
 		TimestampMS:      5,
 		ConsensusProgram: []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
-	}
-	prevHash := prevHeader.Hash()
+	}}
+	prevHash := prev.Hash()
 	cases := []struct {
 		desc   string
 		header bc.BlockHeader
@@ -28,6 +31,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			PreviousBlockHash:      bc.Hash{},
 			TransactionsMerkleRoot: emptyMerkleRoot,
 			Height:                 2,
+			Witness:                [][]byte{{0x04}},
 		},
 		want: ErrBadPrevHash,
 	}, {
@@ -36,6 +40,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			PreviousBlockHash:      prevHash,
 			TransactionsMerkleRoot: emptyMerkleRoot,
 			Height:                 3,
+			Witness:                [][]byte{{0x04}},
 		},
 		want: ErrBadHeight,
 	}, {
@@ -45,6 +50,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			TransactionsMerkleRoot: emptyMerkleRoot,
 			Height:                 2,
 			TimestampMS:            3,
+			Witness:                [][]byte{{0x04}},
 		},
 		want: ErrBadTimestamp,
 	}, {
@@ -66,6 +72,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			Height:                 2,
 			TimestampMS:            6,
 			ConsensusProgram:       []byte{byte(vm.OP_FAIL)},
+			Witness:                [][]byte{{0x04}},
 		},
 		want: ErrBadScript,
 	}, {
@@ -93,7 +100,8 @@ func TestValidateBlockHeader(t *testing.T) {
 	}}
 	for i, c := range cases {
 		block := &bc.Block{BlockHeader: c.header}
-		got := validateBlockHeader(&prevHeader, block, true)
+		snap := state.Empty()
+		got := ValidateBlockForAccept(ctx, snap, prev, block, nil) // nil b/c no txs to validate
 		if errors.Root(got) != c.want {
 			t.Errorf("%d", i)
 			t.Errorf("%s: got %q want %q", c.desc, got, c.want)

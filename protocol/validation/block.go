@@ -16,7 +16,7 @@ import (
 	"chain/protocol/vmutil"
 )
 
-// Errors returned by ValidateAndApplyBlock
+// Errors returned by the block validation functions.
 var (
 	ErrBadPrevHash  = errors.New("invalid previous block hash")
 	ErrBadHeight    = errors.New("invalid block height")
@@ -27,22 +27,37 @@ var (
 	ErrBadStateRoot = errors.New("invalid state merkle root")
 )
 
-// ValidateAndApplyBlock validates the given block against the given
-// state tree and applies its changes to the state snapshot.
-// If block is invalid, it returns a non-nil error describing why.
-func ValidateAndApplyBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
-	return validateBlock(ctx, snapshot, prevBlock, block, validateTx, true)
+// ValidateBlockForAccept performs steps 1 and 2
+// of the "accept block" procedure from the spec.
+// See $CHAIN/protocol/doc/spec/validation.md#accept-block.
+// It evaluates the prevBlock's consensus program,
+// then calls ValidateBlock.
+func ValidateBlockForAccept(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
+	if prevBlock != nil {
+		ok, err := vm.VerifyBlockHeader(&prevBlock.BlockHeader, block)
+		if err == nil && !ok {
+			err = ErrFalseVMResult
+		}
+		if err != nil {
+			pkScriptStr, _ := vm.Disassemble(prevBlock.ConsensusProgram)
+			witnessStrs := make([]string, 0, len(block.Witness))
+			for _, w := range block.Witness {
+				witnessStrs = append(witnessStrs, hex.EncodeToString(w))
+			}
+			witnessStr := strings.Join(witnessStrs, "; ")
+			return errors.Wrapf(ErrBadSig, "validation failed in script execution in block (program [%s] witness [%s]): %s", pkScriptStr, witnessStr, err)
+		}
+	}
+
+	return ValidateBlock(ctx, snapshot, prevBlock, block, validateTx)
 }
 
-// ValidateBlockForSig performs validation on an incoming _unsigned_
-// block in preparation for signing it.  By definition it does not
-// execute the sigscript. It also uses a disposable copy of the
-// supplied snapshot.
-func ValidateBlockForSig(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
-	return validateBlock(ctx, state.Copy(snapshot), prevBlock, block, validateTx, false)
-}
-
-func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error, runScript bool) error {
+// ValidateBlock performs the "validate block" procedure from the spec,
+// yielding a new state (recorded in the 'snapshot' argument).
+// See $CHAIN/protocol/doc/spec/validation.md#validate-block.
+// Note that it does not execute prevBlock's consensus program.
+// (See ValidateBlockForAccept for that.)
+func ValidateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
 
 	var g errgroup.Group
 	// Do all of the unparallelizable work, plus validating the block
@@ -52,7 +67,7 @@ func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, blo
 		if prevBlock != nil {
 			prev = &prevBlock.BlockHeader
 		}
-		err := validateBlockHeader(prev, block, runScript)
+		err := validateBlockHeader(prev, block)
 		if err != nil {
 			return err
 		}
@@ -109,7 +124,7 @@ func ApplyBlock(snapshot *state.Snapshot, block *bc.Block) error {
 	return nil
 }
 
-func validateBlockHeader(prev *bc.BlockHeader, block *bc.Block, runScript bool) error {
+func validateBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
 	if prev == nil && block.Height != 1 {
 		return ErrBadHeight
 	}
@@ -134,22 +149,6 @@ func validateBlockHeader(prev *bc.BlockHeader, block *bc.Block, runScript bool) 
 
 	if vmutil.IsUnspendable(block.ConsensusProgram) {
 		return ErrBadScript
-	}
-
-	if runScript && prev != nil {
-		ok, err := vm.VerifyBlockHeader(prev, block)
-		if err == nil && !ok {
-			err = ErrFalseVMResult
-		}
-		if err != nil {
-			pkScriptStr, _ := vm.Disassemble(prev.ConsensusProgram)
-			witnessStrs := make([]string, 0, len(block.Witness))
-			for _, w := range block.Witness {
-				witnessStrs = append(witnessStrs, hex.EncodeToString(w))
-			}
-			witnessStr := strings.Join(witnessStrs, "; ")
-			return errors.Wrapf(ErrBadSig, "validation failed in script execution in block (program [%s] witness [%s]): %s", pkScriptStr, witnessStr, err)
-		}
 	}
 
 	return nil
