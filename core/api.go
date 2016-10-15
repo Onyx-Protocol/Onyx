@@ -18,7 +18,7 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/generated/dashboard"
-	"chain/generated/doc"
+	"chain/generated/docs"
 	"chain/net/http/authn"
 	"chain/net/http/gzip"
 	"chain/net/http/limit"
@@ -256,8 +256,8 @@ func webAssetsHandler(next http.Handler) http.Handler {
 		Assets:  dashboard.Files,
 		Default: "index.html",
 	}))
-	mux.Handle("/doc/", http.StripPrefix("/doc/", static.Handler{
-		Assets: doc.Files,
+	mux.Handle("/docs/", http.StripPrefix("/docs/", static.Handler{
+		Assets: docs.Files,
 		Index:  "index",
 	}))
 	mux.Handle("/", next)

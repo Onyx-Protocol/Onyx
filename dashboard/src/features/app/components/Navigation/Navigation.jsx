@@ -58,7 +58,7 @@ class Navigation extends React.Component {
         <ul className={styles.navigation}>
           <li className={styles.navigationTitle}>developers</li>
           <li>
-            <a href='/doc' target='_blank'>
+            <a href='/docs' target='_blank'>
               <span className={`glyphicon glyphicon-book ${styles.glyphicon}`} />
               Documentation
             </a>
