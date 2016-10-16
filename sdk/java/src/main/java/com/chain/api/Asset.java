@@ -283,7 +283,7 @@ public class Asset {
     /**
      * Adds a key to the builder's list.
      * @param xpub key
-     * @return updated asset object.
+     * @return updated builder object.
      */
     public Builder addRootXpub(String xpub) {
       this.rootXpubs.add(xpub);
