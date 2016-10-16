@@ -1153,7 +1153,6 @@ public class Transaction {
       // It technically uses an unsigned 64-bit int for the end specifier, but
       // Long.MAX_VALUE should suffice.
       String newAfter = "" + lastTx.blockHeight + ":" + lastTx.position + "-" + Long.MAX_VALUE;
-      System.out.println(newAfter);
       Map<String, Object> req = new HashMap<>();
       req.put("id", this.id);
       req.put("previous_after", this.after);
