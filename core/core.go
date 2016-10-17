@@ -85,7 +85,7 @@ func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
 		return h.leaderInfo(ctx)
 	} else {
 		var resp map[string]interface{}
-		err := h.callLeader(ctx, "/info", nil, &resp)
+		err := h.forwardToLeader(ctx, "/info", nil, &resp)
 		return resp, err
 	}
 }

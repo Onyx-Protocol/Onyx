@@ -23,6 +23,7 @@ import (
 	"chain/generated/dashboard"
 	"chain/generated/docs"
 	"chain/net/http/gzip"
+	"chain/net/http/httpjson"
 	"chain/net/http/limit"
 	"chain/net/http/reqid"
 	"chain/net/http/static"
@@ -286,12 +287,16 @@ func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, 
 			return f(ctx, b)
 		}
 		var resp []byte
-		err := h.callLeader(ctx, "/rpc/signer/sign-block", b, &resp)
+		err := h.forwardToLeader(ctx, "/rpc/signer/sign-block", b, &resp)
 		return resp, err
 	}
 }
 
-func (h *Handler) callLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
+// forwardToLeader forwards the current request to the core's leader
+// process. It propagates the same credentials used in the current
+// request. For that reason, it cannot be used outside of a request-
+// handling context.
+func (h *Handler) forwardToLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
 	addr, err := leader.Address(ctx)
 	if err != nil {
 		return errors.Wrap(err)
@@ -307,6 +312,17 @@ func (h *Handler) callLeader(ctx context.Context, path string, body interface{},
 	// TODO(jackson): If using TLS, use https:// here.
 	l := &rpc.Client{
 		BaseURL: "http://" + addr,
+	}
+
+	// Forward the request credentials if we have them.
+	// TODO(jackson): Don't use the incoming request's credentials and
+	// have an alternative authentication scheme between processes of the
+	// same Core. For now, we only call the leader for the purpose of
+	// forwarding a request, so this is OK.
+	req := httpjson.Request(ctx)
+	user, pass, ok := req.BasicAuth()
+	if ok {
+		l.AccessToken = fmt.Sprintf("%s:%s", user, pass)
 	}
 
 	return l.Call(ctx, path, body, &resp)

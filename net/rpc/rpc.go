@@ -75,15 +75,17 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 		return err
 	}
 
-	var username, password string
-	toks := strings.SplitN(c.AccessToken, ":", 2)
-	if len(toks) > 0 {
-		username = toks[0]
+	if c.AccessToken != "" {
+		var username, password string
+		toks := strings.SplitN(c.AccessToken, ":", 2)
+		if len(toks) > 0 {
+			username = toks[0]
+		}
+		if len(toks) > 1 {
+			password = toks[1]
+		}
+		req.SetBasicAuth(username, password)
 	}
-	if len(toks) > 1 {
-		password = toks[1]
-	}
-	req.SetBasicAuth(username, password)
 
 	// Propagate our request ID so that we can trace a request across nodes.
 	req.Header.Add("Request-ID", reqid.FromContext(ctx))
