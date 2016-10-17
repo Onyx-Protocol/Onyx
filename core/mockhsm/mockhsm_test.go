@@ -47,7 +47,7 @@ func TestMockHSMChainKDKeys(t *testing.T) {
 	if !xpub2.XPub.Derive(path).Verify(msg, sig) {
 		t.Error("expected verify with derived pubkey of sig from derived privkey to succeed")
 	}
-	xpubs, _, err := hsm.ListKeys(ctx, "", 100)
+	xpubs, _, err := hsm.ListKeys(ctx, nil, "", 100)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestMockHSMEd25519Keys(t *testing.T) {
 		t.Error("expected verify with wrong pubkey to fail")
 	}
 
-	pubs, _, err := hsm.ListKeys(ctx, "", 100)
+	pubs, _, err := hsm.ListKeys(ctx, nil, "", 100)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,13 +97,39 @@ func TestKeyWithAlias(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	xpubs, _, err := hsm.ListKeys(ctx, "", 100)
+
+	// List keys, no alias filter
+	xpubs, _, err := hsm.ListKeys(ctx, nil, "", 100)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if !reflect.DeepEqual(xpubs[0], xpub) {
 		t.Fatalf("expected to get %v instead got %v", spew.Sdump(xpub), spew.Sdump(xpubs[0]))
+	}
+
+	// List keys, with matching alias filter
+	xpubs, _, err = hsm.ListKeys(ctx, []string{"some-alias", "other-alias"}, "", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(xpubs) != 1 {
+		t.Fatalf("list keys with matching filter expected to get 1 instead got %v", len(xpubs))
+	}
+
+	if !reflect.DeepEqual(xpubs[0], xpub) {
+		t.Fatalf("expected to get %v instead got %v", spew.Sdump(xpub), spew.Sdump(xpubs[0]))
+	}
+
+	// List keys, with non-matching alias filter
+	xpubs, _, err = hsm.ListKeys(ctx, []string{"other-alias"}, "", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(xpubs) != 0 {
+		t.Fatalf("list keys with matching filter expected to get 0 instead got %v", len(xpubs))
 	}
 
 	// check for uniqueness error

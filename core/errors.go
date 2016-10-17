@@ -107,8 +107,9 @@ var (
 		utxodb.ErrReserved:     errorInfo{400, "CH761", "Some outputs are reserved; try again"},
 
 		// Mock HSM error namespace (80x)
-		mockhsm.ErrDuplicateKeyAlias: errorInfo{400, "CH800", "Duplicate alias for Mock HSM key"},
-		mockhsm.ErrInvalidAfter:      errorInfo{400, "CH801", "Invalid `after` in query"},
+		mockhsm.ErrDuplicateKeyAlias:    errorInfo{400, "CH800", "Duplicate alias for Mock HSM key"},
+		mockhsm.ErrInvalidAfter:         errorInfo{400, "CH801", "Invalid `after` in query"},
+		mockhsm.ErrTooManyAliasesToList: errorInfo{400, "CH802", "Too many aliases to list"},
 	}
 )
 

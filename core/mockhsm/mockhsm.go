@@ -3,8 +3,11 @@ package mockhsm
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"sync"
+
+	"github.com/lib/pq"
 
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/chainkd"
@@ -12,11 +15,15 @@ import (
 	"chain/errors"
 )
 
+// listKeyMaxAliases limits the alias filter to a sane maximum size.
+const listKeyMaxAliases = 200
+
 var (
-	ErrDuplicateKeyAlias = errors.New("duplicate key alias")
-	ErrInvalidAfter      = errors.New("invalid after")
-	ErrNoKey             = errors.New("key not found")
-	ErrInvalidKeySize    = errors.New("key invalid size")
+	ErrDuplicateKeyAlias    = errors.New("duplicate key alias")
+	ErrInvalidAfter         = errors.New("invalid after")
+	ErrNoKey                = errors.New("key not found")
+	ErrInvalidKeySize       = errors.New("key invalid size")
+	ErrTooManyAliasesToList = errors.New("requested aliases exceeds limit")
 )
 
 type HSM struct {
@@ -133,7 +140,11 @@ func (h *HSM) createEd25519Key(ctx context.Context, alias string, get bool) (*Pu
 }
 
 // ListKeys returns a list of all xpubs from the db.
-func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, string, error) {
+func (h *HSM) ListKeys(ctx context.Context, aliases []string, after string, limit int) ([]*XPub, string, error) {
+	if len(aliases) > listKeyMaxAliases {
+		return nil, "", errors.WithDetailf(ErrTooManyAliasesToList, "max: %d", listKeyMaxAliases)
+	}
+
 	var (
 		zafter int64
 		err    error
@@ -146,13 +157,28 @@ func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, s
 		}
 	}
 
-	var xpubs []*XPub
-	const q = `
+	var (
+		xpubs  []*XPub
+		params []interface{}
+	)
+	q := `
 		SELECT pub, alias, sort_id FROM mockhsm
-		WHERE ($1=0 OR $1 < sort_id) AND key_type='chain_kd'
-		ORDER BY sort_id DESC LIMIT $2
+		WHERE key_type = 'chain_kd'
 	`
-	err = pg.ForQueryRows(ctx, pg.FromContext(ctx), q, zafter, limit, func(b []byte, alias sql.NullString, sortID int64) {
+
+	if len(aliases) > 0 {
+		params = append(params, pq.StringArray(aliases))
+		q += fmt.Sprintf(" AND alias = ANY($%d)", len(params))
+	}
+
+	if zafter != 0 {
+		params = append(params, zafter)
+		q += fmt.Sprintf(" AND sort_id > $%d", len(params))
+	}
+
+	q += fmt.Sprintf(" ORDER BY sort_id LIMIT %d", limit)
+
+	consumeRow := func(b []byte, alias sql.NullString, sortID int64) {
 		var hdxpub chainkd.XPub
 		copy(hdxpub[:], b)
 		xpub := &XPub{XPub: hdxpub}
@@ -161,7 +187,10 @@ func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, s
 		}
 		xpubs = append(xpubs, xpub)
 		zafter = sortID
-	})
+	}
+	params = append(params, consumeRow)
+
+	err = pg.ForQueryRows(ctx, pg.FromContext(ctx), q, params...)
 	if err != nil {
 		return nil, "", err
 	}

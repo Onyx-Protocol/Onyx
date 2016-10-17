@@ -104,6 +104,7 @@ POST /mockhsm/list-keys
 
 ```
 {
+  "aliases": [<string>, ...], // optional
   "after": "..." // optional
 }
 ```
@@ -117,6 +118,7 @@ POST /mockhsm/list-keys
     ...
   ],
   "next": {
+    "aliases": [<string>, ...],
     "after": "..."
   },
   "last_page": true|false

@@ -29,8 +29,11 @@ public class Query {
   @SerializedName("sum_by")
   public List<String> sumBy;
 
+  public List<String> aliases;
+
   public Query() {
     this.filterParams = new ArrayList<>();
     this.sumBy = new ArrayList<>();
+    this.aliases = new ArrayList<>();
   }
 }

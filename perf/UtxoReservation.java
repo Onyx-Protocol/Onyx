@@ -189,7 +189,7 @@ public class UtxoReservation {
   }
 
   static void loadKeys(Context ctx) throws Exception {
-    Key.Items keys = MockHsm.Key.list(ctx);
+    Key.Items keys = new MockHsm.Key.QueryBuilder().execute(ctx);
     while (keys.hasNext()) {
       Key k = keys.next();
       HsmSigner.addKey(k.xpub, k.hsmUrl);

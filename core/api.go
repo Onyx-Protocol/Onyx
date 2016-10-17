@@ -222,6 +222,9 @@ type requestQuery struct {
 	// This is used for filtering results from /list-access-tokens
 	// Value must be "client" or "network"
 	Type string `json:"type"`
+
+	// Aliases is used to filter results from /mockshm/list-keys
+	Aliases []string `json:"aliases,omitempty"`
 }
 
 // Used as a response object for api queries

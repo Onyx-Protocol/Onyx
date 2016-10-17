@@ -11,6 +11,7 @@ import com.chain.http.Context;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -97,20 +98,39 @@ public class MockHsm {
       }
     }
 
-    /**
-     * Retrieves a page of key objects from the core.
-     * @param ctx context object that makes requests to the core
-     * @return a collection of key objects
-     * @throws APIException This exception is raised if the api returns errors while retrieving the keys.
-     * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
-     * @throws HTTPException This exception is raised when errors occur making http requests.
-     * @throws JSONException This exception is raised due to malformed json requests or responses.
-     */
-    public static Items list(Context ctx) throws ChainException {
-      Items items = new Items();
-      items.setContext(ctx);
-      return items.getPage();
+    public static class QueryBuilder {
+      private Query query;
+
+      public QueryBuilder() {
+        query = new Query();
+      }
+
+      public QueryBuilder setAliases(List<String> aliases) {
+        query.aliases = aliases;
+        return this;
+      }
+
+      public QueryBuilder addAlias(String alias) {
+        query.aliases.add(alias);
+        return this;
+      }
+
+      /**
+       * Retrieves a page of key objects from the core.
+       * @param ctx context object that makes requests to the core
+       * @return a collection of key objects
+       * @throws APIException This exception is raised if the api returns errors while retrieving the keys.
+       * @throws BadURLException This exception wraps java.net.MalformedURLException.
+       * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+       * @throws HTTPException This exception is raised when errors occur making http requests.
+       * @throws JSONException This exception is raised due to malformed json requests or responses.
+       */
+      public Items execute(Context ctx) throws ChainException {
+        Items items = new Items();
+        items.setContext(ctx);
+        items.setNext(query);
+        return items.getPage();
+      }
     }
   }
 
