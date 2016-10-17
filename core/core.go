@@ -136,6 +136,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		"network_rpc_version":               networkRPCVersion,
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
+		"health":                            h.health(),
 	}, nil
 }
 
