@@ -1,7 +1,7 @@
 package com.chain.api;
 
 import com.chain.exception.*;
-import com.chain.http.Context;
+import com.chain.http.*;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
@@ -374,26 +374,6 @@ public class Transaction {
     public Boolean allowAdditionalActions;
 
     /**
-     * The Chain error code.
-     */
-    public String code;
-
-    /**
-     * The Chain error message.
-     */
-    public String message;
-
-    /**
-     * Additional details about the error.
-     */
-    public String detail;
-
-    /**
-     * Specifies if the error is temporary, or the request needs to be changed.
-     */
-    public Boolean temporary;
-
-    /**
      * A single signing instruction included in a transaction template.
      */
     public static class SigningInstruction {
@@ -483,26 +463,6 @@ public class Transaction {
      * The transaction id.
      */
     public String id;
-
-    /**
-     * The Chain error code.
-     */
-    public String code;
-
-    /**
-     * The Chain error message.
-     */
-    public String message;
-
-    /**
-     * Additional details about the error.
-     */
-    public String detail;
-
-    /**
-     * Specifies if the error is temporary, or the request needs to be changed.
-     */
-    public Boolean temporary;
   }
 
   /**
@@ -516,10 +476,9 @@ public class Transaction {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static List<Template> buildBatch(Context ctx, List<Transaction.Builder> builders)
+  public static BatchResponse<Template> buildBatch(Context ctx, List<Transaction.Builder> builders)
       throws ChainException {
-    Type type = new TypeToken<ArrayList<Template>>() {}.getType();
-    return ctx.request("build-transaction", builders, type);
+    return ctx.batchRequest("build-transaction", builders, Template.class);
   }
 
   /**
@@ -533,12 +492,11 @@ public class Transaction {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static List<SubmitResponse> submitBatch(Context ctx, List<Template> templates)
+  public static BatchResponse<SubmitResponse> submitBatch(Context ctx, List<Template> templates)
       throws ChainException {
-    Type type = new TypeToken<ArrayList<SubmitResponse>>() {}.getType();
-    HashMap<String, Object> requestBody = new HashMap<>();
-    requestBody.put("transactions", templates);
-    return ctx.request("submit-transaction", requestBody, type);
+    HashMap<String, Object> body = new HashMap<>();
+    body.put("transactions", templates);
+    return ctx.batchRequest("submit-transaction", body, SubmitResponse.class);
   }
 
   /**
@@ -553,12 +511,9 @@ public class Transaction {
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
   public static SubmitResponse submit(Context ctx, Template template) throws ChainException {
-    List<SubmitResponse> responses = submitBatch(ctx, Arrays.asList(template));
-    SubmitResponse response = responses.get(0);
-    if (response.code != null) {
-      throw new APIException(response.code, response.message, response.detail, response.temporary);
-    }
-    return response;
+    HashMap<String, Object> body = new HashMap<>();
+    body.put("transactions", Arrays.asList(template));
+    return ctx.singletonBatchRequest("submit-transaction", body, SubmitResponse.class);
   }
 
   /**
@@ -1024,7 +979,7 @@ public class Transaction {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Template build(Context ctx) throws ChainException {
-      return ctx.singletonBatchRequest("build-transaction", this, Template.class);
+      return ctx.singletonBatchRequest("build-transaction", Arrays.asList(this), Template.class);
     }
 
     /**

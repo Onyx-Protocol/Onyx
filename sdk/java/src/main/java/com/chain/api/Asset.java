@@ -6,7 +6,7 @@ import com.chain.exception.ChainException;
 import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
-import com.chain.http.Context;
+import com.chain.http.*;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
@@ -188,7 +188,7 @@ public class Asset {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Asset create(Context ctx) throws ChainException {
-      return ctx.singletonBatchRequest("create-asset", this, Asset.class);
+      return ctx.singletonBatchRequest("create-asset", Arrays.asList(this), Asset.class);
     }
 
     /**
@@ -202,12 +202,12 @@ public class Asset {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public static List<Asset> createBatch(Context ctx, List<Builder> builders) throws ChainException {
+    public static BatchResponse<Asset> createBatch(Context ctx, List<Builder> builders)
+        throws ChainException {
       for (Builder asset : builders) {
         asset.clientToken = UUID.randomUUID().toString();
       }
-      Type type = new TypeToken<List<Asset>>() {}.getType();
-      return ctx.request("create-asset", builders, type);
+      return ctx.batchRequest("create-asset", builders, Asset.class);
     }
 
     /**

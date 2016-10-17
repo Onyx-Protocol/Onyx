@@ -104,7 +104,6 @@ public class UnspentOutput {
   @SerializedName("is_local")
   public String isLocal;
 
-
   public static class Items extends PagedItems<UnspentOutput> {
     public Items getPage() throws ChainException {
       Items items = this.context.request("list-unspent-outputs", this.next, Items.class);

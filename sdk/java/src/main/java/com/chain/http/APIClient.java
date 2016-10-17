@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken;
 import com.squareup.okhttp.*;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.lang.reflect.Type;
 import java.net.*;
 import java.util.Arrays;
@@ -35,7 +36,7 @@ public class APIClient {
 
   public APIClient(URL url, String accessToken) {
     this(url);
-    credentials =  buildCredentials(accessToken);
+    credentials = buildCredentials(accessToken);
   }
 
   public void pinCertificate(String provider, String subjPubKeyInfoHash) {
@@ -78,16 +79,12 @@ public class APIClient {
     this.httpClient.setProxy(proxy);
   }
 
-  public <T> T post(String path, Object body, Type tClass) throws ChainException {
-    return post(path, body, tClass, false);
+  public interface ResponseCreator<T> {
+    public T create(Response response, Gson deserializer) throws ChainException, IOException;
   }
 
-  public <T> T post(String path, Object body, Type tClass, boolean singletonBatch)
+  public <T> T post(String path, Object body, ResponseCreator<T> respCreator)
       throws ChainException {
-    if (singletonBatch && body != null) {
-      body = Arrays.asList(body);
-    }
-
     RequestBody requestBody = RequestBody.create(this.JSON, serializer.toJson(body));
     Request req;
 
@@ -119,14 +116,7 @@ public class APIClient {
 
       try {
         Response resp = this.checkError(this.httpClient.newCall(req).execute());
-        try {
-          if (singletonBatch) {
-            return deserializeSingletonBatchResponse(resp, tClass);
-          }
-          return this.serializer.fromJson(resp.body().charStream(), tClass);
-        } catch (IOException ex) {
-          throw new HTTPException(ex.getMessage());
-        }
+        return respCreator.create(resp, serializer);
       } catch (IOException ex) {
         // The OkHttp library already performs retries for most
         // I/O-related errors. We can add retries here too if this
@@ -145,27 +135,6 @@ public class APIClient {
       }
     }
     throw exception;
-  }
-
-  private <T> T deserializeSingletonBatchResponse(Response response, Type tClass)
-      throws ChainException, IOException {
-    // The response should be a JSON array with a single item. Since we're in a
-    // generic method, and it's difficult to force Gson to deserialize into
-    // List<T>, we'll do some manual string munging to get a singleton object.
-    String body = new String(response.body().bytes()).trim();
-    if (body.charAt(0) != '[' || body.charAt(body.length() - 1) != ']') {
-      throw new ChainException("Response not an array");
-    }
-    body = body.substring(1, body.length() - 1);
-
-    // Check for an error in the response
-    APIException err = serializer.fromJson(body, APIException.class);
-    if (err.code != null) {
-      err.requestId = response.headers().get("Chain-Request-ID");
-      throw err;
-    }
-
-    return serializer.fromJson(body, tClass);
   }
 
   private static final Random randomGenerator = new Random();

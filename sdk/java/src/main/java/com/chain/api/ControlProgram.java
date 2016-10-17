@@ -1,11 +1,12 @@
 package com.chain.api;
 
 import com.chain.exception.*;
-import com.chain.http.Context;
+import com.chain.http.*;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,8 @@ public class ControlProgram {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public ControlProgram create(Context ctx) throws ChainException {
-      return ctx.singletonBatchRequest("create-control-program", this, ControlProgram.class);
+      return ctx.singletonBatchRequest(
+          "create-control-program", Arrays.asList(this), ControlProgram.class);
     }
 
     /**

@@ -207,9 +207,9 @@ class Bank {
                     .setAmount(1)
                     .setReferenceData(payee.ref())));
     }
-    List<Transaction.Template> templates = Transaction.buildBatch(ctx, builders);
-    List<Transaction.Template> signedTemplates = HsmSigner.signBatch(templates);
-    List<Transaction.SubmitResponse> txs = Transaction.submitBatch(ctx, signedTemplates);
+    List<Transaction.Template> templates = Transaction.buildBatch(ctx, builders).successes();
+    List<Transaction.Template> signedTemplates = HsmSigner.signBatch(templates).successes();
+    List<Transaction.SubmitResponse> txs = Transaction.submitBatch(ctx, signedTemplates).successes();
   }
 }
 
