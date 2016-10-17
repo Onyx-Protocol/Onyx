@@ -27,7 +27,7 @@ build:
           go install chain/cmd/vet
           vet .
           go install chain/log # needed before testing ./cmd/vet below
-          go test -cover $(go list ./...|grep -v vendor|egrep -v 'thales|signerd')
+          go test -cover $(go list ./...|grep -v vendor)
           (cd migrations; ./check-names.bash)
           go generate $(go list ./...|grep -v vendor)
           git diff --exit-code # make sure generated files are in sync
@@ -48,12 +48,6 @@ build:
           if egrep -Iinr '//.*\b'$p'\b' $(ls -1|egrep -v 'vendor|generated')
           then exit 1
           fi
-    - script:
-        name: thales hsm unit tests
-        code: |
-          export CHAIN=$GOPATH/src/chain
-          PATH=$CHAIN/bin:$PATH
-          make -C $CHAIN/crypto/hsm/thales/xprvseemodule test
     - inz/npm-install@1.1.5:
       cwd: dashboard/
     - script:
