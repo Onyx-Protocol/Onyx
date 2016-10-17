@@ -67,6 +67,25 @@ public class Asset {
   public String isLocal;
 
   /**
+   * Creates a batch of asset objects.<br>
+   * <strong>Note:</strong> this method will not throw an exception APIException. Each builder's response object must be checked for error.
+   * @param ctx context object that makes requests to the core
+   * @param builders list of asset builders
+   * @return a list of asset and/or error objects
+   * @throws BadURLException This exception wraps java.net.MalformedURLException.
+   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+   * @throws HTTPException This exception is raised when errors occur making http requests.
+   * @throws JSONException This exception is raised due to malformed json requests or responses.
+   */
+  public static BatchResponse<Asset> createBatch(Context ctx, List<Builder> builders)
+          throws ChainException {
+    for (Builder asset : builders) {
+      asset.clientToken = UUID.randomUUID().toString();
+    }
+    return ctx.batchRequest("create-asset", builders, Asset.class);
+  }
+
+  /**
    * A class storing information about the keys associated with the asset.
    */
   public static class Key {
@@ -189,25 +208,6 @@ public class Asset {
      */
     public Asset create(Context ctx) throws ChainException {
       return ctx.singletonBatchRequest("create-asset", Arrays.asList(this), Asset.class);
-    }
-
-    /**
-     * Creates a batch of asset objects.<br>
-     * <strong>Note:</strong> this method will not throw an exception APIException. Each builder's response object must be checked for error.
-     * @param ctx context object that makes requests to the core
-     * @param builders list of asset builders
-     * @return a list of asset and/or error objects
-     * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
-     * @throws HTTPException This exception is raised when errors occur making http requests.
-     * @throws JSONException This exception is raised due to malformed json requests or responses.
-     */
-    public static BatchResponse<Asset> createBatch(Context ctx, List<Builder> builders)
-        throws ChainException {
-      for (Builder asset : builders) {
-        asset.clientToken = UUID.randomUUID().toString();
-      }
-      return ctx.batchRequest("create-asset", builders, Asset.class);
     }
 
     /**

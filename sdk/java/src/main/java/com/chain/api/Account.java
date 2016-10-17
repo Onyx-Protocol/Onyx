@@ -67,6 +67,25 @@ public class Account {
   }
 
   /**
+   * Creates a batch of account objects.
+   * <strong>Note:</strong> this method will not throw an exception APIException. Each builder's response object must be checked for error.
+   * @param ctx context object that makes requests to the core
+   * @param builders list of account builders
+   * @return a list of account and/or error objects
+   * @throws BadURLException This exception wraps java.net.MalformedURLException.
+   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+   * @throws HTTPException This exception is raised when errors occur making http requests.
+   * @throws JSONException This exception is raised due to malformed json requests or responses.
+   */
+  public static BatchResponse<Account> createBatch(Context ctx, List<Builder> builders)
+          throws ChainException {
+    for (Builder builder : builders) {
+      builder.clientToken = UUID.randomUUID().toString();
+    }
+    return ctx.batchRequest("create-account", builders, Account.class);
+  }
+
+  /**
    * A paged collection of accounts returned from a query.
    */
   public static class Items extends PagedItems<Account> {
@@ -159,25 +178,6 @@ public class Account {
      */
     public Account create(Context ctx) throws ChainException {
       return ctx.singletonBatchRequest("create-account", Arrays.asList(this), Account.class);
-    }
-
-    /**
-     * Creates a batch of account objects.
-     * <strong>Note:</strong> this method will not throw an exception APIException. Each builder's response object must be checked for error.
-     * @param ctx context object that makes requests to the core
-     * @param builders list of account builders
-     * @return a list of account and/or error objects
-     * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
-     * @throws HTTPException This exception is raised when errors occur making http requests.
-     * @throws JSONException This exception is raised due to malformed json requests or responses.
-     */
-    public static BatchResponse<Account> createBatch(Context ctx, List<Builder> builders)
-        throws ChainException {
-      for (Builder builder : builders) {
-        builder.clientToken = UUID.randomUUID().toString();
-      }
-      return ctx.batchRequest("create-account", builders, Account.class);
     }
 
     /**

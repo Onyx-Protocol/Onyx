@@ -30,6 +30,23 @@ public class ControlProgram {
   }
 
   /**
+   * Creates a batch of control programs.
+   * @param ctx context object which makes requests to core
+   * @param programs list of control program builder objects
+   * @return a list of control programs
+   * @throws APIException This exception is raised if the api returns errors while creating the control programs.
+   * @throws BadURLException This exception wraps java.net.MalformedURLException.
+   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+   * @throws HTTPException This exception is raised when errors occur making http requests.
+   * @throws JSONException This exception is raised due to malformed json requests or responses.
+   */
+  public static List<ControlProgram> createBatch(Context ctx, List<Builder> programs)
+          throws ChainException {
+    Type type = new TypeToken<List<ControlProgram>>() {}.getType();
+    return ctx.request("create-control-program", programs, type);
+  }
+
+  /**
    * A builder class for control programs.
    */
   public static class Builder {
@@ -63,23 +80,6 @@ public class ControlProgram {
     public ControlProgram create(Context ctx) throws ChainException {
       return ctx.singletonBatchRequest(
           "create-control-program", Arrays.asList(this), ControlProgram.class);
-    }
-
-    /**
-     * Creates a batch of control programs.
-     * @param ctx context object which makes requests to core
-     * @param programs list of control program builder objects
-     * @return a list of control programs
-     * @throws APIException This exception is raised if the api returns errors while creating the control programs.
-     * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
-     * @throws HTTPException This exception is raised when errors occur making http requests.
-     * @throws JSONException This exception is raised due to malformed json requests or responses.
-     */
-    public static List<ControlProgram> createBatch(Context ctx, List<Builder> programs)
-        throws ChainException {
-      Type type = new TypeToken<List<ControlProgram>>() {}.getType();
-      return ctx.request("create-control-program", programs, type);
     }
 
     /**
