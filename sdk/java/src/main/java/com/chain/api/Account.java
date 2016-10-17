@@ -28,15 +28,15 @@ public class Account {
   public String alias;
 
   /**
-   * The number of keys required to sign transactions for the account.
-   */
-  public int quorum;
-
-  /**
    * The list of keys used to create control programs under the account.<br>
    * Signatures from these keys are required for spending funds held in the account.
    */
   public Key[] keys;
+
+  /**
+   * The number of keys required to sign transactions for the account.
+   */
+  public int quorum;
 
   /**
    * User-specified tag structure for the account.

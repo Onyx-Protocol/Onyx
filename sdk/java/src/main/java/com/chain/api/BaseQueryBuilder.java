@@ -16,16 +16,6 @@ public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
     this.next = new Query();
   }
 
-  public T useIndexById(String id) {
-    this.next.indexId = id;
-    return (T) this;
-  }
-
-  public T useIndexByAlias(String alias) {
-    this.next.indexAlias = alias;
-    return (T) this;
-  }
-
   public T setAfter(String after) {
     this.next.after = after;
     return (T) this;

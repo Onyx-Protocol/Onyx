@@ -6,12 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Query {
-  @SerializedName("index_id")
-  public String indexId;
-
-  @SerializedName("index_alias")
-  public String indexAlias;
-
   public String filter;
 
   @SerializedName("filter_params")

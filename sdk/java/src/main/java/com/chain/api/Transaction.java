@@ -14,10 +14,14 @@ import java.util.*;
  */
 public class Transaction {
   /**
-   * Height of the block containing a transaction.
+   * Unique identifier, or transaction hash, of a transaction.
    */
-  @SerializedName("block_height")
-  public int blockHeight;
+  public String id;
+
+  /**
+   * Time of transaction.
+   */
+  public Date timestamp;
 
   /**
    * Unique identifier, or block hash, of the block containing a transaction.
@@ -26,29 +30,15 @@ public class Transaction {
   public String blockId;
 
   /**
-   * Unique identifier, or transaction hash, of a transaction.
+   * Height of the block containing a transaction.
    */
-  public String id;
-
-  /**
-   * List of specified inputs for a transaction.
-   */
-  public List<Input> inputs;
-
-  /**
-   * List of specified outputs for a transaction.
-   */
-  public List<Output> outputs;
+  @SerializedName("block_height")
+  public int blockHeight;
 
   /**
    * Position of a transaction within the block.
    */
   public int position;
-
-  /**
-   * Time of transaction.
-   */
-  public Date timestamp;
 
   /**
    * User specified, unstructured data embedded within a transaction.
@@ -62,6 +52,16 @@ public class Transaction {
    */
   @SerializedName("is_local")
   public String isLocal;
+
+  /**
+   * List of specified inputs for a transaction.
+   */
+  public List<Input> inputs;
+
+  /**
+   * List of specified outputs for a transaction.
+   */
+  public List<Output> outputs;
 
   /**
    * Paged results of a transaction query.
@@ -156,15 +156,40 @@ public class Transaction {
     public String type;
 
     /**
-     * The number of units of the asset being issued or spent.
-     */
-    public long amount;
-
-    /**
      * The id of the asset being issued or spent.
      */
     @SerializedName("asset_id")
     public String assetId;
+
+    /**
+     * The alias of the asset being issued or spent (possibly null).
+     */
+    @SerializedName("asset_alias")
+    public String assetAlias;
+
+    /**
+     * The definition of the asset being issued or spent (possibly null).
+     */
+    @SerializedName("asset_definition")
+    public Map<String, Object> assetDefinition;
+
+    /**
+     * The tags of the asset being issued or spent (possibly null).
+     */
+    @SerializedName("asset_tags")
+    public Map<String, Object> assetTags;
+
+    /**
+     * A flag indicating whether the asset being issued or spent is local.
+     * Possible values are "yes" or "no".
+     */
+    @SerializedName("asset_is_local")
+    public String assetIsLocal;
+
+    /**
+     * The number of units of the asset being issued or spent.
+     */
+    public long amount;
 
     /**
      * The id of the account transferring the asset (possibly null if the input is an issuance or an unspent output is specified).
@@ -173,29 +198,22 @@ public class Transaction {
     public String accountId;
 
     /**
+     * The output consumed by this input. Null if the input is an issuance.
+     */
+    @SerializedName("spent_output")
+    public OutputPointer spentOutput;
+
+    /**
+     * The alias of the account transferring the asset (possibly null if the input is an issuance or an unspent output is specified).
+     */
+    @SerializedName("account_alias")
+    public String accountAlias;
+
+    /**
      * The tags associated with the account (possibly null).
      */
     @SerializedName("account_tags")
     public Map<String, Object> accountTags;
-
-    /**
-     * The tags associated with the asset (possibly null).
-     */
-    @SerializedName("asset_tags")
-    public Map<String, Object> assetTags;
-
-    /**
-     * A flag indicating if the asset is locally controlled.
-     * Possible values are "yes" or "no".
-     */
-    @SerializedName("asset_is_local")
-    public String assetIsLocal;
-
-    /**
-     * Inputs to the control program used to verify the ability to take the specified action (possibly null).
-     */
-    @SerializedName("input_witness")
-    public String[] inputWitness;
 
     /**
      * A program specifying a predicate for issuing an asset (possibly null if input is not an issuance).
@@ -235,9 +253,9 @@ public class Transaction {
     public String purpose;
 
     /**
-     * The number of units of the asset being controlled.
+     * The output's position in a transaction's list of outputs.
      */
-    public long amount;
+    public int position;
 
     /**
      * The id of the asset being controlled.
@@ -246,15 +264,34 @@ public class Transaction {
     public String assetId;
 
     /**
-     * The control program which must be satisfied to transfer this output.
+     * The alias of the asset being controlled.
      */
-    @SerializedName("control_program")
-    public String controlProgram;
+    @SerializedName("asset_alias")
+    public String assetAlias;
 
     /**
-     * The output's position in a transaction's list of outputs
+     * The definition of the asset being controlled (possibly null).
      */
-    public int position;
+    @SerializedName("asset_definition")
+    public Map<String, Object> assetDefinition;
+
+    /**
+     * The tags of the asset being controlled (possibly null).
+     */
+    @SerializedName("asset_tags")
+    public Map<String, Object> assetTags;
+
+    /**
+     * A flag indicating whether the asset being controlled is local.
+     * Possible values are "yes" or "no".
+     */
+    @SerializedName("asset_is_local")
+    public String assetIsLocal;
+
+    /**
+     * The number of units of the asset being controlled.
+     */
+    public long amount;
 
     /**
      * The id of the account controlling this output (possibly null if a control program is specified).
@@ -263,23 +300,22 @@ public class Transaction {
     public String accountId;
 
     /**
+     * The alias of the account controlling this output (possibly null if a control program is specified).
+     */
+    @SerializedName("account_alias")
+    public String accountAlias;
+
+    /**
      * The tags associated with the account controlling this output (possibly null if a control program is specified).
      */
     @SerializedName("account_tags")
     public Map<String, Object> accountTags;
 
     /**
-     * The tags associated with the asset being controlled.
+     * The control program which must be satisfied to transfer this output.
      */
-    @SerializedName("asset_tags")
-    public Map<String, Object> assetTags;
-
-    /**
-     * A flag indicating if the asset is locally controlled.
-     * Possible values are "yes" or "no".
-     */
-    @SerializedName("asset_is_local")
-    public String assetIsLocal;
+    @SerializedName("control_program")
+    public String controlProgram;
 
     /**
      * User specified, unstructured data embedded within an input (possibly null).
@@ -293,6 +329,17 @@ public class Transaction {
      */
     @SerializedName("is_local")
     public String isLocal;
+  }
+
+  /**
+   * An OutputPointer consists of a transaction ID and an output position, and
+   * uniquely identifies an output on the blockchain.
+   */
+  public static class OutputPointer {
+    @SerializedName("transaction_id")
+    public String transactionId;
+
+    public int position;
   }
 
   /**
