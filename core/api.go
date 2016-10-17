@@ -3,7 +3,10 @@ package core
 
 import (
 	"context"
+	"expvar"
+	"fmt"
 	"net/http"
+	"net/http/pprof"
 	"sync"
 	"time"
 
@@ -137,6 +140,12 @@ func (h *Handler) init() {
 	m.Handle("/delete-access-token", jsonHandler(h.deleteAccessToken))
 	m.Handle("/configure", jsonHandler(h.configure))
 	m.Handle("/info", jsonHandler(h.info))
+
+	m.Handle("/debug/vars", http.HandlerFunc(expvarHandler))
+	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	latencyHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if l := latency(m, req); l != nil {
@@ -301,4 +310,21 @@ func (h *Handler) callLeader(ctx context.Context, path string, body interface{},
 	}
 
 	return l.Call(ctx, path, body, &resp)
+}
+
+// expvarHandler is copied from the expvar package.
+// TODO(jackson): In Go 1.8, use expvar.Handler.
+// https://go-review.googlesource.com/#/c/24722/
+func expvarHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	fmt.Fprintf(w, "{\n")
+	first := true
+	expvar.Do(func(kv expvar.KeyValue) {
+		if !first {
+			fmt.Fprintf(w, ",\n")
+		}
+		first = false
+		fmt.Fprintf(w, "%q: %s", kv.Key, kv.Value)
+	})
+	fmt.Fprintf(w, "\n}\n")
 }

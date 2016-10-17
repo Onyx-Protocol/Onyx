@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"time"
@@ -124,9 +123,9 @@ func main() {
 		h = &core.Handler{DB: db, AltAuth: authLoopbackInDev}
 	}
 
-	http.Handle("/", h)
 	secureheader.DefaultConfig.PermitClearLoopback = true
 	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
+	secureheader.DefaultConfig.Next = h
 
 	server := &http.Server{
 		Addr:         *listenAddr,

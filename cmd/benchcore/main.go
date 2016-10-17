@@ -181,7 +181,7 @@ func main() {
 	javaClass := strings.TrimSuffix(progName, ".java")
 	must(scpPut(client.addr, testJava, javaClass+".java", 0644))
 	if *flagP {
-		go profile(publicCoreURL)
+		go profile(publicCoreURL, string(token))
 	}
 	mustRunOn(client.addr, clientsh,
 		"coreURL", coreURL,
@@ -548,17 +548,27 @@ NextVar:
 	return out
 }
 
-func profile(coreURL string) {
+func profile(coreURL, clientToken string) {
+	tokenParts := strings.SplitN(clientToken, ":", 2)
+	username, password := tokenParts[0], tokenParts[1]
+
 	ticker := time.Tick(profileFrequency)
 	for {
-		captureHeap(coreURL, time.Now())
-		captureCPU(coreURL, time.Now())
+		captureHeap(coreURL, username, password, time.Now())
+		captureCPU(coreURL, username, password, time.Now())
 		<-ticker
 	}
 }
 
-func captureHeap(coreURL string, t time.Time) {
-	resp, err := http.Get(coreURL + "/debug/pprof/heap")
+func captureHeap(coreURL, username, password string, t time.Time) {
+	req, err := http.NewRequest("GET", coreURL+"/debug/pprof/heap", nil)
+	if err != nil {
+		log.Printf("error getting heap profile: %s\n", err)
+		return
+	}
+	req.SetBasicAuth(username, password)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("error getting heap profile: %s\n", err)
 		return
@@ -573,8 +583,15 @@ func captureHeap(coreURL string, t time.Time) {
 	io.Copy(out, resp.Body)
 }
 
-func captureCPU(coreURL string, t time.Time) {
-	resp, err := http.Get(coreURL + "/debug/pprof/profile")
+func captureCPU(coreURL, username, password string, t time.Time) {
+	req, err := http.NewRequest("GET", coreURL+"/debug/pprof/profile", nil)
+	if err != nil {
+		log.Printf("error getting cpu profile: %s\n", err)
+		return
+	}
+	req.SetBasicAuth(username, password)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("error getting cpu profile: %s\n", err)
 		return
@@ -761,7 +778,7 @@ ping -c 1 {{coreAddr}}
 echo pinged
 
 echo curling "{{coreURL}}/debug/vars"
-curl -si "{{coreURL}}/debug/vars"
+curl -si -u {{apiToken}} "{{coreURL}}/debug/vars"
 echo curled
 export CHAIN_API_URL='{{coreURL}}/'
 export CHAIN_API_TOKEN='{{apiToken}}'
