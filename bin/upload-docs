@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euf -o pipefail
+
+# TODO: when production is viable target, add commandline option to upload to
+# the production bucket.
+bucket="s3://chain-staging.chain.com"
+
+# Print output from generate-docs to stdout, but capture last line (the actual
+# output directory) in a variable.
+exec 3>&1
+generate_dest_path=$($CHAIN/bin/generate-docs | tee /dev/fd/3 | tail -n1)
+trap "rm -rf $generate_dest_path" EXIT
+
+echo
+echo "Uploading docs...."
+aws s3 sync --delete $generate_dest_path $bucket/docs
+
