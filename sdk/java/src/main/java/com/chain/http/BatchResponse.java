@@ -86,7 +86,7 @@ public class BatchResponse<T> {
    * Returns whether the request object at the given index produced a success.
    * @param index the index of the request object
    */
-  public Boolean isSuccess(int index) {
+  public boolean isSuccess(int index) {
     return successesByIndex.containsKey(index);
   }
 
@@ -94,7 +94,7 @@ public class BatchResponse<T> {
    * Returns whether the request object at the given index produced an error.
    * @param index the index of the request object
    */
-  public Boolean isError(int index) {
+  public boolean isError(int index) {
     return errorsByIndex.containsKey(index);
   }
 

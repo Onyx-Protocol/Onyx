@@ -94,7 +94,7 @@ public class APIException extends ChainException {
    * @param detail additional error information
    * @param temporary unique identifier of the request
    */
-  public APIException(String code, String message, String detail, Boolean temporary) {
+  public APIException(String code, String message, String detail, boolean temporary) {
     super(message);
     this.chainMessage = message;
     this.code = code;

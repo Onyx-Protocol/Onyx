@@ -361,7 +361,7 @@ public class Transaction {
     /**
      * For core use only.
      */
-    private Boolean local;
+    private boolean local;
 
     /**
      * False (the default) makes the transaction "final" when signing,
@@ -371,7 +371,7 @@ public class Transaction {
      * so far, permitting the addition of new elements.
      */
     @SerializedName("allow_additional_actions")
-    public Boolean allowAdditionalActions;
+    public boolean allowAdditionalActions;
 
     /**
      * A single signing instruction included in a transaction template.
