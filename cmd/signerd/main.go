@@ -22,7 +22,6 @@ import (
 	"chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
-	"chain/net/http/authn"
 	"chain/net/http/gzip"
 	"chain/net/http/httpjson"
 	"chain/net/http/reqid"
@@ -88,7 +87,7 @@ func main() {
 
 	var h http.Handler = m
 	h = gzip.Handler{Handler: h}
-	h = authn.BasicHandler{Auth: auth, Next: h}
+	h = authHandler(h)
 	h = reqid.Handler(h)
 	http.Handle("/", h)
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
@@ -190,13 +189,16 @@ func clientSigner(_ context.Context, _ string, path [][]byte, data [32]byte) ([]
 	return client.XSign(kd, path, data)
 }
 
-// TODO(kr): more flexible/secure authentication (e.g. kerberos style)
-func auth(req *http.Request) error {
-	_, pw, _ := req.BasicAuth()
-	if subtle.ConstantTimeCompare([]byte(pw), password) != 1 {
-		return authn.ErrNotAuthenticated
-	}
-	return nil
+func authHandler(next http.Handler) http.Handler {
+	// TODO(kr): more flexible/secure authentication (e.g. kerberos style)
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		_, pw, _ := req.BasicAuth()
+		if subtle.ConstantTimeCompare([]byte(pw), password) != 1 {
+			writeHTTPError(req.Context(), rw, errNotAuthenticated)
+			return
+		}
+		next.ServeHTTP(rw, req)
+	})
 }
 
 func logWriter() io.Writer {

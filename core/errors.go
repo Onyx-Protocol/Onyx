@@ -54,6 +54,7 @@ var (
 		errNotFound:              errorInfo{404, "CH006", "Not found"},
 		errRateLimited:           errorInfo{429, "CH007", "Request limit exceeded"},
 		errLeaderElection:        errorInfo{503, "CH008", "Electing a new leader for the core; try again soon"},
+		errNotAuthenticated:      errorInfo{401, "CH009", "Request could not be authenticated"},
 
 		// Core error namespace
 		errUnconfigured:                errorInfo{400, "CH100", "This core still needs to be configured"},

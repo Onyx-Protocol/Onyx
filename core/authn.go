@@ -10,8 +10,9 @@ import (
 
 	"chain/core/accesstoken"
 	"chain/errors"
-	"chain/net/http/authn"
 )
+
+var errNotAuthenticated = errors.New("not authenticated")
 
 const tokenExpiry = time.Minute * 5
 
@@ -27,6 +28,17 @@ type apiAuthn struct {
 type tokenResult struct {
 	valid      bool
 	lastLookup time.Time
+}
+
+func (a *apiAuthn) handler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		err := a.auth(req)
+		if err != nil {
+			writeHTTPError(req.Context(), rw, err)
+			return
+		}
+		next.ServeHTTP(rw, req)
+	})
 }
 
 func (a *apiAuthn) auth(req *http.Request) error {
@@ -65,7 +77,7 @@ func (a *apiAuthn) cachedAuthCheck(ctx context.Context, typ, user, pw string) er
 		a.tokenMu.Unlock()
 	}
 	if !res.valid {
-		return authn.ErrNotAuthenticated
+		return errNotAuthenticated
 	}
 	return nil
 }

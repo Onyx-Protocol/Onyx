@@ -19,7 +19,6 @@ import (
 	"chain/errors"
 	"chain/generated/dashboard"
 	"chain/generated/docs"
-	"chain/net/http/authn"
 	"chain/net/http/gzip"
 	"chain/net/http/limit"
 	"chain/net/http/reqid"
@@ -146,13 +145,10 @@ func (h *Handler) init() {
 		m.ServeHTTP(w, req)
 	})
 
-	var handler http.Handler = authn.BasicHandler{
-		Auth: (&apiAuthn{
-			tokenMap: make(map[string]tokenResult),
-			alt:      h.AltAuth,
-		}).auth,
-		Next: latencyHandler,
-	}
+	var handler = (&apiAuthn{
+		tokenMap: make(map[string]tokenResult),
+		alt:      h.AltAuth,
+	}).handler(latencyHandler)
 	handler = maxBytes(handler)
 	handler = webAssetsHandler(handler)
 	if h.RequestLimit > 0 {

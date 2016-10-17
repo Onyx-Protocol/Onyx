@@ -9,6 +9,8 @@ type errorInfo struct {
 	Message    string `json:"message"`
 }
 
+var errNotAuthenticated = errors.New("Request could not be authenticated")
+
 var (
 	// infoInternal holds the codes we use for an internal error.
 	// It is defined here for easy reference.
@@ -18,7 +20,7 @@ var (
 	// Missing entries will map to infoInternal.
 	// See chain.com/docs.
 	errorInfoTab = map[error]errorInfo{
-	// none yet
+		errNotAuthenticated: errorInfo{401, "CH009", "Request could not be authenticated"},
 	}
 )
 
