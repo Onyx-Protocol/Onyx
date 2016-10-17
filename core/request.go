@@ -10,6 +10,7 @@ import (
 var (
 	errBadActionType = errors.New("bad action type")
 	errBadAlias      = errors.New("bad alias")
+	errBadAction     = errors.New("bad action object")
 )
 
 type buildRequest struct {

@@ -23,14 +23,14 @@ func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilde
 		return nil, err
 	}
 	actions := make([]txbuilder.Action, 0, len(req.Actions))
-	for _, act := range req.Actions {
+	for i, act := range req.Actions {
 		typ, ok := act["type"].(string)
 		if !ok {
-			return nil, errors.WithDetailf(errBadActionType, "no action type provided")
+			return nil, errors.WithDetailf(errBadActionType, "no action type provided on action %d", i)
 		}
 		decoder, ok := h.actionDecoders[typ]
 		if !ok {
-			return nil, errors.WithDetailf(errBadActionType, "unknown action type %q", typ)
+			return nil, errors.WithDetailf(errBadActionType, "unknown action type %q on action %d", typ, i)
 		}
 
 		// Remarshal to JSON, the action may have been modified when we
@@ -41,7 +41,7 @@ func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilde
 		}
 		a, err := decoder(b)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithDetailf(errBadAction, "%s on action %d", err.Error(), i)
 		}
 		actions = append(actions, a)
 	}

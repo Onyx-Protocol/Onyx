@@ -91,6 +91,7 @@ var (
 		txbuilder.ErrBadRefData: errorInfo{400, "CH700", "Reference data does not match previous transaction's reference data"},
 		errBadActionType:        errorInfo{400, "CH701", "Invalid action type"},
 		errBadAlias:             errorInfo{400, "CH702", "Invalid alias on action"},
+		errBadAction:            errorInfo{400, "CH703", "Invalid action object"},
 
 		// Submit error namespace (73x)
 		txbuilder.ErrMissingRawTx:          errorInfo{400, "CH730", "Missing raw transaction"},
