@@ -3,9 +3,7 @@ package com.chain.api;
 import com.chain.exception.*;
 import com.chain.http.*;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -40,10 +38,9 @@ public class ControlProgram {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static List<ControlProgram> createBatch(Context ctx, List<Builder> programs)
+  public static BatchResponse<ControlProgram> createBatch(Context ctx, List<Builder> programs)
       throws ChainException {
-    Type type = new TypeToken<List<ControlProgram>>() {}.getType();
-    return ctx.request("create-control-program", programs, type);
+    return ctx.batchRequest("create-control-program", programs, ControlProgram.class);
   }
 
   /**
