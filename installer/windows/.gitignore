@@ -1,0 +1,8 @@
+*.msi
+*.exe
+*.wixobj
+ChainBundle/bin/
+ChainBundle/obj/
+ChainPackage/bin/
+ChainBundle/obj/
+
