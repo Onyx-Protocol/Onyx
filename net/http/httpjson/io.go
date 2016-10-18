@@ -19,7 +19,9 @@ var ErrBadRequest = errors.New("httpjson: bad request")
 // The only error it returns is ErrBadRequest
 // (wrapped with the original error message as context).
 func Read(ctx context.Context, r io.Reader, v interface{}) error {
-	err := json.NewDecoder(r).Decode(v)
+	dec := json.NewDecoder(r)
+	dec.UseNumber()
+	err := dec.Decode(v)
 	if err != nil {
 		detail := errors.Detail(err)
 		if detail == "" {
