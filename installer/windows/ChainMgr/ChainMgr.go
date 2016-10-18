@@ -83,14 +83,19 @@ func main() {
 	}
 
 	// run postgres
-	cmd = exec.Command(pg+"Postgres.exe", "-D", pgDataDir)
-	cmd.Stdout = f
-	cmd.Stderr = f
+	pgCmd := exec.Command(pg+"Postgres.exe", "-D", pgDataDir)
+	pgCmd.Stdout = f
+	pgCmd.Stderr = f
 
-	err = cmd.Start()
+	err = pgCmd.Start()
 	if err != nil {
 		log.Fatal("could not start Postgres: " + err.Error())
 	}
+
+	pgStatus := make(chan error, 1)
+	go func() {
+		pgStatus <- pgCmd.Wait()
+	}()
 
 	// block until postgres is ready--if we try to create users or db before it's running, it will fail
 	blockUntilReady()
@@ -109,14 +114,35 @@ func main() {
 
 	log.Println("about to start chain core")
 	env := []string{`DATABASE_URL=postgres://localhost:1998/core?sslmode=disable`}
-	cmd = exec.Command(chainCoreExe)
-	cmd.Env = mergeEnvLists(os.Environ(), env)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	log.Println(cmd.Env)
-	err = cmd.Start()
+	ccCmd := exec.Command(chainCoreExe)
+	ccCmd.Env = mergeEnvLists(os.Environ(), env)
+	ccCmd.Stdout = os.Stdout
+	ccCmd.Stderr = os.Stderr
+	err = ccCmd.Start()
 	if err != nil {
 		log.Println(err)
+	}
+
+	ccStatus := make(chan error, 1)
+	go func() {
+		ccStatus <- ccCmd.Wait()
+	}()
+
+	var msg = "exit status 0"
+	select {
+	case pgErr := <-pgStatus:
+		if pgErr != nil {
+			msg = pgErr.Error()
+		}
+		// TODO: set up separate loggers for PG and CC
+		log.Printf("Postgres died with %s; killing Chain Core", msg)
+		ccCmd.Process.Kill()
+	case ccErr := <-ccStatus:
+		if ccErr != nil {
+			msg = ccErr.Error()
+		}
+		log.Printf("Chain Core died with %s; kill Postgres", msg)
+		pgCmd.Process.Kill()
 	}
 }
 
