@@ -21,7 +21,6 @@ import (
 
 // TODO(kr): display more than one bucket (in time-series?)
 // TODO(kr): collect more fine-grain stats
-// TODO(kr): coalesce /debug/vars requests (cache them?)
 
 var (
 	dims       = image.Rect(0, 0, 800, 100)
