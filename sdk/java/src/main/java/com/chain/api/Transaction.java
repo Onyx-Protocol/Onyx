@@ -385,7 +385,7 @@ public class Transaction {
      * base transaction.
      * @return updated transaction template
      */
-    public Template allowAddtionalActions() {
+    public Template allowAdditionalActions() {
       this.allowAdditionalActions = true;
       return this;
     }

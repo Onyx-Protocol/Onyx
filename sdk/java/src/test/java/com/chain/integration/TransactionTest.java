@@ -293,7 +293,7 @@ public class TransactionTest {
                     .setAmount(80)
                     .addReferenceDataField("test", test))
             .build(context);
-    swap = HsmSigner.sign(swap.allowAddtionalActions());
+    swap = HsmSigner.sign(swap.allowAdditionalActions());
     swap =
         new Transaction.Builder(swap.rawTransaction)
             .addAction(
