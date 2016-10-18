@@ -22,6 +22,11 @@ func main() {
 var tmpl = template.Must(template.New("index.html").Parse(indexHTML))
 
 func index(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Path != "/" {
+		http.NotFound(w, req)
+		return
+	}
+
 	var v struct {
 		BaseURL string
 		Latency map[string]interface{}
@@ -34,7 +39,8 @@ func index(w http.ResponseWriter, req *http.Request) {
 
 	err := getDebugVars(v.BaseURL, &v)
 	if err != nil {
-		pngError(w, err)
+		http.Error(w, err.Error(), 500)
+		log.Println(err)
 		return
 	}
 
