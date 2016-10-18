@@ -109,6 +109,7 @@ func main() {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	processID := fmt.Sprintf("chain-%s-%s-%d", *target, hostname, os.Getpid())
+	expvar.NewString("processID").Set(processID)
 
 	log.SetPrefix("cored-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
