@@ -78,7 +78,7 @@ public class Account {
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
   public static BatchResponse<Account> createBatch(Context ctx, List<Builder> builders)
-          throws ChainException {
+      throws ChainException {
     for (Builder builder : builders) {
       builder.clientToken = UUID.randomUUID().toString();
     }

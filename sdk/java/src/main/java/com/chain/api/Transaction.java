@@ -371,7 +371,24 @@ public class Transaction {
      * so far, permitting the addition of new elements.
      */
     @SerializedName("allow_additional_actions")
-    public boolean allowAdditionalActions;
+    private boolean allowAdditionalActions;
+
+    /**
+     * allowAdditionalActions causes the transaction to be signed so
+     * that it can be used as a base transaction in a multiparty trade
+     * flow. To enable this setting, call this method after building the
+     * transaction, but before sending it to the signer.
+     *
+     * All participants in a multiparty trade flow should call this
+     * method except for the last signer. Do not call this option if
+     * the transaction is complete, i.e. if it will not be used as a
+     * base transaction.
+     * @return updated transaction template
+     */
+    public Template allowAddtionalActions() {
+      this.allowAdditionalActions = true;
+      return this;
+    }
 
     /**
      * A single signing instruction included in a transaction template.

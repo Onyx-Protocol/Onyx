@@ -41,7 +41,7 @@ public class ControlProgram {
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
   public static List<ControlProgram> createBatch(Context ctx, List<Builder> programs)
-          throws ChainException {
+      throws ChainException {
     Type type = new TypeToken<List<ControlProgram>>() {}.getType();
     return ctx.request("create-control-program", programs, type);
   }
