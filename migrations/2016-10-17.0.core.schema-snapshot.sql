@@ -1,11 +1,41 @@
 --
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
 --
 
 CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 
 
+--
+--
+
+
+
 SET search_path = public, pg_catalog;
+
+--
+-- Name: access_token_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE access_token_type AS ENUM (
+    'client',
+    'network'
+);
+
 
 --
 -- Name: b32enc_crockford(bytea); Type: FUNCTION; Schema: public; Owner: -
@@ -140,21 +170,6 @@ $$;
 
 
 --
--- Name: key_index(bigint); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION key_index(n bigint) RETURNS integer[]
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	maxint32 int := x'7fffffff'::int;
-BEGIN
-	RETURN ARRAY[(n>>31) & maxint32, n & maxint32];
-END;
-$$;
-
-
---
 -- Name: next_chain_id(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -281,17 +296,21 @@ END;
 $$;
 
 
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
 --
--- Name: to_key_index(integer[]); Type: FUNCTION; Schema: public; Owner: -
+-- Name: access_tokens; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE FUNCTION to_key_index(n integer[]) RETURNS bigint
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-	RETURN n[1]::bigint<<31 | n[2]::bigint;
-END;
-$$;
+CREATE TABLE access_tokens (
+    id text NOT NULL,
+    sort_id text DEFAULT next_chain_id('at'::text),
+    type access_token_type NOT NULL,
+    hashed_secret bytea NOT NULL,
+    created timestamp with time zone DEFAULT now() NOT NULL
+);
 
 
 --
@@ -306,10 +325,6 @@ CREATE SEQUENCE account_control_program_seq
     CACHE 1;
 
 
-SET default_tablespace = '';
-
-SET default_with_oids = false;
-
 --
 -- Name: account_control_programs; Type: TABLE; Schema: public; Owner: -
 --
@@ -319,7 +334,7 @@ CREATE TABLE account_control_programs (
     signer_id text NOT NULL,
     key_index bigint NOT NULL,
     control_program bytea NOT NULL,
-    redeem_program bytea NOT NULL
+    change boolean NOT NULL
 );
 
 
@@ -339,7 +354,8 @@ CREATE TABLE account_utxos (
     metadata bytea NOT NULL,
     confirmed_in bigint,
     block_pos integer,
-    block_timestamp bigint
+    block_timestamp bigint,
+    expiry_height bigint
 );
 
 
@@ -350,8 +366,7 @@ CREATE TABLE account_utxos (
 CREATE TABLE accounts (
     account_id text NOT NULL,
     tags jsonb,
-    alias text,
-    archived boolean DEFAULT false NOT NULL
+    alias text
 );
 
 
@@ -371,7 +386,8 @@ CREATE TABLE annotated_accounts (
 
 CREATE TABLE annotated_assets (
     id text NOT NULL,
-    data jsonb NOT NULL
+    data jsonb NOT NULL,
+    sort_id text NOT NULL
 );
 
 
@@ -421,11 +437,12 @@ CREATE TABLE assets (
     definition_mutable boolean DEFAULT false NOT NULL,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
     issuance_program bytea NOT NULL,
-    archived boolean DEFAULT false NOT NULL,
     client_token text,
-    genesis_hash text NOT NULL,
-    signer_id text NOT NULL,
-    definition jsonb
+    initial_block_hash text NOT NULL,
+    signer_id text,
+    definition jsonb,
+    alias text,
+    first_block_height bigint
 );
 
 
@@ -454,18 +471,6 @@ CREATE TABLE blocks (
 
 
 --
--- Name: blocks_txs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE blocks_txs (
-    tx_hash text NOT NULL,
-    block_hash text NOT NULL,
-    block_height bigint NOT NULL,
-    block_pos integer NOT NULL
-);
-
-
---
 -- Name: chain_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -478,16 +483,32 @@ CREATE SEQUENCE chain_id_seq
 
 
 --
--- Name: issuance_totals; Type: TABLE; Schema: public; Owner: -
+-- Name: config; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE issuance_totals (
-    asset_id text NOT NULL,
-    issued bigint DEFAULT 0 NOT NULL,
-    destroyed bigint DEFAULT 0 NOT NULL,
-    height bigint NOT NULL,
-    CONSTRAINT issuance_totals_confirmed_check CHECK ((issued >= 0)),
-    CONSTRAINT positive_destroyed_confirmed CHECK ((destroyed >= 0))
+CREATE TABLE config (
+    singleton boolean DEFAULT true NOT NULL,
+    is_signer boolean,
+    is_generator boolean,
+    blockchain_id text NOT NULL,
+    configured_at timestamp with time zone NOT NULL,
+    generator_url text DEFAULT ''::text NOT NULL,
+    block_xpub text DEFAULT ''::text NOT NULL,
+    remote_block_signers bytea DEFAULT '\x'::bytea NOT NULL,
+    generator_access_token text DEFAULT ''::text NOT NULL,
+    max_issuance_window_ms bigint,
+    CONSTRAINT config_singleton CHECK (singleton)
+);
+
+
+--
+-- Name: generator_pending_block; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE generator_pending_block (
+    singleton boolean DEFAULT true NOT NULL,
+    data bytea NOT NULL,
+    CONSTRAINT generator_pending_block_singleton CHECK (singleton)
 );
 
 
@@ -499,8 +520,21 @@ CREATE TABLE leader (
     singleton boolean DEFAULT true NOT NULL,
     leader_key text NOT NULL,
     expiry timestamp with time zone DEFAULT '1970-01-01 00:00:00-08'::timestamp with time zone NOT NULL,
+    address text NOT NULL,
     CONSTRAINT leader_singleton CHECK (singleton)
 );
+
+
+--
+-- Name: mockhsm_sort_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE mockhsm_sort_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
 --
@@ -508,9 +542,11 @@ CREATE TABLE leader (
 --
 
 CREATE TABLE mockhsm (
-    xpub bytea NOT NULL,
-    xprv bytea NOT NULL,
-    xpub_hash text NOT NULL
+    pub bytea NOT NULL,
+    prv bytea NOT NULL,
+    alias text,
+    sort_id bigint DEFAULT nextval('mockhsm_sort_id_seq'::regclass) NOT NULL,
+    key_type text DEFAULT 'chain_kd'::text NOT NULL
 );
 
 
@@ -530,7 +566,7 @@ CREATE SEQUENCE pool_tx_sort_id_seq
 -- Name: pool_txs; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE pool_txs (
+CREATE UNLOGGED TABLE pool_txs (
     tx_hash text NOT NULL,
     data bytea NOT NULL,
     sort_id bigint DEFAULT nextval('pool_tx_sort_id_seq'::regclass) NOT NULL
@@ -545,39 +581,6 @@ CREATE TABLE query_blocks (
     height bigint NOT NULL,
     "timestamp" bigint NOT NULL
 );
-
-
---
--- Name: query_indexes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE query_indexes (
-    internal_id integer NOT NULL,
-    id text NOT NULL,
-    type text NOT NULL,
-    query text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    unspent_outputs boolean DEFAULT false NOT NULL
-);
-
-
---
--- Name: query_indexes_internal_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE query_indexes_internal_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: query_indexes_internal_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE query_indexes_internal_id_seq OWNED BY query_indexes.internal_id;
 
 
 --
@@ -626,8 +629,7 @@ CREATE TABLE signers (
     key_index bigint NOT NULL,
     xpubs text[] NOT NULL,
     quorum integer NOT NULL,
-    client_token text,
-    archived boolean DEFAULT false NOT NULL
+    client_token text
 );
 
 
@@ -661,20 +663,27 @@ CREATE TABLE snapshots (
 
 
 --
--- Name: txs; Type: TABLE; Schema: public; Owner: -
+-- Name: submitted_txs; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE txs (
-    tx_hash text NOT NULL,
-    data bytea NOT NULL
+CREATE TABLE submitted_txs (
+    tx_id text NOT NULL,
+    height bigint NOT NULL,
+    submitted_at timestamp without time zone DEFAULT now() NOT NULL
 );
 
 
 --
--- Name: internal_id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: txfeeds; Type: TABLE; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY query_indexes ALTER COLUMN internal_id SET DEFAULT nextval('query_indexes_internal_id_seq'::regclass);
+CREATE TABLE txfeeds (
+    id text DEFAULT next_chain_id('cur'::text) NOT NULL,
+    alias text,
+    filter text,
+    after text,
+    client_token text NOT NULL
+);
 
 
 --
@@ -682,6 +691,14 @@ ALTER TABLE ONLY query_indexes ALTER COLUMN internal_id SET DEFAULT nextval('que
 --
 
 ALTER TABLE ONLY signers ALTER COLUMN key_index SET DEFAULT nextval('signers_key_index_seq'::regclass);
+
+
+--
+-- Name: access_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY access_tokens
+    ADD CONSTRAINT access_tokens_pkey PRIMARY KEY (id);
 
 
 --
@@ -749,6 +766,14 @@ ALTER TABLE ONLY asset_tags
 
 
 --
+-- Name: assets_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY assets
+    ADD CONSTRAINT assets_alias_key UNIQUE (alias);
+
+
+--
 -- Name: assets_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -781,19 +806,19 @@ ALTER TABLE ONLY blocks
 
 
 --
--- Name: blocks_txs_tx_hash_block_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY blocks_txs
-    ADD CONSTRAINT blocks_txs_tx_hash_block_hash_key UNIQUE (tx_hash, block_hash);
+ALTER TABLE ONLY config
+    ADD CONSTRAINT config_pkey PRIMARY KEY (singleton);
 
 
 --
--- Name: issuance_totals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: generator_pending_block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY issuance_totals
-    ADD CONSTRAINT issuance_totals_pkey PRIMARY KEY (asset_id);
+ALTER TABLE ONLY generator_pending_block
+    ADD CONSTRAINT generator_pending_block_pkey PRIMARY KEY (singleton);
 
 
 --
@@ -805,11 +830,19 @@ ALTER TABLE ONLY leader
 
 
 --
+-- Name: mockhsm_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY mockhsm
+    ADD CONSTRAINT mockhsm_alias_key UNIQUE (alias);
+
+
+--
 -- Name: mockhsm_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY mockhsm
-    ADD CONSTRAINT mockhsm_pkey PRIMARY KEY (xpub);
+    ADD CONSTRAINT mockhsm_pkey PRIMARY KEY (pub);
 
 
 --
@@ -834,22 +867,6 @@ ALTER TABLE ONLY pool_txs
 
 ALTER TABLE ONLY query_blocks
     ADD CONSTRAINT query_blocks_pkey PRIMARY KEY (height);
-
-
---
--- Name: query_indexes_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY query_indexes
-    ADD CONSTRAINT query_indexes_id_key UNIQUE (id);
-
-
---
--- Name: query_indexes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY query_indexes
-    ADD CONSTRAINT query_indexes_pkey PRIMARY KEY (internal_id);
 
 
 --
@@ -885,6 +902,14 @@ ALTER TABLE ONLY signers
 
 
 --
+-- Name: sort_id_index; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY mockhsm
+    ADD CONSTRAINT sort_id_index UNIQUE (sort_id);
+
+
+--
 -- Name: state_trees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -893,11 +918,35 @@ ALTER TABLE ONLY snapshots
 
 
 --
--- Name: txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: submitted_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY txs
-    ADD CONSTRAINT txs_pkey PRIMARY KEY (tx_hash);
+ALTER TABLE ONLY submitted_txs
+    ADD CONSTRAINT submitted_txs_pkey PRIMARY KEY (tx_id);
+
+
+--
+-- Name: txfeeds_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY txfeeds
+    ADD CONSTRAINT txfeeds_alias_key UNIQUE (alias);
+
+
+--
+-- Name: txfeeds_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY txfeeds
+    ADD CONSTRAINT txfeeds_client_token_key UNIQUE (client_token);
+
+
+--
+-- Name: txfeeds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY txfeeds
+    ADD CONSTRAINT txfeeds_pkey PRIMARY KEY (id);
 
 
 --
@@ -922,6 +971,13 @@ CREATE INDEX account_utxos_account_id_asset_id_tx_hash_idx ON account_utxos USIN
 
 
 --
+-- Name: account_utxos_expiry_height_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX account_utxos_expiry_height_idx ON account_utxos USING btree (expiry_height) WHERE (confirmed_in IS NULL);
+
+
+--
 -- Name: account_utxos_reservation_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -940,6 +996,13 @@ CREATE INDEX annotated_accounts_jsondata_idx ON annotated_accounts USING gin (da
 --
 
 CREATE INDEX annotated_assets_jsondata_idx ON annotated_assets USING gin (data jsonb_path_ops);
+
+
+--
+-- Name: annotated_assets_sort_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX annotated_assets_sort_id ON annotated_assets USING btree (sort_id);
 
 
 --
@@ -975,13 +1038,6 @@ CREATE INDEX annotated_txs_data ON annotated_txs USING gin (data);
 --
 
 CREATE INDEX assets_sort_id ON assets USING btree (sort_id);
-
-
---
--- Name: blocks_txs_block_height_block_pos_key; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX blocks_txs_block_height_block_pos_key ON blocks_txs USING btree (block_height, block_pos);
 
 
 --
@@ -1025,3 +1081,9 @@ CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE SET NULL;
+
+
+--
+-- PostgreSQL database dump complete
+--
+

@@ -1,1 +1,0 @@
-ALTER TABLE cursors ALTER COLUMN id SET DEFAULT next_chain_id('cur'::text);

@@ -1,1 +1,0 @@
-ALTER TABLE pool_txs SET UNLOGGED;

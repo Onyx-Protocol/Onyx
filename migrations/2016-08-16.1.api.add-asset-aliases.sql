@@ -1,1 +1,0 @@
-ALTER TABLE assets ADD COLUMN alias text, ADD UNIQUE (alias);

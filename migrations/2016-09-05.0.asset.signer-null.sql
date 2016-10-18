@@ -1,1 +1,0 @@
-ALTER TABLE assets ALTER COLUMN signer_id DROP NOT NULL;

@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1106,46 +1106,4 @@ ALTER TABLE ONLY account_utxos
 -- PostgreSQL database dump complete
 --
 
-insert into migrations (filename, hash) values ('2016-08-16.0.core.initial-schema.sql', 'ee7466ce9642af3afa60c3104d3d0f8f4161e4a9f58b1daa58e005a6566b82e2');
-insert into migrations (filename, hash) values ('2016-08-16.1.api.add-asset-aliases.sql', '78b8c814db73872e6ebc8c5bcedc342d17f566a0a637470aed2761ae09060873');
-insert into migrations (filename, hash) values ('2016-08-16.2.query.rename-index-alias.sql', 'eb1b6b4fa602ac21d7f957f8fda0b94dd50fb710055842cead111a0bb35d93ae');
-insert into migrations (filename, hash) values ('2016-08-16.3.api.alias-keys.sql', 'ee7702a963064b004800ee356558ec2a2a3062f443ff7871d1fc2a873f22665e');
-insert into migrations (filename, hash) values ('2016-08-17.0.query.index-id.sql', '538ce1a1f61b496d1809049f3934ba445177e5b71af2e802d2fbcb009a8d80cb');
-insert into migrations (filename, hash) values ('2016-08-19.0.generator.generated-block.sql', '8068324f63c2d973f0eac120460ca202711bfab0f734b789f18206f21abd3a80');
-insert into migrations (filename, hash) values ('2016-08-22.0.account.change-utxos.sql', '11dff1da7353fd6896c4f153654029d717f838b4a4e528cf7139bfcf35ebf124');
-insert into migrations (filename, hash) values ('2016-08-23.0.query.sum-by.sql', '82a04d0595f19df735dd35e896496c79a70398a8428131ece4d441aaf2f3836c');
-insert into migrations (filename, hash) values ('2016-08-24.0.query.index-filter.sql', '9b501c1fc5a528312f7239a58b1552bf95681fe228d57472a65e9a55fc19246b');
-insert into migrations (filename, hash) values ('2016-08-26.0.query.assets-sort-id.sql', '56083fef381b675be65ef9c9769de724ddf46f2c3ed44a9e75ab81ecc812f983');
-insert into migrations (filename, hash) values ('2016-08-29.0.core.config.sql', '4f440fccb3a8523bfd4455acf400e20859d134118742a55677a04d2297297914');
-insert into migrations (filename, hash) values ('2016-08-30.0.asset.issuance-totals.sql', '2a4b3f9899df7c099eb215c0bf5b6b7e2ac6f991c08820c000a96ddf8cfb2671');
-insert into migrations (filename, hash) values ('2016-08-31.0.core.add-leader-address.sql', '6d2f4eca68067afae4531b8e56de4c7628158e2dd66cd1831585d26e83817f1b');
-insert into migrations (filename, hash) values ('2016-08-31.1.core.mockhsm-key-sort.sql', '4ecebb1e4485e6ea7b0fb7ed3a34f5c4f511fdec0379d67fcb646ec06708ad70');
-insert into migrations (filename, hash) values ('2016-08-31.2.core.default-config-generator-url.sql', '4b3a62ed2ff07256b6289b1f0e02910d9ddf5e345c169a978910306cad1c6948');
-insert into migrations (filename, hash) values ('2016-08-31.3.account.drop-redeem-program.sql', '8b1dfd7056ba04cbb2609a9fa0e8f8f76e6fca3d19b8c2a3cbd88f0513022462');
-insert into migrations (filename, hash) values ('2016-09-01.0.core.add-block-xpub.sql', '89051edcfbfba56cc09870ab9864b8605babded501a612e0a3882823b4ebbdba');
-insert into migrations (filename, hash) values ('2016-09-01.1.core.rename-genesis-to-initial.sql', '25699037b44a16db6e3fdbfe81f35dea5dbf4b230ff3f63904f5150f08955208');
-insert into migrations (filename, hash) values ('2016-09-01.2.core.drop-txs.sql', '14e21eba20efe97745d7e0a1a17e51582e2c05597030db1a3a01d46258ff2574');
-insert into migrations (filename, hash) values ('2016-09-05.0.asset.signer-null.sql', 'e611da44df43ea431c937c77c1e852fe82dc0049a118ec896102ca8a2cfb09f6');
-insert into migrations (filename, hash) values ('2016-09-06.0.asset.height.sql', 'd63ac300dfdaaa9ea48741b5d9c66af27a11eba46621ee2cb9a76ba39b2e50a6');
-insert into migrations (filename, hash) values ('2016-09-14.0.appdb.add-cursors-table.sql', 'fedda13d07e22fce61508dfdc38cafba9492439200e0d120c7438dc7489f4c3a');
-insert into migrations (filename, hash) values ('2016-09-14.1.query.remove-indexes.sql', '47f772881706b2a518f79f22a7dd82512ce3994ba2b97cd7cfc25272aadf8f32');
-insert into migrations (filename, hash) values ('2016-09-14.2.appdb.add-cursors-id.sql', '6125ca2a8c73131e2e619d8edfe59518423482929e13df1f98a24d012cf453bb');
-insert into migrations (filename, hash) values ('2016-09-23.0.account.change-control-programs.sql', 'dd5fe8c4b418c061bea8007b61dfefb64418f9a99c2978f559b4628ec323bc25');
-insert into migrations (filename, hash) values ('2016-09-26.0.core.add-access-tokens.sql', '81b12b6aed53dfacca8f8d922b377ef24c727950dea2c8c186d6f68400de511a');
-insert into migrations (filename, hash) values ('2016-09-26.1.core.add-require-auth-flags.sql', '0e21f6d4836fcde1bdec80b0f6cc7c8cf8355fee47a7d5561ed8d7f6726425f1');
-insert into migrations (filename, hash) values ('2016-09-29.0.core.drop-archived-columns.sql', '557b8ae9b6604485d7ae7eef2206ce218d4bb3a1ac9bcdac6b4691db1da20208');
-insert into migrations (filename, hash) values ('2016-09-29.1.core.cursors-to-txconsumers.sql', 'ed2fee4f5e726ba76eff4c7e3aaceac7e960164031df7f89e2a33b5de4e25216');
-insert into migrations (filename, hash) values ('2016-09-29.2.core.rename-blockchain-id.sql', 'bc1dab19322441951dcc2a49577f1b477cca8ae2e9b6c6568ba57028606b64fc');
-insert into migrations (filename, hash) values ('2016-09-29.3.signers.remove-key-index.sql', '797977c67310d658496138a3d956f9d34c52a4462ab55a5754ecaa8b35908904');
-insert into migrations (filename, hash) values ('2016-09-30.0.core.remove-is-ascending-from-txconsumers.sql', 'dc22181470cd84be345701616755371e4612457955f460110ab0f88aeaa85222');
-insert into migrations (filename, hash) values ('2016-09-30.1.core.submit-idempotence.sql', '2dd217fda2f33f72332d0502149c1b1a75e5e896b5252477a35a7f62bb49052f');
-insert into migrations (filename, hash) values ('2016-09-30.2.config.add-secrets-signers.sql', 'da6c7ee122069bbbed470407f4090e364916d8d54339177b21afbadd820bec0e');
-insert into migrations (filename, hash) values ('2016-10-03.1.config.add-generater-token.sql', 'f1f7e6ea6fcbd773242954d32cc402173913396c8c1233fb573ab8a2e5d770f9');
-insert into migrations (filename, hash) values ('2016-10-04.0.txdb.pool-txs-unlogged.sql', '5baa0d1e2890d8be09c9defc3dc0c81ab9fb012cabf000fffc8330eee0d5708a');
-insert into migrations (filename, hash) values ('2016-10-05.0.core.remote-require-auth-flags.sql', '3dad64f0e38c8140d471b851e3ba5bb5045bf5e760488e0ab3b617ddb09c62cf');
-insert into migrations (filename, hash) values ('2016-10-05.1.core.add-testnet-config.sql', '6e0c8da9c9adb3f85f7d4baee00f84b3b4183c8ebad071d54a0128d8b414b007');
-insert into migrations (filename, hash) values ('2016-10-05.2.core.remove-testnet-config.sql', 'f748d503f055882d3c5af641931c3266a120d7b3ba404424db78a1f075f76b95');
-insert into migrations (filename, hash) values ('2016-10-05.3.account.index-expiry-height.sql', 'a1db582321307ad8fc49c201e95f7380f5f8441d6ab9a11838433666441817d3');
-insert into migrations (filename, hash) values ('2016-10-05.4.config.add-max-issuance-window.sql', 'd8f1a243626db63630238869d0bf1a6c94f6e771558cb831c03f466bb93b2eb7');
-insert into migrations (filename, hash) values ('2016-10-08.0.core.rename-txconsumers-to-txfeeds.sql', 'e187c78524d7009c085b28017a6c801009e82a55d12ac3131bbd589a2b23c5ca');
-insert into migrations (filename, hash) values ('2016-10-10.0.mockhsm.add-key-types.sql', '00ac8143767fe4a44855cab1ec57afd52c44fd4d727055db9e8584c3e9b10983');
+insert into migrations (filename, hash) values ('2016-10-17.0.core.schema-snapshot.sql', 'cff5210e2d6af410719c223a76443f73c5c12fe875f0efecb9a0a5937cf029cd');
