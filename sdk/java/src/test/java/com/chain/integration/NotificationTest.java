@@ -42,10 +42,7 @@ public class NotificationTest {
 
     Transaction.Feed txfeed = Transaction.Feed.create(context, feed, filter);
     ExecutorService executor = Executors.newFixedThreadPool(1);
-    Callable<Transaction> task =
-        () -> {
-          return txfeed.next(context);
-        };
+    Callable<Transaction> task = () -> txfeed.next(context);
     Future<Transaction> future = executor.submit(task);
 
     Transaction.Template issuance =

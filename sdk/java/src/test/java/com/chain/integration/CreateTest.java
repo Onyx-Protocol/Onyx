@@ -7,10 +7,12 @@ import com.chain.api.ControlProgram;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
 import com.chain.exception.APIException;
+import com.chain.http.BatchResponse;
 import com.chain.http.Context;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,8 +27,11 @@ public class CreateTest {
   public void run() throws Exception {
     testKeyCreate();
     testAccountCreate();
+    testAccountCreateBatch();
     testAssetCreate();
+    testAssetCreateBatch();
     testControlProgramCreate();
+    testControlProgramCreateBatch();
     testTransactionFeedCreate();
   }
 
@@ -79,6 +84,21 @@ public class CreateTest {
     throw new Exception("expecting APIException");
   }
 
+  public void testAccountCreateBatch() throws Exception {
+    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    key = MockHsm.Key.create(context);
+    String alice = "CreateTest.testAccountCreateBatch.alice";
+    Account.Builder builder =
+        new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1);
+
+    Account.Builder failure =
+        new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1);
+
+    BatchResponse<Account> resp = Account.createBatch(context, Arrays.asList(builder, failure));
+    assertEquals(1, resp.successes().size());
+    assertEquals(1, resp.errors().size());
+  }
+
   public void testAssetCreate() throws Exception {
     context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
     key = MockHsm.Key.create(context);
@@ -124,6 +144,19 @@ public class CreateTest {
     throw new Exception("expecting APIException");
   }
 
+  public void testAssetCreateBatch() throws Exception {
+    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    key = MockHsm.Key.create(context);
+    String asset = "CreateTest.testAssetCreateBatch.asset";
+    Asset.Builder builder = new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1);
+
+    Asset.Builder failure = new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1);
+
+    BatchResponse<Asset> resp = Asset.createBatch(context, Arrays.asList(builder, failure));
+    assertEquals(1, resp.successes().size());
+    assertEquals(1, resp.errors().size());
+  }
+
   public void testControlProgramCreate() throws Exception {
     context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
     key = MockHsm.Key.create(context);
@@ -135,6 +168,7 @@ public class CreateTest {
             .setQuorum(1)
             .addTag("name", alice)
             .create(context);
+
     ControlProgram ctrlp =
         new ControlProgram.Builder().controlWithAccountById(account.id).create(context);
     assertNotNull(ctrlp.program);
@@ -148,6 +182,29 @@ public class CreateTest {
       return;
     }
     throw new Exception("expecting APIException");
+  }
+
+  public void testControlProgramCreateBatch() throws Exception {
+    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    key = MockHsm.Key.create(context);
+    String alice = "CreateTest.testControlProgramCreateBatch.alice";
+    Account account =
+        new Account.Builder()
+            .setAlias(alice)
+            .addRootXpub(key.xpub)
+            .setQuorum(1)
+            .addTag("name", alice)
+            .create(context);
+
+    ControlProgram.Builder builder =
+        new ControlProgram.Builder().controlWithAccountById(account.id);
+
+    ControlProgram.Builder failure = new ControlProgram.Builder().controlWithAccountById("bad-id");
+
+    BatchResponse<ControlProgram> resp =
+        ControlProgram.createBatch(context, Arrays.asList(builder, failure));
+    assertEquals(1, resp.successes().size());
+    assertEquals(1, resp.errors().size());
   }
 
   public void testTransactionFeedCreate() throws Exception {
