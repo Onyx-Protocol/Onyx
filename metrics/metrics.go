@@ -29,6 +29,7 @@ var (
 type Latency struct {
 	max time.Duration // readonly
 
+	time  time.Time
 	hdr   hdrhistogram.Histogram
 	nover int // how many values were over max
 }
@@ -66,7 +67,7 @@ func (l *Latency) String() string {
 	fmt.Fprintf(&b, `{"Histogram":`)
 	h, _ := json.Marshal((&l.hdr).Export())
 	b.Write(h)
-	fmt.Fprintf(&b, `,"Over":%d}`, l.nover)
+	fmt.Fprintf(&b, `,"Over":%d,"Timestamp":%d}`, l.nover, l.time.Unix())
 	return b.String()
 }
 
@@ -113,6 +114,9 @@ func (r *RotatingLatency) RecordSince(t0 time.Time) {
 func (r *RotatingLatency) rotate() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if r.cur != nil {
+		r.cur.time = time.Now()
+	}
 	r.n++
 	r.cur = &r.l[r.n%len(r.l)]
 	r.cur.Reset()

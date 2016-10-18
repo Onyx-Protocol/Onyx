@@ -85,7 +85,6 @@ func reportMetrics(ctx context.Context, client *rpc.Client, latestNumRots map[st
 	// Convert the histograms into librato gauges.
 	var req libratoMetricsRequest
 	req.Source = varsResp.ProcessID
-	req.MeasureTime = time.Now().Unix()
 	for endpoint, latency := range varsResp.Latency {
 		// figure out how many buckets have happened since we last
 		// recorded data.
@@ -107,30 +106,35 @@ func reportMetrics(ctx context.Context, client *rpc.Client, latestNumRots map[st
 			name := *metricPrefix + ".rpc." + cleanedEndpoint
 
 			req.Gauges = append(req.Gauges, gauge{
-				Name:   name + ".latency.mean",
-				Value:  int64(h.Mean()),
-				Attr:   latencyMetricAttributes,
-				Period: period,
+				Name:        name + ".latency.mean",
+				Value:       int64(h.Mean()),
+				Attr:        latencyMetricAttributes,
+				Period:      period,
+				MeasureTime: bucket.Timestamp,
 			}, gauge{
-				Name:   name + ".latency.p95",
-				Value:  h.ValueAtQuantile(95.0),
-				Attr:   latencyMetricAttributes,
-				Period: period,
+				Name:        name + ".latency.p95",
+				Value:       h.ValueAtQuantile(95.0),
+				Attr:        latencyMetricAttributes,
+				Period:      period,
+				MeasureTime: bucket.Timestamp,
 			}, gauge{
-				Name:   name + ".latency.p99",
-				Value:  h.ValueAtQuantile(99.0),
-				Attr:   latencyMetricAttributes,
-				Period: period,
+				Name:        name + ".latency.p99",
+				Value:       h.ValueAtQuantile(99.0),
+				Attr:        latencyMetricAttributes,
+				Period:      period,
+				MeasureTime: bucket.Timestamp,
 			}, gauge{
-				Name:   name + ".latency.p999",
-				Value:  h.ValueAtQuantile(99.9),
-				Attr:   latencyMetricAttributes,
-				Period: period,
+				Name:        name + ".latency.p999",
+				Value:       h.ValueAtQuantile(99.9),
+				Attr:        latencyMetricAttributes,
+				Period:      period,
+				MeasureTime: bucket.Timestamp,
 			}, gauge{
-				Name:   name + ".latency.max",
-				Value:  h.Max(),
-				Attr:   latencyMetricAttributes,
-				Period: period,
+				Name:        name + ".latency.max",
+				Value:       h.Max(),
+				Attr:        latencyMetricAttributes,
+				Period:      period,
+				MeasureTime: bucket.Timestamp,
 			})
 		}
 	}
@@ -159,6 +163,7 @@ func sendLibratoMetrics(ctx context.Context, body *libratoMetricsRequest) error 
 		// TODO(jackson): Retry automatically?
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("librato responded with %d", resp.StatusCode)
 	}
@@ -166,16 +171,16 @@ func sendLibratoMetrics(ctx context.Context, body *libratoMetricsRequest) error 
 }
 
 type libratoMetricsRequest struct {
-	MeasureTime int64   `json:"measure_time"`
-	Source      string  `json:"source,omitempty"`
-	Gauges      []gauge `json:"gauges,omitempty"`
+	Source string  `json:"source,omitempty"`
+	Gauges []gauge `json:"gauges,omitempty"`
 }
 
 type gauge struct {
-	Name   string     `json:"name"`
-	Value  int64      `json:"value"`
-	Period int64      `json:"period"`
-	Attr   attributes `json:"attributes"`
+	Name        string     `json:"name"`
+	Value       int64      `json:"value"`
+	Period      int64      `json:"period"`
+	MeasureTime int64      `json:"measure_time"`
+	Attr        attributes `json:"attributes"`
 }
 
 type attributes struct {
@@ -200,5 +205,6 @@ type latencies struct {
 
 type latencyBucket struct {
 	Over      uint64                 `json:"Over"`
+	Timestamp int64                  `json:"Timestamp"`
 	Histogram *hdrhistogram.Snapshot `json:"Histogram"`
 }
