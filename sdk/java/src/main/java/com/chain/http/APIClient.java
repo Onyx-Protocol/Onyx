@@ -1,9 +1,7 @@
 package com.chain.http;
 
 import com.chain.exception.*;
-import com.fatboyindustrial.gsonjavatime.Converters;
 import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
 import com.squareup.okhttp.*;
 
 import java.io.IOException;
@@ -11,19 +9,29 @@ import java.io.Reader;
 import java.lang.reflect.Type;
 import java.net.*;
 import java.util.Arrays;
-import java.util.List;
-import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * HTTP client used to make requests to the Chain Core server.
+ */
 public class APIClient {
   private URL baseURL;
   private String credentials;
   private OkHttpClient httpClient;
+  /**
+   * Specifies the MIME type for HTTP requests.
+   */
   public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-  public static final Gson serializer =
-      Converters.registerOffsetDateTime(new GsonBuilder()).create();
+  /**
+   * Serializer object used to serialize/deserialize json requests/responses.
+   */
+  public static final Gson serializer = new Gson();
 
+  /**
+   * Default constructor sets the base URL for the client.
+   * @param url location of the Chain Core server
+   */
   public APIClient(URL url) {
     this.baseURL = url;
     this.httpClient = new OkHttpClient();
@@ -34,11 +42,21 @@ public class APIClient {
     }
   }
 
+  /**
+   * Sets the base URL and client access token for the client.
+   * @param url location of the Chain Core server
+   * @param accessToken client access token for the server
+   */
   public APIClient(URL url, String accessToken) {
     this(url);
     credentials = buildCredentials(accessToken);
   }
 
+  /**
+   * Pins a public key to the HTTP client.
+   * @param provider certificate provider
+   * @param subjPubKeyInfoHash public key hash
+   */
   public void pinCertificate(String provider, String subjPubKeyInfoHash) {
     CertificatePinner cp =
         new CertificatePinner.Builder().add(provider, subjPubKeyInfoHash).build();
@@ -46,8 +64,7 @@ public class APIClient {
   }
 
   /**
-   * Sets the default connect timeout for new connections. A value of 0 means
-   * no timeout.
+   * Sets the default connect timeout for new connections. A value of 0 means no timeout.
    * @param timeout the number of time units for the default timeout
    * @param unit the unit of time
    */
@@ -56,8 +73,7 @@ public class APIClient {
   }
 
   /**
-   * Sets the default read timeout for new connections. A value of 0 means no
-   * timeout.
+   * Sets the default read timeout for new connections. A value of 0 means no timeout.
    * @param timeout the number of time units for the default timeout
    * @param unit the unit of time
    */
@@ -66,8 +82,7 @@ public class APIClient {
   }
 
   /**
-   * Sets the default write timeout for new connections. A value of 0 means no
-   * timeout.
+   * Sets the default write timeout for new connections. A value of 0 means no timeout.
    * @param timeout the number of time units for the default timeout
    * @param unit the unit of time
    */
@@ -75,6 +90,10 @@ public class APIClient {
     this.httpClient.setWriteTimeout(timeout, unit);
   }
 
+  /**
+   * Sets the proxy information for the HTTP client.
+   * @param proxy proxy object
+   */
   public void setProxy(Proxy proxy) {
     this.httpClient.setProxy(proxy);
   }
@@ -142,7 +161,7 @@ public class APIClient {
   private static final int RETRY_BASE_DELAY_MILLIS = 40;
   private static final int RETRY_MAX_DELAY_MILLIS = 4000;
 
-  public static int retryDelayMillis(int retryAttempt) {
+  private static int retryDelayMillis(int retryAttempt) {
     // Calculate the max delay as base * 2 ^ (retryAttempt - 1).
     int max = RETRY_BASE_DELAY_MILLIS * (1 << (retryAttempt - 1));
     max = Math.min(max, RETRY_MAX_DELAY_MILLIS);

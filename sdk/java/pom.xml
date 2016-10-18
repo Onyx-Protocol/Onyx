@@ -41,11 +41,6 @@
             <artifactId>gson</artifactId>
             <version>2.6.2</version>
         </dependency>
-        <dependency>
-            <groupId>com.fatboyindustrial.gson-javatime-serialisers</groupId>
-            <artifactId>gson-javatime-serialisers</artifactId>
-            <version>1.1.1</version>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -76,10 +71,6 @@
                             <pattern>com.google</pattern>
                             <shadedPattern>com.chain.google</shadedPattern>
                         </relocation>
-                        <relocation>
-                            <pattern>com.fatboyindustrial</pattern>
-                            <shadedPattern>com.chain.fatboyindustrial</shadedPattern>
-                        </relocation>
                     </relocations>
                     <filters>
                         <filter>
@@ -90,12 +81,6 @@
                         </filter>
                         <filter>
                             <artifact>com.google.code.gson:gson</artifact>
-                            <excludes>
-                                <exclude>META-INF/**</exclude>
-                            </excludes>
-                        </filter>
-                        <filter>
-                            <artifact>com.fatboyindustrial.gson-javatime-serialisers:gson-javatime-serialisers</artifact>
                             <excludes>
                                 <exclude>META-INF/**</exclude>
                             </excludes>
