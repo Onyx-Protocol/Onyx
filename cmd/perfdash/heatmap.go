@@ -57,45 +57,64 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 	img := newImage(dims)
 	d := drawer
 	d.Dst = img
-	drawf(d, 4, 20, "%v", time.Duration(b0.Histogram.HighestTrackableValue))
+	hist := hdrhistogram.Import(&b0.Histogram)
+
+	_, max := valueAtPixel(hist, img.Bounds().Inset(2).Dx())
 	drawf(d, 4, 38, "%s", name)
 	drawf(d, 4, 54, "over: %d", b0.Over)
-	graph(img, hdrhistogram.Import(&b0.Histogram), lineColor, labelColor)
+	if max == 0 {
+		drawf(d, 4, 20, "no histogram data")
+	} else {
+		max += max / 10
+		max = roundms(max)
+		if max < int64(10*time.Millisecond) {
+			max += int64(time.Millisecond)
+		}
+		drawf(d, 4, 20, "%v", time.Duration(max))
+		graph(img, hist, max, lineColor, labelColor)
+	}
 	png.Encode(w, img)
 }
 
-func graph(img *image.RGBA, hist *hdrhistogram.Histogram, lineColor, labelColor color.Color) {
-	graph := img.SubImage(img.Bounds().Inset(1)).(*image.RGBA)
-	gdims := graph.Bounds().Inset(1)
+func graph(img *image.RGBA, hist *hdrhistogram.Histogram, ymax int64, lineColor, labelColor color.Color) {
+	graph := img.SubImage(img.Bounds().Inset(2)).(*image.RGBA)
+	gdims := graph.Bounds()
 	d := drawer
 	d.Dst = graph
 
 	labelDigits := 0
 	labelPixels := 50
-	p := 0.5
-	for x := 0; x < gdims.Max.X; x++ {
-		q := 1 - p
-		v := hist.ValueAtQuantile(100 * q)
-		y := int(scale(v, hist.HighestTrackableValue(), int64(gdims.Max.Y)))
-		graph.Set(x, gdims.Max.Y-y, lineColor)
-		if labelPixels >= 50 && digits(p) > labelDigits {
+	for x := 0; x < gdims.Dx(); x++ {
+		q, v := valueAtPixel(hist, x)
+		y := int(scale(v, ymax, int64(gdims.Dy())))
+		graph.Set(gdims.Min.X+x, gdims.Max.Y-y-1, lineColor)
+		if dig := digits(1 - q); labelPixels >= 50 && dig > labelDigits {
 			labelPixels = 0
-			labelDigits = digits(p)
+			labelDigits = dig
 			for i := 0; i < 5; i++ {
-				graph.Set(x, gdims.Max.Y-i, labelColor)
+				graph.Set(gdims.Min.X+x, gdims.Max.Y-i-1, labelColor)
 			}
 			prec := labelDigits - 3
 			if prec < 0 {
 				prec = 0
 			}
-			drawf(d, x+4, gdims.Max.Y-2, "p%.*f", prec, 100*q)
+			drawf(d, gdims.Min.X+x+2, gdims.Max.Y-2, "p%.*f", prec, 100*q)
 		}
 		labelPixels++
-		p *= 0.98
 	}
 
 	// special case for p50
 	drawf(d, 4, gdims.Max.Y-2, "p50")
+}
+
+func valueAtPixel(hist *hdrhistogram.Histogram, n int) (quantile float64, v int64) {
+	const pixel0, decayPerPixel = 0.5, 0.98
+	q := 1 - pixel0*math.Pow(decayPerPixel, float64(n))
+	return q, hist.ValueAtQuantile(100 * q)
+}
+
+func roundms(n int64) int64 {
+	return int64(time.Duration(n) / time.Millisecond * time.Millisecond)
 }
 
 func digits(p float64) int {
