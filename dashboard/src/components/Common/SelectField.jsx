@@ -11,7 +11,7 @@ class SelectField extends React.Component {
       <div className='form-group'>
         {this.props.title && <label>{this.props.title}</label>}
         <select className='form-control' {...this.props.fieldProps}>
-          {!this.props.skipEmpty && <option>{emptyLabel}</option>}
+          {!this.props.skipEmpty && <option value=''>{emptyLabel}</option>}
 
           {options.map((option) =>
             <option value={option[valueKey]} key={option[valueKey]}>
