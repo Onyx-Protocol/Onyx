@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"math"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/codahale/hdrhistogram"
@@ -34,24 +35,20 @@ var (
 
 func heatmap(w http.ResponseWriter, req *http.Request) {
 	query := req.URL.Query()
-	baseURL := query.Get("baseurl")
 	name := query.Get("name")
-
-	var debugvars struct {
-		Latency map[string]struct {
-			Buckets []struct {
-				Over      int
-				Histogram hdrhistogram.Snapshot
-			}
-		}
-	}
-	err := getDebugVars(baseURL, &debugvars)
+	id, err := strconv.Atoi(query.Get("id"))
 	if err != nil {
 		pngError(w, err)
 		return
 	}
 
-	latency, ok := debugvars.Latency[name]
+	dv := getDebugVars(id)
+	if dv == nil {
+		pngError(w, errors.New("not found"))
+		return
+	}
+
+	latency, ok := dv.Latency[name]
 	if !ok {
 		pngError(w, errors.New("not found"))
 		return

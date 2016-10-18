@@ -1,11 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
-	"strings"
 
 	"chain/env"
 )
@@ -28,16 +26,17 @@ func index(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var v struct {
-		BaseURL string
-		Latency map[string]interface{}
+		DebugVars *debugVars
+		ID        int
 	}
 
-	v.BaseURL = req.URL.Query().Get("baseurl")
-	if v.BaseURL == "" {
-		v.BaseURL = "http://localhost:1999/"
+	baseURL := req.URL.Query().Get("baseurl")
+	if baseURL == "" {
+		baseURL = "http://localhost:1999/"
 	}
 
-	err := getDebugVars(v.BaseURL, &v)
+	var err error
+	v.ID, v.DebugVars, err = fetchDebugVars(baseURL)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		log.Println(err)
@@ -50,18 +49,10 @@ func index(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func getDebugVars(baseURL string, v interface{}) error {
-	resp, err := http.Get(strings.TrimRight(baseURL, "/") + "/debug/vars")
-	if err != nil {
-		return err
-	}
-	return json.NewDecoder(resp.Body).Decode(v)
-}
-
 const indexHTML = `
 <h1>perfdash</h1>
-{{$b := .BaseURL}}
-{{range $k, $v := .Latency}}
-	<img src="/heatmap.png?name={{$k}}&baseurl={{$b}}">
+{{$id := .ID}}
+{{range $k, $v := .DebugVars.Latency}}
+	<img src="/heatmap.png?name={{$k}}&id={{$id}}">
 {{end}}
 `
