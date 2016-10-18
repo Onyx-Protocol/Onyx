@@ -40,11 +40,11 @@ public class NotificationTest {
 
     new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(context);
 
-    Transaction.Feed cnsmr = Transaction.Feed.create(context, feed, filter);
+    Transaction.Feed txfeed = Transaction.Feed.create(context, feed, filter);
     ExecutorService executor = Executors.newFixedThreadPool(1);
     Callable<Transaction> task =
         () -> {
-          return cnsmr.next(context);
+          return txfeed.next(context);
         };
     Future<Transaction> future = executor.submit(task);
 

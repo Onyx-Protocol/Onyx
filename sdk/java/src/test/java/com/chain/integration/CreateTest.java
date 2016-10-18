@@ -3,7 +3,9 @@ package com.chain.integration;
 import com.chain.TestUtils;
 import com.chain.api.Account;
 import com.chain.api.Asset;
+import com.chain.api.ControlProgram;
 import com.chain.api.MockHsm;
+import com.chain.api.Transaction;
 import com.chain.exception.APIException;
 import com.chain.http.Context;
 
@@ -21,16 +23,32 @@ public class CreateTest {
 
   @Test
   public void run() throws Exception {
-    testAccountCreateSuccess();
-    testAccountCreateFailure();
-    testAssetCreateSuccess();
-    testAssetCreateFailure();
+    testKeyCreate();
+    testAccountCreate();
+    testAssetCreate();
+    testControlProgramCreate();
+    testTransactionFeedCreate();
   }
 
-  public void testAccountCreateSuccess() throws Exception {
+  public void testKeyCreate() throws Exception {
+    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    String alias = "CreateTest.testKeyCreate.alias";
+    key = MockHsm.Key.create(context, alias);
+    assertNotNull(key.xpub);
+    assertEquals(alias, key.alias);
+
+    try {
+      MockHsm.Key.create(context, alias);
+    } catch (APIException e) {
+      return;
+    }
+    throw new Exception("expecting APIException");
+  }
+
+  public void testAccountCreate() throws Exception {
     context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
     key = MockHsm.Key.create(context);
-    String alice = "CreateTest.testAccountCreateSuccess.alice";
+    String alice = "CreateTest.testAccountCreate.alice";
     Account account =
         new Account.Builder()
             .setAlias(alice)
@@ -39,31 +57,33 @@ public class CreateTest {
             .addTag("name", alice)
             .create(context);
     assertNotNull(account.id);
-    assertEquals(account.alias, alice);
     assertNotNull(account.keys);
-    assertEquals(account.keys.length, 1);
+    assertEquals(1, account.keys.length);
     assertNotNull(account.keys[0].accountXpub);
     assertNotNull(account.keys[0].rootXpub);
     assertNotNull(account.keys[0].derivationPath);
-    assertEquals(account.quorum, 1);
-    assertEquals(account.tags.get("name"), alice);
-  }
+    assertEquals(alice, account.alias);
+    assertEquals(1, account.quorum);
+    assertEquals(alice, account.tags.get("name"));
 
-  public static void testAccountCreateFailure() throws Exception {
     try {
-      context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
-      Account account = new Account.Builder().setQuorum(1).create(context);
+      new Account.Builder()
+          .setAlias(alice)
+          .addRootXpub(key.xpub)
+          .setQuorum(1)
+          .addTag("name", alice)
+          .create(context);
     } catch (APIException e) {
       return;
     }
     throw new Exception("expecting APIException");
   }
 
-  public void testAssetCreateSuccess() throws Exception {
+  public void testAssetCreate() throws Exception {
     context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
     key = MockHsm.Key.create(context);
-    String asset = "CreateTest.testAssetCreateSuccess.asset";
-    String test = "CreateTest.testAssetCreateSuccess.test";
+    String asset = "CreateTest.testAssetCreate.asset";
+    String test = "CreateTest.testAssetCreate.test";
     Map<String, Object> def = new HashMap<>();
     def.put("name", asset);
     Asset testAsset =
@@ -75,28 +95,69 @@ public class CreateTest {
             .setDefinition(def)
             .addDefinitionField("test", test)
             .create(context);
-    assertNotNull(testAsset.id);
-    assertEquals(testAsset.alias, asset);
+    assertNotNull(testAsset.id, testAsset.issuanceProgram);
     assertNotNull(testAsset.issuanceProgram);
     assertNotNull(testAsset.keys);
-    assertEquals(testAsset.keys.length, 1);
+    assertEquals(1, testAsset.keys.length);
     assertNotNull(testAsset.keys[0].assetPubkey);
     assertNotNull(testAsset.keys[0].rootXpub);
     assertNotNull(testAsset.keys[0].derivationPath);
-    assertEquals(testAsset.quorum, 1);
-    assertEquals(testAsset.tags.get("name"), asset);
-    assertEquals(testAsset.definition.get("name"), asset);
-    assertEquals(testAsset.definition.get("test"), test);
-    assertEquals(testAsset.isLocal, "yes");
-  }
+    assertEquals(asset, testAsset.alias);
+    assertEquals(1, testAsset.quorum);
+    assertEquals(asset, testAsset.tags.get("name"));
+    assertEquals(asset, testAsset.definition.get("name"));
+    assertEquals(test, testAsset.definition.get("test"));
+    assertEquals("yes", testAsset.isLocal);
 
-  public static void testAssetCreateFailure() throws Exception {
     try {
-      context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
-      Asset asset = new Asset.Builder().setQuorum(1).create(context);
+      new Asset.Builder()
+          .setAlias(asset)
+          .addRootXpub(key.xpub)
+          .setQuorum(1)
+          .addTag("name", asset)
+          .setDefinition(def)
+          .addDefinitionField("test", test)
+          .create(context);
     } catch (APIException e) {
       return;
     }
     throw new Exception("expecting APIException");
+  }
+
+  public void testControlProgramCreate() throws Exception {
+    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    key = MockHsm.Key.create(context);
+    String alice = "CreateTest.testControlProgramCreate.alice";
+    Account account =
+        new Account.Builder()
+            .setAlias(alice)
+            .addRootXpub(key.xpub)
+            .setQuorum(1)
+            .addTag("name", alice)
+            .create(context);
+    ControlProgram ctrlp =
+        new ControlProgram.Builder().controlWithAccountById(account.id).create(context);
+    assertNotNull(ctrlp.program);
+
+    ctrlp = new ControlProgram.Builder().controlWithAccountByAlias(account.alias).create(context);
+    assertNotNull(ctrlp.program);
+
+    try {
+      new ControlProgram.Builder().controlWithAccountById("bad-id").create(context);
+    } catch (APIException e) {
+      return;
+    }
+    throw new Exception("expecting APIException");
+  }
+
+  public void testTransactionFeedCreate() throws Exception {
+    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    String alias = "CreateTest.testFeedCreate.feed";
+    String filter = "outputs(account_alias='alice')";
+    Transaction.Feed feed = Transaction.Feed.create(context, alias, filter);
+    assertNotNull(feed.id);
+    assertNotNull(feed.after);
+    assertEquals(alias, feed.alias);
+    assertEquals(filter, feed.filter);
   }
 }

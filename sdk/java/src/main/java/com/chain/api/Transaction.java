@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A single transaction on a Chain Core.
@@ -1113,7 +1114,7 @@ public class Transaction {
      * If no such transaction is available, this method will block until a
      * matching transaction arrives in the blockchain, or if the specified
      * timeout is reached. To avoid client-side timeouts, be sure to call
-     * {@link Context#setReadTimeout(long, TimeUnit)} with appropriate
+     * {@link Context#setReadTimeout(long, TimeUnit)} (long, TimeUnit)} with appropriate
      * parameters.
      *
      * @param ctx context object that makes requests to core

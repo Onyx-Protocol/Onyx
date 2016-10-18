@@ -84,7 +84,7 @@ public class Context {
    *
    * @param action The requested API action
    * @param body Body payload sent to the API as JSON
-   * @param tClass Type of object to be deserialized from the repsonse JSON
+   * @param tClass Type of object to be deserialized from the response JSON
    * @return the result of the post request
    * @throws ChainException
    */
