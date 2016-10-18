@@ -153,7 +153,7 @@ func (r *RotatingLatency) String() string {
 		if i > 0 {
 			b.WriteByte(',')
 		}
-		j := (r.n + i) % len(r.l)
+		j := (r.n + i + 1) % len(r.l)
 		fmt.Fprintf(&b, "%s", &r.l[j])
 	}
 	fmt.Fprintf(&b, `],"NumRot":%d}`, r.n)
