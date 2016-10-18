@@ -267,7 +267,7 @@ func webAssetsHandler(next http.Handler) http.Handler {
 	}))
 	mux.Handle("/docs/", http.StripPrefix("/docs/", static.Handler{
 		Assets: docs.Files,
-		Index:  "index",
+		Index:  "index.html",
 	}))
 	mux.Handle("/", next)
 

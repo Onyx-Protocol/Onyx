@@ -45,13 +45,22 @@ func serve(addr string) {
 			http.ServeFile(w, r, path)
 			return
 		}
+
 		b, err := render(path + ".md")
 		if os.IsNotExist(err) {
-			http.NotFound(w, r)
-		} else if err != nil {
+			// Try the index
+			b, err = ioutil.ReadFile(strings.TrimSuffix(path, "/") + "/index.html")
+			if os.IsNotExist(err) {
+				http.NotFound(w, r)
+				return
+			}
+		}
+
+		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
+
 		w.Write(b)
 	})
 	log.Fatal(http.ListenAndServe(addr, nil))
