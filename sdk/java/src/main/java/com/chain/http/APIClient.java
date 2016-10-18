@@ -5,10 +5,8 @@ import com.google.gson.*;
 import com.squareup.okhttp.*;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.lang.reflect.Type;
 import java.net.*;
-import java.util.Arrays;
+
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -36,10 +34,6 @@ public class APIClient {
     this.baseURL = url;
     this.httpClient = new OkHttpClient();
     this.httpClient.setFollowRedirects(false);
-    String userinfo = url.getUserInfo();
-    if (userinfo != null && !userinfo.isEmpty()) {
-      credentials = buildCredentials(userinfo);
-    }
   }
 
   /**

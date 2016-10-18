@@ -6,44 +6,32 @@ import com.chain.http.BatchResponse;
 import com.chain.api.Transaction;
 import com.chain.exception.*;
 import com.chain.http.Context;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
-import java.net.URL;
-import java.net.MalformedURLException;
 import java.util.*;
 
 public class HsmSigner {
-  private static Map<URL, List<String>> hsmXPubs = new HashMap();
+  private static Map<Context, List<String>> hsmXPubs = new HashMap();
 
-  public static void addKey(String xpub, URL hsmUrl) {
-    if (!hsmXPubs.containsKey(hsmUrl)) {
-      hsmXPubs.put(hsmUrl, new ArrayList<String>());
+  public static void addKey(String xpub, Context hsm) {
+    if (!hsmXPubs.containsKey(hsm)) {
+      hsmXPubs.put(hsm, new ArrayList<>());
     }
-    hsmXPubs.get(hsmUrl).add(xpub);
+    hsmXPubs.get(hsm).add(xpub);
   }
 
-  public static void addKey(String xpub, String hsmUrl) throws BadURLException {
-    try {
-      addKey(xpub, new URL(hsmUrl));
-    } catch (MalformedURLException e) {
-      throw new BadURLException(e.getMessage());
-    }
+  public static void addKey(MockHsm.Key key, Context hsm) {
+    addKey(key.xpub, hsm);
   }
 
-  public static void addKey(MockHsm.Key key) {
-    addKey(key.xpub, key.hsmUrl);
-  }
-
-  public static void addKeys(List<MockHsm.Key> keys) {
+  public static void addKeys(Context hsm, List<MockHsm.Key> keys) {
     for (MockHsm.Key key : keys) {
-      addKey(key.xpub, key.hsmUrl);
+      addKey(key.xpub, hsm);
     }
   }
 
   public static Transaction.Template sign(Transaction.Template template) throws ChainException {
-    for (Map.Entry<URL, List<String>> entry : hsmXPubs.entrySet()) {
-      Context context = new Context(entry.getKey());
+    for (Map.Entry<Context, List<String>> entry : hsmXPubs.entrySet()) {
+      Context context = entry.getKey();
       HashMap<String, Object> body = new HashMap();
       body.put("transactions", Arrays.asList(template));
       body.put("xpubs", entry.getValue());
@@ -65,13 +53,11 @@ public class HsmSigner {
 
     Map<Integer, APIException> errors = new HashMap<>();
 
-    for (Map.Entry<URL, List<String>> entry : hsmXPubs.entrySet()) {
-      Context hsm = new Context(entry.getKey());
-
+    for (Map.Entry<Context, List<String>> entry : hsmXPubs.entrySet()) {
+      Context hsm = entry.getKey();
       HashMap<String, Object> requestBody = new HashMap();
       requestBody.put("transactions", tmpls);
       requestBody.put("xpubs", entry.getValue());
-
       BatchResponse<Transaction.Template> batch =
           hsm.batchRequest("sign-transaction", requestBody, Transaction.Template.class);
 
@@ -80,7 +66,6 @@ public class HsmSigner {
       // templates for which the most recent sign response was successful, and
       // maintain a mapping of each template's index in the upcoming request
       // to its original index.
-
       List<Transaction.Template> nextTmpls = new ArrayList<>();
       int[] nextOriginalIndex = new int[batch.successesByIndex().size()];
 
@@ -107,6 +92,6 @@ public class HsmSigner {
       successes.put(originalIndex[i], tmpls.get(i));
     }
 
-    return new BatchResponse<Transaction.Template>(successes, errors);
+    return new BatchResponse<>(successes, errors);
   }
 }

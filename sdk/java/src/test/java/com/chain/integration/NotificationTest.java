@@ -29,7 +29,7 @@ public class NotificationTest {
   public void testTransactionNotification() throws Exception {
     context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
     key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key);
+    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     long amount = 1000;
     String alice = "TransactionTest.testTransactionNotification.alice";
     String asset = "TransactionTest.testTransactionNotification.test";

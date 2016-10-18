@@ -19,8 +19,26 @@ import java.util.Map;
  */
 public class MockHsm {
   /**
-   * A class representing an extended public key.<br>
-   * An instance of this class stores a link to the mock hsm holding the corresponding private key.
+   * Returns a new context that knows how to make requests to the mock hsm.
+   * @param ctx context object that makes request to the core
+   * @return new context object
+   * @throws BadURLException
+   */
+  public static Context getSignerContext(Context ctx) throws BadURLException {
+    try {
+      URL signerUrl = new URL(ctx.url().toString() + "/mockhsm");
+      if (ctx.hasAccessToken()) {
+        return new Context(signerUrl, ctx.getAccessToken());
+      }
+      return new Context(signerUrl);
+    } catch (MalformedURLException e) {
+      throw new BadURLException(e.getMessage());
+    }
+  }
+
+  /**
+   * A class representing an extended public key. An instance of this class
+   * stores a link to the mock hsm holding the corresponding private key.
    */
   public static class Key {
     /**
@@ -34,11 +52,6 @@ public class MockHsm {
     public String xpub;
 
     /**
-     * The URL of the mock hsm which stores the key.
-     */
-    public URL hsmUrl;
-
-    /**
      * Creates a key object.
      * @param ctx context object that makes requests to the core
      * @return a key object
@@ -50,7 +63,6 @@ public class MockHsm {
      */
     public static Key create(Context ctx) throws ChainException {
       Key key = ctx.request("mockhsm/create-key", null, Key.class);
-      key.hsmUrl = buildMockHsmUrl(ctx.getUrlWithBasicAuth());
       return key;
     }
 
@@ -69,7 +81,6 @@ public class MockHsm {
       Map<String, Object> req = new HashMap<>();
       req.put("alias", alias);
       Key key = ctx.request("mockhsm/create-key", req, Key.class);
-      key.hsmUrl = buildMockHsmUrl(ctx.getUrlWithBasicAuth());
       return key;
     }
 
@@ -90,10 +101,6 @@ public class MockHsm {
       public Items getPage() throws ChainException {
         Items items = this.context.request("mockhsm/list-keys", this.next, Items.class);
         items.setContext(this.context);
-        URL mockHsmUrl = buildMockHsmUrl(this.context.getUrlWithBasicAuth());
-        for (Key k : items.list) {
-          k.hsmUrl = mockHsmUrl;
-        }
         return items;
       }
     }
@@ -131,20 +138,6 @@ public class MockHsm {
         items.setNext(query);
         return items.getPage();
       }
-    }
-  }
-
-  /**
-   * Creates a mock hsm url object given a Chain Core url.
-   * @param coreUrl the Chain Core url
-   * @return a mock hsm url object
-   * @throws BadURLException thrown if a MalformedURLException is thrown while building the URL object
-   */
-  private static URL buildMockHsmUrl(URL coreUrl) throws BadURLException {
-    try {
-      return new URL(coreUrl.toString() + "/mockhsm");
-    } catch (MalformedURLException e) {
-      throw new BadURLException(e.getMessage());
     }
   }
 }

@@ -95,7 +95,7 @@ public class QueryTest {
   public void testTransactionQuery() throws Exception {
     context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
     key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key);
+    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     String alice = "QueryTest.testTransactionQuery.alice";
     String asset = "QueryTest.testTransactionQuery.asset";
     String test = "QueryTest.testTransactionQuery.test";

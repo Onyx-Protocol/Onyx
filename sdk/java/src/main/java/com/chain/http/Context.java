@@ -2,7 +2,6 @@ package com.chain.http;
 
 import com.chain.exception.*;
 
-import java.io.*;
 import java.lang.reflect.Type;
 import java.net.*;
 import java.util.concurrent.TimeUnit;
@@ -143,17 +142,16 @@ public class Context {
         });
   }
 
-  public URL getUrlWithBasicAuth() throws BadURLException {
-    if (this.accessToken == null || this.accessToken.isEmpty()) {
-      return this.url;
-    }
-    try {
-      return new URL(
-          String.format(
-              "%s://%s@%s", this.url.getProtocol(), this.accessToken, this.url.getAuthority()));
-    } catch (MalformedURLException e) {
-      throw new BadURLException(e.getMessage());
-    }
+  public URL url() {
+    return this.url;
+  }
+
+  public boolean hasAccessToken() {
+    return this.accessToken != null && !this.accessToken.isEmpty();
+  }
+
+  public String getAccessToken() {
+    return accessToken;
   }
 
   public void setConnectTimeout(long timeout, TimeUnit unit) {
@@ -166,5 +164,27 @@ public class Context {
 
   public void setWriteTimeout(long timeout, TimeUnit unit) {
     this.httpClient.setWriteTimeout(timeout, unit);
+  }
+
+  private String identifier() {
+    if (this.hasAccessToken()) {
+      return String.format(
+          "%s://%s@%s", this.url.getProtocol(), this.accessToken, this.url.getAuthority());
+    }
+    return String.format("%s://%s", this.url.getProtocol(), this.url.getAuthority());
+  }
+
+  @Override
+  public int hashCode() {
+    return identifier().hashCode();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null) return false;
+    if (!(o instanceof Context)) return false;
+
+    Context other = (Context) o;
+    return this.identifier().equals(other.identifier());
   }
 }

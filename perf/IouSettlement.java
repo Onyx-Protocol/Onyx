@@ -106,28 +106,32 @@ public class IouSettlement {
     ExecutorService pool = Executors.newFixedThreadPool(2 * nthread);
     List<Callable<Integer>> x = new ArrayList<>();
     for (int b = 0; b < nbatches; b++) {
-      x.add(() -> {
-        acme.pay(zzzz, batchSize);
-        int v = processed.getAndAdd(batchSize) + batchSize;
-        if (v % 1000 == 0) {
-          long elapsed = Duration.between(start, Instant.now()).toMillis();
-          double tps = (double) v / elapsed * 1000.0;
-          System.out.printf("%d / %d (%d%%) %.2f tx/sec\n", v, ntxTotal, 100 * v / ntxTotal, tps);
-        }
-        return 1;
-      });
+      x.add(
+          () -> {
+            acme.pay(zzzz, batchSize);
+            int v = processed.getAndAdd(batchSize) + batchSize;
+            if (v % 1000 == 0) {
+              long elapsed = Duration.between(start, Instant.now()).toMillis();
+              double tps = (double) v / elapsed * 1000.0;
+              System.out.printf(
+                  "%d / %d (%d%%) %.2f tx/sec\n", v, ntxTotal, 100 * v / ntxTotal, tps);
+            }
+            return 1;
+          });
     }
     for (int b = 0; b < nbatches; b++) {
-      x.add(() -> {
-        zzzz.pay(acme, batchSize);
-        int v = processed.getAndAdd(batchSize) + batchSize;
-        if (v % 1000 == 0) {
-          long elapsed = Duration.between(start, Instant.now()).toMillis();
-          double tps = (double) v / elapsed * 1000.0;
-          System.out.printf("%d / %d (%d%%) %.2f tx/sec\n", v, ntxTotal, 100 * v / ntxTotal, tps);
-        }
-        return 1;
-      });
+      x.add(
+          () -> {
+            zzzz.pay(acme, batchSize);
+            int v = processed.getAndAdd(batchSize) + batchSize;
+            if (v % 1000 == 0) {
+              long elapsed = Duration.between(start, Instant.now()).toMillis();
+              double tps = (double) v / elapsed * 1000.0;
+              System.out.printf(
+                  "%d / %d (%d%%) %.2f tx/sec\n", v, ntxTotal, 100 * v / ntxTotal, tps);
+            }
+            return 1;
+          });
     }
 
     Instant tstart = Instant.now();
@@ -166,7 +170,7 @@ public class IouSettlement {
     Key.Items keys = new MockHsm.Key.QueryBuilder().execute(ctx);
     while (keys.hasNext()) {
       Key k = keys.next();
-      HsmSigner.addKey(k.xpub, k.hsmUrl);
+      HsmSigner.addKey(k.xpub, MockHsm.getSignerContext(ctx));
     }
   }
 }
@@ -187,29 +191,30 @@ class Bank {
   void pay(Corp corp, Corp payee, Integer times) throws Exception {
     List<Transaction.Builder> builders = new ArrayList<Transaction.Builder>();
     for (int i = 0; i < times; i++) {
-        builders.add(
+      builders.add(
           new Transaction.Builder()
-            .addAction(
-                new Transaction.Action.Issue()
-                    .setAssetId(this.asset.id)
-                    .setAmount(1)
-                    .setReferenceData(corp.ref()))
-            .addAction(new Transaction.Action.Issue().setAssetId(dealer.usd.id).setAmount(1))
-            .addAction(
-                new Transaction.Action.ControlWithAccount()
-                    .setAccountId(dealer.account.id)
-                    .setAssetId(this.asset.id)
-                    .setAmount(1))
-            .addAction(
-                new Transaction.Action.ControlWithAccount()
-                    .setAccountId(payee.bank.account.id)
-                    .setAssetId(this.dealer.usd.id)
-                    .setAmount(1)
-                    .setReferenceData(payee.ref())));
+              .addAction(
+                  new Transaction.Action.Issue()
+                      .setAssetId(this.asset.id)
+                      .setAmount(1)
+                      .setReferenceData(corp.ref()))
+              .addAction(new Transaction.Action.Issue().setAssetId(dealer.usd.id).setAmount(1))
+              .addAction(
+                  new Transaction.Action.ControlWithAccount()
+                      .setAccountId(dealer.account.id)
+                      .setAssetId(this.asset.id)
+                      .setAmount(1))
+              .addAction(
+                  new Transaction.Action.ControlWithAccount()
+                      .setAccountId(payee.bank.account.id)
+                      .setAssetId(this.dealer.usd.id)
+                      .setAmount(1)
+                      .setReferenceData(payee.ref())));
     }
     List<Transaction.Template> templates = Transaction.buildBatch(ctx, builders).successes();
     List<Transaction.Template> signedTemplates = HsmSigner.signBatch(templates).successes();
-    List<Transaction.SubmitResponse> txs = Transaction.submitBatch(ctx, signedTemplates).successes();
+    List<Transaction.SubmitResponse> txs =
+        Transaction.submitBatch(ctx, signedTemplates).successes();
   }
 }
 

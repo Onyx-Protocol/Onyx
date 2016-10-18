@@ -54,49 +54,49 @@ public class UtxoReservation {
     MockHsm.Key bobAccountKey = MockHsm.Key.create(ctx);
     loadKeys(ctx);
 
-    Asset currency = new Asset.Builder()
-        .setAlias("currency")
-        .addRootXpub(centralBankIssuerKey.xpub)
-        .setQuorum(1)
-        .create(ctx);
+    Asset currency =
+        new Asset.Builder()
+            .setAlias("currency")
+            .addRootXpub(centralBankIssuerKey.xpub)
+            .setQuorum(1)
+            .create(ctx);
 
-    Account alice = new Account.Builder()
-        .setAlias("alice")
-        .addRootXpub(aliceAccountKey.xpub)
-        .setQuorum(1)
-        .create(ctx);
+    Account alice =
+        new Account.Builder()
+            .setAlias("alice")
+            .addRootXpub(aliceAccountKey.xpub)
+            .setQuorum(1)
+            .create(ctx);
 
-    Account bob = new Account.Builder()
-        .setAlias("bob")
-        .addRootXpub(bobAccountKey.xpub)
-        .setQuorum(1)
-        .create(ctx);
-
+    Account bob =
+        new Account.Builder()
+            .setAlias("bob")
+            .addRootXpub(bobAccountKey.xpub)
+            .setQuorum(1)
+            .create(ctx);
 
     // Issue some currency to Alice & Bob at several amounts per utxos.
-    Transaction.Builder builder = new Transaction.Builder().
-        addAction(
-              new Transaction.Action.Issue()
-              .setAssetId(currency.id)
-              .setAmount(2 * totalPerAccount())
-        );
+    Transaction.Builder builder =
+        new Transaction.Builder()
+            .addAction(
+                new Transaction.Action.Issue()
+                    .setAssetId(currency.id)
+                    .setAmount(2 * totalPerAccount()));
 
     for (int i = 0; i < utxoDenominations; i++) {
       long denominationAmount = (long) Math.pow(10, i);
       for (int j = 0; j < utxosPerDenomination; j++) {
         builder
-          .addAction(
-              new Transaction.Action.ControlWithAccount()
-              .setAssetId(currency.id)
-              .setAmount(denominationAmount)
-              .setAccountId(alice.id)
-          )
-          .addAction(
-              new Transaction.Action.ControlWithAccount()
-              .setAssetId(currency.id)
-              .setAmount(denominationAmount)
-              .setAccountId(bob.id)
-          );
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAssetId(currency.id)
+                    .setAmount(denominationAmount)
+                    .setAccountId(alice.id))
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAssetId(currency.id)
+                    .setAmount(denominationAmount)
+                    .setAccountId(bob.id));
       }
     }
     Transaction.Template template = builder.build(ctx);
@@ -112,7 +112,7 @@ public class UtxoReservation {
 
     final int iterations = 600; // 10 minutes
     final int concurrentPayments = 80;
-    final int maxPerPayment = (int)totalPerAccount() / concurrentPayments;
+    final int maxPerPayment = (int) totalPerAccount() / concurrentPayments;
 
     Random r = new Random();
     ExecutorService pool = Executors.newFixedThreadPool(2 * concurrentPayments);
@@ -120,15 +120,17 @@ public class UtxoReservation {
     List<Callable<Integer>> x = new ArrayList<>();
     for (int i = 0; i < iterations; i++) {
       for (int j = 0; j < concurrentPayments; j++) {
-        long amount = (long) r.nextInt(maxPerPayment-1) + 1;
-        x.add(() -> {
-          pay(ctx, alice, bob, currency, amount);
-          return 1;
-        });
-        x.add(() -> {
-          pay(ctx, bob, alice, currency, amount);
-          return 1;
-        });
+        long amount = (long) r.nextInt(maxPerPayment - 1) + 1;
+        x.add(
+            () -> {
+              pay(ctx, alice, bob, currency, amount);
+              return 1;
+            });
+        x.add(
+            () -> {
+              pay(ctx, bob, alice, currency, amount);
+              return 1;
+            });
       }
     }
 
@@ -146,30 +148,28 @@ public class UtxoReservation {
     stats.close();
   }
 
-  static void pay(Context ctx, Account from, Account to, Asset asset, long amount) throws Exception {
-    Transaction.Builder builder = new Transaction.Builder()
-      .addAction(
-          new Transaction.Action.SpendFromAccount()
-          .setAssetId(asset.id)
-          .setAmount(amount)
-          .setAccountId(from.id)
-      )
-      .addAction(
-          new Transaction.Action.ControlWithAccount()
-          .setAssetId(asset.id)
-          .setAmount(amount)
-          .setAccountId(to.id)
-      );
+  static void pay(Context ctx, Account from, Account to, Asset asset, long amount)
+      throws Exception {
+    Transaction.Builder builder =
+        new Transaction.Builder()
+            .addAction(
+                new Transaction.Action.SpendFromAccount()
+                    .setAssetId(asset.id)
+                    .setAmount(amount)
+                    .setAccountId(from.id))
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAssetId(asset.id)
+                    .setAmount(amount)
+                    .setAccountId(to.id));
     Transaction.Template template = builder.build(ctx);
     Transaction.Template signedTemplate = HsmSigner.sign(template);
     Transaction.SubmitResponse tx = Transaction.submit(ctx, signedTemplate);
   }
 
   static Asset getAsset(Context ctx, String alias) throws Exception {
-    Asset.Items assets = new Asset.QueryBuilder()
-        .setFilter("alias = $1")
-        .addFilterParameter(alias)
-        .execute(ctx);
+    Asset.Items assets =
+        new Asset.QueryBuilder().setFilter("alias = $1").addFilterParameter(alias).execute(ctx);
 
     if (assets.list.size() != 1) {
       throw new Exception(String.format("missing asset: %s", alias));
@@ -178,10 +178,8 @@ public class UtxoReservation {
   }
 
   static Account getAccount(Context ctx, String alias) throws Exception {
-    Account.Items accounts = new Account.QueryBuilder()
-        .setFilter("alias = $1")
-        .addFilterParameter(alias)
-        .execute(ctx);
+    Account.Items accounts =
+        new Account.QueryBuilder().setFilter("alias = $1").addFilterParameter(alias).execute(ctx);
     if (accounts.list.size() != 1) {
       throw new Exception(String.format("missing account: %s", alias));
     }
@@ -192,7 +190,7 @@ public class UtxoReservation {
     Key.Items keys = new MockHsm.Key.QueryBuilder().execute(ctx);
     while (keys.hasNext()) {
       Key k = keys.next();
-      HsmSigner.addKey(k.xpub, k.hsmUrl);
+      HsmSigner.addKey(k.xpub, MockHsm.getSignerContext(ctx));
     }
   }
 }

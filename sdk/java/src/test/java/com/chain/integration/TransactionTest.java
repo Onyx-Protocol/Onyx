@@ -36,7 +36,7 @@ public class TransactionTest {
   public void testBasicTransaction() throws Exception {
     context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
     key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key);
+    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     String alice = "TransactionTest.testBasicTransaction.alice";
     String bob = "TransactionTest.testBasicTransaction.bob";
     String asset = "TransactionTest.testBasicTransaction.asset";
@@ -110,9 +110,9 @@ public class TransactionTest {
     key = MockHsm.Key.create(context);
     key2 = MockHsm.Key.create(context);
     key3 = MockHsm.Key.create(context);
-    HsmSigner.addKey(key);
-    HsmSigner.addKey(key2);
-    HsmSigner.addKey(key3);
+    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+    HsmSigner.addKey(key2, MockHsm.getSignerContext(context));
+    HsmSigner.addKey(key3, MockHsm.getSignerContext(context));
     String alice = "TransactionTest.testMultiSigTransaction.alice";
     String bob = "TransactionTest.testMultiSigTransaction.bob";
     String asset = "TransactionTest.testMultiSigTransaction.asset";
@@ -180,7 +180,7 @@ public class TransactionTest {
   public void testBatchTransaction() throws Exception {
     context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
     key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key);
+    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     String alice = "TransactionTest.testBatchTransaction.alice";
     String bob = "TransactionTest.testBatchTransaction.bob";
     String asset = "TransactionTest.testBatchTransaction.asset";
@@ -239,7 +239,7 @@ public class TransactionTest {
   public void testAtomicSwap() throws Exception {
     context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
     key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key);
+    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     String alice = "TransactionTest.testAtomicSwap.alice";
     String bob = "TransactionTest.testAtomicSwap.bob";
     String gold = "TransactionTest.testAtomicSwap.gold";
