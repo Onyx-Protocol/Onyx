@@ -6,7 +6,10 @@ The chain bundler is capable of building multiple .msi's and .exe's into a singl
 
 First, build the chain core msi. To do this, from inside of `installer/windows` run: 
 
-`candle -ext WixHttpExtension -ext WixUtilExtension ChainPackage/ChainCoreInstaller.wxs`
+```
+cd ChainPackage
+candle -ext WixHttpExtension -ext WixUtilExtension ChainCoreInstaller.wxs`
+```
 
 This generates `ChainPackage/ChainCoreInstaller.wixobj`
 
@@ -19,7 +22,8 @@ to generate `ChainPackage/ChainCoreInstaller.msi`.
 Next, build the Chain Bundle. Run 
 
 ```
-candle ChainBundle/Bundle.wxs \
+cd ../ChainBundle
+candle Bundle.wxs \
   -ext WixBalExtension \
   -dChainPackage.TargetPath='Z:\chain\installer\windows\ChainPackage\ChainCoreInstaller.msi' \
   -dPostgresPackage.TargetPath='Z:\chain\installer\windows\Postgres\postgresql-9.5.4-2-windows-x64.exe'
@@ -28,6 +32,6 @@ candle ChainBundle/Bundle.wxs \
 
 This generates `ChainBundle/Bundle.wixobj`. Next, run
 
-`light ChainBundle/Bundle.wixobj -ext WixBalExtension`
+`light Bundle.wixobj -ext WixBalExtension`
 
 This generates Bundle.exe in your current working directory. Clicking on Bundle.exe will install Chain Core as an application on your PC. 
