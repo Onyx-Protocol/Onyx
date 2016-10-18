@@ -55,15 +55,13 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 		height = prevBlock.Height
 	}
 
-	dctx, dcancel := context.WithCancel(ctx)
-	blockch, errch := downloadBlocks(dctx, peer, height+1)
+	blockch, errch := downloadBlocks(ctx, peer, height+1)
 
 	var nfailures uint
 	for {
 		select {
 		case <-ctx.Done():
 			log.Messagef(ctx, "Deposed, Fetch exiting")
-			dcancel()
 			return
 		case err := <-errch:
 			health(err)
