@@ -103,8 +103,6 @@ class Index extends React.Component {
                 </p>
               </div>
             </label>
-
-            {this.showNewFields() && configSubmit}
           </div>
 
           <div className={styles.choice_wrapper}>
@@ -122,8 +120,33 @@ class Index extends React.Component {
                   </p>
               </div>
             </label>
+          </div>
 
-            {this.showJoinFields() && <div>
+          <div className={styles.choice_wrapper}>
+            <label>
+              <input className={styles.choice_radio_button}
+                    type='radio'
+                    {...typeProps}
+                    value='testnet' />
+              <div className={styles.choice}>
+                <InlineSVG src={require('!svg-inline!assets/images/config/join-existing.svg')} />
+                  <span className={styles.choice_title}>Join the Chain Testnet</span>
+
+                  <p>
+                    Connect this Chain Core to the Chain Testnet. Reset weekly.
+                  </p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div className={styles.choices}>
+          <div className={styles.choice_wrapper}>
+            {this.showNewFields() && configSubmit}
+          </div>
+
+          <div className={styles.choice_wrapper}>
+            {this.showJoinFields() && <div className={styles.joinFields}>
               <TextField
                 title='Block Generator URL'
                 placeholder='https://<block-generator-host>'
@@ -142,21 +165,6 @@ class Index extends React.Component {
           </div>
 
           <div className={styles.choice_wrapper}>
-            <label>
-              <input className={styles.choice_radio_button}
-                    type='radio'
-                    {...typeProps}
-                    value='testnet' />
-              <div className={styles.choice}>
-                <InlineSVG src={require('!svg-inline!assets/images/config/join-existing.svg')} />
-                  <span className={styles.choice_title}>Join the Chain Testnet</span>
-
-                  <p>
-                    Connect this Chain Core to the Chain Testnet. Reset weekly.
-                  </p>
-              </div>
-            </label>
-
             {this.showTestNetFields() && configSubmit}
           </div>
         </div>

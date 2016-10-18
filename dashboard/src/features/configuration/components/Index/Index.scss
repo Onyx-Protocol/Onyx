@@ -13,16 +13,17 @@
 
 .choices {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
 }
 
 .choice_wrapper {
   width: 32%;
+  display: flex;
 
   > label {
     display: block;
     font-weight: normal;
-    margin-bottom: $grid-gutter-width;
   }
 }
 
@@ -35,6 +36,7 @@
   border: 1px solid $table-border-color;
   border-radius: $border-radius-base;
   cursor: pointer;
+  height: 100%;
   padding: $grid-gutter-width;
   text-align: center;
 
@@ -53,10 +55,6 @@
     display: block;
     font-size: 18px;
     margin: 12px 0;
-  }
-
-  p {
-
   }
 }
 
@@ -80,12 +78,13 @@ input[type=radio]:checked ~ .choice {
   }
 }
 
-.join_fields {
-  padding-bottom: 1em;
+.joinFields {
+  margin-top: $gutter-size;
+  width: 100%;
 }
 
 .submit {
   display: block;
-  margin-top: 30px;
   width: 100%;
+  margin-top: $gutter-size;
 }
