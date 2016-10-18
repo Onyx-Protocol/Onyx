@@ -50,47 +50,83 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 	// Fetch the generator height periodically.
 	go pollGeneratorHeight(ctx, peer)
 
-	var ntimeouts uint // for backoff
-	var nfailures uint // for backoff
+	var height uint64
+	if prevBlock != nil {
+		height = prevBlock.Height
+	}
+
+	dctx, dcancel := context.WithCancel(ctx)
+	blockch, errch := downloadBlocks(dctx, peer, height+1)
+
+	var nfailures uint
 	for {
 		select {
 		case <-ctx.Done():
 			log.Messagef(ctx, "Deposed, Fetch exiting")
+			dcancel()
 			return
-		default:
-			var height uint64
-			if prevBlock != nil {
-				height = prevBlock.Height
+		case err := <-errch:
+			health(err)
+			log.Error(ctx, err)
+		case b := <-blockch:
+			for {
+				prevSnapshot, prevBlock, err = applyBlock(ctx, c, prevSnapshot, prevBlock, b)
+				if err == protocol.ErrBadBlock {
+					log.Fatal(ctx, log.KeyError, err)
+				} else if err != nil {
+					// This is a serious I/O error.
+					health(err)
+					log.Error(ctx, err)
+					nfailures++
+
+					time.Sleep(backoffDur(nfailures))
+					continue
+				}
+				break
 			}
 
-			block, err := getBlock(ctx, peer, height+1, timeoutBackoffDur(ntimeouts))
-			if err != nil {
-				health(err)
-				log.Error(ctx, err)
-				nfailures++
-				time.Sleep(backoffDur(nfailures))
-				continue
-			}
-			if block == nil {
-				// Request time out. There might not have been any blocks published,
-				// or there was a network error or it just took too long to process the
-				// request.
-				ntimeouts++
-				continue
-			}
-
-			prevSnapshot, prevBlock, err = applyBlock(ctx, c, prevSnapshot, prevBlock, block)
-			if err != nil {
-				health(err)
-				log.Error(ctx, err)
-				nfailures++
-				time.Sleep(backoffDur(nfailures))
-				continue
-			}
+			height++
 			health(nil)
-			nfailures, ntimeouts = 0, 0
+			nfailures = 0
 		}
 	}
+}
+
+func downloadBlocks(ctx context.Context, peer *rpc.Client, height uint64) (chan *bc.Block, chan error) {
+	blockch := make(chan *bc.Block)
+	errch := make(chan error)
+	go func() {
+		var nfailures uint // for backoff
+		var ntimeouts uint // for backoff
+		for {
+			select {
+			case <-ctx.Done():
+				close(blockch)
+				close(errch)
+				return
+			default:
+				block, err := getBlock(ctx, peer, height, timeoutBackoffDur(ntimeouts))
+				if err != nil {
+					errch <- err
+					nfailures++
+					time.Sleep(backoffDur(nfailures))
+					continue
+				}
+				if block == nil {
+					// Request time out. There might not have been any blocks published,
+					// or there was a network error or it just took too long to process the
+					// request.
+					ntimeouts++
+					continue
+				}
+
+				blockch <- block
+				ntimeouts, nfailures = 0, 0
+				height++
+			}
+		}
+	}()
+	return blockch, errch
 }
 
 func pollGeneratorHeight(ctx context.Context, peer *rpc.Client) {
