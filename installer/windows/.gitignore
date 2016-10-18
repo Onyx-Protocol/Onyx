@@ -1,6 +1,8 @@
 *.msi
 *.exe
 *.wixobj
+*.wixpdb
+*.cab
 ChainBundle/bin/
 ChainBundle/obj/
 ChainPackage/bin/

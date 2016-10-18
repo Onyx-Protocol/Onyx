@@ -42,6 +42,7 @@ const (
 )
 
 func main() {
+	log.Println("Please wait while we check Postgres...")
 	// Set up logging
 	// TODO(tessr): better temp file
 	f, err := os.OpenFile(`C:/Program Files (x86)/Chain/install.log`, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -110,8 +111,8 @@ func main() {
 	env := []string{`DATABASE_URL=postgres://localhost:1998/core?sslmode=disable`}
 	cmd = exec.Command(chainCoreExe)
 	cmd.Env = mergeEnvLists(os.Environ(), env)
-	cmd.Stdout = f
-	cmd.Stderr = f
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	log.Println(cmd.Env)
 	err = cmd.Start()
 	if err != nil {
@@ -128,7 +129,7 @@ func rewriteConfig() error {
 	}
 	defer f.Close()
 
-	_, err = f.WriteString("listen_addresses = '*'    # what IP address(es) to listen on;")
+	_, err = f.WriteString("listen_addresses = '*'    # what IP address(es) to listen on;\n")
 	if err != nil {
 		return errors.New("could not write listen addresses: " + err.Error())
 	}
