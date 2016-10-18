@@ -25,7 +25,7 @@ func TestWriteHTTPError(t *testing.T) {
 
 	for _, test := range cases {
 		resp := httptest.NewRecorder()
-		writeHTTPError(context.Background(), resp, test.err)
+		WriteHTTPError(context.Background(), resp, test.err)
 		got := strings.TrimSpace(resp.Body.String())
 		if got != test.json {
 			t.Errorf("writeHTTPError(%#v) wrote %s want %s", test.err, got, test.json)

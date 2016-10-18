@@ -55,7 +55,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 		height = prevBlock.Height
 	}
 
-	blockch, errch := downloadBlocks(ctx, peer, height+1)
+	blockch, errch := DownloadBlocks(ctx, peer, height+1)
 
 	var nfailures uint
 	for {
@@ -63,7 +63,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 		case <-ctx.Done():
 			log.Messagef(ctx, "Deposed, Fetch exiting")
 			return
-		case err := <-errch:
+		case err = <-errch:
 			health(err)
 			log.Error(ctx, err)
 		case b := <-blockch:
@@ -90,7 +90,14 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 	}
 }
 
-func downloadBlocks(ctx context.Context, peer *rpc.Client, height uint64) (chan *bc.Block, chan error) {
+// DownloadBlocks starts a goroutine to download blocks from
+// the given peer, starting at the given height and incrementing from there.
+// It will re-attempt downloads for the next block in the network
+// until it is available. It returns two channels, one for reading blocks
+// and the other for reading errors. Progress will halt unless callers are
+// reading from both. DownloadBlocks will continue even if it encounters errors,
+// until its context is done.
+func DownloadBlocks(ctx context.Context, peer *rpc.Client, height uint64) (chan *bc.Block, chan error) {
 	blockch := make(chan *bc.Block)
 	errch := make(chan error)
 	go func() {

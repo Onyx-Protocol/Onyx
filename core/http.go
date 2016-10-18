@@ -14,14 +14,17 @@ import (
 var errBadReqHeader = errors.New("bad request header")
 
 func jsonHandler(f interface{}) http.Handler {
-	h, err := httpjson.Handler(f, writeHTTPError)
+	h, err := httpjson.Handler(f, WriteHTTPError)
 	if err != nil {
 		panic(err)
 	}
 	return h
 }
 
-func writeHTTPError(ctx context.Context, w http.ResponseWriter, err error) {
+// WriteHTTPError writes a json encoded detailedError
+// to the ResponseWriter. It uses the status code
+// associated with the error.
+func WriteHTTPError(ctx context.Context, w http.ResponseWriter, err error) {
 	logHTTPError(ctx, err)
 	body, info := errInfo(err)
 	httpjson.Write(ctx, w, info.HTTPStatus, body)

@@ -91,6 +91,7 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 	req.Header.Add("Request-ID", reqid.FromContext(ctx))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", c.userAgent())
+	req.Header.Set(HeaderBlockchainID, c.BlockchainID)
 
 	// Propagate our deadline if we have one.
 	deadline, ok := ctx.Deadline()
