@@ -8,9 +8,7 @@ import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
 import com.chain.http.*;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
 import java.util.*;
 
 /**
@@ -297,10 +295,7 @@ public class Asset {
      * @return updated builder object
      */
     public Builder setRootXpubs(List<String> xpubs) {
-      this.rootXpubs = new ArrayList<>();
-      for (String xpub : xpubs) {
-        this.rootXpubs.add(xpub);
-      }
+      this.rootXpubs = new ArrayList<>(xpubs);
       return this;
     }
   }

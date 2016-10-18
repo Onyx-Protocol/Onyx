@@ -1,7 +1,5 @@
 package com.chain.api;
 
-import com.google.gson.annotations.SerializedName;
-
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
 
@@ -32,10 +30,7 @@ public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
   }
 
   public T setFilterParameters(ArrayList<String> params) {
-    this.next.filterParams = new ArrayList<>();
-    for (String p : params) {
-      this.next.filterParams.add(p);
-    }
+    this.next.filterParams = new ArrayList<>(params);
     return (T) this;
   }
 }

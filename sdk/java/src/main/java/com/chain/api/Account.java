@@ -217,10 +217,7 @@ public class Account {
      * @return updated builder object
      */
     public Builder setRootXpubs(List<String> xpubs) {
-      this.rootXpubs = new ArrayList<>();
-      for (String xpub : xpubs) {
-        this.rootXpubs.add(xpub);
-      }
+      this.rootXpubs = new ArrayList<>(xpubs);
       return this;
     }
 

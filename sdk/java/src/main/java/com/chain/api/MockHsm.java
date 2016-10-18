@@ -10,6 +10,7 @@ import com.chain.http.Context;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,7 +114,7 @@ public class MockHsm {
       }
 
       public QueryBuilder setAliases(List<String> aliases) {
-        query.aliases = aliases;
+        query.aliases = new ArrayList<>(aliases);
         return this;
       }
 
