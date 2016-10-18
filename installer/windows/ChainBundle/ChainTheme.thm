@@ -2,11 +2,11 @@
 <Theme xmlns="http://wixtoolset.org/schemas/thmutil/2010">
   <Window Width="485" Height="300" HexStyle="100a0000" FontId="0">#(loc.Caption)</Window>
   <Font Id="0" Height="-12" Weight="500" Foreground="000000" Background="FFFFFF">Segoe UI</Font>
-  <Font Id="1" Height="-24" Weight="500" Foreground="000000" Background="825822">Segoe UI</Font>
+  <Font Id="1" Height="-24" Weight="500" Foreground="000000" Background="000000">Segoe UI</Font>
   <Font Id="2" Height="-22" Weight="500" Foreground="666666">Segoe UI</Font>
   <Font Id="3" Height="-12" Weight="500" Foreground="000000" Background="FFFFFF">Segoe UI</Font>
-  <Font Id="4" Height="-24" Weight="500" Foreground="000000" Background="7FA504">Segoe UI</Font>
-  <Font Id="5" Height="-24" Weight="500" Foreground="000000" Background="637EF2">Segoe UI</Font>
+  <Font Id="4" Height="-24" Weight="500" Foreground="000000" Background="000000">Segoe UI</Font>
+  <Font Id="5" Height="-24" Weight="500" Foreground="000000" Background="000000">Segoe UI</Font>
 
   <Page Name="Help">
     <Text X="0" Y="0" Width="485" Height="75" FontId="1" />
@@ -19,9 +19,6 @@
   <Page Name="Install">
     <Text X="0" Y="0" Width="485" Height="75" FontId="1" />
     <Image X="11" Y="11" Width="201" Height="60" ImageFile="logo.png" Visible="yes"/>
-
-    <Hypertext Name="EulaHyperlink" X="11" Y="121" Width="-11" Height="51" TabStop="yes" FontId="3" HideWhenDisabled="yes">#(loc.InstallLicenseLinkText)</Hypertext>
-    <Checkbox Name="EulaAcceptCheckbox" X="-11" Y="-41" Width="260" Height="17" TabStop="yes" FontId="3" HideWhenDisabled="yes">#(loc.InstallAcceptCheckbox)</Checkbox>
     <Button Name="OptionsButton" X="-171" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0" HideWhenDisabled="yes">#(loc.InstallOptionsButton)</Button>
     <Button Name="InstallButton" X="-91" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.InstallInstallButton)</Button>
     <Button Name="WelcomeCancelButton" X="-11" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.InstallCloseButton)</Button>

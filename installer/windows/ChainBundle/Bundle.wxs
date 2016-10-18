@@ -6,7 +6,8 @@
           DisableModify="button">
 
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkLicense">
-      <bal:WixStandardBootstrapperApplication LicenseUrl="http://chain.com/" 
+      <bal:WixStandardBootstrapperApplication SuppressOptionsUI="yes"
+                                              LicenseUrl="http://chain.com/"
                                               ThemeFile="ChainTheme.thm"
                                               LocalizationFile="ChainTheme.wxl"
                                               LogoFile="logo.png" />
@@ -21,8 +22,8 @@
     <Variable Name="PgInstallFolder" bal:Overridable="yes" Type="string" Value="[InstallFolder]Postgres" />
 
     <Chain>
-      <ExePackage 
-      	SourceFile="$(var.PostgresPackage.TargetPath)" 
+      <ExePackage
+      	SourceFile="$(var.PostgresPackage.TargetPath)"
 	InstallCommand="--mode unattended --prefix &quot;[PgInstallFolder]&quot; --extract-only 1"
 	InstallCondition="OptionInstallPostgres" />
       <MsiPackage Id="ChainPackage" SourceFile="$(var.ChainPackage.TargetPath)">
