@@ -21,7 +21,17 @@ class Client {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'User-Agent': 'chain-sdk-js/0.0'
+
+        // TODO(jeffomatic): The Fetch API has inconsistent behavior between
+        // browser implementations and polyfills.
+        //
+        // - For Edge: we can't use the browser's fetch API because it doesn't
+        // always returns a WWW-Authenticate challenge to 401s.
+        // - For Safari/Chrome: using fetch-ponyfill (the polyfill) causes
+        // console warnings if the user agent string is provided.
+        //
+        // For now, let's not send the UA string.
+        //'User-Agent': 'chain-sdk-js/0.0'
       },
       body: JSON.stringify(body)
     }
