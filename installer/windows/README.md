@@ -34,6 +34,7 @@ Next, build the Chain Bundle. Run
 ```
 cd ../ChainBundle
 candle Bundle.wxs \
+  -arch x64 \
   -ext WixBalExtension \
   -dChainPackage.TargetPath='Z:\chain\installer\windows\ChainPackage\ChainCoreInstaller.msi' \
   -dPostgresPackage.TargetPath='Z:\chain\installer\windows\Postgres\postgresql-9.5.4-2-windows-x64.exe' \

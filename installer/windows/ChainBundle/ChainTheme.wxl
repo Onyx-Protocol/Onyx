@@ -48,7 +48,7 @@
   <String Id="FailureInstallHeader">Setup Failed</String>
   <String Id="FailureUninstallHeader">Uninstall Failed</String>
   <String Id="FailureRepairHeader">Repair Failed</String>
-  <String Id="FailureHyperlinkLogText">One or more issues caused the setup to fail. Please fix the issues and then retry setup. For more information see the &lt;a href="#"&gt;log file&lt;/a&gt;.</String>
+  <String Id="FailureHyperlinkLogText">One or more issues caused the setup to fail. We support 64-bit Windows 7-10. For more information see the &lt;a href="#"&gt;log file&lt;/a&gt;.</String>
   <String Id="FailureRestartText">You must restart your computer to complete the rollback of the software.</String>
   <String Id="FailureRestartButton">&amp;Restart</String>
   <String Id="FailureCloseButton">&amp;Close</String>
