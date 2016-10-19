@@ -73,3 +73,28 @@ which will return the following:
     }
 ]
 ```
+
+## List transactions
+
+The `Transaction.QueryBuilder` retrieves transactions from the blockchain. By default, it returns a paginated list of all transactions, ordered from latest to earliest timestamp. Custom queries can be achieved using the following methods:
+
+| Method             | Description                                                        |
+|--------------------|--------------------------------------------------------------------|
+| setStartTime       | Sets the latest transaction timestamp to include in results.       |
+| setEndTime         | Sets the earliest transaction timestamp to include in results.     |
+| setFilter          | Sets a filter on the results.                                      |
+| addFilterParameter | Defines a value for the first undefined placeholder in the filter. |
+
+### Filters
+
+The `setFilter` method allows filtering `Transaction.QueryBuilder` results by any field in the [transaction object](../reference/api-objects#transaction). For more information, see [Query Filters](../building-applications/query-filters).
+
+### Examples
+
+List all transactions involving Alice's account:
+
+$code ../examples/java/QueryFilters.java list-alice-transactions
+
+List all transactions involving the Core:
+
+$code ../examples/java/QueryFilters.java list-local-transactions

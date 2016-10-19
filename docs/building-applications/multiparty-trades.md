@@ -6,7 +6,7 @@
 - **Multi-asset**: Multiple assets can be traded and issued in the same transaction. The assets may originate from any core.
 - **Risk-free**: Within a single transaction, each party can declare exactly what they will pay, and what they expect to receive. The transaction will be rejected by the blockchain unless it is signed by all parties, and unless its incoming and outgoing assets balance each other.
 
-Please make sure you've read [Transaction Basics](../building-applications/transactions) before continuing.
+Please make sure you've read [Transaction Basics](../building-applications/transaction-basics) before continuing.
 
 ## Example: Trading within the same core and application
 
