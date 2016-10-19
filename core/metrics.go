@@ -15,8 +15,8 @@ var (
 
 	latencyExpvar = expvar.NewMap("latency")
 	latencyRange  = map[string]time.Duration{
-		networkRPCPrefix + "get-block":         5 * time.Second,
-		networkRPCPrefix + "get-blocks":        5 * time.Second,
+		networkRPCPrefix + "get-block":         20 * time.Second,
+		networkRPCPrefix + "get-blocks":        20 * time.Second,
 		networkRPCPrefix + "signer/sign-block": 5 * time.Second,
 		networkRPCPrefix + "get-snapshot":      30 * time.Second,
 		// the rest have a default range
