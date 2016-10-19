@@ -8,14 +8,14 @@ First, build the chain core msi. To do this, from inside of `installer/windows` 
 
 ```
 cd ChainPackage
-candle -ext WixHttpExtension -ext WixUtilExtension ChainCoreInstaller.wxs`
+candle -ext WixHttpExtension -ext WixUtilExtension ChainCoreInstaller.wxs
 ```
 
 This generates `ChainPackage/ChainCoreInstaller.wixobj`
 
 Next, run 
 
-`light -ext WixHttpExtension -ext WixUtilExtension ChainPackage/ChainCoreInstaller.wixobj`
+`light -ext WixHttpExtension -ext WixUtilExtension ChainCoreInstaller.wixobj`
 
 to generate `ChainPackage/ChainCoreInstaller.msi`. 
 
