@@ -12,6 +12,15 @@ const coreConfigReducer = (key, state, defaultState, action) => {
   return state || defaultState
 }
 
+export const configurationKnown = (state = false, action) => {
+  if (action.type == 'UPDATE_CORE_INFO') {
+    return true
+  } else if (action.type == 'ERROR' && action.payload.status == 401) {
+    return false
+  }
+  return state
+}
+
 export const configured = (state, action) =>
   coreConfigReducer('is_configured', state, false, action)
 export const configuredAt = (state, action) => {
@@ -150,6 +159,7 @@ export default combineReducers({
   clientToken,
   configured,
   configuredAt,
+  configurationKnown,
   coreType,
   generator,
   generatorAccessToken,

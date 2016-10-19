@@ -16,7 +16,11 @@ class Container extends React.Component {
     this.redirectRoot = this.redirectRoot.bind(this)
   }
 
-  redirectRoot(configured, location) {
+  redirectRoot(configurationKnown, configured, location) {
+    if (!configurationKnown) {
+      return
+    }
+
     if (configured) {
       if (location.pathname === '/' ||
           location.pathname.indexOf('configuration') >= 0) {
@@ -35,16 +39,17 @@ class Container extends React.Component {
 
     checkInfo().then(() => {
       this.setState({loadedInfo: true})
-      this.redirectRoot(this.props.configured, this.props.location)
+      this.redirectRoot(this.props.configurationKnown, this.props.configured, this.props.location)
     })
 
     setInterval(checkInfo, CORE_POLLING_TIME)
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.configured != this.props.configured ||
+    if (nextProps.configurationKnown != this.props.configurationKnown ||
+        nextProps.configured != this.props.configured ||
         nextProps.location.pathname != this.props.location.pathname) {
-      this.redirectRoot(nextProps.configured, nextProps.location)
+      this.redirectRoot(nextProps.configurationKnown, nextProps.configured, nextProps.location)
     }
   }
 
@@ -67,6 +72,7 @@ class Container extends React.Component {
 
 export default connect(
   (state) => ({
+    configurationKnown: state.core.configurationKnown,
     configured: state.core.configured,
     buildCommit: state.core.buildCommit,
     buildDate: state.core.buildDate,
