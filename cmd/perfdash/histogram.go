@@ -80,10 +80,12 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 		hists   []*hdrhistogram.Histogram
 		trueMax time.Duration
 		over    int
+		total   int64
 	)
 	for _, b := range latency.Buckets {
 		hists = append(hists, hdrhistogram.Import(&b.Histogram))
 		over += b.Over
+		total += int64(b.Over)
 		if d := time.Duration(b.Max); d > trueMax {
 			trueMax = d
 		}
@@ -94,11 +96,11 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 		if v := hist.Max(); v > max {
 			max = v
 		}
+		total += hist.TotalCount()
 	}
 
-	if max == 0 {
-		drawf(d, 4, 20, "no histogram data")
-	} else {
+	histMax := "no histogram data"
+	if max > 0 {
 		max += max / 10
 		max = roundms(max)
 		if max < int64(10*time.Millisecond) {
@@ -111,11 +113,12 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 		}
 		// special color for incomplete bucket
 		graph(img, hists[len(hists)-1], max, curLineColor)
-		drawf(d, 4, 20, "%v", time.Duration(max))
+		label(img, labelColor)
+		histMax = time.Duration(max).String()
 	}
+	drawf(d, 4, 20, "%s (%v max)", histMax, trueMax)
 	drawf(d, 4, 38, "%s", name)
-	drawf(d, 4, 54, "over: %d   max: %v", over, trueMax)
-	label(img, labelColor)
+	drawf(d, 4, 54, "%d events (%d over)", total, over)
 	png.Encode(w, img)
 }
 
