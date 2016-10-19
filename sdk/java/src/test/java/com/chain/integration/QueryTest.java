@@ -38,7 +38,7 @@ public class QueryTest {
   }
 
   public void testKeyQuery() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     for (int i = 0; i < 10; i++) {
       MockHsm.Key.create(context, String.format("%d", i));
     }
@@ -52,7 +52,7 @@ public class QueryTest {
   }
 
   public void testAccountQuery() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     String alice = "QueryTest.testAccountQuery.alice";
     new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(context);
@@ -63,7 +63,7 @@ public class QueryTest {
   }
 
   public void testAssetQuery() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     String asset = "QueryTest.testAssetQuery.alice";
     new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(context);
@@ -74,7 +74,7 @@ public class QueryTest {
   }
 
   public void testAssetPagination() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     String tag = "QueryTest.testAssetPagination.tag";
     for (int i = 0; i < PAGE_SIZE + 1; i++) {
@@ -93,7 +93,7 @@ public class QueryTest {
   }
 
   public void testTransactionQuery() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     String alice = "QueryTest.testTransactionQuery.alice";
@@ -171,7 +171,7 @@ public class QueryTest {
   }
 
   public void testBalanceQuery() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     String asset = "QueryTest.testBalanceQuery.asset";
@@ -220,7 +220,7 @@ public class QueryTest {
   }
 
   public void testUnspentOutputQuery() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     String asset = "QueryTest.testUnspentOutputQuery.asset";
@@ -273,7 +273,7 @@ public class QueryTest {
   // method and for pagination, testing pagination for one
   // api object is sufficient for exercising the code path.
   public void testPagination() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     String tag = "QueryTest.testPagination.tag";
     for (int i = 0; i < PAGE_SIZE + 1; i++) {

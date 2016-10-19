@@ -36,7 +36,7 @@ public class CreateTest {
   }
 
   public void testKeyCreate() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     String alias = "CreateTest.testKeyCreate.alias";
     key = MockHsm.Key.create(context, alias);
     assertNotNull(key.xpub);
@@ -51,7 +51,7 @@ public class CreateTest {
   }
 
   public void testAccountCreate() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     String alice = "CreateTest.testAccountCreate.alice";
     Account account =
@@ -85,7 +85,7 @@ public class CreateTest {
   }
 
   public void testAccountCreateBatch() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     String alice = "CreateTest.testAccountCreateBatch.alice";
     Account.Builder builder =
@@ -100,7 +100,7 @@ public class CreateTest {
   }
 
   public void testAssetCreate() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     String asset = "CreateTest.testAssetCreate.asset";
     String test = "CreateTest.testAssetCreate.test";
@@ -145,7 +145,7 @@ public class CreateTest {
   }
 
   public void testAssetCreateBatch() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     String asset = "CreateTest.testAssetCreateBatch.asset";
     Asset.Builder builder = new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1);
@@ -158,7 +158,7 @@ public class CreateTest {
   }
 
   public void testControlProgramCreate() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     String alice = "CreateTest.testControlProgramCreate.alice";
     Account account =
@@ -185,7 +185,7 @@ public class CreateTest {
   }
 
   public void testControlProgramCreateBatch() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     String alice = "CreateTest.testControlProgramCreateBatch.alice";
     Account account =
@@ -208,7 +208,7 @@ public class CreateTest {
   }
 
   public void testTransactionFeedCreate() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     String alias = "CreateTest.testFeedCreate.feed";
     String filter = "outputs(account_alias='alice')";
     Transaction.Feed feed = Transaction.Feed.create(context, alias, filter);

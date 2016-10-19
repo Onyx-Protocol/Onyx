@@ -34,7 +34,7 @@ public class TransactionTest {
   }
 
   public void testBasicTransaction() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     String alice = "TransactionTest.testBasicTransaction.alice";
@@ -106,7 +106,7 @@ public class TransactionTest {
   }
 
   public void testMultiSigTransaction() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     key2 = MockHsm.Key.create(context);
     key3 = MockHsm.Key.create(context);
@@ -178,7 +178,7 @@ public class TransactionTest {
   }
 
   public void testBatchTransaction() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     String alice = "TransactionTest.testBatchTransaction.alice";
@@ -237,7 +237,7 @@ public class TransactionTest {
   }
 
   public void testAtomicSwap() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     key = MockHsm.Key.create(context);
     HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     String alice = "TransactionTest.testAtomicSwap.alice";

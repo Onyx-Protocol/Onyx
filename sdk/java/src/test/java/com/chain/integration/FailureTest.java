@@ -39,7 +39,7 @@ public class FailureTest {
   }
 
   public void testCreateAccount() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     try {
       new Account.Builder().create(context);
     } catch (APIException e) {
@@ -49,7 +49,7 @@ public class FailureTest {
   }
 
   public void testCreateAsset() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     try {
       new Asset.Builder().create(context);
     } catch (APIException e) {
@@ -59,7 +59,7 @@ public class FailureTest {
   }
 
   public void testCreateControlProgram() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     try {
       new ControlProgram.Builder().create(context);
     } catch (APIException e) {
@@ -69,7 +69,7 @@ public class FailureTest {
   }
 
   public void testBuildTransaction() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     try {
       new Transaction.Builder().addAction(new Transaction.Action.Issue()).build(context);
     } catch (APIException e) {
@@ -79,7 +79,7 @@ public class FailureTest {
   }
 
   public void testSignTransaction() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     HsmSigner.addKey(MockHsm.Key.create(context), MockHsm.getSignerContext(context));
     try {
       HsmSigner.sign(new Transaction.Template());
@@ -90,7 +90,7 @@ public class FailureTest {
   }
 
   public void testSubmitTransaction() throws Exception {
-    context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
+    context = TestUtils.generateContext();
     try {
       Transaction.submit(context, new Transaction.Template());
     } catch (APIException e) {
