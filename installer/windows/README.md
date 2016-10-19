@@ -60,7 +60,7 @@ The commands also assume that both the Wix Tools binaries and the signtool are i
 
 ```
 insignia -ib Bundle.exe -o engine.exe
-signtool sign /v /f [x.pfx] /p [password] engine.exe
+signtool sign -v -f [x.pfx] -p [password] engine.exe
 insignia -ab engine.exe Bundle.exe -o Bundle.exe -v
 ```
 
