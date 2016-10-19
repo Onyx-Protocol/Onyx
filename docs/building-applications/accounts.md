@@ -67,7 +67,7 @@ $code ../examples/java/Accounts.java create-control-program
 
 ## Transfer asset units to an external party
 
-If you wish to transfer asset units to an external party, you must first request a control program from them. You can then build, sign, and submit a transaction sending assets units to their control program. We will use the control program we created in Bob's account to demonstrate this external facing functionality.
+If you wish to transfer asset units to an external party, you must first request a control program from them. You can then build, sign, and submit a transaction sending asset units to their control program. We will use the control program we created in Bob's account to demonstrate this external facing functionality.
 
 $code ../examples/java/Accounts.java transfer-to-control-program
 
@@ -75,7 +75,7 @@ $code ../examples/java/Accounts.java transfer-to-control-program
 
 Chain Core keeps a time-ordered list of all transactions in the blockchain. These transactions are locally annotated with account and asset data to enable intelligent queries. Note: local data is not present in the blockchain. For more information, see: [Global vs. Local Data](../learn-more/global-vs-local-data).
 
-To list transactions involving Alice's account, we build a transaction query, filtering to transactions where alice spent assets units or controlled asset units.
+To list transactions involving Alice's account, we build a transaction query, filtering to transactions where Alice spent asset units or controlled asset units.
 
 $code ../examples/java/Accounts.java list-account-txs
 
