@@ -29,7 +29,7 @@ public class MockHsm {
     try {
       URL signerUrl = new URL(ctx.url().toString() + "/mockhsm");
       if (ctx.hasAccessToken()) {
-        return new Context(signerUrl, ctx.getAccessToken());
+        return new Context(signerUrl, ctx.accessToken());
       }
       return new Context(signerUrl);
     } catch (MalformedURLException e) {
