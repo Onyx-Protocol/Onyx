@@ -42,17 +42,18 @@ const (
 )
 
 func main() {
-	log.Println("Please wait while we check Postgres...")
-	// Set up logging
-	// TODO(tessr): better temp file
-	f, err := os.OpenFile(`C:/Program Files (x86)/Chain/install.log`, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	// Set up chain core logging
+	cclog := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	cclog.Println("Please wait while we check Postgres...")
+
+	// Set up postgres logging
+	f, err := os.OpenFile(`C:/Program Files (x86)/Chain/postgres.log`, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatal("error opening log file: " + err.Error())
+		cclog.Fatal("Error opening postgres.log file: " + err.Error())
 	}
 	defer f.Close()
-
-	log.SetOutput(f)
-	log.Println("=====PG CONFIG LOG=====")
+	pglog := log.New(f, "", log.Ldate|log.Ltime)
+	pglog.Println("=====PG CONFIG LOG=====")
 
 	var cmd *exec.Cmd
 	// Check if the config file exists--not because we care about the config file,
@@ -61,7 +62,8 @@ func main() {
 	// PG again, the installer will fail.)
 	if _, err := os.Stat(pgDataDir); err == nil {
 		if _, err = os.Stat(filepath.Join(pgDataDir, "postgresql.conf")); err != nil {
-			log.Fatal("data dir is non-empty, but postgres hasn't been configured yet.")
+			pglog.Println("data dir is non-empty, but postgres hasn't been configured yet.")
+			cclog.Fatal("Postgres data directory is non-empty, but postgres hasn't been configured yet. You may want to delete the data directory and try again.")
 		}
 	} else {
 		// initdb
@@ -71,15 +73,16 @@ func main() {
 
 		err = cmd.Run()
 		if err != nil {
-			// TODO(tessr): user-friendly message about manually configuring pg?
-			log.Fatal("could not run initdb: " + err.Error())
+			pglog.Println("could not run initdb: " + err.Error())
+			cclog.Fatal("Postgres could not run initdb. Please check postgres.log for more info.")
 		}
 	}
 
 	// tweak postgres config
 	err = rewriteConfig()
 	if err != nil {
-		log.Fatal("could not set postgres port or listen addresses: " + err.Error())
+		pglog.Println("could not set postgres port or listen addresses: " + err.Error())
+		cclog.Fatal("Postgres could not be configured with the port or listen addresses. You may want to manually configure postgresql.conf and try again.")
 	}
 
 	// run postgres
@@ -89,7 +92,9 @@ func main() {
 
 	err = pgCmd.Start()
 	if err != nil {
-		log.Fatal("could not start Postgres: " + err.Error())
+		pglog.Println("could not start Postgres: " + err.Error())
+		cclog.Fatal("Postgres could not be started. Please check postgres.log for more info.")
+
 	}
 
 	pgStatus := make(chan error, 1)
@@ -98,7 +103,7 @@ func main() {
 	}()
 
 	// block until postgres is ready--if we try to create users or db before it's running, it will fail
-	blockUntilReady()
+	blockUntilReady(pglog)
 
 	cmd = exec.Command(pg+"createdb.exe",
 		"--port", pgPort,
@@ -109,10 +114,11 @@ func main() {
 	cmd.Stderr = f
 	err = cmd.Run()
 	if err != nil {
-		log.Fatal("could not run createdb: " + err.Error())
+		pglog.Println("could not run createdb: " + err.Error())
+		cclog.Fatal("Postgres could not create database `core`. Please check postgres.log for more info.")
 	}
 
-	log.Println("about to start chain core")
+	pglog.Println("Postgres configured. About to start chain core")
 	env := []string{`DATABASE_URL=postgres://localhost:1998/core?sslmode=disable`}
 	ccCmd := exec.Command(chainCoreExe)
 	ccCmd.Env = mergeEnvLists(os.Environ(), env)
@@ -120,7 +126,7 @@ func main() {
 	ccCmd.Stderr = os.Stderr
 	err = ccCmd.Start()
 	if err != nil {
-		log.Println(err)
+		cclog.Println(err)
 	}
 
 	ccStatus := make(chan error, 1)
@@ -134,14 +140,13 @@ func main() {
 		if pgErr != nil {
 			msg = pgErr.Error()
 		}
-		// TODO: set up separate loggers for PG and CC
-		log.Printf("Postgres died with %s; killing Chain Core", msg)
+		cclog.Printf("Postgres died with %s; killing Chain Core", msg)
 		ccCmd.Process.Kill()
 	case ccErr := <-ccStatus:
 		if ccErr != nil {
 			msg = ccErr.Error()
 		}
-		log.Printf("Chain Core died with %s; kill Postgres", msg)
+		pglog.Printf("Chain Core died with %s; kill Postgres", msg)
 		pgCmd.Process.Kill()
 	}
 }
@@ -167,19 +172,19 @@ func rewriteConfig() error {
 	return nil
 }
 
-func blockUntilReady() {
+func blockUntilReady(pglog *log.Logger) {
 	// TODO(tessr): add a timeout or something so we can't block indefinitely
 	for {
 		out, err := exec.Command(pg+"pg_isready.exe", "-p", pgPort, "-d", "postgres").Output()
 		if err != nil {
-			log.Printf("out: %s; err: %s", out, err)
+			pglog.Printf("out: %s; err: %s", out, err)
 		}
 
 		if strings.Contains(string(out), "accepting") {
 			return
 		}
 
-		log.Printf("not ready, got %s", out)
+		pglog.Printf("still waiting for postgres ready status: %s", out)
 		time.Sleep(500 * time.Millisecond)
 	}
 }
