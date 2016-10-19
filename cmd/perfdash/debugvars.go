@@ -30,9 +30,18 @@ func getDebugVars(i int) *debugVars {
 	return debugVarData[i]
 }
 
-func fetchDebugVars(baseURL string) (int, *debugVars, error) {
+func fetchDebugVars(baseURL, token string) (int, *debugVars, error) {
 	v := new(debugVars)
-	resp, err := http.Get(strings.TrimRight(baseURL, "/") + "/debug/vars")
+
+	req, err := http.NewRequest("GET", strings.TrimRight(baseURL, "/")+"/debug/vars", nil)
+	if err != nil {
+		return 0, nil, err
+	}
+	if i := strings.Index(token, ":"); i >= 0 {
+		req.SetBasicAuth(token[:i], token[i+1:])
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return 0, nil, err
 	}

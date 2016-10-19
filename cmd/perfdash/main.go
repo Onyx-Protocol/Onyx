@@ -8,7 +8,11 @@ import (
 	"chain/env"
 )
 
-var addr = env.String("LISTEN", ":8080")
+var (
+	addr    = env.String("LISTEN", ":8080")
+	baseURL = env.String("BASE_URL", "http://localhost:1999/")
+	token   = env.String("CLIENT_ACCESS_TOKEN", "")
+)
 
 func main() {
 	env.Parse()
@@ -30,13 +34,13 @@ func index(w http.ResponseWriter, req *http.Request) {
 		ID        int
 	}
 
-	baseURL := req.URL.Query().Get("baseurl")
-	if baseURL == "" {
-		baseURL = "http://localhost:1999/"
+	u := req.URL.Query().Get("baseurl")
+	if u == "" {
+		u = *baseURL
 	}
 
 	var err error
-	v.ID, v.DebugVars, err = fetchDebugVars(baseURL)
+	v.ID, v.DebugVars, err = fetchDebugVars(u, *token)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		log.Println(err)
