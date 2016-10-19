@@ -19,14 +19,25 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// TODO(kr): display more than one bucket (in time-series?)
 // TODO(kr): collect more fine-grain stats
 
 var (
-	dims       = image.Rect(0, 0, 800, 100)
-	lineColor  = color.RGBA{R: 0xff, A: 0xff}
-	labelColor = color.Black
-	drawer     = font.Drawer{
+	dims = image.Rect(0, 0, 800, 100)
+
+	// In reverse order, newest to oldest,
+	// so strongest to faintest color.
+	// Don't forget, color.RGBA fields are
+	// alpha premultiplied.
+	lineColors = [...]color.Color{
+		color.RGBA{R: 0xff, A: 0xff},
+		color.RGBA{R: 0xcc, A: 0xcc},
+		color.RGBA{R: 0x88, A: 0x88},
+		color.RGBA{R: 0x55, A: 0x55},
+		color.RGBA{R: 0x22, A: 0x22},
+	}
+	curLineColor = color.RGBA{A: 0x55}
+	labelColor   = color.Black
+	drawer       = font.Drawer{
 		Src:  image.NewUniform(labelColor),
 		Face: inconsolata.Regular8x16,
 	}
@@ -57,11 +68,21 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 	img := newImage(dims)
 	d := drawer
 	d.Dst = img
-	hist := hdrhistogram.Import(&b0.Histogram)
 
-	_, max := valueAtPixel(hist, img.Bounds().Inset(2).Dx())
-	drawf(d, 4, 38, "%s", name)
-	drawf(d, 4, 54, "over: %d", b0.Over)
+	var hists []*hdrhistogram.Histogram
+	for _, b := range latency.Buckets {
+		hists = append(hists, hdrhistogram.Import(&b.Histogram))
+	}
+
+	dx := img.Bounds().Inset(2).Dx()
+	var max int64
+	for _, hist := range hists {
+		v := valueAtPixel(hist, dx)
+		if v > max {
+			max = v
+		}
+	}
+
 	if max == 0 {
 		drawf(d, 4, 20, "no histogram data")
 	} else {
@@ -70,13 +91,37 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 		if max < int64(10*time.Millisecond) {
 			max += int64(time.Millisecond)
 		}
+		complete := hists[:len(hists)-1]
+		for i, hist := range complete {
+			rindex := len(complete) - i - 1
+			graph(img, hist, max, lineColors[rindex%len(lineColors)])
+		}
+		// special color for incomplete bucket
+		graph(img, hists[len(hists)-1], max, curLineColor)
 		drawf(d, 4, 20, "%v", time.Duration(max))
-		graph(img, hist, max, lineColor, labelColor)
 	}
+	drawf(d, 4, 38, "%s", name)
+	drawf(d, 4, 54, "over: %d", b0.Over)
+	label(img, labelColor)
 	png.Encode(w, img)
 }
 
-func graph(img *image.RGBA, hist *hdrhistogram.Histogram, ymax int64, lineColor, labelColor color.Color) {
+func graph(img *image.RGBA, hist *hdrhistogram.Histogram, ymax int64, color color.Color) {
+	graph := img.SubImage(img.Bounds().Inset(2)).(*image.RGBA)
+	gdims := graph.Bounds()
+	d := drawer
+	d.Dst = graph
+
+	labelPixels := 50
+	for x := 0; x < gdims.Dx(); x++ {
+		v := valueAtPixel(hist, x)
+		y := int(scale(v, ymax, int64(gdims.Dy())))
+		graph.Set(gdims.Min.X+x, gdims.Max.Y-y-1, color)
+		labelPixels++
+	}
+}
+
+func label(img *image.RGBA, color color.Color) {
 	graph := img.SubImage(img.Bounds().Inset(2)).(*image.RGBA)
 	gdims := graph.Bounds()
 	d := drawer
@@ -85,14 +130,12 @@ func graph(img *image.RGBA, hist *hdrhistogram.Histogram, ymax int64, lineColor,
 	labelDigits := 0
 	labelPixels := 50
 	for x := 0; x < gdims.Dx(); x++ {
-		q, v := valueAtPixel(hist, x)
-		y := int(scale(v, ymax, int64(gdims.Dy())))
-		graph.Set(gdims.Min.X+x, gdims.Max.Y-y-1, lineColor)
+		q := quantileAtPixel(x)
 		if dig := digits(1 - q); labelPixels >= 50 && dig > labelDigits {
 			labelPixels = 0
 			labelDigits = dig
 			for i := 0; i < 5; i++ {
-				graph.Set(gdims.Min.X+x, gdims.Max.Y-i-1, labelColor)
+				graph.Set(gdims.Min.X+x, gdims.Max.Y-i-1, color)
 			}
 			prec := labelDigits - 3
 			if prec < 0 {
@@ -107,10 +150,13 @@ func graph(img *image.RGBA, hist *hdrhistogram.Histogram, ymax int64, lineColor,
 	drawf(d, 4, gdims.Max.Y-2, "p50")
 }
 
-func valueAtPixel(hist *hdrhistogram.Histogram, n int) (quantile float64, v int64) {
+func quantileAtPixel(n int) float64 {
 	const pixel0, decayPerPixel = 0.5, 0.98
-	q := 1 - pixel0*math.Pow(decayPerPixel, float64(n))
-	return q, hist.ValueAtQuantile(100 * q)
+	return 1 - pixel0*math.Pow(decayPerPixel, float64(n))
+}
+
+func valueAtPixel(hist *hdrhistogram.Histogram, n int) int64 {
+	return hist.ValueAtQuantile(100 * quantileAtPixel(n))
 }
 
 func roundms(n int64) int64 {
