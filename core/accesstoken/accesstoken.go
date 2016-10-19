@@ -132,18 +132,6 @@ func List(ctx context.Context, typ, after string, limit int) ([]*Token, string, 
 	return tokens, next, nil
 }
 
-// ClientTokenExists returns whether or not a client token is present
-// in the database.
-func ClientTokenExists(ctx context.Context) (bool, error) {
-	const q = `SELECT EXISTS(SELECT 1 FROM access_tokens WHERE type='client')`
-	var exists bool
-	err := pg.QueryRow(ctx, q).Scan(&exists)
-	if err != nil {
-		return false, errors.Wrap(err)
-	}
-	return exists, nil
-}
-
 // Delete deletes an access token by id.
 func Delete(ctx context.Context, id string) error {
 	const q = `DELETE FROM access_tokens WHERE id=$1`

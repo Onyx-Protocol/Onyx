@@ -16,7 +16,6 @@ var (
 	ErrShortProgram       = errors.New("unexpected end of program")
 	ErrToken              = errors.New("unrecognized token")
 	ErrUnexpected         = errors.New("unexpected error")
-	ErrUnknownOpcode      = errors.New("unknown opcode")
 	ErrUnsupportedTx      = errors.New("unsupported transaction type")
 	ErrUnsupportedVM      = errors.New("unsupported VM")
 	ErrVerifyFailed       = errors.New("VERIFY failed")

@@ -58,12 +58,6 @@ func (h *HSM) XCreate(ctx context.Context, alias string) (*XPub, error) {
 	return xpub, err
 }
 
-// XGetOrCreate looks for the ChainKD key with the given alias, generating a
-// new one if it's not found.
-func (h *HSM) XGetOrCreate(ctx context.Context, alias string) (xpub *XPub, created bool, err error) {
-	return h.createChainKDKey(ctx, alias, true)
-}
-
 func (h *HSM) createChainKDKey(ctx context.Context, alias string, get bool) (*XPub, bool, error) {
 	xprv, xpub, err := chainkd.NewXKeys(nil)
 	if err != nil {

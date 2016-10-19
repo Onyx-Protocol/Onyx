@@ -13,9 +13,6 @@ import (
 	"chain/errors"
 )
 
-// MaxProgramByteLength is the maximum length in bytes of a COS program.
-const MaxProgramByteLength = 1000000
-
 const (
 	SerBlockWitness      = 1
 	SerBlockTransactions = 2
