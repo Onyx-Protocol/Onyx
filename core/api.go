@@ -180,6 +180,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Config encapsulates Core-level, persistent configuration options.
 type Config struct {
+	ID                   string  `json:"id"`
 	IsSigner             bool    `json:"is_signer"`
 	IsGenerator          bool    `json:"is_generator"`
 	BlockchainID         bc.Hash `json:"blockchain_id"`

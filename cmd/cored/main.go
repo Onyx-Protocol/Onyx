@@ -108,6 +108,9 @@ func main() {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	processID := fmt.Sprintf("chain-%s-%d", hostname, os.Getpid())
+	if config != nil {
+		processID += "-" + config.ID
+	}
 	expvar.NewString("processID").Set(processID)
 
 	log.SetPrefix("cored-" + buildTag + ": ")
@@ -161,6 +164,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 			BaseURL:      config.GeneratorURL,
 			AccessToken:  config.GeneratorAccessToken,
 			Username:     processID,
+			CoreID:       config.ID,
 			BuildTag:     buildTag,
 			BlockchainID: config.BlockchainID.String(),
 		}
@@ -280,6 +284,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 			BaseURL:      u.String(),
 			AccessToken:  signer.AccessToken,
 			Username:     processID,
+			CoreID:       config.ID,
 			BuildTag:     buildTag,
 			BlockchainID: blockchainID,
 		}

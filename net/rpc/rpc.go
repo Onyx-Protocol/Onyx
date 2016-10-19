@@ -18,6 +18,7 @@ import (
 // Chain-specific header fields
 const (
 	HeaderBlockchainID = "Blockchain-ID"
+	HeaderCoreID       = "Chain-Core-ID"
 	HeaderTimeout      = "RPC-Timeout"
 )
 
@@ -34,6 +35,7 @@ type Client struct {
 	Username     string
 	BuildTag     string
 	BlockchainID string
+	CoreID       string
 }
 
 func (c Client) userAgent() string {
@@ -104,6 +106,7 @@ func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", c.userAgent())
 	req.Header.Set(HeaderBlockchainID, c.BlockchainID)
+	req.Header.Set(HeaderCoreID, c.CoreID)
 
 	// Propagate our deadline if we have one.
 	deadline, ok := ctx.Deadline()

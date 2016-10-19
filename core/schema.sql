@@ -497,6 +497,7 @@ CREATE TABLE config (
     remote_block_signers bytea DEFAULT '\x'::bytea NOT NULL,
     generator_access_token text DEFAULT ''::text NOT NULL,
     max_issuance_window_ms bigint,
+    id text NOT NULL,
     CONSTRAINT config_singleton CHECK (singleton)
 );
 
@@ -1107,3 +1108,4 @@ ALTER TABLE ONLY account_utxos
 --
 
 insert into migrations (filename, hash) values ('2016-10-17.0.core.schema-snapshot.sql', 'cff5210e2d6af410719c223a76443f73c5c12fe875f0efecb9a0a5937cf029cd');
+insert into migrations (filename, hash) values ('2016-10-19.0.core.add-core-id.sql', '9353da072a571d7a633140f2a44b6ac73ffe9e27223f7c653ccdef8df3e8139e');

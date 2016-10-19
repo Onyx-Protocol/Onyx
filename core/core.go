@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"expvar"
@@ -251,16 +252,24 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		}
 	}
 
+	b := make([]byte, 10)
+	_, err = rand.Read(b)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	c.ID = hex.EncodeToString(b)
+
 	// TODO(tessr): rename block_xpub column
 	const q = `
-		INSERT INTO config (is_signer, block_xpub, is_generator,
+		INSERT INTO config (id, is_signer, block_xpub, is_generator,
 			blockchain_id, generator_url, generator_access_token,
 			remote_block_signers, max_issuance_window_ms, configured_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
 	`
 	_, err = db.Exec(
 		ctx,
 		q,
+		c.ID,
 		c.IsSigner,
 		c.BlockPub,
 		c.IsGenerator,
@@ -295,7 +304,7 @@ func (h *Handler) configure(ctx context.Context, x *Config) error {
 // LoadConfig loads the stored configuration, if any, from the database.
 func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
-			SELECT is_signer, is_generator,
+			SELECT id, is_signer, is_generator,
 			blockchain_id, generator_url, generator_access_token, block_xpub,
 			remote_block_signers, max_issuance_window_ms, configured_at
 			FROM config
@@ -307,6 +316,7 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 		miw             int64
 	)
 	err := db.QueryRow(ctx, q).Scan(
+		&c.ID,
 		&c.IsSigner,
 		&c.IsGenerator,
 		&c.BlockchainID,

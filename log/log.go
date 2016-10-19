@@ -39,6 +39,7 @@ const (
 	KeyCaller   = "at"       // location of caller
 	KeyTime     = "t"        // time of call
 	KeyReqID    = "reqid"    // request ID from context
+	KeyCoreID   = "coreid"   // core ID from context
 	KeySubReqID = "subreqid" // potential sub-request ID from context
 
 	KeyMessage = "message" // produced by Message
@@ -119,6 +120,9 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 		KeyCaller, vcaller,
 		KeyTime, formatValue(t.Format(time.RFC3339Nano)),
 	)
+	if s := reqid.CoreIDFromContext(ctx); s != "" {
+		out += " " + KeyCoreID + "=" + formatValue(reqid.CoreIDFromContext(ctx))
+	}
 
 	if subreqid := reqid.FromSubContext(ctx); subreqid != reqid.Unknown {
 		out += " " + KeySubReqID + "=" + formatValue(subreqid)
