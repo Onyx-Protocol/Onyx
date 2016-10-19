@@ -23,10 +23,10 @@ import (
 
 const (
 	// Use these to go to p99.99999
-	// pixel0        = 0.5
-	// decayPerPixel = 0.98
-	pixel0        = 0.4
-	decayPerPixel = 0.99
+	// pixel0Quantile = 0.5
+	// decayPerPixel  = 0.98
+	pixel0Quantile = 0.4
+	decayPerPixel  = 0.99
 )
 
 var (
@@ -155,11 +155,11 @@ func label(img *image.RGBA, color color.Color) {
 	}
 
 	// special case for first pixel
-	drawf(d, 4, gdims.Max.Y-2, "p%.*f", 0, 100*pixel0)
+	drawf(d, 4, gdims.Max.Y-2, "p%.*f", 0, 100*pixel0Quantile)
 }
 
 func quantileAtPixel(n int) float64 {
-	return 1 - pixel0*math.Pow(decayPerPixel, float64(n))
+	return 1 - (1-pixel0Quantile)*math.Pow(decayPerPixel, float64(n))
 }
 
 func valueAtPixel(hist *hdrhistogram.Histogram, n int) int64 {
