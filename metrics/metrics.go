@@ -27,19 +27,20 @@ var (
 // and a counter of attempts to record a value
 // greater than the histogram's max.
 type Latency struct {
-	max time.Duration // readonly
+	limit time.Duration // readonly
 
 	time  time.Time
 	hdr   hdrhistogram.Histogram
-	nover int // how many values were over max
+	nover int           // how many values were over limit
+	max   time.Duration // max recorded value (can be over limit)
 }
 
 // NewLatency returns a new latency histogram with the given
-// max duration and with three significant figures of precision.
-func NewLatency(max time.Duration) *Latency {
+// duration limit and with three significant figures of precision.
+func NewLatency(limit time.Duration) *Latency {
 	return &Latency{
-		hdr: *hdrhistogram.New(0, int64(max), 3),
-		max: max,
+		hdr:   *hdrhistogram.New(0, int64(limit), 3),
+		limit: limit,
 	}
 }
 
@@ -48,6 +49,9 @@ func NewLatency(max time.Duration) *Latency {
 // it increments a counter instead.
 func (l *Latency) Record(d time.Duration) {
 	if d > l.max {
+		l.max = d
+	}
+	if d > l.limit {
 		l.nover++
 	} else {
 		l.hdr.RecordValue(int64(d))
@@ -67,7 +71,7 @@ func (l *Latency) String() string {
 	fmt.Fprintf(&b, `{"Histogram":`)
 	h, _ := json.Marshal((&l.hdr).Export())
 	b.Write(h)
-	fmt.Fprintf(&b, `,"Over":%d,"Timestamp":%d}`, l.nover, l.time.Unix())
+	fmt.Fprintf(&b, `,"Over":%d,"Timestamp":%d,"Max":%d}`, l.nover, l.time.Unix(), l.max)
 	return b.String()
 }
 

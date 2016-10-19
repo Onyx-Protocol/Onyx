@@ -18,6 +18,7 @@ func TestRotString(t *testing.T) {
 		"NumRot": 1,
 		"Buckets": [
 			{
+				"Max": 0,
 				"Over": 0,
 				"Timestamp": -62135596800,
 				"Histogram": {
@@ -28,6 +29,7 @@ func TestRotString(t *testing.T) {
 				}
 			},
 			{
+				"Max": 0,
 				"Over": 0,
 				"Timestamp": -62135596800,
 				"Histogram": {
