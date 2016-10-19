@@ -43,7 +43,7 @@ const (
 
 func main() {
 	// Set up chain core logging
-	cclog := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	cclog := log.New(os.Stdout, "app=core-manager ", log.Ldate|log.Ltime)
 	cclog.Println("Please wait while we check Postgres...")
 
 	// Set up postgres logging
@@ -114,8 +114,10 @@ func main() {
 	cmd.Stderr = f
 	err = cmd.Run()
 	if err != nil {
+		// it's possible this failed because the database exists already, so don't fail
+		// TODO(tessr): investigate using TeeReader (https://godoc.org/io#TeeReader) to read and write the command output
 		pglog.Println("could not run createdb: " + err.Error())
-		cclog.Fatal("Postgres could not create database `core`. Please check postgres.log for more info.")
+		cclog.Printf("WARNING: Postgres did not create database `%s`. It's possible that `%s` exists already. Please check postgres.log for more info.", dbName, dbName)
 	}
 
 	pglog.Println("Postgres configured. About to start chain core")
