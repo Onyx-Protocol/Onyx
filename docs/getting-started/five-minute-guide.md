@@ -17,7 +17,7 @@ This guide will walk you through the basic functions of Chain Core:
 
 Create an instance of the SDK. By default, the SDK will try to access a core located at `http://localhost:1999`, which is the default if you're running Chain Core locally.
 
-$code ../examples/java/FiveMinuteGuide.java create-context
+$code ../examples/java/FiveMinuteGuide.java create-client
 
 ## Create Keys
 
