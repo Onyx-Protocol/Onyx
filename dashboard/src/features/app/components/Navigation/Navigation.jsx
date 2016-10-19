@@ -63,6 +63,12 @@ class Navigation extends React.Component {
               Documentation
             </a>
           </li>
+          <li>
+            <a href='https://chain.com/support' target='_blank'>
+              <span className={`glyphicon glyphicon-earphone ${styles.glyphicon}`} />
+              Support
+            </a>
+          </li>
         </ul>
       </div>
     )
