@@ -6,8 +6,8 @@ import com.chain.signing.*;
 
 class TransactionBasics {
   public static void main(String[] args) throws Exception {
-    Context client = new Context();
-    Context otherCoreClient = new Context();
+    Client client = new Client();
+    Client otherCoreClient = new Client();
     setup(client, otherCoreClient);
 
     // snippet issue-within-core
@@ -163,12 +163,12 @@ class TransactionBasics {
     // endsnippet
   }
 
-  public static void setup(Context client, Context otherCoreClient) throws Exception {
+  public static void setup(Client client, Client otherCoreClient) throws Exception {
     MockHsm.Key aliceKey = MockHsm.Key.create(client);
-    HsmSigner.addKey(aliceKey, MockHsm.getSignerContext(client));
+    HsmSigner.addKey(aliceKey, MockHsm.getSignerClient(client));
 
     MockHsm.Key bobKey = MockHsm.Key.create(otherCoreClient);
-    HsmSigner.addKey(bobKey, MockHsm.getSignerContext(otherCoreClient));
+    HsmSigner.addKey(bobKey, MockHsm.getSignerClient(otherCoreClient));
 
     new Asset.Builder()
       .setAlias("gold")

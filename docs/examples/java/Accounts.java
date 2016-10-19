@@ -6,28 +6,28 @@ import com.chain.signing.*;
 
 class Accounts {
   public static void main(String[] args) throws Exception {
-    Context context = new Context();
+    Client client = new Client();
 
-    MockHsm.Key assetKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(assetKey, MockHsm.getSignerContext(context));
+    MockHsm.Key assetKey = MockHsm.Key.create(client);
+    HsmSigner.addKey(assetKey, MockHsm.getSignerClient(client));
 
-    MockHsm.Key aliceKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(aliceKey, MockHsm.getSignerContext(context));
+    MockHsm.Key aliceKey = MockHsm.Key.create(client);
+    HsmSigner.addKey(aliceKey, MockHsm.getSignerClient(client));
 
-    MockHsm.Key bobKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(bobKey, MockHsm.getSignerContext(context));
+    MockHsm.Key bobKey = MockHsm.Key.create(client);
+    HsmSigner.addKey(bobKey, MockHsm.getSignerClient(client));
 
     new Asset.Builder()
       .setAlias("gold")
       .addRootXpub(assetKey.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     new Asset.Builder()
       .setAlias("silver")
       .addRootXpub(assetKey.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     // snippet create-account-alice
     new Account.Builder()
@@ -38,7 +38,7 @@ class Accounts {
       .addTag("first_name", "Alice")
       .addTag("last_name", "Jones")
       .addTag("user_id", "12345")
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet create-account-bob
@@ -50,14 +50,14 @@ class Accounts {
       .addTag("first_name", "Bob")
       .addTag("last_name", "Smith")
       .addTag("user_id", "67890")
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet list-accounts-by-tag
     Account.Items accounts = new Account.QueryBuilder()
       .setFilter("tags.type=$1")
       .addFilterParameter("savings")
-      .execute(context);
+      .execute(client);
 
     while (accounts.hasNext()) {
       Account a = accounts.next();
@@ -73,9 +73,9 @@ class Accounts {
         .setAccountAlias("alice")
         .setAssetAlias("gold")
         .setAmount(100)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(fundAliceTransaction));
+    Transaction.submit(client, HsmSigner.sign(fundAliceTransaction));
 
     Transaction.Template fundBobTransaction = new Transaction.Builder()
       .addAction(new Transaction.Action.Issue()
@@ -85,9 +85,9 @@ class Accounts {
         .setAccountAlias("bob")
         .setAssetAlias("silver")
         .setAmount(100)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(fundBobTransaction));
+    Transaction.submit(client, HsmSigner.sign(fundBobTransaction));
 
     // snippet build-transfer
     Transaction.Template spendingTransaction = new Transaction.Builder()
@@ -99,7 +99,7 @@ class Accounts {
         .setAccountAlias("bob")
         .setAssetAlias("gold")
         .setAmount(10)
-      ).build(context);
+      ).build(client);
     // endsnippet
 
     // snippet sign-transfer
@@ -107,13 +107,13 @@ class Accounts {
     // endsnippet
 
     // snippet submit-transfer
-    Transaction.submit(context, signedSpendingTransaction);
+    Transaction.submit(client, signedSpendingTransaction);
     // endsnippet
 
     // snippet create-control-program
     ControlProgram bobProgram = new ControlProgram.Builder()
       .controlWithAccountByAlias("bob")
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet transfer-to-control-program
@@ -126,16 +126,16 @@ class Accounts {
         .setControlProgram(bobProgram)
         .setAssetAlias("gold")
         .setAmount(10)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(spendingTransaction2));
+    Transaction.submit(client, HsmSigner.sign(spendingTransaction2));
     // endsnippet
 
     // snippet list-account-txs
     Transaction.Items transactions = new Transaction.QueryBuilder()
       .setFilter("inputs(account_alias=$1) AND outputs(account_alias=$1)")
       .addFilterParameter("alice")
-      .execute(context);
+      .execute(client);
 
     while (transactions.hasNext()) {
       Transaction t = transactions.next();
@@ -147,7 +147,7 @@ class Accounts {
     Balance.Items balances = new Balance.QueryBuilder()
       .setFilter("account_alias=$1")
       .addFilterParameter("alice")
-      .execute(context);
+      .execute(client);
 
     while (balances.hasNext()) {
       Balance b = balances.next();
@@ -163,7 +163,7 @@ class Accounts {
       .setFilter("account_alias=$1 AND asset_alias=$2")
       .addFilterParameter("alice")
       .addFilterParameter("gold")
-      .execute(context);
+      .execute(client);
 
     while (unspentOutputs.hasNext()) {
       UnspentOutput u = unspentOutputs.next();

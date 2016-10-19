@@ -29,7 +29,7 @@ public class ControlProgram {
 
   /**
    * Creates a batch of control programs.
-   * @param ctx context object which makes requests to core
+   * @param client client object which makes requests to core
    * @param programs list of control program builder objects
    * @return a list of control programs
    * @throws APIException This exception is raised if the api returns errors while creating the control programs.
@@ -38,9 +38,9 @@ public class ControlProgram {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<ControlProgram> createBatch(Context ctx, List<Builder> programs)
+  public static BatchResponse<ControlProgram> createBatch(Client client, List<Builder> programs)
       throws ChainException {
-    return ctx.batchRequest("create-control-program", programs, ControlProgram.class);
+    return client.batchRequest("create-control-program", programs, ControlProgram.class);
   }
 
   /**
@@ -66,7 +66,7 @@ public class ControlProgram {
 
     /**
      * Creates a control program.
-     * @param ctx context object which makes requests to core
+     * @param client client object which makes requests to core
      * @return a control program
      * @throws APIException This exception is raised if the api returns errors while creating the control program.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -74,8 +74,8 @@ public class ControlProgram {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public ControlProgram create(Context ctx) throws ChainException {
-      return ctx.singletonBatchRequest(
+    public ControlProgram create(Client client) throws ChainException {
+      return client.singletonBatchRequest(
           "create-control-program", Arrays.asList(this), ControlProgram.class);
     }
 

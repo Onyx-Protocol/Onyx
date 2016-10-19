@@ -8,9 +8,7 @@ import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
 import com.chain.http.*;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
 import java.util.*;
 
 /**
@@ -69,7 +67,7 @@ public class Account {
   /**
    * Creates a batch of account objects.
    * <strong>Note:</strong> this method will not throw an exception APIException. Each builder's response object must be checked for error.
-   * @param ctx context object that makes requests to the core
+   * @param client client object that makes requests to the core
    * @param builders list of account builders
    * @return a list of account and/or error objects
    * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -77,12 +75,12 @@ public class Account {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<Account> createBatch(Context ctx, List<Builder> builders)
+  public static BatchResponse<Account> createBatch(Client client, List<Builder> builders)
       throws ChainException {
     for (Builder builder : builders) {
       builder.clientToken = UUID.randomUUID().toString();
     }
-    return ctx.batchRequest("create-account", builders, Account.class);
+    return client.batchRequest("create-account", builders, Account.class);
   }
 
   /**
@@ -99,8 +97,8 @@ public class Account {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Items getPage() throws ChainException {
-      Items items = this.context.request("list-accounts", this.next, Items.class);
-      items.setContext(this.context);
+      Items items = this.client.request("list-accounts", this.next, Items.class);
+      items.setClient(this.client);
       return items;
     }
   }
@@ -111,7 +109,7 @@ public class Account {
   public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
     /**
      * Executes a query on the core's accounts.
-     * @param ctx context object that makes requests to the core
+     * @param client client object that makes requests to the core
      * @return a collection of account objects
      * @throws APIException This exception is raised if the api returns errors while retrieving the accounts.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -119,9 +117,9 @@ public class Account {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public Items execute(Context ctx) throws ChainException {
+    public Items execute(Client client) throws ChainException {
       Items items = new Items();
-      items.setContext(ctx);
+      items.setClient(client);
       items.setNext(this.next);
       return items.getPage();
     }
@@ -168,7 +166,7 @@ public class Account {
 
     /**
      * Creates an account object.
-     * @param ctx context object that makes request to the core
+     * @param client client object that makes request to the core
      * @return an account object
      * @throws APIException This exception is raised if the api returns errors while creating the account.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -176,8 +174,8 @@ public class Account {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public Account create(Context ctx) throws ChainException {
-      return ctx.singletonBatchRequest("create-account", Arrays.asList(this), Account.class);
+    public Account create(Client client) throws ChainException {
+      return client.singletonBatchRequest("create-account", Arrays.asList(this), Account.class);
     }
 
     /**

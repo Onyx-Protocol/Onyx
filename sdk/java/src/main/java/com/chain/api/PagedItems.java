@@ -1,7 +1,7 @@
 package com.chain.api;
 
 import com.chain.exception.ChainException;
-import com.chain.http.Context;
+import com.chain.http.Client;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public abstract class PagedItems<T> implements Iterator<T> {
-  protected Context context;
+  protected Client client;
   private int pos;
 
   @Expose(serialize = false)
@@ -31,8 +31,8 @@ public abstract class PagedItems<T> implements Iterator<T> {
     this.lastPage = false;
   }
 
-  public void setContext(Context context) {
-    this.context = context;
+  public void setClient(Client client) {
+    this.client = client;
   }
 
   public void setNext(Query next) {

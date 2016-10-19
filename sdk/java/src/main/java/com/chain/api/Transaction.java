@@ -3,9 +3,6 @@ package com.chain.api;
 import com.chain.exception.*;
 import com.chain.http.*;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -78,8 +75,8 @@ public class Transaction {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Items getPage() throws ChainException {
-      Items items = this.context.request("list-transactions", this.next, Items.class);
-      items.setContext(this.context);
+      Items items = this.client.request("list-transactions", this.next, Items.class);
+      items.setClient(this.client);
       return items;
     }
   }
@@ -90,7 +87,7 @@ public class Transaction {
   public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
     /**
      * Executes a transaction query based on provided parameters.
-     * @param ctx context object which makes server requests
+     * @param client client object which makes server requests
      * @return a page of transactions
      * @throws APIException This exception is raised if the api returns errors while processing the query.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -98,9 +95,9 @@ public class Transaction {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public Items execute(Context ctx) throws ChainException {
+    public Items execute(Client client) throws ChainException {
       Items items = new Items();
-      items.setContext(ctx);
+      items.setClient(client);
       items.setNext(this.next);
       return items.getPage();
     }
@@ -344,7 +341,7 @@ public class Transaction {
   }
 
   /**
-   * A built transaction that has not been submitted for block inclusion (returned from {@link Transaction#buildBatch(Context, List)}).
+   * A built transaction that has not been submitted for block inclusion (returned from {@link Transaction#buildBatch(Client, List)}).
    */
   public static class Template {
     /**
@@ -474,7 +471,7 @@ public class Transaction {
   }
 
   /**
-   * A single response from a call to {@link Transaction#submitBatch(Context, List)}
+   * A single response from a call to {@link Transaction#submitBatch(Client, List)}
    */
   public static class SubmitResponse {
     /**
@@ -485,7 +482,7 @@ public class Transaction {
 
   /**
    * Builds a batch of transaction templates.
-   * @param ctx context object which makes server requests
+   * @param client client object which makes server requests
    * @param builders list of transaction builders
    * @return a list of transaction templates
    * @throws APIException This exception is raised if the api returns errors while building transaction templates.
@@ -494,14 +491,14 @@ public class Transaction {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<Template> buildBatch(Context ctx, List<Transaction.Builder> builders)
+  public static BatchResponse<Template> buildBatch(Client client, List<Transaction.Builder> builders)
       throws ChainException {
-    return ctx.batchRequest("build-transaction", builders, Template.class);
+    return client.batchRequest("build-transaction", builders, Template.class);
   }
 
   /**
    * Submits a batch of signed transaction templates for inclusion into a block.
-   * @param ctx context object which makes server requests
+   * @param client client object which makes server requests
    * @param templates list of transaction templates
    * @return a list of submit responses (individual objects can hold transaction ids or error info)
    * @throws APIException This exception is raised if the api returns errors while submitting transactions.
@@ -510,16 +507,16 @@ public class Transaction {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<SubmitResponse> submitBatch(Context ctx, List<Template> templates)
+  public static BatchResponse<SubmitResponse> submitBatch(Client client, List<Template> templates)
       throws ChainException {
     HashMap<String, Object> body = new HashMap<>();
     body.put("transactions", templates);
-    return ctx.batchRequest("submit-transaction", body, SubmitResponse.class);
+    return client.batchRequest("submit-transaction", body, SubmitResponse.class);
   }
 
   /**
    * Submits signed transaction template for inclusion into a block.
-   * @param ctx context object which makes server requests
+   * @param client client object which makes server requests
    * @param template transaction template
    * @return submit responses
    * @throws APIException This exception is raised if the api returns errors while submitting a transaction.
@@ -528,10 +525,10 @@ public class Transaction {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static SubmitResponse submit(Context ctx, Template template) throws ChainException {
+  public static SubmitResponse submit(Client client, Template template) throws ChainException {
     HashMap<String, Object> body = new HashMap<>();
     body.put("transactions", Arrays.asList(template));
-    return ctx.singletonBatchRequest("submit-transaction", body, SubmitResponse.class);
+    return client.singletonBatchRequest("submit-transaction", body, SubmitResponse.class);
   }
 
   /**
@@ -988,7 +985,7 @@ public class Transaction {
 
     /**
      * Builds a single transaction template.
-     * @param ctx context object which makes requests to the server
+     * @param client client object which makes requests to the server
      * @return a transaction template
      * @throws APIException This exception is raised if the api returns errors while building the transaction.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -996,8 +993,8 @@ public class Transaction {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public Template build(Context ctx) throws ChainException {
-      return ctx.singletonBatchRequest("build-transaction", Arrays.asList(this), Template.class);
+    public Template build(Client client) throws ChainException {
+      return client.singletonBatchRequest("build-transaction", Arrays.asList(this), Template.class);
     }
 
     /**
@@ -1067,46 +1064,46 @@ public class Transaction {
     /**
      * Creates a feed.
      *
-     * @param ctx context object that makes requests to core
+     * @param client client object that makes requests to core
      * @param alias an alias which uniquely identifies this feed
      * @param filter a query filter which identifies which transactions this feed consumes
      * @return a feed object
      * @throws ChainException
      */
-    public static Feed create(Context ctx, String alias, String filter) throws ChainException {
+    public static Feed create(Client client, String alias, String filter) throws ChainException {
       Map<String, Object> req = new HashMap<>();
       req.put("alias", alias);
       req.put("filter", filter);
       req.put("client_token", UUID.randomUUID().toString());
-      return ctx.request("create-transaction-feed", req, Feed.class);
+      return client.request("create-transaction-feed", req, Feed.class);
     }
 
     /**
      * Retrieves a feed by ID.
      *
-     * @param ctx context object that makes requests to core
+     * @param client client object that makes requests to core
      * @param id the feed id
      * @return a feed object
      * @throws ChainException
      */
-    public static Feed getByID(Context ctx, String id) throws ChainException {
+    public static Feed getByID(Client client, String id) throws ChainException {
       Map<String, Object> req = new HashMap<>();
       req.put("id", id);
-      return ctx.request("get-transaction-feed", req, Feed.class);
+      return client.request("get-transaction-feed", req, Feed.class);
     }
 
     /**
      * Retrieves a feed by alias.
      *
-     * @param ctx context object that makes requests to core
+     * @param client client object that makes requests to core
      * @param alias the feed alias
      * @return a feed object
      * @throws ChainException
      */
-    public static Feed getByAlias(Context ctx, String alias) throws ChainException {
+    public static Feed getByAlias(Client client, String alias) throws ChainException {
       Map<String, Object> req = new HashMap<>();
       req.put("alias", alias);
-      return ctx.request("get-transaction-feed", req, Feed.class);
+      return client.request("get-transaction-feed", req, Feed.class);
     }
 
     /**
@@ -1114,15 +1111,15 @@ public class Transaction {
      * If no such transaction is available, this method will block until a
      * matching transaction arrives in the blockchain, or if the specified
      * timeout is reached. To avoid client-side timeouts, be sure to call
-     * {@link Context#setReadTimeout(long, TimeUnit)} (long, TimeUnit)} with appropriate
+     * {@link Client#setReadTimeout(long, TimeUnit)} (long, TimeUnit)} with appropriate
      * parameters.
      *
-     * @param ctx context object that makes requests to core
+     * @param client client object that makes requests to core
      * @param timeout number of milliseconds before the server-side long-poll should time out
      * @return a transaction object
      * @throws ChainException
      */
-    public Transaction next(Context ctx, long timeout) throws ChainException {
+    public Transaction next(Client client, long timeout) throws ChainException {
       if (txIter == null || !txIter.hasNext()) {
         txIter =
             new QueryBuilder()
@@ -1130,7 +1127,7 @@ public class Transaction {
                 .setAfter(after)
                 .setTimeout(timeout)
                 .setAscendingWithLongPoll()
-                .execute(ctx)
+                .execute(client)
                 .list
                 .listIterator();
       }
@@ -1143,28 +1140,28 @@ public class Transaction {
      * Retrieves the next transaction matching the feed's filter criteria.
      * If no such transaction is available, this method will block until a
      * matching transaction arrives in the blockchain. To avoid client-side
-     * timeouts, be sure to call {@link Context#setReadTimeout(long, TimeUnit)}
+     * timeouts, be sure to call {@link Client#setReadTimeout(long, TimeUnit)}
      * with appropriate parameters.
      *
-     * @param ctx context object that makes requests to core
+     * @param client client object that makes requests to core
      * @return a transaction object
      * @throws ChainException
      */
-    public Transaction next(Context ctx) throws ChainException {
-      return next(ctx, 0);
+    public Transaction next(Client client) throws ChainException {
+      return next(client, 0);
     }
 
     /**
      * Persists the state of the transaction feed. Be sure to call this
      * periodically when consuming transactions with
-     * {@link #next(Context, long)}. The most conservative (albeit least
+     * {@link #next(Client, long)}. The most conservative (albeit least
      * performant) strategy is to call ack() once for every result returned by
-     * {@link #next(Context, long)}.
+     * {@link #next(Client, long)}.
      *
-     * @param ctx context object that makes requests to core
+     * @param client context object that makes requests to core
      * @throws ChainException
      */
-    public void ack(Context ctx) throws ChainException {
+    public void ack(Client client) throws ChainException {
       if (lastTx == null) {
         return;
       }
@@ -1177,7 +1174,7 @@ public class Transaction {
       req.put("id", this.id);
       req.put("previous_after", this.after);
       req.put("after", newAfter);
-      ctx.request("update-transaction-feed", req, Feed.class);
+      client.request("update-transaction-feed", req, Feed.class);
 
       this.after = newAfter;
     }

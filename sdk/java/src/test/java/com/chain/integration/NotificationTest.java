@@ -6,7 +6,7 @@ import com.chain.api.Asset;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
 
-import com.chain.http.Context;
+import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
 import org.junit.Test;
 
@@ -18,7 +18,7 @@ import java.util.concurrent.Future;
 import static org.junit.Assert.*;
 
 public class NotificationTest {
-  static Context context;
+  static Client client;
   static MockHsm.Key key;
 
   @Test
@@ -27,22 +27,22 @@ public class NotificationTest {
   }
 
   public void testTransactionNotification() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
     long amount = 1000;
     String alice = "TransactionTest.testTransactionNotification.alice";
     String asset = "TransactionTest.testTransactionNotification.test";
     String feed = "TransactionTest.testTransactionNotification.feed";
     String filter = "outputs(account_alias='" + alice + "')";
 
-    new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(context);
+    new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(client);
 
-    new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(context);
+    new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(client);
 
-    Transaction.Feed txfeed = Transaction.Feed.create(context, feed, filter);
+    Transaction.Feed txfeed = Transaction.Feed.create(client, feed, filter);
     ExecutorService executor = Executors.newFixedThreadPool(1);
-    Callable<Transaction> task = () -> txfeed.next(context);
+    Callable<Transaction> task = () -> txfeed.next(client);
     Future<Transaction> future = executor.submit(task);
 
     Transaction.Template issuance =
@@ -53,8 +53,8 @@ public class NotificationTest {
                     .setAccountAlias(alice)
                     .setAssetAlias(asset)
                     .setAmount(amount))
-            .build(context);
-    Transaction.submit(context, HsmSigner.sign(issuance));
+            .build(client);
+    Transaction.submit(client, HsmSigner.sign(issuance));
 
     Transaction tx = future.get();
     assertEquals(tx.inputs.get(0).type, "issue");

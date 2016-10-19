@@ -6,13 +6,13 @@ import com.chain.signing.*;
 
 class ControlPrograms {
   public static void main(String[] args) throws Exception {
-    Context context = new Context();
-    setup(context);
+    Client client = new Client();
+    setup(client);
 
     // snippet create-control-program
     ControlProgram aliceProgram = new ControlProgram.Builder()
       .controlWithAccountByAlias("alice")
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet build-transaction
@@ -25,9 +25,9 @@ class ControlPrograms {
         .setControlProgram(aliceProgram.program)
         .setAssetAlias("gold")
         .setAmount(10)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(paymentToProgram));
+    Transaction.submit(client, HsmSigner.sign(paymentToProgram));
     // endsnippet
 
     // snippet retire
@@ -39,35 +39,35 @@ class ControlPrograms {
       ).addAction(new Transaction.Action.Retire()
         .setAssetAlias("gold")
         .setAmount(10)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(retirement));
+    Transaction.submit(client, HsmSigner.sign(retirement));
     // endsnippet
   }
 
-  public static void setup(Context context) throws Exception {
-    MockHsm.Key key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+  public static void setup(Client client) throws Exception {
+    MockHsm.Key key = MockHsm.Key.create(client);
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
 
     new Asset.Builder()
       .setAlias("gold")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     new Account.Builder()
       .setAlias("alice")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     new Account.Builder()
       .setAlias("bob")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
-    Transaction.submit(context, HsmSigner.sign(new Transaction.Builder()
+    Transaction.submit(client, HsmSigner.sign(new Transaction.Builder()
       .addAction(new Transaction.Action.Issue()
         .setAssetAlias("gold")
         .setAmount(100)
@@ -75,7 +75,7 @@ class ControlPrograms {
         .setAccountAlias("bob")
         .setAssetAlias("gold")
         .setAmount(100)
-      ).build(context)
+      ).build(client)
     ));
   }
 }

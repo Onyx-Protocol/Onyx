@@ -5,38 +5,38 @@ import com.chain.http.BatchResponse;
 
 import com.chain.api.Transaction;
 import com.chain.exception.*;
-import com.chain.http.Context;
+import com.chain.http.Client;
 
 import java.util.*;
 
 public class HsmSigner {
-  private static Map<Context, List<String>> hsmXPubs = new HashMap();
+  private static Map<Client, List<String>> hsmXPubs = new HashMap();
 
-  public static void addKey(String xpub, Context hsm) {
+  public static void addKey(String xpub, Client hsm) {
     if (!hsmXPubs.containsKey(hsm)) {
       hsmXPubs.put(hsm, new ArrayList<>());
     }
     hsmXPubs.get(hsm).add(xpub);
   }
 
-  public static void addKey(MockHsm.Key key, Context hsm) {
+  public static void addKey(MockHsm.Key key, Client hsm) {
     addKey(key.xpub, hsm);
   }
 
-  public static void addKeys(Context hsm, List<MockHsm.Key> keys) {
+  public static void addKeys(Client hsm, List<MockHsm.Key> keys) {
     for (MockHsm.Key key : keys) {
       addKey(key.xpub, hsm);
     }
   }
 
   public static Transaction.Template sign(Transaction.Template template) throws ChainException {
-    for (Map.Entry<Context, List<String>> entry : hsmXPubs.entrySet()) {
-      Context context = entry.getKey();
+    for (Map.Entry<Client, List<String>> entry : hsmXPubs.entrySet()) {
+      Client client = entry.getKey();
       HashMap<String, Object> body = new HashMap();
       body.put("transactions", Arrays.asList(template));
       body.put("xpubs", entry.getValue());
       template =
-          context.singletonBatchRequest("sign-transaction", body, Transaction.Template.class);
+          client.singletonBatchRequest("sign-transaction", body, Transaction.Template.class);
     }
     return template;
   }
@@ -53,8 +53,8 @@ public class HsmSigner {
 
     Map<Integer, APIException> errors = new HashMap<>();
 
-    for (Map.Entry<Context, List<String>> entry : hsmXPubs.entrySet()) {
-      Context hsm = entry.getKey();
+    for (Map.Entry<Client, List<String>> entry : hsmXPubs.entrySet()) {
+      Client hsm = entry.getKey();
       HashMap<String, Object> requestBody = new HashMap();
       requestBody.put("transactions", tmpls);
       requestBody.put("xpubs", entry.getValue());

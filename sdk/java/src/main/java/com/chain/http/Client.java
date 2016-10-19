@@ -20,19 +20,19 @@ import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
 /**
- * The Context object contains all information necessary to
+ * The Client object contains all information necessary to
  * perform an HTTP request against a remote API.
  */
-public class Context {
+public class Client {
 
   private URL url;
   private String accessToken;
   private OkHttpClient httpClient;
 
   /**
-   * Create a new http Context object using the default development host URL.
+   * Create a new http Client object using the default development host URL.
    */
-  public Context() {
+  public Client() {
     URL url;
     try {
       url = new URL("http://localhost:1999");
@@ -46,23 +46,23 @@ public class Context {
   }
 
   /**
-   * Create a new http Context object
+   * Create a new http Client object
    *
    * @param url The URL of the Chain Core or HSM
    */
-  public Context(URL url) {
+  public Client(URL url) {
     this.url = url;
     this.httpClient = new OkHttpClient();
     this.httpClient.setFollowRedirects(false);
   }
 
   /**
-   * Create a new http Context object
+   * Create a new http Client object
    *
    * @param url The URL of the Chain Core or HSM
    * @param accessToken A Client API access token.
    */
-  public Context(URL url, String accessToken) {
+  public Client(URL url, String accessToken) {
     this(url);
     this.accessToken = accessToken;
   }
@@ -374,9 +374,9 @@ public class Context {
   @Override
   public boolean equals(Object o) {
     if (o == null) return false;
-    if (!(o instanceof Context)) return false;
+    if (!(o instanceof Client)) return false;
 
-    Context other = (Context) o;
+    Client other = (Client) o;
     return this.identifier().equals(other.identifier());
   }
 }

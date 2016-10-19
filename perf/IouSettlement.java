@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.chain.api.*;
 import com.chain.api.MockHsm.Key;
-import com.chain.http.Context;
+import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
 
 public class IouSettlement {
@@ -25,20 +25,20 @@ public class IouSettlement {
     String accessToken = System.getenv("CHAIN_API_TOKEN");
     System.out.println(coreURL);
     System.out.println(accessToken);
-    Context ctx = new Context(new URL(coreURL), accessToken);
-    ctx.setConnectTimeout(10, TimeUnit.MINUTES);
-    ctx.setReadTimeout(10, TimeUnit.MINUTES);
-    ctx.setWriteTimeout(10, TimeUnit.MINUTES);
-    bench(ctx);
+    Client client = new Client(new URL(coreURL), accessToken);
+    client.setConnectTimeout(10, TimeUnit.MINUTES);
+    client.setReadTimeout(10, TimeUnit.MINUTES);
+    client.setWriteTimeout(10, TimeUnit.MINUTES);
+    bench(client);
     System.exit(0);
   }
 
-  static void bench(Context ctx) throws Exception {
-    MockHsm.Key dealerAccountKey = MockHsm.Key.create(ctx);
-    MockHsm.Key dealerIssuerKey = MockHsm.Key.create(ctx);
-    MockHsm.Key northBankIssuerKey = MockHsm.Key.create(ctx);
-    MockHsm.Key southBankIssuerKey = MockHsm.Key.create(ctx);
-    loadKeys(ctx);
+  static void bench(Client client) throws Exception {
+    MockHsm.Key dealerAccountKey = MockHsm.Key.create(client);
+    MockHsm.Key dealerIssuerKey = MockHsm.Key.create(client);
+    MockHsm.Key northBankIssuerKey = MockHsm.Key.create(client);
+    MockHsm.Key southBankIssuerKey = MockHsm.Key.create(client);
+    loadKeys(client);
 
     new Asset.Builder()
         .setAlias("dealerusd")
@@ -46,46 +46,46 @@ public class IouSettlement {
         .setQuorum(1)
         .addTag("entity", "dealer")
         .addTag("currency", "usd")
-        .create(ctx);
+        .create(client);
 
     new Asset.Builder()
         .setAlias("nbusd")
         .addRootXpub(northBankIssuerKey.xpub)
         .setQuorum(1)
         .addTag("currency", "usd")
-        .create(ctx);
+        .create(client);
 
     new Asset.Builder()
         .setAlias("sbusd")
         .addRootXpub(southBankIssuerKey.xpub)
         .setQuorum(1)
         .addTag("currency", "usd")
-        .create(ctx);
+        .create(client);
 
     new Account.Builder()
         .setAlias("dealer")
         .addRootXpub(dealerAccountKey.xpub)
         .setQuorum(1)
-        .create(ctx);
+        .create(client);
 
     new Account.Builder()
         .setAlias("nb")
         .addRootXpub(dealerAccountKey.xpub)
         .setQuorum(1)
-        .create(ctx);
+        .create(client);
 
     new Account.Builder()
         .setAlias("sb")
         .addRootXpub(dealerAccountKey.xpub)
         .setQuorum(1)
-        .create(ctx);
+        .create(client);
 
-    Dealer dealer = new Dealer(ctx, getAccount(ctx, "dealer"), getAsset(ctx, "dealerusd"));
-    Bank northBank = new Bank(ctx, dealer, getAsset(ctx, "nbusd"), getAccount(ctx, "nb"));
-    Bank southBank = new Bank(ctx, dealer, getAsset(ctx, "sbusd"), getAccount(ctx, "sb"));
+    Dealer dealer = new Dealer(client, getAccount(client, "dealer"), getAsset(client, "dealerusd"));
+    Bank northBank = new Bank(client, dealer, getAsset(client, "nbusd"), getAccount(client, "nb"));
+    Bank southBank = new Bank(client, dealer, getAsset(client, "sbusd"), getAccount(client, "sb"));
 
-    Corp acme = new Corp("acme", northBank, ctx);
-    Corp zzzz = new Corp("zzzz", southBank, ctx);
+    Corp acme = new Corp("acme", northBank, client);
+    Corp zzzz = new Corp("zzzz", southBank, client);
 
     // Number of threads per corp.
     final int nthread = 20;
@@ -148,29 +148,29 @@ public class IouSettlement {
     stats.close();
   }
 
-  static Asset getAsset(Context ctx, String id) throws Exception {
+  static Asset getAsset(Client client, String id) throws Exception {
     String q = String.format("alias='%s'", id);
-    Asset.Items assets = new Asset.QueryBuilder().setFilter(q).execute(ctx);
+    Asset.Items assets = new Asset.QueryBuilder().setFilter(q).execute(client);
     if (assets.list.size() != 1) {
       throw new Exception(String.format("missing asset: %s", id));
     }
     return assets.list.get(0);
   }
 
-  static Account getAccount(Context ctx, String id) throws Exception {
+  static Account getAccount(Client client, String id) throws Exception {
     Account.Items accounts =
-        new Account.QueryBuilder().setFilter(String.format("alias='%s'", id)).execute(ctx);
+        new Account.QueryBuilder().setFilter(String.format("alias='%s'", id)).execute(client);
     if (accounts.list.size() != 1) {
       throw new Exception(String.format("missing account: %s", id));
     }
     return accounts.list.get(0);
   }
 
-  static void loadKeys(Context ctx) throws Exception {
-    Key.Items keys = new MockHsm.Key.QueryBuilder().execute(ctx);
+  static void loadKeys(Client client) throws Exception {
+    Key.Items keys = new MockHsm.Key.QueryBuilder().execute(client);
     while (keys.hasNext()) {
       Key k = keys.next();
-      HsmSigner.addKey(k.xpub, MockHsm.getSignerContext(ctx));
+      HsmSigner.addKey(k.xpub, MockHsm.getSignerClient(client));
     }
   }
 }
@@ -179,10 +179,10 @@ class Bank {
   Asset asset;
   Account account;
   Dealer dealer;
-  Context ctx;
+  Client client;
 
-  Bank(Context ctx, Dealer dealer, Asset asset, Account account) {
-    this.ctx = ctx;
+  Bank(Client client, Dealer dealer, Asset asset, Account account) {
+    this.client = client;
     this.dealer = dealer;
     this.asset = asset;
     this.account = account;
@@ -211,22 +211,22 @@ class Bank {
                       .setAmount(1)
                       .setReferenceData(payee.ref())));
     }
-    List<Transaction.Template> templates = Transaction.buildBatch(ctx, builders).successes();
+    List<Transaction.Template> templates = Transaction.buildBatch(client, builders).successes();
     List<Transaction.Template> signedTemplates = HsmSigner.signBatch(templates).successes();
     List<Transaction.SubmitResponse> txs =
-        Transaction.submitBatch(ctx, signedTemplates).successes();
+        Transaction.submitBatch(client, signedTemplates).successes();
   }
 }
 
 class Corp {
   String name;
   Bank bank;
-  Context ctx;
+  Client client;
 
-  Corp(String name, Bank bank, Context ctx) {
+  Corp(String name, Bank bank, Client client) {
     this.name = name;
     this.bank = bank;
-    this.ctx = ctx;
+    this.client = client;
   }
 
   void pay(Corp payee, Integer times) throws Exception {
@@ -243,11 +243,11 @@ class Corp {
 class Dealer {
   Account account;
   Asset usd;
-  Context ctx;
+  Client client;
 
-  Dealer(Context ctx, Account account, Asset usd) {
+  Dealer(Client client, Account account, Asset usd) {
     this.account = account;
     this.usd = usd;
-    this.ctx = ctx;
+    this.client = client;
   }
 }

@@ -8,21 +8,21 @@ import com.chain.signing.*;
 class MultipartyTrades {
   public static void main(String[] args) throws Exception {
     // This demo is written to run on either one or two cores. Simply provide
-    // different URLs to the following contexts for the two-core version.
-    Context aliceCore = new Context();
-    Context bobCore = new Context();
+    // different URLs to the following clients for the two-core version.
+    Client aliceCore = new Client();
+    Client bobCore = new Client();
 
     MockHsm.Key aliceDollarKey = MockHsm.Key.create(aliceCore);
-    HsmSigner.addKey(aliceDollarKey, MockHsm.getSignerContext(aliceCore));
+    HsmSigner.addKey(aliceDollarKey, MockHsm.getSignerClient(aliceCore));
 
     MockHsm.Key bobBuckKey = MockHsm.Key.create(bobCore);
-    HsmSigner.addKey(bobBuckKey, MockHsm.getSignerContext(bobCore));
+    HsmSigner.addKey(bobBuckKey, MockHsm.getSignerClient(bobCore));
 
     MockHsm.Key aliceKey = MockHsm.Key.create(aliceCore);
-    HsmSigner.addKey(aliceKey, MockHsm.getSignerContext(aliceCore));
+    HsmSigner.addKey(aliceKey, MockHsm.getSignerClient(aliceCore));
 
     MockHsm.Key bobKey = MockHsm.Key.create(bobCore);
-    HsmSigner.addKey(bobKey, MockHsm.getSignerContext(bobCore));
+    HsmSigner.addKey(bobKey, MockHsm.getSignerClient(bobCore));
 
     Asset aliceDollar = new Asset.Builder()
       .setAlias("aliceDollar")
@@ -77,7 +77,7 @@ class MultipartyTrades {
     crossCore(aliceCore, bobCore, alice, bob, aliceDollar.id, bobBuck.id);
   }
 
-  public static void sameCore(Context context) throws Exception {
+  public static void sameCore(Client client) throws Exception {
     // snippet same-core-trade
     Transaction.Template trade = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendFromAccount()
@@ -96,14 +96,14 @@ class MultipartyTrades {
         .setAccountAlias("bob")
         .setAssetAlias("aliceDollar")
         .setAmount(50)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(trade));
+    Transaction.submit(client, HsmSigner.sign(trade));
     // endsnippet
   }
 
   public static void crossCore(
-    Context aliceCore, Context bobCore,
+    Client aliceCore, Client bobCore,
     Account alice, Account bob,
     String aliceDollarAssetId, String bobBuckAssetId
   ) throws Exception {

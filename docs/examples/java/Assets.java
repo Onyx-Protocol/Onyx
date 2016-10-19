@@ -6,19 +6,19 @@ import com.chain.signing.*;
 
 class Assets {
   public static void main(String[] args) throws Exception {
-    Context context = new Context();
+    Client client = new Client();
 
-    MockHsm.Key assetKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(assetKey, MockHsm.getSignerContext(context));
+    MockHsm.Key assetKey = MockHsm.Key.create(client);
+    HsmSigner.addKey(assetKey, MockHsm.getSignerClient(client));
 
-    MockHsm.Key accountKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(accountKey, MockHsm.getSignerContext(context));
+    MockHsm.Key accountKey = MockHsm.Key.create(client);
+    HsmSigner.addKey(accountKey, MockHsm.getSignerClient(client));
 
     new Account.Builder()
       .setAlias("acme_treasury")
       .addRootXpub(accountKey.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     // snippet create-asset-acme-common
     new Asset.Builder()
@@ -30,7 +30,7 @@ class Assets {
       .addDefinitionField("type", "security")
       .addDefinitionField("subtype", "private")
       .addDefinitionField("class", "common")
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet create-asset-acme-preferred
@@ -43,14 +43,14 @@ class Assets {
       .addDefinitionField("type", "security")
       .addDefinitionField("subtype", "private")
       .addDefinitionField("class", "perferred")
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet list-local-assets
     Asset.Items localAssets = new Asset.QueryBuilder()
       .setFilter("is_local=$1")
       .addFilterParameter("yes")
-      .execute(context);
+      .execute(client);
 
     while (localAssets.hasNext()) {
       Asset asset = localAssets.next();
@@ -64,7 +64,7 @@ class Assets {
       .addFilterParameter("security")
       .addFilterParameter("private")
       .addFilterParameter("preferred")
-      .execute(context);
+      .execute(client);
     // endsnippet
 
     // snippet build-issue
@@ -76,7 +76,7 @@ class Assets {
         .setAccountAlias("acme_treasury")
         .setAssetAlias("acme_common")
         .setAmount(1000)
-      ).build(context);
+      ).build(client);
     // endsnippet
 
     // snippet sign-issue
@@ -84,12 +84,12 @@ class Assets {
     // endsnippet
 
     // snippet submit-issue
-    Transaction.submit(context, signedIssuanceTransaction);
+    Transaction.submit(client, signedIssuanceTransaction);
     // endsnippet
 
     ControlProgram externalProgram = new ControlProgram.Builder()
       .controlWithAccountByAlias("acme_treasury")
-      .create(context);
+      .create(client);
 
     // snippet external-issue
     Transaction.Template externalIssuance = new Transaction.Builder()
@@ -100,9 +100,9 @@ class Assets {
         .setControlProgram(externalProgram)
         .setAssetAlias("acme_preferred")
         .setAmount(2000)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(externalIssuance));
+    Transaction.submit(client, HsmSigner.sign(externalIssuance));
     // endsnippet
 
     // snippet build-retire
@@ -114,7 +114,7 @@ class Assets {
       ).addAction(new Transaction.Action.Retire()
         .setAssetAlias("acme_common")
         .setAmount(50)
-      ).build(context);
+      ).build(client);
     // endsnippet
 
     // snippet sign-retire
@@ -122,7 +122,7 @@ class Assets {
     // endsnippet
 
     // snippet submit-retire
-    Transaction.submit(context, signedRetirementTransaction);
+    Transaction.submit(client, signedRetirementTransaction);
     // endsnippet
 
     // snippet list-issuances
@@ -130,7 +130,7 @@ class Assets {
       .setFilter("inputs(action=$1 AND asset_alias=$2)")
       .addFilterParameter("issue")
       .addFilterParameter("acme_common")
-      .execute(context);
+      .execute(client);
 
     while (acmeCommonIssuances.hasNext()) {
       Transaction tx = acmeCommonIssuances.next();
@@ -143,7 +143,7 @@ class Assets {
       .setFilter("inputs(action=$1 AND asset_alias=$2)")
       .addFilterParameter("spend")
       .addFilterParameter("acme_common")
-      .execute(context);
+      .execute(client);
 
     while (acmeCommonTransfers.hasNext()) {
       Transaction tx = acmeCommonTransfers.next();
@@ -156,7 +156,7 @@ class Assets {
       .setFilter("outputs(action=$1 AND asset_alias=$2)")
       .addFilterParameter("retire")
       .addFilterParameter("acme_common")
-      .execute(context);
+      .execute(client);
 
     while (acmeCommonRetirements.hasNext()) {
       Transaction tx = acmeCommonRetirements.next();
@@ -168,7 +168,7 @@ class Assets {
     Balance.Items acmeCommonBalances = new Balance.QueryBuilder()
       .setFilter("asset_alias=$1")
       .addFilterParameter("acme_common")
-      .execute(context);
+      .execute(client);
 
     Balance acmeCommonBalance = acmeCommonBalances.next();
     System.out.println("Total circulation of Acme Common: " + acmeCommonBalance.amount);
@@ -178,7 +178,7 @@ class Assets {
     Balance.Items acmeAnyBalances = new Balance.QueryBuilder()
       .setFilter("asset_definition.issuer=$1")
       .addFilterParameter("Acme Inc.")
-      .execute(context);
+      .execute(client);
 
     while (acmeAnyBalances.hasNext()) {
       Balance stockBalance = acmeAnyBalances.next();
@@ -193,7 +193,7 @@ class Assets {
     UnspentOutput.Items acmeCommonUnspentOutputs = new UnspentOutput.QueryBuilder()
       .setFilter("asset_alias=$1")
       .addFilterParameter("acme_common")
-      .execute(context);
+      .execute(client);
 
     while (acmeCommonUnspentOutputs.hasNext()) {
       UnspentOutput utxo = acmeCommonUnspentOutputs.next();

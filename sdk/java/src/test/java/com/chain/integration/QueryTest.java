@@ -7,7 +7,7 @@ import com.chain.api.Balance;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
 import com.chain.api.UnspentOutput;
-import com.chain.http.Context;
+import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
 
 import org.junit.Test;
@@ -22,7 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class QueryTest {
-  static Context context;
+  static Client client;
   static MockHsm.Key key;
   final static int PAGE_SIZE = 100;
 
@@ -38,51 +38,51 @@ public class QueryTest {
   }
 
   public void testKeyQuery() throws Exception {
-    context = TestUtils.generateContext();
+    client = TestUtils.generateClient();
     for (int i = 0; i < 10; i++) {
-      MockHsm.Key.create(context, String.format("%d", i));
+      MockHsm.Key.create(client, String.format("%d", i));
     }
     MockHsm.Key.Items items =
         new MockHsm.Key.QueryBuilder()
             .setAliases(Arrays.asList("1", "2", "3"))
             .addAlias("4")
             .addAlias("5")
-            .execute(context);
+            .execute(client);
     assertEquals(5, items.list.size());
   }
 
   public void testAccountQuery() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
     String alice = "QueryTest.testAccountQuery.alice";
-    new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(context);
+    new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(client);
     Account.Items items =
-        new Account.QueryBuilder().setFilter("alias=$1").addFilterParameter(alice).execute(context);
+        new Account.QueryBuilder().setFilter("alias=$1").addFilterParameter(alice).execute(client);
     assertEquals(1, items.list.size());
     assertEquals(alice, items.next().alias);
   }
 
   public void testAssetQuery() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
     String asset = "QueryTest.testAssetQuery.alice";
-    new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(context);
+    new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(client);
     Asset.Items items =
-        new Asset.QueryBuilder().setFilter("alias=$1").addFilterParameter(asset).execute(context);
+        new Asset.QueryBuilder().setFilter("alias=$1").addFilterParameter(asset).execute(client);
     assertEquals(1, items.list.size());
     assertEquals(asset, items.next().alias);
   }
 
   public void testAssetPagination() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
     String tag = "QueryTest.testAssetPagination.tag";
     for (int i = 0; i < PAGE_SIZE + 1; i++) {
-      new Asset.Builder().addRootXpub(key.xpub).setQuorum(1).addTag("tag", tag).create(context);
+      new Asset.Builder().addRootXpub(key.xpub).setQuorum(1).addTag("tag", tag).create(client);
     }
 
     Asset.Items items =
-        new Asset.QueryBuilder().setFilter("tags.tag=$1").addFilterParameter(tag).execute(context);
+        new Asset.QueryBuilder().setFilter("tags.tag=$1").addFilterParameter(tag).execute(client);
     assertEquals(items.list.size(), PAGE_SIZE);
     int counter = 0;
     while (items.hasNext()) {
@@ -93,16 +93,16 @@ public class QueryTest {
   }
 
   public void testTransactionQuery() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
     String alice = "QueryTest.testTransactionQuery.alice";
     String asset = "QueryTest.testTransactionQuery.asset";
     String test = "QueryTest.testTransactionQuery.test";
     long amount = 100;
 
-    new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(context);
-    new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(context);
+    new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(client);
+    new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(client);
 
     Map<String, Object> refData = new HashMap<>();
     refData.put("asset", asset);
@@ -125,14 +125,14 @@ public class QueryTest {
                 new Transaction.Action.SetTransactionReferenceData()
                     .setReferenceData(refData)
                     .addReferenceDataField("test", test))
-            .build(context);
-    Transaction.submit(context, HsmSigner.sign(issuance));
+            .build(client);
+    Transaction.submit(client, HsmSigner.sign(issuance));
 
     Transaction.Items txs =
         new Transaction.QueryBuilder()
             .setFilter("inputs(reference_data.test=$1)")
             .addFilterParameter(test)
-            .execute(context);
+            .execute(client);
     Transaction tx = txs.next();
     assertNotNull(tx.id);
     assertNotNull(tx.blockId);
@@ -153,7 +153,7 @@ public class QueryTest {
         new Transaction.QueryBuilder()
             .setFilter("outputs(reference_data.test=$1)")
             .addFilterParameter(test)
-            .execute(context);
+            .execute(client);
     tx = txs.next();
     assertEquals(1, txs.list.size());
     assertEquals(asset, tx.referenceData.get("asset"));
@@ -163,7 +163,7 @@ public class QueryTest {
         new Transaction.QueryBuilder()
             .setFilter("reference_data.test=$1")
             .addFilterParameter(test)
-            .execute(context);
+            .execute(client);
     tx = txs.next();
     assertEquals(1, txs.list.size());
     assertEquals(asset, tx.referenceData.get("asset"));
@@ -171,9 +171,9 @@ public class QueryTest {
   }
 
   public void testBalanceQuery() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
     String asset = "QueryTest.testBalanceQuery.asset";
     String alice = "QueryTest.testBalanceQuery.alice";
     String test = "QueryTest.testBalanceQuery.test";
@@ -184,7 +184,7 @@ public class QueryTest {
         .setAlias(asset)
         .addTag("name", asset)
         .setQuorum(1)
-        .create(context);
+        .create(client);
 
     for (int i = 0; i < 10; i++) {
       Account account =
@@ -192,7 +192,7 @@ public class QueryTest {
               .setAlias(alice + i)
               .addRootXpub(key.xpub)
               .setQuorum(1)
-              .create(context);
+              .create(client);
       Transaction.Template issuance =
           new Transaction.Builder()
               .addAction(new Transaction.Action.Issue().setAssetAlias(asset).setAmount(amount))
@@ -202,15 +202,15 @@ public class QueryTest {
                       .setAssetAlias(asset)
                       .setAmount(amount)
                       .addReferenceDataField("test", test))
-              .build(context);
-      Transaction.submit(context, HsmSigner.sign(issuance));
+              .build(client);
+      Transaction.submit(client, HsmSigner.sign(issuance));
     }
 
     Balance.Items items =
         new Balance.QueryBuilder()
             .setFilter("reference_data.test=$1")
             .addFilterParameter(test)
-            .execute(context);
+            .execute(client);
     Balance bal = items.next();
     assertNotNull(bal.sumBy);
     assertNotNull(bal.sumBy.get("asset_alias"));
@@ -220,9 +220,9 @@ public class QueryTest {
   }
 
   public void testUnspentOutputQuery() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
     String asset = "QueryTest.testUnspentOutputQuery.asset";
     String alice = "QueryTest.testUnspentOutputQuery.alice";
     String test = "QueryTest.testUnspentOutputQuery.test";
@@ -233,7 +233,7 @@ public class QueryTest {
         .setAlias(asset)
         .addTag("name", asset)
         .setQuorum(1)
-        .create(context);
+        .create(client);
 
     for (int i = 0; i < 10; i++) {
       Account account =
@@ -241,7 +241,7 @@ public class QueryTest {
               .setAlias(alice + i)
               .addRootXpub(key.xpub)
               .setQuorum(1)
-              .create(context);
+              .create(client);
       Transaction.Template issuance =
           new Transaction.Builder()
               .addAction(new Transaction.Action.Issue().setAssetAlias(asset).setAmount(amount))
@@ -251,15 +251,15 @@ public class QueryTest {
                       .setAssetAlias(asset)
                       .setAmount(amount)
                       .addReferenceDataField("test", test))
-              .build(context);
-      Transaction.submit(context, HsmSigner.sign(issuance));
+              .build(client);
+      Transaction.submit(client, HsmSigner.sign(issuance));
     }
 
     UnspentOutput.Items items =
         new UnspentOutput.QueryBuilder()
             .setFilter("reference_data.test=$1")
             .addFilterParameter(test)
-            .execute(context);
+            .execute(client);
     UnspentOutput unspent = items.next();
     assertNotNull(unspent.purpose);
     assertNotNull(unspent.transactionId);
@@ -273,8 +273,8 @@ public class QueryTest {
   // method and for pagination, testing pagination for one
   // api object is sufficient for exercising the code path.
   public void testPagination() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
     String tag = "QueryTest.testPagination.tag";
     for (int i = 0; i < PAGE_SIZE + 1; i++) {
       new Account.Builder()
@@ -282,14 +282,14 @@ public class QueryTest {
           .setAlias(String.format("%d", i))
           .setQuorum(1)
           .addTag("tag", tag)
-          .create(context);
+          .create(client);
     }
 
     Account.Items items =
         new Account.QueryBuilder()
             .setFilter("tags.tag=$1")
             .addFilterParameter(tag)
-            .execute(context);
+            .execute(client);
     assertEquals(PAGE_SIZE, items.list.size());
     int counter = 0;
     while (items.hasNext()) {

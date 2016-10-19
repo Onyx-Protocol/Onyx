@@ -2,7 +2,7 @@ import com.chain.api.Account;
 import com.chain.api.Asset;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
-import com.chain.http.Context;
+import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
 
 import java.math.BigInteger;
@@ -11,15 +11,15 @@ import java.util.Arrays;
 
 public class Quickstart {
   public static void main(String[] args) throws Exception {
-    Context context = new Context(new URL(System.getenv("CHAIN_API_URL")));
-    MockHsm.Key mainKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(mainKey, MockHsm.getSignerContext(context));
+    Client client = new Client(new URL(System.getenv("CHAIN_API_URL")));
+    MockHsm.Key mainKey = MockHsm.Key.create(client);
+    HsmSigner.addKey(mainKey, MockHsm.getSignerClient(client));
 
-    new Account.Builder().setAlias("alice").addRootXpub(mainKey.xpub).setQuorum(1).create(context);
+    new Account.Builder().setAlias("alice").addRootXpub(mainKey.xpub).setQuorum(1).create(client);
 
-    new Account.Builder().setAlias("bob").addRootXpub(mainKey.xpub).setQuorum(1).create(context);
+    new Account.Builder().setAlias("bob").addRootXpub(mainKey.xpub).setQuorum(1).create(client);
 
-    new Asset.Builder().setAlias("gold").addRootXpub(mainKey.xpub).setQuorum(1).create(context);
+    new Asset.Builder().setAlias("gold").addRootXpub(mainKey.xpub).setQuorum(1).create(client);
 
     Transaction.Template issuance =
         new Transaction.Builder()
@@ -29,8 +29,8 @@ public class Quickstart {
                     .setAccountAlias("alice")
                     .setAssetAlias("gold")
                     .setAmount(100))
-            .build(context);
-    Transaction.submit(context, HsmSigner.sign(issuance));
+            .build(client);
+    Transaction.submit(client, HsmSigner.sign(issuance));
 
     Transaction.Template spending =
         new Transaction.Builder()
@@ -44,8 +44,8 @@ public class Quickstart {
                     .setAccountAlias("bob")
                     .setAssetAlias("gold")
                     .setAmount(10))
-            .build(context);
-    Transaction.submit(context, HsmSigner.sign(spending));
+            .build(client);
+    Transaction.submit(client, HsmSigner.sign(spending));
 
     Transaction.Template retirement =
         new Transaction.Builder()
@@ -55,7 +55,7 @@ public class Quickstart {
                     .setAssetAlias("gold")
                     .setAmount(5))
             .addAction(new Transaction.Action.Retire().setAssetAlias("gold").setAmount(5))
-            .build(context);
-    Transaction.submit(context, HsmSigner.sign(retirement));
+            .build(client);
+    Transaction.submit(client, HsmSigner.sign(retirement));
   }
 }

@@ -7,10 +7,10 @@ import com.chain.signing.*;
 
 class BatchOperations {
   public static void main(String[] args) throws Exception {
-    Context context = new Context();
+    Client client = new Client();
 
-    MockHsm.Key key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+    MockHsm.Key key = MockHsm.Key.create(client);
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
 
     // snippet asset-builders
     List<Asset.Builder> assetBuilders = Arrays.asList(
@@ -30,7 +30,7 @@ class BatchOperations {
     // endsnippet
 
     // snippet asset-create-batch
-    BatchResponse<Asset> assetBatch = Asset.createBatch(context, assetBuilders);
+    BatchResponse<Asset> assetBatch = Asset.createBatch(client, assetBuilders);
     // endsnippet
 
     // snippet asset-create-handle-errors
@@ -62,7 +62,7 @@ class BatchOperations {
     );
     // endsnippet
 
-    assetBatch = Asset.createBatch(context, assetBuilders);
+    assetBatch = Asset.createBatch(client, assetBuilders);
 
     for (int i = 0; i < assetBatch.size(); i++) {
       if (assetBatch.isError(i)) {
@@ -78,13 +78,13 @@ class BatchOperations {
       .setAlias("alice")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     new Account.Builder()
       .setAlias("bob")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     // snippet batch-build-builders
     List<Transaction.Builder> txBuilders = Arrays.asList(
@@ -119,7 +119,7 @@ class BatchOperations {
     // endsnippet
 
     // snippet batch-build-handle-errors
-    BatchResponse<Transaction.Template> buildTxBatch = Transaction.buildBatch(context, txBuilders);
+    BatchResponse<Transaction.Template> buildTxBatch = Transaction.buildBatch(client, txBuilders);
 
     for(Map.Entry<Integer, APIException> err : buildTxBatch.errorsByIndex().entrySet()) {
       System.out.println("Error building transaction " + err.getKey() + ": " + err.getValue());
@@ -135,7 +135,7 @@ class BatchOperations {
     // endsnippet
 
     // snippet batch-submit
-    BatchResponse<Transaction.SubmitResponse> submitTxBatch = Transaction.submitBatch(context, signTxBatch.successes());
+    BatchResponse<Transaction.SubmitResponse> submitTxBatch = Transaction.submitBatch(client, signTxBatch.successes());
 
     for(Map.Entry<Integer, APIException> err : submitTxBatch.errorsByIndex().entrySet()) {
       System.out.println("Error submitting transaction " + err.getKey() + ": " + err.getValue());

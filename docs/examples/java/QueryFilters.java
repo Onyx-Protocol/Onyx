@@ -6,20 +6,20 @@ import com.chain.signing.*;
 
 class QueryFilters {
   public static void main(String[] args) throws Exception {
-    Context context = new Context();
+    Client client = new Client();
 
     // snippet list-alice-transactions
     Transaction.Items aliceTransaction = new Transaction.QueryBuilder()
       .setFilter("inputs(account_alias=$1) AND outputs(account_alias=$1)")
       .addFilterParameter("alice")
-      .execute(context);
+      .execute(client);
     // endsnippet
 
     // snippet list-local-transactions
     Transaction.Items localTransactions = new Transaction.QueryBuilder()
       .setFilter("is_local=$1")
       .addFilterParameter("yes")
-      .execute(context);
+      .execute(client);
     // endsnippet
   }
 }

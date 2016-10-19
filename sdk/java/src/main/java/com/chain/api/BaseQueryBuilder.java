@@ -1,14 +1,14 @@
 package com.chain.api;
 
 import com.chain.exception.ChainException;
-import com.chain.http.Context;
+import com.chain.http.Client;
 
 import java.util.ArrayList;
 
 public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
   protected Query next;
 
-  public abstract <S extends PagedItems> S execute(Context ctx) throws ChainException;
+  public abstract <S extends PagedItems> S execute(Client client) throws ChainException;
 
   public BaseQueryBuilder() {
     this.next = new Query();

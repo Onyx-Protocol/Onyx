@@ -6,7 +6,7 @@ import com.chain.exception.ChainException;
 import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
-import com.chain.http.Context;
+import com.chain.http.Client;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -20,18 +20,18 @@ import java.util.Map;
  */
 public class MockHsm {
   /**
-   * Returns a new context that knows how to make requests to the mock hsm.
-   * @param ctx context object that makes request to the core
-   * @return new context object
+   * Returns a new client that knows how to make requests to the mock hsm.
+   * @param client client object that makes request to the core
+   * @return new client object
    * @throws BadURLException
    */
-  public static Context getSignerContext(Context ctx) throws BadURLException {
+  public static Client getSignerClient(Client client) throws BadURLException {
     try {
-      URL signerUrl = new URL(ctx.url().toString() + "/mockhsm");
-      if (ctx.hasAccessToken()) {
-        return new Context(signerUrl, ctx.accessToken());
+      URL signerUrl = new URL(client.url().toString() + "/mockhsm");
+      if (client.hasAccessToken()) {
+        return new Client(signerUrl, client.accessToken());
       }
-      return new Context(signerUrl);
+      return new Client(signerUrl);
     } catch (MalformedURLException e) {
       throw new BadURLException(e.getMessage());
     }
@@ -54,7 +54,7 @@ public class MockHsm {
 
     /**
      * Creates a key object.
-     * @param ctx context object that makes requests to the core
+     * @param client client object that makes requests to the core
      * @return a key object
      * @throws APIException This exception is raised if the api returns errors while creating the key.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -62,14 +62,14 @@ public class MockHsm {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public static Key create(Context ctx) throws ChainException {
-      Key key = ctx.request("mockhsm/create-key", null, Key.class);
+    public static Key create(Client client) throws ChainException {
+      Key key = client.request("mockhsm/create-key", null, Key.class);
       return key;
     }
 
     /**
      * Creates a key object.
-     * @param ctx context object that makes requests to the core
+     * @param client client object that makes requests to the core
      * @param alias user specified identifier
      * @return a key object
      * @throws APIException This exception is raised if the api returns errors while creating the key.
@@ -78,10 +78,10 @@ public class MockHsm {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public static Key create(Context ctx, String alias) throws ChainException {
+    public static Key create(Client client, String alias) throws ChainException {
       Map<String, Object> req = new HashMap<>();
       req.put("alias", alias);
-      Key key = ctx.request("mockhsm/create-key", req, Key.class);
+      Key key = client.request("mockhsm/create-key", req, Key.class);
       return key;
     }
 
@@ -100,8 +100,8 @@ public class MockHsm {
        */
       @Override
       public Items getPage() throws ChainException {
-        Items items = this.context.request("mockhsm/list-keys", this.next, Items.class);
-        items.setContext(this.context);
+        Items items = this.client.request("mockhsm/list-keys", this.next, Items.class);
+        items.setClient(this.client);
         return items;
       }
     }
@@ -125,7 +125,7 @@ public class MockHsm {
 
       /**
        * Retrieves a page of key objects from the core.
-       * @param ctx context object that makes requests to the core
+       * @param client client object that makes requests to the core
        * @return a collection of key objects
        * @throws APIException This exception is raised if the api returns errors while retrieving the keys.
        * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -133,9 +133,9 @@ public class MockHsm {
        * @throws HTTPException This exception is raised when errors occur making http requests.
        * @throws JSONException This exception is raised due to malformed json requests or responses.
        */
-      public Items execute(Context ctx) throws ChainException {
+      public Items execute(Client client) throws ChainException {
         Items items = new Items();
-        items.setContext(ctx);
+        items.setClient(client);
         items.setNext(query);
         return items.getPage();
       }

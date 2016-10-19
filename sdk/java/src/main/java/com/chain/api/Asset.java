@@ -67,7 +67,7 @@ public class Asset {
   /**
    * Creates a batch of asset objects.<br>
    * <strong>Note:</strong> this method will not throw an exception APIException. Each builder's response object must be checked for error.
-   * @param ctx context object that makes requests to the core
+   * @param client client object that makes requests to the core
    * @param builders list of asset builders
    * @return a list of asset and/or error objects
    * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -75,12 +75,12 @@ public class Asset {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<Asset> createBatch(Context ctx, List<Builder> builders)
+  public static BatchResponse<Asset> createBatch(Client client, List<Builder> builders)
       throws ChainException {
     for (Builder asset : builders) {
       asset.clientToken = UUID.randomUUID().toString();
     }
-    return ctx.batchRequest("create-asset", builders, Asset.class);
+    return client.batchRequest("create-asset", builders, Asset.class);
   }
 
   /**
@@ -121,8 +121,8 @@ public class Asset {
      */
     @Override
     public Items getPage() throws ChainException {
-      Items items = this.context.request("list-assets", this.next, Items.class);
-      items.setContext(this.context);
+      Items items = this.client.request("list-assets", this.next, Items.class);
+      items.setClient(this.client);
       return items;
     }
   }
@@ -133,7 +133,7 @@ public class Asset {
   public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
     /**
      * Executes a query on the core's assets.
-     * @param ctx context object that makes requests to the core
+     * @param client client object that makes requests to the core
      * @return a collection of asset objects
      * @throws APIException This exception is raised if the api returns errors while retrieving the assets.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -141,9 +141,9 @@ public class Asset {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public Items execute(Context ctx) throws ChainException {
+    public Items execute(Client client) throws ChainException {
       Items items = new Items();
-      items.setContext(ctx);
+      items.setClient(client);
       items.setNext(this.next);
       return items.getPage();
     }
@@ -196,7 +196,7 @@ public class Asset {
 
     /**
      * Creates an asset object.
-     * @param ctx context object that makes request to the core
+     * @param client client object that makes request to the core
      * @return an asset object
      * @throws APIException This exception is raised if the api returns errors while creating the asset.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
@@ -204,8 +204,8 @@ public class Asset {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public Asset create(Context ctx) throws ChainException {
-      return ctx.singletonBatchRequest("create-asset", Arrays.asList(this), Asset.class);
+    public Asset create(Client client) throws ChainException {
+      return client.singletonBatchRequest("create-asset", Arrays.asList(this), Asset.class);
     }
 
     /**

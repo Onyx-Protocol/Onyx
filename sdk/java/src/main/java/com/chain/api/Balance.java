@@ -1,7 +1,8 @@
 package com.chain.api;
 
 import com.chain.exception.ChainException;
-import com.chain.http.Context;
+import com.chain.http.Client;
+
 import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
@@ -16,16 +17,16 @@ public class Balance {
 
   public static class Items extends PagedItems<Balance> {
     public Items getPage() throws ChainException {
-      Items items = this.context.request("list-balances", this.next, Items.class);
-      items.setContext(this.context);
+      Items items = this.client.request("list-balances", this.next, Items.class);
+      items.setClient(this.client);
       return items;
     }
   }
 
   public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
-    public Items execute(Context ctx) throws ChainException {
+    public Items execute(Client client) throws ChainException {
       Items items = new Items();
-      items.setContext(ctx);
+      items.setClient(client);
       items.setNext(this.next);
       return items.getPage();
     }

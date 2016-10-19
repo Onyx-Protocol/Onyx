@@ -8,7 +8,7 @@ import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
 import com.chain.exception.APIException;
 import com.chain.http.BatchResponse;
-import com.chain.http.Context;
+import com.chain.http.Client;
 
 import org.junit.Test;
 
@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class CreateTest {
-  static Context context;
+  static Client client;
   static MockHsm.Key key;
 
   @Test
@@ -36,14 +36,14 @@ public class CreateTest {
   }
 
   public void testKeyCreate() throws Exception {
-    context = TestUtils.generateContext();
+    client = TestUtils.generateClient();
     String alias = "CreateTest.testKeyCreate.alias";
-    key = MockHsm.Key.create(context, alias);
+    key = MockHsm.Key.create(client, alias);
     assertNotNull(key.xpub);
     assertEquals(alias, key.alias);
 
     try {
-      MockHsm.Key.create(context, alias);
+      MockHsm.Key.create(client, alias);
     } catch (APIException e) {
       return;
     }
@@ -51,8 +51,8 @@ public class CreateTest {
   }
 
   public void testAccountCreate() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
     String alice = "CreateTest.testAccountCreate.alice";
     Account account =
         new Account.Builder()
@@ -60,7 +60,7 @@ public class CreateTest {
             .addRootXpub(key.xpub)
             .setQuorum(1)
             .addTag("name", alice)
-            .create(context);
+            .create(client);
     assertNotNull(account.id);
     assertNotNull(account.keys);
     assertEquals(1, account.keys.length);
@@ -77,7 +77,7 @@ public class CreateTest {
           .addRootXpub(key.xpub)
           .setQuorum(1)
           .addTag("name", alice)
-          .create(context);
+          .create(client);
     } catch (APIException e) {
       return;
     }
@@ -85,8 +85,8 @@ public class CreateTest {
   }
 
   public void testAccountCreateBatch() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
     String alice = "CreateTest.testAccountCreateBatch.alice";
     Account.Builder builder =
         new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1);
@@ -94,14 +94,14 @@ public class CreateTest {
     Account.Builder failure =
         new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1);
 
-    BatchResponse<Account> resp = Account.createBatch(context, Arrays.asList(builder, failure));
+    BatchResponse<Account> resp = Account.createBatch(client, Arrays.asList(builder, failure));
     assertEquals(1, resp.successes().size());
     assertEquals(1, resp.errors().size());
   }
 
   public void testAssetCreate() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
     String asset = "CreateTest.testAssetCreate.asset";
     String test = "CreateTest.testAssetCreate.test";
     Map<String, Object> def = new HashMap<>();
@@ -114,7 +114,7 @@ public class CreateTest {
             .addTag("name", asset)
             .setDefinition(def)
             .addDefinitionField("test", test)
-            .create(context);
+            .create(client);
     assertNotNull(testAsset.id, testAsset.issuanceProgram);
     assertNotNull(testAsset.issuanceProgram);
     assertNotNull(testAsset.keys);
@@ -137,7 +137,7 @@ public class CreateTest {
           .addTag("name", asset)
           .setDefinition(def)
           .addDefinitionField("test", test)
-          .create(context);
+          .create(client);
     } catch (APIException e) {
       return;
     }
@@ -145,21 +145,21 @@ public class CreateTest {
   }
 
   public void testAssetCreateBatch() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
     String asset = "CreateTest.testAssetCreateBatch.asset";
     Asset.Builder builder = new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1);
 
     Asset.Builder failure = new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1);
 
-    BatchResponse<Asset> resp = Asset.createBatch(context, Arrays.asList(builder, failure));
+    BatchResponse<Asset> resp = Asset.createBatch(client, Arrays.asList(builder, failure));
     assertEquals(1, resp.successes().size());
     assertEquals(1, resp.errors().size());
   }
 
   public void testControlProgramCreate() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
     String alice = "CreateTest.testControlProgramCreate.alice";
     Account account =
         new Account.Builder()
@@ -167,17 +167,17 @@ public class CreateTest {
             .addRootXpub(key.xpub)
             .setQuorum(1)
             .addTag("name", alice)
-            .create(context);
+            .create(client);
 
     ControlProgram ctrlp =
-        new ControlProgram.Builder().controlWithAccountById(account.id).create(context);
+        new ControlProgram.Builder().controlWithAccountById(account.id).create(client);
     assertNotNull(ctrlp.program);
 
-    ctrlp = new ControlProgram.Builder().controlWithAccountByAlias(account.alias).create(context);
+    ctrlp = new ControlProgram.Builder().controlWithAccountByAlias(account.alias).create(client);
     assertNotNull(ctrlp.program);
 
     try {
-      new ControlProgram.Builder().controlWithAccountById("bad-id").create(context);
+      new ControlProgram.Builder().controlWithAccountById("bad-id").create(client);
     } catch (APIException e) {
       return;
     }
@@ -185,8 +185,8 @@ public class CreateTest {
   }
 
   public void testControlProgramCreateBatch() throws Exception {
-    context = TestUtils.generateContext();
-    key = MockHsm.Key.create(context);
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
     String alice = "CreateTest.testControlProgramCreateBatch.alice";
     Account account =
         new Account.Builder()
@@ -194,7 +194,7 @@ public class CreateTest {
             .addRootXpub(key.xpub)
             .setQuorum(1)
             .addTag("name", alice)
-            .create(context);
+            .create(client);
 
     ControlProgram.Builder builder =
         new ControlProgram.Builder().controlWithAccountById(account.id);
@@ -202,16 +202,16 @@ public class CreateTest {
     ControlProgram.Builder failure = new ControlProgram.Builder().controlWithAccountById("bad-id");
 
     BatchResponse<ControlProgram> resp =
-        ControlProgram.createBatch(context, Arrays.asList(builder, failure));
+        ControlProgram.createBatch(client, Arrays.asList(builder, failure));
     assertEquals(1, resp.successes().size());
     assertEquals(1, resp.errors().size());
   }
 
   public void testTransactionFeedCreate() throws Exception {
-    context = TestUtils.generateContext();
+    client = TestUtils.generateClient();
     String alias = "CreateTest.testFeedCreate.feed";
     String filter = "outputs(account_alias='alice')";
-    Transaction.Feed feed = Transaction.Feed.create(context, alias, filter);
+    Transaction.Feed feed = Transaction.Feed.create(client, alias, filter);
     assertNotNull(feed.id);
     assertNotNull(feed.after);
     assertEquals(alias, feed.alias);

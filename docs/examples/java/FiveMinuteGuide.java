@@ -4,16 +4,16 @@ import com.chain.signing.*;
 
 class FiveMinuteGuide {
   public static void main(String[] args) throws Exception {
-    // snippet create-context
-    Context context = new Context();
+    // snippet create-client
+    Client client = new Client();
     // endsnippet
 
     // snippet create-key
-    MockHsm.Key key = MockHsm.Key.create(context);
+    MockHsm.Key key = MockHsm.Key.create(client);
     // endsnippet
 
     // snippet signer-add-key
-    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
     // endsnippet
 
     // snippet create-asset
@@ -21,7 +21,7 @@ class FiveMinuteGuide {
       .setAlias("gold")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet create-account-alice
@@ -29,7 +29,7 @@ class FiveMinuteGuide {
       .setAlias("alice")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet create-account-bob
@@ -37,7 +37,7 @@ class FiveMinuteGuide {
       .setAlias("bob")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet issue
@@ -49,9 +49,9 @@ class FiveMinuteGuide {
         .setAccountAlias("alice")
         .setAssetAlias("gold")
         .setAmount(100)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(issuance));
+    Transaction.submit(client, HsmSigner.sign(issuance));
     // endsnippet
 
     // snippet spend
@@ -64,9 +64,9 @@ class FiveMinuteGuide {
         .setAccountAlias("bob")
         .setAssetAlias("gold")
         .setAmount(10)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(spending));
+    Transaction.submit(client, HsmSigner.sign(spending));
     // endsnippet
 
     // snippet retire
@@ -78,9 +78,9 @@ class FiveMinuteGuide {
       ).addAction(new Transaction.Action.Retire()
         .setAssetAlias("gold")
         .setAmount(5)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(retirement));
+    Transaction.submit(client, HsmSigner.sign(retirement));
     // endsnippet
   }
 }

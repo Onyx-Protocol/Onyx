@@ -6,14 +6,14 @@ import com.chain.signing.*;
 
 class Balances {
   public static void main(String[] args) throws Exception {
-    Context context = new Context();
-    setup(context);
+    Client client = new Client();
+    setup(client);
 
     // snippet account-balance
     Balance.Items bank1Balances = new Balance.QueryBuilder()
       .setFilter("account_alias=$1")
       .addFilterParameter("bank1")
-      .execute(context);
+      .execute(client);
 
     while (bank1Balances.hasNext()) {
       Balance b = bank1Balances.next();
@@ -28,7 +28,7 @@ class Balances {
     Balance.Items bank1UsdIouBalances = new Balance.QueryBuilder()
       .setFilter("asset_alias=$1")
       .addFilterParameter("bank1_usd_iou")
-      .execute(context);
+      .execute(client);
 
     Balance bank1UsdIouCirculation = bank1UsdIouBalances.next();
     System.out.println("Total circulation of Bank 1 USD IOU: " + bank1UsdIouCirculation.amount);
@@ -39,7 +39,7 @@ class Balances {
       .setFilter("account_alias=$1")
       .addFilterParameter("bank1")
       .setSumBy(Arrays.asList("asset_definition.currency"))
-      .execute(context);
+      .execute(client);
 
     while (bank1CurrencyBalances.hasNext()) {
       Balance b = bank1CurrencyBalances.next();
@@ -51,44 +51,44 @@ class Balances {
     // endsnippet
   }
 
-  public static void setup(Context context) throws Exception {
-    MockHsm.Key key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+  public static void setup(Client client) throws Exception {
+    MockHsm.Key key = MockHsm.Key.create(client);
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
 
     new Asset.Builder()
       .setAlias("bank1_usd_iou")
       .addRootXpub(key.xpub)
       .setQuorum(1)
       .addDefinitionField("currency", "USD")
-      .create(context);
+      .create(client);
 
     new Asset.Builder()
       .setAlias("bank1_euro_iou")
       .addRootXpub(key.xpub)
       .setQuorum(1)
       .addDefinitionField("currency", "Euro")
-      .create(context);
+      .create(client);
 
     new Asset.Builder()
       .setAlias("bank2_usd_iou")
       .addRootXpub(key.xpub)
       .setQuorum(1)
       .addDefinitionField("currency", "USD")
-      .create(context);
+      .create(client);
 
     new Account.Builder()
       .setAlias("bank1")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     new Account.Builder()
       .setAlias("bank2")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
-    Transaction.submit(context, HsmSigner.sign(new Transaction.Builder()
+    Transaction.submit(client, HsmSigner.sign(new Transaction.Builder()
       .addAction(new Transaction.Action.Issue()
         .setAssetAlias("bank1_usd_iou")
         .setAmount(2000000)
@@ -122,7 +122,7 @@ class Balances {
         .setAccountAlias("bank2")
         .setAssetAlias("bank2_usd_iou")
         .setAmount(1000000)
-      ).build(context)
+      ).build(client)
     ));
   }
 }

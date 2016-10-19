@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.chain.api.*;
 import com.chain.api.MockHsm.Key;
-import com.chain.http.Context;
+import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
 
 public class UtxoReservation {
@@ -26,12 +26,12 @@ public class UtxoReservation {
     String accessToken = System.getenv("CHAIN_API_TOKEN");
     System.out.println(coreURL);
     System.out.println(accessToken);
-    Context ctx = new Context(new URL(coreURL), accessToken);
-    ctx.setConnectTimeout(10, TimeUnit.MINUTES);
-    ctx.setReadTimeout(10, TimeUnit.MINUTES);
-    ctx.setWriteTimeout(10, TimeUnit.MINUTES);
-    setup(ctx);
-    transact(ctx);
+    Client client = new Client(new URL(coreURL), accessToken);
+    client.setConnectTimeout(10, TimeUnit.MINUTES);
+    client.setReadTimeout(10, TimeUnit.MINUTES);
+    client.setWriteTimeout(10, TimeUnit.MINUTES);
+    setup(client);
+    transact(client);
     System.exit(0);
   }
 
@@ -48,32 +48,32 @@ public class UtxoReservation {
 
   // setup issues an asset into a couple of accounts at
   // at several denominations.
-  static void setup(Context ctx) throws Exception {
-    MockHsm.Key centralBankIssuerKey = MockHsm.Key.create(ctx);
-    MockHsm.Key aliceAccountKey = MockHsm.Key.create(ctx);
-    MockHsm.Key bobAccountKey = MockHsm.Key.create(ctx);
-    loadKeys(ctx);
+  static void setup(Client client) throws Exception {
+    MockHsm.Key centralBankIssuerKey = MockHsm.Key.create(client);
+    MockHsm.Key aliceAccountKey = MockHsm.Key.create(client);
+    MockHsm.Key bobAccountKey = MockHsm.Key.create(client);
+    loadKeys(client);
 
     Asset currency =
         new Asset.Builder()
             .setAlias("currency")
             .addRootXpub(centralBankIssuerKey.xpub)
             .setQuorum(1)
-            .create(ctx);
+            .create(client);
 
     Account alice =
         new Account.Builder()
             .setAlias("alice")
             .addRootXpub(aliceAccountKey.xpub)
             .setQuorum(1)
-            .create(ctx);
+            .create(client);
 
     Account bob =
         new Account.Builder()
             .setAlias("bob")
             .addRootXpub(bobAccountKey.xpub)
             .setQuorum(1)
-            .create(ctx);
+            .create(client);
 
     // Issue some currency to Alice & Bob at several amounts per utxos.
     Transaction.Builder builder =
@@ -99,16 +99,16 @@ public class UtxoReservation {
                     .setAccountId(bob.id));
       }
     }
-    Transaction.Template template = builder.build(ctx);
+    Transaction.Template template = builder.build(client);
     Transaction.Template signedTemplate = HsmSigner.sign(template);
-    Transaction.SubmitResponse tx = Transaction.submit(ctx, signedTemplate);
+    Transaction.SubmitResponse tx = Transaction.submit(client, signedTemplate);
   }
 
-  static void transact(Context ctx) throws Exception {
-    loadKeys(ctx);
-    Asset currency = getAsset(ctx, "currency");
-    Account alice = getAccount(ctx, "alice");
-    Account bob = getAccount(ctx, "bob");
+  static void transact(Client client) throws Exception {
+    loadKeys(client);
+    Asset currency = getAsset(client, "currency");
+    Account alice = getAccount(client, "alice");
+    Account bob = getAccount(client, "bob");
 
     final int iterations = 600; // 10 minutes
     final int concurrentPayments = 80;
@@ -123,12 +123,12 @@ public class UtxoReservation {
         long amount = (long) r.nextInt(maxPerPayment - 1) + 1;
         x.add(
             () -> {
-              pay(ctx, alice, bob, currency, amount);
+              pay(client, alice, bob, currency, amount);
               return 1;
             });
         x.add(
             () -> {
-              pay(ctx, bob, alice, currency, amount);
+              pay(client, bob, alice, currency, amount);
               return 1;
             });
       }
@@ -148,7 +148,7 @@ public class UtxoReservation {
     stats.close();
   }
 
-  static void pay(Context ctx, Account from, Account to, Asset asset, long amount)
+  static void pay(Client client, Account from, Account to, Asset asset, long amount)
       throws Exception {
     Transaction.Builder builder =
         new Transaction.Builder()
@@ -162,14 +162,14 @@ public class UtxoReservation {
                     .setAssetId(asset.id)
                     .setAmount(amount)
                     .setAccountId(to.id));
-    Transaction.Template template = builder.build(ctx);
+    Transaction.Template template = builder.build(client);
     Transaction.Template signedTemplate = HsmSigner.sign(template);
-    Transaction.SubmitResponse tx = Transaction.submit(ctx, signedTemplate);
+    Transaction.SubmitResponse tx = Transaction.submit(client, signedTemplate);
   }
 
-  static Asset getAsset(Context ctx, String alias) throws Exception {
+  static Asset getAsset(Client client, String alias) throws Exception {
     Asset.Items assets =
-        new Asset.QueryBuilder().setFilter("alias = $1").addFilterParameter(alias).execute(ctx);
+        new Asset.QueryBuilder().setFilter("alias = $1").addFilterParameter(alias).execute(client);
 
     if (assets.list.size() != 1) {
       throw new Exception(String.format("missing asset: %s", alias));
@@ -177,20 +177,20 @@ public class UtxoReservation {
     return assets.list.get(0);
   }
 
-  static Account getAccount(Context ctx, String alias) throws Exception {
+  static Account getAccount(Client client, String alias) throws Exception {
     Account.Items accounts =
-        new Account.QueryBuilder().setFilter("alias = $1").addFilterParameter(alias).execute(ctx);
+        new Account.QueryBuilder().setFilter("alias = $1").addFilterParameter(alias).execute(client);
     if (accounts.list.size() != 1) {
       throw new Exception(String.format("missing account: %s", alias));
     }
     return accounts.list.get(0);
   }
 
-  static void loadKeys(Context ctx) throws Exception {
-    Key.Items keys = new MockHsm.Key.QueryBuilder().execute(ctx);
+  static void loadKeys(Client client) throws Exception {
+    Key.Items keys = new MockHsm.Key.QueryBuilder().execute(client);
     while (keys.hasNext()) {
       Key k = keys.next();
-      HsmSigner.addKey(k.xpub, MockHsm.getSignerContext(ctx));
+      HsmSigner.addKey(k.xpub, MockHsm.getSignerClient(client));
     }
   }
 }

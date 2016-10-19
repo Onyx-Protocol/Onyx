@@ -6,31 +6,31 @@ import com.chain.signing.*;
 
 class UnspentOutputs {
   public static void main(String[] args) throws Exception {
-    Context context = new Context();
+    Client client = new Client();
 
-    MockHsm.Key key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+    MockHsm.Key key = MockHsm.Key.create(client);
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
 
     new Asset.Builder()
       .setAlias("gold")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     new Account.Builder()
       .setAlias("alice")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     new Account.Builder()
       .setAlias("bob")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     Transaction.SubmitResponse issuanceTx = Transaction.submit(
-      context,
+      client,
       HsmSigner.sign(
         new Transaction.Builder()
           .addAction(new Transaction.Action.Issue()
@@ -44,7 +44,7 @@ class UnspentOutputs {
             .setAccountAlias("alice")
             .setAssetAlias("gold")
             .setAmount(100)
-          ).build(context)
+          ).build(client)
       )
     );
 
@@ -52,7 +52,7 @@ class UnspentOutputs {
     UnspentOutput.Items aliceUnspentOutputs = new UnspentOutput.QueryBuilder()
       .setFilter("account_alias=$1")
       .addFilterParameter("alice")
-      .execute(context);
+      .execute(client);
 
     while (aliceUnspentOutputs.hasNext()) {
       UnspentOutput utxo = aliceUnspentOutputs.next();
@@ -64,7 +64,7 @@ class UnspentOutputs {
     UnspentOutput.Items goldUnspentOutputs = new UnspentOutput.QueryBuilder()
       .setFilter("asset_alias=$1")
       .addFilterParameter("gold")
-      .execute(context);
+      .execute(client);
 
     while (goldUnspentOutputs.hasNext()) {
       UnspentOutput utxo = goldUnspentOutputs.next();
@@ -83,10 +83,10 @@ class UnspentOutputs {
         .setAccountAlias("bob")
         .setAssetAlias("gold")
         .setAmount(100)
-      ).build(context);
+      ).build(client);
     // endsnippet
 
-    Transaction.submit(context, HsmSigner.sign(spendOutput));
+    Transaction.submit(client, HsmSigner.sign(spendOutput));
 
     // snippet build-transaction-partial
     Transaction.Template spendOutputWithChange = new Transaction.Builder()
@@ -101,9 +101,9 @@ class UnspentOutputs {
         .setAccountAlias("alice")
         .setAssetAlias("gold")
         .setAmount(60)
-      ).build(context);
+      ).build(client);
     // endsnippet
 
-    Transaction.submit(context, HsmSigner.sign(spendOutputWithChange));
+    Transaction.submit(client, HsmSigner.sign(spendOutputWithChange));
   }
 }

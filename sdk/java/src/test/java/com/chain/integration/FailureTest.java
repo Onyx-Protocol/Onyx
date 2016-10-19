@@ -4,7 +4,7 @@ import com.chain.TestUtils;
 import com.chain.api.*;
 import com.chain.exception.APIException;
 import com.chain.exception.HTTPException;
-import com.chain.http.Context;
+import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
 
 import org.junit.Test;
@@ -16,7 +16,7 @@ import java.net.URL;
  * of batch endpoints throw exceptions on error.
  */
 public class FailureTest {
-  static Context context;
+  static Client client;
 
   @Test
   public void run() throws Exception {
@@ -31,7 +31,7 @@ public class FailureTest {
 
   public void testCreateKey() throws Exception {
     try {
-      MockHsm.Key.create(new Context(new URL("http://wrong")));
+      MockHsm.Key.create(new Client(new URL("http://wrong")));
     } catch (HTTPException e) {
       return;
     }
@@ -39,9 +39,9 @@ public class FailureTest {
   }
 
   public void testCreateAccount() throws Exception {
-    context = TestUtils.generateContext();
+    client = TestUtils.generateClient();
     try {
-      new Account.Builder().create(context);
+      new Account.Builder().create(client);
     } catch (APIException e) {
       return;
     }
@@ -49,9 +49,9 @@ public class FailureTest {
   }
 
   public void testCreateAsset() throws Exception {
-    context = TestUtils.generateContext();
+    client = TestUtils.generateClient();
     try {
-      new Asset.Builder().create(context);
+      new Asset.Builder().create(client);
     } catch (APIException e) {
       return;
     }
@@ -59,9 +59,9 @@ public class FailureTest {
   }
 
   public void testCreateControlProgram() throws Exception {
-    context = TestUtils.generateContext();
+    client = TestUtils.generateClient();
     try {
-      new ControlProgram.Builder().create(context);
+      new ControlProgram.Builder().create(client);
     } catch (APIException e) {
       return;
     }
@@ -69,9 +69,9 @@ public class FailureTest {
   }
 
   public void testBuildTransaction() throws Exception {
-    context = TestUtils.generateContext();
+    client = TestUtils.generateClient();
     try {
-      new Transaction.Builder().addAction(new Transaction.Action.Issue()).build(context);
+      new Transaction.Builder().addAction(new Transaction.Action.Issue()).build(client);
     } catch (APIException e) {
       return;
     }
@@ -79,8 +79,8 @@ public class FailureTest {
   }
 
   public void testSignTransaction() throws Exception {
-    context = TestUtils.generateContext();
-    HsmSigner.addKey(MockHsm.Key.create(context), MockHsm.getSignerContext(context));
+    client = TestUtils.generateClient();
+    HsmSigner.addKey(MockHsm.Key.create(client), MockHsm.getSignerClient(client));
     try {
       HsmSigner.sign(new Transaction.Template());
     } catch (APIException e) {
@@ -90,9 +90,9 @@ public class FailureTest {
   }
 
   public void testSubmitTransaction() throws Exception {
-    context = TestUtils.generateContext();
+    client = TestUtils.generateClient();
     try {
-      Transaction.submit(context, new Transaction.Template());
+      Transaction.submit(client, new Transaction.Template());
     } catch (APIException e) {
       return;
     }

@@ -6,16 +6,16 @@ import com.chain.signing.*;
 
 class GlobalVsLocalData {
   public static void main(String[] args) throws Exception {
-    Context context = new Context();
+    Client client = new Client();
 
-    MockHsm.Key assetKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(assetKey, MockHsm.getSignerContext(context));
+    MockHsm.Key assetKey = MockHsm.Key.create(client);
+    HsmSigner.addKey(assetKey, MockHsm.getSignerClient(client));
 
-    MockHsm.Key aliceKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(aliceKey, MockHsm.getSignerContext(context));
+    MockHsm.Key aliceKey = MockHsm.Key.create(client);
+    HsmSigner.addKey(aliceKey, MockHsm.getSignerClient(client));
 
-    MockHsm.Key bobKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(bobKey, MockHsm.getSignerContext(context));
+    MockHsm.Key bobKey = MockHsm.Key.create(client);
+    HsmSigner.addKey(bobKey, MockHsm.getSignerClient(client));
 
     // snippet create-accounts-with-tags
     new Account.Builder()
@@ -27,7 +27,7 @@ class GlobalVsLocalData {
       .addTag("last_name", "Jones")
       .addTag("user_id", "12345")
       .addTag("status", "enabled")
-      .create(context);
+      .create(client);
 
     new Account.Builder()
       .setAlias("bob")
@@ -38,7 +38,7 @@ class GlobalVsLocalData {
       .addTag("last_name", "Smith")
       .addTag("user_id", "67890")
       .addTag("status", "enabled")
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet create-asset-with-tags-and-definition
@@ -51,7 +51,7 @@ class GlobalVsLocalData {
       .addDefinitionField("sub-type", "corporate-bond")
       .addDefinitionField("entity", "Acme Inc.")
       .addDefinitionField("maturity", "2016-09-01T18:24:47+00:00")
-      .create(context);
+      .create(client);
     // endsnippet
 
     // snippet build-tx-with-tx-ref-data
@@ -65,10 +65,10 @@ class GlobalVsLocalData {
         .setAmount(100)
       ).addAction(new Transaction.Action.SetTransactionReferenceData()
         .addReferenceDataField("external_reference", "12345")
-      ).build(context);
+      ).build(client);
     // endsnippet
 
-    Transaction.submit(context, HsmSigner.sign(txWithRefData));
+    Transaction.submit(client, HsmSigner.sign(txWithRefData));
 
     // snippet build-tx-with-action-ref-data
     Transaction.Template txWithActionRefData = new Transaction.Builder()
@@ -79,9 +79,9 @@ class GlobalVsLocalData {
         .setAssetAlias("acme_bond")
         .setAmount(100)
         .addReferenceDataField("external_reference", "12345")
-      ).build(context);
+      ).build(client);
     // endsnippet
 
-    Transaction.submit(context, HsmSigner.sign(txWithActionRefData));
+    Transaction.submit(client, HsmSigner.sign(txWithActionRefData));
   }
 }

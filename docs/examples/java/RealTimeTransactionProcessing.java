@@ -4,12 +4,12 @@ import com.chain.signing.*;
 
 class RealTimeTransactionProcessing {
   public static void main(String[] args) throws Exception {
-    Context context = new Context();
-    setup(context);
+    Client client = new Client();
+    setup(client);
 
     // snippet processing-thread
     new Thread(() -> {
-        processingLoop(context);
+        processingLoop(client);
     }).start();
     // endsnippet
 
@@ -22,9 +22,9 @@ class RealTimeTransactionProcessing {
         .setAccountAlias("alice")
         .setAssetAlias("gold")
         .setAmount(100)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(issuance));
+    Transaction.submit(client, HsmSigner.sign(issuance));
     // endsnippet
 
     Thread.sleep(1000);
@@ -39,60 +39,60 @@ class RealTimeTransactionProcessing {
         .setAccountAlias("bob")
         .setAssetAlias("gold")
         .setAmount(50)
-      ).build(context);
+      ).build(client);
 
-    Transaction.submit(context, HsmSigner.sign(transfer));
+    Transaction.submit(client, HsmSigner.sign(transfer));
     // endsnippet
 
     Thread.sleep(1000);
     System.exit(0);
   }
 
-  public static void setup(Context context) throws Exception {
-    MockHsm.Key key = MockHsm.Key.create(context);
-    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
+  public static void setup(Client client) throws Exception {
+    MockHsm.Key key = MockHsm.Key.create(client);
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
 
     new Asset.Builder()
       .setAlias("gold")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     new Account.Builder()
       .setAlias("alice")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     new Account.Builder()
       .setAlias("bob")
       .addRootXpub(key.xpub)
       .setQuorum(1)
-      .create(context);
+      .create(client);
 
     // snippet create-feed
     Transaction.Feed feed = Transaction.Feed.create(
-      context,
+      client,
       "local-transactions",
       "is_local='yes'"
     );
     // endsnippet
   }
 
-  public static void processingLoop(Context context) {
+  public static void processingLoop(Client client) {
     try {
       // snippet get-feed
       Transaction.Feed feed = Transaction.Feed.getByAlias(
-        context,
+        client,
         "local-transactions"
       );
       // endsnippet
 
       // snippet processing-loop
       while (true) {
-        Transaction tx = feed.next(context);
+        Transaction tx = feed.next(client);
         processTransaction(tx);
-        feed.ack(context);
+        feed.ack(client);
       }
       // endsnippet
     } catch (Exception e) {
