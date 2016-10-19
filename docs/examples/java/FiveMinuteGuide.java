@@ -13,7 +13,7 @@ class FiveMinuteGuide {
     // endsnippet
 
     // snippet signer-add-key
-    HsmSigner.addKey(key);
+    HsmSigner.addKey(key, MockHsm.getSignerContext(context));
     // endsnippet
 
     // snippet create-asset

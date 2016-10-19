@@ -68,4 +68,8 @@ mvn\
 	for file in *.java
 	do /usr/lib/jvm/default-jvm/bin/javac $file
 	done
+	cd $CHAIN/docs/examples/java
+	for file in *.java
+	do /usr/lib/jvm/default-jvm/bin/javac $file
+	done
 )

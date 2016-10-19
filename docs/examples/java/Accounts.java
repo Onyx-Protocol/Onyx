@@ -9,13 +9,13 @@ class Accounts {
     Context context = new Context();
 
     MockHsm.Key assetKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(assetKey);
+    HsmSigner.addKey(assetKey, MockHsm.getSignerContext(context));
 
     MockHsm.Key aliceKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(aliceKey);
+    HsmSigner.addKey(aliceKey, MockHsm.getSignerContext(context));
 
     MockHsm.Key bobKey = MockHsm.Key.create(context);
-    HsmSigner.addKey(bobKey);
+    HsmSigner.addKey(bobKey, MockHsm.getSignerContext(context));
 
     new Asset.Builder()
       .setAlias("gold")
@@ -131,46 +131,6 @@ class Accounts {
     Transaction.submit(context, HsmSigner.sign(spendingTransaction2));
     // endsnippet
 
-    // snippet build-trade-alice
-    Transaction.Template tradeProposal = new Transaction.Builder()
-      .addAction(new Transaction.Action.SpendFromAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("gold")
-        .setAmount(10)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("silver")
-        .setAmount(20)
-      ).build(context);
-    // endsnippet
-
-    // snippet sign-trade-alice
-    tradeProposal.allowAdditionalActions = true;
-    Transaction.Template signedTradeProposal = HsmSigner.sign(tradeProposal);
-    // endsnippet
-
-    // snippet build-trade-bob
-    Transaction.Template tradeTransaction = new Transaction.Builder()
-      .setBaseTransaction(signedTradeProposal.rawTransaction)
-      .addAction(new Transaction.Action.SpendFromAccount()
-        .setAccountAlias("bob")
-        .setAssetAlias("silver")
-        .setAmount(20)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("bob")
-        .setAssetAlias("gold")
-        .setAmount(10)
-      ).build(context);
-    // endsnippet
-
-    // snippet sign-trade-bob
-    Transaction.Template signedTradeTransaction = HsmSigner.sign(tradeTransaction);
-    // endsnippet
-
-    // snippet submit-trade
-    Transaction.submit(context, signedTradeTransaction);
-    // endsnippet
-
     // snippet list-account-txs
     Transaction.Items transactions = new Transaction.QueryBuilder()
       .setFilter("inputs(account_alias=$1) AND outputs(account_alias=$1)")
@@ -191,13 +151,10 @@ class Accounts {
 
     while (balances.hasNext()) {
       Balance b = balances.next();
-
-      ArrayList<String> sumBys = new ArrayList<>();
-      for (Map.Entry<String, String> entry : b.sumBy.entrySet()) {
-        sumBys.add(entry.getKey() + ": " + entry.getValue());
-      }
-
-      System.out.println(b.amount + " (" + String.join(", ", sumBys) + ")");
+      System.out.println(
+        "Alice's balance of " + b.sumBy.get("asset_alias") +
+        ": " + b.amount
+      );
     }
     // endsnippet
 

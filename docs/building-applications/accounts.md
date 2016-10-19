@@ -71,39 +71,6 @@ If you wish to transfer asset units to an external party, you must first request
 
 $code ../examples/java/Accounts.java transfer-to-control-program
 
-## Trade asset units with an external party
-
-Chain Core enables risk-free bilateral trades. The steps are as follows:
-
-1. The first party builds a partial transaction proposing the trade
-2. The first party signs the partial transaction
-3. The first party sends the partial transaction to the second party
-4. The second party builds onto the partial transaction to satisfy the proposed trade
-5. The second party signs the complete transaction
-6. The second party submits the transaction to the blockchain
-
-Note: We will simulate the external interactions between Alice and Bob (whose accounts happen to be in the same Core).
-
-We first build a transaction whereby Alice proposes to trade 10 units of gold for 20 units of silver.
-
-$code ../examples/java/Accounts.java build-trade-alice
-
-The transaction builder constructs the transaction such that spending 10 units of gold from Alice's account *requires* 20 units of silver to simultaneously be received into Alice's account. We can then sign this transaction with the key used to create Alice's account to authorize Alice's portion of the proposed trade.
-
-$code ../examples/java/Accounts.java sign-trade-alice
-
-The partial transaction can now be sent to Bob. Bob builds onto the transaction to satisfy the trade offer.
-
-$code ../examples/java/Accounts.java build-trade-bob
-
-The complete transaction can now be signed with the key used to create Bob's account.
-
-$code ../examples/java/Accounts.java sign-trade-bob
-
-Finally, Bob can submit the transaction to the blockchain to execute the trade.
-
-$code ../examples/java/Accounts.java submit-trade
-
 ## List account transactions
 
 Chain Core keeps a time-ordered list of all transactions in the blockchain. These transactions are locally annotated with account and asset data to enable intelligent queries. Note: local data is not present in the blockchain. For more information, see: [Global vs. Local Data](../learn-more/global-vs-local-data).

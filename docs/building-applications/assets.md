@@ -76,37 +76,6 @@ We will issue 2000 units of Acme Common stock to an external party.
 
 $code ../examples/java/Assets.java external-issue
 
-## Trade asset units by issuing to an external party
-
-Chain Core enables risk-free bilateral trades. The steps are as follows:
-
-1. The first party builds a partial transaction proposing the trade
-2. The first party signs the partial transaction
-3. The first party sends the partial transaction to the second party
-4. The second party builds onto the partial transaction to satisfy the proposed trade
-5. The second party signs the complete transaction
-6. The second party submits the transaction to the blockchain
-
-We first build a transaction whereby Acme proposes to issue 1000 units of Acme Common stock to Bob for $50,000. Note: the USD asset is denominated in cents, so the amount is 5,000,000.
-
-$code ../examples/java/Assets.java build-trade-a
-
-The transaction builder constructs the transaction such that issuing 1000 units of Acme Common stock *requires* 5,000,000 units of USD (cents) to simultaneously be received into Acme's account. We can then sign this transaction with the key used to create the Acme Common stock asset to authorize Acme's portion of the proposed trade.
-
-$code ../examples/java/Assets.java sign-trade-a
-
-The partial transaction can now be sent to Bob. Bob builds onto the transaction to satisfy the trade offer. Note: Bob has locally aliased the Acme Common stock asset as `acme_common-stock`.
-
-$code ../examples/java/Assets.java build-trade-b
-
-The complete transaction can now be signed with the key used to create Bob's account.
-
-$code ../examples/java/Assets.java sign-trade-b
-
-Finally, Bob can submit the transaction to the blockchain to execute the trade.
-
-$code ../examples/java/Assets.java submit-trade
-
 ### Retire asset units
 
 To retire units of an asset from an account, we can build a transaction using an `account_alias` and `asset_alias`.
