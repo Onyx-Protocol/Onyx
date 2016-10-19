@@ -2,6 +2,16 @@
 
 These instructions assume that your PATH includes the wix tools binary. My wix tools binary is located at `C:\Program Files (x86)\WiX Toolset v3.10\bin`.
 
+### Dependencies 
+
+The Postgres Installer can be downloaded from http://www.enterprisedb.com/products-services-training/pgdownload
+
+The VC++ Redistributable can be downloaded from https://www.microsoft.com/en-us/download/search.aspx?q=redistributable+package&first=11
+
+Make sure you have the 64-bit versions. Chain Core Windows does not support 32-bit.
+
+### Build
+
 The chain bundler is capable of building multiple .msi's and .exe's into a single installer .exe. 
 
 First, build the chain core msi. To do this, from inside of `installer/windows` run: 
