@@ -1,0 +1,97 @@
+#!/bin/bash
+
+set -eou pipefail
+
+cleanup() {(
+	set +e
+	for pid in $(ps aux | grep [c]ored$ | awk {'print $2'});
+	do
+		kill -9 $pid
+	done
+	wait
+	rm -rf $GOPATH/bin/cored
+	rm -rf $GOPATH/bin/corectl
+	dropdb lbc-gen-core
+	dropdb lbc-s1-core
+	dropdb lbc-s2-core
+)}
+trap cleanup EXIT
+
+GENERATOR_LOG=`mktemp`
+SIGNER1_LOG=`mktemp`
+SIGNER2_LOG=`mktemp`
+dropdb --if-exists lbc-gen-core && createdb lbc-gen-core
+dropdb --if-exists lbc-s1-core && createdb lbc-s1-core
+dropdb --if-exists lbc-s2-core && createdb lbc-s2-core
+GENERATOR_DB_URL=postgres:///lbc-gen-core?sslmode=disable
+SIGNER1_DB_URL=postgres:///lbc-s1-core?sslmode=disable
+SIGNER2_DB_URL=postgres:///lbc-s2-core?sslmode=disable
+
+go install chain/cmd/cored chain/cmd/corectl
+
+GENERATOR_URL=http://localhost:2001
+GENERATOR_PUBKEY=`DATABASE_URL=$GENERATOR_DB_URL corectl create-block-keypair`
+LOGFILE=$GENERATOR_LOG DATABASE_URL=$GENERATOR_DB_URL LISTEN=:2001 cored &
+
+SIGNER1_URL=http://localhost:1999
+SIGNER1_PUBKEY=`DATABASE_URL=$SIGNER1_DB_URL corectl create-block-keypair`
+LOGFILE=$SIGNER1_LOG DATABASE_URL=$SIGNER1_DB_URL cored &
+
+SIGNER2_URL=http://localhost:2000
+SIGNER2_PUBKEY=`DATABASE_URL=$SIGNER2_DB_URL corectl create-block-keypair`
+LOGFILE=$SIGNER2_LOG DATABASE_URL=$SIGNER2_DB_URL LISTEN=:2000 cored &
+
+curlWithRetries() {
+    start=`date +%s`
+    resp="start"
+    while [[ $(( `date +%s` - $start )) -lt 5 ]] && [[ -n ${resp// } ]]; do
+        resp=`curl --silent --data "$2" "$1" | jq -r .code`
+    done
+}
+
+curlForValueWithRetries() {
+    start=`date +%s`
+    resp=""
+    while [[ $(( `date +%s` - $start )) -lt 5 ]] && [[ -z ${resp// } ]]; do
+        resp=`curl --silent --data "$2" "$1" | jq -r .$3`
+    done
+    echo $resp
+}
+
+curlWithRetries $GENERATOR_URL/configure '{
+    "is_generator":true,
+    "is_signer":true,
+    "block_pub":"'$GENERATOR_PUBKEY'",
+    "quorum":2,
+    "block_signer_urls":[{
+        "pubkey":"'$SIGNER1_PUBKEY'",
+        "url":"'$SIGNER1_URL'"
+    }, {
+        "pubkey":"'$SIGNER2_PUBKEY'",
+        "url":"'$SIGNER2_URL'"
+    }]
+}'
+
+BID=`curlForValueWithRetries $GENERATOR_URL/info '' blockchain_id`
+
+curlWithRetries $SIGNER1_URL/configure '{
+    "is_signer":true,
+    "blockchain_id":"'$BID'",
+    "generator_url":"'$GENERATOR_URL'",
+    "block_pub":"'$SIGNER1_PUBKEY'"
+}'
+
+curlWithRetries $SIGNER2_URL/configure '{
+    "is_signer":true,
+    "blockchain_id":"'$BID'",
+    "generator_url":"'$GENERATOR_URL'",
+    "block_pub":"'$SIGNER2_PUBKEY'"
+}'
+
+echo "GENERATOR_URL=$GENERATOR_URL"
+echo "GENERATOR_LOG=$GENERATOR_LOG"
+echo "SIGNER1_URL=$SIGNER1_URL"
+echo "SIGNER1_LOG=$SIGNER1_LOG"
+echo "SIGNER2_URL=$SIGNER2_URL"
+echo "SIGNER2_LOG=$SIGNER2_LOG"
+tail -f $GENERATOR_LOG
