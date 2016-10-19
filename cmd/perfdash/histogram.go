@@ -21,6 +21,14 @@ import (
 
 // TODO(kr): collect more fine-grain stats
 
+const (
+	// Use these to go to p99.99999
+	// pixel0        = 0.5
+	// decayPerPixel = 0.98
+	pixel0        = 0.4
+	decayPerPixel = 0.99
+)
+
 var (
 	dims = image.Rect(0, 0, 800, 100)
 
@@ -128,7 +136,7 @@ func label(img *image.RGBA, color color.Color) {
 	d.Dst = graph
 
 	labelDigits := 0
-	labelPixels := 50
+	labelPixels := 0
 	for x := 0; x < gdims.Dx(); x++ {
 		q := quantileAtPixel(x)
 		if dig := digits(1 - q); labelPixels >= 50 && dig > labelDigits {
@@ -146,12 +154,11 @@ func label(img *image.RGBA, color color.Color) {
 		labelPixels++
 	}
 
-	// special case for p50
-	drawf(d, 4, gdims.Max.Y-2, "p50")
+	// special case for first pixel
+	drawf(d, 4, gdims.Max.Y-2, "p%.*f", 0, 100*pixel0)
 }
 
 func quantileAtPixel(n int) float64 {
-	const pixel0, decayPerPixel = 0.5, 0.98
 	return 1 - pixel0*math.Pow(decayPerPixel, float64(n))
 }
 
