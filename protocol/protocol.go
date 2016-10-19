@@ -176,6 +176,11 @@ func (c *Chain) Height() uint64 {
 	return c.state.height
 }
 
+// Store returns the Store used by the blockchain.
+func (c *Chain) Store() Store {
+	return c.store
+}
+
 // State returns the most recent state available. It will not be current
 // unless the current process is the leader. Callers should examine the
 // returned block header's height if they need to verify the current state.

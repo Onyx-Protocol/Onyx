@@ -178,16 +178,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 
-	// If this core isn't a generator, get the latest snapshot from the generator
-	// and apply it to this core's snapshot set.
-	if !config.IsGenerator && c.Height() == 0 {
-		err = fetch.Snapshot(ctx, remoteGenerator, store, db)
-		if err != nil {
-			// This is a non-fatal error.
-			chainlog.Error(ctx, err)
-		}
-	}
-
 	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, c)
 

@@ -2,11 +2,12 @@ package fetch
 
 import (
 	"context"
+	"math"
 	"math/rand"
 	"sync"
 	"time"
 
-	"chain/database/sql"
+	"chain/core/txdb"
 	"chain/errors"
 	"chain/log"
 	"chain/net/rpc"
@@ -15,7 +16,7 @@ import (
 	"chain/protocol/state"
 )
 
-const getSnapshotTimeout = 10 * time.Second
+const getSnapshotTimeout = 25 * time.Second
 const heightPollingPeriod = 3 * time.Second
 
 var (
@@ -40,15 +41,23 @@ func GeneratorHeight() (uint64, time.Time) {
 // After each attempt to fetch and apply a block, it calls health
 // to report either an error or nil to indicate success.
 func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error)) {
+	// Fetch the generator height periodically.
+	go pollGeneratorHeight(ctx, peer)
+
+	if c.Height() == 0 {
+		err := fetchSnapshot(ctx, peer, c.Store())
+		if err != nil {
+			log.Error(ctx, err)
+			health(err)
+		}
+	}
+
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
 	prevBlock, prevSnapshot, err := c.Recover(ctx)
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}
-
-	// Fetch the generator height periodically.
-	go pollGeneratorHeight(ctx, peer)
 
 	var height uint64
 	if prevBlock != nil {
@@ -224,11 +233,11 @@ func getHeight(ctx context.Context, peer *rpc.Client) (uint64, error) {
 	return h, nil
 }
 
-// Snapshot fetches the latest snapshot from the generator and applies it to this
-// core's snapshot set. It should only be called on freshly configured cores--
-// cores that have been operating should replay all transactions so that they can
-// index them properly.
-func Snapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, db *sql.DB) error {
+// fetchSnapshot fetches the latest snapshot from the generator and applies it
+// to the store. It should only be called on freshly configured cores--
+// cores that have been operating should replay all transactions so that
+// they can index them properly.
+func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store) error {
 	ctx, cancel := context.WithTimeout(ctx, getSnapshotTimeout)
 	defer cancel()
 
@@ -240,6 +249,15 @@ func Snapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, db *sql.D
 	if err != nil {
 		return err
 	}
+	snapshot, err := txdb.DecodeSnapshot(snapResp.Data)
+	if err != nil {
+		return err
+	}
+	// Delete the snapshot issuances because we don't have any commitment
+	// to them in the block. This means that Cores bootstrapping from a
+	// snapshot cannot guarantee uniqueness of issuances until the max
+	// issuance window has elapsed.
+	snapshot.PruneIssuances(math.MaxUint64)
 
 	// Next, get the initial block.
 	initialBlock, err := getBlock(ctx, peer, 1, getSnapshotTimeout)
@@ -260,10 +278,11 @@ func Snapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, db *sql.D
 		// Something seriously funny is still afoot.
 		return errors.New("generator provided snapshot but could not provide block")
 	}
+	if snapshotBlock.AssetsMerkleRoot != snapshot.Tree.RootHash() {
+		return errors.New("snapshot merkle root doesn't match block")
+	}
 
-	// Commit everything to the database. The order here is important. The
-	// snapshot needs to be last. If there's a failure at any point, the
-	// Core will end up recovering back to the empty blockchain state.
+	// Commit the initial block.
 	err = s.SaveBlock(ctx, initialBlock)
 	if err != nil {
 		return errors.Wrap(err, "saving the initial block")
@@ -272,10 +291,6 @@ func Snapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, db *sql.D
 	if err != nil {
 		return errors.Wrap(err, "saving bootstrap block")
 	}
-	const snapQ = `
-		INSERT INTO snapshots (height, data) VALUES ($1, $2)
-		ON CONFLICT DO NOTHING
-	`
-	_, err = db.Exec(ctx, snapQ, snapResp.Height, snapResp.Data)
+	err = s.SaveSnapshot(ctx, snapshotBlock.Height, snapshot)
 	return errors.Wrap(err, "saving bootstrap snaphot")
 }

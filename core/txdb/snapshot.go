@@ -14,6 +14,38 @@ import (
 	"chain/protocol/state"
 )
 
+// DecodeSnapshot decodes a snapshot from the Chain Core's binary,
+// protobuf representation of the snapshot.
+func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
+	var storedSnapshot storage.Snapshot
+	err := proto.Unmarshal(data, &storedSnapshot)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshaling state snapshot proto")
+	}
+
+	leaves := make([]patricia.Leaf, len(storedSnapshot.Nodes))
+	for i, node := range storedSnapshot.Nodes {
+		leaves[i].Key = node.Key
+		copy(leaves[i].Hash[:], node.Hash)
+	}
+	tree, err := patricia.Reconstruct(leaves)
+	if err != nil {
+		return nil, errors.Wrap(err, "reconstructing state tree")
+	}
+
+	issuances := make(state.PriorIssuances, len(storedSnapshot.Issuances))
+	for _, issuance := range storedSnapshot.Issuances {
+		var hash bc.Hash
+		copy(hash[:], issuance.Hash)
+		issuances[hash] = issuance.ExpiryMs
+	}
+
+	return &state.Snapshot{
+		Tree:      tree,
+		Issuances: issuances,
+	}, nil
+}
+
 func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot, blockHeight uint64) error {
 	var storedSnapshot storage.Snapshot
 	err := patricia.Walk(snapshot.Tree, func(l patricia.Leaf) error {
@@ -55,9 +87,8 @@ func getStateSnapshot(ctx context.Context, db pg.DB) (*state.Snapshot, uint64, e
 		SELECT data, height FROM snapshots ORDER BY height DESC LIMIT 1
 	`
 	var (
-		data           []byte
-		height         uint64
-		storedSnapshot storage.Snapshot
+		data   []byte
+		height uint64
 	)
 
 	err := db.QueryRow(ctx, q).Scan(&data, &height)
@@ -67,31 +98,9 @@ func getStateSnapshot(ctx context.Context, db pg.DB) (*state.Snapshot, uint64, e
 		return nil, height, errors.Wrap(err, "retrieving state snapshot blob")
 	}
 
-	err = proto.Unmarshal(data, &storedSnapshot)
+	snapshot, err := DecodeSnapshot(data)
 	if err != nil {
-		return nil, height, errors.Wrap(err, "unmarshaling state snapshot proto")
-	}
-
-	leaves := make([]patricia.Leaf, len(storedSnapshot.Nodes))
-	for i, node := range storedSnapshot.Nodes {
-		leaves[i].Key = node.Key
-		copy(leaves[i].Hash[:], node.Hash)
-	}
-	tree, err := patricia.Reconstruct(leaves)
-	if err != nil {
-		return nil, height, errors.Wrap(err, "reconstructing state tree")
-	}
-
-	issuances := make(state.PriorIssuances, len(storedSnapshot.Issuances))
-	for _, issuance := range storedSnapshot.Issuances {
-		var hash bc.Hash
-		copy(hash[:], issuance.Hash)
-		issuances[hash] = issuance.ExpiryMs
-	}
-
-	snapshot := &state.Snapshot{
-		Tree:      tree,
-		Issuances: issuances,
+		return nil, height, errors.Wrap(err, "decoding snapshot")
 	}
 	return snapshot, height, nil
 }
