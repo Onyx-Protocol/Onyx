@@ -17,6 +17,12 @@ import (
 // when a new consensus program is detected.
 var ErrConsensusChange = errors.New("consensus program has changed")
 
+// ErrInvalidKey is returned from SignBlock when the
+// key specified on the Signer is invalid. It may be
+// not found by the mock HSM or not paired to a valid
+// private key.
+var ErrInvalidKey = errors.New("misconfigured signer public key")
+
 // Signer validates and signs blocks.
 type Signer struct {
 	Pub ed25519.PublicKey
@@ -40,7 +46,11 @@ func New(pub ed25519.PublicKey, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *
 // the private key in s.  It does not validate the block.
 func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	hash := b.HashForSig()
-	return s.hsm.Sign(ctx, s.Pub, hash[:])
+	sig, err := s.hsm.Sign(ctx, s.Pub, hash[:])
+	if err != nil {
+		return nil, errors.Wrapf(ErrInvalidKey, "err=%s", err.Error())
+	}
+	return sig, nil
 }
 
 func (s *Signer) String() string {

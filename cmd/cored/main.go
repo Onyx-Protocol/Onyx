@@ -200,7 +200,13 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		}
 		s := blocksigner.New(blockPub, hsm, db, c)
 		generatorSigners = append(generatorSigners, s) // "local" signer
-		signBlockHandler = s.ValidateAndSignBlock
+		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
+			sig, err := s.ValidateAndSignBlock(ctx, b)
+			if errors.Root(err) == blocksigner.ErrInvalidKey {
+				chainlog.Fatal(ctx, chainlog.KeyError, err)
+			}
+			return sig, err
+		}
 	}
 
 	if config.IsGenerator {
