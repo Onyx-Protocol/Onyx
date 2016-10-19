@@ -36,7 +36,8 @@ cd ../ChainBundle
 candle Bundle.wxs \
   -ext WixBalExtension \
   -dChainPackage.TargetPath='Z:\chain\installer\windows\ChainPackage\ChainCoreInstaller.msi' \
-  -dPostgresPackage.TargetPath='Z:\chain\installer\windows\Postgres\postgresql-9.5.4-2-windows-x64.exe'
+  -dPostgresPackage.TargetPath='Z:\chain\installer\windows\Postgres\postgresql-9.5.4-2-windows-x64.exe' \
+  -dVCRPackage.TargetPath='Z:\chain\installer\windows\Postgres\vcredist_x64.exe'
 ```
 (but obviously sub out your path for my target paths) 
 
