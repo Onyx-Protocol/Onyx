@@ -135,7 +135,7 @@ resulting in two smaller patches.
 In that case, deciding whether they should be added separately
 requires a judgement call. The primary criterion should be
 comprehensibility. Would they be easier to understand together, or
-apart? (This can be in tension with expediency, this is dicussed more
+apart? (This can be in tension with expediency, this is discussed more
 in the “tough example” below.)
 
 ## Code Review Mechanics
