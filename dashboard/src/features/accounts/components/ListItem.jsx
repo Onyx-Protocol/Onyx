@@ -4,21 +4,17 @@ import { Link } from 'react-router'
 class ListItem extends React.Component {
   render() {
     const item = this.props.item
-    const title = item.alias ?
-      `Account - ${item.alias}` :
-      `Account - ${item.id}`
 
     return(
-      <div className='panel panel-default'>
-        <div className='panel-heading'>
-          <strong>{title}</strong>
-        </div>
-        <div className='panel-body'>
+      <tr>
+        <td>{item.alias}</td>
+        <td><code>{item.id}</code></td>
+        <td>
           <Link to={`/accounts/${item.id}`}>
-            View Account →
+            View Details →
           </Link>
-        </div>
-      </div>
+        </td>
+      </tr>
     )
   }
 }

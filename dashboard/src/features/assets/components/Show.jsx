@@ -3,7 +3,7 @@ import {
   BaseShow,
   PageContent,
   PageTitle,
-  Table,
+  KeyValueTable,
 } from 'features/shared/components'
 
 class Show extends BaseShow {
@@ -21,7 +21,7 @@ class Show extends BaseShow {
         <PageTitle title={title} />
 
         <PageContent>
-          <Table
+          <KeyValueTable
             title='details'
             actions={[
               <button className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
@@ -39,7 +39,7 @@ class Show extends BaseShow {
           />
 
           {item.keys.map((key, index) =>
-            <Table
+            <KeyValueTable
               key={index}
               title={`Key ${index + 1}`}
               items={[

@@ -1,0 +1,33 @@
+.main {
+  background: $background-color;
+  border: 1px solid $border-color !important;
+  box-shadow: 0 3px 5px -2px rgba(0,0,0,0.15);
+  color: $text-strong-color;
+  width: 100%;
+  table-layout: fixed;
+
+  td {
+    border-top: 1px solid $border-color;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  th {
+    color: $text-light-color;
+    font-size: 14px;
+    text-transform: uppercase;
+  }
+
+  th, td {
+    padding: 10px 15px;
+
+    &:first-child {
+      padding-left: $gutter-size * 2;
+    }
+
+    &:last-child {
+      text-align: right;
+      padding-right: $gutter-size;
+    }
+  }
+}

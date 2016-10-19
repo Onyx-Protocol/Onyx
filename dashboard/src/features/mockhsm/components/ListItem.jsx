@@ -1,21 +1,16 @@
 import React from 'react'
+import { Link } from 'react-router'
 
 class ListItem extends React.Component {
   render() {
-    const item = {...this.props.item}
-    delete item.id
+    const item = this.props.item
 
     return(
-      <div className='panel panel-default'>
-        <div className='panel-heading'>
-          <strong>Key - {item.alias}</strong>
-        </div>
-        <div className='panel-body'>
-          <pre>
-            {JSON.stringify(item, null, '  ')}
-          </pre>
-        </div>
-      </div>
+      <tr>
+        <td>{item.alias}</td>
+        <td><code>{item.xpub}</code></td>
+        <td></td>
+      </tr>
     )
   }
 }

@@ -3,7 +3,7 @@ import {
   BaseShow,
   PageTitle,
   PageContent,
-  Table,
+  KeyValueTable,
   Section,
 } from 'features/shared/components'
 import { Summary } from './'
@@ -53,7 +53,7 @@ class Show extends BaseShow {
             <Summary transaction={item} />
           </Section>
 
-          <Table
+          <KeyValueTable
             title='Details'
             items={[
               {label: 'ID', value: item.id},
@@ -65,7 +65,7 @@ class Show extends BaseShow {
           />
 
           {item.inputs.map((input, index) =>
-            <Table
+            <KeyValueTable
               key={index}
               title={index == 0 ? 'Inputs' : ''}
               items={this.inoutDetails(input)}
@@ -73,7 +73,7 @@ class Show extends BaseShow {
           )}
 
           {item.outputs.map((output, index) =>
-            <Table
+            <KeyValueTable
               key={index}
               title={index == 0 ? 'Outputs' : ''}
               items={this.inoutDetails(output)}

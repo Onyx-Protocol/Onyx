@@ -1,16 +1,19 @@
-import { BaseList } from 'features/shared/components'
+import { BaseList, TableList } from 'features/shared/components'
 import Item from  './ListItem'
 import actions from 'actions'
 
 const clientType = 'client_access_token'
 const networkType = 'network_access_token'
 
-const stateToProps = (type) => (state, ownProps) => {
-  return {
-    ...BaseList.mapStateToProps(type, Item)(state, ownProps),
+const stateToProps = (type) => (state, ownProps) =>
+  BaseList.mapStateToProps(type, Item, {
     skipQuery: true,
-  }
-}
+    wrapperComponent: TableList,
+    wrapperProps: {
+        titles: ['Token ID']
+    }
+  })(state, ownProps)
+
 
 const dispatchToProps = (type) => (dispatch) => {
   return {

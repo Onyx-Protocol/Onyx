@@ -1,3 +1,4 @@
+import TableList from './TableList/TableList'
 import BaseList from './BaseList'
 import BaseNew from './BaseNew'
 import BaseShow from './BaseShow'
@@ -12,9 +13,10 @@ import RelativeTime from './RelativeTime'
 import RoutingContainer from './RoutingContainer'
 import SearchBar from './SearchBar/SearchBar'
 import Section from './Section/Section'
-import Table from './Table/Table'
+import KeyValueTable from './KeyValueTable/KeyValueTable'
 
 export {
+  TableList,
   BaseList,
   BaseNew,
   BaseShow,
@@ -29,5 +31,5 @@ export {
   RoutingContainer,
   SearchBar,
   Section,
-  Table,
+  KeyValueTable,
 }

@@ -5,10 +5,9 @@ import { pluralize, humanize } from 'utility/string'
 import { PageContent, PageTitle, Pagination, SearchBar } from './'
 import { pageSize } from 'utility/environment'
 
-export class ItemList extends React.Component {
+class ItemList extends React.Component {
   render() {
     const label = this.props.label || pluralize(humanize(this.props.type))
-
     const actions = [...(this.props.actions || [])]
     if (!this.props.skipCreate) {
       actions.push(<button key='showCreate' className='btn btn-link' onClick={this.props.showCreate}>
@@ -37,16 +36,16 @@ export class ItemList extends React.Component {
           isLastPage={this.props.isLastPage}
           pushList={this.props.pushList} />
 
+      const items = this.props.items.map((item) =>
+        <this.props.listItemComponent key={item.id} item={item} {...this.props.itemActions}/>)
+      const Wrapper = this.props.wrapperComponent
+
       return(
         <div>
           {header}
 
           <PageContent>
-            {this.props.children}
-
-            {this.props.items.map((item) =>
-              <this.props.listItemComponent key={item.id} item={item} {...this.props.itemActions}/>
-            )}
+            {Wrapper ? <Wrapper {...this.props.wrapperProps}>{items}</Wrapper> : items}
 
             {pagination}
           </PageContent>
@@ -56,8 +55,6 @@ export class ItemList extends React.Component {
       return(
         <div>
           {header}
-
-          {this.props.children}
 
           <PageContent>
             <div className='jumbotron text-center'>

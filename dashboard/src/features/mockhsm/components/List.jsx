@@ -1,15 +1,20 @@
-import { BaseList } from 'features/shared/components'
+import { BaseList, TableList } from 'features/shared/components'
 import ListItem from './ListItem'
 
 const type = 'mockhsm'
 
 const state = (state, ownProps) => ({
-  ...BaseList.mapStateToProps(type, ListItem)(state, ownProps),
-  skipQuery: true,
-  label: 'Mock HSM Keys'
+  ...(state, ownProps),
 })
 
 export default BaseList.connect(
-  state,
+  BaseList.mapStateToProps(type, ListItem, {
+    skipQuery: true,
+    label: 'Mock HSM Keys',
+    wrapperComponent: TableList,
+    wrapperProps: {
+      titles: ['Alias', 'Xpub']
+    }
+  }),
   BaseList.mapDispatchToProps(type)
 )

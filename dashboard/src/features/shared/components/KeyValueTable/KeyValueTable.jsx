@@ -1,8 +1,8 @@
 import React from 'react'
-import styles from './Table.scss'
+import styles from './KeyValueTable.scss'
 import { Section } from 'features/shared/components'
 
-class Table extends React.Component {
+class KeyValueTable extends React.Component {
   renderPre(value) {
     return value != null && (typeof value == 'object')
   }
@@ -32,4 +32,4 @@ class Table extends React.Component {
   }
 }
 
-export default Table
+export default KeyValueTable
