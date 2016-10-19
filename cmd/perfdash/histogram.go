@@ -82,11 +82,9 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 		hists = append(hists, hdrhistogram.Import(&b.Histogram))
 	}
 
-	dx := img.Bounds().Inset(2).Dx()
 	var max int64
 	for _, hist := range hists {
-		v := valueAtPixel(hist, dx)
-		if v > max {
+		if v := hist.Max(); v > max {
 			max = v
 		}
 	}
