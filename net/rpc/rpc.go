@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -56,9 +55,21 @@ func (e errStatusCode) Error() string {
 
 // Call calls a remote procedure on another node, specified by the path.
 func (c *Client) Call(ctx context.Context, path string, request, response interface{}) error {
-	u, err := url.Parse(c.BaseURL)
+	r, err := c.CallRaw(ctx, path, request)
 	if err != nil {
 		return err
+	}
+	defer r.Close()
+	err = json.NewDecoder(r).Decode(response)
+	return err
+}
+
+// CallRaw calls a remote procedure on another node, specified by the path. It
+// returns a io.ReadCloser of the raw response body.
+func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) (io.ReadCloser, error) {
+	u, err := url.Parse(c.BaseURL)
+	if err != nil {
+		return nil, err
 	}
 	u.Path = path
 
@@ -66,14 +77,14 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 	if request != nil {
 		var jsonBody bytes.Buffer
 		if err := json.NewEncoder(&jsonBody).Encode(request); err != nil {
-			return err
+			return nil, err
 		}
 		bodyReader = &jsonBody
 	}
 
 	req, err := http.NewRequest("POST", u.String(), bodyReader)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if c.AccessToken != "" {
@@ -102,40 +113,22 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 
 	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if id := resp.Header.Get(HeaderBlockchainID); c.BlockchainID != "" && id != "" && c.BlockchainID != id {
-		return ErrWrongNetwork
+		resp.Body.Close()
+		return nil, ErrWrongNetwork
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return errStatusCode{
+		resp.Body.Close()
+		return nil, errStatusCode{
 			URL:        cleanedURLString(u),
 			StatusCode: resp.StatusCode,
 		}
 	}
-
-	if response != nil {
-		switch resp.Header.Get("Content-Type") {
-		case "application/x-protobuf":
-			b, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				return err
-			}
-			byteResponse, ok := response.(*[]byte)
-			if !ok {
-				return errors.New("RPC returned unexpected protobuf")
-			}
-			*byteResponse = b
-		default:
-			if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return resp.Body, nil
 }
 
 func cleanedURLString(u *url.URL) string {

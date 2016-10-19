@@ -2,9 +2,12 @@ package fetch
 
 import (
 	"context"
+	"io"
+	"io/ioutil"
 	"math"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"chain/core/txdb"
@@ -16,13 +19,16 @@ import (
 	"chain/protocol/state"
 )
 
-const getSnapshotTimeout = 25 * time.Second
+const getSnapshotTimeout = 60 * time.Second
 const heightPollingPeriod = 3 * time.Second
 
 var (
 	generatorHeight          uint64
 	generatorHeightFetchedAt time.Time
 	generatorLock            sync.Mutex
+
+	downloadingSnapshot   *Snapshot
+	downloadingSnapshotMu sync.Mutex
 )
 
 func GeneratorHeight() (uint64, time.Time) {
@@ -31,6 +37,12 @@ func GeneratorHeight() (uint64, time.Time) {
 	t := generatorHeightFetchedAt
 	generatorLock.Unlock()
 	return h, t
+}
+
+func SnapshotProgress() *Snapshot {
+	downloadingSnapshotMu.Lock()
+	defer downloadingSnapshotMu.Unlock()
+	return downloadingSnapshot
 }
 
 // Fetch runs in a loop, fetching blocks from the configured
@@ -233,6 +245,28 @@ func getHeight(ctx context.Context, peer *rpc.Client) (uint64, error) {
 	return h, nil
 }
 
+// Snapshot describes a snapshot being downloaded from a peer Core.
+type Snapshot struct {
+	Height uint64
+	Size   uint64
+	progressReader
+
+	stopped   bool
+	stoppedMu sync.Mutex
+}
+
+func (s *Snapshot) InProgress() bool {
+	s.stoppedMu.Lock()
+	defer s.stoppedMu.Unlock()
+	return !s.stopped
+}
+
+func (s *Snapshot) done() {
+	s.stoppedMu.Lock()
+	defer s.stoppedMu.Unlock()
+	s.stopped = true
+}
+
 // fetchSnapshot fetches the latest snapshot from the generator and applies it
 // to the store. It should only be called on freshly configured cores--
 // cores that have been operating should replay all transactions so that
@@ -241,23 +275,34 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store) erro
 	ctx, cancel := context.WithTimeout(ctx, getSnapshotTimeout)
 	defer cancel()
 
-	var snapshotInfo struct {
-		Height, Size uint64
-	}
-	err := peer.Call(ctx, "/rpc/get-snapshot-info", nil, &snapshotInfo)
+	info := new(Snapshot)
+	err := peer.Call(ctx, "/rpc/get-snapshot-info", nil, &info)
 	if err != nil {
 		return errors.Wrap(err, "getting snapshot info")
 	}
-	if snapshotInfo.Height == 0 {
+	if info.Height == 0 {
 		return nil
 	}
 
-	var rawSnapshot []byte
-	err = peer.Call(ctx, "/rpc/get-snapshot", snapshotInfo.Height, &rawSnapshot)
+	downloadingSnapshotMu.Lock()
+	downloadingSnapshot = info
+	downloadingSnapshotMu.Unlock()
+	defer info.done()
+
+	// Download the snapshot, recording our progress as we go.
+	body, err := peer.CallRaw(ctx, "/rpc/get-snapshot", info.Height)
 	if err != nil {
 		return errors.Wrap(err, "getting snapshot")
 	}
-	snapshot, err := txdb.DecodeSnapshot(rawSnapshot)
+	defer body.Close()
+
+	// Wrap the response body reader in our progress reader.
+	info.progressReader.reader = body
+	b, err := ioutil.ReadAll(&info.progressReader)
+	if err != nil {
+		return err
+	}
+	snapshot, err := txdb.DecodeSnapshot(b)
 	if err != nil {
 		return err
 	}
@@ -278,7 +323,7 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store) erro
 	}
 
 	// Also get the corresponding block.
-	snapshotBlock, err := getBlock(ctx, peer, snapshotInfo.Height, getSnapshotTimeout)
+	snapshotBlock, err := getBlock(ctx, peer, info.Height, getSnapshotTimeout)
 	if err != nil {
 		return err
 	}
@@ -301,4 +346,19 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store) erro
 	}
 	err = s.SaveSnapshot(ctx, snapshotBlock.Height, snapshot)
 	return errors.Wrap(err, "saving bootstrap snaphot")
+}
+
+type progressReader struct {
+	reader io.Reader
+	read   uint64
+}
+
+func (r *progressReader) BytesRead() uint64 {
+	return atomic.LoadUint64(&r.read)
+}
+
+func (r *progressReader) Read(b []byte) (int, error) {
+	n, err := r.reader.Read(b)
+	atomic.AddUint64(&r.read, uint64(n))
+	return n, err
 }

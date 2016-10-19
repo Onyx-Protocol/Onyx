@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	httpReadTimeout  = 30 * time.Second
+	httpReadTimeout  = 2 * time.Minute
 	httpWriteTimeout = 2 * time.Minute
 )
 

@@ -95,6 +95,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 	var (
 		generatorHeight  *uint64
 		generatorFetched *time.Time
+		snapshot         *fetch.Snapshot
 	)
 	if h.Config.IsGenerator {
 		now := time.Now()
@@ -102,7 +103,6 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		generatorFetched = &now
 	} else {
 		fetchHeight, fetchTime := fetch.GeneratorHeight()
-
 		// Because everything is asynchronous, it's possible for the localHeight to
 		// be higher than our cached generator height. In that case, display the
 		// local height as the generator height.
@@ -116,12 +116,16 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		if !fetchTime.IsZero() {
 			generatorHeight, generatorFetched = &fetchHeight, &fetchTime
 		}
+
+		// Get the snapshot downloading progress if we're bootstrapping
+		// from a state snapshot.
+		snapshot = fetch.SnapshotProgress()
 	}
 
 	buildCommit := json.RawMessage(expvar.Get("buildcommit").String())
 	buildDate := json.RawMessage(expvar.Get("builddate").String())
 
-	return map[string]interface{}{
+	m := map[string]interface{}{
 		"is_configured":                     true,
 		"configured_at":                     h.Config.ConfiguredAt,
 		"is_signer":                         h.Config.IsSigner,
@@ -137,7 +141,18 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
 		"health":                            h.health(),
-	}, nil
+	}
+
+	// Add in snapshot information if we're downloading a snapshot.
+	if snapshot != nil {
+		m["snapshot"] = map[string]interface{}{
+			"height":      snapshot.Height,
+			"size":        snapshot.Size,
+			"downloaded":  snapshot.BytesRead(),
+			"in_progress": snapshot.InProgress(),
+		}
+	}
+	return m, nil
 }
 
 // Configure configures the core by writing to the database.
