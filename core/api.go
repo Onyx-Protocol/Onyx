@@ -127,7 +127,8 @@ func (h *Handler) init() {
 	m.Handle(networkRPCPrefix+"submit", needConfig(h.Chain.AddTx))
 	m.Handle(networkRPCPrefix+"get-blocks", needConfig(h.getBlocksRPC)) // DEPRECATED: use get-block instead
 	m.Handle(networkRPCPrefix+"get-block", needConfig(h.getBlockRPC))
-	m.Handle(networkRPCPrefix+"get-snapshot", needConfig(h.getSnapshotRPC))
+	m.Handle(networkRPCPrefix+"get-snapshot-info", needConfig(h.getSnapshotInfoRPC))
+	m.Handle(networkRPCPrefix+"get-snapshot", http.HandlerFunc(h.getSnapshotRPC))
 	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(h.leaderSignHandler(h.Signer)))
 	m.Handle(networkRPCPrefix+"block-height", needConfig(func(ctx context.Context) map[string]uint64 {
 		h := h.Chain.Height()

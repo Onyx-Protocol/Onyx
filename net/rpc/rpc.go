@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -117,8 +118,21 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 	}
 
 	if response != nil {
-		if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
-			return err
+		switch resp.Header.Get("Content-Type") {
+		case "application/x-protobuf":
+			b, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			byteResponse, ok := response.(*[]byte)
+			if !ok {
+				return errors.New("RPC returned unexpected protobuf")
+			}
+			*byteResponse = b
+		default:
+			if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

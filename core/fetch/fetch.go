@@ -241,15 +241,23 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store) erro
 	ctx, cancel := context.WithTimeout(ctx, getSnapshotTimeout)
 	defer cancel()
 
-	var snapResp struct {
-		Data   []byte
-		Height uint64
+	var snapshotInfo struct {
+		Height, Size uint64
 	}
-	err := peer.Call(ctx, "/rpc/get-snapshot", nil, &snapResp)
+	err := peer.Call(ctx, "/rpc/get-snapshot-info", nil, &snapshotInfo)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "getting snapshot info")
 	}
-	snapshot, err := txdb.DecodeSnapshot(snapResp.Data)
+	if snapshotInfo.Height == 0 {
+		return nil
+	}
+
+	var rawSnapshot []byte
+	err = peer.Call(ctx, "/rpc/get-snapshot", snapshotInfo.Height, &rawSnapshot)
+	if err != nil {
+		return errors.Wrap(err, "getting snapshot")
+	}
+	snapshot, err := txdb.DecodeSnapshot(rawSnapshot)
 	if err != nil {
 		return err
 	}
@@ -270,7 +278,7 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store) erro
 	}
 
 	// Also get the corresponding block.
-	snapshotBlock, err := getBlock(ctx, peer, snapResp.Height, getSnapshotTimeout)
+	snapshotBlock, err := getBlock(ctx, peer, snapshotInfo.Height, getSnapshotTimeout)
 	if err != nil {
 		return err
 	}
@@ -282,7 +290,7 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store) erro
 		return errors.New("snapshot merkle root doesn't match block")
 	}
 
-	// Commit the initial block.
+	// Commit the snapshot, initial block and snapshot block.
 	err = s.SaveBlock(ctx, initialBlock)
 	if err != nil {
 		return errors.Wrap(err, "saving the initial block")

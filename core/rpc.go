@@ -2,16 +2,20 @@ package core
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 
-	"chain/encoding/json"
+	chainjson "chain/encoding/json"
 	"chain/errors"
+	"chain/net/http/httpjson"
+	"chain/protocol/bc"
 )
 
 // getBlockRPC returns the block at the requested height.
 // If successful, it always returns at least one block,
 // waiting if necessary until one is created.
 // It is an error to request blocks very far in the future.
-func (h *Handler) getBlockRPC(ctx context.Context, height uint64) (json.HexBytes, error) {
+func (h *Handler) getBlockRPC(ctx context.Context, height uint64) (chainjson.HexBytes, error) {
 	err := h.Chain.WaitForBlockSoon(ctx, height)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", height)
@@ -26,28 +30,52 @@ func (h *Handler) getBlockRPC(ctx context.Context, height uint64) (json.HexBytes
 }
 
 // getBlocksRPC -- DEPRECATED: use getBlock instead
-func (h *Handler) getBlocksRPC(ctx context.Context, afterHeight uint64) ([]json.HexBytes, error) {
+func (h *Handler) getBlocksRPC(ctx context.Context, afterHeight uint64) ([]chainjson.HexBytes, error) {
 	block, err := h.getBlockRPC(ctx, afterHeight+1)
 	if err != nil {
 		return nil, err
 	}
 
-	return []json.HexBytes{block}, nil
+	return []chainjson.HexBytes{block}, nil
 }
 
-// Data is a []byte because it's being funneled from the
-// generator's db to the recipient node's db, and this is
-// the smallest serialization format.
-type snapshotResp struct {
-	Data   []byte `json:"data"`
-	Height uint64 `json:"height"`
+type snapshotInfoResp struct {
+	Height       uint64  `json:"height"`
+	Size         uint64  `json:"size"`
+	BlockchainID bc.Hash `json:"blockchain_id"`
 }
 
-// getSnapshotRPC returns the latest snapshot data.
-// The generator should run this to bootstrap new cores.
+func (h *Handler) getSnapshotInfoRPC(ctx context.Context) (resp snapshotInfoResp, err error) {
+	// TODO(jackson): cache latest snapshot and its height & size in-memory.
+	resp.Height, resp.Size, err = h.Store.LatestSnapshotInfo(ctx)
+	resp.BlockchainID = h.Config.BlockchainID
+	return resp, err
+}
+
+// getSnapshotRPC returns the raw protobuf snapshot at the provided height.
 // Non-generators can call this endpoint to get raw data
 // that they can use to populate their own snapshot table.
-func (h *Handler) getSnapshotRPC(ctx context.Context) (resp snapshotResp, err error) {
-	resp.Data, resp.Height, err = h.Store.LatestFullSnapshot(ctx)
-	return resp, err
+//
+// This handler doesn't use the httpjson.Handler format so that it can return
+// raw protobuf bytes on the wire.
+func (h *Handler) getSnapshotRPC(rw http.ResponseWriter, req *http.Request) {
+	if h.Config == nil {
+		alwaysError(errUnconfigured).ServeHTTP(rw, req)
+		return
+	}
+
+	var height uint64
+	err := json.NewDecoder(req.Body).Decode(&height)
+	if err != nil {
+		WriteHTTPError(req.Context(), rw, httpjson.ErrBadRequest)
+		return
+	}
+
+	data, err := h.Store.GetSnapshot(req.Context(), height)
+	if err != nil {
+		WriteHTTPError(req.Context(), rw, err)
+		return
+	}
+	rw.Header().Set("Content-Type", "application/x-protobuf")
+	rw.Write(data)
 }

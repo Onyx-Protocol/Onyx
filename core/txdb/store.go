@@ -62,10 +62,21 @@ func (s *Store) LatestSnapshot(ctx context.Context) (*state.Snapshot, uint64, er
 	return getStateSnapshot(ctx, s.db)
 }
 
-// LatestFullSnapshot returns the most recent state snapshot stored in
-// the database, raw.
-func (s *Store) LatestFullSnapshot(ctx context.Context) ([]byte, uint64, error) {
-	return getFullSnapshot(ctx, s.db)
+// LatestSnapshotInfo returns the height and size of the most recent
+// state snapshot stored in the database.
+func (s *Store) LatestSnapshotInfo(ctx context.Context) (height uint64, size uint64, err error) {
+	const q = `
+		SELECT height, octet_length(data) FROM snapshots ORDER BY height DESC LIMIT 1
+	`
+	err = s.db.QueryRow(ctx, q).Scan(&height, &size)
+	return height, size, err
+}
+
+// GetSnapshot returns the state snapshot stored at the provided height,
+// in Chain Core's binary protobuf representation. If no snapshot exists
+// at the provided height, an error is returned.
+func (s *Store) GetSnapshot(ctx context.Context, height uint64) ([]byte, error) {
+	return getRawSnapshot(ctx, s.db, height)
 }
 
 // SaveBlock persists a new block in the database.
