@@ -17,7 +17,7 @@ var (
 func main() {
 	env.Parse()
 	http.HandleFunc("/", index)
-	http.HandleFunc("/heatmap.png", heatmap)
+	http.HandleFunc("/histogram.png", histogram)
 	log.Fatalln(http.ListenAndServe(*addr, nil))
 }
 
@@ -57,6 +57,6 @@ const indexHTML = `
 <h1>perfdash</h1>
 {{$id := .ID}}
 {{range $k, $v := .DebugVars.Latency}}
-	<img src="/heatmap.png?name={{$k}}&id={{$id}}">
+	<img src="/histogram.png?name={{$k}}&id={{$id}}">
 {{end}}
 `

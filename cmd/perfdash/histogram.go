@@ -50,7 +50,7 @@ var (
 	}
 )
 
-func heatmap(w http.ResponseWriter, req *http.Request) {
+func histogram(w http.ResponseWriter, req *http.Request) {
 	query := req.URL.Query()
 	name := query.Get("name")
 	id, err := strconv.Atoi(query.Get("id"))
