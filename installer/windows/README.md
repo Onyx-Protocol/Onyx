@@ -46,4 +46,23 @@ This generates `ChainBundle/Bundle.wixobj`. Next, run
 
 `light Bundle.wixobj -ext WixBalExtension`
 
-This generates Bundle.exe in your current working directory. Clicking on Bundle.exe will install Chain Core as an application on your PC. 
+This generates Bundle.exe in your current working directory. 
+
+### Code Signing
+
+In order for Chain to appear as the publisher, Bundle.exe needs to be signed with the private key of Chain's code signing certificate. 
+
+To do this, first put a .pfx file ([generated from the certificate](https://www.digicert.com/code-signing/exporting-code-signing-certificate.htm)) into the `ChainBundle` directory. Then run the following commands. 
+
+The following commands rely on signtool, which is a tool packaged inside the Windows SDK. The Windows SDK is from Microsoft and can be downloaded here: https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk 
+
+The commands also assume that both the Wix Tools binaries and the signtool are in your path. My signtool was installed at `C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe`. 
+
+```
+insignia -ib Bundle.exe -o engine.exe
+signtool sign /v /f [x.pfx] /p [password] engine.exe
+insignia -ab engine.exe Bundle.exe -o Bundle.exe -v
+```
+
+
+Clicking on Bundle.exe will install Chain Core as an application on your PC. 
