@@ -7,6 +7,7 @@ import (
 
 	"chain/core/signers"
 	"chain/database/pg"
+	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -33,11 +34,15 @@ func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
 	}
 	var keys []map[string]interface{}
 	path := signers.Path(a.Signer, signers.AccountKeySpace)
+	var jsonPath []json.HexBytes
+	for _, p := range path {
+		jsonPath = append(jsonPath, p)
+	}
 	for _, xpub := range a.XPubs {
 		keys = append(keys, map[string]interface{}{
 			"root_xpub":               xpub,
 			"account_xpub":            xpub.Derive(path),
-			"account_derivation_path": path,
+			"account_derivation_path": jsonPath,
 		})
 	}
 	return m.indexer.SaveAnnotatedAccount(ctx, a.ID, map[string]interface{}{

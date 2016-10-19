@@ -36,12 +36,16 @@ func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 	if a.Signer != nil {
 		var keys []map[string]interface{}
 		path := signers.Path(a.Signer, signers.AssetKeySpace)
+		var jsonPath []json.HexBytes
+		for _, p := range path {
+			jsonPath = append(jsonPath, p)
+		}
 		for _, xpub := range a.Signer.XPubs {
 			derived := xpub.Derive(path)
 			keys = append(keys, map[string]interface{}{
 				"root_xpub":             xpub,
 				"asset_pubkey":          derived,
-				"asset_derivation_path": path,
+				"asset_derivation_path": jsonPath,
 			})
 		}
 		m["keys"] = keys
