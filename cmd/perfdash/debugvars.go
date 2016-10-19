@@ -13,6 +13,7 @@ type debugVars struct {
 	Latency map[string]struct {
 		Buckets []struct {
 			Over      int
+			Max       int64
 			Histogram hdrhistogram.Snapshot
 		}
 	}

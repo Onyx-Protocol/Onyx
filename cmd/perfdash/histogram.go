@@ -72,14 +72,21 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	b0 := latency.Buckets[0]
 	img := newImage(dims)
 	d := drawer
 	d.Dst = img
 
-	var hists []*hdrhistogram.Histogram
+	var (
+		hists   []*hdrhistogram.Histogram
+		trueMax time.Duration
+		over    int
+	)
 	for _, b := range latency.Buckets {
 		hists = append(hists, hdrhistogram.Import(&b.Histogram))
+		over += b.Over
+		if d := time.Duration(b.Max); d > trueMax {
+			trueMax = d
+		}
 	}
 
 	var max int64
@@ -107,7 +114,7 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 		drawf(d, 4, 20, "%v", time.Duration(max))
 	}
 	drawf(d, 4, 38, "%s", name)
-	drawf(d, 4, 54, "over: %d", b0.Over)
+	drawf(d, 4, 54, "over: %d   max: %v", over, trueMax)
 	label(img, labelColor)
 	png.Encode(w, img)
 }
