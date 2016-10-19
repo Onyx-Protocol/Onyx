@@ -37,13 +37,12 @@ var (
 	// Don't forget, color.RGBA fields are
 	// alpha premultiplied.
 	lineColors = [...]color.Color{
-		color.RGBA{R: 0xff, A: 0xff},
-		color.RGBA{R: 0xcc, A: 0xcc},
-		color.RGBA{R: 0x88, A: 0x88},
-		color.RGBA{R: 0x55, A: 0x55},
-		color.RGBA{R: 0x22, A: 0x22},
+		color.RGBA{B: 0xff, A: 0xff},
+		color.RGBA{B: 0xbb, A: 0xbb},
+		color.RGBA{B: 0x66, A: 0x66},
+		color.RGBA{B: 0x22, A: 0x22},
 	}
-	curLineColor = color.RGBA{A: 0x55}
+	curLineColor = color.RGBA{R: 0x55, B: 0x55, A: 0x55}
 	labelColor   = color.Black
 	drawer       = font.Drawer{
 		Src:  image.NewUniform(labelColor),
