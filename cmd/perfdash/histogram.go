@@ -119,12 +119,19 @@ func graph(img *image.RGBA, hist *hdrhistogram.Histogram, ymax int64, color colo
 	d.Dst = graph
 
 	labelPixels := 50
-	for x := 0; x < gdims.Dx(); x++ {
+	prevY := int(scale(valueAtPixel(hist, 0), ymax, int64(gdims.Dy())))
+	for x := 1; x < gdims.Dx(); x++ {
 		v := valueAtPixel(hist, x)
 		y := int(scale(v, ymax, int64(gdims.Dy())))
-		graph.Set(gdims.Min.X+x, gdims.Max.Y-y-1, color)
+		vLineSeg(graph, gdims.Min.X+x, gdims.Max.Y-y-1, gdims.Max.Y-prevY-1, color)
 		labelPixels++
+		prevY = y
 	}
+}
+
+func vLineSeg(img *image.RGBA, x, y0, y1 int, color color.Color) {
+	dims := image.Rect(x, y0, x+1, y1+1)
+	draw.Draw(img, dims, image.NewUniform(color), image.ZP, draw.Over)
 }
 
 func label(img *image.RGBA, color color.Color) {
