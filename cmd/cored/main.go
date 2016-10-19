@@ -52,7 +52,6 @@ var (
 	tlsKey     = env.String("TLSKEY", "")
 	listenAddr = env.String("LISTEN", ":1999")
 	dbURL      = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
-	target     = env.String("TARGET", "sandbox")
 	splunkAddr = os.Getenv("SPLUNKADDR")
 	logFile    = os.Getenv("LOGFILE")
 	logSize    = env.Int("LOGSIZE", 5e6) // 5MB
@@ -108,12 +107,12 @@ func main() {
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
-	processID := fmt.Sprintf("chain-%s-%s-%d", *target, hostname, os.Getpid())
+	processID := fmt.Sprintf("chain-%s-%d", hostname, os.Getpid())
 	expvar.NewString("processID").Set(processID)
 
 	log.SetPrefix("cored-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
-	chainlog.SetPrefix(append([]interface{}{"app", "cored", "target", *target, "buildtag", buildTag, "processID", processID}, race...)...)
+	chainlog.SetPrefix(append([]interface{}{"app", "cored", "buildtag", buildTag, "processID", processID}, race...)...)
 	chainlog.SetOutput(logWriter())
 
 	var h http.Handler
