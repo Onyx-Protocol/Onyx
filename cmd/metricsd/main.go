@@ -7,7 +7,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 
@@ -82,9 +84,50 @@ func reportMetrics(ctx context.Context, client *rpc.Client, latestNumRots map[st
 		return err
 	}
 
-	// Convert the histograms into librato gauges.
 	var req libratoMetricsRequest
 	req.Source = varsResp.ProcessID
+	req.MeasureTime = time.Now().Unix()
+
+	// Add measurements from the runtime memstats.
+	// See https://golang.org/pkg/runtime/#MemStats for full
+	// documentation on the meaning of these metrics.
+	memoryPrefix := *metricPrefix + ".memory."
+	req.Gauges = append(req.Gauges, gauge{
+		Name:   memoryPrefix + "total",
+		Value:  int64(varsResp.Memstats.Alloc),
+		Period: period,
+		Attr: attributes{
+			Units:     "MB",
+			Transform: "x/1000000",
+			Summarize: "max",
+		},
+	}, gauge{
+		Name:   memoryPrefix + "heap.total",
+		Value:  int64(varsResp.Memstats.HeapAlloc),
+		Period: period,
+		Attr: attributes{
+			Units:     "MB",
+			Transform: "x/1000000",
+			Summarize: "max",
+		},
+	})
+	req.Counters = append(req.Counters, counter{
+		Name:  memoryPrefix + "mallocs",
+		Value: int64(varsResp.Memstats.Mallocs),
+	}, counter{
+		Name:  memoryPrefix + "frees",
+		Value: int64(varsResp.Memstats.Frees),
+	}, counter{
+		Name:  memoryPrefix + "gc.total_pause",
+		Value: int64(varsResp.Memstats.PauseTotalNs),
+		Attr: attributes{
+			Units:     "ms",
+			Transform: "x/1000000",
+			Summarize: "max",
+		},
+	})
+
+	// Convert the most recent latency histograms into librato gauges.
 	for endpoint, latency := range varsResp.Latency {
 		// figure out how many buckets have happened since we last
 		// recorded data.
@@ -142,10 +185,6 @@ func reportMetrics(ctx context.Context, client *rpc.Client, latestNumRots map[st
 }
 
 func sendLibratoMetrics(ctx context.Context, body *libratoMetricsRequest) error {
-	if len(body.Gauges) == 0 {
-		return nil
-	}
-
 	b, err := json.Marshal(body)
 	if err != nil {
 		return err
@@ -165,21 +204,34 @@ func sendLibratoMetrics(ctx context.Context, body *libratoMetricsRequest) error 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("librato responded with %d", resp.StatusCode)
+		errmsg, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("librato responded with %d:\n%s", resp.StatusCode, errmsg)
 	}
 	return nil
 }
 
 type libratoMetricsRequest struct {
-	Source string  `json:"source,omitempty"`
-	Gauges []gauge `json:"gauges,omitempty"`
+	Source      string    `json:"source,omitempty"`
+	MeasureTime int64     `json:"measure_time,omitempty"`
+	Counters    []counter `json:"counters,omitempty"`
+	Gauges      []gauge   `json:"gauges,omitempty"`
 }
 
 type gauge struct {
 	Name        string     `json:"name"`
 	Value       int64      `json:"value"`
 	Period      int64      `json:"period"`
-	MeasureTime int64      `json:"measure_time"`
+	MeasureTime int64      `json:"measure_time,omitempty"`
+	Attr        attributes `json:"attributes"`
+}
+
+type counter struct {
+	Name        string     `json:"name"`
+	Value       int64      `json:"value"`
+	MeasureTime int64      `json:"measure_time,omitempty"`
 	Attr        attributes `json:"attributes"`
 }
 
@@ -195,6 +247,7 @@ type debugVarsResponse struct {
 	BuildDate   string               `json:"builddate"`
 	BuildTag    string               `json:"buildtag"`
 	Latency     map[string]latencies `json:"latency"`
+	Memstats    runtime.MemStats     `json:"memstats"`
 	ProcessID   string               `json:"processID"`
 }
 
