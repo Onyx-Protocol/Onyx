@@ -1,0 +1,26 @@
+.main {
+  padding: $gutter-size*2 $gutter-size;
+  border-top: 1px solid $border-color;
+
+  &:first-child {
+    border: 0;
+  }
+}
+
+.wrapper {
+  display: flex;
+  width: 80%;
+  margin: 0 auto;
+}
+
+.title {
+  color: $text-strong-color;
+  font-weight: bold;
+  min-width: 30%;
+  font-size: 16px;
+  padding-right: 15%;
+}
+
+.content {
+  width: 100%;
+}

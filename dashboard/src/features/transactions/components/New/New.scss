@@ -12,9 +12,15 @@
 
   label {
     margin-bottom: 0;
+    color: $text-strong-color;
+  }
+
+  .submitDescription {
+    font-weight: normal;
+    color: $text-color;
   }
 }
 
-.submitDescription {
-  font-weight: normal;
+.addAction {
+  width: 250px;
 }

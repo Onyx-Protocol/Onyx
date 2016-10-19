@@ -1,13 +1,14 @@
 import React from 'react'
 import {
-  Panel,
   TextField,
+  HiddenField,
   NumberField,
   SelectField,
   JsonField,
   ObjectSelectorField,
   Autocomplete
 } from 'components/Common'
+import styles from './FormActionItem.scss'
 
 const ISSUE_KEY = 'issue'
 const SPEND_ACCOUNT_KEY = 'spend_account'
@@ -17,15 +18,15 @@ const CONTROL_PROGRAM_KEY = 'control_program'
 const RETIRE_ASSET_KEY = 'retire_asset'
 const TRANSACTION_REFERENCE_DATA = 'set_transaction_reference_data'
 
-const actionTypes = [
-  {value: ISSUE_KEY, label: 'Issue'},
-  {value: SPEND_ACCOUNT_KEY, label: 'Spend from Account'},
-  {value: SPEND_UNSPENT_KEY, label: 'Spend Unspent Output'},
-  {value: CONTROL_ACCOUNT_KEY, label: 'Control with Account'},
-  {value: CONTROL_PROGRAM_KEY, label: 'Control with Program'},
-  {value: RETIRE_ASSET_KEY, label: 'Retire'},
-  {value: TRANSACTION_REFERENCE_DATA, label: 'Set Transaction Reference Data'},
-]
+const actionLabels = {
+  [ISSUE_KEY]: 'Issue',
+  [SPEND_ACCOUNT_KEY]: 'Spend from Account',
+  [SPEND_UNSPENT_KEY]: 'Spend Unspent Output',
+  [CONTROL_ACCOUNT_KEY]: 'Control with Account',
+  [CONTROL_PROGRAM_KEY]: 'Control with Program',
+  [RETIRE_ASSET_KEY]: 'Retire',
+  [TRANSACTION_REFERENCE_DATA]: 'Set Transaction Reference Data',
+}
 
 const visibleFields = {
   [ISSUE_KEY]: {asset: true, amount: true},
@@ -40,7 +41,9 @@ const visibleFields = {
 export default class ActionItem extends React.Component {
   constructor(props) {
     super(props)
-    this.state = {}
+    this.state = {
+      referenceDataOpen: props.fieldProps.type.value == TRANSACTION_REFERENCE_DATA
+    }
     this.openReferenceData = this.openReferenceData.bind(this)
   }
 
@@ -49,63 +52,74 @@ export default class ActionItem extends React.Component {
   }
 
   render() {
-    let typeOnChange = event => {
-      let selected = this.props.fieldProps.type.onChange(event).value
-      this.setState({
-        selectedType: selected,
-        referenceDataOpen: selected == TRANSACTION_REFERENCE_DATA
-      })
+    const {
+      type,
+      account_id,
+      account_alias,
+      control_program,
+      transaction_id,
+      position,
+      asset_id,
+      asset_alias,
+      amount,
+      reference_data } = this.props.fieldProps
+
+    const visible = visibleFields[type.value] || {}
+    const remove = (event) => {
+      event.preventDefault()
+      this.props.remove(this.props.index)
     }
-    let typeProps = Object.assign({}, this.props.fieldProps.type, {onChange: typeOnChange})
-    let visible = visibleFields[this.state.selectedType] || {}
 
     return (
-      <Panel title={`Action ${this.props.index + 1}`} >
+      <div className={styles.main}>
+        <HiddenField fieldProps={type} />
 
-        <SelectField title='Type' emptyLabel='Select an action type...' options={actionTypes} fieldProps={typeProps} />
+        <div className={styles.header}>
+          <label className={styles.title}>{actionLabels[type.value]}</label>
+          <a href='#' className='btn btn-sm btn-danger' onClick={remove}>Remove</a>
+        </div>
 
         {visible.account &&
           <ObjectSelectorField
             title='Account'
             aliasField={Autocomplete.AccountAlias}
             fieldProps={{
-              id: this.props.fieldProps.account_id,
-              alias: this.props.fieldProps.account_alias
+              id: account_id,
+              alias: account_alias
             }}
           />}
 
         {visible.control_program &&
-          <TextField title='Control Program' fieldProps={this.props.fieldProps.control_program} />}
+          <TextField title='Control Program' fieldProps={control_program} />}
 
         {visible.transaction_id &&
-          <TextField title='Transaction ID' fieldProps={this.props.fieldProps.transaction_id} />}
+          <TextField title='Transaction ID' fieldProps={transaction_id} />}
 
         {visible.position &&
-          <NumberField title='Transaction Unspent Position' fieldProps={this.props.fieldProps.position} />}
+          <NumberField title='Transaction Unspent Position' fieldProps={position} />}
 
         {visible.asset &&
           <ObjectSelectorField
             title='Asset'
             aliasField={Autocomplete.AssetAlias}
             fieldProps={{
-              id: this.props.fieldProps.asset_id,
-              alias: this.props.fieldProps.asset_alias
+              id: asset_id,
+              alias: asset_alias
             }}
           />}
 
         {visible.amount &&
-          <NumberField title='Amount' fieldProps={this.props.fieldProps.amount} />}
+          <NumberField title='Amount' fieldProps={amount} />}
 
-        {this.state.selectedType && this.state.referenceDataOpen &&
-          <JsonField title='Reference data' fieldProps={this.props.fieldProps.reference_data} />
+        {this.state.referenceDataOpen &&
+          <JsonField title='Reference data' fieldProps={reference_data} />
         }
-        {this.state.selectedType && !this.state.referenceDataOpen &&
+        {!this.state.referenceDataOpen &&
           <button type='button' className='btn btn-link' onClick={this.openReferenceData}>
             Add reference data
           </button>
         }
-
-      </Panel>
+      </div>
     )
   }
 }

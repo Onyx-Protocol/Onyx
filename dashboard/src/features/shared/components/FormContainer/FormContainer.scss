@@ -1,9 +1,17 @@
 .main {
   background: $background-color;
+  box-shadow: $box-shadow;
 
   min-width: 600px;
-  width: 50%;
-  padding: $gutter-size;
-  margin: $gutter-size auto 0;
+  width: 80%;
+  padding: 0;
+  margin: $gutter-size auto;
+}
 
+.submitSection {
+  text-align: right;
+}
+
+.submit {
+  width: 50%;
 }

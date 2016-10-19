@@ -1,10 +1,11 @@
 import React from 'react'
 import styles from './JsonField.scss'
 import AceEditor from 'react-ace'
+import { parseNonblankJSON } from 'utility/string'
+import { FieldLabel } from 'features/shared/components'
 
 import 'brace/mode/json'
 import 'brace/theme/github'
-import { parseNonblankJSON } from 'utility/string'
 
 class JsonField extends React.Component {
   constructor(props) {
@@ -13,12 +14,12 @@ class JsonField extends React.Component {
   }
 
   render() {
-    const hint = this.props.hint || 'All JSON values supported'
+    const hint = this.props.hint || 'Contents must be represented as a JSON object'
     const fieldProps = this.props.fieldProps
     const displayProps = {
       mode: 'json',
-      theme:'github',
-      height: '100px',
+      theme: 'github',
+      height: '80px',
       width: '100%',
       tabSize: 2,
       showGutter: false,
@@ -51,7 +52,7 @@ class JsonField extends React.Component {
 
     return (
       <div className='form-group'>
-        {this.props.title && <label>{this.props.title}</label>}
+        {this.props.title && <FieldLabel>{this.props.title}</FieldLabel>}
         <div className={editorStyles.join(' ')}>
           <AceEditor
             {...fieldProps}

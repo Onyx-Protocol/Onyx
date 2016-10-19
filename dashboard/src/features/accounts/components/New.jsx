@@ -1,5 +1,5 @@
 import React from 'react'
-import { BaseNew, FormContainer } from 'features/shared/components'
+import { BaseNew, FormContainer, FormSection } from 'features/shared/components'
 import {
   TextField,
   JsonField,
@@ -36,13 +36,17 @@ class Form extends React.Component {
         onSubmit={handleSubmit(this.submitWithErrors)}
         submitting={submitting} >
 
-        <TextField title='Alias' placeholder='Alias' fieldProps={alias} autoFocus={true} />
-        <JsonField title='Tags' fieldProps={tags} />
-        <KeyConfiguration
-          xpubs={root_xpubs}
-          quorum={quorum}
-          quorumHint='Number of keys required for transfer' />
+        <FormSection title='Account Information'>
+          <TextField title='Alias' placeholder='Alias' fieldProps={alias} autoFocus={true} />
+          <JsonField title='Tags' fieldProps={tags} />
+        </FormSection>
 
+        <FormSection title='Keys and Signing'>
+          <KeyConfiguration
+            xpubs={root_xpubs}
+            quorum={quorum}
+            quorumHint='Number of keys required for transfer' />
+        </FormSection>
       </FormContainer>
     )
   }

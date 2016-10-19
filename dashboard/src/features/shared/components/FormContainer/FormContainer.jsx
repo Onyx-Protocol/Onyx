@@ -1,5 +1,5 @@
 import React from 'react'
-import { ErrorBanner, PageTitle } from 'features/shared/components'
+import { ErrorBanner, PageTitle, FormSection } from 'features/shared/components'
 import styles from './FormContainer.scss'
 
 class FormContainer extends React.Component {
@@ -8,18 +8,20 @@ class FormContainer extends React.Component {
       <div>
         <PageTitle title={this.props.label} />
 
-        <div className={styles.main}>
+        <div className={`${styles.main}`}>
           <form onSubmit={this.props.onSubmit}>
             {this.props.children}
 
-            {this.props.error &&
-              <ErrorBanner
-                title='Error creating key'
-                message={this.props.error.toString()} />}
+            <FormSection className={styles.submitSection}>
+              {this.props.error &&
+                <ErrorBanner
+                  title='Error creating key'
+                  message={this.props.error.toString()} />}
 
-            <button type='submit' className='btn btn-primary' disabled={this.props.submitting}>
-              Submit
-            </button>
+              <button type='submit' className={`btn btn-primary ${styles.submit}`} disabled={this.props.submitting}>
+                {this.props.submitLabel || 'Submit'}
+              </button>
+            </FormSection>
           </form>
         </div>
       </div>

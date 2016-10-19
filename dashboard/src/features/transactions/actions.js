@@ -19,6 +19,10 @@ function preprocessTransaction(formParams) {
     actions: copy.actions,
   }
 
+  if (builder.base_transaction == '') {
+    delete builder.base_transaction
+  }
+
   for (let i in builder.actions) {
     let a = builder.actions[i]
 

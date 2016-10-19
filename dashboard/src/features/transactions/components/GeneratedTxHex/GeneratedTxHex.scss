@@ -1,5 +1,7 @@
 .main {
+  background: $background-color;
   max-width: 50%;
+  padding: $gutter-size;
   margin: 0 auto;
 }
 

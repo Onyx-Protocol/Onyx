@@ -1,6 +1,7 @@
 import React from 'react'
 import styles from './ObjectSelectorField.scss'
 import { DropdownButton, MenuItem } from 'react-bootstrap'
+import { FieldLabel } from 'features/shared/components'
 
 const ALIAS_SELECTED = 'Alias'
 const ID_SELECTED = 'ID'
@@ -35,7 +36,7 @@ class ObjectSelectorField extends React.Component {
   render() {
     return(
       <div className='form-group'>
-        {this.props.title && <label>{this.props.title}</label>}
+        {this.props.title && <FieldLabel>{this.props.title}</FieldLabel>}
         <div className='input-group'>
           <div className={`input-group-btn ${this.state.showDropdown && 'open'}`}>
             <DropdownButton

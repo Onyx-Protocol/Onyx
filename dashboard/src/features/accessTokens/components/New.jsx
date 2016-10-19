@@ -1,4 +1,4 @@
-import { BaseNew, FormContainer } from 'features/shared/components'
+import { BaseNew, FormContainer, FormSection } from 'features/shared/components'
 import { TextField, HiddenField } from 'components/Common'
 import React from 'react'
 import { reduxForm } from 'redux-form'
@@ -37,9 +37,10 @@ const Form = class Form extends React.Component {
       onSubmit={handleSubmit(this.submitWithErrors)}
       submitting={submitting} >
 
-      <TextField title='Token ID' placeholder='Token ID' fieldProps={id} autoFocus={true} />
-      <HiddenField fieldProps={type} />
-
+      <FormSection title='Token Information'>
+        <TextField title='Token ID' placeholder='Token ID' fieldProps={id} autoFocus={true} />
+        <HiddenField fieldProps={type} />
+      </FormSection>
     </FormContainer>)
   }
 }

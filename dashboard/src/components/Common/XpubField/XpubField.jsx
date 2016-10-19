@@ -1,8 +1,9 @@
 import React from 'react'
 import styles from './XpubField.scss'
-import { SelectField, TextField } from '../'
+import { SelectField } from 'features/shared/components'
+import { TextField } from '../'
 import { connect } from 'react-redux'
-import actions from '../../../actions'
+import actions from 'features/mockhsm'
 
 const methodOptions = {
   mockhsm: 'Use Mock HSM key',
@@ -79,7 +80,7 @@ export default connect(
     }
   },
   (dispatch) => ({
-    didLoadAutocomplete: () => dispatch(actions.mockhsm.didLoadAutocomplete()),
-    fetchAll: (cb) => dispatch(actions.mockhsm.fetchAll(cb)),
+    didLoadAutocomplete: () => dispatch(actions.didLoadAutocomplete()),
+    fetchAll: (cb) => dispatch(actions.fetchAll(cb)),
   })
 )(XpubField)

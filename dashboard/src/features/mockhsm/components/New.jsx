@@ -1,5 +1,5 @@
 import React from 'react'
-import { BaseNew, FormContainer } from 'features/shared/components'
+import { BaseNew, FormContainer, FormSection } from 'features/shared/components'
 import { TextField } from 'components/Common'
 import { reduxForm } from 'redux-form'
 
@@ -32,8 +32,9 @@ class New extends React.Component {
         onSubmit={handleSubmit(this.submitWithErrors)}
         submitting={submitting} >
 
+        <FormSection title='Key Information'>
           <TextField title='Alias' placeholder='Alias' fieldProps={alias} autoFocus={true} />
-
+        </FormSection>
       </FormContainer>
     )
   }
