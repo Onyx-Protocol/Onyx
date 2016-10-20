@@ -491,8 +491,8 @@ public class Transaction {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<Template> buildBatch(Client client, List<Transaction.Builder> builders)
-      throws ChainException {
+  public static BatchResponse<Template> buildBatch(
+      Client client, List<Transaction.Builder> builders) throws ChainException {
     return client.batchRequest("build-transaction", builders, Template.class);
   }
 

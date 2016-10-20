@@ -286,10 +286,7 @@ public class QueryTest {
     }
 
     Account.Items items =
-        new Account.QueryBuilder()
-            .setFilter("tags.tag=$1")
-            .addFilterParameter(tag)
-            .execute(client);
+        new Account.QueryBuilder().setFilter("tags.tag=$1").addFilterParameter(tag).execute(client);
     assertEquals(PAGE_SIZE, items.list.size());
     int counter = 0;
     while (items.hasNext()) {

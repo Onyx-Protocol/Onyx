@@ -21,7 +21,10 @@ import com.squareup.okhttp.Response;
 
 /**
  * The Client object contains all information necessary to
- * perform an HTTP request against a remote API.
+ * perform an HTTP request against a remote API. Typically,
+ * an application will have a client that makes requests to
+ * a Chain Core, and a separate Client that makes requests
+ * to an HSM server.
  */
 public class Client {
 
@@ -48,7 +51,7 @@ public class Client {
   /**
    * Create a new http Client object
    *
-   * @param url The URL of the Chain Core or HSM
+   * @param url the URL of the Chain Core or HSM
    */
   public Client(URL url) {
     this.url = url;
@@ -59,8 +62,8 @@ public class Client {
   /**
    * Create a new http Client object
    *
-   * @param url The URL of the Chain Core or HSM
-   * @param accessToken A Client API access token.
+   * @param url the URL of the Chain Core or HSM
+   * @param accessToken a Client API access token.
    */
   public Client(URL url, String accessToken) {
     this(url);
@@ -80,9 +83,8 @@ public class Client {
     return post(
         action,
         body,
-        (Response response, Gson deserializer) -> {
-          return deserializer.fromJson(response.body().charStream(), tClass);
-        });
+        (Response response, Gson deserializer) ->
+            deserializer.fromJson(response.body().charStream(), tClass));
   }
 
   /**
@@ -150,14 +152,26 @@ public class Client {
         });
   }
 
+  /**
+   * Returns the base url stored in the client.
+   * @return the client's base url
+   */
   public URL url() {
     return this.url;
   }
 
+  /**
+   * Returns true if a client access token stored in the client.
+   * @return a boolean
+   */
   public boolean hasAccessToken() {
     return this.accessToken != null && !this.accessToken.isEmpty();
   }
 
+  /**
+   * Returns the client access token (possibly null).
+   * @return the client access token
+   */
   public String accessToken() {
     return accessToken;
   }
@@ -217,10 +231,30 @@ public class Client {
     this.httpClient.setProxy(proxy);
   }
 
+  /**
+   * Defines an interface for deserializing HTTP responses into objects.
+   * @param <T> the type of object to return
+   */
   public interface ResponseCreator<T> {
+    /**
+     * Deserializes an HTTP response into a Java object of type T.
+     * @param response HTTP response object
+     * @param deserializer json deseriazlier
+     * @return an object of type T
+     * @throws ChainException
+     * @throws IOException
+     */
     T create(Response response, Gson deserializer) throws ChainException, IOException;
   }
 
+  /**
+   * Builds and executes an HTTP Post request.
+   * @param path the path to the endpoint
+   * @param body the request body
+   * @param respCreator object specifying the response structure
+   * @return a response deserialized into type T
+   * @throws ChainException
+   */
   public <T> T post(String path, Object body, ResponseCreator<T> respCreator)
       throws ChainException {
     RequestBody requestBody = RequestBody.create(this.JSON, serializer.toJson(body));
@@ -366,11 +400,20 @@ public class Client {
     return String.format("%s://%s", this.url.getProtocol(), this.url.getAuthority());
   }
 
+  /**
+   * Overrides {@link Object#hashCode()}
+   * @return the hash code
+   */
   @Override
   public int hashCode() {
     return identifier().hashCode();
   }
 
+  /**
+   * Overrides {@link Object#equals(Object)}
+   * @param o the object to compare
+   * @return a boolean specifying equality
+   */
   @Override
   public boolean equals(Object o) {
     if (o == null) return false;
