@@ -57,6 +57,9 @@ var config = getConfig({
   }
 })
 
+// Enable babel-polyfill
+config.entry = ['babel-polyfill', './src/app.js']
+
 // Enable CSS modules
 let loaders = config.module.loaders
 
