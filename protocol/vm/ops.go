@@ -214,6 +214,8 @@ const (
 	OP_INDEX         Op = 0xc9
 	OP_OUTPOINT      Op = 0xcb
 	OP_NONCE         Op = 0xcc
+	OP_NEXTPROGRAM   Op = 0xcd
+	OP_BLOCKTIME     Op = 0xce
 )
 
 type opInfo struct {
@@ -325,6 +327,8 @@ var (
 		OP_INDEX:         {OP_INDEX, "INDEX", opIndex},
 		OP_OUTPOINT:      {OP_OUTPOINT, "OUTPOINT", opOutpoint},
 		OP_NONCE:         {OP_NONCE, "NONCE", opNonce},
+		OP_NEXTPROGRAM:   {OP_NEXTPROGRAM, "NEXTPROGRAM", opNextProgram},
+		OP_BLOCKTIME:     {OP_BLOCKTIME, "BLOCKTIME", opBlockTime},
 	}
 
 	opsByName map[string]opInfo

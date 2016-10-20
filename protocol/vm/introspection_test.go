@@ -7,6 +7,84 @@ import (
 	"chain/protocol/bc"
 )
 
+func TestNextProgram(t *testing.T) {
+	block := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			ConsensusProgram: []byte{0x1, 0x2, 0x3},
+		},
+	}
+	prog, err := Assemble("NEXTPROGRAM 0x010203 EQUAL")
+	if err != nil {
+		t.Fatal(err)
+	}
+	vm := &virtualMachine{
+		runLimit: 50000,
+		block:    block,
+		program:  prog,
+	}
+	ok, err := vm.run()
+	if err != nil {
+		t.Errorf("got error %s, expected none", err)
+	} else if !ok {
+		t.Error("got failure result, expected ok")
+	}
+
+	prog, err = Assemble("NEXTPROGRAM 0x0102 EQUAL")
+	if err != nil {
+		t.Fatal(err)
+	}
+	vm = &virtualMachine{
+		runLimit: 50000,
+		block:    block,
+		program:  prog,
+	}
+	ok, err = vm.run()
+	if err != nil {
+		t.Errorf("got error %s, expected none", err)
+	} else if ok {
+		t.Error("got ok result, expected failure")
+	}
+}
+
+func TestBlockTime(t *testing.T) {
+	block := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			TimestampMS: 3263827,
+		},
+	}
+	prog, err := Assemble("BLOCKTIME 3263827 NUMEQUAL")
+	if err != nil {
+		t.Fatal(err)
+	}
+	vm := &virtualMachine{
+		runLimit: 50000,
+		block:    block,
+		program:  prog,
+	}
+	ok, err := vm.run()
+	if err != nil {
+		t.Errorf("got error %s, expected none", err)
+	} else if !ok {
+		t.Error("got failure result, expected ok")
+	}
+
+	prog, err = Assemble("BLOCKTIME 3263826 NUMEQUAL")
+	if err != nil {
+		t.Fatal(err)
+	}
+	vm = &virtualMachine{
+		runLimit: 50000,
+		block:    block,
+		program:  prog,
+	}
+	ok, err = vm.run()
+	if err != nil {
+		t.Errorf("got error %s, expected none", err)
+	} else if ok {
+		t.Error("got ok result, expected failure")
+	}
+}
+
 func TestOutpointAndNonceOp(t *testing.T) {
 	var zeroHash bc.Hash
 	nonce := []byte{36, 37, 38}

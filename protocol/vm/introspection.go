@@ -2,6 +2,7 @@ package vm
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 
 	"golang.org/x/crypto/sha3"
@@ -242,4 +243,29 @@ func opNonce(vm *virtualMachine) error {
 	}
 
 	return vm.push(ii.Nonce, true)
+}
+
+func opNextProgram(vm *virtualMachine) error {
+	if vm.block == nil {
+		return ErrContext
+	}
+	err := vm.applyCost(1)
+	if err != nil {
+		return err
+	}
+	return vm.push(vm.block.ConsensusProgram, true)
+}
+
+func opBlockTime(vm *virtualMachine) error {
+	if vm.block == nil {
+		return ErrContext
+	}
+	err := vm.applyCost(1)
+	if err != nil {
+		return err
+	}
+	if vm.block.TimestampMS > math.MaxInt64 {
+		return fmt.Errorf("block timestamp out of range")
+	}
+	return vm.pushInt64(int64(vm.block.TimestampMS), true)
 }
