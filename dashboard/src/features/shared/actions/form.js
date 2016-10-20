@@ -8,7 +8,6 @@ export default function(type, options = {}) {
   const listPath = options.listPath || `/${type}s`
   const createPath = options.createPath || `${listPath}/create`
   const created = actionCreator(`CREATED_${type.toUpperCase()}`, param => ({ param }) )
-  let postCreatePath = listPath
 
   return {
     showCreate: push(createPath),
@@ -31,6 +30,7 @@ export default function(type, options = {}) {
 
         return object.create(context())
           .then((resp) => {
+            let postCreatePath = listPath
             if (options.redirectToShow) {
               postCreatePath = `${postCreatePath}/${resp.id}`
             }
