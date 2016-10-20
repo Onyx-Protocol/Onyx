@@ -1,3 +1,4 @@
+// Command benchcore launches EC2 instances for benchmarking Chain Core.
 package main
 
 import (

@@ -1,3 +1,4 @@
+// Command testbot provides a web server for running Chain integeration tests.
 package main
 
 import (

@@ -1,3 +1,5 @@
+// Command decode reads hex-encoded Chain data structures and prints
+// the decoded data structures.
 package main
 
 import (

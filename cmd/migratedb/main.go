@@ -1,15 +1,12 @@
-// migratedb applies the specified migration
-// to the specified database or target
+// Command migratedb applies database migrations to the
+// specified database.
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -21,13 +18,13 @@ import (
 const help = `
 Usage:
 
-	migratedb [-t target] [-d url] [-dryrun] [-status] [migration]
+	migratedb [-d url] [-dryrun] [-status] [migration]
 
 Command migratedb applies migrations to the specified
-database or target.
+database.
 
-Either the database or the target flag must be specified,
-but not both.
+If the database URL is not provided, the local 'core'
+database is used.
 
 Providing the -status flag will not run any migrations, but will
 instead print out the status of each migration.
@@ -35,7 +32,6 @@ instead print out the status of each migration.
 
 var (
 	flagD      = flag.String("d", "postgres:///core?sslmode=disable", "database")
-	flagT      = flag.String("t", "", "target")
 	flagStatus = flag.Bool("status", false, "print all migrations and their status")
 	flagDry    = flag.Bool("dryrun", false, "print but don't execute migrations")
 	flagH      = flag.Bool("h", false, "show help")
@@ -49,33 +45,18 @@ func fatalf(format string, args ...interface{}) {
 }
 
 func main() {
-	log.SetPrefix("appenv: ")
+	log.SetPrefix("migratedb: ")
 	log.SetFlags(0)
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: %s [-t target] [-d url] [-dryrun] [-status] [migration]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "usage: %s [-d url] [-dryrun] [-status] [migration]\n", os.Args[0])
 	}
 	flag.Parse()
 	args := flag.Args()
-	if *flagH || (*flagT == "") == (*flagD == "") || (*flagStatus && len(args) > 0) {
+	if *flagH || *flagD == "" || (*flagStatus && len(args) > 0) {
 		fmt.Println(strings.TrimSpace(help))
 		fmt.Print("\nFlags:\n\n")
 		flag.PrintDefaults()
 		return
-	}
-
-	if *flagD != "" {
-		dbURL = *flagD
-	}
-	if *flagT != "" {
-		if !*flagDry && !*flagStatus && isTargetRunning(*flagT) {
-			fatalf("%s api is running; disable the app before running migrations.\n", *flagT)
-		}
-
-		var err error
-		dbURL, err = getTargetDBURL(*flagT)
-		if err != nil {
-			fatalf("unable to get target DB_URL: %v\n", err)
-		}
 	}
 
 	// Determine the directory with migrations using the $CHAIN environment
@@ -86,9 +67,9 @@ func main() {
 	}
 
 	// Create a database connection.
-	db, err := sql.Open("hapg", dbURL)
+	db, err := sql.Open("hapg", *flagD)
 	if err != nil {
-		fatalf("unable to connect to %s: %v\n", dbURL, err)
+		fatalf("unable to connect to %s: %v\n", *flagD, err)
 	}
 	defer db.Close()
 
@@ -143,28 +124,11 @@ func main() {
 	for _, m := range migrationsToRun {
 		fmt.Println("Pending migration:", m.Filename)
 		if !*flagDry {
-			err := runMigration(db, dbURL, migrationsDir, m)
+			err := runMigration(db, *flagD, migrationsDir, m)
 			if err != nil {
 				fatalf("unable to run migration %s: %v\n", m.Filename, err)
 			}
-			fmt.Printf("Successfully ran %s migration on %s\n", m.Filename, *flagT+*flagD)
+			fmt.Printf("Successfully ran %s migration on %s\n", m.Filename, *flagD)
 		}
 	}
-}
-
-func getTargetDBURL(target string) (string, error) {
-	out, err := exec.Command("appenv", "-t", target, "DB_URL").CombinedOutput()
-	if err != nil {
-		return "", errors.New(string(out))
-	}
-	return strings.TrimSpace(string(out)), nil
-}
-
-func isTargetRunning(t string) bool {
-	c := http.Client{Timeout: 5 * time.Second}
-	resp, err := c.Get(fmt.Sprintf("https://%s-api.chain.com/health", t))
-	if err != nil {
-		return false
-	}
-	return resp.StatusCode == http.StatusOK
 }

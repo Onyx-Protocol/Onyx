@@ -1,3 +1,4 @@
+// Command cored provides the Chain Core daemon and API server.
 package main
 
 import (

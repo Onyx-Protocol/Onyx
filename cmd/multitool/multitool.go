@@ -1,3 +1,4 @@
+// Command multitool provides miscellaneous Chain-related commands.
 package main
 
 import (
