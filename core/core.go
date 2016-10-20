@@ -138,6 +138,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 	// Add in snapshot information if we're downloading a snapshot.
 	if snapshot != nil {
 		m["snapshot"] = map[string]interface{}{
+			"attempt":     snapshot.Attempt,
 			"height":      snapshot.Height,
 			"size":        snapshot.Size,
 			"downloaded":  snapshot.BytesRead(),

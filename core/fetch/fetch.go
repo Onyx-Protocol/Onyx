@@ -57,10 +57,14 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 	go pollGeneratorHeight(ctx, peer)
 
 	if c.Height() == 0 {
-		err := fetchSnapshot(ctx, peer, c.Store())
-		if err != nil {
-			log.Error(ctx, err)
+		const maxAttempts = 5
+		for attempt := 1; attempt <= maxAttempts; attempt++ {
+			err := fetchSnapshot(ctx, peer, c.Store(), attempt)
 			health(err)
+			if err == nil {
+				break
+			}
+			log.Error(ctx, err)
 		}
 	}
 
@@ -253,8 +257,9 @@ func getHeight(ctx context.Context, peer *rpc.Client) (uint64, error) {
 
 // Snapshot describes a snapshot being downloaded from a peer Core.
 type Snapshot struct {
-	Height uint64
-	Size   uint64
+	Attempt int
+	Height  uint64
+	Size    uint64
 	progressReader
 
 	stopped   bool
@@ -277,11 +282,11 @@ func (s *Snapshot) done() {
 // to the store. It should only be called on freshly configured cores--
 // cores that have been operating should replay all transactions so that
 // they can index them properly.
-func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store) error {
+func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, attempt int) error {
 	ctx, cancel := context.WithTimeout(ctx, getSnapshotTimeout)
 	defer cancel()
 
-	info := new(Snapshot)
+	info := &Snapshot{Attempt: attempt}
 	err := peer.Call(ctx, "/rpc/get-snapshot-info", nil, &info)
 	if err != nil {
 		return errors.Wrap(err, "getting snapshot info")
