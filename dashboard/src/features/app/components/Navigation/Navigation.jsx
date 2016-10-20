@@ -42,7 +42,7 @@ class Navigation extends React.Component {
     return (
       <div className={styles.main}>
         <ul className={styles.navigation}>
-          <li className={styles.navigationTitle}>blockchain data</li>
+          <li className={styles.navigationTitle}>core data</li>
           <li>
             <Link to='/transactions' activeClassName={styles.active}>
               <span className={`glyphicon glyphicon-transfer ${styles.glyphicon}`} />
@@ -50,15 +50,15 @@ class Navigation extends React.Component {
             </Link>
           </li>
           <li>
-            <Link to='/assets' activeClassName={styles.active}>
-              <span className={`glyphicon glyphicon-file ${styles.glyphicon}`} />
-              Assets
-            </Link>
-          </li>
-          <li>
             <Link to='/accounts' activeClassName={styles.active}>
               <span className={`glyphicon glyphicon-user ${styles.glyphicon}`} />
               Accounts
+            </Link>
+          </li>
+          <li>
+            <Link to='/assets' activeClassName={styles.active}>
+              <span className={`glyphicon glyphicon-file ${styles.glyphicon}`} />
+              Assets
             </Link>
           </li>
           <li>
@@ -76,7 +76,7 @@ class Navigation extends React.Component {
         </ul>
 
         <ul className={styles.navigation}>
-          <li className={styles.navigationTitle}>configuration</li>
+          <li className={styles.navigationTitle}>services</li>
           <li>
             <Link to='/mockhsms' activeClassName={styles.active}>
               <span className={`glyphicon glyphicon-lock ${styles.glyphicon}`} />

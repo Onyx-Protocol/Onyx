@@ -9,7 +9,7 @@
 
   a {
     display: block;
-    padding: 3px 0;
+    padding: 1px 0;
     color: $text-color;
   }
 
@@ -21,7 +21,7 @@
 .navigation {
   padding: 0;
   list-style-type: none;
-  margin-top: 5px;
+  margin-top: 8px;
   margin-bottom: 8px;
 
   li {
@@ -30,7 +30,8 @@
 }
 
 .navigationTitle {
-  font-variant: small-caps;
+  font-size: 13px;
+  text-transform: uppercase;
   padding: 3px 20px;
 }
 
@@ -44,4 +45,9 @@
 .logOut {
   margin-top: 5px;
   border-top: 1px solid $border-color;
+  margin-bottom: -3px;
+
+  a {
+    padding-top: 5px;
+  }
 }

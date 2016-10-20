@@ -1,7 +1,7 @@
 .main {
   a {
     display: block;
-    padding: 3px 0;
+    padding: 1px 0;
     color: $highlight-inverse-color;
   }
 
@@ -19,7 +19,9 @@
 }
 
 .navigationTitle {
-  font-variant: small-caps;
+  color: $highlight-inverse-color;
+  font-size: 13px;
+  text-transform: uppercase;
   padding: 3px 0;
 }
 
