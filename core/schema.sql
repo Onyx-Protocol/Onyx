@@ -1107,5 +1107,5 @@ ALTER TABLE ONLY account_utxos
 -- PostgreSQL database dump complete
 --
 
-insert into migrations (filename, hash) values ('2016-10-17.0.core.schema-snapshot', 'cff5210e2d6af410719c223a76443f73c5c12fe875f0efecb9a0a5937cf029cd');
-insert into migrations (filename, hash) values ('2016-10-19.0.core.add-core-id', '4a47d31443b2cc0fa9b3a6fdd98566f1c0e1d898d44da0a7c056d4101b256a67');
+insert into migrations (filename, hash) values ('2016-10-17.0.core.schema-snapshot.sql', 'cff5210e2d6af410719c223a76443f73c5c12fe875f0efecb9a0a5937cf029cd');
+insert into migrations (filename, hash) values ('2016-10-19.0.core.add-core-id.sql', '9353da072a571d7a633140f2a44b6ac73ffe9e27223f7c653ccdef8df3e8139e');
