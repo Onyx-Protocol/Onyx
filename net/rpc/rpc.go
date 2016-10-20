@@ -62,7 +62,9 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 		return err
 	}
 	defer r.Close()
-	err = json.NewDecoder(r).Decode(response)
+	if response != nil {
+		err = json.NewDecoder(r).Decode(response)
+	}
 	return err
 }
 

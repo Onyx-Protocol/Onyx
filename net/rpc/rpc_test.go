@@ -67,6 +67,12 @@ func TestRPCCallJSON(t *testing.T) {
 	if !reflect.DeepEqual(response, map[string]string{"response": "example"}) {
 		t.Errorf(`expected map[string]string{"response": "example"}, got %#v`, response)
 	}
+
+	// Ensure that supplying a nil response is OK.
+	err = client.Call(context.Background(), "/example/rpc/path", requestBody, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestRPCCallError(t *testing.T) {
