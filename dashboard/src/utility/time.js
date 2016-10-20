@@ -49,20 +49,23 @@
 
 export const humanizeDuration = seconds => {
   let big, little, bigUnit, littleUnit
+  const min = 60
+  const hr = 60 * min
+  const day = 24 * hr
 
-  if (seconds > 24 * 60 * 60) {
-    big = seconds / (24 * 60 * 60)
-    little = seconds % (24 * 60 * 60)
+  if (seconds > day) {
+    big = seconds / day
+    little = (seconds % day) / hr
     bigUnit = 'd'
     littleUnit = 'h'
-  } else if (seconds > 60 * 60) {
-    big = seconds / (60 * 60)
-    little = seconds % (60 * 60)
+  } else if (seconds > hr) {
+    big = seconds / hr
+    little = (seconds % hr) / min
     bigUnit = 'h'
     littleUnit = 'm'
-  } else if (seconds > 60) {
-    big = seconds / 60
-    little = seconds % 60
+  } else if (seconds > min) {
+    big = seconds / min
+    little = seconds % min
     bigUnit = 'm'
     littleUnit = 's'
   } else {
