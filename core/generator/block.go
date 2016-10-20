@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 	"time"
 
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
+	"chain/metrics"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 	"chain/protocol/vmutil"
@@ -20,9 +22,27 @@ import (
 // signatures required.
 var errTooFewSigners = errors.New("too few signers")
 
+var (
+	once    sync.Once
+	latency *metrics.RotatingLatency
+)
+
+func recordSince(t0 time.Time) {
+	// Lazily publish the expvar and initialize the rotating latency
+	// histogram. We don't want to publish metrics that aren't meaningful.
+	once.Do(func() {
+		latency = metrics.NewRotatingLatency(5, 2*time.Second)
+		metrics.PublishLatency("generator.make_block", latency)
+	})
+	latency.RecordSince(t0)
+}
+
 // makeBlock generates a new bc.Block, collects the required signatures
 // and commits the block to the blockchain.
 func (g *generator) makeBlock(ctx context.Context) error {
+	t0 := time.Now()
+	defer recordSince(t0)
+
 	b, s, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
 	if err != nil {
 		return errors.Wrap(err, "generate")

@@ -128,10 +128,10 @@ func reportMetrics(ctx context.Context, client *rpc.Client, latestNumRots map[st
 	})
 
 	// Convert the most recent latency histograms into librato gauges.
-	for endpoint, latency := range varsResp.Latency {
+	for key, latency := range varsResp.Latency {
 		// figure out how many buckets have happened since we last
 		// recorded data.
-		latestRot := latestNumRots[endpoint]
+		latestRot := latestNumRots[key]
 		if latestRot == 0 {
 			latestRot = 1
 		}
@@ -139,14 +139,14 @@ func reportMetrics(ctx context.Context, client *rpc.Client, latestNumRots map[st
 		if bucketCount >= len(latency.Buckets) {
 			bucketCount = len(latency.Buckets) - 1
 		}
-		latestNumRots[endpoint] = latency.NumRot
+		latestNumRots[key] = latency.NumRot
 
 		for b := 1; b <= bucketCount; b++ {
 			bucket := latency.Buckets[len(latency.Buckets)-1-b]
 			h := hdrhistogram.Import(bucket.Histogram)
 
-			cleanedEndpoint := strings.Replace(strings.Trim(endpoint, "/"), "/", "_", -1)
-			name := *metricPrefix + ".rpc." + cleanedEndpoint
+			cleanedKey := strings.Replace(strings.Trim(key, "/"), "/", "_", -1)
+			name := *metricPrefix + "." + cleanedKey
 
 			req.Gauges = append(req.Gauges, gauge{
 				Name:   name + ".qps",
