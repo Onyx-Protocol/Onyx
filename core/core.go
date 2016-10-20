@@ -92,11 +92,11 @@ func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
 }
 
 func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
-	localHeight := h.Chain.Height()
 	var (
 		generatorHeight  *uint64
 		generatorFetched *time.Time
-		snapshot         *fetch.Snapshot
+		snapshot         = fetch.SnapshotProgress()
+		localHeight      = h.Chain.Height()
 	)
 	if h.Config.IsGenerator {
 		now := time.Now()
@@ -117,10 +117,6 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		if !fetchTime.IsZero() {
 			generatorHeight, generatorFetched = &fetchHeight, &fetchTime
 		}
-
-		// Get the snapshot downloading progress if we're bootstrapping
-		// from a state snapshot.
-		snapshot = fetch.SnapshotProgress()
 	}
 
 	buildCommit := json.RawMessage(expvar.Get("buildcommit").String())
