@@ -21,7 +21,7 @@ class SecondaryNavigation extends React.Component {
     return (
       <div className={styles.main}>
         <ul className={styles.navigation}>
-          <li className={styles.navigationTitle}>blockchain data</li>
+          <li className={styles.navigationTitle}>settings</li>
 
           <li>
             <Link to='/core' activeClassName={styles.active}>

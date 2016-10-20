@@ -51,7 +51,7 @@ class Navigation extends React.Component {
           <li>
             <Link to='/transaction-feeds' activeClassName={styles.active}>
               <span className={`glyphicon glyphicon-th-list ${styles.glyphicon}`} />
-              Transaction Feeds
+              Feeds
             </Link>
           </li>
         </ul>
