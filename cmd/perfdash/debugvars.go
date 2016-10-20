@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -10,6 +11,7 @@ import (
 )
 
 type debugVars struct {
+	Raw     *json.RawMessage
 	Latency map[string]struct {
 		Buckets []struct {
 			Over      int
@@ -46,7 +48,16 @@ func fetchDebugVars(baseURL, token string) (int, *debugVars, error) {
 	if err != nil {
 		return 0, nil, err
 	}
-	err = json.NewDecoder(resp.Body).Decode(v)
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 0, nil, err
+	}
+	err = json.Unmarshal(b, v)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	v.Raw = (*json.RawMessage)(&b)
 
 	debugVarMu.Lock()
 	n := debugVarNext

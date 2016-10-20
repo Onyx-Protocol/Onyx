@@ -55,8 +55,12 @@ func index(w http.ResponseWriter, req *http.Request) {
 
 const indexHTML = `
 <h1>perfdash</h1>
+Open dev tools to see the full /debug/vars data.
 {{$id := .ID}}
 {{range $k, $v := .DebugVars.Latency}}
 	<img src="/histogram.png?name={{$k}}&id={{$id}}">
 {{end}}
+<script>
+console.log("/debug/vars", {{.DebugVars.Raw}});
+</script>
 `
