@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -51,13 +50,10 @@ func sshAuthMethods(agentSock, privKeyPEM string) (m []ssh.AuthMethod) {
 }
 
 func main() {
-	envFile, err := ioutil.ReadFile(srcdir + "/cmd/testnet/chain.env")
-	must(err)
 	coredBin := mustBuildCored()
 	might(runOn(instanceAddr, stopsh))
-	log.Println("uploading binaries")
+	log.Println("uploading cored binary")
 	must(scpPut(instanceAddr, coredBin, "cored", 0755))
-	must(scpPut(instanceAddr, envFile, "chain.env", 0755))
 	must(runOn(instanceAddr, startsh))
 	log.Println("SUCCESS")
 }
