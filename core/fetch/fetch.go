@@ -71,6 +71,12 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 		log.Fatal(ctx, log.KeyError, err)
 	}
 
+	// If we downloaded a snapshot, now that we've recovered and successfully
+	// booted from the snapshot, mark it as done.
+	if sp := SnapshotProgress(); sp != nil {
+		sp.done()
+	}
+
 	var height uint64
 	if prevBlock != nil {
 		height = prevBlock.Height
@@ -287,7 +293,6 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store) erro
 	downloadingSnapshotMu.Lock()
 	downloadingSnapshot = info
 	downloadingSnapshotMu.Unlock()
-	defer info.done()
 
 	// Download the snapshot, recording our progress as we go.
 	body, err := peer.CallRaw(ctx, "/rpc/get-snapshot", info.Height)
