@@ -8,7 +8,7 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate />
 
-    <Property Id="PORT" Value="8080" Secure="yes">
+    <Property Id="PORT" Value="1999" Secure="yes">
       <RegistrySearch Id="TryFindPort" Root="HKLM" Key="SOFTWARE\Chain" Name="ChainCorePort" Type="raw" />
     </Property>
 
@@ -16,6 +16,7 @@
       <ComponentGroupRef Id="ChainCoreComponents" />
       <ComponentGroupRef Id="ShortcutComponents" />
       <ComponentRef Id="InstallDirDataPermissions" />
+      <ComponentRef Id="CleanupMainApplicationFolder" />
     </Feature>
   </Product>
 
@@ -23,18 +24,34 @@
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLFOLDER" Name="Chain">
-	  <Component Id="InstallDirDataPermissions" Guid="cfd4e967-6f96-4ff9-9b92-f115e4cac547" KeyPath="yes">
-	    <CreateFolder>
-	      <util:PermissionEx User="Everyone" GenericAll="yes" />
-	    </CreateFolder>
-	  </Component>
-	</Directory>
+      	  <Component Id="InstallDirDataPermissions" Guid="cfd4e967-6f96-4ff9-9b92-f115e4cac547" KeyPath="yes">
+      	    <CreateFolder>
+      	      <util:PermissionEx User="Everyone" GenericAll="yes" />
+      	    </CreateFolder>
+            <RemoveFile Id="removefiles" Name="*.*" Directory="INSTALLFOLDER" On="uninstall" />
+      	  </Component>
+      	</Directory>
       </Directory>
 
       <Directory Id="ProgramMenuFolder">
         <Directory Id="ShortcutFolder" Name="Chain" />
       </Directory>
     </Directory>
+
+    <!--
+      RemoveFolderEx requires that we "remember" the path for uninstall.
+      Read the path value and set the APPLICATIONFOLDER property with the value.
+    -->
+    <Property Id="INSTALLFOLDER">
+      <RegistrySearch Key="SOFTWARE\Chain" Root="HKLM" Type="raw" Id="APPLICATIONFOLDER_REGSEARCH" Name="Path" />
+    </Property>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="CleanupMainApplicationFolder" Guid="*">
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Chain" Name="Path" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+        <util:RemoveFolderEx On="uninstall" Property="INSTALLFOLDER" />
+      </Component>
+    </DirectoryRef>
   </Fragment>
 
   <Fragment>
@@ -76,10 +93,10 @@
 
   <Fragment>
     <SetProperty Id="ChainBrowseUrl" Value="http://localhost:1999/" Sequence="execute" Before="CreateShortcuts" />
-    
+
     <ComponentGroup Id="ShortcutComponents" Directory="ShortcutFolder">
       <Component>
-        <!-- 
+        <!--
         This registry exists because the Windows Installer wants a per-user keypath when non-Advertised resources
         (such as our shortcut here) are installed to a per-user location (such as ProgramMenuFolder).
         -->
