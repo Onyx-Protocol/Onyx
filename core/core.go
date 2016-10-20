@@ -53,11 +53,6 @@ func isProduction() bool {
 	return bt != nil && bt.String() != `"dev"`
 }
 
-// Schema returns DDL for the entire Chain Core Postgres schema.
-func Schema() string {
-	return files["schema.sql"]
-}
-
 func (h *Handler) reset(ctx context.Context, req struct {
 	Everything bool `json:"everything"`
 }) error {
