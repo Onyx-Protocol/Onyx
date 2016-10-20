@@ -17,7 +17,7 @@ import (
 
 var (
 	srcdir       = os.Getenv("CHAIN")
-	instanceAddr = os.Getenv("TESTNET_IP")
+	instanceAddr = os.Getenv("INSTANCE_ADDR")
 	sshConfig    = &ssh.ClientConfig{
 		User: "ubuntu",
 		Auth: sshAuthMethods(
