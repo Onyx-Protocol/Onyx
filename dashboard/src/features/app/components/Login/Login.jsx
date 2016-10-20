@@ -37,11 +37,12 @@ class Login extends React.Component {
           <form onSubmit={handleSubmit(this.submitWithErrors)}>
             <TextField
               placeholder='Enter client token (tokenname:xyz...)'
-              fieldProps={token} />
+              fieldProps={token}
+              autoFocus={true} />
 
             {error &&
               <ErrorBanner
-                title='Error creating key'
+                title='Error logging in'
                 message={error.toString()} />}
 
             <button type='submit' className='btn btn-primary' disabled={submitting}>

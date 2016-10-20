@@ -16,8 +16,8 @@ class Container extends React.Component {
     this.redirectRoot = this.redirectRoot.bind(this)
   }
 
-  redirectRoot(configurationKnown, configured, location) {
-    if (!configurationKnown) {
+  redirectRoot(authOk, configured, location) {
+    if (!authOk) {
       return
     }
 
@@ -39,17 +39,17 @@ class Container extends React.Component {
 
     checkInfo().then(() => {
       this.setState({loadedInfo: true})
-      this.redirectRoot(this.props.configurationKnown, this.props.configured, this.props.location)
+      this.redirectRoot(this.props.authOk, this.props.configured, this.props.location)
     })
 
     setInterval(checkInfo, CORE_POLLING_TIME)
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.configurationKnown != this.props.configurationKnown ||
+    if (nextProps.authOk != this.props.authOk ||
         nextProps.configured != this.props.configured ||
         nextProps.location.pathname != this.props.location.pathname) {
-      this.redirectRoot(nextProps.configurationKnown, nextProps.configured, nextProps.location)
+      this.redirectRoot(nextProps.authOk, nextProps.configured, nextProps.location)
     }
   }
 
@@ -57,7 +57,7 @@ class Container extends React.Component {
     if (!this.state.loadedInfo) return(<div>Loading...</div>)
 
     let layout = <Main>{this.props.children}</Main>
-    if (this.props.loginRequired && !this.props.loggedIn) {
+    if (!this.props.authOk) {
       layout = <Login />
     } else if (!this.props.configured) {
       layout = <Config>{this.props.children}</Config>
@@ -72,12 +72,10 @@ class Container extends React.Component {
 
 export default connect(
   (state) => ({
-    configurationKnown: state.core.configurationKnown,
     configured: state.core.configured,
     buildCommit: state.core.buildCommit,
     buildDate: state.core.buildDate,
-    loginRequired: state.core.requireClientToken,
-    loggedIn: state.core.validToken,
+    authOk: !state.core.requireClientToken || state.core.validToken,
     onTestNet: state.core.onTestNet,
   }),
   (dispatch) => ({
