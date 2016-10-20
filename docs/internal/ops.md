@@ -3,6 +3,7 @@
 * [Creating Networks](#creating-networks)
   * [Unauthenticated](#unauthenticated)
   * [Authenticated](#authenticated)
+* [Building a new release](#building-a-new-release)
 
 ## Creating Networks
 ### Unauthenticated
@@ -166,3 +167,17 @@ $ curl --silent --user $SIGNER2_CLIENT_TOKEN $SIGNER2_PUBKEY/configure --data '{
 }'
 ```
 
+## Building a new release
+
+1. Update `/docs/install.md` for impending verson change.
+2. Build and bundle most recent dashboard: `bin/bundle-dashboard`
+3. Build and bundle most recent docs: `bin/bundle-docs`
+4. Commit bundle changes in `$CHAIN/generated` to `main`
+5. Prepare new installer apps based on `main`, using a `latest` namescheme.
+    - TODO: per-platform instructions
+6. Upload installer apps to s3://download.chain.com
+    - TODO: automate this uploader
+7. `bin/upload-docs` - This will build and upload the docs (should be identical material to the `bin/bundle-docs` step above).
+    - TODO: Edit `bin/upload-docs` command to include a production target. Currently only handles staging.
+
+TODO: Determine whether we should also use GitHub's releases feature.
