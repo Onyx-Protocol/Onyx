@@ -1,6 +1,7 @@
 import { combineReducers } from 'redux'
 import { testNetUrl } from 'utility/environment'
 import moment from 'moment'
+import { DeltaSampler } from 'utility/time'
 
 const LONG_TIME_FORMAT = 'YYYY-MM-DD, h:mm:ss a'
 
@@ -74,12 +75,66 @@ export const coreType = (state = '', action) => {
 export const replicationLag = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
     if (action.param.generator_block_height == null) {
-      return '???'
+      return null
     }
-    return action.param.generator_block_height - action.param.block_height + ''
+    return action.param.generator_block_height - action.param.block_height
   }
 
   return state
+}
+
+let syncSamplers = null
+const resetSyncSamplers = () => {
+  syncSamplers = {
+    snapshot: new DeltaSampler({sampleTtl: 10 * 1000}),
+    replicaLag: new DeltaSampler({sampleTtl: 10 * 1000}),
+  }
+}
+
+export const syncEstimates = (state = {}, action) => {
+  switch (action.type) {
+    case 'UPDATE_CORE_INFO': {
+      if (!syncSamplers) {
+        resetSyncSamplers()
+      }
+
+      const {
+        snapshot,
+        generator_block_height,
+        block_height,
+      } = action.param
+
+      const estimates = {}
+
+      if (snapshot && snapshot.in_progress) {
+        const speed = syncSamplers.snapshot.sample(snapshot.downloaded)
+
+        if (speed != 0) {
+          estimates.snapshot = (snapshot.size - snapshot.downloaded) / speed
+        }
+      } else {
+        const replicaLag = generator_block_height - block_height
+        const speed = syncSamplers.replicaLag.sample(replicaLag)
+
+        if (speed != 0) {
+          const duration = -1 * replicaLag / speed
+          if (duration > 0) {
+            estimates.replicaLag = duration
+          }
+        }
+      }
+
+      return estimates
+    }
+
+    case 'CORE_DISCONNECT':
+    case 'USER_LOG_OUT':
+      resetSyncSamplers()
+      return {}
+
+    default:
+      return state
+  }
 }
 
 export const replicationLagClass = (state = null, action) => {
@@ -141,6 +196,13 @@ export const connected = (state = true, action) => {
   return state
 }
 
+const snapshot = (state = null, action) => {
+  if (action.type == 'UPDATE_CORE_INFO') {
+    return action.param.snapshot || null // snapshot may be undefined, which Redux doesn't like.
+  }
+  return state
+}
+
 export default combineReducers({
   blockchainID,
   blockHeight,
@@ -162,5 +224,7 @@ export default combineReducers({
   replicationLagClass,
   requireClientToken,
   signer,
+  snapshot,
+  syncEstimates,
   validToken,
 })

@@ -3,7 +3,7 @@ import { connect } from 'react-redux'
 import actions from 'actions'
 import { Main, Config, Login, Modal } from './'
 
-const CORE_POLLING_TIME=15000
+const CORE_POLLING_TIME = 2 * 1000
 
 class Container extends React.Component {
   constructor(props) {
@@ -42,7 +42,16 @@ class Container extends React.Component {
       this.redirectRoot(this.props.authOk, this.props.configured, this.props.location)
     })
 
-    setInterval(checkInfo, CORE_POLLING_TIME)
+    const pollInfo = () => {
+      // TODO(jeffomatic) - dynamically adjust polling time based on lag?
+      const interval = CORE_POLLING_TIME
+      setTimeout(() => {
+        checkInfo()
+        pollInfo()
+      }, interval)
+    }
+
+    pollInfo()
   }
 
   componentWillReceiveProps(nextProps) {

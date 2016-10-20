@@ -95,7 +95,7 @@ class Index extends React.Component {
               <tr>
                 <td className={styles.row_label}>Replication Lag:</td>
                 <td className={`${styles.replication_lag} ${styles[this.props.core.replicationLagClass]}`}>
-                  {this.props.core.replicationLag}
+                  {this.props.core.replicationLag === null ? '???' : this.props.core.replicationLag}
                 </td>
               </tr>
             </tbody>
