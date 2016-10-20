@@ -3,7 +3,7 @@ import styles from './XpubField.scss'
 import { SelectField } from 'features/shared/components'
 import { TextField } from '../'
 import { connect } from 'react-redux'
-import actions from 'features/mockhsm'
+import { actions } from 'features/mockhsm'
 
 const methodOptions = {
   mockhsm: 'Use Mock HSM key',
@@ -62,7 +62,6 @@ class XpubField extends React.Component {
   }
 }
 
-
 export default connect(
   (state) => {
     let keys = []
@@ -80,7 +79,7 @@ export default connect(
     }
   },
   (dispatch) => ({
-    didLoadAutocomplete: () => dispatch(actions.didLoadAutocomplete()),
+    didLoadAutocomplete: () => dispatch(actions.didLoadAutocomplete),
     fetchAll: (cb) => dispatch(actions.fetchAll(cb)),
   })
 )(XpubField)
