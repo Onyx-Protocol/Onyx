@@ -39,11 +39,26 @@ public class Client {
     URL url;
     try {
       url = new URL("http://localhost:1999");
-    } catch (Exception e) {
-      throw new RuntimeException("invalid default development URL");
+    } catch (MalformedURLException e) {
+      throw new RuntimeException("invalid default development URL", e);
     }
 
     this.url = url;
+    this.httpClient = new OkHttpClient();
+    this.httpClient.setFollowRedirects(false);
+  }
+
+  /**
+   * Create a new http Client object
+   *
+   * @param url the URL of the Chain Core or HSM
+   */
+  public Client(String url) throws BadURLException {
+    try {
+      this.url = new URL(url);
+    } catch (MalformedURLException e) {
+      throw new BadURLException(e.getMessage());
+    }
     this.httpClient = new OkHttpClient();
     this.httpClient.setFollowRedirects(false);
   }
@@ -63,7 +78,18 @@ public class Client {
    * Create a new http Client object
    *
    * @param url the URL of the Chain Core or HSM
-   * @param accessToken a Client API access token.
+   * @param accessToken a Client API access token
+   */
+  public Client(String url, String accessToken) throws BadURLException {
+    this(url);
+    this.accessToken = accessToken;
+  }
+
+  /**
+   * Create a new http Client object
+   *
+   * @param url the URL of the Chain Core or HSM
+   * @param accessToken a Client API access token
    */
   public Client(URL url, String accessToken) {
     this(url);
@@ -380,7 +406,7 @@ public class Client {
   private String buildCredentials() {
     String user = "";
     String pass = "";
-    if (accessToken != null) {
+    if (hasAccessToken()) {
       String[] parts = accessToken.split(":");
       if (parts.length >= 1) {
         user = parts[0];
