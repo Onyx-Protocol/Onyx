@@ -22,6 +22,11 @@ func Run(db pg.DB) error {
 		return errors.Wrap(err, "creating migration table")
 	}
 
+	err = convertOldStatus(db)
+	if err != nil {
+		return err
+	}
+
 	err = loadStatus(db, migrations)
 	if err != nil {
 		return err
@@ -149,6 +154,45 @@ func loadStatus(db pg.DB, ms []migration) error {
 		}
 	}
 	return errors.Wrap(rows.Err())
+}
+
+// Well this is funny. We are going to migrate our migrations.
+// We squashed our migration history into a single migration
+// (2016-10-17.0.core.schema-snapshot.sql), but some deployed
+// systems are running a database from before the squash.
+// So we'll detect that case and convert it here to the new
+// format before attempting to run any new migrations.
+// If they are running a schema older than the last migration
+// just before the squash, we cannot help them here.
+func convertOldStatus(db pg.DB) error {
+	ctx := context.Background()
+
+	// last migration in the old regime
+	const q = `
+		SELECT count(*) FROM migrations
+		WHERE filename='2016-10-10.0.mockhsm.add-key-types.sql'
+		AND hash='00ac8143767fe4a44855cab1ec57afd52c44fd4d727055db9e8584c3e9b10983'
+	`
+	var n int
+	err := db.QueryRow(ctx, q).Scan(&n)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	if n == 0 {
+		return nil // no conversion necessary/possible
+	}
+
+	_, err = db.Exec(ctx, `
+		TRUNCATE migrations;
+
+		INSERT INTO migrations (filename, hash, applied_at)
+		VALUES (
+			'2016-10-17.0.core.schema-snapshot.sql',
+			'cff5210e2d6af410719c223a76443f73c5c12fe875f0efecb9a0a5937cf029cd',
+			now()
+		);
+	`)
+	return errors.Wrap(err)
 }
 
 // find finds name in ms.
