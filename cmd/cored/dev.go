@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 
-	"chain/core"
 	"chain/core/coreunsafe"
 	"chain/database/pg"
 	"chain/env"
@@ -17,25 +16,6 @@ import (
 )
 
 var reset = env.String("RESET", "")
-
-func initSchemaInDev(db pg.DB) {
-	ctx := context.Background()
-	const q = `
-		SELECT count(*) FROM pg_tables
-		WHERE schemaname='public' AND tablename='migrations'
-	`
-	var n int
-	err := db.QueryRow(ctx, q).Scan(&n)
-	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
-	}
-	if n == 0 {
-		_, err := db.Exec(ctx, core.Schema())
-		if err != nil {
-			log.Fatal(ctx, log.KeyError, err)
-		}
-	}
-}
 
 func resetInDevIfRequested(db pg.DB) {
 	if *reset != "" {

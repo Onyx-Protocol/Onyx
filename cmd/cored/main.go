@@ -94,7 +94,7 @@ func main() {
 	db.SetMaxIdleConns(100)
 	ctx = pg.NewContext(ctx, db)
 
-	initSchemaInDev(db)
+	initSchema(db)
 	resetInDevIfRequested(db)
 
 	config, err := core.LoadConfig(ctx, db)
@@ -153,6 +153,25 @@ func main() {
 		err = server.ListenAndServe()
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
+		}
+	}
+}
+
+func initSchema(db pg.DB) {
+	ctx := context.Background()
+	const q = `
+		SELECT count(*) FROM pg_tables
+		WHERE schemaname='public' AND tablename='migrations'
+	`
+	var n int
+	err := db.QueryRow(ctx, q).Scan(&n)
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, err)
+	}
+	if n == 0 {
+		_, err := db.Exec(ctx, core.Schema())
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
 	}
 }
