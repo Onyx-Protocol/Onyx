@@ -44,7 +44,7 @@ func TestBuildFinal(t *testing.T) {
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
 	dests := accounts.NewControlAction(assetAmt, acc.ID, nil)
 
-	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func TestBuildFinal(t *testing.T) {
 	prottest.MakeBlock(ctx, t, c)
 
 	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
-	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func TestAccountTransfer(t *testing.T) {
 
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
 	dests := accounts.NewControlAction(assetAmt, acc.ID, nil)
-	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func TestAccountTransfer(t *testing.T) {
 
 	// new source
 	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
-	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +226,7 @@ func TestTransfer(t *testing.T) {
 	txTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
 		handler.Assets.NewIssueAction(issueAssetAmount, nil),
 		handler.Accounts.NewControlAction(issueAssetAmount, account1ID, nil),
-	})
+	}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

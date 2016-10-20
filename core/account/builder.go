@@ -35,21 +35,14 @@ func (m *Manager) DecodeSpendAction(data []byte) (txbuilder.Action, error) {
 type spendAction struct {
 	accounts *Manager
 	bc.AssetAmount
-	AccountID     string             `json:"account_id"`
-	TxHash        *bc.Hash           `json:"transaction_id"`
-	TxOut         *uint32            `json:"position"`
-	TTL           chainjson.Duration `json:"reservation_ttl"`
-	ReferenceData chainjson.Map      `json:"reference_data"`
-	ClientToken   *string            `json:"client_token"`
+	AccountID     string        `json:"account_id"`
+	TxHash        *bc.Hash      `json:"transaction_id"`
+	TxOut         *uint32       `json:"position"`
+	ReferenceData chainjson.Map `json:"reference_data"`
+	ClientToken   *string       `json:"client_token"`
 }
 
-func (a *spendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
-	ttl := a.TTL.Duration
-	if ttl == 0 {
-		ttl = time.Minute
-	}
-	maxTime := time.Now().Add(ttl)
-
+func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
 	acct, err := a.accounts.findByID(ctx, a.AccountID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get account info")
@@ -93,20 +86,14 @@ func (a *spendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error)
 		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, change[0].Amount, acp, nil))
 	}
 
-	return &txbuilder.BuildResult{
-		Inputs:              txins,
-		Outputs:             changeOuts,
-		SigningInstructions: tplInsts,
-		MaxTimeMS:           bc.Millis(maxTime),
-	}, nil
+	return &txbuilder.BuildResult{Inputs: txins, Outputs: changeOuts, SigningInstructions: tplInsts}, nil
 }
 
-func (m *Manager) NewSpendUTXOAction(outpoint bc.Outpoint, ttl time.Duration) txbuilder.Action {
+func (m *Manager) NewSpendUTXOAction(outpoint bc.Outpoint) txbuilder.Action {
 	return &spendUTXOAction{
 		accounts: m,
 		TxHash:   outpoint.Hash,
 		TxOut:    outpoint.Index,
-		TTL:      chainjson.Duration{ttl},
 	}
 }
 
@@ -118,21 +105,14 @@ func (m *Manager) DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
 
 type spendUTXOAction struct {
 	accounts *Manager
-	TxHash   bc.Hash            `json:"transaction_id"`
-	TxOut    uint32             `json:"position"`
-	TTL      chainjson.Duration `json:"reservation_ttl"`
+	TxHash   bc.Hash `json:"transaction_id"`
+	TxOut    uint32  `json:"position"`
 
 	ReferenceData chainjson.Map `json:"reference_data"`
 	ClientToken   *string       `json:"client_token"`
 }
 
-func (a *spendUTXOAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
-	ttl := a.TTL.Duration
-	if ttl == 0 {
-		ttl = time.Minute
-	}
-	maxTime := time.Now().Add(ttl)
-
+func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
 	dbctx := pg.NewContext(ctx, a.accounts.db) // TODO(jackson): remove dbctx
 	r, err := utxodb.ReserveUTXO(dbctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
 	if err != nil {
@@ -152,7 +132,6 @@ func (a *spendUTXOAction) Build(ctx context.Context) (*txbuilder.BuildResult, er
 	return &txbuilder.BuildResult{
 		Inputs:              []*bc.TxInput{txInput},
 		SigningInstructions: []*txbuilder.SigningInstruction{sigInst},
-		MaxTimeMS:           bc.Millis(maxTime),
 	}, nil
 }
 
@@ -197,7 +176,7 @@ type controlAction struct {
 	ReferenceData chainjson.Map `json:"reference_data"`
 }
 
-func (a *controlAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
+func (a *controlAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
 	acp, err := a.accounts.CreateControlProgram(ctx, a.AccountID, false)
 	if err != nil {
 		return nil, err

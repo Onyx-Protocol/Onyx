@@ -3,6 +3,7 @@ package coretest
 import (
 	"context"
 	"testing"
+	"time"
 
 	"chain/core/account"
 	"chain/core/asset"
@@ -39,7 +40,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, assets *a
 	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
 		assets.NewIssueAction(assetAmount, nil), // does not support reference data
 		accounts.NewControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil),
-	})
+	}, time.Now().Add(time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -58,7 +59,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, assets *a
 }
 
 func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []txbuilder.Action) *bc.Tx {
-	template, err := txbuilder.Build(ctx, nil, actions)
+	template, err := txbuilder.Build(ctx, nil, actions, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

@@ -45,7 +45,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	}
 	source := accounts.NewSpendAction(assetAmount1, accID, nil, nil, nil, nil)
 
-	buildResult, err := source.Build(ctx)
+	buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -89,8 +89,8 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	accounts.IndexAccounts(indexer)
 	prottest.MakeBlock(ctx, t, c)
 
-	source := accounts.NewSpendUTXOAction(out.Outpoint, time.Minute)
-	buildResult, err := source.Build(ctx)
+	source := accounts.NewSpendUTXOAction(out.Outpoint)
+	buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -135,7 +135,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	prottest.MakeBlock(ctx, t, c)
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
-		buildResult, err := source.Build(ctx)
+		buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -191,7 +191,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 		theTxHash := srcTxs[i]
 		source := accounts.NewSpendAction(assetAmt, acc, &theTxHash, nil, nil, nil)
 
-		buildResult, err := source.Build(ctx)
+		buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

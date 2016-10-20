@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"chain/crypto/ed25519/chainkd"
 	"chain/encoding/json"
@@ -22,7 +23,7 @@ var (
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, tx *bc.TxData, actions []Action) (*Template, error) {
+func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Time) (*Template, error) {
 	var local bool
 	if tx == nil {
 		tx = &bc.TxData{
@@ -33,7 +34,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action) (*Template, err
 
 	var tplSigInsts []*SigningInstruction
 	for i, action := range actions {
-		buildResult, err := action.Build(ctx)
+		buildResult, err := action.Build(ctx, maxTime)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "invalid action %d", i)
 		}
@@ -64,11 +65,10 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action) (*Template, err
 				tx.MinTime = buildResult.MinTimeMS
 			}
 		}
-		if buildResult.MaxTimeMS > 0 {
-			if tx.MaxTime == 0 || buildResult.MaxTimeMS < tx.MaxTime {
-				tx.MaxTime = buildResult.MaxTimeMS
-			}
-		}
+	}
+
+	if tx.MaxTime == 0 || tx.MaxTime > bc.Millis(maxTime) {
+		tx.MaxTime = bc.Millis(maxTime)
 	}
 
 	for _, sigInst := range tplSigInsts {

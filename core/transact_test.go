@@ -39,7 +39,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
 	dests := accounts.NewControlAction(assetAmt, acc.ID, nil)
 
-	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 
 	// Add a new source, spending the change output produced above.
 	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
-	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 
+	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
 )
@@ -16,6 +17,7 @@ var (
 type buildRequest struct {
 	Tx      *bc.TxData               `json:"base_transaction"`
 	Actions []map[string]interface{} `json:"actions"`
+	TTL     json.Duration            `json:"ttl"`
 }
 
 func (h *Handler) filterAliases(ctx context.Context, br *buildRequest) error {

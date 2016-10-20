@@ -55,7 +55,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	dest1 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
 
 	// Build the first tx
-	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1})
+	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1}, time.Now().Add(time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -74,7 +74,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 
 	// Build the second tx
 	dest2 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
-	secondTemplate, err := Build(ctx, nil, []Action{spendAction, dest2})
+	secondTemplate, err := Build(ctx, nil, []Action{spendAction, dest2}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,7 +299,7 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, destAcctID string,
 	issueTx, err := Build(ctx, nil, []Action{
 		info.Registry.NewIssueAction(assetAmount, nil),
 		info.Manager.NewControlAction(assetAmount, destAcctID, nil),
-	})
+	}, time.Now().Add(time.Minute))
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +316,7 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, srcAcctID, dest
 	source := info.NewSpendAction(assetAmount, srcAcctID, nil, nil, nil, nil)
 	dest := info.NewControlAction(assetAmount, destAcctID, nil)
 
-	xferTx, err := Build(ctx, nil, []Action{source, dest})
+	xferTx, err := Build(ctx, nil, []Action{source, dest}, time.Now().Add(time.Minute))
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

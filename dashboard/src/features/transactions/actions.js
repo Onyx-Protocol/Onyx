@@ -23,15 +23,12 @@ function preprocessTransaction(formParams) {
     delete builder.base_transaction
   }
 
+  if (formParams.submit_action == 'generate') {
+    builder.ttl = '1h' // 1 hour
+  }
+
   for (let i in builder.actions) {
     let a = builder.actions[i]
-
-    // HACK: issuances use `ttl` as a parameter name, spends/controls use
-    // `reservation_ttl`. Set both.
-    if (formParams.submit_action == 'generate') {
-      a.ttl = '1h' // 1 hour
-      a.reservation_ttl = '1h' // 1 hour
-    }
 
     // HACK: Check for retire actions and replace with OP_FAIL control programs.
     // TODO: update JS SDK to support Java SDK builder style.

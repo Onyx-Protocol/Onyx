@@ -17,6 +17,8 @@ import (
 	"chain/protocol/bc"
 )
 
+var defaultTxTTL = 5 * time.Minute
+
 func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
 	err := h.filterAliases(ctx, req)
 	if err != nil {
@@ -46,7 +48,12 @@ func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilde
 		actions = append(actions, a)
 	}
 
-	tpl, err := txbuilder.Build(ctx, req.Tx, actions)
+	ttl := req.TTL.Duration
+	if ttl == 0 {
+		ttl = defaultTxTTL
+	}
+	maxTime := time.Now().Add(ttl)
+	tpl, err := txbuilder.Build(ctx, req.Tx, actions, maxTime)
 	if err != nil {
 		return nil, err
 	}

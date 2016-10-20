@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"testing"
+	"time"
 
 	"chain/core/account"
 	"chain/core/asset"
@@ -55,7 +56,7 @@ func TestMockHSM(t *testing.T) {
 	issueSrc2 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, nil))
 	issueDest1 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, acct1.ID, nil)
 	issueDest2 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, acct2.ID, nil)
-	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{issueSrc1, issueSrc2, issueDest1, issueDest2})
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{issueSrc1, issueSrc2, issueDest1, issueDest2}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +73,7 @@ func TestMockHSM(t *testing.T) {
 	xferSrc2 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct2.ID, nil, nil, nil, nil)
 	xferDest1 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct1.ID, nil)
 	xferDest2 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct2.ID, nil)
-	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{xferSrc1, xferSrc2, xferDest1, xferDest2})
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{xferSrc1, xferSrc2, xferDest1, xferDest2}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
