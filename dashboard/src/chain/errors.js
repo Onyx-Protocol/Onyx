@@ -1,8 +1,15 @@
 const lib = {
   create: function(type, message, props = {}) {
     let err = new Error(message)
-    err = Object.assign(err, props, {type: type})
+    err = Object.assign(err, props, {
+      chainClientError: true,
+      type: type,
+    })
     return err
+  },
+
+  isChainError: function(err) {
+    return err && !!err.chainClientError
   },
 
   isBatchError: function (v) {

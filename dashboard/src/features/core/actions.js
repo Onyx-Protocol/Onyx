@@ -11,7 +11,7 @@ const fetchCoreInfo = (options = {}) => {
     return chain.Core.info(context())
       .then((info) => dispatch(updateInfo(info)))
       .catch((err) => {
-        if (options.throw) {
+        if (options.throw || !chain.errors.isChainError(err)) {
           throw err
         } else {
           if (err.status == 401) {

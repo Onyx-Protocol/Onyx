@@ -9,6 +9,7 @@ import MockHsm from './mockHsm'
 import Transaction from './transaction'
 import TransactionFeed from './transactionFeed'
 import Unspent from './unspent'
+import errors from './errors'
 
 export default {
   AccessToken,
@@ -22,4 +23,5 @@ export default {
   Transaction,
   TransactionFeed,
   Unspent,
+  errors,
 }
