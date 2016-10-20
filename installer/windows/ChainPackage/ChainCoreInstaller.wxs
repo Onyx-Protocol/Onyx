@@ -110,6 +110,6 @@
   </Fragment>
 
   <Fragment>
-    <Icon Id="ChainLogo.exe" SourceFile="Chain_Black_On_White.ico"/>
+    <Icon Id="ChainLogo.exe" SourceFile="white_logo.ico"/>
   </Fragment>
 </Wix>
