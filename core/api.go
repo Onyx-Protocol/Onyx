@@ -167,6 +167,7 @@ func (h *Handler) init() {
 	}
 	handler = gzip.Handler{Handler: handler}
 	handler = dbContextHandler(handler, h.DB)
+	handler = coreCounter(handler)
 	handler = reqid.Handler(handler)
 	handler = timeoutContextHandler(handler)
 	h.handler = handler
