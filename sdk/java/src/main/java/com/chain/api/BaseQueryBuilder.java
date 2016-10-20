@@ -4,6 +4,7 @@ import com.chain.exception.ChainException;
 import com.chain.http.Client;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract base class providing interface for building queries on API objects.
@@ -65,7 +66,7 @@ public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
    * <strong>Note:</strong> any existing filter params will be replaced.
    * @param params list of parameters to be added
    */
-  public T setFilterParameters(ArrayList<String> params) {
+  public T setFilterParameters(List<String> params) {
     this.next.filterParams = new ArrayList<>(params);
     return (T) this;
   }
