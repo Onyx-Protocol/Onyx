@@ -5,6 +5,7 @@ package metrics
 import (
 	"bytes"
 	"encoding/json"
+	"expvar"
 	"fmt"
 	"sync"
 	"time"
@@ -19,7 +20,15 @@ const Period = time.Minute
 var (
 	rotatingLatenciesMu sync.Mutex
 	rotatingLatencies   []*RotatingLatency
+	latencyExpvar       = expvar.NewMap("latency")
 )
+
+// PublishLatency publishes rl as an expvar inside the
+// global latency map (which is itself published under
+// the key "latency").
+func PublishLatency(key string, rl *RotatingLatency) {
+	latencyExpvar.Set(key, rl)
+}
 
 // A Latency records information about the aggregate latency
 // of an operation over time.

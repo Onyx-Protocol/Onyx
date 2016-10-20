@@ -1,7 +1,6 @@
 package core
 
 import (
-	"expvar"
 	"net/http"
 	"sync"
 	"time"
@@ -13,8 +12,7 @@ var (
 	latencyMu sync.Mutex
 	latencies = map[string]*metrics.RotatingLatency{}
 
-	latencyExpvar = expvar.NewMap("latency")
-	latencyRange  = map[string]time.Duration{
+	latencyRange = map[string]time.Duration{
 		networkRPCPrefix + "get-block":         20 * time.Second,
 		networkRPCPrefix + "get-blocks":        20 * time.Second,
 		networkRPCPrefix + "signer/sign-block": 5 * time.Second,
@@ -38,7 +36,7 @@ func latency(tab *http.ServeMux, req *http.Request) *metrics.RotatingLatency {
 		}
 		l := metrics.NewRotatingLatency(5, d)
 		latencies[req.URL.Path] = l
-		latencyExpvar.Set(req.URL.Path, l)
+		metrics.PublishLatency(req.URL.Path, l)
 		return l
 	}
 	return nil
