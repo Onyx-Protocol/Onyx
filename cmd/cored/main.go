@@ -45,7 +45,7 @@ import (
 
 const (
 	httpReadTimeout  = 2 * time.Minute
-	httpWriteTimeout = 2 * time.Minute
+	httpWriteTimeout = time.Hour
 )
 
 var (

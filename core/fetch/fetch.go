@@ -19,7 +19,6 @@ import (
 	"chain/protocol/state"
 )
 
-const getSnapshotTimeout = 60 * time.Second
 const heightPollingPeriod = 3 * time.Second
 
 var (
@@ -283,8 +282,8 @@ func (s *Snapshot) done() {
 // cores that have been operating should replay all transactions so that
 // they can index them properly.
 func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, attempt int) error {
-	ctx, cancel := context.WithTimeout(ctx, getSnapshotTimeout)
-	defer cancel()
+	const getBlockTimeout = 30 * time.Second
+	const readSnapshotTimeout = 30 * time.Second
 
 	info := &Snapshot{Attempt: attempt}
 	err := peer.Call(ctx, "/rpc/get-snapshot-info", nil, &info)
@@ -299,8 +298,10 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 	downloadingSnapshot = info
 	downloadingSnapshotMu.Unlock()
 
+	downloadCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	// Download the snapshot, recording our progress as we go.
-	body, err := peer.CallRaw(ctx, "/rpc/get-snapshot", info.Height)
+	body, err := peer.CallRaw(downloadCtx, "/rpc/get-snapshot", info.Height)
 	if err != nil {
 		return errors.Wrap(err, "getting snapshot")
 	}
@@ -308,6 +309,7 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 
 	// Wrap the response body reader in our progress reader.
 	info.progressReader.reader = body
+	info.progressReader.setTimeout(readSnapshotTimeout, cancel)
 	b, err := ioutil.ReadAll(&info.progressReader)
 	if err != nil {
 		return err
@@ -323,7 +325,7 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 	snapshot.PruneIssuances(math.MaxUint64)
 
 	// Next, get the initial block.
-	initialBlock, err := getBlock(ctx, peer, 1, getSnapshotTimeout)
+	initialBlock, err := getBlock(ctx, peer, 1, getBlockTimeout)
 	if err != nil {
 		return err
 	}
@@ -333,7 +335,7 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 	}
 
 	// Also get the corresponding block.
-	snapshotBlock, err := getBlock(ctx, peer, info.Height, getSnapshotTimeout)
+	snapshotBlock, err := getBlock(ctx, peer, info.Height, getBlockTimeout)
 	if err != nil {
 		return err
 	}
@@ -361,6 +363,14 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 type progressReader struct {
 	reader io.Reader
 	read   uint64
+
+	timer           *time.Timer
+	progressTimeout time.Duration
+}
+
+func (r *progressReader) setTimeout(timeout time.Duration, cancel func()) {
+	r.progressTimeout = timeout
+	r.timer = time.AfterFunc(timeout, cancel)
 }
 
 func (r *progressReader) BytesRead() uint64 {
@@ -369,6 +379,12 @@ func (r *progressReader) BytesRead() uint64 {
 
 func (r *progressReader) Read(b []byte) (int, error) {
 	n, err := r.reader.Read(b)
+
 	atomic.AddUint64(&r.read, uint64(n))
+
+	// If there's a timeout on delay between reads, then reset the timer.
+	if r.timer != nil {
+		r.timer.Reset(r.progressTimeout)
+	}
 	return n, err
 }
