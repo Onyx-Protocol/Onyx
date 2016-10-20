@@ -33,7 +33,7 @@ class New extends React.Component {
         submitting={submitting} >
 
         <FormSection title='Feed Information'>
-          <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
+          <TextField title='Alias' placeholder='Alias' fieldProps={alias} autoFocus={true} />
           <TextField title='Filter' placeholder='Filter' fieldProps={filter} />
         </FormSection>
       </FormContainer>

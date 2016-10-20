@@ -76,9 +76,14 @@ form.submitForm = (formParams) => function(dispatch) {
     return build
       .then(tpl => chain.MockHsm.sign([tpl], getTemplateXpubs(tpl), context()))
       .then(signed => signed[0].submit(context()))
-      .then(() => {
-        dispatch(push('/transactions'))
+      .then(resp => {
         dispatch(form.created())
+        dispatch(push({
+          pathname: `/transactions/${resp.id}`,
+          state: {
+            preserveFlash: true
+          }
+        }))
       })
   }
 

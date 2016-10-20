@@ -8,6 +8,7 @@ const list = baseListActions(type, { defaultKey: 'alias' })
 const form = baseFormActions(type, {
   jsonFields: ['tags'],
   intFields: ['quorum'],
+  redirectToShow: true,
 })
 
 let actions = {

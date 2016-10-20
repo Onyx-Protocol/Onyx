@@ -1,0 +1,12 @@
+.main {
+  display: flex;
+}
+
+.content {
+  width: 100%;
+  flex: 1;
+
+  p {
+    margin: 0;
+  }
+}

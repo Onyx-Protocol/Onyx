@@ -1,3 +1,5 @@
+import React from 'react'
+import { Link } from 'react-router'
 import { combineReducers } from 'redux'
 import uuid from 'uuid'
 
@@ -7,13 +9,21 @@ const error = (message, title) => flash(message, title, 'danger')
 
 export const flashMessages = (state = new Map(), action) => {
   if (action.type == 'CREATED_ACCOUNT') {
-    return new Map(state).set(uuid.v4(), success('Created account'))
+    return new Map(state).set(uuid.v4(), success(<p>
+      Created account. <Link to='accounts/create'>Create another?</Link>
+    </p>))
   } else if (action.type == 'CREATED_ASSET') {
-    return new Map(state).set(uuid.v4(), success('Created asset'))
+    return new Map(state).set(uuid.v4(), success(<p>
+      Created asset. <Link to='assets/create'>Create another?</Link>
+    </p>))
   } else if (action.type == 'CREATED_TRANSACTION') {
-    return new Map(state).set(uuid.v4(), success('Created transaction'))
-  } else if (action.type == 'CREATE_MOCKHSM') {
+    return new Map(state).set(uuid.v4(), success(<p>
+      Submitted transaction. <Link to='transactions/create'>Create another?</Link>
+    </p>))
+  } else if (action.type == 'CREATED_MOCKHSM') {
     return new Map(state).set(uuid.v4(), success('Created key'))
+  } else if (action.type == 'CREATED_TRANSACTIONFEED') {
+    return new Map(state).set(uuid.v4(), success('Created transaction feed'))
   } else if (['CREATED_CLIENT_ACCESS_TOKEN',
               'CREATED_NETWORK_ACCESS_TOKEN'].includes(action.type)) {
     const object = action.param
