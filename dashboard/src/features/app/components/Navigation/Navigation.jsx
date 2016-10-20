@@ -21,7 +21,7 @@ class Navigation extends React.Component {
         syncContent = <ul className={styles.navigation}>
           <li className={styles.navigationTitle}>snapshot sync</li>
           <li>{snapshot.height} blocks</li>
-          <li>{downloaded.toFixed(1)}% downloaded</li>
+          <li>{Math.round(downloaded)}% downloaded</li>
           {!!syncEstimates.snapshot && <li>Time remaining: {humanizeDuration(syncEstimates.snapshot)}</li>}
         </ul>
       } else if (replicationLag !== null && replicationLag < 3) { // synced up, or close to it
