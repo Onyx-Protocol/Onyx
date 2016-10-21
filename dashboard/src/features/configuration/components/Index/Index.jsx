@@ -116,7 +116,7 @@ class Index extends React.Component {
                   <span className={styles.choice_title}>Join existing blockchain network</span>
 
                   <p>
-                    Connect this Chain Core to an existing blockchain network
+                    Connect this Chain Core to an existing blockchain network.
                   </p>
               </div>
             </label>
@@ -133,7 +133,9 @@ class Index extends React.Component {
                   <span className={styles.choice_title}>Join the Chain Testnet</span>
 
                   <p>
-                    Connect this Chain Core to the Chain Testnet. Reset weekly.
+                    Connect this Chain Core to the Chain Testnet.
+                    <br />
+                    Data will be reset every week.
                   </p>
               </div>
             </label>
