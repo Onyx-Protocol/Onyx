@@ -34,7 +34,6 @@
       </Directory>
 
       <Directory Id="ProgramMenuFolder">
-        <Directory Id="ShortcutFolder" Name="Chain" />
       </Directory>
     </Directory>
 
@@ -70,7 +69,7 @@
          Eventually replace this shortcut with a more standard way of having Chain running on a machine,
          name: system service or as tray icon + StartupFolder shortcut.
          -->
-         <Shortcut Id="ChainCoreShortcut" Name="Chain Core" Directory="ShortcutFolder" Advertise="yes"
+         <Shortcut Id="ChainCoreShortcut" Name="Chain Core" Directory="ProgramMenuFolder" Advertise="yes"
                    Description="Starts the chain core server. Then browse to http://localhost:1999" Icon='ChainLogo.exe' />
        </Component>
 
@@ -94,15 +93,13 @@
   <Fragment>
     <SetProperty Id="ChainBrowseUrl" Value="http://localhost:1999/" Sequence="execute" Before="CreateShortcuts" />
 
-    <ComponentGroup Id="ShortcutComponents" Directory="ShortcutFolder">
+    <ComponentGroup Id="ShortcutComponents" Directory="ProgramMenuFolder">
       <Component>
         <!--
         This registry exists because the Windows Installer wants a per-user keypath when non-Advertised resources
         (such as our shortcut here) are installed to a per-user location (such as ProgramMenuFolder).
         -->
         <RegistryValue Root="HKCU" Key="SOFTWARE\Chain" Name="ChainCoreUrl" Value="[ChainBrowseUrl]" Type="string" />
-
-        <Shortcut Id='ChainCoreUrlShortcut' Name='Connect to Chain' Target='[ChainBrowseUrl]' Icon='ChainLogo.exe' />
 
         <RemoveFolder Id="CleanupShortcutFolder" On="uninstall" />
       </Component>
