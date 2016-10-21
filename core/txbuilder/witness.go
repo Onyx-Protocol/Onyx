@@ -101,7 +101,7 @@ var ErrEmptyProgram = errors.New("empty signature program")
 //  - the assetID, amount, control program, and (if non-empty) reference data of each output.
 func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, xpubs []string, signFn SignFunc) error {
 	// Compute the predicate to sign. This is either a
-	// txsighash program if tpl.Final is true (i.e., the tx is complete
+	// txsighash program if tpl.AllowAdditional is false (i.e., the tx is complete
 	// and no further changes are allowed) or a program enforcing
 	// constraints derived from the existing outputs and current input.
 	if len(sw.Program) == 0 {
