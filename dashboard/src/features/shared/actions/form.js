@@ -3,6 +3,7 @@ import { context } from 'utility/environment'
 import { parseNonblankJSON } from 'utility/string'
 import actionCreator from './actionCreator'
 import { push } from 'react-router-redux'
+import actions from 'actions'
 
 export default function(type, options = {}) {
   const listPath = options.listPath || `/${type}s`
@@ -30,12 +31,20 @@ export default function(type, options = {}) {
 
         return object.create(context())
           .then((resp) => {
+            dispatch(created(resp))
+
+            if (options.createModal) {
+              dispatch(actions.app.showModal(
+                options.createModal(resp),
+                actions.app.hideModal()
+              ))
+            }
+
             let postCreatePath = listPath
             if (options.redirectToShow) {
               postCreatePath = `${postCreatePath}/${resp.id}`
             }
 
-            dispatch(created(resp))
             dispatch(push({
               pathname: postCreatePath,
               state: {

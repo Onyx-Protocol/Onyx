@@ -48,12 +48,6 @@ export const flashMessages = (state = new Map(), action) => {
       return new Map(state).set(uuid.v4(), success('Created transaction feed'))
     }
 
-    case 'CREATED_CLIENT_ACCESS_TOKEN':
-    case 'CREATED_NETWORK_ACCESS_TOKEN': {
-      const object = action.param
-      return new Map(state).set(uuid.v4(), success(object.token, 'Created Access Token:'))
-    }
-
     case 'DELETED_CLIENT_ACCESS_TOKEN':
     case 'DELETED_NETWORK_ACCESS_TOKEN':
     case 'DELETED_TRANSACTIONFEED': {

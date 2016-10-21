@@ -3,16 +3,13 @@ import {
   baseListActions
 } from 'features/shared/actions'
 
+import React from 'react'
 import { actions as coreActions } from 'features/core'
-import chain from 'chain'
 import { context } from 'utility/environment'
+import CreateModal from './components/CreateModal/CreateModal'
 
-const setRequired = (type, value) => {
-  return (dispatch) => chain.Core.updateConfiguration(context(), {
-    [`require_${type}s`]: value
-  }).then(() => dispatch(coreActions.fetchCoreInfo()))
-    .then(() => dispatch({type: 'UPDATED_CONFIGURATION'}))
-    .catch(err => dispatch({type: 'ERROR', payload: err}))
+const makeCreateModal = token => {
+  return <CreateModal token={token.token} />
 }
 
 let actions = {
@@ -25,9 +22,8 @@ let actions = {
     ...baseFormActions('client_access_token', {
       listPath: '/access_tokens/client',
       className: 'AccessToken',
+      createModal: makeCreateModal,
     }),
-    enable: setRequired('client_access_token', true),
-    disable: setRequired('client_access_token', false),
   },
   network_access_token: {
     ...baseListActions('network_access_token', {
@@ -38,9 +34,8 @@ let actions = {
     ...baseFormActions('network_access_token', {
       listPath: '/access_tokens/network',
       className: 'AccessToken',
+      createModal: makeCreateModal,
     }),
-    enable: setRequired('network_access_token', true),
-    disable: setRequired('network_access_token', false),
   }
 }
 
