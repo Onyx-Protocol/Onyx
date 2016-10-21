@@ -73,22 +73,24 @@ func main() {
 
 	time.Sleep(time.Second) // give generator time to restart
 
-	var blockchainID string
-	must(gen.Call(ctx, "/info", "", &blockchainID))
-	log.Println("blockchain ID", blockchainID)
+	var resp struct {
+		BlockchainID string `json:"blockchain_id"`
+	}
+	must(gen.Call(ctx, "/info", "", &resp))
+	log.Println("blockchain ID", resp.BlockchainID)
 
 	// configure signers
 	must(sig1.Call(ctx, "/configure", map[string]interface{}{
 		"is_signer":              true,
 		"block_pub":              sig1Core.pubkey,
-		"blockchain_id":          blockchainID,
+		"blockchain_id":          resp.BlockchainID,
 		"generator_url":          gen.BaseURL,
 		"generator_access_token": genCore.netTok,
 	}, nil))
 	must(sig2.Call(ctx, "/configure", map[string]interface{}{
 		"is_signer":              true,
 		"block_pub":              sig2Core.pubkey,
-		"blockchain_id":          blockchainID,
+		"blockchain_id":          resp.BlockchainID,
 		"generator_url":          gen.BaseURL,
 		"generator_access_token": genCore.netTok,
 	}, nil))
