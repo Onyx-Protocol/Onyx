@@ -1,19 +1,13 @@
 import React from 'react'
+import { KeyValueTable } from 'features/shared/components'
+import { buildInOutDisplay } from 'features/transactions/utility'
 
 class ListItem extends React.Component {
   render() {
     const item = {...this.props.item}
     delete item.id
 
-    return(
-      <div className='panel panel-default'>
-        <div className='panel-body'>
-          <pre>
-            {JSON.stringify(item, null, '  ')}
-          </pre>
-        </div>
-      </div>
-    )
+    return(<KeyValueTable items={buildInOutDisplay(item)} />)
   }
 }
 

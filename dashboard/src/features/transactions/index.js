@@ -5,5 +5,5 @@ import routes from './routes'
 export {
   actions,
   reducers,
-  routes
+  routes,
 }

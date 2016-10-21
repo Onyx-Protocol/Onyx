@@ -6,34 +6,12 @@ import {
   KeyValueTable,
   Section,
 } from 'features/shared/components'
+
 import { Summary } from './'
+import { buildInOutDisplay } from 'features/transactions/utility'
 
 class Show extends BaseShow {
-  inoutDetails(inout) {
-    let details = [{label: 'Type', value: inout.type}]
-    if (inout.purpose) details.push({label: 'Action Purpose', value: inout.purpose})
 
-    details = details.concat([
-      {label: 'Asset ID', value: inout.asset_id},
-      {label: 'Asset Alias', value: inout.asset_alias},
-      {label: 'Asset Tags', value: inout.asset_tags},
-      {label: 'Amount', value: inout.amount},
-    ])
-
-    if (inout.account_id) {
-      details = details.concat([
-        {label: 'Account ID', value: inout.account_id},
-        {label: 'Account Alias', value: inout.account_alias},
-        {label: 'Account Tags', value: inout.account_tags},
-      ])
-    }
-
-    if (inout.control_program) details.push({label: 'Control Program', value: inout.control_program})
-    if (inout.issuance_program) details.push({label: 'Issuance Program', value: inout.issuance_program})
-
-    details.push({label: 'Reference Data', value: inout.reference_data})
-    return details
-  }
 
   render() {
     const item = this.props.item
@@ -59,7 +37,9 @@ class Show extends BaseShow {
               {label: 'ID', value: item.id},
               {label: 'Timestamp', value: item.timestamp},
               {label: 'Block ID', value: item.block_id},
+              {label: 'Block Height', value: item.block_height},
               {label: 'Position', value: item.position},
+              {label: 'Local?', value: item.is_local},
               {label: 'Reference Data', value: item.reference_data},
             ]}
           />
@@ -68,7 +48,7 @@ class Show extends BaseShow {
             <KeyValueTable
               key={index}
               title={index == 0 ? 'Inputs' : ''}
-              items={this.inoutDetails(input)}
+              items={buildInOutDisplay(input)}
             />
           )}
 
@@ -76,12 +56,13 @@ class Show extends BaseShow {
             <KeyValueTable
               key={index}
               title={index == 0 ? 'Outputs' : ''}
-              items={this.inoutDetails(output)}
+              items={buildInOutDisplay(output)}
             />
           )}
         </PageContent>
       </div>
     }
+
     return this.renderIfFound(view)
   }
 }
