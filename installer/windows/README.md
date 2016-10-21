@@ -54,13 +54,38 @@ This generates Bundle.exe in your current working directory.
 
 ### Code Signing
 
-In order for Chain to appear as the publisher, Bundle.exe needs to be signed with the private key of Chain's code signing certificate. 
+In order for Chain to appear as the publisher, some of the files inside the installer need to be signed with the private key of Chain's code signing certificate. 
 
-To do this, first put a .pfx file ([generated from the certificate](https://www.digicert.com/code-signing/exporting-code-signing-certificate.htm)) into the `ChainBundle` directory. Then run the following commands. 
+To do this, you will need:
 
-The following commands rely on signtool, which is a tool packaged inside the Windows SDK. The Windows SDK is from Microsoft and can be downloaded here: https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk 
+* A `.pfx` file ([generated from the certificate](https://www.digicert.com/code-signing/exporting-code-signing-certificate.htm)). In order to prevent as many security warnings as possible, the certificate should be an EV Certificate.
+* `signtool`, which is packaged inside the Windows SDK. The Windows SDK is from Microsoft and can be downloaded here: https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk 
 
-The commands also assume that both the Wix Tools binaries and the signtool are in your path. My signtool was installed at `C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe`. 
+You will need to sign:
+
+* `chain-core.exe`
+* `ChainMgr.exe`
+* `cab1.cab` (a build artifact from building `ChainCoreInstaller.msi`)
+* `Bundle.exe` 
+* The Burn engine contained inside `Bundle.exe`
+
+To sign a file, do the following. The following commands assume that both the Wix Tools binaries and the signtool are in your path. My signtool was installed at `C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe`. 
+
+1. Sign `chain-core.exe` and `ChainMgr.exe` by running signtool:
+
+```
+signtool sign -v -f [x.pfx] -p [password] [file to sign]
+```
+
+2. Build `ChainCoreInstaller.msi` using `candle` and `light`, as above.
+3. Sign `cab1.cab`, the build artifact, using `signtool`:
+
+```
+signtool sign -v -f [x.pfx] -p [password] ChainPackage/cab1.cab
+```
+
+4. Build `Bundle.exe` using `candle` and `light`, as above. 
+5. Extract `engine.exe` from the bundle and sign it:
 
 ```
 insignia -ib Bundle.exe -o engine.exe
@@ -68,5 +93,10 @@ signtool sign -v -f [x.pfx] -p [password] engine.exe
 insignia -ab engine.exe Bundle.exe -o Chain_Core_Latest.exe -v
 ```
 
+6. Sign `Chain_Core_Latest.exe` directly: 
+
+```
+signtool sign -v -f [x.pfx] -p [password] ChainBundle/Chain_Core_Latest.exe
+```
 
 Clicking on `Chain_Core_Latest.exe` will install Chain Core as an application on your PC. 
