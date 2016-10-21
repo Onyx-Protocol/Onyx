@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"chain/errors"
 	"chain/net/http/reqid"
 )
 
@@ -63,7 +63,7 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 	}
 	defer r.Close()
 	if response != nil {
-		err = json.NewDecoder(r).Decode(response)
+		err = errors.Wrap(json.NewDecoder(r).Decode(response))
 	}
 	return err
 }
@@ -73,7 +73,7 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) (io.ReadCloser, error) {
 	u, err := url.Parse(c.BaseURL)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	u.Path = path
 
@@ -81,14 +81,14 @@ func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) 
 	if request != nil {
 		var jsonBody bytes.Buffer
 		if err := json.NewEncoder(&jsonBody).Encode(request); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err)
 		}
 		bodyReader = &jsonBody
 	}
 
 	req, err := http.NewRequest("POST", u.String(), bodyReader)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	if c.AccessToken != "" {
@@ -118,12 +118,12 @@ func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) 
 
 	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	if id := resp.Header.Get(HeaderBlockchainID); c.BlockchainID != "" && id != "" && c.BlockchainID != id {
 		resp.Body.Close()
-		return nil, ErrWrongNetwork
+		return nil, errors.Wrap(ErrWrongNetwork)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
