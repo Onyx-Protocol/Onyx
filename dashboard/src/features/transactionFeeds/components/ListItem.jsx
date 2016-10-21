@@ -18,7 +18,7 @@ class ListItem extends React.Component {
         <div className='panel-heading'>
           {label}
 
-          <button className='btn btn-danger btn-sm pull-right' onClick={this.props.delete.bind(this, item.id)}>
+          <button className='btn btn-danger btn-sm pull-right' onClick={this.props.delete.bind(this, item)}>
             <span className='glyphicon glyphicon-trash' />&nbsp;
             Delete
           </button>

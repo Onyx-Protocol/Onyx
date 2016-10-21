@@ -111,13 +111,23 @@ export default function(type, options = {}) {
     }
   }
 
-  const deleteItem = (id) => {
-    return (dispatch) => chain[className].delete(context(), id)
-      .then(() => dispatch({
-        type: `DELETE_${type.toUpperCase()}`,
-        id: id,
-      }))
-      .catch(err => dispatch({type: 'ERROR', payload: err}))
+  const deleteItem = (id, confirmMessage, deleteMessage) => {
+    return (dispatch) => {
+      if (!window.confirm(confirmMessage)) {
+        return
+      }
+
+      chain[className].delete(context(), id)
+        .then(() => dispatch({
+          type: `DELETE_${type.toUpperCase()}`,
+          id: id,
+        })).then(() => dispatch({
+          type: `DELETED_${type.toUpperCase()}`,
+          message: deleteMessage,
+        })).catch(err => dispatch({
+          type: 'ERROR', payload: err
+        }))
+    }
   }
 
   const pushList = (query = {}, pageNumber) => {

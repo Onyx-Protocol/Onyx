@@ -19,7 +19,13 @@ const dispatchToProps = (type) => (dispatch) => {
   return {
     ...BaseList.mapDispatchToProps(type)(dispatch),
     itemActions: {
-      delete: (id) => dispatch(actions[type].deleteItem(id))
+      delete: (token) => {
+        dispatch(actions[type].deleteItem(
+          token.id,
+          `Really delete access token ${token.id}?`,
+          `Deleted access token ID ${token.id}.`
+        ))
+      }
     },
   }
 }

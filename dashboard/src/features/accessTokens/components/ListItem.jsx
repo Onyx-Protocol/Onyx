@@ -8,7 +8,7 @@ export default class ListItem extends React.Component {
         <code>{item.id}</code>
       </td>
       <td>
-        <button className='btn btn-danger' onClick={this.props.delete.bind(this, item.id)}>
+        <button className='btn btn-danger' onClick={this.props.delete.bind(this, item)}>
           Delete
         </button>
       </td>

@@ -7,7 +7,18 @@ const type = 'transactionFeed'
 const dispatch = (dispatch) => ({
   ...BaseList.mapDispatchToProps(type)(dispatch),
   itemActions: {
-    delete: (id) => dispatch(actions.deleteItem(id))
+    delete: (feed) => {
+      let label = `ID ${feed.id}`
+      if (!!feed.alias && feed.alias.length > 0) {
+        label = `"${feed.alias}"`
+      }
+
+      dispatch(actions.deleteItem(
+        feed.id,
+        `Really delete transaction feed ${label}?`,
+        `Deleted transaction feed ${label}.`
+      ))
+    }
   },
 })
 
