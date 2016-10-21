@@ -117,13 +117,7 @@ func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) 
 	}
 
 	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
-	if ctx.Err() != nil { // check if it timed out
-		if resp != nil {
-			// There's a small chance the deadline expired
-			// *after* we successfully received a response header.
-			// In that case, we should be sure not to leak the conn.
-			resp.Body.Close()
-		}
+	if err != nil && ctx.Err() != nil { // check if it timed out
 		return nil, errors.Wrap(ctx.Err())
 	} else if err != nil {
 		return nil, errors.Wrap(err)
