@@ -143,11 +143,11 @@ class Index extends React.Component {
         </div>
 
         <div className={styles.choices}>
-          <div className={styles.choice_wrapper}>
-            {this.showNewFields() && configSubmit}
+          <div>
+            {this.showNewFields() && <span className={styles.submitWrapper}>{configSubmit}</span>}
           </div>
 
-          <div className={styles.choice_wrapper}>
+          <div>
             {this.showJoinFields() && <div className={styles.joinFields}>
               <TextField
                 title='Block Generator URL'
@@ -166,8 +166,8 @@ class Index extends React.Component {
             </div>}
           </div>
 
-          <div className={styles.choice_wrapper}>
-            {this.showTestNetFields() && configSubmit}
+          <div>
+            {this.showTestNetFields() && <span className={styles.submitWrapper}>{configSubmit}</span>}
           </div>
         </div>
       </form>

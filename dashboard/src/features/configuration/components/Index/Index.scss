@@ -15,10 +15,13 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
+
+  > div {
+    width: 30%;
+  }
 }
 
 .choice_wrapper {
-  width: 32%;
   display: flex;
 
   > label {
@@ -81,6 +84,11 @@ input[type=radio]:checked ~ .choice {
 .joinFields {
   margin-top: $gutter-size;
   width: 100%;
+}
+
+.submitWrapper {
+  display: block;
+  margin-top: 30px;
 }
 
 .submit {
