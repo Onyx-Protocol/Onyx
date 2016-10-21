@@ -25,7 +25,9 @@ This generates `ChainPackage/ChainCoreInstaller.wixobj`
 
 Next, run 
 
-`light -ext WixHttpExtension -ext WixUtilExtension ChainCoreInstaller.wixobj`
+```
+light -ext WixHttpExtension -ext WixUtilExtension ChainCoreInstaller.wixobj
+```
 
 to generate `ChainPackage/ChainCoreInstaller.msi`. 
 
@@ -44,7 +46,9 @@ candle Bundle.wxs \
 
 This generates `ChainBundle/Bundle.wixobj`. Next, run
 
-`light Bundle.wixobj -ext WixBalExtension`
+```
+light Bundle.wixobj -ext WixBalExtension
+```
 
 This generates Bundle.exe in your current working directory. 
 
@@ -61,8 +65,8 @@ The commands also assume that both the Wix Tools binaries and the signtool are i
 ```
 insignia -ib Bundle.exe -o engine.exe
 signtool sign -v -f [x.pfx] -p [password] engine.exe
-insignia -ab engine.exe Bundle.exe -o Bundle.exe -v
+insignia -ab engine.exe Bundle.exe -o Chain_Core_Latest.exe -v
 ```
 
 
-Clicking on Bundle.exe will install Chain Core as an application on your PC. 
+Clicking on `Chain_Core_Latest.exe` will install Chain Core as an application on your PC. 
