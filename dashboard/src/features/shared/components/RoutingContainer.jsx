@@ -3,7 +3,7 @@ import React from 'react'
 export default class RoutingContainer extends React.Component {
   render() {
     return (
-      <div className='section-container'>
+      <div className='flex-container'>
         {this.props.children}
       </div>
     )

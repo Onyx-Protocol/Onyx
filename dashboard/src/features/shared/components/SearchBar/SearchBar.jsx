@@ -19,7 +19,9 @@ class SearchBar extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     // Override text field with default query when provided
-    this.setState({query: nextProps.queryString})
+    if (nextProps.queryString != this.props.queryString) {
+      this.setState({query: nextProps.queryString})
+    }
   }
 
   filterKeydown(event) {

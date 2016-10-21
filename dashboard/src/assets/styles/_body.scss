@@ -71,3 +71,9 @@ p {
   line-height: 1.5;
   margin-bottom: $grid-gutter-width/2;
 }
+
+.flex-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}

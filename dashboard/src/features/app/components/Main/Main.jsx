@@ -44,7 +44,7 @@ class Main extends React.Component {
           </div>
         </div>
 
-        <div className={styles.content}>
+        <div className={`${styles.content} flex-container`}>
           {!this.props.connected && <div className={styles.connectionIssue}>
             There was an issue connecting to Chain Core. Please check your connection while dashboard attempts to reconnect.
           </div>}

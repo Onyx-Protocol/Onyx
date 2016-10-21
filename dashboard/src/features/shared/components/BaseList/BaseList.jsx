@@ -2,17 +2,21 @@ import React from 'react'
 import actions from 'actions'
 import { connect as reduxConnect } from 'react-redux'
 import { pluralize, humanize } from 'utility/string'
-import { PageContent, PageTitle, Pagination, SearchBar } from './'
+import { PageContent, PageTitle, Pagination, SearchBar } from '../'
+import EmptyList from './EmptyList'
 import { pageSize } from 'utility/environment'
 
 class ItemList extends React.Component {
   render() {
     const label = this.props.label || pluralize(humanize(this.props.type))
+    const objectName = label.slice(0,-1)
+    const newLabel = 'New ' + objectName
     const actions = [...(this.props.actions || [])]
-    if (!this.props.skipCreate) {
-      actions.push(<button key='showCreate' className='btn btn-link' onClick={this.props.showCreate}>
-        + New
-      </button>)
+    const newButton = <button key='showCreate' className='btn btn-primary' onClick={this.props.showCreate}>
+      + {newLabel}
+    </button>
+    if (!this.props.skipCreate && !this.props.showFirstTimeFlow) {
+      actions.push(newButton)
     }
 
     let header = <div>
@@ -21,7 +25,7 @@ class ItemList extends React.Component {
         actions={actions}
       />
 
-      {!this.props.skipQuery &&
+      {!this.props.skipQuery && !this.props.showFirstTimeFlow &&
         <SearchBar key='search-bar'
           {...this.props.searchState}
           pushList={this.props.pushList}
@@ -29,7 +33,23 @@ class ItemList extends React.Component {
         />}
     </div>
 
-    if (this.props.items.length > 0) {
+    if (this.props.noResults) {
+      return(
+        <div className='flex-container'>
+          {header}
+
+          <EmptyList
+            type={this.props.type}
+            objectName={objectName}
+            newButton={newButton}
+            showFirstTimeFlow={this.props.showFirstTimeFlow}
+            skipCreate={this.props.skipCreate}
+            loadedOnce={this.props.loadedOnce}
+            currentFilter={this.props.currentFilter} />
+
+        </div>
+      )
+    } else {
       let pagination = <Pagination
           currentPage={this.props.currentPage}
           currentFilter={this.props.currentFilter}
@@ -48,18 +68,6 @@ class ItemList extends React.Component {
             {Wrapper ? <Wrapper {...this.props.wrapperProps}>{items}</Wrapper> : items}
 
             {pagination}
-          </PageContent>
-        </div>
-       )
-    } else {
-      return(
-        <div>
-          {header}
-
-          <PageContent>
-            <div className='jumbotron text-center'>
-              <p>No results</p>
-            </div>
           </PageContent>
         </div>
       )
@@ -87,12 +95,14 @@ export const mapStateToProps = (type, itemComponent, additionalProps = {}) => (s
     items: items,
     isLastPage: isLastPage,
 
+    loadedOnce: Object.keys(state[type].queries).length > 0,
     type: type,
     listItemComponent: itemComponent,
-    searchState: {
-      // queryString: state[type].listView.query,
-      queryTime: currentQuery.queryTime,
-    },
+    searchState: { queryTime: currentQuery.queryTime },
+
+    noResults: items.length == 0,
+    showFirstTimeFlow: items.length == 0 && currentFilter == '',
+
     ...additionalProps
   }
 }

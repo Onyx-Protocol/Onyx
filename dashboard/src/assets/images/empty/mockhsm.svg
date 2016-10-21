@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="54px" height="69px" viewBox="0 0 54 69" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: sketchtool 40.2 (33826) - http://www.bohemiancoding.com/sketch -->
+    <title>616B4CA3-2F97-4EB6-BAF7-F57108445F83</title>
+    <desc>Created with sketchtool.</desc>
+    <defs>
+        <rect id="path-1" x="20.5949247" y="7.32712226" width="34.8784722" height="34.8784722" rx="17.4392361"></rect>
+        <mask id="mask-2" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="34.8784722" height="34.8784722" fill="white">
+            <use xlink:href="#path-1"></use>
+        </mask>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="mock-keys:-empty-state" transform="translate(-801.000000, -249.000000)">
+            <g id="Group-4" transform="translate(799.000000, 242.000000)">
+                <rect id="Rectangle" fill="#A3A9B8" transform="translate(15.170233, 67.954291) rotate(42.000000) translate(-15.170233, -67.954291) " x="5.58523331" y="65.8684677" width="19.1700001" height="4.17164664" rx="2.08582332"></rect>
+                <rect id="Rectangle" fill="#A3A9B8" transform="translate(20.361299, 61.466907) rotate(42.000000) translate(-20.361299, -61.466907) " x="12.4712989" y="59.4198433" width="15.7799997" height="4.09412769" rx="2.04706385"></rect>
+                <path d="M16.7098563,33.1768654 L18.4076844,71.7950862" id="Line" stroke="#A3A9B8" stroke-width="5" stroke-linecap="round" transform="translate(17.558770, 52.485976) rotate(42.000000) translate(-17.558770, -52.485976) "></path>
+                <use id="Rectangle-2" stroke="#A3A9B8" mask="url(#mask-2)" stroke-width="10" transform="translate(38.034161, 24.766358) rotate(42.000000) translate(-38.034161, -24.766358) " xlink:href="#path-1"></use>
+            </g>
+        </g>
+    </g>
+</svg>
