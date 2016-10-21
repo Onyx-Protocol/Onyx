@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"os"
 	"time"
@@ -43,9 +44,10 @@ func main() {
 	sig1, sig1Core := coreEnv("SIGNER1")
 	sig2, sig2Core := coreEnv("SIGNER2")
 
-	must(gen.Call(ctx, "/reset", nil, nil))
-	must(sig1.Call(ctx, "/reset", nil, nil))
-	must(sig2.Call(ctx, "/reset", nil, nil))
+	empty := json.RawMessage("{}")
+	must(gen.Call(ctx, "/reset", &empty, nil))
+	must(sig1.Call(ctx, "/reset", &empty, nil))
+	must(sig2.Call(ctx, "/reset", &empty, nil))
 
 	time.Sleep(time.Second) // give them time to restart
 
