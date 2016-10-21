@@ -5,8 +5,16 @@
     color: $highlight-inverse-color;
   }
 
-  .active {
+  .active,
+  .active:hover,
+  .active:focus {
     color: $highlight-default;
+  }
+
+  a:hover,
+  a:focus {
+    text-decoration: none;
+    color: lighten($highlight-inverse-color, 15%);
   }
 }
 

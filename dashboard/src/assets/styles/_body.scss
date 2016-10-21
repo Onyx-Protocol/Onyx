@@ -77,3 +77,20 @@ p {
   flex-direction: column;
   flex: 1;
 }
+
+.btn-primary {
+  border-color: $highlight-default;
+  height: 40px;
+  color: $text-inverse-color;
+  border-radius: $border-radius-standard;
+  background-color: $highlight-default;
+  padding: 0 20px;
+}
+.btn:hover,
+.btn:active,
+.btn:focus {
+  text-decoration: none;
+  color: $text-inverse-color;
+  background: $highlight-secondary;
+  border-color: $highlight-secondary;
+}
