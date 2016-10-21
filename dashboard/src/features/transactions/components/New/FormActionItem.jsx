@@ -2,8 +2,6 @@ import React from 'react'
 import {
   TextField,
   HiddenField,
-  NumberField,
-  SelectField,
   JsonField,
   ObjectSelectorField,
   Autocomplete
@@ -96,7 +94,7 @@ export default class ActionItem extends React.Component {
           <TextField title='Transaction ID' fieldProps={transaction_id} />}
 
         {visible.position &&
-          <NumberField title='Transaction Unspent Position' fieldProps={position} />}
+          <TextField title='Transaction Unspent Position' fieldProps={position} />}
 
         {visible.asset &&
           <ObjectSelectorField
@@ -109,7 +107,7 @@ export default class ActionItem extends React.Component {
           />}
 
         {visible.amount &&
-          <NumberField title='Amount' fieldProps={amount} />}
+          <TextField title='Amount' fieldProps={amount} />}
 
         {this.state.referenceDataOpen &&
           <JsonField title='Reference data' fieldProps={reference_data} />
