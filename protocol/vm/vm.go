@@ -8,7 +8,7 @@ import (
 	"chain/protocol/bc"
 )
 
-const initialRunLimit = 50000
+const initialRunLimit = 10000
 
 type virtualMachine struct {
 	program      []byte
