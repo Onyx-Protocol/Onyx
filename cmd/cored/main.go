@@ -151,6 +151,10 @@ func main() {
 		Handler:      secureheader.DefaultConfig,
 		ReadTimeout:  httpReadTimeout,
 		WriteTimeout: httpWriteTimeout,
+		// Disable HTTP/2 for now until the Go implementation is more stable.
+		// https://github.com/golang/go/issues/16450
+		// https://github.com/golang/go/issues/17071
+		TLSNextProto: map[string]func(*http.Server, *tls.Conn, http.Handler){},
 	}
 	if *tlsCrt != "" {
 		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
