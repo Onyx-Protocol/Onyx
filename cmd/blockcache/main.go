@@ -194,8 +194,8 @@ func (c *blockCache) after(ctx context.Context, height uint64) error {
 	go func() {
 		c.cond.L.Lock()
 		defer c.cond.L.Unlock()
-		for h := c.getHeight(); h < height; {
-			if height > h+slop { // due to reset
+		for c.height < height { // c.height is safe to access since lock is held
+			if height > c.height+slop { // due to reset
 				errch <- protocol.ErrTheDistantFuture
 				return
 			}
