@@ -135,6 +135,13 @@ func main() {
 	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
 	secureheader.DefaultConfig.Next = h
 
+	// Give the remainder of this function a second to reach the
+	// ListenAndServe call, then log a welcome message.
+	go func() {
+		time.Sleep(time.Second)
+		chainlog.Messagef(ctx, "Chain Core online and listening at %s", *listenAddr)
+	}()
+
 	server := &http.Server{
 		Addr:         *listenAddr,
 		Handler:      secureheader.DefaultConfig,
