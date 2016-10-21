@@ -42,10 +42,15 @@
 .settings {
   cursor: pointer;
   line-height: $title-height;
+  padding: 0 20px;
   position: absolute;
   right: 0;
   top: 0;
-  padding: 0 20px;
+
+  img {
+    width: 28px;
+    height: 28px;
+  }
 }
 
 .connectionIssue {

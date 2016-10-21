@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { connect } from 'react-redux'
 import { NavigationItem as CoreNavigationItem } from 'features/core/components'
 import actions from 'actions'
+import { navIcon } from '../Navigation/Navigation'
 import styles from './SecondaryNavigation.scss'
 
 class SecondaryNavigation extends React.Component {
@@ -25,25 +26,26 @@ class SecondaryNavigation extends React.Component {
 
           <li>
             <Link to='/core' activeClassName={styles.active}>
-              <CoreNavigationItem externalStyles={styles.glyphicon}/>
+              {navIcon('core', styles)}
+              Core
             </Link>
           </li>
           <li>
             <Link to='/access_tokens/client' activeClassName={styles.active}>
-              <span className={`glyphicon glyphicon-user ${styles.glyphicon}`} />
+              {navIcon('client', styles)}
               Client Tokens
             </Link>
           </li>
           <li>
             <Link to='/access_tokens/network' activeClassName={styles.active}>
-              <span className={`glyphicon glyphicon-globe ${styles.glyphicon}`} />
+            {navIcon('network', styles)}
               Network Tokens
             </Link>
           </li>
 
           {this.props.canLogOut && <li className={styles.logOut}>
             <a href='#' onClick={this.logOut}>
-              <span className={`glyphicon glyphicon-log-out ${styles.glyphicon}`} />
+              {navIcon('logout', styles)}
               Log Out
             </a>
           </li>}

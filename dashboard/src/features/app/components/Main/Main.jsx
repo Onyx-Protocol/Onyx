@@ -33,9 +33,9 @@ class Main extends React.Component {
               </Link>
 
               <span>
-                <span
-                  className={`glyphicon glyphicon-cog ${styles.settings}`}
-                  onClick={this.toggleDropdown} />
+                <span className={styles.settings} onClick={this.toggleDropdown}>
+                  <img src={require('assets/images/navigation/settings.png')}/>
+                </span>
                 {this.props.showDropwdown && <SecondaryNavigation />}
               </span>
             </div>

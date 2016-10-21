@@ -4,6 +4,21 @@ import { Link } from 'react-router'
 import styles from './Navigation.scss'
 import { humanizeDuration } from 'utility/time'
 
+export const navIcon = (name, styles) => {
+  let active = false
+  const icon = require(`assets/images/navigation/${name}.png`)
+
+  try {
+    active = require(`assets/images/navigation/${name}-active.png`)
+  } catch (err) { /* do nothing */ }
+  return (
+    <span className={styles.iconWrapper}>
+      <img className={styles.icon} src={icon}/>
+      {active && <img className={styles.activeIcon} src={active}/>}
+    </span>
+  )
+}
+
 class Navigation extends React.Component {
   render() {
     const {
@@ -25,10 +40,10 @@ class Navigation extends React.Component {
           {!!syncEstimates.snapshot && <li>Time remaining: {humanizeDuration(syncEstimates.snapshot)}</li>}
         </ul>
       } else if (replicationLag !== null && replicationLag < 3) { // synced up, or close to it
-          syncContent = <ul className={styles.navigation}>
-            <li className={styles.navigationTitle}>generator sync</li>
-            <li>Local core fully synced.</li>
-          </ul>
+        syncContent = <ul className={styles.navigation}>
+          <li className={styles.navigationTitle}>generator sync</li>
+          <li>Local core fully synced.</li>
+        </ul>
       } else { // Using RPC sync
         // TODO(jeffomatic): Show a warning if the snapshot did not succeed.
         syncContent = <ul className={styles.navigation}>
@@ -45,31 +60,31 @@ class Navigation extends React.Component {
           <li className={styles.navigationTitle}>core data</li>
           <li>
             <Link to='/transactions' activeClassName={styles.active}>
-              <span className={`glyphicon glyphicon-transfer ${styles.glyphicon}`} />
+              {navIcon('transaction', styles)}
               Transactions
             </Link>
           </li>
           <li>
             <Link to='/accounts' activeClassName={styles.active}>
-              <span className={`glyphicon glyphicon-user ${styles.glyphicon}`} />
+              {navIcon('account', styles)}
               Accounts
             </Link>
           </li>
           <li>
             <Link to='/assets' activeClassName={styles.active}>
-              <span className={`glyphicon glyphicon-file ${styles.glyphicon}`} />
+              {navIcon('asset', styles)}
               Assets
             </Link>
           </li>
           <li>
             <Link to='/balances' activeClassName={styles.active}>
-              <span className={`glyphicon glyphicon-stats ${styles.glyphicon}`} />
+              {navIcon('balance', styles)}
               Balances
             </Link>
           </li>
           <li>
             <Link to='/unspents' activeClassName={styles.active}>
-              <span className={`glyphicon glyphicon-th-list ${styles.glyphicon}`} />
+              {navIcon('unspent', styles)}
               Unspent Outputs
             </Link>
           </li>
@@ -79,13 +94,13 @@ class Navigation extends React.Component {
           <li className={styles.navigationTitle}>services</li>
           <li>
             <Link to='/mockhsms' activeClassName={styles.active}>
-              <span className={`glyphicon glyphicon-lock ${styles.glyphicon}`} />
+              {navIcon('mockhsm', styles)}
               Mock HSM
             </Link>
           </li>
           <li>
             <Link to='/transaction-feeds' activeClassName={styles.active}>
-              <span className={`glyphicon glyphicon-th-list ${styles.glyphicon}`} />
+              {navIcon('feed', styles)}
               Feeds
             </Link>
           </li>
@@ -94,13 +109,13 @@ class Navigation extends React.Component {
           <li className={styles.navigationTitle}>developers</li>
           <li>
             <a href='/docs' target='_blank'>
-              <span className={`glyphicon glyphicon-book ${styles.glyphicon}`} />
+              {navIcon('docs', styles)}
               Documentation
             </a>
           </li>
           <li>
             <a href='https://chain.com/support' target='_blank'>
-              <span className={`glyphicon glyphicon-earphone ${styles.glyphicon}`} />
+              {navIcon('help', styles)}
               Support
             </a>
           </li>

@@ -35,13 +35,6 @@
   padding: 3px 20px;
 }
 
-.glyphicon {
-  font-size: 10px;
-  padding-bottom: 5px;
-  padding-right: 12px;
-  vertical-align: middle;
-}
-
 .logOut {
   margin-top: 5px;
   border-top: 1px solid $border-color;
@@ -49,5 +42,24 @@
 
   a {
     padding-top: 5px;
+  }
+}
+
+.activeIcon {
+  display: none;
+}
+
+.active .activeIcon {
+  display: inline;
+}
+
+.active .icon {
+  display: none;
+}
+
+.iconWrapper {
+  img {
+    width: 28px;
+    height: 28px;
   }
 }
