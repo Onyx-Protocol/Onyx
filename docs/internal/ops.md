@@ -1,9 +1,117 @@
 # Operations
 
+* [Chain Core Testnet](#testnet)
+  * [Network Info](#network-info)
+  * [Updating the Generator](#updating-the-generator)
+  * [Updating the Signer](#updating-the-signer)
 * [Creating Networks](#creating-networks)
   * [Unauthenticated](#unauthenticated)
   * [Authenticated](#authenticated)
 * [Building a new release](#building-a-new-release)
+
+## Chain Core Testnet
+### Network Info
+The relevant information for joining the testnet can be found at `https://testnet-info.chain.com`.
+This includes the generator's url and network access token and the network's blockchain id.
+
+Information regarding the generator and signers, e.g. access tokens & block signing pubkeys,
+can be located within the config vars of our reset tool:
+```
+$ heroku config -a testnet-resetter
+```
+>**Note:** Testnet is reset every week. The access tokens and signing keys for the
+key participants do not change, but the blockchain id will need to be updated in the
+testnet info config variables.
+
+Retrieve the blockchain id:
+```
+$ BLOCKCHAIN_ID=`curl --silent --user $GENERATOR_CLIENT_TOKEN $GENERATOR_URL/info | jq -r .blockchain_id`
+```
+
+Update the blockchain id:
+```
+$ heroku config:set BLOCKCHAIN_ID=$BLOCKCHAIN_ID -a chain-testnet-info
+```
+
+### Updating the Generator
+The generator's code is deployed through the `deploy` command. `deploy`
+builds the `cored` binary from the caller's local environment and uses
+ssh to copy the binary to the address specified. This guide will walk
+you through the deployment steps.
+
+#### Set configuration variables
+```
+$ export CHAIN=path/to/chain/src
+$ export INSTANCE_ADDR=...
+```
+>Note: In addition to the above env vars, the command needs to authenticate
+its connection to the generator's host. Be sure to set your ssh private key
+as an environment variable (`SSH_PRIVATE_KEY`) or have ssh-agent configured
+on your machine. Use the same key authorized for other Chain ec2 instances.
+
+#### Checkout the latest code.
+
+#### Install command
+```
+$ cd $CHAIN
+$ go install ./cmd/deploy
+```
+
+#### Checkout code to deploy.
+
+#### Run command:
+```
+$ deploy
+```
+
+### Updating the Signers
+The signers for our testnet run our Chain Core DE docker image. A new version
+of the image must be built and uploaded to s3.
+
+#### Build the image
+```
+$ cd $CHAIN
+$ bin/build-ccde
+```
+
+#### Export the image
+```
+$ docker save chain:latest -o path/to/dest/latest.tar
+```
+
+#### Upload the image to s3
+```
+$ aws s3 cp path/to/latest.tar s3://chain-core/YYYYMMDD/latest.tar --acl public-read
+```
+
+Once the image has been uploaded to s3, each signer must follow the process
+below to update their core.
+
+#### Download latest Chain Core Docker image
+```
+$ curl -LO https://s3.amazonaws.com/chain-core/YYYYMMDD/latest.tar
+```
+
+#### Delete current container
+```
+$ docker stop chain
+$ docker rm chain
+```
+
+#### Load new image into Docker engine
+```
+$ docker load < latest.tar
+```
+
+#### Start new container
+```
+$ docker run -d -p 1999:1999 \
+    -v /var/lib/chain/postgresql/data:/var/lib/postgresql/data \
+    -v /var/log/chain/:/var/log/chain \
+    --name chain \
+    --restart always \
+    chain:latest
+```
 
 ## Creating Networks
 ### Unauthenticated
