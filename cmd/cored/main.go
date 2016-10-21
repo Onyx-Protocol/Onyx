@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/kr/secureheader"
@@ -79,6 +80,9 @@ func init() {
 	expvar.NewString("buildtag").Set(buildTag)
 	expvar.NewString("builddate").Set(buildDate)
 	expvar.NewString("buildcommit").Set(buildCommit)
+	expvar.NewString("runtime.GOOS").Set(runtime.GOOS)
+	expvar.NewString("runtime.GOARCH").Set(runtime.GOARCH)
+	expvar.NewString("runtime.Version").Set(runtime.Version())
 }
 
 func main() {
