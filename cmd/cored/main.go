@@ -39,6 +39,7 @@ import (
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
+	"chain/net/http/limit"
 	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -51,18 +52,19 @@ const (
 
 var (
 	// config vars
-	tlsCrt     = env.String("TLSCRT", "")
-	tlsKey     = env.String("TLSKEY", "")
-	listenAddr = env.String("LISTEN", ":1999")
-	dbURL      = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
-	splunkAddr = os.Getenv("SPLUNKADDR")
-	logFile    = os.Getenv("LOGFILE")
-	logSize    = env.Int("LOGSIZE", 5e6) // 5MB
-	logCount   = env.Int("LOGCOUNT", 9)
-	logQueries = env.Bool("LOG_QUERIES", false)
-	maxDBConns = env.Int("MAXDBCONNS", 10) // set to 100 in prod
-	reqsPerSec = env.Int("REQUESTS_PER_SECOND", 0)
-	indexTxs   = env.Bool("INDEX_TRANSACTIONS", true)
+	tlsCrt        = env.String("TLSCRT", "")
+	tlsKey        = env.String("TLSKEY", "")
+	listenAddr    = env.String("LISTEN", ":1999")
+	dbURL         = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
+	splunkAddr    = os.Getenv("SPLUNKADDR")
+	logFile       = os.Getenv("LOGFILE")
+	logSize       = env.Int("LOGSIZE", 5e6) // 5MB
+	logCount      = env.Int("LOGCOUNT", 9)
+	logQueries    = env.Bool("LOG_QUERIES", false)
+	maxDBConns    = env.Int("MAXDBCONNS", 10)           // set to 100 in prod
+	rpsToken      = env.Int("RATELIMIT_TOKEN", 0)       // reqs/sec
+	rpsRemoteAddr = env.Int("RATELIMIT_REMOTE_ADDR", 0) // reqs/sec
+	indexTxs      = env.Bool("INDEX_TRANSACTIONS", true)
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -244,18 +246,31 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	go core.CleanupSubmittedTxs(ctx, db)
 
 	h := &core.Handler{
-		Chain:        c,
-		Store:        store,
-		Assets:       assets,
-		Accounts:     accounts,
-		HSM:          hsm,
-		Indexer:      indexer,
-		Config:       config,
-		DB:           db,
-		Addr:         *listenAddr,
-		RequestLimit: *reqsPerSec,
-		Signer:       signBlockHandler,
-		AltAuth:      authLoopbackInDev,
+		Chain:    c,
+		Store:    store,
+		Assets:   assets,
+		Accounts: accounts,
+		HSM:      hsm,
+		Indexer:  indexer,
+		Config:   config,
+		DB:       db,
+		Addr:     *listenAddr,
+		Signer:   signBlockHandler,
+		AltAuth:  authLoopbackInDev,
+	}
+	if *rpsToken > 0 {
+		h.RequestLimits = append(h.RequestLimits, core.RequestLimit{
+			Key:       limit.AuthUserID,
+			Burst:     2 * (*rpsToken),
+			PerSecond: *rpsToken,
+		})
+	}
+	if *rpsRemoteAddr > 0 {
+		h.RequestLimits = append(h.RequestLimits, core.RequestLimit{
+			Key:       limit.RemoteAddrID,
+			Burst:     2 * (*rpsRemoteAddr),
+			PerSecond: *rpsRemoteAddr,
+		})
 	}
 
 	var (

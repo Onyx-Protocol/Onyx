@@ -47,18 +47,18 @@ var (
 
 // Handler serves the Chain HTTP API
 type Handler struct {
-	Chain        *protocol.Chain
-	Store        *txdb.Store
-	Assets       *asset.Registry
-	Accounts     *account.Manager
-	HSM          *mockhsm.HSM
-	Indexer      *query.Indexer
-	Config       *Config
-	DB           pg.DB
-	Addr         string
-	AltAuth      func(*http.Request) bool
-	Signer       func(context.Context, *bc.Block) ([]byte, error)
-	RequestLimit int
+	Chain         *protocol.Chain
+	Store         *txdb.Store
+	Assets        *asset.Registry
+	Accounts      *account.Manager
+	HSM           *mockhsm.HSM
+	Indexer       *query.Indexer
+	Config        *Config
+	DB            pg.DB
+	Addr          string
+	AltAuth       func(*http.Request) bool
+	Signer        func(context.Context, *bc.Block) ([]byte, error)
+	RequestLimits []RequestLimit
 
 	once           sync.Once
 	handler        http.Handler
@@ -66,6 +66,12 @@ type Handler struct {
 
 	healthMu     sync.Mutex
 	healthErrors map[string]interface{}
+}
+
+type RequestLimit struct {
+	Key       func(*http.Request) string
+	Burst     int
+	PerSecond int
 }
 
 func maxBytes(h http.Handler) http.Handler {
@@ -162,8 +168,8 @@ func (h *Handler) init() {
 	}).handler(latencyHandler)
 	handler = maxBytes(handler)
 	handler = webAssetsHandler(handler)
-	if h.RequestLimit > 0 {
-		handler = limit.Handler(handler, alwaysError(errRateLimited), h.RequestLimit, 100, limit.AuthUserID)
+	for _, l := range h.RequestLimits {
+		handler = limit.Handler(handler, alwaysError(errRateLimited), l.PerSecond, l.Burst, l.Key)
 	}
 	handler = gzip.Handler{Handler: handler}
 	handler = dbContextHandler(handler, h.DB)
