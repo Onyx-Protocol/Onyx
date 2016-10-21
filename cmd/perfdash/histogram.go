@@ -22,11 +22,8 @@ import (
 // TODO(kr): collect more fine-grain stats
 
 const (
-	// Use these to go to p99.99999
-	// pixel0Quantile = 0.5
-	// decayPerPixel  = 0.98
-	pixel0Quantile = 0.4
-	decayPerPixel  = 0.99
+	pixel0Quantile = 0.5
+	decayPerPixel  = 0.98
 )
 
 var (
