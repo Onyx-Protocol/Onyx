@@ -22,6 +22,11 @@
 
   pre {
     white-space: pre-wrap;
+    background: $background-content-color;
+    display: inline-block;
+    padding: 8px 12px;
+    color: $text-color;
+    line-height: 1.4;
   }
 }
 

@@ -14,7 +14,7 @@ export default class CreateModal extends React.Component {
       <div className={styles.tokenContainer}>
         <pre className={styles.pre}>{this.props.token}</pre>
         <div className={styles.copyButton}>
-          <button className='btn btn-info' onClick={this.copyClick.bind(this)}>Copy to clipboard</button>
+          <button className='btn btn-default btn-sm' onClick={this.copyClick.bind(this)}>Copy to clipboard</button>
         </div>
       </div>
     </div>
