@@ -7,7 +7,7 @@
     <artifactId>chain-sdk-java</artifactId>
     <version>1.0.0</version>
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>The Official Java SDK for Chain Core</description>
+    <description>The Official Java SDK for Chain Core Developer Edition</description>
     <url>https://github.com/chain/chain</url>
     <properties>
         <encoding>UTF-8</encoding>

@@ -3,6 +3,8 @@ package com.chain.http;
 import com.chain.exception.*;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.net.*;
 import java.util.Random;
@@ -31,6 +33,21 @@ public class Client {
   private URL url;
   private String accessToken;
   private OkHttpClient httpClient;
+  private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+  private static final Gson serializer = new Gson();
+  private static String version = "dev"; // updated in the static initializer
+
+  private static class BuildProperties {
+    public String version;
+  }
+
+  static {
+    InputStream in = Client.class.getClassLoader().getResourceAsStream("properties.json");
+    if (in != null) {
+      InputStreamReader inr = new InputStreamReader(in);
+      version = serializer.fromJson(inr, BuildProperties.class).version;
+    }
+  }
 
   /**
    * Create a new http Client object using the default development host URL.
@@ -203,15 +220,6 @@ public class Client {
   }
 
   /**
-   * Specifies the MIME type for HTTP requests.
-   */
-  public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-  /**
-   * Serializer object used to serialize/deserialize json requests/responses.
-   */
-  public static final Gson serializer = new Gson();
-
-  /**
    * Pins a public key to the HTTP client.
    * @param provider certificate provider
    * @param subjPubKeyInfoHash public key hash
@@ -289,8 +297,7 @@ public class Client {
     try {
       Request.Builder builder =
           new Request.Builder()
-              // TODO: include version string in User-Agent when available
-              .header("User-Agent", "chain-sdk-java")
+              .header("User-Agent", "chain-sdk-java/" + version)
               .url(this.createEndpoint(path))
               .method("POST", requestBody);
       if (hasAccessToken()) {
