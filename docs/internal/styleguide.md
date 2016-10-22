@@ -38,7 +38,7 @@ about “refactoring” into appendices to handle essential complexity.
 The issue of “padding” phrases recalls our stylistic conventions for
 naming symbols. Overly-long names, like wooly sentences, carry little
 or no additional information. The Unix library function is not
-waitforpid, but waitpid, which, in context,<sup id=a1>[1](#f1)</sup>
+waitforpid, but waitpid, which, in context,<sup id=a1><a href="#f1">1</a></sup>
 works better. It carries just as much information, and it is more
 legible.
 
@@ -84,7 +84,7 @@ These are all meant to help accomplish the ultimate goal up there.
 
 We have plenty of ideas for processes meant to further these goals.
 Each is a tradeoff. It helps in some ways, hurts in
-others.<sup id=a2>[2](#f2)</sup>
+others.<sup id=a2><a href="#f2">2</a></sup>
 
 Sometimes these goals are in tension—keeping our quality standards too
 high would mean we never ship anything—but often they are in harmony.
@@ -197,7 +197,7 @@ need it, any necessary background information, relevant future plans,
 a rationale for any technical tradeoffs or other choices made, what
 the alternatives were, or any other notes you think might be good to
 include. This can be empty if everything is obvious<sup
-id=a3>[3](#f3)</sup> just from looking at the diff, or it can be very
+id=a3><a href="#f3">3</a></sup> just from looking at the diff, or it can be very
 long. Hard wrap paragraphs to something reasonable (between 65-75
 columns). The rule of thumb is to describe it as you would to a
 coworker sitting next to you (so you should assume they know all the
@@ -217,15 +217,16 @@ patch after six months. It will be helpful to know that it’s part of a
 set, but that’s probably not the first question they’ll ask.
 
 More generally good advice on commit messages:
-- http://chris.beams.io/posts/git-commit/
-- https://robots.thoughtbot.com/5-useful-tips-for-a-better-commit-message
-- http://mislav.net/2014/02/hidden-documentation/
+
+* http://chris.beams.io/posts/git-commit/
+* https://robots.thoughtbot.com/5-useful-tips-for-a-better-commit-message
+* http://mislav.net/2014/02/hidden-documentation/
 
 Finally, list the reviewers and the pull requests or issues (can be
 several) where this patch was discussed. Use GitHub’s “closes #nnn”
 notation to tell GitHub to close the ones that need to be closed. This
 part generally needs to be added at the end of the review process, and
-it’s mostly automated by chainbot's /land command (see below).
+it’s mostly automated by chainbot’s `/land` command (see below).
 
 ### Trello
 
@@ -236,7 +237,7 @@ the tools will help remind you or do it for you.
 
 ### Testing
 
-*Write tests*. Especially regression tests when fixing a bug.
+**Write tests**. Especially regression tests when fixing a bug.
 
 (Pure refactoring often doesn’t need new tests. Deleting code rarely
 requires adding tests. But almost every other code change ought to be
@@ -273,7 +274,7 @@ irrelevant trivial refactorings?
 - Is this change really necessary at all?
 
 (You might be surprised how often the answer to that last one is
-“no”. 😉)
+“no”. )
 
 ### Iteration
 
@@ -282,7 +283,7 @@ on the pull request. This stands for “please take a(nother) look” and
 tells the world you are ready for some (more) review. You’re
 encouraged also to ask a specific person or two if you know they have
 relevant expertise in the subject matter or region of code you’re
-touching. Your reviewers will comment “👀” to indicate they’re
+touching. Your reviewers will comment “” to indicate they’re
 looking at it, they’ll add their comments and questions, and you’ll
 update your patch. When the reviewers are satisfied, they’ll write
 “LGTM”, for “looks good to me”.
@@ -407,15 +408,15 @@ but the principle of vendoring is part of our style guide.
 connecting words like “for” works in the context of strong
 conventions, plus the assumption that we’ll use the convention often
 enough to outweigh the cost of learning it.
-[↩️](#a1)
+<a href="#a1">↩</a>
 
 <b id=f2>2</b>: And the tradeoff differs depending on context: some
 processes work well only among certain others. It’s generally not
 possible to evaluate a potential process change in isolation. We must
 consider what other changes might need to go along with it so the
-whole system is closer to the goal. [↩️](#a2)
+whole system is closer to the goal. <a href="#a2">↩</a>
 
 <b id=f3>3</b>: Obviousness correlates with brevity, but of course
 there are plenty of exceptions. Consider a subtle one-line change in
 the heart of a distributed consensus algorithm, or a system-wide
-renaming of one widely-used symbol. [↩️](#a3)
+renaming of one widely-used symbol. <a href="#a3">↩</a>

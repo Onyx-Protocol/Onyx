@@ -55,7 +55,7 @@ SDKTARGET=chain-test
 	for file in *.java
 	do javac $file
 	done
-	cd $CHAIN/docs/examples/java
+	cd $CHAIN/docs/core/examples/java
 	for file in *.java
 	do javac $file
 	done
