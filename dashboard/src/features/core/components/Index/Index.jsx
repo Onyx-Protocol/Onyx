@@ -1,11 +1,10 @@
 import { connect } from 'react-redux'
 import { context } from 'utility/environment'
-import { getUpcomingReset, getNetworkMismatch } from 'features/configuration/reducers'
 import chain from 'chain'
 import { PageContent, ErrorBanner, PageTitle } from 'features/shared/components'
 import React from 'react'
 import styles from './Index.scss'
-import moment from 'moment-timezone'
+import testnetUtils from 'features/testnet/utils'
 
 class Index extends React.Component {
   constructor(props) {
@@ -37,6 +36,26 @@ class Index extends React.Component {
   }
 
   render() {
+    const {
+      onTestnet,
+      testnetBlockchainMismatch,
+      testnetNetworkMismatch,
+      testnetNextReset,
+    } = this.props
+
+    let generatorUrl
+    if (this.props.core.generator) {
+      generatorUrl = window.location.origin
+    } else if (onTestnet) {
+      generatorUrl = <span>
+        {this.props.core.generatorUrl}
+        &nbsp;
+        <span className='label label-primary'>Chain Testnet</span>
+      </span>
+    } else {
+      generatorUrl = this.props.core.generatorUrl
+    }
+
     let configBlock = (
       <div className={`${styles.left} ${styles.col}`}>
         <div>
@@ -60,8 +79,13 @@ class Index extends React.Component {
               </tr>
               <tr>
                 <td className={styles.row_label}>Generator URL:</td>
-                <td>{this.props.core.generator ? window.location.origin : this.props.core.generatorUrl}</td>
+                <td>{generatorUrl}</td>
               </tr>
+              {onTestnet && !!testnetNextReset &&
+                <tr>
+                  <td className={styles.row_label}>Next Testnet data reset:</td>
+                  <td>{testnetNextReset.toString()}</td>
+                </tr>}
               {!this.props.core.generator &&
                 <tr>
                   <td className={styles.row_label}>Generator Access Token:</td>
@@ -69,13 +93,26 @@ class Index extends React.Component {
                 </tr>}
               <tr>
                 <td className={styles.row_label}>Blockchain ID:</td>
-                <td><code className={styles.block_hash}>{this.props.core.blockchainID}</code></td>
+                <td><code className={styles.block_hash}>{this.props.core.blockchainId}</code></td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
     )
+
+    let testnetErr
+    if (onTestnet) {
+      if (testnetBlockchainMismatch) {
+        testnetErr = <span>
+          Chain Testnet has been reset. Please reset your core below.
+        </span>
+      } else if (testnetNetworkMismatch) {
+        testnetErr = <span>
+          This core is no longer compatible with Testnet. <a href='https://chain.com/docs' target='_blank'>Please upgrade Chain Core</a>.
+        </span>
+      }
+    }
 
     let networkStatusBlock = (
       <div className={`${styles.right} ${styles.col}`}>
@@ -101,18 +138,7 @@ class Index extends React.Component {
             </tbody>
           </table>
 
-          {this.props.onTestNet &&
-            <div>
-              {this.props.networkMismatchError && <ErrorBanner
-                title='Network RPC Version'
-                message='This core is not compatible with the Testnet generator. Please update to the latest official release of Chain Core.'
-                />}
-
-              {this.props.upcomingResetError && <ErrorBanner
-                title='Network Reset'
-                message={`The Testnet will be reset at ${this.props.resetTime}`}
-                />}
-            </div>}
+          {testnetErr && <ErrorBanner title='Chain Testnet error' message={testnetErr} />}
         </div>
       </div>
     )
@@ -158,7 +184,7 @@ class Index extends React.Component {
         <PageContent>
           <div className={`${styles.top} ${styles.flex}`}>
             {configBlock}
-            {!this.props.core.generator && networkStatusBlock}
+            {networkStatusBlock}
           </div>
 
           {resetDataBlock}
@@ -168,14 +194,12 @@ class Index extends React.Component {
   }
 }
 
-// Container
-
 const mapStateToProps = (state) => ({
   core: state.core,
-  onTestNet: state.core.onTestNet,
-  upcomingResetError: getUpcomingReset(state),
-  resetTime: moment(state.configuration.testNetResetTime).tz('UTC').format('MMMM Do YYYY, h:mm:ss z'),
-  networkMismatchError: getNetworkMismatch(state),
+  onTestnet: state.core.onTestnet,
+  testnetBlockchainMismatch: testnetUtils.isBlockchainMismatch(state),
+  testnetNetworkMismatch: testnetUtils.isNetworkMismatch(state),
+  testnetNextReset: state.testnet.nextReset,
 })
 
 const mapDispatchToProps = () => ({})

@@ -1,9 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router'
 import { connect } from 'react-redux'
-import { NavigationItem as CoreNavigationItem } from 'features/core/components'
 import actions from 'actions'
-import { navIcon } from '../Navigation/Navigation'
+import { navIcon } from '../../utils'
 import styles from './SecondaryNavigation.scss'
 
 class SecondaryNavigation extends React.Component {

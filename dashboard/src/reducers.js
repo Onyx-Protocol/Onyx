@@ -6,9 +6,9 @@ import { reducers as account } from 'features/accounts'
 import { reducers as app } from 'features/app'
 import { reducers as asset } from 'features/assets'
 import { reducers as balance } from 'features/balances'
-import { reducers as configuration } from 'features/configuration'
 import { reducers as core } from 'features/core'
 import { reducers as mockhsm } from 'features/mockhsm'
+import { reducers as testnet } from 'features/testnet'
 import { reducers as transaction } from 'features/transactions'
 import { reducers as transactionFeed } from 'features/transactionFeeds'
 import { reducers as unspent } from 'features/unspents'
@@ -21,7 +21,7 @@ const makeRootReducer = () => (state, action) => {
       routing: state.routing,
     }
 
-    if (state.core.blockchainID == (action.param.blockchain_id || 0)) {
+    if (state.core.blockchainId == (action.param.blockchain_id || 0)) {
       newState.core = state.core
     }
 
@@ -34,11 +34,11 @@ const makeRootReducer = () => (state, action) => {
     app,
     asset,
     balance,
-    configuration,
     core,
     form,
     mockhsm,
     routing,
+    testnet,
     transaction,
     transactionFeed,
     unspent,

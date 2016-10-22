@@ -2,7 +2,7 @@
  * Calculates the average change per second of a variable sampled at various times.
  */
 export class DeltaSampler {
-  constructor({sampleTtl = 60*1000, maxSamples = 60} = {}) {
+  constructor({sampleTtl = 60*1000, maxSamples = 30} = {}) {
     this.sampleTtl = sampleTtl
     this.maxSamples = maxSamples
     this.samples = []

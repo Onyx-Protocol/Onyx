@@ -4,6 +4,7 @@ import actions from 'actions'
 import { Main, Config, Login, Modal } from './'
 
 const CORE_POLLING_TIME = 2 * 1000
+const TESTNET_INFO_POLLING_TIME = 30 * 1000
 
 class Container extends React.Component {
   constructor(props) {
@@ -32,26 +33,19 @@ class Container extends React.Component {
   }
 
   componentWillMount() {
-    const checkInfo = () => {
-      if (this.props.onTestNet) this.props.fetchTestNetInfo()
-      return this.props.fetchInfo()
+    const checkTestnet = () => {
+      if (this.props.onTestnet) this.props.fetchTestnetInfo()
     }
 
-    checkInfo().then(() => {
+    this.props.fetchInfo().then(() => {
+      checkTestnet()
+
       this.setState({loadedInfo: true})
       this.redirectRoot(this.props.authOk, this.props.configured, this.props.location)
     })
 
-    const pollInfo = () => {
-      // TODO(jeffomatic) - dynamically adjust polling time based on lag?
-      const interval = CORE_POLLING_TIME
-      setTimeout(() => {
-        checkInfo()
-        pollInfo()
-      }, interval)
-    }
-
-    pollInfo()
+    setInterval(() => this.props.fetchInfo(), CORE_POLLING_TIME)
+    setInterval(() => checkTestnet(), TESTNET_INFO_POLLING_TIME)
   }
 
   componentWillReceiveProps(nextProps) {
@@ -85,11 +79,11 @@ export default connect(
     buildCommit: state.core.buildCommit,
     buildDate: state.core.buildDate,
     authOk: !state.core.requireClientToken || state.core.validToken,
-    onTestNet: state.core.onTestNet,
+    onTestnet: state.core.onTestnet,
   }),
   (dispatch) => ({
     fetchInfo: options => dispatch(actions.core.fetchCoreInfo(options)),
-    fetchTestNetInfo: () => dispatch(actions.configuration.fetchTestNetInfo()),
+    fetchTestnetInfo: () => dispatch(actions.testnet.fetchTestnetInfo()),
     showRoot: () => dispatch(actions.app.showRoot),
     showConfiguration: () => dispatch(actions.app.showConfiguration()),
     clearSession: () => dispatch(actions.core.clearSession()),

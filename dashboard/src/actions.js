@@ -6,6 +6,7 @@ import { actions as balance } from 'features/balances'
 import { actions as configuration } from 'features/configuration'
 import { actions as core } from 'features/core'
 import { actions as mockhsm } from 'features/mockhsm'
+import { actions as testnet } from 'features/testnet'
 import { actions as transaction } from 'features/transactions'
 import { actions as transactionFeed } from 'features/transactionFeeds'
 import { actions as unspent } from 'features/unspents'
@@ -19,6 +20,7 @@ const actions = {
   configuration,
   core,
   mockhsm,
+  testnet,
   transaction,
   transactionFeed,
   unspent,

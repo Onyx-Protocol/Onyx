@@ -28,5 +28,5 @@ export const history = useRouterHistory(createHistory)({
 
 export const pageSize = 25
 
-export const testNetInfoUrl = process.env.TESTNET_INFO_URL || 'https://testnet-info.chain.com'
-export const testNetUrl = process.env.TESTNET_GENERATOR_URL || 'https://testnet.chain.com'
+export const testnetInfoUrl = process.env.TESTNET_INFO_URL || 'https://testnet-info.chain.com'
+export const testnetUrl = process.env.TESTNET_GENERATOR_URL || 'https://testnet.chain.com'

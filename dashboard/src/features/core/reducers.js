@@ -1,5 +1,5 @@
 import { combineReducers } from 'redux'
-import { testNetUrl } from 'utility/environment'
+import { testnetUrl } from 'utility/environment'
 import moment from 'moment'
 import { DeltaSampler } from 'utility/time'
 
@@ -58,7 +58,7 @@ export const generatorUrl = (state, action) =>
   coreConfigReducer('generator_url', state, false, action)
 export const generatorAccessToken = (state, action) =>
   coreConfigReducer('generator_access_token', state, false, action)
-export const blockchainID = (state, action) =>
+export const blockchainId = (state, action) =>
   coreConfigReducer('blockchain_id', state, 0, action)
 export const networkRpcVersion = (state, action) =>
   coreConfigReducer('network_rpc_version', state, 0, action)
@@ -87,7 +87,7 @@ let syncSamplers = null
 const resetSyncSamplers = () => {
   syncSamplers = {
     snapshot: new DeltaSampler({sampleTtl: 10 * 1000}),
-    replicaLag: new DeltaSampler({sampleTtl: 10 * 1000}),
+    replicationLag: new DeltaSampler({sampleTtl: 10 * 1000}),
   }
 }
 
@@ -112,14 +112,13 @@ export const syncEstimates = (state = {}, action) => {
         if (speed != 0) {
           estimates.snapshot = (snapshot.size - snapshot.downloaded) / speed
         }
-      } else {
-        const replicaLag = generator_block_height - block_height
-        const speed = syncSamplers.replicaLag.sample(replicaLag)
-
+      } else if (generator_block_height > 0) {
+        const replicationLag = generator_block_height - block_height
+        const speed = syncSamplers.replicationLag.sample(replicationLag)
         if (speed != 0) {
-          const duration = -1 * replicaLag / speed
+          const duration = -1 * replicationLag / speed
           if (duration > 0) {
-            estimates.replicaLag = duration
+            estimates.replicationLag = duration
           }
         }
       }
@@ -156,9 +155,9 @@ export const replicationLagClass = (state = null, action) => {
   return state
 }
 
-export const onTestNet = (state = false, action) => {
+export const onTestnet = (state = false, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    return (action.param.generator_url || '').indexOf(testNetUrl) >= 0
+    return (action.param.generator_url || '').indexOf(testnetUrl) >= 0
   }
 
   return state
@@ -204,7 +203,7 @@ const snapshot = (state = null, action) => {
 }
 
 export default combineReducers({
-  blockchainID,
+  blockchainId,
   blockHeight,
   buildCommit,
   buildDate,
@@ -218,7 +217,7 @@ export default combineReducers({
   generatorBlockHeight,
   generatorUrl,
   networkRpcVersion,
-  onTestNet,
+  onTestnet,
   production,
   replicationLag,
   replicationLagClass,

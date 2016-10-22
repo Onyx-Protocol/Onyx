@@ -22,7 +22,7 @@ class Index extends React.Component {
     return this.props.fields.type.value === 'join'
   }
 
-  showTestNetFields() {
+  showTestnetFields() {
     return this.props.fields.type.value === 'testnet'
   }
 
@@ -167,7 +167,9 @@ class Index extends React.Component {
           </div>
 
           <div>
-            {this.showTestNetFields() && <span className={styles.submitWrapper}>{configSubmit}</span>}
+            {this.showTestnetFields() &&
+              <span className={styles.submitWrapper}>{configSubmit}</span>
+            }
           </div>
         </div>
       </form>
@@ -175,12 +177,7 @@ class Index extends React.Component {
   }
 }
 
-const mapStateToProps = (state) => ({
-  testNetInfo: state.configuration.testNetInfo
-})
-
 const mapDispatchToProps = (dispatch) => ({
-  fetchTestNetInfo: () => dispatch(actions.configuration.fetchTestNetInfo()),
   submitForm: (data) => dispatch(actions.configuration.submitConfiguration(data))
 })
 
@@ -196,6 +193,6 @@ const config = {
 
 export default reduxForm(
   config,
-  mapStateToProps,
+  () => {},
   mapDispatchToProps
 )(Index)
