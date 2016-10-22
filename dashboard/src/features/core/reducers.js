@@ -13,6 +13,13 @@ const coreConfigReducer = (key, state, defaultState, action) => {
   return state || defaultState
 }
 
+const configKnown = (state = false, action) => {
+  if (action.type == 'UPDATE_CORE_INFO') {
+    return true
+  }
+  return state
+}
+
 export const configured = (state, action) =>
   coreConfigReducer('is_configured', state, false, action)
 export const configuredAt = (state, action) => {
@@ -209,6 +216,7 @@ export default combineReducers({
   buildDate,
   connected,
   clientToken,
+  configKnown,
   configured,
   configuredAt,
   coreType,

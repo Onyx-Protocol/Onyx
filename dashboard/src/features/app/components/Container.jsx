@@ -9,16 +9,18 @@ const TESTNET_INFO_POLLING_TIME = 30 * 1000
 class Container extends React.Component {
   constructor(props) {
     super(props)
-
-    this.state = {
-      loadedInfo: false
-    }
-
     this.redirectRoot = this.redirectRoot.bind(this)
   }
 
-  redirectRoot(authOk, configured, location) {
-    if (!authOk) {
+  redirectRoot(props) {
+    const {
+      authOk,
+      configKnown,
+      configured,
+      location
+    } = props
+
+    if (!authOk || !configKnown) {
       return
     }
 
@@ -39,9 +41,7 @@ class Container extends React.Component {
 
     this.props.fetchInfo().then(() => {
       checkTestnet()
-
-      this.setState({loadedInfo: true})
-      this.redirectRoot(this.props.authOk, this.props.configured, this.props.location)
+      this.redirectRoot(this.props)
     })
 
     setInterval(() => this.props.fetchInfo(), CORE_POLLING_TIME)
@@ -50,35 +50,40 @@ class Container extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.authOk != this.props.authOk ||
+        nextProps.configKnown != this.props.configKnown ||
         nextProps.configured != this.props.configured ||
         nextProps.location.pathname != this.props.location.pathname) {
-      this.redirectRoot(nextProps.authOk, nextProps.configured, nextProps.location)
+      this.redirectRoot(nextProps)
     }
   }
 
   render() {
-    if (!this.state.loadedInfo) return(<div>Loading...</div>)
+    let layout
 
-    let layout = <Main>{this.props.children}</Main>
     if (!this.props.authOk) {
       layout = <Login />
+    } else if (!this.props.configKnown) {
+      return <div>Loading core configuration...</div>
     } else if (!this.props.configured) {
       layout = <Config>{this.props.children}</Config>
+    } else {
+      layout = <Main>{this.props.children}</Main>
     }
 
-    return(<div>
+    return <div>
       {layout}
       <Modal />
-    </div>)
+    </div>
   }
 }
 
 export default connect(
   (state) => ({
+    authOk: !state.core.requireClientToken || state.core.validToken,
+    configKnown: state.core.configKnown,
     configured: state.core.configured,
     buildCommit: state.core.buildCommit,
     buildDate: state.core.buildDate,
-    authOk: !state.core.requireClientToken || state.core.validToken,
     onTestnet: state.core.onTestnet,
   }),
   (dispatch) => ({
