@@ -166,7 +166,7 @@ class Index extends React.Component {
               />}
 
               <button
-                className='btn btn-danger btn-lg'
+                className='btn btn-danger'
                 onClick={this.deleteClick}
                 disabled={this.state.deleteDisabled}
               >
@@ -178,7 +178,7 @@ class Index extends React.Component {
     )
 
     return (
-      <div>
+      <div className={`flex-container ${styles.mainContainer}`}>
         <PageTitle title='Core' />
 
         <PageContent>
