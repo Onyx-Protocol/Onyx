@@ -8,6 +8,7 @@
   * [Unauthenticated](#unauthenticated)
   * [Authenticated](#authenticated)
 * [Building a new release](#building-a-new-release)
+* [Monitoring Performance](#monitoring-performance)
 
 ## Chain Core Testnet
 ### Network Info
@@ -289,3 +290,22 @@ $ curl --silent --user $SIGNER2_CLIENT_TOKEN $SIGNER2_PUBKEY/configure --data '{
     - TODO: Edit `bin/upload-docs` command to include a production target. Currently only handles staging.
 
 TODO: Determine whether we should also use GitHub's releases feature.
+
+## Monitoring Performance
+
+We have two performance dashboards, Librato and Perfdash.
+They're both web apps, so visit the link to view each one.
+
+Perfdash polls /debug/vars on a running Chain Core and
+visualizes the returned HDR histograms and a few other metrics.
+
+The histogram graph has quantile on the horizontal axis
+and latency (duration) on the vertical. You can look up
+the 99th percentile (or any other percentile) latency as
+the vertical position of the curve at the p99 tick.
+
+The histograms are recorded in 1-minute "buckets", and
+each bucket is plotted on top of the others. The newest
+complete bucket is solid blue, and older bucket lines
+are drawn with more transparency. The current bucket
+(which is still collecting data) is plotted in magenta.
