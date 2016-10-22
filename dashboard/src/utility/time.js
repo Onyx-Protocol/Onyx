@@ -1,7 +1,7 @@
 /**
  * Calculates the average change per second of a variable sampled at various times.
  */
- export class DeltaSampler {
+export class DeltaSampler {
   constructor({sampleTtl = 60*1000, maxSamples = 60} = {}) {
     this.sampleTtl = sampleTtl
     this.maxSamples = maxSamples
@@ -27,7 +27,6 @@
    */
   average() {
     const cutoff = Date.now() - this.sampleTtl
-    const deltas = []
 
     let earliest = null
     let latest = null
@@ -48,36 +47,54 @@
 }
 
 export const humanizeDuration = seconds => {
-  let big, little, bigUnit, littleUnit
-  const min = 60
+  if (seconds == 0) {
+    return '0s'
+  }
+
+  const sec = 1
+  const min = 60 * sec
   const hr = 60 * min
   const day = 24 * hr
 
-  if (seconds > day) {
-    big = seconds / day
-    little = (seconds % day) / hr
-    bigUnit = 'd'
-    littleUnit = 'h'
-  } else if (seconds > hr) {
-    big = seconds / hr
-    little = (seconds % hr) / min
-    bigUnit = 'h'
-    littleUnit = 'm'
-  } else if (seconds > min) {
-    big = seconds / min
-    little = seconds % min
-    bigUnit = 'm'
-    littleUnit = 's'
+  let bigUnit, littleUnit, bigLabel, littleLabel
+
+  if (seconds >= day) {
+    bigUnit = day
+    littleUnit = hr
+    bigLabel = 'd'
+    littleLabel = 'h'
+  } else if (seconds >= hr) {
+    bigUnit = hr
+    littleUnit = min
+    bigLabel = 'h'
+    littleLabel = 'm'
   } else {
-    return `${Math.round(seconds)}s`
+    bigUnit = min
+    littleUnit = sec
+    bigLabel = 'm'
+    littleLabel = 's'
   }
 
-  big = Math.floor(big)
-  little = Math.round(little)
+  const bigVal = Math.floor(seconds / bigUnit)
+  const littleVal = Math.round((seconds % bigUnit) / littleUnit)
 
-  if (big > 9 || little == 0) {
-    return `${big}${bigUnit}`
+  // Rounding may give us little-unit vals of 60s, 24h, etc.
+  if (littleVal == bigUnit / littleUnit) {
+    return `${bigVal + 1}${bigLabel}`
   }
 
-  return `${big}${bigUnit} ${little}${littleUnit}`
+  const big = `${bigVal}${bigLabel}`
+  const little = `${littleVal}${littleLabel}`
+
+  // Don't show little unit if the big unit is in double digits
+  if (bigVal > 9 || littleVal == 0) {
+    return big
+  }
+
+  // For values that round to under 60 seconds
+  if (bigVal == 0) {
+    return little
+  }
+
+  return `${big} ${little}`
 }
