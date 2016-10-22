@@ -16,9 +16,8 @@ import (
 )
 
 var (
-	srcdir       = os.Getenv("CHAIN")
-	instanceAddr = os.Getenv("INSTANCE_ADDR")
-	sshConfig    = &ssh.ClientConfig{
+	srcdir    = os.Getenv("CHAIN")
+	sshConfig = &ssh.ClientConfig{
 		User: "ubuntu",
 		Auth: sshAuthMethods(
 			os.Getenv("SSH_AUTH_SOCK"),
@@ -27,10 +26,19 @@ var (
 	}
 )
 
-const (
-	stopsh  = `sudo stop chain`
-	startsh = `sudo start chain`
-)
+const usage = `
+Command deploy builds and deploys a Chain cmd
+to a remote, ubuntu vm. It requires the cmd
+name and the ip addr of the target vm. It assumes
+the name of the upstart service matches the name
+of the cmd. It will attempt to stop the service
+before deployment, and restart once the code is
+deployed. It uses ssh and also requires either
+your private key to be stored in the environment
+as SSH_PRIVATE_KEY or ssh-agent to be running.
+
+usage: deploy cmd addr
+`
 
 func sshAuthMethods(agentSock, privKeyPEM string) (m []ssh.AuthMethod) {
 	conn, sockErr := net.Dial("unix", agentSock)
@@ -50,16 +58,22 @@ func sshAuthMethods(agentSock, privKeyPEM string) (m []ssh.AuthMethod) {
 }
 
 func main() {
-	coredBin := mustBuildCored()
-	might(runOn(instanceAddr, stopsh))
-	log.Println("uploading cored binary")
-	must(scpPut(instanceAddr, coredBin, "cored", 0755))
-	must(runOn(instanceAddr, startsh))
+	if len(os.Args) != 3 {
+		fmt.Println(usage)
+		os.Exit(0)
+	}
+	cmd := os.Args[1]
+	addr := os.Args[2]
+	bin := mustBuild(cmd)
+	might(runOn(addr, "sudo stop "+cmd))
+	must(scpPut(addr, bin, cmd, 0755))
+	must(runOn(addr, fmt.Sprintf("sudo mv %s /usr/bin/%s", cmd, cmd)))
+	must(runOn(addr, "sudo start "+cmd))
 	log.Println("SUCCESS")
 }
 
-func mustBuildCored() []byte {
-	log.Println("building cored")
+func mustBuild(filename string) []byte {
+	log.Println("building", filename)
 
 	env := []string{
 		"GOOS=linux",
@@ -77,13 +91,13 @@ func mustBuildCored() []byte {
 		"-tags", "insecure_disable_https_redirect",
 		"-ldflags", "-X main.buildTag=dev -X main.buildDate="+date+" -X main.buildCommit="+string(commit),
 		"-o", "/dev/stdout",
-		"chain/cmd/cored",
+		"chain/cmd/"+filename,
 	)
 	cmd.Env = mergeEnvLists(env, os.Environ())
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	must(err)
-	log.Printf("cored executable: %d bytes", len(out))
+	log.Printf("%s executable: %d bytes", filename, len(out))
 	return out
 }
 
