@@ -2,10 +2,21 @@
   display: flex;
 }
 
+.alert {
+  padding: 15px;
+  border-bottom: 1px solid transparent;
+}
+
 .success {
   background-color: $success-background;
   border-color: $success-border;
   color: $success;
+}
+
+.danger {
+  background-color: $highlight-danger-background;
+  border-color: $highlight-danger-border;
+  color: $highlight-danger;
 }
 
 .content {
