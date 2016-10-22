@@ -31,7 +31,7 @@ class Sync extends React.Component {
         }
 
         <li>{snapshot.height} blocks</li>
-        <li>{Math.round(downloaded)}% downloaded</li>
+        {!!downloaded && <li>{Math.round(downloaded)}% downloaded</li>}
         {!!syncEstimates.snapshot && <li>Time remaining: {humanizeDuration(syncEstimates.snapshot)}</li>}
       </ul>
     }
