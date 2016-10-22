@@ -1,3 +1,5 @@
+// Package txbuilder builds a Chain Protocol transaction from
+// a list of actions.
 package txbuilder
 
 import (

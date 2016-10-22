@@ -1,3 +1,4 @@
+// Package txfeed implements Chain Core's transaction feeds.
 package txfeed
 
 import (

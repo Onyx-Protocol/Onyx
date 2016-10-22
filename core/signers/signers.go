@@ -1,3 +1,4 @@
+// Package signers associates signers and their corresponding keys.
 package signers
 
 import (

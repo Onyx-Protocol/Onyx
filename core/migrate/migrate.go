@@ -1,3 +1,4 @@
+// Package migrate implements database migration for Chain Core.
 package migrate
 
 import (

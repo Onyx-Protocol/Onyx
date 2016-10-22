@@ -1,3 +1,4 @@
+// Package limit provides a rate limiting HTTP handler.
 package limit
 
 import (

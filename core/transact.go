@@ -139,6 +139,7 @@ func recordSubmittedTx(ctx context.Context, txHash bc.Hash, currentHeight uint64
 // CleanupSubmittedTxs will periodically delete records of submitted txs
 // older than a day. This function blocks and only exits when its context
 // is cancelled.
+//
 // TODO(jackson): unexport this and start it in a goroutine in a core.New()
 // function?
 func CleanupSubmittedTxs(ctx context.Context, db pg.DB) {

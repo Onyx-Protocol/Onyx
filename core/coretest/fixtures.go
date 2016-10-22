@@ -1,3 +1,4 @@
+// Package coretest provides utilities for testing Chain Core.
 package coretest
 
 import (

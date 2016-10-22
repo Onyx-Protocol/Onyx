@@ -1,3 +1,4 @@
+// Package blocksigner implements remote block signing.
 package blocksigner
 
 import (

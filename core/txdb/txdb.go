@@ -1,3 +1,5 @@
+// Package txdb provides storage for Chain Protocol blockchain
+// data structures.
 package txdb
 
 import (

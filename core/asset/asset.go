@@ -1,3 +1,5 @@
+// Package asset maintains a registry of all assets on a
+// blockchain.
 package asset
 
 import (

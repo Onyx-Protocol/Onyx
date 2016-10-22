@@ -1,3 +1,5 @@
+// Package fetch implements block replication for participant
+// Chain Cores.
 package fetch
 
 import (

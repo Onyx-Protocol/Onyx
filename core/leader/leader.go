@@ -1,3 +1,5 @@
+// Package leader implements leader election between cored processes
+// of a Chain Core.
 package leader
 
 import (

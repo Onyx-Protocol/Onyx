@@ -44,7 +44,7 @@ func ReadVarint63(r io.Reader) (uint64, int, error) {
 	if val > math.MaxInt64 {
 		return 0, br.n, ErrRange
 	}
-	return uint64(val), br.n, nil
+	return val, br.n, nil
 }
 
 func ReadVarstr31(r io.Reader) ([]byte, int, error) {

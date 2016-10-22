@@ -1,3 +1,7 @@
+// Package generator implements the Chain Core generator.
+//
+// A Chain Core configured as a generator produces new blocks
+// on an interval.
 package generator
 
 import (

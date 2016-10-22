@@ -1,3 +1,4 @@
+// Package rpc implements Chain Core's RPC client.
 package rpc
 
 import (

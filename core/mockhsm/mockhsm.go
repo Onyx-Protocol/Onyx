@@ -1,3 +1,5 @@
+// Package mockhsm provides a mock HSM for development environments.
+// It is unsafe for use in production.
 package mockhsm
 
 import (

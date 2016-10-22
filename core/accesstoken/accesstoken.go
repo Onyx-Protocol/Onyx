@@ -1,3 +1,5 @@
+// Package accesstoken provides storage and validation of Chain Core
+// credentials.
 package accesstoken
 
 import (

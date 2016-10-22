@@ -1,3 +1,4 @@
+// Package utxodb implements UTXO selection and reservation.
 package utxodb
 
 import (

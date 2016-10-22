@@ -1,3 +1,4 @@
+// Package account stores and tracks accounts within a Chain Core.
 package account
 
 import (
