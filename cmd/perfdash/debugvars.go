@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -33,21 +34,29 @@ func getDebugVars(i int) *debugVars {
 	return debugVarData[i]
 }
 
-func fetchDebugVars(baseURL, token string) (int, *debugVars, error) {
+var errAuth = errors.New("need auth")
+
+func fetchDebugVars(baseURL, user, pass string) (int, *debugVars, error) {
 	v := new(debugVars)
 
 	req, err := http.NewRequest("GET", strings.TrimRight(baseURL, "/")+"/debug/vars", nil)
 	if err != nil {
 		return 0, nil, err
 	}
-	if i := strings.Index(token, ":"); i >= 0 {
-		req.SetBasicAuth(token[:i], token[i+1:])
+	if user != "" && pass != "" {
+		req.SetBasicAuth(user, pass)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return 0, nil, err
 	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 401 {
+		return 0, nil, errAuth
+	}
+
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return 0, nil, err
