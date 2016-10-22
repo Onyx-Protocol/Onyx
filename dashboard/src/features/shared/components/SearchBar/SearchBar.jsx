@@ -35,13 +35,6 @@ class SearchBar extends React.Component {
     let cursorPosition = input.selectionStart
 
     switch (key) {
-      case '=':
-        value = value.substr(0, cursorPosition)
-          + "''"
-          + value.substr(cursorPosition)
-
-        cursorPosition += 1
-        break
       case '"':
         value = value.substr(0, value.length - 1) + "'"
         break
