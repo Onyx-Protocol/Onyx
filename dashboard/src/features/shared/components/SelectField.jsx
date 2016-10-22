@@ -1,4 +1,5 @@
 import React from 'react'
+import FieldLabel from './FieldLabel/FieldLabel'
 
 class SelectField extends React.Component {
   render() {
@@ -9,7 +10,7 @@ class SelectField extends React.Component {
 
     return(
       <div className='form-group'>
-        {this.props.title && <label>{this.props.title}</label>}
+        {this.props.title && <FieldLabel>{this.props.title}</FieldLabel>}
         <select className='form-control' {...this.props.fieldProps}>
           {!this.props.skipEmpty && <option value=''>{emptyLabel}</option>}
 

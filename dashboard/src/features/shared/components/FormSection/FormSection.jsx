@@ -5,14 +5,10 @@ class FormSection extends React.Component {
   render() {
     return (
       <div className={`${styles.main} ${this.props.className || ''}`}>
-        <div className={styles.wrapper}>
-          <div className={styles.title}>
-            {this.props.title}
-          </div>
+        <div className={styles.title}>{this.props.title}</div>
 
-          <div className={styles.content}>
-            {this.props.children}
-          </div>
+        <div className={styles.content}>
+          {this.props.children}
         </div>
       </div>
     )

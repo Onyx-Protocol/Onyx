@@ -14,18 +14,17 @@
 }
 
 .colAction {
-  color: $text-strong-color;
-  font-weight: bold;
   padding-left: $gutter-size * 1.5;
 }
 
 .colAction, .colAmount, .colAsset, .colAccount {
+  color: $text-strong-color;
   width: 20%;
 }
 
 .amount {
-  background: none;
   color: $text-strong-color;
+  background: none;
 }
 
 .odd td {
@@ -34,14 +33,12 @@
 
 .colLabel {
   color: $text-light-color;
-  font-size: 12px;
+  font-size: 14px;
   text-align: right;
   width: 5%;
 }
 
 .rawId {
-  background: transparentize($text-color, 0.85);
-  color: $text-color;
   display: inline-block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -51,7 +48,6 @@
 
 a {
   .rawId {
-    background: transparentize($highlight-default, 0.95);
     color: $highlight-default;
   }
 

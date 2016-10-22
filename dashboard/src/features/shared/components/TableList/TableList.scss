@@ -14,15 +14,14 @@
     border-top: 1px solid $background-content-color;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: $code-color;
+    color: $text-color;
   }
 
   th {
-    color: $text-light-color;
+    color: $text-strong-color;
     font-size: 13px;
     text-transform: uppercase;
     font-weight: bold;
-    color: $text-strong-color;
   }
 
   td, th  {

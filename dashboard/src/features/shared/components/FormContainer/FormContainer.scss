@@ -1,11 +1,12 @@
 .main {
   background: $background-color;
-  box-shadow: $box-shadow;
-
-  min-width: 600px;
-  width: 80%;
   padding: 0;
-  margin: $gutter-size auto;
+}
+
+.content {
+  min-width: 500px;
+  width: 55%;
+  margin: 0 auto;
 }
 
 .submitSection {
@@ -13,5 +14,5 @@
 }
 
 .submit {
-  width: 50%;
+
 }

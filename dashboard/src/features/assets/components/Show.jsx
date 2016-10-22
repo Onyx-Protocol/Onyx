@@ -22,7 +22,7 @@ class Show extends BaseShow {
 
         <PageContent>
           <KeyValueTable
-            title='details'
+            title='Details'
             actions={[
               <button className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
                 Circulation

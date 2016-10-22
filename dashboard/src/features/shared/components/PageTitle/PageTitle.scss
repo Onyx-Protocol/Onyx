@@ -9,9 +9,14 @@
     background: #f2f2f2;
     display: inline-block;
     font-size: 14px;
+    font-weight: normal;
     padding: 0 3px;
     margin-left: 3px;
     vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 300px;
   }
 }
 .title {

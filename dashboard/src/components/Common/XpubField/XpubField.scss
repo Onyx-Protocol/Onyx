@@ -1,8 +1,12 @@
 .main {
-  border-top: 1px solid $border-color;
+  border: 1px solid $border-color;
   margin-top: $grid-gutter-width/2;
-  padding-top: $grid-gutter-width/2;
+  padding: $grid-gutter-width;
   margin-bottom: $grid-gutter-width;
+
+  > div {
+    margin-bottom: $gutter-size/2;
+  }
 }
 
 .options {

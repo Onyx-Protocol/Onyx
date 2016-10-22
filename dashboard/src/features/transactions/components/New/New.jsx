@@ -64,6 +64,13 @@ class Form extends React.Component {
         submitting={submitting} >
 
         <FormSection title='Actions'>
+          {actions.length == 0 && <p className={styles.actionInfo}>
+              Add actions to issue, spend, control or retire assets.
+              For more information, read the&nbsp;
+              <a href='/docs/building-applications/transaction-basics#creating-transactions'>
+                documentation on transactions
+              </a>.
+            </p>}
           {actions.map((action, index) =>
             <ActionItem
               key={index}
@@ -74,9 +81,9 @@ class Form extends React.Component {
               remove={this.removeActionItem}
             />)}
 
-            <div className={`btn-group ${this.state.showDropdown && 'open'}`}>
+            <div className={`btn-group ${styles.addActionContainer} ${this.state.showDropdown && 'open'}`}>
               <DropdownButton
-                className={`btn-primary ${styles.addAction}`}
+                className={`btn btn-default ${styles.addAction}`}
                 id='input-dropdown-addon'
                 title='+ Add Action'
                 onSelect={this.addActionItem}
@@ -92,9 +99,10 @@ class Form extends React.Component {
             </div>
         </FormSection>
 
-        <FormSection title='Advanced Options'>
-          {!this.state.showAdvanced &&
+        {!this.state.showAdvanced &&
+          <FormSection>
             <a href='#'
+              className={styles.showAdvanced}
               onClick={(e) => {
                 e.preventDefault()
                 this.setState({showAdvanced: true})
@@ -102,46 +110,45 @@ class Form extends React.Component {
             >
               Show advanced options
             </a>
-          }
-          {this.state.showAdvanced &&
-            <div>
-              <TextField
-                title='Base transaction'
-                placeholder='Paste transaction hex here...'
-                fieldProps={base_transaction}
-                autoFocus={true} />
+          </FormSection>
+        }
 
-              <FieldLabel>Transaction Build Type</FieldLabel>
-              <table className={styles.submitTable}>
-                <tbody>
-                  <tr>
-                    <td><input id='submit_action_submit' type='radio' {...submit_action} value='submit' checked={submit_action.value == 'submit'} /></td>
-                    <td><label htmlFor='submit_action_submit'>Submit transaction to blockchain</label></td>
-                  </tr>
-                  <tr>
-                    <td></td>
-                    <td><label htmlFor='submit_action_submit' className={styles.submitDescription}>
+        {this.state.showAdvanced && <FormSection title='Advanced Options'>
+          <div>
+            <TextField
+              title='Base transaction'
+              placeholder='Paste transaction hex here...'
+              fieldProps={base_transaction}
+              autoFocus={true} />
+
+            <FieldLabel>Transaction Build Type</FieldLabel>
+            <table className={styles.submitTable}>
+              <tbody>
+                <tr>
+                  <td><input id='submit_action_submit' type='radio' {...submit_action} value='submit' checked={submit_action.value == 'submit'} /></td>
+                  <td>
+                    <label htmlFor='submit_action_submit'>Submit transaction to blockchain</label>
+                    <label htmlFor='submit_action_submit' className={styles.submitDescription}>
                       This transaction will be signed by the Mock HSM and submitted to the blockchain.
-                    </label></td>
-                  </tr>
-                  <tr>
-                    <td><input id='submit_action_generate' type='radio' {...submit_action} value='generate' checked={submit_action.value == 'generate'} /></td>
-                    <td><label htmlFor='submit_action_generate'>Allow additional actions</label></td>
-                  </tr>
-                  <tr>
-                    <td></td>
-                    <td><label htmlFor='submit_action_generate' className={styles.submitDescription}>
+                    </label>
+                  </td>
+                </tr>
+                <tr>
+                  <td><input id='submit_action_generate' type='radio' {...submit_action} value='generate' checked={submit_action.value == 'generate'} /></td>
+                  <td>
+                    <label htmlFor='submit_action_generate'>Allow additional actions</label>
+                    <label htmlFor='submit_action_generate' className={styles.submitDescription}>
                       These actions will be signed by the Mock HSM and returned as a
                       transaction hex string, which should be used as the base
                       transaction in a multi-party swap. This transaction will be
                       valid for one hour.
-                    </label></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          }
-        </FormSection>
+                    </label>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </FormSection>}
       </FormContainer>
     )
   }

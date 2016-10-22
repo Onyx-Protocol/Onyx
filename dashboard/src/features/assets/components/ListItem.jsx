@@ -7,7 +7,7 @@ class ListItem extends React.Component {
 
     return(
       <tr>
-        <td>{item.alias}</td>
+        <td>{item.alias || '-'}</td>
         <td><code>{item.id}</code></td>
         <td>
           <Link to={`/assets/${item.id}`}>

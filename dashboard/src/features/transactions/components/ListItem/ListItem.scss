@@ -11,9 +11,15 @@
   padding: 20px 25px;
 
   code {
-    background: $background-content-color;
-    color: $text-color;
-    padding: 4px 6px;
+    background: #f2f2f2;
+    display: inline-block;
+    font-size: 14px;
+    padding: 0 3px;
+    margin-left: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    width: 200px;
   }
 }
 
@@ -23,6 +29,7 @@
   label {
     color: $text-strong-color;
     font-size: 13px;
+    text-transform: uppercase;
     font-weight: bold;
     margin: 0 8px 0 0;
   }

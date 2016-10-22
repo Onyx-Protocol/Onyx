@@ -1,6 +1,6 @@
 import React from 'react'
 import styles from './XpubField.scss'
-import { SelectField } from 'features/shared/components'
+import { SelectField, FieldLabel } from 'features/shared/components'
 import { TextField } from '../'
 import { connect } from 'react-redux'
 import { actions } from 'features/mockhsm'
@@ -32,7 +32,7 @@ class XpubField extends React.Component {
 
     return (
       <div className={styles.main}>
-        <label>Key {this.props.index + 1}</label>
+        <FieldLabel>Key {this.props.index + 1}</FieldLabel>
 
         <div className={styles.options}>
           {Object.keys(methodOptions).map((key) =>

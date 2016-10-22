@@ -9,20 +9,22 @@ class FormContainer extends React.Component {
         <PageTitle title={this.props.label} />
 
         <div className={`${styles.main}`}>
-          <form onSubmit={this.props.onSubmit}>
-            {this.props.children}
+          <div className={styles.content}>
+            <form onSubmit={this.props.onSubmit}>
+              {this.props.children}
 
-            <FormSection className={styles.submitSection}>
-              {this.props.error &&
-                <ErrorBanner
-                  title='Error submitting form'
-                  message={this.props.error.toString()} />}
+              <FormSection className={styles.submitSection}>
+                {this.props.error &&
+                  <ErrorBanner
+                    title='Error submitting form'
+                    message={this.props.error.toString()} />}
 
-              <button type='submit' className={`btn btn-primary ${styles.submit}`} disabled={this.props.submitting}>
-                {this.props.submitLabel || 'Submit'}
-              </button>
-            </FormSection>
-          </form>
+                <button type='submit' className={`btn btn-primary ${styles.submit}`} disabled={this.props.submitting}>
+                  {this.props.submitLabel || 'Submit'}
+                </button>
+              </FormSection>
+            </form>
+          </div>
         </div>
       </div>
     )

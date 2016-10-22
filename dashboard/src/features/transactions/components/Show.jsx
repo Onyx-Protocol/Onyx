@@ -20,7 +20,7 @@ class Show extends BaseShow {
     if (item) {
       const title = <span>
         {'Transaction '}
-        <code>{item.id.substring(0,8) + '…'}</code>
+        &nbsp;<code>{item.id}</code>
       </span>
 
       view = <div>

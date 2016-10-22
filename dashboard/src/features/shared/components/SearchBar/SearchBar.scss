@@ -27,15 +27,11 @@
   height: 44px;
   color: $text-strong-color;
   border-radius: 25px;
-
-  &:focus {
-    box-shadow: none;
-    border-color: $highlight-secondary;
-  }
 }
+
 .search_input::-webkit-input-placeholder {
-    color: #b6bcc5;
-  }
+  color: #b6bcc5;
+}
 
 .search_button_container {
   display: inline-block;

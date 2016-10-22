@@ -14,7 +14,8 @@ class ListItem extends React.Component {
         <div className={styles.titleBar}>
           <div className={styles.title}>
             <label>Transaction ID:</label>
-            <code>{item.id.slice(0,16) + '…'}</code>
+            &nbsp;<code>{item.id}</code>&nbsp;
+
             <span className={styles.timestamp}>
               <RelativeTime timestamp={item.timestamp} />
             </span>

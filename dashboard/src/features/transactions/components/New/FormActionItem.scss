@@ -1,5 +1,6 @@
 .main {
-  border-bottom: 1px solid $border-color;
+  border: 1px solid $border-color;
+  padding: $gutter-size;
   margin-bottom: $gutter-size;
 }
 
