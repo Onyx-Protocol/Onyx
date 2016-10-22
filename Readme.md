@@ -109,6 +109,14 @@ the upstream repo.) Also, make sure the upstream working tree is clean.
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chain/chain/tree/main)
 
+When Chain Core is deployed to a non-local host, all requests require authentication.
+To generate a client access token on Heroku, run the following command:
+
+```
+$ heroku run -a <your-heroku-app> corectl create-token <token-name>
+<token-name>:<your-token>
+```
+
 ## License
 
 Chain Core Developer Edition is licensed under the terms of the [GNU 
