@@ -7,11 +7,17 @@ export const exportState = (store) => () => {
     },
   }
 
-  localStorage.setItem('reduxState', JSON.stringify(exportable))
+  try {
+    localStorage.setItem('reduxState', JSON.stringify(exportable))
+  } catch (err) { /* localstorage not available */ }
 }
 
 export const importState = () => {
-  const state = localStorage.getItem('reduxState')
+  let state
+  try {
+    state = localStorage.getItem('reduxState')
+  } catch (err) { /* localstorage not available */ }
+
   if (!state) return {}
 
   try {
