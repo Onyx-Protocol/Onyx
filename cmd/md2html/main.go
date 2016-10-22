@@ -17,7 +17,8 @@ import (
 	"github.com/russross/blackfriday"
 )
 
-var defaultLayout = []byte("{{Body}}")
+var layoutPlaceholder = []byte("{{Body}}")
+var documentNamePlaceholder = []byte("{{Filename}}")
 
 func main() {
 	var dest = ":8080"
@@ -48,12 +49,18 @@ func serve(addr string) {
 
 		b, err := render(path + ".md")
 		if os.IsNotExist(err) {
-			// Try the index
-			b, err = ioutil.ReadFile(strings.TrimSuffix(path, "/") + "/index.html")
+			// Try plain HTML
+			b, err = renderHTML(path + ".html")
+
 			if os.IsNotExist(err) {
-				http.NotFound(w, r)
-				return
+				// Try index.html
+				b, err = renderHTML(strings.TrimSuffix(path, "/") + "/index.html")
 			}
+		}
+
+		if os.IsNotExist(err) {
+			http.NotFound(w, r)
+			return
 		}
 
 		if err != nil {
@@ -69,31 +76,78 @@ func serve(addr string) {
 func convert(dest string) {
 	fmt.Printf("Converting markdown to: %s\n", dest)
 	err := filepath.Walk(".", func(path string, f os.FileInfo, err error) error {
+		if err != nil {
+			printe(err)
+			return err
+		}
+
 		if f.IsDir() {
 			return nil
 		}
-		match, err := filepath.Match("*.md", f.Name())
-		printe(err)
-		if !match {
-			b, err := ioutil.ReadFile(path)
+
+		var (
+			destFile = filepath.Join(dest, path)
+			output   []byte
+		)
+
+		if isMarkdown, _ := filepath.Match("*.md", f.Name()); isMarkdown {
+			output, err = render(path)
 			if err != nil {
+				printe(err)
 				return err
 			}
-			err = os.MkdirAll(filepath.Dir(filepath.Join(dest, path)), 0777)
+
+			destFile = strings.TrimSuffix(destFile, ".md")
+		} else if isHTML, _ := filepath.Match("*.html", f.Name()); isHTML {
+			output, err = renderHTML(path)
 			if err != nil {
+				printe(err)
 				return err
 			}
-			return ioutil.WriteFile(filepath.Join(dest, path), b, 0644)
+
+			// For serving index files in S3, avoid stripping the extension.
+			if isIndexHTML, _ := filepath.Match("index.html", f.Name()); !isIndexHTML {
+				destFile = strings.TrimSuffix(destFile, ".html")
+			}
+		} else {
+			output, err = ioutil.ReadFile(path)
+			if err != nil {
+				printe(err)
+				return err
+			}
 		}
-		b, err := render(path)
-		printe(err)
-		path = dest + "/" + path
-		printe(os.MkdirAll(filepath.Dir(path), 0777))
-		printe(ioutil.WriteFile(strings.TrimSuffix(path, ".md"), b, 0644))
+
+		err = os.MkdirAll(filepath.Dir(destFile), 0777)
+		if err != nil {
+			printe(err)
+			return err
+		}
+
+		err = ioutil.WriteFile(destFile, output, 0644)
+		if err != nil {
+			printe(err)
+			return err
+		}
+
 		fmt.Printf("converted: %s\n", path)
 		return nil
 	})
 	printe(err)
+}
+
+func renderHTML(path string) ([]byte, error) {
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	html, err := layout(path)
+	if err != nil {
+		return nil, err
+	}
+
+	html = bytes.Replace(html, layoutPlaceholder, content, 1)
+	return html, nil
 }
 
 func printe(err error) {
@@ -110,18 +164,27 @@ func render(f string) ([]byte, error) {
 
 	src = interpolateCode(src, path.Dir(f))
 
-	layout, err := layout(f)
+	html, err := layout(f)
 	if err != nil {
 		return nil, err
 	}
 
-	return bytes.Replace(layout, defaultLayout, markdown(src), 1), nil
+	src = preprocessLocalLinks(src)
+	src = markdown(src)
+	src = formatSidenotes(src)
+
+	html = bytes.Replace(html, layoutPlaceholder, src, 1)
+	pathClass := strings.Replace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(f, "./"), "../"), ".md"), "/", "_", -1)
+	html = bytes.Replace(html, documentNamePlaceholder, []byte(pathClass), -1)
+
+	return html, nil
 }
 
 // Returns the contents of a layout.html file
 // starting in the directory of p and ending at the command's
 // working directory.
-// If no layout.html file is found defaultLayout is returned.
+// If no layout.html file is found layoutPlaceholder is returned
+// as a default layout.
 func layout(p string) ([]byte, error) {
 	// Don't search for layouts beyond the working dir
 	wd, err := os.Getwd()
@@ -144,7 +207,7 @@ func layout(p string) ([]byte, error) {
 		}
 	}
 
-	return defaultLayout, nil
+	return layoutPlaceholder, nil
 }
 
 func interpolateCode(md []byte, hostPath string) []byte {
@@ -312,4 +375,43 @@ func markdown(source []byte) []byte {
 	extensions |= blackfriday.EXTENSION_AUTO_HEADER_IDS
 
 	return blackfriday.Markdown(source, renderer, extensions)
+}
+
+// Very rude, but compatible with our code rewrite of local .md links to their post-processed URLs.
+// The intention is to process only local links to .md files into non-.md files:
+// [Foo](foo.md) -> [Foo](foo)
+// [Bar](../bar.md) -> [Bar](../bar)
+// [Global](https://github.com/.../global.md) -> [Global](https://github.com/.../global.md)   <- .md must be preserved here!
+func preprocessLocalLinks(source []byte) []byte {
+	// We use a simple rule - local URLs are those without ":" in them.
+	var localMdLink = regexp.MustCompile(`(\]\([^:)#]+)\.md([)#])`)
+
+	w := new(bytes.Buffer)
+	scanner := bufio.NewScanner(bytes.NewBuffer(source))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fmt.Fprintln(w, localMdLink.ReplaceAllString(line, "$1$2"))
+	}
+	return w.Bytes()
+}
+
+func formatSidenotes(source []byte) []byte {
+	const openTag = `<p>[sidenote]</p>`
+	const closeTag = `<p>[/sidenote]</p>`
+
+	w := new(bytes.Buffer)
+	scanner := bufio.NewScanner(bytes.NewBuffer(source))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, closeTag) {
+			fmt.Fprintln(w, `</div>`)
+			continue
+		}
+		if strings.HasPrefix(line, openTag) {
+			fmt.Fprintln(w, `<div class="sidenote">`)
+			continue
+		}
+		fmt.Fprintln(w, line)
+	}
+	return w.Bytes()
 }

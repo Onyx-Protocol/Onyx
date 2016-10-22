@@ -113,5 +113,27 @@ md2html will produce the following interpolated markdown file:
 	}
 	```
 
+Sidenotes
+
+To wrap a portion of the document in a sidenote tag
+`<div class="sidenote"> ... </div>` use these tags:
+
+	[sidenote]
+
+	...
+
+	[/sidenote]
+
+Make sure that each tag occupies its own paragraph per
+markdown rules, otherwise processor will not recognize them.
+
+
+Local Links
+
+This tool converts local links ending with `.md` by stripping
+that extension, so the resulting HTML link points to a formatted
+page instead of a raw markdown file.
+
+
 */
 package main
