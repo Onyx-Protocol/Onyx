@@ -1,10 +1,9 @@
 .main {
   background: $highlight-danger-background;
   color: $highlight-danger;
-  border: 1px solid $highlight-danger;
+  border: 1px solid $highlight-danger-border;
   border-radius: $border-radius-standard;
   padding: 20px;
   margin-bottom: 20px;
-
   word-wrap: break-word;
 }

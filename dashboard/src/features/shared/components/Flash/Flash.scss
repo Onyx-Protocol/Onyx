@@ -2,6 +2,12 @@
   display: flex;
 }
 
+.success {
+  background-color: $success-background;
+  border-color: $success-border;
+  color: $success;
+}
+
 .content {
   width: 100%;
   flex: 1;
