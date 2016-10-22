@@ -1,0 +1,39 @@
+.main {
+  text-align: center;
+  list-style-type: none;
+  padding: 0;
+  user-select: none;
+
+  li {
+    display: inline-block;
+    margin: 0 $gutter-size;
+  }
+}
+
+.label {
+  color: $text-strong-color;
+  font-weight: bold;
+}
+
+.button {
+  border: 2px solid $highlight-default;
+  color: $highlight-default;
+  cursor: pointer;
+  display: block;
+  line-height: 26px;
+  font-size: 20px;
+  height: 30px;
+  width: 30px;
+  border-radius: 15px;
+
+  &:hover {
+    border-color: $highlight-secondary;
+  }
+}
+
+.disabled {
+  border-color: $text-color;
+  color: $text-color;
+  opacity: 0;
+  pointer-events: none;
+}

@@ -25,7 +25,7 @@ class EmptyList extends React.Component {
     } else if (!this.props.showFirstTimeFlow) {
       emptyBlock = <div>
         <span className={styles.emptyLabel}>No results for query:</span>
-        <code className={styles.code}>{this.props.currentFilter}</code>
+        <code className={styles.code}>{this.props.currentFilter.filter}</code>
       </div>
     }
 
@@ -45,6 +45,7 @@ EmptyList.propTypes = {
   noRecords: React.PropTypes.bool,
   skipCreate: React.PropTypes.bool,
   loadedOnce: React.PropTypes.bool,
+  currentFilter: React.PropTypes.object,
 }
 
 export default EmptyList

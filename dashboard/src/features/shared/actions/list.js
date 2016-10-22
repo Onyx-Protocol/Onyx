@@ -133,8 +133,8 @@ export default function(type, options = {}) {
   const pushList = (query = {}, pageNumber) => {
     if (pageNumber) {
       query = {
-        page: pageNumber,
         ...query,
+        page: pageNumber,
       }
     }
 

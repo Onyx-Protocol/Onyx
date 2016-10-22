@@ -29,7 +29,7 @@ class ItemList extends React.Component {
         <SearchBar key='search-bar'
           {...this.props.searchState}
           pushList={this.props.pushList}
-          queryString={this.props.currentFilter}
+          currentFilter={this.props.currentFilter}
         />}
     </div>
 
@@ -77,8 +77,11 @@ class ItemList extends React.Component {
 
 export const mapStateToProps = (type, itemComponent, additionalProps = {}) => (state, ownProps) => {
   const currentPage = Math.max(parseInt(ownProps.location.query.page) || 1, 1)
-  const currentFilter = ownProps.location.query.filter || ''
-  const currentQuery = state[type].queries[currentFilter] || {}
+  // TODO: this should be renamed `currentQuery`; we should
+  // do some renaminng in here 
+  const currentFilter = ownProps.location.query || {}
+  const currentQueryString = currentFilter.filter || ''
+  const currentQuery = state[type].queries[currentQueryString] || {}
   const currentIds = currentQuery.itemIds || []
   const cursor = currentQuery.cursor || {}
 
@@ -101,7 +104,7 @@ export const mapStateToProps = (type, itemComponent, additionalProps = {}) => (s
     searchState: { queryTime: currentQuery.queryTime },
 
     noResults: items.length == 0,
-    showFirstTimeFlow: items.length == 0 && currentFilter == '',
+    showFirstTimeFlow: items.length == 0 && currentQueryString == '',
 
     ...additionalProps
   }

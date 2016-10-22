@@ -16,7 +16,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    width: 300px;
+    max-width: 300px;
   }
 }
 .title {

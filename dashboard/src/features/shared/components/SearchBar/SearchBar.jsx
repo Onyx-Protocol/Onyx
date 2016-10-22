@@ -5,8 +5,8 @@ class SearchBar extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      query: this.props.queryString || '',
-      sumBy: this.props.sumBy || '',
+      query: this.props.currentFilter.filter || '',
+      sumBy: this.props.currentFilter.sum_by || '',
       sumByVisible: false,
     }
     this.state.showClear = this.state.query != '' || this.state.sumBy != ''
@@ -22,8 +22,8 @@ class SearchBar extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     // Override text field with default query when provided
-    if (nextProps.queryString != this.props.queryString) {
-      this.setState({query: nextProps.queryString})
+    if (nextProps.currentFilter.filter != this.props.currentFilter.filter) {
+      this.setState({query: nextProps.currentFilter.filter})
     }
   }
 
@@ -84,7 +84,7 @@ class SearchBar extends React.Component {
     event.preventDefault()
 
     if (this.state.query == '' && this.state.sumBy == '') {
-      if (this.props.queryString || this.props.sumBy) {
+      if (this.props.currentFilter.filter || this.props.currentFilter.sum_by) {
         this.clearQuery()
       }
       return
