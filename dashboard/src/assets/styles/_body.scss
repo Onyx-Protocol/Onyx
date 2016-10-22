@@ -34,7 +34,6 @@ html {
 body {
   display: flex;
   flex-direction: column;
-
   position: relative;
   margin: 0 auto;
   min-height: 100%;
@@ -75,17 +74,23 @@ p {
 
 .btn-primary {
   border-color: $highlight-default;
-  height: 40px;
+  height: 36px;
   color: $text-inverse-color;
   border-radius: $border-radius-standard;
   background-color: $highlight-default;
   padding: 0 20px;
 }
-.btn:hover,
-.btn:active,
-.btn:focus {
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:focus {
   text-decoration: none;
   color: $text-inverse-color;
   background: $highlight-secondary;
   border-color: $highlight-secondary;
+}
+
+a:hover,
+a:focus {
+  color: $highlight-secondary;
+  text-decoration: none;
 }

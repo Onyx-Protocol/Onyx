@@ -5,20 +5,30 @@
   width: 100%;
   table-layout: fixed;
 
+  code {
+    padding: 0;
+    font-size: 14px;
+  }
+
   td {
-    border-top: 1px solid $border-color;
+    border-top: 1px solid $background-content-color;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: $code-color;
   }
 
   th {
     color: $text-light-color;
-    font-size: 14px;
+    font-size: 13px;
     text-transform: uppercase;
+    font-weight: bold;
+    color: $text-strong-color;
   }
 
+  td, th  {
+    padding: 10px $gutter-size 10px 0;
+  }
   th, td {
-    padding: 10px 15px;
 
     &:first-child {
       padding-left: $gutter-size * 2;
@@ -26,7 +36,6 @@
 
     &:last-child {
       text-align: right;
-      padding-right: $gutter-size;
     }
   }
 }

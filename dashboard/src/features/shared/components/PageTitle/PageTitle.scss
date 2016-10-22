@@ -2,13 +2,18 @@
   background: $background-color;
   padding: $gutter-size;
   border-bottom: 1px solid $border-color;
-
   height: $title-height;
-
   display: flex;
   align-items: center;
+  code {
+    background: #f2f2f2;
+    display: inline-block;
+    font-size: 14px;
+    padding: 0 3px;
+    margin-left: 3px;
+    vertical-align: middle;
+  }
 }
-
 .title {
   color: $text-strong-color;
 }

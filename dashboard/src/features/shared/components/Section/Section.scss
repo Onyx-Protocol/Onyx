@@ -1,5 +1,5 @@
 .main {
-  margin: 40px 0;
+  margin: 0 0 $gutter-size;
 }
 
 .title {
@@ -7,12 +7,9 @@
 
   h5 {
     flex-grow: 1;
-    font-size: 13px;
+    font-size: 18px;
     font-weight: bold;
-    text-transform: uppercase;
   }
-
-  margin-bottom: 15px;
 }
 
 .children {

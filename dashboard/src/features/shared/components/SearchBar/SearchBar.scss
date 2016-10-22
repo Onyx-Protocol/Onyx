@@ -1,7 +1,5 @@
 .main {
-  background: $background-color;
   padding: $gutter-size/2 $gutter-size;
-  border-bottom: 1px solid $border-color;
 }
 
 .search_field_full, .search_field_half, .sum_by_field {
@@ -10,7 +8,7 @@
 }
 
 .search_field_full {
-  width: calc(100% - 130px);
+  width: 100%;
 }
 
 .search_field_half {
@@ -25,9 +23,19 @@
 .search_input {
   height:50px;
   padding: 10px 20px;
-  font-size: 16px;
-  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  border: 1px solid $border-color;
+  height: 44px;
+  color: $text-strong-color;
+  border-radius: 25px;
+
+  &:focus {
+    box-shadow: none;
+    border-color: $highlight-secondary;
+  }
 }
+.search_input::-webkit-input-placeholder {
+    color: #b6bcc5;
+  }
 
 .search_button_container {
   display: inline-block;

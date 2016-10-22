@@ -138,18 +138,13 @@ class SearchBar extends React.Component {
                 placeholder='asset_alias, asset_id' />
             </span>}
 
-          <div className={styles.search_button_container}>
-            <button type='submit' className={`btn btn-primary ${styles.search_button}`} >
-              Filter
-            </button>
 
-            {this.state.showClear &&
-              <button type='button'
-                className={`close ${styles.clear_search}`}
-                onClick={this.clearQuery}>
-                  Reset
-              </button>}
-          </div>
+          {this.state.showClear &&
+            <button type='button'
+              className={`close ${styles.clear_search}`}
+              onClick={this.clearQuery}>
+                Reset
+            </button>}
         </form>
 
         {this.state.showClear && <span className={styles.queryTime}>

@@ -33,7 +33,7 @@ class KeyValueTable extends React.Component {
             {this.props.items.map((item) =>
               <tr key={`${item.label}`}>
                 <td className={styles.label}>{item.label}</td>
-                <td>{this.renderValue(item)}</td>
+                <td className={styles.value}>{this.renderValue(item)}</td>
               </tr>
             )}
           </tbody>
