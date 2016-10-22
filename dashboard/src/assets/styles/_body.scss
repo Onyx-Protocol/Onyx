@@ -53,7 +53,7 @@ body {
 }
 
 :focus, .focus {
-    outline: none !important;
+  outline: none !important;
 }
 
 .jumbotron p {
@@ -72,25 +72,61 @@ p {
   flex: 1;
 }
 
+.btn-primary,
+.btn-default {
+  height: 36px;
+  padding: 0 20px;
+  border-radius: $border-radius-standard;
+}
+
 .btn-primary {
   border-color: $highlight-default;
-  height: 36px;
   color: $text-inverse-color;
-  border-radius: $border-radius-standard;
   background-color: $highlight-default;
-  padding: 0 20px;
 }
+
 .btn-primary:hover,
 .btn-primary:active,
-.btn-primary:focus {
+.btn-primary:focus,
+.btn-primary:active:hover,
+.btn-primary:focus,
+.btn-primary:active:focus,
+.btn-primary:focus, .btn-primary.focus
+.btn-primary:active.focus, .btn-primary.active:hover,
+.btn-primary.active:focus, .btn-primary.active.focus {
   text-decoration: none;
   color: $text-inverse-color;
   background: $highlight-secondary;
   border-color: $highlight-secondary;
 }
 
+.btn-default {
+  background-color: $background-color;
+  border-color: $border-strong-color;
+}
+.btn-default:active:hover,
+.btn-default:hover,
+.btn-default:focus,
+.btn-default:active:focus,
+.btn-default:focus, .btn-default.focus
+.btn-default:active.focus, .btn-default.active:hover,
+.btn-default.active:focus, .btn-default.active.focus,
+.open > .btn-default.dropdown-toggle:hover,
+.open > .btn-default.dropdown-toggle:focus, .open > .btn-default.dropdown-toggle.focus {
+  color: $text-strong-color;
+  background-color: $background-content-color;
+  border-color: $border-strong-color;
+}
+
 a:hover,
 a:focus {
   color: $highlight-secondary;
   text-decoration: none;
+}
+
+.form-control {
+  height: 36px;
+}
+.help-block {
+  color: $text-light-color;
 }
