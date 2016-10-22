@@ -91,6 +91,5 @@ export default connect(
     fetchTestnetInfo: () => dispatch(actions.testnet.fetchTestnetInfo()),
     showRoot: () => dispatch(actions.app.showRoot),
     showConfiguration: () => dispatch(actions.app.showConfiguration()),
-    clearSession: () => dispatch(actions.core.clearSession()),
   })
 )(Container)

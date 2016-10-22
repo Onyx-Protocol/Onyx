@@ -1,3 +1,11 @@
+export const clear = () => {
+  try {
+    localStorage.clear()
+  } catch (err) {
+    // Local storage is not available.
+  }
+}
+
 export const exportState = (store) => () => {
   const state = store.getState()
   const exportable = {

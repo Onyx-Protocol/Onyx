@@ -16,7 +16,10 @@ const actions = {
   },
   showConfiguration: () => {
     return (dispatch, getState) => {
-      let pathname = getState().routing.locationBeforeTransitions.pathname
+      // Need a default here, since locationBeforeTransitions gets cleared
+      // during logout.
+      let pathname = (getState().routing.locationBeforeTransitions || {}).pathname
+
       if (pathname !== 'configuration') {
         dispatch(push('/configuration'))
       }

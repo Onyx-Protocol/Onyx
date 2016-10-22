@@ -134,7 +134,6 @@ export const syncEstimates = (state = {}, action) => {
     }
 
     case 'CORE_DISCONNECT':
-    case 'USER_LOG_OUT':
       resetSyncSamplers()
       return {}
 
@@ -178,7 +177,6 @@ export const requireClientToken = (state = false, action) => {
 
 export const clientToken = (state = '', action) => {
   if      (action.type == 'SET_CLIENT_TOKEN') return action.token
-  else if (action.type == 'USER_LOG_OUT')     return ''
   else if (action.type == 'ERROR' &&
            action.payload.status == 401)      return ''
 
@@ -188,7 +186,6 @@ export const clientToken = (state = '', action) => {
 export const validToken = (state = false, action) => {
   if      (action.type == 'SET_CLIENT_TOKEN') return false
   else if (action.type == 'USER_LOG_IN')      return true
-  else if (action.type == 'USER_LOG_OUT')     return false
   else if (action.type == 'ERROR' &&
            action.payload.status == 401)      return false
 

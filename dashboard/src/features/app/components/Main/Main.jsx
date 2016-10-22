@@ -73,6 +73,5 @@ export default connect(
     dismissFlash: (key) => dispatch(actions.app.dismissFlash(key)),
     toggleDropdown: () => dispatch(actions.app.toggleDropdown),
     closeDropdown: () => dispatch(actions.app.closeDropdown),
-    logOut: () => dispatch(actions.core.clearSession())
   })
 )(Main)

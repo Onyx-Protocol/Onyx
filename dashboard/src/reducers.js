@@ -12,6 +12,7 @@ import { reducers as testnet } from 'features/testnet'
 import { reducers as transaction } from 'features/transactions'
 import { reducers as transactionFeed } from 'features/transactionFeeds'
 import { reducers as unspent } from 'features/unspents'
+import { clear as clearStorage } from 'utility/localStorage'
 
 const makeRootReducer = () => (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO' &&
@@ -26,6 +27,19 @@ const makeRootReducer = () => (state, action) => {
     }
 
     state = newState
+  } else if (action.type == 'USER_LOG_OUT') {
+    // TODO: see if we can't move this outside of a reducer..
+
+    // Actions still may fire after the location redirect, so make sure they
+    // fire against blank state, and the local storage listener doesn't
+    // persist state.
+    state = undefined
+
+    // Clear tokens and other state from local storage.
+    clearStorage()
+
+    // Finally, reboot the entire dashboard app via a hard redirect.
+    window.location.href = '/'
   }
 
   return combineReducers({
