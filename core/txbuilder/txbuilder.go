@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"chain/crypto/ed25519/chainkd"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/math/checked"
 	"chain/protocol/bc"
 )
 
@@ -16,6 +18,8 @@ var (
 	ErrBadRefData          = errors.New("transaction reference data does not match previous template's reference data")
 	ErrBadTxInputIdx       = errors.New("unsigned tx missing input")
 	ErrBadWitnessComponent = errors.New("invalid witness component")
+	ErrBadAmount           = errors.New("bad asset amount")
+	ErrBlankCheck          = errors.New("unsafe transaction: leaves assets free to control")
 )
 
 // Build builds or adds on to a transaction.
@@ -37,6 +41,17 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 		buildResult, err := action.Build(ctx, maxTime)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "invalid action %d", i)
+		}
+
+		for _, in := range buildResult.Inputs {
+			if in.Amount() > math.MaxInt64 {
+				return nil, errors.WithDetailf(ErrBadAmount, "bad amount %d for action %d", in.Amount(), i)
+			}
+		}
+		for _, out := range buildResult.Outputs {
+			if out.Amount > math.MaxInt64 {
+				return nil, errors.WithDetailf(ErrBadAmount, "bad amount %d for action %d", out.Amount, i)
+			}
 		}
 
 		if len(buildResult.Inputs) != len(buildResult.SigningInstructions) {
@@ -65,6 +80,11 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 				tx.MinTime = buildResult.MinTimeMS
 			}
 		}
+	}
+
+	err := checkBlankCheck(tx)
+	if err != nil {
+		return nil, err
 	}
 
 	if tx.MaxTime == 0 || tx.MaxTime > bc.Millis(maxTime) {
@@ -110,4 +130,50 @@ func Sign(ctx context.Context, tpl *Template, xpubs []string, signFn SignFunc) e
 		}
 	}
 	return materializeWitnesses(tpl)
+}
+
+func checkBlankCheck(tx *bc.TxData) error {
+	assetMap := make(map[bc.AssetID]int64)
+	var ok bool
+	for _, in := range tx.Inputs {
+		asset := in.AssetID() // AssetID() is calculated for IssuanceInputs, so grab once
+		assetMap[asset], ok = checked.AddInt64(assetMap[asset], int64(in.Amount()))
+		if !ok {
+			return errors.WithDetailf(ErrBadAmount, "amounts for asset %s overflow the allowed asset amount", asset)
+		}
+	}
+	for _, out := range tx.Outputs {
+		assetMap[out.AssetID], ok = checked.SubInt64(assetMap[out.AssetID], int64(out.Amount))
+		if !ok {
+			return errors.WithDetailf(ErrBadAmount, "amounts for asset %s overflow the allowed asset amount", out.AssetID)
+		}
+	}
+
+	var requiresOutputs, requiresInputs bool
+	for _, amt := range assetMap {
+		if amt > 0 {
+			requiresOutputs = true
+		}
+		if amt < 0 {
+			requiresInputs = true
+		}
+	}
+
+	// 4 possible cases here:
+	// 1. requiresOutputs - false requiresInputs - false
+	//    This is a balanced transaction with no free assets to consume.
+	//    It could potentially be a complete transaction.
+	// 2. requiresOutputs - true requiresInputs - false
+	//    This is an unbalanced transaction with free assets to consume
+	// 3. requiresOutputs - false requiresInputs - true
+	//    This is an unbalanced transaction with a requiring assets to be spent
+	// 4. requiresOutputs - true requiresInputs - true
+	//    This is an unbalanced transaction with free assets to consume
+	//    and requiring assets to be spent.
+	// The only case that needs to be protected against is 2.
+	if requiresOutputs && !requiresInputs {
+		return errors.Wrap(ErrBlankCheck)
+	}
+
+	return nil
 }

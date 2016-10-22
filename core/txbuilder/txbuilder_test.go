@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -402,5 +403,73 @@ func TestTxSighashCommitment(t *testing.T) {
 	err = checkTxSighashCommitment(tx)
 	if err != nil {
 		t.Errorf("spend input committing to the right txsighash: got error %s, want no error", err)
+	}
+}
+
+func TestCheckBlankCheck(t *testing.T) {
+	cases := []struct {
+		tx   *bc.TxData
+		want error
+	}{{
+		tx: &bc.TxData{
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+		},
+		want: ErrBlankCheck,
+	}, {
+		tx: &bc.TxData{
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 3, nil, nil)},
+		},
+		want: ErrBlankCheck,
+	}, {
+		tx: &bc.TxData{
+			Inputs: []*bc.TxInput{
+				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil),
+				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{1}, 5, nil, nil),
+			},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
+		},
+		want: ErrBlankCheck,
+	}, {
+		tx: &bc.TxData{
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{
+				bc.NewTxOutput(bc.AssetID{0}, math.MaxInt64, nil, nil),
+				bc.NewTxOutput(bc.AssetID{0}, 7, nil, nil),
+			},
+		},
+		want: ErrBadAmount,
+	}, {
+		tx: &bc.TxData{
+			Inputs: []*bc.TxInput{
+				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil),
+				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, math.MaxInt64, nil, nil),
+			},
+		},
+		want: ErrBadAmount,
+	}, {
+		tx: &bc.TxData{
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
+		},
+		want: nil,
+	}, {
+		tx: &bc.TxData{
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
+		},
+		want: nil,
+	}, {
+		tx: &bc.TxData{
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{1}, 5, nil, nil)},
+		},
+		want: nil,
+	}}
+
+	for _, c := range cases {
+		got := checkBlankCheck(c.tx)
+		if errors.Root(got) != c.want {
+			t.Errorf("checkUnsafe(%+v) err = %v want %v", c.tx, errors.Root(got), c.want)
+		}
 	}
 }

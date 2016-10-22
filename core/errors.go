@@ -93,6 +93,8 @@ var (
 		errBadActionType:        errorInfo{400, "CH701", "Invalid action type"},
 		errBadAlias:             errorInfo{400, "CH702", "Invalid alias on action"},
 		errBadAction:            errorInfo{400, "CH703", "Invalid action object"},
+		txbuilder.ErrBadAmount:  errorInfo{400, "CH704", "Invalid asset amount"},
+		txbuilder.ErrBlankCheck: errorInfo{400, "CH705", "Unsafe transaction: leaves assets to be taken without requiring payment"},
 
 		// Submit error namespace (73x)
 		txbuilder.ErrMissingRawTx:          errorInfo{400, "CH730", "Missing raw transaction"},
