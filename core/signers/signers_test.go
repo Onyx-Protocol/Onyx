@@ -34,6 +34,11 @@ func TestCreate(t *testing.T) {
 		want:   ErrBadXPub,
 	}, {
 		typ:    "account",
+		xpubs:  []string{testutil.TestXPub.String(), testutil.TestXPub.String()},
+		quorum: 2,
+		want:   ErrDupeXPub,
+	}, {
+		typ:    "account",
 		xpubs:  []string{testutil.TestXPub.String()},
 		quorum: 0,
 		want:   ErrBadQuorum,

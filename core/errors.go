@@ -75,6 +75,7 @@ var (
 		signers.ErrBadXPub:   errorInfo{400, "CH201", "Invalid xpub format"},
 		signers.ErrNoXPubs:   errorInfo{400, "CH202", "At least one xpub is required"},
 		signers.ErrBadType:   errorInfo{400, "CH203", "Retrieved type does not match expected type"},
+		signers.ErrDupeXPub:  errorInfo{400, "CH204", "Root XPubs cannot contain the same key more than once"},
 
 		// Access token error namespace (3xx)
 		accesstoken.ErrBadID:       errorInfo{400, "CH300", "Malformed or empty access token id"},

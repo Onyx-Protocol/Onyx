@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/binary"
+	"sort"
 
 	"github.com/lib/pq"
 
@@ -42,6 +43,10 @@ var (
 	// ErrBadType is returned when a find operation
 	// retrieves a signer that is not the expected type.
 	ErrBadType = errors.New("retrieved type does not match expected type")
+
+	// ErrDupeXPub is returned by create when the same xpub
+	// appears twice in a single call.
+	ErrDupeXPub = errors.New("xpubs cannot contain the same key more than once")
 )
 
 // Signer is the abstract concept of a signer,
@@ -73,6 +78,13 @@ func Path(s *Signer, ks keySpace, itemIndexes ...uint64) [][]byte {
 func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientToken *string) (*Signer, error) {
 	if len(xpubs) == 0 {
 		return nil, errors.Wrap(ErrNoXPubs)
+	}
+
+	sort.Strings(xpubs) // this transforms the input slice
+	for i := 1; i < len(xpubs); i++ {
+		if xpubs[i] == xpubs[i-1] {
+			return nil, errors.WithDetailf(ErrDupeXPub, "duplicated key=%s", xpubs[i])
+		}
 	}
 
 	keys, err := ConvertKeys(xpubs)
