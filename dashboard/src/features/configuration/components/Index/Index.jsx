@@ -77,15 +77,13 @@ class Index extends React.Component {
         type='submit'
         className={`btn btn-primary btn-lg ${styles.submit}`}
         disabled={submitting}>
-          <span className='glyphicon glyphicon-arrow-right' />
           &nbsp;{this.showNewFields() ? 'Create' : 'Join'} network
       </button>
     ]
 
     return (
       <form onSubmit={handleSubmit(this.submitWithValidation)}>
-        <h2 className={styles.title}>Select a blockchain configuration</h2>
-        <h3 className={styles.subtitle}>You can reset your Chain Core at any time to change these settings</h3>
+        <h2 className={styles.title}>Configure Chain Core</h2>
 
         <div className={styles.choices}>
           <div className={styles.choice_wrapper}>
@@ -133,9 +131,7 @@ class Index extends React.Component {
                   <span className={styles.choice_title}>Join the Chain Testnet</span>
 
                   <p>
-                    Connect this Chain Core to the Chain Testnet.
-                    <br />
-                    Data will be reset every week.
+                    Connect this Chain Core to the Chain Testnet. <strong>Data will be reset every week.</strong>
                   </p>
               </div>
             </label>

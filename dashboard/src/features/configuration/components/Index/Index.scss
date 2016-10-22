@@ -1,6 +1,8 @@
 .title {
   font-size: 28px;
   font-weight: normal;
+  margin-top: $gutter-size*2;
+  margin-bottom: $gutter-size;
 }
 
 .subtitle {
@@ -47,9 +49,15 @@
   text-align: center;
 
   &:hover {
-    border-color: lighten($brand-primary, 10%);
+    background-color: $background-emphasis-color;
   }
 
+  p {
+    line-height: 1.4;
+  }
+  strong {
+    color: $text-danger;
+  }
   svg {
     display: block;
     margin: 0 auto;
@@ -61,6 +69,8 @@
     display: block;
     font-size: 18px;
     margin: 12px 0;
+    color: $text-strong-color;
+    font-weight: bold;
   }
 }
 
