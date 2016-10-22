@@ -38,7 +38,13 @@ const Form = class Form extends React.Component {
       submitting={submitting} >
 
       <FormSection title='Token Information'>
-        <TextField title='Token ID' placeholder='Token ID' fieldProps={id} autoFocus={true} />
+        <TextField
+          title='Token ID'
+          placeholder='Token ID'
+          fieldProps={id}
+          autoFocus={true}
+          hint='Valid characters include letters, numbers, underscores, and hyphens.'
+        />
         <HiddenField fieldProps={type} />
       </FormSection>
     </FormContainer>)
