@@ -68,9 +68,10 @@
 
 .clearSearch {
   display: inline-block;
+  text-decoration: underline;
 
   &:hover {
-    text-decoration: underline;
+    cursor: pointer;
   }
 }
 
