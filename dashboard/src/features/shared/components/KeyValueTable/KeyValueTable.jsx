@@ -1,13 +1,29 @@
 import React from 'react'
 import styles from './KeyValueTable.scss'
 import { Section } from 'features/shared/components'
+import { Link } from 'react-router'
 
 class KeyValueTable extends React.Component {
-  renderPre(value) {
-    return value != null && (typeof value == 'object')
+  shouldUsePre(item) {
+    if (item.pre) return true
+
+    return item.value != null && (typeof item.value == 'object')
+  }
+
+  renderValue(item) {
+    let value = item.value
+    if (this.shouldUsePre(item)) {
+      value = <pre className={styles.pre}>{JSON.stringify(item.value, null, '  ')}</pre>
+    }
+    if (item.link) {
+      value = <Link to={item.link}>{value}</Link>
+    }
+
+    return value
   }
 
   render() {
+
     return(
       <Section
         title={this.props.title}
@@ -17,12 +33,7 @@ class KeyValueTable extends React.Component {
             {this.props.items.map((item) =>
               <tr key={`${item.label}`}>
                 <td className={styles.label}>{item.label}</td>
-                {this.renderPre(item.value) ?
-                  <td>
-                    <pre className={styles.pre}>{JSON.stringify(item.value, null, '  ')}</pre>
-                  </td> :
-                  <td>{item.value}</td>
-                }
+                <td>{this.renderValue(item)}</td>
               </tr>
             )}
           </tbody>

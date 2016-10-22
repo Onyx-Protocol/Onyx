@@ -1,9 +1,9 @@
 import React from 'react'
+import { KeyValueTable } from 'features/shared/components'
 
 class ListItem extends React.Component {
   render() {
     const item = {...this.props.item}
-    const label = `Feed ${item.alias || item.id}`
 
     const after = item.after.split('-')[0].split(':')
     const blockHeight = after[0]
@@ -13,34 +13,21 @@ class ListItem extends React.Component {
     // hasn't yet been read from.
     const hasStarted = blockPosition != '2147483647'
 
+    const options = [
+      {label: 'ID', value: item.id}
+    ]
+
+    if (item.alias) options.push({label: 'Alias', value: item.alias})
+    options.push({label: 'Filter', value: item.filter, link: `/transactions?filter=${item.filter}`, pre: true})
+
+    if (hasStarted) {
+      options.push({label: 'Last Acknowledged', value: {blockHeight, blockPosition}})
+    } else {
+      options.push({label: 'Last Acknowledged', value: 'None'})
+    }
+
     return(
-      <div className='panel panel-default'>
-        <div className='panel-heading'>
-          {label}
-
-          <button className='btn btn-danger btn-sm pull-right' onClick={this.props.delete.bind(this, item)}>
-            <span className='glyphicon glyphicon-trash' />&nbsp;
-            Delete
-          </button>
-        </div>
-        <div className='panel-body'>
-          <label>Filter</label>
-          <pre>
-            {item.filter}
-          </pre>
-
-          <label>Last Item</label>
-          {hasStarted && <p>
-            Block Height: {blockHeight}
-            <br/>
-            Block Position: {blockPosition}
-          </p>}
-
-          {!hasStarted && <p>
-            Not yet queried
-          </p>}
-        </div>
-      </div>
+      <KeyValueTable items={options} />
     )
   }
 }
