@@ -4,8 +4,6 @@ import {
 } from 'features/shared/actions'
 
 import React from 'react'
-import { actions as coreActions } from 'features/core'
-import { context } from 'utility/environment'
 import CreateModal from './components/CreateModal/CreateModal'
 
 const makeCreateModal = token => {

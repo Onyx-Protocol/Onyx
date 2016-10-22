@@ -98,7 +98,8 @@ class Form extends React.Component {
               onClick={(e) => {
                 e.preventDefault()
                 this.setState({showAdvanced: true})
-            }}>
+              }}
+            >
               Show advanced options
             </a>
           }

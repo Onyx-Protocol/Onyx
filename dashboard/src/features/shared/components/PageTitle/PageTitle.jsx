@@ -43,7 +43,7 @@ const mapStateToProps = (state) => {
 
   let currentRoutes = routes.childRoutes
   let currentPath = []
-  pathname.split('/').forEach((component, index, array) => {
+  pathname.split('/').forEach(component => {
     let match = currentRoutes.find(route => {
       return route.path == component || route.path.indexOf(':') >= 0
     })

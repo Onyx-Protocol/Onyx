@@ -1,5 +1,4 @@
 import { List, New, Show, GeneratedTxHex } from './components'
-import { routes as transactionFeeds } from 'features/transactionFeeds'
 import { makeRoutes } from 'features/shared'
 
 export default (store) => {

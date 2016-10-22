@@ -10,8 +10,8 @@ const stateToProps = (type) => (state, ownProps) =>
     skipQuery: true,
     wrapperComponent: TableList,
     wrapperProps: {
-        titles: ['Token ID']
-    }
+      titles: ['Token ID'],
+    },
   })(state, ownProps)
 
 
