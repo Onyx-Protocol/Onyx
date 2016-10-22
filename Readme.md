@@ -1,20 +1,23 @@
-Chain 🍭
+# Chain Core Developer Edition
 
-## Getting Started
+Chain Core Developer Edition is a free, downloadable version of Chain Core that is open source and licensed under AGPL. Individuals and organizations use Chain Core Developer Edition to learn, experiment, and build prototypes.
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chain/chain/tree/main)
+Chain Core Developer Edition can be run locally on Mac, Windows, or Linux to create a new blockchain network, connect to an existing blockchain network, or connect to the public Chain testnet, operated by Chain, Microsoft, and Cornell University’s IC3.
+
+For more information about how to use Chain Core Developer Edition, see the docs: https://chain.com/docs
 
 ## Contributing
 
 Chain has adopted the code of conduct defined by the Contributor Covenant. It can be read in full [here](https://github.com/chain/chain/blob/main/CODE_OF_CONDUCT.md).
+This repository is the canonical source for Chain Core Developer Edition. Consequently, Chain engineers actively maintain this repository.
+If you are interested in contributing to this code base, please read our [issue](https://github.com/chain/chain/blob/main/.github/ISSUE_TEMPLATE.md) and [pull request](https://github.com/chain/chain/blob/main/.github/PULL_REQUEST_TEMPLATE.md) templates first.
 
-### Dependencies
+## Building source
 
 * [Go](https://golang.org/doc/install) version 1.7, with $GOPATH set to your
   preferred directory
 * Postgres (we suggest [Postgres.app](http://postgresapp.com/)),
-  along with the [command line
-  tools](http://postgresapp.com/documentation/cli-tools.html)
+  along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
 * [protoc](https://github.com/google/protobuf#protocol-compiler-installation),
   if you need to compile protos
 
@@ -23,12 +26,16 @@ Chain has adopted the code of conduct defined by the Contributor Covenant. It ca
 Set the `CHAIN` environment variable, in `.profile` in your home
 directory, to point to the root of the Chain source code repo:
 
-	export CHAIN=$GOPATH/src/chain
+```
+export CHAIN=$GOPATH/src/chain
+```
 
 You should also add `$CHAIN/bin` to your path (as well as
 `$GOPATH/bin`, if it isn't already):
 
-	PATH=$GOPATH/bin:$CHAIN/bin:$PATH
+```
+PATH=$GOPATH/bin:$CHAIN/bin:$PATH
+```
 
 You might want to open a new terminal window to pick up the change.
 
@@ -36,65 +43,45 @@ You might want to open a new terminal window to pick up the change.
 
 Build and install from source:
 
-	$ git clone https://github.com/chain/chain $CHAIN
-	$ cd $CHAIN
-	$ go install ./cmd/...
+```
+$ git clone https://github.com/chain/chain $CHAIN
+$ cd $CHAIN
+$ go install ./cmd/...
+```
 
 Set up the database:
 
-	$ createdb core
+```
+$ createdb core
+```
 
 Start Chain Core:
 
-	$ cored
+```
+$ cored
+```
 
 Access the dashboard:
 
-	$ open http://localhost:1999/
+```
+$ open http://localhost:1999/
+```
 
 Run tests:
 
-    $ go test $(go list ./... | grep -v vendor)
+```
+$ go test $(go list ./... | grep -v vendor)
+```
 
-## Updating the schema with migrations
+## Developing Chain Core
 
-	$ dumpschema
+### Updating the schema with migrations
 
-## Provisioning
+```
+$ dumpschema
+```
 
-First, make sure the following commands have been installed on
-your local machine:
-
-	$ go install chain/cmd/{appenv,corectl,migratedb}
-
-From #devlog, provision the AWS resources:
-
-	/provision api <target>
-
-From your local machine, check out your desired branch for the
-`chain` project, and run database migrations:
-
-	$ migratedb -t <target>
-
-Then create an initial block:
-
-	$ DB_URL=postgres://... corectl init 1 [key]
-
-From #devlog, build and deploy the Core server:
-
-	/build [-t <git-branch>] api
-	/deploy [-t <build-tag>] api <target>
-
-Finally, try logging into the dashboard at `https://<target>.chain.com`.
-
-##### Provisioning TODO:
-
-- Commandline tool to create projects
-- Commandline tool to add members to projects
-- `/provision` should automatically migrate and deploy given a
-  specific git ref, defaulting to `main`.
-
-## Dependencies
+### Dependencies
 
 To add or update a Go dependency, do the following:
 
@@ -102,10 +89,12 @@ Copy the code from `$GOPATH/src/x`
 to `$CHAIN/vendor/x`. For example, to vendor the package
 `github.com/kr/pretty`, run
 
-	$ mkdir -p $CHAIN/vendor/github.com/kr
-	$ rm -r $CHAIN/vendor/github.com/kr/pretty
-	$ cp -r $GOPATH/src/github.com/kr/pretty $CHAIN/vendor/github.com/kr/pretty
-	$ rm -rf $CHAIN/vendor/github.com/kr/pretty/.git
+```
+$ mkdir -p $CHAIN/vendor/github.com/kr
+$ rm -r $CHAIN/vendor/github.com/kr/pretty
+$ cp -r $GOPATH/src/github.com/kr/pretty $CHAIN/vendor/github.com/kr/pretty
+$ rm -rf $CHAIN/vendor/github.com/kr/pretty/.git
+```
 
 (Note: don't put a trailing slash (`/`) on these paths.
 It can change the behavior of cp and put the files
@@ -116,11 +105,14 @@ for the dependency. (You can find this with `git rev-parse HEAD` in
 the upstream repo.) Also, make sure the upstream working tree is clean.
 (Check with `git status`.)
 
-### License
+## Deploy Options
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chain/chain/tree/main)
+
+## License
 
 Chain Core Developer Edition is licensed under the terms of the [GNU 
 Affero General Public License Version 3 (AGPL)](LICENSE).
 
 The Chain Java SDK (`/sdk/java`) is licensed under the terms of the 
 [Apache License Version 2.0](sdk/java/LICENSE).
-
