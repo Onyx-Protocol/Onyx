@@ -18,14 +18,17 @@
 
   > div {
     width: 30%;
+    min-height: 100%;
   }
 }
 
 .choice_wrapper {
   display: flex;
+  min-height: 100%;
 
   > label {
-    display: block;
+    display: flex;
+    min-height:100%;
     font-weight: normal;
   }
 }
@@ -39,7 +42,7 @@
   border: 1px solid $table-border-color;
   border-radius: $border-radius-base;
   cursor: pointer;
-  height: 100%;
+  min-height: 100%;
   padding: $grid-gutter-width;
   text-align: center;
 
