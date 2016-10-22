@@ -6,13 +6,16 @@ class SearchBar extends React.Component {
     super(props)
     this.state = {
       query: this.props.queryString || '',
-      sumBy: this.props.sumBy || ''
+      sumBy: this.props.sumBy || '',
+      sumByVisible: false,
     }
     this.state.showClear = this.state.query != '' || this.state.sumBy != ''
+    this.state.sumByVisible = this.state.sumBy != ''
 
     this.filterKeydown = this.filterKeydown.bind(this)
     this.filterOnChange = this.filterOnChange.bind(this)
     this.sumByOnChange = this.sumByOnChange.bind(this)
+    this.showSumBy = this.showSumBy.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
     this.clearQuery = this.clearQuery.bind(this)
   }
@@ -69,6 +72,10 @@ class SearchBar extends React.Component {
     }, 0)
   }
 
+  showSumBy() {
+    this.setState({sumByVisible: true})
+  }
+
   sumByOnChange(event) {
     this.setState({sumBy: event.target.value})
   }
@@ -98,18 +105,17 @@ class SearchBar extends React.Component {
   }
 
   render() {
-    let showSumBy = false
+    let usesSumBy = false
     let searchFieldClass = styles.search_field_full
 
-    if (this.props.sumBy !== undefined) {
-      showSumBy = true
-      searchFieldClass = styles.search_field_half
-    }
+    if (this.props.sumBy !== undefined) usesSumBy = true
+    if (this.state.sumByVisible) searchFieldClass = styles.search_field_half
 
     return (
       <div className={styles.main}>
         <form onSubmit={this.handleSubmit}>
-          <span className={searchFieldClass}>
+          <span className={`${styles.searchField} ${searchFieldClass}`}>
+            <label className={styles.label}>Filter</label>
             <input
               value={this.state.query}
               onKeyDown={this.filterKeydown}
@@ -118,11 +124,14 @@ class SearchBar extends React.Component {
               type='search'
               autoFocus='autofocus'
               placeholder='Enter predicate...' />
+
+            {usesSumBy && !this.state.sumByVisible &&
+              <span onClick={this.showSumBy} className={styles.showSumBy}>set sum_by</span>}
           </span>
 
-          {showSumBy &&
+          {usesSumBy && this.state.sumByVisible &&
             <span className={styles.sum_by_field}>
-              <label>Sum By</label>
+              <label className={styles.label}>Sum By</label>
               <input
                 value={this.state.sumBy}
                 onChange={this.sumByOnChange}
@@ -131,18 +140,19 @@ class SearchBar extends React.Component {
                 placeholder='asset_alias, asset_id' />
             </span>}
 
-
-          {this.state.showClear &&
-            <button type='button'
-              className={`close ${styles.clear_search}`}
-              onClick={this.clearQuery}>
-                Reset
-            </button>}
+            {/* This is required for form submission */}
+            <input type='submit' className={styles.submit} />
         </form>
 
         {this.state.showClear && <span className={styles.queryTime}>
-          Queried at {this.props.queryTime}
+          Queried at {this.props.queryTime} –&nbsp;
+          <span type='button'
+            className={styles.clearSearch}
+            onClick={this.clearQuery}>
+              Clear Search
+          </span>
         </span>}
+
       </div>
     )
   }
