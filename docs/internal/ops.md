@@ -1,6 +1,7 @@
 # Operations
 
 * [Chain Core Testnet](#testnet)
+  * [Librato Dashboard](https://metrics.librato.com/s/spaces/258615)
   * [Network Info](#network-info)
   * [Updating the Generator](#updating-the-generator)
   * [Updating the Signer](#updating-the-signer)
