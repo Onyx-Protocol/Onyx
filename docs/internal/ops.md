@@ -62,7 +62,7 @@ $ go install ./cmd/deploy
 
 #### Run command:
 ```
-$ deploy
+$ deploy cored <ip addr of generator>
 ```
 
 ### Updating the Signers
