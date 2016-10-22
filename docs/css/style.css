@@ -1,34 +1,46 @@
 
 /* Font families */
+
 @font-face {
-    font-family: 'Nitti-Medium';
-    src: url('../fonts/nitti-medium.otf');
+  font-family: 'Nitti-Normal';
+  src: url('/docs/fonts/Nitti-Normal.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/Nitti-Normal.otf')  format('opentype'),
+	     url('/docs/fonts/Nitti-Normal.woff') format('woff'), url('/docs/fonts/Nitti-Normal.ttf')  format('truetype'), url('/docs/fonts/Nitti-Normal.svg#Nitti-Normal') format('svg');
+  font-weight: normal;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'Nitti-Normal';
-    src: url('../fonts/nitti-normal.otf');
+  font-family: 'Nitti-Medium';
+  src: url('/docs/fonts/Nitti-Medium.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/Nitti-Medium.otf')  format('opentype'),
+	     url('/docs/fonts/Nitti-Medium.woff') format('woff'), url('/docs/fonts/Nitti-Medium.ttf')  format('truetype'), url('/docs/fonts/Nitti-Medium.svg#Nitti-Medium') format('svg');
+  font-weight: normal;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'NittiGrotesk-Bold';
-    src: url('../fonts/NittiGrotesk-Bold.otf');
+  font-family: 'NittiGrotesk-Normal';
+  src: url('/docs/fonts/NittiGrotesk-Normal.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/NittiGrotesk-Normal.otf')  format('opentype'),
+	     url('/docs/fonts/NittiGrotesk-Normal.woff') format('woff'), url('/docs/fonts/NittiGrotesk-Normal.ttf')  format('truetype'), url('/docs/fonts/NittiGrotesk-Normal.svg#NittiGrotesk-Normal') format('svg');
+  font-weight: normal;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'NittiGrotesk-Medium';
-    src: url('../fonts/NittiGrotesk-Medium.otf');
+  font-family: 'NittiGrotesk-Medium';
+  src: url('/docs/fonts/NittiGrotesk-Medium.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/NittiGrotesk-Medium.otf')  format('opentype'),
+	     url('/docs/fonts/NittiGrotesk-Medium.woff') format('woff'), url('/docs/fonts/NittiGrotesk-Medium.ttf')  format('truetype'), url('/docs/fonts/NittiGrotesk-Medium.svg#NittiGrotesk-Medium') format('svg');
+  font-weight: normal;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'NittiGrotesk-Normal';
-    src: url('../fonts/NittiGrotesk-Normal.otf');
+  font-family: 'NittiGrotesk-Bold';
+  src: url('/docs/fonts/NittiGrotesk-Bold.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/NittiGrotesk-Bold.otf')  format('opentype'),
+	     url('/docs/fonts/NittiGrotesk-Bold.woff') format('woff'), url('/docs/fonts/NittiGrotesk-Bold.ttf')  format('truetype'), url('/docs/fonts/NittiGrotesk-Bold.svg#NittiGrotesk-Bold') format('svg');
+  font-weight: normal;
+  font-style: normal;
 }
 
-@font-face {
-    font-family: 'NittiGrotesk-SemiLight';
-    src: url('../fonts/NittiGrotesk-SemiLight.otf');
-}
 
 * {
     margin: 0;
