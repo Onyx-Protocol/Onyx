@@ -8,4 +8,4 @@ However, if you've found a way to help out the Chain Core community by submittin
   4. Write the patch adhering to Chain's Code Style Guide: https://github.com/chain/chain/blob/main/docs/internal/styleguide.md
   5. Complete legal requirements for Chain's Contributor License
 
-If you have questions about how to contribute, please post in the Chain forum: http://forums.chain.com
+If you have questions about how to contribute, please visit the Chain developer support center: https://support.chain.com

@@ -1,7 +1,7 @@
 Thank you for reporting an issue! Please read the following before submitting:
 
-Github issues are for reporting specific bugs with Chain Core Developer Edition. If you have general questions about Chain Core or questions regarding building an application on Chain Core, please visit our community forum: 
-http://forums.chain.com
+Github issues are for reporting specific bugs with Chain Core Developer Edition. If you have general questions about Chain Core or questions regarding building an application on Chain Core, please visit our developer support center: 
+https://support.chain.com
 
 Enterprise customers can reach out to their support contact directly. 
 
