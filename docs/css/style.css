@@ -909,23 +909,26 @@ img {
     margin: 0 auto;
     position: relative;
     top: 20px;
-    width: 30px;
+    width: 32px;
+    height:38px;
+    background-image: url(../images/os-icon-sprite.png);
+    background-size: 200%;
 }
 .os-icon-mac {
-    content: url(../images/mac.png);
+    background-position: 0 0;
 }
 
 .os-icon-windows {
-    content: url(../images/windows.png);
+    background-position: 0 -38px;
 }
 
 .os-icon-linux {
-    content: url(../images/linux.png);
+    background-position: 0 -76px;
 }
 
 #download-options .download-option,
 #download-options .download-option .os-icon {
-	transition: all 0.15s ease-in-out;
+	transition: transform 0.15s ease-in-out;
 }
 
 #download-options .download-option:hover .os-icon,
@@ -943,19 +946,16 @@ img {
 }
 
 #download-options .download-option a.active .os-icon-mac {
-    content: url(../images/mac-active.png);
+    background-position: 32px 0;
 }
 
 #download-options .download-option a.active .os-icon-windows {
-    content: url(../images/window-active.png);
+    background-position: 32px -38px;
 }
 
 #download-options .download-option a.active .os-icon-linux {
-    content: url(../images/linux-active.png);
+    background-position: 32px -76px;
 }
-
-
-
 
 /* Modal */
 .modal {
@@ -1140,12 +1140,13 @@ video {
 }
 
 #download-options li a h3 {
-    top: 16px;
+    top: -5px;
     font-size: 20px;
     color: #babdc4;
     font-weight: 500;
     display: inline-block;
     margin: 0 auto;
+    position: relative;
 }
 
 #download-options li a h3,
