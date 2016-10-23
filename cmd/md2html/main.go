@@ -31,7 +31,7 @@ func main() {
 	}
 
 	if !strings.Contains(dest, ":") {
-		convert(dest)
+		printe(convert(dest))
 		os.Exit(0)
 	}
 
@@ -47,24 +47,38 @@ func serve(addr string) {
 			return
 		}
 
-		b, err := render(path + ".md")
-		if os.IsNotExist(err) {
-			// Try plain HTML
-			b, err = renderHTML(path + ".html")
+		paths := []string{
+			path + ".md",
+			path + ".partial.html",
+			strings.TrimSuffix(path, "/") + "/index.html",
+			strings.TrimSuffix(path, "/") + "/index.partial.html",
+		}
 
-			if os.IsNotExist(err) {
-				// Try index.html
-				b, err = renderHTML(strings.TrimSuffix(path, "/") + "/index.html")
+		var (
+			b   []byte
+			err error
+		)
+		for _, p := range paths {
+			if strings.HasSuffix(p, ".md") {
+				b, err = renderMarkdown(p)
+			} else if strings.HasSuffix(p, ".partial.html") {
+				b, err = renderHTML(p)
+			} else {
+				b, err = ioutil.ReadFile(p)
+			}
+
+			if err == nil {
+				break
+			}
+
+			if err != nil && !os.IsNotExist(err) {
+				http.Error(w, err.Error(), 500)
+				return
 			}
 		}
 
-		if os.IsNotExist(err) {
-			http.NotFound(w, r)
-			return
-		}
-
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.NotFound(w, r)
 			return
 		}
 
@@ -73,11 +87,10 @@ func serve(addr string) {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-func convert(dest string) {
+func convert(dest string) error {
 	fmt.Printf("Converting markdown to: %s\n", dest)
-	err := filepath.Walk(".", func(path string, f os.FileInfo, err error) error {
+	return filepath.Walk(".", func(path string, f os.FileInfo, err error) error {
 		if err != nil {
-			printe(err)
 			return err
 		}
 
@@ -90,49 +103,41 @@ func convert(dest string) {
 			output   []byte
 		)
 
-		if isMarkdown, _ := filepath.Match("*.md", f.Name()); isMarkdown {
-			output, err = render(path)
-			if err != nil {
-				printe(err)
-				return err
-			}
-
+		if strings.HasSuffix(f.Name(), ".md") {
 			destFile = strings.TrimSuffix(destFile, ".md")
-		} else if isHTML, _ := filepath.Match("*.html", f.Name()); isHTML {
+			output, err = renderMarkdown(path)
+		} else if strings.HasSuffix(f.Name(), ".partial.html") {
+			destFile = strings.TrimSuffix(destFile, ".partial.html")
 			output, err = renderHTML(path)
-			if err != nil {
-				printe(err)
-				return err
-			}
-
-			// For serving index files in S3, avoid stripping the extension.
-			if isIndexHTML, _ := filepath.Match("index.html", f.Name()); !isIndexHTML {
-				destFile = strings.TrimSuffix(destFile, ".html")
-			}
+		} else if strings.HasSuffix(f.Name(), ".html") {
+			destFile = strings.TrimSuffix(destFile, ".html")
+			output, err = ioutil.ReadFile(path)
 		} else {
 			output, err = ioutil.ReadFile(path)
-			if err != nil {
-				printe(err)
-				return err
-			}
+		}
+
+		if err != nil {
+			return err
+		}
+
+		// For serving index files in S3, we need the .html extension.
+		if f.Name() == "index.html" || f.Name() == "index.partial.html" {
+			destFile += ".html"
 		}
 
 		err = os.MkdirAll(filepath.Dir(destFile), 0777)
 		if err != nil {
-			printe(err)
 			return err
 		}
 
 		err = ioutil.WriteFile(destFile, output, 0644)
 		if err != nil {
-			printe(err)
 			return err
 		}
 
 		fmt.Printf("converted: %s\n", path)
 		return nil
 	})
-	printe(err)
 }
 
 func renderHTML(path string) ([]byte, error) {
@@ -156,7 +161,7 @@ func printe(err error) {
 	}
 }
 
-func render(f string) ([]byte, error) {
+func renderMarkdown(f string) ([]byte, error) {
 	src, err := ioutil.ReadFile(f)
 	if err != nil {
 		return nil, err
