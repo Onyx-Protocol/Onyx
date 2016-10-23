@@ -142,7 +142,7 @@ public class QueryTest {
     new Transaction.QueryBuilder()
         .setFilter("reference_data.test=$1")
         .addFilterParameter(test)
-        .setEndTime(System.currentTimeMillis() - 10000L)
+        .setEndTime(System.currentTimeMillis() - 100000000000L)
         .execute(client);
     assertEquals(0, txs.list.size());
 
@@ -228,7 +228,7 @@ public class QueryTest {
         new Balance.QueryBuilder()
             .setFilter("reference_data.test=$1")
             .addFilterParameter(test)
-            .setTimestamp(System.currentTimeMillis() - 10000L)
+            .setTimestamp(System.currentTimeMillis() - 100000000000L)
             .execute(client);
     assertEquals(0, items.list.size());
 
@@ -287,7 +287,7 @@ public class QueryTest {
         new UnspentOutput.QueryBuilder()
             .setFilter("reference_data.test=$1")
             .setFilterParameters(Arrays.asList(test))
-            .setTimestamp(System.currentTimeMillis() - 10000L)
+            .setTimestamp(System.currentTimeMillis() - 100000000000L)
             .execute(client);
     assertEquals(0, items.list.size());
 
