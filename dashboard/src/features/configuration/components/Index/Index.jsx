@@ -123,12 +123,13 @@ class Index extends React.Component {
                     type='radio'
                     {...typeProps}
                     value='testnet' />
-              <div className={`${styles.choice} ${styles.testnet}`}>
-                <span className={styles.choice_title}>Join the Chain Testnet</span>
+              <div className={styles.choice}>
+                <InlineSVG src={require('!svg-inline!assets/images/config/join-existing.svg')} />
+                  <span className={styles.choice_title}>Join the Chain Testnet</span>
 
-                <p>
-                  Connect this Chain Core to the Chain Testnet. <strong>Data will be reset every week.</strong>
-                </p>
+                  <p>
+                    Connect this Chain Core to the Chain Testnet. <strong>Data will be reset every week.</strong>
+                  </p>
               </div>
             </label>
           </div>
