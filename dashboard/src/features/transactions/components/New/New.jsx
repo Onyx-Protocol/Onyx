@@ -62,11 +62,16 @@ class Form extends React.Component {
       submitting
     } = this.props
 
+    let submitLabel = 'Submit Transaction'
+    if (submit_action.value == 'generate') {
+      submitLabel = 'Generate Transaction Hex'
+    }
+
     return(
       <FormContainer
         error={error}
         label='New Transaction'
-        submitLabel='Submit Transaction'
+        submitLabel={submitLabel}
         onSubmit={handleSubmit(this.submitWithValidation)}
         showActiveSubmit={true}
         submitting={submitting} >
