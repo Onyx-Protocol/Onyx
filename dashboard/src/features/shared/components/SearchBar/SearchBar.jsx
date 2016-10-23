@@ -117,7 +117,7 @@ class SearchBar extends React.Component {
           <span className={`${styles.searchField} ${searchFieldClass}`}>
             <label className={styles.label}>Filter</label>
             <input
-              value={this.state.query}
+              value={this.state.query || ''}
               onKeyDown={this.filterKeydown}
               onChange={this.filterOnChange}
               className={`form-control ${styles.search_input}`}
