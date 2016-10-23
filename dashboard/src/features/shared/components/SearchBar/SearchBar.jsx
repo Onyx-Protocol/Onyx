@@ -130,13 +130,13 @@ class SearchBar extends React.Component {
 
           {usesSumBy && this.state.sumByVisible &&
             <span className={styles.sum_by_field}>
-              <label className={styles.label}>Sum By</label>
               <input
                 value={this.state.sumBy}
                 onChange={this.sumByOnChange}
                 className={`form-control ${styles.search_input}`}
                 type='search'
-                placeholder='asset_alias, asset_id' />
+                autoFocus='autofocus'
+                placeholder='Enter sum_by...' />
             </span>}
 
             {/* This is required for form submission */}
