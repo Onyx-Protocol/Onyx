@@ -24,9 +24,31 @@ Any field in a JSON object can be used as a filter property. To use a field that
 asset_definition.issuer.name
 ```
 
+Note: although you can create asset definitions, tags, and reference data with any valid JSON object, you can only query fieldnames that contain **letters**, **numbers**, and **underscores**.
+
 #### Operators
 
-Filters currently support only the `=` operator.
+Filters currently support only the `=` operator, which allows you to search for exact matches of **string** and **integer** values. Other data types, such as booleans, are not supported.
+
+There are two methods of providing search values to the `=` operator. First, you can include them inline, surrounded by single quotes:
+
+```
+alias='alice'
+```
+
+Alternatively, you can specify a parameterized filter, without single quotes:
+
+```
+alias=$1 OR alias=$2
+```
+
+When using parameterized filters, you should also provide an ordered set of values for the parameters:
+
+```
+["Bob's account", "Bob's dog's account"]
+```
+
+The SDK supports both parameterized and non-parameterized filters. The dashboard does **not** support parameterized filters.
 
 #### Scope
 
