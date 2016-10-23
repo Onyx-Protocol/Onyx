@@ -49,6 +49,13 @@ export default class ActionItem extends React.Component {
     this.setState({referenceDataOpen: true})
   }
 
+  componentDidMount() {
+    window.scroll(
+      window.scrollX,
+      window.scrollY + this.scrollRef.getBoundingClientRect().top - 10
+    )
+  }
+
   render() {
     const {
       type,
@@ -69,7 +76,7 @@ export default class ActionItem extends React.Component {
     }
 
     return (
-      <div className={styles.main}>
+      <div className={styles.main} ref={ref => this.scrollRef = ref}>
         <HiddenField fieldProps={type} />
 
         <div className={styles.header}>
