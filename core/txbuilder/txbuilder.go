@@ -47,12 +47,12 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 
 		for _, in := range buildResult.Inputs {
 			if in.Amount() > math.MaxInt64 {
-				return nil, errors.WithDetailf(ErrBadAmount, "bad amount %d for action %d", in.Amount(), i)
+				return nil, errors.WithDetailf(ErrBadAmount, "bad amount '%d' for action %d: exceeds maximum value 2^63", in.Amount(), i)
 			}
 		}
 		for _, out := range buildResult.Outputs {
 			if out.Amount > math.MaxInt64 {
-				return nil, errors.WithDetailf(ErrBadAmount, "bad amount %d for action %d", out.Amount, i)
+				return nil, errors.WithDetailf(ErrBadAmount, "bad amount '%d' for action %d: exceeds maximum value 2^63", out.Amount, i)
 			}
 		}
 
@@ -141,13 +141,13 @@ func checkBlankCheck(tx *bc.TxData) error {
 		asset := in.AssetID() // AssetID() is calculated for IssuanceInputs, so grab once
 		assetMap[asset], ok = checked.AddInt64(assetMap[asset], int64(in.Amount()))
 		if !ok {
-			return errors.WithDetailf(ErrBadAmount, "amounts for asset %s overflow the allowed asset amount", asset)
+			return errors.WithDetailf(ErrBadAmount, "cumulative amounts for asset %s overflow the allowed asset amount 2^63", asset)
 		}
 	}
 	for _, out := range tx.Outputs {
 		assetMap[out.AssetID], ok = checked.SubInt64(assetMap[out.AssetID], int64(out.Amount))
 		if !ok {
-			return errors.WithDetailf(ErrBadAmount, "amounts for asset %s overflow the allowed asset amount", out.AssetID)
+			return errors.WithDetailf(ErrBadAmount, "cumulative amounts for asset %s overflow the allowed asset amount 2^63", out.AssetID)
 		}
 	}
 
