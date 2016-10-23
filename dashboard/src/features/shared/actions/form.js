@@ -16,6 +16,14 @@ export default function(type, options = {}) {
     submitForm: (data) => {
       const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
 
+      if (typeof data.id == 'string') {
+        data.id = data.id.trim()
+      }
+
+      if (typeof data.alias == 'string') {
+        data.alias = data.alias.trim()
+      }
+
       const jsonFields = options.jsonFields || []
       jsonFields.map(fieldName => {
         data[fieldName] = parseNonblankJSON(data[fieldName])
