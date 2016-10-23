@@ -4,11 +4,39 @@ These instructions assume that your PATH includes the wix tools binary. My wix t
 
 ### Dependencies 
 
+We don't check `.exe`s into git, so you'll have to provide them yourself. There are four `.exe`s:
+
+1. `chain-core.exe` (aka `cored`).
+2. `ChainMgr.exe` 
+3. The Postgres Installer, called `postgresql-9.5.4-2-windows-x64.exe`
+4. The VC++ Redistributable (which is required to run the Postgres Installer), called `vcredist_x64.exe`
+
+You will want to put them into this directory like this: 
+
+```
+|-windows
+   | chain-core.exe
+   |-ChainBundle
+   |-ChainMgr
+      | ChainMgr.exe
+   |-ChainPackage
+   |-Postgres
+      | postgres-installer.exe
+      | postgres dll exe
+```
+
+`ChainMgr.exe` and `chain-core.exe` can be compiled from any machine using `GOOS` and `GOARCH`: 
+
+```
+GOOS=windows GOARCH=amd64 go build chain/cmd/cored
+GOOS=windows GOARCH=amd64 go build chain/installer/windows/ChainMgr
+```
+
 The Postgres Installer can be downloaded from http://www.enterprisedb.com/products-services-training/pgdownload
 
 The VC++ Redistributable can be downloaded from https://www.microsoft.com/en-us/download/search.aspx?q=redistributable+package&first=11
 
-Make sure you have the 64-bit versions. Chain Core Windows does not support 32-bit.
+Make sure you have the 64-bit versions. Chain Core Windows does not support 32-bit. Do not actually run these installers, just provide them.
 
 ### Build
 
