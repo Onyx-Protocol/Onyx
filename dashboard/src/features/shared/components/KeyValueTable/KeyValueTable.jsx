@@ -19,6 +19,10 @@ class KeyValueTable extends React.Component {
       value = <Link to={item.link}>{value}</Link>
     }
 
+    if (value === undefined || value === null || value === '') {
+      value = "-"
+    }
+
     return value
   }
 
