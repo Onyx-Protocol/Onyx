@@ -61,6 +61,9 @@ public class Query {
   @SerializedName("sum_by")
   public List<String> sumBy;
 
+  /**
+   * Specifies aliases to use when filteringer results. This is parameter only used in {@link MockHsm.Key} queries.
+   */
   public List<String> aliases;
 
   /**

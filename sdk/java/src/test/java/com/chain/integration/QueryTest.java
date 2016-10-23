@@ -4,6 +4,7 @@ import com.chain.TestUtils;
 import com.chain.api.Account;
 import com.chain.api.Asset;
 import com.chain.api.Balance;
+import com.chain.api.ControlProgram;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
 import com.chain.api.UnspentOutput;
@@ -103,6 +104,8 @@ public class QueryTest {
 
     new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(client);
     new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(client);
+    ControlProgram ctrlp =
+        new ControlProgram.Builder().controlWithAccountByAlias(alice).create(client);
 
     Map<String, Object> refData = new HashMap<>();
     refData.put("asset", asset);
@@ -115,8 +118,8 @@ public class QueryTest {
                     .setReferenceData(refData)
                     .addReferenceDataField("test", test))
             .addAction(
-                new Transaction.Action.ControlWithAccount()
-                    .setAccountAlias(alice)
+                new Transaction.Action.ControlWithProgram()
+                    .setControlProgram(ctrlp)
                     .setAssetAlias(asset)
                     .setAmount(amount)
                     .setReferenceData(refData)
@@ -129,6 +132,21 @@ public class QueryTest {
     Transaction.submit(client, HsmSigner.sign(issuance));
 
     Transaction.Items txs =
+        new Transaction.QueryBuilder()
+            .setFilter("reference_data.test=$1")
+            .addFilterParameter(test)
+            .setStartTime(System.currentTimeMillis())
+            .execute(client);
+    assertEquals(0, txs.list.size());
+
+    new Transaction.QueryBuilder()
+        .setFilter("reference_data.test=$1")
+        .addFilterParameter(test)
+        .setEndTime(System.currentTimeMillis() - 10000L)
+        .execute(client);
+    assertEquals(0, txs.list.size());
+
+    txs =
         new Transaction.QueryBuilder()
             .setFilter("inputs(reference_data.test=$1)")
             .addFilterParameter(test)
@@ -210,6 +228,15 @@ public class QueryTest {
         new Balance.QueryBuilder()
             .setFilter("reference_data.test=$1")
             .addFilterParameter(test)
+            .setTimestamp(System.currentTimeMillis() - 10000L)
+            .execute(client);
+    assertEquals(0, items.list.size());
+
+    items =
+        new Balance.QueryBuilder()
+            .setFilter("reference_data.test=$1")
+            .addFilterParameter(test)
+            .setTimestamp(System.currentTimeMillis())
             .execute(client);
     Balance bal = items.next();
     assertNotNull(bal.sumBy);
@@ -233,6 +260,7 @@ public class QueryTest {
         .setAlias(asset)
         .addTag("name", asset)
         .setQuorum(1)
+        .addDefinitionField("name", asset)
         .create(client);
 
     for (int i = 0; i < 10; i++) {
@@ -241,6 +269,7 @@ public class QueryTest {
               .setAlias(alice + i)
               .addRootXpub(key.xpub)
               .setQuorum(1)
+              .addTag("test", test)
               .create(client);
       Transaction.Template issuance =
           new Transaction.Builder()
@@ -254,18 +283,37 @@ public class QueryTest {
               .build(client);
       Transaction.submit(client, HsmSigner.sign(issuance));
     }
-
     UnspentOutput.Items items =
         new UnspentOutput.QueryBuilder()
             .setFilter("reference_data.test=$1")
-            .addFilterParameter(test)
+            .setFilterParameters(Arrays.asList(test))
+            .setTimestamp(System.currentTimeMillis() - 10000L)
+            .execute(client);
+    assertEquals(0, items.list.size());
+
+    items =
+        new UnspentOutput.QueryBuilder()
+            .setFilter("reference_data.test=$1")
+            .setFilterParameters(Arrays.asList(test))
             .execute(client);
     UnspentOutput unspent = items.next();
+    assertNotNull(unspent.type);
     assertNotNull(unspent.purpose);
     assertNotNull(unspent.transactionId);
     assertNotNull(unspent.position);
-    assertNotNull(unspent.amount);
-    assertEquals("control", unspent.type);
+    assertNotNull(unspent.assetId);
+    assertNotNull(unspent.assetAlias);
+    assertNotNull(unspent.accountId);
+    assertNotNull(unspent.accountAlias);
+    assertNotNull(unspent.controlProgram);
+    assertNotNull(unspent.assetTags);
+    assertNotNull(unspent.assetDefinition);
+    assertNotNull(unspent.accountTags);
+    assertNotNull(unspent.referenceData);
+    assertEquals(100, unspent.amount);
+    assertEquals("yes", unspent.isLocal);
+    assertEquals("yes", unspent.assetIsLocal);
+    assertEquals(asset, unspent.assetDefinition.get("name"));
     assertEquals(10, items.list.size());
   }
 

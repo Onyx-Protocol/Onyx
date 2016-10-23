@@ -38,7 +38,7 @@ class TransactionBasics {
         .setAssetAlias("gold")
         .setAmount(10)
       ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.program)
+        .setControlProgram(bobProgram.controlProgram)
         .setAssetAlias("gold")
         .setAmount(10)
       ).build(client);
@@ -78,7 +78,7 @@ class TransactionBasics {
         .setAssetAlias("gold")
         .setAmount(10)
       ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.program)
+        .setControlProgram(bobProgram.controlProgram)
         .setAssetAlias("gold")
         .setAmount(10)
       ).build(client);
@@ -132,11 +132,11 @@ class TransactionBasics {
         .setAssetAlias("silver")
         .setAmount(20)
       ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.program)
+        .setControlProgram(bobProgram.controlProgram)
         .setAssetAlias("gold")
         .setAmount(10)
       ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.program)
+        .setControlProgram(bobProgram.controlProgram)
         .setAssetAlias("silver")
         .setAmount(20)
       ).build(client);

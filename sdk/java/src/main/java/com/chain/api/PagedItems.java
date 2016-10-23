@@ -45,7 +45,7 @@ public abstract class PagedItems<T> implements Iterator<T> {
 
   /**
    * Retrieves the next page of results.
-   * @return
+   * @return a paged collection of type T
    * @throws ChainException
    */
   public abstract PagedItems<T> getPage() throws ChainException;

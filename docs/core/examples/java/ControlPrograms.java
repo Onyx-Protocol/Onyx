@@ -22,7 +22,7 @@ class ControlPrograms {
         .setAssetAlias("gold")
         .setAmount(10)
       ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(aliceProgram.program)
+        .setControlProgram(aliceProgram.controlProgram)
         .setAssetAlias("gold")
         .setAmount(10)
       ).build(client);

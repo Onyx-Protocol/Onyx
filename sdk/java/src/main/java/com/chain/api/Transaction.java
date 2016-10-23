@@ -826,7 +826,7 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithProgram setControlProgram(ControlProgram controlProgram) {
-        this.put("control_program", controlProgram.program);
+        this.put("control_program", controlProgram.controlProgram);
         return this;
       }
 
@@ -1016,16 +1016,16 @@ public class Transaction {
      * Sets the baseTransaction field and initializes the actions lists.<br>
      * This constructor can be used when executing an atomic swap and the counter party has sent an initialized tx template.
      */
-    public Builder(String rawTransaction) {
-      this.baseTransaction = rawTransaction;
+    public Builder(String baseTransaction) {
+      this.setBaseTransaction(baseTransaction);
       this.actions = new ArrayList<>();
     }
 
     /**
      * Sets the rawTransaction that will be added to the current template.
      */
-    public Builder setBaseTransaction(String rawTransaction) {
-      this.baseTransaction = rawTransaction;
+    public Builder setBaseTransaction(String baseTransaction) {
+      this.baseTransaction = baseTransaction;
       return this;
     }
 

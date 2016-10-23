@@ -61,7 +61,7 @@ public class Account {
      * The derivation path of the extended key.
      */
     @SerializedName("account_derivation_path")
-    public String[] derivationPath;
+    public String[] accountDerivationPath;
   }
 
   /**

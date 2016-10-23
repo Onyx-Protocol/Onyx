@@ -17,11 +17,11 @@ public class ControlProgram {
    * Hex-encoded string representation of the control program.
    */
   @SerializedName("control_program")
-  public String program;
+  public String controlProgram;
 
   /**
    * Generates hex representation of a "retire" control program.
-   * @return
+   * @return hex-encoded "retire" program
    */
   public static String retireProgram() {
     return "6a";
@@ -86,7 +86,7 @@ public class ControlProgram {
      * @return updated builder object
      */
     public Builder controlWithAccountById(String accountId) {
-      this.type = "account";
+      this.setType("account");
       this.addParameter("account_id", accountId);
       return this;
     }
@@ -98,7 +98,7 @@ public class ControlProgram {
      * @return updated builder object
      */
     public Builder controlWithAccountByAlias(String accountAlias) {
-      this.type = "account";
+      this.setType("account");
       this.addParameter("account_alias", accountAlias);
       return this;
     }

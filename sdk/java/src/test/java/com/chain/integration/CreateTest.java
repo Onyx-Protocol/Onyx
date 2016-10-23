@@ -54,22 +54,27 @@ public class CreateTest {
     client = TestUtils.generateClient();
     key = MockHsm.Key.create(client);
     String alice = "CreateTest.testAccountCreate.alice";
+    String test = "CreateTest.testAccountCreate.test";
+    Map<String, Object> tags = new HashMap<>();
+    tags.put("name", alice);
     Account account =
         new Account.Builder()
             .setAlias(alice)
             .addRootXpub(key.xpub)
             .setQuorum(1)
-            .addTag("name", alice)
+            .setTags(tags)
+            .addTag("test", test)
             .create(client);
     assertNotNull(account.id);
     assertNotNull(account.keys);
     assertEquals(1, account.keys.length);
     assertNotNull(account.keys[0].accountXpub);
     assertNotNull(account.keys[0].rootXpub);
-    assertNotNull(account.keys[0].derivationPath);
+    assertNotNull(account.keys[0].accountDerivationPath);
     assertEquals(alice, account.alias);
     assertEquals(1, account.quorum);
     assertEquals(alice, account.tags.get("name"));
+    assertEquals(test, account.tags.get("test"));
 
     try {
       new Account.Builder()
@@ -104,6 +109,8 @@ public class CreateTest {
     key = MockHsm.Key.create(client);
     String asset = "CreateTest.testAssetCreate.asset";
     String test = "CreateTest.testAssetCreate.test";
+    Map<String, Object> tags = new HashMap<>();
+    tags.put("name", asset);
     Map<String, Object> def = new HashMap<>();
     def.put("name", asset);
     Asset testAsset =
@@ -111,7 +118,8 @@ public class CreateTest {
             .setAlias(asset)
             .addRootXpub(key.xpub)
             .setQuorum(1)
-            .addTag("name", asset)
+            .setTags(tags)
+            .addTag("test", test)
             .setDefinition(def)
             .addDefinitionField("test", test)
             .create(client);
@@ -121,10 +129,11 @@ public class CreateTest {
     assertEquals(1, testAsset.keys.length);
     assertNotNull(testAsset.keys[0].assetPubkey);
     assertNotNull(testAsset.keys[0].rootXpub);
-    assertNotNull(testAsset.keys[0].derivationPath);
+    assertNotNull(testAsset.keys[0].assetDerivationPath);
     assertEquals(asset, testAsset.alias);
     assertEquals(1, testAsset.quorum);
     assertEquals(asset, testAsset.tags.get("name"));
+    assertEquals(test, testAsset.tags.get("test"));
     assertEquals(asset, testAsset.definition.get("name"));
     assertEquals(test, testAsset.definition.get("test"));
     assertEquals("yes", testAsset.isLocal);
@@ -171,10 +180,10 @@ public class CreateTest {
 
     ControlProgram ctrlp =
         new ControlProgram.Builder().controlWithAccountById(account.id).create(client);
-    assertNotNull(ctrlp.program);
+    assertNotNull(ctrlp.controlProgram);
 
     ctrlp = new ControlProgram.Builder().controlWithAccountByAlias(account.alias).create(client);
-    assertNotNull(ctrlp.program);
+    assertNotNull(ctrlp.controlProgram);
 
     try {
       new ControlProgram.Builder().controlWithAccountById("bad-id").create(client);

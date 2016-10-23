@@ -16,11 +16,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A mock hsm provided by Chain Core to handle key material in development.
+ * A mock HSM provided by Chain Core to handle key material in development.
  */
 public class MockHsm {
   /**
-   * Returns a new client that knows how to make requests to the mock hsm.
+   * Returns a new client that knows how to make requests to the mock HSM.
    * @param client client object that makes request to the core
    * @return new client object
    * @throws BadURLException
@@ -39,7 +39,7 @@ public class MockHsm {
 
   /**
    * A class representing an extended public key. An instance of this class
-   * stores a link to the mock hsm holding the corresponding private key.
+   * stores a link to the mock HSM holding the corresponding private key.
    */
   public static class Key {
     /**

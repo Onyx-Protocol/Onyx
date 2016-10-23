@@ -103,7 +103,7 @@ public class Asset {
      * The derivation path of the derived key.
      */
     @SerializedName("asset_derivation_path")
-    public String[] derivationPath;
+    public String[] assetDerivationPath;
   }
 
   /**
