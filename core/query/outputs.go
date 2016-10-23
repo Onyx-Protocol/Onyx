@@ -13,6 +13,12 @@ import (
 	"chain/errors"
 )
 
+var defaultOutputsAfter = OutputsAfter{
+	lastBlockHeight: math.MaxInt64,
+	lastTxPos:       math.MaxUint32,
+	lastIndex:       math.MaxUint32,
+}
+
 type OutputsAfter struct {
 	lastBlockHeight uint64
 	lastTxPos       uint32
@@ -56,7 +62,7 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 	}
 	defer rows.Close()
 
-	var newAfter OutputsAfter
+	var newAfter = defaultOutputsAfter
 	if after != nil {
 		newAfter = *after
 	}
@@ -88,6 +94,8 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 }
 
 func constructOutputsQuery(expr filter.SQLExpr, timestampMS uint64, after *OutputsAfter, limit int) (string, []interface{}) {
+	// TODO(jackson): refactor to use bytes.Buffer for consistency
+	// with the other construct(...)Query functions.
 	sql := fmt.Sprintf("SELECT block_height, tx_pos, output_index, data FROM %s", pq.QuoteIdentifier("annotated_outputs"))
 
 	vals := make([]interface{}, 0, 4+len(expr.Values))
@@ -114,10 +122,10 @@ func constructOutputsQuery(expr filter.SQLExpr, timestampMS uint64, after *Outpu
 		vals = append(vals, after.lastIndex)
 		lastIndexValIndex := len(vals)
 
-		where = fmt.Sprintf("%s AND (block_height, tx_pos, output_index) > ($%d, $%d, $%d)", where, lastBlockHeightValIndex, lastTxPosValIndex, lastIndexValIndex)
+		where = fmt.Sprintf("%s AND (block_height, tx_pos, output_index) < ($%d, $%d, $%d)", where, lastBlockHeightValIndex, lastTxPosValIndex, lastIndexValIndex)
 	}
 
-	sql += fmt.Sprintf(" WHERE %s ORDER BY block_height ASC, tx_pos ASC, output_index ASC LIMIT %d", where, limit)
+	sql += fmt.Sprintf(" WHERE %s ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT %d", where, limit)
 
 	return sql, vals
 }

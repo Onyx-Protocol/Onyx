@@ -24,6 +24,7 @@ func TestDecodeOutputsAfter(t *testing.T) {
 		{str: "10:1:0", cur: OutputsAfter{lastBlockHeight: 10, lastTxPos: 1}},
 		{str: "15:15:15", cur: OutputsAfter{lastBlockHeight: 15, lastTxPos: 15, lastIndex: 15}},
 		{str: "49153:51966:51829", cur: OutputsAfter{lastBlockHeight: 49153, lastTxPos: 51966, lastIndex: 51829}},
+		{str: "9223372036854775807:4294967295:4294967295", cur: defaultOutputsAfter},
 	}
 
 	for _, tc := range testCases {
@@ -48,6 +49,7 @@ func TestOutputsAfter(t *testing.T) {
 		VALUES
 			(1, 0, 0, 'ab', '{"account_id": "abc"}', int8range(1, 100)),
 			(1, 1, 0, 'cd', '{"account_id": "abc"}', int8range(1, 100)),
+			(1, 1, 1, 'cd', '{"account_id": "abc"}', int8range(1, 100)),
 			(2, 0, 0, 'ef', '{"account_id": "abc"}', int8range(10, 50));
 	`)
 	if err != nil {
@@ -66,19 +68,19 @@ func TestOutputsAfter(t *testing.T) {
 	if len(results) != 2 {
 		t.Errorf("got %d results, want 2", len(results))
 	}
-	if after.String() != "1:1:0" {
-		t.Errorf("got after=%q want 1:1:0", after.String())
+	if after.String() != "1:1:1" {
+		t.Errorf("got after=%q want 1:1:1", after.String())
 	}
 
 	results, after, err = indexer.Outputs(ctx, q, nil, 25, after, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(results) != 1 {
-		t.Errorf("got %d results, want 1", len(results))
+	if len(results) != 2 {
+		t.Errorf("got %d results, want 2", len(results))
 	}
-	if after.String() != "2:0:0" {
-		t.Errorf("got after=%q want 2:0:0", after.String())
+	if after.String() != "1:0:0" {
+		t.Errorf("got after=%q want 1:0:0", after.String())
 	}
 }
 
@@ -95,13 +97,13 @@ func TestConstructOutputsQuery(t *testing.T) {
 	}{
 		{
 			// empty filter
-			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE timespan @> $1::int8 ORDER BY block_height ASC, tx_pos ASC, output_index ASC LIMIT 10`,
+			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE timespan @> $1::int8 ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT 10`,
 			wantValues: []interface{}{nowMillis},
 		},
 		{
 			filter:     "asset_id = $1 AND account_id = 'abc'",
 			values:     []interface{}{"foo"},
-			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 ORDER BY block_height ASC, tx_pos ASC, output_index ASC LIMIT 10`,
+			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT 10`,
 			wantValues: []interface{}{`{"account_id":"abc","asset_id":"foo"}`, nowMillis},
 		},
 		{
@@ -112,7 +114,7 @@ func TestConstructOutputsQuery(t *testing.T) {
 				lastTxPos:       17,
 				lastIndex:       19,
 			},
-			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 AND (block_height, tx_pos, output_index) > ($3, $4, $5) ORDER BY block_height ASC, tx_pos ASC, output_index ASC LIMIT 10`,
+			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 AND (block_height, tx_pos, output_index) < ($3, $4, $5) ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT 10`,
 			wantValues: []interface{}{`{"account_id":"abc","asset_id":"foo"}`, nowMillis, uint64(15), uint32(17), uint32(19)},
 		},
 	}
@@ -203,8 +205,8 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{acct1.ID},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
 				{bc.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
 			},
 		},
 		{

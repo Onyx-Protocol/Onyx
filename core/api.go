@@ -218,6 +218,9 @@ type requestQuery struct {
 	AscLongPoll bool          `json:"ascending_with_long_poll,omitempty"`
 	Timeout     json.Duration `json:"timeout"`
 
+	// After is a completely opaque cursor, indicating that only
+	// items in the result set after the one identified by `After`
+	// should be included. It has no relationship to time.
 	After string `json:"after"`
 
 	// These two are used for time-range queries like /list-transactions
