@@ -30,14 +30,17 @@ function preprocessTransaction(formParams) {
   for (let i in builder.actions) {
     let a = builder.actions[i]
 
-    const amount = a.amount
-    if (amount) {
-      if ((parseInt(amount)+'') == amount) {
-        a.amount = parseInt(amount)
-      } else {
-        throw new Error(`Action ${parseInt(i)+1} amount must be an integer.`)
+    const intFields = ['amount', 'position']
+    intFields.forEach(key => {
+      const value = a[key]
+      if (value) {
+        if ((parseInt(value)+'') == value) {
+          a[key] = parseInt(value)
+        } else {
+          throw new Error(`Action ${parseInt(i)+1} ${key} must be an integer.`)
+        }
       }
-    }
+    })
 
     // HACK: Check for retire actions and replace with OP_FAIL control programs.
     // TODO: update JS SDK to support Java SDK builder style.

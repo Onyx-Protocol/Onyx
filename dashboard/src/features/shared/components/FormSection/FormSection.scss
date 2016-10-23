@@ -10,6 +10,8 @@
 
   &:last-child {
     border: 0;
+    margin-bottom: 0;
+    padding-bottom: $gutter-size*2;
   }
 }
 
@@ -19,8 +21,4 @@
   font-size: 20px;
   text-transform: uppercase;
   margin-bottom: $gutter-size;
-}
-
-.content {
-
 }

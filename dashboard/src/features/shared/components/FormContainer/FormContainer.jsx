@@ -5,10 +5,10 @@ import styles from './FormContainer.scss'
 class FormContainer extends React.Component {
   render() {
     return(
-      <div>
+      <div className='flex-container'>
         <PageTitle title={this.props.label} />
 
-        <div className={`${styles.main}`}>
+        <div className={`${styles.main} flex-container`}>
           <div className={styles.content}>
             <form onSubmit={this.props.onSubmit}>
               {this.props.children}
@@ -19,9 +19,11 @@ class FormContainer extends React.Component {
                     title='Error submitting form'
                     message={this.props.error.toString()} />}
 
-                <button type='submit' className={`btn btn-primary ${styles.submit}`} disabled={this.props.submitting}>
-                  {this.props.submitLabel || 'Submit'}
-                </button>
+                <div className={styles.submit}>
+                  <button type='submit' className='btn btn-primary' disabled={this.props.submitting}>
+                    {this.props.submitLabel || 'Submit'}
+                  </button>
+                </div>
               </FormSection>
             </form>
           </div>

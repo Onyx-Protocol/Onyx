@@ -1,10 +1,15 @@
 import chain from 'chain'
 import { context, pageSize } from 'utility/environment'
-import { push } from 'react-router-redux'
+import { push, replace } from 'react-router-redux'
 
 export default function(type, options = {}) {
   const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
   const listPath  = options.listPath || `/${type}s`
+
+  const receive = (param) => ({
+    type: `RECEIVED_${type.toUpperCase()}_ITEMS`,
+    param,
+  })
 
   // Dispatch a single request for the specified query, and persist the
   // results to the default item store
@@ -17,10 +22,7 @@ export default function(type, options = {}) {
       const promise = chain[className].query(context(), params)
 
       promise.then(
-        (param) => dispatch({
-          type: `RECEIVED_${type.toUpperCase()}_ITEMS`,
-          param: param,
-        })
+        (param) => dispatch(receive(param))
       )
 
       return promise
@@ -84,6 +86,7 @@ export default function(type, options = {}) {
         return Promise.resolve({last: true})
       } else if (!refresh && latestResponse.nextPage) {
         promise = latestResponse.nextPage(context())
+        promise.then(resp => dispatch(receive(resp)))
       } else {
         let params = {}
 
@@ -103,7 +106,7 @@ export default function(type, options = {}) {
         if (options.defaultKey && filter.indexOf('\'') < 0 && filter.indexOf('=') < 0) {
           dispatch(pushList({
             filter: `${options.defaultKey}='${query.filter}'`
-          }))
+          }, null, {replace: true}))
         } else {
           return dispatch({type: 'ERROR', payload: err})
         }
@@ -130,7 +133,7 @@ export default function(type, options = {}) {
     }
   }
 
-  const pushList = (query = {}, pageNumber) => {
+  const pushList = (query = {}, pageNumber, options = {}) => {
     if (pageNumber) {
       query = {
         ...query,
@@ -143,6 +146,7 @@ export default function(type, options = {}) {
       query
     }
 
+    if (options.replace) return replace(location)
     return push(location)
   }
 

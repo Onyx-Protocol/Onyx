@@ -74,7 +74,7 @@ class Form extends React.Component {
           {actions.length == 0 && <p className={styles.actionInfo}>
               Add actions to issue, spend, control or retire assets.
               For more information, read the&nbsp;
-              <a href='/docs/building-applications/transaction-basics#creating-transactions'>
+              <a href='/docs/core/build-applications/transaction-basics#creating-transactions'>
                 documentation on transactions
               </a>.
             </p>}

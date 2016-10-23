@@ -43,12 +43,9 @@
   margin: -15px 0;
   padding: 15px;
   position: relative;
-}
 
-.chevron {
-  width: 5px;
-  height: 9px;
-  position: absolute;
-  right: 0;
-  top: calc(50% - 5px;)
+  background: url('assets/images/chevron-green.png');
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 5px 9px;
 }

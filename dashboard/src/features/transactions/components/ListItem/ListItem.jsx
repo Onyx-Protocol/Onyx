@@ -7,7 +7,6 @@ import styles from './ListItem.scss'
 class ListItem extends React.Component {
   render() {
     const item = this.props.item
-    const chevron = require('assets/images/chevron-green.png')
 
     return(
       <div className={styles.main}>
@@ -22,7 +21,6 @@ class ListItem extends React.Component {
           </div>
           <Link className={styles.viewLink} to={`/transactions/${item.id}`}>
             View Details
-            <img src={chevron} className={styles.chevron} />
           </Link>
         </div>
 
