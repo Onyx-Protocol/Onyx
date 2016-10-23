@@ -1293,7 +1293,7 @@ video {
         page-break-after: avoid;
     }
 
-    table, img, p {
+    table, img, p, pre, code {
         page-break-inside: avoid;
     }
 
@@ -1318,6 +1318,11 @@ video {
     }
     footer {
         display: none;
+    }
+    pre code {
+        font-size: 12px;
+        line-height: 17px;
+        white-space: pre-wrap;
     }
 }
 
