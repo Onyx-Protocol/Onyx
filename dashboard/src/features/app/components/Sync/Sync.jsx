@@ -22,7 +22,7 @@ class Sync extends React.Component {
     if (snapshot && snapshot.in_progress) { // Currently downloading the snapshot.
       const downloaded = (snapshot.downloaded / snapshot.size) * 100
 
-      return <ul className={navStyles.navigation}>
+      return <ul className={`${navStyles.navigation} ${styles.main}`}>
         {onTestnet &&
           <li className={navStyles.navigationTitle}>testnet snapshot</li>
         }
@@ -70,7 +70,7 @@ class Sync extends React.Component {
       }
     }
 
-    return <ul className={navStyles.navigation}>{elems}</ul>
+    return <ul className={`${navStyles.navigation} ${styles.main}`}>{elems}</ul>
   }
 }
 

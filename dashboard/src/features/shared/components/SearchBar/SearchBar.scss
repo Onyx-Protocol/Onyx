@@ -29,7 +29,6 @@
 }
 
 .search_input {
-
   height: 50px;
   padding: 10px 20px 10px 45px;
   border: 1px solid $border-color;
@@ -40,6 +39,10 @@
   background-repeat: no-repeat;
   background-size: 15px 15px;
   background-position: 20px center;
+}
+
+.sum_by_input {
+  background-image: url('assets/images/sum.png');
 }
 
 .showSumBy {

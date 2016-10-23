@@ -1,3 +1,9 @@
+.main {
+  padding-top: $gutter-size;
+  border-top: 1px solid $border-inverse-color;
+  margin-top: $gutter-size;
+}
+
 .testnetError {
   color: $brand-danger;
 }

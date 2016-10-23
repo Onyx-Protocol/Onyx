@@ -133,7 +133,7 @@ class SearchBar extends React.Component {
               <input
                 value={this.state.sumBy}
                 onChange={this.sumByOnChange}
-                className={`form-control ${styles.search_input}`}
+                className={`form-control ${styles.search_input} ${styles.sum_by_input}`}
                 type='search'
                 autoFocus='autofocus'
                 placeholder='Enter sum_by...' />
