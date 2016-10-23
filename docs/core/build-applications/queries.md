@@ -83,7 +83,7 @@ Unlike other queries in Chain Core, balance queries do not return Chain Core obj
 
 ##### Sum By
 
-Balance sums are totalled by `asset_id` and `account_id` by default, but it is also possible to query more complex sums. For example, if you have a network of counterparty-issued IOUs, you may wish to calculate the account balance of all IOUs from different counterparties that represent the same underlying currency.
+Balance sums are totalled by `asset_id` and `asset_alias` by default, but it is also possible to query more complex sums. For example, if you have a network of counterparty-issued IOUs, you may wish to calculate the account balance of all IOUs from different counterparties that represent the same underlying currency.
 
 ## Overview
 

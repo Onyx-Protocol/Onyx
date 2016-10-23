@@ -28,8 +28,8 @@ This is a simple deterministic key derivation scheme consisting of two instances
 Features:
 
 1. Scheme is fully deterministic and allows producing complex hierarchies of keys from a single high-entropy seed.
-2. Derive private keys from extended private keys using "hardened derivation".
-3. Derive public keys independently from private keys using "non-hardened derivation".
+2. Derive private keys from extended private keys using “hardened derivation”.
+3. Derive public keys independently from private keys using “non-hardened derivation”.
 4. Hardened and non-hardened public keys and signatures are compatible with [EdDSA](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-08) specification.
 5. Variable-length string selectors instead of fixed-length integer indexes.
 6. Short 64-byte extended public and private keys without special encoding.
@@ -47,9 +47,9 @@ Features:
 
 **Public key** is a 32-byte string representing a point on elliptic curve Ed25519 [CFRG].
 
-**Extended private key** (aka "xprv") is a 64-byte string representing a key that can be used for deriving *child extended private and public keys*.
+**Extended private key** (aka “xprv”) is a 64-byte string representing a key that can be used for deriving *child extended private and public keys*.
 
-**Extended public key** (aka "xpub") is a 64-byte string representing a key that can be used for deriving *child extended public keys*.
+**Extended public key** (aka “xpub”) is a 64-byte string representing a key that can be used for deriving *child extended public keys*.
 
 **LEB128** is a [Little Endian Base-128](https://developers.google.com/protocol-buffers/docs/encoding#varints) encoding for unsigned integers used for length-prefixing of a variable-length *selector* string.
 
@@ -234,10 +234,6 @@ Knowledge of a parent extended public key and one of non-hardened derived extend
 
 
 ## FAQ
-
-**Is it any good?**
-
-Yes.
 
 **Can I derive hardened keys from non-hardened ones?**
 

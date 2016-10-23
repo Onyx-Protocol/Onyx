@@ -1,25 +1,37 @@
 # Federated Consensus
 
 * [Introduction](#introduction)
-* [Algorithm overview](#algorithm-overview)
-* [Integrity guarantees](#integrity-guarantees)
+* [Consensus programs](#consensus-programs)
+* [Federated consensus algorithm overview](#federated-consensus-algorithm-overview)
+* [Safety guarantees](#safety-guarantees)
 * [Liveness guarantees](#liveness-guarantees)
-* [Key management](#key-management)
-* [Membership changes](#membership-changes)
+* [Consensus program changes](#consensus-program-changes)
 * [Policy enforcement](#policy-enforcement)
 * [Future improvements](#future-improvements)
 
 
 ## Introduction
 
-Federated consensus is a mechanism ensuring that only one valid blockchain is published and therefore double-spends are prevented.
+In this guide we discuss the design of the federated consensus protocol used by the Chain Protocol: its goals, use cases, threat models, and areas for future improvement.
 
-The consensus protocol is mostly distinct from other blockchain validation rules. Those specify _which_ blockchain is valid, while consensus makes sure there is no more than _just one_ valid blockchain.
+Federated consensus is a mechanism ensuring that all participants in a network agree on a single transaction log. This prevents different versions of the ledger being shown to different participants, thus preventing “double-spending,” of assets, and prevents history from being edited. While the blockchain validation rules specify _whether_ a given blockchain is valid, the consensus protocol makes sure there is _only one_ valid blockchain on a given network. 
 
-In this guide we discuss the design of the federated consensus used in Chain Protocol: its goals, use cases, threat models, and areas for future improvement.
+This consensus protocol is designed to be practically useful under a certain set of requirements and assumptions commonly encountered in permissioned blockchain networks. The Chain Protocol is capable of supporting alternative consensus protocols.
+
+For a detailed description of the federated consensus protocol, see the [formal specification](../specifications/consensus.md).
+
+## Consensus programs
+
+Blockchain validation rules are intentionally agnostic as to the consensus protocol used by a federation, and instead provide a way for the network to authenticate the blockchain produced by the federation called _consensus programs_. The consensus program specifies a set of conditions that must be satisfied for a block to be accepted. The separation of consensus logic from blockchain validation rules, together with flexibility of consensus programs, allows networks to adopt of arbitrary consensus protocols, even including ones based on proof-of-work and proof-of-stake.
+
+The consensus program for each block is specified in the header of the previous block. When the block is validated by a network participant, the consensus program is executed with the *arguments* that are specified in the block header. If the consensus program fails, the block is considered invalid.
+
+Consensus programs are written for and executed by the Chain Virtual Machine. See [Blockchain Programs](./blockchain-programs.md#consensus-programs) and [Chain VM Specification](../specifications/vm1.md) for details.
+
+Presented here consensus protocol uses relatively simple consensus programs, but the Chain Protocol supports more complex programs that could allocate signing authority in more complex ways.
 
 
-## Algorithm overview
+## Federated consensus algorithm overview
 
 A federation consists of a single _block generator_ and a group of _block signers_. 
 
@@ -28,110 +40,64 @@ The block generator:
 * receives transactions from the network,
 * filters out transactions that are invalid,
 * filters out transactions that do not pass local policy checks,
-* periodically aggregates them in a new block,
+* periodically aggregates transactions into blocks,
 * sends each proposed block to the block signers for approval.
 
 Each block signer:
 
 * verifies that the proposed block is signed by the generator,
-* verifies that it follows the protocol rules (excluding checks for block signers’ signatures, which are not yet present),
-* verifies that it extends their chain (i.e. the block does not fork the chain),
-* verifies that the block contains an acceptable _consensus program_ (for authenticating the next block),
-* signs the block.
+* verifies that the block is valid under its (the signer’s) current state without checking that the previous _consensus program_ is satisfied (which requires the block signers’ signatures),
+* verifies that it has not signed a different block at the same or greater height,
+* verifies that the block timestamp is no more than 2 minutes ahead of the current system time,
+* verifies that the block contains an acceptable consensus program (for authenticating the next block),
+* if all checks passed, signs the block.
 
-Once the block generator receives signatures from enough block signers (as defined by the block's consensus program), it publishes the block to the network. All network nodes validate that block on receiving it (including block signers’ signatures). Meanwhile the block generator assembles the next block with more transactions.
+Once the block generator receives signatures from enough block signers (as defined by the previous block's consensus program), it publishes the block to the network. All network participants, including the block signers, validate that block (including checking the previous consensus program is satisfied) and update their state.
 
-[sidenote]
+The federated consensus protocol uses a consensus program that implements an “M-of-N multisignature” rule, where N is the number of block signers, and M is the number of signatures required for a block to be accepted. 
 
-For a detailed description of the consensus protocol, see the [Federated Consensus Protocol](../specifications/consensus.md) specification.
+The program specifies the public keys of each of the N block signers. The signatures are passed in the arguments. The program checks the signatures against the prespecified public keys to confirm that they are valid signatures of the hash of the new block. New blocks may reuse the same consensus program or change it to a new one (as when members join and leave the federation) as long as a quorum of block signers approves the change.
 
-Chain VM supports block introspection instructions that allow custom consensus programs. See the [Chain VM](../specifications/vm1.md#block-context) specification for details.
+The generator's signature is only used to coordinate the block signers; it is not seen or validated by the network. The network only relies on the block signers. This allows block signers to evolve the consensus mechanism without any additional support from the rest of the network.
 
-[/sidenote]
+## Safety guarantees
 
-Each block is authenticated to the network via a _consensus program_ declared in the previous block. The consensus program is a predicate that must be satisifed by _program arguments_ in the subsequent block. A typical consensus programs implements an “M-of-N multisignature” rule where M is the number of required signatures and N is the number of block signers. Public keys are included within the program and the signatures are provided in the arguments list. The program checks that the signatures are correctly made from the subsequent block and match the keys in the consensus program. New blocks may reuse the same consensus program or change it to a new one (as when members join and leave the federation) as long as a quorum of block signers approves the change.
+Safety — specifically, the assurance that a valid block is the only valid block at that height — is guaranteed as long as no more than `2M - N - 1` block signers violate the protocol. For example, if the consensus program requires signatures by 3 of 4 block signers, the blockchain could only be forked if 2 block signers misbehave by signing two blocks at the same height.
 
-The signature supplied by a block generator to authenticate a block-signing request to the block signers is distinct from the block-ratifying signature that the signers themselves supply. Only the latter are part of the rules used by the rest of the network to validate blocks. This allows block signers to evolve the consensus mechanism without any additional support from the rest of the network.
+An attempt to fork the blockchain by signing multiple blocks can be detected and proven by anyone with access to both block headers. Network participants could implement a gossip protocol to share block headers and detect an attempted fork immediately, as long as the network is not partitioned. Double-signing can be proven after the fact, and dealt with out-of-band.
 
+Another potentially desirable safety guarantee is the assurance that, if a block header's consensus program is satisfied, there is a corresponding valid blockchain history — i.e., no transaction is unbalanced and all programmed conditions are satisfied. This guarantee is assured as long as no more than `N - M` block signers are faulty.
 
-## Integrity guarantees
-
-The Chain Protocol prescribes a number of context-free rules that define (in part) which transactions are valid - amounts must balance, signatures must be correct, etc. However, some validity rules depend on a wider context. Additional rules are necessary to ensure that:
-
-* two transactions do not spend the same output,
-* transactions are final,
-* there is only one version of the blockchain.
-
-To prevent double spending, each network node tracks a set of *unspent transaction outputs* (the “UTXO set”). Each transaction is allowed to spend only existing unspent outputs. When validating the transactions in each incoming block, the network node updates its UTXO set, removing spent outputs and adding new ones.
-
-Network nodes also verify that each block correctly links to its predecessor and is correctly signed. If a node detects two different, correctly signed blocks at one point in history, it stops immediately and reports an integrity violation to the administrator. The node refuses to process transactions from either of the two blocks and waits for out-of-band resolution. Therefore network nodes may only experience double-spends or have their transactions reversed if both of these conditions are satisfied:
-
-[sidenote]
-
-Note that a node should fail-stop even if one of two blocks is correctly signed, but contains invalid transactions (e.g. double spends, or transactions not satisfying control and issuance programs). This provides protection for those using compact proofs. Such users rely on block signers’ signatures to verify that a certain transaction is included in the blockchain rather than on validating all transactions.
-
-[/sidenote]
-
-1. a quorum of block signers signs two different blocks with a common ancestor (“forks the blockchain”),
-2. block signers perform a partition attack to prevent each part of the network seeing both blocks.
-
-Honest block signers are therefore responsible for not signing two forks of the blockchain. They do so simply by refusing to sign an alternative version of a proposed block by a block generator. A dishonest block generator is not able to fork the blockchain. An attempt to do so may lead to a deadlock: block signers will not be able to reach a quorum and will need an out-of-band agreement about the block to finalize and publish.
-
+This latter guarantee is useful for clients that do not have full visibility into the blockchain, instead using _compact proofs_ to check some transaction or piece of state against the block headers. Network participants that have visibility into entire blocks and has seen the entire history of the blockchain — or which trust some other party which does have such visibility — have no need to trust block signers for this particular guarantee. 
 
 ## Liveness guarantees
 
-Simplicity and performance of the consensus protocol comes with a liveness tradeoff. While the block generator is not capable of forking the blockchain, it does have control over network liveness: if the block generator crashes or otherwise stops producing new blocks, the blockchain halts. The block generator can also deadlock the network by sending inconsistent blocks to different block signers. Additionally, the block generator has control over the block timestamp, and can produce blocks with artificially “slow” timestamps.
+Liveness is guaranteed as long as: 
 
-Since the responsibility for preventing blockchain forks resides in the block signers, the block generator can be made highly available using traditional replication methods, without the need for a Byzantine-fault-tolerant agreement protocol.
+* The generator is not faulty, and
+* No more than `N - M` block signers are faulty
 
-A quorum of block signers can temporarily stop the network by refusing to sign new blocks. They can also permanently deadlock other nodes by attempting to fork a blockchain, provided these nodes receive blocks from both chains (i.e. if the network is not partitioned). If deadlock occurs among block signers or on the entire network level, it must be resolved manually using an out-of-band agreement.
+If the block generator crashes or becomes unavailable, the network cannot generate new blocks. If the block generator disobeys the protocol by sending different blocks to different signers, it can even *deadlock* the protocol.
 
+This reliance on a single specific participant is relatively unusual for modern consensus protocols. However, it provides many efficiency and simplicity benefits, and has only limited downside in many target use cases.
 
-## Key management
+Guaranteeing the liveness of the generator is an easier technical problem than a more complicated consensus protocol that allows any block signer to propose a block. The block generator can be operated as a distributed system within a single organization's trust boundary. It can therefore be made highly available using traditional replication methods, including non-Byzantine-fault-tolerant consensus protocols.
 
-The block generator and block signers store signing keys in a hardware security module (HSM) that prevents leakage of long-term cryptographic material. If the HSM needs to be upgraded, or keys need to be rotated for any reason, the federation may agree out of band on a new consensus program and start using it in new blocks beginning at a certain timestamp.
+If the generator is intentionally shut down by the network operator, or if it ceases to correctly follow the protocol (whether due to a hack, a bug, or malicious intent by its operator), the network can safely halt until manual intervention.
 
-The consensus program is evaluated by the Chain VM. By using introspection instructions such as [NEXTPROGRAM](../specifications/vm1.md#nextprogram) and [CHECKPREDICATE](../specifications/vm1.md#checkpredicate) directly inside the consensus program it is possible to create more sophisticated schemes such as temporary key delegation or automatic rotation.
+## Consensus program changes
 
-The [Blockchain Programs](blockchain-programs.md) paper discusses in detail different ways to use programs and introspection instructions to build secure blockchain consensus schemes.
-
-
-## Membership changes
-
-Members can be added and removed from the federation of block signers using the same techniques as described in the key management session. As with any change to consensus program, it requires approval by a quorum of existing block signers.
-
-Extra care must be taken when changing membership in order to avoid changes to liveness or integrity guarantees. For instance, if a member is removed from a 5-of-7 multisignature consensus program and the threshold is not lowered, the rule becomes 5-of-6 and the network can tolerate downtime of only one block signer instead of two. However, if the threshold is lowered to 4-of-6, then it can still tolerate two crashes, but only one byzantine failure among block signers. Generally, it is recommended always to maintain the stable federation size, especially if it is relatively small.
-
+If members need to be added or removed from the federation, or if keys need to be rotated, the federation may agree out of band on a new consensus program to be used in new blocks beginning at a certain timestamp.
 
 ## Policy enforcement
 
-The block generator may apply local policy to filter out non-compliant transactions. Since policy enforcement is not a part of the protocol rules, it is more flexible, can be changed at will, and may use confidential information that should not be shared with the whole network. The cost of this flexibility is lower security: if some transactions “slip through” one node’s filter, they are recorded forever in the ledger and additional measures limiting subsequent transactions are necessary to mitigate any potential damage.
-
+The block generator may enforce local “policies” to filter out non-compliant transactions. For example, a block generator could require that transactions include AML/KYC information in its reference data. Since policy enforcement is not a part of the protocol rules, it is flexible, can be changed at will, and may use confidential information that should not be shared with the whole network.
 
 ## Future improvements
 
-The consensus mechanism may be improved without disrupting the network. This section provides a brief overview of improvements that are desirable and may be introduced in future versions of the Chain Protocol and Chain Core software.
+Future versions of the Chain Protocol may move further in the direction of full Byzantine-fault-tolerance, such as by supporting leader rotation or multi-phase commitment. Protocols such as [PBFT](http://pmg.csail.mit.edu/papers/osdi99.pdf) and [Tendermint](https://atrium.lib.uoguelph.ca/xmlui/bitstream/handle/10214/9769/Buchman_Ethan_201606_MAsc.pdf?sequence=7) show promise in this area. 
 
+Future protocols may also include specifications of fraud proofs and gossip protocols to allow network participants to more easily detect and report problems in the network, such as forks or signatures on invalid blocks. 
 
-#### Double-phase commitment 
-
-The current consensus mechanism does not allow block signers to enforce their own local policies and refuse to sign otherwise valid blocks. If a signer wants to re-negotiate the block content with a block generator, other signers who already signed the first version of that block cannot safely sign another version as this undermines integrity guarantees.
-
-However, if block signers use two rounds of signing, with _private signatures_ first and then _public signatures_ after reaching quorum, then they are able to reject proposed blocks and re-sign alternative versions any number of times privately. A block signer’s _public signature_ could only be used on one block at each point in history.
-
-
-#### Fraud proofs protocol
-
-Nodes may implement stronger protection against blockchain forks by not relying exclusively on a quorum of block signers. In addition to existing fail-stop rules, nodes may communicate directly with other nodes using a peer-to-peer protocol to verify that they see the same chain of block headers. When a fork is detected, nodes let each other know about it. And if any given node cannot reach a well-known peer, it may pause in its processing of the blockchain assuming that a network partition attack could be under way. This makes such attacks more difficult: faulty block signers must isolate not one node, but a whole group of interconnected nodes to prevent them from learning about the existence of an alternative chain. 
-
-#### Byzantine fault tolerance
-
-A consensus mechanism based on a single block generator is not ideal for all scenarios. To improve liveness guarantees without compromising security, a more sophisticated byzantine agreement protocol is required. Existing proposals such as PBFT, Tendermint and Byzcoin demonstrate potential in this area.
-
-#### Bitcoin checkpoints
-
-The present consensus mechanism assumes that a quorum (majority) of federation members is honest and that their keys are well-protected (as do more sophisticated byzantine consensus protocols). However, if keys used in older blocks ever become compromised, it is possible to fork the blockchain at an arbitrary point in the past.
-
-One way to offer long-term blockchain integrity is periodically to commit the latest block hash to the Bitcoin blockchain. This way, even a compromised quorum of keys cannot produce a valid fork without being detected by nodes cross-checking against the Bitcoin blockchain. With this technique, the network needs to trust the quorum of block signers for much less time to not fork the network: hours instead of years.
 
 

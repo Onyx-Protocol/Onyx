@@ -92,7 +92,7 @@ A *block* is a data structure that batches multiple transactions to be executed.
 
 [sidenote]
 
-A *hash* is the result of running a deterministic one-way hash function on a given input data. A good hash function is collision-resistant: is it infeasible to find two inputs that hash to the same output. This property makes a blockchain immutable, since it is impossible to change a block without changing its hash, and thus changing the hashes in the headers of all subsequent blocks.
+A *hash* is the result of running a deterministic one-way hash function on a given input data. A good hash function is collision-resistant: it is infeasible to find two inputs that hash to the same output. This property makes a blockchain immutable, since it is impossible to change a block without changing its hash, and thus changing the hashes in the headers of all subsequent blocks.
 
 [/sidenote]
 
@@ -146,7 +146,7 @@ The `CHECKOUTPUT` instruction allows a program to verify that specific amounts o
 
 The `MINTIME` and `MAXTIME` instructions (and their associated transaction fields) provide functionality similar to Bitcoin’s `CHECKLOCKTIMEVERIFY`.
 
-The `CHECKOUTPUT` instruction provides functionality similar to the `CHECKOUTPUTVERIFY` opcode proposed by Malte Möser, Ittay Eyal, and Emin Gün Sirer in their [Bitcoin Covenants](http://fc16.ifca.ai/bitcoin/papers/MES16.pdf) paper.
+The `CHECKOUTPUT` instruction provides functionality similar to the `CHECKOUTPUTVERIFY` instruction proposed by Malte Möser, Ittay Eyal, and Emin Gün Sirer in their [Bitcoin Covenants](http://fc16.ifca.ai/bitcoin/papers/MES16.pdf) paper.
 
 [/sidenote]
 
@@ -234,7 +234,7 @@ The Chain Protocol makes several design decisions to support scalable transactio
 
 First, the UTXO model makes it possible to verify transactions in parallel — potentially on separate servers. This makes scaling easier, compared to a “programmable state-machine” model, such as Ethereum’s, which requires each transaction to be executed in sequence. Programs do not calculate or alter state — rather, each transaction fully specifies a state transition, and each program checks whether the specified state transition is valid. As a result, the program for each input can be validated independently. Similarly, each transaction in a block can be validated in parallel (except that UTXOs must be created before they are spent, and each UTXO can be spent only once).
 
-Second, the protocol does not require that participants keep track of the entire blockchain state. Participants only need to remember the hashes of unspent UTXOs, since transactions include the details (such as asset ID, amount, and control program), which can be verified against the hash. This trades bandwidth for memory, making it easier for participants to avoid costly disk accesses.
+Second, the protocol does not require that participants keep track of the entire blockchain state. Participants only need to remember the hashes of unspent outputs, since transactions include the details (such as asset ID, amount, and control program), which can be verified against the hash. This trades bandwidth for memory, making it easier for participants to avoid costly disk accesses.
 
 Finally, compact proofs allow users to validate only the parts of the blockchain with which they are concerned without processing and validating all transactions, as long as they trust a quorum of block signers. An example of such proof is a Merkle path that proves that a given transaction or unspent output is included in a particular block. For additional security, clients could delegate the task of monitoring the entire blockchain to a server they trust.
 

@@ -49,7 +49,7 @@ $code ../examples/java/Assets.java create-asset-acme-preferred
 
 ## List assets
 
-Chain Core keeps a list of all assets in the blockchain, whether or not they were issued by the local Chain Core. Each asset can be locally annotated with an alias and tags to enable efficient actions and intelligent queries. Note: local data is not present in the blockchain, see: [Local vs. Global Data](../learn-more/global-vs-local-data.md).
+Chain Core keeps a list of all assets in the blockchain, whether or not they were issued by the local Chain Core. Each asset can be locally annotated with an alias and tags to enable efficient actions and intelligent queries. Note: local data is not present in the blockchain, see: [Global vs Local Data](../learn-more/global-vs-local-data.md).
 
 To list all assets created in the local Core, we build an assets query, filtering on the `is_local` tag.
 
@@ -101,7 +101,7 @@ $code ../examples/java/Assets.java submit-retire
 
 ## List asset transactions
 
-Chain Core keeps a time-ordered list of all transactions in the blockchain. These transactions are locally annotated with asset aliases and asset tags to enable intelligent queries. Note: local data is not present in the blockchain, see: [Local vs. Global Data](../learn-more/global-vs-local-data.md).
+Chain Core keeps a time-ordered list of all transactions in the blockchain. These transactions are locally annotated with asset aliases and asset tags to enable intelligent queries. Note: local data is not present in the blockchain, see: [Global vs Local Data](../learn-more/global-vs-local-data.md).
 
 ### Issuance transactions
 

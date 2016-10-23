@@ -49,7 +49,6 @@
   * [Merkle Binary Tree](#merkle-binary-tree)
   * [Merkle Patricia Tree](#merkle-patricia-tree)
 * [References](#references)
-* [Test vectors](#test-vectors)
 
 
 ## Introduction
@@ -76,7 +75,7 @@ A binary string with a varint31 prefix specifying its length in bytes. So the em
 
 ### Extensible string
 
-A varstring31 whose content is the concatenation of other encoded data structures, possibly including other varstring31s. Used for values that future versions of the protocol might wish to extend without breaking older clients. Older clients can consume the complete "outer" varstring31 and parse out the subparts they understand while ignoring the suffix that they don’t.
+A varstring31 whose content is the concatenation of other encoded data structures, possibly including other varstring31s. Used for values that future versions of the protocol might wish to extend without breaking older clients. Older clients can consume the complete “outer” varstring31 and parse out the subparts they understand while ignoring the suffix that they don’t.
 
 ### Public Key
 
@@ -144,7 +143,7 @@ Serialization Flags Examples | Description
 
 ### Block Header
 
-"Block header" is shorthand for a block serialized with [serialization flags](#block-serialization-flags) 0x01. Header does not contain actual transactions, but contains all commitments and witness data with block signatures.
+“Block header” is shorthand for a block serialized with [serialization flags](#block-serialization-flags) 0x01. Header does not contain actual transactions, but contains all commitments and witness data with block signatures.
 
 
 
@@ -261,7 +260,7 @@ See [Validate Transaction](validation.md#validate-transaction) section for more 
 
 Field                 | Type                | Description
 ----------------------|---------------------|----------------------------------------------------------
-Type                  | byte                | Equals 0x00 indicating the "issuance" type.
+Type                  | byte                | Equals 0x00 indicating the “issuance” type.
 Nonce                 | varstring31         | Variable-length string guaranteeing uniqueness of the issuing transaction or of the given issuance.
 Asset ID              | sha3-256            | Global [asset identifier](#asset-id).
 Amount                | varint63            | Amount being issued.
@@ -570,85 +569,11 @@ In case a list contains multiple items, all keys have a common bit-prefix extrac
 
 ## References
 
-* [FIPS180] ["Secure Hash Standard", United States of America, National Institute of Standards and Technology, Federal Information Processing Standard (FIPS) 180-2](http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf).
+* [FIPS180] [“Secure Hash Standard”, United States of America, National Institute of Standards and Technology, Federal Information Processing Standard (FIPS) 180-2](http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf).
 * [FIPS202] [Federal Inf. Process. Stds. (NIST FIPS) - 202 (SHA3)](https://dx.doi.org/10.6028/NIST.FIPS.202)
 * [LEB128] [Little-Endian Base-128 Encoding](https://developers.google.com/protocol-buffers/docs/encoding)
 * [CFRG1] [Edwards-curve Digital Signature Algorithm (EdDSA) draft-irtf-cfrg-eddsa-05](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)
 * [RFC 6962](https://tools.ietf.org/html/rfc6962#section-2.1)
-
-
-
-
-
-
-
-
-## Test vectors
-
-### 1. Varint test vectors
-
-Decimal Value | Varint (hex)
---------------|---------------
-0             | 00
-1             | 01
-127           | 7f
-128           | 8001
-624485        | e58e26
-
-
-### 2. Varstring test vectors
-
-String            | Varstring31 (hex)
-------------------|---------------
-"" (empty string) | 00
-"a"               | 0161
-"chain"           | 05636861696e
-
-
-
-### 3. SHA3 test vectors
-
-Input String              | SHA3-256 Value (hex)
---------------------------|---------------
-Empty string              | a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a
-0x00                      | 5d53469f20fef4f8eab52b88044ede69c77a6a68a60728609fc4a65ff531e7d0
-0x616263 ("abc" in ASCII) | 3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532
-
-
-### 4. Asset ID test vectors
-
-TBD: asset id with different issuance programs
-
-
-### 5. Block test vectors
-
-TBD: initial block
-
-TBD: different serialization options
-
-TBD: a block with transactions
-
-TBD: merge block
-
-TBD: final block (before merging)
-
-
-### 6. Transaction test vectors
-
-TBD: empty transaction
-
-TBD: issuance transaction
-
-TBD: transfer+issuance transaction
-
-TBD: tx with different serialization
-
-TBD: transactions with reference data
-
-TBD: transactions with extended fields
-
-TBD: for all txs show both binary and JSON encoding
-
 
 
 

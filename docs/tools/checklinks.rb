@@ -38,7 +38,9 @@ def check_links(file, links, dataset = {})
   dataset["__checked_remote_urls"] ||= {}
   cache = dataset["__checked_remote_urls"]
   links.each do |(name, ref)|
-    if ref[0,1] == "#"
+    if ref =~ %r{^mailto:}
+      # TODO: check emails later
+    elsif ref[0,1] == "#"
       if !dataset[file][:anchors].include?(ref)
         puts "! Broken anchor link in file #{file}: [#{name}](#{ref})"
       end

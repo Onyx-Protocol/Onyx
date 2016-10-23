@@ -55,7 +55,7 @@ Creating a transaction consists of three steps:
 
 Rather than forcing you to manipulate inputs, outputs and change directly, the Chain Core API allows you to build transactions using a list of high-level **actions**.
 
-There are seven types of action:
+There are seven types of actions:
 
 Action                                  | Description                                                                                                                                              
 ----------------------------------------|------------------------------------------------------------------------------------

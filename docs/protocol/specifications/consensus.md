@@ -244,7 +244,7 @@ See also the note in the [Make Block](#make-block) algorithm.
     7. Transaction count: the number of transactions in T.
     8. Transactions: T.
 
-Note: "local policy" in this section gives the generator the ability to exclude
+Note: “local policy” in this section gives the generator the ability to exclude
 a transaction for any reason. For example, it might apply a fixed size limit
 to every block, and stop adding transactions once it reaches that size.
 

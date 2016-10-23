@@ -16,20 +16,24 @@
   * [Splice operators](#splice-operators)
   * [Bitwise operators](#bitwise-operators)
   * [Logical and numeric operators](#logical-and-numeric-operators)
-  * [Cryptographic opcodes](#cryptographic-opcodes)
-  * [Introspection opcodes](#introspection-opcodes)
+  * [Cryptographic instructions](#cryptographic-instructions)
+  * [Introspection instructions](#introspection-instructions)
   * [Expansion opcodes](#expansion-opcodes)
 * [References](#references)
-* [Test vectors](#test-vectors)
 
 
 ## Introduction
 
 The Chain Protocol uses a bytecode language to express short programs used to authenticate blockchain activity. Programs are used in [two contexts](#execution-context): transactions and blocks.
 
-Programs are executed in a stack-based [virtual machine](#vm-state). First, the program arguments are pushed on the stack one after the other (so that the last argument is on the top of the stack). Then the VM executes the actual predicate program (control program, issuance program or consensus program). If execution halts early (because of a disabled opcode, [FAIL](#fail), a [VERIFY](#verify) failure, or exceeding the run limit), validation fails. Otherwise the top stack value is inspected. If it’s zero, validation fails, otherwise validation succeeds.
+Programs are executed in a stack-based [virtual machine](#vm-state).
 
-Each opcode has a built-in [run cost](#instruction-cost) that counts against a built-in *run limit* to protect the network from resource exhaustion. Currently, the protocol [mandates](#vm-state) a specific run limit. Future VM versions will provide more fine-grained control over run limit by operators and users of the network.
+* First, the program arguments are pushed on the stack one after the other (so that the last argument is on the top of the stack).
+* Then the VM executes the actual predicate program (control program, issuance program or consensus program) encoded as a sequence of **opcodes**.
+* If execution halts early (because of a disabled opcode, [FAIL](#fail), a [VERIFY](#verify) failure, or exceeding the run limit), validation fails.
+* If execution completes successfully, the top stack value is inspected. If it’s zero, validation fails, otherwise validation succeeds.
+
+Each instruction has a built-in [run cost](#instruction-cost) that counts against a built-in *run limit* to protect the network from resource exhaustion. Currently, the protocol [mandates](#vm-state) a specific run limit. Future VM versions will provide more fine-grained control over run limit by operators and users of the network.
 
 ## Versioning
 
@@ -42,9 +46,11 @@ Blocks do not specify VM version explicitly. [Consensus programs](data.md#consen
 
 ## Program format
 
-A program comprises a sequence of zero or more *instructions*. Each instruction contains a one-byte *opcode* followed by zero or more *continuation bytes*, determined by the operation. Data in this format is informally known as *bytecode*.
+A program comprises a sequence of zero or more **instructions**. Each instruction contains a one-byte **opcode** followed by zero or more **continuation bytes**, determined by the operation. Data in this format is informally known as **bytecode**.
 
-Instructions that push arbitrary data onto the stack use one of the [PUSHDATA](#pushdata) opcodes followed by a variable-length binary string to be placed on stack. The length of the string is either encoded within the opcode itself, or prepended to the string. All other instructions are encoded simply by a single-byte opcode. The protocol reserves several opcodes for future extensions together with a range of double-byte opcodes.
+Instructions that push arbitrary data onto the stack use one of the [PUSHDATA](#pushdata) opcode followed by a variable-length binary string to be placed on stack. The length of the string is either encoded within the opcode itself, or prepended to the string. 
+
+All other instructions are encoded simply by a single-byte opcode. The protocol reserves unassigned opcodes for future extensions.
 
 
 ## Execution context
@@ -53,7 +59,7 @@ A program executes in a context, either a *block* or a *transaction*. Some instr
 
 Transactions use [control programs](data.md#control-program) to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
 
-Blocks use [consensus programs](data.md#consensus-program) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some opcodes (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
+Blocks use [consensus programs](data.md#consensus-program) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
 
 ### Block context
 
@@ -102,13 +108,13 @@ Execution of any of the following instructions results in immediate failure:
 
 **Initial State** has empty stacks, uninitialized program, PC set to zero, and *run limit* set to 10,000.
 
-**Program** is a sequence of opcodes and associated data, encoded as bytecode.
+**Program** is a sequence of instructions, encoded as bytecode.
 
 **PC** is a 32-bit unsigned integer used as a pointer to an opcode within a program.
 
 **Data Stack** and **Alt Stack** are stacks of binary strings.
 
-**Run Limit** is a built-in 64-bit integer specifying remaining total cost of execution. Run limit is decreased by the cost of each instruction and also affected by data added to and removed from the data stack and alt stack. Every byte added to either stack costs 1 unit, and every byte removed from either stack refunds 1 unit. (This includes explicit additions and removals by stack-manipulating opcodes such as PUSHDATA and DROP, and also implicit additions and removals as when other opcodes consume arguments and produce results.)
+**Run Limit** is a built-in 64-bit integer specifying remaining total cost of execution. Run limit is decreased by the cost of each instruction and also affected by data added to and removed from the data stack and alt stack. Every byte added to either stack costs 1 unit, and every byte removed from either stack refunds 1 unit. (This includes explicit additions and removals by stack-manipulating instructions such as PUSHDATA and DROP, and also implicit additions and removals as when other instructions consume arguments and produce results.)
 
 **Execution Context** is either a [block context](#block-context) or [transaction context](#transaction-context).
 
@@ -125,7 +131,7 @@ Places program arguments on the data stack one after another so that last argume
 
 Initializes VM with a predicate program (e.g. a [control program](data.md#control-program)) and begins its execution with PC set to zero.
 
-At the beginning of each execution step, the PC is checked. If it is less than the length of the program, the instruction at that byte position in the program is executed. Opcodes are evaluated as described in the [Instructions](#instructions) section. The run limit is decreased or increased according to the opcode’s *run cost*. If the opcode’s run cost exceeds the current run limit, the opcode is not executed and execution fails immediately.
+At the beginning of each execution step, the PC is checked. If it is less than the length of the program, VM reads the opcode at that byte position in the program and executes a corresponding instruction. Instructions are executed as described in the [Instructions](#instructions) section. The run limit is decreased or increased according to the instruction’s *run cost*. If the instruction’s run cost exceeds the current run limit, the instruction is not executed and execution fails immediately.
 
 If the PC is equal to or greater than the length of the program at the beginning of an execution step, execution is complete, and the top value of the data stack is checked and interpreted as a boolean. If it is `false`, or if the data stack is empty, verification fails; otherwise, verification succeeds. (Note: The data stack may contain any number of elements when execution finishes; there is no "clean stack" requirement. The alt stack also can be non-empty upon completion.)
 
@@ -996,7 +1002,7 @@ Pops two [numbers](#vm-number) from the stack, results in [true](#vm-boolean) if
 Fails if any of `x`, `y`, or `z` is not a valid [VM number](#vm-number).
 
 
-### Cryptographic opcodes
+### Cryptographic instructions
 
 #### RIPEMD160
 
@@ -1100,7 +1106,7 @@ Fails if executed in the [transaction context](#transaction-context).
 
 
 
-### Introspection opcodes
+### Introspection instructions
 
 The following instructions are defined within a [transaction context](#execution-context). In the block context these instructions cause VM to halt immediately and return false.
 
@@ -1286,22 +1292,5 @@ The unassigned codes are reserved for future expansion and have no effect on the
 * [LEB128] [Little-Endian Base-128 Encoding](https://developers.google.com/protocol-buffers/docs/encoding)
 * [CFRG1] [Edwards-curve Digital Signature Algorithm (EdDSA) draft-irtf-cfrg-eddsa-05](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)
 * [RFC 6962](https://tools.ietf.org/html/rfc6962#section-2.1)
-
-
-
-
-
-
-
-# Test vectors
-
-## 1. VM Number test vectors
-
-TBD.
-
-## 2. Sample programs
-
-TBD.
-
 
 
