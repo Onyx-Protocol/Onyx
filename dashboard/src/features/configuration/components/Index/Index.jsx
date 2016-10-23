@@ -123,7 +123,7 @@ class Index extends React.Component {
                     type='radio'
                     {...typeProps}
                     value='testnet' />
-              <div className={`${styles.choice} ${styles.new}`}>
+              <div className={`${styles.choice} ${styles.testnet}`}>
                   <span className={styles.choice_title}>Join the Chain Testnet</span>
 
                   <p>
