@@ -123,8 +123,7 @@ class Index extends React.Component {
                     type='radio'
                     {...typeProps}
                     value='testnet' />
-              <div className={styles.choice}>
-                <InlineSVG src={require('!svg-inline!assets/images/config/join-existing.svg')} />
+              <div className={`${styles.choice} ${styles.new}`}>
                   <span className={styles.choice_title}>Join the Chain Testnet</span>
 
                   <p>
