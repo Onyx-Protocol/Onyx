@@ -42,7 +42,11 @@ func DecodeTxAfter(str string) (c TxAfter, err error) {
 	if err != nil {
 		return c, errors.Wrap(ErrBadAfter, err.Error())
 	}
-
+	if from > math.MaxInt64 ||
+		pos > math.MaxUint32 ||
+		stop > math.MaxInt64 {
+		return c, errors.Wrap(ErrBadAfter)
+	}
 	return TxAfter{FromBlockHeight: from, FromPosition: uint32(pos), StopBlockHeight: stop}, nil
 }
 

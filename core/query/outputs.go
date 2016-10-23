@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/lib/pq"
@@ -28,7 +29,11 @@ func DecodeOutputsAfter(str string) (c *OutputsAfter, err error) {
 	if err != nil {
 		return c, errors.Wrap(ErrBadAfter, err.Error())
 	}
-
+	if lastBlockHeight > math.MaxInt64 ||
+		lastTxPos > math.MaxUint32 ||
+		lastIndex > math.MaxUint32 {
+		return nil, errors.Wrap(ErrBadAfter)
+	}
 	return &OutputsAfter{
 		lastBlockHeight: lastBlockHeight,
 		lastTxPos:       uint32(lastTxPos),

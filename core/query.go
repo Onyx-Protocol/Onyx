@@ -72,11 +72,6 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 		ctx, c = context.WithTimeout(ctx, timeout)
 		defer c()
 	}
-
-	if in.EndTimeMS == 0 {
-		in.EndTimeMS = math.MaxInt64
-	}
-
 	var (
 		p     filter.Predicate
 		after query.TxAfter
@@ -88,6 +83,12 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 		return result, err
 	}
 
+	endTimeMS := in.EndTimeMS
+	if endTimeMS == 0 {
+		endTimeMS = math.MaxInt64
+	} else if endTimeMS > math.MaxInt64 {
+		return result, errors.WithDetail(httpjson.ErrBadRequest, "end timestamp is too large")
+	}
 	// Either parse the provided `after` or look one up for the time range.
 	if in.After != "" {
 		after, err = query.DecodeTxAfter(in.After)
@@ -95,7 +96,7 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 			return result, errors.Wrap(err, "decoding `after`")
 		}
 	} else {
-		after, err = h.Indexer.LookupTxAfter(ctx, in.StartTimeMS, in.EndTimeMS)
+		after, err = h.Indexer.LookupTxAfter(ctx, in.StartTimeMS, endTimeMS)
 		if err != nil {
 			return result, err
 		}
@@ -269,10 +270,6 @@ func (h *Handler) listAccounts(ctx context.Context, in requestQuery) (page, erro
 
 // POST /list-balances
 func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
-	if in.TimestampMS == 0 {
-		in.TimestampMS = math.MaxInt64
-	}
-
 	var p filter.Predicate
 	var sumBy []filter.Field
 	p, err = filter.Parse(in.Filter)
@@ -294,8 +291,15 @@ func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result pag
 		sumBy = append(sumBy, f)
 	}
 
+	timestampMS := in.TimestampMS
+	if timestampMS == 0 {
+		timestampMS = math.MaxInt64
+	} else if timestampMS > math.MaxInt64 {
+		return result, errors.WithDetail(httpjson.ErrBadRequest, "timestamp is too large")
+	}
+
 	// TODO(jackson): paginate this endpoint.
-	balances, err := h.Indexer.Balances(ctx, p, in.FilterParams, sumBy, in.TimestampMS)
+	balances, err := h.Indexer.Balances(ctx, p, in.FilterParams, sumBy, timestampMS)
 	if err != nil {
 		return result, err
 	}
@@ -328,9 +332,6 @@ type utxoResp struct {
 
 // POST /list-unspent-outputs
 func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
-	if in.TimestampMS == 0 {
-		in.TimestampMS = math.MaxInt64
-	}
 	var p filter.Predicate
 	p, err = filter.Parse(in.Filter)
 	if err != nil {
@@ -345,8 +346,14 @@ func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (resu
 		}
 	}
 
+	timestampMS := in.TimestampMS
+	if timestampMS == 0 {
+		timestampMS = math.MaxInt64
+	} else if timestampMS > math.MaxInt64 {
+		return result, errors.WithDetail(httpjson.ErrBadRequest, "timestamp is too large")
+	}
 	limit := defGenericPageSize
-	outputs, nextAfter, err := h.Indexer.Outputs(ctx, p, in.FilterParams, in.TimestampMS, after, limit)
+	outputs, nextAfter, err := h.Indexer.Outputs(ctx, p, in.FilterParams, timestampMS, after, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "querying outputs")
 	}
