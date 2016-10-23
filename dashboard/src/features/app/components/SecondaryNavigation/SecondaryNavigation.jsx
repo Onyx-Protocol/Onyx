@@ -26,7 +26,7 @@ class SecondaryNavigation extends React.Component {
           <li>
             <Link to='/core' activeClassName={styles.active}>
               {navIcon('core', styles)}
-              Core
+              Core Status
             </Link>
           </li>
           <li>

@@ -115,7 +115,6 @@ class SearchBar extends React.Component {
       <div className={styles.main}>
         <form onSubmit={this.handleSubmit}>
           <span className={`${styles.searchField} ${searchFieldClass}`}>
-            <label className={styles.label}>Filter</label>
             <input
               value={this.state.query || ''}
               onKeyDown={this.filterKeydown}
@@ -123,7 +122,7 @@ class SearchBar extends React.Component {
               className={`form-control ${styles.search_input}`}
               type='search'
               autoFocus='autofocus'
-              placeholder='Enter predicate...' />
+              placeholder='Enter filter...' />
 
             {usesSumBy && !this.state.sumByVisible &&
               <span onClick={this.showSumBy} className={styles.showSumBy}>set sum_by</span>}

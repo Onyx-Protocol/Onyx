@@ -59,7 +59,7 @@ class Index extends React.Component {
     let configBlock = (
       <div className={`${styles.left} ${styles.col}`}>
         <div>
-          <h3>Configuration</h3>
+          <h4>Configuration</h4>
           <table className={styles.table}>
             <tbody>
               <tr>
@@ -117,7 +117,7 @@ class Index extends React.Component {
     let networkStatusBlock = (
       <div className={`${styles.right} ${styles.col}`}>
         <div>
-          <h3>Network Status</h3>
+          <h4>Network Status</h4>
 
           <table className={styles.table}>
             <tbody>
@@ -146,7 +146,7 @@ class Index extends React.Component {
     let resetDataBlock = (
       <div className='row'>
         <div className='col-sm-6'>
-          <h3>Reset Data</h3>
+          <h4>Reset Data</h4>
 
           {this.props.core.production ?
             <p>
