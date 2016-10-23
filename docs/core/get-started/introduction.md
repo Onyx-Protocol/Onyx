@@ -11,7 +11,7 @@ Chain Core Developer Edition can run locally on Mac, Windows, or Linux to create
 
 ## Join the community
 
-Talk to us on [Twitter](https://twitter.com/chain), [Linkedin](https://www.linkedin.com/company/chain-inc-), [GitHub](https://github.com/chain) and, [Slack](https://slack.chain.com).
+Talk to us on [Twitter](https://twitter.com/chain), [Linkedin](https://www.linkedin.com/company/chain-inc-), [GitHub](https://github.com/chain), and [Slack](https://slack.chain.com).
 
 ##  Support
 
