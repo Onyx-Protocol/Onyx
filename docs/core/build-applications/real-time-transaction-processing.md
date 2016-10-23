@@ -18,7 +18,7 @@ To illustrate how to use transaction feeds, we'll create a program that prints i
 
 Transaction feeds can be created either in the Chain Core Dashboard, or from your application. When creating a feed, you can provide a [transaction filter expression](../build-applications/queries.md) so that the feed only contains transactions matching the filter. If you don't supply a filter, then the feed will contain all new transaction activity on the blockchain.
 
-First, we'll create a new feed programmatically, seting the filter expression to `is_local='yes'`.
+First, we'll create a new feed programmatically, setting the filter expression to `is_local='yes'`.
 
 $code ../examples/java/RealTimeTransactionProcessing.java create-feed
 

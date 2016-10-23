@@ -63,7 +63,7 @@ What follows is a summary of the functionality provided by CVM instructions. For
 
 #### Stack manipulation
 
-Programs may encode bytestrings to push on data stack using a range of `PUSHDATA` instructions. Instructions `DROP`, `DUP`, `SWAP`, `PICK` and others allow moving stack items around. More complex stack manipulations can be assisted by `TOALTSTACK` and `FROMALTSTACK` instructions that move items between the data stack and an auxilliary alt stack.
+Programs may encode bytestrings to push on data stack using a range of `PUSHDATA` instructions. Instructions `DROP`, `DUP`, `SWAP`, `PICK` and others allow moving stack items around. More complex stack manipulations can be assisted by `TOALTSTACK` and `FROMALTSTACK` instructions that move items between the data stack and an auxiliary alt stack.
 
 #### String manipulation
 

@@ -187,7 +187,7 @@ Strings coerce to `true` if and only if they contain any non-zero bytes. Therefo
 
 An integer greater than or equal to –2<sup>63</sup>, and less than 2<sup>63</sup>.
 
-Certain arithmetic operations use conservative bounds checks (explictly specified below) on their inputs to prevent the output from being outside the legal range. If one of these bounds checks fails, execution fails.
+Certain arithmetic operations use conservative bounds checks (explicitly specified below) on their inputs to prevent the output from being outside the legal range. If one of these bounds checks fails, execution fails.
 
 #### String to Number
 
@@ -926,7 +926,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|----------------------------
 0x9f  | (x y → x < y)   | 2; [standard memory cost](#standard-memory-cost)
 
-Pops two [numbers](#vm-number) from the data stack, results in `true` if `x` is less than `y` and `false` otherwise, and pushes the result to teh data stack.
+Pops two [numbers](#vm-number) from the data stack, results in `true` if `x` is less than `y` and `false` otherwise, and pushes the result to the data stack.
 
 Fails if either of `x` or `y` is not a valid [VM number](#vm-number).
 

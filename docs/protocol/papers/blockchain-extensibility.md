@@ -39,7 +39,7 @@ A *soft fork* is a compatible change — it rejects some messages that were prev
 
 [sidenote]
 
-Contrary to what one might assume, neither hard forks, nor soft forks are intended to _actually fork_ the blockchain. The word “fork” indicates the change of the protocol rules that _potentially_ may lead to an undesireable fork of the blockchain. While hard forks require careful coordination of all users, soft forks require careful coordination of block signers only.
+Contrary to what one might assume, neither hard forks, nor soft forks are intended to _actually fork_ the blockchain. The word “fork” indicates the change of the protocol rules that _potentially_ may lead to an undesirable fork of the blockchain. While hard forks require careful coordination of all users, soft forks require careful coordination of block signers only.
 
 [/sidenote]
 
