@@ -1252,7 +1252,7 @@ video {
 }
 
 .next-step .btn-icon {
-    position: relative;;
+    position: relative;
     transition: all 0.15s linear;
 }
 .next-step:hover .btn-icon {
