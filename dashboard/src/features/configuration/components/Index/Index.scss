@@ -46,7 +46,12 @@
   cursor: pointer;
   min-height: 100%;
   padding: $grid-gutter-width;
+  padding-top: 110px;
   text-align: center;
+
+  background-repeat: no-repeat;
+  background-position: center 25px;
+  background-size: 90px 90px;
 
   &:hover {
     background-color: $background-emphasis-color;
@@ -74,9 +79,34 @@
   }
 }
 
+.new {
+  background-image: url('assets/images/config/new.png')
+}
+
+.join {
+  background-image: url('assets/images/config/join.png')
+}
+
+.testnet {
+  background-image: url('assets/images/config/testnet.png')
+}
+
 input[type=radio]:checked ~ .choice {
   background-color: transparentize($brand-primary, 0.85);
   border-color: $brand-primary;
+
+  &.new {
+    background-image: url('assets/images/config/new-active.png')
+  }
+
+  &.join {
+    background-image: url('assets/images/config/join-active.png')
+  }
+
+  &.testnet {
+    background-image: url('assets/images/config/testnet-active.png')
+  }
+
 
   .choice_title {
     color: $brand-primary;

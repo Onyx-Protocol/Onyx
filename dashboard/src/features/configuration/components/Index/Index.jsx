@@ -3,7 +3,6 @@ import { TextField } from 'components/Common'
 import { ErrorBanner } from 'features/shared/components'
 import pick from 'lodash.pick'
 import actions from 'actions'
-import InlineSVG from 'svg-inline-react'
 import React from 'react'
 import styles from './Index.scss'
 
@@ -92,8 +91,7 @@ class Index extends React.Component {
                     type='radio'
                     {...typeProps}
                     value='new' />
-              <div className={styles.choice}>
-                <InlineSVG src={require('!svg-inline!assets/images/config/create-new.svg')} />
+              <div className={`${styles.choice} ${styles.new}`}>
                 <span className={styles.choice_title}>Create new blockchain network</span>
 
                 <p>
@@ -109,13 +107,12 @@ class Index extends React.Component {
                     type='radio'
                     {...typeProps}
                     value='join' />
-              <div className={styles.choice}>
-                <InlineSVG src={require('!svg-inline!assets/images/config/join-existing.svg')} />
-                  <span className={styles.choice_title}>Join existing blockchain network</span>
+              <div className={`${styles.choice} ${styles.join}`}>
+                <span className={styles.choice_title}>Join existing blockchain network</span>
 
-                  <p>
-                    Connect this Chain Core to an existing blockchain network.
-                  </p>
+                <p>
+                  Connect this Chain Core to an existing blockchain network.
+                </p>
               </div>
             </label>
           </div>
@@ -126,13 +123,12 @@ class Index extends React.Component {
                     type='radio'
                     {...typeProps}
                     value='testnet' />
-              <div className={styles.choice}>
-                <InlineSVG src={require('!svg-inline!assets/images/config/join-existing.svg')} />
-                  <span className={styles.choice_title}>Join the Chain Testnet</span>
+              <div className={`${styles.choice} ${styles.testnet}`}>
+                <span className={styles.choice_title}>Join the Chain Testnet</span>
 
-                  <p>
-                    Connect this Chain Core to the Chain Testnet. <strong>Data will be reset every week.</strong>
-                  </p>
+                <p>
+                  Connect this Chain Core to the Chain Testnet. <strong>Data will be reset every week.</strong>
+                </p>
               </div>
             </label>
           </div>

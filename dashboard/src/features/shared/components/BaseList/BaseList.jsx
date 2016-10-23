@@ -78,7 +78,7 @@ class ItemList extends React.Component {
 export const mapStateToProps = (type, itemComponent, additionalProps = {}) => (state, ownProps) => {
   const currentPage = Math.max(parseInt(ownProps.location.query.page) || 1, 1)
   // TODO: this should be renamed `currentQuery`; we should
-  // do some renaminng in here 
+  // do some renaminng in here
   const currentFilter = ownProps.location.query || {}
   const currentQueryString = currentFilter.filter || ''
   const currentQuery = state[type].queries[currentQueryString] || {}
@@ -126,4 +126,5 @@ export default {
   mapStateToProps,
   mapDispatchToProps,
   connect,
+  ItemList,
 }
