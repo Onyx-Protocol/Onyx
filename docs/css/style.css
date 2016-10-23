@@ -1259,3 +1259,66 @@ video {
     left: 5px;
     transform: translateX(6px);
 }
+
+/* Print Styles */
+
+@media print {
+    body, html, #doc-wrapper, #doc-content {
+        overflow: visible;
+    }
+
+    body > * {
+        visibility: visible;
+    }
+
+    #docs {
+        position: static;
+        float: none;
+    }
+
+    #header, #footer {
+        display: none !important;
+    }
+
+    @page {
+        size: auto;
+        margin-bottom: 10mm;
+    }
+
+    h1 {
+        page-break-before: always;
+    }
+
+    h1, h2, h3, h4, h5 {
+        page-break-after: avoid;
+    }
+
+    table, img, p {
+        page-break-inside: avoid;
+    }
+
+    #side-nav {
+        display: none;
+    }
+
+    #doc-content, #doc-header {
+        margin-left: 0;
+    }
+
+    #doc-content {
+        width: 800px;
+        margin-left: 300px;
+    }
+    article div.sidenote {
+        float:left;
+        width: 260px;
+        margin-left: -330px;
+        border-left: none;
+        padding-right: 30px;
+    }
+    footer {
+        display: none;
+    }
+}
+
+
