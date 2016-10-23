@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
+	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -65,7 +66,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 			if err == nil {
 				break
 			}
-			log.Error(ctx, err)
+			logNetworkError(ctx, err)
 		}
 	}
 
@@ -97,7 +98,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 			return
 		case err = <-errch:
 			health(err)
-			log.Error(ctx, err)
+			logNetworkError(ctx, err)
 		case b := <-blockch:
 			for {
 				prevSnapshot, prevBlock, err = applyBlock(ctx, c, prevSnapshot, prevBlock, b)
@@ -185,7 +186,7 @@ func pollGeneratorHeight(ctx context.Context, peer *rpc.Client) {
 func updateGeneratorHeight(ctx context.Context, peer *rpc.Client) {
 	gh, err := getHeight(ctx, peer)
 	if err != nil {
-		log.Error(ctx, err)
+		logNetworkError(ctx, err)
 		return
 	}
 
@@ -254,6 +255,14 @@ func getHeight(ctx context.Context, peer *rpc.Client) (uint64, error) {
 	}
 
 	return h, nil
+}
+
+func logNetworkError(ctx context.Context, err error) {
+	if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
+		log.Messagef(ctx, "%s", err.Error())
+	} else {
+		log.Error(ctx, err)
+	}
 }
 
 // Snapshot describes a snapshot being downloaded from a peer Core.
