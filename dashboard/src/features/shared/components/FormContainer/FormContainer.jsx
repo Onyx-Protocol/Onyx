@@ -23,6 +23,10 @@ class FormContainer extends React.Component {
                   <button type='submit' className='btn btn-primary' disabled={this.props.submitting}>
                     {this.props.submitLabel || 'Submit'}
                   </button>
+
+                  {this.props.showActiveSubmit && this.props.submitting &&
+                    <div className={styles.activeSubmit}>Submitting...</div>
+                  }
                 </div>
               </FormSection>
             </form>
