@@ -7,7 +7,7 @@ export const nextReset = (state = '', action) => {
       return moment(action.data.next_reset)
     } else {
       // Default reset time is the upcoming Sunday 00:00:00 Pacific.
-      return moment().tz('America/Los_Angeles').isoWeekday(7).startOf('day')
+      return moment().tz('America/Los_Angeles').day(7).startOf('day')
     }
   }
   return state
