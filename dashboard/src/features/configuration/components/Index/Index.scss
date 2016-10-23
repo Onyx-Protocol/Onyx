@@ -1,7 +1,7 @@
 .title {
   font-size: 28px;
   font-weight: normal;
-  margin-top: $gutter-size*2;
+  margin-top: $gutter-size;
   margin-bottom: $gutter-size;
 }
 
@@ -45,7 +45,7 @@
   border-radius: $border-radius-base;
   cursor: pointer;
   min-height: 100%;
-  padding: $grid-gutter-width;
+  padding: 20px $grid-gutter-width;
   padding-top: 110px;
   text-align: center;
 
@@ -90,9 +90,6 @@
 }
 
 input[type=radio]:checked ~ .choice {
-  background-color: transparentize($brand-primary, 0.85);
-  border-color: $brand-primary;
-
   strong {
     color: $text-danger;
   }
@@ -131,8 +128,16 @@ input[type=radio]:checked ~ .choice {
 }
 
 .joinFields {
-  margin-top: $gutter-size;
+  margin-top: 20px; // hack for 13" displays
+  margin-bottom: $gutter-size;
   width: 100%;
+
+  // HACK for 13" displays
+  :global {
+    .form-group {
+      margin-bottom: 20px;
+    }
+  }
 }
 
 .submitWrapper {
