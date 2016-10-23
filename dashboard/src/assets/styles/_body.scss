@@ -32,6 +32,7 @@ body {
   margin: 0 auto;
   min-height: 100%;
   min-width: $minWidth;
+  color: $text-color;
 }
 
 #root {
@@ -133,4 +134,14 @@ a:focus {
 .btn-lg {
   height: 44px;
   font-size: 18px;
+}
+.label-primary {
+  color: $text-color;
+  background: $background-emphasis-color;
+  border: 1px solid transparentize($border-color, 0.5);
+}
+.close {
+  text-shadow: none;
+  font-size: 27px;
+  font-weight: normal;
 }

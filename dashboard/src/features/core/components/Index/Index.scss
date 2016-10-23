@@ -31,11 +31,13 @@
   display: flex;
   width: 50%;
   padding: $grid-gutter-width;
-
   h4 {
     margin-top: 0;
-    font-weight: bold;
   }
+}
+
+h4 {
+  font-weight: bold;
 }
 
 .top {
@@ -63,7 +65,7 @@
 }
 
 .green {
-  background: $brand-success;
+  background: $highlight-secondary;
 }
 
 .yellow {
@@ -71,9 +73,13 @@
 }
 
 .red {
-  background: $brand-danger;
+  background: darken($highlight-danger-background, 20%);
 }
 
 .mainContainer {
   background-color: $background-color;
+}
+
+code {
+  padding-left: 0;
 }

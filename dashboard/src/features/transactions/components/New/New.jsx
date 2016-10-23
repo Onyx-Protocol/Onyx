@@ -72,10 +72,10 @@ class Form extends React.Component {
 
         <FormSection title='Actions'>
           {actions.length == 0 && <p className={styles.actionInfo}>
-              Add actions to issue, spend, control or retire assets.
-              For more information, read the&nbsp;
-              <a href='/docs/core/build-applications/transaction-basics#creating-transactions'>
-                documentation on transactions
+              Add actions to issue, spend, control, or retire asset units.
+              For more information, please consult the&nbsp;
+              <a href='/docs/core/build-applications/transaction-basics#creating-transactions' target="blank">
+                documentation
               </a>.
             </p>}
           {actions.map((action, index) =>
