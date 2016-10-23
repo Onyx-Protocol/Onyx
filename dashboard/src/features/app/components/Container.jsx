@@ -73,6 +73,14 @@ class Container extends React.Component {
     return <div>
       {layout}
       <Modal />
+
+      {/* For copyToClipboard(). TODO: move this some place cleaner. */}
+      <input
+        id='_copyInput'
+        onChange={() => 'do nothing'}
+        value='dummy'
+        style={{display: 'none'}}
+      />
     </div>
   }
 }
