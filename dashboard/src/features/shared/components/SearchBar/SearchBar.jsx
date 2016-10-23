@@ -148,7 +148,7 @@ class SearchBar extends React.Component {
           <span type='button'
             className={styles.clearSearch}
             onClick={this.clearQuery}>
-              Clear Search
+              Clear Filter
           </span>
         </span>}
 
