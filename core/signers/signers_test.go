@@ -15,7 +15,8 @@ import (
 var dummyXPub = "48161b6ca79fe3ae248eaf1a32c66a07db901d81ec3f172b16d3ca8b0de37cd8c49975a24499c5d7a40708f4f13d5445cf87fed54ef5a4a5c47a7689a12e73f9"
 
 func TestCreate(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	db := pgtest.NewTx(t)
 
 	cases := []struct {
 		typ    string
@@ -87,7 +88,7 @@ func TestCreate(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		_, got := Create(ctx, c.typ, c.xpubs, c.quorum, nil)
+		_, got := Create(ctx, db, c.typ, c.xpubs, c.quorum, nil)
 
 		if errors.Root(got) != c.want {
 			t.Errorf("Create(%s, %v, %d) = %q want %q", c.typ, c.xpubs, c.quorum, errors.Root(got), c.want)
@@ -96,11 +97,13 @@ func TestCreate(t *testing.T) {
 }
 
 func TestCreateIdempotency(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	db := pgtest.NewTx(t)
 
 	clientToken := "test"
 	signer, err := Create(
 		ctx,
+		db,
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
@@ -113,6 +116,7 @@ func TestCreateIdempotency(t *testing.T) {
 
 	signer2, err := Create(
 		ctx,
+		db,
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
@@ -129,9 +133,10 @@ func TestCreateIdempotency(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	db := pgtest.NewTx(t)
 
-	s1 := createFixture(ctx, t)
+	s1 := createFixture(ctx, db, t)
 
 	cases := []struct {
 		typ  string
@@ -152,7 +157,7 @@ func TestFind(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		_, got := Find(ctx, c.typ, c.id)
+		_, got := Find(ctx, db, c.typ, c.id)
 
 		if errors.Root(got) != c.want {
 			t.Errorf("Find(%s, %s) = %q want %q", c.typ, c.id, errors.Root(got), c.want)
@@ -161,11 +166,12 @@ func TestFind(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	db := pgtest.NewTx(t)
 
 	var signers []*Signer
 	for i := 0; i < 5; i++ {
-		signers = append(signers, createFixture(ctx, t))
+		signers = append(signers, createFixture(ctx, db, t))
 	}
 
 	cases := []struct {
@@ -195,7 +201,7 @@ func TestList(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		got, gotLast, err := List(ctx, c.typ, c.prev, c.limit)
+		got, gotLast, err := List(ctx, db, c.typ, c.prev, c.limit)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -212,10 +218,11 @@ func TestList(t *testing.T) {
 
 var clientTokenCounter = createCounter()
 
-func createFixture(ctx context.Context, t testing.TB) *Signer {
+func createFixture(ctx context.Context, db pg.DB, t testing.TB) *Signer {
 	clientToken := fmt.Sprintf("%d", <-clientTokenCounter)
 	signer, err := Create(
 		ctx,
+		db,
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
