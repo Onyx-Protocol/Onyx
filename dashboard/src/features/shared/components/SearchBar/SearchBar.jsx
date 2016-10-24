@@ -154,9 +154,14 @@ class SearchBar extends React.Component {
         </form>
 
         <span className={styles.queryTime}>
+          {/* TODO: in the future there may be objects with default filters that
+              do not require a filter; this is a stopgap measure for balances. */}
           {this.props.defaultFilter && !this.state.query.trim() && 'Filter is required • '}
+
           Queried at {this.props.queryTime}
-          {this.state.showClear && <span> •&nbsp;
+
+          {this.state.showClear && <span>
+            {' • '}
             <span type='button'
               className={styles.clearSearch}
               onClick={this.clearQuery}>
