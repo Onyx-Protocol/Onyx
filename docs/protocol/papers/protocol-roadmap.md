@@ -15,7 +15,7 @@ If you have feature requests or feedback, we want to hear from you. Join us on [
 ## Privacy
 
 * Confidential transactions that hide assets and amounts through homomorphic encryption
-* Unlinkable transactions that further hide the identities of transacting parties
+* Untraceable transactions that further hide the identities of transacting parties
 
 ## Programs
 
