@@ -1,8 +1,13 @@
-# windows-installer
+# Chain Core for Windows
+
+## Installing Chain Core
+
+To install Chain Core Developer Edition for Windows, please visit [our downloads page](https://chain.com/docs/core/get-started/install). 
+
+## Building the Windows Installer
+### Dependencies 
 
 These instructions assume that your PATH includes the wix tools binary. My wix tools binary is located at `C:\Program Files (x86)\WiX Toolset v3.10\bin`.
-
-### Dependencies 
 
 We don't check `.exe`s into git, so you'll have to provide them yourself. There are four `.exe`s:
 
