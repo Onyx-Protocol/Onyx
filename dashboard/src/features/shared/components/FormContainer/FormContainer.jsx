@@ -1,5 +1,5 @@
 import React from 'react'
-import { ErrorBanner, PageTitle, FormSection } from 'features/shared/components'
+import { ErrorBanner, PageTitle, FormSection, SubmitIndicator } from 'features/shared/components'
 import styles from './FormContainer.scss'
 
 class FormContainer extends React.Component {
@@ -24,8 +24,8 @@ class FormContainer extends React.Component {
                     {this.props.submitLabel || 'Submit'}
                   </button>
 
-                  {this.props.showActiveSubmit && this.props.submitting &&
-                    <div className={styles.activeSubmit}>Submitting...</div>
+                  {this.props.showSubmitIndicator && this.props.submitting &&
+                    <SubmitIndicator />
                   }
                 </div>
               </FormSection>

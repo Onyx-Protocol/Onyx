@@ -16,6 +16,7 @@ import RoutingContainer from './RoutingContainer'
 import SearchBar from './SearchBar/SearchBar'
 import Section from './Section/Section'
 import SelectField from './SelectField'
+import SubmitIndicator from './SubmitIndicator/SubmitIndicator'
 import TableList from './TableList/TableList'
 
 export {
@@ -37,5 +38,6 @@ export {
   SearchBar,
   Section,
   SelectField,
+  SubmitIndicator,
   TableList,
 }

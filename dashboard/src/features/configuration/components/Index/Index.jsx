@@ -1,6 +1,6 @@
 import { reduxForm } from 'redux-form'
 import { TextField } from 'components/Common'
-import { ErrorBanner } from 'features/shared/components'
+import { ErrorBanner, SubmitIndicator } from 'features/shared/components'
 import pick from 'lodash.pick'
 import actions from 'actions'
 import React from 'react'
@@ -79,6 +79,12 @@ class Index extends React.Component {
           &nbsp;{this.showNewFields() ? 'Create' : 'Join'} network
       </button>
     ]
+
+    if (submitting) {
+      configSubmit.push(<SubmitIndicator
+        text={this.showNewFields() ? 'Creating network...' : 'Joining network...'}
+      />)
+    }
 
     return (
       <form onSubmit={handleSubmit(this.submitWithValidation)}>
