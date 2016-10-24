@@ -15,10 +15,10 @@ import (
 
 	"github.com/codahale/hdrhistogram"
 
+	"chain/core/rpc"
 	"chain/env"
 	"chain/log"
 	"chain/metrics"
-	"chain/net/rpc"
 )
 
 const (

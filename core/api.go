@@ -15,6 +15,7 @@ import (
 	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/query"
+	"chain/core/rpc"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/database/pg"
@@ -27,7 +28,6 @@ import (
 	"chain/net/http/limit"
 	"chain/net/http/reqid"
 	"chain/net/http/static"
-	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
