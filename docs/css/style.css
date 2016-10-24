@@ -1265,6 +1265,10 @@ video {
 @media (max-width: 992px) {
     #doc-content, #doc-header {
         max-width: 650px;
+        overflow: auto;
+    }
+    #docs {
+        overflow-x: hidden;
     }
 }
 
