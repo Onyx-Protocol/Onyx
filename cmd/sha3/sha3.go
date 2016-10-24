@@ -1,14 +1,20 @@
 package main
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 
 	"golang.org/x/crypto/sha3"
 )
 
 func main() {
-	b, err := ioutil.ReadAll(os.Stdin)
-	h := sha3.Sum256(b)
-	os.Stdout.Write(h[:])
+	h := sha3.New256()
+	_, err := io.Copy(h, os.Stdin)
+	if err != nil {
+		panic(err)
+	}
+	_, err = os.Stdout.Write(h.Sum(nil))
+	if err != nil {
+		panic(err)
+	}
 }
