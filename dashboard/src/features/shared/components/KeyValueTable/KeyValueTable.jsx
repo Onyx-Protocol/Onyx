@@ -20,7 +20,7 @@ class KeyValueTable extends React.Component {
     }
 
     if (value === undefined || value === null || value === '') {
-      value = "-"
+      value = '-'
     }
 
     return value
