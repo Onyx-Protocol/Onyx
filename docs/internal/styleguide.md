@@ -274,7 +274,7 @@ irrelevant trivial refactorings?
 - Is this change really necessary at all?
 
 (You might be surprised how often the answer to that last one is
-“no”. )
+“no”.)
 
 ### Iteration
 
@@ -283,7 +283,7 @@ on the pull request. This stands for “please take a(nother) look” and
 tells the world you are ready for some (more) review. You’re
 encouraged also to ask a specific person or two if you know they have
 relevant expertise in the subject matter or region of code you’re
-touching. Your reviewers will comment “” to indicate they’re
+touching. Your reviewers will comment “👀” to indicate they’re
 looking at it, they’ll add their comments and questions, and you’ll
 update your patch. When the reviewers are satisfied, they’ll write
 “LGTM”, for “looks good to me”.
