@@ -8,23 +8,23 @@ If you have feature requests or feedback, we want to hear from you. Join us on [
 
 ## Denial of service mitigation
 
-* Explicit limits on number and size of blockchain entities (size of the blocks, number of transactions etc).
-* Fine-tuned runtime cost limits for the control and issuance programs.
-* Improvements to consensus algorithm.
+* Fine-tuned and tested runtime costs for the virtual machine
+* Adjustable run limit, as well as adjustable limits on the size of blocks, transactions, programs, and other data structures
+* Improved consensus algorithms to guarantee liveness under weaker assumptions
 
 ## Privacy
 
-* Homomorphically encrypted asset identifiers and amounts to provide secrecy for balances and financial parameters of the transactions.
-* Controlled traceability of the transactions; hiding the link between transaction inputs and the previous transactions’ outputs.
+* Confidential transactions that hide assets and amounts through homomorphic encryption
+* Untraceable transactions that further hide the identities of transacting parties
 
 ## Programs
 
-* Generalizing virtual machine for on-chain and off-chain predicate evaluation.
-* Support for arithmetic on homomorphically encrypted values (to improve confidentiality of on-chain programs).
-* High-level programming language and formal verification toolkit.
+* Simpler and more flexible virtual machine designs
+* Support for arithmetic on homomorphically encrypted values
+* Further development of high-level compiled languages
+* Formal verification tools to evaluate program security
 
 ## Scalability
 
-* Reducing the amount of data to be stored by the nodes by requiring clients use more sophisticated proofs.
-* More elaborate support for compact proofs to improve security of clients that do not validate the blockchain entirely.
-* Additional support for merging blockchains.
+* Shifting memory and CPU burdens from the network to transacting parties
+* More extensive support for compact proofs to protect light clients
