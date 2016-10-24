@@ -17,7 +17,6 @@ import (
 	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
@@ -206,11 +205,10 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			if err != nil {
 				return errors.Wrap(errBadSignerURL, err.Error())
 			}
-			signingKey, err := chainkd.NewEd25519PublicKey(signer.Pubkey)
-			if err != nil {
+			if len(signer.Pubkey) != ed25519.PublicKeySize {
 				return errors.Wrap(errBadSignerPubkey, err.Error())
 			}
-			signingKeys = append(signingKeys, signingKey)
+			signingKeys = append(signingKeys, ed25519.PublicKey(signer.Pubkey))
 		}
 
 		if c.Quorum == 0 && len(signingKeys) > 0 {
