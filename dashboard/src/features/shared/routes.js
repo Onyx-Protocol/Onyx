@@ -7,6 +7,10 @@ const makeRoutes = (store, type, List, New, Show, options = {}) => {
     const query = state.location.query
     if (query.filter && options.skipFilter) {
       replace(state.location.pathname)
+      return
+    } else if (query.filter === undefined && options.defaultFilter) {
+      replace(`${state.location.pathname}?filter=${options.defaultFilter}`)
+      return
     }
 
     const pageNumber = parseInt(state.location.query.page || 1)

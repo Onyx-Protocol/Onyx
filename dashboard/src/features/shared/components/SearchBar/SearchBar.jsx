@@ -9,7 +9,7 @@ class SearchBar extends React.Component {
       sumBy: this.props.currentFilter.sum_by || '',
       sumByVisible: false,
     }
-    this.state.showClear = this.state.query != '' || this.state.sumBy != ''
+    this.state.showClear = (this.state.query != (this.props.defaultFilter || '')) || this.state.sumBy != ''
     this.state.sumByVisible = this.state.sumBy != ''
 
     this.filterKeydown = this.filterKeydown.bind(this)
@@ -83,25 +83,36 @@ class SearchBar extends React.Component {
   handleSubmit(event) {
     event.preventDefault()
 
-    if (this.state.query == '' && this.state.sumBy == '') {
-      if (this.props.currentFilter.filter || this.props.currentFilter.sum_by) {
-        this.clearQuery()
-      }
+    if (this.state.query == this.props.defaultFilter) {
+      this.setState({ showClear: false })
+      this.props.pushList()
       return
     }
 
-    this.setState({ showClear: true })
+    const state = {
+      showClear: this.state.query || this.state.sumBy
+    }
 
     const query = {}
-    if (this.state.query) query.filter = this.state.query
-    if (this.state.sumBy) query.sum_by = this.state.sumBy
+    if (this.state.query) {
+      query.filter = this.state.query
+    } else if (this.props.defaultFilter) {
+      state.query = this.props.defaultFilter
+      query.filter = this.props.defaultFilter
+    }
+    if (this.state.sum_by) query.sum_by = this.state.sumBy
 
+    this.setState(state)
     this.props.pushList(query)
   }
 
   clearQuery() {
-    this.setState({ query: '', sumBy: '', showClear: false })
-    this.props.pushList()
+    const newState = { query: (this.props.defaultFilter || ''), sumBy: '', showClear: false}
+    this.setState(newState)
+
+    const query = {}
+    if (newState.query) { query.filter = newState.query }
+    this.props.pushList(query)
   }
 
   render() {
@@ -143,15 +154,22 @@ class SearchBar extends React.Component {
             <input type='submit' className={styles.submit} />
         </form>
 
-        {this.state.showClear && <span className={styles.queryTime}>
-          Queried at {this.props.queryTime} –&nbsp;
-          <span type='button'
-            className={styles.clearSearch}
-            onClick={this.clearQuery}>
-              Clear Filter
-          </span>
-        </span>}
+        <span className={styles.queryTime}>
+          {/* TODO: in the future there may be objects with default filters that
+              do not require a filter; this is a stopgap measure for balances. */}
+          {this.props.defaultFilter && !this.state.query.trim() && 'Filter is required • '}
 
+          Queried at {this.props.queryTime}
+
+          {this.state.showClear && <span>
+            {' • '}
+            <span type='button'
+              className={styles.clearSearch}
+              onClick={this.clearQuery}>
+                {this.props.defaultFilter ? 'Restore default filter' : 'Clear filter'}
+            </span>
+          </span>}
+        </span>
       </div>
     )
   }
