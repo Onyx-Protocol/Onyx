@@ -5,12 +5,13 @@ import (
 	"flag"
 	"io"
 	"log"
+	"math"
 	"os"
 )
 
 var (
 	decode  bool
-	lineLen = flag.Int("n", 72, "max encoded output line `length`")
+	lineLen = flag.Int("n", math.MaxInt32, "max encoded output line `length`")
 )
 
 func main() {

@@ -20,7 +20,7 @@ after every n characters of output (n/2 bytes of input),
 and at the end.
 If n is odd, it is rounded down to the nearest even.
 If n < 2, it suppresses all newlines from the output.
-The default is 72.
+The default is 2,147,483,647 (2**31 - 1).
 
 */
 package main
