@@ -3,7 +3,6 @@ import styles from './EmptyList.scss'
 
 class EmptyList extends React.Component {
   render() {
-    let classNames = [styles.empty]
     let emptyImage
     try {
       emptyImage = require(`assets/images/empty/${this.props.type}.svg`)
@@ -24,7 +23,6 @@ class EmptyList extends React.Component {
         {this.props.newButton}
       </div>
     } else if (!this.props.showFirstTimeFlow) {
-      classNames.push(styles.noResults)
       emptyBlock = <div>
         <span className={styles.emptyLabel}>No results for query:</span>
         <code className={styles.code}>{this.props.currentFilter.filter}</code>
@@ -32,7 +30,7 @@ class EmptyList extends React.Component {
     }
 
     return (
-      <div className={`flex-container ${classNames.join(' ')}`}>
+      <div className={`flex-container ${stlyes.empty}`}>
         {emptyImage && <img className={styles.image} src={emptyImage} />}
         {emptyBlock}
       </div>
