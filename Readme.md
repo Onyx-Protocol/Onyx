@@ -6,13 +6,17 @@ Chain Core Developer Edition can be run locally on Mac, Windows, or Linux to cre
 
 For more information about how to use Chain Core Developer Edition, see the docs: https://chain.com/docs
 
+## Download
+
+To install Chain Core Developer Edition on Mac, Windows, or Linux, please visit [our downloads page](https://chain.com/docs/core/get-started/install).
+
 ## Contributing
 
 Chain has adopted the code of conduct defined by the Contributor Covenant. It can be read in full [here](https://github.com/chain/chain/blob/main/CODE_OF_CONDUCT.md).
 This repository is the canonical source for Chain Core Developer Edition. Consequently, Chain engineers actively maintain this repository.
 If you are interested in contributing to this code base, please read our [issue](https://github.com/chain/chain/blob/main/.github/ISSUE_TEMPLATE.md) and [pull request](https://github.com/chain/chain/blob/main/.github/PULL_REQUEST_TEMPLATE.md) templates first.
 
-## Building source
+## Building from source
 
 * [Go](https://golang.org/doc/install) version 1.7, with $GOPATH set to your
   preferred directory
