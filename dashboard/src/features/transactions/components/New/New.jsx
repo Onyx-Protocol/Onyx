@@ -73,7 +73,7 @@ class Form extends React.Component {
         label='New Transaction'
         submitLabel={submitLabel}
         onSubmit={handleSubmit(this.submitWithValidation)}
-        showActiveSubmit={true}
+        showSubmitIndicator={true}
         submitting={submitting} >
 
         <FormSection title='Actions'>
