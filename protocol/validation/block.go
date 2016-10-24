@@ -32,7 +32,7 @@ var (
 // See $CHAIN/protocol/doc/spec/validation.md#accept-block.
 // It evaluates the prevBlock's consensus program,
 // then calls ValidateBlock.
-func ValidateBlockForAccept(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
+func ValidateBlockForAccept(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, initialBlockHash bc.Hash, validateTx func(*bc.Tx) error) error {
 	if prevBlock != nil {
 		ok, err := vm.VerifyBlockHeader(&prevBlock.BlockHeader, block)
 		if err == nil && !ok {
@@ -49,7 +49,7 @@ func ValidateBlockForAccept(ctx context.Context, snapshot *state.Snapshot, prevB
 		}
 	}
 
-	return ValidateBlock(ctx, snapshot, prevBlock, block, validateTx)
+	return ValidateBlock(ctx, snapshot, prevBlock, block, initialBlockHash, validateTx)
 }
 
 // ValidateBlock performs the "validate block" procedure from the spec,
@@ -57,7 +57,7 @@ func ValidateBlockForAccept(ctx context.Context, snapshot *state.Snapshot, prevB
 // See $CHAIN/protocol/doc/spec/validation.md#validate-block.
 // Note that it does not execute prevBlock's consensus program.
 // (See ValidateBlockForAccept for that.)
-func ValidateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
+func ValidateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, initialBlockHash bc.Hash, validateTx func(*bc.Tx) error) error {
 
 	var g errgroup.Group
 	// Do all of the unparallelizable work, plus validating the block
@@ -77,7 +77,7 @@ func ValidateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, blo
 		// TODO(erykwalder): consider writing to a copy of the state tree
 		// of the one provided and make the caller call ApplyBlock as well
 		for _, tx := range block.Transactions {
-			err = ConfirmTx(snapshot, block, tx)
+			err = ConfirmTx(snapshot, block, initialBlockHash, tx)
 			if err != nil {
 				return err
 			}

@@ -115,7 +115,7 @@ func TestUniqueIssuance(t *testing.T) {
 		},
 	}
 
-	err = ConfirmTx(snapshot, block, tx)
+	err = ConfirmTx(snapshot, block, initialBlockHash, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestUniqueIssuance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ConfirmTx(snapshot, block, tx)
+	err = ConfirmTx(snapshot, block, initialBlockHash, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestUniqueIssuance(t *testing.T) {
 		t.Errorf("expected input with non-empty nonce to be added to issuance memory")
 	}
 	// Adding it again should fail
-	if ConfirmTx(snapshot, block, tx) == nil {
+	if ConfirmTx(snapshot, block, initialBlockHash, tx) == nil {
 		t.Errorf("expected adding duplicate issuance tx to fail")
 	}
 }
@@ -771,7 +771,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 				TimestampMS: c.timestamp,
 			},
 		}
-		err := ConfirmTx(state.Empty(), block, &c.tx)
+		err := ConfirmTx(state.Empty(), block, block.Hash(), &c.tx)
 		if !c.ok && errors.Root(err) != ErrBadTx {
 			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue
