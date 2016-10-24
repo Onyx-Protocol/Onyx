@@ -19,6 +19,7 @@
   <Page Name="Install">
     <Text X="0" Y="0" Width="485" Height="75" FontId="1" />
     <Image X="0" Y="0" Width="485" Height="96" ImageFile="logo.png" Visible="yes"/>
+    <Hypertext X="40" Y="-11" Width="-11" Height="14" FontId="3" DisablePrefix="yes">#(loc.LicenseLink)</Hypertext>
     <Button Name="InstallButton" X="-91" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.InstallInstallButton)</Button>
     <Button Name="WelcomeCancelButton" X="-11" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.InstallCloseButton)</Button>
   </Page>

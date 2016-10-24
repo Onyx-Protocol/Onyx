@@ -17,8 +17,7 @@
 /norestart   - suppress any attempts to restart. By default UI will prompt before restart.
 /log log.txt - logs to a specific file. By default a log file is created in %TEMP%.</String>
   <String Id="HelpCloseButton">&amp;Close</String>
-  <String Id="InstallLicenseLinkText">[WixBundleName] &lt;a href="#"&gt;license terms&lt;/a&gt;.</String>
-  <String Id="InstallAcceptCheckbox">I &amp;agree to the license terms and conditions</String>
+  <String Id="LicenseLink">&lt;a href="http://chain.com/docs/core/reference/license-information&#35;chain-core-developer-edition-for-windows"&gt;License Information&lt;/a&gt;</String>
   <String Id="InstallOptionsButton">&amp;Options</String>
   <String Id="InstallInstallButton">&amp;Install</String>
   <String Id="InstallCloseButton">&amp;Close</String>
