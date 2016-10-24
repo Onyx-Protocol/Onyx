@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 
+	"chain/core/rpc"
 	"chain/errors"
 	chainlog "chain/log"
-	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/validation"

@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"chain/net/rpc"
+	"chain/core/rpc"
 )
 
 type core struct {

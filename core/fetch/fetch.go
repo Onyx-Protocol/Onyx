@@ -13,10 +13,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/errors"
 	"chain/log"
-	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"

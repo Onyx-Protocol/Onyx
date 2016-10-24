@@ -28,6 +28,7 @@ import (
 	"chain/core/migrate"
 	"chain/core/mockhsm"
 	"chain/core/query"
+	"chain/core/rpc"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
@@ -40,7 +41,6 @@ import (
 	"chain/log/rotation"
 	"chain/log/splunk"
 	"chain/net/http/limit"
-	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 )

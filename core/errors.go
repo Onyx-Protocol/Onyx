@@ -9,12 +9,12 @@ import (
 	"chain/core/mockhsm"
 	"chain/core/query"
 	"chain/core/query/filter"
+	"chain/core/rpc"
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
-	"chain/net/rpc"
 	"chain/protocol"
 )
 
