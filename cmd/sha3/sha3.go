@@ -7,6 +7,9 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+// Usage:
+//   sha3 <bytes >hash
+
 func main() {
 	h := sha3.New256()
 	_, err := io.Copy(h, os.Stdin)
