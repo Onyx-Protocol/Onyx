@@ -147,7 +147,7 @@ func nonNilSigs(a [][]byte) (b [][]byte) {
 	return b
 }
 
-// getPendingBlock retrieves the generated, uncomitted block if it exists.
+// getPendingBlock retrieves the generated, uncommitted block if it exists.
 func getPendingBlock(ctx context.Context, db pg.DB) (*bc.Block, error) {
 	const q = `SELECT data FROM generator_pending_block`
 	var block bc.Block
