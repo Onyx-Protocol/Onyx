@@ -30,7 +30,7 @@ class EmptyList extends React.Component {
     }
 
     return (
-      <div className={`flex-container ${stlyes.empty}`}>
+      <div className={`flex-container ${styles.empty}`}>
         {emptyImage && <img className={styles.image} src={emptyImage} />}
         {emptyBlock}
       </div>
