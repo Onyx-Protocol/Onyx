@@ -37,19 +37,16 @@ To reset the network run:
 $ heroku run bin/testnet-reset -a testnet-resetter
 ```
 
-Next, the blockchain id will need to be updated in the test-info app.
+Next, the blockchain id will need to be updated in the testnet-info app.
 
 To retrieve the blockchain id run:
 ```
-$ BLOCKCHAIN_ID=`curl --silent --user
-$GENERATOR_CLIENT_TOKEN $GENERATOR_URL/info | jq -r
-.blockchain_id`
+$ BLOCKCHAIN_ID=`curl --silent --user $GENERATOR_CLIENT_TOKEN $GENERATOR_URL/info | jq -r .blockchain_id`
 ```
 
 To update the blockchain id:
 ```
-$ heroku config:set BLOCKCHAIN_ID=$BLOCKCHAIN_ID -a
-chain-testnet-info
+$ heroku config:set BLOCKCHAIN_ID=$BLOCKCHAIN_ID -a chain-testnet-info
 ```
 
 ### Updating the Generator
@@ -108,8 +105,7 @@ $ docker save chain:latest -o path/to/dest/latest.tar
 
 #### Upload the image to s3
 ```
-$ aws s3 cp path/to/latest.tar
-s3://chain-core/YYYYMMDD/latest.tar --acl public-read
+$ aws s3 cp path/to/latest.tar s3://chain-core/YYYYMMDD/latest.tar --acl public-read
 ```
 
 Once the image has been uploaded to s3, each signer must
@@ -118,8 +114,7 @@ below to update their core.
 
 #### Download latest Chain Core Docker image
 ```
-$ curl -LO
-https://s3.amazonaws.com/chain-core/YYYYMMDD/latest.tar
+$ curl -LO https://s3.amazonaws.com/chain-core/YYYYMMDD/latest.tar
 ```
 
 #### Delete current container
@@ -136,9 +131,7 @@ $ docker load < latest.tar
 #### Start new container
 ```
 $ docker run -d -p 1999:1999 \
-    -v
-/var/lib/chain/postgresql/data:/var/lib/postgresql/data
-\
+    -v /var/lib/chain/postgresql/data:/var/lib/postgresql/data \
     -v /var/log/chain/:/var/log/chain \
     --name chain \
     --restart always \
@@ -172,20 +165,17 @@ $ SIGNER2_DB_URL=...
 #### Create block signing keypairs
 Generator:
 ```
-$ GENERATOR_PUBKEY=`DATABASE_URL=$GENERATOR_DB_URL
-corectl create-block-keypair`
+$ GENERATOR_PUBKEY=`DATABASE_URL=$GENERATOR_DB_URL corectl create-block-keypair`
 ```
 
 Signer 1:
 ```
-$ SIGNER1_PUBKEY=`DATABASE_URL=$SIGNER1_DB_URL corectl
-create-block-keypair`
+$ SIGNER1_PUBKEY=`DATABASE_URL=$SIGNER1_DB_URL corectl create-block-keypair`
 ```
 
 Signer 2:
 ```
-$ SIGNER2_PUBKEY=`DATABASE_URL=$SIGNER2_DB_URL corectl
-create-block-keypair`
+$ SIGNER2_PUBKEY=`DATABASE_URL=$SIGNER2_DB_URL corectl create-block-keypair`
 ```
 
 #### Configure the generator
@@ -207,8 +197,7 @@ $ curl --silent $GENERATOR_URL/configure --data '{
 
 #### Retrieve the blockchain id
 ```
-$ BLOCKCHAIN_ID=`curl --silent $GENERATOR_URL/info | jq
--r .blockchain_id`
+$ BLOCKCHAIN_ID=`curl --silent $GENERATOR_URL/info | jq -r .blockchain_id`
 ```
 
 #### Configure the signers
@@ -245,47 +234,39 @@ them.
 #### Create client access tokens
 Generator:
 ```
-$ GENERATOR_CLIENT_TOKEN=`DATABASE_URL=$GENERATOR_DB_URL
-corectl create-token client`
+$ GENERATOR_CLIENT_TOKEN=`DATABASE_URL=$GENERATOR_DB_URL corectl create-token client`
 ```
 
 Signer 1:
 ```
-$ SIGNER1_CLIENT_TOKEN=`DATABASE_URL=$SIGNER1_DB_URL
-corectl create-token client`
+$ SIGNER1_CLIENT_TOKEN=`DATABASE_URL=$SIGNER1_DB_URL corectl create-token client`
 ```
 
 Signer 2:
 ```
-$ SIGNER2_CLIENT_TOKEN=`DATABASE_URL=$SIGNER2_DB_URL
-corectl create-token client`
+$ SIGNER2_CLIENT_TOKEN=`DATABASE_URL=$SIGNER2_DB_URL corectl create-token client`
 ```
 
 #### Create network access tokens
 Run this command passing each core's database url:
 Generator:
 ```
-$
-GENERATOR_NETWORK_TOKEN=`DATABASE_URL=$GENERATOR_DB_URL
-corectl create-token -net network`
+$ GENERATOR_NETWORK_TOKEN=`DATABASE_URL=$GENERATOR_DB_URL corectl create-token -net network`
 ```
 
 Signer 1:
 ```
-$ SIGNER1_NETWORK_TOKEN=`DATABASE_URL=$SIGNER1_DB_URL
-corectl create-token -net network`
+$ SIGNER1_NETWORK_TOKEN=`DATABASE_URL=$SIGNER1_DB_URL corectl create-token -net network`
 ```
 
 Signer 2:
 ```
-$ SIGNER2_NETWORK_TOKEN=`DATABASE_URL=$SIGNER2_DB_URL
-corectl create-token -net network`
+$ SIGNER2_NETWORK_TOKEN=`DATABASE_URL=$SIGNER2_DB_URL corectl create-token -net network`
 ```
 
 #### Configure the generator
 ```
-$ curl --silent --user $GENERATOR_CLIENT_TOKEN
-$GENERATOR_URL/configure --data '{
+$ curl --silent --user $GENERATOR_CLIENT_TOKEN $GENERATOR_URL/configure --data '{
     "is_generator":true,
     "is_signer":true,
     "block_pub":"'$GENERATOR_PUBKEY'",    
@@ -304,16 +285,13 @@ $GENERATOR_URL/configure --data '{
 
 #### Retrieve the blockchain id
 ```
-$ BLOCKCHAIN_ID=`curl --silent --user
-$GENERATOR_CLIENT_TOKEN $GENERATOR_URL/info | jq -r
-.blockchain_id`
+$ BLOCKCHAIN_ID=`curl --silent --user $GENERATOR_CLIENT_TOKEN $GENERATOR_URL/info | jq -r .blockchain_id`
 ```
 
 #### Configure the signers
 Signer 1:
 ```
-$ curl --silent --user $SIGNER1_CLIENT_TOKEN
-$SIGNER1_PUBKEY/configure --data '{
+$ curl --silent --user $SIGNER1_CLIENT_TOKEN $SIGNER1_PUBKEY/configure --data '{
     "is_signer":true,
     "blockchain_id":"'$BLOCKCHAIN_ID'",
     "generator_url":"'$GENERATOR_URL'",
@@ -324,8 +302,7 @@ $SIGNER1_PUBKEY/configure --data '{
 
 Signer 2:
 ```
-$ curl --silent --user $SIGNER2_CLIENT_TOKEN
-$SIGNER2_PUBKEY/configure --data '{
+$ curl --silent --user $SIGNER2_CLIENT_TOKEN $SIGNER2_PUBKEY/configure --data '{
     "is_signer":true,
     "blockchain_id":"'$BLOCKCHAIN_ID'",
     "generator_url":"'$GENERATOR_URL'",
