@@ -80,7 +80,7 @@ class Form extends React.Component {
           {actions.length == 0 && <p className={styles.actionInfo}>
               Add actions to issue, spend, control, or retire asset units.
               For more information, please consult the&nbsp;
-              <a href='/docs/core/build-applications/transaction-basics#creating-transactions' target="blank">
+              <a href='/docs/core/build-applications/transaction-basics#creating-transactions' target='_blank'>
                 documentation
               </a>.
             </p>}
