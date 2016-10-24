@@ -2,13 +2,13 @@
 
 * [Introduction](#introduction)
 * [Consensus programs](#consensus-programs)
-* [Federated consensus algorithm overview](#federated-consensus-algorithm-overview)
+* [Federated consensus program](#federated-consensus-program)
+* [Consensus algorithm](#consensus-algorithm)
 * [Safety guarantees](#safety-guarantees)
 * [Liveness guarantees](#liveness-guarantees)
 * [Consensus program changes](#consensus-program-changes)
 * [Policy enforcement](#policy-enforcement)
 * [Future improvements](#future-improvements)
-
 
 ## Introduction
 
