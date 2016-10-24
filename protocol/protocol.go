@@ -114,7 +114,7 @@ type Chain struct {
 	pool              Pool
 	MaxIssuanceWindow time.Duration // only used by generators
 
-	initialBlockHash bc.Hash
+	InitialBlockHash bc.Hash
 
 	lastQueuedSnapshot time.Time
 	pendingSnapshots   chan pendingSnapshot
@@ -150,7 +150,7 @@ func NewChain(ctx context.Context, store Store, pool Pool, heights <-chan uint64
 		if err != nil {
 			return nil, errors.Wrap(err, "retrieving initial block")
 		}
-		c.initialBlockHash = b.Hash()
+		c.InitialBlockHash = b.Hash()
 	}
 
 	// Note that c.state.height may still be zero here.
@@ -210,7 +210,7 @@ func (c *Chain) setState(b *bc.Block, s *state.Snapshot) {
 		c.state.cond.Broadcast()
 	}
 	if b.Height == 1 {
-		c.initialBlockHash = b.Hash()
+		c.InitialBlockHash = b.Hash()
 	}
 }
 

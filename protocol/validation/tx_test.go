@@ -771,7 +771,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 				TimestampMS: c.timestamp,
 			},
 		}
-		err := ConfirmTx(state.Empty(), block, block.Hash(), &c.tx)
+		err := ConfirmTx(state.Empty(), block, initialBlockHash, &c.tx)
 		if !c.ok && errors.Root(err) != ErrBadTx {
 			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue

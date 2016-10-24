@@ -26,21 +26,19 @@ import (
 
 const maxAssetCache = 100
 
-func NewRegistry(db pg.DB, chain *protocol.Chain, initialBlockHash bc.Hash) *Registry {
+func NewRegistry(db pg.DB, chain *protocol.Chain) *Registry {
 	return &Registry{
-		db:               db,
-		chain:            chain,
-		initialBlockHash: initialBlockHash,
-		cache:            lru.New(maxAssetCache),
+		db:    db,
+		chain: chain,
+		cache: lru.New(maxAssetCache),
 	}
 }
 
 // Registry tracks and stores all known assets on a blockchain.
 type Registry struct {
-	db               pg.DB
-	chain            *protocol.Chain
-	indexer          Saver
-	initialBlockHash bc.Hash
+	db      pg.DB
+	chain   *protocol.Chain
+	indexer Saver
 
 	cacheMu sync.Mutex
 	cache   *lru.Cache
@@ -87,8 +85,8 @@ func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, def
 	asset := &Asset{
 		Definition:       definition,
 		IssuanceProgram:  issuanceProgram,
-		InitialBlockHash: reg.initialBlockHash,
-		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1),
+		InitialBlockHash: reg.chain.InitialBlockHash,
+		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.chain.InitialBlockHash, 1),
 		Signer:           assetSigner,
 		Tags:             tags,
 	}

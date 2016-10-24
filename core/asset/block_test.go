@@ -21,7 +21,7 @@ func (f fakeSaver) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, o
 }
 
 func TestIndexNonLocalAssets(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t))
 	ctx := context.Background()
 
 	// Create a local asset which should be unaffected by a block landing.
@@ -46,7 +46,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 						{ // non-local asset
 							AssetVersion: 1,
 							TypedInput: &bc.IssuanceInput{
-								InitialBlock:    r.initialBlockHash,
+								InitialBlock:    r.chain.InitialBlockHash,
 								Amount:          10000,
 								IssuanceProgram: issuanceProgram,
 								VMVersion:       1,
@@ -55,7 +55,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 						{ // local asset
 							AssetVersion: 1,
 							TypedInput: &bc.IssuanceInput{
-								InitialBlock:    r.initialBlockHash,
+								InitialBlock:    r.chain.InitialBlockHash,
 								Amount:          10000,
 								IssuanceProgram: local.IssuanceProgram,
 								VMVersion:       1,
@@ -93,7 +93,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 			"currency": "USD",
 		},
 		IssuanceProgram:  issuanceProgram,
-		InitialBlockHash: r.initialBlockHash,
+		InitialBlockHash: r.chain.InitialBlockHash,
 		sortID:           got.sortID,
 	}
 	if !reflect.DeepEqual(got, want) {
