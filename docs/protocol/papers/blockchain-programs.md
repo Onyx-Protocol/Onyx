@@ -51,24 +51,24 @@ Bitcoin, similarly, uses programs as predicates in order to determine whether a 
 
 ### Stack machine basics
 
-Lets take a look at a simple program:
+Let’s take a look at a simple program:
 
     1 2 ADD 3 EQUAL
 
-This program encodes a predicate `1 + 2 == 3`.
+This program encodes the predicate `1 + 2 == 3`.
 
-First two instructions are `PUSHDATA` instructions that push their associated values (encoded within the program) on the data stack.
+The first two instructions are `PUSHDATA` instructions that push their associated values (encoded within the program) on the data stack.
 
-Next, instruction `ADD` removes top two values `1, 2`, interprets them as integers, adds them together and pushes the result (`3`) on the stack.
+Next, the `ADD` instruction removes the top two values (`1` and `2`), interprets them as integers, adds them together, and pushes the result (`3`) on the stack.
 
-Following instruction is another `PUSHDATA`, that pushes value `3`.
+The next instruction is another `PUSHDATA`. This one pushes the number `3`.
 
-Finally, instruction `EQUAL` removes top two values, compares them byte-by-byte and pushes a boolean value `true`.
+Finally, `EQUAL` removes the top two values (the two copies of the number `3`), compares them byte-by-byte, finds them equal, and so pushes the boolean value `true`.
 
 
 ### Run limit
 
-The CVM’s instruction set is Turing complete. To prevent unbounded use of computational resources, the protocol allows networks to set a *run limit* that a program is not allowed to exceed. Each instruction consumes some of the limit as it runs, according to its *run cost*. Processing-intensive instructions, such as signature checks, are more expensive.
+The CVM’s instruction set is Turing complete. To prevent unbounded use of computational resources, the protocol allows networks to set a *run limit* that a program is not allowed to exceed. Each instruction consumes some of the limit as it runs, according to its *run cost*. Simple instructions have a low cost, while processing-intensive instructions, such as signature checks, are more expensive.
 
 [sidenote]
 
@@ -76,7 +76,7 @@ Both Bitcoin and Ethereum have restrictions that prevent program execution from 
 
 [/sidenote]
 
-The run cost also takes into account the stack’s current memory usage. Adding an item to the stack has a cost based on the size of the item; removing an item from the stack refunds that cost.
+The run cost also takes memory usage into account. Adding an item to the stack has a cost based on the size of the item; removing an item from the stack refunds that cost.
 
 
 ### Instruction set
@@ -87,26 +87,25 @@ What follows is a summary of the functionality provided by CVM instructions. For
 
 #### Stack manipulation
 
-Programs may encode bytestrings to push on data stack using a range of `PUSHDATA` instructions. Instructions `DROP`, `DUP`, `SWAP`, `PICK` and others allow moving stack items around. More complex stack manipulations can be assisted by `TOALTSTACK` and `FROMALTSTACK` instructions that move items between the data stack and an auxiliary alt stack.
+Programs may encode bytestrings to push on the data stack using a range of `PUSHDATA` instructions. Instructions such as `DROP`, `DUP`, `SWAP`, `PICK`, and others allow moving stack items around. More complex stack manipulations can be assisted by `TOALTSTACK` and `FROMALTSTACK` instructions that move items between the data stack and an alternate stack.
 
 #### String manipulation
 
-`EQUAL` checks for the equality of two strings. `CAT`, `SUBSTR`, `LEFT`, and `RIGHT` perform operations on strings from the top of the stack. `AND`, `OR`, `XOR` perform bitwise operations.
+`EQUAL` checks for the equality of two strings. `CAT`, `SUBSTR`, `LEFT`, and `RIGHT` perform operations on strings from the top of the stack. `AND`, `OR`, and `XOR` perform bitwise operations.
 
 #### Arithmetic operations
 
 While all items on the stack are strings, some instructions interpret items as numbers, using 64-bit two’s complement representation.
 
-CVM deterministically checks for overflows: if the result overflows (e.g. too large numbers are multiplied), execution immediately fails.
-
+The CVM deterministically checks for overflows: if the result overflows (e.g. too-large numbers are multiplied), execution immediately fails.
 
 #### Boolean operations
 
-Items on the stack can also be interpreted as booleans. Empty strings and strings consisting of zero bytes are coerced to `false`, all others are coerced to `true`.
+Items on the stack can also be interpreted as booleans. Empty strings and strings consisting of only `0x00` bytes are interpreted as `false`, all others are `true`.
 
 #### Cryptographic operations
 
-The `SHA256` and `SHA3` instructions execute corresponding hash functions and output 32-byte strings.
+The `SHA256` and `SHA3` instructions execute the corresponding hash functions and output 32-byte strings.
 
 The `CHECKSIG` instruction checks the validity of an Ed25519 signature against a given public key and a message hash.
 
