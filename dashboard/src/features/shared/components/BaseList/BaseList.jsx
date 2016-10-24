@@ -62,7 +62,7 @@ class ItemList extends React.Component {
       const Wrapper = this.props.wrapperComponent
 
       return(
-        <div>
+        <div className='flex-container'>
           {header}
 
           <PageContent>
