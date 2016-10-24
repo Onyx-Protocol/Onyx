@@ -9,19 +9,21 @@ import (
 )
 
 var (
-	decode  = flag.Bool("d", false, "decode")
+	decode  bool
 	lineLen = flag.Int("n", 72, "max encoded output line `length`")
 )
 
 func main() {
 	log.SetFlags(0)
 	log.SetPrefix("hex: ")
+	flag.BoolVar(&decode, "d", false, "decode (negates -e)")
+	flagNotBoolVar(&decode, "e", true, "encode (negates -d) (default true)")
 	flag.Parse()
 	var r io.Reader = &encodeReader{os.Stdin}
 	if *lineLen >= 2 {
 		r = &splitLineReader{r: r, max: *lineLen - *lineLen%2}
 	}
-	if *decode {
+	if decode {
 		r = &decodeReader{r: &stripSpaceReader{os.Stdin}}
 	}
 	_, err := io.Copy(os.Stdout, r)
