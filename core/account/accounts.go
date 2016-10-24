@@ -55,9 +55,7 @@ type Account struct {
 
 // Create creates a new Account.
 func (m *Manager) Create(ctx context.Context, xpubs []string, quorum int, alias string, tags map[string]interface{}, clientToken *string) (*Account, error) {
-	// TODO(jackson): remove dbctx when the signers package doesn't need it
-	dbctx := pg.NewContext(ctx, m.db)
-	signer, err := signers.Create(dbctx, "account", xpubs, quorum, clientToken)
+	signer, err := signers.Create(ctx, m.db, "account", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -119,9 +117,7 @@ func (m *Manager) findByID(ctx context.Context, id string) (*signers.Signer, err
 	if ok {
 		return cached.(*signers.Signer), nil
 	}
-	// TODO(jackson): remove dbctx when the signers package doesn't need it
-	dbctx := pg.NewContext(ctx, m.db)
-	account, err := signers.Find(dbctx, "account", id)
+	account, err := signers.Find(ctx, m.db, "account", id)
 	if err != nil {
 		return nil, err
 	}
