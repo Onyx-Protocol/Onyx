@@ -193,9 +193,9 @@ Here is an example of a control program written in Ivy:
 
 Let’s break this program down piece by piece.
 
-* Programs can have **parameters**. This program has one parameter, `publicKey`. Values for a program’s parameters, also called **arguments**, are specified at the time the program is *instantiated*, or created. In the case of a control program like this, that is the time that an unspent output is added to the blockchain state by a transaction.
+* Programs can have **parameters**. This program has one parameter, `publicKey`. Values for a program’s parameters, called **arguments**, are specified at the time the program is *instantiated*, or created. In the case of a control program like this, that is the time that an unspent output is added to the blockchain state by a transaction.
 * Programs define one or more **paths**. This program has only one path: `spend`. If this control program could be satisfied in different ways, it would have more than one path. 
-* Each path can have its own parameters. Arguments for path parameters are provided in the input witness. Arguments are passed — and the path is chosen — at the time the program is executed. In the case of a control program like this, that is the time the unspent output is used as an input in a new transaction. This program takes one argument: a `signature`.
+* Each path can define its own parameters. Arguments for path parameters are provided in the input witness. These arguments are passed — and the path is chosen — at the time the program is executed. In the case of a control program like this, that is the time the unspent output is used as an input in a new transaction. This program takes one argument: a `signature`.
 * Paths contain one or more **conditions**. This path only uses a single condition, which uses the `CHECKSIG` instruction to check that the provided signature on the hash of the new transaction corresponds to the previously specified public key.
 
 Control and issuance programs have access to a global `tx` variable, which allows them to use the transaction introspection instructions. In this case, `tx.hash` uses the `TXSIGHASH` instruction to get the hash of the new transaction.
@@ -244,7 +244,7 @@ Bitcoin supports a similar pattern, known as “[Pay to Script Hash](https://git
 
 This technique is useful for describing and developing generic patterns for control programs and as a result is used throughout the rest of this guide. 
 
-Programs *themselves* can instantiate programs with parameters to create new programs. In combination with output introspection, this allows construction of complex state machines.
+Programs *themselves* can instantiate programs with arguments to create new programs. In combination with output introspection, this allows construction of complex state machines.
 
 This is examined in more detail in the [examples](#examples) below.
 
@@ -423,7 +423,7 @@ Notice that the remainder must be sent to a new program that is a duplicate of t
 
 ### State Machines
 
-What if you want to get more complex than just replicating the same program, but want to change its state when you do? This is where the program model really shines. Programs can instantiate programs with new parameters on the fly.
+What if you want to get more complex than just replicating the same program, but want to change its state when you do? This is where the program model really shines. Programs can instantiate programs with new arguments on the fly.
 
 This program will prevent its assets from being transferred more than once within a certain time period:
 
@@ -449,7 +449,7 @@ This program will prevent its assets from being transferred more than once withi
 
 ### Singletons
 
-While most state should be tracked locally in the program parameters for a specific unspent output, some on-chain use cases may require keeping track of “global” state. For example, one may want to limit issuance of an asset, so only 100 units can be issued per day. This can be done using the *singleton* design pattern.
+While most state should be tracked locally in the program-level arguments for a specific unspent output, some on-chain use cases may require keeping track of “global” state. For example, one may want to limit issuance of an asset, so only 100 units can be issued per day. This can be done using the *singleton* design pattern.
 
 First, one needs to create an asset for which only one unit can ever be issued. This requires some understanding of how the Chain Protocol handles issuances. Unique issuance — ensuring that issuances cannot be replayed — is a challenging problem that is outside the scope of this paper. The Chain Protocol’s solution is that each issuance input has a nonce that, when combined with the transaction’s `mintime`, `maxtime`, and asset ID, must be unique throughout the blockchain’s history. As a result, an issuance *program* can ensure that it is only used once by committing to a specific nonce, transaction mintime, and transaction maxtime:
 
