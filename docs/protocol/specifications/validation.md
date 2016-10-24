@@ -11,7 +11,7 @@
   * [Check block is well-formed](#check-block-is-well-formed)
   * [Validate block](#validate-block)
   * [Validate transaction](#validate-transaction)
-  * [Validate transaction tnput](#validate-transaction-input)
+  * [Validate transaction input](#validate-transaction-input)
   * [Check transaction is well-formed](#check-transaction-is-well-formed)
   * [Apply block](#apply-block)
   * [Apply transaction](#apply-transaction)
