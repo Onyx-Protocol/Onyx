@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-set -euf -o pipefail
+set -ef -o pipefail
 
 # TODO: when production is viable target, add commandline option to upload to
 # the production bucket.
 bucket="s3://chain-staging.chain.com"
+if [ "$1" = "prod" ];
+then
+  bucket="s3://chain.com"
+fi
 
 # Print output from generate-docs to stdout, but capture last line (the actual
 # output directory) in a variable.
