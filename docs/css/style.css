@@ -1260,8 +1260,15 @@ video {
     transform: translateX(6px);
 }
 
-/* Print Styles */
 
+/* Media Queries */
+@media (max-width: 992px) {
+    #doc-content, #doc-header {
+        max-width: 650px;
+    }
+}
+
+ /* Print Styles */
 @media print {
     body, html, #doc-wrapper, #doc-content {
         overflow: visible;
