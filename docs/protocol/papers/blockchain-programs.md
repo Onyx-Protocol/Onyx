@@ -139,18 +139,18 @@ In contrast, CVM allows introspection only of the immutable data declared in the
 
 `CHECKOUTPUT` allows an input to introspect the outputs of the transaction. This allows it to place restrictions on how the input values are subsequently used. This instruction provides functionality similar to the `CHECKOUTPUTVERIFY` instruction proposed by Malte Möser, Ittay Eyal, and Emin Gün Sirer in their [Bitcoin Covenants](http://fc16.ifca.ai/bitcoin/papers/MES16.pdf) paper. `CHECKOUTPUT` also allows implementing arbitrary state-machines within a UTXO model as was proposed by Oleg Andreev in [Pay-to-Contract](https://github.com/oleganza/bitcoin-papers/blob/master/SmartContractsSoftFork.md) paper.
 
-`MINTIME` and `MAXTIME` allow limitations on when an output can be spent. `AMOUNT`, `ASSET`, `PROGRAM`, `REFDATAHASH`, and `INDEX` allow a control program to introspect the input itself.
+`MINTIME` and `MAXTIME` allow placing limitations on when an output can be spent. `AMOUNT`, `ASSET`, `PROGRAM`, `REFDATAHASH`, and `INDEX` allow a control program to introspect the input itself.
 
 
 ## Ivy
 
-It is easy to write simple programs directly in the bytecode thanks to specialized instructions and simple execution model. However, to design more complex programs that perform transaction introspection and manipulate more data than a few signatures, a higher-level language is needed.
+It is easy to write simple programs directly in bytecode thanks to specialized instructions and the simple execution model. However, to design more complex programs that perform transaction introspection and manipulate more data than a few signatures, a higher-level language is needed.
 
 Chain is developing a high-level programming language, *Ivy*, that compiles to CVM bytecode, to make it easier to write and reason about blockchain programs. Ivy is still evolving, and this explanation and tutorial is provided only to help ground the examples used below. Some of the compiled bytecode programs are tweaked for clarity or simplicity.
 
 [sidenote]
 
-Similarly, most development for the Ethereum VM is done using [Solidity](https://solidity.readthedocs.io/en/develop/), a high-level language that has been compared to JavaScript. While Ivy and Solidity have some similarities in syntax, they have very different semantics. Solidity can be roughly classified as an object-oriented imperative language, while Ivy fits better into the paradigm of a *declarative language*. This reflects the design differences between Ethereum’s and Chain’s transaction models.
+Most development for the Ethereum VM is done using [Solidity](https://solidity.readthedocs.io/en/develop/), a high-level language that has been compared to JavaScript. While Ivy and Solidity have some similarities in syntax, they have very different semantics. Solidity can be classified roughly as an object-oriented imperative language, while Ivy fits better into the paradigm of a *declarative language*. This reflects the design differences between Ethereum’s and Chain’s transaction models.
 
 [/sidenote]
 
@@ -181,7 +181,7 @@ is compiled to:
 
 ### Programs
 
-Ivy syntax brings additional structure to programs making it easy to construct and combine sequences of conditions. Like individual conditions, programs do not change state or return values; they simply succeed or fail.
+Ivy syntax brings additional structure to programs, making it easy to construct and combine sequences of conditions. Like individual conditions, programs do not change state or return values; they simply succeed or fail.
 
 Here is an example of a control program written in Ivy:
 
@@ -193,9 +193,9 @@ Here is an example of a control program written in Ivy:
 
 Let’s break this program down piece by piece.
 
-* Programs can take **parameters**. This program takes one parameter, `publicKey`. Parameters are specified at the time the program is *instantiated*, or created. In the case of a control program like this, that is the time that an unspent output is added to the blockchain state by a transaction.
+* Programs can have **parameters**. This program has one parameter, `publicKey`. Values for a program’s parameters, also called **arguments**, are specified at the time the program is *instantiated*, or created. In the case of a control program like this, that is the time that an unspent output is added to the blockchain state by a transaction.
 * Programs define one or more **paths**. This program has only one path: `spend`. If this control program could be satisfied in different ways, it would have more than one path. 
-* Each path can take **arguments**. Arguments are provided in the input witness. Arguments are passed — and the path is chosen — at the time the program is executed. In the case of a control program like this, that is the time the unspent output is used as an input in a new transaction. This program takes one argument: a `signature`.
+* Each path can have its own parameters. Arguments for path parameters are provided in the input witness. Arguments are passed — and the path is chosen — at the time the program is executed. In the case of a control program like this, that is the time the unspent output is used as an input in a new transaction. This program takes one argument: a `signature`.
 * Paths contain one or more **conditions**. This path only uses a single condition, which uses the `CHECKSIG` instruction to check that the provided signature on the hash of the new transaction corresponds to the previously specified public key.
 
 Control and issuance programs have access to a global `tx` variable, which allows them to use the transaction introspection instructions. In this case, `tx.hash` uses the `TXSIGHASH` instruction to get the hash of the new transaction.
@@ -212,7 +212,7 @@ When the output is spent and the control program is run:
 2. The program then executes, first pushing the public key and then the transaction hash to the stack. 
 3. The public key and transaction hash are then swapped to put them in the correct order for the following `CHECKSIG` instruction. 
 4. `CHECKSIG` pops all three items off the stack to check the signature, pushing `true` or `false` to the stack. 
-5. `VERIFY` then pops the top value from the stack, and causes the program to fail if the value is `false`. (In an actual control program, the `VERIFY` instruction of the last condition in a path is omitted, since it is performed by the VM itself.)
+5. `VERIFY` then pops the top value from the stack and causes the program to fail if the value is `false`. (In an actual control program, the `VERIFY` instruction of the last condition in a path is omitted, since it is performed by the VM itself.)
 
 Many control, issuance, and consensus programs use a multisignature check.
 
@@ -222,12 +222,12 @@ Many control, issuance, and consensus programs use a multisignature check.
 		}
 	}
 
-The `publicKeys[n]` syntax allows programs to take variable numbers of parameters or arguments.
+The `publicKeys[n]` syntax allows programs to take variable numbers of arguments.
 
 
 ### Composing programs
 
-Normally, when a control program is added to the blockchain, the logic is available immediately. What if we don't want to reveal our public keys or logic when the control program is first put on the blockchain, but only when it is spent? The control program could commit to a *hash* of the relevant program and have it passed as an argument later.
+Normally, when a control program is added to the blockchain, its logic and any public keys it contains are available immediately to all observers. What if we don't want to reveal our public keys or logic when the control program is first put on the blockchain, but only when and if it is spent? The control program could commit to a *hash* of the actual program, with the actual program passed as an argument later and then evaluated.
 
 [sidenote]
 
@@ -242,7 +242,7 @@ Bitcoin supports a similar pattern, known as “[Pay to Script Hash](https://git
 		}
 	}
 
-The program format is a useful tool for describing and developing generic patterns for control programs (and as a result is used throughout the rest of this guide). 
+This technique is useful for describing and developing generic patterns for control programs and as a result is used throughout the rest of this guide. 
 
 Programs *themselves* can instantiate programs with parameters to create new programs. In combination with output introspection, this allows construction of complex state machines.
 
@@ -264,7 +264,7 @@ Control programs define the conditions for spending assets on a blockchain.
 
 Control programs are sometimes called **addresses**.
 
-Control programs are specified in a transaction output, which also specifies an asset ID and amount. That value is stored on the blockchain in an unspent transaction output (UTXO). To spend that value, someone can create a transaction that uses that unspent output as the source of one of its inputs.
+Control programs are specified in a transaction output, which also specifies an asset ID and amount. That value is stored on the blockchain in an unspent transaction output (UTXO). To spend that value, someone can create a transaction that uses that unspent output as the source of one of its inputs, as long as they can provide arguments that cause the control program to succeed.
 
 Examples of control programs are described above.
 
@@ -313,16 +313,16 @@ Bitcoin provides “signature hash types” that offer some of the functionality
 
 Signing the entire transaction hash is fine if you only want to authorize an input to be spent in a particular transaction. However, what if you only know or care about a particular part of a transaction at the time you sign it? 
 
-For example, suppose Alice wants to sell **5 Acme shares** to Bob, in exchange for **10 USD**. Alice wants to authorize the transfer of her Acme shares if and only if she receive payment of 10 USD to her own address. However, Alice does not care what the other input in the transaction will be — i.e., where the other payment will come from. If Alice sends the partially filled transaction to Bob to allow him to fill out the rest, he will have to return it to her to examine and sign.
+For example, suppose Alice wants to sell **5 Acme shares** to Bob, in exchange for **10 USD**. Alice wants to authorize the transfer of her Acme shares if and only if she receive payment of 10 USD to her own address. However, Alice does not care what the other input in the transaction will be — i.e., where the other payment will come from. If Alice sends the partially filled transaction to Bob to allow him to fill out the rest, he will have to return it to her to examine (verifying that it pays her the 10 USD she expects) and then sign.
 
-Instead of authorizing a specific transaction, it would be useful if a spender or issuer could authorize any transaction that meets certain criteria.
+Instead of authorizing a specific transaction, it would be useful if a spender or issuer could preauthorize *any* transaction as long as it meets certain criteria.
 
-To enable this, the control program for Alice’s Acme shares cannot have the simple form described above, which checks a signature against the transaction hash. Instead, it should look like this:
+To enable this, the control program for Alice’s Acme shares cannot have the simple form described above, which checks a signature against the transaction hash, since at the time Alice signs it, the transaction is still incomplete and its hash is therefore not yet known. Instead, the control program should look like this:
 
     program AliceAccount(publicKey) {
-    	path spend(signature, program, m, arguments[m]) {
-    		verify checksig(publicKey, program, signature)
-    		verify program(arguments)
+    	path spend(signature, prog, m, arguments[m]) {
+    		verify checksig(publicKey, prog, signature)
+    		verify prog(arguments)
     	}
     }
 
@@ -354,7 +354,7 @@ But a signature program can do much more than that. For example, this program so
     	}
     }
 
-If this program is initialized with the details of the desired output — say, **10 USD** sent to Alice’s new address — and signed with the private key corresponding to Alice’s , the combined signature program will authorize Alice’s input to be spent only in a transaction that includes the desired output. 
+If this program is initialized with the details of the desired output — say, **10 USD** sent to Alice’s new address — and signed with Alice’s private key, the combined signature program will authorize Alice’s input to be spent only in a transaction that includes the desired output. 
 
 [sidenote]
 
@@ -367,7 +367,7 @@ Christopher Allen and Shannon Appelcline explore ideas similar to signature prog
 
 Using the building blocks described above, it is possible to implement financial applications that are enforced by the network (so-called "smart contracts").
 
-The examples that follow are provided as illustrations only. They elide over some subtleties, and should not be considered final or secure.
+The examples that follow are provided as illustrations only. They gloss over some subtleties and should not be considered final or secure.
 
 ### Offers
 
@@ -451,7 +451,7 @@ This program will prevent its assets from being transferred more than once withi
 
 While most state should be tracked locally in the program parameters for a specific unspent output, some on-chain use cases may require keeping track of “global” state. For example, one may want to limit issuance of an asset, so only 100 units can be issued per day. This can be done using the *singleton* design pattern.
 
-First, one needs to create an asset for which only one unit can ever be issued. This requires some understanding of how the Chain Protocol handles issuances. Unique issuance — ensuring that issuances cannot be replayed — is a challenging problem that is outside the scope of this paper. The Chain Protocol’s solution is that each issuance input has a nonce, which, when combined with the transaction’s `mintime`, `maxtime` and the asset ID, must be unique throughout the blockchain’s history. As a result, an issuance program can ensure that it is only used once by committing to a specific nonce, transaction mintime, and transaction maxtime:
+First, one needs to create an asset for which only one unit can ever be issued. This requires some understanding of how the Chain Protocol handles issuances. Unique issuance — ensuring that issuances cannot be replayed — is a challenging problem that is outside the scope of this paper. The Chain Protocol’s solution is that each issuance input has a nonce that, when combined with the transaction’s `mintime`, `maxtime`, and asset ID, must be unique throughout the blockchain’s history. As a result, an issuance *program* can ensure that it is only used once by committing to a specific nonce, transaction mintime, and transaction maxtime:
 
     program SinglyIssuableAssetSingletonToken(nonce, mintime, maxtime, amount, lockProgram) {
     	path issue(outputIndex) {
@@ -505,14 +505,14 @@ Programs on the blockchain are made secure because the entire network may verify
     		// all interested parties can agree to the final result of the program
     		verify checkmultisig(n, n, publicKeys, tx.hash, signatures)
     	}
-    	path enforce(program, m, arguments[m]) {
+    	path enforce(prog, m, arguments[m]) {
     		// any party can reveal the program and enforce it
-    		verify sha3(program) == programHash
-    		verify program(arguments)
+    		verify sha3(prog) == programHash
+    		verify prog(arguments)
     	}
     }
 
-Parties can evaluate the program privately, determine the result, mutually agree to how it should resolve, and provide their signatures on the resulting transaction. If any party refuses to agree to the result, another party can enforce the program by making its code public. This is similar to how contract enforcement works in the real world.
+Parties can evaluate the program privately, determine the result, mutually agree to how it should resolve, and provide their signatures on the resulting transaction. If any party refuses to agree to the result, another party can enforce the program by making its code public. This is similar to how contract enforcement works in the real world: details can remain private unless and until disputes have to be settled in court.
 
 [sidenote]
 
