@@ -19,7 +19,7 @@ import (
 const (
 
 	// The Chain Core executable itself.
-	chainCoreExe = `C:/Program Files (x86)/Chain/chain-core.exe`
+	chainCoreExe = `C:/Program Files (x86)/Chain/cored.exe`
 
 	// Data directory for Postgres to store all of its stuff for a specific db.
 	pgDataDir = `C:/Program Files (x86)/Chain/data`
