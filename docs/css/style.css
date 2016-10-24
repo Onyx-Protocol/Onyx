@@ -462,13 +462,13 @@ article div.sidenote p:not(:first-child) {
 
 
 /* Headers */
-h1 {
+h1, .modal-title {
     font-size: 36px;
     color: #20252D;
     font-weight: 400;
     border-bottom: 1px solid rgba(120, 134, 156, .15);
     padding-bottom: 8px;
-	clear: both;
+    clear: both;
 }
 
 h2 {
@@ -1336,5 +1336,3 @@ video {
         white-space: pre-wrap;
     }
 }
-
-
