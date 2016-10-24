@@ -16,7 +16,6 @@ import (
 	"chain/core/migrate"
 	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
-	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
 	"chain/log"
@@ -165,8 +164,9 @@ func createToken(db *sql.DB, args []string) {
 		fatalln(usage)
 	}
 
+	accessTokens := &accesstoken.CredentialStore{DB: db}
 	typ := map[bool]string{true: "network", false: "client"}[*flagNet]
-	tok, err := accesstoken.Create(pg.NewContext(context.Background(), db), args[0], typ)
+	tok, err := accessTokens.Create(context.Background(), args[0], typ)
 	if err != nil {
 		fatalln("error:", err)
 	}

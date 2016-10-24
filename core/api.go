@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"chain/core/accesstoken"
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/leader"
@@ -53,6 +54,7 @@ type Handler struct {
 	Accounts      *account.Manager
 	HSM           *mockhsm.HSM
 	Indexer       *query.Indexer
+	AccessTokens  *accesstoken.CredentialStore
 	Config        *Config
 	DB            pg.DB
 	Addr          string
@@ -163,6 +165,7 @@ func (h *Handler) init() {
 	})
 
 	var handler = (&apiAuthn{
+		tokens:   h.AccessTokens,
 		tokenMap: make(map[string]tokenResult),
 		alt:      h.AltAuth,
 	}).handler(latencyHandler)
