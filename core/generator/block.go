@@ -88,6 +88,12 @@ func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 
 	hashForSig := b.HashForSig()
 
+	// This signature proves to the signers that the signing request came from the generator
+	requestSig, err := g.hsm.Sign(ctx, g.signReqPub, hashForSig[:])
+	if err != nil {
+		return errors.Wrap(err, "producing outbound request signature")
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -95,7 +101,7 @@ func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 	replies := make([][]byte, len(g.signers))
 	done := make(chan int, len(g.signers))
 	for i, signer := range g.signers {
-		go getSig(ctx, signer, b, &replies[i], i, done)
+		go getSig(ctx, signer, b, requestSig, &replies[i], i, done)
 	}
 
 	nready := 0
@@ -129,7 +135,7 @@ func indexKey(keys []ed25519.PublicKey, msg, sig []byte) int {
 	return -1
 }
 
-func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, sig *[]byte, i int, done chan int) {
+func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, requestSig []byte, sig *[]byte, i int, done chan int) {
 	var err error
 	*sig, err = signer.SignBlock(ctx, b)
 	if err != nil && ctx.Err() != context.Canceled {

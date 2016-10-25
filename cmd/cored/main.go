@@ -228,7 +228,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
-		s := blocksigner.New(blockPub, hsm, db, c)
+		s := blocksigner.New(blockPub, signReqPub, hsm, db, c)
 		generatorSigners = append(generatorSigners, s) // "local" signer
 		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
 			sig, err := s.ValidateAndSignBlock(ctx, b)
@@ -332,11 +332,11 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 	return a
 }
 
-func (s *remoteSigner) SignBlock(ctx context.Context, b *bc.Block) (signature []byte, err error) {
+func (s *remoteSigner) SignBlock(ctx context.Context, req blocksigner.SignBlockRequest) (signature []byte, err error) {
 	// TODO(kr): We might end up serializing b multiple
 	// times in multiple calls to different remoteSigners.
 	// Maybe optimize that if it makes a difference.
-	err = s.Client.Call(ctx, "/rpc/signer/sign-block", b, &signature)
+	err = s.Client.Call(ctx, "/rpc/signer/sign-block", req, &signature)
 	return
 }
 

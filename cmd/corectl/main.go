@@ -174,10 +174,11 @@ func createToken(db *sql.DB, args []string) {
 }
 
 func configNongenerator(db *sql.DB, args []string) {
-	const usage = "usage: corectl config [-t token] [-k pubkey] [blockchain-id] [url]"
+	const usage = "usage: corectl config [-t token] [-k pubkey] [-r signreqpubkey] [blockchain-id] [url]"
 	var flags flag.FlagSet
 	flagT := flags.String("t", "", "generator access `token`")
 	flagK := flags.String("k", "", "local `pubkey` for signing blocks")
+	flagR := flags.String("r", "", "`signreqpubkey` accompanying sign-block requests")
 	flags.Usage = func() {
 		fmt.Println(usage)
 		flags.PrintDefaults()
@@ -198,6 +199,11 @@ func configNongenerator(db *sql.DB, args []string) {
 	config.GeneratorAccessToken = *flagT
 	config.IsSigner = *flagK != ""
 	config.BlockPub = *flagK
+	config.SignReqPub = *flagR
+
+	if config.IsSigner && config.SignReqPub == "" {
+		fatalln("error: must specify sign-request pubkey with -r")
+	}
 
 	ctx := context.Background()
 	err = core.Configure(ctx, db, &config)
