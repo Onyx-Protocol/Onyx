@@ -3,11 +3,13 @@ set -ef -o pipefail
 
 # TODO: when production is viable target, add commandline option to upload to
 # the production bucket.
-bucket="s3://chain-staging.chain.com"
+bucket="chain-staging.chain.com"
 if [ "$1" = "prod" ];
 then
-  bucket="s3://chain.com"
+  bucket="chain.com"
 fi
+
+bucket_url=s3://$bucket
 
 # Print output from generate-docs to stdout, but capture last line (the actual
 # output directory) in a variable.
@@ -17,5 +19,16 @@ trap "rm -rf $generate_dest_path" EXIT
 
 echo
 echo "Uploading docs...."
-aws s3 sync --delete $generate_dest_path $bucket/docs
+aws s3 sync --delete $generate_dest_path $bucket_url/docs
 
+echo
+echo "Setting content type for extensionless files, this will take a while..."
+cd $generate_dest_path
+find . -type f ! -name "*.*" |
+  sed -e "s/^.\\///" |
+  xargs -I {} aws s3api copy-object \
+    --bucket $bucket \
+    --content-type "text/html" \
+    --copy-source $bucket/docs/{} \
+    --key docs/{} \
+    --metadata-directive "REPLACE" > /dev/null
