@@ -109,7 +109,7 @@ func (h *Handler) init() {
 
 	m := http.NewServeMux()
 	m.Handle("/", alwaysError(errNotFound))
-	m.Handle("/health", jsonHandler(h.health))
+	m.Handle("/health", jsonHandler(func() {}))
 
 	m.Handle("/create-account", needConfig(h.createAccount))
 	m.Handle("/create-asset", needConfig(h.createAsset))
