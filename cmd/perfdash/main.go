@@ -11,7 +11,6 @@ import (
 var (
 	addr    = env.String("LISTEN", ":8080")
 	baseURL = env.String("BASE_URL", "http://localhost:1999/")
-	token   = env.String("CLIENT_ACCESS_TOKEN", "")
 )
 
 func main() {
@@ -39,9 +38,15 @@ func index(w http.ResponseWriter, req *http.Request) {
 		u = *baseURL
 	}
 
+	user, pass, _ := req.BasicAuth()
+
 	var err error
-	v.ID, v.DebugVars, err = fetchDebugVars(u, *token)
-	if err != nil {
+	v.ID, v.DebugVars, err = fetchDebugVars(u, user, pass)
+	if err == errAuth {
+		w.Header().Set("WWW-Authenticate", `Basic realm="perfdash"`)
+		http.Error(w, "auth pls", 401)
+		return
+	} else if err != nil {
 		http.Error(w, err.Error(), 500)
 		log.Println(err)
 		return
