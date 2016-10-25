@@ -27,12 +27,7 @@ func TestBuildFinal(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
 
-	b1, err := c.GetBlock(ctx, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assets := asset.NewRegistry(db, c, b1.Hash())
+	assets := asset.NewRegistry(db, c, prottest.InitialBlockHash(ctx, t, c))
 	accounts := account.NewManager(db, c)
 	accounts.IndexAccounts(query.NewIndexer(db, c))
 
@@ -139,12 +134,7 @@ func TestAccountTransfer(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
 
-	b1, err := c.GetBlock(ctx, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assets := asset.NewRegistry(db, c, b1.Hash())
+	assets := asset.NewRegistry(db, c, prottest.InitialBlockHash(ctx, t, c))
 	accounts := account.NewManager(db, c)
 	accounts.IndexAccounts(query.NewIndexer(db, c))
 
@@ -207,14 +197,9 @@ func TestTransfer(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
 
-	b1, err := c.GetBlock(ctx, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	handler := &Handler{
 		Chain:    c,
-		Assets:   asset.NewRegistry(db, c, b1.Hash()),
+		Assets:   asset.NewRegistry(db, c, prottest.InitialBlockHash(ctx, t, c)),
 		Accounts: account.NewManager(db, c),
 		Indexer:  query.NewIndexer(db, c),
 		DB:       db,

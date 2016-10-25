@@ -72,11 +72,7 @@ func MakeBlock(ctx context.Context, tb testing.TB, c *protocol.Chain) *bc.Block 
 		if curBlock.Height == 1 {
 			initialBlockHash = curBlock.Hash()
 		} else {
-			b1, err := c.GetBlock(ctx, 1)
-			if err != nil {
-				testutil.FatalErr(tb, err)
-			}
-			initialBlockHash = b1.Hash()
+			initialBlockHash = InitialBlockHash(ctx, tb, c)
 		}
 		curState = state.NewSnapshot(initialBlockHash)
 	}
@@ -94,4 +90,12 @@ func MakeBlock(ctx context.Context, tb testing.TB, c *protocol.Chain) *bc.Block 
 	states[c] = nextState
 	mutex.Unlock()
 	return nextBlock
+}
+
+func InitialBlockHash(ctx context.Context, tb testing.TB, c *protocol.Chain) bc.Hash {
+	b1, err := c.GetBlock(ctx, 1)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	return b1.Hash()
 }
