@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 
@@ -18,7 +17,7 @@ func main() {
 	case "gen":
 		_, prv, err := ed25519.GenerateKey(nil)
 		must(err)
-		os.Stdout.Write([]byte(prv))
+		os.Stdout.Write(prv)
 
 	case "pub":
 		prv, err := ioutil.ReadAll(os.Stdin)
@@ -58,23 +57,16 @@ func main() {
 		msg, err := ioutil.ReadAll(os.Stdin)
 		must(err)
 		ok := ed25519.Verify(ed25519.PublicKey(pub), msg, sig)
-		var (
-			output string
-			w      io.Writer
-		)
-		if ok {
-			output = "OK"
-		} else {
-			output = "BAD"
-		}
 		if silent {
-			w = os.Stderr
+			if !ok {
+				os.Exit(1)
+			}
 		} else {
-			w = os.Stdout
-		}
-		fmt.Fprintln(w, output)
-		if silent && !ok {
-			os.Exit(1)
+			if ok {
+				fmt.Println("OK")
+			} else {
+				fmt.Println("BAD")
+			}
 		}
 	default:
 		usage()
@@ -100,6 +92,6 @@ func usage() {
 	}
 	fmt.Println("PRIVHEX is a hex-encoded private key. SIGHEX is a hex-encoded signature.")
 	fmt.Println("The verify subcommand prints OK or BAD to stdout;")
-	fmt.Println("or, if -s (\"silent\") is given, to stderr,")
-	fmt.Println("and the exit code reflects the validity of the signature.")
+	fmt.Println("or, if -s (\"silent\") is given, exits with a zero or non-zero exit code.")
+	os.Exit(1)
 }
