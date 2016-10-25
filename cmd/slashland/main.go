@@ -185,7 +185,7 @@ func land(req *landReq) {
 	cmd = dirCmd(landdir, "git", "filter-branch", "-f", "--env-filter", `
 		export GIT_COMMITTER_NAME=$GIT_AUTHOR_NAME
 		export GIT_COMMITTER_EMAIL=$GIT_AUTHOR_EMAIL
-	`, "--", "origin/main..", req.ref)
+	`, "--", req.ref, "^origin/main")
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
