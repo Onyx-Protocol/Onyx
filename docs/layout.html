@@ -123,24 +123,15 @@
   ga('create', 'UA-50822719-1', 'auto');
   ga('send', 'pageview');
 
-  function trackOption(label) {
+  function track(a, l) {
     ga('send', 'event', {
       eventCategory: 'docs',
-      eventAction: 'select-os',
-      eventLabel: label
-    });
+      eventAction: a,
+      eventLabel: l
+    }) ;
     return true;
   }
 
-
-  function trackDownload(label) {
-    ga('send', 'event', {
-      eventCategory: 'docs',
-      eventAction: 'download-app',
-      eventLabel: label
-    });
-    return true;
-  }
 
 </script>
 
