@@ -134,7 +134,11 @@ func main() {
 		h = launchConfiguredCore(ctx, db, config, processID)
 	} else {
 		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
-		h = &core.Handler{DB: db, AltAuth: authLoopbackInDev}
+		h = &core.Handler{
+			DB:           db,
+			AltAuth:      authLoopbackInDev,
+			AccessTokens: &accesstoken.CredentialStore{DB: db},
+		}
 	}
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
