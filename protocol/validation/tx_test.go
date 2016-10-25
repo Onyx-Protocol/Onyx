@@ -701,11 +701,15 @@ func TestTxWellFormed(t *testing.T) {
 	}
 }
 
-func TestValidateInvalidTimestamps(t *testing.T) {
+func TestValidateInvalidIssuances(t *testing.T) {
 	var initialBlockHash bc.Hash
 	issuanceProg := []byte{1}
 	aid := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	now := time.Now()
+
+	wrongInitialBlockHash := initialBlockHash
+	wrongInitialBlockHash[0] ^= 1
+
 	cases := []struct {
 		ok        bool
 		tx        bc.Tx
@@ -761,6 +765,23 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 				},
 			},
 			timestamp: bc.Millis(now.Add(-time.Hour)),
+		},
+		{
+			ok: false,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Version: 1,
+					MinTime: bc.Millis(now),
+					MaxTime: bc.Millis(now.Add(time.Hour)),
+					Inputs: []*bc.TxInput{
+						bc.NewIssuanceInput(nil, 1000, nil, wrongInitialBlockHash, issuanceProg, nil),
+					},
+					Outputs: []*bc.TxOutput{
+						bc.NewTxOutput(aid, 1000, nil, nil),
+					},
+				},
+			},
+			timestamp: bc.Millis(now.Add(time.Minute)),
 		},
 	}
 
