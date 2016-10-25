@@ -133,7 +133,14 @@ func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 	if err != nil {
 		return errors.Wrap(err, "storing block")
 	}
-	if block.Time().After(c.lastQueuedSnapshot.Add(saveSnapshotFrequency)) {
+
+	if block.Height == 1 {
+		// synchronously commit the initial block snapshot
+		err = c.store.SaveSnapshot(ctx, 1, snapshot)
+		if err != nil {
+			return errors.Wrap(err, "saving snapshot")
+		}
+	} else if block.Time().After(c.lastQueuedSnapshot.Add(saveSnapshotFrequency)) {
 		c.queueSnapshot(ctx, block.Height, block.Time(), snapshot)
 	}
 
