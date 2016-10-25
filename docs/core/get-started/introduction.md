@@ -1,7 +1,5 @@
 # Introduction
 
-## Chain Core
-
 Chain Core is enterprise software that enables institutions to issue and transfer financial assets on permissioned blockchain networks. Using Chain Core, institutions can launch and operate a blockchain network, or connect to a growing list of other networks that are transforming how assets move around the world.
 
 ## Chain Core Developer Edition
