@@ -21,11 +21,9 @@ echo
 echo "Uploading docs...."
 aws s3 sync --delete $generate_dest_path $bucket_url/docs
 
-# Set text/html MIME types for all files without extensions
-cd $generate_dest_path
-
 echo
 echo "Setting content type for extensionless files, this will take a while..."
+cd $generate_dest_path
 find . -type f ! -name "*.*" |
   sed -e "s/^.\\///" |
   xargs -I {} aws s3api copy-object \
