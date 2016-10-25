@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -47,6 +49,10 @@ func main() {
 	env.Parse()
 
 	err := configGit()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	err = writeNetrc()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -249,6 +255,12 @@ func land(req *landReq) {
 	runIn(landdir, exec.Command("git", "push", "origin", ":"+req.ref))
 	fetch(landdir, "main", repo)
 	runIn(landdir, exec.Command("git", "branch", "-D", req.ref))
+}
+
+func writeNetrc() error {
+	p := filepath.Clean(os.Getenv("HOME") + "/.netrc")
+	s := "machine github.com login chainbot password " + *githubToken + "\n"
+	return ioutil.WriteFile(p, []byte(s), 0600)
 }
 
 func configGit() error {
