@@ -33,10 +33,7 @@ var (
 	postURL       = env.String("SLACK_POST_URL", "")
 )
 
-var (
-	landReqs      = make(chan *landReq, 10)
-	gitConfigured bool
-)
+var landReqs = make(chan *landReq, 10)
 
 type landReq struct {
 	userID   string
@@ -49,6 +46,11 @@ func main() {
 	log.SetFlags(log.Lshortfile)
 	env.Parse()
 
+	err := configGit()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	http.HandleFunc("/slash", slashLand)
 	http.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(200)
@@ -57,7 +59,7 @@ func main() {
 	go lander()
 
 	say("Ready for action!")
-	err := http.ListenAndServe(":"+*port, nil)
+	err = http.ListenAndServe(":"+*port, nil)
 	log.Fatalln(err)
 }
 
@@ -101,8 +103,6 @@ func lander() {
 
 func land(req *landReq) {
 	defer catch()
-
-	configGit()
 
 	repo := *repo
 	if req.private {
@@ -179,7 +179,7 @@ func land(req *landReq) {
 	cmd = dirCmd(landdir, "git", "filter-branch", "--env-filter", `
 		export GIT_COMMITTER_NAME=$GIT_AUTHOR_NAME
 		export GIT_COMMITTER_EMAIL=$GIT_AUTHOR_EMAIL
-	`, "--", fmt.Sprintf("main..%s", req.ref))
+	`, fmt.Sprintf("main..%s", req.ref))
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
@@ -252,9 +252,6 @@ func land(req *landReq) {
 }
 
 func configGit() error {
-	if gitConfigured {
-		return nil
-	}
 	cmd := exec.Command("git", "config", "--global", "user.email", "ops@chain.com")
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -264,11 +261,7 @@ func configGit() error {
 	cmd = exec.Command("git", "config", "--global", "user.name", "chainbot")
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
-	if err != nil {
-		return err
-	}
-	gitConfigured = true
-	return nil
+	return err
 }
 
 func wrapMessage(msg string, limit int) string {
