@@ -52,9 +52,8 @@ func (m *Manager) IndexAccounts(indexer Saver) {
 	m.chain.AddBlockCallback(m.indexAccountUTXOs)
 }
 
-// ExpireReservations removes reservations that have expired on the provided
-// period until the context is cancelled. It blocks until the context is
-// cancelled.
+// ExpireReservations removes reservations that have expired periodically.
+// It blocks until the context is canceled.
 func (m *Manager) ExpireReservations(ctx context.Context, period time.Duration) {
 	m.utxoDB.ExpireReservations(ctx, period)
 }
