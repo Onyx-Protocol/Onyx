@@ -75,7 +75,16 @@ func Generate(
 		log.Fatal(ctx, log.KeyError, err)
 	}
 	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
-		s := state.Copy(g.latestSnapshot)
+		var s *state.Snapshot
+		if g.latestSnapshot == nil {
+			if b.Height == 1 {
+				s = state.NewSnapshot(b.Hash())
+			} else {
+				log.Fatal(ctx, log.KeyError, "missing initial block")
+			}
+		} else {
+			s = state.Copy(g.latestSnapshot)
+		}
 		err := validation.ApplyBlock(s, b)
 		if err != nil {
 			log.Fatal(ctx, log.KeyError, err)

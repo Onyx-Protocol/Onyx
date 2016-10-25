@@ -40,7 +40,7 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store, pool protocol.Pool
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	err = c.CommitBlock(ctx, b1, state.Empty())
+	err = c.CommitBlock(ctx, b1, state.NewSnapshot(b1.Hash()))
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -68,7 +68,17 @@ func MakeBlock(ctx context.Context, tb testing.TB, c *protocol.Chain) *bc.Block 
 	curState := states[c]
 	mutex.Unlock()
 	if curState == nil {
-		curState = state.Empty()
+		var initialBlockHash bc.Hash
+		if curBlock.Height == 1 {
+			initialBlockHash = curBlock.Hash()
+		} else {
+			b1, err := c.GetBlock(ctx, 1)
+			if err != nil {
+				testutil.FatalErr(tb, err)
+			}
+			initialBlockHash = b1.Hash()
+		}
+		curState = state.NewSnapshot(initialBlockHash)
 	}
 
 	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())

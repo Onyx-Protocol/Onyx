@@ -22,11 +22,19 @@ import (
 
 func TestAccountSourceReserve(t *testing.T) {
 	var (
-		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx      = pg.NewContext(context.Background(), db)
-		c        = prottest.NewChain(t)
+		_, db = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx   = pg.NewContext(context.Background(), db)
+		c     = prottest.NewChain(t)
+	)
+
+	b1, err := c.GetBlock(ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var (
+		assets   = asset.NewRegistry(db, c, b1.Hash())
 		accounts = account.NewManager(db, c)
-		assets   = asset.NewRegistry(db, c, bc.Hash{})
 		indexer  = query.NewIndexer(db, c)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -72,10 +80,18 @@ func TestAccountSourceReserve(t *testing.T) {
 
 func TestAccountSourceUTXOReserve(t *testing.T) {
 	var (
-		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx      = pg.NewContext(context.Background(), db)
-		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(db, c, bc.Hash{})
+		_, db = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx   = pg.NewContext(context.Background(), db)
+		c     = prottest.NewChain(t)
+	)
+
+	b1, err := c.GetBlock(ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var (
+		assets   = asset.NewRegistry(db, c, b1.Hash())
 		accounts = account.NewManager(db, c)
 		indexer  = query.NewIndexer(db, c)
 
@@ -105,10 +121,18 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 func TestAccountSourceReserveIdempotency(t *testing.T) {
 	var (
-		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx      = pg.NewContext(context.Background(), db)
-		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(db, c, bc.Hash{})
+		_, db = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx   = pg.NewContext(context.Background(), db)
+		c     = prottest.NewChain(t)
+	)
+
+	b1, err := c.GetBlock(ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var (
+		assets   = asset.NewRegistry(db, c, b1.Hash())
 		accounts = account.NewManager(db, c)
 		indexer  = query.NewIndexer(db, c)
 
@@ -163,10 +187,18 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 
 func TestAccountSourceWithTxHash(t *testing.T) {
 	var (
-		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx      = pg.NewContext(context.Background(), db)
-		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(db, c, bc.Hash{})
+		_, db = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx   = pg.NewContext(context.Background(), db)
+		c     = prottest.NewChain(t)
+	)
+
+	b1, err := c.GetBlock(ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var (
+		assets   = asset.NewRegistry(db, c, b1.Hash())
 		accounts = account.NewManager(db, c)
 		indexer  = query.NewIndexer(db, c)
 

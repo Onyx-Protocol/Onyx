@@ -30,7 +30,7 @@ func TestIdempotentAddTx(t *testing.T) {
 	}
 
 	// still idempotent after block lands
-	block, tree, err := c.GenerateBlock(ctx, b1, state.Empty(), time.Now())
+	block, tree, err := c.GenerateBlock(ctx, b1, state.NewSnapshot(b1.Hash()), time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

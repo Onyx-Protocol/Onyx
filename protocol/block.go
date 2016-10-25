@@ -87,7 +87,16 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 // of committing the block. ValidateBlock returns the state after
 // the block has been applied.
 func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev, block *bc.Block) (*state.Snapshot, error) {
-	newState := state.Copy(prevState)
+	var newState *state.Snapshot
+	if prevState == nil {
+		if block.Height == 1 {
+			newState = state.NewSnapshot(block.Hash())
+		} else {
+			return nil, fmt.Errorf("missing initial block")
+		}
+	} else {
+		newState = state.Copy(prevState)
+	}
 	err := validation.ValidateBlockForAccept(ctx, newState, prev, block, c.ValidateTxCached)
 	if err != nil {
 		return nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
@@ -186,7 +195,7 @@ func (c *Chain) setHeight(h uint64) {
 func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	var (
 		prev     *bc.Block
-		snapshot = state.Empty()
+		snapshot *state.Snapshot
 	)
 
 	if block.Height > 1 {
@@ -200,6 +209,8 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 		if prev == nil || prev.Height != block.Height-1 {
 			return ErrStaleState
 		}
+	} else {
+		snapshot = state.NewSnapshot(block.Hash())
 	}
 
 	// TODO(kr): cache the applied snapshot, and maybe

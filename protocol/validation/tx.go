@@ -48,6 +48,13 @@ func ConfirmTx(snapshot *state.Snapshot, block *bc.Block, tx *bc.Tx) error {
 			if txin.AssetVersion != 1 {
 				continue
 			}
+			if ii.InitialBlock != snapshot.InitialBlockHash {
+				return errors.WithDetail(ErrBadTx, "issuance is for different blockchain")
+			}
+			assetID := bc.ComputeAssetID(ii.IssuanceProgram, snapshot.InitialBlockHash, ii.VMVersion)
+			if assetID != ii.AssetID() {
+				return errors.WithDetail(ErrBadTx, "asset ID does not match issuance parameters")
+			}
 			if len(ii.Nonce) == 0 {
 				continue
 			}
