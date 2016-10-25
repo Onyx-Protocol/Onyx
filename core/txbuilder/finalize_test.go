@@ -219,9 +219,14 @@ func benchGenBlock(b *testing.B) {
 		);
 	`)
 	c := prottest.NewChain(b)
+	initialBlock, err := c.GetBlock(ctx, 1)
+	if err != nil {
+		testutil.FatalErr(b, err)
+	}
+
 	now := time.Now()
 	b.StartTimer()
-	_, _, err = c.GenerateBlock(ctx, initialBlock, state.NewSnapshot(prottest.InitialBlockHash(ctx, b, c), now))
+	_, _, err = c.GenerateBlock(ctx, initialBlock, state.NewSnapshot(initialBlock.Hash()), now)
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)
