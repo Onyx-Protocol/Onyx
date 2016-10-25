@@ -9,13 +9,13 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 )
 
 func TestCreate(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	cs := &CredentialStore{DB: pgtest.NewTx(t)}
 
 	cases := []struct {
 		id, net string
@@ -30,7 +30,7 @@ func TestCreate(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		_, err := Create(ctx, c.id, c.net)
+		_, err := cs.Create(ctx, c.id, c.net)
 		if errors.Root(err) != c.want {
 			t.Errorf("Create(%s, %s) error = %s want %s", c.id, c.net, err, c.want)
 		}
@@ -38,10 +38,11 @@ func TestCreate(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	a := mustCreateToken(t, ctx, "a", "client")
-	b := mustCreateToken(t, ctx, "b", "network")
-	c := mustCreateToken(t, ctx, "c", "client")
+	ctx := context.Background()
+	cs := &CredentialStore{DB: pgtest.NewTx(t)}
+	a := mustCreateToken(t, ctx, cs, "a", "client")
+	b := mustCreateToken(t, ctx, cs, "b", "network")
+	c := mustCreateToken(t, ctx, cs, "c", "client")
 	for _, token := range []*Token{a, b, c} {
 		token.Token = ""
 	}
@@ -84,7 +85,7 @@ func TestList(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		got, gotNext, err := List(ctx, c.typ, c.after, c.limit)
+		got, gotNext, err := cs.List(ctx, c.typ, c.after, c.limit)
 
 		if err != nil {
 			t.Errorf("List(%s, %d) errored: %s", c.after, c.limit, err)
@@ -102,9 +103,10 @@ func TestList(t *testing.T) {
 }
 
 func TestCheck(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	cs := &CredentialStore{DB: pgtest.NewTx(t)}
 
-	token := mustCreateToken(t, ctx, "x", "client")
+	token := mustCreateToken(t, ctx, cs, "x", "client")
 
 	tokenParts := strings.Split(token.Token, ":")
 	tokenID := tokenParts[0]
@@ -113,37 +115,36 @@ func TestCheck(t *testing.T) {
 		t.Fatal("bad token secret")
 	}
 
-	valid, err := Check(ctx, tokenID, token.Type, tokenSecret)
+	valid, err := cs.Check(ctx, tokenID, token.Type, tokenSecret)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	if !valid {
 		t.Fatal("expected token and secret to be valid")
 	}
 
-	valid, err = Check(ctx, "x", "client", []byte("badsecret"))
+	valid, err = cs.Check(ctx, "x", "client", []byte("badsecret"))
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	if valid {
 		t.Fatal("expected bad secret to not be valid")
 	}
 }
 
 func TestDelete(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	cs := &CredentialStore{DB: pgtest.NewTx(t)}
 
-	token := mustCreateToken(t, ctx, "x", "client")
-	err := Delete(ctx, token.ID)
+	token := mustCreateToken(t, ctx, cs, "x", "client")
+	err := cs.Delete(ctx, token.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func mustCreateToken(t *testing.T, ctx context.Context, id, typ string) *Token {
-	token, err := Create(ctx, id, typ)
+func mustCreateToken(t *testing.T, ctx context.Context, cs *CredentialStore, id, typ string) *Token {
+	token, err := cs.Create(ctx, id, typ)
 	if err != nil {
 		t.Fatal(err)
 	}

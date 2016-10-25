@@ -18,6 +18,7 @@ import (
 	"github.com/kr/secureheader"
 
 	"chain/core"
+	"chain/core/accesstoken"
 	"chain/core/account"
 	"chain/core/account/utxodb"
 	"chain/core/asset"
@@ -246,17 +247,18 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	go core.CleanupSubmittedTxs(ctx, db)
 
 	h := &core.Handler{
-		Chain:    c,
-		Store:    store,
-		Assets:   assets,
-		Accounts: accounts,
-		HSM:      hsm,
-		Indexer:  indexer,
-		Config:   config,
-		DB:       db,
-		Addr:     *listenAddr,
-		Signer:   signBlockHandler,
-		AltAuth:  authLoopbackInDev,
+		Chain:        c,
+		Store:        store,
+		Assets:       assets,
+		Accounts:     accounts,
+		HSM:          hsm,
+		Indexer:      indexer,
+		AccessTokens: &accesstoken.CredentialStore{DB: db},
+		Config:       config,
+		DB:           db,
+		Addr:         *listenAddr,
+		Signer:       signBlockHandler,
+		AltAuth:      authLoopbackInDev,
 	}
 	if *rpsToken > 0 {
 		h.RequestLimits = append(h.RequestLimits, core.RequestLimit{
