@@ -23,7 +23,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c, bc.Hash{})
 	accounts := account.NewManager(db, c)
-	h := &Handler{Assets: assets, Accounts: accounts, Chain: c}
+	h := &Handler{Assets: assets, Accounts: accounts, DB: db, Chain: c}
 
 	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {

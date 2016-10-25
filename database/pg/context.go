@@ -93,18 +93,3 @@ func NewContext(ctx context.Context, db DB) context.Context {
 func FromContext(ctx context.Context) DB {
 	return ctx.Value(dbKey).(DB)
 }
-
-// Query is a short form of FromContext(ctx).Query
-func Query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-	return FromContext(ctx).Query(ctx, query, args...)
-}
-
-// QueryRow is a short form of FromContext(ctx).QueryRow
-func QueryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
-	return FromContext(ctx).QueryRow(ctx, query, args...)
-}
-
-// Exec is a short form of FromContext(ctx).Exec
-func Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	return FromContext(ctx).Exec(ctx, query, args...)
-}
