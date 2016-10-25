@@ -27,7 +27,7 @@ func TestGetBlock(t *testing.T) {
 		t.Error("expected 1 (initial) block, got none")
 	}
 
-	newBlock := prottest.MakeBlock(ctx, t, chain)
+	newBlock := prottest.MakeBlock(t, chain)
 	buf := new(bytes.Buffer)
 	_, err = newBlock.WriteTo(buf)
 	if err != nil {

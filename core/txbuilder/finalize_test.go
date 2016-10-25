@@ -44,7 +44,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	dumpState(ctx, t, db)
-	prottest.MakeBlock(ctx, t, info.Chain)
+	prottest.MakeBlock(t, info.Chain)
 	dumpState(ctx, t, db)
 
 	assetAmount := bc.AssetAmount{
@@ -86,7 +86,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 
 	// Make a block, which should reject one of the txs.
 	dumpState(ctx, t, db)
-	b := prottest.MakeBlock(ctx, t, info.Chain)
+	b := prottest.MakeBlock(t, info.Chain)
 
 	dumpState(ctx, t, db)
 	if len(b.Transactions) != 1 {
@@ -109,7 +109,7 @@ func TestTransferConfirmed(t *testing.T) {
 	}
 
 	dumpState(ctx, t, db)
-	prottest.MakeBlock(ctx, t, info.Chain)
+	prottest.MakeBlock(t, info.Chain)
 	dumpState(ctx, t, db)
 
 	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
@@ -140,7 +140,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		b.Logf("finalized %v", tx.Hash)
 
 		if i%10 == 0 {
-			prottest.MakeBlock(ctx, b, info.Chain)
+			prottest.MakeBlock(b, info.Chain)
 		}
 	}
 }

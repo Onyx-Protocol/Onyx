@@ -37,7 +37,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	// Make a block so that account UTXOs are available to spend.
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
-	prottest.MakeBlock(ctx, t, c)
+	prottest.MakeBlock(t, c)
 
 	assetAmount1 := bc.AssetAmount{
 		AssetID: asset,
@@ -87,7 +87,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	// Make a block so that account UTXOs are available to spend.
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
-	prottest.MakeBlock(ctx, t, c)
+	prottest.MakeBlock(t, c)
 
 	source := accounts.NewSpendUTXOAction(out.Outpoint)
 	buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
@@ -132,7 +132,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	// Make a block so that account UTXOs are available to spend.
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
-	prottest.MakeBlock(ctx, t, c)
+	prottest.MakeBlock(t, c)
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
 		buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
@@ -185,7 +185,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 	// Make a block so that account UTXOs are available to spend.
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
-	prottest.MakeBlock(ctx, t, c)
+	prottest.MakeBlock(t, c)
 
 	for i := 0; i < utxos; i++ {
 		theTxHash := srcTxs[i]

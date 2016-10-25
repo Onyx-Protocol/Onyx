@@ -60,7 +60,7 @@ func TestRecovery(t *testing.T) {
 	_ = coretest.IssueAssets(ctx, t, c, assets, accounts, apple, 10, alice)
 	_ = coretest.IssueAssets(ctx, t, c, assets, accounts, usd, 1, bob)
 
-	prottest.MakeBlock(ctx, t, c)
+	prottest.MakeBlock(t, c)
 
 	// Submit a transfer between Alice and Bob but don't publish it in a block.
 	coretest.Transfer(ctx, t, c, []txbuilder.Action{
