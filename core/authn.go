@@ -17,6 +17,7 @@ var errNotAuthenticated = errors.New("not authenticated")
 const tokenExpiry = time.Minute * 5
 
 type apiAuthn struct {
+	tokens *accesstoken.CredentialStore
 	// alternative authentication mechanism,
 	// used when no basic auth creds are provided.
 	alt func(*http.Request) bool
@@ -54,12 +55,12 @@ func (a *apiAuthn) auth(req *http.Request) error {
 	return a.cachedAuthCheck(req.Context(), typ, user, pw)
 }
 
-func authCheck(ctx context.Context, typ, user, pw string) (bool, error) {
+func (a *apiAuthn) authCheck(ctx context.Context, typ, user, pw string) (bool, error) {
 	pwBytes, err := hex.DecodeString(pw)
 	if err != nil {
 		return false, nil
 	}
-	return accesstoken.Check(ctx, user, typ, pwBytes)
+	return a.tokens.Check(ctx, user, typ, pwBytes)
 }
 
 func (a *apiAuthn) cachedAuthCheck(ctx context.Context, typ, user, pw string) error {
@@ -67,7 +68,7 @@ func (a *apiAuthn) cachedAuthCheck(ctx context.Context, typ, user, pw string) er
 	res, ok := a.tokenMap[typ+user+pw]
 	a.tokenMu.Unlock()
 	if !ok || time.Now().After(res.lastLookup.Add(tokenExpiry)) {
-		valid, err := authCheck(ctx, typ, user, pw)
+		valid, err := a.authCheck(ctx, typ, user, pw)
 		if err != nil {
 			return errors.Wrap(err)
 		}

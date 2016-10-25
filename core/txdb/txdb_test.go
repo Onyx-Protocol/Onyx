@@ -63,8 +63,9 @@ func TestInsertPoolTx(t *testing.T) {
 }
 
 func TestGetBlock(t *testing.T) {
+	ctx := context.Background()
 	dbtx := pgtest.NewTx(t)
-	pgtest.Exec(pg.NewContext(context.Background(), dbtx), t, `
+	pgtest.Exec(ctx, dbtx, t, `
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES
 		('0000000000000000000000000000000000000000000000000000000000000000', 0, '', ''),
@@ -76,7 +77,6 @@ func TestGetBlock(t *testing.T) {
 		);
 	`)
 	store := NewStore(dbtx)
-	ctx := context.Background()
 	got, err := store.GetBlock(ctx, 1)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)

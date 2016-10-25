@@ -2,7 +2,6 @@ package vmutil
 
 import (
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
 	"chain/errors"
 	"chain/protocol/vm"
 )
@@ -66,11 +65,10 @@ func ParseBlockMultiSigProgram(script []byte) ([]ed25519.PublicKey, int, error) 
 
 	pubkeys := make([]ed25519.PublicKey, 0, npubkeys)
 	for i := firstPubkeyIndex; i < firstPubkeyIndex+int(npubkeys); i++ {
-		pubkey, err := chainkd.NewEd25519PublicKey(pops[i].Data)
-		if err != nil {
+		if len(pops[i].Data) != ed25519.PublicKeySize {
 			return nil, 0, err
 		}
-		pubkeys = append(pubkeys, pubkey)
+		pubkeys = append(pubkeys, ed25519.PublicKey(pops[i].Data))
 	}
 	return pubkeys, int(nrequired), nil
 }
@@ -129,11 +127,10 @@ func ParseP2SPMultiSigProgram(program []byte) ([]ed25519.PublicKey, int, error) 
 
 	pubkeys := make([]ed25519.PublicKey, 0, npubkeys)
 	for i := firstPubkeyIndex; i < firstPubkeyIndex+int(npubkeys); i++ {
-		pubkey, err := chainkd.NewEd25519PublicKey(pops[i].Data)
-		if err != nil {
+		if len(pops[i].Data) != ed25519.PublicKeySize {
 			return nil, 0, err
 		}
-		pubkeys = append(pubkeys, pubkey)
+		pubkeys = append(pubkeys, ed25519.PublicKey(pops[i].Data))
 	}
 	return pubkeys, int(nrequired), nil
 }

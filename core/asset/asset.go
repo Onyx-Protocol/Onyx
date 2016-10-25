@@ -64,9 +64,7 @@ type Asset struct {
 
 // Define defines a new Asset.
 func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
-	// TODO(jackson): remove the dbctx when the signers package doesn't need it
-	dbctx := pg.NewContext(ctx, reg.db)
-	assetSigner, err := signers.Create(dbctx, "asset", xpubs, quorum, clientToken)
+	assetSigner, err := signers.Create(ctx, reg.db, "asset", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, err
 	}

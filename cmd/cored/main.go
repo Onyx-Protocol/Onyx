@@ -18,6 +18,7 @@ import (
 	"github.com/kr/secureheader"
 
 	"chain/core"
+	"chain/core/accesstoken"
 	"chain/core/account"
 	"chain/core/account/utxodb"
 	"chain/core/asset"
@@ -28,10 +29,10 @@ import (
 	"chain/core/migrate"
 	"chain/core/mockhsm"
 	"chain/core/query"
+	"chain/core/rpc"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
@@ -40,7 +41,6 @@ import (
 	"chain/log/rotation"
 	"chain/log/splunk"
 	"chain/net/http/limit"
-	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
@@ -134,7 +134,11 @@ func main() {
 		h = launchConfiguredCore(ctx, db, config, processID)
 	} else {
 		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
-		h = &core.Handler{DB: db, AltAuth: authLoopbackInDev}
+		h = &core.Handler{
+			DB:           db,
+			AltAuth:      authLoopbackInDev,
+			AccessTokens: &accesstoken.CredentialStore{DB: db},
+		}
 	}
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
@@ -246,17 +250,18 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	go core.CleanupSubmittedTxs(ctx, db)
 
 	h := &core.Handler{
-		Chain:    c,
-		Store:    store,
-		Assets:   assets,
-		Accounts: accounts,
-		HSM:      hsm,
-		Indexer:  indexer,
-		Config:   config,
-		DB:       db,
-		Addr:     *listenAddr,
-		Signer:   signBlockHandler,
-		AltAuth:  authLoopbackInDev,
+		Chain:        c,
+		Store:        store,
+		Assets:       assets,
+		Accounts:     accounts,
+		HSM:          hsm,
+		Indexer:      indexer,
+		AccessTokens: &accesstoken.CredentialStore{DB: db},
+		Config:       config,
+		DB:           db,
+		Addr:         *listenAddr,
+		Signer:       signBlockHandler,
+		AltAuth:      authLoopbackInDev,
 	}
 	if *rpsToken > 0 {
 		h.RequestLimits = append(h.RequestLimits, core.RequestLimit{
@@ -311,8 +316,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
-		k, err := chainkd.NewEd25519PublicKey(signer.Pubkey)
-		if err != nil {
+		if len(signer.Pubkey) != ed25519.PublicKeySize {
 			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err), "at", "decoding signer public key")
 		}
 		client := &rpc.Client{
@@ -323,7 +327,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 			BuildTag:     buildTag,
 			BlockchainID: blockchainID,
 		}
-		a = append(a, &remoteSigner{Client: client, Key: k})
+		a = append(a, &remoteSigner{Client: client, Key: ed25519.PublicKey(signer.Pubkey)})
 	}
 	return a
 }

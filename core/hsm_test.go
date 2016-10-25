@@ -20,13 +20,13 @@ import (
 )
 
 func TestMockHSM(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(dbtx, c, bc.Hash{})
-	accounts := account.NewManager(dbtx, c)
-	accounts.IndexAccounts(query.NewIndexer(dbtx, c))
-	mockhsm := mockhsm.New(dbtx)
+	assets := asset.NewRegistry(db, c, bc.Hash{})
+	accounts := account.NewManager(db, c)
+	accounts.IndexAccounts(query.NewIndexer(db, c))
+	mockhsm := mockhsm.New(db)
 
 	xpub1, err := mockhsm.XCreate(ctx, "")
 	if err != nil {

@@ -2,19 +2,19 @@
 
 * [Introduction](#introduction)
 * [Consensus programs](#consensus-programs)
-* [Federated consensus algorithm overview](#federated-consensus-algorithm-overview)
+* [Federated consensus program](#federated-consensus-program)
+* [Consensus algorithm](#consensus-algorithm)
 * [Safety guarantees](#safety-guarantees)
 * [Liveness guarantees](#liveness-guarantees)
 * [Consensus program changes](#consensus-program-changes)
 * [Policy enforcement](#policy-enforcement)
 * [Future improvements](#future-improvements)
 
-
 ## Introduction
 
 In this guide we discuss the design of the federated consensus protocol used by the Chain Protocol: its goals, use cases, threat models, and areas for future improvement.
 
-Federated consensus is a mechanism ensuring that all participants in a network agree on a single transaction log. This prevents different versions of the ledger being shown to different participants, thus preventing “double-spending,” of assets, and prevents history from being edited. While the blockchain validation rules specify _whether_ a given blockchain is valid, the consensus protocol makes sure there is _only one_ valid blockchain on a given network. 
+Federated consensus is a mechanism ensuring that all participants in a network agree on a single transaction log. This prevents different versions of the ledger being shown to different participants — thus preventing “double-spending” of assets — as well preventing history from being edited. While the blockchain validation rules specify _whether_ a given blockchain is valid, the consensus protocol makes sure there is _only one_ valid blockchain on a given network. 
 
 This consensus protocol is designed to be practically useful under a certain set of requirements and assumptions commonly encountered in permissioned blockchain networks. The Chain Protocol is capable of supporting alternative consensus protocols.
 
@@ -22,18 +22,28 @@ For a detailed description of the federated consensus protocol, see the [formal 
 
 ## Consensus programs
 
-Blockchain validation rules are intentionally agnostic as to the consensus protocol used by a federation, and instead provide a way for the network to authenticate the blockchain produced by the federation called _consensus programs_. The consensus program specifies a set of conditions that must be satisfied for a block to be accepted. The separation of consensus logic from blockchain validation rules, together with flexibility of consensus programs, allows networks to adopt of arbitrary consensus protocols, even including ones based on proof-of-work and proof-of-stake.
+The Chain Protocol blockchain validation rules are intentionally agnostic as to what kind of consensus protocol is enforced. Additionally, they do not play a role in the process by which consensus is reached. Instead, blockchains provide a way for network participants to evaluate whether consensus has been reached: namely, _consensus programs_. The consensus program specifies a set of conditions that must be satisfied for a block to be accepted. The separation of consensus logic from blockchain validation rules, together with flexibility of consensus programs, allows networks to adopt of arbitrary consensus protocols, even including ones based on proof-of-work and proof-of-stake.
 
 The consensus program for each block is specified in the header of the previous block. When the block is validated by a network participant, the consensus program is executed with the *arguments* that are specified in the block header. If the consensus program fails, the block is considered invalid.
 
 Consensus programs are written for and executed by the Chain Virtual Machine. See [Blockchain Programs](./blockchain-programs.md#consensus-programs) and [Chain VM Specification](../specifications/vm1.md) for details.
 
-Presented here consensus protocol uses relatively simple consensus programs, but the Chain Protocol supports more complex programs that could allocate signing authority in more complex ways.
+The consensus protocol presented here uses relatively simple consensus programs, but the Chain Protocol supports more complex programs that could allocate signing authority in more complex ways.
 
 
-## Federated consensus algorithm overview
+## Federated consensus program
 
-A federation consists of a single _block generator_ and a group of _block signers_. 
+Under the federated consensus protocol, blocks are considered accepted once they have been signed by a specified quorum of *block signers*. This is implemented using a consensus program that checks an “M-of-N multisignature” rule, where N is the number of block signers, and M is the number of signatures required for a block to be accepted. 
+
+The program specifies the public keys of each of the N block signers. The signatures are passed in the arguments. The program checks the signatures against the prespecified public keys to confirm that they are valid signatures of the hash of the new block. New blocks may reuse the same consensus program or change it to a new one (as when members join and leave the federation) as long as a quorum of block signers approves the change.
+
+The values of these parameters, M and N, can be tweaked according to business requirements or the security parameters of the network. The safety and liveness implications of these choices are described below.
+
+## Consensus algorithm
+
+Assuming that every participant in the network trusts a sufficient subset of the block signers, the consensus program described above reduces the problem of reaching network-wide consensus to the simpler problem of reaching a consensus of at least M out of N block signers.
+
+To efficiently do so, block signers agree on a single *block generator*. The generator's signature is only used to coordinate the block signers; it is not seen or validated by the network. This allows block signers to evolve the consensus mechanism without any additional support from the rest of the network.
 
 The block generator:
 
@@ -54,11 +64,6 @@ Each block signer:
 
 Once the block generator receives signatures from enough block signers (as defined by the previous block's consensus program), it publishes the block to the network. All network participants, including the block signers, validate that block (including checking the previous consensus program is satisfied) and update their state.
 
-The federated consensus protocol uses a consensus program that implements an “M-of-N multisignature” rule, where N is the number of block signers, and M is the number of signatures required for a block to be accepted. 
-
-The program specifies the public keys of each of the N block signers. The signatures are passed in the arguments. The program checks the signatures against the prespecified public keys to confirm that they are valid signatures of the hash of the new block. New blocks may reuse the same consensus program or change it to a new one (as when members join and leave the federation) as long as a quorum of block signers approves the change.
-
-The generator's signature is only used to coordinate the block signers; it is not seen or validated by the network. The network only relies on the block signers. This allows block signers to evolve the consensus mechanism without any additional support from the rest of the network.
 
 ## Safety guarantees
 

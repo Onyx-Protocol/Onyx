@@ -1262,13 +1262,21 @@ video {
 
 
 /* Media Queries */
-@media (max-width: 992px) {
+@media (max-device-width: 992px) {
     #doc-content, #doc-header {
         max-width: 650px;
         overflow: auto;
     }
     #docs {
         overflow-x: hidden;
+    }
+    article ol > li:before {
+        left: -16px;
+        top: 3px;
+        width: 16px;
+    }
+    article ol > li a  {
+        padding-left: 10px;
     }
 }
 

@@ -75,7 +75,7 @@ func Path(s *Signer, ks keySpace, itemIndexes ...uint64) [][]byte {
 }
 
 // Create creates and stores a Signer in the database
-func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientToken *string) (*Signer, error) {
+func Create(ctx context.Context, db pg.DB, typ string, xpubs []string, quorum int, clientToken *string) (*Signer, error) {
 	if len(xpubs) == 0 {
 		return nil, errors.Wrap(ErrNoXPubs)
 	}
@@ -106,10 +106,10 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientT
 		id       string
 		keyIndex uint64
 	)
-	err = pg.QueryRow(ctx, q, typeIDMap[typ], typ, pq.StringArray(xpubs), quorum, clientToken).
+	err = db.QueryRow(ctx, q, typeIDMap[typ], typ, pq.StringArray(xpubs), quorum, clientToken).
 		Scan(&id, &keyIndex)
 	if err == sql.ErrNoRows && clientToken != nil {
-		return findByClientToken(ctx, clientToken)
+		return findByClientToken(ctx, db, clientToken)
 	}
 	if err != nil && err != sql.ErrNoRows {
 		return nil, errors.Wrap(err)
@@ -138,7 +138,7 @@ func New(id, typ string, xpubs []string, quorum int, keyIndex uint64) (*Signer, 
 	}, nil
 }
 
-func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error) {
+func findByClientToken(ctx context.Context, db pg.DB, clientToken *string) (*Signer, error) {
 	const q = `
 		SELECT id, type, xpubs, quorum, key_index
 		FROM signers WHERE client_token=$1
@@ -148,7 +148,7 @@ func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error
 		s        Signer
 		xpubStrs []string
 	)
-	err := pg.QueryRow(ctx, q, clientToken).
+	err := db.QueryRow(ctx, q, clientToken).
 		Scan(&s.ID, &s.Type, (*pq.StringArray)(&xpubStrs), &s.Quorum, &s.KeyIndex)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -166,7 +166,7 @@ func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error
 
 // Find retrieves a Signer from the database
 // using the type and id.
-func Find(ctx context.Context, typ, id string) (*Signer, error) {
+func Find(ctx context.Context, db pg.DB, typ, id string) (*Signer, error) {
 	const q = `
 		SELECT id, type, xpubs, quorum, key_index
 		FROM signers WHERE id=$1
@@ -176,7 +176,7 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 		s        Signer
 		xpubStrs []string
 	)
-	err := pg.QueryRow(ctx, q, id).Scan(
+	err := db.QueryRow(ctx, q, id).Scan(
 		&s.ID,
 		&s.Type,
 		(*pq.StringArray)(&xpubStrs),
@@ -206,7 +206,7 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 
 // List returns a paginated set of Signers, limited to
 // the provided type.
-func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, error) {
+func List(ctx context.Context, db pg.DB, typ, prev string, limit int) ([]*Signer, string, error) {
 	const q = `
 		SELECT id, type, xpubs, quorum, key_index
 		FROM signers WHERE type=$1 AND ($2='' OR $2<id)
@@ -214,7 +214,7 @@ func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, 
 	`
 
 	var signers []*Signer
-	err := pg.ForQueryRows(ctx, pg.FromContext(ctx), q, typ, prev, limit,
+	err := pg.ForQueryRows(ctx, db, q, typ, prev, limit,
 		func(id, typ string, xpubs pq.StringArray, quorum int, keyIndex uint64) error {
 			keys, err := ConvertKeys(xpubs)
 			if err != nil {

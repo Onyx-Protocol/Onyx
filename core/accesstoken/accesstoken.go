@@ -39,8 +39,12 @@ type Token struct {
 	sortID  string
 }
 
+type CredentialStore struct {
+	DB pg.DB
+}
+
 // Create generates a new access token with the given ID.
-func Create(ctx context.Context, id, typ string) (*Token, error) {
+func (cs *CredentialStore) Create(ctx context.Context, id, typ string) (*Token, error) {
 	if !validIDRegexp.MatchString(id) {
 		return nil, errors.WithDetailf(ErrBadID, "invalid id %q", id)
 	}
@@ -66,7 +70,7 @@ func Create(ctx context.Context, id, typ string) (*Token, error) {
 		created time.Time
 		sortID  string
 	)
-	err = pg.QueryRow(ctx, q, id, typ, hashedSecret[:]).Scan(&created, &sortID)
+	err = cs.DB.QueryRow(ctx, q, id, typ, hashedSecret[:]).Scan(&created, &sortID)
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetailf(ErrDuplicateID, "id %q already in use", id)
 	}
@@ -84,7 +88,7 @@ func Create(ctx context.Context, id, typ string) (*Token, error) {
 }
 
 // Check returns whether or not an id-secret pair is a valid access token.
-func Check(ctx context.Context, id, typ string, secret []byte) (bool, error) {
+func (cs *CredentialStore) Check(ctx context.Context, id, typ string, secret []byte) (bool, error) {
 	var (
 		toHash [tokenSize]byte
 		hashed [32]byte
@@ -94,7 +98,7 @@ func Check(ctx context.Context, id, typ string, secret []byte) (bool, error) {
 
 	const q = `SELECT EXISTS(SELECT 1 FROM access_tokens WHERE id=$1 AND type=$2 AND hashed_secret=$3)`
 	var valid bool
-	err := pg.QueryRow(ctx, q, id, typ, hashed[:]).Scan(&valid)
+	err := cs.DB.QueryRow(ctx, q, id, typ, hashed[:]).Scan(&valid)
 	if err != nil {
 		return false, err
 	}
@@ -103,7 +107,7 @@ func Check(ctx context.Context, id, typ string, secret []byte) (bool, error) {
 }
 
 // List lists all access tokens.
-func List(ctx context.Context, typ, after string, limit int) ([]*Token, string, error) {
+func (cs *CredentialStore) List(ctx context.Context, typ, after string, limit int) ([]*Token, string, error) {
 	if limit == 0 {
 		limit = defaultLimit
 	}
@@ -114,7 +118,7 @@ func List(ctx context.Context, typ, after string, limit int) ([]*Token, string, 
 		LIMIT $3
 	`
 	var tokens []*Token
-	err := pg.ForQueryRows(ctx, pg.FromContext(ctx), q, typ, after, limit, func(id, typ, sortID string, created time.Time) {
+	err := pg.ForQueryRows(ctx, cs.DB, q, typ, after, limit, func(id, typ, sortID string, created time.Time) {
 		tokens = append(tokens, &Token{
 			ID:      id,
 			Type:    typ,
@@ -135,9 +139,9 @@ func List(ctx context.Context, typ, after string, limit int) ([]*Token, string, 
 }
 
 // Delete deletes an access token by id.
-func Delete(ctx context.Context, id string) error {
+func (cs *CredentialStore) Delete(ctx context.Context, id string) error {
 	const q = `DELETE FROM access_tokens WHERE id=$1`
-	res, err := pg.Exec(ctx, q, id)
+	res, err := cs.DB.Exec(ctx, q, id)
 	if err != nil {
 		return errors.Wrap(err)
 	}

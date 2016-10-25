@@ -79,7 +79,7 @@ func (h *HSM) createChainKDKey(ctx context.Context, alias string, get bool) (*XP
 			}
 
 			var xpubBytes []byte
-			err = pg.QueryRow(ctx, `SELECT pub FROM mockhsm WHERE alias = $1`, alias).Scan(&xpubBytes)
+			err = h.db.QueryRow(ctx, `SELECT pub FROM mockhsm WHERE alias = $1`, alias).Scan(&xpubBytes)
 			if err != nil {
 				return nil, false, errors.Wrapf(err, "reading existing xpub with alias %s", alias)
 			}
@@ -124,7 +124,7 @@ func (h *HSM) createEd25519Key(ctx context.Context, alias string, get bool) (*Pu
 			}
 
 			var pubBytes []byte
-			err = pg.QueryRow(ctx, `SELECT pub FROM mockhsm WHERE alias = $1`, alias).Scan(&pubBytes)
+			err = h.db.QueryRow(ctx, `SELECT pub FROM mockhsm WHERE alias = $1`, alias).Scan(&pubBytes)
 			if err != nil {
 				return nil, false, errors.Wrapf(err, "reading existing pub with alias %s", alias)
 			}

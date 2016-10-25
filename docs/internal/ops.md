@@ -1,10 +1,10 @@
 # Operations
 
-* [Chain Core Testnet](#testnet)
+* [Chain Core Testnet](#chain-core-testnet)
   * [Network Info](#network-info)
   * [Reset](#reset)
   * [Updating the Generator](#updating-the-generator)
-  * [Updating the Signer](#updating-the-signer)
+  * [Updating the Signers](#updating-the-signers)
 * [Creating Networks](#creating-networks)
   * [Unauthenticated](#unauthenticated)
   * [Authenticated](#authenticated)

@@ -21,11 +21,11 @@ import (
 
 	"chain/core"
 	"chain/core/fetch"
+	"chain/core/rpc"
 	"chain/env"
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/httpjson"
-	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 )

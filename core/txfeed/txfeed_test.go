@@ -12,14 +12,15 @@ import (
 )
 
 func TestInsertTxFeed(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	db := pgtest.NewTx(t)
 	token := "test_token"
 	alias := "test_txfeed"
 	feed := &TxFeed{
 		Alias: &alias,
 	}
 
-	result, err := insertTxFeed(ctx, feed, &token)
+	result, err := insertTxFeed(ctx, db, feed, &token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -31,7 +32,7 @@ func TestInsertTxFeed(t *testing.T) {
 	// Verify that the txfeed was created.
 	var resultAlias string
 	var checkQ = `SELECT alias FROM txfeeds`
-	err = pg.QueryRow(ctx, checkQ).Scan(&resultAlias)
+	err = db.QueryRow(ctx, checkQ).Scan(&resultAlias)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -41,19 +42,20 @@ func TestInsertTxFeed(t *testing.T) {
 }
 
 func TestInsertTxFeedRepeatToken(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	db := pgtest.NewTx(t)
 	token := "test_token"
 	alias := "test_txfeed"
 	feed := &TxFeed{
 		Alias: &alias,
 	}
 
-	result0, err := insertTxFeed(ctx, feed, &token)
+	result0, err := insertTxFeed(ctx, db, feed, &token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	result1, err := insertTxFeed(ctx, feed, &token)
+	result1, err := insertTxFeed(ctx, db, feed, &token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -65,7 +67,8 @@ func TestInsertTxFeedRepeatToken(t *testing.T) {
 }
 
 func TestInsertTxFeedDuplicateAlias(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	db := pgtest.NewTx(t)
 	token0 := "test_token_0"
 	token1 := "test_token_1"
 	alias := "test_txfeed"
@@ -73,12 +76,12 @@ func TestInsertTxFeedDuplicateAlias(t *testing.T) {
 		Alias: &alias,
 	}
 
-	_, err := insertTxFeed(ctx, feed, &token0)
+	_, err := insertTxFeed(ctx, db, feed, &token0)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	_, err = insertTxFeed(ctx, feed, &token1)
+	_, err = insertTxFeed(ctx, db, feed, &token1)
 	if err.Error() != "non-unique alias: httpjson: bad request" {
 		t.Errorf("expected ErrBadRequest, got %v", err)
 	}

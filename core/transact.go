@@ -122,7 +122,7 @@ func (h *Handler) submitSingle(ctx context.Context, c *protocol.Chain, x submitS
 // If the tx has already been submitted, it returns the existing
 // height.
 // TODO(jackson): Prune entries older than some threshold periodically.
-func recordSubmittedTx(ctx context.Context, txHash bc.Hash, currentHeight uint64) (height uint64, err error) {
+func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHeight uint64) (height uint64, err error) {
 	const q = `
 		WITH inserted AS (
 			INSERT INTO submitted_txs (tx_id, height) VALUES($1, $2)
@@ -132,7 +132,7 @@ func recordSubmittedTx(ctx context.Context, txHash bc.Hash, currentHeight uint64
 		UNION
 		SELECT height FROM submitted_txs WHERE tx_id = $1
 	`
-	err = pg.QueryRow(ctx, q, txHash, currentHeight).Scan(&height)
+	err = db.QueryRow(ctx, q, txHash, currentHeight).Scan(&height)
 	return height, err
 }
 
@@ -183,7 +183,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, c *protocol.Chain, txTempl
 
 	// Remember this height in case we retry this submit call.
 	tx := bc.NewTx(*txTemplate.Transaction)
-	height, err := recordSubmittedTx(ctx, tx.Hash, generatorHeight)
+	height, err := recordSubmittedTx(ctx, h.DB, tx.Hash, generatorHeight)
 	if err != nil {
 		return errors.Wrap(err, "saving tx submitted height")
 	}

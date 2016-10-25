@@ -56,7 +56,7 @@
   <Fragment>
     <ComponentGroup Id="ChainCoreComponents" Directory="INSTALLFOLDER">
        <Component>
-         <File Source="../chain-core.exe" />
+         <File Source="../cored.exe" />
        </Component>
        <Component>
          <File Source="../ChainMgr/ChainMgr.exe" />

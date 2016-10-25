@@ -10,11 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"chain/core/accesstoken"
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/query"
+	"chain/core/rpc"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/database/pg"
@@ -27,7 +29,6 @@ import (
 	"chain/net/http/limit"
 	"chain/net/http/reqid"
 	"chain/net/http/static"
-	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
@@ -53,6 +54,7 @@ type Handler struct {
 	Accounts      *account.Manager
 	HSM           *mockhsm.HSM
 	Indexer       *query.Indexer
+	AccessTokens  *accesstoken.CredentialStore
 	Config        *Config
 	DB            pg.DB
 	Addr          string
@@ -107,7 +109,7 @@ func (h *Handler) init() {
 
 	m := http.NewServeMux()
 	m.Handle("/", alwaysError(errNotFound))
-	m.Handle("/health", jsonHandler(h.health))
+	m.Handle("/health", jsonHandler(func() {}))
 
 	m.Handle("/create-account", needConfig(h.createAccount))
 	m.Handle("/create-asset", needConfig(h.createAsset))
@@ -163,6 +165,7 @@ func (h *Handler) init() {
 	})
 
 	var handler = (&apiAuthn{
+		tokens:   h.AccessTokens,
 		tokenMap: make(map[string]tokenResult),
 		alt:      h.AltAuth,
 	}).handler(latencyHandler)
