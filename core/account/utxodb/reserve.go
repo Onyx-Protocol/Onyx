@@ -4,7 +4,6 @@ package utxodb
 import (
 	"context"
 	stdsql "database/sql"
-	"fmt"
 	"time"
 
 	"github.com/lib/pq"
@@ -33,6 +32,10 @@ var (
 )
 
 type (
+	Reserver struct {
+		DB *sql.DB
+	}
+
 	UTXO struct {
 		bc.Outpoint
 		bc.AssetAmount
@@ -59,17 +62,8 @@ type (
 	}
 )
 
-func beginTxn(ctx context.Context) (pg.Tx, error) {
-	db := pg.FromContext(ctx)
-	beginner, ok := db.(*sql.DB)
-	if !ok {
-		return nil, fmt.Errorf("%T not capable of beginning SQL txns", db)
-	}
-	return beginner.Begin(ctx)
-}
-
-func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (*UTXO, error) {
-	dbtx, err := beginTxn(ctx)
+func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (*UTXO, error) {
+	dbtx, err := res.DB.Begin(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "begin transaction for reserving utxos")
 	}
@@ -150,12 +144,12 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 	return utxo, nil
 }
 
-func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c []Change, err error) {
+func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c []Change, err error) {
 	var reserved []*UTXO
 	var change []Change
 	var reservationIDs []int64
 
-	dbtx, err := beginTxn(ctx)
+	dbtx, err := res.DB.Begin(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "begin transaction for reserving utxos")
 	}
@@ -271,7 +265,7 @@ func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c
 // calling the expire_reservations() pl/pgsql function to
 // remove expired reservations from the reservations table.
 // It returns when its context is canceled.
-func ExpireReservations(ctx context.Context, period time.Duration) {
+func (res *Reserver) ExpireReservations(ctx context.Context, period time.Duration) {
 	ticks := time.Tick(period)
 	for {
 		select {
@@ -280,7 +274,7 @@ func ExpireReservations(ctx context.Context, period time.Duration) {
 			return
 		case <-ticks:
 			err := func() error {
-				dbtx, err := beginTxn(ctx)
+				dbtx, err := res.DB.Begin(ctx)
 				if err != nil {
 					return err
 				}

@@ -58,7 +58,7 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
 	dbctx := pg.NewContext(ctx, a.accounts.db) // TODO(jackson): remove dbctx
-	reserved, change, err := utxodb.Reserve(dbctx, utxodbSources, maxTime)
+	reserved, change, err := a.accounts.utxoDB.Reserve(dbctx, utxodbSources, maxTime)
 	if err != nil {
 		return nil, errors.Wrap(err, "reserving utxos")
 	}
@@ -114,7 +114,7 @@ type spendUTXOAction struct {
 
 func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
 	dbctx := pg.NewContext(ctx, a.accounts.db) // TODO(jackson): remove dbctx
-	r, err := utxodb.ReserveUTXO(dbctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
+	r, err := a.accounts.utxoDB.ReserveUTXO(dbctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, err
 	}

@@ -3,15 +3,18 @@ package account
 
 import (
 	"context"
-	"database/sql"
+	stdsql "database/sql"
 	"encoding/json"
 	"sync"
+	"time"
 
 	"github.com/golang/groupcache/lru"
 
+	"chain/core/account/utxodb"
 	"chain/core/signers"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/net/http/httpjson"
 	"chain/protocol"
@@ -20,11 +23,12 @@ import (
 
 const maxAccountCache = 100
 
-func NewManager(db pg.DB, chain *protocol.Chain) *Manager {
+func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 	return &Manager{
-		db:    db,
-		chain: chain,
-		cache: lru.New(maxAccountCache),
+		db:     db,
+		chain:  chain,
+		utxoDB: &utxodb.Reserver{DB: db},
+		cache:  lru.New(maxAccountCache),
 	}
 }
 
@@ -32,6 +36,7 @@ func NewManager(db pg.DB, chain *protocol.Chain) *Manager {
 type Manager struct {
 	db      pg.DB
 	chain   *protocol.Chain
+	utxoDB  *utxodb.Reserver
 	indexer Saver
 
 	cacheMu sync.Mutex
@@ -45,6 +50,12 @@ type Manager struct {
 func (m *Manager) IndexAccounts(indexer Saver) {
 	m.indexer = indexer
 	m.chain.AddBlockCallback(m.indexAccountUTXOs)
+}
+
+// ExpireReservations removes reservations that have expired periodically.
+// It blocks until the context is canceled.
+func (m *Manager) ExpireReservations(ctx context.Context, period time.Duration) {
+	m.utxoDB.ExpireReservations(ctx, period)
 }
 
 type Account struct {
@@ -65,7 +76,7 @@ func (m *Manager) Create(ctx context.Context, xpubs []string, quorum int, alias 
 		return nil, err
 	}
 
-	aliasSQL := sql.NullString{
+	aliasSQL := stdsql.NullString{
 		String: alias,
 		Valid:  alias != "",
 	}
@@ -100,7 +111,7 @@ func (m *Manager) FindByAlias(ctx context.Context, alias string) (*signers.Signe
 	const q = `SELECT account_id FROM accounts WHERE alias=$1`
 	var accountID string
 	err := m.db.QueryRow(ctx, q, alias).Scan(&accountID)
-	if err == sql.ErrNoRows {
+	if err == stdsql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "alias: %s", alias)
 	}
 	if err != nil {
@@ -185,7 +196,7 @@ func (m *Manager) nextIndex(ctx context.Context) (uint64, error) {
 	return n, nil
 }
 
-func tagsToNullString(tags map[string]interface{}) (*sql.NullString, error) {
+func tagsToNullString(tags map[string]interface{}) (*stdsql.NullString, error) {
 	var tagsJSON []byte
 	if len(tags) != 0 {
 		var err error
@@ -194,5 +205,5 @@ func tagsToNullString(tags map[string]interface{}) (*sql.NullString, error) {
 			return nil, errors.Wrap(err)
 		}
 	}
-	return &sql.NullString{String: string(tagsJSON), Valid: len(tagsJSON) > 0}, nil
+	return &stdsql.NullString{String: string(tagsJSON), Valid: len(tagsJSON) > 0}, nil
 }

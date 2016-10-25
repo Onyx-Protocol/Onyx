@@ -20,7 +20,6 @@ import (
 	"chain/core"
 	"chain/core/accesstoken"
 	"chain/core/account"
-	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/fetch"
@@ -289,7 +288,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
 		ctx = pg.NewContext(ctx, db)
 
-		go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
+		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
 		if config.IsGenerator {
 			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
 		} else {
