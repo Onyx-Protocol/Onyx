@@ -10,9 +10,6 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// Usage:
-//   sha3 <bytes >hash
-
 func main() {
 	size := flag.Int("n", 256, "size in bits of the desired hash: 224, 256 (default), 384, or 512")
 	flag.Parse()
