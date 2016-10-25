@@ -123,34 +123,23 @@
   ga('create', 'UA-50822719-1', 'auto');
   ga('send', 'pageview');
 
-  function mac_option() {
+  function trackOption(label) {
     ga('send', 'event', {
       eventCategory: 'docs',
-      eventAction: 'option',
-      eventLabel: 'mac'
+      eventAction: 'select-os',
+      eventLabel: label
     });
-  }
-  function windows_option() {
-    ga('send', 'event', {
-      eventCategory: 'docs',
-      eventAction: 'option',
-      eventLabel: 'windows'
-    });
+    return true;
   }
 
-  function mac_download() {
+
+  function trackDownload(label) {
     ga('send', 'event', {
       eventCategory: 'docs',
-      eventAction: 'download',
-      eventLabel: 'mac'
+      eventAction: 'download-app',
+      eventLabel: label
     });
-  }
-  function windows_download() {
-    ga('send', 'event', {
-      eventCategory: 'docs',
-      eventAction: 'download',
-      eventLabel: 'windows'
-    });
+    return true;
   }
 
 </script>
