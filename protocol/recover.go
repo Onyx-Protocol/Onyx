@@ -15,14 +15,14 @@ import (
 // and the corresponding state snapshot.
 //
 // If the blockchain is empty (missing initial block), this function
-// returns a nil block and snapshot.
-func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error) {
+// returns a nil block and an empty snapshot.
+func (c *Chain) Recover(ctx context.Context, initialBlockHash bc.Hash) (*bc.Block, *state.Snapshot, error) {
 	snapshot, snapshotHeight, err := c.store.LatestSnapshot(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting latest snapshot")
 	}
 	if snapshotHeight == 0 {
-		return nil, nil, nil
+		return nil, state.NewSnapshot(initialBlockHash), nil
 	}
 	b, err := c.store.GetBlock(ctx, snapshotHeight)
 	if err != nil {

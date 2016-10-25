@@ -194,8 +194,9 @@ func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 	if err != nil {
 		return err
 	}
+	initialBlockHash := initial.Hash()
 
-	assets := asset.NewRegistry(db, c, initial.Hash())
+	assets := asset.NewRegistry(db, c, initialBlockHash)
 	accounts := account.NewManager(db, c)
 
 	// Setup the transaction query indexer to index every transaction.
@@ -205,7 +206,7 @@ func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	c.AddBlockCallback(indexer.IndexTransactions)
 
-	block, snapshot, err := c.Recover(ctx)
+	block, snapshot, err := c.Recover(ctx, initialBlockHash)
 	if err != nil {
 		return err
 	}

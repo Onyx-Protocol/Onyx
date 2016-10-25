@@ -49,14 +49,6 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
 	}
 
-	if snapshot == nil {
-		if prev != nil && prev.Height == 1 {
-			snapshot = state.NewSnapshot(prev.Hash())
-		} else {
-			return nil, nil, fmt.Errorf("missing initial block")
-		}
-	}
-
 	// Make a copy of the state that we can apply our changes to.
 	result = state.Copy(snapshot)
 	result.PruneIssuances(timestampMS)
@@ -95,16 +87,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 // of committing the block. ValidateBlock returns the state after
 // the block has been applied.
 func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev, block *bc.Block) (*state.Snapshot, error) {
-	var newState *state.Snapshot
-	if prevState == nil {
-		if block.Height == 1 {
-			newState = state.NewSnapshot(block.Hash())
-		} else {
-			return nil, fmt.Errorf("missing initial block")
-		}
-	} else {
-		newState = state.Copy(prevState)
-	}
+	newState := state.Copy(prevState)
 	err := validation.ValidateBlockForAccept(ctx, newState, prev, block, c.ValidateTxCached)
 	if err != nil {
 		return nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)

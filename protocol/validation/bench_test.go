@@ -23,20 +23,14 @@ func BenchmarkValidateBlock(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	if blocks[0].Height != 1 {
+		b.Fatal("first test block must have height 1")
+	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		var (
-			current  *bc.Block
-			snapshot *state.Snapshot
-		)
+		var current *bc.Block
+		snapshot := state.NewSnapshot(blocks[0].Hash())
 		for _, block := range blocks {
-			if snapshot == nil {
-				if block.Height == 1 {
-					snapshot = state.NewSnapshot(block.Hash())
-				} else {
-					b.Fatal("missing initial block")
-				}
-			}
 			err := ValidateBlockForAccept(ctx, snapshot, current, block, CheckTxWellFormed)
 			if err != nil {
 				b.Fatal(err)
