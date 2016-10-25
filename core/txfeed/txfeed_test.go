@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"chain/core/query/filter"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 )
@@ -88,11 +87,12 @@ func TestInsertTxFeedDuplicateAlias(t *testing.T) {
 }
 
 func TestCreateTxFeedBadFilter(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
+	tracker := &Tracker{DB: pgtest.NewTx(t)}
 	token := "test_token_0"
 	alias := "test_txfeed"
 	fil := "lol i'm not a ~real~ filter"
-	_, err := Create(ctx, alias, fil, "", &token)
+	_, err := tracker.Create(ctx, alias, fil, "", &token)
 	if errors.Root(err) != filter.ErrBadFilter {
 		t.Errorf("expected ErrBadFilter, got %s", errors.Root(err))
 	}

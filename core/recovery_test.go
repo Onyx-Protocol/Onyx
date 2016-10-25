@@ -115,7 +115,6 @@ func TestRecovery(t *testing.T) {
 		})
 
 		ctx := context.Background()
-		ctx = pg.NewContext(ctx, wrappedDB)
 		go func() {
 			err := generateBlock(ctx, wrappedDB, timestamp)
 			ch <- err

@@ -6,6 +6,7 @@
 package pg
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"net"
@@ -13,8 +14,17 @@ import (
 
 	"github.com/lib/pq"
 
+	chainsql "chain/database/sql"
 	chainnet "chain/net"
 )
+
+// DB holds methods common to the DB, Tx, and Stmt types
+// in package sql.
+type DB interface {
+	Query(context.Context, string, ...interface{}) (*chainsql.Rows, error)
+	QueryRow(context.Context, string, ...interface{}) *chainsql.Row
+	Exec(context.Context, string, ...interface{}) (chainsql.Result, error)
+}
 
 // TODO: move this under chain/hapg
 type hapgDriver struct{}

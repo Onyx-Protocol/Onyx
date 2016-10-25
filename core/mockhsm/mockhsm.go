@@ -186,7 +186,7 @@ func (h *HSM) ListKeys(ctx context.Context, aliases []string, after string, limi
 	}
 	params = append(params, consumeRow)
 
-	err = pg.ForQueryRows(ctx, pg.FromContext(ctx), q, params...)
+	err = pg.ForQueryRows(ctx, h.db, q, params...)
 	if err != nil {
 		return nil, "", err
 	}

@@ -9,7 +9,6 @@ import (
 	"chain/core/asset"
 	"chain/core/coretest"
 	"chain/core/txbuilder"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	chainjson "chain/encoding/json"
 	"chain/protocol/bc"
@@ -19,7 +18,7 @@ import (
 
 func TestLocalAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c, bc.Hash{})
 	accounts := account.NewManager(db, c)

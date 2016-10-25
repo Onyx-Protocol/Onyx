@@ -281,7 +281,7 @@ func (h *Handler) configure(ctx context.Context, x *Config) error {
 		x.MaxIssuanceWindow = 24 * time.Hour
 	}
 
-	err := Configure(ctx, pg.FromContext(ctx), x)
+	err := Configure(ctx, h.DB, x)
 	if err != nil {
 		return err
 	}

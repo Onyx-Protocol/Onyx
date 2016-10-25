@@ -19,6 +19,7 @@ import (
 	"chain/core/rpc"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
+	"chain/core/txfeed"
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/errors"
@@ -54,6 +55,7 @@ type Handler struct {
 	Accounts      *account.Manager
 	HSM           *mockhsm.HSM
 	Indexer       *query.Indexer
+	TxFeeds       *txfeed.Tracker
 	AccessTokens  *accesstoken.CredentialStore
 	Config        *Config
 	DB            pg.DB
@@ -175,7 +177,6 @@ func (h *Handler) init() {
 		handler = limit.Handler(handler, alwaysError(errRateLimited), l.PerSecond, l.Burst, l.Key)
 	}
 	handler = gzip.Handler{Handler: handler}
-	handler = dbContextHandler(handler, h.DB)
 	handler = coreCounter(handler)
 	handler = reqid.Handler(handler)
 	handler = timeoutContextHandler(handler)
@@ -266,14 +267,6 @@ func timeoutContextHandler(handler http.Handler) http.Handler {
 	})
 }
 
-func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		ctx := req.Context()
-		ctx = pg.NewContext(ctx, db)
-		handler.ServeHTTP(w, req.WithContext(ctx))
-	})
-}
-
 func webAssetsHandler(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/dashboard/", http.StripPrefix("/dashboard/", static.Handler{
@@ -315,7 +308,7 @@ func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, 
 // request. For that reason, it cannot be used outside of a request-
 // handling context.
 func (h *Handler) forwardToLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
-	addr, err := leader.Address(ctx)
+	addr, err := leader.Address(ctx, h.DB)
 	if err != nil {
 		return errors.Wrap(err)
 	}

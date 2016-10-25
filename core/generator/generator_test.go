@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"chain/crypto/ed25519"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -19,7 +18,7 @@ import (
 
 func TestGeneratorRecovery(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := context.Background()
 	c := prottest.NewChain(t)
 	b, s := c.State()
 

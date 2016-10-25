@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"chain/core/txdb"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/prottest"
 	"chain/testutil"
@@ -14,7 +13,7 @@ import (
 
 func TestGetBlock(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	store, pool := txdb.New(db)
 	chain := prottest.NewChainWithStorage(t, store, pool)
 	h := &Handler{Chain: chain, Store: store}

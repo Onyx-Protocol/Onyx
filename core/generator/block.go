@@ -2,13 +2,13 @@ package generator
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"sync"
 	"time"
 
 	"chain/crypto/ed25519"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
 	"chain/metrics"

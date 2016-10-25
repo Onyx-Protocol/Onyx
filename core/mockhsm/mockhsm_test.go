@@ -8,14 +8,13 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/crypto/ed25519"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 )
 
 func TestMockHSMChainKDKeys(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	hsm := New(db)
 	xpub, err := hsm.XCreate(ctx, "")
 	if err != nil {
@@ -58,7 +57,7 @@ func TestMockHSMChainKDKeys(t *testing.T) {
 
 func TestMockHSMEd25519Keys(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	hsm := New(db)
 	pub, err := hsm.Create(ctx, "")
 	if err != nil {
@@ -91,7 +90,7 @@ func TestMockHSMEd25519Keys(t *testing.T) {
 
 func TestKeyWithAlias(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	hsm := New(db)
 	xpub, err := hsm.XCreate(ctx, "some-alias")
 	if err != nil {
@@ -144,7 +143,7 @@ func TestKeyWithAlias(t *testing.T) {
 
 func TestKeyWithEmptyAlias(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	hsm := New(db)
 	for i := 0; i < 2; i++ {
 		_, err := hsm.XCreate(ctx, "")
@@ -158,7 +157,7 @@ func BenchmarkSign(b *testing.B) {
 	b.StopTimer()
 
 	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	hsm := New(db)
 	xpub, err := hsm.XCreate(ctx, "")
 	if err != nil {

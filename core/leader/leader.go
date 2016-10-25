@@ -144,11 +144,11 @@ func update(ctx context.Context, l *leader) {
 
 // Address retrieves the IP address of the current
 // core leader.
-func Address(ctx context.Context) (string, error) {
+func Address(ctx context.Context, db pg.DB) (string, error) {
 	const q = `SELECT address FROM leader`
 
 	var addr string
-	err := pg.FromContext(ctx).QueryRow(ctx, q).Scan(&addr)
+	err := db.QueryRow(ctx, q).Scan(&addr)
 	if err != nil {
 		return "", errors.Wrap(err, "could not fetch leader address")
 	}

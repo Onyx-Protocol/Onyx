@@ -11,6 +11,10 @@ import (
 	"chain/net/http/httpjson"
 )
 
+type Tracker struct {
+	DB pg.DB
+}
+
 type TxFeed struct {
 	ID     string  `json:"id,omitempty"`
 	Alias  *string `json:"alias"`
@@ -18,7 +22,7 @@ type TxFeed struct {
 	After  string  `json:"after,omitempty"`
 }
 
-func Create(ctx context.Context, alias, fil, after string, clientToken *string) (*TxFeed, error) {
+func (t *Tracker) Create(ctx context.Context, alias, fil, after string, clientToken *string) (*TxFeed, error) {
 	// Validate the filter.
 	_, err := filter.Parse(fil)
 	if err != nil {
@@ -35,9 +39,7 @@ func Create(ctx context.Context, alias, fil, after string, clientToken *string) 
 		Filter: fil,
 		After:  after,
 	}
-
-	db := pg.FromContext(ctx)
-	return insertTxFeed(ctx, db, feed, clientToken)
+	return insertTxFeed(ctx, t.DB, feed, clientToken)
 }
 
 // insertTxFeed adds the txfeed to the database. If the txfeed has a client token,
@@ -99,7 +101,7 @@ func txfeedByClientToken(ctx context.Context, db pg.DB, clientToken string) (*Tx
 	return &feed, nil
 }
 
-func Find(ctx context.Context, id, alias string) (*TxFeed, error) {
+func (t *Tracker) Find(ctx context.Context, id, alias string) (*TxFeed, error) {
 	where := ` WHERE `
 	if id != "" {
 		where += `id=$1`
@@ -118,7 +120,7 @@ func Find(ctx context.Context, id, alias string) (*TxFeed, error) {
 		sqlAlias sql.NullString
 	)
 
-	err := pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(&feed.ID, &sqlAlias, &feed.Filter, &feed.After)
+	err := t.DB.QueryRow(ctx, q, id).Scan(&feed.ID, &sqlAlias, &feed.Filter, &feed.After)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +132,7 @@ func Find(ctx context.Context, id, alias string) (*TxFeed, error) {
 	return &feed, nil
 }
 
-func Delete(ctx context.Context, id, alias string) error {
+func (t *Tracker) Delete(ctx context.Context, id, alias string) error {
 	where := ` WHERE `
 	if id != "" {
 		where += `id=$1`
@@ -141,7 +143,7 @@ func Delete(ctx context.Context, id, alias string) error {
 
 	q := `DELETE FROM txfeeds` + where
 
-	res, err := pg.FromContext(ctx).Exec(ctx, q, id)
+	res, err := t.DB.Exec(ctx, q, id)
 	if err != nil {
 		return err
 	}
@@ -158,7 +160,7 @@ func Delete(ctx context.Context, id, alias string) error {
 	return nil
 }
 
-func Update(ctx context.Context, id, alias, after, prev string) (*TxFeed, error) {
+func (t *Tracker) Update(ctx context.Context, id, alias, after, prev string) (*TxFeed, error) {
 	where := ` WHERE `
 	if id != "" {
 		where += `id=$2`
@@ -171,7 +173,7 @@ func Update(ctx context.Context, id, alias, after, prev string) (*TxFeed, error)
 		UPDATE txfeeds SET after=$1
 	` + where + ` AND after=$3`
 
-	res, err := pg.FromContext(ctx).Exec(ctx, q, after, id, prev)
+	res, err := t.DB.Exec(ctx, q, after, id, prev)
 	if err != nil {
 		return nil, err
 	}

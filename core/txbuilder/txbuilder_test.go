@@ -13,8 +13,6 @@ import (
 
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/chainkd"
-	"chain/database/pg"
-	"chain/database/pg/pgtest"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -41,7 +39,7 @@ func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *controlPro
 }
 
 func TestBuild(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	ctx := context.Background()
 	pool := mempool.New()
 
 	err := pool.Insert(ctx, &bc.Tx{

@@ -60,15 +60,13 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[
 		annotatedTxsDecoded = append(annotatedTxsDecoded, transactionObject(tx, b, uint32(pos)))
 	}
 
-	dbctx := pg.NewContext(ctx, ind.db)
-
 	for _, annotator := range ind.annotators {
-		err := annotator(dbctx, annotatedTxsDecoded)
+		err := annotator(ctx, annotatedTxsDecoded)
 		if err != nil {
 			return nil, errors.Wrap(err, "adding external annotations")
 		}
 	}
-	localAnnotator(dbctx, annotatedTxsDecoded)
+	localAnnotator(ctx, annotatedTxsDecoded)
 
 	for _, decoded := range annotatedTxsDecoded {
 		b, err := json.Marshal(decoded)

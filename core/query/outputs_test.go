@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"chain/core/query/filter"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -43,7 +42,7 @@ func TestDecodeOutputsAfter(t *testing.T) {
 
 func TestOutputsAfter(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	_, err := db.Exec(ctx, `
 		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, data, timespan)
 		VALUES
