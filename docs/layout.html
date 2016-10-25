@@ -122,6 +122,26 @@
 
   ga('create', 'UA-50822719-1', 'auto');
   ga('send', 'pageview');
+
+  function trackOption(label) {
+    ga('send', 'event', {
+      eventCategory: 'docs',
+      eventAction: 'select-os',
+      eventLabel: label
+    });
+    return true;
+  }
+
+
+  function trackDownload(label) {
+    ga('send', 'event', {
+      eventCategory: 'docs',
+      eventAction: 'download-app',
+      eventLabel: label
+    });
+    return true;
+  }
+
 </script>
 
 </body>
