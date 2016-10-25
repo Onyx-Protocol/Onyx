@@ -2,7 +2,6 @@ package pg
 
 import (
 	"context"
-	"fmt"
 
 	"chain/database/sql"
 )
@@ -43,45 +42,6 @@ type key int
 // unexported; clients use pg.NewContext and pg.FromContext
 // instead of using this key directly.
 var dbKey key
-
-// Begin opens a new transaction on the database
-// stored in ctx. The stored database must
-// provide a Begin method like sql.DB or satisfy
-// the interface Beginner.
-// Begin returns the new transaction and
-// a new context with the transaction as its
-// associated database.
-//
-// Note: if a transaction is already pending in the passed-in context,
-// this function does not create a new one but returns the existing
-// one.
-func Begin(ctx context.Context) (Committer, context.Context, error) {
-	db := FromContext(ctx)
-
-	if dbtx, ok := db.(Tx); ok {
-		return newNestedTx(ctx, dbtx)
-	}
-
-	dbtx, err := begin(db, ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	ctx = NewContext(ctx, dbtx)
-	return dbtx, ctx, nil
-}
-
-func begin(db DB, ctx context.Context) (Tx, error) {
-	type beginner interface {
-		Begin(context.Context) (*sql.Tx, error)
-	}
-	switch d := db.(type) {
-	case beginner: // e.g. *sql.DB
-		return d.Begin(ctx)
-	case Beginner: // e.g. pgtest.noCommitDB
-		return d.Begin(ctx)
-	}
-	return nil, fmt.Errorf("unknown db type %T", db)
-}
 
 // NewContext returns a new Context that carries value db.
 func NewContext(ctx context.Context, db DB) context.Context {
