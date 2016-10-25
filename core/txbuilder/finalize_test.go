@@ -15,6 +15,7 @@ import (
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -33,7 +34,7 @@ import (
 func TestConflictingTxsInPool(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	info, err := bootdb(ctx, t)
+	info, err := bootdb(ctx, db, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +99,7 @@ func TestTransferConfirmed(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 
-	info, err := bootdb(ctx, t)
+	info, err := bootdb(ctx, db, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +122,7 @@ func TestTransferConfirmed(t *testing.T) {
 func BenchmarkTransferWithBlocks(b *testing.B) {
 	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	info, err := bootdb(ctx, b)
+	info, err := bootdb(ctx, db, b)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -246,12 +247,11 @@ type testInfo struct {
 
 // TODO(kr): refactor this into new package core/coreutil
 // and consume it from cmd/corectl.
-func bootdb(ctx context.Context, t testing.TB) (*testInfo, error) {
+func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
 	c := prottest.NewChain(t)
-	indexer := query.NewIndexer(pg.FromContext(ctx), c)
-
-	assets := asset.NewRegistry(pg.FromContext(ctx), c, bc.Hash{})
-	accounts := account.NewManager(pg.FromContext(ctx), c)
+	indexer := query.NewIndexer(db, c)
+	assets := asset.NewRegistry(db, c, bc.Hash{})
+	accounts := account.NewManager(db, c)
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
 

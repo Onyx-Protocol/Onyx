@@ -17,7 +17,8 @@ import (
 var dummyXPub = testutil.TestXPub.String()
 
 func TestCreateAccount(t *testing.T) {
-	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	m := NewManager(db, prottest.NewChain(t))
 	ctx := context.Background()
 
 	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
@@ -38,7 +39,8 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestCreateAccountIdempotency(t *testing.T) {
-	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	m := NewManager(db, prottest.NewChain(t))
 	ctx := context.Background()
 	var clientToken = "a-unique-client-token"
 
@@ -56,7 +58,8 @@ func TestCreateAccountIdempotency(t *testing.T) {
 }
 
 func TestCreateAccountReusedAlias(t *testing.T) {
-	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	m := NewManager(db, prottest.NewChain(t))
 	ctx := context.Background()
 	m.createTestAccount(ctx, t, "some-account", nil)
 
@@ -115,7 +118,8 @@ func (m *Manager) createTestControlProgram(ctx context.Context, t testing.TB, ac
 }
 
 func TestFindByID(t *testing.T) {
-	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	m := NewManager(db, prottest.NewChain(t))
 	ctx := context.Background()
 	account := m.createTestAccount(ctx, t, "", nil)
 
@@ -130,7 +134,8 @@ func TestFindByID(t *testing.T) {
 }
 
 func TestFindByAlias(t *testing.T) {
-	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	m := NewManager(db, prottest.NewChain(t))
 	ctx := context.Background()
 	account := m.createTestAccount(ctx, t, "some-alias", nil)
 
