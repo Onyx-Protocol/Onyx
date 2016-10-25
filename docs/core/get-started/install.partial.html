@@ -4,13 +4,13 @@
         <h2>Choose operating system</h2>
         <ul id="download-options" class="tab">
           <li class="download-option" id="download-option-mac">
-            <a href="javascript:void(0)" class="tablinks active" onclick="trackOption('mac');selectOSTab(event.currentTarget, 'mac')">
+            <a href="javascript:void(0)" class="tablinks active" onclick="track('select-os','mac');selectOSTab(event.currentTarget, 'mac')">
               <div class="os-icon os-icon-mac"></div>
               <h3 data-no-anchor="">Mac</h3>
             </a>
           </li>
           <li class="download-option" id="download-option-windows">
-            <a href="javascript:void(0)" class="tablinks" onclick="trackOption('windows');selectOSTab(event.currentTarget, 'windows')">
+            <a href="javascript:void(0)" class="tablinks" onclick="track('select-os','windows');selectOSTab(event.currentTarget, 'windows')">
               <div class="os-icon os-icon-windows"></div>
               <h3 data-no-anchor="">Windows</h3>
             </a>
@@ -34,7 +34,7 @@
           <p>Download and run the <strong>Chain Core app</strong>.</p>
 
           <p>
-            <a href="https://download.chain.com/mac/Chain_Core.zip" onclick="trackDownload('mac')" class="downloadBtn btn success">
+            <a href="https://download.chain.com/mac/Chain_Core.zip" onclick="track('download-app','mac')" class="downloadBtn btn success">
               Download App
               <img src="/docs/images/download-icon.png" class="btn-icon icon-download">
             </a>
@@ -66,7 +66,7 @@
           <p>Download and run the <strong>Chain Core installer</strong>. After installation, open the <strong>Start menu</strong> and run <strong>Chain Core</strong>.</p>
 
           <p>
-            <a href="https://download.chain.com/windows/Chain_Core_Latest.exe" onclick="trackDownload('windows')" class="downloadBtn btn success">
+            <a href="https://download.chain.com/windows/Chain_Core_Latest.exe" onclick="track('download-app','windows')" class="downloadBtn btn success">
               Download Installer
               <img src="/docs/images/download-icon.png" class="btn-icon icon-download">
             </a>
@@ -132,7 +132,7 @@
     <span class="close"><img src="/docs/images/close.png" class="close-icon"> </span>
     <div class="form-container">
       <div class="modal-title ">Stay up to date with Chain Core</div>
-      <p class="modal-subtitle">We're constanty developing new features and we want you to be the first to try them. Enter your email
+      <p class="modal-subtitle">We're constantly developing new features and we want you to be the first to try them. Enter your email
         address, and we'll keep you in the loop.</p>
       <form action="https://go.pardot.com/l/230312/2016-10-14/dqr" method="post" accept-charset="utf-8" autocomplete="off">
         <fieldset id="sign_up">
