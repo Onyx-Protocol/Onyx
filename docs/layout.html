@@ -123,16 +123,18 @@
   ga('create', 'UA-50822719-1', 'auto');
   ga('send', 'pageview');
 
-  function mac() {
+  function mac_download() {
     ga('send', 'event', {
       eventCategory: 'docs',
-      eventAction: 'download'
+      eventAction: 'download',
+      eventLabel: 'mac'
     });
   }
-  function windows() {
+  function windows_download() {
     ga('send', 'event', {
       eventCategory: 'docs',
-      eventAction: 'download'
+      eventAction: 'download',
+      eventLabel: 'windows'
     });
   }
 
