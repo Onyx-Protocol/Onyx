@@ -7,7 +7,7 @@ services:
     env:
       POSTGRES_PASSWORD: p
       POSTGRES_USER: u
-      POSTGRES_DB: api-test
+      POSTGRES_DB: core-test
 
 build:
   steps:
@@ -21,7 +21,7 @@ build:
           PATH=$GOPATH/bin:$PATH:$CHAIN/bin
           cp -a $WERCKER_SOURCE_DIR $GOPATH/src/chain
           export WERCKER_SOURCE_DIR=$GOPATH/src/chain
-          export DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/api-test?sslmode=disable"
+          export DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable"
           cd $CHAIN
           go vet $(go list ./...|grep -v vendor)
           go install chain/cmd/vet
@@ -54,10 +54,4 @@ build:
         cwd: dashboard/
         code: |
           npm run lint
-
-
-
-
-
-
 
