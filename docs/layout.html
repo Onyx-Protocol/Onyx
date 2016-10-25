@@ -123,6 +123,21 @@
   ga('create', 'UA-50822719-1', 'auto');
   ga('send', 'pageview');
 
+  function mac_option() {
+    ga('send', 'event', {
+      eventCategory: 'docs',
+      eventAction: 'option',
+      eventLabel: 'mac'
+    });
+  }
+  function windows_option() {
+    ga('send', 'event', {
+      eventCategory: 'docs',
+      eventAction: 'option',
+      eventLabel: 'windows'
+    });
+  }
+
   function mac_download() {
     ga('send', 'event', {
       eventCategory: 'docs',
