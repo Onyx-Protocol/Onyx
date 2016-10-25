@@ -250,8 +250,8 @@ func formatPrefix(prefix string, t time.Time) string {
 
 // Exec executes q in the database or transaction in ctx.
 // If there is an error, it fails t.
-func Exec(ctx context.Context, t testing.TB, q string, args ...interface{}) {
-	_, err := pg.Exec(ctx, q, args...)
+func Exec(ctx context.Context, db pg.DB, t testing.TB, q string, args ...interface{}) {
+	_, err := db.Exec(ctx, q, args...)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

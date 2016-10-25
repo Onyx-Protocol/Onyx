@@ -63,8 +63,9 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 		return nil, errors.Wrap(err, "begin transaction for reserving utxos")
 	}
 	defer dbtx.Rollback(ctx)
+	db := pg.FromContext(ctx)
 
-	_, err = pg.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
+	_, err = db.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
 		return nil, errors.Wrap(err, "acquire lock for reserving utxos")
 	}
@@ -86,7 +87,7 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 		alreadyExisted bool
 		utxoExists     bool
 	)
-	err = pg.QueryRow(ctx, reserveQ, txHash, pos, exp, clientToken).Scan(
+	err = db.QueryRow(ctx, reserveQ, txHash, pos, exp, clientToken).Scan(
 		&reservationID,
 		&alreadyExisted,
 		&utxoExists,
@@ -109,7 +110,7 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 		controlProg  []byte
 	)
 
-	err = pg.QueryRow(ctx, utxosQ, reservationID).Scan(&accountID, &assetID, &amount, &programIndex, &controlProg)
+	err = db.QueryRow(ctx, utxosQ, reservationID).Scan(&accountID, &assetID, &amount, &programIndex, &controlProg)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	}
@@ -149,15 +150,16 @@ func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c
 		return nil, nil, errors.Wrap(err, "begin transaction for reserving utxos")
 	}
 	defer dbtx.Rollback(ctx)
+	db := pg.FromContext(ctx)
 
-	_, err = pg.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
+	_, err = db.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "acquire lock for reserving utxos")
 	}
 
 	defer func() {
 		if err != nil {
-			pg.Exec(ctx, "SELECT cancel_reservations($1)", pq.Int64Array(reservationIDs)) // ignore errors
+			db.Exec(ctx, "SELECT cancel_reservations($1)", pq.Int64Array(reservationIDs)) // ignore errors
 		}
 	}()
 
@@ -201,7 +203,7 @@ func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c
 		//  * already_existed will be TRUE
 		//  * existing_change will be the change value for the existing
 		//    reservation row.
-		err = pg.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, outIndex, source.Amount, exp, source.ClientToken).Scan(
+		err = db.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, outIndex, source.Amount, exp, source.ClientToken).Scan(
 			&reservationID,
 			&alreadyExisted,
 			&existingChange,
@@ -227,7 +229,7 @@ func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c
 			change = append(change, Change{source, reservedAmount - source.Amount})
 		}
 
-		err = pg.ForQueryRows(ctx, pg.FromContext(ctx), utxosQ, reservationID, func(
+		err = pg.ForQueryRows(ctx, db, utxosQ, reservationID, func(
 			hash bc.Hash,
 			index uint32,
 			amount uint64,
@@ -274,13 +276,14 @@ func ExpireReservations(ctx context.Context, period time.Duration) {
 					return err
 				}
 				defer dbtx.Rollback(ctx)
+				db := pg.FromContext(ctx)
 
-				_, err = pg.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
+				_, err = db.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
 				if err != nil {
 					return err
 				}
 
-				_, err = pg.Exec(ctx, `SELECT expire_reservations()`)
+				_, err = db.Exec(ctx, `SELECT expire_reservations()`)
 				if err != nil {
 					return err
 				}

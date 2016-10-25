@@ -43,9 +43,9 @@ func TestConflictingTxsInPool(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dumpState(ctx, t)
+	dumpState(ctx, t, db)
 	prottest.MakeBlock(ctx, t, info.Chain)
-	dumpState(ctx, t)
+	dumpState(ctx, t, db)
 
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
@@ -67,7 +67,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Make the utxo available for reserving again
-	err = cancel(ctx, []bc.Outpoint{firstTemplate.Transaction.Inputs[0].TypedInput.(*bc.SpendInput).Outpoint})
+	err = cancel(ctx, db, []bc.Outpoint{firstTemplate.Transaction.Inputs[0].TypedInput.(*bc.SpendInput).Outpoint})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,10 +85,10 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Make a block, which should reject one of the txs.
-	dumpState(ctx, t)
+	dumpState(ctx, t, db)
 	b := prottest.MakeBlock(ctx, t, info.Chain)
 
-	dumpState(ctx, t)
+	dumpState(ctx, t, db)
 	if len(b.Transactions) != 1 {
 		t.Errorf("got block.Transactions = %#v\n, want exactly one tx", b.Transactions)
 	}
@@ -108,9 +108,9 @@ func TestTransferConfirmed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dumpState(ctx, t)
+	dumpState(ctx, t, db)
 	prottest.MakeBlock(ctx, t, info.Chain)
-	dumpState(ctx, t)
+	dumpState(ctx, t, db)
 
 	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {
@@ -145,17 +145,17 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 	}
 }
 
-func dumpState(ctx context.Context, t *testing.T) {
+func dumpState(ctx context.Context, t *testing.T, db pg.DB) {
 	t.Log("pool")
-	dumpTab(ctx, t, `
+	dumpTab(ctx, t, db, `
 		SELECT tx_hash, data FROM pool_txs
 	`)
 	t.Log("blockchain")
-	dumpBlocks(ctx, t)
+	dumpBlocks(ctx, t, db)
 }
 
-func dumpTab(ctx context.Context, t *testing.T, q string) {
-	rows, err := pg.Query(ctx, q)
+func dumpTab(ctx context.Context, t *testing.T, db pg.DB, q string) {
+	rows, err := db.Query(ctx, q)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,8 +176,8 @@ func dumpTab(ctx context.Context, t *testing.T, q string) {
 	}
 }
 
-func dumpBlocks(ctx context.Context, t *testing.T) {
-	rows, err := pg.Query(ctx, `SELECT height, block_hash FROM blocks`)
+func dumpBlocks(ctx context.Context, t *testing.T, db pg.DB) {
+	rows, err := db.Query(ctx, `SELECT height, block_hash FROM blocks`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,9 +204,9 @@ func BenchmarkGenerateBlock(b *testing.B) {
 
 func benchGenBlock(b *testing.B) {
 	b.StopTimer()
+	ctx := context.Background()
 	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
-	pgtest.Exec(ctx, b, `
+	pgtest.Exec(ctx, db, b, `
 		INSERT INTO pool_txs (tx_hash, data, sort_id)
 		VALUES (
 			'37383ebfffe807d694343a9004a42f605592e0dc7f7d5de76857fb46a7050410',
@@ -331,7 +331,7 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, srcAcctID, dest
 // cancel cancels the given reservations, if they still exist.
 // If any do not exist (if they've already been consumed
 // or canceled), it silently ignores them.
-func cancel(ctx context.Context, outpoints []bc.Outpoint) error {
+func cancel(ctx context.Context, db pg.DB, outpoints []bc.Outpoint) error {
 	txHashes := make([]string, 0, len(outpoints))
 	indexes := make([]uint32, 0, len(outpoints))
 	for _, outpoint := range outpoints {
@@ -347,6 +347,6 @@ func cancel(ctx context.Context, outpoints []bc.Outpoint) error {
 		SELECT cancel_reservation(reservation_id) FROM reservation_ids
 	`
 
-	_, err := pg.Exec(ctx, query, pq.StringArray(txHashes), pg.Uint32s(indexes))
+	_, err := db.Exec(ctx, query, pq.StringArray(txHashes), pg.Uint32s(indexes))
 	return err
 }

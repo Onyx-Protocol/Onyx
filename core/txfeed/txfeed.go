@@ -36,13 +36,14 @@ func Create(ctx context.Context, alias, fil, after string, clientToken *string) 
 		After:  after,
 	}
 
-	return insertTxFeed(ctx, feed, clientToken)
+	db := pg.FromContext(ctx)
+	return insertTxFeed(ctx, db, feed, clientToken)
 }
 
 // insertTxFeed adds the txfeed to the database. If the txfeed has a client token,
 // and there already exists a txfeed with that client token, insertTxFeed will
 // lookup and return the existing txfeed instead.
-func insertTxFeed(ctx context.Context, feed *TxFeed, clientToken *string) (*TxFeed, error) {
+func insertTxFeed(ctx context.Context, db pg.DB, feed *TxFeed, clientToken *string) (*TxFeed, error) {
 	const q = `
 		INSERT INTO txfeeds (alias, filter, after, client_token)
 		VALUES ($1, $2, $3, $4)
@@ -55,7 +56,7 @@ func insertTxFeed(ctx context.Context, feed *TxFeed, clientToken *string) (*TxFe
 		alias = sql.NullString{Valid: true, String: *feed.Alias}
 	}
 
-	err := pg.QueryRow(
+	err := db.QueryRow(
 		ctx, q, alias, feed.Filter, feed.After,
 		clientToken).Scan(&feed.ID)
 
@@ -64,7 +65,7 @@ func insertTxFeed(ctx context.Context, feed *TxFeed, clientToken *string) (*TxFe
 	} else if err == sql.ErrNoRows && clientToken != nil {
 		// There is already a txfeed with the provided client
 		// token. We should return the existing txfeed
-		feed, err = txfeedByClientToken(ctx, *clientToken)
+		feed, err = txfeedByClientToken(ctx, db, *clientToken)
 		if err != nil {
 			return nil, errors.Wrap(err, "retrieving existing txfeed")
 		}
@@ -75,7 +76,7 @@ func insertTxFeed(ctx context.Context, feed *TxFeed, clientToken *string) (*TxFe
 	return feed, nil
 }
 
-func txfeedByClientToken(ctx context.Context, clientToken string) (*TxFeed, error) {
+func txfeedByClientToken(ctx context.Context, db pg.DB, clientToken string) (*TxFeed, error) {
 	const q = `
 		SELECT id, alias, filter, after
 		FROM txfeeds
@@ -86,7 +87,7 @@ func txfeedByClientToken(ctx context.Context, clientToken string) (*TxFeed, erro
 		feed  TxFeed
 		alias sql.NullString
 	)
-	err := pg.QueryRow(ctx, q, clientToken).Scan(&feed.ID, &alias, &feed.Filter, &feed.After)
+	err := db.QueryRow(ctx, q, clientToken).Scan(&feed.ID, &alias, &feed.Filter, &feed.After)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +118,7 @@ func Find(ctx context.Context, id, alias string) (*TxFeed, error) {
 		sqlAlias sql.NullString
 	)
 
-	err := pg.QueryRow(ctx, q, id).Scan(&feed.ID, &sqlAlias, &feed.Filter, &feed.After)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(&feed.ID, &sqlAlias, &feed.Filter, &feed.After)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +141,7 @@ func Delete(ctx context.Context, id, alias string) error {
 
 	q := `DELETE FROM txfeeds` + where
 
-	res, err := pg.Exec(ctx, q, id)
+	res, err := pg.FromContext(ctx).Exec(ctx, q, id)
 	if err != nil {
 		return err
 	}
@@ -170,7 +171,7 @@ func Update(ctx context.Context, id, alias, after, prev string) (*TxFeed, error)
 		UPDATE txfeeds SET after=$1
 	` + where + ` AND after=$3`
 
-	res, err := pg.Exec(ctx, q, after, id, prev)
+	res, err := pg.FromContext(ctx).Exec(ctx, q, after, id, prev)
 	if err != nil {
 		return nil, err
 	}
