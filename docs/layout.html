@@ -122,6 +122,20 @@
 
   ga('create', 'UA-50822719-1', 'auto');
   ga('send', 'pageview');
+
+  function mac_download() {
+    ga('send', 'event', {
+      eventCategory: 'mac',
+      eventAction: 'download'
+    });
+  }
+  function windows_download() {
+    ga('send', 'event', {
+      eventCategory: 'windows',
+      eventAction: 'download'
+    });
+  }
+
 </script>
 
 </body>
