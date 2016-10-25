@@ -33,7 +33,10 @@ var (
 	postURL       = env.String("SLACK_POST_URL", "")
 )
 
-var landReqs = make(chan *landReq, 10)
+var (
+	landReqs      = make(chan *landReq, 10)
+	gitConfigured bool
+)
 
 type landReq struct {
 	userID   string
@@ -98,6 +101,8 @@ func lander() {
 
 func land(req *landReq) {
 	defer catch()
+
+	configGit()
 
 	repo := *repo
 	if req.private {
@@ -244,6 +249,26 @@ func land(req *landReq) {
 	runIn(landdir, exec.Command("git", "push", "origin", ":"+req.ref))
 	fetch(landdir, "main", repo)
 	runIn(landdir, exec.Command("git", "branch", "-D", req.ref))
+}
+
+func configGit() error {
+	if gitConfigured {
+		return nil
+	}
+	cmd := exec.Command("git", "config", "--global", "user.email", "ops@chain.com")
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	cmd = exec.Command("git", "config", "--global", "user.name", "chainbot")
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+	gitConfigured = true
+	return nil
 }
 
 func wrapMessage(msg string, limit int) string {
