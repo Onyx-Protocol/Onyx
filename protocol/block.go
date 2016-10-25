@@ -49,6 +49,14 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
 	}
 
+	if snapshot == nil {
+		if prev != nil && prev.Height == 1 {
+			snapshot = state.NewSnapshot(prev.Hash())
+		} else {
+			return nil, nil, fmt.Errorf("missing initial block")
+		}
+	}
+
 	// Make a copy of the state that we can apply our changes to.
 	result = state.Copy(snapshot)
 	result.PruneIssuances(timestampMS)
