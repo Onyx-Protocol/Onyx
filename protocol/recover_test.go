@@ -24,7 +24,8 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	err = c1.CommitBlock(context.Background(), b, state.Empty())
+	initialBlockHash := b.Hash()
+	err = c1.CommitBlock(context.Background(), b, state.NewSnapshot(initialBlockHash))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -42,7 +43,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	block, snapshot, err := c2.Recover(context.Background())
+	block, snapshot, err := c2.Recover(context.Background(), initialBlockHash)
 	if err != nil {
 		t.Fatal(err)
 	}

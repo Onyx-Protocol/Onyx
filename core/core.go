@@ -225,12 +225,13 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			return err
 		}
 
-		err = chain.CommitBlock(ctx, block, state.Empty())
+		c.BlockchainID = block.Hash()
+
+		err = chain.CommitBlock(ctx, block, state.NewSnapshot(c.BlockchainID))
 		if err != nil {
 			return err
 		}
 
-		c.BlockchainID = block.Hash()
 		chain.MaxIssuanceWindow = c.MaxIssuanceWindow
 	}
 

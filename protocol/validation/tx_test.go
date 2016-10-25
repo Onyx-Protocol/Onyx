@@ -79,7 +79,7 @@ func TestUniqueIssuance(t *testing.T) {
 		t.Errorf("expected tx with unique issuance to pass validation, got: %s", err)
 	}
 
-	snapshot := state.Empty()
+	snapshot := state.NewSnapshot(initialBlockHash)
 
 	// Add tx to the state tree so we can spend it in the next tx
 	err = ApplyTx(snapshot, tx)
@@ -701,11 +701,15 @@ func TestTxWellFormed(t *testing.T) {
 	}
 }
 
-func TestValidateInvalidTimestamps(t *testing.T) {
+func TestValidateInvalidIssuances(t *testing.T) {
 	var initialBlockHash bc.Hash
 	issuanceProg := []byte{1}
 	aid := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	now := time.Now()
+
+	wrongInitialBlockHash := initialBlockHash
+	wrongInitialBlockHash[0] ^= 1
+
 	cases := []struct {
 		ok        bool
 		tx        bc.Tx
@@ -762,6 +766,23 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 			},
 			timestamp: bc.Millis(now.Add(-time.Hour)),
 		},
+		{
+			ok: false,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Version: 1,
+					MinTime: bc.Millis(now),
+					MaxTime: bc.Millis(now.Add(time.Hour)),
+					Inputs: []*bc.TxInput{
+						bc.NewIssuanceInput(nil, 1000, nil, wrongInitialBlockHash, issuanceProg, nil),
+					},
+					Outputs: []*bc.TxOutput{
+						bc.NewTxOutput(aid, 1000, nil, nil),
+					},
+				},
+			},
+			timestamp: bc.Millis(now.Add(time.Minute)),
+		},
 	}
 
 	for i, c := range cases {
@@ -771,7 +792,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 				TimestampMS: c.timestamp,
 			},
 		}
-		err := ConfirmTx(state.Empty(), block, &c.tx)
+		err := ConfirmTx(state.NewSnapshot(initialBlockHash), block, &c.tx)
 		if !c.ok && errors.Root(err) != ErrBadTx {
 			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue

@@ -47,6 +47,7 @@ type generator struct {
 func Generate(
 	ctx context.Context,
 	c *protocol.Chain,
+	initialBlockHash bc.Hash,
 	s []BlockSigner,
 	db pg.DB,
 	period time.Duration,
@@ -54,7 +55,7 @@ func Generate(
 ) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
-	recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
+	recoveredBlock, recoveredSnapshot, err := c.Recover(ctx, initialBlockHash)
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}

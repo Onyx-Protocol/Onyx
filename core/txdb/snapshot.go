@@ -40,10 +40,12 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 		issuances[hash] = issuance.ExpiryMs
 	}
 
-	return &state.Snapshot{
+	result := &state.Snapshot{
 		Tree:      tree,
 		Issuances: issuances,
-	}, nil
+	}
+	copy(result.InitialBlockHash[:], storedSnapshot.InitialBlockHash)
+	return result, nil
 }
 
 func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot, blockHeight uint64) error {
@@ -67,6 +69,8 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 			ExpiryMs: v,
 		})
 	}
+
+	storedSnapshot.InitialBlockHash = snapshot.InitialBlockHash[:]
 
 	b, err := proto.Marshal(&storedSnapshot)
 	if err != nil {
@@ -93,8 +97,9 @@ func getStateSnapshot(ctx context.Context, db pg.DB) (*state.Snapshot, uint64, e
 
 	err := db.QueryRow(ctx, q).Scan(&data, &height)
 	if err == sql.ErrNoRows {
-		return state.Empty(), 0, nil
-	} else if err != nil {
+		return nil, 0, nil
+	}
+	if err != nil {
 		return nil, height, errors.Wrap(err, "retrieving state snapshot blob")
 	}
 

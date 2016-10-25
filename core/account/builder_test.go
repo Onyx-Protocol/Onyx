@@ -25,8 +25,8 @@ func TestAccountSourceReserve(t *testing.T) {
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
 		ctx      = pg.NewContext(context.Background(), db)
 		c        = prottest.NewChain(t)
+		assets   = asset.NewRegistry(db, c, prottest.InitialBlockHash(ctx, t, c))
 		accounts = account.NewManager(db, c)
-		assets   = asset.NewRegistry(db, c, bc.Hash{})
 		indexer  = query.NewIndexer(db, c)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -75,7 +75,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
 		ctx      = pg.NewContext(context.Background(), db)
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(db, c, bc.Hash{})
+		assets   = asset.NewRegistry(db, c, prottest.InitialBlockHash(ctx, t, c))
 		accounts = account.NewManager(db, c)
 		indexer  = query.NewIndexer(db, c)
 
@@ -108,7 +108,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
 		ctx      = pg.NewContext(context.Background(), db)
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(db, c, bc.Hash{})
+		assets   = asset.NewRegistry(db, c, prottest.InitialBlockHash(ctx, t, c))
 		accounts = account.NewManager(db, c)
 		indexer  = query.NewIndexer(db, c)
 
@@ -166,7 +166,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
 		ctx      = pg.NewContext(context.Background(), db)
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(db, c, bc.Hash{})
+		assets   = asset.NewRegistry(db, c, prottest.InitialBlockHash(ctx, t, c))
 		accounts = account.NewManager(db, c)
 		indexer  = query.NewIndexer(db, c)
 

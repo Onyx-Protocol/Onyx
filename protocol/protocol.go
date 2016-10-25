@@ -77,6 +77,9 @@ type BlockCallback func(ctx context.Context, block *bc.Block) error
 type Store interface {
 	Height(context.Context) (uint64, error)
 	GetBlock(context.Context, uint64) (*bc.Block, error)
+
+	// LatestSnapshot returns the latest blockchain snapshot from the store.
+	// The result is nil if the blockchain is empty.
 	LatestSnapshot(context.Context) (*state.Snapshot, uint64, error)
 
 	SaveBlock(context.Context, *bc.Block) error

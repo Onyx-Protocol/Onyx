@@ -226,7 +226,7 @@ func benchGenBlock(b *testing.B) {
 
 	now := time.Now()
 	b.StartTimer()
-	_, _, err = c.GenerateBlock(ctx, initialBlock, state.Empty(), now)
+	_, _, err = c.GenerateBlock(ctx, initialBlock, state.NewSnapshot(initialBlock.Hash()), now)
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)
@@ -250,7 +250,7 @@ func bootdb(ctx context.Context, t testing.TB) (*testInfo, error) {
 	c := prottest.NewChain(t)
 	indexer := query.NewIndexer(pg.FromContext(ctx), c)
 
-	assets := asset.NewRegistry(pg.FromContext(ctx), c, bc.Hash{})
+	assets := asset.NewRegistry(pg.FromContext(ctx), c, prottest.InitialBlockHash(ctx, t, c))
 	accounts := account.NewManager(pg.FromContext(ctx), c)
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)

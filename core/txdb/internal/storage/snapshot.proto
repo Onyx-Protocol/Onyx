@@ -13,6 +13,9 @@ message Snapshot {
   // of issuances.
   repeated Issuance issuances = 2;
 
+  // InitialBlockHash is the hash of the initial block (a.k.a. the blockchain id).
+  bytes initial_block_hash = 3;
+
   message Issuance {
     bytes  hash      = 1;
     uint64 expiry_ms = 2;

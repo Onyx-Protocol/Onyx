@@ -26,7 +26,8 @@ func TestBuildFinal(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(db, c, bc.Hash{})
+
+	assets := asset.NewRegistry(db, c, prottest.InitialBlockHash(ctx, t, c))
 	accounts := account.NewManager(db, c)
 	accounts.IndexAccounts(query.NewIndexer(db, c))
 
@@ -132,7 +133,8 @@ func TestAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(db, c, bc.Hash{})
+
+	assets := asset.NewRegistry(db, c, prottest.InitialBlockHash(ctx, t, c))
 	accounts := account.NewManager(db, c)
 	accounts.IndexAccounts(query.NewIndexer(db, c))
 
@@ -194,9 +196,10 @@ func TestTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
+
 	handler := &Handler{
 		Chain:    c,
-		Assets:   asset.NewRegistry(db, c, bc.Hash{}),
+		Assets:   asset.NewRegistry(db, c, prottest.InitialBlockHash(ctx, t, c)),
 		Accounts: account.NewManager(db, c),
 		Indexer:  query.NewIndexer(db, c),
 		DB:       db,

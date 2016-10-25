@@ -23,7 +23,7 @@ func TestGetBlock(t *testing.T) {
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
 	oneBlock.SaveBlock(ctx, b1)
-	oneBlock.SaveSnapshot(ctx, 1, state.Empty())
+	oneBlock.SaveSnapshot(ctx, 1, state.NewSnapshot(b1.Hash()))
 
 	cases := []struct {
 		store   Store
@@ -170,7 +170,7 @@ func TestGenerateBlock(t *testing.T) {
 		}
 	}
 
-	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now)
+	got, _, err := c.GenerateBlock(ctx, b1, state.NewSnapshot(initialBlockHash), now)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -231,7 +231,7 @@ func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	err = c.CommitBlock(ctx, b1, state.Empty())
+	err = c.CommitBlock(ctx, b1, state.NewSnapshot(b1.Hash()))
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -250,7 +250,17 @@ func makeEmptyBlock(tb testing.TB, c *Chain) {
 		tb.Fatal("cannot make nonempty block")
 	}
 
-	curState := state.Empty()
+	var initialBlockHash bc.Hash
+	if curBlock.Height == 1 {
+		initialBlockHash = curBlock.Hash()
+	} else {
+		b1, err := c.GetBlock(ctx, 1)
+		if err != nil {
+			testutil.FatalErr(tb, err)
+		}
+		initialBlockHash = b1.Hash()
+	}
+	curState := state.NewSnapshot(initialBlockHash)
 
 	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
 	if err != nil {

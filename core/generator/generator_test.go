@@ -37,7 +37,7 @@ func TestGeneratorRecovery(t *testing.T) {
 	// Start Generate which should notice the pending block and commit it.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	go Generate(ctx, c, nil, dbtx, time.Second, func(error) {})
+	go Generate(ctx, c, b.Hash(), nil, dbtx, time.Second, func(error) {})
 
 	// Wait for the block to land, and then make sure it's the same block
 	// that was pending before we ran Generate.
@@ -59,6 +59,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+	initialBlockHash := b1.Hash()
 
 	pubKey, privKey, err := ed25519.GenerateKey(nil)
 	if err != nil {
@@ -70,10 +71,10 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		chain:          c,
 		signers:        []BlockSigner{signer},
 		latestBlock:    b1,
-		latestSnapshot: state.Empty(),
+		latestSnapshot: state.NewSnapshot(initialBlockHash),
 	}
 
-	tip, snapshot, err := c.Recover(ctx)
+	tip, snapshot, err := c.Recover(ctx, initialBlockHash)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

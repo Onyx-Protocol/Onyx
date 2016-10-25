@@ -116,7 +116,14 @@ func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 	if err != nil {
 		return errors.Wrap(err, "storing block")
 	}
-	if block.Time().After(c.lastQueuedSnapshot.Add(saveSnapshotFrequency)) {
+
+	if block.Height == 1 {
+		// synchronously commit the initial block snapshot
+		err = c.store.SaveSnapshot(ctx, 1, snapshot)
+		if err != nil {
+			return errors.Wrap(err, "saving snapshot")
+		}
+	} else if block.Time().After(c.lastQueuedSnapshot.Add(saveSnapshotFrequency)) {
 		c.queueSnapshot(ctx, block.Height, block.Time(), snapshot)
 	}
 
@@ -186,7 +193,7 @@ func (c *Chain) setHeight(h uint64) {
 func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	var (
 		prev     *bc.Block
-		snapshot = state.Empty()
+		snapshot *state.Snapshot
 	)
 
 	if block.Height > 1 {
@@ -200,6 +207,8 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 		if prev == nil || prev.Height != block.Height-1 {
 			return ErrStaleState
 		}
+	} else {
+		snapshot = state.NewSnapshot(block.Hash())
 	}
 
 	// TODO(kr): cache the applied snapshot, and maybe

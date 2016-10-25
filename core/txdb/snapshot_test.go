@@ -20,7 +20,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 
-	snapshot := state.Empty()
+	snapshot := state.NewSnapshot(bc.Hash{})
 	changes := []struct {
 		inserts          []pair
 		deletes          []string
@@ -142,7 +142,7 @@ func benchmarkStoreSnapshot(nodes, issuances int, b *testing.B) {
 	db := pgtest.NewTx(b)
 	ctx := context.Background()
 
-	snapshot := state.Empty()
+	snapshot := state.NewSnapshot(bc.Hash{})
 	for i := 0; i < nodes; i++ {
 		var h [32]byte
 		_, err := r.Read(h[:])

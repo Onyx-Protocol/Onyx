@@ -68,8 +68,13 @@ func (m *MemStore) LatestSnapshot(context.Context) (*state.Snapshot, uint64, err
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	b1, ok := m.Blocks[1]
+	if !ok {
+		return nil, 0, nil
+	}
+
 	if m.State == nil {
-		m.State = state.Empty()
+		m.State = state.NewSnapshot(b1.Hash())
 	}
 	return state.Copy(m.State), m.StateHeight, nil
 }
