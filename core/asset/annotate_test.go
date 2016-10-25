@@ -6,13 +6,12 @@ import (
 	"testing"
 
 	"chain/database/pg/pgtest"
-	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
 func TestAnnotateTxs(t *testing.T) {
-	reg := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	reg := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t))
 	ctx := context.Background()
 
 	tags1 := map[string]interface{}{"foo": "bar"}

@@ -114,6 +114,8 @@ type Chain struct {
 	pool              Pool
 	MaxIssuanceWindow time.Duration // only used by generators
 
+	InitialBlockHash bc.Hash
+
 	lastQueuedSnapshot time.Time
 	pendingSnapshots   chan pendingSnapshot
 
@@ -143,7 +145,15 @@ func NewChain(ctx context.Context, store Store, pool Pool, heights <-chan uint64
 		return nil, errors.Wrap(err, "looking up blockchain height")
 	}
 
-	// Note that c.height.n may still be zero here.
+	if c.state.height >= 1 {
+		b, err := store.GetBlock(ctx, 1)
+		if err != nil {
+			return nil, errors.Wrap(err, "retrieving initial block")
+		}
+		c.InitialBlockHash = b.Hash()
+	}
+
+	// Note that c.state.height may still be zero here.
 	if heights != nil {
 		go func() {
 			for h := range heights {
@@ -198,6 +208,9 @@ func (c *Chain) setState(b *bc.Block, s *state.Snapshot) {
 	if b != nil && b.Height > c.state.height {
 		c.state.height = b.Height
 		c.state.cond.Broadcast()
+	}
+	if b.Height == 1 {
+		c.InitialBlockHash = b.Hash()
 	}
 }
 

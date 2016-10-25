@@ -21,12 +21,8 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
 	indexer := NewIndexer(db, c)
-	b1, err := c.GetBlock(ctx, 1)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
 	accounts := account.NewManager(db, c)
-	assets := asset.NewRegistry(db, c, b1.Hash())
+	assets := asset.NewRegistry(db, c)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 	c.AddBlockCallback(indexer.IndexTransactions)

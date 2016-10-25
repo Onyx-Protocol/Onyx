@@ -73,7 +73,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			break
 		}
 
-		if validation.ConfirmTx(result, b, tx) == nil {
+		if validation.ConfirmTx(result, b, c.InitialBlockHash, tx) == nil {
 			validation.ApplyTx(result, tx)
 			b.Transactions = append(b.Transactions, tx)
 		}
@@ -88,7 +88,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 // the block has been applied.
 func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev, block *bc.Block) (*state.Snapshot, error) {
 	newState := state.Copy(prevState)
-	err := validation.ValidateBlockForAccept(ctx, newState, prev, block, c.ValidateTxCached)
+	err := validation.ValidateBlockForAccept(ctx, newState, prev, block, c.InitialBlockHash, c.ValidateTxCached)
 	if err != nil {
 		return nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
 	}
@@ -205,7 +205,7 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 	// TODO(kr): cache the applied snapshot, and maybe
 	// we can skip re-applying it later
 	snapshot = state.Copy(snapshot)
-	err := validation.ValidateBlock(ctx, snapshot, prev, block, validation.CheckTxWellFormed)
+	err := validation.ValidateBlock(ctx, snapshot, prev, block, c.InitialBlockHash, validation.CheckTxWellFormed)
 	return errors.Wrap(err, "validation")
 }
 

@@ -115,7 +115,7 @@ func TestUniqueIssuance(t *testing.T) {
 		},
 	}
 
-	err = ConfirmTx(snapshot, block, tx)
+	err = ConfirmTx(snapshot, block, initialBlockHash, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestUniqueIssuance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ConfirmTx(snapshot, block, tx)
+	err = ConfirmTx(snapshot, block, initialBlockHash, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestUniqueIssuance(t *testing.T) {
 		t.Errorf("expected input with non-empty nonce to be added to issuance memory")
 	}
 	// Adding it again should fail
-	if ConfirmTx(snapshot, block, tx) == nil {
+	if ConfirmTx(snapshot, block, initialBlockHash, tx) == nil {
 		t.Errorf("expected adding duplicate issuance tx to fail")
 	}
 }
@@ -701,11 +701,15 @@ func TestTxWellFormed(t *testing.T) {
 	}
 }
 
-func TestValidateInvalidTimestamps(t *testing.T) {
+func TestValidateInvalidIssuances(t *testing.T) {
 	var initialBlockHash bc.Hash
 	issuanceProg := []byte{1}
 	aid := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	now := time.Now()
+
+	wrongInitialBlockHash := initialBlockHash
+	wrongInitialBlockHash[0] ^= 1
+
 	cases := []struct {
 		ok        bool
 		tx        bc.Tx
@@ -762,6 +766,23 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 			},
 			timestamp: bc.Millis(now.Add(-time.Hour)),
 		},
+		{
+			ok: false,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Version: 1,
+					MinTime: bc.Millis(now),
+					MaxTime: bc.Millis(now.Add(time.Hour)),
+					Inputs: []*bc.TxInput{
+						bc.NewIssuanceInput(nil, 1000, nil, wrongInitialBlockHash, issuanceProg, nil),
+					},
+					Outputs: []*bc.TxOutput{
+						bc.NewTxOutput(aid, 1000, nil, nil),
+					},
+				},
+			},
+			timestamp: bc.Millis(now.Add(time.Minute)),
+		},
 	}
 
 	for i, c := range cases {
@@ -771,7 +792,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 				TimestampMS: c.timestamp,
 			},
 		}
-		err := ConfirmTx(state.Empty(), block, &c.tx)
+		err := ConfirmTx(state.Empty(), block, initialBlockHash, &c.tx)
 		if !c.ok && errors.Root(err) != ErrBadTx {
 			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue

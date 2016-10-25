@@ -28,7 +28,7 @@ func BenchmarkValidateBlock(b *testing.B) {
 		var current *bc.Block
 		snapshot := state.Empty()
 		for _, block := range blocks {
-			err := ValidateBlockForAccept(ctx, snapshot, current, block, CheckTxWellFormed)
+			err := ValidateBlockForAccept(ctx, snapshot, current, block, bc.Hash{}, CheckTxWellFormed)
 			if err != nil {
 				b.Fatal(err)
 			}
