@@ -63,7 +63,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b := prottest.MakeBlock(ctx, t, c)
+	b := prottest.MakeBlock(t, c)
 	if len(b.Transactions) != 2 {
 		t.Errorf("len(b.Transactions) = %d, want 2", len(b.Transactions))
 	}

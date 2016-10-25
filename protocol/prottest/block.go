@@ -54,11 +54,8 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store, pool protocol.Pool
 // MakeBlock always makes a block;
 // if there are no transactions in the pool,
 // it makes an empty block.
-func MakeBlock(ctx context.Context, tb testing.TB, c *protocol.Chain) *bc.Block {
-	// TODO(kr): remove context parameter when block
-	// callbacks no longer expect a DB connection pool
-	// to be in the ctx. Just use background here.
-
+func MakeBlock(tb testing.TB, c *protocol.Chain) *bc.Block {
+	ctx := context.Background()
 	curBlock, err := c.GetBlock(ctx, c.Height())
 	if err != nil {
 		testutil.FatalErr(tb, err)

@@ -55,7 +55,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	coretest.IssueAssets(ctx, t, c, assets, accounts, asset1.AssetID, 867, acct1.ID)
 	coretest.IssueAssets(ctx, t, c, assets, accounts, asset2.AssetID, 100, acct1.ID)
 
-	prottest.MakeBlock(ctx, t, c)
+	prottest.MakeBlock(t, c)
 
 	time2 := time.Now()
 

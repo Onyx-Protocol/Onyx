@@ -1,16 +1,12 @@
 package prottest
 
-import (
-	"context"
-	"testing"
-)
+import "testing"
 
 func TestMakeBlock(t *testing.T) {
-	ctx := context.Background()
 	c := NewChain(t)
-	MakeBlock(ctx, t, c)
-	MakeBlock(ctx, t, c)
-	MakeBlock(ctx, t, c)
+	MakeBlock(t, c)
+	MakeBlock(t, c)
+	MakeBlock(t, c)
 
 	var want uint64 = 4
 	if got := c.Height(); got != want {
