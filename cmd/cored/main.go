@@ -33,7 +33,6 @@ import (
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
@@ -313,8 +312,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
-		k, err := chainkd.NewEd25519PublicKey(signer.Pubkey)
-		if err != nil {
+		if len(signer.Pubkey) != ed25519.PublicKeySize {
 			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err), "at", "decoding signer public key")
 		}
 		client := &rpc.Client{
@@ -325,7 +323,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 			BuildTag:     buildTag,
 			BlockchainID: blockchainID,
 		}
-		a = append(a, &remoteSigner{Client: client, Key: k})
+		a = append(a, &remoteSigner{Client: client, Key: ed25519.PublicKey(signer.Pubkey)})
 	}
 	return a
 }
