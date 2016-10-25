@@ -23,7 +23,7 @@ import (
 func TestAccountSourceReserve(t *testing.T) {
 	var (
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx      = pg.NewContext(context.Background(), db)
+		ctx      = context.Background()
 		c        = prottest.NewChain(t)
 		accounts = account.NewManager(db, c)
 		assets   = asset.NewRegistry(db, c, bc.Hash{})
@@ -73,7 +73,7 @@ func TestAccountSourceReserve(t *testing.T) {
 func TestAccountSourceUTXOReserve(t *testing.T) {
 	var (
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx      = pg.NewContext(context.Background(), db)
+		ctx      = context.Background()
 		c        = prottest.NewChain(t)
 		assets   = asset.NewRegistry(db, c, bc.Hash{})
 		accounts = account.NewManager(db, c)
@@ -106,7 +106,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 func TestAccountSourceReserveIdempotency(t *testing.T) {
 	var (
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx      = pg.NewContext(context.Background(), db)
+		ctx      = context.Background()
 		c        = prottest.NewChain(t)
 		assets   = asset.NewRegistry(db, c, bc.Hash{})
 		accounts = account.NewManager(db, c)
@@ -164,7 +164,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 func TestAccountSourceWithTxHash(t *testing.T) {
 	var (
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx      = pg.NewContext(context.Background(), db)
+		ctx      = context.Background()
 		c        = prottest.NewChain(t)
 		assets   = asset.NewRegistry(db, c, bc.Hash{})
 		accounts = account.NewManager(db, c)

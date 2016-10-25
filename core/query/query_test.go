@@ -8,7 +8,6 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/prottest"
 	"chain/testutil"
@@ -18,7 +17,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	time1 := time.Now()
 
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	c := prottest.NewChain(t)
 	indexer := NewIndexer(db, c)
 	b1, err := c.GetBlock(ctx, 1)

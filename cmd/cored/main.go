@@ -31,8 +31,8 @@ import (
 	"chain/core/rpc"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
+	"chain/core/txfeed"
 	"chain/crypto/ed25519"
-	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
 	"chain/errors"
@@ -99,7 +99,6 @@ func main() {
 	}
 	db.SetMaxOpenConns(*maxDBConns)
 	db.SetMaxIdleConns(100)
-	ctx = pg.NewContext(ctx, db)
 
 	err = migrate.Run(db)
 	if err != nil {
@@ -254,6 +253,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		Assets:       assets,
 		Accounts:     accounts,
 		HSM:          hsm,
+		TxFeeds:      &txfeed.Tracker{DB: db},
 		Indexer:      indexer,
 		AccessTokens: &accesstoken.CredentialStore{DB: db},
 		Config:       config,
@@ -286,8 +286,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	// callbacks to be initialized before leader.Run() and the http server,
 	// otherwise there's a data race within protocol.Chain.
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
-		ctx = pg.NewContext(ctx, db)
-
 		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
 		if config.IsGenerator {
 			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)

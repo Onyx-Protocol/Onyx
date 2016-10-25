@@ -8,7 +8,6 @@ import (
 	"chain/core/account/utxodb"
 	"chain/core/signers"
 	"chain/core/txbuilder"
-	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -57,8 +56,7 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		ClientToken: a.ClientToken,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
-	dbctx := pg.NewContext(ctx, a.accounts.db) // TODO(jackson): remove dbctx
-	reserved, change, err := a.accounts.utxoDB.Reserve(dbctx, utxodbSources, maxTime)
+	reserved, change, err := a.accounts.utxoDB.Reserve(ctx, utxodbSources, maxTime)
 	if err != nil {
 		return nil, errors.Wrap(err, "reserving utxos")
 	}
@@ -113,8 +111,7 @@ type spendUTXOAction struct {
 }
 
 func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
-	dbctx := pg.NewContext(ctx, a.accounts.db) // TODO(jackson): remove dbctx
-	r, err := a.accounts.utxoDB.ReserveUTXO(dbctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
+	r, err := a.accounts.utxoDB.ReserveUTXO(ctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, err
 	}

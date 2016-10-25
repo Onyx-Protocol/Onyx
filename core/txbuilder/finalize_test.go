@@ -33,7 +33,7 @@ import (
 // but destinations w/ different addresses.
 func TestConflictingTxsInPool(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	info, err := bootdb(ctx, db, t)
 	if err != nil {
 		t.Fatal(err)
@@ -97,7 +97,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 
 func TestTransferConfirmed(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 
 	info, err := bootdb(ctx, db, t)
 	if err != nil {
@@ -121,7 +121,7 @@ func TestTransferConfirmed(t *testing.T) {
 
 func BenchmarkTransferWithBlocks(b *testing.B) {
 	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	info, err := bootdb(ctx, db, b)
 	if err != nil {
 		b.Fatal(err)

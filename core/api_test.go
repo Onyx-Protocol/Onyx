@@ -12,7 +12,6 @@ import (
 	"chain/core/coretest"
 	"chain/core/query"
 	"chain/core/txbuilder"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -24,7 +23,7 @@ import (
 
 func TestBuildFinal(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c, bc.Hash{})
 	accounts := account.NewManager(db, c)
@@ -130,7 +129,7 @@ func TestBuildFinal(t *testing.T) {
 
 func TestAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c, bc.Hash{})
 	accounts := account.NewManager(db, c)
@@ -192,7 +191,7 @@ func TestMux(t *testing.T) {
 
 func TestTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	ctx := context.Background()
 	c := prottest.NewChain(t)
 	handler := &Handler{
 		Chain:    c,
