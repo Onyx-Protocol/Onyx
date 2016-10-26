@@ -6,13 +6,12 @@ import (
 	"testing"
 
 	"chain/database/pg/pgtest"
-	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
 func TestDefineAsset(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t))
 	ctx := context.Background()
 
 	keys := []string{testutil.TestXPub.String()}
@@ -37,7 +36,7 @@ func TestDefineAsset(t *testing.T) {
 }
 
 func TestDefineAssetIdempotency(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t))
 	ctx := context.Background()
 	token := "test_token"
 	keys := []string{testutil.TestXPub.String()}
@@ -57,7 +56,7 @@ func TestDefineAssetIdempotency(t *testing.T) {
 }
 
 func TestFindAssetByID(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t))
 	ctx := context.Background()
 	keys := []string{testutil.TestXPub.String()}
 	asset, err := r.Define(ctx, keys, 1, nil, "", nil, nil)
@@ -75,7 +74,7 @@ func TestFindAssetByID(t *testing.T) {
 }
 
 func TestAssetByClientToken(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t))
 	ctx := context.Background()
 	keys := []string{testutil.TestXPub.String()}
 	token := "test_token"

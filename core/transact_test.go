@@ -20,7 +20,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(db, c, bc.Hash{})
+	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
 	h := &Handler{Assets: assets, Accounts: accounts, DB: db, Chain: c}
 

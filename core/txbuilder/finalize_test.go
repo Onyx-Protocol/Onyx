@@ -250,7 +250,7 @@ type testInfo struct {
 func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
 	c := prottest.NewChain(t)
 	indexer := query.NewIndexer(db, c)
-	assets := asset.NewRegistry(db, c, bc.Hash{})
+	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)

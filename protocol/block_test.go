@@ -35,7 +35,7 @@ func TestGetBlock(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		c, err := NewChain(ctx, test.store, emptyPool, nil)
+		c, err := NewChain(ctx, b1.Hash(), test.store, emptyPool, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -51,7 +51,7 @@ func TestGetBlock(t *testing.T) {
 
 func TestNoTimeTravel(t *testing.T) {
 	ctx := context.Background()
-	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil)
+	c, err := NewChain(ctx, bc.Hash{}, memstore.New(), mempool.New(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,7 +205,7 @@ func TestValidateBlockForSig(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil)
+	c, err := NewChain(ctx, initialBlock.Hash(), memstore.New(), mempool.New(), nil)
 	if err != nil {
 		t.Fatal("unexpected error ", err)
 	}
@@ -221,16 +221,19 @@ func TestValidateBlockForSig(t *testing.T) {
 // It commits b1 before returning.
 func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	ctx := context.Background()
-	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil)
+
+	var err error
+
+	b1, err = NewInitialBlock(nil, 0, ts)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	c, err = NewChain(ctx, b1.Hash(), memstore.New(), mempool.New(), nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
 	// TODO(tessr): consider adding MaxIssuanceWindow to NewChain
 	c.MaxIssuanceWindow = 48 * time.Hour
-	b1, err = NewInitialBlock(nil, 0, ts)
-	if err != nil {
-		testutil.FatalErr(tb, err)
-	}
 	err = c.CommitBlock(ctx, b1, state.Empty())
 	if err != nil {
 		testutil.FatalErr(tb, err)
