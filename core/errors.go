@@ -27,8 +27,9 @@ type errorInfo struct {
 
 type detailedError struct {
 	errorInfo
-	Detail    string `json:"detail,omitempty"`
-	Temporary bool   `json:"temporary"`
+	Detail    string      `json:"detail,omitempty"`
+	Data      interface{} `json:"data,omitempty"`
+	Temporary bool        `json:"temporary"`
 }
 
 var temporaryErrorCodes = map[string]bool{
@@ -128,7 +129,7 @@ func errInfo(err error) (body detailedError, info errorInfo) {
 	defer func() {
 		if err := recover(); err != nil {
 			info = infoInternal
-			body = detailedError{infoInternal, "", true}
+			body = detailedError{infoInternal, "", nil, true}
 		}
 	}()
 	info, ok := errorInfoTab[root]
@@ -139,6 +140,7 @@ func errInfo(err error) (body detailedError, info errorInfo) {
 	body = detailedError{
 		errorInfo: info,
 		Detail:    errors.Detail(err),
+		Data:      errors.Data(err),
 		Temporary: temporaryErrorCodes[info.ChainCode],
 	}
 	return body, info
