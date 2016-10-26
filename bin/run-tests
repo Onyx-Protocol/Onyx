@@ -22,11 +22,11 @@ cleanup() {(
 )}
 trap cleanup EXIT
 
-# waitForGenerator blocks the script and greps
-# the generator's output for a log message signifying
-# the generator is fully initialized. It will timeout
+# waitForProposer blocks the script and greps
+# the proposer's output for a log message signifying
+# the proposer is fully initialized. It will timeout
 # after 30s.
-waitForGenerator() {(
+waitForProposer() {(
 	set +e
 	start=`date +%s`
 	while [ $(( `date +%s` - $start )) -lt 30 ]; do
@@ -42,7 +42,7 @@ SDKTARGET=chain-test
 	createdb it-core
 	go install chain/cmd/migratedb chain/cmd/cored chain/cmd/corectl
 	migratedb -d $DATABASE_URL
-	corectl config-generator
+	corectl config-proposer
 	cored | tee $initlog &
 	cd $CHAIN/sdk/java
 	mvn\

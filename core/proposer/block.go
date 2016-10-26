@@ -1,4 +1,4 @@
-package generator
+package proposer
 
 import (
 	"context"
@@ -32,20 +32,20 @@ func recordSince(t0 time.Time) {
 	// histogram. We don't want to publish metrics that aren't meaningful.
 	once.Do(func() {
 		latency = metrics.NewRotatingLatency(5, 2*time.Second)
-		metrics.PublishLatency("generator.make_block", latency)
+		metrics.PublishLatency("proposer.make_block", latency)
 	})
 	latency.RecordSince(t0)
 }
 
-// makeBlock generates a new bc.Block, collects the required signatures
+// makeBlock proposes a new bc.Block, collects the required signatures
 // and commits the block to the blockchain.
-func (g *generator) makeBlock(ctx context.Context) error {
+func (g *proposer) makeBlock(ctx context.Context) error {
 	t0 := time.Now()
 	defer recordSince(t0)
 
-	b, s, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
+	b, s, err := g.chain.ProposeBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
 	if err != nil {
-		return errors.Wrap(err, "generate")
+		return errors.Wrap(err, "propose")
 	}
 	if len(b.Transactions) == 0 {
 		return nil // don't bother making an empty block
@@ -57,7 +57,7 @@ func (g *generator) makeBlock(ctx context.Context) error {
 	return g.commitBlock(ctx, b, s)
 }
 
-func (g *generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snapshot) error {
+func (g *proposer) commitBlock(ctx context.Context, b *bc.Block, s *state.Snapshot) error {
 	err := g.getAndAddBlockSignatures(ctx, b, g.latestBlock)
 	if err != nil {
 		return errors.Wrap(err, "sign")
@@ -73,7 +73,7 @@ func (g *generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snaps
 	return nil
 }
 
-func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
+func (g *proposer) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
 	if prevBlock == nil && b.Height == 1 {
 		return nil // no signatures needed for initial block
 	}
@@ -147,27 +147,27 @@ func nonNilSigs(a [][]byte) (b [][]byte) {
 	return b
 }
 
-// getPendingBlock retrieves the generated, uncomitted block if it exists.
+// getPendingBlock retrieves the proposed, uncomitted block if it exists.
 func getPendingBlock(ctx context.Context, db pg.DB) (*bc.Block, error) {
-	const q = `SELECT data FROM generator_pending_block`
+	const q = `SELECT data FROM proposer_pending_block`
 	var block bc.Block
 	err := db.QueryRow(ctx, q).Scan(&block)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
-		return nil, errors.Wrap(err, "retrieving generated pending block query")
+		return nil, errors.Wrap(err, "retrieving proposed pending block query")
 	}
 	return &block, nil
 }
 
 // savePendingBlock persists a pending, uncommitted block to the database.
-// The generator should save a pending block *before* asking signers to
+// The proposer should save a pending block *before* asking signers to
 // sign the block.
 func savePendingBlock(ctx context.Context, db pg.DB, b *bc.Block) error {
 	const q = `
-		INSERT INTO generator_pending_block (data) VALUES($1)
+		INSERT INTO proposer_pending_block (data) VALUES($1)
 		ON CONFLICT (singleton) DO UPDATE SET data = $1;
 	`
 	_, err := db.Exec(ctx, q, b)
-	return errors.Wrap(err, "generator_pending_block insert query")
+	return errors.Wrap(err, "proposer_pending_block insert query")
 }

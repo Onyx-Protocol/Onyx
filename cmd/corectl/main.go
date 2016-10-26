@@ -35,10 +35,10 @@ type command struct {
 }
 
 var commands = map[string]*command{
-	"config-generator":     {configGenerator},
+	"config-proposer":      {configProposer},
 	"create-block-keypair": {createBlockKeyPair},
 	"create-token":         {createToken},
-	"config":               {configNongenerator},
+	"config":               {configNonproposer},
 	"reset":                {reset},
 }
 
@@ -68,8 +68,8 @@ func main() {
 	cmd.f(db, os.Args[2:])
 }
 
-func configGenerator(db *sql.DB, args []string) {
-	const usage = "usage: corectl config-generator [-s] [-w duration] [quorum] [pubkey url]..."
+func configProposer(db *sql.DB, args []string) {
+	const usage = "usage: corectl config-proposer [-s] [-w duration] [quorum] [pubkey url]..."
 	var (
 		quorum  int
 		signers []core.ConfigSigner
@@ -77,7 +77,7 @@ func configGenerator(db *sql.DB, args []string) {
 	)
 
 	var flags flag.FlagSet
-	maxIssuanceWindow := flags.Duration("w", 24*time.Hour, "the maximum issuance window `duration` for this generator")
+	maxIssuanceWindow := flags.Duration("w", 24*time.Hour, "the maximum issuance window `duration` for this proposer")
 	isSigner := flags.Bool("s", false, "whether this core is a signer")
 	flags.Usage = func() {
 		fmt.Println(usage)
@@ -118,7 +118,7 @@ func configGenerator(db *sql.DB, args []string) {
 	}
 
 	config := &core.Config{
-		IsGenerator:       true,
+		IsProposer:        true,
 		IsSigner:          *isSigner,
 		Quorum:            quorum,
 		Signers:           signers,
@@ -173,10 +173,10 @@ func createToken(db *sql.DB, args []string) {
 	fmt.Println(tok.Token)
 }
 
-func configNongenerator(db *sql.DB, args []string) {
+func configNonproposer(db *sql.DB, args []string) {
 	const usage = "usage: corectl config [-t token] [-k pubkey] [blockchain-id] [url]"
 	var flags flag.FlagSet
-	flagT := flags.String("t", "", "generator access `token`")
+	flagT := flags.String("t", "", "proposer access `token`")
 	flagK := flags.String("k", "", "local `pubkey` for signing blocks")
 	flags.Usage = func() {
 		fmt.Println(usage)
@@ -194,8 +194,8 @@ func configNongenerator(db *sql.DB, args []string) {
 	if err != nil {
 		fatalln("error: invalid blockchain ID:", err)
 	}
-	config.GeneratorURL = args[1]
-	config.GeneratorAccessToken = *flagT
+	config.ProposerURL = args[1]
+	config.ProposerAccessToken = *flagT
 	config.IsSigner = *flagK != ""
 	config.BlockPub = *flagK
 

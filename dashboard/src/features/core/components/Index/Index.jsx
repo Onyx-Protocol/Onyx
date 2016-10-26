@@ -43,17 +43,17 @@ class Index extends React.Component {
       testnetNextReset,
     } = this.props
 
-    let generatorUrl
-    if (this.props.core.generator) {
-      generatorUrl = window.location.origin
+    let proposerUrl
+    if (this.props.core.proposer) {
+      proposerUrl = window.location.origin
     } else if (onTestnet) {
-      generatorUrl = <span>
-        {this.props.core.generatorUrl}
+      proposerUrl = <span>
+        {this.props.core.proposerUrl}
         &nbsp;
         <span className='label label-primary'>Chain Testnet</span>
       </span>
     } else {
-      generatorUrl = this.props.core.generatorUrl
+      proposerUrl = this.props.core.proposerUrl
     }
 
     let configBlock = (
@@ -78,18 +78,18 @@ class Index extends React.Component {
                 <td colSpan={2}><hr /></td>
               </tr>
               <tr>
-                <td className={styles.row_label}>Generator URL:</td>
-                <td>{generatorUrl}</td>
+                <td className={styles.row_label}>Proposer URL:</td>
+                <td>{proposerUrl}</td>
               </tr>
               {onTestnet && !!testnetNextReset &&
                 <tr>
                   <td className={styles.row_label}>Next Testnet data reset:</td>
                   <td>{testnetNextReset.toString()}</td>
                 </tr>}
-              {!this.props.core.generator &&
+              {!this.props.core.proposer &&
                 <tr>
-                  <td className={styles.row_label}>Generator Access Token:</td>
-                  <td><code>{this.props.core.generatorAccessToken}</code></td>
+                  <td className={styles.row_label}>Proposer Access Token:</td>
+                  <td><code>{this.props.core.proposerAccessToken}</code></td>
                 </tr>}
               <tr>
                 <td className={styles.row_label}>Blockchain ID:</td>
@@ -122,8 +122,8 @@ class Index extends React.Component {
           <table className={styles.table}>
             <tbody>
               <tr>
-                <td className={styles.row_label}>Generator Block:</td>
-                <td>{this.props.core.generatorBlockHeight}</td>
+                <td className={styles.row_label}>Proposer Block:</td>
+                <td>{this.props.core.proposerBlockHeight}</td>
               </tr>
               <tr>
                 <td className={styles.row_label}>Local Block:</td>

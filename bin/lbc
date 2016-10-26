@@ -17,21 +17,21 @@ cleanup() {(
 )}
 trap cleanup EXIT
 
-GENERATOR_LOG=`mktemp`
+PROPOSER_LOG=`mktemp`
 SIGNER1_LOG=`mktemp`
 SIGNER2_LOG=`mktemp`
 dropdb --if-exists lbc-gen-core && createdb lbc-gen-core
 dropdb --if-exists lbc-s1-core && createdb lbc-s1-core
 dropdb --if-exists lbc-s2-core && createdb lbc-s2-core
-GENERATOR_DB_URL=postgres:///lbc-gen-core?sslmode=disable
+PROPOSER_DB_URL=postgres:///lbc-gen-core?sslmode=disable
 SIGNER1_DB_URL=postgres:///lbc-s1-core?sslmode=disable
 SIGNER2_DB_URL=postgres:///lbc-s2-core?sslmode=disable
 
 go install chain/cmd/cored chain/cmd/corectl
 
-GENERATOR_URL=http://localhost:2001
-GENERATOR_PUBKEY=`DATABASE_URL=$GENERATOR_DB_URL corectl create-block-keypair`
-LOGFILE=$GENERATOR_LOG DATABASE_URL=$GENERATOR_DB_URL LISTEN=:2001 cored &
+PROPOSER_URL=http://localhost:2001
+PROPOSER_PUBKEY=`DATABASE_URL=$PROPOSER_DB_URL corectl create-block-keypair`
+LOGFILE=$PROPOSER_LOG DATABASE_URL=$PROPOSER_DB_URL LISTEN=:2001 cored &
 
 SIGNER1_URL=http://localhost:1999
 SIGNER1_PUBKEY=`DATABASE_URL=$SIGNER1_DB_URL corectl create-block-keypair`
@@ -58,10 +58,10 @@ curlForValueWithRetries() {
     echo $resp
 }
 
-curlWithRetries $GENERATOR_URL/configure '{
-    "is_generator":true,
+curlWithRetries $PROPOSER_URL/configure '{
+    "is_proposer":true,
     "is_signer":true,
-    "block_pub":"'$GENERATOR_PUBKEY'",
+    "block_pub":"'$PROPOSER_PUBKEY'",
     "quorum":2,
     "block_signer_urls":[{
         "pubkey":"'$SIGNER1_PUBKEY'",
@@ -72,26 +72,26 @@ curlWithRetries $GENERATOR_URL/configure '{
     }]
 }'
 
-BID=`curlForValueWithRetries $GENERATOR_URL/info '' blockchain_id`
+BID=`curlForValueWithRetries $PROPOSER_URL/info '' blockchain_id`
 
 curlWithRetries $SIGNER1_URL/configure '{
     "is_signer":true,
     "blockchain_id":"'$BID'",
-    "generator_url":"'$GENERATOR_URL'",
+    "proposer_url":"'$PROPOSER_URL'",
     "block_pub":"'$SIGNER1_PUBKEY'"
 }'
 
 curlWithRetries $SIGNER2_URL/configure '{
     "is_signer":true,
     "blockchain_id":"'$BID'",
-    "generator_url":"'$GENERATOR_URL'",
+    "proposer_url":"'$PROPOSER_URL'",
     "block_pub":"'$SIGNER2_PUBKEY'"
 }'
 
-echo "GENERATOR_URL=$GENERATOR_URL"
-echo "GENERATOR_LOG=$GENERATOR_LOG"
+echo "PROPOSER_URL=$PROPOSER_URL"
+echo "PROPOSER_LOG=$PROPOSER_LOG"
 echo "SIGNER1_URL=$SIGNER1_URL"
 echo "SIGNER1_LOG=$SIGNER1_LOG"
 echo "SIGNER2_URL=$SIGNER2_URL"
 echo "SIGNER2_LOG=$SIGNER2_LOG"
-tail -f $GENERATOR_LOG
+tail -f $PROPOSER_LOG

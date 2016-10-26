@@ -173,17 +173,17 @@ func (h *Handler) finalizeTxWait(ctx context.Context, c *protocol.Chain, txTempl
 		return errors.Wrap(txbuilder.ErrMissingRawTx)
 	}
 
-	// Use the current generator height as the lower bound of the block height
+	// Use the current proposer height as the lower bound of the block height
 	// that the transaction may appear in.
-	generatorHeight, _ := fetch.GeneratorHeight()
+	proposerHeight, _ := fetch.ProposerHeight()
 	localHeight := c.Height()
-	if localHeight > generatorHeight {
-		generatorHeight = localHeight
+	if localHeight > proposerHeight {
+		proposerHeight = localHeight
 	}
 
 	// Remember this height in case we retry this submit call.
 	tx := bc.NewTx(*txTemplate.Transaction)
-	height, err := recordSubmittedTx(ctx, h.DB, tx.Hash, generatorHeight)
+	height, err := recordSubmittedTx(ctx, h.DB, tx.Hash, proposerHeight)
 	if err != nil {
 		return errors.Wrap(err, "saving tx submitted height")
 	}

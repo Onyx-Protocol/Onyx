@@ -12,7 +12,7 @@ Connect to a local Chain Core running on the default port.
 
 	http://localhost:8080/
 
-Connect to the testnet generator Chain Core.
+Connect to the testnet proposer Chain Core.
 
 	http://localhost:8080/?baseurl=https://testnet.chain.com:8443/
 

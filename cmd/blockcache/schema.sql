@@ -39,7 +39,7 @@ CREATE TABLE cache (
     singleton boolean DEFAULT true NOT NULL,
     id text NOT NULL,
     height bigint NOT NULL,
-    CONSTRAINT generator_pending_block_singleton CHECK (singleton)
+    CONSTRAINT proposer_pending_block_singleton CHECK (singleton)
 );
 
 

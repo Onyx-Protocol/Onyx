@@ -12,8 +12,8 @@ import (
 )
 
 // AddTx inserts tx into the set of "pending" transactions available
-// to be included in the next block produced by GenerateBlock. It should
-// only be called by the Generator.
+// to be included in the next block produced by ProposeBlock. It should
+// only be called by the proposer.
 //
 // It performs context-free validation of the tx, but does not validate
 // against the current state tree.

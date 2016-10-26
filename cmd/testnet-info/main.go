@@ -11,12 +11,12 @@ import (
 var (
 	addr = env.String("LISTEN", ":8080")
 	info = struct {
-		GeneratorURL      *string `json:"generator_url"`
+		ProposerURL       *string `json:"proposer_url"`
 		BlockchainID      *string `json:"blockchain_id"`
 		NetworkRPCVersion *int    `json:"network_rpc_version"`
 		NextReset         *string `json:"next_reset"`
 	}{
-		env.String("GENERATOR_URL", ""),
+		env.String("PROPOSER_URL", ""),
 		env.String("BLOCKCHAIN_ID", ""),
 		env.Int("NETWORK_RPC_VERSION", 1),
 		env.String("NEXT_RESET", ""),

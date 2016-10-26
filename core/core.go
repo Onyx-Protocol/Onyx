@@ -30,7 +30,7 @@ import (
 var (
 	errAlreadyConfigured = errors.New("core is already configured; must reset first")
 	errUnconfigured      = errors.New("core is not configured")
-	errBadGenerator      = errors.New("generator returned an unsuccessful response")
+	errBadProposer       = errors.New("proposer returned an unsuccessful response")
 	errBadBlockPub       = errors.New("supplied block pub key is invalid")
 	errNoClientTokens    = errors.New("cannot enable client auth without client access tokens")
 	errBadSignerURL      = errors.New("block signer URL is invalid")
@@ -87,29 +87,29 @@ func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
 
 func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	var (
-		generatorHeight  *uint64
-		generatorFetched *time.Time
-		snapshot         = fetch.SnapshotProgress()
-		localHeight      = h.Chain.Height()
+		proposerHeight  *uint64
+		proposerFetched *time.Time
+		snapshot        = fetch.SnapshotProgress()
+		localHeight     = h.Chain.Height()
 	)
-	if h.Config.IsGenerator {
+	if h.Config.IsProposer {
 		now := time.Now()
-		generatorHeight = &localHeight
-		generatorFetched = &now
+		proposerHeight = &localHeight
+		proposerFetched = &now
 	} else {
-		fetchHeight, fetchTime := fetch.GeneratorHeight()
+		fetchHeight, fetchTime := fetch.ProposerHeight()
 		// Because everything is asynchronous, it's possible for the localHeight to
-		// be higher than our cached generator height. In that case, display the
-		// local height as the generator height.
+		// be higher than our cached proposer height. In that case, display the
+		// local height as the proposer height.
 		if localHeight > fetchHeight {
 			fetchHeight = localHeight
 		}
 
 		// fetchTime might be the zero time if we're having trouble connecting
-		// to the remote generator. Only set the height & time if we have it.
+		// to the remote proposer. Only set the height & time if we have it.
 		// The dashboard will handle nulls correctly.
 		if !fetchTime.IsZero() {
-			generatorHeight, generatorFetched = &fetchHeight, &fetchTime
+			proposerHeight, proposerFetched = &fetchHeight, &fetchTime
 		}
 	}
 
@@ -117,21 +117,21 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 	buildDate := json.RawMessage(expvar.Get("builddate").String())
 
 	m := map[string]interface{}{
-		"is_configured":                     true,
-		"configured_at":                     h.Config.ConfiguredAt,
-		"is_signer":                         h.Config.IsSigner,
-		"is_generator":                      h.Config.IsGenerator,
-		"generator_url":                     h.Config.GeneratorURL,
-		"generator_access_token":            obfuscateTokenSecret(h.Config.GeneratorAccessToken),
-		"blockchain_id":                     h.Config.BlockchainID,
-		"block_height":                      localHeight,
-		"generator_block_height":            generatorHeight,
-		"generator_block_height_fetched_at": generatorFetched,
-		"is_production":                     isProduction(),
-		"network_rpc_version":               networkRPCVersion,
-		"build_commit":                      &buildCommit,
-		"build_date":                        &buildDate,
-		"health":                            h.health(),
+		"is_configured":                    true,
+		"configured_at":                    h.Config.ConfiguredAt,
+		"is_signer":                        h.Config.IsSigner,
+		"is_proposer":                      h.Config.IsProposer,
+		"proposer_url":                     h.Config.ProposerURL,
+		"proposer_access_token":            obfuscateTokenSecret(h.Config.ProposerAccessToken),
+		"blockchain_id":                    h.Config.BlockchainID,
+		"block_height":                     localHeight,
+		"proposer_block_height":            proposerHeight,
+		"proposer_block_height_fetched_at": proposerFetched,
+		"is_production":                    isProduction(),
+		"network_rpc_version":              networkRPCVersion,
+		"build_commit":                     &buildCommit,
+		"build_date":                       &buildDate,
+		"health":                           h.health(),
 	}
 
 	// Add in snapshot information if we're downloading a snapshot.
@@ -155,17 +155,17 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 // If c.IsSigner is true, Configure generates a new mockhsm keypair
 // for signing blocks, and assigns it to c.BlockPub.
 //
-// If c.IsGenerator is true, Configure creates an initial block,
+// If c.IsProposer is true, Configure creates an initial block,
 // saves it, and assigns its hash to c.BlockchainID.
-// Otherwise, c.IsGenerator is false, and Configure makes a test request
-// to GeneratorURL to detect simple configuration mistakes.
+// Otherwise, c.IsProposer is false, and Configure makes a test request
+// to ProposerURL to detect simple configuration mistakes.
 func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	var err error
-	if !c.IsGenerator {
-		err = tryGenerator(
+	if !c.IsProposer {
+		err = tryProposer(
 			ctx,
-			c.GeneratorURL,
-			c.GeneratorAccessToken,
+			c.ProposerURL,
+			c.ProposerAccessToken,
 			c.BlockchainID.String(),
 		)
 		if err != nil {
@@ -185,7 +185,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			blockPub = corePub.Pub
 			blockPubStr := hex.EncodeToString(blockPub)
 			if created {
-				log.Messagef(ctx, "Generated new block-signing key %s\n", blockPubStr)
+				log.Messagef(ctx, "Proposed new block-signing key %s\n", blockPubStr)
 			} else {
 				log.Messagef(ctx, "Using block-signing key %s\n", blockPubStr)
 			}
@@ -199,7 +199,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		signingKeys = append(signingKeys, blockPub)
 	}
 
-	if c.IsGenerator {
+	if c.IsProposer {
 		for _, signer := range c.Signers {
 			_, err = url.Parse(signer.URL)
 			if err != nil {
@@ -254,8 +254,8 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 
 	// TODO(tessr): rename block_xpub column
 	const q = `
-		INSERT INTO config (id, is_signer, block_xpub, is_generator,
-			blockchain_id, generator_url, generator_access_token,
+		INSERT INTO config (id, is_signer, block_xpub, is_proposer,
+			blockchain_id, proposer_url, proposer_access_token,
 			remote_block_signers, max_issuance_window_ms, configured_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
 	`
@@ -265,10 +265,10 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.ID,
 		c.IsSigner,
 		c.BlockPub,
-		c.IsGenerator,
+		c.IsProposer,
 		c.BlockchainID,
-		c.GeneratorURL,
-		c.GeneratorAccessToken,
+		c.ProposerURL,
+		c.ProposerAccessToken,
 		blockSignerData,
 		bc.DurationMillis(c.MaxIssuanceWindow),
 	)
@@ -280,7 +280,7 @@ func (h *Handler) configure(ctx context.Context, x *Config) error {
 		return errAlreadyConfigured
 	}
 
-	if x.IsGenerator && x.MaxIssuanceWindow == 0 {
+	if x.IsProposer && x.MaxIssuanceWindow == 0 {
 		x.MaxIssuanceWindow = 24 * time.Hour
 	}
 
@@ -297,8 +297,8 @@ func (h *Handler) configure(ctx context.Context, x *Config) error {
 // LoadConfig loads the stored configuration, if any, from the database.
 func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
-			SELECT id, is_signer, is_generator,
-			blockchain_id, generator_url, generator_access_token, block_xpub,
+			SELECT id, is_signer, is_proposer,
+			blockchain_id, proposer_url, proposer_access_token, block_xpub,
 			remote_block_signers, max_issuance_window_ms, configured_at
 			FROM config
 		`
@@ -311,10 +311,10 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	err := db.QueryRow(ctx, q).Scan(
 		&c.ID,
 		&c.IsSigner,
-		&c.IsGenerator,
+		&c.IsProposer,
 		&c.BlockchainID,
-		&c.GeneratorURL,
-		&c.GeneratorAccessToken,
+		&c.ProposerURL,
+		&c.ProposerAccessToken,
 		&c.BlockPub,
 		&blockSignerData,
 		&miw,
@@ -337,7 +337,7 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	return c, nil
 }
 
-func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) error {
+func tryProposer(ctx context.Context, url, accessToken, blockchainID string) error {
 	client := &rpc.Client{
 		BaseURL:      url,
 		AccessToken:  accessToken,
@@ -348,11 +348,11 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) er
 	}
 	err := client.Call(ctx, "/rpc/block-height", nil, &x)
 	if err != nil {
-		return errors.Wrap(errBadGenerator, err.Error())
+		return errors.Wrap(errBadProposer, err.Error())
 	}
 
 	if x.BlockHeight < 1 {
-		return errBadGenerator
+		return errBadProposer
 	}
 
 	return nil

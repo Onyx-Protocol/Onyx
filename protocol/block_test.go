@@ -127,7 +127,7 @@ func TestWaitForBlockSoonTimesout(t *testing.T) {
 	}
 }
 
-func TestGenerateBlock(t *testing.T) {
+func TestProposeBlock(t *testing.T) {
 	ctx := context.Background()
 	now := time.Unix(233400000, 0)
 	c, b1 := newTestChain(t, now)
@@ -170,7 +170,7 @@ func TestGenerateBlock(t *testing.T) {
 		}
 	}
 
-	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now)
+	got, _, err := c.ProposeBlock(ctx, b1, state.Empty(), now)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -255,7 +255,7 @@ func makeEmptyBlock(tb testing.TB, c *Chain) {
 
 	curState := state.Empty()
 
-	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
+	nextBlock, nextState, err := c.ProposeBlock(ctx, curBlock, curState, time.Now())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

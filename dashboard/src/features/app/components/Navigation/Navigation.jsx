@@ -83,6 +83,6 @@ class Navigation extends React.Component {
 export default connect(
   state => ({
     routing: state.routing, // required for <Link>s to update active state on navigation
-    showSync: state.core.configured && !state.core.generator,
+    showSync: state.core.configured && !state.core.proposer,
   })
 )(Navigation)

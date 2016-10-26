@@ -26,7 +26,7 @@ class Index extends React.Component {
   }
 
   submitWithValidation(data) {
-    if (data.generator_url && !data.blockchain_id) {
+    if (data.proposer_url && !data.blockchain_id) {
       return new Promise((_, reject) => reject({
         _error: 'You must specify a blockchain ID to connect to a network'
       }))
@@ -42,8 +42,8 @@ class Index extends React.Component {
     const {
       fields: {
         type,
-        generator_url,
-        generator_access_token,
+        proposer_url,
+        proposer_access_token,
         blockchain_id
       },
       handleSubmit,
@@ -54,8 +54,8 @@ class Index extends React.Component {
       const value = type.onChange(event).value
 
       if (value != 'join') {
-        generator_url.onChange('')
-        generator_access_token.onChange('')
+        proposer_url.onChange('')
+        proposer_access_token.onChange('')
         blockchain_id.onChange('')
       }
     }
@@ -101,7 +101,7 @@ class Index extends React.Component {
                 <span className={styles.choice_title}>Create new blockchain network</span>
 
                 <p>
-                  Start a new blockchain network with this Chain Core as the block generator.
+                  Start a new blockchain network with this Chain Core as the block proposer.
                 </p>
               </div>
             </label>
@@ -148,13 +148,13 @@ class Index extends React.Component {
           <div>
             {this.showJoinFields() && <div className={styles.joinFields}>
               <TextField
-                title='Block Generator URL'
-                placeholder='https://<block-generator-host>'
-                fieldProps={generator_url} />
+                title='Block Proposer URL'
+                placeholder='https://<block-proposer-host>'
+                fieldProps={proposer_url} />
               <TextField
-                title='Generator Access Token'
+                title='Proposer Access Token'
                 placeholder='token-id:9e5f139755366add8c76'
-                fieldProps={generator_access_token} />
+                fieldProps={proposer_access_token} />
               <TextField
                 title='Blockchain ID'
                 placeholder='896a800000000000000'
@@ -183,8 +183,8 @@ const config = {
   form: 'coreConfigurationForm',
   fields: [
     'type',
-    'generator_url',
-    'generator_access_token',
+    'proposer_url',
+    'proposer_access_token',
     'blockchain_id'
   ]
 }

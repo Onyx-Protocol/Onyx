@@ -1,8 +1,8 @@
-// Package generator implements the Chain Core generator.
+// Package proposer implements the Chain Core proposer.
 //
-// A Chain Core configured as a generator produces new blocks
+// A Chain Core configured as a proposer produces new blocks
 // on an interval.
-package generator
+package proposer
 
 import (
 	"context"
@@ -24,8 +24,8 @@ type BlockSigner interface {
 	SignBlock(context.Context, *bc.Block) (signature []byte, err error)
 }
 
-// generator produces new blocks on an interval.
-type generator struct {
+// proposer produces new blocks on an interval.
+type proposer struct {
 	// config
 	db      pg.DB
 	chain   *protocol.Chain
@@ -33,18 +33,18 @@ type generator struct {
 
 	// latestBlock and latestSnapshot are current as long as this
 	// process remains the leader process. If the process is demoted,
-	// generator.Generate() should return and this struct should be
+	// proposer.Propose() should return and this struct should be
 	// garbage collected.
 	latestBlock    *bc.Block
 	latestSnapshot *state.Snapshot
 }
 
-// Generate runs in a loop, making one new block
+// Propose runs in a loop, making one new block
 // every block period. It returns when its context
 // is canceled.
 // After each attempt to make a block, it calls health
 // to report either an error or nil to indicate success.
-func Generate(
+func Propose(
 	ctx context.Context,
 	c *protocol.Chain,
 	s []BlockSigner,
@@ -59,7 +59,7 @@ func Generate(
 		log.Fatal(ctx, log.KeyError, err)
 	}
 
-	g := &generator{
+	g := &proposer{
 		db:             db,
 		chain:          c,
 		signers:        s,
@@ -67,8 +67,8 @@ func Generate(
 		latestSnapshot: recoveredSnapshot,
 	}
 
-	// Check to see if we already have a pending, generated block.
-	// This can happen if the leader process exits between generating
+	// Check to see if we already have a pending, proposed block.
+	// This can happen if the leader process exits between proposing
 	// the block and committing the signed block to the blockchain.
 	b, err := getPendingBlock(ctx, g.db)
 	if err != nil {
@@ -92,7 +92,7 @@ func Generate(
 	for {
 		select {
 		case <-ctx.Done():
-			log.Messagef(ctx, "Deposed, Generate exiting")
+			log.Messagef(ctx, "Deposed, Propose exiting")
 			return
 		case <-ticks:
 			err := g.makeBlock(ctx)

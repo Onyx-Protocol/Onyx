@@ -197,7 +197,7 @@ func dumpBlocks(ctx context.Context, t *testing.T, db pg.DB) {
 	}
 }
 
-func BenchmarkGenerateBlock(b *testing.B) {
+func BenchmarkProposeBlock(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		benchGenBlock(b)
 	}
@@ -227,7 +227,7 @@ func benchGenBlock(b *testing.B) {
 
 	now := time.Now()
 	b.StartTimer()
-	_, _, err = c.GenerateBlock(ctx, initialBlock, state.Empty(), now)
+	_, _, err = c.ProposeBlock(ctx, initialBlock, state.Empty(), now)
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)

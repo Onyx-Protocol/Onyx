@@ -25,19 +25,19 @@ import (
 const heightPollingPeriod = 3 * time.Second
 
 var (
-	generatorHeight          uint64
-	generatorHeightFetchedAt time.Time
-	generatorLock            sync.Mutex
+	proposerHeight          uint64
+	proposerHeightFetchedAt time.Time
+	proposerLock            sync.Mutex
 
 	downloadingSnapshot   *Snapshot
 	downloadingSnapshotMu sync.Mutex
 )
 
-func GeneratorHeight() (uint64, time.Time) {
-	generatorLock.Lock()
-	h := generatorHeight
-	t := generatorHeightFetchedAt
-	generatorLock.Unlock()
+func ProposerHeight() (uint64, time.Time) {
+	proposerLock.Lock()
+	h := proposerHeight
+	t := proposerHeightFetchedAt
+	proposerLock.Unlock()
 	return h, t
 }
 
@@ -48,15 +48,15 @@ func SnapshotProgress() *Snapshot {
 }
 
 // Fetch runs in a loop, fetching blocks from the configured
-// peer (e.g. the generator) and applying them to the local
+// peer (e.g. the proposer) and applying them to the local
 // Chain.
 //
 // It returns when its context is canceled.
 // After each attempt to fetch and apply a block, it calls health
 // to report either an error or nil to indicate success.
 func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error)) {
-	// Fetch the generator height periodically.
-	go pollGeneratorHeight(ctx, peer)
+	// Fetch the proposer height periodically.
+	go pollProposerHeight(ctx, peer)
 
 	if c.Height() == 0 {
 		const maxAttempts = 5
@@ -167,33 +167,33 @@ func DownloadBlocks(ctx context.Context, peer *rpc.Client, height uint64) (chan 
 	return blockch, errch
 }
 
-func pollGeneratorHeight(ctx context.Context, peer *rpc.Client) {
-	updateGeneratorHeight(ctx, peer)
+func pollProposerHeight(ctx context.Context, peer *rpc.Client) {
+	updateProposerHeight(ctx, peer)
 
 	ticker := time.NewTicker(heightPollingPeriod)
 	for {
 		select {
 		case <-ctx.Done():
-			log.Messagef(ctx, "Deposed, fetchGeneratorHeight exiting")
+			log.Messagef(ctx, "Deposed, fetchProposerHeight exiting")
 			ticker.Stop()
 			return
 		case <-ticker.C:
-			updateGeneratorHeight(ctx, peer)
+			updateProposerHeight(ctx, peer)
 		}
 	}
 }
 
-func updateGeneratorHeight(ctx context.Context, peer *rpc.Client) {
+func updateProposerHeight(ctx context.Context, peer *rpc.Client) {
 	gh, err := getHeight(ctx, peer)
 	if err != nil {
 		logNetworkError(ctx, err)
 		return
 	}
 
-	generatorLock.Lock()
-	defer generatorLock.Unlock()
-	generatorHeight = gh
-	generatorHeightFetchedAt = time.Now()
+	proposerLock.Lock()
+	defer proposerLock.Unlock()
+	proposerHeight = gh
+	proposerHeightFetchedAt = time.Now()
 }
 
 func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot, prev *bc.Block, block *bc.Block) (*state.Snapshot, *bc.Block, error) {
@@ -251,7 +251,7 @@ func getHeight(ctx context.Context, peer *rpc.Client) (uint64, error) {
 	}
 	h, ok := resp["block_height"]
 	if !ok {
-		return 0, errors.New("unexpected response from generator")
+		return 0, errors.New("unexpected response from proposer")
 	}
 
 	return h, nil
@@ -288,7 +288,7 @@ func (s *Snapshot) done() {
 	s.stopped = true
 }
 
-// fetchSnapshot fetches the latest snapshot from the generator and applies it
+// fetchSnapshot fetches the latest snapshot from the proposer and applies it
 // to the store. It should only be called on freshly configured cores--
 // cores that have been operating should replay all transactions so that
 // they can index them properly.
@@ -342,7 +342,7 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 	}
 	if initialBlock == nil {
 		// Something seriously funny is afoot.
-		return errors.New("could not get initial block from generator")
+		return errors.New("could not get initial block from proposer")
 	}
 
 	// Also get the corresponding block.
@@ -352,7 +352,7 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 	}
 	if snapshotBlock == nil {
 		// Something seriously funny is still afoot.
-		return errors.New("generator provided snapshot but could not provide block")
+		return errors.New("proposer provided snapshot but could not provide block")
 	}
 	if snapshotBlock.AssetsMerkleRoot != snapshot.Tree.RootHash() {
 		return errors.New("snapshot merkle root doesn't match block")

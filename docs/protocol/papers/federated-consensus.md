@@ -43,9 +43,9 @@ The values of these parameters, M and N, can be tweaked according to business re
 
 Assuming that every participant in the network trusts a sufficient subset of the block signers, the consensus program described above reduces the problem of reaching network-wide consensus to the simpler problem of reaching a consensus of at least M out of N block signers.
 
-To efficiently do so, block signers agree on a single *block generator*. The generator's signature is only used to coordinate the block signers; it is not seen or validated by the network. This allows block signers to evolve the consensus mechanism without any additional support from the rest of the network.
+To efficiently do so, block signers agree on a single *block proposer*. The proposer's signature is only used to coordinate the block signers; it is not seen or validated by the network. This allows block signers to evolve the consensus mechanism without any additional support from the rest of the network.
 
-The block generator:
+The block proposer:
 
 * receives transactions from the network,
 * filters out transactions that are invalid,
@@ -55,14 +55,14 @@ The block generator:
 
 Each block signer:
 
-* verifies that the proposed block is signed by the generator,
+* verifies that the proposed block is signed by the proposer,
 * verifies that the block is valid under its (the signer’s) current state without checking that the previous _consensus program_ is satisfied (which requires the block signers’ signatures),
 * verifies that it has not signed a different block at the same or greater height,
 * verifies that the block timestamp is no more than 2 minutes ahead of the current system time,
 * verifies that the block contains an acceptable consensus program (for authenticating the next block),
 * if all checks passed, signs the block.
 
-Once the block generator receives signatures from enough block signers (as defined by the previous block's consensus program), it publishes the block to the network. All network participants, including the block signers, validate that block (including checking the previous consensus program is satisfied) and update their state.
+Once the block proposer receives signatures from enough block signers (as defined by the previous block's consensus program), it publishes the block to the network. All network participants, including the block signers, validate that block (including checking the previous consensus program is satisfied) and update their state.
 
 
 ## Safety guarantees
@@ -79,16 +79,16 @@ This latter guarantee is useful for clients that do not have full visibility int
 
 Liveness is guaranteed as long as: 
 
-* The generator is not faulty, and
+* The proposer is not faulty, and
 * No more than `N - M` block signers are faulty
 
-If the block generator crashes or becomes unavailable, the network cannot generate new blocks. If the block generator disobeys the protocol by sending different blocks to different signers, it can even *deadlock* the protocol.
+If the block proposer crashes or becomes unavailable, the network cannot generate new blocks. If the block proposer disobeys the protocol by sending different blocks to different signers, it can even *deadlock* the protocol.
 
 This reliance on a single specific participant is relatively unusual for modern consensus protocols. However, it provides many efficiency and simplicity benefits, and has only limited downside in many target use cases.
 
-Guaranteeing the liveness of the generator is an easier technical problem than a more complicated consensus protocol that allows any block signer to propose a block. The block generator can be operated as a distributed system within a single organization's trust boundary. It can therefore be made highly available using traditional replication methods, including non-Byzantine-fault-tolerant consensus protocols.
+Guaranteeing the liveness of the proposer is an easier technical problem than a more complicated consensus protocol that allows any block signer to propose a block. The block proposer can be operated as a distributed system within a single organization's trust boundary. It can therefore be made highly available using traditional replication methods, including non-Byzantine-fault-tolerant consensus protocols.
 
-If the generator is intentionally shut down by the network operator, or if it ceases to correctly follow the protocol (whether due to a hack, a bug, or malicious intent by its operator), the network can safely halt until manual intervention.
+If the proposer is intentionally shut down by the network operator, or if it ceases to correctly follow the protocol (whether due to a hack, a bug, or malicious intent by its operator), the network can safely halt until manual intervention.
 
 ## Consensus program changes
 
@@ -96,7 +96,7 @@ If members need to be added or removed from the federation, or if keys need to b
 
 ## Policy enforcement
 
-The block generator may enforce local “policies” to filter out non-compliant transactions. For example, a block generator could require that transactions include AML/KYC information in its reference data. Since policy enforcement is not a part of the protocol rules, it is flexible, can be changed at will, and may use confidential information that should not be shared with the whole network.
+The block proposer may enforce local “policies” to filter out non-compliant transactions. For example, a block proposer could require that transactions include AML/KYC information in its reference data. Since policy enforcement is not a part of the protocol rules, it is flexible, can be changed at will, and may use confidential information that should not be shared with the whole network.
 
 ## Future improvements
 

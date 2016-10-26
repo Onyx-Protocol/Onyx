@@ -50,21 +50,21 @@ export const production = (state, action) =>
   coreConfigReducer('is_production', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('block_height', state, 0, action)
-export const generatorBlockHeight = (state, action) => {
+export const proposerBlockHeight = (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.generator_block_height == null) return '???'
+    if (action.param.proposer_block_height == null) return '???'
   }
 
-  return coreConfigReducer('generator_block_height', state, 0, action)
+  return coreConfigReducer('proposer_block_height', state, 0, action)
 }
 export const signer = (state, action) =>
   coreConfigReducer('is_signer', state, false, action)
-export const generator = (state, action) =>
-  coreConfigReducer('is_generator', state, false, action)
-export const generatorUrl = (state, action) =>
-  coreConfigReducer('generator_url', state, false, action)
-export const generatorAccessToken = (state, action) =>
-  coreConfigReducer('generator_access_token', state, false, action)
+export const proposer = (state, action) =>
+  coreConfigReducer('is_proposer', state, false, action)
+export const proposerUrl = (state, action) =>
+  coreConfigReducer('proposer_url', state, false, action)
+export const proposerAccessToken = (state, action) =>
+  coreConfigReducer('proposer_access_token', state, false, action)
 export const blockchainId = (state, action) =>
   coreConfigReducer('blockchain_id', state, 0, action)
 export const networkRpcVersion = (state, action) =>
@@ -72,7 +72,7 @@ export const networkRpcVersion = (state, action) =>
 
 export const coreType = (state = '', action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.is_generator) return 'Generator'
+    if (action.param.is_proposer) return 'Proposer'
     if (action.param.is_signer) return 'Signer'
     return 'Participant'
   }
@@ -81,10 +81,10 @@ export const coreType = (state = '', action) => {
 
 export const replicationLag = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.generator_block_height == null) {
+    if (action.param.proposer_block_height == null) {
       return null
     }
-    return action.param.generator_block_height - action.param.block_height
+    return action.param.proposer_block_height - action.param.block_height
   }
 
   return state
@@ -107,7 +107,7 @@ export const syncEstimates = (state = {}, action) => {
 
       const {
         snapshot,
-        generator_block_height,
+        proposer_block_height,
         block_height,
       } = action.param
 
@@ -119,8 +119,8 @@ export const syncEstimates = (state = {}, action) => {
         if (speed != 0) {
           estimates.snapshot = (snapshot.size - snapshot.downloaded) / speed
         }
-      } else if (generator_block_height > 0) {
-        const replicationLag = generator_block_height - block_height
+      } else if (proposer_block_height > 0) {
+        const replicationLag = proposer_block_height - block_height
         const speed = syncSamplers.replicationLag.sample(replicationLag)
         if (speed != 0) {
           const duration = -1 * replicationLag / speed
@@ -144,10 +144,10 @@ export const syncEstimates = (state = {}, action) => {
 
 export const replicationLagClass = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.generator_block_height == null) {
+    if (action.param.proposer_block_height == null) {
       return 'red'
     } else {
-      let lag = action.param.generator_block_height - action.param.block_height
+      let lag = action.param.proposer_block_height - action.param.block_height
       if (lag < 5) {
         return 'green'
       } else if (lag < 10) {
@@ -163,7 +163,7 @@ export const replicationLagClass = (state = null, action) => {
 
 export const onTestnet = (state = false, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    return (action.param.generator_url || '').indexOf(testnetUrl) >= 0
+    return (action.param.proposer_url || '').indexOf(testnetUrl) >= 0
   }
 
   return state
@@ -217,13 +217,13 @@ export default combineReducers({
   configured,
   configuredAt,
   coreType,
-  generator,
-  generatorAccessToken,
-  generatorBlockHeight,
-  generatorUrl,
   networkRpcVersion,
   onTestnet,
   production,
+  proposer,
+  proposerAccessToken,
+  proposerBlockHeight,
+  proposerUrl,
   replicationLag,
   replicationLagClass,
   requireClientToken,
