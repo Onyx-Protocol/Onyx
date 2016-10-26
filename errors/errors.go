@@ -15,6 +15,7 @@ func New(text string) error {
 type wrapperError struct {
 	msg    string
 	detail []string
+	data   interface{}
 	stack  []StackFrame
 	root   error
 }
@@ -108,4 +109,25 @@ func WithDetailf(err error, format string, v ...interface{}) error {
 func Detail(err error) string {
 	wrapper, _ := err.(wrapperError)
 	return strings.Join(wrapper.detail, "; ")
+}
+
+// WithData returns a new error that wraps err
+// as a chain error message containing v as
+// an extra data item.
+// Calling Data on the returned error yields v.
+// Note that if err already has a data item,
+// it will not be accessible via the returned error value.
+func WithData(err error, v interface{}) error {
+	if err == nil {
+		return nil
+	}
+	e1 := wrap(err, "", 1).(wrapperError)
+	e1.data = v
+	return e1
+}
+
+// Data returns the data item in err, if any.
+func Data(err error) interface{} {
+	wrapper, _ := err.(wrapperError)
+	return wrapper.data
 }
