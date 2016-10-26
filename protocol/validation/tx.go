@@ -31,7 +31,7 @@ var (
 // to the pool.
 //
 // ConfirmTx must not mutate the snapshot or the block.
-func ConfirmTx(snapshot *state.Snapshot, block *bc.Block, tx *bc.Tx) error {
+func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, block *bc.Block, tx *bc.Tx) error {
 	if block.Version == 1 && tx.Version != 1 {
 		return errors.WithDetailf(ErrBadTx, "unknown transaction version %d for block version 1", tx.Version)
 	}
@@ -47,6 +47,13 @@ func ConfirmTx(snapshot *state.Snapshot, block *bc.Block, tx *bc.Tx) error {
 		if ii, ok := txin.TypedInput.(*bc.IssuanceInput); ok {
 			if txin.AssetVersion != 1 {
 				continue
+			}
+			if ii.InitialBlock != initialBlockHash {
+				return errors.WithDetail(ErrBadTx, "issuance is for different blockchain")
+			}
+			assetID := bc.ComputeAssetID(ii.IssuanceProgram, initialBlockHash, ii.VMVersion)
+			if assetID != ii.AssetID() {
+				return errors.WithDetail(ErrBadTx, "asset ID does not match issuance parameters")
 			}
 			if len(ii.Nonce) == 0 {
 				continue
