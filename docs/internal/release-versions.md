@@ -28,7 +28,7 @@ Use the following version format:
 
 **Major** and **minor** versions are reserved for the entire product updates usually affecting several pieces of software. Either version can be bumped based on the significance of the update. Individual pieces of software must not use either **major** or **minor** version on their own without synchronization with the entire product line, but instead should use **build** version.
 
-**Build** version must be formatted as date in the following format: `YYYYMMDD` or omitted entirely. **Major** and **minor** versions are plain integers.
+**Build** version must be formatted as dates in the following format: `YYYYMMDD` or omitted entirely. **Major** and **minor** versions are plain integers.
 
 Examples:
 
@@ -38,6 +38,13 @@ Examples:
 * 2.3.20170601
 
 Compatibility notes must be specified separately. See [Blockchain Extensibility](../protocol/papers/blockchain-extensibility.md) document for details of blockchain compatibility. SDKs should deprecate old APIs and introduce new ones smoothly and may change entirely with major product releases.
+
+## Rationale
+
+The reason to use dates for **build** versions is to avoid frequent collisions across different software pieces that may convey non-existant correlation. E.g. if at some point Java SDK and Mac app both have version `1.3.2`, some may be confused by the identical version. 
+
+On the other hand, dependent releases usually happen on the same day and therefore most likely will have the identical versions, indicating the correlation truthfully. E.g. if Chain Core adds a minor fix in the API, all SDKs may be updated with the same new build number: `1.0.161205`.
+
 
 ## Examples
 
