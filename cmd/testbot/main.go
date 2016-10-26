@@ -74,39 +74,21 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("pr ref:", req.PR.Head.Ref)
+	log.Println("pr sha:", req.PR.Head.Sha)
 	log.Println("pr action:", req.Action)
 	if req.Action == "opened" || req.Action == "synchronize" {
 		go func() {
 			mu.Lock()
 			defer mu.Unlock()
 			var out bytes.Buffer
-			defer uploadToS3(req.PR.Head.Sha, &out)
+			sha := req.PR.Head.Sha
+			defer uploadToS3(sha, &out)
 			defer catch(&out)
-			remote := "origin"
-			if req.PR.Head.Repo.Name != "chain/chain" {
-				remote = req.PR.User.Login
-			}
-			err := runIn(sourcedir, &out, exec.Command("git", "fetch", remote), req)
-			if err != nil {
-				if strings.Contains(out.String(), "Could not read from remote repository.") {
-					runInNReport(sourcedir, &out, exec.Command("git", "remote", "add", remote, req.PR.Head.Repo.CloneURL), req)
-				} else {
-					postToGithub(req.PR.StatusesURL, map[string]string{
-						"state":       "failure",
-						"description": "Integration tests failed",
-						"target_url":  "https://s3.amazonaws.com/chain-qa/testbot/" + req.PR.Head.Sha,
-						"context":     "chain/testbot",
-					})
-					panic(req)
-				}
-			}
-			ref := fmt.Sprintf("%s/%s", remote, req.PR.Head.Ref)
-			runInNReport(sourcedir, &out, exec.Command("git", "fetch", remote), req)
-			runInNReport(sourcedir, &out, exec.Command("git", "clean", "-xdf"), req)
-			runInNReport(sourcedir, &out, exec.Command("git", "checkout", ref, "--"), req)
-			runInNReport(sourcedir, &out, exec.Command("git", "reset", "--hard", ref), req)
-			runInNReport(sourcedir, &out, exec.Command("sh", "docker/testbot/tests.sh"), req)
+			runIn(sourcedir, &out, exec.Command("git", "fetch", "origin"), req)
+			runIn(sourcedir, &out, exec.Command("git", "clean", "-xdf"), req)
+			runIn(sourcedir, &out, exec.Command("git", "checkout", sha, "--"), req)
+			runIn(sourcedir, &out, exec.Command("git", "reset", "--hard", sha), req)
+			runIn(sourcedir, &out, exec.Command("sh", "docker/testbot/tests.sh"), req)
 			postToGithub(req.PR.StatusesURL, map[string]string{
 				"state":       "success",
 				"description": "Integration tests passed",
@@ -218,18 +200,12 @@ func (w *signalWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func runIn(dir string, w io.Writer, c *exec.Cmd, req pullRequest) error {
+func runIn(dir string, w io.Writer, c *exec.Cmd, req pullRequest) {
 	c.Dir = dir
 	c.Env = os.Environ()
 	c.Stdout = w
 	c.Stderr = w
-	err := c.Run()
-	return err
-}
-
-func runInNReport(dir string, w io.Writer, c *exec.Cmd, req pullRequest) {
-	err := runIn(dir, w, c, req)
-	if err != nil {
+	if err := c.Run(); err != nil {
 		log.Printf("error: command run: %s\n", strings.Join(c.Args, " "))
 		postToGithub(req.PR.StatusesURL, map[string]string{
 			"state":       "failure",
