@@ -20,6 +20,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
+	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
 )
@@ -115,7 +116,7 @@ func TestRecovery(t *testing.T) {
 
 		ctx := context.Background()
 		go func() {
-			err := generateBlock(ctx, t, wrappedDB, timestamp)
+			err := generateBlock(ctx, wrappedDB, timestamp)
 			ch <- err
 		}()
 
@@ -156,7 +157,7 @@ func TestRecovery(t *testing.T) {
 
 		// We crashed at some point during block generation. Do it again,
 		// without crashing.
-		err = generateBlock(ctx, t, wrappedDB, timestamp)
+		err = generateBlock(ctx, wrappedDB, timestamp)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -180,9 +181,13 @@ func TestRecovery(t *testing.T) {
 	}
 }
 
-func generateBlock(ctx context.Context, tb testing.TB, db *sql.DB, timestamp time.Time) error {
+func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 	store, pool := txdb.New(db)
-	c := prottest.NewChainWithStorage(tb, store, pool)
+	b1, err := store.GetBlock(ctx, 1)
+	if err != nil {
+		return err
+	}
+	c, err := protocol.NewChain(ctx, b1.Hash(), store, pool, nil)
 	indexer := query.NewIndexer(db, c)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
