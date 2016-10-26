@@ -54,6 +54,9 @@ func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilde
 	}
 	maxTime := time.Now().Add(ttl)
 	tpl, err := txbuilder.Build(ctx, req.Tx, actions, maxTime)
+	if errors.Root(err) == txbuilder.ErrMulti {
+		err = errors.WithData(err, errInfoBodyList(errors.Data(err).([]error)))
+	}
 	if err != nil {
 		return nil, err
 	}

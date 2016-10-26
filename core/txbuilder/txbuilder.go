@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sync"
 	"time"
 
 	"chain/crypto/ed25519/chainkd"
@@ -22,6 +23,7 @@ var (
 	ErrBadWitnessComponent = errors.New("invalid witness component")
 	ErrBadAmount           = errors.New("bad asset amount")
 	ErrBlankCheck          = errors.New("unsafe transaction: leaves assets free to control")
+	ErrMulti               = errors.New("errors occurred in more than one action")
 )
 
 // Build builds or adds on to a transaction.
@@ -38,31 +40,59 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 		local = true
 	}
 
-	var tplSigInsts []*SigningInstruction
-	for i, action := range actions {
-		buildResult, err := action.Build(ctx, maxTime)
-		if err != nil {
-			return nil, errors.WithDetailf(err, "invalid action %d", i)
-		}
+	type res struct {
+		buildResult *BuildResult
+		err         error
+	}
+	results := make([]res, len(actions))
+	var wg sync.WaitGroup
+	wg.Add(len(actions))
+	for i := range actions {
+		i := i
+		go func() {
+			defer wg.Done()
+			buildResult, err := actions[i].Build(ctx, maxTime)
+			results[i] = res{buildResult, errors.WithDetailf(err, "invalid action %d", i)}
+		}()
+	}
 
+	wg.Wait()
+	var tplSigInsts []*SigningInstruction
+	var errs []error
+result:
+	for i, v := range results {
+		if v.err != nil {
+			errs = append(errs, v.err)
+			continue result
+		}
+		buildResult := v.buildResult
 		for _, in := range buildResult.Inputs {
 			if in.Amount() > math.MaxInt64 {
-				return nil, errors.WithDetailf(ErrBadAmount, "bad amount '%d' for action %d: exceeds maximum value 2^63", in.Amount(), i)
+				errs = append(errs, errors.WithDetailf(ErrBadAmount, "bad amount '%d' for action %d: exceeds maximum value 2^63", in.Amount(), i))
+				continue result
 			}
 		}
 		for _, out := range buildResult.Outputs {
 			if out.Amount > math.MaxInt64 {
-				return nil, errors.WithDetailf(ErrBadAmount, "bad amount '%d' for action %d: exceeds maximum value 2^63", out.Amount, i)
+				errs = append(errs, errors.WithDetailf(ErrBadAmount, "bad amount '%d' for action %d: exceeds maximum value 2^63", out.Amount, i))
+				continue result
 			}
 		}
 
 		if len(buildResult.Inputs) != len(buildResult.SigningInstructions) {
 			// This would only happen from a bug in our system
-			return nil, errors.Wrap(fmt.Errorf("%T returned different number of inputs and signing instructions", action))
+			errs = append(errs, errors.Wrap(fmt.Errorf("%T returned different number of inputs and signing instructions", actions[i])))
+			continue result
 		}
 
 		for i := range buildResult.Inputs {
 			buildResult.SigningInstructions[i].Position = len(tx.Inputs)
+
+			// Empty signature arrays should be serialized as empty arrays, not null.
+			if buildResult.SigningInstructions[i].WitnessComponents == nil {
+				buildResult.SigningInstructions[i].WitnessComponents = []WitnessComponent{}
+			}
+
 			tplSigInsts = append(tplSigInsts, buildResult.SigningInstructions[i])
 			tx.Inputs = append(tx.Inputs, buildResult.Inputs[i])
 		}
@@ -82,6 +112,13 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 				tx.MinTime = buildResult.MinTimeMS
 			}
 		}
+
+	}
+
+	if len(errs) > 1 {
+		return nil, errors.WithData(ErrMulti, errs)
+	} else if len(errs) == 1 {
+		return nil, errs[0]
 	}
 
 	err := checkBlankCheck(tx)
@@ -91,13 +128,6 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 
 	if tx.MaxTime == 0 || tx.MaxTime > bc.Millis(maxTime) {
 		tx.MaxTime = bc.Millis(maxTime)
-	}
-
-	for _, sigInst := range tplSigInsts {
-		// Empty signature arrays should be serialized as empty arrays, not null.
-		if sigInst.WitnessComponents == nil {
-			sigInst.WitnessComponents = []WitnessComponent{}
-		}
 	}
 
 	tpl := &Template{
