@@ -35,7 +35,8 @@ var (
 type pullRequest struct {
 	Action string
 	PR     struct {
-		Head struct {
+		Number string
+		Head   struct {
 			Ref string
 			Sha string
 		}
@@ -77,10 +78,9 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 			sha := req.PR.Head.Sha
 			defer uploadToS3(sha, &out)
 			defer catch(&out)
-			runIn(sourcedir, &out, exec.Command("git", "fetch", "origin"), req)
+			runIn(sourcedir, &out, exec.Command("git", "fetch", "origin", "pull/"+req.PR.Number+"/head"), req)
 			runIn(sourcedir, &out, exec.Command("git", "clean", "-xdf"), req)
 			runIn(sourcedir, &out, exec.Command("git", "checkout", sha, "--"), req)
-			runIn(sourcedir, &out, exec.Command("git", "reset", "--hard", sha), req)
 			runIn(sourcedir, &out, exec.Command("sh", "docker/testbot/tests.sh"), req)
 			postToGithub(req.PR.StatusesURL, map[string]string{
 				"state":       "success",
