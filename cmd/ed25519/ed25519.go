@@ -57,17 +57,17 @@ func main() {
 		msg, err := ioutil.ReadAll(os.Stdin)
 		must(err)
 		ok := ed25519.Verify(ed25519.PublicKey(pub), msg, sig)
-		if silent {
-			if !ok {
-				os.Exit(1)
-			}
-		} else {
+		if !silent {
 			if ok {
 				fmt.Println("OK")
 			} else {
 				fmt.Println("BAD")
 			}
 		}
+		if !ok {
+			os.Exit(1)
+		}
+
 	default:
 		usage()
 	}

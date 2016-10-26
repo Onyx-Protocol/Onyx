@@ -14,9 +14,8 @@ The pub subcommand reads a private key and produces the corresponding public key
 The sign subcommand produces a signature from a message and private key.
 The verify subcommand verifies a signature with a message and a public key.
 
-The verify subcommand prints "OK" or "BAD" to stdout by default.
-With the -s ("silent") flag, that output goes to stderr instead,
-and the program exits with 0 when the signature is verified, nonzero when it's not.
+The verify subcommand prints "OK" or "BAD" to stdout unless the -s ("silent") flag is given.
+The program exits with 0 when the signature is verified, nonzero when it's not.
 
 */
 package main
