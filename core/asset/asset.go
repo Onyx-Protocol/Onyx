@@ -26,11 +26,11 @@ import (
 
 const maxAssetCache = 100
 
-func NewRegistry(db pg.DB, chain *protocol.Chain, initialBlockHash bc.Hash) *Registry {
+func NewRegistry(db pg.DB, chain *protocol.Chain) *Registry {
 	return &Registry{
 		db:               db,
 		chain:            chain,
-		initialBlockHash: initialBlockHash,
+		initialBlockHash: chain.InitialBlockHash,
 		cache:            lru.New(maxAssetCache),
 	}
 }

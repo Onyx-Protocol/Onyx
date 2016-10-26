@@ -103,6 +103,9 @@ type Pool interface {
 // validation logic from package validation to decide what
 // objects can be safely stored.
 type Chain struct {
+	InitialBlockHash  bc.Hash
+	MaxIssuanceWindow time.Duration // only used by generators
+
 	blockCallbacks []BlockCallback
 	state          struct {
 		cond     sync.Cond // protects height, block, snapshot
@@ -110,9 +113,8 @@ type Chain struct {
 		block    *bc.Block       // current only if leader
 		snapshot *state.Snapshot // current only if leader
 	}
-	store             Store
-	pool              Pool
-	MaxIssuanceWindow time.Duration // only used by generators
+	store Store
+	pool  Pool
 
 	lastQueuedSnapshot time.Time
 	pendingSnapshots   chan pendingSnapshot
@@ -126,8 +128,9 @@ type pendingSnapshot struct {
 }
 
 // NewChain returns a new Chain using store as the underlying storage.
-func NewChain(ctx context.Context, store Store, pool Pool, heights <-chan uint64) (*Chain, error) {
+func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, pool Pool, heights <-chan uint64) (*Chain, error) {
 	c := &Chain{
+		InitialBlockHash: initialBlockHash,
 		store:            store,
 		pool:             pool,
 		pendingSnapshots: make(chan pendingSnapshot, 1),

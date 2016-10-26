@@ -200,7 +200,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	store, pool := txdb.New(db)
-	c, err := protocol.NewChain(ctx, store, pool, heights)
+	c, err := protocol.NewChain(ctx, config.BlockchainID, store, pool, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
@@ -208,7 +208,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, c)
 
-	assets := asset.NewRegistry(db, c, config.BlockchainID)
+	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
 	if *indexTxs {
 		indexer.RegisterAnnotator(assets.AnnotateTxs)

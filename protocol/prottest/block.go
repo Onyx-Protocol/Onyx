@@ -31,15 +31,15 @@ func NewChain(tb testing.TB) *protocol.Chain {
 // It commits the initial block before returning the Chain.
 func NewChainWithStorage(tb testing.TB, store protocol.Store, pool protocol.Pool) *protocol.Chain {
 	ctx := context.Background()
-	c, err := protocol.NewChain(ctx, store, pool, nil)
-	if err != nil {
-		testutil.FatalErr(tb, err)
-	}
-	c.MaxIssuanceWindow = 48 * time.Hour // TODO(tessr): consider adding MaxIssuanceWindow to NewChain
 	b1, err := protocol.NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
+	c, err := protocol.NewChain(ctx, b1.Hash(), store, pool, nil)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	c.MaxIssuanceWindow = 48 * time.Hour // TODO(tessr): consider adding MaxIssuanceWindow to NewChain
 	err = c.CommitBlock(ctx, b1, state.Empty())
 	if err != nil {
 		testutil.FatalErr(tb, err)

@@ -219,8 +219,11 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		if err != nil {
 			return err
 		}
+
+		initialBlockHash := block.Hash()
+
 		store, pool := txdb.New(db.(*sql.DB))
-		chain, err := protocol.NewChain(ctx, store, pool, nil)
+		chain, err := protocol.NewChain(ctx, initialBlockHash, store, pool, nil)
 		if err != nil {
 			return err
 		}
@@ -230,7 +233,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			return err
 		}
 
-		c.BlockchainID = block.Hash()
+		c.BlockchainID = initialBlockHash
 		chain.MaxIssuanceWindow = c.MaxIssuanceWindow
 	}
 

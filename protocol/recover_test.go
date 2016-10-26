@@ -16,13 +16,13 @@ import (
 func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 	store := memstore.New()
 	pool := mempool.New()
-	c1, err := NewChain(context.Background(), store, pool, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
 	b, err := NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
+	}
+	c1, err := NewChain(context.Background(), b.Hash(), store, pool, nil)
+	if err != nil {
+		t.Fatal(err)
 	}
 	err = c1.CommitBlock(context.Background(), b, state.Empty())
 	if err != nil {
@@ -38,7 +38,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 		}
 	}
 
-	c2, err := NewChain(context.Background(), store, mempool.New(), nil)
+	c2, err := NewChain(context.Background(), b.Hash(), store, mempool.New(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
