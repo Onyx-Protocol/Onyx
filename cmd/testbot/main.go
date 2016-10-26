@@ -35,17 +35,18 @@ var (
 type pullRequest struct {
 	Action string
 	PR     struct {
-		User struct {
-			Login string
-		}
 		Head struct {
 			Repo struct {
-				Name string `json:"full_name"`
-				Url  string `json:"clone_url"`
+				Name     string `json:"full_name"`
+				CloneURL string `json:"clone_url"`
 			}
 			Ref string
 			Sha string
 		}
+		User struct {
+			Login string
+		}
+		StatusesURL string `json:"statuses_url"`
 	} `json:"pull_request"`
 }
 
@@ -89,9 +90,9 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 			err := runIn(sourcedir, &out, exec.Command("git", "fetch", remote), req)
 			if err != nil {
 				if strings.Contains(out.String(), "Could not read from remote repository.") {
-					runInNReport(sourcedir, &out, exec.Command("git", "remote", "add", remote, req.PR.Head.Repo.Url), req)
+					runInNReport(sourcedir, &out, exec.Command("git", "remote", "add", remote, req.PR.Head.Repo.CloneURL), req)
 				} else {
-					postToGithub(req.PR.Head.Sha, map[string]string{
+					postToGithub(req.PR.StatusesURL, map[string]string{
 						"state":       "failure",
 						"description": "Integration tests failed",
 						"target_url":  "https://s3.amazonaws.com/chain-qa/testbot/" + req.PR.Head.Sha,
@@ -105,7 +106,7 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 			runInNReport(sourcedir, &out, exec.Command("git", "checkout", req.PR.Head.Ref, "--"), req)
 			runInNReport(sourcedir, &out, exec.Command("git", "reset", "--hard", fmt.Sprintf("%s/%s", remote, req.PR.Head.Ref)), req)
 			runInNReport(sourcedir, &out, exec.Command("sh", "docker/testbot/tests.sh"), req)
-			postToGithub(req.PR.Head.Sha, map[string]string{
+			postToGithub(req.PR.StatusesURL, map[string]string{
 				"state":       "success",
 				"description": "Integration tests passed",
 				"context":     "chain/testbot",
@@ -229,7 +230,7 @@ func runInNReport(dir string, w io.Writer, c *exec.Cmd, req pullRequest) {
 	err := runIn(dir, w, c, req)
 	if err != nil {
 		log.Printf("error: command run: %s\n", strings.Join(c.Args, " "))
-		postToGithub(req.PR.Head.Sha, map[string]string{
+		postToGithub(req.PR.StatusesURL, map[string]string{
 			"state":       "failure",
 			"description": "Integration tests failed",
 			"target_url":  "https://s3.amazonaws.com/chain-qa/testbot/" + req.PR.Head.Sha,
@@ -258,13 +259,13 @@ func uploadToS3(filename string, logfile io.Reader) {
 	log.Printf("response from aws: %s", resp.Status)
 }
 
-func postToGithub(sha string, requestBody map[string]string) {
+func postToGithub(url string, requestBody map[string]string) {
 	log.Println("sending results to github")
 	b, err := json.Marshal(requestBody)
 	if err != nil {
 		panic(err)
 	}
-	req, err := http.NewRequest("POST", "https://api.github.com/repos/chain/chain/statuses/"+sha, bytes.NewReader(b))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
 	if err != nil {
 		log.Println("sending request:", err)
 	}
