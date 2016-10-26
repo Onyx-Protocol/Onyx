@@ -2,6 +2,7 @@ package bc
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 
@@ -46,6 +47,8 @@ type (
 		Arguments       [][]byte
 	}
 )
+
+var errBadAssetID = errors.New("asset ID does not match other issuance parameters")
 
 func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxInput {
 	return &TxInput{
@@ -156,8 +159,9 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	}
 
 	var (
-		ii *IssuanceInput
-		si *SpendInput
+		ii      *IssuanceInput
+		si      *SpendInput
+		assetID AssetID
 	)
 	if t.AssetVersion == 1 {
 		icBuf := bytes.NewBuffer(inputCommitment)
@@ -178,7 +182,6 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 			}
 			bytesRead += n
 
-			var assetID Hash
 			n, err = io.ReadFull(icBuf, assetID[:])
 			if err != nil {
 				return err
@@ -240,6 +243,11 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 			ii.IssuanceProgram, _, err = blockchain.ReadVarstr31(iwBuf)
 			if err != nil {
 				return err
+			}
+
+			computedAssetID := ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion)
+			if computedAssetID != assetID {
+				return errBadAssetID
 			}
 		}
 

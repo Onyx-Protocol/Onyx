@@ -225,6 +225,47 @@ func TestHasIssuance(t *testing.T) {
 	}
 }
 
+func TestInvalidIssuance(t *testing.T) {
+	hex := ("07" + // serflags
+		"01" + // transaction version
+		"02" + // common fields extensible string length
+		"00" + // common fields, mintime
+		"00" + // common fields, maxtime
+		"00" + // common witness extensible string length
+		"01" + // inputs count
+		"01" + // input 0, asset version
+		"2b" + // input 0, input commitment length prefix
+		"00" + // input 0, input commitment, "issuance" type
+		"03" + // input 0, input commitment, nonce length prefix
+		"0a0908" + // input 0, input commitment, nonce
+		"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, input commitment, WRONG asset id
+		"80a094a58d1d" + // input 0, input commitment, amount
+		"05696e707574" + // input 0, reference data
+		"28" + // input 0, issuance input witness length prefix
+		"03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d" + // input 0, issuance input witness, initial block
+		"01" + // input 0, issuance input witness, vm version
+		"01" + // input 0, issuance input witness, issuance program length prefix
+		"01" + // input 0, issuance input witness, issuance program
+		"01" + // input 0, issuance input witness, arguments count
+		"03" + // input 0, issuance input witness, argument 0 length prefix
+		"010203" + // input 0, issuance input witness, argument 0
+		"01" + // outputs count
+		"01" + // output 0, asset version
+		"29" + // output 0, output commitment length
+		"0000000000000000000000000000000000000000000000000000000000000000" + // output 0, output commitment, asset id
+		"80a094a58d1d" + // output 0, output commitment, amount
+		"01" + // output 0, output commitment, vm version
+		"0101" + // output 0, output commitment, control program
+		"066f7574707574" + // output 0, reference data
+		"00" + // output 0, output witness
+		"0869737375616e6365")
+	tx := new(TxData)
+	err := tx.UnmarshalText([]byte(hex))
+	if err != errBadAssetID {
+		t.Errorf("want errBadAssetID, got %v", err)
+	}
+}
+
 func TestEmptyOutpoint(t *testing.T) {
 	g := Outpoint{}.String()
 	w := "0000000000000000000000000000000000000000000000000000000000000000:0"
