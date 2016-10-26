@@ -35,7 +35,7 @@ var (
 type pullRequest struct {
 	Action string
 	PR     struct {
-		Number string
+		Number int
 		Head   struct {
 			Ref string
 			Sha string
@@ -78,7 +78,8 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 			sha := req.PR.Head.Sha
 			defer uploadToS3(sha, &out)
 			defer catch(&out)
-			runIn(sourcedir, &out, exec.Command("git", "fetch", "origin", "pull/"+req.PR.Number+"/head"), req)
+			prRef := fmt.Sprintf("pull/%d/head", req.PR.Number)
+			runIn(sourcedir, &out, exec.Command("git", "fetch", "origin", prRef), req)
 			runIn(sourcedir, &out, exec.Command("git", "clean", "-xdf"), req)
 			runIn(sourcedir, &out, exec.Command("git", "checkout", sha, "--"), req)
 			runIn(sourcedir, &out, exec.Command("sh", "docker/testbot/tests.sh"), req)
