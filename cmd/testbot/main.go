@@ -93,7 +93,7 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 func commitHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var req struct {
-		After, Ref, SHA string
+		After, Ref string
 	}
 	err := decoder.Decode(&req)
 	if err != nil {
