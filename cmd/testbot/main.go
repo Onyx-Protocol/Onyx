@@ -72,12 +72,14 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			mu.Lock()
 			defer mu.Unlock()
-			defer catch()
-			runIn(sourcedir, exec.Command("git", "fetch", "origin"), req)
-			runIn(sourcedir, exec.Command("git", "clean", "-xdf"), req)
-			runIn(sourcedir, exec.Command("git", "checkout", req.PR.Head.Ref, "--"), req)
-			runIn(sourcedir, exec.Command("git", "reset", "--hard", "origin/"+req.PR.Head.Ref), req)
-			runIn(sourcedir, exec.Command("sh", "docker/testbot/tests.sh"), req)
+			var out bytes.Buffer
+			defer uploadToS3(req.PR.Head.Sha, &out)
+			defer catch(&out)
+			runIn(sourcedir, &out, exec.Command("git", "fetch", "origin"), req)
+			runIn(sourcedir, &out, exec.Command("git", "clean", "-xdf"), req)
+			runIn(sourcedir, &out, exec.Command("git", "checkout", req.PR.Head.Ref, "--"), req)
+			runIn(sourcedir, &out, exec.Command("git", "reset", "--hard", "origin/"+req.PR.Head.Ref), req)
+			runIn(sourcedir, &out, exec.Command("sh", "docker/testbot/tests.sh"), req)
 			postToGithub(req.PR.Head.Sha, map[string]string{
 				"state":       "success",
 				"description": "Integration tests passed",
@@ -91,7 +93,7 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 func commitHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var req struct {
-		After, Ref string
+		After, Ref, SHA string
 	}
 	err := decoder.Decode(&req)
 	if err != nil {
@@ -108,7 +110,7 @@ func commitHandler(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			mu.Lock()
 			defer mu.Unlock()
-			defer catch()
+			defer catch(nil)
 			select {
 			case <-startBenchcore(req.After):
 			case <-time.After(2 * time.Minute):
@@ -189,12 +191,11 @@ func (w *signalWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func runIn(dir string, c *exec.Cmd, req pullRequest) {
-	var outfile bytes.Buffer
+func runIn(dir string, w io.Writer, c *exec.Cmd, req pullRequest) {
 	c.Dir = dir
 	c.Env = os.Environ()
-	c.Stdout = &outfile
-	c.Stderr = &outfile
+	c.Stdout = w
+	c.Stderr = w
 	if err := c.Run(); err != nil {
 		log.Printf("error: command run: %s\n", strings.Join(c.Args, " "))
 		postToGithub(req.PR.Head.Sha, map[string]string{
@@ -203,18 +204,16 @@ func runIn(dir string, c *exec.Cmd, req pullRequest) {
 			"target_url":  "https://s3.amazonaws.com/chain-qa/testbot/" + req.PR.Head.Sha,
 			"context":     "chain/testbot",
 		})
-		uploadToS3(req.PR.Head.Sha, &outfile)
 		panic(req)
 	}
 }
 
-func uploadToS3(filename string, logfile *bytes.Buffer) {
+func uploadToS3(filename string, logfile io.Reader) {
 	log.Println("uploading results to s3")
 	req, err := http.NewRequest("PUT", "https://chain-qa.s3.amazonaws.com/testbot/"+filename, logfile)
 	if err != nil {
 		log.Println("sending request:", err)
 	}
-	req.ContentLength = int64(logfile.Len())
 	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
 	req.Header.Set("X-Amz-Acl", "public-read")
 	req.Header.Set("Content-Type", "text/plain")
@@ -265,11 +264,11 @@ func postToSlack(b []byte) {
 	log.Printf("response from slack: %s", resp.Status)
 }
 
-func catch() {
+func catch(w io.Writer) {
 	if err := recover(); err != nil {
 		switch err := err.(type) {
 		case pullRequest:
-			log.Println("panic due to failed test: continue running server")
+			fmt.Fprintln(w, err)
 		default:
 			panic(err)
 		}
