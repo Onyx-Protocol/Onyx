@@ -16,12 +16,13 @@ import (
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
-	"chain/net/http/httpjson"
 	"chain/protocol"
 	"chain/protocol/vmutil"
 )
 
 const maxAccountCache = 100
+
+var ErrDuplicateAlias = errors.New("duplicate account alias")
 
 func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 	return &Manager{
@@ -87,7 +88,7 @@ func (m *Manager) Create(ctx context.Context, xpubs []string, quorum int, alias 
 	`
 	_, err = m.db.Exec(ctx, q, signer.ID, aliasSQL, tagsParam)
 	if pg.IsUniqueViolation(err) {
-		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
+		return nil, errors.WithDetail(ErrDuplicateAlias, "an account with the provided alias already exists")
 	} else if err != nil {
 		return nil, errors.Wrap(err)
 	}
