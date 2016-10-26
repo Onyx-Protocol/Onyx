@@ -101,10 +101,11 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 					panic(req)
 				}
 			}
+			ref := fmt.Sprintf("%s/%s", remote, req.PR.Head.Ref)
 			runInNReport(sourcedir, &out, exec.Command("git", "fetch", remote), req)
 			runInNReport(sourcedir, &out, exec.Command("git", "clean", "-xdf"), req)
-			runInNReport(sourcedir, &out, exec.Command("git", "checkout", req.PR.Head.Ref, "--"), req)
-			runInNReport(sourcedir, &out, exec.Command("git", "reset", "--hard", fmt.Sprintf("%s/%s", remote, req.PR.Head.Ref)), req)
+			runInNReport(sourcedir, &out, exec.Command("git", "checkout", ref, "--"), req)
+			runInNReport(sourcedir, &out, exec.Command("git", "reset", "--hard", ref), req)
 			runInNReport(sourcedir, &out, exec.Command("sh", "docker/testbot/tests.sh"), req)
 			postToGithub(req.PR.StatusesURL, map[string]string{
 				"state":       "success",
