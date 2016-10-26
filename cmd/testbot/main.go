@@ -110,7 +110,7 @@ func commitHandler(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			mu.Lock()
 			defer mu.Unlock()
-			defer catch(nil)
+			defer catch(new(bytes.Buffer))
 			select {
 			case <-startBenchcore(req.After):
 			case <-time.After(2 * time.Minute):
