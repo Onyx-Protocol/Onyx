@@ -35,10 +35,12 @@ var (
 type pullRequest struct {
 	Action string
 	PR     struct {
-		Head struct {
+		Number string
+		Head   struct {
 			Ref string
 			Sha string
 		}
+		StatusesURL string `json:"statuses_url"`
 	} `json:"pull_request"`
 }
 
@@ -66,21 +68,21 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("pr ref:", req.PR.Head.Ref)
+	log.Println("pr sha:", req.PR.Head.Sha)
 	log.Println("pr action:", req.Action)
 	if req.Action == "opened" || req.Action == "synchronize" {
 		go func() {
 			mu.Lock()
 			defer mu.Unlock()
 			var out bytes.Buffer
-			defer uploadToS3(req.PR.Head.Sha, &out)
+			sha := req.PR.Head.Sha
+			defer uploadToS3(sha, &out)
 			defer catch(&out)
-			runIn(sourcedir, &out, exec.Command("git", "fetch", "origin"), req)
+			runIn(sourcedir, &out, exec.Command("git", "fetch", "origin", "pull/"+req.PR.Number+"/head"), req)
 			runIn(sourcedir, &out, exec.Command("git", "clean", "-xdf"), req)
-			runIn(sourcedir, &out, exec.Command("git", "checkout", req.PR.Head.Ref, "--"), req)
-			runIn(sourcedir, &out, exec.Command("git", "reset", "--hard", "origin/"+req.PR.Head.Ref), req)
+			runIn(sourcedir, &out, exec.Command("git", "checkout", sha, "--"), req)
 			runIn(sourcedir, &out, exec.Command("sh", "docker/testbot/tests.sh"), req)
-			postToGithub(req.PR.Head.Sha, map[string]string{
+			postToGithub(req.PR.StatusesURL, map[string]string{
 				"state":       "success",
 				"description": "Integration tests passed",
 				"context":     "chain/testbot",
@@ -198,7 +200,7 @@ func runIn(dir string, w io.Writer, c *exec.Cmd, req pullRequest) {
 	c.Stderr = w
 	if err := c.Run(); err != nil {
 		log.Printf("error: command run: %s\n", strings.Join(c.Args, " "))
-		postToGithub(req.PR.Head.Sha, map[string]string{
+		postToGithub(req.PR.StatusesURL, map[string]string{
 			"state":       "failure",
 			"description": "Integration tests failed",
 			"target_url":  "https://s3.amazonaws.com/chain-qa/testbot/" + req.PR.Head.Sha,
@@ -227,13 +229,13 @@ func uploadToS3(filename string, logfile io.Reader) {
 	log.Printf("response from aws: %s", resp.Status)
 }
 
-func postToGithub(sha string, requestBody map[string]string) {
+func postToGithub(url string, requestBody map[string]string) {
 	log.Println("sending results to github")
 	b, err := json.Marshal(requestBody)
 	if err != nil {
 		panic(err)
 	}
-	req, err := http.NewRequest("POST", "https://api.github.com/repos/chain/chain/statuses/"+sha, bytes.NewReader(b))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
 	if err != nil {
 		log.Println("sending request:", err)
 	}
