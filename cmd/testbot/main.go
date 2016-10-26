@@ -36,15 +36,8 @@ type pullRequest struct {
 	Action string
 	PR     struct {
 		Head struct {
-			Repo struct {
-				Name     string `json:"full_name"`
-				CloneURL string `json:"clone_url"`
-			}
 			Ref string
 			Sha string
-		}
-		User struct {
-			Login string
 		}
 		StatusesURL string `json:"statuses_url"`
 	} `json:"pull_request"`
