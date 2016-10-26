@@ -40,7 +40,7 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store, pool protocol.Pool
 		testutil.FatalErr(tb, err)
 	}
 	c.MaxIssuanceWindow = 48 * time.Hour // TODO(tessr): consider adding MaxIssuanceWindow to NewChain
-	err = c.CommitBlock(ctx, b1, state.Empty())
+	err = c.CommitBlock(ctx, b1, state.Empty(b1.Hash()))
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -65,7 +65,7 @@ func MakeBlock(tb testing.TB, c *protocol.Chain) *bc.Block {
 	curState := states[c]
 	mutex.Unlock()
 	if curState == nil {
-		curState = state.Empty()
+		curState = state.Empty(c.InitialBlockHash)
 	}
 
 	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())

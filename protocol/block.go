@@ -186,7 +186,7 @@ func (c *Chain) setHeight(h uint64) {
 func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	var (
 		prev     *bc.Block
-		snapshot = state.Empty()
+		snapshot = state.Empty(c.InitialBlockHash)
 	)
 
 	if block.Height > 1 {

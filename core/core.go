@@ -228,7 +228,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			return err
 		}
 
-		err = chain.CommitBlock(ctx, block, state.Empty())
+		err = chain.CommitBlock(ctx, block, state.Empty(initialBlockHash))
 		if err != nil {
 			return err
 		}

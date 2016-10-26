@@ -69,7 +69,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		chain:          c,
 		signers:        []BlockSigner{signer},
 		latestBlock:    b1,
-		latestSnapshot: state.Empty(),
+		latestSnapshot: state.Empty(c.InitialBlockHash),
 	}
 
 	tip, snapshot, err := c.Recover(ctx)

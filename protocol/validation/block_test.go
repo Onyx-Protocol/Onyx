@@ -100,7 +100,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}}
 	for i, c := range cases {
 		block := &bc.Block{BlockHeader: c.header}
-		snap := state.Empty()
+		snap := state.Empty(prevHash)
 		got := ValidateBlockForAccept(ctx, snap, prev, block, nil) // nil b/c no txs to validate
 		if errors.Root(got) != c.want {
 			t.Errorf("%d", i)

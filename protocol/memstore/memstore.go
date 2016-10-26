@@ -64,12 +64,12 @@ func (m *MemStore) GetBlock(ctx context.Context, height uint64) (*bc.Block, erro
 	return b, nil
 }
 
-func (m *MemStore) LatestSnapshot(context.Context) (*state.Snapshot, uint64, error) {
+func (m *MemStore) LatestSnapshot(ctx context.Context, b1Hash bc.Hash) (*state.Snapshot, uint64, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if m.State == nil {
-		m.State = state.Empty()
+		m.State = state.Empty(b1Hash)
 	}
 	return state.Copy(m.State), m.StateHeight, nil
 }

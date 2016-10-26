@@ -77,7 +77,7 @@ type BlockCallback func(ctx context.Context, block *bc.Block) error
 type Store interface {
 	Height(context.Context) (uint64, error)
 	GetBlock(context.Context, uint64) (*bc.Block, error)
-	LatestSnapshot(context.Context) (*state.Snapshot, uint64, error)
+	LatestSnapshot(ctx context.Context, b1Hash bc.Hash) (*state.Snapshot, uint64, error)
 
 	SaveBlock(context.Context, *bc.Block) error
 	FinalizeBlock(context.Context, uint64) error

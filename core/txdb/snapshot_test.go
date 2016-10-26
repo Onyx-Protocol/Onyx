@@ -20,7 +20,8 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 
-	snapshot := state.Empty()
+	var b1Hash bc.Hash // empty
+	snapshot := state.Empty(b1Hash)
 	changes := []struct {
 		inserts          []pair
 		deletes          []string
@@ -97,7 +98,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 			t.Fatalf("Error writing state snapshot to db: %s\n", err)
 		}
 
-		loadedSnapshot, height, err := getStateSnapshot(ctx, dbtx)
+		loadedSnapshot, height, err := getStateSnapshot(ctx, dbtx, b1Hash)
 		if err != nil {
 			t.Fatalf("Error reading state snapshot from db: %s\n", err)
 		}
@@ -142,7 +143,8 @@ func benchmarkStoreSnapshot(nodes, issuances int, b *testing.B) {
 	db := pgtest.NewTx(b)
 	ctx := context.Background()
 
-	snapshot := state.Empty()
+	var b1Hash bc.Hash // empty
+	snapshot := state.Empty(b1Hash)
 	for i := 0; i < nodes; i++ {
 		var h [32]byte
 		_, err := r.Read(h[:])

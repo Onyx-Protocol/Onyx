@@ -13,6 +13,7 @@ type PriorIssuances map[bc.Hash]uint64
 // Snapshot encompasses a snapshot of entire blockchain state. It
 // consists of a patricia state tree and the issuances memory.
 type Snapshot struct {
+	B1Hash    bc.Hash
 	Tree      *patricia.Tree
 	Issuances PriorIssuances
 }
@@ -35,6 +36,7 @@ func Copy(original *Snapshot) *Snapshot {
 	// We already handle it that way in many places (with explicit
 	// calls to Copy to get the right behavior).
 	c := &Snapshot{
+		B1Hash:    original.B1Hash,
 		Tree:      patricia.Copy(original.Tree),
 		Issuances: make(PriorIssuances, len(original.Issuances)),
 	}
@@ -45,8 +47,9 @@ func Copy(original *Snapshot) *Snapshot {
 }
 
 // Empty returns an empty state snapshot.
-func Empty() *Snapshot {
+func Empty(b1Hash bc.Hash) *Snapshot {
 	return &Snapshot{
+		B1Hash:    b1Hash,
 		Tree:      new(patricia.Tree),
 		Issuances: make(PriorIssuances),
 	}

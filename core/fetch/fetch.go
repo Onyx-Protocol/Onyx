@@ -61,7 +61,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 	if c.Height() == 0 {
 		const maxAttempts = 5
 		for attempt := 1; attempt <= maxAttempts; attempt++ {
-			err := fetchSnapshot(ctx, peer, c.Store(), attempt)
+			err := fetchSnapshot(ctx, peer, c, attempt)
 			health(err)
 			if err == nil {
 				break
@@ -292,9 +292,11 @@ func (s *Snapshot) done() {
 // to the store. It should only be called on freshly configured cores--
 // cores that have been operating should replay all transactions so that
 // they can index them properly.
-func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, attempt int) error {
+func fetchSnapshot(ctx context.Context, peer *rpc.Client, c *protocol.Chain, attempt int) error {
 	const getBlockTimeout = 30 * time.Second
 	const readSnapshotTimeout = 30 * time.Second
+
+	store := c.Store()
 
 	info := &Snapshot{Attempt: attempt}
 	err := peer.Call(ctx, "/rpc/get-snapshot-info", nil, &info)
@@ -325,7 +327,7 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 	if err != nil {
 		return err
 	}
-	snapshot, err := txdb.DecodeSnapshot(b)
+	snapshot, err := txdb.DecodeSnapshot(b, c.InitialBlockHash)
 	if err != nil {
 		return err
 	}
@@ -359,15 +361,15 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 	}
 
 	// Commit the snapshot, initial block and snapshot block.
-	err = s.SaveBlock(ctx, initialBlock)
+	err = store.SaveBlock(ctx, initialBlock)
 	if err != nil {
 		return errors.Wrap(err, "saving the initial block")
 	}
-	err = s.SaveBlock(ctx, snapshotBlock)
+	err = store.SaveBlock(ctx, snapshotBlock)
 	if err != nil {
 		return errors.Wrap(err, "saving bootstrap block")
 	}
-	err = s.SaveSnapshot(ctx, snapshotBlock.Height, snapshot)
+	err = store.SaveSnapshot(ctx, snapshotBlock.Height, snapshot)
 	return errors.Wrap(err, "saving bootstrap snaphot")
 }
 

@@ -23,10 +23,11 @@ func BenchmarkValidateBlock(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	b1Hash := blocks[0].Hash()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		var current *bc.Block
-		snapshot := state.Empty()
+		snapshot := state.Empty(b1Hash)
 		for _, block := range blocks {
 			err := ValidateBlockForAccept(ctx, snapshot, current, block, CheckTxWellFormed)
 			if err != nil {

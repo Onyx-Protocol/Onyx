@@ -24,7 +24,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = c1.CommitBlock(context.Background(), b, state.Empty())
+	err = c1.CommitBlock(context.Background(), b, state.Empty(b.Hash()))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -32,7 +32,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 	// Snapshots are applied asynchronously. This loops waits
 	// until the snapshot is created.
 	for {
-		_, height, _ := store.LatestSnapshot(context.Background())
+		_, height, _ := store.LatestSnapshot(context.Background(), b.Hash())
 		if height > 0 {
 			break
 		}

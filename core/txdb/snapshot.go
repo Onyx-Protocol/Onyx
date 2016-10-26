@@ -16,7 +16,7 @@ import (
 
 // DecodeSnapshot decodes a snapshot from the Chain Core's binary,
 // protobuf representation of the snapshot.
-func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
+func DecodeSnapshot(data []byte, b1Hash bc.Hash) (*state.Snapshot, error) {
 	var storedSnapshot storage.Snapshot
 	err := proto.Unmarshal(data, &storedSnapshot)
 	if err != nil {
@@ -41,6 +41,7 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 	}
 
 	return &state.Snapshot{
+		B1Hash:    b1Hash,
 		Tree:      tree,
 		Issuances: issuances,
 	}, nil
@@ -82,7 +83,7 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 	return errors.Wrap(err, "writing state snapshot to database")
 }
 
-func getStateSnapshot(ctx context.Context, db pg.DB) (*state.Snapshot, uint64, error) {
+func getStateSnapshot(ctx context.Context, db pg.DB, b1Hash bc.Hash) (*state.Snapshot, uint64, error) {
 	const q = `
 		SELECT data, height FROM snapshots ORDER BY height DESC LIMIT 1
 	`
@@ -93,12 +94,12 @@ func getStateSnapshot(ctx context.Context, db pg.DB) (*state.Snapshot, uint64, e
 
 	err := db.QueryRow(ctx, q).Scan(&data, &height)
 	if err == sql.ErrNoRows {
-		return state.Empty(), 0, nil
+		return state.Empty(b1Hash), 0, nil
 	} else if err != nil {
 		return nil, height, errors.Wrap(err, "retrieving state snapshot blob")
 	}
 
-	snapshot, err := DecodeSnapshot(data)
+	snapshot, err := DecodeSnapshot(data, b1Hash)
 	if err != nil {
 		return nil, height, errors.Wrap(err, "decoding snapshot")
 	}

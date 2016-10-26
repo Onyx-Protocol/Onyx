@@ -23,7 +23,7 @@ func TestGetBlock(t *testing.T) {
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
 	oneBlock.SaveBlock(ctx, b1)
-	oneBlock.SaveSnapshot(ctx, 1, state.Empty())
+	oneBlock.SaveSnapshot(ctx, 1, state.Empty(b1.Hash()))
 
 	cases := []struct {
 		store   Store
@@ -170,7 +170,7 @@ func TestGenerateBlock(t *testing.T) {
 		}
 	}
 
-	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now)
+	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(initialBlockHash), now)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -234,7 +234,7 @@ func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	}
 	// TODO(tessr): consider adding MaxIssuanceWindow to NewChain
 	c.MaxIssuanceWindow = 48 * time.Hour
-	err = c.CommitBlock(ctx, b1, state.Empty())
+	err = c.CommitBlock(ctx, b1, state.Empty(b1.Hash()))
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -253,7 +253,7 @@ func makeEmptyBlock(tb testing.TB, c *Chain) {
 		tb.Fatal("cannot make nonempty block")
 	}
 
-	curState := state.Empty()
+	curState := state.Empty(c.InitialBlockHash)
 
 	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
 	if err != nil {

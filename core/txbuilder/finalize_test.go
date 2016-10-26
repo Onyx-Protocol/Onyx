@@ -226,8 +226,9 @@ func benchGenBlock(b *testing.B) {
 	}
 
 	now := time.Now()
+	b1Hash := initialBlock.Hash()
 	b.StartTimer()
-	_, _, err = c.GenerateBlock(ctx, initialBlock, state.Empty(), now)
+	_, _, err = c.GenerateBlock(ctx, initialBlock, state.Empty(b1Hash), now)
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)

@@ -79,7 +79,7 @@ func TestUniqueIssuance(t *testing.T) {
 		t.Errorf("expected tx with unique issuance to pass validation, got: %s", err)
 	}
 
-	snapshot := state.Empty()
+	snapshot := state.Empty(initialBlockHash)
 
 	// Add tx to the state tree so we can spend it in the next tx
 	err = ApplyTx(snapshot, tx)
@@ -771,7 +771,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 				TimestampMS: c.timestamp,
 			},
 		}
-		err := ConfirmTx(state.Empty(), block, &c.tx)
+		err := ConfirmTx(state.Empty(initialBlockHash), block, &c.tx)
 		if !c.ok && errors.Root(err) != ErrBadTx {
 			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue
