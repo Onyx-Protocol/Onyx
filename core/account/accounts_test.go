@@ -8,7 +8,6 @@ import (
 
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/net/http/httpjson"
 	"chain/protocol/prottest"
 	"chain/protocol/vm"
 	"chain/testutil"
@@ -64,8 +63,8 @@ func TestCreateAccountReusedAlias(t *testing.T) {
 	m.createTestAccount(ctx, t, "some-account", nil)
 
 	_, err := m.Create(ctx, []string{dummyXPub}, 1, "some-account", nil, nil)
-	if errors.Root(err) != httpjson.ErrBadRequest {
-		t.Errorf("Expected %s when reusing an alias, got %v", httpjson.ErrBadRequest, err)
+	if errors.Root(err) != ErrDuplicateAlias {
+		t.Errorf("Expected %s when reusing an alias, got %v", ErrDuplicateAlias, err)
 	}
 }
 

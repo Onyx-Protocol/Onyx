@@ -81,8 +81,8 @@ func TestInsertTxFeedDuplicateAlias(t *testing.T) {
 	}
 
 	_, err = insertTxFeed(ctx, db, feed, &token1)
-	if err.Error() != "non-unique alias: httpjson: bad request" {
-		t.Errorf("expected ErrBadRequest, got %v", err)
+	if errors.Root(err) != ErrDuplicateAlias {
+		t.Errorf("expected ErrDuplicateAlias, got %v", err)
 	}
 }
 

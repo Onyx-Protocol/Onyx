@@ -8,8 +8,9 @@ import (
 	"chain/core/query/filter"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/net/http/httpjson"
 )
+
+var ErrDuplicateAlias = errors.New("duplicate feed alias")
 
 type Tracker struct {
 	DB pg.DB
@@ -63,7 +64,7 @@ func insertTxFeed(ctx context.Context, db pg.DB, feed *TxFeed, clientToken *stri
 		clientToken).Scan(&feed.ID)
 
 	if pg.IsUniqueViolation(err) {
-		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
+		return nil, errors.WithDetail(ErrDuplicateAlias, "a transaction feed with the provided alias already exists")
 	} else if err == sql.ErrNoRows && clientToken != nil {
 		// There is already a txfeed with the provided client
 		// token. We should return the existing txfeed

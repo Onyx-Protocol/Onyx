@@ -17,7 +17,6 @@ import (
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/net/http/httpjson"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
@@ -25,6 +24,8 @@ import (
 )
 
 const maxAssetCache = 100
+
+var ErrDuplicateAlias = errors.New("duplicate asset alias")
 
 func NewRegistry(db pg.DB, chain *protocol.Chain) *Registry {
 	return &Registry{
@@ -165,7 +166,7 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 	).Scan(&asset.sortID)
 
 	if pg.IsUniqueViolation(err) {
-		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
+		return nil, errors.WithDetail(ErrDuplicateAlias, "an asset with the provided alias already exists")
 	} else if err == sql.ErrNoRows && clientToken != nil {
 		// There is already an asset with the provided client
 		// token. We should return the existing asset.
