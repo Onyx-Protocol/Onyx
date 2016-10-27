@@ -26,6 +26,8 @@ const (
 	// coreIDKey is the key for Chain-Core-ID request header field values.
 	// It is only for statistics; don't use it for authorization.
 	coreIDKey
+	// pathKey is the key for the request path being handled.
+	pathKey
 )
 
 const Unknown = "unknown_req_id"
@@ -70,6 +72,13 @@ func CoreIDFromContext(ctx context.Context) string {
 	return id
 }
 
+// PathFromContext returns the HTTP path stored in ctx,
+// or the empty string.
+func PathFromContext(ctx context.Context) string {
+	path, _ := ctx.Value(pathKey).(string)
+	return path
+}
+
 // NewSubContext returns a new Context that carries subreqid
 func NewSubContext(ctx context.Context, reqid string) context.Context {
 	return context.WithValue(ctx, subReqIDKey, reqid)
@@ -92,6 +101,7 @@ func Handler(handler http.Handler) http.Handler {
 		id := New()
 		ctx = NewContext(ctx, id)
 		ctx = context.WithValue(ctx, coreIDKey, req.Header.Get("Chain-Core-ID"))
+		ctx = context.WithValue(ctx, pathKey, req.URL.Path)
 		defer func() {
 			if err := recover(); err != nil {
 				// See also $GOROOT/src/net/http/server.go.
