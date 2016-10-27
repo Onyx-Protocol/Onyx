@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"chain/core/blocksigner"
+	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol"
-	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/protocol/state"
 	"chain/protocol/validation"
@@ -34,10 +35,16 @@ func TestGeneratorRecovery(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
+	hsm := mockhsm.New(dbtx)
+	signReqPub, err := hsm.Create(ctx, "alias")
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
 	// Start Generate which should notice the pending block and commit it.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	go Generate(ctx, c, nil, dbtx, time.Second, func(error) {})
+	go Generate(ctx, c, nil, dbtx, hsm, signReqPub.Pub, time.Second, func(error) {})
 
 	// Wait for the block to land, and then make sure it's the same block
 	// that was pending before we ran Generate.
@@ -52,10 +59,17 @@ func TestGeneratorRecovery(t *testing.T) {
 }
 
 func TestGetAndAddBlockSignatures(t *testing.T) {
-	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 
 	c := prottest.NewChain(t)
 	b1, err := c.GetBlock(ctx, 1)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	hsm := mockhsm.New(dbtx)
+	signReqPub, err := hsm.Create(ctx, "alias")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -71,6 +85,9 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		signers:        []BlockSigner{signer},
 		latestBlock:    b1,
 		latestSnapshot: state.Empty(),
+		db:             dbtx,
+		hsm:            hsm,
+		signReqPub:     signReqPub.Pub,
 	}
 
 	tip, snapshot, err := c.Recover(ctx)
@@ -120,8 +137,8 @@ type testSigner struct {
 	privKey ed25519.PrivateKey
 }
 
-func (s testSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
-	hash := b.HashForSig()
+func (s testSigner) SignBlock(ctx context.Context, req blocksigner.SignBlockRequest) ([]byte, error) {
+	hash := req.Block.HashForSig()
 	return ed25519.Sign(s.privKey, hash[:]), nil
 }
 
