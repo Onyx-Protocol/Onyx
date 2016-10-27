@@ -7,6 +7,7 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/httpjson"
+	"chain/net/http/reqid"
 )
 
 // errBadReqHeader indicates the user supplied a malformed request header,
@@ -41,6 +42,7 @@ func logHTTPError(ctx context.Context, err error) {
 	keyvals := []interface{}{
 		"status", info.HTTPStatus,
 		"chaincode", info.ChainCode,
+		"path", reqid.PathFromContext(ctx),
 		log.KeyError, errorMessage,
 	}
 	if info.HTTPStatus == 500 {
