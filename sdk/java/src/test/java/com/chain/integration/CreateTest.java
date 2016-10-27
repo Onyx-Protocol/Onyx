@@ -99,7 +99,7 @@ public class CreateTest {
     Account.Builder failure =
         new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1);
 
-    BatchResponse<Account> resp = Account.createBatch(client, Arrays.asList(builder, failure));
+    BatchResponse<Account,APIException> resp = Account.createBatch(client, Arrays.asList(builder, failure));
     assertEquals(1, resp.successes().size());
     assertEquals(1, resp.errors().size());
   }
@@ -161,7 +161,7 @@ public class CreateTest {
 
     Asset.Builder failure = new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1);
 
-    BatchResponse<Asset> resp = Asset.createBatch(client, Arrays.asList(builder, failure));
+    BatchResponse<Asset,APIException> resp = Asset.createBatch(client, Arrays.asList(builder, failure));
     assertEquals(1, resp.successes().size());
     assertEquals(1, resp.errors().size());
   }
@@ -210,7 +210,7 @@ public class CreateTest {
 
     ControlProgram.Builder failure = new ControlProgram.Builder().controlWithAccountById("bad-id");
 
-    BatchResponse<ControlProgram> resp =
+    BatchResponse<ControlProgram,APIException> resp =
         ControlProgram.createBatch(client, Arrays.asList(builder, failure));
     assertEquals(1, resp.successes().size());
     assertEquals(1, resp.errors().size());

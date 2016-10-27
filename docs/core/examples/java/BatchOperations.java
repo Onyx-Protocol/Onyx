@@ -30,7 +30,7 @@ class BatchOperations {
     // endsnippet
 
     // snippet asset-create-batch
-    BatchResponse<Asset> assetBatch = Asset.createBatch(client, assetBuilders);
+    BatchResponse<Asset,APIException> assetBatch = Asset.createBatch(client, assetBuilders);
     // endsnippet
 
     // snippet asset-create-handle-errors
@@ -119,15 +119,15 @@ class BatchOperations {
     // endsnippet
 
     // snippet batch-build-handle-errors
-    BatchResponse<Transaction.Template> buildTxBatch = Transaction.buildBatch(client, txBuilders);
+    BatchResponse<Transaction.Template,BuildException> buildTxBatch = Transaction.buildBatch(client, txBuilders);
 
-    for(Map.Entry<Integer, APIException> err : buildTxBatch.errorsByIndex().entrySet()) {
+    for(Map.Entry<Integer, BuildException> err : buildTxBatch.errorsByIndex().entrySet()) {
       System.out.println("Error building transaction " + err.getKey() + ": " + err.getValue());
     }
     // endsnippet
 
     // snippet batch-sign
-    BatchResponse<Transaction.Template> signTxBatch = HsmSigner.signBatch(buildTxBatch.successes());
+    BatchResponse<Transaction.Template,APIException> signTxBatch = HsmSigner.signBatch(buildTxBatch.successes());
 
     for(Map.Entry<Integer, APIException> err : signTxBatch.errorsByIndex().entrySet()) {
       System.out.println("Error signing transaction " + err.getKey() + ": " + err.getValue());
@@ -135,7 +135,7 @@ class BatchOperations {
     // endsnippet
 
     // snippet batch-submit
-    BatchResponse<Transaction.SubmitResponse> submitTxBatch = Transaction.submitBatch(client, signTxBatch.successes());
+    BatchResponse<Transaction.SubmitResponse,APIException> submitTxBatch = Transaction.submitBatch(client, signTxBatch.successes());
 
     for(Map.Entry<Integer, APIException> err : submitTxBatch.errorsByIndex().entrySet()) {
       System.out.println("Error submitting transaction " + err.getKey() + ": " + err.getValue());
