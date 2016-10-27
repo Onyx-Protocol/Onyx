@@ -1282,13 +1282,9 @@ and (-webkit-min-device-pixel-ratio: 2) {
     article ol {
         -webkit-padding-start: 28px;
     }
-    article ol > li {
-        padding-left: 5px;
-    }
 
     article ul > li {
         margin-left: 22px;
-        padding-left: 4px;
     }
 }
 
