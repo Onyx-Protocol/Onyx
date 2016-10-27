@@ -104,7 +104,7 @@ var (
 		errBadAction:            errorInfo{400, "CH703", "Invalid action object"},
 		txbuilder.ErrBadAmount:  errorInfo{400, "CH704", "Invalid asset amount"},
 		txbuilder.ErrBlankCheck: errorInfo{400, "CH705", "Unsafe transaction: leaves assets to be taken without requiring payment"},
-		txbuilder.ErrMulti:      errorInfo{400, "CH706", "Multiple errors: see attached data for each action"},
+		txbuilder.ErrAction:     errorInfo{400, "CH706", "One or more actions had an error: see attached data"},
 
 		// Submit error namespace (73x)
 		txbuilder.ErrMissingRawTx:          errorInfo{400, "CH730", "Missing raw transaction"},

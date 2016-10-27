@@ -23,7 +23,7 @@ var (
 	ErrBadWitnessComponent = errors.New("invalid witness component")
 	ErrBadAmount           = errors.New("bad asset amount")
 	ErrBlankCheck          = errors.New("unsafe transaction: leaves assets free to control")
-	ErrMulti               = errors.New("errors occurred in more than one action")
+	ErrAction              = errors.New("errors occurred in one or more actions")
 )
 
 // Build builds or adds on to a transaction.
@@ -115,10 +115,8 @@ result:
 
 	}
 
-	if len(errs) > 1 {
-		return nil, errors.WithData(ErrMulti, errs)
-	} else if len(errs) == 1 {
-		return nil, errs[0]
+	if len(errs) > 0 {
+		return nil, errors.WithData(ErrAction, errs)
 	}
 
 	err := checkBlankCheck(tx)
