@@ -52,7 +52,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 		go func() {
 			defer wg.Done()
 			buildResult, err := actions[i].Build(ctx, maxTime)
-			results[i] = res{buildResult, errors.WithDetailf(err, "invalid action %d", i)}
+			results[i] = res{buildResult, err}
 		}()
 	}
 
@@ -62,26 +62,33 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 result:
 	for i, v := range results {
 		if v.err != nil {
-			errs = append(errs, v.err)
+			err := errors.WithData(v.err, map[string]int{"action_index": i})
+			errs = append(errs, err)
 			continue result
 		}
 		buildResult := v.buildResult
 		for _, in := range buildResult.Inputs {
 			if in.Amount() > math.MaxInt64 {
-				errs = append(errs, errors.WithDetailf(ErrBadAmount, "bad amount '%d' for action %d: exceeds maximum value 2^63", in.Amount(), i))
+				err := errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", in.Amount())
+				err = errors.WithData(err, map[string]int{"action_index": i})
+				errs = append(errs, err)
 				continue result
 			}
 		}
 		for _, out := range buildResult.Outputs {
 			if out.Amount > math.MaxInt64 {
-				errs = append(errs, errors.WithDetailf(ErrBadAmount, "bad amount '%d' for action %d: exceeds maximum value 2^63", out.Amount, i))
+				err := errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", out.Amount)
+				err = errors.WithData(err, map[string]int{"action_index": i})
+				errs = append(errs, err)
 				continue result
 			}
 		}
 
 		if len(buildResult.Inputs) != len(buildResult.SigningInstructions) {
 			// This would only happen from a bug in our system
-			errs = append(errs, errors.Wrap(fmt.Errorf("%T returned different number of inputs and signing instructions", actions[i])))
+			err := errors.Wrap(fmt.Errorf("%T returned different number of inputs and signing instructions", actions[i]))
+			err = errors.WithData(err, map[string]int{"action_index": i})
+			errs = append(errs, err)
 			continue result
 		}
 
