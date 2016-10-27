@@ -2,43 +2,43 @@
 /* Font families */
 
 @font-face {
-  font-family: 'Nitti-Normal';
-  src: url('/docs/fonts/Nitti-Normal.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/Nitti-Normal.otf')  format('opentype'),
-	     url('/docs/fonts/Nitti-Normal.woff') format('woff'), url('/docs/fonts/Nitti-Normal.ttf')  format('truetype'), url('/docs/fonts/Nitti-Normal.svg#Nitti-Normal') format('svg');
-  font-weight: normal;
-  font-style: normal;
+    font-family: 'Nitti-Normal';
+    src: url('/docs/fonts/Nitti-Normal.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/Nitti-Normal.otf')  format('opentype'),
+    url('/docs/fonts/Nitti-Normal.woff') format('woff'), url('/docs/fonts/Nitti-Normal.ttf')  format('truetype'), url('/docs/fonts/Nitti-Normal.svg#Nitti-Normal') format('svg');
+    font-weight: normal;
+    font-style: normal;
 }
 
 @font-face {
-  font-family: 'Nitti-Medium';
-  src: url('/docs/fonts/Nitti-Medium.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/Nitti-Medium.otf')  format('opentype'),
-	     url('/docs/fonts/Nitti-Medium.woff') format('woff'), url('/docs/fonts/Nitti-Medium.ttf')  format('truetype'), url('/docs/fonts/Nitti-Medium.svg#Nitti-Medium') format('svg');
-  font-weight: normal;
-  font-style: normal;
+    font-family: 'Nitti-Medium';
+    src: url('/docs/fonts/Nitti-Medium.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/Nitti-Medium.otf')  format('opentype'),
+    url('/docs/fonts/Nitti-Medium.woff') format('woff'), url('/docs/fonts/Nitti-Medium.ttf')  format('truetype'), url('/docs/fonts/Nitti-Medium.svg#Nitti-Medium') format('svg');
+    font-weight: normal;
+    font-style: normal;
 }
 
 @font-face {
-  font-family: 'NittiGrotesk-Normal';
-  src: url('/docs/fonts/NittiGrotesk-Normal.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/NittiGrotesk-Normal.otf')  format('opentype'),
-	     url('/docs/fonts/NittiGrotesk-Normal.woff') format('woff'), url('/docs/fonts/NittiGrotesk-Normal.ttf')  format('truetype'), url('/docs/fonts/NittiGrotesk-Normal.svg#NittiGrotesk-Normal') format('svg');
-  font-weight: normal;
-  font-style: normal;
+    font-family: 'NittiGrotesk-Normal';
+    src: url('/docs/fonts/NittiGrotesk-Normal.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/NittiGrotesk-Normal.otf')  format('opentype'),
+    url('/docs/fonts/NittiGrotesk-Normal.woff') format('woff'), url('/docs/fonts/NittiGrotesk-Normal.ttf')  format('truetype'), url('/docs/fonts/NittiGrotesk-Normal.svg#NittiGrotesk-Normal') format('svg');
+    font-weight: normal;
+    font-style: normal;
 }
 
 @font-face {
-  font-family: 'NittiGrotesk-Medium';
-  src: url('/docs/fonts/NittiGrotesk-Medium.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/NittiGrotesk-Medium.otf')  format('opentype'),
-	     url('/docs/fonts/NittiGrotesk-Medium.woff') format('woff'), url('/docs/fonts/NittiGrotesk-Medium.ttf')  format('truetype'), url('/docs/fonts/NittiGrotesk-Medium.svg#NittiGrotesk-Medium') format('svg');
-  font-weight: normal;
-  font-style: normal;
+    font-family: 'NittiGrotesk-Medium';
+    src: url('/docs/fonts/NittiGrotesk-Medium.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/NittiGrotesk-Medium.otf')  format('opentype'),
+    url('/docs/fonts/NittiGrotesk-Medium.woff') format('woff'), url('/docs/fonts/NittiGrotesk-Medium.ttf')  format('truetype'), url('/docs/fonts/NittiGrotesk-Medium.svg#NittiGrotesk-Medium') format('svg');
+    font-weight: normal;
+    font-style: normal;
 }
 
 @font-face {
-  font-family: 'NittiGrotesk-Bold';
-  src: url('/docs/fonts/NittiGrotesk-Bold.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/NittiGrotesk-Bold.otf')  format('opentype'),
-	     url('/docs/fonts/NittiGrotesk-Bold.woff') format('woff'), url('/docs/fonts/NittiGrotesk-Bold.ttf')  format('truetype'), url('/docs/fonts/NittiGrotesk-Bold.svg#NittiGrotesk-Bold') format('svg');
-  font-weight: normal;
-  font-style: normal;
+    font-family: 'NittiGrotesk-Bold';
+    src: url('/docs/fonts/NittiGrotesk-Bold.eot?#iefix') format('embedded-opentype'),  url('/docs/fonts/NittiGrotesk-Bold.otf')  format('opentype'),
+    url('/docs/fonts/NittiGrotesk-Bold.woff') format('woff'), url('/docs/fonts/NittiGrotesk-Bold.ttf')  format('truetype'), url('/docs/fonts/NittiGrotesk-Bold.svg#NittiGrotesk-Bold') format('svg');
+    font-weight: normal;
+    font-style: normal;
 }
 
 
@@ -121,7 +121,7 @@ article a,
 #side-nav ul li a.active,
 #side-nav ul li a:hover,
 #side-nav ul li a.toggle:hover {
-	color: #00BFAA;
+    color: #00BFAA;
 }
 
 a {
@@ -283,7 +283,7 @@ a {
     padding-top: 30px;
     padding-left: 32px;
     margin: 0 90px 0 0;
-	overflow-x: scroll;
+    overflow-x: scroll;
 }
 
 
@@ -295,7 +295,7 @@ a {
 }
 
 #doc-header {
-	padding-right:40px;
+    padding-right:40px;
     border-bottom: 1px solid #e8e8e8;
 }
 
@@ -313,7 +313,7 @@ article strong {
 
 article li strong,
 article p strong {
-	color: #1e2224;
+    color: #1e2224;
 }
 
 
@@ -351,10 +351,9 @@ article ul:not(:first-child) {
 article li > ol,
 article li > ul {
     margin-top: 0 !important;
-	margin-left: 0px;
+    margin-left: 0px;
 }
 
-article ol > li,
 article ul > li {
     position: relative;
     margin-bottom: 4px;
@@ -365,39 +364,31 @@ article ul > li {
 /* ## Article Numbered Lists  */
 
 article ol {
-	counter-reset: customCounter;
-    list-style-type: none;
-}
-article ol > li:before {
-    counter-increment: customCounter;
-    content: counter(customCounter) ".";
-	position:absolute;
-	left: -22px;
+    display: block;
+    list-style-type: decimal;
+    -webkit-margin-before: 1em;
+    -webkit-margin-after: 1em;
+    -webkit-margin-start: 0px;
+    -webkit-margin-end: 0px;
+    -webkit-padding-start: 18px;
 }
 article ol > li {
-	margin-left:23px;
+    padding-left: 5px;
 }
 
 
 /* ## Article Unordered Lists  */
 
 article ul {
-    list-style-type: none;
-}
-article ul > li:before {
-    content: "•";
-	font-size:170%;
-	position:absolute;
-	top:-1px;
-	left: -22px;
+    list-style-type: disc;
 }
 article ul > li {
-	margin-left:23px;
+    margin-left: 18px;
 }
 
 sup, sub {
-  vertical-align: baseline;
-  position: relative;
+    vertical-align: baseline;
+    position: relative;
 }
 sup { top: -0.5em; }
 sub { top:  0.5em; }
@@ -406,8 +397,8 @@ sub { top:  0.5em; }
 /* # Sidenotes */
 
 article div.sidenote {
-	float:right;
-	width: 300px;
+    float:right;
+    width: 300px;
 }
 
 article div.sidenote {
@@ -418,8 +409,8 @@ article div.sidenote {
 }
 
 article div.sidenote > p:first-of-type {
-	margin-top:0;
-	padding-top:0;
+    margin-top:0;
+    padding-top:0;
 }
 
 article div.sidenote p,
@@ -436,27 +427,27 @@ article div.sidenote p:not(:first-child) {
 
 @media screen and (min-width: 1640px) {
 
-	#docs {
-	    overflow-x: visible;
-	}
-	#doc-content {
-	    overflow-x: visible;
-	}
-	#doc-wrapper {
-	    overflow-x: visible;
-	}
+    #docs {
+        overflow-x: visible;
+    }
+    #doc-content {
+        overflow-x: visible;
+    }
+    #doc-wrapper {
+        overflow-x: visible;
+    }
 
-	article div.sidenote {
-		position:relative;
-		margin-right: -350px;
-	}
+    article div.sidenote {
+        position:relative;
+        margin-right: -350px;
+    }
 
-	article div.sidenote p,
-	article div.sidenote ul,
-	article div.sidenote ol {
-	    font-size: 16px;
-	    line-height: 23px;
-	}
+    article div.sidenote p,
+    article div.sidenote ul,
+    article div.sidenote ol {
+        font-size: 16px;
+        line-height: 23px;
+    }
 }
 
 
@@ -474,7 +465,7 @@ h1, .modal-title {
 h2 {
     font-size: 24px;
     padding-top: 40px;
-	clear: both;
+    clear: both;
 }
 
 h2,
@@ -594,9 +585,9 @@ section:after {
 
 #doc-content.docs_protocol_papers_protocol-roadmap > h2,
 #doc-content.docs_core_reference_product-roadmap > h2 {
-	padding-top:20px;
-	margin-top:0px;
-	border-top:none;
+    padding-top:20px;
+    margin-top:0px;
+    border-top:none;
 }
 
 
@@ -677,7 +668,7 @@ article table tbody {
 }
 
 article table tbody tr td {
-	vertical-align:top;
+    vertical-align:top;
 }
 article table tbody tr td,
 article thead tr th {
@@ -688,7 +679,7 @@ article thead tr th {
 
 article tbody tr td:first-child,
 article thead tr th:first-child {
-	min-width:120px;
+    min-width:120px;
 }
 
 article tbody tr td:first-child,
@@ -834,7 +825,7 @@ article li > .code:last-child {
     margin-top: 10px;
 }
 a.btn.success {
-	    line-height: 39px;
+    line-height: 39px;
 }
 
 a.btn.success,
@@ -928,12 +919,12 @@ img {
 
 #download-options .download-option,
 #download-options .download-option .os-icon {
-	transition: transform 0.15s ease-in-out;
+    transition: transform 0.15s ease-in-out;
 }
 
 #download-options .download-option:hover .os-icon,
 #download-options .download-option a.active .os-icon {
-	transform: scale(1.1);
+    transform: scale(1.1);
 }
 
 
@@ -1270,17 +1261,38 @@ video {
     #docs {
         overflow-x: hidden;
     }
-    article ol > li:before {
-        left: -16px;
-        top: 3px;
-        width: 16px;
+    article ol {
+        -webkit-padding-start: 22px;
     }
-    article ol > li a  {
-        padding-left: 10px;
+    article ol > li {
+        padding-left: 5px;
+    }
+
+    article ul > li {
+        margin-left: 20px;
+        padding-left: 4px;
     }
 }
 
- /* Print Styles */
+
+@media only screen
+and (min-device-width: 320px)
+and (max-device-width: 480px)
+and (-webkit-min-device-pixel-ratio: 2) {
+    article ol {
+        -webkit-padding-start: 28px;
+    }
+    article ol > li {
+        padding-left: 5px;
+    }
+
+    article ul > li {
+        margin-left: 22px;
+        padding-left: 4px;
+    }
+}
+
+/* Print Styles */
 @media print {
     body, html, #doc-wrapper, #doc-content {
         overflow: visible;
