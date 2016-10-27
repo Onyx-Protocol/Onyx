@@ -111,7 +111,6 @@ func (h *Handler) init() {
 
 	m := http.NewServeMux()
 	m.Handle("/", alwaysError(errNotFound))
-	m.Handle("/health", jsonHandler(func() {}))
 
 	m.Handle("/create-account", needConfig(h.createAccount))
 	m.Handle("/create-asset", needConfig(h.createAsset))
@@ -173,6 +172,7 @@ func (h *Handler) init() {
 	}).handler(latencyHandler)
 	handler = maxBytes(handler)
 	handler = webAssetsHandler(handler)
+	handler = healthHandler(handler)
 	for _, l := range h.RequestLimits {
 		handler = limit.Handler(handler, alwaysError(errRateLimited), l.PerSecond, l.Burst, l.Key)
 	}
@@ -354,4 +354,13 @@ func expvarHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "%q: %s", kv.Key, kv.Value)
 	})
 	fmt.Fprintf(w, "\n}\n")
+}
+
+func healthHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/health" {
+			return
+		}
+		handler.ServeHTTP(w, req)
+	})
 }
