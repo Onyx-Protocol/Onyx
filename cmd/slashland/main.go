@@ -212,7 +212,7 @@ func land(req *landReq) {
 
 	commit = string(bytes.TrimSpace(runOutput(landdir, exec.Command("git", "rev-parse", "HEAD"))))
 
-	success := waitForSuccessfulStatus(req, commit)
+	success := waitForSuccessfulStatus(req, repo, commit)
 	if !success {
 		return
 	}
@@ -295,7 +295,7 @@ func wrapMessage(msg string, limit int) string {
 	return string(b)
 }
 
-func waitForSuccessfulStatus(req *landReq, commitSHA string) bool {
+func waitForSuccessfulStatus(req *landReq, repo, commitSHA string) bool {
 	start := time.Now()
 	for {
 		if time.Since(start) > 3*time.Minute {
@@ -310,7 +310,7 @@ func waitForSuccessfulStatus(req *landReq, commitSHA string) bool {
 		var statusResp struct {
 			State, SHA string
 		}
-		err := doGithubReq("GET", fmt.Sprintf("repos/%s/%s/commits/%s/status", *org, *repo, req.ref), nil, &statusResp)
+		err := doGithubReq("GET", fmt.Sprintf("repos/%s/%s/commits/%s/status", *org, repo, req.ref), nil, &statusResp)
 		if err != nil || statusResp.State == "" {
 			sayf("<@%s|%s> failed to land %s: error fetching github status",
 				req.userID,
