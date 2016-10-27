@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +35,7 @@ var (
 	flagD       = flag.Bool("d", false, "delete instances from previous runs")
 	flagP       = flag.Bool("p", false, "capture cpu and heap profiles from cored")
 	flagQ       = flag.Duration("q", 0, "capture SQL slow queries")
+	flagWith    = flag.String("with", "", "upload the provided file alongside the java program")
 	flagDBStats = flag.Bool("dbstats", false, "capture database query statistics")
 
 	appName      = "benchcore"
@@ -184,6 +186,13 @@ func main() {
 	if *flagP {
 		go profile(publicCoreURL, string(token))
 	}
+
+	if *flagWith != "" {
+		b, err := ioutil.ReadFile(*flagWith)
+		must(err)
+		must(scpPut(client.addr, b, filepath.Base(*flagWith), 0644))
+	}
+
 	mustRunOn(client.addr, clientsh,
 		"coreURL", coreURL,
 		"apiToken", accessToken,
