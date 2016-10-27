@@ -7,6 +7,12 @@
   border-bottom: 1px solid transparent;
 }
 
+.info {
+  background-color: $alert-info-bg;
+  border-color: $alert-info-border;
+  color: $alert-info-text;
+}
+
 .success {
   background-color: $success-background;
   border-color: $success-border;
