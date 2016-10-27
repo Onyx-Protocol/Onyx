@@ -35,11 +35,12 @@ type command struct {
 }
 
 var commands = map[string]*command{
-	"config-generator":     {configGenerator},
-	"create-block-keypair": {createBlockKeyPair},
-	"create-token":         {createToken},
-	"config":               {configNongenerator},
-	"reset":                {reset},
+	"config-generator":            {configGenerator},
+	"create-block-keypair":        {createBlockKeyPair},
+	"create-sign-request-keypair": {createSignReqKeyPair},
+	"create-token":                {createToken},
+	"config":                      {configNongenerator},
+	"reset":                       {reset},
 }
 
 func main() {
@@ -135,13 +136,21 @@ func configGenerator(db *sql.DB, args []string) {
 }
 
 func createBlockKeyPair(db *sql.DB, args []string) {
+	createKeyPairHelper(db, args, "create-block-keypair", "block_key")
+}
+
+func createSignReqKeyPair(db *sql.DB, args []string) {
+	createKeyPairHelper(db, args, "create-sign-request-keypair", "sign_request_key")
+}
+
+func createKeyPairHelper(db *sql.DB, args []string, fnName, alias string) {
 	if len(args) != 0 {
-		fatalln("error: create-block-keypair takes no args")
+		fatalln(fmt.Sprintf("error: %s takes no args", fnName))
 	}
 
 	hsm := mockhsm.New(db)
 	ctx := context.Background()
-	pub, err := hsm.Create(ctx, "block_key")
+	pub, err := hsm.Create(ctx, alias)
 	if err != nil {
 		fatalln("error:", err)
 	}
@@ -178,7 +187,7 @@ func configNongenerator(db *sql.DB, args []string) {
 	var flags flag.FlagSet
 	flagT := flags.String("t", "", "generator access `token`")
 	flagK := flags.String("k", "", "local `pubkey` for signing blocks")
-	flagR := flags.String("r", "", "`signreqpubkey` accompanying sign-block requests")
+	flagR := flags.String("r", "", "`signreqpubkey` (a.k.a. generator block pubkey) accompanying sign-block requests")
 	flags.Usage = func() {
 		fmt.Println(usage)
 		flags.PrintDefaults()

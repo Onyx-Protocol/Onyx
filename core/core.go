@@ -43,8 +43,9 @@ var (
 
 // reserved mockhsm key alias
 const (
-	networkRPCVersion = 1
-	autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
+	networkRPCVersion   = 1
+	autoBlockKeyAlias   = "_CHAIN_CORE_AUTO_BLOCK_KEY"
+	autoSignReqKeyAlias = "_CHAIN_CORE_AUTO_SIGN_REQ_KEY"
 )
 
 func isProduction() bool {
@@ -197,6 +198,23 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			}
 		}
 		signingKeys = append(signingKeys, blockPub)
+
+		if c.IsGenerator {
+			if c.SignReqPub == "" {
+				hsm := mockhsm.New(db)
+				signReqPub, created, err := hsm.GetOrCreate(ctx, autoSignReqKeyAlias)
+				if err != nil {
+					return err
+				}
+				signReqPubStr := hex.EncodeToString(signReqPub.Pub)
+				if created {
+					log.Messagef(ctx, "Generated new sign-request key %s\n", signReqPubStr)
+				} else {
+					log.Messagef(ctx, "Using sign-request key %s\n", signReqPubStr)
+				}
+				c.SignReqPub = signReqPubStr
+			}
+		}
 	}
 
 	if c.IsGenerator {

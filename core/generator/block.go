@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"chain/core/blocksigner"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
@@ -137,7 +138,11 @@ func indexKey(keys []ed25519.PublicKey, msg, sig []byte) int {
 
 func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, requestSig []byte, sig *[]byte, i int, done chan int) {
 	var err error
-	*sig, err = signer.SignBlock(ctx, b)
+	req := blocksigner.SignBlockRequest{
+		Block: b,
+		Sig:   requestSig,
+	}
+	*sig, err = signer.SignBlock(ctx, req)
 	if err != nil && ctx.Err() != context.Canceled {
 		log.Write(ctx, "error", err, "signer", signer)
 	}

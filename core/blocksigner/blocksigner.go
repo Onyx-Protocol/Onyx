@@ -82,13 +82,13 @@ func (s *Signer) ValidateAndSignBlock(ctx context.Context, req SignBlockRequest)
 	if !ok {
 		return nil, fmt.Errorf("unverified request signature")
 	}
-	err := s.c.WaitForBlockSoon(ctx, b.Height-1)
+	err := s.c.WaitForBlockSoon(ctx, req.Block.Height-1)
 	if err != nil {
-		return nil, errors.Wrapf(err, "waiting for block at height %d", b.Height-1)
+		return nil, errors.Wrapf(err, "waiting for block at height %d", req.Block.Height-1)
 	}
-	prev, err := s.c.GetBlock(ctx, b.Height-1)
+	prev, err := s.c.GetBlock(ctx, req.Block.Height-1)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting block at height %d", b.Height-1)
+		return nil, errors.Wrap(err, "getting block at height %d", req.Block.Height-1)
 	}
 	// TODO: Add the ability to change the consensus program
 	// by having a current consensus program, and a potential
@@ -96,18 +96,18 @@ func (s *Signer) ValidateAndSignBlock(ctx context.Context, req SignBlockRequest)
 	// has been used, it will become the current consensus program
 	// and the only signable consensus program until a new
 	// next is set.
-	if !bytes.Equal(b.ConsensusProgram, prev.ConsensusProgram) {
+	if !bytes.Equal(req.Block.ConsensusProgram, prev.ConsensusProgram) {
 		return nil, errors.Wrap(ErrConsensusChange)
 	}
-	err = s.c.ValidateBlockForSig(ctx, b)
+	err = s.c.ValidateBlockForSig(ctx, req.Block)
 	if err != nil {
 		return nil, errors.Wrap(err, "validating block for signature")
 	}
-	err = lockBlockHeight(ctx, s.db, b)
+	err = lockBlockHeight(ctx, s.db, req.Block)
 	if err != nil {
 		return nil, errors.Wrap(err, "lock block height")
 	}
-	return s.SignBlock(ctx, b)
+	return s.SignBlock(ctx, req)
 }
 
 // lockBlockHeight records a signer's intention to sign a given block

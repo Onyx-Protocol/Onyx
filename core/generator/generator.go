@@ -10,6 +10,7 @@ import (
 
 	"chain/core/blocksigner"
 	"chain/core/mockhsm"
+	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/log"
 	"chain/protocol"
@@ -29,10 +30,11 @@ type BlockSigner interface {
 // generator produces new blocks on an interval.
 type generator struct {
 	// config
-	db      pg.DB
-	chain   *protocol.Chain
-	signers []BlockSigner
-	hsm     *mockhsm.HSM
+	db         pg.DB
+	chain      *protocol.Chain
+	signReqPub ed25519.PublicKey
+	signers    []BlockSigner
+	hsm        *mockhsm.HSM
 
 	// latestBlock and latestSnapshot are current as long as this
 	// process remains the leader process. If the process is demoted,
@@ -53,6 +55,7 @@ func Generate(
 	s []BlockSigner,
 	db pg.DB,
 	hsm *mockhsm.HSM,
+	signReqPub ed25519.PublicKey,
 	period time.Duration,
 	health func(error),
 ) {
@@ -68,6 +71,7 @@ func Generate(
 		chain:          c,
 		signers:        s,
 		hsm:            hsm,
+		signReqPub:     signReqPub,
 		latestBlock:    recoveredBlock,
 		latestSnapshot: recoveredSnapshot,
 	}
