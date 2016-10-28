@@ -40,7 +40,7 @@ func main() {
 	log.SetFlags(0)
 	ctx := context.Background()
 
-	gen, genCore := coreEnv("GENERATOR")
+	gen, genCore := coreEnv("PROPOSER")
 	sig1, sig1Core := coreEnv("SIGNER1")
 	sig2, sig2Core := coreEnv("SIGNER2")
 
@@ -51,12 +51,12 @@ func main() {
 
 	time.Sleep(time.Second) // give them time to restart
 
-	// configure generator
+	// configure proposer
 	must(gen.Call(ctx, "/configure", map[string]interface{}{
-		"is_signer":    true,
-		"block_pub":    genCore.pubkey,
-		"is_generator": true,
-		"quorum":       2,
+		"is_signer":   true,
+		"block_pub":   genCore.pubkey,
+		"is_proposer": true,
+		"quorum":      2,
 		"block_signer_urls": []map[string]interface{}{
 			{
 				"pubkey":       sig1Core.pubkey,
@@ -71,7 +71,7 @@ func main() {
 		},
 	}, nil))
 
-	time.Sleep(time.Second) // give generator time to restart
+	time.Sleep(time.Second) // give proposer time to restart
 
 	var resp struct {
 		BlockchainID string `json:"blockchain_id"`
@@ -81,18 +81,18 @@ func main() {
 
 	// configure signers
 	must(sig1.Call(ctx, "/configure", map[string]interface{}{
-		"is_signer":              true,
-		"block_pub":              sig1Core.pubkey,
-		"blockchain_id":          resp.BlockchainID,
-		"generator_url":          gen.BaseURL,
-		"generator_access_token": genCore.netTok,
+		"is_signer":             true,
+		"block_pub":             sig1Core.pubkey,
+		"blockchain_id":         resp.BlockchainID,
+		"proposer_url":          gen.BaseURL,
+		"proposer_access_token": genCore.netTok,
 	}, nil))
 	must(sig2.Call(ctx, "/configure", map[string]interface{}{
-		"is_signer":              true,
-		"block_pub":              sig2Core.pubkey,
-		"blockchain_id":          resp.BlockchainID,
-		"generator_url":          gen.BaseURL,
-		"generator_access_token": genCore.netTok,
+		"is_signer":             true,
+		"block_pub":             sig2Core.pubkey,
+		"blockchain_id":         resp.BlockchainID,
+		"proposer_url":          gen.BaseURL,
+		"proposer_access_token": genCore.netTok,
 	}, nil))
 }
 

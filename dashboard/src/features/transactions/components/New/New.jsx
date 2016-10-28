@@ -44,7 +44,7 @@ class Form extends React.Component {
     const lagThreshold = 5
     if (this.props.replicationLag === null || this.props.replicationLag >= lagThreshold) {
       return Promise.reject({
-        _error: `Replication lag must be less than ${lagThreshold} to submit transactions via the dashboard. Please wait for the local core to catch up to the generator.`
+        _error: `Replication lag must be less than ${lagThreshold} to submit transactions via the dashboard. Please wait for the local core to catch up to the proposer.`
       })
     }
 

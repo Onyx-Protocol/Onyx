@@ -25,11 +25,11 @@ cleanup() {(
 # call cleanup on program exit
 trap 'cleanup' EXIT
 
-# waitForGenerator blocks the script and greps
-# the generator's output for a log message signifying
-# the generator is fully initialized. It will timeout
+# waitForProposer blocks the script and greps
+# the proposer's output for a log message signifying
+# the proposer is fully initialized. It will timeout
 # after 30s.
-waitForGenerator() {(
+waitForProposer() {(
 	set +e
 	start=`date +%s`
 	while [ $(( `date +%s` - $start )) -lt 30 ]; do
@@ -52,9 +52,9 @@ echo 'installing corectl'
 go install chain/cmd/corectl
 
 echo 'running integration tests'
-$GOPATH/bin/corectl config-generator
+$GOPATH/bin/corectl config-proposer
 LISTEN=":8081" $GOPATH/bin/cored 2>&1 | tee $initlog &
-waitForGenerator
+waitForProposer
 SDKTARGET=chain-test
 cd $CHAIN/sdk/java
 mvn\

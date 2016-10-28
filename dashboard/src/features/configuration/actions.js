@@ -30,7 +30,7 @@ let actions = {
       } else {
         if (data.type == 'new') {
           data = {
-            is_generator: true,
+            is_proposer: true,
             is_signer: true,
             quorum: 1,
           }

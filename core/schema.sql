@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.4
+-- Dumped by pg_dump version 9.5.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -489,27 +489,16 @@ CREATE SEQUENCE chain_id_seq
 CREATE TABLE config (
     singleton boolean DEFAULT true NOT NULL,
     is_signer boolean,
-    is_generator boolean,
+    is_proposer boolean,
     blockchain_id text NOT NULL,
     configured_at timestamp with time zone NOT NULL,
-    generator_url text DEFAULT ''::text NOT NULL,
+    proposer_url text DEFAULT ''::text NOT NULL,
     block_xpub text DEFAULT ''::text NOT NULL,
     remote_block_signers bytea DEFAULT '\x'::bytea NOT NULL,
-    generator_access_token text DEFAULT ''::text NOT NULL,
+    proposer_access_token text DEFAULT ''::text NOT NULL,
     max_issuance_window_ms bigint,
     id text NOT NULL,
     CONSTRAINT config_singleton CHECK (singleton)
-);
-
-
---
--- Name: generator_pending_block; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE generator_pending_block (
-    singleton boolean DEFAULT true NOT NULL,
-    data bytea NOT NULL,
-    CONSTRAINT generator_pending_block_singleton CHECK (singleton)
 );
 
 
@@ -582,6 +571,17 @@ CREATE UNLOGGED TABLE pool_txs (
     tx_hash text NOT NULL,
     data bytea NOT NULL,
     sort_id bigint DEFAULT nextval('pool_tx_sort_id_seq'::regclass) NOT NULL
+);
+
+
+--
+-- Name: proposer_pending_block; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE proposer_pending_block (
+    singleton boolean DEFAULT true NOT NULL,
+    data bytea NOT NULL,
+    CONSTRAINT proposer_pending_block_singleton CHECK (singleton)
 );
 
 
@@ -826,14 +826,6 @@ ALTER TABLE ONLY config
 
 
 --
--- Name: generator_pending_block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY generator_pending_block
-    ADD CONSTRAINT generator_pending_block_pkey PRIMARY KEY (singleton);
-
-
---
 -- Name: leader_singleton_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -879,6 +871,14 @@ ALTER TABLE ONLY pool_txs
 
 ALTER TABLE ONLY pool_txs
     ADD CONSTRAINT pool_txs_sort_id_key UNIQUE (sort_id);
+
+
+--
+-- Name: proposer_pending_block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY proposer_pending_block
+    ADD CONSTRAINT proposer_pending_block_pkey PRIMARY KEY (singleton);
 
 
 --
@@ -1109,3 +1109,4 @@ ALTER TABLE ONLY account_utxos
 
 insert into migrations (filename, hash) values ('2016-10-17.0.core.schema-snapshot.sql', 'cff5210e2d6af410719c223a76443f73c5c12fe875f0efecb9a0a5937cf029cd');
 insert into migrations (filename, hash) values ('2016-10-19.0.core.add-core-id.sql', '9353da072a571d7a633140f2a44b6ac73ffe9e27223f7c653ccdef8df3e8139e');
+insert into migrations (filename, hash) values ('2016-10-26.0.core.rename-to-proposer.sql', 'a277fa908a445bd661647a6cba27eb6815dae2165c490f040146c17f1f912864');

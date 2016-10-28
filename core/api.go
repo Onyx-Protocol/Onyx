@@ -191,17 +191,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Config encapsulates Core-level, persistent configuration options.
 type Config struct {
-	ID                   string  `json:"id"`
-	IsSigner             bool    `json:"is_signer"`
-	IsGenerator          bool    `json:"is_generator"`
-	BlockchainID         bc.Hash `json:"blockchain_id"`
-	GeneratorURL         string  `json:"generator_url"`
-	GeneratorAccessToken string  `json:"generator_access_token"`
-	ConfiguredAt         time.Time
-	BlockPub             string         `json:"block_pub"`
-	Signers              []ConfigSigner `json:"block_signer_urls"`
-	Quorum               int
-	MaxIssuanceWindow    time.Duration
+	ID                  string  `json:"id"`
+	IsSigner            bool    `json:"is_signer"`
+	IsProposer          bool    `json:"is_proposer"`
+	BlockchainID        bc.Hash `json:"blockchain_id"`
+	ProposerURL         string  `json:"proposer_url"`
+	ProposerAccessToken string  `json:"proposer_access_token"`
+	ConfiguredAt        time.Time
+	BlockPub            string         `json:"block_pub"`
+	Signers             []ConfigSigner `json:"block_signer_urls"`
+	Quorum              int
+	MaxIssuanceWindow   time.Duration
 }
 
 type ConfigSigner struct {

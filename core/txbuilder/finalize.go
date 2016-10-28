@@ -21,7 +21,7 @@ var (
 	ErrBadInstructionCount = errors.New("too many signing instructions in template")
 )
 
-var Generator *rpc.Client
+var Proposer *rpc.Client
 
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
@@ -50,16 +50,16 @@ func publishTx(ctx context.Context, c *protocol.Chain, msg *bc.Tx) error {
 	// finalize a tx before the initial block has landed
 	c.WaitForBlock(1)
 
-	if Generator != nil {
+	if Proposer != nil {
 		// If this transaction is valid, ValidateTxCached will store it in the cache.
 		err := c.ValidateTxCached(msg)
 		if err != nil {
 			return errors.Wrap(err, "tx rejected")
 		}
 
-		err = Generator.Call(ctx, "/rpc/submit", msg, nil)
+		err = Proposer.Call(ctx, "/rpc/submit", msg, nil)
 		if err != nil {
-			err = errors.Wrap(err, "generator transaction notice")
+			err = errors.Wrap(err, "proposer transaction notice")
 			chainlog.Error(ctx, err)
 
 			// Return an error so that the client knows that it needs to

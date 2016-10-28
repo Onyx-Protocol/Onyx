@@ -973,11 +973,11 @@ POST /configure
 
 ```
 {
-  "is_generator": <boolean>,
+  "is_proposer": <boolean>,
 
-  // Supply these if is_generator is false.
-  "generator_url": ...,
-  "generator_access_token": <string>,
+  // Supply these if is_proposer is false.
+  "proposer_url": ...,
+  "proposer_access_token": <string>,
   "blockchain_id": <string>
 }
 ```
@@ -988,11 +988,11 @@ POST /configure
 {"message": "ok"}
 ```
 
-Returns 400 error if the generator URL, generator access token, and/or blockchain ID are bad.
+Returns 400 error if the proposer URL, proposer access token, and/or blockchain ID are bad.
 
 ### Info
 
-Returns useful information about this core, including the relative distance between the local block height and the generator's block height.
+Returns useful information about this core, including the relative distance between the local block height and the proposer's block height.
 
 #### Endpoint
 
@@ -1011,12 +1011,12 @@ POST /info
   "is_configured": <boolean>,
   "configured_at": <string, RFC3339 timestamp>,
   "is_signer": <boolean>,
-  "is_generator": <boolean>,
-  "generator_url": <string>,
-  "generator_access_token": <string>, // secret portion should be obfuscated
+  "is_proposer": <boolean>,
+  "proposer_url": <string>,
+  "proposer_access_token": <string>, // secret portion should be obfuscated
   "blockchain_id": <string>,
   "block_height": <integer>,
-  "generator_block_height": <integer>,
+  "proposer_block_height": <integer>,
   "is_production": <boolean>,
   "network_rpc_version": <integer>,
   "build_commit": <string>,

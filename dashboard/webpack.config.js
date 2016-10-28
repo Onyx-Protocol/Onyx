@@ -100,7 +100,7 @@ config.plugins.push(new webpack.DefinePlugin({
   'process.env.API_URL': JSON.stringify(process.env.API_URL),
   'process.env.PROXY_API_HOST': JSON.stringify(process.env.PROXY_API_HOST),
   'process.env.TESTNET_INFO_URL': JSON.stringify(process.env.TESTNET_INFO_URL),
-  'process.env.TESTNET_GENERATOR_URL': JSON.stringify(process.env.TESTNET_GENERATOR_URL),
+  'process.env.TESTNET_PROPOSER_URL': JSON.stringify(process.env.TESTNET_PROPOSER_URL),
 }))
 
 config.output.publicPath = publicPath

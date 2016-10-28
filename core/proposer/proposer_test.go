@@ -1,4 +1,4 @@
-package generator
+package proposer
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"chain/testutil"
 )
 
-func TestGeneratorRecovery(t *testing.T) {
+func TestProposerRecovery(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
@@ -24,7 +24,7 @@ func TestGeneratorRecovery(t *testing.T) {
 
 	// Create a new block and save it to pending blocks to simulate
 	// a crash after generating a block but before committing it.
-	pendingBlock, _, err := c.GenerateBlock(ctx, b, s, time.Now())
+	pendingBlock, _, err := c.ProposeBlock(ctx, b, s, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -33,13 +33,13 @@ func TestGeneratorRecovery(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	// Start Generate which should notice the pending block and commit it.
+	// Start Propose which should notice the pending block and commit it.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	go Generate(ctx, c, nil, dbtx, time.Second, func(error) {})
+	go Propose(ctx, c, nil, dbtx, time.Second, func(error) {})
 
 	// Wait for the block to land, and then make sure it's the same block
-	// that was pending before we ran Generate.
+	// that was pending before we ran Propose.
 	c.WaitForBlock(pendingBlock.Height)
 	confirmedBlock, err := c.GetBlock(ctx, pendingBlock.Height)
 	if err != nil {
@@ -65,7 +65,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 	}
 
 	signer := testSigner{pubKey, privKey}
-	g := &generator{
+	g := &proposer{
 		chain:          c,
 		signers:        []BlockSigner{signer},
 		latestBlock:    b1,
@@ -77,7 +77,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	block, _, err := c.GenerateBlock(ctx, tip, snapshot, time.Now())
+	block, _, err := c.ProposeBlock(ctx, tip, snapshot, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -99,7 +99,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
 	ctx := context.Background()
 
-	g := new(generator)
+	g := new(proposer)
 	block, err := protocol.NewInitialBlock(testutil.TestPubs, 1, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)

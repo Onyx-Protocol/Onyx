@@ -736,7 +736,7 @@ set -eo pipefail
 EOFPOSTGRES
 
 export DATABASE_URL='postgres://benchcore:benchcorepass@localhost/core'
-$HOME/corectl config-generator
+$HOME/corectl config-proposer
 $HOME/corectl create-token benchcore > $HOME/token.txt
 $HOME/corectl create-token -net benchcorenet > $HOME/network-token.txt
 `

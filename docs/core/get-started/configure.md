@@ -12,19 +12,19 @@ Choosing one of these options configures your Chain Core. You can reset it to it
 
 ## Create a new blockchain
 
-This creates a new blockchain with the Core as the block generator and single block signer. The Core's block-signing key is automatically created in the Mock HSM. The Core's URL and blockchain ID (needed by other Cores wishing to join this network) are available in Core Settings in the dashboard.
+This creates a new blockchain with the Core as the block proposer and single block signer. The Core's block-signing key is automatically created in the Mock HSM. The Core's URL and blockchain ID (needed by other Cores wishing to join this network) are available in Core Settings in the dashboard.
 
 For more information, see [operating a blockchain](../learn-more/blockchain-operators.md).
 
 ## Connect to an existing blockchain
 
-This connects to an existing blockchain whose block generator is already configured. You must supply the following information to join:
+This connects to an existing blockchain whose block proposer is already configured. You must supply the following information to join:
 
-* Block generator URL
+* Block proposer URL
 * Blockchain ID
 * Network token
 
-Once configured, Chain Core will begin downloading blockchain data from the block generator. Once your Core is up to date with the network it will receive new blocks as they are created.
+Once configured, Chain Core will begin downloading blockchain data from the block proposer. Once your Core is up to date with the network it will receive new blocks as they are created.
 
 For more information, see [participating in a blockchain](../learn-more/blockchain-participants.md).
 

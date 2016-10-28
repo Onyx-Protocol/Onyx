@@ -7,13 +7,13 @@ variable; the default is to connect to the "core" database on localhost.
 
 The config commands initialize the schema if necessary.
 
-Config Generator
+Config Proposer
 
-Subcommand 'config-generator' configures a new core as a generator.
+Subcommand 'config-proposer' configures a new core as a proposer.
 It matches the dashboard's behavior when writing the config,
 but with additional functionality.
 
-	corectl config-generator [-s] [-w duration] [quorum] [pubkey url]...
+	corectl config-proposer [-s] [-w duration] [quorum] [pubkey url]...
 
 Flag -s sets this core as a signer.
 
@@ -22,18 +22,18 @@ The default is 24 hours.
 
 Config Participant
 
-Subcommand 'config' configures the Core as a non-generator. It requires a
-blockchain ID and the corresponding generator URL. Optionally, it takes
+Subcommand 'config' configures the Core as a non-proposer. It requires a
+blockchain ID and the corresponding proposer URL. Optionally, it takes
 the public key of a block signing key if the Core is to be configured
 as a signer.
 
 	corectl config [-t token] [-k pubkey] [blockchain-id] [url]
 
-Flag -t provides an access token to authenticate with the generator.
+Flag -t provides an access token to authenticate with the proposer.
 
 Flag -k causes the core to be a block signer.
 Its argument is the local public key for signing blocks.
-If -k is not given, the core will be a participant (not a generator or a signer).
+If -k is not given, the core will be a participant (not a proposer or a signer).
 
 Create Block Keypair
 

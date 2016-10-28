@@ -3,12 +3,12 @@
 Command testnet-reset is a convenient command to reset a blockchain network.
 It takes no optional flags or other arguments.
 It expects twelve environment variables: four each for three Chain Core deployments.
-One is the generator, the other two are signers.
+One is the proposer, the other two are signers.
 
-	GENERATOR_URL
-	GENERATOR_CLIENT_TOKEN
-	GENERATOR_NETWORK_TOKEN
-	GENERATOR_PUBKEY
+	PROPOSER_URL
+	PROPOSER_CLIENT_TOKEN
+	PROPOSER_NETWORK_TOKEN
+	PROPOSER_PUBKEY
 
 	SIGNER1_URL
 	SIGNER1_CLIENT_TOKEN

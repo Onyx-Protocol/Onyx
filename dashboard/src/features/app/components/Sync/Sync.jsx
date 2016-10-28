@@ -41,7 +41,7 @@ class Sync extends React.Component {
     if (onTestnet) {
       elems.push(<li key='sync-title' className={navStyles.navigationTitle}>testnet sync</li>)
     } else {
-      elems.push(<li key='sync-title' className={navStyles.navigationTitle}>generator sync</li>)
+      elems.push(<li key='sync-title' className={navStyles.navigationTitle}>proposer sync</li>)
     }
 
     if (onTestnet && !testnetError && testnetNextReset) {

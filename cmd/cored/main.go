@@ -23,10 +23,10 @@ import (
 	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/fetch"
-	"chain/core/generator"
 	"chain/core/leader"
 	"chain/core/migrate"
 	"chain/core/mockhsm"
+	"chain/core/proposer"
 	"chain/core/query"
 	"chain/core/rpc"
 	"chain/core/txbuilder"
@@ -182,18 +182,18 @@ func main() {
 }
 
 func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, processID string) http.Handler {
-	var remoteGenerator *rpc.Client
-	if !config.IsGenerator {
-		remoteGenerator = &rpc.Client{
-			BaseURL:      config.GeneratorURL,
-			AccessToken:  config.GeneratorAccessToken,
+	var remoteProposer *rpc.Client
+	if !config.IsProposer {
+		remoteProposer = &rpc.Client{
+			BaseURL:      config.ProposerURL,
+			AccessToken:  config.ProposerAccessToken,
 			Username:     processID,
 			CoreID:       config.ID,
 			BuildTag:     buildTag,
 			BlockchainID: config.BlockchainID.String(),
 		}
 	}
-	txbuilder.Generator = remoteGenerator
+	txbuilder.Proposer = remoteProposer
 
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
@@ -219,7 +219,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	}
 
 	hsm := mockhsm.New(db)
-	var generatorSigners []generator.BlockSigner
+	var proposerSigners []proposer.BlockSigner
 	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
 	if config.IsSigner {
 		blockPub, err := hex.DecodeString(config.BlockPub)
@@ -227,7 +227,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
 		s := blocksigner.New(blockPub, hsm, db, c)
-		generatorSigners = append(generatorSigners, s) // "local" signer
+		proposerSigners = append(proposerSigners, s) // "local" signer
 		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
 			sig, err := s.ValidateAndSignBlock(ctx, b)
 			if errors.Root(err) == blocksigner.ErrInvalidKey {
@@ -237,9 +237,9 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		}
 	}
 
-	if config.IsGenerator {
+	if config.IsProposer {
 		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, config.BlockchainID.String(), config) {
-			generatorSigners = append(generatorSigners, signer)
+			proposerSigners = append(proposerSigners, signer)
 		}
 		c.MaxIssuanceWindow = config.MaxIssuanceWindow
 	}
@@ -278,7 +278,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	}
 
 	var (
-		genhealth   = h.HealthSetter("generator")
+		genhealth   = h.HealthSetter("proposer")
 		fetchhealth = h.HealthSetter("fetch")
 	)
 
@@ -287,10 +287,10 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	// otherwise there's a data race within protocol.Chain.
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
 		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
-		if config.IsGenerator {
-			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
+		if config.IsProposer {
+			go proposer.Propose(ctx, c, proposerSigners, db, blockPeriod, genhealth)
 		} else {
-			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
+			go fetch.Fetch(ctx, c, remoteProposer, fetchhealth)
 		}
 	})
 
@@ -301,7 +301,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 }
 
 // remoteSigner defines the address and public key of another Core
-// that may sign blocks produced by this generator.
+// that may sign blocks produced by this proposer.
 type remoteSigner struct {
 	Client *rpc.Client
 	Key    ed25519.PublicKey

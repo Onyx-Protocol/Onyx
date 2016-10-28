@@ -53,7 +53,7 @@ func (h *Handler) getSnapshotInfoRPC(ctx context.Context) (resp snapshotInfoResp
 }
 
 // getSnapshotRPC returns the raw protobuf snapshot at the provided height.
-// Non-generators can call this endpoint to get raw data
+// Non-proposers can call this endpoint to get raw data
 // that they can use to populate their own snapshot table.
 //
 // This handler doesn't use the httpjson.Handler format so that it can return

@@ -17,7 +17,7 @@ In this paper, we present the Chain Protocol: a design for a shared, multi-asset
 
 The Chain Protocol allows any network participant to define and issue assets by writing custom “issuance programs.” Once issued, units of an asset are controlled by “control programs.” These programs are expressed in a flexible and Turing-complete programming language that can be used to build sophisticated smart contracts.
 
-Each network is secured by a federation of “block signers.” The system is secure against forks as long as a quorum of block signers follows the protocol. For efficiency, block creation is delegated to a single “block generator.” Any node on the network can validate blocks and submit transactions to the network.
+Each network is secured by a federation of “block signers.” The system is secure against forks as long as a quorum of block signers follows the protocol. For efficiency, block creation is delegated to a single “block proposer.” Any node on the network can validate blocks and submit transactions to the network.
 
 Chain Core is an enterprise software product that implements the Chain Protocol. An open-source [developer edition](https://github.com/chain/chain) is freely available, and Chain operates a Chain blockchain network as a freely accessible testnet. 
 
@@ -176,13 +176,13 @@ A consensus program specifies a set of N public keys and uses the `CHECKMULTISIG
 
 Each public key corresponds to a block signer. Block signers should never sign two different blocks with the same height. As long as no more than 2M - N - 1 block signers violate this rule, the blockchain cannot be forked.
 
-Because of this rule, block signers must coordinate to make sure they sign the same block. To ensure this, they rely on a single *block generator*. The block generator collects transactions, periodically batching valid ones together into blocks.
+Because of this rule, block signers must coordinate to make sure they sign the same block. To ensure this, they rely on a single *block proposer*. The block proposer collects transactions, periodically batching valid ones together into blocks.
 
-The generator sends each proposed new block to the block signers. Block signers only sign blocks that have already been signed by the generator.
+The proposer sends each proposed new block to the block signers. Block signers only sign blocks that have already been signed by the proposer.
 
-While the block generator is not capable of forking the blockchain, it does have a privileged role. The block generator has control over network liveness: if the block generator crashes or otherwise stops producing new blocks, the blockchain halts. The block generator can also deadlock the network by sending inconsistent blocks to different block signers. Additionally, the block generator has control over the block timestamp, and can produce blocks with artificially “slow” timestamps. 
+While the block proposer is not capable of forking the blockchain, it does have a privileged role. The block proposer has control over network liveness: if it crashes or otherwise stops producing new blocks, the blockchain halts. The block proposer can also deadlock the network by sending inconsistent blocks to different block signers. Additionally, the block proposer has control over the block timestamp, and can produce blocks with artificially “slow” timestamps. 
 
-These tradeoffs are considered acceptable based on the current business use cases for the protocol. For most permissioned networks, it makes sense to have a single company or market utility responsible for continued operation of the network. High-availability of the block generator is an engineering problem that can be solved through replication, without the need for Byzantine-fault-tolerant distribution. If the block generator behaves maliciously, or is intentionally shut down, it is probably better (in these use cases) for the network to stop. Such misbehavior can be detected and dealt with out-of-band.
+These tradeoffs are considered acceptable based on the current business use cases for the protocol. For most permissioned networks, it makes sense to have a single company or market utility responsible for continued operation of the network. High-availability of the block proposer is an engineering problem that can be solved through replication, without the need for Byzantine-fault-tolerant distribution. If the block proposer behaves maliciously, or is intentionally shut down, it is probably better (in these use cases) for the network to stop. Such misbehavior can be detected and dealt with out-of-band.
 
 ![Federated Consensus](whitepaper-consensus.png)
 
@@ -210,7 +210,7 @@ The Chain Protocol can also be extended with additional confidentiality features
 
 Security against forks — i.e., security against history-editing or double-spending — is enforced by the consensus protocol.
 
-The consensus protocol guarantees safety — i.e, the blockchain cannot be “forked” to show two different versions of history — as long as at least 2M – N – 1 block signers obey the protocol. The protocol guarantees liveness as long as the block generator and at least M block signers follow the protocol.
+The consensus protocol guarantees safety — i.e, the blockchain cannot be “forked” to show two different versions of history — as long as at least 2M – N – 1 block signers obey the protocol. The protocol guarantees liveness as long as the block proposer and at least M block signers follow the protocol.
 
 If signers attempt to fork the blockchain, this behavior can be detected and proven to an observer. Finally, any party that monitors the block headers can detect history-editing when it occurs.
 
@@ -218,7 +218,7 @@ The set of participants and the number of required block signatures can be confi
 
 #### Local policy
 
-Block generators can implement local policies that filter out non-compliant transactions. This allows implementation of business or regulatory requirements (such as KYC/AML rules) that are outside the scope of the protocol. Local policies can be changed freely over time, as they are not enforced and verified by the rest of the network nodes.
+Block proposers can implement local policies that filter out non-compliant transactions. This allows implementation of business or regulatory requirements (such as KYC/AML rules) that are outside the scope of the protocol. Local policies can be changed freely over time, as they are not enforced and verified by the rest of the network nodes.
 
 #### Compact proofs
 

@@ -68,7 +68,7 @@ func MakeBlock(tb testing.TB, c *protocol.Chain) *bc.Block {
 		curState = state.Empty()
 	}
 
-	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
+	nextBlock, nextState, err := c.ProposeBlock(ctx, curBlock, curState, time.Now())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

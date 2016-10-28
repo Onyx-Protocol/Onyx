@@ -204,7 +204,7 @@ func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 		return err
 	}
 
-	b, s, err := c.GenerateBlock(ctx, block, snapshot, timestamp)
+	b, s, err := c.ProposeBlock(ctx, block, snapshot, timestamp)
 	if err != nil {
 		return err
 	}

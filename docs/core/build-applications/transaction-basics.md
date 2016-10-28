@@ -83,7 +83,7 @@ The Chain Core SDK assumes that private keys are held within an HSM controlled b
 
 ### Submit transaction
 
-Once a transaction is balanced and all inputs are signed, it is considered valid and can be submitted to the blockchain. The local core will forward the transaction to the generator, which adds it to the blockchain and propagates it to other cores on the network.
+Once a transaction is balanced and all inputs are signed, it is considered valid and can be submitted to the blockchain. The local core will forward the transaction to the proposer, which adds it to the blockchain and propagates it to other cores on the network.
 
 The Chain Core API does not return a response until either the transaction has been added to the blockchain and indexed by the local core, or there was an error. This allows you to write your programs in a linear fashion. In general, if a submission responds with success, the rest of your program may proceed with the guarantee that the transaction has been committed to the blockchain.
 

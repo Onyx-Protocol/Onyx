@@ -34,19 +34,19 @@ Blockchain observers, such as auditors, regulators, and analysts, don't issue or
 
 When initializing a Chain Core, a participant can connect to an existing blockchain by providing the following information:
 
-1. block generator URL
+1. block proposer URL
 2. network token
 2. blockchain ID
 
-Chain Core will begin downloading blockchain data from the block generator. Once the Core is up to date with the network it will receive new blocks as they are created.
+Chain Core will begin downloading blockchain data from the block proposer. Once the Core is up to date with the network it will receive new blocks as they are created.
 
 ### Receiving blocks
 
-Each participant in a blockchain independently validates each block it receives from the block generator through the following steps:
+Each participant in a blockchain independently validates each block it receives from the block proposer through the following steps:
 
 1. Validate that the block is signed by a quorum of block signers (as defined in the consensus program of the previous block)
 2. Validate each transaction in the block, ensuring each input is properly signed and does not double-spend asset units
 
 ### Submitting transactions
 
-When a transaction is submitted to the Chain Core API, it is automatically relayed to the block generator for inclusion in the next block. The API does not respond until the transaction appears in a block, or an error occurs. Therefore, once a successful response is received from the API, it is guaranteed that the transaction has been included in a valid block and is final and immutable on the blockchain.
+When a transaction is submitted to the Chain Core API, it is automatically relayed to the block proposer for inclusion in the next block. The API does not respond until the transaction appears in a block, or an error occurs. Therefore, once a successful response is received from the API, it is guaranteed that the transaction has been included in a valid block and is final and immutable on the blockchain.

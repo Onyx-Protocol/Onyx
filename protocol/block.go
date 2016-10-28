@@ -37,13 +37,13 @@ func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) 
 	return c.store.GetBlock(ctx, height)
 }
 
-// GenerateBlock generates a valid, but unsigned, candidate block from
+// ProposeBlock generates a valid, but unsigned, candidate block from
 // the current pending transaction pool. It returns the new block and
 // a snapshot of what the state snapshot is if the block is applied.
 //
 // After generating the block, the pending transaction pool will be
 // empty.
-func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, result *state.Snapshot, err error) {
+func (c *Chain) ProposeBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, result *state.Snapshot, err error) {
 	timestampMS := bc.Millis(now)
 	if timestampMS < prev.TimestampMS {
 		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
