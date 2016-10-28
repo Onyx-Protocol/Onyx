@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/binary"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,17 +9,13 @@ import (
 	"strconv"
 )
 
-var signed bool
-
 func main() {
 	log.SetFlags(0)
 	log.SetPrefix("varint: ")
 
-	flag.BoolVar(&signed, "s", false, "signed")
-	flagNotBoolVar(&signed, "u", true, "unsigned (default)")
-	flag.Parse()
+	// strip the "varint" token off the front of all args
+	args := os.Args[1:]
 
-	args := flag.Args()
 	if len(args) == 0 {
 		// decode from stdin
 		b, err := ioutil.ReadAll(os.Stdin)
@@ -28,28 +23,11 @@ func main() {
 			errorf("could not read from stdin: %s", err)
 		}
 
-		var nbytes int
-		if signed {
-			var n int64
-			n, nbytes = binary.Varint(b)
-			if nbytes <= 0 {
-				errorf("could not parse varint")
-			}
-			_, err = os.Stdout.Write([]byte(strconv.FormatInt(n, 10)))
-			if err != nil {
-				errorf("could not write to stdout: %s", err)
-			}
-		} else {
-			var n uint64
-			n, nbytes = binary.Uvarint(b)
-			if nbytes <= 0 {
-				errorf("could not parse uvarint")
-			}
-			_, err = os.Stdout.Write([]byte(strconv.FormatUint(n, 10)))
-			if err != nil {
-				errorf("could not write to stdout: %s", err)
-			}
+		n, nbytes := binary.Uvarint(b)
+		if nbytes <= 0 {
+			errorf("could not parse uvarint")
 		}
+		fmt.Println(n)
 		return
 	}
 
@@ -58,20 +36,13 @@ func main() {
 		errorf("invalid argument count %d; varint must read from stdin or take 1 argument", len(args))
 	}
 
-	val, err := strconv.ParseInt(args[0], 10, 64)
+	val, err := strconv.ParseUint(args[0], 10, 64)
 	if err != nil {
-		errorf("could not parse base 10 int")
+		errorf("could not parse base 10 uint")
 	}
 
-	var (
-		buf [10]byte
-		n   int
-	)
-	if signed {
-		n = binary.PutVarint(buf[:], val)
-	} else {
-		n = binary.PutUvarint(buf[:], uint64(val))
-	}
+	var buf [10]byte
+	n := binary.PutUvarint(buf[:], val)
 
 	_, err = os.Stdout.Write(buf[:n])
 	if err != nil {

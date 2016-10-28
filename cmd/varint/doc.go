@@ -4,10 +4,7 @@ Command varint encodes a decimal number to or from varint.
 
 Usage:
 
-      varint [-u] [-s]
-
-It takes flags -s and -u to choose signed or unsigned encoding.
-The default is unsigned (and unsigned is the only encoding used in Chain Protocol).
+      varint
 
 It reads from stdin when decoding, and takes a parameter when encoding.
 
@@ -15,11 +12,11 @@ Examples:
 
 Obtain the decimal value of the hex-encoded varint 0101:
 
-      printf 0101 | hex -d | varint -u
+      printf 0101 | hex -d | varint
 
 Obtain the unsigned varint value of the decimal number 1234:
 
-      varint -u 1234 | hex -e
+      varint 1234 | hex
 
 Note that encoding a varint without hex encoding it will often result in an
 byte value that cannot be printed as ASCII.
