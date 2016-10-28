@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -veu
+
+cd $CHAIN
+bin/jfmt --replace \
+  $CHAIN/perf/*.java \
+  $CHAIN/sdk/java/src/main/java/com/chain/**/*.java \
+  $CHAIN/sdk/java/src/test/java/com/chain/TestUtils.java \
+  $CHAIN/sdk/java/src/test/java/com/chain/integration/*.java
+git diff --exit-code

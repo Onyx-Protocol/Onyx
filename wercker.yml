@@ -1,13 +1,13 @@
-box: chaindev/wercker:20160923
+box: chaindev/ci:20161114
 # To update the docker image for this "box",
-# see $CHAIN/docker/wercker.
+# see $CHAIN/docker/ci.
 
 services:
   - id: clkao/postgres-plv8
     env:
       POSTGRES_PASSWORD: p
       POSTGRES_USER: u
-      POSTGRES_DB: api-test
+      POSTGRES_DB: core-test
 
 build:
   steps:
@@ -62,14 +62,18 @@ build:
     - inz/npm-install@1.1.5:
       cwd: dashboard/
     - script:
-        name: lint dashboard
-        cwd: dashboard/
+        name: unit tests and formatting
         code: |
-          npm run lint
+          cp -a $WERCKER_SOURCE_DIR $CHAIN
+          DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" /usr/bin/unit-tests
+          /usr/bin/gofmt
+          /usr/bin/javafmt
+          /usr/bin/dashboard
 
-
-
-
-
-
-
+integration-tests:
+  steps:
+    - script:
+        name: integration tests
+        code: |
+          cp -a $WERCKER_SOURCE_DIR $CHAIN
+          DATABASE_URL="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" CACHE_DIR="$WERCKER_CACHE_DIR/maven" /usr/bin/integration-tests
