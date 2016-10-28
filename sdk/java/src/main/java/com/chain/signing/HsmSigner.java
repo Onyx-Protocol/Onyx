@@ -66,7 +66,7 @@ public class HsmSigner {
       HashMap<String, Object> body = new HashMap();
       body.put("transactions", Arrays.asList(template));
       body.put("xpubs", entry.getValue());
-      template = hsm.singletonBatchRequest("sign-transaction", body, Transaction.Template.class);
+      template = hsm.singletonBatchRequest("sign-transaction", body, Transaction.Template.class, APIException.class);
     }
     return template;
   }
@@ -95,7 +95,7 @@ public class HsmSigner {
       requestBody.put("transactions", tmpls);
       requestBody.put("xpubs", entry.getValue());
       BatchResponse<Transaction.Template> batch =
-          hsm.batchRequest("sign-transaction", requestBody, Transaction.Template.class);
+          hsm.batchRequest("sign-transaction", requestBody, Transaction.Template.class, APIException.class);
 
       // We need to work towards a single, final BatchResponse that uses the
       // original indexes. For the next cycle, we should retain only those

@@ -40,7 +40,7 @@ public class ControlProgram {
    */
   public static BatchResponse<ControlProgram> createBatch(Client client, List<Builder> programs)
       throws ChainException {
-    return client.batchRequest("create-control-program", programs, ControlProgram.class);
+    return client.batchRequest("create-control-program", programs, ControlProgram.class, APIException.class);
   }
 
   /**
@@ -76,7 +76,7 @@ public class ControlProgram {
      */
     public ControlProgram create(Client client) throws ChainException {
       return client.singletonBatchRequest(
-          "create-control-program", Arrays.asList(this), ControlProgram.class);
+          "create-control-program", Arrays.asList(this), ControlProgram.class, APIException.class);
     }
 
     /**

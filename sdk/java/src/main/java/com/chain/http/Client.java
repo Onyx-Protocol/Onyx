@@ -139,16 +139,17 @@ public class Client {
    * @param action The requested API action
    * @param body Body payload sent to the API as JSON
    * @param tClass Type of object to be deserialized from the response JSON
+   * @param eClass Type of error object to be deserialized from the response JSON
    * @return the result of the post request
    * @throws ChainException
    */
-  public <T> BatchResponse<T> batchRequest(String action, Object body, Type tClass)
+  public <T> BatchResponse<T> batchRequest(String action, Object body, Type tClass, Type eClass)
       throws ChainException {
     return post(
         action,
         body,
         (Response response, Gson deserializer) ->
-            new BatchResponse(response, deserializer, tClass));
+            new BatchResponse(response, deserializer, tClass, eClass));
   }
 
   /**
@@ -167,13 +168,13 @@ public class Client {
    * @return the result of the post request
    * @throws ChainException
    */
-  public <T> T singletonBatchRequest(String action, Object body, Type tClass)
+  public <T> T singletonBatchRequest(String action, Object body, Type tClass, Type eClass)
       throws ChainException {
     return post(
         action,
         body,
         (Response response, Gson deserializer) -> {
-          BatchResponse<T> batch = new BatchResponse(response, deserializer, tClass);
+          BatchResponse<T> batch = new BatchResponse(response, deserializer, tClass, eClass);
 
           List<APIException> errors = batch.errors();
           if (errors.size() == 1) {

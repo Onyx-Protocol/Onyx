@@ -80,7 +80,7 @@ public class Account {
     for (Builder builder : builders) {
       builder.clientToken = UUID.randomUUID().toString();
     }
-    return client.batchRequest("create-account", builders, Account.class);
+    return client.batchRequest("create-account", builders, Account.class, APIException.class);
   }
 
   /**
@@ -175,7 +175,7 @@ public class Account {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Account create(Client client) throws ChainException {
-      return client.singletonBatchRequest("create-account", Arrays.asList(this), Account.class);
+      return client.singletonBatchRequest("create-account", Arrays.asList(this), Account.class, APIException.class);
     }
 
     /**
