@@ -35,10 +35,24 @@ type detailedError struct {
 	Temporary bool        `json:"temporary"`
 }
 
-var temporaryErrorCodes = map[string]bool{
-	"CH000": true, // internal server error
-	"CH001": true, // request timed out
-	"CH761": true, // outputs currently reserved
+func isTemporary(info errorInfo, err error) bool {
+	switch info.ChainCode {
+	case "CH000": // internal server error
+		return true
+	case "CH001": // request timed out
+		return true
+	case "CH761": // outputs currently reserved
+		return true
+	case "CH706": // 1 or more action errors
+		errs := errors.Data(err).([]detailedError)
+		temp := true
+		for _, actionErr := range errs {
+			temp = temp && isTemporary(actionErr.errorInfo, nil)
+		}
+		return temp
+	default:
+		return false
+	}
 }
 
 var (
@@ -148,7 +162,7 @@ func errInfo(err error) (body detailedError, info errorInfo) {
 		errorInfo: info,
 		Detail:    errors.Detail(err),
 		Data:      errors.Data(err),
-		Temporary: temporaryErrorCodes[info.ChainCode],
+		Temporary: isTemporary(info, err),
 	}
 	return body, info
 }
