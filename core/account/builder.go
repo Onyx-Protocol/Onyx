@@ -48,7 +48,7 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		return nil, errors.Wrap(err, "get account info")
 	}
 
-	utxodbSource := utxodb.Source{
+	src := utxodb.Source{
 		AssetID:     a.AssetID,
 		Amount:      a.Amount,
 		AccountID:   a.AccountID,
@@ -56,13 +56,10 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		OutputIndex: a.TxOut,
 		ClientToken: a.ClientToken,
 	}
-	utxodbSources := []utxodb.Source{utxodbSource}
-	// TODO(kr): make utxodb.Reserve take a single Source not a slice
-	rids, reserved, change, err := a.accounts.utxoDB.Reserve(ctx, utxodbSources, maxTime)
+	rid, reserved, change, err := a.accounts.utxoDB.Reserve(ctx, src, maxTime)
 	if err != nil {
 		return nil, errors.Wrap(err, "reserving utxos")
 	}
-	rid := rids[0] // len(rids)==len(utxodbSources)
 
 	var (
 		txins      []*bc.TxInput
