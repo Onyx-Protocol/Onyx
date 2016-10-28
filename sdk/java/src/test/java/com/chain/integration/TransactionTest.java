@@ -9,6 +9,8 @@ import com.chain.api.MockHsm;
 import com.chain.api.PagedItems;
 import com.chain.api.Transaction;
 import com.chain.api.UnspentOutput;
+import com.chain.exception.APIException;
+import com.chain.exception.BuildException;
 import com.chain.http.BatchResponse;
 import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
@@ -298,17 +300,17 @@ public class TransactionTest {
             .addAction(
                 new Transaction.Action.SetTransactionReferenceData()
                     .addReferenceDataField("test", test));
-    BatchResponse<Transaction.Template> buildResponses =
+    BatchResponse<Transaction.Template,BuildException> buildResponses =
         Transaction.buildBatch(client, Arrays.asList(aliceBuilder, bobTheBuilder));
     assertEquals(2, buildResponses.successes().size());
 
-    BatchResponse<Transaction.Template> signResponses =
+    BatchResponse<Transaction.Template,APIException> signResponses =
         HsmSigner.signBatch(
             Arrays.asList(buildResponses.successes().get(0), new Transaction.Template()));
     List<Transaction.Template> templates = signResponses.successes();
     templates.add(buildResponses.successes().get(1));
 
-    BatchResponse<Transaction.SubmitResponse> submitResponses =
+    BatchResponse<Transaction.SubmitResponse,APIException> submitResponses =
         Transaction.submitBatch(client, templates);
     assertNotNull(signResponses.errors().get(0));
     assertEquals(2, submitResponses.size());

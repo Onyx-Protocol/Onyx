@@ -36,6 +36,10 @@ import com.google.gson.annotations.SerializedName;
  * CH700 - Reference data does not match previous transaction's reference data<br>
  * CH701 - Invalid action type<br>
  * CH702 - Invalid alias on action<br>
+ * CH703 - Invalid action object<br>
+ * CH704 - Invalid asset amount<br>
+ * CH705 - Unsafe transaction: leaves assets to be taken without requiring payment<br>
+ * CH706 - One or more actions had an error: see attached data<br>
  * CH730 - Missing raw transaction<br>
  * CH731 - Too many signing instructions in template for transaction<br>
  * CH732 - Invalid transaction input index<br>

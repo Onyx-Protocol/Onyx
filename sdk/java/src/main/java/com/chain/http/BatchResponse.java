@@ -14,17 +14,17 @@ import com.squareup.okhttp.Response;
 /**
  * BatchResponse provides a convenient interface for handling the results of
  * batched API calls. The response contains one success or error per outgoing
- * request item in the batch. Errors are always of type APIExcpetion.
+ * request item in the batch. Errors must always inherit from APIExcpetion.
  */
-public class BatchResponse<T> {
+public class BatchResponse<T, E extends APIException> {
   private Response response;
   private Map<Integer, T> successesByIndex = new LinkedHashMap<>();
-  private Map<Integer, APIException> errorsByIndex = new LinkedHashMap<>();
+  private Map<Integer, E> errorsByIndex = new LinkedHashMap<>();
 
   /**
    * This constructor is used when deserializing a response from an API call.
    */
-  public BatchResponse(Response response, Gson serializer, Type tClass)
+  public BatchResponse(Response response, Gson serializer, Type tClass, Type eClass)
       throws ChainException, IOException {
     this.response = response;
 
@@ -34,7 +34,7 @@ public class BatchResponse<T> {
         JsonElement elem = root.get(i);
 
         // Test for interleaved errors
-        APIException err = serializer.fromJson(elem, APIException.class);
+        E err = serializer.fromJson(elem, eClass);
         if (err.code != null) {
           errorsByIndex.put(i, err);
           continue;
@@ -53,7 +53,7 @@ public class BatchResponse<T> {
    * object from a map of successes and a map of errors. It ensures that
    * the successes and errors are stored in an order-preserving fashion.
    */
-  public BatchResponse(Map<Integer, T> successes, Map<Integer, APIException> errors) {
+  public BatchResponse(Map<Integer, T> successes, Map<Integer, E> errors) {
     List<Integer> successIndexes = new ArrayList<>();
     Iterator<Integer> successIter = successes.keySet().iterator();
     while (successIter.hasNext()) successIndexes.add(successIter.next());
@@ -114,8 +114,8 @@ public class BatchResponse<T> {
    * corresponds to the order of the request objects that produced the
    * errors.
    */
-  public List<APIException> errors() {
-    List<APIException> res = new ArrayList<>();
+  public List<E> errors() {
+    List<E> res = new ArrayList<>();
     res.addAll(errorsByIndex.values());
     return res;
   }
@@ -134,7 +134,7 @@ public class BatchResponse<T> {
    * object that produced the error. The set of this map's keys is mutually
    * exclusive of the keys returned by successByIndex.
    */
-  public Map<Integer, APIException> errorsByIndex() {
+  public Map<Integer, E> errorsByIndex() {
     return errorsByIndex;
   }
 }

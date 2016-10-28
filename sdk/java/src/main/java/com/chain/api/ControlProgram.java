@@ -38,9 +38,9 @@ public class ControlProgram {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<ControlProgram> createBatch(Client client, List<Builder> programs)
+  public static BatchResponse<ControlProgram,APIException> createBatch(Client client, List<Builder> programs)
       throws ChainException {
-    return client.batchRequest("create-control-program", programs, ControlProgram.class);
+    return client.batchRequest("create-control-program", programs, ControlProgram.class, APIException.class);
   }
 
   /**
@@ -76,7 +76,7 @@ public class ControlProgram {
      */
     public ControlProgram create(Client client) throws ChainException {
       return client.singletonBatchRequest(
-          "create-control-program", Arrays.asList(this), ControlProgram.class);
+          "create-control-program", Arrays.asList(this), ControlProgram.class, APIException.class);
     }
 
     /**

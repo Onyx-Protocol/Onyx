@@ -75,12 +75,12 @@ public class Asset {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<Asset> createBatch(Client client, List<Builder> builders)
+  public static BatchResponse<Asset,APIException> createBatch(Client client, List<Builder> builders)
       throws ChainException {
     for (Builder asset : builders) {
       asset.clientToken = UUID.randomUUID().toString();
     }
-    return client.batchRequest("create-asset", builders, Asset.class);
+    return client.batchRequest("create-asset", builders, Asset.class, APIException.class);
   }
 
   /**
@@ -205,7 +205,7 @@ public class Asset {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Asset create(Client client) throws ChainException {
-      return client.singletonBatchRequest("create-asset", Arrays.asList(this), Asset.class);
+      return client.singletonBatchRequest("create-asset", Arrays.asList(this), Asset.class, APIException.class);
     }
 
     /**

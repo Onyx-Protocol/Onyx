@@ -66,7 +66,7 @@ public class HsmSigner {
       HashMap<String, Object> body = new HashMap();
       body.put("transactions", Arrays.asList(template));
       body.put("xpubs", entry.getValue());
-      template = hsm.singletonBatchRequest("sign-transaction", body, Transaction.Template.class);
+      template = hsm.singletonBatchRequest("sign-transaction", body, Transaction.Template.class, APIException.class);
     }
     return template;
   }
@@ -80,7 +80,7 @@ public class HsmSigner {
   // TODO(boymanjor): Currently this method trusts the hsm to return a tx template
   // in the event it is unable to sign it. Moving forward we should employ a filter
   // step and only send txs to the HSM that holds the proper key material to sign.
-  public static BatchResponse<Transaction.Template> signBatch(List<Transaction.Template> tmpls)
+  public static BatchResponse<Transaction.Template,APIException> signBatch(List<Transaction.Template> tmpls)
       throws ChainException {
     int[] originalIndex = new int[tmpls.size()];
     for (int i = 0; i < tmpls.size(); i++) {
@@ -94,8 +94,8 @@ public class HsmSigner {
       HashMap<String, Object> requestBody = new HashMap();
       requestBody.put("transactions", tmpls);
       requestBody.put("xpubs", entry.getValue());
-      BatchResponse<Transaction.Template> batch =
-          hsm.batchRequest("sign-transaction", requestBody, Transaction.Template.class);
+      BatchResponse<Transaction.Template,APIException> batch =
+          hsm.batchRequest("sign-transaction", requestBody, Transaction.Template.class, APIException.class);
 
       // We need to work towards a single, final BatchResponse that uses the
       // original indexes. For the next cycle, we should retain only those
