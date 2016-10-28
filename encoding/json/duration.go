@@ -1,6 +1,7 @@
 package json
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -19,6 +20,10 @@ type Duration struct {
 // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h").
 // If there is no time unit, UnmarshalJSON defaults to ms.
 func (d *Duration) UnmarshalJSON(b []byte) error {
+	if bytes.Equal(b, []byte("null")) {
+		return nil
+	}
+
 	dMS, err := strconv.ParseInt(string(b), 10, 64)
 	if err != nil {
 		// Assume this is a string instead, in which case we need to unmarshal it as a string
