@@ -250,8 +250,23 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 // If it doesn't exist (if it's already been consumed
 // or canceled), it is silently ignored.
 func (res *DBReserver) Cancel(ctx context.Context, rid int32) error {
-	_, err := res.DB.Exec(ctx, "SELECT cancel_reservation($1)", rid)
-	return err
+	dbtx, err := res.DB.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err, "begin transaction for canceling utxo reservation")
+	}
+	defer dbtx.Rollback(ctx)
+
+	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
+	if err != nil {
+		return errors.Wrap(err, "locking table for canceling utxo reservation")
+	}
+
+	_, err = dbtx.Exec(ctx, "SELECT cancel_reservation($1)", rid)
+	if err != nil {
+		return errors.Wrap(err, "canceling utxo reservation")
+	}
+
+	return dbtx.Commit(ctx)
 }
 
 func (res *DBReserver) ExpireReservations(ctx context.Context) error {
