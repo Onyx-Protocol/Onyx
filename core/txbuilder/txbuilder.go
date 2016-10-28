@@ -57,8 +57,11 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 	}
 
 	wg.Wait()
-	var tplSigInsts []*SigningInstruction
-	var errs []error
+	var (
+		tplSigInsts []*SigningInstruction
+		errs        []error
+		rollbacks   []func()
+	)
 result:
 	for i, v := range results {
 		if v.err != nil {
@@ -120,14 +123,19 @@ result:
 			}
 		}
 
+		if buildResult.Rollback != nil {
+			rollbacks = append(rollbacks, buildResult.Rollback)
+		}
 	}
 
 	if len(errs) > 0 {
+		rollback(rollbacks)
 		return nil, errors.WithData(ErrAction, errs)
 	}
 
 	err := checkBlankCheck(tx)
 	if err != nil {
+		rollback(rollbacks)
 		return nil, err
 	}
 
@@ -141,6 +149,12 @@ result:
 		Local:               local,
 	}
 	return tpl, nil
+}
+
+func rollback(rollbacks []func()) {
+	for _, f := range rollbacks {
+		f()
+	}
 }
 
 // KeyIDs produces KeyIDs from a list of xpubs and a derivation path

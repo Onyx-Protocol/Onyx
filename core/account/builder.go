@@ -10,6 +10,7 @@ import (
 	"chain/core/txbuilder"
 	chainjson "chain/encoding/json"
 	"chain/errors"
+	"chain/log"
 	"chain/protocol/bc"
 )
 
@@ -56,10 +57,12 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		ClientToken: a.ClientToken,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
-	reserved, change, err := a.accounts.utxoDB.Reserve(ctx, utxodbSources, maxTime)
+	// TODO(kr): make utxodb.Reserve take a single Source not a slice
+	rids, reserved, change, err := a.accounts.utxoDB.Reserve(ctx, utxodbSources, maxTime)
 	if err != nil {
 		return nil, errors.Wrap(err, "reserving utxos")
 	}
+	rid := rids[0] // len(rids)==len(utxodbSources)
 
 	var (
 		txins      []*bc.TxInput
@@ -84,7 +87,13 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, change[0].Amount, acp, nil))
 	}
 
-	return &txbuilder.BuildResult{Inputs: txins, Outputs: changeOuts, SigningInstructions: tplInsts}, nil
+	br := &txbuilder.BuildResult{
+		Inputs:              txins,
+		Outputs:             changeOuts,
+		SigningInstructions: tplInsts,
+		Rollback:            canceler(ctx, a.accounts, rid),
+	}
+	return br, nil
 }
 
 func (m *Manager) NewSpendUTXOAction(outpoint bc.Outpoint) txbuilder.Action {
@@ -111,7 +120,7 @@ type spendUTXOAction struct {
 }
 
 func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
-	r, err := a.accounts.utxoDB.ReserveUTXO(ctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
+	rid, r, err := a.accounts.utxoDB.ReserveUTXO(ctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +138,18 @@ func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuil
 	return &txbuilder.BuildResult{
 		Inputs:              []*bc.TxInput{txInput},
 		SigningInstructions: []*txbuilder.SigningInstruction{sigInst},
+		Rollback:            canceler(ctx, a.accounts, rid),
 	}, nil
+}
+
+// Best-effort cancellation attempt to put in txbuilder.BuildResult.Rollback.
+func canceler(ctx context.Context, m *Manager, rid int32) func() {
+	return func() {
+		err := m.utxoDB.Cancel(ctx, rid)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}
 }
 
 func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxodb.UTXO, refData []byte) (

@@ -77,6 +77,14 @@ type (
 		SigningInstructions []*SigningInstruction
 		MinTimeMS           uint64
 		ReferenceData       []byte
+
+		// If set, Rollback attempts to undo any side effects
+		// of building the action. For example, it might cancel
+		// any reservations that were made on UTXOs in a spend
+		// action. Rollback is a "best-effort" operation and not
+		// guaranteed to succeed. Each action's side effects,
+		// if any, must be designed with this in mind.
+		Rollback func()
 	}
 
 	Action interface {
