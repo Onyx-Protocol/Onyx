@@ -129,6 +129,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		"generator_block_height_fetched_at": generatorFetched,
 		"is_production":                     isProduction(),
 		"network_rpc_version":               networkRPCVersion,
+		"core_id":                           h.Config.ID,
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
 		"health":                            h.health(),

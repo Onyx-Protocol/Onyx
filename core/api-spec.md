@@ -1019,6 +1019,7 @@ POST /info
   "generator_block_height": <integer>,
   "is_production": <boolean>,
   "network_rpc_version": <integer>,
+  "core_id": <string>,
   "build_commit": <string>,
   "build_date": <string>
 }
