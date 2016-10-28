@@ -32,21 +32,21 @@ import (
 )
 
 var (
-	flagD       = flag.Bool("d", false, "delete instances from previous runs")
-	flagP       = flag.Bool("p", false, "capture cpu and heap profiles from cored")
-	flagQ       = flag.Duration("q", 0, "capture SQL slow queries")
-	flagWith    = flag.String("with", "", "upload the provided file alongside the java program")
-	flagDBStats = flag.Bool("dbstats", false, "capture database query statistics")
+	flagD        = flag.Bool("d", false, "delete instances from previous runs")
+	flagP        = flag.Bool("p", false, "capture cpu and heap profiles from cored")
+	flagQ        = flag.Duration("q", 0, "capture SQL slow queries")
+	flagWith     = flag.String("with", "", "upload the provided file alongside the java program")
+	flagInstance = flag.String("instance", "m3.xlarge", "the EC2 instance size to use")
+	flagDBStats  = flag.Bool("dbstats", false, "capture database query statistics")
 
-	appName      = "benchcore"
-	testRunID    = appName + randString()
-	ami          = "ami-f71883e0" // Ubuntu LTS 16.04
-	instanceType = "m3.xlarge"
-	subnetID     = "subnet-80560fd9"
-	key          = os.Getenv("USER")
-	user         = os.Getenv("USER")
-	schemaPath   = os.Getenv("CHAIN") + "/core/schema.sql"
-	sdkDir       = os.Getenv("CHAIN") + "/sdk/java"
+	appName    = "benchcore"
+	testRunID  = appName + randString()
+	ami        = "ami-f71883e0" // Ubuntu LTS 16.04
+	subnetID   = "subnet-80560fd9"
+	key        = os.Getenv("USER")
+	user       = os.Getenv("USER")
+	schemaPath = os.Getenv("CHAIN") + "/core/schema.sql"
+	sdkDir     = os.Getenv("CHAIN") + "/sdk/java"
 
 	awsConfig = &aws.Config{Region: aws.String("us-east-1")}
 	ec2client = ec2.New(awsConfig)
@@ -436,7 +436,7 @@ func makeEC2(role string, inst *instance, wg *sync.WaitGroup) {
 		resv, err = ec2client.RunInstances(&ec2.RunInstancesInput{
 			ClientToken:  &runtoken,
 			ImageID:      &ami,
-			InstanceType: &instanceType,
+			InstanceType: flagInstance,
 			KeyName:      &key,
 			MinCount:     &n,
 			MaxCount:     &n,
