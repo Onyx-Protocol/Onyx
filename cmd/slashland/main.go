@@ -182,21 +182,6 @@ func land(req *landReq) {
 		return
 	}
 
-	cmd = dirCmd(landdir, "git", "filter-branch", "-f", "--env-filter", `
-		export GIT_COMMITTER_NAME=$GIT_AUTHOR_NAME
-		export GIT_COMMITTER_EMAIL=$GIT_AUTHOR_EMAIL
-	`, "--", req.ref, "^origin/main")
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		sayf("<@%s|%s> failed to land %s: could not fix commiter name/email",
-			req.userID,
-			req.userName,
-			req.ref,
-		)
-		return
-	}
-
 	cmd = dirCmd(landdir, "git", "push", "origin", req.ref, "-f")
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
