@@ -62,16 +62,16 @@ type (
 	}
 )
 
-func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (*UTXO, error) {
+func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (reservationID int32, utxo *UTXO, err error) {
 	dbtx, err := res.DB.Begin(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "begin transaction for reserving utxos")
+		return 0, nil, errors.Wrap(err, "begin transaction for reserving utxos")
 	}
 	defer dbtx.Rollback(ctx)
 
 	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
-		return nil, errors.Wrap(err, "acquire lock for reserving utxos")
+		return 0, nil, errors.Wrap(err, "acquire lock for reserving utxos")
 	}
 
 	const (
@@ -87,7 +87,6 @@ func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32
 	)
 
 	var (
-		reservationID  int32
 		alreadyExisted bool
 		utxoExists     bool
 	)
@@ -97,13 +96,13 @@ func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32
 		&utxoExists,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "reserve utxo")
+		return 0, nil, errors.Wrap(err, "reserve utxo")
 	}
 	if reservationID <= 0 {
 		if !utxoExists {
-			return nil, pg.ErrUserInputNotFound
+			return 0, nil, pg.ErrUserInputNotFound
 		}
-		return nil, ErrReserved
+		return 0, nil, ErrReserved
 	}
 
 	var (
@@ -116,18 +115,18 @@ func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32
 
 	err = dbtx.QueryRow(ctx, utxosQ, reservationID).Scan(&accountID, &assetID, &amount, &programIndex, &controlProg)
 	if err == stdsql.ErrNoRows {
-		return nil, pg.ErrUserInputNotFound
+		return 0, nil, pg.ErrUserInputNotFound
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "query reservation member")
+		return 0, nil, errors.Wrap(err, "query reservation member")
 	}
 
 	err = dbtx.Commit(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "commit transaction for reserving utxo")
+		return 0, nil, errors.Wrap(err, "commit transaction for reserving utxo")
 	}
 
-	utxo := &UTXO{
+	utxo = &UTXO{
 		Outpoint: bc.Outpoint{
 			Hash:  txHash,
 			Index: pos,
@@ -141,28 +140,31 @@ func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32
 		ControlProgramIndex: programIndex,
 	}
 
-	return utxo, nil
+	return reservationID, utxo, nil
 }
 
-func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c []Change, err error) {
+func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Time) (reservationIDs []int32, u []*UTXO, c []Change, err error) {
 	var reserved []*UTXO
 	var change []Change
-	var reservationIDs []int64
 
 	dbtx, err := res.DB.Begin(ctx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "begin transaction for reserving utxos")
+		return nil, nil, nil, errors.Wrap(err, "begin transaction for reserving utxos")
 	}
 	defer dbtx.Rollback(ctx)
 
 	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "acquire lock for reserving utxos")
+		return nil, nil, nil, errors.Wrap(err, "acquire lock for reserving utxos")
 	}
 
 	defer func() {
 		if err != nil {
-			dbtx.Exec(ctx, "SELECT cancel_reservations($1)", pq.Int64Array(reservationIDs)) // ignore errors
+			var a pq.Int64Array
+			for _, rid := range reservationIDs {
+				a = append(a, int64(rid))
+			}
+			dbtx.Exec(ctx, "SELECT cancel_reservations($1)", a) // ignore errors
 		}
 	}()
 
@@ -178,12 +180,14 @@ func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Tim
 		`
 	)
 
+	// TODO(kr): make sources not be a list;
+	// we only ever call Reserve with a single item.
 	for _, source := range sources {
 		var (
 			txHash   stdsql.NullString
 			outIndex stdsql.NullInt64
 
-			reservationID  int64
+			reservationID  int32
 			alreadyExisted bool
 			existingChange uint64
 			reservedAmount uint64
@@ -214,13 +218,13 @@ func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Tim
 			&insufficient,
 		)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "reserve utxos")
+			return nil, nil, nil, errors.Wrap(err, "reserve utxos")
 		}
 		if reservationID <= 0 {
 			if insufficient {
-				return nil, nil, ErrInsufficient
+				return nil, nil, nil, ErrInsufficient
 			}
-			return nil, nil, ErrReserved
+			return nil, nil, nil, ErrReserved
 		}
 
 		reservationIDs = append(reservationIDs, reservationID)
@@ -249,38 +253,23 @@ func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Tim
 			reserved = append(reserved, &utxo)
 		})
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "query reservation members")
+			return nil, nil, nil, errors.Wrap(err, "query reservation members")
 		}
 	}
 
 	err = dbtx.Commit(ctx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "commit transaction for reserving utxos")
+		return nil, nil, nil, errors.Wrap(err, "commit transaction for reserving utxos")
 	}
 
-	return reserved, change, err
+	return reservationIDs, reserved, change, err
 }
 
-// Cancel cancels the given reservations, if they still exist.
-// If any do not exist (if they've already been consumed
-// or canceled), it silently ignores them.
-func (res *Reserver) Cancel(ctx context.Context, outpoints []bc.Outpoint) error {
-	txHashes := make([]string, 0, len(outpoints))
-	indexes := make([]uint32, 0, len(outpoints))
-	for _, outpoint := range outpoints {
-		txHashes = append(txHashes, outpoint.Hash.String())
-		indexes = append(indexes, outpoint.Index)
-	}
-
-	const query = `
-		WITH reservation_ids AS (
-		    SELECT DISTINCT reservation_id FROM account_utxos
-		        WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
-		)
-		SELECT cancel_reservation(reservation_id) FROM reservation_ids
-	`
-
-	_, err := res.DB.Exec(ctx, query, pq.StringArray(txHashes), pg.Uint32s(indexes))
+// Cancel cancels the given reservation if possible.
+// If it doesn't exist (if it's already been consumed
+// or canceled), it is silently ignored.
+func (res *Reserver) Cancel(ctx context.Context, rid int32) error {
+	_, err := res.DB.Exec(ctx, "SELECT cancel_reservation($1)", rid)
 	return err
 }
 

@@ -57,10 +57,12 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		ClientToken: a.ClientToken,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
-	reserved, change, err := a.accounts.utxoDB.Reserve(ctx, utxodbSources, maxTime)
+	// TODO(kr): make utxodb.Reserve tkae a single Source not a slice
+	rids, reserved, change, err := a.accounts.utxoDB.Reserve(ctx, utxodbSources, maxTime)
 	if err != nil {
 		return nil, errors.Wrap(err, "reserving utxos")
 	}
+	rid := rids[0] // len(rids)==len(utxodbSources)
 
 	var (
 		txins      []*bc.TxInput
@@ -89,7 +91,7 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		Inputs:              txins,
 		Outputs:             changeOuts,
 		SigningInstructions: tplInsts,
-		Rollback:            canceler(ctx, a.accounts, reserved...),
+		Rollback:            canceler(ctx, a.accounts, rid),
 	}
 	return br, nil
 }
@@ -118,7 +120,7 @@ type spendUTXOAction struct {
 }
 
 func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
-	r, err := a.accounts.utxoDB.ReserveUTXO(ctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
+	rid, r, err := a.accounts.utxoDB.ReserveUTXO(ctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, err
 	}
@@ -136,19 +138,14 @@ func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuil
 	return &txbuilder.BuildResult{
 		Inputs:              []*bc.TxInput{txInput},
 		SigningInstructions: []*txbuilder.SigningInstruction{sigInst},
-		Rollback:            canceler(ctx, a.accounts, r),
+		Rollback:            canceler(ctx, a.accounts, rid),
 	}, nil
 }
 
 // Best-effort cancellation attempt to put in txbuilder.BuildResult.Rollback.
-func canceler(ctx context.Context, m *Manager, utxos ...*utxodb.UTXO) func() {
+func canceler(ctx context.Context, m *Manager, rid int32) func() {
 	return func() {
-		var o []bc.Outpoint
-		for _, utxo := range utxos {
-			o = append(o, utxo.Outpoint)
-		}
-
-		err := m.utxoDB.Cancel(ctx, o)
+		err := m.utxoDB.Cancel(ctx, rid)
 		if err != nil {
 			log.Error(ctx, err)
 		}
