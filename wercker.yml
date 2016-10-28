@@ -1,63 +1,31 @@
-box: chaindev/wercker:20160923
+box: chaindev/ci:20161114
 # To update the docker image for this "box",
-# see $CHAIN/docker/wercker.
+# see $CHAIN/docker/ci.
 
 services:
   - id: clkao/postgres-plv8
     env:
       POSTGRES_PASSWORD: p
       POSTGRES_USER: u
-      POSTGRES_DB: api-test
+      POSTGRES_DB: core-test
 
 build:
   steps:
-    - script:
-        name: fmt vet test imports
-        code: |
-          set -veo pipefail
-          go version
-          go env
-          export CHAIN=$GOPATH/src/chain
-          PATH=$GOPATH/bin:$PATH:$CHAIN/bin
-          cp -a $WERCKER_SOURCE_DIR $GOPATH/src/chain
-          export WERCKER_SOURCE_DIR=$GOPATH/src/chain
-          export DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/api-test?sslmode=disable"
-          cd $CHAIN
-          go vet $(go list ./...|grep -v vendor)
-          go install chain/cmd/vet
-          vet .
-          go install chain/log # needed before testing ./cmd/vet below
-          go test -cover $(go list ./...|grep -v vendor)
-          go generate $(go list ./...|grep -v vendor)
-          git diff --exit-code # make sure generated files are in sync
-    - script:
-        name: gofmt
-        code: |
-          test -z "$(go fmt $(go list ./...|grep -v vendor))"
-          test -z "$(./bin/gochainimports -l .|grep -v vendor)"
-    - script:
-        name: cfmt
-        code: |
-          bin/cfmt
-          git diff --exit-code
-    - script:
-        name: check for tk and xxx
-        code: |
-          p='(xxx|(tk)+)' # can't write inline or it'll match this file
-          if egrep -Iinr '//.*\b'$p'\b' $(ls -1|egrep -v 'vendor|generated')
-          then exit 1
-          fi
     - inz/npm-install@1.1.5:
       cwd: dashboard/
     - script:
-        name: lint dashboard
-        cwd: dashboard/
+        name: unit tests and formatting
         code: |
-          npm run lint
+          cp -a $WERCKER_SOURCE_DIR $CHAIN
+          DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" /usr/bin/unit-tests
+          /usr/bin/gofmt
+          /usr/bin/javafmt
+          /usr/bin/dashboard
 
-
-
-
-
-
-
+integration-tests:
+  steps:
+    - script:
+        name: integration tests
+        code: |
+          cp -a $WERCKER_SOURCE_DIR $CHAIN
+          DATABASE_URL="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" CACHE_DIR="$WERCKER_CACHE_DIR/maven" /usr/bin/integration-tests

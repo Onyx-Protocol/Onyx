@@ -511,7 +511,8 @@ public class Transaction {
       throws ChainException {
     HashMap<String, Object> body = new HashMap<>();
     body.put("transactions", templates);
-    return client.batchRequest("submit-transaction", body, SubmitResponse.class, APIException.class);
+    return client.batchRequest(
+        "submit-transaction", body, SubmitResponse.class, APIException.class);
   }
 
   /**
@@ -526,12 +527,13 @@ public class Transaction {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<SubmitResponse> submitBatch(Client client, List<Template> templates, String waitUntil)
-      throws ChainException {
+  public static BatchResponse<SubmitResponse> submitBatch(
+      Client client, List<Template> templates, String waitUntil) throws ChainException {
     HashMap<String, Object> body = new HashMap<>();
     body.put("transactions", templates);
     body.put("wait_until", waitUntil);
-    return client.batchRequest("submit-transaction", body, SubmitResponse.class, APIException.class);
+    return client.batchRequest(
+        "submit-transaction", body, SubmitResponse.class, APIException.class);
   }
 
   /**
@@ -548,7 +550,8 @@ public class Transaction {
   public static SubmitResponse submit(Client client, Template template) throws ChainException {
     HashMap<String, Object> body = new HashMap<>();
     body.put("transactions", Arrays.asList(template));
-    return client.singletonBatchRequest("submit-transaction", body, SubmitResponse.class, APIException.class);
+    return client.singletonBatchRequest(
+        "submit-transaction", body, SubmitResponse.class, APIException.class);
   }
 
   /**
@@ -563,11 +566,13 @@ public class Transaction {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static SubmitResponse submit(Client client, Template template, String waitUntil) throws ChainException {
+  public static SubmitResponse submit(Client client, Template template, String waitUntil)
+      throws ChainException {
     HashMap<String, Object> body = new HashMap<>();
     body.put("transactions", Arrays.asList(template));
     body.put("wait_until", waitUntil);
-    return client.singletonBatchRequest("submit-transaction", body, SubmitResponse.class, APIException.class);
+    return client.singletonBatchRequest(
+        "submit-transaction", body, SubmitResponse.class, APIException.class);
   }
 
   /**
@@ -1041,7 +1046,8 @@ public class Transaction {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Template build(Client client) throws ChainException {
-      return client.singletonBatchRequest("build-transaction", Arrays.asList(this), Template.class, BuildException.class);
+      return client.singletonBatchRequest(
+          "build-transaction", Arrays.asList(this), Template.class, BuildException.class);
     }
 
     /**

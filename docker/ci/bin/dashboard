@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+
+cd $CHAIN/dashboard
+npm run lint
