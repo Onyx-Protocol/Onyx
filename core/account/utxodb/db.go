@@ -9,7 +9,6 @@ import (
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
-	chainlog "chain/log"
 	"chain/protocol/bc"
 )
 
@@ -30,7 +29,7 @@ var (
 )
 
 type (
-	Reserver struct {
+	DBReserver struct {
 		DB *sql.DB
 	}
 
@@ -60,7 +59,7 @@ type (
 	}
 )
 
-func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (reservationID int32, utxo *UTXO, err error) {
+func (res *DBReserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (reservationID int32, utxo *UTXO, err error) {
 	dbtx, err := res.DB.Begin(ctx)
 	if err != nil {
 		return 0, nil, errors.Wrap(err, "begin transaction for reserving utxos")
@@ -144,7 +143,7 @@ func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32
 // Reserve reserves account UTXOs to cover the provided sources. If
 // UTXOs are successfully reserved, it's the responsbility of the
 // caller to cancel them if an error occurs.
-func (res *Reserver) Reserve(ctx context.Context, source Source, exp time.Time) (reservationID int32, u []*UTXO, c []Change, err error) {
+func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time) (reservationID int32, u []*UTXO, c []Change, err error) {
 	var reserved []*UTXO
 	var change []Change
 
@@ -250,45 +249,27 @@ func (res *Reserver) Reserve(ctx context.Context, source Source, exp time.Time) 
 // Cancel cancels the given reservation if possible.
 // If it doesn't exist (if it's already been consumed
 // or canceled), it is silently ignored.
-func (res *Reserver) Cancel(ctx context.Context, rid int32) error {
+func (res *DBReserver) Cancel(ctx context.Context, rid int32) error {
 	_, err := res.DB.Exec(ctx, "SELECT cancel_reservation($1)", rid)
 	return err
 }
 
-// ExpireReservations is meant to be run as a goroutine. It loops,
-// calling the expire_reservations() pl/pgsql function to
-// remove expired reservations from the reservations table.
-// It returns when its context is canceled.
-func (res *Reserver) ExpireReservations(ctx context.Context, period time.Duration) {
-	ticks := time.Tick(period)
-	for {
-		select {
-		case <-ctx.Done():
-			chainlog.Messagef(ctx, "Deposed, ExpireReservations exiting")
-			return
-		case <-ticks:
-			err := func() error {
-				dbtx, err := res.DB.Begin(ctx)
-				if err != nil {
-					return err
-				}
-				defer dbtx.Rollback(ctx)
-
-				_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
-				if err != nil {
-					return err
-				}
-
-				_, err = dbtx.Exec(ctx, `SELECT expire_reservations()`)
-				if err != nil {
-					return err
-				}
-
-				return dbtx.Commit(ctx)
-			}()
-			if err != nil {
-				chainlog.Error(ctx, err)
-			}
-		}
+func (res *DBReserver) ExpireReservations(ctx context.Context) error {
+	dbtx, err := res.DB.Begin(ctx)
+	if err != nil {
+		return err
 	}
+	defer dbtx.Rollback(ctx)
+
+	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
+	if err != nil {
+		return err
+	}
+
+	_, err = dbtx.Exec(ctx, `SELECT expire_reservations()`)
+	if err != nil {
+		return err
+	}
+
+	return dbtx.Commit(ctx)
 }
