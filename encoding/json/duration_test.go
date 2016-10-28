@@ -41,6 +41,17 @@ func TestUnmarshalDuration(t *testing.T) {
 			t.Errorf("wanted error %s, got %s", wantErr, err)
 		}
 	}
+
+	// Null case
+	var dur Duration
+	err := json.Unmarshal([]byte("null"), &dur)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	if dur.Duration != 0 {
+		t.Errorf(`Duration.UnmarshalJSON("null") = %v want 0`, dur.Duration)
+	}
 }
 
 func TestMarshalDuration(t *testing.T) {
