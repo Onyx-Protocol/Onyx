@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lib/pq"
-
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
@@ -399,27 +397,4 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, srcAcctID, dest
 	tx := bc.NewTx(*xferTx.Transaction)
 	err = FinalizeTx(ctx, info.Chain, tx)
 	return tx, errors.Wrap(err)
-}
-
-// cancel cancels the given reservations, if they still exist.
-// If any do not exist (if they've already been consumed
-// or canceled), it silently ignores them.
-func cancel(ctx context.Context, db pg.DB, outpoints []bc.Outpoint) error {
-	txHashes := make([]string, 0, len(outpoints))
-	indexes := make([]uint32, 0, len(outpoints))
-	for _, outpoint := range outpoints {
-		txHashes = append(txHashes, outpoint.Hash.String())
-		indexes = append(indexes, outpoint.Index)
-	}
-
-	const query = `
-		WITH reservation_ids AS (
-		    SELECT DISTINCT reservation_id FROM account_utxos
-		        WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
-		)
-		SELECT cancel_reservation(reservation_id) FROM reservation_ids
-	`
-
-	_, err := db.Exec(ctx, query, pq.StringArray(txHashes), pg.Uint32s(indexes))
-	return err
 }
