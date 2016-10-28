@@ -16,6 +16,7 @@ import (
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
+	"chain/log"
 	"chain/protocol"
 	"chain/protocol/vmutil"
 )
@@ -28,7 +29,7 @@ func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 	return &Manager{
 		db:     db,
 		chain:  chain,
-		utxoDB: &utxodb.Reserver{DB: db},
+		utxoDB: &utxodb.DBReserver{DB: db},
 		cache:  lru.New(maxAccountCache),
 	}
 }
@@ -37,7 +38,7 @@ func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 type Manager struct {
 	db      pg.DB
 	chain   *protocol.Chain
-	utxoDB  *utxodb.Reserver
+	utxoDB  *utxodb.DBReserver
 	indexer Saver
 
 	cacheMu sync.Mutex
@@ -56,7 +57,19 @@ func (m *Manager) IndexAccounts(indexer Saver) {
 // ExpireReservations removes reservations that have expired periodically.
 // It blocks until the context is canceled.
 func (m *Manager) ExpireReservations(ctx context.Context, period time.Duration) {
-	m.utxoDB.ExpireReservations(ctx, period)
+	ticks := time.Tick(period)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Messagef(ctx, "Deposed, ExpireReservations exiting")
+			return
+		case <-ticks:
+			err := m.utxoDB.ExpireReservations(ctx)
+			if err != nil {
+				log.Error(ctx, err)
+			}
+		}
+	}
 }
 
 type Account struct {
