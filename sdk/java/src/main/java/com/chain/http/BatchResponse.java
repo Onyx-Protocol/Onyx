@@ -24,7 +24,7 @@ public class BatchResponse<T> {
   /**
    * This constructor is used when deserializing a response from an API call.
    */
-  public BatchResponse(Response response, Gson serializer, Type tClass)
+  public BatchResponse(Response response, Gson serializer, Type tClass, Type eClass)
       throws ChainException, IOException {
     this.response = response;
 
@@ -34,7 +34,7 @@ public class BatchResponse<T> {
         JsonElement elem = root.get(i);
 
         // Test for interleaved errors
-        APIException err = serializer.fromJson(elem, APIException.class);
+        APIException err = serializer.fromJson(elem, eClass);
         if (err.code != null) {
           errorsByIndex.put(i, err);
           continue;
