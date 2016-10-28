@@ -261,6 +261,29 @@ func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Tim
 	return reserved, change, err
 }
 
+// Cancel cancels the given reservations, if they still exist.
+// If any do not exist (if they've already been consumed
+// or canceled), it silently ignores them.
+func (res *Reserver) Cancel(ctx context.Context, outpoints []bc.Outpoint) error {
+	txHashes := make([]string, 0, len(outpoints))
+	indexes := make([]uint32, 0, len(outpoints))
+	for _, outpoint := range outpoints {
+		txHashes = append(txHashes, outpoint.Hash.String())
+		indexes = append(indexes, outpoint.Index)
+	}
+
+	const query = `
+		WITH reservation_ids AS (
+		    SELECT DISTINCT reservation_id FROM account_utxos
+		        WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
+		)
+		SELECT cancel_reservation(reservation_id) FROM reservation_ids
+	`
+
+	_, err := res.DB.Exec(ctx, query, pq.StringArray(txHashes), pg.Uint32s(indexes))
+	return err
+}
+
 // ExpireReservations is meant to be run as a goroutine. It loops,
 // calling the expire_reservations() pl/pgsql function to
 // remove expired reservations from the reservations table.

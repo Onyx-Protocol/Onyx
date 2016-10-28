@@ -10,6 +10,7 @@ import (
 	"chain/core/txbuilder"
 	chainjson "chain/encoding/json"
 	"chain/errors"
+	"chain/log"
 	"chain/protocol/bc"
 )
 
@@ -84,7 +85,13 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, change[0].Amount, acp, nil))
 	}
 
-	return &txbuilder.BuildResult{Inputs: txins, Outputs: changeOuts, SigningInstructions: tplInsts}, nil
+	br := &txbuilder.BuildResult{
+		Inputs:              txins,
+		Outputs:             changeOuts,
+		SigningInstructions: tplInsts,
+		Rollback:            canceler(ctx, a.accounts, reserved...),
+	}
+	return br, nil
 }
 
 func (m *Manager) NewSpendUTXOAction(outpoint bc.Outpoint) txbuilder.Action {
@@ -129,7 +136,23 @@ func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuil
 	return &txbuilder.BuildResult{
 		Inputs:              []*bc.TxInput{txInput},
 		SigningInstructions: []*txbuilder.SigningInstruction{sigInst},
+		Rollback:            canceler(ctx, a.accounts, r),
 	}, nil
+}
+
+// Best-effort cancellation attempt to put in txbuilder.BuildResult.Rollback.
+func canceler(ctx context.Context, m *Manager, utxos ...*utxodb.UTXO) func() {
+	return func() {
+		var o []bc.Outpoint
+		for _, utxo := range utxos {
+			o = append(o, utxo.Outpoint)
+		}
+
+		err := m.utxoDB.Cancel(ctx, o)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}
 }
 
 func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxodb.UTXO, refData []byte) (
