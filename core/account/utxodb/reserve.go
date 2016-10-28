@@ -6,8 +6,6 @@ import (
 	stdsql "database/sql"
 	"time"
 
-	"github.com/lib/pq"
-
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
@@ -143,6 +141,9 @@ func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32
 	return reservationID, utxo, nil
 }
 
+// Reserve reserves account UTXOs to cover the provided sources. If
+// UTXOs are successfully reserved, it's the responsbility of the
+// caller to cancel them if an error occurs.
 func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Time) (reservationIDs []int32, u []*UTXO, c []Change, err error) {
 	var reserved []*UTXO
 	var change []Change
@@ -157,17 +158,6 @@ func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Tim
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "acquire lock for reserving utxos")
 	}
-
-	defer func() {
-		if err != nil {
-			var a pq.Int64Array
-			for _, rid := range reservationIDs {
-				a = append(a, int64(rid))
-			}
-			dbtx.Exec(ctx, "SELECT cancel_reservations($1)", a) // ignore errors
-		}
-	}()
-
 	const (
 		reserveQ = `
 		SELECT * FROM reserve_utxos($1, $2, $3, $4, $5, $6, $7)
