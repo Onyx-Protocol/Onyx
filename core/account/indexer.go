@@ -7,6 +7,7 @@ import (
 
 	"chain/core/signers"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -99,7 +100,19 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	if err != nil {
 		return errors.Wrap(err, "loading account info from control programs")
 	}
-	err = m.upsertConfirmedAccountOutputs(ctx, accOuts, blockPositions, b)
+
+	dbtx, err := m.db.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err, "begin transaction for canceling utxo reservation")
+	}
+	defer dbtx.Rollback(ctx)
+
+	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
+	if err != nil {
+		return errors.Wrap(err, "locking utxo table")
+	}
+
+	err = m.upsertConfirmedAccountOutputs(ctx, dbtx, accOuts, blockPositions, b)
 	if err != nil {
 		return errors.Wrap(err, "upserting confirmed account utxos")
 	}
@@ -110,7 +123,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 		DELETE FROM account_utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	_, err = m.db.Exec(ctx, delQ, deltxhash, delindex)
+	_, err = dbtx.Exec(ctx, delQ, deltxhash, delindex)
 	if err != nil {
 		return errors.Wrap(err, "deleting spent account utxos")
 	}
@@ -120,8 +133,14 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	const expiryQ = `
 		DELETE FROM account_utxos WHERE expiry_height <= $1 AND confirmed_in IS NULL
 	`
-	_, err = m.db.Exec(ctx, expiryQ, b.Height)
-	return errors.Wrap(err, "deleting expired account utxos")
+	_, err = dbtx.Exec(ctx, expiryQ, b.Height)
+
+	if err != nil {
+		return errors.Wrap(err, "deleting expired account utxos")
+	}
+
+	err = dbtx.Commit(ctx)
+	return errors.Wrap(err, "committing db transaction")
 }
 
 func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.StringArray, index pg.Uint32s) {
@@ -201,6 +220,17 @@ func (m *Manager) upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*o
 		metadata = append(metadata, out.ReferenceData)
 	}
 
+	dbtx, err := m.db.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err, "begin transaction for canceling utxo reservation")
+	}
+	defer dbtx.Rollback(ctx)
+
+	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
+	if err != nil {
+		return errors.Wrap(err, "locking utxo table")
+	}
+
 	const q = `
 		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, account_id, control_program_index,
 			control_program, metadata, expiry_height)
@@ -208,7 +238,7 @@ func (m *Manager) upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*o
 			   unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), unnest($8::bytea[]), $9
 		ON CONFLICT (tx_hash, index) DO NOTHING;
 	`
-	_, err := m.db.Exec(ctx, q,
+	_, err = dbtx.Exec(ctx, q,
 		txHash,
 		index,
 		assetID,
@@ -219,13 +249,17 @@ func (m *Manager) upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*o
 		metadata,
 		expiryHeight,
 	)
-	return errors.Wrap(err)
+	if err != nil {
+		return errors.Wrap(err, "inserting utxos")
+	}
+	err = dbtx.Commit(ctx)
+	return errors.Wrap(err, "committing db transaction")
 }
 
 // upsertConfirmedAccountOutputs records the account data for confirmed utxos.
 // If the account utxo already exists (because it's from a local tx), the
 // block confirmation data will in the row will be updated.
-func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[bc.Hash]uint32, block *bc.Block) error {
+func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, dbtx *sql.Tx, outs []*output, pos map[bc.Hash]uint32, block *bc.Block) error {
 	var (
 		txHash    pq.StringArray
 		index     pg.Uint32s
@@ -261,7 +295,7 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 			block_timestamp = excluded.block_timestamp,
 			expiry_height   = excluded.expiry_height;
 	`
-	_, err := m.db.Exec(ctx, q,
+	_, err := dbtx.Exec(ctx, q,
 		txHash,
 		index,
 		assetID,
