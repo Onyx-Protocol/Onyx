@@ -144,20 +144,21 @@ func (res *Reserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32
 // Reserve reserves account UTXOs to cover the provided sources. If
 // UTXOs are successfully reserved, it's the responsbility of the
 // caller to cancel them if an error occurs.
-func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Time) (reservationIDs []int32, u []*UTXO, c []Change, err error) {
+func (res *Reserver) Reserve(ctx context.Context, source Source, exp time.Time) (reservationID int32, u []*UTXO, c []Change, err error) {
 	var reserved []*UTXO
 	var change []Change
 
 	dbtx, err := res.DB.Begin(ctx)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "begin transaction for reserving utxos")
+		return 0, nil, nil, errors.Wrap(err, "begin transaction for reserving utxos")
 	}
 	defer dbtx.Rollback(ctx)
 
 	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "acquire lock for reserving utxos")
+		return 0, nil, nil, errors.Wrap(err, "acquire lock for reserving utxos")
 	}
+
 	const (
 		reserveQ = `
 		SELECT * FROM reserve_utxos($1, $2, $3, $4, $5, $6, $7)
@@ -170,89 +171,80 @@ func (res *Reserver) Reserve(ctx context.Context, sources []Source, exp time.Tim
 		`
 	)
 
-	// TODO(kr): make sources not be a list;
-	// we only ever call Reserve with a single item.
-	for _, source := range sources {
-		var (
-			txHash   stdsql.NullString
-			outIndex stdsql.NullInt64
+	var (
+		txHash   stdsql.NullString
+		outIndex stdsql.NullInt64
 
-			reservationID  int32
-			alreadyExisted bool
-			existingChange uint64
-			reservedAmount uint64
-			insufficient   bool
-		)
+		alreadyExisted bool
+		existingChange uint64
+		reservedAmount uint64
+		insufficient   bool
+	)
 
-		if source.TxHash != nil {
-			txHash.Valid = true
-			txHash.String = source.TxHash.String()
-		}
-
-		if source.OutputIndex != nil {
-			outIndex.Valid = true
-			outIndex.Int64 = int64(*source.OutputIndex)
-		}
-
-		// Create a reservation row and reserve the utxos. If this reservation
-		// has alredy been processed in a previous request:
-		//  * the existing reservation ID will be returned
-		//  * already_existed will be TRUE
-		//  * existing_change will be the change value for the existing
-		//    reservation row.
-		err = dbtx.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, outIndex, source.Amount, exp, source.ClientToken).Scan(
-			&reservationID,
-			&alreadyExisted,
-			&existingChange,
-			&reservedAmount,
-			&insufficient,
-		)
-		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "reserve utxos")
-		}
-		if reservationID <= 0 {
-			if insufficient {
-				return nil, nil, nil, ErrInsufficient
-			}
-			return nil, nil, nil, ErrReserved
-		}
-
-		reservationIDs = append(reservationIDs, reservationID)
-
-		if alreadyExisted && existingChange > 0 {
-			// This reservation already exists from a previous request
-			change = append(change, Change{source, existingChange})
-		} else if reservedAmount > source.Amount {
-			change = append(change, Change{source, reservedAmount - source.Amount})
-		}
-
-		err = pg.ForQueryRows(ctx, dbtx, utxosQ, reservationID, func(
-			hash bc.Hash,
-			index uint32,
-			amount uint64,
-			programIndex uint64,
-			script []byte,
-		) {
-			utxo := UTXO{
-				Outpoint:            bc.Outpoint{Hash: hash, Index: index},
-				Script:              script,
-				AssetAmount:         bc.AssetAmount{AssetID: source.AssetID, Amount: amount},
-				AccountID:           source.AccountID,
-				ControlProgramIndex: programIndex,
-			}
-			reserved = append(reserved, &utxo)
-		})
-		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "query reservation members")
-		}
+	if source.TxHash != nil {
+		txHash.Valid = true
+		txHash.String = source.TxHash.String()
 	}
 
+	if source.OutputIndex != nil {
+		outIndex.Valid = true
+		outIndex.Int64 = int64(*source.OutputIndex)
+	}
+
+	// Create a reservation row and reserve the utxos. If this reservation
+	// has alredy been processed in a previous request:
+	//  * the existing reservation ID will be returned
+	//  * already_existed will be TRUE
+	//  * existing_change will be the change value for the existing
+	//    reservation row.
+	err = dbtx.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, outIndex, source.Amount, exp, source.ClientToken).Scan(
+		&reservationID,
+		&alreadyExisted,
+		&existingChange,
+		&reservedAmount,
+		&insufficient,
+	)
+	if err != nil {
+		return 0, nil, nil, errors.Wrap(err, "reserve utxos")
+	}
+	if reservationID <= 0 {
+		if insufficient {
+			return 0, nil, nil, ErrInsufficient
+		}
+		return 0, nil, nil, ErrReserved
+	}
+
+	if alreadyExisted && existingChange > 0 {
+		// This reservation already exists from a previous request
+		change = append(change, Change{source, existingChange})
+	} else if reservedAmount > source.Amount {
+		change = append(change, Change{source, reservedAmount - source.Amount})
+	}
+
+	err = pg.ForQueryRows(ctx, dbtx, utxosQ, reservationID, func(
+		hash bc.Hash,
+		index uint32,
+		amount uint64,
+		programIndex uint64,
+		script []byte,
+	) {
+		utxo := UTXO{
+			Outpoint:            bc.Outpoint{Hash: hash, Index: index},
+			Script:              script,
+			AssetAmount:         bc.AssetAmount{AssetID: source.AssetID, Amount: amount},
+			AccountID:           source.AccountID,
+			ControlProgramIndex: programIndex,
+		}
+		reserved = append(reserved, &utxo)
+	})
+	if err != nil {
+		return 0, nil, nil, errors.Wrap(err, "query reservation members")
+	}
 	err = dbtx.Commit(ctx)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "commit transaction for reserving utxos")
+		return 0, nil, nil, errors.Wrap(err, "commit transaction for reserving utxos")
 	}
-
-	return reservationIDs, reserved, change, err
+	return reservationID, reserved, change, err
 }
 
 // Cancel cancels the given reservation if possible.
