@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"log"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"chain/core/rpc"
@@ -43,6 +46,10 @@ func main() {
 	gen, genCore := coreEnv("GENERATOR")
 	sig1, sig1Core := coreEnv("SIGNER1")
 	sig2, sig2Core := coreEnv("SIGNER2")
+
+	if os.Getenv("AUTH_USER") == "" || os.Getenv("AUTH_TOKEN") == "" {
+		log.Fatal("must set heroku user credentials")
+	}
 
 	empty := json.RawMessage("{}")
 	must(gen.Call(ctx, "/reset", &empty, nil))
@@ -94,6 +101,19 @@ func main() {
 		"generator_url":          gen.BaseURL,
 		"generator_access_token": genCore.netTok,
 	}, nil))
+
+	method := "PATCH"
+	url := "https://api.heroku.com/apps/chain-testnet-info/config-vars"
+	r := strings.NewReader(`{"BLOCKCHAIN_ID":"` + resp.BlockchainID + `"}`)
+	req, err := http.NewRequest(method, url, r)
+	must(err)
+	req.Header.Add("Accept", "application/vnd.heroku+json; version=3")
+	req.Header.Add("Content-type", "application/json")
+	req.SetBasicAuth(os.Getenv("AUTH_USER"), os.Getenv("AUTH_TOKEN"))
+	response, err := http.DefaultClient.Do(req)
+	must(err)
+	defer response.Body.Close()
+	io.Copy(os.Stdout, response.Body)
 }
 
 func must(err error) {
