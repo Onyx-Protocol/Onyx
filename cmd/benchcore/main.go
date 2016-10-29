@@ -69,7 +69,7 @@ var (
 
 var amis = map[string]string{
 	"m3.xlarge":   "ami-f71883e0", // Ubuntu LTS 16.04
-	"m4.16xlarge": "ami-2d39803a", // Ubuntu Server 14.04 LTS (HVM), SSD Volume Type
+	"m4.16xlarge": "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
 }
 
 func sshAuthMethods(agentSock, privKeyPEM string) (m []ssh.AuthMethod) {
