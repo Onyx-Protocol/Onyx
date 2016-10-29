@@ -39,14 +39,15 @@ var (
 	flagInstance = flag.String("instance", "m3.xlarge", "the EC2 instance size to use")
 	flagDBStats  = flag.Bool("dbstats", false, "capture database query statistics")
 
-	appName    = "benchcore"
-	testRunID  = appName + randString()
-	ami        = "ami-f71883e0" // Ubuntu LTS 16.04
-	subnetID   = "subnet-80560fd9"
-	key        = os.Getenv("USER")
-	user       = os.Getenv("USER")
-	schemaPath = os.Getenv("CHAIN") + "/core/schema.sql"
-	sdkDir     = os.Getenv("CHAIN") + "/sdk/java"
+	appName     = "benchcore"
+	testRunID   = appName + randString()
+	blockDevice = "/dev/xvdb" // must match initdbsh
+	volumeSize  = int64(500)
+	subnetID    = "subnet-80560fd9"
+	key         = os.Getenv("USER")
+	user        = os.Getenv("USER")
+	schemaPath  = os.Getenv("CHAIN") + "/core/schema.sql"
+	sdkDir      = os.Getenv("CHAIN") + "/sdk/java"
 
 	awsConfig = &aws.Config{Region: aws.String("us-east-1")}
 	ec2client = ec2.New(awsConfig)
@@ -65,6 +66,11 @@ var (
 
 	profileFrequency = time.Minute * 3
 )
+
+var amis = map[string]string{
+	"m3.xlarge":   "ami-f71883e0", // Ubuntu LTS 16.04
+	"m4.16xlarge": "ami-2d39803a", // Ubuntu Server 14.04 LTS (HVM), SSD Volume Type
+}
 
 func sshAuthMethods(agentSock, privKeyPEM string) (m []ssh.AuthMethod) {
 	conn, sockErr := net.Dial("unix", agentSock)
@@ -430,6 +436,12 @@ func makeEC2(role string, inst *instance, wg *sync.WaitGroup) {
 	defer wg.Done()
 	runtoken := randString()
 	var n int64 = 1
+	tru := true
+
+	ami := amis[*flagInstance]
+	if ami == "" {
+		log.Fatalf("unsupported instance type %s", *flagInstance)
+	}
 
 	var resv *ec2.Reservation
 	retry(func() (err error) {
@@ -441,6 +453,15 @@ func makeEC2(role string, inst *instance, wg *sync.WaitGroup) {
 			MinCount:     &n,
 			MaxCount:     &n,
 			SubnetID:     &subnetID,
+
+			BlockDeviceMappings: []*ec2.BlockDeviceMapping{{
+				DeviceName: &blockDevice,
+				EBS: &ec2.EBSBlockDevice{
+					DeleteOnTermination: &tru,
+					VolumeSize:          &volumeSize,
+					VolumeType:          aws.String("st1"),
+				},
+			}},
 		})
 		return err
 	})
