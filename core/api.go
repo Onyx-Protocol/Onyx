@@ -79,7 +79,7 @@ type RequestLimit struct {
 }
 
 func maxBytes(h http.Handler) http.Handler {
-	const maxReqSize = 1e5 // 100kB
+	const maxReqSize = 1e7 // 10mb
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// A block can easily be bigger than maxReqSize, but everything
 		// else should be pretty small.
