@@ -699,6 +699,7 @@ sudo bash <<EOFSUDO
 set -eo pipefail
 apt-get update -qq
 mkdir -p /var/lib/postgresql
+mkfs -t ext4 /dev/xvdb
 mount /dev/xvdb /var/lib/postgresql/
 apt-get install -y -qq postgresql-9.5 postgresql-client-9.5
 
