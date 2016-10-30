@@ -42,6 +42,14 @@ with the alias "block_key".
 
     corectl create-block-keypair
 
+Create Sign Request Keypair
+
+Subcommand 'create-sign-request-keypair' generates a new keypair in
+the MockHSM for signing outbound block-signing requests from the
+generator.  The generated key has the alias "sign_request_key".
+
+    corectl create-sign-request-keypair
+
 Create Access Token
 
 Subcommand 'create-token' generates a new access token with the given name.

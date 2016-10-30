@@ -9,6 +9,7 @@ import (
 	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -26,27 +27,33 @@ var ErrInvalidKey = errors.New("misconfigured signer public key")
 
 // Signer validates and signs blocks.
 type Signer struct {
+	// The identity of this signer's block-signing key
 	Pub ed25519.PublicKey
+
+	// The key for verifying the signature accompanying the signing request
+	signReqPub ed25519.PublicKey
+
 	hsm *mockhsm.HSM
 	db  pg.DB
 	c   *protocol.Chain
 }
 
 // New returns a new Signer that validates blocks with c and signs
-// them with k.
-func New(pub ed25519.PublicKey, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
+// them with pub.
+func New(pub, signReqPub ed25519.PublicKey, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
 	return &Signer{
-		Pub: pub,
-		hsm: hsm,
-		db:  db,
-		c:   c,
+		Pub:        pub,
+		signReqPub: signReqPub,
+		hsm:        hsm,
+		db:         db,
+		c:          c,
 	}
 }
 
-// SignBlock computes the signature for the block using
-// the private key in s.  It does not validate the block.
-func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
-	hash := b.HashForSig()
+// SignBlock computes the signature for the block using the private
+// key in s.  It does not validate the block or verify req.Sig.
+func (s *Signer) SignBlock(ctx context.Context, req SignBlockRequest) ([]byte, error) {
+	hash := req.Block.HashForSig()
 	sig, err := s.hsm.Sign(ctx, s.Pub, hash[:])
 	if err != nil {
 		return nil, errors.Wrapf(ErrInvalidKey, "err=%s", err.Error())
@@ -58,20 +65,30 @@ func (s *Signer) String() string {
 	return fmt.Sprintf("signer for key %x", s.Pub)
 }
 
+type SignBlockRequest struct {
+	Block *bc.Block
+	Sig   chainjson.HexBytes
+}
+
 // ValidateAndSignBlock validates the given block against the current blockchain
 // and, if valid, computes and returns a signature for the block.  It
 // is used as the httpjson handler for /rpc/signer/sign-block.
 //
 // This function fails if this node has ever signed a different block at the
 // same height as b.
-func (s *Signer) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
-	err := s.c.WaitForBlockSoon(ctx, b.Height-1)
-	if err != nil {
-		return nil, errors.Wrapf(err, "waiting for block at height %d", b.Height-1)
+func (s *Signer) ValidateAndSignBlock(ctx context.Context, req SignBlockRequest) ([]byte, error) {
+	hashForSig := req.Block.HashForSig()
+	ok := ed25519.Verify(s.signReqPub, hashForSig[:], req.Sig)
+	if !ok {
+		return nil, fmt.Errorf("unverified request signature")
 	}
-	prev, err := s.c.GetBlock(ctx, b.Height-1)
+	err := s.c.WaitForBlockSoon(ctx, req.Block.Height-1)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting block at height %d", b.Height-1)
+		return nil, errors.Wrapf(err, "waiting for block at height %d", req.Block.Height-1)
+	}
+	prev, err := s.c.GetBlock(ctx, req.Block.Height-1)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting block at height %d", req.Block.Height-1)
 	}
 	// TODO: Add the ability to change the consensus program
 	// by having a current consensus program, and a potential
@@ -79,18 +96,18 @@ func (s *Signer) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]byte,
 	// has been used, it will become the current consensus program
 	// and the only signable consensus program until a new
 	// next is set.
-	if !bytes.Equal(b.ConsensusProgram, prev.ConsensusProgram) {
+	if !bytes.Equal(req.Block.ConsensusProgram, prev.ConsensusProgram) {
 		return nil, errors.Wrap(ErrConsensusChange)
 	}
-	err = s.c.ValidateBlockForSig(ctx, b)
+	err = s.c.ValidateBlockForSig(ctx, req.Block)
 	if err != nil {
 		return nil, errors.Wrap(err, "validating block for signature")
 	}
-	err = lockBlockHeight(ctx, s.db, b)
+	err = lockBlockHeight(ctx, s.db, req.Block)
 	if err != nil {
 		return nil, errors.Wrap(err, "lock block height")
 	}
-	return s.SignBlock(ctx, b)
+	return s.SignBlock(ctx, req)
 }
 
 // lockBlockHeight records a signer's intention to sign a given block

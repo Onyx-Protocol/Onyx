@@ -8,6 +8,9 @@ import (
 	"context"
 	"time"
 
+	"chain/core/blocksigner"
+	"chain/core/mockhsm"
+	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/log"
 	"chain/protocol"
@@ -21,15 +24,17 @@ type BlockSigner interface {
 	// SignBlock returns an ed25519 signature over the block's sighash.
 	// See also the Chain Protocol spec for the complete required behavior
 	// of a block signer.
-	SignBlock(context.Context, *bc.Block) (signature []byte, err error)
+	SignBlock(context.Context, blocksigner.SignBlockRequest) (signature []byte, err error)
 }
 
 // generator produces new blocks on an interval.
 type generator struct {
 	// config
-	db      pg.DB
-	chain   *protocol.Chain
-	signers []BlockSigner
+	db         pg.DB
+	chain      *protocol.Chain
+	signReqPub ed25519.PublicKey
+	signers    []BlockSigner
+	hsm        *mockhsm.HSM
 
 	// latestBlock and latestSnapshot are current as long as this
 	// process remains the leader process. If the process is demoted,
@@ -49,6 +54,8 @@ func Generate(
 	c *protocol.Chain,
 	s []BlockSigner,
 	db pg.DB,
+	hsm *mockhsm.HSM,
+	signReqPub ed25519.PublicKey,
 	period time.Duration,
 	health func(error),
 ) {
@@ -63,6 +70,8 @@ func Generate(
 		db:             db,
 		chain:          c,
 		signers:        s,
+		hsm:            hsm,
+		signReqPub:     signReqPub,
 		latestBlock:    recoveredBlock,
 		latestSnapshot: recoveredSnapshot,
 	}

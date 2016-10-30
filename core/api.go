@@ -13,6 +13,7 @@ import (
 	"chain/core/accesstoken"
 	"chain/core/account"
 	"chain/core/asset"
+	"chain/core/blocksigner"
 	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/query"
@@ -61,7 +62,7 @@ type Handler struct {
 	DB            pg.DB
 	Addr          string
 	AltAuth       func(*http.Request) bool
-	Signer        func(context.Context, *bc.Block) ([]byte, error)
+	Signer        func(context.Context, blocksigner.SignBlockRequest) ([]byte, error)
 	RequestLimits []RequestLimit
 
 	once           sync.Once
@@ -199,6 +200,7 @@ type Config struct {
 	GeneratorAccessToken string  `json:"generator_access_token"`
 	ConfiguredAt         time.Time
 	BlockPub             string         `json:"block_pub"`
+	SignReqPub           string         `json:"sign_request_pub"`
 	Signers              []ConfigSigner `json:"block_signer_urls"`
 	Quorum               int
 	MaxIssuanceWindow    time.Duration
@@ -289,16 +291,16 @@ func webAssetsHandler(next http.Handler) http.Handler {
 	})
 }
 
-func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, error)) func(context.Context, *bc.Block) ([]byte, error) {
-	return func(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (h *Handler) leaderSignHandler(f func(context.Context, blocksigner.SignBlockRequest) ([]byte, error)) func(context.Context, blocksigner.SignBlockRequest) ([]byte, error) {
+	return func(ctx context.Context, req blocksigner.SignBlockRequest) ([]byte, error) {
 		if f == nil {
 			return nil, errNotFound // TODO(kr): is this really the right error here?
 		}
 		if leader.IsLeading() {
-			return f(ctx, b)
+			return f(ctx, req)
 		}
 		var resp []byte
-		err := h.forwardToLeader(ctx, "/rpc/signer/sign-block", b, &resp)
+		err := h.forwardToLeader(ctx, "/rpc/signer/sign-block", req, &resp)
 		return resp, err
 	}
 }

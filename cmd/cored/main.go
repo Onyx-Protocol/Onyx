@@ -41,7 +41,6 @@ import (
 	"chain/log/splunk"
 	"chain/net/http/limit"
 	"chain/protocol"
-	"chain/protocol/bc"
 )
 
 const (
@@ -220,16 +219,14 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 
 	hsm := mockhsm.New(db)
 	var generatorSigners []generator.BlockSigner
-	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
+	var signBlockHandler func(context.Context, blocksigner.SignBlockRequest) ([]byte, error)
 	if config.IsSigner {
-		blockPub, err := hex.DecodeString(config.BlockPub)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-		s := blocksigner.New(blockPub, hsm, db, c)
+		blockPub := decodePubkey(ctx, config.BlockPub, "block key")
+		signReqPub := decodePubkey(ctx, config.SignReqPub, "sign-request key")
+		s := blocksigner.New(blockPub, signReqPub, hsm, db, c)
 		generatorSigners = append(generatorSigners, s) // "local" signer
-		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
-			sig, err := s.ValidateAndSignBlock(ctx, b)
+		signBlockHandler = func(ctx context.Context, req blocksigner.SignBlockRequest) ([]byte, error) {
+			sig, err := s.ValidateAndSignBlock(ctx, req)
 			if errors.Root(err) == blocksigner.ErrInvalidKey {
 				chainlog.Fatal(ctx, chainlog.KeyError, err)
 			}
@@ -288,7 +285,8 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
 		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
 		if config.IsGenerator {
-			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
+			signReqPub := decodePubkey(ctx, config.SignReqPub, "sign-request key")
+			go generator.Generate(ctx, c, generatorSigners, db, hsm, signReqPub, blockPeriod, genhealth)
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
 		}
@@ -314,7 +312,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
 		if len(signer.Pubkey) != ed25519.PublicKeySize {
-			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err), "at", "decoding signer public key")
+			chainlog.Fatal(ctx, chainlog.KeyError, fmt.Errorf("wrong length for block pubkey"))
 		}
 		client := &rpc.Client{
 			BaseURL:      u.String(),
@@ -329,11 +327,11 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 	return a
 }
 
-func (s *remoteSigner) SignBlock(ctx context.Context, b *bc.Block) (signature []byte, err error) {
+func (s *remoteSigner) SignBlock(ctx context.Context, req blocksigner.SignBlockRequest) (signature []byte, err error) {
 	// TODO(kr): We might end up serializing b multiple
 	// times in multiple calls to different remoteSigners.
 	// Maybe optimize that if it makes a difference.
-	err = s.Client.Call(ctx, "/rpc/signer/sign-block", b, &signature)
+	err = s.Client.Call(ctx, "/rpc/signer/sign-block", req, &signature)
 	return
 }
 
@@ -373,4 +371,15 @@ func (w *errlog) Write(p []byte) (int, error) {
 		w.t = time.Now()
 	}
 	return len(p), nil // report success for the MultiWriter
+}
+
+func decodePubkey(ctx context.Context, s, keyName string) ed25519.PublicKey {
+	k, err := hex.DecodeString(s)
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrapf(err, "decoding key %s", keyName))
+	}
+	if len(k) != ed25519.PublicKeySize {
+		chainlog.Fatal(ctx, chainlog.KeyError, fmt.Errorf("wrong length (%d) for key %s", len(k), keyName))
+	}
+	return ed25519.PublicKey(k)
 }

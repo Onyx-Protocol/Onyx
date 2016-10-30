@@ -43,8 +43,9 @@ var (
 
 // reserved mockhsm key alias
 const (
-	networkRPCVersion = 1
-	autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
+	networkRPCVersion   = 1
+	autoBlockKeyAlias   = "_CHAIN_CORE_AUTO_BLOCK_KEY"
+	autoSignReqKeyAlias = "_CHAIN_CORE_AUTO_SIGN_REQ_KEY"
 )
 
 func isProduction() bool {
@@ -198,6 +199,23 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			}
 		}
 		signingKeys = append(signingKeys, blockPub)
+
+		if c.IsGenerator {
+			if c.SignReqPub == "" {
+				hsm := mockhsm.New(db)
+				signReqPub, created, err := hsm.GetOrCreate(ctx, autoSignReqKeyAlias)
+				if err != nil {
+					return err
+				}
+				signReqPubStr := hex.EncodeToString(signReqPub.Pub)
+				if created {
+					log.Messagef(ctx, "Generated new sign-request key %s\n", signReqPubStr)
+				} else {
+					log.Messagef(ctx, "Using sign-request key %s\n", signReqPubStr)
+				}
+				c.SignReqPub = signReqPubStr
+			}
+		}
 	}
 
 	if c.IsGenerator {
@@ -253,12 +271,11 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	}
 	c.ID = hex.EncodeToString(b)
 
-	// TODO(tessr): rename block_xpub column
 	const q = `
-		INSERT INTO config (id, is_signer, block_xpub, is_generator,
+		INSERT INTO config (id, is_signer, block_pub, sign_request_pub, is_generator,
 			blockchain_id, generator_url, generator_access_token,
 			remote_block_signers, max_issuance_window_ms, configured_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
 	`
 	_, err = db.Exec(
 		ctx,
@@ -266,6 +283,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.ID,
 		c.IsSigner,
 		c.BlockPub,
+		c.SignReqPub,
 		c.IsGenerator,
 		c.BlockchainID,
 		c.GeneratorURL,
@@ -299,7 +317,7 @@ func (h *Handler) configure(ctx context.Context, x *Config) error {
 func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT id, is_signer, is_generator,
-			blockchain_id, generator_url, generator_access_token, block_xpub,
+			blockchain_id, generator_url, generator_access_token, block_pub, sign_request_pub,
 			remote_block_signers, max_issuance_window_ms, configured_at
 			FROM config
 		`
@@ -317,6 +335,7 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 		&c.GeneratorURL,
 		&c.GeneratorAccessToken,
 		&c.BlockPub,
+		&c.SignReqPub,
 		&blockSignerData,
 		&miw,
 		&c.ConfiguredAt,
