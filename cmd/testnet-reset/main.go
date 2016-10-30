@@ -47,7 +47,7 @@ func main() {
 	sig1, sig1Core := coreEnv("SIGNER1")
 	sig2, sig2Core := coreEnv("SIGNER2")
 
-	if os.Getenv("AUTH_USER") == "" || os.Getenv("AUTH_TOKEN") == "" {
+	if os.Getenv("HEROKU_API_USER") == "" || os.Getenv("HEROKU_API_KEY") == "" {
 		log.Fatal("must set heroku user credentials")
 	}
 
@@ -109,7 +109,7 @@ func main() {
 	must(err)
 	req.Header.Add("Accept", "application/vnd.heroku+json; version=3")
 	req.Header.Add("Content-type", "application/json")
-	req.SetBasicAuth(os.Getenv("AUTH_USER"), os.Getenv("AUTH_TOKEN"))
+	req.SetBasicAuth(os.Getenv("HEROKU_API_USER"), os.Getenv("HEROKU_API_KEY"))
 	response, err := http.DefaultClient.Do(req)
 	must(err)
 	defer response.Body.Close()
