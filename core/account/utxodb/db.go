@@ -66,6 +66,11 @@ func (res *DBReserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint
 	}
 	defer dbtx.Rollback(ctx)
 
+	// Lock in ROW EXCLUSIVE mode because we believe the row affected
+	// here can't be affected by other threads concurrently. (That may
+	// be too optimistic. If it's just been spent [by another Core,
+	// presumably] it might get deleted during utxo indexing while we're
+	// trying to reserve it.)
 	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
 		return 0, nil, errors.Wrap(err, "acquire lock for reserving utxos")
@@ -153,6 +158,11 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 	}
 	defer dbtx.Rollback(ctx)
 
+	// Lock in ROW EXCLUSIVE mode because we believe the rows affected
+	// here can't be affected by other threads concurrently. (That may
+	// be too optimistic. If they've just been spent [by another Core,
+	// presumably] they might get deleted during utxo indexing while
+	// we're trying to reserve them.)
 	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
 		return 0, nil, nil, errors.Wrap(err, "acquire lock for reserving utxos")
@@ -256,6 +266,12 @@ func (res *DBReserver) Cancel(ctx context.Context, rid int32) error {
 	}
 	defer dbtx.Rollback(ctx)
 
+	// Lock in ROW EXCLUSIVE mode because we believe the row affected
+	// here can't be affected by other threads concurrently. (That may
+	// be too optimistic. If an underlying utxo has just been spent [by
+	// another Core, presumably] it might get deleted at the same time
+	// we're trying to null out its reservation_id as a result of
+	// canceling the reservation.)
 	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
 		return errors.Wrap(err, "locking table for canceling utxo reservation")
