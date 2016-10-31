@@ -43,6 +43,14 @@ type spendAction struct {
 }
 
 func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
+	if a.AccountID == "" {
+		return nil, txbuilder.ErrActionMissingAccountID
+	}
+
+	if a.AssetID == (bc.AssetID{}) {
+		return nil, txbuilder.ErrActionMissingAssetID
+	}
+
 	acct, err := a.accounts.findByID(ctx, a.AccountID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get account info")
@@ -191,6 +199,14 @@ type controlAction struct {
 }
 
 func (a *controlAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
+	if a.AccountID == "" {
+		return nil, txbuilder.ErrActionMissingAccountID
+	}
+
+	if a.AssetID == (bc.AssetID{}) {
+		return nil, txbuilder.ErrActionMissingAssetID
+	}
+
 	acp, err := a.accounts.CreateControlProgram(ctx, a.AccountID, false)
 	if err != nil {
 		return nil, err
