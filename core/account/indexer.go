@@ -10,6 +10,7 @@ import (
 	"chain/database/sql"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/log"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 )
@@ -80,6 +81,38 @@ func (m *Manager) IndexUnconfirmedUTXOs(ctx context.Context, tx *bc.Tx) error {
 	}
 	err = m.upsertUnconfirmedAccountOutputs(ctx, accOuts, m.chain.Height()+unconfirmedExpiration)
 	return errors.Wrap(err, "upserting confirmed account utxos")
+}
+
+func (m *Manager) ProcessBlocks(ctx context.Context) {
+	if m.indexer == nil || m.cursorStore == nil {
+		return
+	}
+	accountCursor := m.cursorStore.Cursor("account")
+	for {
+		height := accountCursor.Height()
+		select {
+		case <-m.chain.WaitForBlock(height + 1):
+			block, err := m.chain.GetBlock(ctx, height+1)
+			if err != nil {
+				log.Error(ctx, err)
+				continue
+			}
+			err = m.indexAccountUTXOs(ctx, block)
+			if err != nil {
+				log.Error(ctx, err)
+				continue
+			}
+			// This could cause issues, since it is not inside of a
+			// database transaction.
+			err = accountCursor.Increment(ctx)
+			if err != nil {
+				log.Error(ctx, err)
+			}
+		case <-ctx.Done(): // leader deposed
+			log.Error(ctx, ctx.Err())
+			break
+		}
+	}
 }
 
 func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {

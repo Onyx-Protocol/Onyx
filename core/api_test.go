@@ -10,6 +10,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
+	"chain/core/processor"
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/database/pg/pgtest"
@@ -27,7 +28,9 @@ func TestBuildFinal(t *testing.T) {
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
-	accounts.IndexAccounts(query.NewIndexer(db, c))
+	cursorStore := &processor.CursorStore{DB: db}
+	accounts.IndexAccounts(query.NewIndexer(db, c, cursorStore), cursorStore)
+	go accounts.ProcessBlocks(ctx)
 
 	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
@@ -56,6 +59,8 @@ func TestBuildFinal(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
+	cursor := cursorStore.Cursor("account")
+	<-cursor.WaitForHeight(c.Height())
 
 	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
@@ -133,7 +138,9 @@ func TestAccountTransfer(t *testing.T) {
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
-	accounts.IndexAccounts(query.NewIndexer(db, c))
+	cursorStore := &processor.CursorStore{DB: db}
+	accounts.IndexAccounts(query.NewIndexer(db, c, cursorStore), cursorStore)
+	go accounts.ProcessBlocks(ctx)
 
 	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
@@ -161,6 +168,8 @@ func TestAccountTransfer(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
+	cursor := cursorStore.Cursor("account")
+	<-cursor.WaitForHeight(c.Height())
 
 	// new source
 	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
@@ -193,18 +202,19 @@ func TestTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
+	cursorStore := &processor.CursorStore{DB: db}
 	handler := &Handler{
 		Chain:    c,
 		Assets:   asset.NewRegistry(db, c),
 		Accounts: account.NewManager(db, c),
-		Indexer:  query.NewIndexer(db, c),
+		Indexer:  query.NewIndexer(db, c, cursorStore),
 		DB:       db,
 	}
-	handler.Assets.IndexAssets(handler.Indexer)
-	handler.Accounts.IndexAccounts(handler.Indexer)
+	handler.Assets.IndexAssets(handler.Indexer, cursorStore)
+	handler.Accounts.IndexAccounts(handler.Indexer, cursorStore)
+	go handler.Accounts.ProcessBlocks(ctx)
 	handler.Indexer.RegisterAnnotator(handler.Accounts.AnnotateTxs)
 	handler.Indexer.RegisterAnnotator(handler.Assets.AnnotateTxs)
-	c.AddBlockCallback(handler.Indexer.IndexTransactions)
 	handler.init()
 
 	assetAlias := "some-asset"
@@ -241,6 +251,8 @@ func TestTransfer(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
+	cursor := cursorStore.Cursor("account")
+	<-cursor.WaitForHeight(c.Height())
 
 	// Now transfer
 	buildReqFmt := `

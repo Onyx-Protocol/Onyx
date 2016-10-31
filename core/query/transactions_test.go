@@ -49,7 +49,7 @@ func TestDecodeTxAfter(t *testing.T) {
 func TestLookupTxAfterNoBlocks(t *testing.T) {
 	ctx := context.Background()
 	db := pgtest.NewTx(t)
-	indexer := NewIndexer(db, &protocol.Chain{})
+	indexer := NewIndexer(db, &protocol.Chain{}, nil)
 
 	cur, err := indexer.LookupTxAfter(ctx, 0, 0)
 	if err != nil {

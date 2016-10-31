@@ -59,7 +59,7 @@ func TestOutputsAfter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	indexer := NewIndexer(db, &protocol.Chain{})
+	indexer := NewIndexer(db, &protocol.Chain{}, nil)
 	results, after, err := indexer.Outputs(ctx, q, nil, 25, nil, 2)
 	if err != nil {
 		t.Fatal(err)

@@ -8,6 +8,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
+	"chain/core/processor"
 	"chain/database/pg/pgtest"
 	"chain/protocol/prottest"
 	"chain/testutil"
@@ -19,12 +20,13 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
-	indexer := NewIndexer(db, c)
+	cursorStore := &processor.CursorStore{DB: db}
+	indexer := NewIndexer(db, c, cursorStore)
 	accounts := account.NewManager(db, c)
 	assets := asset.NewRegistry(db, c)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
-	c.AddBlockCallback(indexer.IndexTransactions)
+	go indexer.ProcessBlocks(ctx)
 
 	acct1, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
@@ -51,6 +53,8 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	coretest.IssueAssets(ctx, t, c, assets, accounts, asset2.AssetID, 100, acct1.ID)
 
 	prottest.MakeBlock(t, c)
+	cursor := cursorStore.Cursor("tx")
+	<-cursor.WaitForHeight(c.Height())
 
 	time2 := time.Now()
 

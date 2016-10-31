@@ -9,6 +9,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/log"
 	"chain/protocol/bc"
 )
 
@@ -20,6 +21,38 @@ type Annotator func(ctx context.Context, txs []map[string]interface{}) error
 // the annotated transaction object.
 func (ind *Indexer) RegisterAnnotator(annotator Annotator) {
 	ind.annotators = append(ind.annotators, annotator)
+}
+
+func (ind *Indexer) ProcessBlocks(ctx context.Context) {
+	if ind.cursorStore == nil {
+		return
+	}
+	txCursor := ind.cursorStore.Cursor("tx")
+	for {
+		height := txCursor.Height()
+		select {
+		case <-ind.c.WaitForBlock(height + 1):
+			block, err := ind.c.GetBlock(ctx, height+1)
+			if err != nil {
+				log.Error(ctx, err)
+				continue
+			}
+			err = ind.IndexTransactions(ctx, block)
+			if err != nil {
+				log.Error(ctx, err)
+				continue
+			}
+			// This could cause issues, since it is not inside of a
+			// database transaction.
+			err = txCursor.Increment(ctx)
+			if err != nil {
+				log.Error(ctx, err)
+			}
+		case <-ctx.Done(): // leader deposed
+			log.Error(ctx, ctx.Err())
+			break
+		}
+	}
 }
 
 // IndexTransactions is registered as a block callback on the Chain. It

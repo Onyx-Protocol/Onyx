@@ -9,6 +9,7 @@ import (
 	"chain/core/asset"
 	"chain/core/coretest"
 	"chain/core/mockhsm"
+	"chain/core/processor"
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
@@ -24,7 +25,9 @@ func TestMockHSM(t *testing.T) {
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
-	accounts.IndexAccounts(query.NewIndexer(db, c))
+	cursorStore := &processor.CursorStore{DB: db}
+	accounts.IndexAccounts(query.NewIndexer(db, c, cursorStore), cursorStore)
+	go accounts.ProcessBlocks(ctx)
 	mockhsm := mockhsm.New(db)
 
 	xpub1, err := mockhsm.XCreate(ctx, "")
@@ -67,6 +70,8 @@ func TestMockHSM(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
+	cursor := cursorStore.Cursor("account")
+	<-cursor.WaitForHeight(c.Height())
 
 	xferSrc1 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil, nil, nil)
 	xferSrc2 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct2.ID, nil, nil, nil, nil)

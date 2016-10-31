@@ -27,6 +27,7 @@ import (
 	"chain/core/leader"
 	"chain/core/migrate"
 	"chain/core/mockhsm"
+	"chain/core/processor"
 	"chain/core/query"
 	"chain/core/rpc"
 	"chain/core/txbuilder"
@@ -206,16 +207,16 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	}
 
 	// Setup the transaction query indexer to index every transaction.
-	indexer := query.NewIndexer(db, c)
+	cursorStore := &processor.CursorStore{DB: db}
+	indexer := query.NewIndexer(db, c, cursorStore)
 
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
 	if *indexTxs {
 		indexer.RegisterAnnotator(assets.AnnotateTxs)
 		indexer.RegisterAnnotator(accounts.AnnotateTxs)
-		assets.IndexAssets(indexer)
-		accounts.IndexAccounts(indexer)
-		c.AddBlockCallback(indexer.IndexTransactions)
+		assets.IndexAssets(indexer, cursorStore)
+		accounts.IndexAccounts(indexer, cursorStore)
 	}
 
 	hsm := mockhsm.New(db)
@@ -292,6 +293,14 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
 		}
+		err := cursorStore.LoadAll(ctx)
+		if err != nil {
+			chainlog.Error(ctx, err)
+			return
+		}
+		go h.Accounts.ProcessBlocks(ctx)
+		go h.Assets.ProcessBlocks(ctx)
+		go h.Indexer.ProcessBlocks(ctx)
 	})
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
