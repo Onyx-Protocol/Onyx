@@ -3,9 +3,9 @@ TODO:
 
 - Tx = {txversion, mintime, maxtime, [entry] }
 - Entry = {content, witness}
-- TxID = Hash(txversion, mintime, maxtime, [{entry.assetversion, entry.content}] )
+- TxID = Hash(txversion, mintime, maxtime, [{entry.entrytype, entry.content}] )
 - TxWitHash = Hash(TxID, [{entry.witness}] )
-- Content = {assetversion, ...}
+- Content = {entrytype, ...}
 - Content = {0, refdata_hash}
 - Content = {1, entry_type, ...}
 - Content = {1, "issue", ...}
