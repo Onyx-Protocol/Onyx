@@ -48,7 +48,7 @@ func publishTx(ctx context.Context, c *protocol.Chain, msg *bc.Tx) error {
 
 	// Make sure there is at least one block in case client is trying to
 	// finalize a tx before the initial block has landed
-	c.WaitForBlock(1)
+	<-c.WaitForBlock(1)
 
 	if Generator != nil {
 		// If this transaction is valid, ValidateTxCached will store it in the cache.

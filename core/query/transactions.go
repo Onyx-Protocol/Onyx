@@ -164,7 +164,11 @@ func (ind *Indexer) waitForAndFetchTransactions(ctx context.Context, queryStr st
 		)
 
 		for h := ind.c.Height(); len(txs) == 0; h++ {
-			err = ind.c.WaitForBlockSoon(ctx, h)
+			select {
+			case err = <-ind.c.WaitForBlockSoon(h):
+			case <-ctx.Done():
+				err = ctx.Err()
+			}
 			if err != nil {
 				resp <- fetchResp{nil, nil, err}
 				return

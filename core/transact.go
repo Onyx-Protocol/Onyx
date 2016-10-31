@@ -214,7 +214,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, c *protocol.Chain, txTempl
 		case <-ctx.Done():
 			return ctx.Err()
 
-		case <-waitBlock(ctx, c, height):
+		case <-c.WaitForBlock(height):
 			b, err := c.GetBlock(ctx, height)
 			if err != nil {
 				return errors.Wrap(err, "getting block that just landed")
@@ -243,15 +243,6 @@ func (h *Handler) finalizeTxWait(ctx context.Context, c *protocol.Chain, txTempl
 			// the tx's blockchain prevouts still exist in the state tree.
 		}
 	}
-}
-
-func waitBlock(ctx context.Context, c *protocol.Chain, height uint64) <-chan struct{} {
-	done := make(chan struct{}, 1)
-	go func() {
-		c.WaitForBlock(height)
-		done <- struct{}{}
-	}()
-	return done
 }
 
 type submitArg struct {
