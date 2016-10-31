@@ -70,7 +70,7 @@ func TestWaitForBlockSoonAlreadyExists(t *testing.T) {
 	makeEmptyBlock(t, c) // height=2
 	makeEmptyBlock(t, c) // height=3
 
-	err := c.WaitForBlockSoon(context.Background(), 2)
+	err := <-c.WaitForBlockSoon(context.Background(), 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestWaitForBlockSoonAlreadyExists(t *testing.T) {
 func TestWaitForBlockSoonDistantFuture(t *testing.T) {
 	c, _ := newTestChain(t, time.Now())
 
-	got := c.WaitForBlockSoon(context.Background(), 100) // distant future
+	got := <-c.WaitForBlockSoon(context.Background(), 100) // distant future
 	want := ErrTheDistantFuture
 	if got != want {
 		t.Errorf("WaitForBlockSoon(100) = %+v want %+v", got, want)
@@ -103,7 +103,7 @@ func TestWaitForBlockSoonWaits(t *testing.T) {
 		makeEmptyBlock(t, c)              // height=3
 	}()
 
-	err := c.WaitForBlockSoon(context.Background(), 3)
+	err := <-c.WaitForBlockSoon(context.Background(), 3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestWaitForBlockSoonTimesout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
-	err := c.WaitForBlockSoon(ctx, 3)
+	err := <-c.WaitForBlockSoon(ctx, 3)
 	if err != ctx.Err() {
 		t.Fatalf("expected timeout err, got %v", err)
 	}
