@@ -19,6 +19,12 @@
   * [Block ID](#block-id)
   * [Block Signature Hash](#block-signature-hash)
   * [Transaction](#transaction)
+  * [Transaction Entry](#transaction-entry)
+  * [Reference Entry](#reference-entry)
+  * [Issuance Entry](#issuance-entry)
+  * [Input Entry](#input-entry)
+  * [Output Entry](#output-entry)
+  * [Retirement Entry](#retirement-entry)
   * [Issuance Hash](#issuance-hash)
   * [Outpoint](#outpoint)
   * [Transaction Serialization Flags](#transaction-serialization-flags)
@@ -31,7 +37,6 @@
   * [Control Program](#control-program)
   * [Issuance Program](#issuance-program)
   * [Program Arguments](#program-arguments)
-  * [Asset Version](#asset-version)
   * [Asset ID](#asset-id)
   * [Asset Definition](#asset-definition)
   * [Retired Asset](#retired-asset)
@@ -192,80 +197,83 @@ Entries             | [TxEntry]     | List of [transaction entries](#transaction
 
 ### Transaction Entry
 
-Transaction entry consists of three fields: type, content and witness. The type field is used to extend transactions with support of new entry formats in the future. Content and witness are extensible strings themselves that may be extended with additional fields in the future. Content is separated from the [entry witness](#transaction-entry-witness) in order to allow correct computation of [transaction ID](#transaction-id) and the [witness hash](#transaction-witness-hash) without need to parse and understand the content.
+Transaction entry consists of three fields: *type*, *content* and *witness*. The type field is used to extend transactions with support of new entry formats in the future. Content and witness are extensible strings themselves that may be extended with additional fields in the future. Content is separated from the [entry witness](#entry-witness) in order to allow correct computation of [transaction ID](#transaction-id) and the [witness hash](#transaction-witness-hash) without need to parse and understand the content.
 
 Field             | Type                | Description
 ------------------|---------------------|----------------------------------------------------------
-Entry Type        | varint63            | Type of the entry: 0 or 1 for transactions with version 1.
-Entry Content     | Extensible string   | See [Entry Content](#transaction-entry-content).
-Entry Witness     | Extensible string   | Optional [Entry Witness](#transaction-entry-witness) data. Absent if [serialization flags](#transaction-serialization-flags) do not have the witness bit set.
+Entry Type        | varint63            | [Type of the entry](#entry-type).
+Entry Content     | Extensible string   | See [Entry Content](#entry-content).
+Entry Witness     | Extensible string   | Optional [Entry Witness](#entry-witness) data. Absent if [serialization flags](#transaction-serialization-flags) do not have the witness bit set.
 
-#### Transaction Entry Content
 
-Exact format of the content field is defined according to the asset version and additional entry type flags (if any) used within the content field.
+#### Entry Type
 
-#### Transaction Entry Witness
+Entry type defines the structure and semantics for both the [content](#entry-content) and the [witness](#entry-witness) fields. 
+
+The present version of Chain Protocol defines five entry types:
+
+Entry type                             | Numeric value | Purpose
+---------------------------------------|---------------|----------------
+[Reference](#reference-entry)          | 0x00          | Provides transaction-level reference data without affecting asset flow. 
+[Issuance](#issuance-entry)            | 0x04          | Creates new units of a given asset ID.
+[Input](#input-entry)                  | 0x05          | Consumes existing units from a previous transaction’s output.
+[Output](#output-entry)                | 0x06          | Distributes units to specified control program.
+[Retirement](#retirement-entry)        | 0x07          | Removes units from circulation.
+
+Other entry types are reserved for future extensions.
+
+#### Entry Content
+
+Exact format of the content field is defined according to the [entry type](#entry-type).
+
+#### Entry Witness
 
 The *witness* string contains [program arguments](#program-arguments) ([cryptographic signatures](#signature) and other data necessary to verify the input). Witness string does not affect the *outcome* of the transaction and therefore is excluded from the [transaction ID](#transaction-id).
 
 The witness string can be extended with additional commitments, proofs or validation hints that are excluded from the [transaction ID](#transaction-id), but committed to the blockchain via the [witness hash](#transaction-witness-hash).
 
-Exact format of the witness field is defined according to the asset version and additional entry type flags (if any) used within the [entry content](#transaction-entry-content).
+Exact format of the witness field is defined according to the asset version and additional entry type flags (if any) used within the [entry content](#entry-content).
 
 
-### Transaction Entry Type 0
+### Reference Entry
 
-Entries with type 0 are not governing movement of assets, but only commit to arbitrary transaction-level reference data (as opposed to action-level reference data provided in entries with type 1). Transactions may have zero or more such entries. Typically, every party to a transaction may add their own annotation to the entire transaction this way.
+Reference entries do not govern movement of assets, but only commit to an arbitrary transaction-level reference data (as opposed to entry-level reference data). Transactions may have zero or more such entries. Typically, every party to a transaction may add their own annotation to the entire transaction this way.
 
 Entry content field stores an [optional hash](#optional-hash) of a reference data. Witness field is empty. Both content and witness fields can be extended in the future transaction versions.
 
-#### Content field
+#### Reference Entry Content
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
 Reference Data          | varstring31             | Arbitrary string or its [optional hash](#optional-hash), depending on [serialization flags](#transaction-serialization-flags).
 —                       | —                       | Additional fields may be added by future extensions.
 
-#### Witness field
+#### Reference Entry Witness
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
 —                       | —                       | Additional fields may be added by future extensions.
 
 
-### Transaction Entry Type 1
+### Issuance Entry
 
-Entries with **type 1** define four actions declared in the first byte (“prefix”) of the **entry content** field:
+Unlike [inputs](#input-entry), each of which is unique because it references a distinct [output](#output-entry), issuances are not intrinsically unique and must be made so to protect against replay attacks. The field *nonce* contains an arbitrary string that must be distinct from the nonces in other issuances of the same asset ID during the interval between the transaction's minimum and maximum time. Nodes ensure uniqueness of the issuance by remembering the [issuance hash](#issuance-hash) that includes the nonce, asset ID and minimum and maximum timestamps. To make sure that *issuance memory* does not take an unbounded amount of RAM, network enforces the *maximum issuance window* for these timestamps.
 
-Action                                 | Content field prefix  | Purpose
----------------------------------------|-----------------------|----------------
-[Issuance](#issuance-entry-type-1)     | 0x00                  | Creates new units of a given asset ID.
-[Input](#input-entry-type-1)           | 0x01                  | Consumes existing units from a previous transaction’s output.
-[Output](#output-entry-type-1)         | 0x02                  | Distributes units to specified control program.
-[Retirement](#retirement-entry-type-1) | 0x03                  | Removes units from circulation.
-
-All other values for the content field prefix are invalid.
-
-### Issuance Entry Type 1
-
-Unlike [inputs](#input-entry-type-1), each of which is unique because it references a distinct [output](#output-entry-type-1), issuances are not intrinsically unique and must be made so to protect against replay attacks. The field *nonce* contains an arbitrary string that must be distinct from the nonces in other issuances of the same asset ID during the interval between the transaction's minimum and maximum time. Nodes ensure uniqueness of the issuance by remembering the [issuance hash](#issuance-hash) that includes the nonce, asset ID and minimum and maximum timestamps. To make sure that *issuance memory* does not take an unbounded amount of RAM, network enforces the *maximum issuance window* for these timestamps.
-
-If the transaction has another input that guarantees uniqueness of the entire transaction (e.g. an [input](#transaction-entry-type-1-input)), then the issuance must be able to opt out of the bounded minimum and maximum timestamps and therefore the uniqueness test for the [issuance hash](#issuance-hash). The empty nonce signals if the input opts out of the uniqueness checks.
+If the transaction has another entry that guarantees uniqueness of the entire transaction (e.g. an [input entry](#input-entry)), then the issuance must be able to opt out of the bounded minimum and maximum timestamps and therefore the uniqueness test for the [issuance hash](#issuance-hash). The empty nonce signals if the input opts out of the uniqueness checks.
 
 See [Validate Transaction](validation.md#validate-transaction) section for more details on how the network enforces the uniqueness of issuance inputs.
 
-#### Content field
+#### Issuance Entry Content
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
-Action                  | byte                    | Equals 0x00 indicating the “issuance” action.
 Nonce                   | varstring31             | Variable-length string guaranteeing uniqueness of the issuing transaction or of the given issuance.
 Asset ID                | sha3-256                | Global [asset identifier](#asset-id).
 Amount                  | varint63                | Amount being issued.
 Issuance Reference Data | varstring31             | Arbitrary string or its [optional hash](#optional-hash), depending on [serialization flags](#transaction-serialization-flags).
 —                       | —                       | Additional fields may be added by future extensions.
 
-#### Witness field
+#### Issuance Entry Witness
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
@@ -279,34 +287,33 @@ Program Arguments       | [varstring31]           | [Signatures](#signature) and
 Note: nodes must verify that the initial block ID and issuance program are valid and match the declared asset ID in the corresponding content field.
 
 
-### Input Entry Type 1
+### Input Entry
 
-Input entries describe transfer of funds from a previous transaction’s [output](#output-entry-type-1)
+Input entries describe transfer of funds from a previous transaction’s [output](#output-entry)
 
-#### Content field
+#### Input Entry Content
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
-Action                  | byte                    | Equals 0x01 indicating the “input” action.
 Outpoint Reference      | [Outpoint](#outpoint)   | [Transaction ID](#transaction-id) and index of the output being spent.
-Previous Output         | [Output entry](#output-entry-type-1) | Optional output commitment used as the source for this input. Presence of this field is controlled by [serialization flags](#transaction-serialization-flags): if switched off, this field is excluded from the spend entirely.
 Input Reference Data    | varstring31             | Arbitrary string or its [optional hash](#optional-hash), depending on [serialization flags](#transaction-serialization-flags).
 —                       | —                       | Additional fields may be added by future extensions.
 
-#### Witness field
+#### Input Entry Witness
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
+Previous Output         | [Output Entry Content](#output-entry-content) | Output content field used as the source for this input [serialized with flags](#transaction-serialization-flags) 0x00 (this also means that reference data within this field is always encoded as hash, even if the transaction is serialized with direct reference data values in the entries).
 Program Arguments Count | varint31                | Number of [program arguments](#program-arguments) that follow.
 Program Arguments       | [varstring31]           | [Signatures](#signature) and other data satisfying the spent output’s control program. Used to initialize the [data stack](vm1.md#vm-state) of the VM.
 —                       | —                       | Additional fields may be added by future extensions.
 
 
-### Output Entry Type 1
+### Output Entry
 
 Output entries describe allocation of assets using [control programs](#control-program).
 
-#### Content field
+#### Output Entry Content
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
@@ -317,7 +324,7 @@ Control Program         | varstring31             | Predicate [program](#control
 Output Reference Data   | varstring31             | Arbitrary string or its [optional hash](#optional-hash), depending on [serialization flags](#transaction-serialization-flags).
 —                       | —                       | Additional fields may be added by future extensions.
 
-#### Witness field
+#### Output Entry Witness
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
@@ -325,11 +332,11 @@ Field                   | Type                    | Description
 
 
 
-### Retirement Entry Type 1
+### Retirement Entry
 
-Retirement entries remove units of assets from circulation. They are similar to [output entries](#output-entry-type-1), except they do not specify a control program since assets are made unspendable.
+Retirement entries remove units of assets from circulation. They are similar to [output entries](#output-entry), except they do not specify a control program since assets are made unspendable.
 
-#### Content field
+#### Retirement Entry Content
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
@@ -338,12 +345,11 @@ Amount                  | varint63                | Number of units of the speci
 Retirement Reference Data   | varstring31         | Arbitrary string or its [optional hash](#optional-hash), depending on [serialization flags](#transaction-serialization-flags).
 —                       | —                       | Additional fields may be added by future extensions.
 
-#### Witness field
+#### Retirement Entry Witness
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
 —                       | —                       | Additional fields may be added by future extensions.
-
 
 
 ### Issuance Hash
@@ -352,7 +358,7 @@ Issuance hash provides a globally unique identifier for an issuance input. It is
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
-Nonce                   | varstring31             | Nonce from the [issuance entry](#issuance-entry-type-1).
+Nonce                   | varstring31             | Nonce from the [issuance entry](#issuance-entry).
 Asset ID                | sha3-256                | Global [asset identifier](#asset-id).
 Minimum Time            | varint63                | Transaction minimum time.
 Maximum Time            | varint63                | Transaction maximum time.
@@ -367,28 +373,26 @@ An *outpoint* uniquely specifies a single transaction output.
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
 Transaction ID          | sha3-256                | [Transaction ID](#transaction-id) of the referenced transaction.
-Output Index            | varint31                | Index (zero-based) of the [output](#transaction-output) within the transaction.
+Output Index            | varint31                | Index (zero-based) of the [output entry](#output-entry) within the transaction.
 
 Note: In the transaction wire format, outpoint uses the [varint encoding](#varint31) for the output index, but in the [assets merkle tree](#assets-merkle-root) a fixed-length big-endian encoding is used for lexicographic ordering of unspent outputs.
 
 
 ### Transaction Serialization Flags
 
-Serialization flags control what and how data is encoded in a given *Transaction* message. Unused values are reserved for future expansion. Implementations must reject messages using unsupported serialization values. This allows changing encoding freely and extending the serialization flags fields to a longer sequence if needed.
+Serialization flags control what and how data is encoded in a given [transaction](#transaction) message. Unused values are reserved for future expansion. Implementations must reject messages using unsupported serialization values. This allows changing encoding freely and extending the serialization flags fields to a longer sequence if needed.
 
-The **first (least significant) bit** indicates whether the transaction includes witness data. If set to zero, the input and output witness fields are absent.
+The **first (least significant) bit** indicates whether the transaction includes witness data. If set to zero, the witness fields are absent from all [transaction entries](#transaction-entry).
 
-The **second bit** indicates whether the output commitment from the spent output is present in the [input spend commitment](#asset-version-1-spend-commitment). If set to zero, the output commitment field is absent.
+The **second bit** indicates whether transaction reference data is present. If set to zero, the reference data is replaced by its optional hash value.
 
-The **third bit** indicates whether transaction reference data is present. If set to zero, the reference data is replaced by its optional hash value.
-
-All three bits can be used independently. Non-zero **higher bits** are reserved for future use.
+Both bits can be used independently. Non-zero **higher bits** are reserved for future use.
 
 Serialization Flags Examples | Description
 -----------------------------|---------------------------------------------------------------------------
 0000 0000                    | Minimal serialization without witness and with reference data hashes instead of content.
-0000 0011                    | Minimal serialization needed for full verification. Contains witness fields and redundant [output commitment](#transaction-output-commitment), but not complete reference data.
-0000 0101                    | Non-redundant full binary serialization with witness fields and reference data.
+0000 0001                    | Minimal serialization needed for full verification. Contains witness fields, but not complete reference data.
+0000 0011                    | Full binary serialization with witness fields and reference data.
 
 
 ### Transaction ID
@@ -403,7 +407,7 @@ Field                           | Type                    | Description
 --------------------------------|-------------------------|----------------------------------------------------------
 Transaction ID                  | sha3-256                | [Transaction identifier](#transaction-id).
 Entries Count                   | varint31                | Number of transaction entries.
-Hashed Entry Witnesses          | [sha3-256]              | [SHA3-256](#sha3) hash of the [entry witness data](#transaction-entry-witness) from each entry (in the same order as entries).
+Hashed Entry Witnesses          | [sha3-256]              | [SHA3-256](#sha3) hash of the [entry witness data](#entry-witness) from each entry (in the same order as entries).
 
 Reusing the transaction ID saves time hashing again the rest of input and output data that can be arbitrarily large. Intermediate hashing of each witness enables compact proofs with partial reveal of witness data in cases of large transactions or large witnesses.
 
@@ -447,30 +451,27 @@ The control program is a program specifying a predicate for transferring an asse
 
 ### Issuance Program
 
-The issuance program is a [program](#program) specifying a predicate for issuing an asset within an [input issuance commitment](#asset-version-1-issuance-commitment). The asset ID is derived from the issuance program, guaranteeing the authenticity of the issuer.
+The issuance program is a [program](#program) specifying a predicate for issuing an asset within an [issuance entry](#issuance-entry). The asset ID is derived from the issuance program, guaranteeing the authenticity of the issuer.
 
 Issuance programs must start with a [PUSHDATA](vm1.md#pushdata) opcode, followed by the [asset definition](#asset-definition), followed by a [DROP](vm1.md#drop) opcode.
 
 ### Program Arguments
 
-A list of binary strings in a [transaction input witness](#transaction-input-witness) and [block witness](#block-witness) structures. It typically contains signatures and other data to satisfy the predicate specified by the control program of the output referenced by the current input. Program arguments are used also for authenticating *issuance inputs* where the predicate is defined by an issuance program.
+A list of binary strings in the [issuance witness](#issuance-entry-witness), [input witness](#input-entry-witness) and [block witness](#block-witness) structures. It typically contains signatures and other data to satisfy the predicate specified by the control program of the output referenced by the current input. Program arguments are used also for authenticating *issuance inputs* where the predicate is defined by an issuance program.
 
-### Asset Version
-
-An *asset version* is a variable-length integer encoded as [varint63](#varint63). Asset issuance and transfer is defined within the scope of a given asset version. Commitments and witness fields of inputs and outputs with unknown versions are treated as opaque strings. Unassigned versions are left for future extensions.
 
 ### Asset ID
 
-Globally unique identifier of a given asset. Each [asset version](#asset-version) defines its own method to compute the asset ID, but an asset ID is always guaranteed to be unique across all asset versions and across all blockchains.
+Globally unique identifier of a given asset. Future versions of the protocol may introduce new [issuance entry types](#issuance-entry) with another definition of an asset ID, but an asset ID is always guaranteed to be unique across all asset versions and across all blockchains.
 
-**Asset version 1** defines asset ID as the [SHA3-256](#sha3) of the following structure:
+Present version of the protocol defines asset ID as the [SHA3-256](#sha3) of the following structure:
 
 Field            | Type          | Description
 -----------------|---------------|-------------------------------------------------
 Initial Block ID | sha3-256      | Hash of the first block in this blockchain.
-Asset Version    | varint63      | [Version](#asset-version) of this asset.
 VM Version       | varint63      | [Version of the VM](#vm-version) for the issuance program.
 Issuance Program | varstring31   | Program used in the issuance input.
+
 
 ### Asset Definition
 
@@ -480,11 +481,11 @@ For version 1 assets, asset definitions are included in the issuance program. Is
 
 ### Retired Asset
 
-Units of an asset can be retired by sending them to a [VM version 1](#vm-version) [control program](#control-program) starting with [FAIL](vm1.md#fail) instruction resulting in a provably unspendable output. The rest of the control program can contain arbitrary instructions.
+Units of an asset can be retired by allocating them to [retirement entry](#retirement-entry).
 
 Retired assets are not included in the [assets merkle root](#assets-merkle-root) and therefore do not occupy any memory in the nodes. One may use a merkle path to the [transactions merkle root](#transactions-merkle-root) to create a compact proof for a retired asset.
 
-Note: many other kinds of control programs may render the output unspendable (e.g. `FALSE` or `0 VERIFY`), but they do not cause the output to be removed from the [assets merkle root](#assets-merkle-root), only programs beginning with `FAIL` do.
+Note: [outputs](#output-entry) with certain control programs may render the output unspendable (e.g. `FALSE` or `0 VERIFY`), but they do not cause the output to be removed from the [assets merkle root](#assets-merkle-root), only [retirement entries](#retirement-entry) do.
 
 ### Transactions Merkle Root
 
@@ -494,12 +495,11 @@ Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the *t
 
 Root hash of the [merkle patricia tree](#merkle-patricia-tree) formed by unspent outputs with an **asset version 1** after applying the block. Allows bootstrapping nodes from recent blocks and an archived copy of the corresponding merkle patricia tree without processing all historical transactions.
 
-The tree contains [non-retired](#retired-asset) unspent outputs (one or more per [asset ID](#asset-id)):
+The tree contains unspent outputs (one or more per [asset ID](#asset-id)):
 
 Key                       | Value
 --------------------------|------------------------------
-`<txhash><index int32be>` | [SHA3-256](#sha3) of the [output commitment](#transaction-output-commitment) 
-
+`<txhash><index int32be>` | [SHA3-256](#sha3) of the [output entry content](#output-entry-content)
 
 Note: unspent output indices are encoded with a fixed-length big-endian format to support lexicographic ordering.
 
