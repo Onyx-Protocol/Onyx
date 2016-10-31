@@ -1,8 +1,8 @@
 # Chain Core Developer Edition
 
-Chain Core is software designed to operate and connect to highly scalable permissioned blockchain networks conforming to the Chain Protocol. Each network maintains a cryptographically-secured transaction log, known as a blockchain, which allows partipicants to define, issue, and transfer digital assets on a multi-asset shared ledger. Digital assets share a common, interoperable format and can represent any units of value that are guaranteed by a trusted issuer — such as currencies, bonds, securities, IOUs, or loyalty points. Each Chain Core holds a copy of the ledger and independently validates each update, or "block," while a federation of block signers ensures global consistency of the ledger. 
+Chain Core is software designed to operate and connect to highly scalable permissioned blockchain networks conforming to the Chain Protocol. Each network maintains a shared ledger: a cryptographically-secured transaction log, known as a blockchain. The blockchain allows partipicants to define, issue, and transfer digital assets. Digital assets share a common, interoperable format and can represent any units of value that are guaranteed by a trusted issuer — such as currencies, bonds, securities, IOUs, or loyalty points. Each Chain Core holds a copy of the ledger and independently validates each update, or “block,” while a federation of block signers ensures global consistency of the ledger. 
 
-Chain Core Developer Edition is a free, downloadable version of Chain Core that is open source and licensed under the AGPL. Individuals and organizations use Chain Core Developer Edition to learn, experiment, and build prototypes.
+Chain Core Developer Edition is a free, downloadable version of Chain Core that is open source and licensed under the AGPL. Individuals and organizations use Chain Core Developer Edition to learn, experiment, and build prototypes. An enterprise edition, with additional features, is also available for those wishing to productionize their blockchain applications.
 
 Chain Core Developer Edition can be run locally on Mac, Windows, or Linux to create a new blockchain network, connect to an existing blockchain network, or connect to the public Chain testnet, operated by Chain, Microsoft, and Cornell University’s IC3.
 
@@ -14,18 +14,17 @@ To install Chain Core Developer Edition on Mac, Windows, or Linux, please visit 
 
 ## Contributing
 
-Chain has adopted the code of conduct defined by the Contributor Covenant. It can be read in full [here](https://github.com/chain/chain/blob/main/CODE_OF_CONDUCT.md).
 This repository is the canonical source for Chain Core Developer Edition. Consequently, Chain engineers actively maintain this repository.
 If you are interested in contributing to this code base, please read our [issue](https://github.com/chain/chain/blob/main/.github/ISSUE_TEMPLATE.md) and [pull request](https://github.com/chain/chain/blob/main/.github/PULL_REQUEST_TEMPLATE.md) templates first.
+
+Contributors must abide by the terms of the Contributor Covenant. It can be read in full [here](https://github.com/chain/chain/blob/main/CODE_OF_CONDUCT.md).
 
 ## Building from source
 
 * [Go](https://golang.org/doc/install) version 1.7, with $GOPATH set to your
   preferred directory
-* Postgres (we suggest [Postgres.app](http://postgresapp.com/)),
-  along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
-* [protoc](https://github.com/google/protobuf#protocol-compiler-installation),
-  if you need to compile protos
+* Postgres (main site [here](https://www.postgresql.org/), but we suggest [Postgres.app](http://postgresapp.com/)), along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
+* [protoc](https://github.com/google/protobuf#protocol-compiler-installation), if you need to compile protocol buffers, which at this writing (October 2016) you will only if you change `core/txdb/snapshot.go`
 
 ### Environment
 
@@ -37,7 +36,7 @@ export CHAIN=$GOPATH/src/chain
 ```
 
 You should also add `$CHAIN/bin` to your path (as well as
-`$GOPATH/bin`, if it isn't already):
+`$GOPATH/bin`, if it isn’t already):
 
 ```
 PATH=$GOPATH/bin:$CHAIN/bin:$PATH
@@ -102,7 +101,7 @@ $ cp -r $GOPATH/src/github.com/kr/pretty $CHAIN/vendor/github.com/kr/pretty
 $ rm -rf $CHAIN/vendor/github.com/kr/pretty/.git
 ```
 
-(Note: don't put a trailing slash (`/`) on these paths.
+(Note: don’t put a trailing slash (`/`) on these paths.
 It can change the behavior of cp and put the files
 in the wrong place.)
 
