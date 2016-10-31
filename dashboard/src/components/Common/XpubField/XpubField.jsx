@@ -1,13 +1,14 @@
 import React from 'react'
 import styles from './XpubField.scss'
-import { SelectField, FieldLabel } from 'features/shared/components'
+import { SelectField, FieldLabel, HiddenField } from 'features/shared/components'
 import { TextField } from '../'
 import { connect } from 'react-redux'
 import { actions } from 'features/mockhsm'
 
 const methodOptions = {
   mockhsm: 'Use Mock HSM key',
-  provide: 'Provide existing Xpub'
+  provide: 'Provide existing Xpub',
+  generate: 'Generate Mock HSM key',
 }
 
 class XpubField extends React.Component {
@@ -57,9 +58,21 @@ class XpubField extends React.Component {
 
         {this.state.selectedType == 'provide' &&
           <TextField key={this.props.index} fieldProps={this.props.fieldProps} />}
+
+        {this.state.selectedType == 'generate' &&
+          <HiddenField key={this.props.index} fieldProps={this.props.fieldProps} />}
       </div>
     )
   }
+}
+
+XpubField.propTypes = {
+  index: React.PropTypes.number,
+  fieldProps: React.PropTypes.object,
+  mockhsmKeys: React.PropTypes.array,
+  autocompleteIsLoaded: React.PropTypes.bool,
+  fetchAll: React.PropTypes.func,
+  didLoadAutocomplete: React.PropTypes.func,
 }
 
 export default connect(

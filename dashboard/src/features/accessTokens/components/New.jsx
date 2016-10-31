@@ -1,5 +1,5 @@
-import { BaseNew, FormContainer, FormSection } from 'features/shared/components'
-import { TextField, HiddenField } from 'components/Common'
+import { BaseNew, FormContainer, FormSection, HiddenField } from 'features/shared/components'
+import { TextField } from 'components/Common'
 import React from 'react'
 import { reduxForm } from 'redux-form'
 import { humanize } from 'utility/string'
