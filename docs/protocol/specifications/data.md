@@ -153,7 +153,7 @@ Unknown appended commitments must be ignored. Changes to the format of the commi
 Field                                   | Type        | Description
 ----------------------------------------|-------------|----------------------------------------------------------
 Transactions Merkle Root                | sha3-256    | Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the transaction witness hashes of all transactions included in the block.
-Assets Merkle Root                      | sha3-256    | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](#assets-merkle-root) for details.
+Assets Merkle Root                      | sha3-256    | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent [outputs](#output-entry) after applying the block. See [Assets Merkle Root](#assets-merkle-root) for details.
 Next [Consensus Program](#consensus-program) | varstring31 | Authentication predicate for adding a new block after this one.
 —                                       | —           | Additional fields may be added by future extensions.
 
@@ -215,10 +215,10 @@ The present version of Chain Protocol defines five entry types:
 Entry type                             | Numeric value | Purpose
 ---------------------------------------|---------------|----------------
 [Reference](#reference-entry)          | 0x00          | Provides transaction-level reference data without affecting asset flow. 
-[Issuance](#issuance-entry)            | 0x04          | Creates new units of a given asset ID.
-[Input](#input-entry)                  | 0x05          | Consumes existing units from a previous transaction’s output.
-[Output](#output-entry)                | 0x06          | Distributes units to specified control program.
-[Retirement](#retirement-entry)        | 0x07          | Removes units from circulation.
+[Issuance](#issuance-entry)            | 0x01          | Creates new units of a given asset ID.
+[Input](#input-entry)                  | 0x02          | Consumes existing units from a previous transaction’s output.
+[Output](#output-entry)                | 0x03          | Distributes units to specified control program.
+[Retirement](#retirement-entry)        | 0x04          | Removes units from circulation.
 
 Other entry types are reserved for future extensions.
 
@@ -232,7 +232,7 @@ The *witness* string contains [program arguments](#program-arguments) ([cryptogr
 
 The witness string can be extended with additional commitments, proofs or validation hints that are excluded from the [transaction ID](#transaction-id), but committed to the blockchain via the [witness hash](#transaction-witness-hash).
 
-Exact format of the witness field is defined according to the asset version and additional entry type flags (if any) used within the [entry content](#entry-content).
+Exact format of the witness field is defined according to the [entry type](#entry-type).
 
 
 ### Reference Entry
@@ -462,7 +462,7 @@ A list of binary strings in the [issuance witness](#issuance-entry-witness), [in
 
 ### Asset ID
 
-Globally unique identifier of a given asset. Future versions of the protocol may introduce new [issuance entry types](#issuance-entry) with another definition of an asset ID, but an asset ID is always guaranteed to be unique across all asset versions and across all blockchains.
+Globally unique identifier of a given asset. Future versions of the protocol may introduce new [issuance entry types](#issuance-entry) with a different definition of an asset ID, but an asset ID is always guaranteed to be unique across all blockchains.
 
 Present version of the protocol defines asset ID as the [SHA3-256](#sha3) of the following structure:
 
@@ -475,9 +475,9 @@ Issuance Program | varstring31   | Program used in the issuance input.
 
 ### Asset Definition
 
-An asset definition is an arbitrary binary string that corresponds to a particular [asset ID](#asset-id). Each asset version may define its own method to declare and commit to asset definitions.
+An asset definition is an arbitrary binary string that corresponds to a particular [asset ID](#asset-id). Future [issuance entry types](#issuance-entry) may define their own methods to declare and commit to asset definitions.
 
-For version 1 assets, asset definitions are included in the issuance program. Issuance programs must start with a [PUSHDATA](vm1.md#pushdata) opcode, followed by the asset definition, followed by a [DROP](vm1.md#drop) opcode. Since the issuance program is part of the string hashed to determine an asset ID, the asset definition for a particular asset ID is immutable.
+In he present version of the protocol, asset definitions are included in the issuance program. Issuance programs must start with a [PUSHDATA](vm1.md#pushdata) opcode, followed by the asset definition, followed by a [DROP](vm1.md#drop) opcode. Since the issuance program is part of the string hashed to determine an asset ID, the asset definition for a particular asset ID is immutable.
 
 ### Retired Asset
 
@@ -493,7 +493,7 @@ Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the *t
 
 ### Assets Merkle Root
 
-Root hash of the [merkle patricia tree](#merkle-patricia-tree) formed by unspent outputs with an **asset version 1** after applying the block. Allows bootstrapping nodes from recent blocks and an archived copy of the corresponding merkle patricia tree without processing all historical transactions.
+Root hash of the [merkle patricia tree](#merkle-patricia-tree) formed by unspent [output entries](#output-entry) after applying the block. Allows bootstrapping nodes from recent blocks and an archived copy of the corresponding merkle patricia tree without processing all historical transactions.
 
 The tree contains unspent outputs (one or more per [asset ID](#asset-id)):
 
