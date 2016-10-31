@@ -76,8 +76,7 @@ public class Client {
     } catch (MalformedURLException e) {
       throw new BadURLException(e.getMessage());
     }
-    this.httpClient = new OkHttpClient();
-    this.httpClient.setFollowRedirects(false);
+    this.httpClient = this.defaultHttpClient();
   }
 
   /**
@@ -87,8 +86,7 @@ public class Client {
    */
   public Client(URL url) {
     this.url = url;
-    this.httpClient = new OkHttpClient();
-    this.httpClient.setFollowRedirects(false);
+    this.httpClient = this.defaultHttpClient();
   }
 
   /**
@@ -341,6 +339,15 @@ public class Client {
       }
     }
     throw exception;
+  }
+
+  private OkHttpClient defaultHttpClient() {
+    OkHttpClient httpClient = new OkHttpClient();
+    httpClient.setFollowRedirects(false);
+    httpClient.setReadTimeout(30, TimeUnit.SECONDS);
+    httpClient.setWriteTimeout(30, TimeUnit.SECONDS);
+    httpClient.setConnectTimeout(30, TimeUnit.SECONDS);
+    return httpClient;
   }
 
   private static final Random randomGenerator = new Random();
