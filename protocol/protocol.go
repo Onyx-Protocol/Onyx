@@ -211,8 +211,9 @@ func (c *Chain) AddBlockCallback(f BlockCallback) {
 // WaitForBlockSoon returns a channel that
 // waits for the block at the given height,
 // but it is an error to wait for a block far in the future.
+// WaitForBlockSoon will timeout if the context times out.
 // To wait unconditionally, the caller should use WaitForBlock.
-func (c *Chain) WaitForBlockSoon(height uint64) chan error {
+func (c *Chain) WaitForBlockSoon(ctx context.Context, height uint64) chan error {
 	ch := make(chan error)
 
 	go func() {
@@ -222,8 +223,12 @@ func (c *Chain) WaitForBlockSoon(height uint64) chan error {
 			return
 		}
 
-		<-c.WaitForBlock(height)
-		ch <- nil
+		select {
+		case <-c.WaitForBlock(height):
+			ch <- nil
+		case <-ctx.Done():
+			ch <- ctx.Err()
+		}
 	}()
 
 	return ch

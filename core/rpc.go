@@ -16,12 +16,7 @@ import (
 // waiting if necessary until one is created.
 // It is an error to request blocks very far in the future.
 func (h *Handler) getBlockRPC(ctx context.Context, height uint64) (chainjson.HexBytes, error) {
-	var err error
-	select {
-	case err = <-h.Chain.WaitForBlockSoon(height):
-	case <-ctx.Done():
-		err = ctx.Err()
-	}
+	err := <-h.Chain.WaitForBlockSoon(ctx, height)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", height)
 	}
