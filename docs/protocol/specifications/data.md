@@ -261,7 +261,7 @@ Unlike [inputs](#input-entry), each of which is unique because it references a d
 
 If the transaction has another entry that guarantees uniqueness of the entire transaction (e.g. an [input entry](#input-entry)), then the issuance must be able to opt out of the bounded minimum and maximum timestamps and therefore the uniqueness test for the [issuance hash](#issuance-hash). The empty nonce signals if the input opts out of the uniqueness checks.
 
-See [Validate Transaction](validation.md#validate-transaction) section for more details on how the network enforces the uniqueness of issuance inputs.
+See [Validate Transaction](validation.md#validate-transaction) section for more details on how the network enforces the uniqueness of issuance entries.
 
 #### Issuance Entry Content
 
@@ -303,7 +303,7 @@ Input Reference Data    | varstring31             | Arbitrary string or its [opt
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
-Previous Output         | [Output Entry Content](#output-entry-content) | Output content field used as the source for this input [serialized with flags](#transaction-serialization-flags) 0x00 (this also means that reference data within this field is always encoded as hash, even if the transaction is serialized with direct reference data values in the entries).
+Previous Output         | [Output Entry](#output-entry) | Output entry used as the source for this input [serialized with flags](#transaction-serialization-flags) 0x00 (entry type is included, witness is always excluded and reference data within this field is always encoded as hash, regardless of the transaction own serialization flags).
 Program Arguments Count | varint31                | Number of [program arguments](#program-arguments) that follow.
 Program Arguments       | [varstring31]           | [Signatures](#signature) and other data satisfying the spent output’s control program. Used to initialize the [data stack](vm1.md#vm-state) of the VM.
 —                       | —                       | Additional fields may be added by future extensions.
@@ -334,7 +334,7 @@ Field                   | Type                    | Description
 
 ### Retirement Entry
 
-Retirement entries remove units of assets from circulation. They are similar to [output entries](#output-entry), except they do not specify a control program since assets are made unspendable.
+Retirement entries remove units of assets from circulation. They are similar to [output entries](#output-entry), except they do not specify a control program since assets are destroyed.
 
 #### Retirement Entry Content
 
@@ -354,7 +354,7 @@ Field                   | Type                    | Description
 
 ### Issuance Hash
 
-Issuance hash provides a globally unique identifier for an issuance input. It is defined as [SHA3-256](#sha3) of the following structure:
+Issuance hash provides a globally unique identifier for an issuance entry. It is defined as [SHA3-256](#sha3) of the following structure:
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
@@ -426,11 +426,11 @@ Field                   | Type                                      | Descriptio
 ------------------------|-------------------------------------------|----------------------------------------------------------
 Transaction ID          | sha3-256                                  | Current [transaction ID](#transaction-id).
 Input Index             | varint31                                  | Index of the current input encoded as [varint31](#varint31).
-Output Commitment Hash  | sha3-256                                  | [SHA3-256](#sha3) of the output commitment from the output being spent by the current input. Issuance input uses a hash of an empty string.
+Output Hash             | sha3-256                                  | [SHA3-256](#sha3) of the [output entry](#output-entry) [serialized with flags](#transaction-serialization-flags) 0x00 being spent by the current input. Issuance entries use a hash of an empty string.
 
-Note 1. Including the spent output commitment makes it easier to verify the asset ID and amount at signing time, although those values are already committed to via the input's [outpoint](#outpoint).
+Note 1. Including the spent output entry makes it easier to verify the asset ID and amount at signing time, although those values are already committed to via the input's [outpoint](#outpoint).
 
-Note 2. Using the hash of the output commitment instead of the output commitment as-is does not incur additional overhead since this hash is readily available from the [assets merkle tree](#assets-merkle-root). As a result, total amount of data to be hashed by all nodes during transaction validation is reduced.
+Note 2. Using the hash of the output entry instead of the output commitment as-is does not incur additional overhead since this hash is readily available from the [assets merkle tree](#assets-merkle-root). As a result, total amount of data to be hashed by all nodes during transaction validation is reduced.
 
 ### Program
 
@@ -457,7 +457,7 @@ Issuance programs must start with a [PUSHDATA](vm1.md#pushdata) opcode, followed
 
 ### Program Arguments
 
-A list of binary strings in the [issuance witness](#issuance-entry-witness), [input witness](#input-entry-witness) and [block witness](#block-witness) structures. It typically contains signatures and other data to satisfy the predicate specified by the control program of the output referenced by the current input. Program arguments are used also for authenticating *issuance inputs* where the predicate is defined by an issuance program.
+A list of binary strings in the [issuance witness](#issuance-entry-witness), [input witness](#input-entry-witness) and [block witness](#block-witness) structures. It typically contains signatures and other data to satisfy the predicate specified by the control program of the output referenced by the current input. Program arguments are used also for authenticating *issuance entries* where the predicate is defined by an issuance program.
 
 
 ### Asset ID
@@ -470,7 +470,7 @@ Field            | Type          | Description
 -----------------|---------------|-------------------------------------------------
 Initial Block ID | sha3-256      | Hash of the first block in this blockchain.
 VM Version       | varint63      | [Version of the VM](#vm-version) for the issuance program.
-Issuance Program | varstring31   | Program used in the issuance input.
+Issuance Program | varstring31   | Program used in the issuance entry.
 
 
 ### Asset Definition
@@ -485,7 +485,11 @@ Units of an asset can be retired by allocating them to [retirement entry](#retir
 
 Retired assets are not included in the [assets merkle root](#assets-merkle-root) and therefore do not occupy any memory in the nodes. One may use a merkle path to the [transactions merkle root](#transactions-merkle-root) to create a compact proof for a retired asset.
 
-Note: [outputs](#output-entry) with certain control programs may render the output unspendable (e.g. `FALSE` or `0 VERIFY`), but they do not cause the output to be removed from the [assets merkle root](#assets-merkle-root), only [retirement entries](#retirement-entry) do.
+[sidenote]
+
+[Outputs](#output-entry) with certain control programs may render the output unspendable (e.g. `FALSE` or `0 VERIFY`), but they do not cause the output to be removed from the [assets merkle root](#assets-merkle-root), only [retirement entries](#retirement-entry) do.
+
+[/sidenote]
 
 ### Transactions Merkle Root
 
@@ -499,7 +503,7 @@ The tree contains unspent outputs (one or more per [asset ID](#asset-id)):
 
 Key                       | Value
 --------------------------|------------------------------
-`<txhash><index int32be>` | [SHA3-256](#sha3) of the [output entry content](#output-entry-content)
+`<txhash><index int32be>` | [SHA3-256](#sha3) of the [output entry](#output-entry) [serialized](#transaction-serialization-flags) with flags 0x00.
 
 Note: unspent output indices are encoded with a fixed-length big-endian format to support lexicographic ordering.
 
