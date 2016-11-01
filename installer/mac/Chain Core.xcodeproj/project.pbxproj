@@ -21,7 +21,6 @@
 		208663E81D9C8AFD00D32EB2 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 208663E71D9C8AFD00D32EB2 /* WebKit.framework */; };
 		20889C761DA5AD8600C39E3D /* DashboardWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20889C751DA5AD8600C39E3D /* DashboardWindowController.swift */; };
 		208D132C1D99CD02006E68D0 /* ChainCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208D132B1D99CD02006E68D0 /* ChainCore.swift */; };
-		20A50E551DA586D900F36C00 /* updates.xml in Resources */ = {isa = PBXBuildFile; fileRef = 20A50E541DA586D900F36C00 /* updates.xml */; };
 		20BC08761DC9303A002A3C1E /* build_chain.sh in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08721DC9303A002A3C1E /* build_chain.sh */; };
 		20BC08771DC9303A002A3C1E /* copy_postgres.sh in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08731DC9303A002A3C1E /* copy_postgres.sh */; };
 		20BC08781DC9303A002A3C1E /* patch_loader_path.rb in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08741DC9303A002A3C1E /* patch_loader_path.rb */; };
@@ -271,7 +270,6 @@
 				20239A641DB14CE000DA27B3 /* Nitti Light.otf in Resources */,
 				20BC08791DC9303A002A3C1E /* update_appcast.rb in Resources */,
 				20BC08781DC9303A002A3C1E /* patch_loader_path.rb in Resources */,
-				20A50E551DA586D900F36C00 /* updates.xml in Resources */,
 				20239A691DB14CE000DA27B3 /* NittiGrotesk-Normal.otf in Resources */,
 				83FB57201D1B05F000A903A3 /* Assets.xcassets in Resources */,
 				20BC08771DC9303A002A3C1E /* copy_postgres.sh in Resources */,
