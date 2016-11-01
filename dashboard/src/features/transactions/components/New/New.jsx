@@ -50,7 +50,27 @@ class Form extends React.Component {
 
     return new Promise((resolve, reject) => {
       this.props.submitForm(data)
-        .catch((err) => reject({_error: err.message}))
+        .catch((err) => {
+          const response = {}
+
+          if (err.data) {
+            response.actions = []
+
+            err.data.forEach((error) => {
+              const message = [error.message]
+              if (error.detail) message.push(error.detail)
+              response.actions[error.data.action_index] = {type: message.join(': ')}
+            })
+
+            response['_error'] = 'There was a problem with one or more actions'
+          } else {
+            const message = [err.message]
+            if (err.detail) message.push(err.detail)
+            response['_error'] = message.join(': ')
+          }
+
+          return reject(response)
+        })
     })
   }
 

@@ -4,6 +4,10 @@
   margin-bottom: $gutter-size;
 }
 
+.error {
+  border-color: $highlight-danger-border;
+}
+
 .header {
   display: flex;
   justify-content: space-between;
