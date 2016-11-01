@@ -293,6 +293,9 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
 		}
+		if !*indexTxs {
+			return
+		}
 		err := cursorStore.LoadAll(ctx)
 		if err != nil {
 			chainlog.Error(ctx, err)
