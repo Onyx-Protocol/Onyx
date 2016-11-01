@@ -107,7 +107,9 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	}
 	defer dbtx.Rollback(ctx)
 
-	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
+	// Use EXCLUSIVE locking here because the rows affected may overlap
+	// with rows affected by writes in other threads.
+	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
 	if err != nil {
 		return errors.Wrap(err, "locking utxo table")
 	}
@@ -226,6 +228,10 @@ func (m *Manager) upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*o
 	}
 	defer dbtx.Rollback(ctx)
 
+	// Use ROW EXCLUSIVE locking here because the rows affected are
+	// distinct from rows affected by writes in other threads. (This
+	// assumes that ON CONFLICT ... DO NOTHING avoids a deadlock when an
+	// actual conflict occurs.)
 	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
 		return errors.Wrap(err, "locking utxo table")
