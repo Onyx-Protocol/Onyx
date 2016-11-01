@@ -75,7 +75,6 @@ Execution of any of the following instructions results in immediate failure:
 * [AMOUNT](#amount)
 * [MINTIME](#mintime)
 * [MAXTIME](#maxtime)
-* [TXREFDATAHASH](#txrefdatahash)
 * [REFDATAHASH](#refdatahash)
 * [INDEX](#index)
 * [OUTPOINT](#outpoint)
@@ -84,7 +83,7 @@ Execution of any of the following instructions results in immediate failure:
 
 ### Transaction context
 
-Transaction context is defined by the pair of the entire transaction and the index of one of its inputs indicating the “current input”.
+Transaction context is defined by the pair of the entire transaction and the index of one of its issuance or input entries indicating the “current entry”.
 
 Execution of any of the following instructions results in immediate failure:
 
@@ -104,7 +103,7 @@ Execution of any of the following instructions results in immediate failure:
 5. Run Limit
 6. Execution Context:
     a. Block
-    b. (Transaction, Input Index)
+    b. (Transaction, Entry Index)
 
 **Initial State** has empty stacks, uninitialized program, PC set to zero, and *run limit* set to 10,000.
 
@@ -1083,7 +1082,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xae  | (∅ → hash)                     | 256 + [standard memory cost](#standard-memory-cost)
 
-Computes the [transaction signature hash](data.md#transaction-signature-hash) corresponding to the current input.
+Computes the [transaction signature hash](data.md#transaction-signature-hash) corresponding to the current entry.
 
 Typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
 
@@ -1153,8 +1152,8 @@ Code  | Stack Diagram  | Cost
 0xc4  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
 1. In [transaction context](#transaction-context):
-  * For spend inputs: pushes the control program from the output being spent.
-  * For issuance inputs: pushes the issuance program.
+  * For input entries: pushes the control program from the output being spent.
+  * For issuance entries: pushes the issuance program.
 2. In [block context](#block-context):
   * Pushes the current [consensus program](data.md#consensus-program) being executed (that is specified in the previous block header).
 
@@ -1181,27 +1180,6 @@ If the value is zero or greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>�
 
 Fails if executed in the [block context](#block-context).
 
-#### TXREFDATAHASH
-
-Code  | Stack Diagram   | Cost
-------|-----------------|-----------------------------------------------------
-0xc7  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
-
-Pushes the SHA3-256 hash of the [transaction](data.md#transaction)'s reference data.
-
-Fails if executed in the [block context](#block-context).
-
-
-#### REFDATAHASH
-
-Code  | Stack Diagram   | Cost
-------|-----------------|-----------------------------------------------------
-0xc8  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
-
-Pushes the SHA3-256 hash of the current [input](data.md#transaction-input)'s reference data.
-
-Fails if executed in the [block context](#block-context).
-
 
 #### INDEX
 
@@ -1209,7 +1187,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc9  | (∅ → index)     | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the index of the current input on the data stack.
+Pushes the index of the current entry on the data stack.
 
 Fails if executed in the [block context](#block-context).
 
@@ -1220,7 +1198,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xcb  | (∅ → outpointtx outpointindex)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the transaction ID and output index fields of the current input's [outpoint](#outpoint) on the data stack as separate items. The index is encoded as a [VM number](#vm-number).
+Pushes the transaction ID and output index fields of the current entry’s [outpoint](#outpoint) on the data stack as separate items. The index is encoded as a [VM number](#vm-number).
 
 Fails if the current entry is an [issuance entry](data.md#issuance-entry).
 
@@ -1235,7 +1213,7 @@ Code  | Stack Diagram   | Cost
 
 Pushes the nonce declared in the current issuance entry’s [content](data.md#issuance-entry-content) on the data stack.
 
-Fails if the current input is not an [issuance entry](data.md#issuance-entry).
+Fails if the current entry is not an [issuance entry](data.md#issuance-entry).
 
 Fails if executed in the [block context](#block-context).
 
