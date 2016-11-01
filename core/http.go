@@ -56,26 +56,22 @@ func alwaysError(err error) http.Handler {
 	return jsonHandler(func() error { return err })
 }
 
-func handleInnerRequest(ctx context.Context, innerHandler func() (interface{}, error)) (result interface{}) {
-	var resp interface{}
-	var err error
-	defer func() {
-		if r := recover(); r != nil {
-			if recoveredErr, ok := r.(error); ok {
-				err = recoveredErr
-			} else {
-				err = fmt.Errorf("panic with %T", r)
-			}
+func batchRecover(ctx context.Context, v *interface{}) {
+	if r := recover(); r != nil {
+		if recoveredErr, ok := r.(error); ok {
+			*v = recoveredErr
+		} else {
+			*v = fmt.Errorf("panic with %T", r)
 		}
-		// Convert errors into errorInfo responses (including errors from
-		// recovered panics above).
-		if err != nil {
-			logHTTPError(ctx, err)
-			result, _ = errInfo(err)
-		}
-	}()
+	}
 
-	resp, err = innerHandler()
-	// err is checked by the above defer.
-	return resp
+	if *v == nil {
+		return
+	}
+	// Convert errors into errorInfo responses (including errors
+	// from recovered panics above).
+	if err, ok := (*v).(error); ok {
+		logHTTPError(ctx, err)
+		*v, _ = errInfo(err)
+	}
 }

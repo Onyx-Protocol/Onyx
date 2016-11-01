@@ -42,30 +42,31 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 
 	for i := range responses {
 		go func(i int) {
-			defer wg.Done()
 			subctx := reqid.NewSubContext(ctx, reqid.New())
-			responses[i] = handleInnerRequest(subctx, func() (interface{}, error) {
-				acc, err := h.Accounts.Create(subctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
-				if err != nil {
-					return nil, err
-				}
-				path := signers.Path(acc.Signer, signers.AccountKeySpace)
-				var keys []accountKey
-				for _, xpub := range acc.XPubs {
-					keys = append(keys, accountKey{
-						RootXPub:              xpub,
-						AccountXPub:           xpub.Derive(path),
-						AccountDerivationPath: path,
-					})
-				}
-				return &accountResponse{
-					ID:     acc.ID,
-					Alias:  acc.Alias,
-					Keys:   keys,
-					Quorum: acc.Quorum,
-					Tags:   acc.Tags,
-				}, nil
-			})
+			defer wg.Done()
+			defer batchRecover(subctx, &responses[i])
+
+			acc, err := h.Accounts.Create(subctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
+			if err != nil {
+				responses[i] = err
+				return
+			}
+			path := signers.Path(acc.Signer, signers.AccountKeySpace)
+			var keys []accountKey
+			for _, xpub := range acc.XPubs {
+				keys = append(keys, accountKey{
+					RootXPub:              xpub,
+					AccountXPub:           xpub.Derive(path),
+					AccountDerivationPath: path,
+				})
+			}
+			responses[i] = &accountResponse{
+				ID:     acc.ID,
+				Alias:  acc.Alias,
+				Keys:   keys,
+				Quorum: acc.Quorum,
+				Tags:   acc.Tags,
+			}
 		}(i)
 	}
 
