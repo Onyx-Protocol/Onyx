@@ -126,6 +126,29 @@ func WithData(err error, v interface{}) error {
 	return e1
 }
 
+// WithDataKV returns a new error that wraps err
+// as a chain error message containing a value of type
+// map[string]interface{} as an extra data item.
+// The map contains the values in map in err, if any,
+// plus the items in keyval.
+// Keyval takes the form
+//   k1, v1, k2, v2, ...
+// Here kN must be strings.
+// Calling Data on the returned error yields the map.
+// Note that if err already has a data item of any other type,
+// it will not be accessible via the returned error value.
+func WithDataKV(err error, keyval ...interface{}) error {
+	newkv := make(map[string]interface{})
+	oldkv, _ := Data(err).(map[string]interface{})
+	for k, v := range oldkv {
+		newkv[k] = v
+	}
+	for i := 0; i < len(keyval); i += 2 {
+		newkv[keyval[i].(string)] = keyval[i+1]
+	}
+	return WithData(err, newkv)
+}
+
 // Data returns the data item in err, if any.
 func Data(err error) interface{} {
 	wrapper, _ := err.(wrapperError)

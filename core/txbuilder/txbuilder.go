@@ -65,7 +65,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 result:
 	for i, v := range results {
 		if v.err != nil {
-			err := errors.WithData(v.err, map[string]int{"action_index": i})
+			err := errors.WithDataKV(v.err, "action_index", i)
 			errs = append(errs, err)
 			continue result
 		}

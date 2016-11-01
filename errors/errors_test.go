@@ -120,3 +120,24 @@ func TestData(t *testing.T) {
 		}
 	}
 }
+
+func TestDataKV(t *testing.T) {
+	root := errors.New("foo")
+	cases := []struct {
+		err  error
+		data interface{}
+	}{
+		{WithDataKV(root, "a", "b"), map[string]interface{}{"a": "b"}},
+		{WithDataKV(WithDataKV(root, "a", "b"), "c", "d"), map[string]interface{}{"a": "b", "c": "d"}},
+		{Wrap(WithDataKV(root, "a", "b"), "baz"), map[string]interface{}{"a": "b"}},
+	}
+
+	for _, test := range cases {
+		if got := Data(test.err); !reflect.DeepEqual(got, test.data) {
+			t.Errorf("Data(%#v) = %v want %v", test.err, got, test.data)
+		}
+		if got := Root(test.err); got != root {
+			t.Errorf("Root(%#v) = %v want %v", test.err, got, root)
+		}
+	}
+}
