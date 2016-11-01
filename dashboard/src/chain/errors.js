@@ -1,10 +1,12 @@
 const lib = {
   create: function(type, message, props = {}) {
     let err = new Error(message)
-    err = Object.assign(err, props, {
+    err = {
+      ...err,
+      ...props.data,
       chainClientError: true,
       type: type,
-    })
+    }
     return err
   },
 

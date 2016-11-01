@@ -4,8 +4,9 @@ import {
   HiddenField,
   JsonField,
   ObjectSelectorField,
-  Autocomplete
+  Autocomplete,
 } from 'components/Common'
+import { ErrorBanner } from 'features/shared/components'
 import styles from './FormActionItem.scss'
 
 const ISSUE_KEY = 'issue'
@@ -75,14 +76,19 @@ export default class ActionItem extends React.Component {
       this.props.remove(this.props.index)
     }
 
+    const classNames = [styles.main]
+    if (type.error) classNames.push(styles.error)
+
     return (
-      <div className={styles.main} ref={ref => this.scrollRef = ref}>
+      <div className={classNames.join(' ')} ref={ref => this.scrollRef = ref}>
         <HiddenField fieldProps={type} />
 
         <div className={styles.header}>
           <label className={styles.title}>{actionLabels[type.value]}</label>
           <a href='#' className='btn btn-sm btn-danger' onClick={remove}>Remove</a>
         </div>
+
+        {type.error && <ErrorBanner message={type.error} />}
 
         {visible.account &&
           <ObjectSelectorField
