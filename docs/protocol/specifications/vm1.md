@@ -75,7 +75,6 @@ Execution of any of the following instructions results in immediate failure:
 * [AMOUNT](#amount)
 * [MINTIME](#mintime)
 * [MAXTIME](#maxtime)
-* [REFDATAHASH](#refdatahash)
 * [INDEX](#index)
 * [OUTPOINT](#outpoint)
 * [NONCE](#nonce)
