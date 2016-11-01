@@ -8,13 +8,14 @@ called `md2html`.
 Make sure all Chain Core commands have been installed by following the
 installation instructions in the [repo README](../Readme.md#installation).
 
-Once installed, from the root directory of the repo, run:
+Once installed, run `md2html` from the root directory of the rep:
 
 ```sh
+$ cd $CHAIN
 $ md2html
 ```
 
-to start the markdown server. The converted documentation is available at
+The converted documentation is served at
 [http://localhost:8080/docs](http://localhost:8080/docs).
 
 ---
