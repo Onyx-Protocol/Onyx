@@ -765,13 +765,11 @@ $HOME/corectl create-token -net benchcorenet > $HOME/network-token.txt
 
 const coredsh = `#!/bin/bash
 set -eo pipefail
-sudo bash<<EOFSUDO
-ulimit -n 65535
+sudo bash -c "ulimit -n 65535 && exec su ubuntu"
 export DATABASE_URL='{{dbURL}}'
 export MAXDBCONNS=100
 export GOTRACEBACK=crash
 ./cored 2>&1 | tee -a cored.log
-EOFSUDO
 `
 
 const clientsh = `#!/bin/bash
