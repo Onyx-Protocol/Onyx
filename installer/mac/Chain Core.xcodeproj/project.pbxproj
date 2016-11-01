@@ -133,7 +133,8 @@
 			children = (
 				20A50E541DA586D900F36C00 /* updates.xml */,
 			);
-			path = Updates;
+			name = Updates;
+			path = updates;
 			sourceTree = "<group>";
 		};
 		20BC08711DC93032002A3C1E /* Tools */ = {
