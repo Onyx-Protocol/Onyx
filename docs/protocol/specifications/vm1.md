@@ -59,7 +59,7 @@ A program executes in a context, either a *block* or a *transaction*. Some instr
 
 Transactions use [control programs](data.md#control-program) to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
 
-Blocks use [consensus programs](data.md#consensus-program) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
+Blocks use [consensus programs](data.md#consensus-program) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [ENTRY](#entry)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
 
 ### Block context
 
@@ -70,7 +70,7 @@ Instruction [PROGRAM](#program) behaves differently than in transaction context.
 Execution of any of the following instructions results in immediate failure:
 
 * [TXSIGHASH](#txsighash)
-* [CHECKOUTPUT](#checkoutput)
+* [ENTRY](#entry)
 * [ASSET](#asset)
 * [AMOUNT](#amount)
 * [MINTIME](#mintime)
@@ -1113,25 +1113,15 @@ The following instructions are defined within a [transaction context](#execution
 Note: [standard memory cost](#standard-memory-cost) is applied *after* the instruction is executed in order to determine the exact size of the encoded data (this also applies to [ASSET](#asset), even though the result is always 32 bytes long).
 
 
-#### CHECKOUTPUT
+#### ENTRY
 
 Code  | Stack Diagram                                        | Cost
 ------|------------------------------------------------------|-----------------------------------------------------
-0xc1  | (index refdatahash amount assetid version prog → q)  | 16; [standard memory cost](#standard-memory-cost)
+0xc1  | (m → field<sub>n-1</sub> ... field<sub>0</sub> type  | 16; [standard memory cost](#standard-memory-cost)
 
-1. Pops 6 items from the data stack: `index`, `refdatahash`, `amount`, `assetid`, `version`, `prog`.
-2. Fails if `index` is negative or not a valid [number](#vm-number).
-3. Fails if the number of outputs is less or equal to `index`.
-4. Fails if `amount` and `version` are not non-negative [numbers](#vm-number).
-5. Finds a transaction output at the given `index`.
-6. If the output satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
-    1. control program equals `prog`,
-    2. VM version equals `version`,
-    3. asset ID equals `assetid`,
-    4. amount equals `amount`,
-    5. `refdatahash` is an empty string or it matches the [SHA3-256](data.md#sha3) hash of the reference data.
+Pushes to the stack each of the `n` fields of the [content](data.md#transaction-entry-content) of the `m`th [entry](data.md#transaction-entry) in the transaction. Also pushes the type of that entry to the top of the stack.
 
-Fails if executed in the [block context](#block-context).
+Fails if executed in the [block context](#block-context), or if the transaction has fewer than `m-1` entries.
 
 
 #### ASSET
@@ -1140,7 +1130,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc2  | (∅ → assetid)   | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the asset ID assigned to the current input on the data stack.
+Pushes the asset ID assigned to the current entry on the data stack.
 
 Fails if executed in the [block context](#block-context).
 
@@ -1151,7 +1141,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc3  | (∅ → amount)    | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the amount assigned to the current input on the data stack.
+Pushes the amount assigned to the current entry on the data stack.
 
 Fails if executed in the [block context](#block-context).
 
