@@ -9,7 +9,6 @@ import (
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/errors"
-	"chain/log"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
 )
@@ -72,32 +71,7 @@ func (reg *Registry) ProcessBlocks(ctx context.Context) {
 	if reg.indexer == nil || reg.cursorStore == nil {
 		return
 	}
-	assetCursor := reg.cursorStore.Cursor("asset")
-	for {
-		height := assetCursor.Height()
-		select {
-		case <-reg.chain.WaitForBlock(height + 1):
-			block, err := reg.chain.GetBlock(ctx, height+1)
-			if err != nil {
-				log.Error(ctx, err)
-				continue
-			}
-			err = reg.indexAssets(ctx, block)
-			if err != nil {
-				log.Error(ctx, err)
-				continue
-			}
-			// This could cause issues, since it is not inside of a
-			// database transaction.
-			err = assetCursor.Increment(ctx)
-			if err != nil {
-				log.Error(ctx, err)
-			}
-		case <-ctx.Done(): // leader deposed
-			log.Error(ctx, ctx.Err())
-			break
-		}
-	}
+	reg.cursorStore.ProcessBlocks(ctx, reg.chain, "asset", reg.indexAssets)
 }
 
 // indexAssets is run on every block and indexes all non-local assets.

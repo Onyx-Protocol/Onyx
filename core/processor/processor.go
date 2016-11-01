@@ -5,6 +5,9 @@ import (
 	"sync"
 
 	"chain/database/pg"
+	"chain/log"
+	"chain/protocol"
+	"chain/protocol/bc"
 )
 
 type CursorStore struct {
@@ -26,6 +29,35 @@ func (ct *CursorStore) Cursor(name string) *Cursor {
 		ct.cursors[name] = cursor
 	}
 	return cursor
+}
+
+func (ct *CursorStore) ProcessBlocks(ctx context.Context, c *protocol.Chain, cursorName string, cb func(context.Context, *bc.Block) error) {
+	cursor := ct.Cursor(cursorName)
+	for {
+		height := cursor.Height()
+		select {
+		case <-c.WaitForBlock(height + 1):
+			block, err := c.GetBlock(ctx, height+1)
+			if err != nil {
+				log.Error(ctx, err)
+				continue
+			}
+			err = cb(ctx, block)
+			if err != nil {
+				log.Error(ctx, err)
+				continue
+			}
+			// This could cause issues, since it is not inside of a
+			// database transaction.
+			err = cursor.Increment(ctx)
+			if err != nil {
+				log.Error(ctx, err)
+			}
+		case <-ctx.Done(): // leader deposed
+			log.Error(ctx, ctx.Err())
+			break
+		}
+	}
 }
 
 func (ct *CursorStore) LoadAll(ctx context.Context) error {
