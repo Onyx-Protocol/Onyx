@@ -1,4 +1,27 @@
-## Chain Core
+# Documentation
+
+## Development
+
+To view docs with their associated HTML, styles and fonts, we use a tool
+called `md2html`.
+
+Make sure all Chain Core commands have been installed by following the
+installation instructions in the [repo README](../Readme.md#installation).
+
+Once installed, from the root directory of the repo, run:
+
+```sh
+$ md2html
+```
+
+to start the markdown server. The converted documentation is available at
+http://localhost:8080/docs.
+
+---
+
+## Table of Contents
+
+### Chain Core
 
 * Get Started
   * [Introduction](core/get-started/introduction.md)
@@ -27,7 +50,7 @@
   * [API Objects](core/reference/api-objects.md)
   * [Product Roadmap](core/reference/product-roadmap.md)
 
-## Chain Protocol
+### Chain Protocol
 
 * Papers
   * [Whitepaper](protocol/papers/whitepaper.md)
