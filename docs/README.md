@@ -15,7 +15,7 @@ $ md2html
 ```
 
 to start the markdown server. The converted documentation is available at
-http://localhost:8080/docs.
+[http://localhost:8080/docs](http://localhost:8080/docs).
 
 ---
 
