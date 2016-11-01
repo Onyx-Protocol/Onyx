@@ -97,7 +97,7 @@ func TestDetail(t *testing.T) {
 	}
 }
 
-func TestDataKV(t *testing.T) {
+func TestData(t *testing.T) {
 	root := errors.New("foo")
 	cases := []struct {
 		err  error
