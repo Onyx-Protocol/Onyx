@@ -1119,7 +1119,7 @@ Code  | Stack Diagram                                        | Cost
 ------|------------------------------------------------------|-----------------------------------------------------
 0xc1  | (m → field<sub>n-1</sub> ... field<sub>0</sub> type  | 16; [standard memory cost](#standard-memory-cost)
 
-Pushes to the stack each of the `n` fields of the [content](data.md#transaction-entry-content) of the `m`th [entry](data.md#transaction-entry) in the transaction. Also pushes the type of that entry to the top of the stack.
+Pushes to the stack each of the `n` fields of the [content](data.md#entry-content) of the `m`th [entry](data.md#transaction-entry) in the transaction. Also pushes the type of that entry to the top of the stack.
 
 Fails if executed in the [block context](#block-context), or if the transaction has fewer than `m-1` entries.
 
@@ -1222,7 +1222,7 @@ Code  | Stack Diagram   | Cost
 
 Pushes the transaction ID and output index fields of the current input's [outpoint](#outpoint) on the data stack as separate items. The index is encoded as a [VM number](#vm-number).
 
-Fails if the current input is an [issuance input](data.md#transaction-input-commitment).
+Fails if the current entry is an [issuance entry](data.md#issuance-entry).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1233,9 +1233,9 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xcc  | (∅ → nonce)     | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the nonce declared in the current input's [issuance commitment](data.md#asset-version-1-issuance-commitment) on the data stack.
+Pushes the nonce declared in the current issuance entry’s [content](data.md#issuance-entry-content) on the data stack.
 
-Fails if the current input is not an [issuance input](data.md#transaction-input-commitment).
+Fails if the current input is not an [issuance entry](data.md#issuance-entry).
 
 Fails if executed in the [block context](#block-context).
 
