@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 require 'open-uri'
+require 'pathname'
+
 CHECK_GLOBAL_LINKS = false
 
 # 1. Get all links
@@ -13,7 +15,7 @@ def main
   basepath = File.expand_path("..", File.dirname(__FILE__))
   Dir["#{basepath}/**/*.md"].each do |file|
     collect_links_and_anchors(file, dataset)
-    check_links(file, dataset[file][:links], dataset)
+    check_links(file, file, dataset[file][:links], dataset)
   end
 end
 
@@ -34,7 +36,7 @@ def collect_links_and_anchors(fp, dataset={})
   end
 end
 
-def check_links(file, links, dataset = {})
+def check_links(originfile, file, links, dataset = {})
   dataset["__checked_remote_urls"] ||= {}
   cache = dataset["__checked_remote_urls"]
   links.each do |(name, ref)|
@@ -42,12 +44,17 @@ def check_links(file, links, dataset = {})
       # TODO: check emails later
     elsif ref[0,1] == "#"
       if !dataset[file][:anchors].include?(ref)
-        puts "! Broken anchor link in file #{file}: [#{name}](#{ref})"
+        fullref = ref
+        if originfile != file
+          relative = Pathname.new(file).relative_path_from(Pathname.new(File.dirname(originfile)))
+          fullref = relative.to_s + ref
+        end
+        puts "! Broken anchor link in file #{originfile}: [#{name}](#{fullref})"
       end
     elsif ref =~ %r{^https?://}
       if !cache[ref]
         if !check_url(ref)
-          puts "! Broken global link in file #{file}: [#{name}](#{ref})"
+          puts "! Broken global link in file #{originfile}: [#{name}](#{ref})"
           cache[ref] = "failed"
         else
           cache[ref] = "ok"
@@ -63,7 +70,7 @@ def check_links(file, links, dataset = {})
         puts "! Broken local link in file #{file}: [#{name}](#{ref})"
       elsif anchor
         collect_links_and_anchors(path, dataset)
-        check_links(path, [[name + " (from #{file})", anchor]], dataset)
+        check_links(file, path, [[name, anchor]], dataset)
       end
     end
   end
