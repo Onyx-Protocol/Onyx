@@ -18,7 +18,7 @@ public class BuildException extends APIException {
             /**
              * The index of the action that caused this error.
              */
-            @SerializedName("action_index")
+            @SerializedName("index")
             public Integer index;
         }
 
@@ -32,9 +32,17 @@ public class BuildException extends APIException {
         public Data data;
     }
 
+    public static class Data {
+        /**
+         * A list of errors resulting from building actions.
+         */
+        @SerializedName("actions")
+        public List<ActionError> actionErrors;
+    }
+
     /**
-     * A list of errors resulting from building actions.
+     * Extra data associated with this error, if any.
      */
     @SerializedName("data")
-    public List<ActionError> actionErrors;
+    public Data data;
 }
