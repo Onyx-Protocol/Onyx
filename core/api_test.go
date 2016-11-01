@@ -284,7 +284,7 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
-	_, err = handler.submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: chainjson.Duration{time.Millisecond}})
+	_, err = handler.submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: chainjson.Duration{Duration: time.Millisecond}})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
 	}
@@ -329,7 +329,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	_, err = handler.submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: chainjson.Duration{time.Millisecond}})
+	_, err = handler.submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: chainjson.Duration{Duration: time.Millisecond}})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
 	}
