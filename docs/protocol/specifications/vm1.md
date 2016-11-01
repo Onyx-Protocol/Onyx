@@ -1185,7 +1185,7 @@ Fails if executed in the [block context](#block-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0xc9  | (∅ → index)     | 1; [standard memory cost](#standard-memory-cost)
+0xc7  | (∅ → index)     | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes the index of the current entry on the data stack.
 
@@ -1196,7 +1196,7 @@ Fails if executed in the [block context](#block-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0xcb  | (∅ → outpointtx outpointindex)  | 1; [standard memory cost](#standard-memory-cost)
+0xc8  | (∅ → outpointtx outpointindex)  | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes the transaction ID and output index fields of the current entry’s [outpoint](#outpoint) on the data stack as separate items. The index is encoded as a [VM number](#vm-number).
 
@@ -1209,7 +1209,7 @@ Fails if executed in the [block context](#block-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0xcc  | (∅ → nonce)     | 1; [standard memory cost](#standard-memory-cost)
+0xc9  | (∅ → nonce)     | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes the nonce declared in the current issuance entry’s [content](data.md#issuance-entry-content) on the data stack.
 
@@ -1222,7 +1222,7 @@ Fails if executed in the [block context](#block-context).
 
 Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
-0xcd  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
+0xca  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes the [next consensus program](data.md#consensus-program) specified in the current block header.
 
@@ -1233,7 +1233,7 @@ Fails if executed in the [transaction context](#transaction-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0xce  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
+0xcb  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes the block timestamp in milliseconds on the data stack.
 
@@ -1245,7 +1245,7 @@ Fails if executed in the [transaction context](#transaction-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcc..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion and have no effect on the state of the VM apart from reducing run limit by 1.
 
