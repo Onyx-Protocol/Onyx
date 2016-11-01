@@ -10,12 +10,17 @@ Make sure you are running macOS Sierra (10.12) and have Xcode 8.
 
 2) Install iTerm in order to be able to make `ClientLauncher.applescript` compile.
 
-3) Build Postgres (binaries will be installed in `./PostgresBuild`):
+3) Build Postgres (binaries will be installed in `./pg/build`):
 
-    $ cd src
+    $ cd pg/src
+    $ make clean
     $ make -j16
 
 4) Open ChainCore.xcodeproj and click Build.
+
+Note: `make` patches the absolute loader paths into relative ones which messes with postgres's configure script.
+Make sure you do `make clean` before re-build. Later we will improve this by patching separate copies of the libraries, during cope_postgres.sh phase.
+
 
 ## Release process
 
