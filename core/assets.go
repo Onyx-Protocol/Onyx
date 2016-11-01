@@ -6,6 +6,7 @@ import (
 
 	"chain/core/signers"
 	"chain/encoding/json"
+	"chain/net/http/reqid"
 )
 
 type (
@@ -19,10 +20,6 @@ type (
 		Definition      interface{} `json:"definition"`
 		Tags            interface{} `json:"tags"`
 		IsLocal         interface{} `json:"is_local"`
-	}
-	assetOrError struct {
-		*assetResponse
-		*detailedError
 	}
 )
 
@@ -45,28 +42,28 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 	// idempotency of create asset requests. Duplicate create asset requests
 	// with the same client_token will only create one asset.
 	ClientToken *string `json:"client_token"`
-}) ([]assetOrError, error) {
-	responses := make([]assetOrError, len(ins))
+}) ([]interface{}, error) {
+	responses := make([]interface{}, len(ins))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
 
-	for i := 0; i < len(responses); i++ {
+	for i := range responses {
 		go func(i int) {
 			defer wg.Done()
-			asset, err := h.Assets.Define(
-				ctx,
-				ins[i].RootXPubs,
-				ins[i].Quorum,
-				ins[i].Definition,
-				ins[i].Alias,
-				ins[i].Tags,
-				ins[i].ClientToken,
-			)
-			if err != nil {
-				logHTTPError(ctx, err)
-				res, _ := errInfo(err)
-				responses[i] = assetOrError{detailedError: &res}
-			} else {
+			subctx := reqid.NewSubContext(ctx, reqid.New())
+			resp := handleInnerRequest(subctx, func() (interface{}, error) {
+				asset, err := h.Assets.Define(
+					subctx,
+					ins[i].RootXPubs,
+					ins[i].Quorum,
+					ins[i].Definition,
+					ins[i].Alias,
+					ins[i].Tags,
+					ins[i].ClientToken,
+				)
+				if err != nil {
+					return nil, err
+				}
 				var keys []assetKey
 				for _, xpub := range asset.Signer.XPubs {
 					path := signers.Path(asset.Signer, signers.AssetKeySpace)
@@ -77,7 +74,7 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 						AssetDerivationPath: path,
 					})
 				}
-				r := &assetResponse{
+				return &assetResponse{
 					ID:              asset.AssetID,
 					Alias:           asset.Alias,
 					IssuanceProgram: asset.IssuanceProgram,
@@ -86,9 +83,9 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 					Definition:      asset.Definition,
 					Tags:            asset.Tags,
 					IsLocal:         "yes",
-				}
-				responses[i] = assetOrError{assetResponse: r}
-			}
+				}, nil
+			})
+			responses[i] = resp
 		}(i)
 	}
 

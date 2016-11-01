@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"chain/errors"
@@ -53,4 +54,28 @@ func logHTTPError(ctx context.Context, err error) {
 
 func alwaysError(err error) http.Handler {
 	return jsonHandler(func() error { return err })
+}
+
+func handleInnerRequest(ctx context.Context, innerHandler func() (interface{}, error)) (result interface{}) {
+	var resp interface{}
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			if recoveredErr, ok := r.(error); ok {
+				err = recoveredErr
+			} else {
+				err = fmt.Errorf("panic with %T", r)
+			}
+		}
+		// Convert errors into errorInfo responses (including errors from recovered
+		// panics above).
+		if err != nil {
+			logHTTPError(ctx, err)
+			result, _ = errInfo(err)
+		}
+	}()
+
+	resp, err = innerHandler()
+	// err is checked by the above defer().
+	return resp
 }
