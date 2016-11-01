@@ -65,7 +65,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 result:
 	for i, v := range results {
 		if v.err != nil {
-			err := errors.WithDataKV(v.err, "action_index", i)
+			err := errors.WithData(v.err, "action_index", i)
 			errs = append(errs, err)
 			continue result
 		}
@@ -73,7 +73,7 @@ result:
 		for _, in := range buildResult.Inputs {
 			if in.Amount() > math.MaxInt64 {
 				err := errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", in.Amount())
-				err = errors.WithData(err, map[string]int{"action_index": i})
+				err = errors.WithData(err, "action_index", i)
 				errs = append(errs, err)
 				continue result
 			}
@@ -81,7 +81,7 @@ result:
 		for _, out := range buildResult.Outputs {
 			if out.Amount > math.MaxInt64 {
 				err := errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", out.Amount)
-				err = errors.WithData(err, map[string]int{"action_index": i})
+				err = errors.WithData(err, "action_index", i)
 				errs = append(errs, err)
 				continue result
 			}
@@ -90,7 +90,7 @@ result:
 		if len(buildResult.Inputs) != len(buildResult.SigningInstructions) {
 			// This would only happen from a bug in our system
 			err := errors.Wrap(fmt.Errorf("%T returned different number of inputs and signing instructions", actions[i]))
-			err = errors.WithData(err, map[string]int{"action_index": i})
+			err = errors.WithData(err, "action_index", i)
 			errs = append(errs, err)
 			continue result
 		}
@@ -130,7 +130,7 @@ result:
 
 	if len(errs) > 0 {
 		rollback(rollbacks)
-		return nil, errors.WithData(ErrAction, errs)
+		return nil, errors.WithData(ErrAction, "actions", errs)
 	}
 
 	err := checkBlankCheck(tx)

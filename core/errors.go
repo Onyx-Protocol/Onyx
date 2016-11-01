@@ -30,9 +30,9 @@ type errorInfo struct {
 
 type detailedError struct {
 	errorInfo
-	Detail    string      `json:"detail,omitempty"`
-	Data      interface{} `json:"data,omitempty"`
-	Temporary bool        `json:"temporary"`
+	Detail    string                 `json:"detail,omitempty"`
+	Data      map[string]interface{} `json:"data,omitempty"`
+	Temporary bool                   `json:"temporary"`
 }
 
 func isTemporary(info errorInfo, err error) bool {
@@ -44,7 +44,7 @@ func isTemporary(info errorInfo, err error) bool {
 	case "CH761": // outputs currently reserved
 		return true
 	case "CH706": // 1 or more action errors
-		errs := errors.Data(err).([]detailedError)
+		errs := errors.Data(err)["actions"].([]detailedError)
 		temp := true
 		for _, actionErr := range errs {
 			temp = temp && isTemporary(actionErr.errorInfo, nil)

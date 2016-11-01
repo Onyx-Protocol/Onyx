@@ -97,40 +97,15 @@ func TestDetail(t *testing.T) {
 	}
 }
 
-func TestData(t *testing.T) {
-	root := errors.New("foo")
-	cases := []struct {
-		err  error
-		data interface{}
-	}{
-		{root, nil},
-		{WithData(root, 1), 1},
-		{WithData(root, map[string]string{"a": "b"}), map[string]string{"a": "b"}},
-		{WithData(root, "bar"), "bar"},
-		{WithData(WithData(root, "bar"), "baz"), "baz"},
-		{Wrap(WithData(root, "bar"), "baz"), "bar"},
-	}
-
-	for _, test := range cases {
-		if got := Data(test.err); !reflect.DeepEqual(got, test.data) {
-			t.Errorf("Data(%#v) = %v want %v", test.err, got, test.data)
-		}
-		if got := Root(test.err); got != root {
-			t.Errorf("Root(%#v) = %v want %v", test.err, got, root)
-		}
-	}
-}
-
 func TestDataKV(t *testing.T) {
 	root := errors.New("foo")
 	cases := []struct {
 		err  error
 		data interface{}
 	}{
-		{WithDataKV(root, "a", "b"), map[string]interface{}{"a": "b"}},
-		{WithDataKV(WithDataKV(root, "a", "b"), "c", "d"), map[string]interface{}{"a": "b", "c": "d"}},
-		{Wrap(WithDataKV(root, "a", "b"), "baz"), map[string]interface{}{"a": "b"}},
-		{WithDataKV(WithData(root, "x"), "a", "b"), map[string]interface{}{"a": "b"}},
+		{WithData(root, "a", "b"), map[string]interface{}{"a": "b"}},
+		{WithData(WithData(root, "a", "b"), "c", "d"), map[string]interface{}{"a": "b", "c": "d"}},
+		{Wrap(WithData(root, "a", "b"), "baz"), map[string]interface{}{"a": "b"}},
 	}
 
 	for _, test := range cases {
