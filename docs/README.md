@@ -12,7 +12,7 @@ Once installed, run `md2html` from the root directory of the rep:
 
 ```sh
 $ cd $CHAIN
-$ md2html
+$ go run ./cmd/md2html/*.go
 ```
 
 The converted documentation is served at
