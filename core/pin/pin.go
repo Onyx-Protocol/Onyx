@@ -136,11 +136,9 @@ func (p *Pin) Listen(ctx context.Context, dbURL string) {
 		return
 	}
 
-	c := make(chan uint64)
 	go func() {
 		defer func() {
 			listener.Close()
-			close(c)
 		}()
 
 		for {
