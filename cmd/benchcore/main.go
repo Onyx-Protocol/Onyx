@@ -68,7 +68,7 @@ var (
 )
 
 var amis = map[string]string{
-	"m3.xlarge":   "ami-f71883e0", // Ubuntu LTS 16.04
+	"m3.xlarge":   "ami-40d28157", // Ubuntu LTS 16.04
 	"m4.16xlarge": "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
 }
 
@@ -710,7 +710,7 @@ ident_file = '/etc/postgresql/9.5/main/pg_ident.conf'
 external_pid_file = '/var/run/postgresql/9.5-main.pid'
 listen_addresses = '*'
 port = 5432
-max_connections = 100
+max_connections = 130
 unix_socket_directories = '/var/run/postgresql'
 ssl = true
 ssl_cert_file = '/etc/ssl/certs/ssl-cert-snakeoil.pem'
@@ -766,6 +766,7 @@ $HOME/corectl create-token -net benchcorenet > $HOME/network-token.txt
 const coredsh = `#!/bin/bash
 set -eo pipefail
 export DATABASE_URL='{{dbURL}}'
+export MAXDBCONNS=100
 export GOTRACEBACK=crash
 ./cored 2>&1 | tee -a cored.log
 `
