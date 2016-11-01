@@ -1,0 +1,517 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		20239A631DB14CE000DA27B3 /* Nitti Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 20239A5B1DB14CE000DA27B3 /* Nitti Bold.otf */; };
+		20239A641DB14CE000DA27B3 /* Nitti Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = 20239A5C1DB14CE000DA27B3 /* Nitti Light.otf */; };
+		20239A651DB14CE000DA27B3 /* Nitti Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 20239A5D1DB14CE000DA27B3 /* Nitti Medium.otf */; };
+		20239A661DB14CE000DA27B3 /* Nitti Normal.otf in Resources */ = {isa = PBXBuildFile; fileRef = 20239A5E1DB14CE000DA27B3 /* Nitti Normal.otf */; };
+		20239A671DB14CE000DA27B3 /* NittiGrotesk-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 20239A5F1DB14CE000DA27B3 /* NittiGrotesk-Bold.otf */; };
+		20239A681DB14CE000DA27B3 /* NittiGrotesk-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 20239A601DB14CE000DA27B3 /* NittiGrotesk-Medium.otf */; };
+		20239A691DB14CE000DA27B3 /* NittiGrotesk-Normal.otf in Resources */ = {isa = PBXBuildFile; fileRef = 20239A611DB14CE000DA27B3 /* NittiGrotesk-Normal.otf */; };
+		20239A6A1DB14CE000DA27B3 /* NittiGrotesk-SemiLight.otf in Resources */ = {isa = PBXBuildFile; fileRef = 20239A621DB14CE000DA27B3 /* NittiGrotesk-SemiLight.otf */; };
+		205C761F1D9B36240094165A /* OperationStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 205C761E1D9B36240094165A /* OperationStatus.swift */; };
+		206184001D9C3C5300964915 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 206183FF1D9C3C5300964915 /* Config.swift */; };
+		208663E61D9C8A4700D32EB2 /* DashboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208663E51D9C8A4700D32EB2 /* DashboardViewController.swift */; };
+		208663E81D9C8AFD00D32EB2 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 208663E71D9C8AFD00D32EB2 /* WebKit.framework */; };
+		20889C761DA5AD8600C39E3D /* DashboardWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20889C751DA5AD8600C39E3D /* DashboardWindowController.swift */; };
+		208D132C1D99CD02006E68D0 /* ChainCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208D132B1D99CD02006E68D0 /* ChainCore.swift */; };
+		20A50E551DA586D900F36C00 /* updates.xml in Resources */ = {isa = PBXBuildFile; fileRef = 20A50E541DA586D900F36C00 /* updates.xml */; };
+		20BC08761DC9303A002A3C1E /* build_chain.sh in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08721DC9303A002A3C1E /* build_chain.sh */; };
+		20BC08771DC9303A002A3C1E /* copy_postgres.sh in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08731DC9303A002A3C1E /* copy_postgres.sh */; };
+		20BC08781DC9303A002A3C1E /* patch_loader_path.rb in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08741DC9303A002A3C1E /* patch_loader_path.rb */; };
+		20BC08791DC9303A002A3C1E /* update_appcast.rb in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08751DC9303A002A3C1E /* update_appcast.rb */; };
+		20BC087C1DC93051002A3C1E /* ClientLauncher.applescript in Sources */ = {isa = PBXBuildFile; fileRef = 20BC087A1DC93051002A3C1E /* ClientLauncher.applescript */; };
+		20BC087D1DC93051002A3C1E /* ClientLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20BC087B1DC93051002A3C1E /* ClientLauncher.swift */; };
+		20C5E44F1DB0A28100C8CB2D /* TaskCleaner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C5E44E1DB0A28100C8CB2D /* TaskCleaner.swift */; };
+		830658E51D536F2E00BA1752 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830658E41D536F2E00BA1752 /* Extensions.swift */; };
+		830B4B261D1C132300F16762 /* ServerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B4B251D1C132300F16762 /* ServerManager.swift */; };
+		8324D9AA1D9402A10066DCDB /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 831C84AC1D771B4800FA5F59 /* Sparkle.framework */; };
+		8324D9AB1D9402A10066DCDB /* Sparkle.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 831C84AC1D771B4800FA5F59 /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		83543E281D2136E800F764CB /* ErrorRecoveryAttempter.m in Sources */ = {isa = PBXBuildFile; fileRef = 83543E271D2136E800F764CB /* ErrorRecoveryAttempter.m */; };
+		8358D53C1D26EBE7007B7904 /* PostgresServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8358D53B1D26EBE7007B7904 /* PostgresServer.swift */; };
+		839A38281D88494A00E9591A /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839A38271D88494A00E9591A /* main.swift */; };
+		83FB571C1D1B05F000A903A3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83FB571B1D1B05F000A903A3 /* AppDelegate.swift */; };
+		83FB57201D1B05F000A903A3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 83FB571F1D1B05F000A903A3 /* Assets.xcassets */; };
+		83FB57231D1B05F000A903A3 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 83FB57211D1B05F000A903A3 /* Main.storyboard */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8324D9AC1D9402A20066DCDB /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				8324D9AB1D9402A10066DCDB /* Sparkle.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		20239A5B1DB14CE000DA27B3 /* Nitti Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Nitti Bold.otf"; sourceTree = "<group>"; };
+		20239A5C1DB14CE000DA27B3 /* Nitti Light.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Nitti Light.otf"; sourceTree = "<group>"; };
+		20239A5D1DB14CE000DA27B3 /* Nitti Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Nitti Medium.otf"; sourceTree = "<group>"; };
+		20239A5E1DB14CE000DA27B3 /* Nitti Normal.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Nitti Normal.otf"; sourceTree = "<group>"; };
+		20239A5F1DB14CE000DA27B3 /* NittiGrotesk-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NittiGrotesk-Bold.otf"; sourceTree = "<group>"; };
+		20239A601DB14CE000DA27B3 /* NittiGrotesk-Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NittiGrotesk-Medium.otf"; sourceTree = "<group>"; };
+		20239A611DB14CE000DA27B3 /* NittiGrotesk-Normal.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NittiGrotesk-Normal.otf"; sourceTree = "<group>"; };
+		20239A621DB14CE000DA27B3 /* NittiGrotesk-SemiLight.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NittiGrotesk-SemiLight.otf"; sourceTree = "<group>"; };
+		205C761E1D9B36240094165A /* OperationStatus.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = OperationStatus.swift; path = ChainCore/OperationStatus.swift; sourceTree = "<group>"; };
+		206183FF1D9C3C5300964915 /* Config.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Config.swift; path = ChainCore/Config.swift; sourceTree = "<group>"; };
+		208663E51D9C8A4700D32EB2 /* DashboardViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DashboardViewController.swift; sourceTree = "<group>"; };
+		208663E71D9C8AFD00D32EB2 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		20889C751DA5AD8600C39E3D /* DashboardWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DashboardWindowController.swift; sourceTree = "<group>"; };
+		208D132B1D99CD02006E68D0 /* ChainCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ChainCore.swift; path = ChainCore/ChainCore.swift; sourceTree = "<group>"; };
+		208D132F1D9AE32C006E68D0 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		20A50E541DA586D900F36C00 /* updates.xml */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; path = updates.xml; sourceTree = "<group>"; };
+		20BC08721DC9303A002A3C1E /* build_chain.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = build_chain.sh; path = tools/build_chain.sh; sourceTree = "<group>"; };
+		20BC08731DC9303A002A3C1E /* copy_postgres.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = copy_postgres.sh; path = tools/copy_postgres.sh; sourceTree = "<group>"; };
+		20BC08741DC9303A002A3C1E /* patch_loader_path.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; name = patch_loader_path.rb; path = tools/patch_loader_path.rb; sourceTree = "<group>"; };
+		20BC08751DC9303A002A3C1E /* update_appcast.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; name = update_appcast.rb; path = tools/update_appcast.rb; sourceTree = "<group>"; };
+		20BC087A1DC93051002A3C1E /* ClientLauncher.applescript */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.applescript; name = ClientLauncher.applescript; path = ChainCore/ClientLauncher.applescript; sourceTree = "<group>"; };
+		20BC087B1DC93051002A3C1E /* ClientLauncher.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ClientLauncher.swift; path = ChainCore/ClientLauncher.swift; sourceTree = "<group>"; };
+		20BC087E1DC93237002A3C1E /* makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = makefile; path = pg/src/makefile; sourceTree = "<group>"; };
+		20C5E44E1DB0A28100C8CB2D /* TaskCleaner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = TaskCleaner.swift; path = ChainCore/TaskCleaner.swift; sourceTree = "<group>"; };
+		830658E41D536F2E00BA1752 /* Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Extensions.swift; path = ChainCore/Extensions.swift; sourceTree = "<group>"; };
+		830B4B251D1C132300F16762 /* ServerManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ServerManager.swift; path = ChainCore/ServerManager.swift; sourceTree = "<group>"; };
+		831C84AC1D771B4800FA5F59 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = ChainCore/Vendor/Sparkle.framework; sourceTree = "<group>"; };
+		83543E251D2136E800F764CB /* ChainCore-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "ChainCore-Bridging-Header.h"; path = "ChainCore/ChainCore-Bridging-Header.h"; sourceTree = "<group>"; };
+		83543E261D2136E800F764CB /* ErrorRecoveryAttempter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ErrorRecoveryAttempter.h; path = ChainCore/ErrorRecoveryAttempter.h; sourceTree = "<group>"; };
+		83543E271D2136E800F764CB /* ErrorRecoveryAttempter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ErrorRecoveryAttempter.m; path = ChainCore/ErrorRecoveryAttempter.m; sourceTree = "<group>"; };
+		8358D53B1D26EBE7007B7904 /* PostgresServer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; name = PostgresServer.swift; path = ChainCore/PostgresServer.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
+		839A38271D88494A00E9591A /* main.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		83FB57181D1B05F000A903A3 /* Chain Core.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Chain Core.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		83FB571B1D1B05F000A903A3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		83FB571F1D1B05F000A903A3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		83FB57221D1B05F000A903A3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		83FB57241D1B05F000A903A3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ChainCore/Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		83FB57151D1B05F000A903A3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				208663E81D9C8AFD00D32EB2 /* WebKit.framework in Frameworks */,
+				8324D9AA1D9402A10066DCDB /* Sparkle.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		208D13371D9AF58D006E68D0 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				206183FF1D9C3C5300964915 /* Config.swift */,
+				205C761E1D9B36240094165A /* OperationStatus.swift */,
+				830B4B251D1C132300F16762 /* ServerManager.swift */,
+				208D132B1D99CD02006E68D0 /* ChainCore.swift */,
+				8358D53B1D26EBE7007B7904 /* PostgresServer.swift */,
+				830658E41D536F2E00BA1752 /* Extensions.swift */,
+				20C5E44E1DB0A28100C8CB2D /* TaskCleaner.swift */,
+				20BC087A1DC93051002A3C1E /* ClientLauncher.applescript */,
+				20BC087B1DC93051002A3C1E /* ClientLauncher.swift */,
+				83543E261D2136E800F764CB /* ErrorRecoveryAttempter.h */,
+				83543E271D2136E800F764CB /* ErrorRecoveryAttempter.m */,
+				83FB57241D1B05F000A903A3 /* Info.plist */,
+				83543E251D2136E800F764CB /* ChainCore-Bridging-Header.h */,
+			);
+			name = Models;
+			sourceTree = "<group>";
+		};
+		20A50E531DA586D900F36C00 /* Updates */ = {
+			isa = PBXGroup;
+			children = (
+				20A50E541DA586D900F36C00 /* updates.xml */,
+			);
+			path = Updates;
+			sourceTree = "<group>";
+		};
+		20BC08711DC93032002A3C1E /* Tools */ = {
+			isa = PBXGroup;
+			children = (
+				20BC087E1DC93237002A3C1E /* makefile */,
+				20BC08721DC9303A002A3C1E /* build_chain.sh */,
+				20BC08731DC9303A002A3C1E /* copy_postgres.sh */,
+				20BC08741DC9303A002A3C1E /* patch_loader_path.rb */,
+				20BC08751DC9303A002A3C1E /* update_appcast.rb */,
+			);
+			name = Tools;
+			sourceTree = "<group>";
+		};
+		836CC37F1D2D6A0D000D0C13 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				208663E71D9C8AFD00D32EB2 /* WebKit.framework */,
+				831C84AC1D771B4800FA5F59 /* Sparkle.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		83FB570F1D1B05F000A903A3 = {
+			isa = PBXGroup;
+			children = (
+				208D132F1D9AE32C006E68D0 /* README.md */,
+				20BC08711DC93032002A3C1E /* Tools */,
+				208D13371D9AF58D006E68D0 /* Models */,
+				83FB571A1D1B05F000A903A3 /* Views */,
+				20A50E531DA586D900F36C00 /* Updates */,
+				83FB57191D1B05F000A903A3 /* Products */,
+				836CC37F1D2D6A0D000D0C13 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		83FB57191D1B05F000A903A3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				83FB57181D1B05F000A903A3 /* Chain Core.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		83FB571A1D1B05F000A903A3 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				839A38271D88494A00E9591A /* main.swift */,
+				83FB571B1D1B05F000A903A3 /* AppDelegate.swift */,
+				20889C751DA5AD8600C39E3D /* DashboardWindowController.swift */,
+				208663E51D9C8A4700D32EB2 /* DashboardViewController.swift */,
+				83FB571F1D1B05F000A903A3 /* Assets.xcassets */,
+				83FB57211D1B05F000A903A3 /* Main.storyboard */,
+				20239A5B1DB14CE000DA27B3 /* Nitti Bold.otf */,
+				20239A5C1DB14CE000DA27B3 /* Nitti Light.otf */,
+				20239A5D1DB14CE000DA27B3 /* Nitti Medium.otf */,
+				20239A5E1DB14CE000DA27B3 /* Nitti Normal.otf */,
+				20239A5F1DB14CE000DA27B3 /* NittiGrotesk-Bold.otf */,
+				20239A601DB14CE000DA27B3 /* NittiGrotesk-Medium.otf */,
+				20239A611DB14CE000DA27B3 /* NittiGrotesk-Normal.otf */,
+				20239A621DB14CE000DA27B3 /* NittiGrotesk-SemiLight.otf */,
+			);
+			name = Views;
+			path = ChainCore;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		83FB57171D1B05F000A903A3 /* Chain Core */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 83FB57271D1B05F000A903A3 /* Build configuration list for PBXNativeTarget "Chain Core" */;
+			buildPhases = (
+				83FB57141D1B05F000A903A3 /* Sources */,
+				83FB57151D1B05F000A903A3 /* Frameworks */,
+				83FB57161D1B05F000A903A3 /* Resources */,
+				20DA64441DC909E7004E51E3 /* Copy Postgres Binaries */,
+				36BF586A1D771E62002CB485 /* Build and Copy Chain Binaries */,
+				8324D9AC1D9402A20066DCDB /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Chain Core";
+			productName = Postgres;
+			productReference = 83FB57181D1B05F000A903A3 /* Chain Core.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		83FB57101D1B05F000A903A3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 0800;
+				LastUpgradeCheck = 0800;
+				ORGANIZATIONNAME = postgresapp;
+				TargetAttributes = {
+					83FB57171D1B05F000A903A3 = {
+						CreatedOnToolsVersion = 8.0;
+						DevelopmentTeam = ZA97W57QRY;
+						LastSwiftMigration = 0800;
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 83FB57131D1B05F000A903A3 /* Build configuration list for PBXProject "Chain Core" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 83FB570F1D1B05F000A903A3;
+			productRefGroup = 83FB57191D1B05F000A903A3 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				83FB57171D1B05F000A903A3 /* Chain Core */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		83FB57161D1B05F000A903A3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20239A661DB14CE000DA27B3 /* Nitti Normal.otf in Resources */,
+				20239A651DB14CE000DA27B3 /* Nitti Medium.otf in Resources */,
+				20239A681DB14CE000DA27B3 /* NittiGrotesk-Medium.otf in Resources */,
+				20239A641DB14CE000DA27B3 /* Nitti Light.otf in Resources */,
+				20BC08791DC9303A002A3C1E /* update_appcast.rb in Resources */,
+				20BC08781DC9303A002A3C1E /* patch_loader_path.rb in Resources */,
+				20A50E551DA586D900F36C00 /* updates.xml in Resources */,
+				20239A691DB14CE000DA27B3 /* NittiGrotesk-Normal.otf in Resources */,
+				83FB57201D1B05F000A903A3 /* Assets.xcassets in Resources */,
+				20BC08771DC9303A002A3C1E /* copy_postgres.sh in Resources */,
+				83FB57231D1B05F000A903A3 /* Main.storyboard in Resources */,
+				20239A6A1DB14CE000DA27B3 /* NittiGrotesk-SemiLight.otf in Resources */,
+				20BC08761DC9303A002A3C1E /* build_chain.sh in Resources */,
+				20239A631DB14CE000DA27B3 /* Nitti Bold.otf in Resources */,
+				20239A671DB14CE000DA27B3 /* NittiGrotesk-Bold.otf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		20DA64441DC909E7004E51E3 /* Copy Postgres Binaries */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Postgres Binaries";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "source \"${SRCROOT}\"/tools/copy_postgres.sh";
+		};
+		36BF586A1D771E62002CB485 /* Build and Copy Chain Binaries */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Build and Copy Chain Binaries";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "source \"${SRCROOT}\"/tools/build_chain.sh";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		83FB57141D1B05F000A903A3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				830B4B261D1C132300F16762 /* ServerManager.swift in Sources */,
+				83FB571C1D1B05F000A903A3 /* AppDelegate.swift in Sources */,
+				20C5E44F1DB0A28100C8CB2D /* TaskCleaner.swift in Sources */,
+				839A38281D88494A00E9591A /* main.swift in Sources */,
+				20BC087D1DC93051002A3C1E /* ClientLauncher.swift in Sources */,
+				206184001D9C3C5300964915 /* Config.swift in Sources */,
+				208D132C1D99CD02006E68D0 /* ChainCore.swift in Sources */,
+				205C761F1D9B36240094165A /* OperationStatus.swift in Sources */,
+				208663E61D9C8A4700D32EB2 /* DashboardViewController.swift in Sources */,
+				8358D53C1D26EBE7007B7904 /* PostgresServer.swift in Sources */,
+				83543E281D2136E800F764CB /* ErrorRecoveryAttempter.m in Sources */,
+				20BC087C1DC93051002A3C1E /* ClientLauncher.applescript in Sources */,
+				20889C761DA5AD8600C39E3D /* DashboardWindowController.swift in Sources */,
+				830658E51D536F2E00BA1752 /* Extensions.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		83FB57211D1B05F000A903A3 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				83FB57221D1B05F000A903A3 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		83FB57251D1B05F000A903A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/pg/build/include";
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/pg/build/lib";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "-lpq";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		83FB57261D1B05F000A903A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/pg/build/include";
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/pg/build/lib";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = "-lpq";
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+			};
+			name = Release;
+		};
+		83FB57281D1B05F000A903A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APP_VERSION = 1.0.20161101;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				DB_VERSION = v1.0;
+				DEVELOPMENT_TEAM = ZA97W57QRY;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/ChainCore/Vendor",
+				);
+				INFOPLIST_FILE = ChainCore/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.chain.ChainCoreApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "52f8d7ba-ced6-496e-80e9-e209aa0fa82a";
+				PROVISIONING_PROFILE_SPECIFIER = "Chain Core App Mac Production";
+				SWIFT_OBJC_BRIDGING_HEADER = "ChainCore/ChainCore-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 3.0.1;
+			};
+			name = Debug;
+		};
+		83FB57291D1B05F000A903A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APP_VERSION = 1.0.20161101;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				DB_VERSION = v1.0;
+				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/ChainCore/Vendor",
+				);
+				INFOPLIST_FILE = ChainCore/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.chain.ChainCoreApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "ChainCore/ChainCore-Bridging-Header.h";
+				SWIFT_VERSION = 3.0.1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		83FB57131D1B05F000A903A3 /* Build configuration list for PBXProject "Chain Core" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				83FB57251D1B05F000A903A3 /* Debug */,
+				83FB57261D1B05F000A903A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		83FB57271D1B05F000A903A3 /* Build configuration list for PBXNativeTarget "Chain Core" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				83FB57281D1B05F000A903A3 /* Debug */,
+				83FB57291D1B05F000A903A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 83FB57101D1B05F000A903A3 /* Project object */;
+}

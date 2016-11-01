@@ -1,0 +1,12 @@
+pg/src/*
+!pg/src/makefile
+pg/build/*
+!pg/build/.gitkeep
+.DS_Store
+xcuserdata
+xcshareddata
+*.xcworkspace
+Gemfile.lock
+updates/Chain\ Core.app
+updates/Chain\ Core*
+updates/Chain_Core*
