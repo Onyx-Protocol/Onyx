@@ -37,10 +37,10 @@ func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 
 // Manager stores accounts and their associated control programs.
 type Manager struct {
-	db          *sql.DB
-	chain       *protocol.Chain
-	utxoDB      *utxodb.DBReserver
-	indexer     Saver
+	db       *sql.DB
+	chain    *protocol.Chain
+	utxoDB   *utxodb.DBReserver
+	indexer  Saver
 	pinStore *pin.Store
 
 	cacheMu sync.Mutex

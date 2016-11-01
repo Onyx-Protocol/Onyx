@@ -43,7 +43,7 @@ type Registry struct {
 	chain            *protocol.Chain
 	indexer          Saver
 	initialBlockHash bc.Hash
-	pinStore      *pin.Store
+	pinStore         *pin.Store
 
 	cacheMu sync.Mutex
 	cache   *lru.Cache
