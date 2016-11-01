@@ -1,17 +1,17 @@
 package query
 
 import (
-	"chain/core/processor"
+	"chain/core/pin"
 	"chain/database/pg"
 	"chain/protocol"
 )
 
 // NewIndexer constructs a new indexer for indexing transactions.
-func NewIndexer(db pg.DB, c *protocol.Chain, cursorStore *processor.CursorStore) *Indexer {
+func NewIndexer(db pg.DB, c *protocol.Chain, pinStore *pin.Store) *Indexer {
 	indexer := &Indexer{
 		db:          db,
 		c:           c,
-		cursorStore: cursorStore,
+		pinStore: pinStore,
 	}
 	return indexer
 }
@@ -20,6 +20,6 @@ func NewIndexer(db pg.DB, c *protocol.Chain, cursorStore *processor.CursorStore)
 type Indexer struct {
 	db          pg.DB
 	c           *protocol.Chain
-	cursorStore *processor.CursorStore
+	pinStore *pin.Store
 	annotators  []Annotator
 }

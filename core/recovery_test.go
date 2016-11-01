@@ -14,7 +14,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
-	"chain/core/processor"
+	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
@@ -38,12 +38,12 @@ func TestRecovery(t *testing.T) {
 	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	store, pool := txdb.New(db)
 	c := prottest.NewChainWithStorage(t, store, pool)
-	cursorStore := &processor.CursorStore{DB: db}
-	indexer := query.NewIndexer(db, c, cursorStore)
+	pinStore := &pin.Store{DB: db}
+	indexer := query.NewIndexer(db, c, pinStore)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
-	assets.IndexAssets(indexer, cursorStore)
-	accounts.IndexAccounts(indexer, cursorStore)
+	assets.IndexAssets(indexer, pinStore)
+	accounts.IndexAccounts(indexer, pinStore)
 	go accounts.ProcessBlocks(ctx)
 
 	// Setup the transaction query indexer to index every transaction.
@@ -190,14 +190,14 @@ func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 		return err
 	}
 	c, err := protocol.NewChain(ctx, b1.Hash(), store, pool, nil)
-	cursorStore := &processor.CursorStore{DB: db}
-	indexer := query.NewIndexer(db, c, cursorStore)
+	pinStore := &pin.Store{DB: db}
+	indexer := query.NewIndexer(db, c, pinStore)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
 
 	// Setup the transaction query indexer to index every transaction.
-	assets.IndexAssets(indexer, cursorStore)
-	accounts.IndexAccounts(indexer, cursorStore)
+	assets.IndexAssets(indexer, pinStore)
+	accounts.IndexAccounts(indexer, pinStore)
 	go accounts.ProcessBlocks(ctx)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)

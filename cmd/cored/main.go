@@ -27,7 +27,7 @@ import (
 	"chain/core/leader"
 	"chain/core/migrate"
 	"chain/core/mockhsm"
-	"chain/core/processor"
+	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/rpc"
 	"chain/core/txbuilder"
@@ -207,16 +207,16 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	}
 
 	// Setup the transaction query indexer to index every transaction.
-	cursorStore := &processor.CursorStore{DB: db}
-	indexer := query.NewIndexer(db, c, cursorStore)
+	pinStore := &pin.Store{DB: db}
+	indexer := query.NewIndexer(db, c, pinStore)
 
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
 	if *indexTxs {
 		indexer.RegisterAnnotator(assets.AnnotateTxs)
 		indexer.RegisterAnnotator(accounts.AnnotateTxs)
-		assets.IndexAssets(indexer, cursorStore)
-		accounts.IndexAccounts(indexer, cursorStore)
+		assets.IndexAssets(indexer, pinStore)
+		accounts.IndexAccounts(indexer, pinStore)
 	}
 
 	hsm := mockhsm.New(db)
@@ -296,7 +296,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		if !*indexTxs {
 			return
 		}
-		err := cursorStore.LoadAll(ctx)
+		err := pinStore.LoadAll(ctx)
 		if err != nil {
 			chainlog.Error(ctx, err)
 			return

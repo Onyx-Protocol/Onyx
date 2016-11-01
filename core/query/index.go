@@ -12,6 +12,12 @@ import (
 	"chain/protocol/bc"
 )
 
+const (
+	// TxPinName is used to identify the pin associated
+	// with the transaction block processor.
+	TxPinName = "tx"
+)
+
 // Annotator describes a function capable of adding annotations
 // to transactions, inputs and outputs.
 type Annotator func(ctx context.Context, txs []map[string]interface{}) error
@@ -23,10 +29,10 @@ func (ind *Indexer) RegisterAnnotator(annotator Annotator) {
 }
 
 func (ind *Indexer) ProcessBlocks(ctx context.Context) {
-	if ind.cursorStore == nil {
+	if ind.pinStore == nil {
 		return
 	}
-	ind.cursorStore.ProcessBlocks(ctx, ind.c, "tx", ind.IndexTransactions)
+	ind.pinStore.ProcessBlocks(ctx, ind.c, TxPinName, ind.IndexTransactions)
 }
 
 // IndexTransactions is registered as a block callback on the Chain. It

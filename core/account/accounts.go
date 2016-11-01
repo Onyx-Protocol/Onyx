@@ -11,7 +11,7 @@ import (
 	"github.com/golang/groupcache/lru"
 
 	"chain/core/account/utxodb"
-	"chain/core/processor"
+	"chain/core/pin"
 	"chain/core/signers"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
@@ -41,7 +41,7 @@ type Manager struct {
 	chain       *protocol.Chain
 	utxoDB      *utxodb.DBReserver
 	indexer     Saver
-	cursorStore *processor.CursorStore
+	pinStore *pin.Store
 
 	cacheMu sync.Mutex
 	cache   *lru.Cache
@@ -51,9 +51,9 @@ type Manager struct {
 	acpIndexCap  uint64 // points to end of block
 }
 
-func (m *Manager) IndexAccounts(indexer Saver, cursorStore *processor.CursorStore) {
+func (m *Manager) IndexAccounts(indexer Saver, pinStore *pin.Store) {
 	m.indexer = indexer
-	m.cursorStore = cursorStore
+	m.pinStore = pinStore
 }
 
 // ExpireReservations removes reservations that have expired periodically.

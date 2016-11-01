@@ -10,7 +10,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
-	"chain/core/processor"
+	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/database/pg"
@@ -23,13 +23,13 @@ import (
 
 func TestAccountSourceReserve(t *testing.T) {
 	var (
-		_, db       = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx         = context.Background()
-		c           = prottest.NewChain(t)
-		accounts    = account.NewManager(db, c)
-		assets      = asset.NewRegistry(db, c)
-		cursorStore = &processor.CursorStore{DB: db}
-		indexer     = query.NewIndexer(db, c, cursorStore)
+		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx      = context.Background()
+		c        = prottest.NewChain(t)
+		accounts = account.NewManager(db, c)
+		assets   = asset.NewRegistry(db, c)
+		pinStore = &pin.Store{DB: db}
+		indexer  = query.NewIndexer(db, c, pinStore)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
@@ -37,12 +37,12 @@ func TestAccountSourceReserve(t *testing.T) {
 	)
 
 	// Make a block so that account UTXOs are available to spend.
-	assets.IndexAssets(indexer, cursorStore)
-	accounts.IndexAccounts(indexer, cursorStore)
+	assets.IndexAssets(indexer, pinStore)
+	accounts.IndexAccounts(indexer, pinStore)
 	go accounts.ProcessBlocks(ctx)
 	prottest.MakeBlock(t, c)
-	cursor := cursorStore.Cursor("account")
-	<-cursor.WaitForHeight(c.Height())
+	accountPin := pinStore.Pin(account.PinName)
+	<-accountPin.WaitForHeight(c.Height())
 
 	assetAmount1 := bc.AssetAmount{
 		AssetID: asset,
@@ -77,13 +77,13 @@ func TestAccountSourceReserve(t *testing.T) {
 
 func TestAccountSourceUTXOReserve(t *testing.T) {
 	var (
-		_, db       = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx         = context.Background()
-		c           = prottest.NewChain(t)
-		assets      = asset.NewRegistry(db, c)
-		accounts    = account.NewManager(db, c)
-		cursorStore = &processor.CursorStore{DB: db}
-		indexer     = query.NewIndexer(db, c, cursorStore)
+		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx      = context.Background()
+		c        = prottest.NewChain(t)
+		assets   = asset.NewRegistry(db, c)
+		accounts = account.NewManager(db, c)
+		pinStore = &pin.Store{DB: db}
+		indexer  = query.NewIndexer(db, c, pinStore)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
@@ -91,12 +91,12 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	)
 
 	// Make a block so that account UTXOs are available to spend.
-	assets.IndexAssets(indexer, cursorStore)
-	accounts.IndexAccounts(indexer, cursorStore)
+	assets.IndexAssets(indexer, pinStore)
+	accounts.IndexAccounts(indexer, pinStore)
 	go accounts.ProcessBlocks(ctx)
 	prottest.MakeBlock(t, c)
-	cursor := cursorStore.Cursor("account")
-	<-cursor.WaitForHeight(c.Height())
+	accountPin := pinStore.Pin(account.PinName)
+	<-accountPin.WaitForHeight(c.Height())
 
 	source := accounts.NewSpendUTXOAction(out.Outpoint)
 	buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
@@ -114,13 +114,13 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 func TestAccountSourceReserveIdempotency(t *testing.T) {
 	var (
-		_, db       = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx         = context.Background()
-		c           = prottest.NewChain(t)
-		assets      = asset.NewRegistry(db, c)
-		accounts    = account.NewManager(db, c)
-		cursorStore = &processor.CursorStore{DB: db}
-		indexer     = query.NewIndexer(db, c, cursorStore)
+		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx      = context.Background()
+		c        = prottest.NewChain(t)
+		assets   = asset.NewRegistry(db, c)
+		accounts = account.NewManager(db, c)
+		pinStore = &pin.Store{DB: db}
+		indexer  = query.NewIndexer(db, c, pinStore)
 
 		accID        = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset        = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
@@ -140,12 +140,12 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	)
 
 	// Make a block so that account UTXOs are available to spend.
-	assets.IndexAssets(indexer, cursorStore)
-	accounts.IndexAccounts(indexer, cursorStore)
+	assets.IndexAssets(indexer, pinStore)
+	accounts.IndexAccounts(indexer, pinStore)
 	go accounts.ProcessBlocks(ctx)
 	prottest.MakeBlock(t, c)
-	cursor := cursorStore.Cursor("account")
-	<-cursor.WaitForHeight(c.Height())
+	accountPin := pinStore.Pin(account.PinName)
+	<-accountPin.WaitForHeight(c.Height())
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
 		buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
@@ -176,13 +176,13 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 
 func TestAccountSourceWithTxHash(t *testing.T) {
 	var (
-		_, db       = pgtest.NewDB(t, pgtest.SchemaPath)
-		ctx         = context.Background()
-		c           = prottest.NewChain(t)
-		assets      = asset.NewRegistry(db, c)
-		accounts    = account.NewManager(db, c)
-		cursorStore = &processor.CursorStore{DB: db}
-		indexer     = query.NewIndexer(db, c, cursorStore)
+		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
+		ctx      = context.Background()
+		c        = prottest.NewChain(t)
+		assets   = asset.NewRegistry(db, c)
+		accounts = account.NewManager(db, c)
+		pinStore = &pin.Store{DB: db}
+		indexer  = query.NewIndexer(db, c, pinStore)
 
 		acc      = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset    = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
@@ -197,12 +197,12 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 	}
 
 	// Make a block so that account UTXOs are available to spend.
-	assets.IndexAssets(indexer, cursorStore)
-	accounts.IndexAccounts(indexer, cursorStore)
+	assets.IndexAssets(indexer, pinStore)
+	accounts.IndexAccounts(indexer, pinStore)
 	go accounts.ProcessBlocks(ctx)
 	prottest.MakeBlock(t, c)
-	cursor := cursorStore.Cursor("account")
-	<-cursor.WaitForHeight(c.Height())
+	accountPin := pinStore.Pin(account.PinName)
+	<-accountPin.WaitForHeight(c.Height())
 
 	for i := 0; i < utxos; i++ {
 		theTxHash := srcTxs[i]

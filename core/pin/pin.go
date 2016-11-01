@@ -1,4 +1,4 @@
-package processor
+package pin
 
 import (
 	"context"
@@ -10,31 +10,31 @@ import (
 	"chain/protocol/bc"
 )
 
-type CursorStore struct {
+type Store struct {
 	DB pg.DB
 
-	mu      sync.Mutex
-	cursors map[string]*Cursor
+	mu   sync.Mutex
+	pins map[string]*Pin
 }
 
-func (ct *CursorStore) Cursor(name string) *Cursor {
+func (ct *Store) Pin(name string) *Pin {
 	ct.mu.Lock()
 	defer ct.mu.Unlock()
-	if ct.cursors == nil {
-		ct.cursors = make(map[string]*Cursor)
+	if ct.pins == nil {
+		ct.pins = make(map[string]*Pin)
 	}
-	cursor, ok := ct.cursors[name]
+	pin, ok := ct.pins[name]
 	if !ok {
-		cursor = newCursor(ct.DB, name, 0)
-		ct.cursors[name] = cursor
+		pin = newPin(ct.DB, name, 0)
+		ct.pins[name] = pin
 	}
-	return cursor
+	return pin
 }
 
-func (ct *CursorStore) ProcessBlocks(ctx context.Context, c *protocol.Chain, cursorName string, cb func(context.Context, *bc.Block) error) {
-	cursor := ct.Cursor(cursorName)
+func (ct *Store) ProcessBlocks(ctx context.Context, c *protocol.Chain, pinName string, cb func(context.Context, *bc.Block) error) {
+	pin := ct.Pin(pinName)
 	for {
-		height := cursor.Height()
+		height := pin.Height()
 		select {
 		case <-c.WaitForBlock(height + 1):
 			block, err := c.GetBlock(ctx, height+1)
@@ -47,31 +47,29 @@ func (ct *CursorStore) ProcessBlocks(ctx context.Context, c *protocol.Chain, cur
 				log.Error(ctx, err)
 				continue
 			}
-			// This could cause issues, since it is not inside of a
-			// database transaction.
-			err = cursor.Increment(ctx)
+			err = pin.RaiseTo(ctx, block.Height)
 			if err != nil {
 				log.Error(ctx, err)
 			}
 		case <-ctx.Done(): // leader deposed
 			log.Error(ctx, ctx.Err())
-			break
+			return
 		}
 	}
 }
 
-func (ct *CursorStore) LoadAll(ctx context.Context) error {
+func (ct *Store) LoadAll(ctx context.Context) error {
 	ct.mu.Lock()
 	defer ct.mu.Unlock()
-	ct.cursors = make(map[string]*Cursor)
+	ct.pins = make(map[string]*Pin)
 	const q = `SELECT name, height FROM block_processors;`
 	err := pg.ForQueryRows(ctx, ct.DB, q, func(name string, height uint64) {
-		ct.cursors[name] = newCursor(ct.DB, name, height)
+		ct.pins[name] = newPin(ct.DB, name, height)
 	})
 	return err
 }
 
-type Cursor struct {
+type Pin struct {
 	mu     sync.Mutex
 	cond   sync.Cond
 	height uint64
@@ -80,42 +78,45 @@ type Cursor struct {
 	name string
 }
 
-func newCursor(db pg.DB, name string, height uint64) *Cursor {
-	c := &Cursor{db: db, name: name, height: height}
+func newPin(db pg.DB, name string, height uint64) *Pin {
+	c := &Pin{db: db, name: name, height: height}
 	c.cond.L = &c.mu
 	return c
 }
 
-func (c *Cursor) Height() uint64 {
+func (c *Pin) Height() uint64 {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.height
 }
 
-func (c *Cursor) Increment(ctx context.Context) error {
+func (c *Pin) RaiseTo(ctx context.Context, height uint64) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	const q = `
 		INSERT INTO block_processors (name, height) VALUES($1, $2)
 		ON CONFLICT(name) DO UPDATE SET height=EXCLUDED.height
+		WHERE block_processors.height<EXCLUDED.height
 	`
-	_, err := c.db.Exec(ctx, q, c.name, c.height+1)
+	_, err := c.db.Exec(ctx, q, c.name, height)
 	if err != nil {
 		return err
 	}
-	c.height++
-	c.cond.Broadcast()
+	if height > c.height {
+		c.height = height
+		c.cond.Broadcast()
+	}
 	return nil
 }
 
-func (c *Cursor) WaitForHeight(height uint64) <-chan struct{} {
+func (c *Pin) WaitForHeight(height uint64) <-chan struct{} {
 	ch := make(chan struct{}, 1)
 	go func() {
 		c.mu.Lock()
+		defer c.mu.Unlock()
 		for c.height < height {
 			c.cond.Wait()
 		}
-		c.mu.Unlock()
 		ch <- struct{}{}
 	}()
 	return ch
