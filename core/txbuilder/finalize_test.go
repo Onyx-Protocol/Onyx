@@ -351,7 +351,7 @@ func cancel(ctx context.Context, db pg.DB, outpoints []bc.Outpoint) error {
 
 	const query = `
 		WITH reservation_ids AS (
-		    SELECT DISTINCT reservation_id FROM account_utxos
+		    SELECT DISTINCT reservation_id FROM reservation_utxos
 		        WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
 		)
 		SELECT cancel_reservation(reservation_id) FROM reservation_ids

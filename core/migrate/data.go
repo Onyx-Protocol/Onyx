@@ -30,4 +30,116 @@ var migrations = []migration{
 			height bigint DEFAULT 0 NOT NULL
 		);
 	`},
+	{
+		Name: "2016-11-01.0.account.reservation-utxos.sql",
+		SQL: `
+			CREATE TABLE reservation_utxos (
+				tx_hash TEXT NOT NULL,
+				index INTEGER NOT NULL,
+				reservation_id INTEGER NOT NULL REFERENCES reservations(reservation_id) ON DELETE CASCADE,
+				PRIMARY KEY (tx_hash, index)
+			);
+			DROP INDEX account_utxos_reservation_id_idx;
+			ALTER TABLE account_utxos DROP CONSTRAINT account_utxos_reservation_id_fkey;
+			ALTER TABLE account_utxos DROP COLUMN reservation_id;
+
+			CREATE OR REPLACE FUNCTION reserve_utxo(inp_tx_hash text, inp_out_index bigint, inp_expiry timestamp with time zone, inp_idempotency_key text) RETURNS record
+			    LANGUAGE plpgsql
+			    AS $$
+			DECLARE
+			    res RECORD;
+			    row RECORD;
+			    ret RECORD;
+			BEGIN
+			    SELECT * FROM create_reservation(NULL, NULL, inp_expiry, inp_idempotency_key) INTO STRICT res;
+			    IF res.already_existed THEN
+			      SELECT res.reservation_id, res.already_existed, res.existing_change, CAST(0 AS BIGINT) AS amount, FALSE AS insufficient INTO ret;
+			      RETURN ret;
+			    END IF;
+			
+			    SELECT u.tx_hash, u.index, u.amount INTO row
+			        FROM account_utxos u LEFT JOIN reservation_utxos r ON (u.tx_hash = r.tx_hash AND u.index = r.index)
+			        WHERE inp_tx_hash = u.tx_hash
+			              AND inp_out_index = u.index
+			              AND r.tx_hash IS NULL
+			        LIMIT 1;
+			    IF FOUND THEN
+			        INSERT INTO reservation_utxos (tx_hash, index, reservation_id)
+			            VALUES (row.tx_hash, row.index, res.reservation_id)
+			            ON CONFLICT (tx_hash, index) DO NOTHING;
+			        IF NOT FOUND THEN
+			            PERFORM cancel_reservation(res.reservation_id);
+			            res.reservation_id := 0;
+			        END IF;
+			    ELSE
+			      PERFORM cancel_reservation(res.reservation_id);
+			      res.reservation_id := 0;
+			    END IF;
+			
+			    SELECT res.reservation_id, res.already_existed, EXISTS(SELECT tx_hash FROM account_utxos WHERE tx_hash = inp_tx_hash AND index = inp_out_index) INTO ret;
+			    RETURN ret;
+			END;
+			$$;
+
+			CREATE OR REPLACE FUNCTION reserve_utxos(inp_asset_id text, inp_account_id text, inp_tx_hash text, inp_out_index bigint, inp_amt bigint, inp_expiry timestamp with time zone, inp_idempotency_key text) RETURNS record
+			    LANGUAGE plpgsql
+			    AS $$
+			DECLARE
+			    res RECORD;
+			    row RECORD;
+			    ret RECORD;
+			    available BIGINT := 0;
+			    unavailable BIGINT := 0;
+			BEGIN
+			    SELECT * FROM create_reservation(inp_asset_id, inp_account_id, inp_expiry, inp_idempotency_key) INTO STRICT res;
+			    IF res.already_existed THEN
+			      SELECT res.reservation_id, res.already_existed, res.existing_change, CAST(0 AS BIGINT) AS amount, FALSE AS insufficient INTO ret;
+			      RETURN ret;
+			    END IF;
+			
+			    LOOP
+			        SELECT u.tx_hash, u.index, u.amount INTO row
+			            FROM account_utxos u LEFT JOIN reservation_utxos r ON (u.tx_hash = r.tx_hash AND u.index = r.index)
+			            WHERE u.asset_id = inp_asset_id
+			                  AND inp_account_id = u.account_id
+			                  AND (inp_tx_hash IS NULL OR inp_tx_hash = u.tx_hash)
+			                  AND (inp_out_index IS NULL OR inp_out_index = u.index)
+			                  AND r.tx_hash IS NULL
+			            FOR UPDATE OF u SKIP LOCKED
+			            LIMIT 1;
+			        IF FOUND THEN
+			            INSERT INTO reservation_utxos (tx_hash, index, reservation_id)
+			                VALUES (row.tx_hash, row.index, res.reservation_id)
+			                ON CONFLICT (tx_hash, index) DO NOTHING;
+			            IF FOUND THEN
+			                available := available + row.amount;
+			                IF available >= inp_amt THEN
+			                    EXIT;
+			                END IF;
+			            END IF;
+			            -- If not FOUND, then another thread reserved this utxo
+			            -- out from under us; just keep looping.
+			        ELSE
+			            EXIT;
+			        END IF;
+			    END LOOP;
+			
+			    IF available < inp_amt THEN
+			        SELECT SUM(change) AS change INTO STRICT row
+			            FROM reservations
+			            WHERE asset_id = inp_asset_id AND account_id = inp_account_id;
+			        unavailable := row.change;
+			        PERFORM cancel_reservation(res.reservation_id);
+			        res.reservation_id := 0;
+			    ELSE
+			        UPDATE reservations SET change = available - inp_amt
+			            WHERE reservation_id = res.reservation_id;
+			    END IF;
+			
+			    SELECT res.reservation_id, res.already_existed, CAST(0 AS BIGINT) AS existing_change, available AS amount, (available+unavailable < inp_amt) AS insufficient INTO ret;
+			    RETURN ret;
+			END;
+			$$;
+		`,
+	},
 }

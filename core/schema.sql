@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.4
+-- Dumped by pg_dump version 9.5.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -202,37 +202,40 @@ $$;
 CREATE FUNCTION reserve_utxo(inp_tx_hash text, inp_out_index bigint, inp_expiry timestamp with time zone, inp_idempotency_key text) RETURNS record
     LANGUAGE plpgsql
     AS $$
-DECLARE
-    res RECORD;
-    row RECORD;
-    ret RECORD;
-BEGIN
-    SELECT * FROM create_reservation(NULL, NULL, inp_expiry, inp_idempotency_key) INTO STRICT res;
-    IF res.already_existed THEN
-      SELECT res.reservation_id, res.already_existed, res.existing_change, CAST(0 AS BIGINT) AS amount, FALSE AS insufficient INTO ret;
-      RETURN ret;
-    END IF;
-
-    SELECT tx_hash, index, amount INTO row
-        FROM account_utxos u
-        WHERE inp_tx_hash = tx_hash
-              AND inp_out_index = index
-              AND reservation_id IS NULL
-        LIMIT 1
-        FOR UPDATE
-        SKIP LOCKED;
-    IF FOUND THEN
-        UPDATE account_utxos SET reservation_id = res.reservation_id
-            WHERE (tx_hash, index) = (row.tx_hash, row.index);
-    ELSE
-      PERFORM cancel_reservation(res.reservation_id);
-      res.reservation_id := 0;
-    END IF;
-
-    SELECT res.reservation_id, res.already_existed, EXISTS(SELECT tx_hash FROM account_utxos WHERE tx_hash = inp_tx_hash AND index = inp_out_index) INTO ret;
-    RETURN ret;
-END;
-$$;
+			DECLARE
+			    res RECORD;
+			    row RECORD;
+			    ret RECORD;
+			BEGIN
+			    SELECT * FROM create_reservation(NULL, NULL, inp_expiry, inp_idempotency_key) INTO STRICT res;
+			    IF res.already_existed THEN
+			      SELECT res.reservation_id, res.already_existed, res.existing_change, CAST(0 AS BIGINT) AS amount, FALSE AS insufficient INTO ret;
+			      RETURN ret;
+			    END IF;
+			
+			    SELECT u.tx_hash, u.index, u.amount INTO row
+			        FROM account_utxos u LEFT JOIN reservation_utxos r ON (u.tx_hash = r.tx_hash AND u.index = r.index)
+			        WHERE inp_tx_hash = u.tx_hash
+			              AND inp_out_index = u.index
+			              AND r.tx_hash IS NULL
+			        LIMIT 1;
+			    IF FOUND THEN
+			        INSERT INTO reservation_utxos (tx_hash, index, reservation_id)
+			            VALUES (row.tx_hash, row.index, res.reservation_id)
+			            ON CONFLICT (tx_hash, index) DO NOTHING;
+			        IF NOT FOUND THEN
+			            PERFORM cancel_reservation(res.reservation_id);
+			            res.reservation_id := 0;
+			        END IF;
+			    ELSE
+			      PERFORM cancel_reservation(res.reservation_id);
+			      res.reservation_id := 0;
+			    END IF;
+			
+			    SELECT res.reservation_id, res.already_existed, EXISTS(SELECT tx_hash FROM account_utxos WHERE tx_hash = inp_tx_hash AND index = inp_out_index) INTO ret;
+			    RETURN ret;
+			END;
+			$$;
 
 
 --
@@ -242,58 +245,62 @@ $$;
 CREATE FUNCTION reserve_utxos(inp_asset_id text, inp_account_id text, inp_tx_hash text, inp_out_index bigint, inp_amt bigint, inp_expiry timestamp with time zone, inp_idempotency_key text) RETURNS record
     LANGUAGE plpgsql
     AS $$
-DECLARE
-    res RECORD;
-    row RECORD;
-    ret RECORD;
-    available BIGINT := 0;
-    unavailable BIGINT := 0;
-BEGIN
-    SELECT * FROM create_reservation(inp_asset_id, inp_account_id, inp_expiry, inp_idempotency_key) INTO STRICT res;
-    IF res.already_existed THEN
-      SELECT res.reservation_id, res.already_existed, res.existing_change, CAST(0 AS BIGINT) AS amount, FALSE AS insufficient INTO ret;
-      RETURN ret;
-    END IF;
-
-    LOOP
-        SELECT tx_hash, index, amount INTO row
-            FROM account_utxos u
-            WHERE asset_id = inp_asset_id
-                  AND inp_account_id = account_id
-                  AND (inp_tx_hash IS NULL OR inp_tx_hash = tx_hash)
-                  AND (inp_out_index IS NULL OR inp_out_index = index)
-                  AND reservation_id IS NULL
-            LIMIT 1
-            FOR UPDATE
-            SKIP LOCKED;
-        IF FOUND THEN
-            UPDATE account_utxos SET reservation_id = res.reservation_id
-                WHERE (tx_hash, index) = (row.tx_hash, row.index);
-            available := available + row.amount;
-            IF available >= inp_amt THEN
-                EXIT;
-            END IF;
-        ELSE
-            EXIT;
-        END IF;
-    END LOOP;
-
-    IF available < inp_amt THEN
-        SELECT SUM(change) AS change INTO STRICT row
-            FROM reservations
-            WHERE asset_id = inp_asset_id AND account_id = inp_account_id;
-        unavailable := row.change;
-        PERFORM cancel_reservation(res.reservation_id);
-        res.reservation_id := 0;
-    ELSE
-        UPDATE reservations SET change = available - inp_amt
-            WHERE reservation_id = res.reservation_id;
-    END IF;
-
-    SELECT res.reservation_id, res.already_existed, CAST(0 AS BIGINT) AS existing_change, available AS amount, (available+unavailable < inp_amt) AS insufficient INTO ret;
-    RETURN ret;
-END;
-$$;
+			DECLARE
+			    res RECORD;
+			    row RECORD;
+			    ret RECORD;
+			    available BIGINT := 0;
+			    unavailable BIGINT := 0;
+			BEGIN
+			    SELECT * FROM create_reservation(inp_asset_id, inp_account_id, inp_expiry, inp_idempotency_key) INTO STRICT res;
+			    IF res.already_existed THEN
+			      SELECT res.reservation_id, res.already_existed, res.existing_change, CAST(0 AS BIGINT) AS amount, FALSE AS insufficient INTO ret;
+			      RETURN ret;
+			    END IF;
+			
+			    LOOP
+			        SELECT u.tx_hash, u.index, u.amount INTO row
+			            FROM account_utxos u LEFT JOIN reservation_utxos r ON (u.tx_hash = r.tx_hash AND u.index = r.index)
+			            WHERE u.asset_id = inp_asset_id
+			                  AND inp_account_id = u.account_id
+			                  AND (inp_tx_hash IS NULL OR inp_tx_hash = u.tx_hash)
+			                  AND (inp_out_index IS NULL OR inp_out_index = u.index)
+			                  AND r.tx_hash IS NULL
+			            FOR UPDATE OF u SKIP LOCKED
+			            LIMIT 1;
+			        IF FOUND THEN
+			            INSERT INTO reservation_utxos (tx_hash, index, reservation_id)
+			                VALUES (row.tx_hash, row.index, res.reservation_id)
+			                ON CONFLICT (tx_hash, index) DO NOTHING;
+			            IF FOUND THEN
+			                available := available + row.amount;
+			                IF available >= inp_amt THEN
+			                    EXIT;
+			                END IF;
+			            END IF;
+			            -- If not FOUND, then another thread reserved this utxo
+			            -- out from under us; just keep looping.
+			        ELSE
+			            EXIT;
+			        END IF;
+			    END LOOP;
+			
+			    IF available < inp_amt THEN
+			        SELECT SUM(change) AS change INTO STRICT row
+			            FROM reservations
+			            WHERE asset_id = inp_asset_id AND account_id = inp_account_id;
+			        unavailable := row.change;
+			        PERFORM cancel_reservation(res.reservation_id);
+			        res.reservation_id := 0;
+			    ELSE
+			        UPDATE reservations SET change = available - inp_amt
+			            WHERE reservation_id = res.reservation_id;
+			    END IF;
+			
+			    SELECT res.reservation_id, res.already_existed, CAST(0 AS BIGINT) AS existing_change, available AS amount, (available+unavailable < inp_amt) AS insufficient INTO ret;
+			    RETURN ret;
+			END;
+			$$;
 
 
 SET default_tablespace = '';
@@ -349,7 +356,6 @@ CREATE TABLE account_utxos (
     amount bigint NOT NULL,
     account_id text NOT NULL,
     control_program_index bigint NOT NULL,
-    reservation_id integer,
     control_program bytea NOT NULL,
     metadata bytea NOT NULL,
     confirmed_in bigint,
@@ -615,6 +621,17 @@ CREATE SEQUENCE reservation_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
+
+
+--
+-- Name: reservation_utxos; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE reservation_utxos (
+    tx_hash text NOT NULL,
+    index integer NOT NULL,
+    reservation_id integer NOT NULL
+);
 
 
 --
@@ -908,6 +925,14 @@ ALTER TABLE ONLY query_blocks
 
 
 --
+-- Name: reservation_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY reservation_utxos
+    ADD CONSTRAINT reservation_utxos_pkey PRIMARY KEY (tx_hash, index);
+
+
+--
 -- Name: reservations_idempotency_key_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1016,13 +1041,6 @@ CREATE INDEX account_utxos_expiry_height_idx ON account_utxos USING btree (expir
 
 
 --
--- Name: account_utxos_reservation_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX account_utxos_reservation_id_idx ON account_utxos USING btree (reservation_id);
-
-
---
 -- Name: annotated_accounts_jsondata_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1114,11 +1132,11 @@ CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
 
 
 --
--- Name: account_utxos_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: reservation_utxos_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY account_utxos
-    ADD CONSTRAINT account_utxos_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE SET NULL;
+ALTER TABLE ONLY reservation_utxos
+    ADD CONSTRAINT reservation_utxos_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE CASCADE;
 
 
 --
@@ -1128,3 +1146,4 @@ ALTER TABLE ONLY account_utxos
 insert into migrations (filename, hash) values ('2016-10-17.0.core.schema-snapshot.sql', 'cff5210e2d6af410719c223a76443f73c5c12fe875f0efecb9a0a5937cf029cd');
 insert into migrations (filename, hash) values ('2016-10-19.0.core.add-core-id.sql', '9353da072a571d7a633140f2a44b6ac73ffe9e27223f7c653ccdef8df3e8139e');
 insert into migrations (filename, hash) values ('2016-10-31.0.core.add-block-processors.sql', '9e9488e0039337967ef810b09a8f7822e23b3918a49a6308f02db24ddf3e490f');
+insert into migrations (filename, hash) values ('2016-11-01.0.account.reservation-utxos.sql', '8a0c2654d82b8e7c3e7457cb827cfd8dce2b30d4b3d6bf9ae2410a0bb0552919');
