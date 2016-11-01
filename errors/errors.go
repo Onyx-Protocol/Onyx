@@ -138,7 +138,7 @@ func withData(err error, v map[string]interface{}) error {
 // Note that if err already has a data item of any other type,
 // it will not be accessible via the returned error value.
 func WithData(err error, keyval ...interface{}) error {
-	// TODO(kr): add vet check for odd-length keyval
+	// TODO(kr): add vet check for odd-length keyval and non-string keys
 	newkv := make(map[string]interface{})
 	for k, v := range Data(err) {
 		newkv[k] = v
