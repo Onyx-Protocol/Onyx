@@ -129,8 +129,8 @@ func WithData(err error, v interface{}) error {
 // WithDataKV returns a new error that wraps err
 // as a chain error message containing a value of type
 // map[string]interface{} as an extra data item.
-// The map contains the values in map in err, if any,
-// plus the items in keyval.
+// The map contains the values in the map in err,
+// if any, plus the items in keyval.
 // Keyval takes the form
 //   k1, v1, k2, v2, ...
 // Here kN must be strings.
