@@ -4,6 +4,9 @@ import styles from './SearchBar.scss'
 class SearchBar extends React.Component {
   constructor(props) {
     super(props)
+
+    // TODO: examine renaming and refactoring for clarity. Consider moving
+    // away from local state if possible.
     this.state = {
       query: this.props.currentFilter.filter || '',
       sumBy: this.props.currentFilter.sum_by || '',
@@ -83,24 +86,18 @@ class SearchBar extends React.Component {
   handleSubmit(event) {
     event.preventDefault()
 
-    if (this.state.query == this.props.defaultFilter) {
-      this.setState({ showClear: false })
-      this.props.pushList()
-      return
-    }
-
-    const state = {
-      showClear: this.state.query || this.state.sumBy
-    }
-
     const query = {}
+    const state = {
+      showClear: (this.state.query && (this.state.query != this.props.defaultFilter)) || this.state.sumBy
+    }
+
     if (this.state.query) {
       query.filter = this.state.query
     } else if (this.props.defaultFilter) {
       state.query = this.props.defaultFilter
       query.filter = this.props.defaultFilter
     }
-    if (this.state.sum_by) query.sum_by = this.state.sumBy
+    if (this.state.sumBy) query.sum_by = this.state.sumBy
 
     this.setState(state)
     this.props.pushList(query)
