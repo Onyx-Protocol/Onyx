@@ -133,7 +133,7 @@ func WithData(err error, v interface{}) error {
 // if any, plus the items in keyval.
 // Keyval takes the form
 //   k1, v1, k2, v2, ...
-// Here kN must be strings.
+// Values kN must be strings.
 // Calling Data on the returned error yields the map.
 // Note that if err already has a data item of any other type,
 // it will not be accessible via the returned error value.
