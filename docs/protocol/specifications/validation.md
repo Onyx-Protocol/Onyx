@@ -260,7 +260,7 @@ A transaction is said to be *valid* with respect to a particular blockchain stat
 1. Load an output hash from the state as identified by the input’s [spent output reference](data.md#outpoint), yielding a *previous output hash*.
 2. If the previous output does not exist, halt and return false.
 3. Compute the SHA3-256 hash of the *previous output* provided in the [input witness](data.md#input-entry-witness).
-4. Test that the *previous output hash* from the blockchain state equals the hash of the *previous output* in the wintess; if not, halt and return false.
+4. Test that the *previous output hash* from the blockchain state equals the hash of the *previous output* in the witness; if not, halt and return false.
 5. [Evaluate](#evaluate-predicate) the control program specified in the *previous output*, for the VM version specified in the previous output and with the [input witness](data.md#input-entry-witness) program arguments.
 6. If the evaluation returns false, halt and return false.
 7. Return true.
