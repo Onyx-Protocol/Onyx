@@ -67,8 +67,8 @@ func handleInnerRequest(ctx context.Context, innerHandler func() (interface{}, e
 				err = fmt.Errorf("panic with %T", r)
 			}
 		}
-		// Convert errors into errorInfo responses (including errors from recovered
-		// panics above).
+		// Convert errors into errorInfo responses (including errors from
+		// recovered panics above).
 		if err != nil {
 			logHTTPError(ctx, err)
 			result, _ = errInfo(err)
@@ -76,6 +76,6 @@ func handleInnerRequest(ctx context.Context, innerHandler func() (interface{}, e
 	}()
 
 	resp, err = innerHandler()
-	// err is checked by the above defer().
+	// err is checked by the above defer.
 	return resp
 }
