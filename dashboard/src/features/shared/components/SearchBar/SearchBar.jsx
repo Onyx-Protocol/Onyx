@@ -4,6 +4,9 @@ import styles from './SearchBar.scss'
 class SearchBar extends React.Component {
   constructor(props) {
     super(props)
+
+    // TODO: examine renaming and refactoring for clarity. Consider moving
+    // away from local state if possible.
     this.state = {
       query: this.props.currentFilter.filter || '',
       sumBy: this.props.currentFilter.sum_by || '',
