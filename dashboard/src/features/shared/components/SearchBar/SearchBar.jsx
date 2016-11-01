@@ -100,7 +100,7 @@ class SearchBar extends React.Component {
       state.query = this.props.defaultFilter
       query.filter = this.props.defaultFilter
     }
-    if (this.state.sum_by) query.sum_by = this.state.sumBy
+    if (this.state.sumBy) query.sum_by = this.state.sumBy
 
     this.setState(state)
     this.props.pushList(query)
