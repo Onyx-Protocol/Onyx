@@ -74,6 +74,7 @@ var (
 		errRateLimited:               errorInfo{429, "CH007", "Request limit exceeded"},
 		errLeaderElection:            errorInfo{503, "CH008", "Electing a new leader for the core; try again soon"},
 		errNotAuthenticated:          errorInfo{401, "CH009", "Request could not be authenticated"},
+		txbuilder.ErrMissingFields:   errorInfo{400, "CH010", "One or more fields are missing"},
 		asset.ErrDuplicateAlias:      errorInfo{400, "CH050", "Alias already exists"},
 		account.ErrDuplicateAlias:    errorInfo{400, "CH050", "Alias already exists"},
 		txfeed.ErrDuplicateAlias:     errorInfo{400, "CH050", "Alias already exists"},
