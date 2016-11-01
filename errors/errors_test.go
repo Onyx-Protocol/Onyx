@@ -130,6 +130,7 @@ func TestDataKV(t *testing.T) {
 		{WithDataKV(root, "a", "b"), map[string]interface{}{"a": "b"}},
 		{WithDataKV(WithDataKV(root, "a", "b"), "c", "d"), map[string]interface{}{"a": "b", "c": "d"}},
 		{Wrap(WithDataKV(root, "a", "b"), "baz"), map[string]interface{}{"a": "b"}},
+		{WithDataKV(WithData(root, "x"), "a", "b"), map[string]interface{}{"a": "b"}},
 	}
 
 	for _, test := range cases {
