@@ -83,24 +83,24 @@ class SearchBar extends React.Component {
   handleSubmit(event) {
     event.preventDefault()
 
-    if (this.state.query == this.props.defaultFilter) {
-      this.setState({ showClear: false })
-      this.props.pushList()
-      return
-    }
-
+    const query = {}
     const state = {
       showClear: this.state.query || this.state.sumBy
     }
 
-    const query = {}
-    if (this.state.query) {
-      query.filter = this.state.query
-    } else if (this.props.defaultFilter) {
+    if (this.state.sumBy) query.sum_by = this.state.sumBy
+    if (this.props.defaultFilter) {
       state.query = this.props.defaultFilter
       query.filter = this.props.defaultFilter
     }
-    if (this.state.sumBy) query.sum_by = this.state.sumBy
+
+    if (this.state.query == this.props.defaultFilter) {
+      this.setState({ showClear: false })
+      this.props.pushList(query)
+      return
+    }
+
+    if (this.state.query) query.filter = this.state.query
 
     this.setState(state)
     this.props.pushList(query)
