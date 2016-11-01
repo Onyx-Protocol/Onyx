@@ -2,9 +2,11 @@ package pin
 
 import (
 	"context"
+	"strconv"
 	"sync"
 
 	"chain/database/pg"
+	"chain/errors"
 	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -98,7 +100,12 @@ func (p *Pin) RaiseTo(ctx context.Context, height uint64) error {
 		ON CONFLICT(name) DO UPDATE SET height=EXCLUDED.height
 		WHERE block_processors.height<EXCLUDED.height
 	`
+	const notifyQ = `SELECT pg_notify($1, $2)`
 	_, err := p.db.Exec(ctx, q, p.name, height)
+	if err != nil {
+		return err
+	}
+	_, err = p.db.Exec(ctx, notifyQ, "pin-"+p.name, height)
 	if err != nil {
 		return err
 	}
@@ -120,4 +127,43 @@ func (p *Pin) WaitForHeight(height uint64) <-chan struct{} {
 		ch <- struct{}{}
 	}()
 	return ch
+}
+
+func (p *Pin) Listen(ctx context.Context, dbURL string) {
+	listener, err := pg.NewListener(ctx, dbURL, "pin-"+p.name)
+	if err != nil {
+		log.Error(ctx, err)
+		return
+	}
+
+	c := make(chan uint64)
+	go func() {
+		defer func() {
+			listener.Close()
+			close(c)
+		}()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			case n := <-listener.Notify:
+				height, err := strconv.ParseUint(n.Extra, 10, 64)
+				if err != nil {
+					log.Error(ctx, errors.Wrap(err, "parsing db notification payload"))
+					return
+				}
+
+				p.mu.Lock()
+				if p.height < height {
+					p.height = height
+					p.cond.Broadcast()
+				}
+				p.mu.Unlock()
+			}
+		}
+	}()
+
+	return
 }

@@ -15,6 +15,7 @@ import (
 	"chain/core/asset"
 	"chain/core/leader"
 	"chain/core/mockhsm"
+	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/rpc"
 	"chain/core/txbuilder"
@@ -51,6 +52,7 @@ var (
 type Handler struct {
 	Chain         *protocol.Chain
 	Store         *txdb.Store
+	PinStore      *pin.Store
 	Assets        *asset.Registry
 	Accounts      *account.Manager
 	HSM           *mockhsm.HSM

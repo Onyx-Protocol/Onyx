@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"chain/core/fetch"
+	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
@@ -97,7 +98,7 @@ type submitSingleArg struct {
 	wait chainjson.Duration
 }
 
-func (h *Handler) submitSingle(ctx context.Context, c *protocol.Chain, x submitSingleArg) (interface{}, error) {
+func (h *Handler) submitSingle(ctx context.Context, x submitSingleArg) (interface{}, error) {
 	// TODO(bobg): Set up an expiring context object outside this
 	// function, perhaps in handler.ServeHTTPContext, and perhaps
 	// initialize the timeout from the HTTP Timeout field.  (Or just
@@ -109,7 +110,7 @@ func (h *Handler) submitSingle(ctx context.Context, c *protocol.Chain, x submitS
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	err := h.finalizeTxWait(ctx, c, x.tpl)
+	err := h.finalizeTxWait(ctx, x.tpl)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +172,7 @@ func CleanupSubmittedTxs(ctx context.Context, db pg.DB) {
 // confirmed on the blockchain.  ErrRejected means a conflicting tx is
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
-func (h *Handler) finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilder.Template) error {
+func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template) error {
 	if txTemplate.Transaction == nil {
 		return errors.Wrap(txbuilder.ErrMissingRawTx)
 	}
@@ -179,7 +180,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, c *protocol.Chain, txTempl
 	// Use the current generator height as the lower bound of the block height
 	// that the transaction may appear in.
 	generatorHeight, _ := fetch.GeneratorHeight()
-	localHeight := c.Height()
+	localHeight := h.Chain.Height()
 	if localHeight > generatorHeight {
 		generatorHeight = localHeight
 	}
@@ -191,7 +192,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, c *protocol.Chain, txTempl
 		return errors.Wrap(err, "saving tx submitted height")
 	}
 
-	err = txbuilder.FinalizeTx(ctx, c, tx)
+	err = txbuilder.FinalizeTx(ctx, h.Chain, tx)
 	if err != nil {
 		return err
 	}
@@ -208,26 +209,41 @@ func (h *Handler) finalizeTxWait(ctx context.Context, c *protocol.Chain, txTempl
 		}
 	}
 
+	height, err = waitForTxInBlock(ctx, h.Chain, tx, height)
+	if err != nil {
+		return err
+	}
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-h.PinStore.Pin(query.TxPinName).WaitForHeight(height):
+	}
+
+	return nil
+}
+
+func waitForTxInBlock(ctx context.Context, c *protocol.Chain, tx *bc.Tx, height uint64) (uint64, error) {
 	for {
 		height++
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return 0, ctx.Err()
 
 		case <-c.WaitForBlock(height):
 			b, err := c.GetBlock(ctx, height)
 			if err != nil {
-				return errors.Wrap(err, "getting block that just landed")
+				return 0, errors.Wrap(err, "getting block that just landed")
 			}
 			for _, confirmed := range b.Transactions {
 				if confirmed.Hash == tx.Hash {
 					// confirmed
-					return nil
+					return height, nil
 				}
 			}
 
 			if tx.MaxTime > 0 && tx.MaxTime < b.TimestampMS {
-				return txbuilder.ErrRejected
+				return 0, txbuilder.ErrRejected
 			}
 
 			// might still be in pool or might be rejected; we can't
@@ -236,7 +252,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, c *protocol.Chain, txTempl
 			// Re-insert into the pool in case it was dropped.
 			err = txbuilder.FinalizeTx(ctx, c, tx)
 			if err != nil {
-				return err
+				return 0, err
 			}
 
 			// TODO(jackson): Do simple rejection checks like checking if
@@ -258,7 +274,7 @@ func (h *Handler) submit(ctx context.Context, x submitArg) interface{} {
 	wg.Add(len(responses))
 	for i := range responses {
 		go func(i int) {
-			resp, err := h.submitSingle(reqid.NewSubContext(ctx, reqid.New()), h.Chain, submitSingleArg{tpl: x.Transactions[i], wait: x.wait})
+			resp, err := h.submitSingle(reqid.NewSubContext(ctx, reqid.New()), submitSingleArg{tpl: x.Transactions[i], wait: x.wait})
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)

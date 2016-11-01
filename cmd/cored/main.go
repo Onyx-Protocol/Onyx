@@ -206,8 +206,18 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 
-	// Setup the transaction query indexer to index every transaction.
+	// Set up the pin store for block processing
 	pinStore := &pin.Store{DB: db}
+	err = pinStore.LoadAll(ctx)
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, err)
+	}
+	// Start listeners
+	go pinStore.Pin(account.PinName).Listen(ctx, *dbURL)
+	go pinStore.Pin(asset.PinName).Listen(ctx, *dbURL)
+	go pinStore.Pin(query.TxPinName).Listen(ctx, *dbURL)
+
+	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, c, pinStore)
 
 	assets := asset.NewRegistry(db, c)
@@ -251,6 +261,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	h := &core.Handler{
 		Chain:        c,
 		Store:        store,
+		PinStore:     pinStore,
 		Assets:       assets,
 		Accounts:     accounts,
 		HSM:          hsm,
@@ -294,11 +305,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
 		}
 		if !*indexTxs {
-			return
-		}
-		err := pinStore.LoadAll(ctx)
-		if err != nil {
-			chainlog.Error(ctx, err)
 			return
 		}
 		go h.Accounts.ProcessBlocks(ctx)
