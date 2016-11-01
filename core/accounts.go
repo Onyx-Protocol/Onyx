@@ -44,7 +44,7 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 		go func(i int) {
 			defer wg.Done()
 			subctx := reqid.NewSubContext(ctx, reqid.New())
-			resp := handleInnerRequest(subctx, func() (interface{}, error) {
+			responses[i] = handleInnerRequest(subctx, func() (interface{}, error) {
 				acc, err := h.Accounts.Create(subctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
 				if err != nil {
 					return nil, err
@@ -66,7 +66,6 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 					Tags:   acc.Tags,
 				}, nil
 			})
-			responses[i] = resp
 		}(i)
 	}
 

@@ -51,7 +51,7 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 		go func(i int) {
 			defer wg.Done()
 			subctx := reqid.NewSubContext(ctx, reqid.New())
-			resp := handleInnerRequest(subctx, func() (interface{}, error) {
+			responses[i] = handleInnerRequest(subctx, func() (interface{}, error) {
 				asset, err := h.Assets.Define(
 					subctx,
 					ins[i].RootXPubs,
@@ -85,7 +85,6 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 					IsLocal:         "yes",
 				}, nil
 			})
-			responses[i] = resp
 		}(i)
 	}
 

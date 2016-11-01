@@ -80,10 +80,9 @@ func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interfa
 			defer wg.Done()
 
 			subctx := reqid.NewSubContext(ctx, reqid.New())
-			resp := handleInnerRequest(subctx, func() (interface{}, error) {
+			responses[i] = handleInnerRequest(subctx, func() (interface{}, error) {
 				return h.buildSingle(subctx, buildReqs[i])
 			})
-			responses[i] = resp
 		}(i)
 	}
 
@@ -274,13 +273,12 @@ func (h *Handler) submit(ctx context.Context, x submitArg) interface{} {
 		go func(i int) {
 			defer wg.Done()
 			subctx := reqid.NewSubContext(ctx, reqid.New())
-			resp := handleInnerRequest(subctx, func() (interface{}, error) {
+			responses[i] = handleInnerRequest(subctx, func() (interface{}, error) {
 				return h.submitSingle(subctx, submitSingleArg{
 					tpl:  x.Transactions[i],
 					wait: x.wait,
 				})
 			})
-			responses[i] = resp
 		}(i)
 	}
 
