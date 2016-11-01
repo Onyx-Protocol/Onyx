@@ -17,22 +17,22 @@ type Store struct {
 	pins map[string]*Pin
 }
 
-func (ct *Store) Pin(name string) *Pin {
-	ct.mu.Lock()
-	defer ct.mu.Unlock()
-	if ct.pins == nil {
-		ct.pins = make(map[string]*Pin)
+func (s *Store) Pin(name string) *Pin {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.pins == nil {
+		s.pins = make(map[string]*Pin)
 	}
-	pin, ok := ct.pins[name]
+	pin, ok := s.pins[name]
 	if !ok {
-		pin = newPin(ct.DB, name, 0)
-		ct.pins[name] = pin
+		pin = newPin(s.DB, name, 0)
+		s.pins[name] = pin
 	}
 	return pin
 }
 
-func (ct *Store) ProcessBlocks(ctx context.Context, c *protocol.Chain, pinName string, cb func(context.Context, *bc.Block) error) {
-	pin := ct.Pin(pinName)
+func (s *Store) ProcessBlocks(ctx context.Context, c *protocol.Chain, pinName string, cb func(context.Context, *bc.Block) error) {
+	pin := s.Pin(pinName)
 	for {
 		height := pin.Height()
 		select {
@@ -58,13 +58,13 @@ func (ct *Store) ProcessBlocks(ctx context.Context, c *protocol.Chain, pinName s
 	}
 }
 
-func (ct *Store) LoadAll(ctx context.Context) error {
-	ct.mu.Lock()
-	defer ct.mu.Unlock()
-	ct.pins = make(map[string]*Pin)
+func (s *Store) LoadAll(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.pins = make(map[string]*Pin)
 	const q = `SELECT name, height FROM block_processors;`
-	err := pg.ForQueryRows(ctx, ct.DB, q, func(name string, height uint64) {
-		ct.pins[name] = newPin(ct.DB, name, height)
+	err := pg.ForQueryRows(ctx, s.DB, q, func(name string, height uint64) {
+		s.pins[name] = newPin(s.DB, name, height)
 	})
 	return err
 }
@@ -79,43 +79,43 @@ type Pin struct {
 }
 
 func newPin(db pg.DB, name string, height uint64) *Pin {
-	c := &Pin{db: db, name: name, height: height}
-	c.cond.L = &c.mu
-	return c
+	p := &Pin{db: db, name: name, height: height}
+	p.cond.L = &p.mu
+	return p
 }
 
-func (c *Pin) Height() uint64 {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.height
+func (p *Pin) Height() uint64 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.height
 }
 
-func (c *Pin) RaiseTo(ctx context.Context, height uint64) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (p *Pin) RaiseTo(ctx context.Context, height uint64) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	const q = `
 		INSERT INTO block_processors (name, height) VALUES($1, $2)
 		ON CONFLICT(name) DO UPDATE SET height=EXCLUDED.height
 		WHERE block_processors.height<EXCLUDED.height
 	`
-	_, err := c.db.Exec(ctx, q, c.name, height)
+	_, err := p.db.Exec(ctx, q, p.name, height)
 	if err != nil {
 		return err
 	}
-	if height > c.height {
-		c.height = height
-		c.cond.Broadcast()
+	if height > p.height {
+		p.height = height
+		p.cond.Broadcast()
 	}
 	return nil
 }
 
-func (c *Pin) WaitForHeight(height uint64) <-chan struct{} {
+func (p *Pin) WaitForHeight(height uint64) <-chan struct{} {
 	ch := make(chan struct{}, 1)
 	go func() {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		for c.height < height {
-			c.cond.Wait()
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		for p.height < height {
+			p.cond.Wait()
 		}
 		ch <- struct{}{}
 	}()
