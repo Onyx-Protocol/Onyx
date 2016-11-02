@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"chain/core/fetch"
-	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
@@ -95,8 +94,9 @@ func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interfa
 }
 
 type submitSingleArg struct {
-	tpl  *txbuilder.Template
-	wait chainjson.Duration
+	tpl       *txbuilder.Template
+	wait      chainjson.Duration
+	waitUntil string
 }
 
 func (h *Handler) submitSingle(ctx context.Context, x submitSingleArg) (interface{}, error) {
@@ -111,7 +111,7 @@ func (h *Handler) submitSingle(ctx context.Context, x submitSingleArg) (interfac
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	err := h.finalizeTxWait(ctx, x.tpl)
+	err := h.finalizeTxWait(ctx, x.tpl, x.waitUntil)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func CleanupSubmittedTxs(ctx context.Context, db pg.DB) {
 // confirmed on the blockchain.  ErrRejected means a conflicting tx is
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
-func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template) error {
+func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template, waitUntil string) error {
 	if txTemplate.Transaction == nil {
 		return errors.Wrap(txbuilder.ErrMissingRawTx)
 	}
@@ -210,15 +210,23 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 		}
 	}
 
+	if waitUntil == "none" {
+		return nil
+	}
+
 	height, err = waitForTxInBlock(ctx, h.Chain, tx, height)
 	if err != nil {
 		return err
 	}
 
+	if waitUntil == "confirmed" {
+		return nil
+	}
+
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-h.PinStore.Pin(query.TxPinName).WaitForHeight(height):
+	case <-h.PinStore.WaitForAll(height):
 	}
 
 	return nil
@@ -265,6 +273,7 @@ func waitForTxInBlock(ctx context.Context, c *protocol.Chain, tx *bc.Tx, height 
 type submitArg struct {
 	Transactions []*txbuilder.Template
 	wait         chainjson.Duration
+	WaitUntil    string `json:"wait_until"` // values none, confirmed, processed. default: processed
 }
 
 // POST /v3/transact/submit
@@ -280,8 +289,9 @@ func (h *Handler) submit(ctx context.Context, x submitArg) interface{} {
 			defer batchRecover(subctx, &responses[i])
 
 			tx, err := h.submitSingle(subctx, submitSingleArg{
-				tpl:  x.Transactions[i],
-				wait: x.wait,
+				tpl:       x.Transactions[i],
+				wait:      x.wait,
+				waitUntil: x.WaitUntil,
 			})
 			if err != nil {
 				responses[i] = err

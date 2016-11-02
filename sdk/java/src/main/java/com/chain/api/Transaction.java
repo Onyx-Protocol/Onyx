@@ -515,6 +515,26 @@ public class Transaction {
   }
 
   /**
+   * Submits a batch of signed transaction templates for inclusion into a block.
+   * @param client client object which makes server requests
+   * @param templates list of transaction templates
+   * @param waitUntil when the server should wait until responding - none, confirmed, processed
+   * @return a list of submit responses (individual objects can hold transaction ids or error info)
+   * @throws APIException This exception is raised if the api returns errors while submitting transactions.
+   * @throws BadURLException This exception wraps java.net.MalformedURLException.
+   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+   * @throws HTTPException This exception is raised when errors occur making http requests.
+   * @throws JSONException This exception is raised due to malformed json requests or responses.
+   */
+  public static BatchResponse<SubmitResponse> submitBatch(Client client, List<Template> templates, String waitUntil)
+      throws ChainException {
+    HashMap<String, Object> body = new HashMap<>();
+    body.put("transactions", templates);
+    body.put("wait_until", waitUntil);
+    return client.batchRequest("submit-transaction", body, SubmitResponse.class, APIException.class);
+  }
+
+  /**
    * Submits signed transaction template for inclusion into a block.
    * @param client client object which makes server requests
    * @param template transaction template
@@ -528,6 +548,25 @@ public class Transaction {
   public static SubmitResponse submit(Client client, Template template) throws ChainException {
     HashMap<String, Object> body = new HashMap<>();
     body.put("transactions", Arrays.asList(template));
+    return client.singletonBatchRequest("submit-transaction", body, SubmitResponse.class, APIException.class);
+  }
+
+  /**
+   * Submits signed transaction template for inclusion into a block.
+   * @param client client object which makes server requests
+   * @param template transaction template
+   * @param waitUntil when the server should wait until responding - none, confirmed, processed
+   * @return submit responses
+   * @throws APIException This exception is raised if the api returns errors while submitting a transaction.
+   * @throws BadURLException This exception wraps java.net.MalformedURLException.
+   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+   * @throws HTTPException This exception is raised when errors occur making http requests.
+   * @throws JSONException This exception is raised due to malformed json requests or responses.
+   */
+  public static SubmitResponse submit(Client client, Template template, String waitUntil) throws ChainException {
+    HashMap<String, Object> body = new HashMap<>();
+    body.put("transactions", Arrays.asList(template));
+    body.put("wait_until", waitUntil);
     return client.singletonBatchRequest("submit-transaction", body, SubmitResponse.class, APIException.class);
   }
 
