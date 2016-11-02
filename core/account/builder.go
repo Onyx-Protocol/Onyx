@@ -46,7 +46,8 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 	var missing []string
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")
-	} else if a.AssetID == (bc.AssetID{}) {
+	}
+	if a.AssetID == (bc.AssetID{}) {
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {
@@ -204,7 +205,8 @@ func (a *controlAction) Build(ctx context.Context, maxTime time.Time) (*txbuilde
 	var missing []string
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")
-	} else if a.AssetID == (bc.AssetID{}) {
+	}
+	if a.AssetID == (bc.AssetID{}) {
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {
