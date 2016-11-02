@@ -78,7 +78,7 @@ class KeyConfiguration extends React.Component {
             key={`xpub-${index}`}
             index={index}
             typeProps={xpub.type}
-            valueProps={xpub.xpub}
+            valueProps={xpub.value}
           />)}
       </div>
     )

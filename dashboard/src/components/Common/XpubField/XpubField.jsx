@@ -1,6 +1,6 @@
 import React from 'react'
 import styles from './XpubField.scss'
-import { SelectField, FieldLabel, HiddenField } from 'features/shared/components'
+import { SelectField, FieldLabel } from 'features/shared/components'
 import { TextField } from '../'
 import { connect } from 'react-redux'
 import { actions } from 'features/mockhsm'
@@ -77,10 +77,14 @@ class XpubField extends React.Component {
         }
 
         {typeProps.value == 'provide' &&
-          <TextField fieldProps={{...valueProps, onChange: valueOnChange}} />}
+          <TextField
+            fieldProps={{...valueProps, onChange: valueOnChange}}
+            placeholder='Enter Xpub' />}
 
         {typeProps.value == 'generate' &&
-          <HiddenField fieldProps={{...valueProps, onChange: valueOnChange}} />}
+          <TextField
+            fieldProps={{...valueProps, onChange: valueOnChange}}
+            placeholder='Alias for generated key (leave blank for automatic value)' />}
       </div>
     )
   }

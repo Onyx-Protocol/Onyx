@@ -70,7 +70,7 @@ const fields = [
   'alias',
   'tags',
   'definition',
-  'xpubs[].xpub',
+  'xpubs[].value',
   'xpubs[].type',
   'quorum'
 ]

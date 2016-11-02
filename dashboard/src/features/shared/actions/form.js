@@ -36,13 +36,16 @@ export default function(type, options = {}) {
         if (key.type == 'generate') {
           promise = promise
             .then(() => {
-              const alias = (data.alias || 'generated') + '-' + uuid.v4()
+              const alias = (key.value || '').trim()
+                ? key.value.trim()
+                : (data.alias || 'generated') + '-' + uuid.v4()
+
               return new chain.MockHsm({alias}).create(context())
             }).then(newKey => {
               data.root_xpubs = [...(data.root_xpubs || []), newKey.xpub]
             })
         } else {
-          data.root_xpubs = [...(data.root_xpubs || []), key.xpub]
+          data.root_xpubs = [...(data.root_xpubs || []), key.value]
         }
       })
       delete data.xpubs

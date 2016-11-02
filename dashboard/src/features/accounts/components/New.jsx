@@ -64,7 +64,7 @@ const validate = values => {
 const fields = [
   'alias',
   'tags',
-  'xpubs[].xpub',
+  'xpubs[].value',
   'xpubs[].type',
   'quorum'
 ]
