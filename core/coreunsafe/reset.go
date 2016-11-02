@@ -39,6 +39,7 @@ func ResetBlockchain(ctx context.Context, db pg.DB) error {
 			annotated_txs,
 			asset_tags,
 			assets,
+			block_processors,
 			blocks,
 			config,
 			generator_pending_block,
