@@ -1,3 +1,4 @@
+import CopyableBlock from './CopyableBlock/CopyableBlock'
 import BaseList from './BaseList/BaseList'
 import BaseNew from './BaseNew'
 import BaseShow from './BaseShow'
@@ -20,6 +21,7 @@ import SubmitIndicator from './SubmitIndicator/SubmitIndicator'
 import TableList from './TableList/TableList'
 
 export {
+  CopyableBlock,
   BaseList,
   BaseNew,
   BaseShow,

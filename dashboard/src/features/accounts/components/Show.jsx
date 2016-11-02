@@ -1,9 +1,10 @@
 import React from 'react'
 import {
   BaseShow,
+  CopyableBlock,
+  KeyValueTable,
   PageContent,
   PageTitle,
-  KeyValueTable,
 } from 'features/shared/components'
 
 class Show extends BaseShow {
@@ -19,7 +20,7 @@ class Show extends BaseShow {
       params: { account_id: this.props.item.id }
     }]).then((program) => this.props.showControlProgram(<div>
       <p>Copy this one-time use control program to use in a transaction:</p>
-      <pre>{program.control_program}</pre>
+      <CopyableBlock value={program.control_program} />
     </div>))
   }
 
