@@ -11,7 +11,10 @@ import (
 	"time"
 
 	"chain/core/rpc"
+	"chain/env"
 )
+
+var scheduled = env.Bool("SCHEDULED", true)
 
 type core struct {
 	netTok string
@@ -42,6 +45,15 @@ func coreEnv(prefix string) (*rpc.Client, core) {
 func main() {
 	log.SetFlags(0)
 	ctx := context.Background()
+	env.Parse()
+
+	cur := time.Now()
+	max := cur.Add(time.Hour).Weekday()
+	min := cur.Add(-1 * time.Hour).Weekday()
+	if *scheduled && (min != time.Saturday || max != time.Sunday) {
+		log.Println("only run Sunday at midnight +/- an hour")
+		os.Exit(0)
+	}
 
 	gen, genCore := coreEnv("GENERATOR")
 	sig1, sig1Core := coreEnv("SIGNER1")
