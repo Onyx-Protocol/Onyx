@@ -103,12 +103,9 @@ func TestData(t *testing.T) {
 		err  error
 		data interface{}
 	}{
-		{root, nil},
-		{WithData(root, 1), 1},
-		{WithData(root, map[string]string{"a": "b"}), map[string]string{"a": "b"}},
-		{WithData(root, "bar"), "bar"},
-		{WithData(WithData(root, "bar"), "baz"), "baz"},
-		{Wrap(WithData(root, "bar"), "baz"), "bar"},
+		{WithData(root, "a", "b"), map[string]interface{}{"a": "b"}},
+		{WithData(WithData(root, "a", "b"), "c", "d"), map[string]interface{}{"a": "b", "c": "d"}},
+		{Wrap(WithData(root, "a", "b"), "baz"), map[string]interface{}{"a": "b"}},
 	}
 
 	for _, test := range cases {
