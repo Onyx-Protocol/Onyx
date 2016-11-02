@@ -4,6 +4,7 @@ import { parseNonblankJSON } from 'utility/string'
 import actionCreator from './actionCreator'
 import { push } from 'react-router-redux'
 import actions from 'actions'
+import uuid from 'uuid'
 
 export default function(type, options = {}) {
   const listPath = options.listPath || `/${type}s`
@@ -15,6 +16,7 @@ export default function(type, options = {}) {
     created,
     submitForm: (data) => {
       const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
+      let promise = new Promise((resolve) => resolve())
 
       if (typeof data.id == 'string')     data.id = data.id.trim()
       if (typeof data.alias == 'string')  data.alias = data.alias.trim()
@@ -31,14 +33,22 @@ export default function(type, options = {}) {
 
       const xpubs = data.xpubs || []
       xpubs.map(key => {
-        data.root_xpubs = [...(data.root_xpubs || []), key.xpub]
+        if (key.type == 'generate') {
+          promise = promise
+            .then(() => {
+              const alias = (data.alias || 'generated') + '-' + uuid.v4()
+              return new chain.MockHsm({alias}).create(context())
+            }).then(newKey => {
+              data.root_xpubs = [...(data.root_xpubs || []), newKey.xpub]
+            })
+        } else {
+          data.root_xpubs = [...(data.root_xpubs || []), key.xpub]
+        }
       })
       delete data.xpubs
 
       return function(dispatch) {
-        let object = new chain[className](data)
-
-        return object.create(context())
+        return promise.then(() => new chain[className](data).create(context())
           .then((resp) => {
             dispatch(created(resp))
 
@@ -60,7 +70,7 @@ export default function(type, options = {}) {
                 preserveFlash: true
               }
             }))
-          })
+          }))
       }
     }
   }
