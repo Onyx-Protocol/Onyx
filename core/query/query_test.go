@@ -24,8 +24,10 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	indexer := NewIndexer(db, c, pinStore)
 	accounts := account.NewManager(db, c)
 	assets := asset.NewRegistry(db, c)
+	assets.IndexAssets(indexer, pinStore)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
+	go assets.ProcessBlocks(ctx)
 	go indexer.ProcessBlocks(ctx)
 
 	acct1, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
@@ -53,8 +55,8 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	coretest.IssueAssets(ctx, t, c, assets, accounts, asset2.AssetID, 100, acct1.ID)
 
 	prottest.MakeBlock(t, c)
-	txPin := pinStore.Pin(TxPinName)
-	<-txPin.WaitForHeight(c.Height())
+	<-pinStore.Pin(asset.PinName).WaitForHeight(c.Height())
+	<-pinStore.Pin(TxPinName).WaitForHeight(c.Height())
 
 	time2 := time.Now()
 

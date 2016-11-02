@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"chain/core/pin"
 	"chain/database/pg/pgtest"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -13,7 +14,9 @@ func TestIndexBlock(t *testing.T) {
 	ctx := context.Background()
 	db := pgtest.NewTx(t)
 
-	indexer := NewIndexer(db, &protocol.Chain{}, nil)
+	pinStore := &pin.Store{DB: db}
+
+	indexer := NewIndexer(db, &protocol.Chain{}, pinStore)
 	b := &bc.Block{
 		Transactions: []*bc.Tx{},
 	}

@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"chain/core/asset"
+	"chain/core/pin"
 	"chain/core/query"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
@@ -16,7 +18,13 @@ func TestQueryWithClockSkew(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	c := prottest.NewChain(t)
 
-	indexer := query.NewIndexer(db, c, nil)
+	pinStore := &pin.Store{DB: db}
+	err := pinStore.Pin(asset.PinName).RaiseTo(ctx, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	indexer := query.NewIndexer(db, c, pinStore)
 	h := &Handler{DB: db, Chain: c, Indexer: indexer}
 
 	tx := bc.NewTx(bc.TxData{})
@@ -27,7 +35,7 @@ func TestQueryWithClockSkew(t *testing.T) {
 		},
 		Transactions: []*bc.Tx{tx},
 	}
-	err := indexer.IndexTransactions(ctx, block)
+	err = indexer.IndexTransactions(ctx, block)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/lib/pq"
 
+	"chain/core/asset"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -38,6 +39,8 @@ func (ind *Indexer) ProcessBlocks(ctx context.Context) {
 // IndexTransactions is registered as a block callback on the Chain. It
 // saves all annotated transactions to the database.
 func (ind *Indexer) IndexTransactions(ctx context.Context, b *bc.Block) error {
+	<-ind.pinStore.Pin(asset.PinName).WaitForHeight(b.Height)
+
 	err := ind.insertBlock(ctx, b)
 	if err != nil {
 		return err
