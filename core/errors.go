@@ -8,6 +8,7 @@ import (
 	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/blocksigner"
+	"chain/core/config"
 	"chain/core/mockhsm"
 	"chain/core/query"
 	"chain/core/query/filter"
@@ -81,13 +82,13 @@ var (
 		// Core error namespace
 		errUnconfigured:                errorInfo{400, "CH100", "This core still needs to be configured"},
 		errAlreadyConfigured:           errorInfo{400, "CH101", "This core has already been configured"},
-		errBadGenerator:                errorInfo{400, "CH102", "Generator URL returned an invalid response"},
+		config.ErrBadGenerator:         errorInfo{400, "CH102", "Generator URL returned an invalid response"},
 		errBadBlockPub:                 errorInfo{400, "CH103", "Provided Block XPub is invalid"},
 		rpc.ErrWrongNetwork:            errorInfo{502, "CH104", "A peer core is operating on a different blockchain network"},
 		protocol.ErrTheDistantFuture:   errorInfo{400, "CH105", "Requested height is too far ahead"},
-		errBadSignerURL:                errorInfo{400, "CH106", "Block signer URL is invalid"},
-		errBadSignerPubkey:             errorInfo{400, "CH107", "Block signer pubkey is invalid"},
-		errBadQuorum:                   errorInfo{400, "CH108", "Quorum must be greater than 0 if there are signers"},
+		config.ErrBadSignerURL:         errorInfo{400, "CH106", "Block signer URL is invalid"},
+		config.ErrBadSignerPubkey:      errorInfo{400, "CH107", "Block signer pubkey is invalid"},
+		config.ErrBadQuorum:            errorInfo{400, "CH108", "Quorum must be greater than 0 if there are signers"},
 		errProdReset:                   errorInfo{400, "CH110", "Reset can only be called in a development system"},
 		errNoClientTokens:              errorInfo{400, "CH120", "Cannot enable client authentication with no client tokens"},
 		blocksigner.ErrConsensusChange: errorInfo{400, "CH150", "Refuse to sign block with consensus change"},

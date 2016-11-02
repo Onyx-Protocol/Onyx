@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"time"
 
-	"chain/core"
 	"chain/core/accesstoken"
+	"chain/core/config"
 	"chain/core/migrate"
 	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
@@ -72,7 +72,7 @@ func configGenerator(db *sql.DB, args []string) {
 	const usage = "usage: corectl config-generator [-s] [-w duration] [quorum] [pubkey url]..."
 	var (
 		quorum  int
-		signers []core.ConfigSigner
+		signers []config.BlockSigner
 		err     error
 	)
 
@@ -105,7 +105,7 @@ func configGenerator(db *sql.DB, args []string) {
 				fatalln(usage)
 			}
 			url := args[i+1]
-			signers = append(signers, core.ConfigSigner{
+			signers = append(signers, config.BlockSigner{
 				// Silently truncate the input (which is likely to be an xpub
 				// produced by the create-block-keypair subcommand) to
 				// bare-pubkey size.
@@ -117,7 +117,7 @@ func configGenerator(db *sql.DB, args []string) {
 		}
 	}
 
-	config := &core.Config{
+	conf := &config.Config{
 		IsGenerator:       true,
 		IsSigner:          *isSigner,
 		Quorum:            quorum,
@@ -126,12 +126,12 @@ func configGenerator(db *sql.DB, args []string) {
 	}
 
 	ctx := context.Background()
-	err = core.Configure(ctx, db, config)
+	err = config.Configure(ctx, db, conf)
 	if err != nil {
 		fatalln("error:", err)
 	}
 
-	fmt.Println("blockchain id", config.BlockchainID)
+	fmt.Println("blockchain id", conf.BlockchainID)
 }
 
 func createBlockKeyPair(db *sql.DB, args []string) {
@@ -189,18 +189,18 @@ func configNongenerator(db *sql.DB, args []string) {
 		fatalln(usage)
 	}
 
-	var config core.Config
-	err := config.BlockchainID.UnmarshalText([]byte(args[0]))
+	var conf config.Config
+	err := conf.BlockchainID.UnmarshalText([]byte(args[0]))
 	if err != nil {
 		fatalln("error: invalid blockchain ID:", err)
 	}
-	config.GeneratorURL = args[1]
-	config.GeneratorAccessToken = *flagT
-	config.IsSigner = *flagK != ""
-	config.BlockPub = *flagK
+	conf.GeneratorURL = args[1]
+	conf.GeneratorAccessToken = *flagT
+	conf.IsSigner = *flagK != ""
+	conf.BlockPub = *flagK
 
 	ctx := context.Background()
-	err = core.Configure(ctx, db, &config)
+	err = config.Configure(ctx, db, &conf)
 	if err != nil {
 		fatalln("error:", err)
 	}
