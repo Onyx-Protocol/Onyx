@@ -56,8 +56,10 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 	}
 
 	src := utxodb.Source{
-		AssetID:     a.AssetID,
-		Amount:      a.Amount,
+		AssetAmount: bc.AssetAmount{
+			AssetID: a.AssetID,
+			Amount:  a.Amount,
+		},
 		AccountID:   a.AccountID,
 		ClientToken: a.ClientToken,
 	}
@@ -81,12 +83,12 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		txins = append(txins, txInput)
 		tplInsts = append(tplInsts, sigInst)
 	}
-	if len(change) > 0 {
+	if change > 0 {
 		acp, err := a.accounts.CreateControlProgram(ctx, a.AccountID, true)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating control program")
 		}
-		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, change[0].Amount, acp, nil))
+		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, change, acp, nil))
 	}
 
 	br := &txbuilder.BuildResult{
