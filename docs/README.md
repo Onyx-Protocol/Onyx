@@ -37,20 +37,21 @@ $ ./bin/bundle-docs
 * [AWS CLI](https://aws.amazon.com/cli/)
 * AWS credentials with access to the appropriate buckets
 
-To upload the latest docs for production, log in to `aws` with the command:
+To upload the latest docs to S3, log in to `aws` with the command:
 
 ```sh
 $ aws configure
 ```
 
-Once configured, you can upload the docs to the S3 staging bucket with:
+Once configured, you can upload the docs to the staging bucket with:
 
 ```sh
 $ cd $CHAIN
 $ ./bin/upload-docs
 ```
 
-To upload to production, run `upload-docs` with `prod` as an argument:
+To upload to the production bucket instead, run `upload-docs` with `prod` as
+an argument:
 
 ```sh
 $ ./bin/upload-docs prod
