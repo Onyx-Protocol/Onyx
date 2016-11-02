@@ -15,12 +15,12 @@ class XpubField extends React.Component {
   constructor(props) {
     super(props)
 
-    this.props.typeProps.onChange(Object.keys(methodOptions)[0])
     this.state = {
       generate: '',
       mockhsm: '',
       provide: ''
     }
+    this.props.typeProps.onChange(Object.keys(methodOptions)[0])
   }
 
   componentDidMount() {
@@ -38,14 +38,14 @@ class XpubField extends React.Component {
       mockhsmKeys,
     } = this.props
 
-    const typeOnChange = (event) => {
+    const typeOnChange = event => {
       const value = typeProps.onChange(event).value
 
       typeProps.onChange(value)
       valueProps.onChange(this.state[value] || '')
     }
 
-    const valueOnChange = (event) => {
+    const valueOnChange = event => {
       const value = valueProps.onChange(event).value
       this.setState({ [typeProps.value]: value })
     }
