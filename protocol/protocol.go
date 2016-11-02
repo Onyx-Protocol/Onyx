@@ -65,8 +65,6 @@ var (
 	ErrTheDistantFuture = errors.New("block height too far in future")
 )
 
-type BlockCallback func(ctx context.Context, block *bc.Block) error
-
 // Store provides storage for blockchain data: blocks and state tree
 // snapshots.
 //
@@ -106,8 +104,7 @@ type Chain struct {
 	InitialBlockHash  bc.Hash
 	MaxIssuanceWindow time.Duration // only used by generators
 
-	blockCallbacks []BlockCallback
-	state          struct {
+	state struct {
 		cond     sync.Cond // protects height, block, snapshot
 		height   uint64
 		block    *bc.Block       // current only if leader
@@ -202,10 +199,6 @@ func (c *Chain) setState(b *bc.Block, s *state.Snapshot) {
 		c.state.height = b.Height
 		c.state.cond.Broadcast()
 	}
-}
-
-func (c *Chain) AddBlockCallback(f BlockCallback) {
-	c.blockCallbacks = append(c.blockCallbacks, f)
 }
 
 // WaitForBlockSoon returns a channel that

@@ -16,7 +16,7 @@ func TestQueryWithClockSkew(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	c := prottest.NewChain(t)
 
-	indexer := query.NewIndexer(db, c)
+	indexer := query.NewIndexer(db, c, nil)
 	h := &Handler{DB: db, Chain: c, Indexer: indexer}
 
 	tx := bc.NewTx(bc.TxData{})

@@ -19,6 +19,10 @@ const (
 	// be confirmed in a block before it expires and is deleted. If a
 	// UTXO is deleted but later confirmed, it'll be re-inserted.
 	unconfirmedExpiration = 5
+
+	// PinName is used to identify the pin associated with
+	// the account block processor.
+	PinName = "account"
 )
 
 // A Saver is responsible for saving an annotated account object.
@@ -80,6 +84,13 @@ func (m *Manager) IndexUnconfirmedUTXOs(ctx context.Context, tx *bc.Tx) error {
 	}
 	err = m.upsertUnconfirmedAccountOutputs(ctx, accOuts, m.chain.Height()+unconfirmedExpiration)
 	return errors.Wrap(err, "upserting confirmed account utxos")
+}
+
+func (m *Manager) ProcessBlocks(ctx context.Context) {
+	if m.indexer == nil || m.pinStore == nil {
+		return
+	}
+	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, m.indexAccountUTXOs)
 }
 
 func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {

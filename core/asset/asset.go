@@ -12,6 +12,7 @@ import (
 	"github.com/golang/groupcache/lru"
 	"github.com/lib/pq"
 
+	"chain/core/pin"
 	"chain/core/signers"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/chainkd"
@@ -42,14 +43,15 @@ type Registry struct {
 	chain            *protocol.Chain
 	indexer          Saver
 	initialBlockHash bc.Hash
+	pinStore         *pin.Store
 
 	cacheMu sync.Mutex
 	cache   *lru.Cache
 }
 
-func (reg *Registry) IndexAssets(indexer Saver) {
+func (reg *Registry) IndexAssets(indexer Saver, pinStore *pin.Store) {
 	reg.indexer = indexer
-	reg.chain.AddBlockCallback(reg.indexAssets)
+	reg.pinStore = pinStore
 }
 
 type Asset struct {

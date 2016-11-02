@@ -27,6 +27,7 @@ import (
 	"chain/core/leader"
 	"chain/core/migrate"
 	"chain/core/mockhsm"
+	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/rpc"
 	"chain/core/txbuilder"
@@ -205,17 +206,27 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 
+	// Set up the pin store for block processing
+	pinStore := &pin.Store{DB: db}
+	err = pinStore.LoadAll(ctx)
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, err)
+	}
+	// Start listeners
+	go pinStore.Pin(account.PinName).Listen(ctx, *dbURL)
+	go pinStore.Pin(asset.PinName).Listen(ctx, *dbURL)
+	go pinStore.Pin(query.TxPinName).Listen(ctx, *dbURL)
+
 	// Setup the transaction query indexer to index every transaction.
-	indexer := query.NewIndexer(db, c)
+	indexer := query.NewIndexer(db, c, pinStore)
 
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
 	if *indexTxs {
 		indexer.RegisterAnnotator(assets.AnnotateTxs)
 		indexer.RegisterAnnotator(accounts.AnnotateTxs)
-		assets.IndexAssets(indexer)
-		accounts.IndexAccounts(indexer)
-		c.AddBlockCallback(indexer.IndexTransactions)
+		assets.IndexAssets(indexer, pinStore)
+		accounts.IndexAccounts(indexer, pinStore)
 	}
 
 	hsm := mockhsm.New(db)
@@ -250,6 +261,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	h := &core.Handler{
 		Chain:        c,
 		Store:        store,
+		PinStore:     pinStore,
 		Assets:       assets,
 		Accounts:     accounts,
 		HSM:          hsm,
@@ -292,6 +304,12 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
 		}
+		if !*indexTxs {
+			return
+		}
+		go h.Accounts.ProcessBlocks(ctx)
+		go h.Assets.ProcessBlocks(ctx)
+		go h.Indexer.ProcessBlocks(ctx)
 	})
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
