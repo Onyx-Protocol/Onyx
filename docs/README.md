@@ -12,57 +12,46 @@ Once installed, run `md2html` from the root directory of the rep:
 
 ```sh
 $ cd $CHAIN
-$ go run ./cmd/md2html/*.go
+$ go install ./cmd/md2html && md2html
 ```
 
 The converted documentation is served at
 [http://localhost:8080/docs](http://localhost:8080/docs).
 
----
-
-## Table of Contents
+## Deployment
 
 ### Chain Core
 
-* Get Started
-  * [Introduction](core/get-started/introduction.md)
-  * [Install](index.html)
-  * [SDKs](core/get-started/sdk.md)
-  * [Configure](core/get-started/configure.md)
-  * [5-Minute Guide](core/get-started/five-minute-guide.md)
+Documentation is bundled into Chain Core inside the `$CHAIN/generated` folder.
+To bundle the latest docs, run:
 
-* Build Applications
-  * [Keys](core/build-applications/keys.md)
-  * [Assets](core/build-applications/assets.md)
-  * [Accounts](core/build-applications/accounts.md)
-  * [Transactions](core/build-applications/transactions.md)
-  * [Unspent Outputs](core/build-applications/unspent-outputs.md)
-  * [Balances](core/build-applications/balances.md)
-  * [Control Programs](core/build-applications/control-programs.md)
-  * [Query Filters](core/build-applications/queries.md)
-  * [Batch Operations](core/build-applications/batch-operations.md)
+```sh
+$ cd $CHAIN
+$ ./bin/bundle-docs
+```
 
-* Learn More
-  * [Global vs Local Data](core/learn-more/global-vs-local-data.md)
-  * [Blockchain Operators](core/learn-more/blockchain-operators.md)
-  * [Blockchain Participants](core/learn-more/blockchain-participants.md)
+### Web
 
-* Reference
-  * [API Objects](core/reference/api-objects.md)
-  * [Product Roadmap](core/reference/product-roadmap.md)
+#### Dependencies
 
-### Chain Protocol
+* [AWS CLI](https://aws.amazon.com/cli/)
+* AWS credentials with access to the appropriate buckets
 
-* Papers
-  * [Whitepaper](protocol/papers/whitepaper.md)
-  * [Federated Consensus](protocol/papers/federated-consensus.md)
-  * [Blockchain Programs](protocol/papers/blockchain-programs.md)
-  * [Blockchain Extensibility](protocol/papers/blockchain-extensibility.md)
-  * [Protocol Roadmap](protocol/papers/protocol-roadmap.md)
+To upload the latest docs for production, log in to `aws` with the command:
 
-* Specifications
-  * [Data Model](protocol/specifications/data.md)
-  * [Validation](protocol/specifications/validation.md)
-  * [Consensus](protocol/specifications/consensus.md)
-  * [Virtual Machine](protocol/specifications/vm1.md)
-  * [ChainKD](protocol/specifications/chainkd.md)
+```sh
+$ aws configure
+```
+
+Once configured, you can upload the docs to the S3 staging bucket with:
+
+```sh
+$ cd $CHAIN
+$ ./bin/upload-docs
+```
+
+To upload to production, run `upload-docs` with `prod` as an argument:
+
+```sh
+$ ./bin/upload-docs prod
+```
