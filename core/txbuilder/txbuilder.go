@@ -24,6 +24,7 @@ var (
 	ErrBadAmount           = errors.New("bad asset amount")
 	ErrBlankCheck          = errors.New("unsafe transaction: leaves assets free to control")
 	ErrAction              = errors.New("errors occurred in one or more actions")
+	ErrMissingFields       = errors.New("required field is missing")
 )
 
 // Build builds or adds on to a transaction.
@@ -227,4 +228,10 @@ func checkBlankCheck(tx *bc.TxData) error {
 	}
 
 	return nil
+}
+
+// MissingFieldsError returns a wrapped error ErrMissingFields
+// with a data item containing the given field names.
+func MissingFieldsError(name ...string) error {
+	return errors.WithData(ErrMissingFields, "missing_fields", name)
 }
