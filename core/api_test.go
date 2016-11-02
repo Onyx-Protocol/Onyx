@@ -9,6 +9,7 @@ import (
 
 	"chain/core/account"
 	"chain/core/asset"
+	"chain/core/config"
 	"chain/core/coretest"
 	"chain/core/pin"
 	"chain/core/query"
@@ -195,7 +196,7 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	(&Handler{Config: &Config{}}).init()
+	(&Handler{Config: &config.Config{}}).init()
 }
 
 func TestTransfer(t *testing.T) {

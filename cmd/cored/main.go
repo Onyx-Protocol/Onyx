@@ -22,6 +22,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/blocksigner"
+	"chain/core/config"
 	"chain/core/fetch"
 	"chain/core/generator"
 	"chain/core/leader"
@@ -107,7 +108,7 @@ func main() {
 	}
 	resetInDevIfRequested(db)
 
-	config, err := core.LoadConfig(ctx, db)
+	conf, err := config.Load(ctx, db)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
@@ -118,8 +119,8 @@ func main() {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	processID := fmt.Sprintf("chain-%s-%d", hostname, os.Getpid())
-	if config != nil {
-		processID += "-" + config.ID
+	if conf != nil {
+		processID += "-" + conf.ID
 	}
 	expvar.NewString("processID").Set(processID)
 
@@ -129,8 +130,8 @@ func main() {
 	chainlog.SetOutput(logWriter())
 
 	var h http.Handler
-	if config != nil {
-		h = launchConfiguredCore(ctx, db, config, processID)
+	if conf != nil {
+		h = launchConfiguredCore(ctx, db, conf, processID)
 	} else {
 		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
 		h = &core.Handler{
@@ -182,16 +183,16 @@ func main() {
 	}
 }
 
-func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, processID string) http.Handler {
+func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, processID string) http.Handler {
 	var remoteGenerator *rpc.Client
-	if !config.IsGenerator {
+	if !conf.IsGenerator {
 		remoteGenerator = &rpc.Client{
-			BaseURL:      config.GeneratorURL,
-			AccessToken:  config.GeneratorAccessToken,
+			BaseURL:      conf.GeneratorURL,
+			AccessToken:  conf.GeneratorAccessToken,
 			Username:     processID,
-			CoreID:       config.ID,
+			CoreID:       conf.ID,
 			BuildTag:     buildTag,
-			BlockchainID: config.BlockchainID.String(),
+			BlockchainID: conf.BlockchainID.String(),
 		}
 	}
 	txbuilder.Generator = remoteGenerator
@@ -201,7 +202,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	store, pool := txdb.New(db)
-	c, err := protocol.NewChain(ctx, config.BlockchainID, store, pool, heights)
+	c, err := protocol.NewChain(ctx, conf.BlockchainID, store, pool, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
@@ -232,8 +233,8 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	hsm := mockhsm.New(db)
 	var generatorSigners []generator.BlockSigner
 	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
-	if config.IsSigner {
-		blockPub, err := hex.DecodeString(config.BlockPub)
+	if conf.IsSigner {
+		blockPub, err := hex.DecodeString(conf.BlockPub)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
@@ -248,11 +249,11 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		}
 	}
 
-	if config.IsGenerator {
-		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, config.BlockchainID.String(), config) {
+	if conf.IsGenerator {
+		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainID.String(), conf) {
 			generatorSigners = append(generatorSigners, signer)
 		}
-		c.MaxIssuanceWindow = config.MaxIssuanceWindow
+		c.MaxIssuanceWindow = conf.MaxIssuanceWindow
 	}
 
 	// GC old submitted txs periodically.
@@ -268,7 +269,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		TxFeeds:      &txfeed.Tracker{DB: db},
 		Indexer:      indexer,
 		AccessTokens: &accesstoken.CredentialStore{DB: db},
-		Config:       config,
+		Config:       conf,
 		DB:           db,
 		Addr:         *listenAddr,
 		Signer:       signBlockHandler,
@@ -299,7 +300,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	// otherwise there's a data race within protocol.Chain.
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
 		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
-		if config.IsGenerator {
+		if conf.IsGenerator {
 			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
@@ -313,7 +314,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	})
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set(rpc.HeaderBlockchainID, config.BlockchainID.String())
+		w.Header().Set(rpc.HeaderBlockchainID, conf.BlockchainID.String())
 		h.ServeHTTP(w, req)
 	})
 }
@@ -325,8 +326,8 @@ type remoteSigner struct {
 	Key    ed25519.PublicKey
 }
 
-func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, config *core.Config) (a []*remoteSigner) {
-	for _, signer := range config.Signers {
+func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, conf *config.Config) (a []*remoteSigner) {
+	for _, signer := range conf.Signers {
 		u, err := url.Parse(signer.URL)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
@@ -338,7 +339,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 			BaseURL:      u.String(),
 			AccessToken:  signer.AccessToken,
 			Username:     processID,
-			CoreID:       config.ID,
+			CoreID:       conf.ID,
 			BuildTag:     buildTag,
 			BlockchainID: blockchainID,
 		}
