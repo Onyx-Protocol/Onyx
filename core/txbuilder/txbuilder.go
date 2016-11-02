@@ -233,5 +233,5 @@ func checkBlankCheck(tx *bc.TxData) error {
 // MissingFieldsError returns a wrapped error ErrMissingFields
 // with a data item containing the given field names.
 func MissingFieldsError(name ...string) error {
-	return errors.WithData(ErrMissingFields, "missing_field_names", name)
+	return errors.WithData(ErrMissingFields, "missing_fields", name)
 }
