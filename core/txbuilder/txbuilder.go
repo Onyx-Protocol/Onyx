@@ -18,12 +18,14 @@ import (
 )
 
 var (
-	ErrBadRefData          = errors.New("transaction reference data does not match previous template's reference data")
-	ErrBadTxInputIdx       = errors.New("unsigned tx missing input")
-	ErrBadWitnessComponent = errors.New("invalid witness component")
-	ErrBadAmount           = errors.New("bad asset amount")
-	ErrBlankCheck          = errors.New("unsafe transaction: leaves assets free to control")
-	ErrAction              = errors.New("errors occurred in one or more actions")
+	ErrBadRefData             = errors.New("transaction reference data does not match previous template's reference data")
+	ErrBadTxInputIdx          = errors.New("unsigned tx missing input")
+	ErrBadWitnessComponent    = errors.New("invalid witness component")
+	ErrBadAmount              = errors.New("bad asset amount")
+	ErrBlankCheck             = errors.New("unsafe transaction: leaves assets free to control")
+	ErrAction                 = errors.New("errors occurred in one or more actions")
+	ErrActionMissingAssetID   = errors.New("asset ID is blank")
+	ErrActionMissingAccountID = errors.New("account ID is blank")
 )
 
 // Build builds or adds on to a transaction.

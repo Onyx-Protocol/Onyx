@@ -35,6 +35,10 @@ type issueAction struct {
 }
 
 func (a *issueAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
+	if a.AssetID == (bc.AssetID{}) {
+		return nil, txbuilder.ErrActionMissingAssetID
+	}
+
 	asset, err := a.assets.findByID(ctx, a.AssetID)
 	if errors.Root(err) == pg.ErrUserInputNotFound {
 		err = errors.WithDetailf(err, "missing asset with ID %q", a.AssetID)

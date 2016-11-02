@@ -112,13 +112,15 @@ var (
 
 		// Transaction error namespace (7xx)
 		// Build error namespace (70x)
-		txbuilder.ErrBadRefData: errorInfo{400, "CH700", "Reference data does not match previous transaction's reference data"},
-		errBadActionType:        errorInfo{400, "CH701", "Invalid action type"},
-		errBadAlias:             errorInfo{400, "CH702", "Invalid alias on action"},
-		errBadAction:            errorInfo{400, "CH703", "Invalid action object"},
-		txbuilder.ErrBadAmount:  errorInfo{400, "CH704", "Invalid asset amount"},
-		txbuilder.ErrBlankCheck: errorInfo{400, "CH705", "Unsafe transaction: leaves assets to be taken without requiring payment"},
-		txbuilder.ErrAction:     errorInfo{400, "CH706", "One or more actions had an error: see attached data"},
+		txbuilder.ErrBadRefData:             errorInfo{400, "CH700", "Reference data does not match previous transaction's reference data"},
+		errBadActionType:                    errorInfo{400, "CH701", "Invalid action type"},
+		errBadAlias:                         errorInfo{400, "CH702", "Invalid alias on action"},
+		errBadAction:                        errorInfo{400, "CH703", "Invalid action object"},
+		txbuilder.ErrBadAmount:              errorInfo{400, "CH704", "Invalid asset amount"},
+		txbuilder.ErrBlankCheck:             errorInfo{400, "CH705", "Unsafe transaction: leaves assets to be taken without requiring payment"},
+		txbuilder.ErrAction:                 errorInfo{400, "CH706", "One or more actions had an error: see attached data"},
+		txbuilder.ErrActionMissingAssetID:   errorInfo{400, "CH707", "Action is missing asset information"},
+		txbuilder.ErrActionMissingAccountID: errorInfo{400, "CH708", "Action is missing account information"},
 
 		// Submit error namespace (73x)
 		txbuilder.ErrMissingRawTx:          errorInfo{400, "CH730", "Missing raw transaction"},
