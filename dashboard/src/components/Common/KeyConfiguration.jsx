@@ -13,6 +13,12 @@ class KeyConfiguration extends React.Component {
   }
 
   render() {
+    const {
+      quorum,
+      quorumHint,
+      xpubs
+    } = this.props
+
     // Override onChange here rather than in a redux-form normalizer because
     // we're using component state (keys) to determine the max value
     const quorumChange = (event, maxKeys) => {
@@ -61,17 +67,18 @@ class KeyConfiguration extends React.Component {
         <SelectField options={quorumOptions}
           title='Quorum'
           skipEmpty={true}
-          hint={this.props.quorumHint}
+          hint={quorumHint}
           fieldProps={{
-            ...this.props.quorum,
+            ...quorum,
             onChange: quorumChange,
           }} />
 
-        {this.props.xpubs.map((xpub, index) =>
+        {xpubs.map((xpub, index) =>
           <XpubField
             key={`xpub-${index}`}
             index={index}
-            fieldProps={xpub}
+            typeProps={xpub.type}
+            valueProps={xpub.xpub}
           />)}
       </div>
     )

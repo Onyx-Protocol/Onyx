@@ -6,16 +6,21 @@ import { connect } from 'react-redux'
 import { actions } from 'features/mockhsm'
 
 const methodOptions = {
-  mockhsm: 'Use Mock HSM key',
-  provide: 'Provide existing Xpub',
   generate: 'Generate Mock HSM key',
+  mockhsm: 'Use existing Mock HSM key',
+  provide: 'Provide existing Xpub',
 }
 
 class XpubField extends React.Component {
   constructor(props) {
     super(props)
 
-    this.state = { selectedType: Object.keys(methodOptions)[0] }
+    this.props.typeProps.onChange(Object.keys(methodOptions)[0])
+    this.state = {
+      generate: '',
+      mockhsm: '',
+      provide: ''
+    }
   }
 
   componentDidMount() {
@@ -27,8 +32,22 @@ class XpubField extends React.Component {
   }
 
   render() {
-    const radioChanged = event => {
-      this.setState({ selectedType: event.target.value })
+    const {
+      typeProps,
+      valueProps,
+      mockhsmKeys,
+    } = this.props
+
+    const typeOnChange = (event) => {
+      const value = typeProps.onChange(event).value
+
+      typeProps.onChange(value)
+      valueProps.onChange(this.state[value] || '')
+    }
+
+    const valueOnChange = (event) => {
+      const value = valueProps.onChange(event).value
+      this.setState({ [typeProps.value]: value })
     }
 
     return (
@@ -40,27 +59,27 @@ class XpubField extends React.Component {
             <label key={`key-${this.props.index}-option-${key}`}>
               <input type='radio'
                 name={`keys-${this.props.index}`}
+                onChange={typeOnChange}
+                checked={key == typeProps.value}
                 value={key}
-                checked={key == this.state.selectedType}
-                onChange={radioChanged}
               />
               {methodOptions[key]}
             </label>
           )}
         </div>
 
-        {this.state.selectedType == 'mockhsm' &&
-          <SelectField options={this.props.mockhsmKeys}
+        {typeProps.value == 'mockhsm' &&
+          <SelectField options={mockhsmKeys}
             valueKey='xpub'
             labelKey='label'
-            fieldProps={this.props.fieldProps} />
+            fieldProps={{...valueProps, onChange: valueOnChange}} />
         }
 
-        {this.state.selectedType == 'provide' &&
-          <TextField key={this.props.index} fieldProps={this.props.fieldProps} />}
+        {typeProps.value == 'provide' &&
+          <TextField fieldProps={{...valueProps, onChange: valueOnChange}} />}
 
-        {this.state.selectedType == 'generate' &&
-          <HiddenField key={this.props.index} fieldProps={this.props.fieldProps} />}
+        {typeProps.value == 'generate' &&
+          <HiddenField fieldProps={{...valueProps, onChange: valueOnChange}} />}
       </div>
     )
   }
@@ -68,7 +87,8 @@ class XpubField extends React.Component {
 
 XpubField.propTypes = {
   index: React.PropTypes.number,
-  fieldProps: React.PropTypes.object,
+  typeProps: React.PropTypes.object,
+  valueProps: React.PropTypes.object,
   mockhsmKeys: React.PropTypes.array,
   autocompleteIsLoaded: React.PropTypes.bool,
   fetchAll: React.PropTypes.func,

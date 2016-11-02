@@ -61,7 +61,13 @@ const validate = values => {
   return errors
 }
 
-const fields = [ 'alias', 'tags', 'root_xpubs[]', 'quorum' ]
+const fields = [
+  'alias',
+  'tags',
+  'root_xpubs[].xpub',
+  'root_xpubs[].type',
+  'quorum'
+]
 
 export default BaseNew.connect(
   BaseNew.mapStateToProps('account'),
