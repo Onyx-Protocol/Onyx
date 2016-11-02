@@ -16,13 +16,8 @@ export default function(type, options = {}) {
     submitForm: (data) => {
       const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
 
-      if (typeof data.id == 'string') {
-        data.id = data.id.trim()
-      }
-
-      if (typeof data.alias == 'string') {
-        data.alias = data.alias.trim()
-      }
+      if (typeof data.id == 'string')     data.id = data.id.trim()
+      if (typeof data.alias == 'string')  data.alias = data.alias.trim()
 
       const jsonFields = options.jsonFields || []
       jsonFields.map(fieldName => {
@@ -33,6 +28,12 @@ export default function(type, options = {}) {
       intFields.map(fieldName => {
         data[fieldName] = parseInt(data[fieldName])
       })
+
+      const xpubs = data.xpubs || []
+      xpubs.map(key => {
+        data.root_xpubs = [...(data.root_xpubs || []), key.xpub]
+      })
+      delete data.xpubs
 
       return function(dispatch) {
         let object = new chain[className](data)
