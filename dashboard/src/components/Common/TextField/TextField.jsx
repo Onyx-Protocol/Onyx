@@ -26,18 +26,15 @@ class TextField extends React.Component {
     }
 
     return(
-      <div>
-        <div className='form-group'>
-          {this.props.title && <FieldLabel className={styles.title}>{this.props.title}</FieldLabel>}
-          <input className='form-control'
-            type={this.state.type}
-            placeholder={this.props.placeholder}
-            autoFocus={!!this.props.autoFocus}
-            {...fieldProps} />
+      <div className='form-group'>
+        {this.props.title && <FieldLabel className={styles.title}>{this.props.title}</FieldLabel>}
+        <input className='form-control'
+          type={this.state.type}
+          placeholder={this.props.placeholder}
+          autoFocus={!!this.props.autoFocus}
+          {...fieldProps} />
 
-          {this.props.hint && <span className='help-block'>{this.props.hint}</span>}
-        </div>
-
+        {this.props.hint && <span className='help-block'>{this.props.hint}</span>}
         {error && <span className={styles.errorText}>{error}</span>}
       </div>
     )

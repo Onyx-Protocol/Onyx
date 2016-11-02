@@ -4,4 +4,6 @@
 
 .errorText {
   color: $brand-danger;
+  display: block;
+  margin-top: $gutter-size/4;
 }
