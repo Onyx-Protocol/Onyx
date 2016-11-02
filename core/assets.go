@@ -6,25 +6,20 @@ import (
 
 	"chain/core/signers"
 	"chain/encoding/json"
+	"chain/net/http/reqid"
 )
 
-type (
-	// This type enforces JSON field ordering in API output.
-	assetResponse struct {
-		ID              interface{} `json:"id"`
-		Alias           *string     `json:"alias"`
-		IssuanceProgram interface{} `json:"issuance_program"`
-		Keys            interface{} `json:"keys"`
-		Quorum          interface{} `json:"quorum"`
-		Definition      interface{} `json:"definition"`
-		Tags            interface{} `json:"tags"`
-		IsLocal         interface{} `json:"is_local"`
-	}
-	assetOrError struct {
-		*assetResponse
-		*detailedError
-	}
-)
+// This type enforces JSON field ordering in API output.
+type assetResponse struct {
+	ID              interface{} `json:"id"`
+	Alias           *string     `json:"alias"`
+	IssuanceProgram interface{} `json:"issuance_program"`
+	Keys            interface{} `json:"keys"`
+	Quorum          interface{} `json:"quorum"`
+	Definition      interface{} `json:"definition"`
+	Tags            interface{} `json:"tags"`
+	IsLocal         interface{} `json:"is_local"`
+}
 
 type assetKey struct {
 	RootXPub            interface{} `json:"root_xpub"`
@@ -45,16 +40,19 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 	// idempotency of create asset requests. Duplicate create asset requests
 	// with the same client_token will only create one asset.
 	ClientToken *string `json:"client_token"`
-}) ([]assetOrError, error) {
-	responses := make([]assetOrError, len(ins))
+}) ([]interface{}, error) {
+	responses := make([]interface{}, len(ins))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
 
-	for i := 0; i < len(responses); i++ {
+	for i := range responses {
 		go func(i int) {
+			subctx := reqid.NewSubContext(ctx, reqid.New())
 			defer wg.Done()
+			defer batchRecover(subctx, &responses[i])
+
 			asset, err := h.Assets.Define(
-				ctx,
+				subctx,
 				ins[i].RootXPubs,
 				ins[i].Quorum,
 				ins[i].Definition,
@@ -63,31 +61,28 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 				ins[i].ClientToken,
 			)
 			if err != nil {
-				logHTTPError(ctx, err)
-				res, _ := errInfo(err)
-				responses[i] = assetOrError{detailedError: &res}
-			} else {
-				var keys []assetKey
-				for _, xpub := range asset.Signer.XPubs {
-					path := signers.Path(asset.Signer, signers.AssetKeySpace)
-					derived := xpub.Derive(path)
-					keys = append(keys, assetKey{
-						AssetPubkey:         json.HexBytes(derived[:]),
-						RootXPub:            xpub,
-						AssetDerivationPath: path,
-					})
-				}
-				r := &assetResponse{
-					ID:              asset.AssetID,
-					Alias:           asset.Alias,
-					IssuanceProgram: asset.IssuanceProgram,
-					Keys:            keys,
-					Quorum:          asset.Signer.Quorum,
-					Definition:      asset.Definition,
-					Tags:            asset.Tags,
-					IsLocal:         "yes",
-				}
-				responses[i] = assetOrError{assetResponse: r}
+				responses[i] = err
+				return
+			}
+			var keys []assetKey
+			for _, xpub := range asset.Signer.XPubs {
+				path := signers.Path(asset.Signer, signers.AssetKeySpace)
+				derived := xpub.Derive(path)
+				keys = append(keys, assetKey{
+					AssetPubkey:         json.HexBytes(derived[:]),
+					RootXPub:            xpub,
+					AssetDerivationPath: path,
+				})
+			}
+			responses[i] = &assetResponse{
+				ID:              asset.AssetID,
+				Alias:           asset.Alias,
+				IssuanceProgram: asset.IssuanceProgram,
+				Keys:            keys,
+				Quorum:          asset.Signer.Quorum,
+				Definition:      asset.Definition,
+				Tags:            asset.Tags,
+				IsLocal:         "yes",
 			}
 		}(i)
 	}

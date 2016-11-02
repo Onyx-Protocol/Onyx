@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"chain/core/signers"
+	"chain/net/http/reqid"
 )
 
 // This type enforces JSON field ordering in API output.
@@ -39,31 +40,32 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
 
-	for i := 0; i < len(responses); i++ {
+	for i := range responses {
 		go func(i int) {
+			subctx := reqid.NewSubContext(ctx, reqid.New())
 			defer wg.Done()
-			acc, err := h.Accounts.Create(ctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
+			defer batchRecover(subctx, &responses[i])
+
+			acc, err := h.Accounts.Create(subctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
 			if err != nil {
-				logHTTPError(ctx, err)
-				responses[i], _ = errInfo(err)
-			} else {
-				path := signers.Path(acc.Signer, signers.AccountKeySpace)
-				var keys []accountKey
-				for _, xpub := range acc.XPubs {
-					keys = append(keys, accountKey{
-						RootXPub:              xpub,
-						AccountXPub:           xpub.Derive(path),
-						AccountDerivationPath: path,
-					})
-				}
-				r := &accountResponse{
-					ID:     acc.ID,
-					Alias:  acc.Alias,
-					Keys:   keys,
-					Quorum: acc.Quorum,
-					Tags:   acc.Tags,
-				}
-				responses[i] = r
+				responses[i] = err
+				return
+			}
+			path := signers.Path(acc.Signer, signers.AccountKeySpace)
+			var keys []accountKey
+			for _, xpub := range acc.XPubs {
+				keys = append(keys, accountKey{
+					RootXPub:              xpub,
+					AccountXPub:           xpub.Derive(path),
+					AccountDerivationPath: path,
+				})
+			}
+			responses[i] = &accountResponse{
+				ID:     acc.ID,
+				Alias:  acc.Alias,
+				Keys:   keys,
+				Quorum: acc.Quorum,
+				Tags:   acc.Tags,
 			}
 		}(i)
 	}
