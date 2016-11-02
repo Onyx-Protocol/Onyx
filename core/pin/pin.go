@@ -71,6 +71,23 @@ func (s *Store) LoadAll(ctx context.Context) error {
 	return err
 }
 
+func (s *Store) WaitForAll(height uint64) <-chan struct{} {
+	ch := make(chan struct{}, 1)
+	go func() {
+		var pins []string
+		s.mu.Lock()
+		for name := range s.pins {
+			pins = append(pins, name)
+		}
+		s.mu.Unlock()
+		for _, name := range pins {
+			<-s.Pin(name).WaitForHeight(height)
+		}
+		ch <- struct{}{}
+	}()
+	return ch
+}
+
 type Pin struct {
 	mu     sync.Mutex
 	cond   sync.Cond
