@@ -765,10 +765,16 @@ $HOME/corectl create-token -net benchcorenet > $HOME/network-token.txt
 
 const coredsh = `#!/bin/bash
 set -eo pipefail
+sudo bash <<EOFROOT
+ulimit -n 65535
+
+sudo -u ubuntu bash <<EOFUBUNTU
 export DATABASE_URL='{{dbURL}}'
 export MAXDBCONNS=100
 export GOTRACEBACK=crash
 ./cored 2>&1 | tee -a cored.log
+EOFUBUNTU
+EOFROOT
 `
 
 const clientsh = `#!/bin/bash
