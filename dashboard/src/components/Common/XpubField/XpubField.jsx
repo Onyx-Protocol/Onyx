@@ -20,7 +20,6 @@ class XpubField extends React.Component {
       mockhsm: '',
       provide: ''
     }
-    this.props.typeProps.onChange(Object.keys(methodOptions)[0])
   }
 
   componentDidMount() {
@@ -29,6 +28,8 @@ class XpubField extends React.Component {
         this.props.didLoadAutocomplete()
       })
     }
+
+    this.props.typeProps.onChange(Object.keys(methodOptions)[0])
   }
 
   render() {
