@@ -4,7 +4,7 @@ import {
 } from 'features/shared/actions'
 
 import React from 'react'
-import CreateModal from './components/CreateModal/CreateModal'
+import CreateModal from './components/CreateModal'
 
 const makeCreateModal = token => {
   return <CreateModal token={token.token} />

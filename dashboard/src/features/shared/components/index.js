@@ -1,6 +1,7 @@
 import BaseList from './BaseList/BaseList'
 import BaseNew from './BaseNew'
 import BaseShow from './BaseShow'
+import CopyableBlock from './CopyableBlock/CopyableBlock'
 import ErrorBanner from './ErrorBanner/ErrorBanner'
 import FieldLabel from './FieldLabel/FieldLabel'
 import Flash from './Flash/Flash'
@@ -23,6 +24,7 @@ export {
   BaseList,
   BaseNew,
   BaseShow,
+  CopyableBlock,
   ErrorBanner,
   FieldLabel,
   Flash,
