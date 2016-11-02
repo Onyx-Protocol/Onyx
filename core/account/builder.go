@@ -14,12 +14,10 @@ import (
 	"chain/protocol/bc"
 )
 
-func (m *Manager) NewSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut *uint32, refData chainjson.Map, clientToken *string) txbuilder.Action {
+func (m *Manager) NewSpendAction(amt bc.AssetAmount, accountID string, refData chainjson.Map, clientToken *string) txbuilder.Action {
 	return &spendAction{
 		accounts:      m,
 		AssetAmount:   amt,
-		TxHash:        txHash,
-		TxOut:         txOut,
 		AccountID:     accountID,
 		ReferenceData: refData,
 		ClientToken:   clientToken,
@@ -36,8 +34,6 @@ type spendAction struct {
 	accounts *Manager
 	bc.AssetAmount
 	AccountID     string        `json:"account_id"`
-	TxHash        *bc.Hash      `json:"transaction_id"`
-	TxOut         *uint32       `json:"position"`
 	ReferenceData chainjson.Map `json:"reference_data"`
 	ClientToken   *string       `json:"client_token"`
 }
@@ -63,8 +59,6 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		AssetID:     a.AssetID,
 		Amount:      a.Amount,
 		AccountID:   a.AccountID,
-		TxHash:      a.TxHash,
-		OutputIndex: a.TxOut,
 		ClientToken: a.ClientToken,
 	}
 	rid, reserved, change, err := a.accounts.utxoDB.Reserve(ctx, src, maxTime)

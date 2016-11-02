@@ -50,7 +50,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	_, _ = h.submitSingle(ctx, submitSingleArg{tpl: tmpl, wait: chainjson.Duration{Duration: time.Millisecond}})
 
 	// Add a new source, spending the change output produced above.
-	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
+	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)

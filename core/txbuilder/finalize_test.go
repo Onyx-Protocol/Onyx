@@ -55,7 +55,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 		AssetID: info.asset.AssetID,
 		Amount:  10,
 	}
-	spendAction := info.NewSpendAction(assetAmount, info.acctA.ID, nil, nil, nil, nil)
+	spendAction := info.NewSpendAction(assetAmount, info.acctA.ID, nil, nil)
 	dest1 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
 
 	// Build the first tx
@@ -324,7 +324,7 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, srcAcctID, dest
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
-	source := info.NewSpendAction(assetAmount, srcAcctID, nil, nil, nil, nil)
+	source := info.NewSpendAction(assetAmount, srcAcctID, nil, nil)
 	dest := info.NewControlAction(assetAmount, destAcctID, nil)
 
 	xferTx, err := Build(ctx, nil, []Action{source, dest}, time.Now().Add(time.Minute))
