@@ -1,0 +1,66 @@
+#!/bin/sh
+#
+# /etc/init.d/cored
+# Subsystem file for Chain Core api server
+#
+# chkconfig: 2345 95 05
+# description: Chain Core api server daemon
+# processname: cored
+
+
+# Set variables
+RETVAL=0
+cfg="/etc/cored.env"
+cmd="/usr/bin/cored"
+pname="cored"
+lockfile=/var/lock/subsys/$pname
+
+# Source function library and config vars
+. /etc/init.d/functions
+[ -f $cfg ] && . $cfg
+
+start() {
+    echo -n "Starting $pname: "
+    if [ -f $lockfile ]; then
+      echo "$pname already running..."
+      return 1
+    fi
+    if [ ! -f $cfg ]; then
+      echo "configuration file does not exist: $cfg"
+      return 1
+    fi
+    echo
+    daemon --check cored nohup ${cmd} > /dev/null 2>&1 &
+    RETVAL=$?
+    [ "$RETVAL" = 0 ] && touch $lockfile
+}
+
+stop() {
+    echo -n "Stopping $pname:"
+    killproc $pname -TERM
+    RETVAL=$?
+    echo
+    [ "$RETVAL" = 0 ] && rm -f $lockfile
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status $pname
+        ;;
+    restart)
+        printf "Restarting $pname:\n"
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: $pname {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
+exit $?

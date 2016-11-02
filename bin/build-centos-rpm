@@ -1,0 +1,47 @@
+#!/bin/sh
+# This command packages an rpm compatible with
+# CentOS versions 5.11 and 6.8. The package will
+# include cored, corectl and a SysVinit script.
+#
+# The command takes a version number as its only
+# argument. Currently, we use YYYYMMDD datestamps
+# as versions for developer edition packages.
+# The command will default to this convention.
+#
+# usage: build-centos-rpm [VERSION]
+
+set -xue
+
+# Disable cgo entirely.
+# We have seen one too many problems with cgo,
+# including an occasional (rare) malloc failure.
+# See https://github.com/lib/pq/issues/395.
+export CGO_ENABLED=0
+
+version=${1:-`date +%Y%m%d`}
+out=`mktemp -d /tmp/build-centos-rpm.XXXXXXXX`
+commit=`git rev-parse HEAD`
+date=`date +%s`
+ldflags="-X main.buildTag=dev -X main.buildCommit=$commit -X main.buildDate=$date"
+
+cleanup() {
+  rm -f $CHAIN/docker/centos-rpm/cored
+  rm -f $CHAIN/docker/centos-rpm/corectl
+  rm -rf $out
+}
+trap "cleanup" EXIT
+
+GOOS=linux GOARCH=amd64 go build\
+  -tags 'insecure_disable_https_redirect'\
+  -ldflags "$ldflags"\
+  -o $CHAIN/docker/centos-rpm/cored\
+  chain/cmd/cored
+
+GOOS=linux GOARCH=amd64 go build\
+  -o $CHAIN/docker/centos-rpm/corectl\
+  chain/cmd/corectl
+
+docker build --tag centos-rpm $CHAIN/docker/centos-rpm/
+docker run -it --rm -v "$out":/output -e VERSION="$version" centos-rpm
+aws s3 cp $out/cored-$version-1.x86_64.rpm s3://chain-core/centos/$version/cored-$version-1.x86_64.rpm --acl public-read
+aws s3 cp $out/cored-$version-1.x86_64.rpm s3://chain-core/centos/latest/cored-latest-1.x86_64.rpm --acl public-read
