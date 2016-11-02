@@ -8,9 +8,18 @@ package coreunsafe
 import (
 	"context"
 	"expvar"
+	"fmt"
+	"strings"
+
+	"github.com/lib/pq"
 
 	"chain/database/pg"
 	"chain/errors"
+)
+
+var (
+	persistBlockchainReset = []string{"mockhsm", "access_tokens"}
+	neverReset             = []string{"migrations"}
 )
 
 func isProduction() bool {
@@ -28,33 +37,25 @@ func ResetBlockchain(ctx context.Context, db pg.DB) error {
 		panic("reset called on production")
 	}
 
-	const q = `
-		TRUNCATE
-			account_control_programs,
-			account_utxos,
-			accounts,
-			annotated_accounts,
-			annotated_assets,
-			annotated_outputs,
-			annotated_txs,
-			asset_tags,
-			assets,
-			block_processors,
-			blocks,
-			config,
-			generator_pending_block,
-			leader,
-			pool_txs,
-			query_blocks,
-			reservations,
-			signed_blocks,
-			signers,
-			snapshots,
-			submitted_txs,
-			txfeeds
-			RESTART IDENTITY;
+	var skip []string
+	skip = append(skip, persistBlockchainReset...)
+	skip = append(skip, neverReset...)
+
+	const tableQ = `
+		SELECT table_name
+		FROM information_schema.tables
+		WHERE table_schema='public' AND NOT (table_name=ANY($1::text[]))
 	`
-	_, err := db.Exec(ctx, q)
+	var tables []string
+	err := pg.ForQueryRows(ctx, db, tableQ, pq.StringArray(skip), func(table string) {
+		tables = append(tables, table)
+	})
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	const q = `TRUNCATE %s RESTART IDENTITY;`
+	_, err = db.Exec(ctx, fmt.Sprintf(q, strings.Join(tables, ", ")))
 	return errors.Wrap(err)
 }
 
@@ -71,7 +72,7 @@ func ResetEverything(ctx context.Context, db pg.DB) error {
 		return errors.Wrap(err)
 	}
 
-	const q = `TRUNCATE mockhsm, access_tokens RESTART IDENTITY;`
-	_, err = db.Exec(ctx, q)
+	const q = `TRUNCATE %s RESTART IDENTITY;`
+	_, err = db.Exec(ctx, fmt.Sprintf(q, strings.Join(persistBlockchainReset, ", ")))
 	return errors.Wrap(err)
 }
