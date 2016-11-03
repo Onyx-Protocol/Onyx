@@ -1,208 +1,200 @@
-import java.util.*;
+require 'chain'
 
-import com.chain.api.*;
-import com.chain.http.*;
-import com.chain.signing.*;
+chain = Chain::Client.new
+Client otherCoreClient = Chain::Client.new
+setup(client, otherCoreClient)
 
-class TransactionBasics {
-  public static void main(String[] args) throws Exception {
-    Client client = new Client();
-    Client otherCoreClient = new Client();
-    setup(client, otherCoreClient);
+# snippet issue-within-core
+issuance = chain.transactions.build do |b|
+  .addAction(new Transaction.Action.Issue()
+    .setAssetAlias('gold')
+    .setAmount(1000)
+  ).addAction(new Transaction.Action.ControlWithAccount()
+    .setAccountAlias('alice')
+    .setAssetAlias('gold')
+    .setAmount(1000)
+  ).build(client)
 
-    // snippet issue-within-core
-    Transaction.Template issuance = new Transaction.Builder()
-      .addAction(new Transaction.Action.Issue()
-        .setAssetAlias("gold")
-        .setAmount(1000)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("gold")
-        .setAmount(1000)
-      ).build(client);
+signedIssuance = signer.sign(issuance)
 
-    Transaction.Template signedIssuance = HsmSigner.sign(issuance);
+chain.transactions.submit(signedIssuance)
+# endsnippet
 
-    Transaction.submit(client, signedIssuance);
-    // endsnippet
+# snippet create-bob-issue-program
+ControlProgram bobProgram = chain.accounts.create_control_program()
+  .controlWithAccountByAlias('bob')
+  .create(otherCoreClient)
+# endsnippet
 
-    // snippet create-bob-issue-program
-    ControlProgram bobProgram = new ControlProgram.Builder()
-      .controlWithAccountByAlias("bob")
-      .create(otherCoreClient);
-    // endsnippet
+# snippet issue-to-bob-program
+issuanceToProgram = chain.transactions.build do |b|
+  .addAction(new Transaction.Action.Issue()
+    .setAssetAlias('gold')
+    .setAmount(10)
+  ).addAction(new Transaction.Action.ControlWithProgram()
+    .setControlProgram(bobProgram.controlProgram)
+    .setAssetAlias('gold')
+    .setAmount(10)
+  ).build(client)
 
-    // snippet issue-to-bob-program
-    Transaction.Template issuanceToProgram = new Transaction.Builder()
-      .addAction(new Transaction.Action.Issue()
-        .setAssetAlias("gold")
-        .setAmount(10)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.controlProgram)
-        .setAssetAlias("gold")
-        .setAmount(10)
-      ).build(client);
+signedIssuanceToProgram = signer.sign(issuanceToProgram)
 
-    Transaction.Template signedIssuanceToProgram = HsmSigner.sign(issuanceToProgram);
+chain.transactions.submit(signedIssuanceToProgram)
+# endsnippet
 
-    Transaction.submit(client, signedIssuanceToProgram);
-    // endsnippet
+# snippet pay-within-core
+payment = chain.transactions.build do |b|
+  .addAction(new Transaction.Action.SpendFromAccount()
+    .setAccountAlias('alice')
+    .setAssetAlias('gold')
+    .setAmount(10)
+  ).addAction(new Transaction.Action.ControlWithAccount()
+    .setAccountAlias('bob')
+    .setAssetAlias('gold')
+    .setAmount(10)
+  ).build(client)
 
-    // snippet pay-within-core
-    Transaction.Template payment = new Transaction.Builder()
-      .addAction(new Transaction.Action.SpendFromAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("gold")
-        .setAmount(10)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("bob")
-        .setAssetAlias("gold")
-        .setAmount(10)
-      ).build(client);
+signedPayment = signer.sign(payment)
 
-    Transaction.Template signedPayment = HsmSigner.sign(payment);
+chain.transactions.submit(signedPayment)
+# endsnippet
 
-    Transaction.submit(client, signedPayment);
-    // endsnippet
+# snippet create-bob-payment-program
+bobProgram = chain.accounts.create_control_program()
+  .controlWithAccountByAlias('bob')
+  .create(otherCoreClient)
+# endsnippet
 
-    // snippet create-bob-payment-program
-    bobProgram = new ControlProgram.Builder()
-      .controlWithAccountByAlias("bob")
-      .create(otherCoreClient);
-    // endsnippet
+# snippet pay-between-cores
+paymentToProgram = chain.transactions.build do |b|
+  .addAction(new Transaction.Action.SpendFromAccount()
+    .setAccountAlias('alice')
+    .setAssetAlias('gold')
+    .setAmount(10)
+  ).addAction(new Transaction.Action.ControlWithProgram()
+    .setControlProgram(bobProgram.controlProgram)
+    .setAssetAlias('gold')
+    .setAmount(10)
+  ).build(client)
 
-    // snippet pay-between-cores
-    Transaction.Template paymentToProgram = new Transaction.Builder()
-      .addAction(new Transaction.Action.SpendFromAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("gold")
-        .setAmount(10)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.controlProgram)
-        .setAssetAlias("gold")
-        .setAmount(10)
-      ).build(client);
+signedPaymentToProgram = signer.sign(paymentToProgram)
 
-    Transaction.Template signedPaymentToProgram = HsmSigner.sign(paymentToProgram);
+chain.transactions.submit(signedPaymentToProgram)
+# endsnippet
 
-    Transaction.submit(client, signedPaymentToProgram);
-    // endsnippet
+if (client.equals(otherCoreClient)) {
+  # snippet multiasset-within-core
+  multiAssetPayment = chain.transactions.build do |b|
+    .addAction(new Transaction.Action.SpendFromAccount()
+      .setAccountAlias('alice')
+      .setAssetAlias('gold')
+      .setAmount(10)
+    ).addAction(new Transaction.Action.SpendFromAccount()
+      .setAccountAlias('alice')
+      .setAssetAlias('silver')
+      .setAmount(20)
+    ).addAction(new Transaction.Action.ControlWithAccount()
+      .setAccountAlias('bob')
+      .setAssetAlias('gold')
+      .setAmount(10)
+    ).addAction(new Transaction.Action.ControlWithAccount()
+      .setAccountAlias('bob')
+      .setAssetAlias('silver')
+      .setAmount(20)
+    ).build(client)
 
-    if (client.equals(otherCoreClient)) {
-      // snippet multiasset-within-core
-      Transaction.Template multiAssetPayment = new Transaction.Builder()
-        .addAction(new Transaction.Action.SpendFromAccount()
-          .setAccountAlias("alice")
-          .setAssetAlias("gold")
-          .setAmount(10)
-        ).addAction(new Transaction.Action.SpendFromAccount()
-          .setAccountAlias("alice")
-          .setAssetAlias("silver")
-          .setAmount(20)
-        ).addAction(new Transaction.Action.ControlWithAccount()
-          .setAccountAlias("bob")
-          .setAssetAlias("gold")
-          .setAmount(10)
-        ).addAction(new Transaction.Action.ControlWithAccount()
-          .setAccountAlias("bob")
-          .setAssetAlias("silver")
-          .setAmount(20)
-        ).build(client);
+  signedMultiAssetPayment = signer.sign(multiAssetPayment)
 
-      Transaction.Template signedMultiAssetPayment = HsmSigner.sign(multiAssetPayment);
-
-      Transaction.submit(client, signedMultiAssetPayment);
-      // endsnippet
-    }
-
-    // snippet create-bob-multiasset-program
-    bobProgram = new ControlProgram.Builder()
-      .controlWithAccountByAlias("bob")
-      .create(otherCoreClient);
-    // endsnippet
-
-    // snippet multiasset-between-cores
-    Transaction.Template multiAssetToProgram = new Transaction.Builder()
-      .addAction(new Transaction.Action.SpendFromAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("gold")
-        .setAmount(10)
-      ).addAction(new Transaction.Action.SpendFromAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("silver")
-        .setAmount(20)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.controlProgram)
-        .setAssetAlias("gold")
-        .setAmount(10)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.controlProgram)
-        .setAssetAlias("silver")
-        .setAmount(20)
-      ).build(client);
-
-    Transaction.Template signedMultiAssetToProgram = HsmSigner.sign(multiAssetToProgram);
-
-    Transaction.submit(client, signedMultiAssetToProgram);
-    // endsnippet
-
-    // snippet retire
-    Transaction.Template retirement = new Transaction.Builder()
-      .addAction(new Transaction.Action.SpendFromAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("gold")
-        .setAmount(50)
-      ).addAction(new Transaction.Action.Retire()
-        .setAssetAlias("gold")
-        .setAmount(50)
-      ).build(client);
-
-    Transaction.Template signedRetirement = HsmSigner.sign(retirement);
-
-    Transaction.submit(client, signedRetirement);
-    // endsnippet
-  }
-
-  public static void setup(Client client, Client otherCoreClient) throws Exception {
-    MockHsm.Key aliceKey = MockHsm.Key.create(client);
-    HsmSigner.addKey(aliceKey, MockHsm.getSignerClient(client));
-
-    MockHsm.Key bobKey = MockHsm.Key.create(otherCoreClient);
-    HsmSigner.addKey(bobKey, MockHsm.getSignerClient(otherCoreClient));
-
-    new Asset.Builder()
-      .setAlias("gold")
-      .addRootXpub(aliceKey.xpub)
-      .setQuorum(1)
-      .create(client);
-
-    new Asset.Builder()
-      .setAlias("silver")
-      .addRootXpub(aliceKey.xpub)
-      .setQuorum(1)
-      .create(client);
-
-    new Account.Builder()
-      .setAlias("alice")
-      .addRootXpub(aliceKey.xpub)
-      .setQuorum(1)
-      .create(client);
-
-    new Account.Builder()
-      .setAlias("bob")
-      .addRootXpub(bobKey.xpub)
-      .setQuorum(1)
-      .create(otherCoreClient);
-
-    Transaction.submit(client, HsmSigner.sign(new Transaction.Builder()
-      .addAction(new Transaction.Action.Issue()
-        .setAssetAlias("silver")
-        .setAmount(1000)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("silver")
-        .setAmount(1000)
-      ).build(client)
-    ));
-  }
+  chain.transactions.submit(signedMultiAssetPayment)
+  # endsnippet
 }
+
+# snippet create-bob-multiasset-program
+bobProgram = chain.accounts.create_control_program()
+  .controlWithAccountByAlias('bob')
+  .create(otherCoreClient)
+# endsnippet
+
+# snippet multiasset-between-cores
+multiAssetToProgram = chain.transactions.build do |b|
+  .addAction(new Transaction.Action.SpendFromAccount()
+    .setAccountAlias('alice')
+    .setAssetAlias('gold')
+    .setAmount(10)
+  ).addAction(new Transaction.Action.SpendFromAccount()
+    .setAccountAlias('alice')
+    .setAssetAlias('silver')
+    .setAmount(20)
+  ).addAction(new Transaction.Action.ControlWithProgram()
+    .setControlProgram(bobProgram.controlProgram)
+    .setAssetAlias('gold')
+    .setAmount(10)
+  ).addAction(new Transaction.Action.ControlWithProgram()
+    .setControlProgram(bobProgram.controlProgram)
+    .setAssetAlias('silver')
+    .setAmount(20)
+  ).build(client)
+
+signedMultiAssetToProgram = signer.sign(multiAssetToProgram)
+
+chain.transactions.submit(signedMultiAssetToProgram)
+# endsnippet
+
+# snippet retire
+retirement = chain.transactions.build do |b|
+  .addAction(new Transaction.Action.SpendFromAccount()
+    .setAccountAlias('alice')
+    .setAssetAlias('gold')
+    .setAmount(50)
+  ).addAction(new Transaction.Action.Retire()
+    .setAssetAlias('gold')
+    .setAmount(50)
+  ).build(client)
+
+signedRetirement = signer.sign(retirement)
+
+chain.transactions.submit(signedRetirement)
+# endsnippet
+}
+
+public static void setup(chain, Client otherCoreClient) throws Exception {
+alice_key = chain.mock_hsm.keys.create
+signer.add_key(alice_key, chain.mock_hsm.signer_conn)
+
+bob_key = MockHsm.Key.create(otherCoreClient)
+signer.add_key(bob_key, MockHsm.getSignerClient(otherCoreClient))
+
+chain.assets.create()
+  .setAlias('gold')
+  .addRootXpub(alice_key.xpub)
+  .setQuorum(1)
+  .create(client)
+
+chain.assets.create()
+  .setAlias('silver')
+  .addRootXpub(alice_key.xpub)
+  .setQuorum(1)
+  .create(client)
+
+chain.accounts.create()
+  .setAlias('alice')
+  .addRootXpub(alice_key.xpub)
+  .setQuorum(1)
+  .create(client)
+
+chain.accounts.create()
+  .setAlias('bob')
+  .addRootXpub(bob_key.xpub)
+  .setQuorum(1)
+  .create(otherCoreClient)
+
+chain.transactions.submit(signer.sign(chain.transactions.build do |b|
+  .addAction(new Transaction.Action.Issue()
+    .setAssetAlias('silver')
+    .setAmount(1000)
+  ).addAction(new Transaction.Action.ControlWithAccount()
+    .setAccountAlias('alice')
+    .setAssetAlias('silver')
+    .setAmount(1000)
+  ).build(client)
+))

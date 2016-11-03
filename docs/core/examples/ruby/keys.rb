@@ -1,43 +1,37 @@
-import com.chain.api.*;
-import com.chain.http.*;
-import com.chain.signing.*;
+require 'chain'
 
-class Keys {
-  public static void main(String[] args) throws Exception {
-    Client client = new Client();
+chain = Chain::Client.new
 
-    // snippet create-key
-    MockHsm.Key key = MockHsm.Key.create(client);
-    // endsnippet
+# snippet create-key
+key = chain.mock_hsm.keys.create
+# endsnippet
 
-    // snippet signer-add-key
-    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
-    // endsnippet
+# snippet signer-add-key
+signer.add_key(key, chain.mock_hsm.signer_conn)
+# endsnippet
 
-    new Asset.Builder()
-      .setAlias("gold")
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .create(client);
+chain.assets.create()
+  .setAlias('gold')
+  .addRootXpub(key.xpub)
+  .setQuorum(1)
+  .create(client)
 
-    new Account.Builder()
-      .setAlias("alice")
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .create(client);
+chain.accounts.create()
+  .setAlias('alice')
+  .addRootXpub(key.xpub)
+  .setQuorum(1)
+  .create(client)
 
-    Transaction.Template unsigned = new Transaction.Builder()
-      .addAction(new Transaction.Action.Issue()
-        .setAssetAlias("gold")
-        .setAmount(100)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("gold")
-        .setAmount(100)
-      ).build(client);
+unsigned = chain.transactions.build do |b|
+  .addAction(new Transaction.Action.Issue()
+    .setAssetAlias('gold')
+    .setAmount(100)
+  ).addAction(new Transaction.Action.ControlWithAccount()
+    .setAccountAlias('alice')
+    .setAssetAlias('gold')
+    .setAmount(100)
+  ).build(client)
 
-    // snippet sign-transaction
-    Transaction.Template signed = HsmSigner.sign(unsigned);
-    // endsnippet
-  }
-}
+# snippet sign-transaction
+signed = signer.sign(unsigned)
+# endsnippet

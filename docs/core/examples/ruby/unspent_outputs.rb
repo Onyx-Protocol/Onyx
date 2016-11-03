@@ -1,109 +1,101 @@
-import java.util.*;
+require 'chain'
 
-import com.chain.api.*;
-import com.chain.http.*;
-import com.chain.signing.*;
+chain = Chain::Client.new
 
-class UnspentOutputs {
-  public static void main(String[] args) throws Exception {
-    Client client = new Client();
+key = chain.mock_hsm.keys.create
+signer.add_key(key, chain.mock_hsm.signer_conn)
 
-    MockHsm.Key key = MockHsm.Key.create(client);
-    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
+chain.assets.create()
+  .setAlias('gold')
+  .addRootXpub(key.xpub)
+  .setQuorum(1)
+  .create(client)
 
-    new Asset.Builder()
-      .setAlias("gold")
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .create(client);
+chain.accounts.create()
+  .setAlias('alice')
+  .addRootXpub(key.xpub)
+  .setQuorum(1)
+  .create(client)
 
-    new Account.Builder()
-      .setAlias("alice")
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .create(client);
+chain.accounts.create()
+  .setAlias('bob')
+  .addRootXpub(key.xpub)
+  .setQuorum(1)
+  .create(client)
 
-    new Account.Builder()
-      .setAlias("bob")
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .create(client);
-
-    Transaction.SubmitResponse issuanceTx = Transaction.submit(
-      client,
-      HsmSigner.sign(
-        new Transaction.Builder()
-          .addAction(new Transaction.Action.Issue()
-            .setAssetAlias("gold")
-            .setAmount(200)
-          ).addAction(new Transaction.Action.ControlWithAccount()
-            .setAccountAlias("alice")
-            .setAssetAlias("gold")
-            .setAmount(100)
-          ).addAction(new Transaction.Action.ControlWithAccount()
-            .setAccountAlias("alice")
-            .setAssetAlias("gold")
-            .setAmount(100)
-          ).build(client)
-      )
-    );
-
-    // snippet alice-unspent-outputs
-    UnspentOutput.Items aliceUnspentOutputs = new UnspentOutput.QueryBuilder()
-      .setFilter("account_alias=$1")
-      .addFilterParameter("alice")
-      .execute(client);
-
-    while (aliceUnspentOutputs.hasNext()) {
-      UnspentOutput utxo = aliceUnspentOutputs.next();
-      System.out.println("Unspent output in alice account: " + utxo.transactionId + ":" + utxo.position);
-    }
-    // endsnippet
-
-    // snippet gold-unspent-outputs
-    UnspentOutput.Items goldUnspentOutputs = new UnspentOutput.QueryBuilder()
-      .setFilter("asset_alias=$1")
-      .addFilterParameter("gold")
-      .execute(client);
-
-    while (goldUnspentOutputs.hasNext()) {
-      UnspentOutput utxo = goldUnspentOutputs.next();
-      System.out.println("Unspent output containing gold: " + utxo.transactionId + ":" + utxo.position);
-    }
-    // endsnippet
-
-    String prevTransactionId = issuanceTx.id;
-
-    // snippet build-transaction-all
-    Transaction.Template spendOutput = new Transaction.Builder()
-      .addAction(new Transaction.Action.SpendAccountUnspentOutput()
-        .setTransactionId(prevTransactionId)
-        .setPosition(0)
+issuanceTx = chain.transactions.submit(
+  client,
+  signer.sign(
+    chain.transactions.build do |b|
+      .addAction(new Transaction.Action.Issue()
+        .setAssetAlias('gold')
+        .setAmount(200)
       ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("bob")
-        .setAssetAlias("gold")
+        .setAccountAlias('alice')
+        .setAssetAlias('gold')
         .setAmount(100)
-      ).build(client);
-    // endsnippet
-
-    Transaction.submit(client, HsmSigner.sign(spendOutput));
-
-    // snippet build-transaction-partial
-    Transaction.Template spendOutputWithChange = new Transaction.Builder()
-      .addAction(new Transaction.Action.SpendAccountUnspentOutput()
-        .setTransactionId(prevTransactionId)
-        .setPosition(1)
       ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("bob")
-        .setAssetAlias("gold")
-        .setAmount(40)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("gold")
-        .setAmount(60)
-      ).build(client);
-    // endsnippet
+        .setAccountAlias('alice')
+        .setAssetAlias('gold')
+        .setAmount(100)
+      ).build(client)
+  )
+)
 
-    Transaction.submit(client, HsmSigner.sign(spendOutputWithChange));
-  }
+# snippet alice-unspent-outputs
+UnspentOutput.Items aliceUnspentOutputs = new UnspentOutput.QueryBuilder()
+  .setFilter('account_alias=$1')
+  .addFilterParameter('alice')
+  .execute(client)
+
+while (aliceUnspentOutputs.hasNext()) {
+  UnspentOutput utxo = aliceUnspentOutputs.next()
+  puts('Unspent output in alice account: ' + utxo.transactionId + ':' + utxo.position)
 }
+# endsnippet
+
+# snippet gold-unspent-outputs
+UnspentOutput.Items goldUnspentOutputs = new UnspentOutput.QueryBuilder()
+  .setFilter('asset_alias=$1')
+  .addFilterParameter('gold')
+  .execute(client)
+
+while (goldUnspentOutputs.hasNext()) {
+  UnspentOutput utxo = goldUnspentOutputs.next()
+  puts('Unspent output containing gold: ' + utxo.transactionId + ':' + utxo.position)
+}
+# endsnippet
+
+String prevTransactionId = issuanceTx.id
+
+# snippet build-transaction-all
+spendOutput = chain.transactions.build do |b|
+  .addAction(new Transaction.Action.SpendAccountUnspentOutput()
+    .setTransactionId(prevTransactionId)
+    .setPosition(0)
+  ).addAction(new Transaction.Action.ControlWithAccount()
+    .setAccountAlias('bob')
+    .setAssetAlias('gold')
+    .setAmount(100)
+  ).build(client)
+# endsnippet
+
+chain.transactions.submit(signer.sign(spendOutput))
+
+# snippet build-transaction-partial
+spendOutputWithChange = chain.transactions.build do |b|
+  .addAction(new Transaction.Action.SpendAccountUnspentOutput()
+    .setTransactionId(prevTransactionId)
+    .setPosition(1)
+  ).addAction(new Transaction.Action.ControlWithAccount()
+    .setAccountAlias('bob')
+    .setAssetAlias('gold')
+    .setAmount(40)
+  ).addAction(new Transaction.Action.ControlWithAccount()
+    .setAccountAlias('alice')
+    .setAssetAlias('gold')
+    .setAmount(60)
+  ).build(client)
+# endsnippet
+
+chain.transactions.submit(signer.sign(spendOutputWithChange))
