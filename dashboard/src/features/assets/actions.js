@@ -1,9 +1,9 @@
-import { baseFormActions, baseListActions } from 'features/shared/actions'
+import { baseCreateActions, baseListActions } from 'features/shared/actions'
 
 const type = 'asset'
 
 const list = baseListActions(type, { defaultKey: 'alias' })
-const form = baseFormActions(type, {
+const form = baseCreateActions(type, {
   jsonFields: ['tags', 'definition'],
   intFields: ['quorum'],
   redirectToShow: true,

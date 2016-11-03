@@ -1,9 +1,9 @@
-import { baseListActions, baseFormActions } from 'features/shared/actions'
+import { baseListActions, baseCreateActions } from 'features/shared/actions'
 
 const type = 'transactionFeed'
 
 export default {
-  ...baseFormActions(type, {
+  ...baseCreateActions(type, {
     listPath: 'transaction-feeds',
     className: 'TransactionFeed',
   }),
