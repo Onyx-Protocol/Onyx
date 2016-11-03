@@ -74,6 +74,13 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			mu.Lock()
 			defer mu.Unlock()
+
+			postToGithub(req.PR.StatusesURL, map[string]string{
+				"state":       "pending",
+				"description": "Integration tests executing",
+				"context":     "chain/testbot",
+			})
+
 			var out bytes.Buffer
 			sha := req.PR.Head.Sha
 			defer uploadToS3(sha, &out)
