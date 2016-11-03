@@ -16,7 +16,7 @@ export default function(type, options = {}) {
     created,
     submitForm: (data) => {
       const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
-      let promise = new Promise((resolve) => resolve())
+      let promise = Promise.resolve()
 
       if (typeof data.id == 'string')     data.id = data.id.trim()
       if (typeof data.alias == 'string')  data.alias = data.alias.trim()
@@ -31,24 +31,26 @@ export default function(type, options = {}) {
         data[fieldName] = parseInt(data[fieldName])
       })
 
-      const xpubs = data.xpubs || []
-      xpubs.map(key => {
-        if (key.type == 'generate') {
-          promise = promise
-            .then(() => {
-              const alias = (key.value || '').trim()
-                ? key.value.trim()
-                : (data.alias || 'generated') + '-' + uuid.v4()
+      if (data.xpubs) {
+        data.root_xpubs = []
+        data.xpubs.forEach(key => {
+          if (key.type == 'generate') {
+            promise = promise
+              .then(() => {
+                const alias = (key.value || '').trim()
+                  ? key.value.trim()
+                  : (data.alias || 'generated') + '-' + uuid.v4()
 
-              return new chain.MockHsm({alias}).create(context())
-            }).then(newKey => {
-              data.root_xpubs = [...(data.root_xpubs || []), newKey.xpub]
-            })
-        } else {
-          data.root_xpubs = [...(data.root_xpubs || []), key.value]
-        }
-      })
-      delete data.xpubs
+                return new chain.MockHsm({alias}).create(context())
+              }).then(newKey => {
+                data.root_xpubs.push(newKey.xpub)
+              })
+          } else {
+            data.root_xpubs.push(key.value)
+          }
+        })
+        delete data.xpubs
+      }
 
       return function(dispatch) {
         return promise.then(() => new chain[className](data).create(context())

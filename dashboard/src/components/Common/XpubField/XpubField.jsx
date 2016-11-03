@@ -41,8 +41,6 @@ class XpubField extends React.Component {
 
     const typeOnChange = event => {
       const value = typeProps.onChange(event).value
-
-      typeProps.onChange(value)
       valueProps.onChange(this.state[value] || '')
     }
 
