@@ -48,7 +48,7 @@ type snapshotInfoResp struct {
 func (a *API) getSnapshotInfoRPC(ctx context.Context) (resp snapshotInfoResp, err error) {
 	// TODO(jackson): cache latest snapshot and its height & size in-memory.
 	resp.Height, resp.Size, err = a.Store.LatestSnapshotInfo(ctx)
-	resp.BlockchainID = a.Config.BlockchainID
+	resp.BlockchainID = a.Config.BlockchainId.Hash()
 	return resp, err
 }
 

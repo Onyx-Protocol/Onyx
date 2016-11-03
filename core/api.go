@@ -5,6 +5,7 @@ import (
 	"context"
 	"expvar"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/pprof"
 	"sync"
@@ -22,6 +23,7 @@ import (
 	"chain/core/txdb"
 	"chain/core/txfeed"
 	"chain/database/pg"
+	"chain/database/raft"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/generated/dashboard"
@@ -60,6 +62,7 @@ type API struct {
 	AccessTokens  *accesstoken.CredentialStore
 	Config        *config.Config
 	Submitter     txbuilder.Submitter
+	RaftDB        *raft.Service
 	DB            pg.DB
 	Addr          string
 	AltAuth       func(*http.Request) bool
@@ -148,6 +151,8 @@ func Handler(a *API, register func(*http.ServeMux, *API)) http.Handler {
 	m.Handle("/delete-access-token", jsonHandler(a.deleteAccessToken))
 	m.Handle("/configure", jsonHandler(a.configure))
 	m.Handle("/info", jsonHandler(a.info))
+
+	m.Handle("/raft/", h.RaftDB)
 
 	m.Handle("/debug/vars", http.HandlerFunc(expvarHandler))
 	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
