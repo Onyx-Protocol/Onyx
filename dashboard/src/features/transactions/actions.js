@@ -3,14 +3,14 @@ import chain from 'chain'
 import { context } from 'utility/environment'
 import { parseNonblankJSON } from 'utility/string'
 import { push } from 'react-router-redux'
-import { baseFormActions, baseListActions } from 'features/shared/actions'
+import { baseCreateActions, baseListActions } from 'features/shared/actions'
 
 const type = 'transaction'
 
 const list = baseListActions(type, {
   defaultKey: 'id'
 })
-const form = baseFormActions(type)
+const form = baseCreateActions(type)
 
 function preprocessTransaction(formParams) {
   const copy = JSON.parse(JSON.stringify(formParams))

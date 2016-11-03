@@ -23,7 +23,7 @@ class Form extends React.Component {
 
   render() {
     const {
-      fields: { alias, tags, root_xpubs, quorum },
+      fields: { alias, tags, xpubs, quorum },
       error,
       handleSubmit,
       submitting
@@ -43,7 +43,7 @@ class Form extends React.Component {
 
         <FormSection title='Keys and Signing'>
           <KeyConfiguration
-            xpubs={root_xpubs}
+            xpubs={xpubs}
             quorum={quorum}
             quorumHint='Number of keys required for transfer' />
         </FormSection>
@@ -61,7 +61,13 @@ const validate = values => {
   return errors
 }
 
-const fields = [ 'alias', 'tags', 'root_xpubs[]', 'quorum' ]
+const fields = [
+  'alias',
+  'tags',
+  'xpubs[].value',
+  'xpubs[].type',
+  'quorum'
+]
 
 export default BaseNew.connect(
   BaseNew.mapStateToProps('account'),

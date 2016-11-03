@@ -1,11 +1,11 @@
 import chain from 'chain'
 import { context } from 'utility/environment'
-import { baseFormActions, baseListActions } from 'features/shared/actions'
+import { baseCreateActions, baseListActions } from 'features/shared/actions'
 
 const type = 'account'
 
 const list = baseListActions(type, { defaultKey: 'alias' })
-const form = baseFormActions(type, {
+const form = baseCreateActions(type, {
   jsonFields: ['tags'],
   intFields: ['quorum'],
   redirectToShow: true,

@@ -48,8 +48,8 @@ class Show extends BaseShow {
           <KeyValueTable
             title='Details'
             actions={[
-              <button className='btn btn-link' onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>,
-              <button className='btn btn-link' onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
+              <button key='show-txs' className='btn btn-link' onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>,
+              <button key='show-balances' className='btn btn-link' onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
             ]}
             items={[
               {label: 'ID', value: item.id},

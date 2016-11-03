@@ -1,9 +1,9 @@
-import baseFormActions from './form'
+import baseCreateActions from './create'
 import baseListActions from './list'
 import actionCreator from './actionCreator'
 
 export {
-  baseFormActions,
+  baseCreateActions,
   baseListActions,
   actionCreator
 }
