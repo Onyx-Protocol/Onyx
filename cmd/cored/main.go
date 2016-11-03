@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/hex"
 	"expvar"
 	"flag"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -24,12 +24,14 @@ import (
 	"chain/core"
 	"chain/core/blocksigner"
 	"chain/core/config"
+	"chain/core/fileutil"
 	"chain/core/generator"
 	"chain/core/migrate"
 	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
+	"chain/database/raft"
 	"chain/database/sql"
 	"chain/encoding/json"
 	"chain/env"
@@ -65,6 +67,8 @@ var (
 	rpsToken      = env.Int("RATELIMIT_TOKEN", 0)       // reqs/sec
 	rpsRemoteAddr = env.Int("RATELIMIT_REMOTE_ADDR", 0) // reqs/sec
 	indexTxs      = env.Bool("INDEX_TRANSACTIONS", true)
+	dataDir       = env.String("CORED_DATA_DIR", fileutil.DefaultDir())
+	bootURL       = env.String("BOOTURL", "")
 
 	// build vars; initialized by the linker
 	buildTag    = "?"
@@ -133,8 +137,14 @@ func runServer() {
 	ctx := context.Background()
 	env.Parse()
 
-	// We need to be able to add handlers to our serve mux in two phases.
-	// In the first phase, we will start
+	raftDir := filepath.Join(*dataDir, "raft") // TODO(kr): better name for this
+	// TODO(tessr): remove tls param once we have tls everywhere
+	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, *tlsCrt != "")
+	if err != nil {
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+	}
+
+	// We add handlers to our serve mux in two phases. In the first phase, we start
 	// listening on the raft routes (`/raft`). This allows us to do things like
 	// read the config value stored in raft storage. (A new node in a raft cluster
 	// can't read values without kicking off a consensus round, which in turn
@@ -144,6 +154,7 @@ func runServer() {
 	// cored functionality, and add the rest of the core routes to the serve mux.
 	// That is the second phase.
 	mux := http.NewServeMux()
+	mux.Handle("/raft/", raftDB)
 
 	var handler http.Handler = mux
 	handler = reqid.Handler(handler)
@@ -181,7 +192,7 @@ func runServer() {
 				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
 			}
 		} else {
-			err := server.ListenAndServe()
+			err = server.ListenAndServe()
 			if err != nil {
 				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
 			}
@@ -206,9 +217,9 @@ func runServer() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	resetInDevIfRequested(db)
+	resetInDevIfRequested(db, raftDB)
 
-	conf, err := config.Load(ctx, db)
+	conf, err := config.Load(ctx, db, raftDB)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
@@ -220,7 +231,7 @@ func runServer() {
 	}
 	processID := fmt.Sprintf("chain-%s-%d", hostname, os.Getpid())
 	if conf != nil {
-		processID += "-" + conf.ID
+		processID += "-" + conf.Id
 	}
 	expvar.NewString("processID").Set(processID)
 
@@ -231,12 +242,11 @@ func runServer() {
 
 	var h http.Handler
 	if conf != nil {
-		h = launchConfiguredCore(ctx, db, conf, processID)
+		h = launchConfiguredCore(ctx, raftDB, db, conf, processID)
 	} else {
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		h = core.RunUnconfigured(ctx, db, core.AlternateAuth(authLoopbackInDev))
+		h = core.RunUnconfigured(ctx, db, raftDB, core.AlternateAuth(authLoopbackInDev))
 	}
-
 	mux.Handle("/", h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
 
@@ -245,14 +255,14 @@ func runServer() {
 	select {}
 }
 
-func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, processID string) http.Handler {
+func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string) http.Handler {
 	// Initialize the protocol.Chain.
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 	store := txdb.NewStore(db)
-	c, err := protocol.NewChain(ctx, conf.BlockchainID, store, heights)
+	c, err := protocol.NewChain(ctx, conf.BlockchainId.Hash(), store, heights)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
@@ -292,27 +302,27 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 		if localSigner != nil {
 			signers = append(signers, localSigner)
 		}
-		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainID.String(), conf) {
+		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainId.Hash().String(), conf) {
 			signers = append(signers, signer)
 		}
-		c.MaxIssuanceWindow = conf.MaxIssuanceWindow.Duration
+		c.MaxIssuanceWindow = bc.MillisDuration(conf.MaxIssuanceWindowMs)
 
 		gen := generator.New(c, signers, db)
 		opts = append(opts, core.GeneratorLocal(gen))
 	} else {
 		opts = append(opts, core.GeneratorRemote(&rpc.Client{
-			BaseURL:      conf.GeneratorURL,
+			BaseURL:      conf.GeneratorUrl,
 			AccessToken:  conf.GeneratorAccessToken,
 			Username:     processID,
-			CoreID:       conf.ID,
+			CoreID:       conf.Id,
 			BuildTag:     buildTag,
-			BlockchainID: conf.BlockchainID.String(),
+			BlockchainID: conf.BlockchainId.Hash().String(),
 		}))
 	}
 
 	// Start up the Core. This will start up the various Core subsystems,
 	// and begin leader election.
-	api, err := core.Run(ctx, conf, db, *dbURL, c, store, *listenAddr, opts...)
+	api, err := core.Run(ctx, conf, db, *dbURL, raftDB, c, store, *listenAddr, opts...)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
@@ -320,29 +330,26 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 }
 
 func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c *protocol.Chain, processID string) (*blocksigner.BlockSigner, error) {
-	blockPub, err := hex.DecodeString(conf.BlockPub)
-	if err != nil {
-		return nil, err
-	}
-
 	var hsm blocksigner.Signer
-	if conf.BlockHSMURL != "" {
+	if conf.BlockHsmUrl != "" {
 		// TODO(ameets): potential option to take only a password when configuring
 		//  and convert to an access token string here for BlockHSMAccessToken
 		hsm = &remoteHSM{Client: &rpc.Client{
-			BaseURL:      conf.BlockHSMURL,
-			AccessToken:  conf.BlockHSMAccessToken,
+			BaseURL:      conf.BlockHsmUrl,
+			AccessToken:  conf.BlockHsmAccessToken,
 			Username:     processID,
-			CoreID:       conf.ID,
+			CoreID:       conf.Id,
 			BuildTag:     buildTag,
-			BlockchainID: conf.BlockchainID.String(),
+			BlockchainID: conf.BlockchainId.Hash().String(),
 		}}
 	} else {
+		var err error
 		hsm, err = mockHSM(db)
 		if err != nil {
 			return nil, err
 		}
 	}
+	blockPub := ed25519.PublicKey(conf.BlockPub)
 	s := blocksigner.New(blockPub, hsm, db, c)
 	return s, nil
 }
@@ -363,7 +370,7 @@ func (h *remoteHSM) Sign(ctx context.Context, pk ed25519.PublicKey, bh *bc.Block
 
 func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, conf *config.Config) (a []*remoteSigner) {
 	for _, signer := range conf.Signers {
-		u, err := url.Parse(signer.URL)
+		u, err := url.Parse(signer.Url)
 		if err != nil {
 			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
@@ -374,7 +381,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 			BaseURL:      u.String(),
 			AccessToken:  signer.AccessToken,
 			Username:     processID,
-			CoreID:       conf.ID,
+			CoreID:       conf.Id,
 			BuildTag:     buildTag,
 			BlockchainID: blockchainID,
 		}

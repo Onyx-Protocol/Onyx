@@ -16,7 +16,6 @@ import (
 )
 
 // Hash represents a 256-bit hash.
-
 var EmptyStringHash = NewHash(sha3.Sum256(nil))
 
 func NewHash(b32 [32]byte) (h Hash) {

@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"chain/core/coreunsafe"
 	"chain/core/mockhsm"
+	"chain/core/rpc"
 	"chain/database/sql"
 )
 
@@ -16,10 +16,19 @@ func reset(db *sql.DB, args []string) {
 		fatalln("error: reset takes no args")
 	}
 
+	// TODO(tessr): TLS everywhere?
+	client := &rpc.Client{
+		BaseURL: *coreURL,
+	}
+
+	req := map[string]bool{
+		"Everything": true,
+	}
+
 	ctx := context.Background()
-	err := coreunsafe.ResetEverything(ctx, db)
+	err := client.Call(ctx, "/reset", req, nil)
 	if err != nil {
-		fatalln("error:", err)
+		fatalln("rpc error:", err)
 	}
 }
 

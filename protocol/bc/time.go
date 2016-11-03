@@ -11,3 +11,8 @@ func Millis(t time.Time) uint64 {
 func DurationMillis(d time.Duration) uint64 {
 	return uint64(d / time.Millisecond)
 }
+
+// MillisDuration coverts milliseconds to a time.Duration.
+func MillisDuration(m uint64) time.Duration {
+	return time.Duration(m) * time.Millisecond
+}

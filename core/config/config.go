@@ -2,6 +2,9 @@
 // Chain Core.
 package config
 
+// Generate code for the Config and BlockSigner types.
+//go:generate protoc -I. -I$CHAIN/.. --go_out=. config.proto
+
 import (
 	"context"
 	"crypto/rand"
@@ -10,13 +13,16 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+
 	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
+	"chain/database/raft"
 	"chain/database/sql"
-	chainjson "chain/encoding/json"
 	"chain/errors"
+	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -46,31 +52,54 @@ var (
 	}
 )
 
-// Config encapsulates Core-level, persistent configuration options.
-type Config struct {
-	ID                   string  `json:"id"`
-	IsSigner             bool    `json:"is_signer"`
-	IsGenerator          bool    `json:"is_generator"`
-	BlockchainID         bc.Hash `json:"blockchain_id"`
-	GeneratorURL         string  `json:"generator_url"`
-	GeneratorAccessToken string  `json:"generator_access_token"`
-	BlockHSMURL          string  `json:"block_hsm_url"`
-	BlockHSMAccessToken  string  `json:"block_hsm_access_token"`
-	ConfiguredAt         time.Time
-	BlockPub             string        `json:"block_pub"`
-	Signers              []BlockSigner `json:"block_signer_urls"`
-	Quorum               int
-	MaxIssuanceWindow    chainjson.Duration
-}
-
-type BlockSigner struct {
-	AccessToken string             `json:"access_token"`
-	Pubkey      chainjson.HexBytes `json:"pubkey"`
-	URL         string             `json:"url"`
-}
-
 // Load loads the stored configuration, if any, from the database.
-func Load(ctx context.Context, db pg.DB) (*Config, error) {
+// It will first try to load the config from raft storage; if that fails,
+// it will try Postgres next. If it finds a config in Postgres but not in raft
+// storage, the config will be added to raft storage.
+func Load(ctx context.Context, db pg.DB, rDB *raft.Service) (*Config, error) {
+	data, err := rDB.Get(ctx, "/core/config")
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	if data == nil {
+		// Check Postgres next.
+		config, err := loadFromPG(ctx, db)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+
+		// If we were able to find a config in Postgres, store it in Raft
+		if config != nil {
+			val, err := proto.Marshal(config)
+			if err != nil {
+				return nil, errors.Wrap(err)
+			}
+			err = rDB.Insert(ctx, "/core/config", val)
+			if err != nil {
+				return nil, errors.Wrap(err)
+			}
+			err = deleteFromPG(ctx, db)
+			if err != nil {
+				// If we got this far but failed to delete from PG, it's really NBD. Just
+				// log the failure and carry on.
+				log.Error(ctx, err, "failed to delete config from postgres")
+
+			}
+			return config, nil
+		}
+		return nil, nil
+	}
+
+	c := new(Config)
+	err = proto.Unmarshal(data, c)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	return c, nil
+}
+
+// loadFromPG loads the stored configuration from Postgres.
+func loadFromPG(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT id, is_signer, is_generator,
 			blockchain_id, generator_url, generator_access_token, block_pub,
@@ -82,27 +111,30 @@ func Load(ctx context.Context, db pg.DB) (*Config, error) {
 	c := new(Config)
 	var (
 		blockSignerData []byte
-		miw             int64
+		blockchainID    bc.Hash
+		configuredAt    time.Time
 	)
 	err := db.QueryRow(ctx, q).Scan(
-		&c.ID,
+		&c.Id,
 		&c.IsSigner,
 		&c.IsGenerator,
-		&c.BlockchainID,
-		&c.GeneratorURL,
+		&blockchainID,
+		&c.GeneratorUrl,
 		&c.GeneratorAccessToken,
 		&c.BlockPub,
-		&c.BlockHSMURL,
-		&c.BlockHSMAccessToken,
+		&c.BlockHsmUrl,
+		&c.BlockHsmAccessToken,
 		&blockSignerData,
-		&miw,
-		&c.ConfiguredAt,
+		&c.MaxIssuanceWindowMs,
+		&configuredAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, errors.Wrap(err, "fetching Core config")
 	}
+
+	c.BlockchainId = blockchainID.Proto()
 
 	if len(blockSignerData) > 0 {
 		err = json.Unmarshal(blockSignerData, &c.Signers)
@@ -111,8 +143,17 @@ func Load(ctx context.Context, db pg.DB) (*Config, error) {
 		}
 	}
 
-	c.MaxIssuanceWindow = chainjson.Duration{time.Duration(miw) * time.Millisecond}
+	c.ConfiguredAt = bc.Millis(configuredAt)
+
 	return c, nil
+}
+
+// deleteFromPG deletes the stored configuration in Postgres.
+func deleteFromPG(ctx context.Context, db pg.DB) error {
+	// deletes every row
+	const q = `DELETE from config`
+	_, err := db.Exec(ctx, q)
+	return errors.Wrap(err, "deleting config stored in postgres")
 }
 
 // Configure configures the core by writing to the database.
@@ -125,17 +166,17 @@ func Load(ctx context.Context, db pg.DB) (*Config, error) {
 // for signing blocks, and assigns it to c.BlockPub.
 //
 // If c.IsGenerator is true, Configure creates an initial block,
-// saves it, and assigns its hash to c.BlockchainID.
+// saves it, and assigns its hash to c.BlockchainId
 // Otherwise, c.IsGenerator is false, and Configure makes a test request
-// to GeneratorURL to detect simple configuration mistakes.
-func Configure(ctx context.Context, db pg.DB, c *Config) error {
+// to GeneratorUrl to detect simple configuration mistakes.
+func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, c *Config) error {
 	var err error
 	if !c.IsGenerator {
 		err = tryGenerator(
 			ctx,
-			c.GeneratorURL,
+			c.GeneratorUrl,
 			c.GeneratorAccessToken,
-			c.BlockchainID.String(),
+			c.BlockchainId.Hash().String(),
 		)
 		if err != nil {
 			return err
@@ -145,27 +186,24 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	var signingKeys []ed25519.PublicKey
 	if c.IsSigner {
 		var blockPub ed25519.PublicKey
-		err = checkProdBlockHSMURL(c.BlockHSMURL)
+		err = checkProdBlockHSMURL(c.BlockHsmUrl)
 		if err != nil {
 			return err
 		}
-		if c.BlockPub == "" {
+		if len(c.BlockPub) == 0 {
 			blockPub, err = getOrCreateDevKey(ctx, db, c)
 			if err != nil {
 				return err
 			}
 		} else {
-			blockPub, err = hex.DecodeString(c.BlockPub)
-			if err != nil {
-				return err
-			}
+			blockPub = ed25519.PublicKey(c.BlockPub)
 		}
 		signingKeys = append(signingKeys, blockPub)
 	}
 
 	if c.IsGenerator {
 		for _, signer := range c.Signers {
-			_, err = url.Parse(signer.URL)
+			_, err = url.Parse(signer.Url)
 			if err != nil {
 				return errors.Sub(ErrBadSignerURL, err)
 			}
@@ -179,7 +217,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			return errors.Wrap(ErrBadQuorum)
 		}
 
-		block, err := protocol.NewInitialBlock(signingKeys, c.Quorum, time.Now())
+		block, err := protocol.NewInitialBlock(signingKeys, int(c.Quorum), time.Now())
 		if err != nil {
 			return err
 		}
@@ -197,16 +235,8 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			return err
 		}
 
-		c.BlockchainID = initialBlockHash
-		chain.MaxIssuanceWindow = c.MaxIssuanceWindow.Duration
-	}
-
-	var blockSignerData []byte
-	if len(c.Signers) > 0 {
-		blockSignerData, err = json.Marshal(c.Signers)
-		if err != nil {
-			return errors.Wrap(err)
-		}
+		c.BlockchainId = initialBlockHash.Proto()
+		chain.MaxIssuanceWindow = bc.MillisDuration(c.MaxIssuanceWindowMs)
 	}
 
 	b := make([]byte, 10)
@@ -214,31 +244,13 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	if err != nil {
 		return errors.Wrap(err)
 	}
-	c.ID = hex.EncodeToString(b)
+	c.Id = hex.EncodeToString(b)
 
-	const q = `
-		INSERT INTO config (id, is_signer, block_pub, is_generator,
-			blockchain_id, generator_url, generator_access_token,
-			block_hsm_url, block_hsm_access_token,
-			remote_block_signers, max_issuance_window_ms, configured_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
-	`
-	_, err = db.Exec(
-		ctx,
-		q,
-		c.ID,
-		c.IsSigner,
-		c.BlockPub,
-		c.IsGenerator,
-		c.BlockchainID,
-		c.GeneratorURL,
-		c.GeneratorAccessToken,
-		c.BlockHSMURL,
-		c.BlockHSMAccessToken,
-		blockSignerData,
-		bc.DurationMillis(c.MaxIssuanceWindow.Duration),
-	)
-	return err
+	val, err := proto.Marshal(c)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	return rDB.Insert(ctx, "/core/config", val)
 }
 
 func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) error {

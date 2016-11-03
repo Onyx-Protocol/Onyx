@@ -24,13 +24,13 @@ import (
 	"chain/core/txdb"
 	"chain/core/txfeed"
 	"chain/database/pg"
+	"chain/database/raft"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/generated/dashboard"
 	"chain/net/http/gzip"
 	"chain/net/http/httpjson"
 	"chain/net/http/limit"
-	"chain/net/http/reqid"
 	"chain/net/http/static"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -62,6 +62,7 @@ type API struct {
 	config          *config.Config
 	submitter       txbuilder.Submitter
 	db              pg.DB
+	raftDB          *raft.Service
 	mux             *http.ServeMux
 	handler         http.Handler
 	leader          leaderProcess
@@ -116,8 +117,8 @@ func (a *API) needConfig() func(f interface{}) http.Handler {
 	return jsonHandler
 }
 
+// buildHandler adds the Core API routes to a preexisting http handler.
 func (a *API) buildHandler() {
-	// Setup the muxer.
 	needConfig := a.needConfig()
 
 	devOnly := func(h http.Handler) http.Handler { return h }
@@ -185,7 +186,7 @@ func (a *API) buildHandler() {
 		tokenMap: make(map[string]tokenResult),
 		alt:      a.altAuth,
 	}).handler(latencyHandler)
-	handler = maxBytes(handler)
+	handler = maxBytes(handler) // TODO(tessr): consider moving this to non-core specific mux
 	handler = webAssetsHandler(handler)
 	handler = healthHandler(handler)
 	for _, l := range a.requestLimits {
@@ -193,10 +194,9 @@ func (a *API) buildHandler() {
 	}
 	handler = gzip.Handler{Handler: handler}
 	handler = coreCounter(handler)
-	handler = reqid.Handler(handler)
 	handler = timeoutContextHandler(handler)
-	if a.config != nil {
-		handler = blockchainIDHandler(handler, a.config.BlockchainID.String())
+	if a.config != nil && a.config.BlockchainId != nil {
+		handler = blockchainIDHandler(handler, a.config.BlockchainId.Hash().String())
 	}
 	a.handler = handler
 }
