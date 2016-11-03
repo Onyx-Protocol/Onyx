@@ -14,6 +14,7 @@ import (
 	"github.com/lib/pq"
 
 	"chain/database/pg"
+	"chain/database/raft"
 	"chain/errors"
 )
 
@@ -30,7 +31,7 @@ func isProduction() bool {
 // ResetBlockchain deletes all blockchain data, resulting in an
 // unconfigured core. It does not delete access tokens or mockhsm
 // keys.
-func ResetBlockchain(ctx context.Context, db pg.DB) error {
+func ResetBlockchain(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 	if isProduction() {
 		// Shouldn't ever happen; This package shouldn't even be
 		// included in a production binary.
@@ -54,20 +55,26 @@ func ResetBlockchain(ctx context.Context, db pg.DB) error {
 		return errors.Wrap(err)
 	}
 
+	// Config "table" now lives in raft, and it needs to be deleted too
+	err = rDB.Delete(ctx, "/core/config")
+	if err != nil {
+		return errors.Wrap(err, "could not delete config from RaftDB")
+	}
+
 	const q = `TRUNCATE %s RESTART IDENTITY;`
 	_, err = db.Exec(ctx, fmt.Sprintf(q, strings.Join(tables, ", ")))
 	return errors.Wrap(err)
 }
 
 // ResetEverything deletes all of a Core's data.
-func ResetEverything(ctx context.Context, db pg.DB) error {
+func ResetEverything(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 	if isProduction() {
 		// Shouldn't ever happen; This package shouldn't even be
 		// included in a production binary.
 		panic("reset called on production")
 	}
 
-	err := ResetBlockchain(ctx, db)
+	err := ResetBlockchain(ctx, db, rDB)
 	if err != nil {
 		return errors.Wrap(err)
 	}

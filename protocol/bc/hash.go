@@ -3,6 +3,7 @@ package bc
 import (
 	"bytes"
 	"database/sql/driver"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -14,6 +15,8 @@ import (
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
+
+//go:generate protoc --go_out=. hash.proto
 
 // Hash represents a 256-bit hash.  By convention, Hash objects are
 // typically passed as values, not as pointers.
@@ -105,4 +108,24 @@ func writeFastHash(w io.Writer, d []byte) {
 	var h [32]byte
 	sha3pool.Sum256(h[:], d)
 	blockchain.WriteVarstr31(w, h[:])
+}
+
+func (ph ProtoHash) Hash() (h Hash) {
+	binary.BigEndian.PutUint64(h[0:8], ph.V0)
+	binary.BigEndian.PutUint64(h[8:16], ph.V1)
+	binary.BigEndian.PutUint64(h[16:24], ph.V2)
+	binary.BigEndian.PutUint64(h[24:32], ph.V3)
+
+	return h
+}
+
+func (h Hash) Proto() (ph *ProtoHash) {
+	ph = new(ProtoHash)
+
+	ph.V0 = binary.BigEndian.Uint64(h[0:8])
+	ph.V1 = binary.BigEndian.Uint64(h[8:16])
+	ph.V2 = binary.BigEndian.Uint64(h[16:24])
+	ph.V3 = binary.BigEndian.Uint64(h[24:32])
+
+	return ph
 }

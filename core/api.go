@@ -5,6 +5,7 @@ import (
 	"context"
 	"expvar"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/pprof"
 	"sync"
@@ -23,6 +24,7 @@ import (
 	"chain/core/txdb"
 	"chain/core/txfeed"
 	"chain/database/pg"
+	"chain/database/raft"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/generated/dashboard"
@@ -61,6 +63,7 @@ type Handler struct {
 	TxFeeds       *txfeed.Tracker
 	AccessTokens  *accesstoken.CredentialStore
 	Config        *config.Config
+	RaftDB        *raft.Service
 	DB            pg.DB
 	Addr          string
 	AltAuth       func(*http.Request) bool
@@ -155,6 +158,8 @@ func (h *Handler) init() {
 	m.Handle("/configure", jsonHandler(h.configure))
 	m.Handle("/info", jsonHandler(h.info))
 
+	m.Handle("/raft/", h.RaftDB)
+
 	m.Handle("/debug/vars", http.HandlerFunc(expvarHandler))
 	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
@@ -183,7 +188,17 @@ func (h *Handler) init() {
 	handler = coreCounter(handler)
 	handler = reqid.Handler(handler)
 	handler = timeoutContextHandler(handler)
-	h.handler = handler
+	h.handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		// TODO(kr): remove this debugging hack
+		if req.URL.Path == "/raft/debugset" {
+			err := h.RaftDB.Set(req.Context(), "a", []byte("b"))
+			if err != nil {
+				log.Println(err)
+			}
+			return
+		}
+		handler.ServeHTTP(w, req)
+	})
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

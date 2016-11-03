@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"encoding/hex"
 	"expvar"
 	"fmt"
 	"io"
@@ -12,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -36,6 +36,7 @@ import (
 	"chain/core/txdb"
 	"chain/core/txfeed"
 	"chain/crypto/ed25519"
+	"chain/database/raft"
 	"chain/database/sql"
 	"chain/env"
 	"chain/errors"
@@ -69,6 +70,8 @@ var (
 	rpsToken      = env.Int("RATELIMIT_TOKEN", 0)       // reqs/sec
 	rpsRemoteAddr = env.Int("RATELIMIT_REMOTE_ADDR", 0) // reqs/sec
 	indexTxs      = env.Bool("INDEX_TRANSACTIONS", true)
+	dir           = env.String("DIR", defaultDir())
+	bootURL       = env.String("BOOTURL", "")
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -110,6 +113,12 @@ func main() {
 	ctx := context.Background()
 	env.Parse()
 
+	raftDir := filepath.Join(*dir, "raft") // TODO(kr): better name for this
+	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL)
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, err)
+	}
+
 	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("hapg", *dbURL)
 	if err != nil {
@@ -122,9 +131,9 @@ func main() {
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
-	resetInDevIfRequested(db)
+	resetInDevIfRequested(db, raftDB)
 
-	conf, err := config.Load(ctx, db)
+	conf, err := config.Load(ctx, db, raftDB)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
@@ -136,7 +145,7 @@ func main() {
 	}
 	processID := fmt.Sprintf("chain-%s-%d", hostname, os.Getpid())
 	if conf != nil {
-		processID += "-" + conf.ID
+		processID += "-" + conf.Id
 	}
 	expvar.NewString("processID").Set(processID)
 
@@ -147,10 +156,11 @@ func main() {
 
 	var h http.Handler
 	if conf != nil {
-		h = launchConfiguredCore(ctx, db, conf, processID)
+		h = launchConfiguredCore(ctx, raftDB, db, conf, processID)
 	} else {
 		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
 		h = &core.Handler{
+			RaftDB:       raftDB,
 			DB:           db,
 			AltAuth:      authLoopbackInDev,
 			AccessTokens: &accesstoken.CredentialStore{DB: db},
@@ -178,6 +188,7 @@ func main() {
 		// https://github.com/golang/go/issues/17071
 		TLSNextProto: map[string]func(*http.Server, *tls.Conn, http.Handler){},
 	}
+
 	if *tlsCrt != "" {
 		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
 		if err != nil {
@@ -199,16 +210,16 @@ func main() {
 	}
 }
 
-func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, processID string) http.Handler {
+func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string) http.Handler {
 	var remoteGenerator *rpc.Client
 	if !conf.IsGenerator {
 		remoteGenerator = &rpc.Client{
-			BaseURL:      conf.GeneratorURL,
+			BaseURL:      conf.GeneratorUrl,
 			AccessToken:  conf.GeneratorAccessToken,
 			Username:     processID,
-			CoreID:       conf.ID,
+			CoreID:       conf.Id,
 			BuildTag:     buildTag,
-			BlockchainID: conf.BlockchainID.String(),
+			BlockchainID: conf.BlockchainId.String(),
 		}
 	}
 	txbuilder.Generator = remoteGenerator
@@ -219,7 +230,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	}
 	pool := mempool.New()
 	store := txdb.NewStore(db)
-	c, err := protocol.NewChain(ctx, conf.BlockchainID, store, pool, heights)
+	c, err := protocol.NewChain(ctx, conf.BlockchainId.Hash(), store, pool, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
@@ -251,11 +262,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	var generatorSigners []generator.BlockSigner
 	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
 	if conf.IsSigner {
-		blockPub, err := hex.DecodeString(conf.BlockPub)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-		s := blocksigner.New(blockPub, hsm, db, c)
+		s := blocksigner.New(conf.BlockPub, hsm, db, c)
 		generatorSigners = append(generatorSigners, s) // "local" signer
 		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
 			sig, err := s.ValidateAndSignBlock(ctx, b)
@@ -267,10 +274,10 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	}
 
 	if conf.IsGenerator {
-		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainID.String(), conf) {
+		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainId.String(), conf) {
 			generatorSigners = append(generatorSigners, signer)
 		}
-		c.MaxIssuanceWindow = conf.MaxIssuanceWindow
+		c.MaxIssuanceWindow = bc.MillisDuration(conf.MaxIssuanceWindow)
 	}
 
 	// GC old submitted txs periodically.
@@ -287,6 +294,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		Indexer:      indexer,
 		AccessTokens: &accesstoken.CredentialStore{DB: db},
 		Config:       conf,
+		RaftDB:       raftDB,
 		DB:           db,
 		Addr:         *listenAddr,
 		Signer:       signBlockHandler,
@@ -350,7 +358,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	})
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set(rpc.HeaderBlockchainID, conf.BlockchainID.String())
+		w.Header().Set(rpc.HeaderBlockchainID, conf.BlockchainId.String())
 		h.ServeHTTP(w, req)
 	})
 }
@@ -364,7 +372,7 @@ type remoteSigner struct {
 
 func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, conf *config.Config) (a []*remoteSigner) {
 	for _, signer := range conf.Signers {
-		u, err := url.Parse(signer.URL)
+		u, err := url.Parse(signer.Url)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
@@ -375,7 +383,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 			BaseURL:      u.String(),
 			AccessToken:  signer.AccessToken,
 			Username:     processID,
-			CoreID:       conf.ID,
+			CoreID:       conf.Id,
 			BuildTag:     buildTag,
 			BlockchainID: blockchainID,
 		}
@@ -428,4 +436,9 @@ func (w *errlog) Write(p []byte) (int, error) {
 		w.t = time.Now()
 	}
 	return len(p), nil // report success for the MultiWriter
+}
+
+func defaultDir() string {
+	// TODO(kr): something in ~/Library on darwin?
+	return filepath.Join(os.Getenv("HOME"), ".cored")
 }

@@ -11,6 +11,7 @@ import (
 
 	"chain/core/coreunsafe"
 	"chain/database/pg"
+	"chain/database/raft"
 	"chain/env"
 	"chain/log"
 )
@@ -20,7 +21,7 @@ var (
 	prod  = "no"
 )
 
-func resetInDevIfRequested(db pg.DB) {
+func resetInDevIfRequested(db pg.DB, rDB *raft.Service) {
 	if *reset != "" {
 		os.Setenv("RESET", "")
 
@@ -28,9 +29,9 @@ func resetInDevIfRequested(db pg.DB) {
 		ctx := context.Background()
 		switch *reset {
 		case "blockchain":
-			err = coreunsafe.ResetBlockchain(ctx, db)
+			err = coreunsafe.ResetBlockchain(ctx, db, rDB)
 		case "everything":
-			err = coreunsafe.ResetEverything(ctx, db)
+			err = coreunsafe.ResetEverything(ctx, db, rDB)
 		default:
 			log.Fatal(ctx, log.KeyError, fmt.Errorf("unrecognized argument to reset: %s", *reset))
 		}

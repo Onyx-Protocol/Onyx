@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package bc;
+
+message ProtoHash {
+	fixed64 v0 = 1;
+	fixed64 v1 = 2;
+	fixed64 v2 = 3;
+	fixed64 v3 = 4;
+}

@@ -14,6 +14,7 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/httpjson"
+	"chain/protocol/bc"
 )
 
 var (
@@ -106,15 +107,15 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		"configured_at":                     h.Config.ConfiguredAt,
 		"is_signer":                         h.Config.IsSigner,
 		"is_generator":                      h.Config.IsGenerator,
-		"generator_url":                     h.Config.GeneratorURL,
+		"generator_url":                     h.Config.GeneratorUrl,
 		"generator_access_token":            obfuscateTokenSecret(h.Config.GeneratorAccessToken),
-		"blockchain_id":                     h.Config.BlockchainID,
+		"blockchain_id":                     h.Config.BlockchainId.Hash(),
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
 		"is_production":                     isProduction(),
 		"network_rpc_version":               networkRPCVersion,
-		"core_id":                           h.Config.ID,
+		"core_id":                           h.Config.Id,
 		"version":                           &version,
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
@@ -140,10 +141,10 @@ func (h *Handler) configure(ctx context.Context, x *config.Config) error {
 	}
 
 	if x.IsGenerator && x.MaxIssuanceWindow == 0 {
-		x.MaxIssuanceWindow = 24 * time.Hour
+		x.MaxIssuanceWindow = bc.DurationMillis(24 * time.Hour)
 	}
 
-	err := config.Configure(ctx, h.DB, x)
+	err := config.Configure(ctx, h.DB, h.RaftDB, x)
 	if err != nil {
 		return err
 	}
