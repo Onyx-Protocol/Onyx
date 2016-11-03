@@ -59,6 +59,9 @@ func (s *Store) ProcessBlocks(ctx context.Context, c *protocol.Chain, pinName st
 func (s *Store) CreatePin(ctx context.Context, name string, height uint64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if _, ok := s.pins[name]; ok {
+		return nil
+	}
 	const q = `
 		INSERT INTO block_processors (name, height) VALUES($1, $2)
 		ON CONFLICT(name) DO NOTHING;

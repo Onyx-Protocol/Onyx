@@ -295,32 +295,34 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		fetchhealth = h.HealthSetter("fetch")
 	)
 
+	networkReady := func() {
+		height := c.Height()
+		if height > 0 {
+			height = height - 1
+		}
+		err := pinStore.CreatePin(ctx, account.PinName, height)
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
+		}
+		err = pinStore.CreatePin(ctx, asset.PinName, height)
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
+		}
+		err = pinStore.CreatePin(ctx, query.TxPinName, height)
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
+		}
+	}
+
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,
 	// otherwise there's a data race within protocol.Chain.
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
 		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
 		if conf.IsGenerator {
-			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
+			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth, networkReady)
 		} else {
-			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth, func() {
-				height := c.Height()
-				if height > 0 {
-					height = height - 1
-				}
-				err := pinStore.CreatePin(ctx, account.PinName, height)
-				if err != nil {
-					chainlog.Fatal(ctx, chainlog.KeyError, err)
-				}
-				err = pinStore.CreatePin(ctx, asset.PinName, height)
-				if err != nil {
-					chainlog.Fatal(ctx, chainlog.KeyError, err)
-				}
-				err = pinStore.CreatePin(ctx, query.TxPinName, height)
-				if err != nil {
-					chainlog.Fatal(ctx, chainlog.KeyError, err)
-				}
-			})
+			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth, networkReady)
 		}
 		if !*indexTxs {
 			return
