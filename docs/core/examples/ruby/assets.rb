@@ -8,36 +8,36 @@ signer.add_key(asset_key, chain.mock_hsm.signer_conn)
 account_key = chain.mock_hsm.keys.create
 signer.add_key(account_key, chain.mock_hsm.signer_conn)
 
-chain.accounts.create()
-  .setAlias('acme_treasury')
-  .addRootXpub(account_key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.accounts.create(
+  alias: 'acme_treasury',
+  root_xpubs: [account_key.xpub],
+  quorum: 1,
+)
 
 # snippet create-asset-acme-common
-chain.assets.create()
-  .setAlias('acme_common')
-  .addRootXpub(asset_key.xpub)
-  .setQuorum(1)
+chain.assets.create(
+  alias: 'acme_common',
+  root_xpubs: [asset_key.xpub],
+  quorum: 1,
   .addTag('internal_rating', '1')
   .addDefinitionField('issuer', 'Acme Inc.')
   .addDefinitionField('type', 'security')
   .addDefinitionField('subtype', 'private')
   .addDefinitionField('class', 'common')
-  .create(client)
+)
 # endsnippet
 
 # snippet create-asset-acme-preferred
-chain.assets.create()
-  .setAlias('acme_preferred')
-  .addRootXpub(asset_key.xpub)
-  .setQuorum(1)
+chain.assets.create(
+  alias: 'acme_preferred',
+  root_xpubs: [asset_key.xpub],
+  quorum: 1,
   .addTag('internal_rating', '2')
   .addDefinitionField('issuer', 'Acme Inc.')
   .addDefinitionField('type', 'security')
   .addDefinitionField('subtype', 'private')
   .addDefinitionField('class', 'perferred')
-  .create(client)
+)
 # endsnippet
 
 # snippet list-local-assets
@@ -83,7 +83,7 @@ chain.transactions.submit(signedIssuanceTransaction)
 
 ControlProgram externalProgram = chain.accounts.create_control_program()
   .controlWithAccountByAlias('acme_treasury')
-  .create(client)
+)
 
 # snippet external-issue
 externalIssuance = chain.transactions.build do |b|

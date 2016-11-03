@@ -48,23 +48,23 @@ public static void setup(chain) throws Exception {
 key = chain.mock_hsm.keys.create
 signer.add_key(key, chain.mock_hsm.signer_conn)
 
-chain.assets.create()
-  .setAlias('gold')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.assets.create(
+  alias: 'gold',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
-chain.accounts.create()
-  .setAlias('alice')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.accounts.create(
+  alias: 'alice',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
-chain.accounts.create()
-  .setAlias('bob')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.accounts.create(
+  alias: 'bob',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
 # snippet create-feed
 feed = chain.transaction_feeds.create

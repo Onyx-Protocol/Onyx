@@ -164,28 +164,28 @@ signer.add_key(alice_key, chain.mock_hsm.signer_conn)
 bob_key = MockHsm.Key.create(otherCoreClient)
 signer.add_key(bob_key, MockHsm.getSignerClient(otherCoreClient))
 
-chain.assets.create()
-  .setAlias('gold')
-  .addRootXpub(alice_key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.assets.create(
+  alias: 'gold',
+  root_xpubs: [alice_key.xpub],
+  quorum: 1,
+)
 
-chain.assets.create()
-  .setAlias('silver')
-  .addRootXpub(alice_key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.assets.create(
+  alias: 'silver',
+  root_xpubs: [alice_key.xpub],
+  quorum: 1,
+)
 
-chain.accounts.create()
-  .setAlias('alice')
-  .addRootXpub(alice_key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.accounts.create(
+  alias: 'alice',
+  root_xpubs: [alice_key.xpub],
+  quorum: 1,
+)
 
-chain.accounts.create()
-  .setAlias('bob')
-  .addRootXpub(bob_key.xpub)
-  .setQuorum(1)
+chain.accounts.create(
+  alias: 'bob',
+  root_xpubs: [bob_key.xpub],
+  quorum: 1,
   .create(otherCoreClient)
 
 chain.transactions.submit(signer.sign(chain.transactions.build do |b|

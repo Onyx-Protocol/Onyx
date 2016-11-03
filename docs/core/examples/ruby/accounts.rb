@@ -11,40 +11,40 @@ signer.add_key(alice_key, chain.mock_hsm.signer_conn)
 bob_key = chain.mock_hsm.keys.create
 signer.add_key(bob_key, chain.mock_hsm.signer_conn)
 
-chain.assets.create()
-  .setAlias('gold')
-  .addRootXpub(asset_key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.assets.create(
+  alias: 'gold',
+  root_xpubs: [asset_key.xpub],
+  quorum: 1,
+)
 
-chain.assets.create()
-  .setAlias('silver')
-  .addRootXpub(asset_key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.assets.create(
+  alias: 'silver',
+  root_xpubs: [asset_key.xpub],
+  quorum: 1,
+)
 
 # snippet create-account-alice
-chain.accounts.create()
-  .setAlias('alice')
-  .addRootXpub(alice_key.xpub)
-  .setQuorum(1)
+chain.accounts.create(
+  alias: 'alice',
+  root_xpubs: [alice_key.xpub],
+  quorum: 1,
   .addTag('type', 'checking')
   .addTag('first_name', 'Alice')
   .addTag('last_name', 'Jones')
   .addTag('user_id', '12345')
-  .create(client)
+)
 # endsnippet
 
 # snippet create-account-bob
-chain.accounts.create()
-  .setAlias('bob')
-  .addRootXpub(bob_key.xpub)
-  .setQuorum(1)
+chain.accounts.create(
+  alias: 'bob',
+  root_xpubs: [bob_key.xpub],
+  quorum: 1,
   .addTag('type', 'savings')
   .addTag('first_name', 'Bob')
   .addTag('last_name', 'Smith')
   .addTag('user_id', '67890')
-  .create(client)
+)
 # endsnippet
 
 # snippet list-accounts-by-tag
@@ -107,7 +107,7 @@ chain.transactions.submit(signedSpendingTransaction)
 # snippet create-control-program
 ControlProgram bobProgram = chain.accounts.create_control_program()
   .controlWithAccountByAlias('bob')
-  .create(client)
+)
 # endsnippet
 
 # snippet transfer-to-control-program

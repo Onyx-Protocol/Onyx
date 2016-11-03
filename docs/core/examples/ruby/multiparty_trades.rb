@@ -17,28 +17,28 @@ signer.add_key(alice_key, MockHsm.getSignerClient(aliceCore))
 bob_key = MockHsm.Key.create(bobCore)
 signer.add_key(bob_key, MockHsm.getSignerClient(bobCore))
 
-Asset aliceDollar = chain.assets.create()
-  .setAlias('aliceDollar')
-  .addRootXpub(alice_dollar_key.xpub)
-  .setQuorum(1)
+Asset aliceDollar = chain.assets.create(
+  alias: 'aliceDollar',
+  root_xpubs: [alice_dollar_key.xpub],
+  quorum: 1,
   .create(aliceCore)
 
-Asset bobBuck = chain.assets.create()
-  .setAlias('bobBuck')
-  .addRootXpub(bob_buck_key.xpub)
-  .setQuorum(1)
+Asset bobBuck = chain.assets.create(
+  alias: 'bobBuck',
+  root_xpubs: [bob_buck_key.xpub],
+  quorum: 1,
   .create(bobCore)
 
-Account alice = chain.accounts.create()
-  .setAlias('alice')
-  .addRootXpub(alice_key.xpub)
-  .setQuorum(1)
+Account alice = chain.accounts.create(
+  alias: 'alice',
+  root_xpubs: [alice_key.xpub],
+  quorum: 1,
   .create(aliceCore)
 
-Account bob = chain.accounts.create()
-  .setAlias('bob')
-  .addRootXpub(bob_key.xpub)
-  .setQuorum(1)
+Account bob = chain.accounts.create(
+  alias: 'bob',
+  root_xpubs: [bob_key.xpub],
+  quorum: 1,
   .create(bobCore)
 
 chain.transactions.submit(aliceCore, signer.sign(chain.transactions.build do |b|

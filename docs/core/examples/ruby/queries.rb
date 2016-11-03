@@ -131,30 +131,30 @@ public static void setup(chain) throws Exception {
 key = chain.mock_hsm.keys.create
 signer.add_key(key, chain.mock_hsm.signer_conn)
 
-chain.assets.create()
-  .setAlias('gold')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.assets.create(
+  alias: 'gold',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
-chain.assets.create()
-  .setAlias('silver')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.assets.create(
+  alias: 'silver',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
-chain.accounts.create()
-  .setAlias('alice')
+chain.accounts.create(
+  alias: 'alice',
   .addTag('type', 'checking')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
-chain.accounts.create()
-  .setAlias('bob')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.accounts.create(
+  alias: 'bob',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
 chain.transactions.submit(signer.sign(chain.transactions.build do |b|
   .addAction(new Transaction.Action.Issue()
@@ -192,38 +192,38 @@ chain.transactions.submit(signer.sign(chain.transactions.build do |b|
     .setAmount(10))
   .build(client)))
 
-chain.assets.create()
-  .setAlias('bank1_usd_iou')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
+chain.assets.create(
+  alias: 'bank1_usd_iou',
+  root_xpubs: [key.xpub],
+  quorum: 1,
   .addDefinitionField('currency', 'USD')
-  .create(client)
+)
 
-chain.assets.create()
-  .setAlias('bank1_euro_iou')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
+chain.assets.create(
+  alias: 'bank1_euro_iou',
+  root_xpubs: [key.xpub],
+  quorum: 1,
   .addDefinitionField('currency', 'Euro')
-  .create(client)
+)
 
-chain.assets.create()
-  .setAlias('bank2_usd_iou')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
+chain.assets.create(
+  alias: 'bank2_usd_iou',
+  root_xpubs: [key.xpub],
+  quorum: 1,
   .addDefinitionField('currency', 'USD')
-  .create(client)
+)
 
-chain.accounts.create()
-  .setAlias('bank1')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.accounts.create(
+  alias: 'bank1',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
-chain.accounts.create()
-  .setAlias('bank2')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.accounts.create(
+  alias: 'bank2',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
 chain.transactions.submit(signer.sign(chain.transactions.build do |b|
   .addAction(new Transaction.Action.Issue()

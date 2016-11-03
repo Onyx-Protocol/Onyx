@@ -7,18 +7,18 @@ signer.add_key(key, chain.mock_hsm.signer_conn)
 
 # snippet asset-builders
 List<Asset.Builder> assetBuilders = Arrays.asList(
-  chain.assets.create()
-    .setAlias('gold')
-    .addRootXpub(key.xpub)
-    .setQuorum(1),
-  chain.assets.create()
-    .setAlias('silver')
-    .addRootXpub(key.xpub)
-    .setQuorum(1),
-  chain.assets.create()
-    .setAlias('bronze')
-    .addRootXpub(key.xpub)
-    .setQuorum(0)
+  chain.assets.create(
+    alias: 'gold',
+    root_xpubs: [key.xpub],
+    quorum: 1,,
+  chain.assets.create(
+    alias: 'silver',
+    root_xpubs: [key.xpub],
+    quorum: 1,,
+  chain.assets.create(
+    alias: 'bronze',
+    root_xpubs: [key.xpub],
+    quorum: [0],
 )
 # endsnippet
 
@@ -40,18 +40,18 @@ for (int i = 0 i < assetBatch.size() i++) {
 
 # snippet nondeterministic-errors
 assetBuilders = Arrays.asList(
-  chain.assets.create()
-    .setAlias('platinum')
-    .addRootXpub(key.xpub)
-    .setQuorum(1),
-  chain.assets.create()
-    .setAlias('platinum')
-    .addRootXpub(key.xpub)
-    .setQuorum(1),
-  chain.assets.create()
-    .setAlias('platinum')
-    .addRootXpub(key.xpub)
-    .setQuorum(1)
+  chain.assets.create(
+    alias: 'platinum',
+    root_xpubs: [key.xpub],
+    quorum: 1,,
+  chain.assets.create(
+    alias: 'platinum',
+    root_xpubs: [key.xpub],
+    quorum: 1,,
+  chain.assets.create(
+    alias: 'platinum',
+    root_xpubs: [key.xpub],
+    quorum: 1,
 )
 # endsnippet
 
@@ -67,17 +67,17 @@ for (int i = 0 i < assetBatch.size() i++) {
   }
 }
 
-chain.accounts.create()
-  .setAlias('alice')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.accounts.create(
+  alias: 'alice',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
-chain.accounts.create()
-  .setAlias('bob')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.accounts.create(
+  alias: 'bob',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
 # snippet batch-build-builders
 List<Transaction.Builder> txBuilders = Arrays.asList(

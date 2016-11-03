@@ -10,17 +10,17 @@ key = chain.mock_hsm.keys.create
 signer.add_key(key, chain.mock_hsm.signer_conn)
 # endsnippet
 
-chain.assets.create()
-  .setAlias('gold')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.assets.create(
+  alias: 'gold',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
-chain.accounts.create()
-  .setAlias('alice')
-  .addRootXpub(key.xpub)
-  .setQuorum(1)
-  .create(client)
+chain.accounts.create(
+  alias: 'alice',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+)
 
 unsigned = chain.transactions.build do |b|
   .addAction(new Transaction.Action.Issue()
