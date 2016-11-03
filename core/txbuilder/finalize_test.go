@@ -48,8 +48,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	dumpState(ctx, t, db)
 	prottest.MakeBlock(t, info.Chain)
 	dumpState(ctx, t, db)
-	accountPin := info.pinStore.Pin(account.PinName)
-	<-accountPin.WaitForHeight(info.Chain.Height())
+	<-info.pinStore.WaitForPin(account.PinName, info.Chain.Height())
 
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
@@ -91,7 +90,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	// Make a block, which should reject one of the txs.
 	dumpState(ctx, t, db)
 	b := prottest.MakeBlock(t, info.Chain)
-	<-accountPin.WaitForHeight(info.Chain.Height())
+	<-info.pinStore.WaitForPin(account.PinName, info.Chain.Height())
 
 	dumpState(ctx, t, db)
 	if len(b.Transactions) != 1 {
@@ -117,8 +116,7 @@ func TestTransferConfirmed(t *testing.T) {
 	prottest.MakeBlock(t, info.Chain)
 	dumpState(ctx, t, db)
 
-	accountPin := info.pinStore.Pin(account.PinName)
-	<-accountPin.WaitForHeight(info.Chain.Height())
+	<-info.pinStore.WaitForPin(account.PinName, info.Chain.Height())
 
 	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {
@@ -257,7 +255,8 @@ type testInfo struct {
 // and consume it from cmd/corectl.
 func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
 	c := prottest.NewChain(t)
-	pinStore := &pin.Store{DB: db}
+	pinStore := pin.NewStore(db)
+	coretest.CreatePins(ctx, t, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)

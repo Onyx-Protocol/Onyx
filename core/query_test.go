@@ -18,8 +18,8 @@ func TestQueryWithClockSkew(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	c := prottest.NewChain(t)
 
-	pinStore := &pin.Store{DB: db}
-	err := pinStore.Pin(asset.PinName).RaiseTo(ctx, 100)
+	pinStore := pin.NewStore(db)
+	err := pinStore.CreatePin(ctx, asset.PinName, 100)
 	if err != nil {
 		t.Fatal(err)
 	}

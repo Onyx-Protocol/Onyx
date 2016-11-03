@@ -8,6 +8,7 @@ import (
 
 	"chain/core/account"
 	"chain/core/asset"
+	"chain/core/pin"
 	"chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
 	"chain/errors"
@@ -16,6 +17,16 @@ import (
 	"chain/protocol/state"
 	"chain/testutil"
 )
+
+func CreatePins(ctx context.Context, t testing.TB, s *pin.Store) {
+	pins := []string{account.PinName, asset.PinName, "tx"} // "tx" avoids circular dependency on query
+	for _, p := range pins {
+		err := s.CreatePin(ctx, p, 0)
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+	}
+}
 
 func CreateAccount(ctx context.Context, t testing.TB, accounts *account.Manager, alias string, tags map[string]interface{}) string {
 	keys := []string{testutil.TestXPub.String()}

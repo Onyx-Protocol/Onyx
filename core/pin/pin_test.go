@@ -8,11 +8,12 @@ import (
 	"chain/database/pg/pgtest"
 )
 
-func TestWaitForHeight(t *testing.T) {
+func TestWaitForPin(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 
 	p := newPin(dbtx, "test", 0)
+	s := &Store{pins: map[string]*pin{"test": p}}
 
 	sctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
@@ -21,12 +22,12 @@ func TestWaitForHeight(t *testing.T) {
 		select {
 		case <-ctx.Done():
 			ch <- ctx.Err()
-		case <-p.WaitForHeight(1):
+		case <-s.WaitForPin("test", 1):
 			ch <- nil
 		}
 	}(sctx)
 
-	err := p.RaiseTo(ctx, 1)
+	err := p.raiseTo(ctx, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
