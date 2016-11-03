@@ -1,7 +1,7 @@
 require 'chain'
 
 # snippet create-client
-chain = Chain.new
+chain = Chain::Client.new
 # endsnippet
 
 # snippet create-key
@@ -10,7 +10,7 @@ key = chain.mock_hsm.keys.create
 
 # snippet signer-add-key
 signer = Chain::HSMSigner.new
-signer.add_key(key, chain.mock_hsm.signer_client)
+signer.add_key(key, chain.mock_hsm.signer_conn)
 # endsnippet
 
 # snippet create-asset
