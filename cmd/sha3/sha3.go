@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	size := flag.Int("n", 256, "size in bits of the desired hash: 224, 256 (default), 384, or 512")
+	size := flag.Int("n", 256, "output size in `bits`: 224, 256, 384, or 512")
 	flag.Parse()
 
 	var h hash.Hash
