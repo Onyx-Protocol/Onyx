@@ -117,6 +117,7 @@ type Chain struct {
 	pendingSnapshots   chan pendingSnapshot
 
 	prevalidated prevalidatedTxsCache
+	ready        chan struct{}
 }
 
 type pendingSnapshot struct {
@@ -134,6 +135,7 @@ func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, pool P
 		prevalidated: prevalidatedTxsCache{
 			lru: lru.New(maxCachedValidatedTxs),
 		},
+		ready: make(chan struct{}),
 	}
 	c.state.cond.L = new(sync.Mutex)
 
@@ -167,6 +169,13 @@ func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, pool P
 	}()
 
 	return c, nil
+}
+
+// Ready returns a channel that is closed when the
+// chain has been recovered. This indicates that it is
+// ready for access.
+func (c *Chain) Ready() <-chan struct{} {
+	return c.ready
 }
 
 // Height returns the current height of the blockchain.

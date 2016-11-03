@@ -51,7 +51,6 @@ func Generate(
 	db pg.DB,
 	period time.Duration,
 	health func(error),
-	networkReady func(),
 ) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
@@ -59,8 +58,6 @@ func Generate(
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}
-
-	networkReady()
 
 	g := &generator{
 		db:             db,

@@ -54,7 +54,7 @@ func SnapshotProgress() *Snapshot {
 // It returns when its context is canceled.
 // After each attempt to fetch and apply a block, it calls health
 // to report either an error or nil to indicate success.
-func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error), networkReady func()) {
+func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error)) {
 	// Fetch the generator height periodically.
 	go pollGeneratorHeight(ctx, peer)
 
@@ -87,8 +87,6 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 	if prevBlock != nil {
 		height = prevBlock.Height
 	}
-
-	networkReady()
 
 	blockch, errch := DownloadBlocks(ctx, peer, height+1)
 

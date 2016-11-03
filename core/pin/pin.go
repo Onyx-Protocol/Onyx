@@ -91,13 +91,10 @@ func (s *Store) pin(name string) <-chan *pin {
 	go func() {
 		s.mu.Lock()
 		defer s.mu.Unlock()
-		for {
-			if p, ok := s.pins[name]; ok {
-				ch <- p
-				return
-			}
+		for s.pins[name] == nil {
 			s.cond.Wait()
 		}
+		ch <- s.pins[name]
 	}()
 	return ch
 }
@@ -140,9 +137,7 @@ func (s *Store) Listen(ctx context.Context, pinName, dbURL string) {
 		return
 	}
 	go func() {
-		defer func() {
-			listener.Close()
-		}()
+		defer listener.Close()
 
 		var p *pin
 
