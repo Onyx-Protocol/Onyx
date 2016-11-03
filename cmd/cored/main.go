@@ -304,15 +304,19 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth, func() {
-				err := pinStore.CreatePin(ctx, account.PinName, c.Height()-1)
+				height := c.Height()
+				if height > 0 {
+					height = height - 1
+				}
+				err := pinStore.CreatePin(ctx, account.PinName, height)
 				if err != nil {
 					chainlog.Fatal(ctx, chainlog.KeyError, err)
 				}
-				err = pinStore.CreatePin(ctx, asset.PinName, c.Height()-1)
+				err = pinStore.CreatePin(ctx, asset.PinName, height)
 				if err != nil {
 					chainlog.Fatal(ctx, chainlog.KeyError, err)
 				}
-				err = pinStore.CreatePin(ctx, query.TxPinName, c.Height()-1)
+				err = pinStore.CreatePin(ctx, query.TxPinName, height)
 				if err != nil {
 					chainlog.Fatal(ctx, chainlog.KeyError, err)
 				}
