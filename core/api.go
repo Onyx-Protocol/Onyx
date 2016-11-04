@@ -60,6 +60,7 @@ type Handler struct {
 	Indexer       *query.Indexer
 	TxFeeds       *txfeed.Tracker
 	AccessTokens  *accesstoken.CredentialStore
+	Leadership    leader.Leadership
 	Config        *config.Config
 	DB            pg.DB
 	Addr          string
@@ -276,7 +277,7 @@ func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, 
 		if f == nil {
 			return nil, errNotFound // TODO(kr): is this really the right error here?
 		}
-		if leader.IsLeading() {
+		if h.Leadership.IsLeading() {
 			return f(ctx, b)
 		}
 		var resp []byte
@@ -290,7 +291,7 @@ func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, 
 // request. For that reason, it cannot be used outside of a request-
 // handling context.
 func (h *Handler) forwardToLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
-	addr, err := leader.Address(ctx, h.DB)
+	addr, err := h.Leadership.Address(ctx)
 	if err != nil {
 		return errors.Wrap(err)
 	}
