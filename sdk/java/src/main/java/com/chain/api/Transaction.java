@@ -148,8 +148,8 @@ public class Transaction {
    */
   public static class Input {
     /**
-     * The type of action being taken on an input.<br>
-     * Possible actions are "issue", "spend_account", and "spend_account_unspent_output".
+     * The type of the input.<br>
+     * Possible values are "issue" and "spend".
      */
     public String type;
 
@@ -238,8 +238,8 @@ public class Transaction {
    */
   public static class Output {
     /**
-     * The type of action being taken on the output.<br>
-     * Possible actions are "control_account", "control_program", and "retire".
+     * The type the output.<br>
+     * Possible values are "control" and "retire".
      */
     public String type;
 
