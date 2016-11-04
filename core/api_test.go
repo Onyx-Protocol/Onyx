@@ -24,7 +24,7 @@ import (
 )
 
 func TestBuildFinal(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c)
@@ -32,7 +32,8 @@ func TestBuildFinal(t *testing.T) {
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore), pinStore)
-	go accounts.ProcessBlocks(ctx)
+	go pinStore.QueueBlocks(ctx, c, account.PinName)
+	go accounts.ProcessBlocks(ctx, "testhost", dbURL)
 
 	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
@@ -134,7 +135,7 @@ func TestBuildFinal(t *testing.T) {
 }
 
 func TestAccountTransfer(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c)
@@ -142,7 +143,8 @@ func TestAccountTransfer(t *testing.T) {
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore), pinStore)
-	go accounts.ProcessBlocks(ctx)
+	go pinStore.QueueBlocks(ctx, c, account.PinName)
+	go accounts.ProcessBlocks(ctx, "testhost", dbURL)
 
 	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
@@ -200,7 +202,7 @@ func TestMux(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
 	pinStore := pin.NewStore(db)
@@ -214,7 +216,8 @@ func TestTransfer(t *testing.T) {
 	}
 	handler.Assets.IndexAssets(handler.Indexer, pinStore)
 	handler.Accounts.IndexAccounts(handler.Indexer, pinStore)
-	go handler.Accounts.ProcessBlocks(ctx)
+	go pinStore.QueueBlocks(ctx, c, account.PinName)
+	go handler.Accounts.ProcessBlocks(ctx, "testhost", dbURL)
 	handler.Indexer.RegisterAnnotator(handler.Accounts.AnnotateTxs)
 	handler.Indexer.RegisterAnnotator(handler.Assets.AnnotateTxs)
 	handler.init()

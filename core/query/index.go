@@ -10,6 +10,7 @@ import (
 	"chain/core/asset"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/log"
 	"chain/protocol/bc"
 )
 
@@ -29,11 +30,23 @@ func (ind *Indexer) RegisterAnnotator(annotator Annotator) {
 	ind.annotators = append(ind.annotators, annotator)
 }
 
-func (ind *Indexer) ProcessBlocks(ctx context.Context) {
+func (ind *Indexer) ProcessBlocks(ctx context.Context, host, dbURL string) {
 	if ind.pinStore == nil {
 		return
 	}
-	ind.pinStore.ProcessBlocks(ctx, ind.c, TxPinName, ind.IndexTransactions)
+	go ind.pinStore.Listen(ctx, TxPinName, dbURL)
+	go ind.pinStore.ListenQueue(ctx, TxPinName, dbURL)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		err := ind.pinStore.ProcessBlock(ctx, ind.c, host, TxPinName, ind.IndexTransactions)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}
 }
 
 // IndexTransactions is registered as a block callback on the Chain. It

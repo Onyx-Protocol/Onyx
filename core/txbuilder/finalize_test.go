@@ -96,9 +96,9 @@ func TestSighashCheck(t *testing.T) {
 // source, and then building two different txs with that same source,
 // but destinations w/ different addresses.
 func TestConflictingTxsInPool(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
-	info, err := bootdb(ctx, db, t)
+	info, err := bootdb(ctx, db, dbURL, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,10 +162,10 @@ func TestConflictingTxsInPool(t *testing.T) {
 }
 
 func TestTransferConfirmed(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 
-	info, err := bootdb(ctx, db, t)
+	info, err := bootdb(ctx, db, dbURL, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,9 +188,9 @@ func TestTransferConfirmed(t *testing.T) {
 }
 
 func BenchmarkTransferWithBlocks(b *testing.B) {
-	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
+	dbURL, db := pgtest.NewDB(b, pgtest.SchemaPath)
 	ctx := context.Background()
-	info, err := bootdb(ctx, db, b)
+	info, err := bootdb(ctx, db, dbURL, b)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -316,7 +316,7 @@ type testInfo struct {
 
 // TODO(kr): refactor this into new package core/coreutil
 // and consume it from cmd/corectl.
-func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
+func bootdb(ctx context.Context, db *sql.DB, dbURL string, t testing.TB) (*testInfo, error) {
 	c := prottest.NewChain(t)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
@@ -325,7 +325,8 @@ func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
 	accounts := account.NewManager(db, c)
 	assets.IndexAssets(indexer, pinStore)
 	accounts.IndexAccounts(indexer, pinStore)
-	go accounts.ProcessBlocks(ctx)
+	go pinStore.QueueBlocks(ctx, c, account.PinName)
+	go accounts.ProcessBlocks(ctx, "testhost", dbURL)
 
 	accPriv, accPub, err := chainkd.NewXKeys(nil)
 	if err != nil {

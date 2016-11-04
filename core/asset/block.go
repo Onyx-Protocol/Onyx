@@ -9,6 +9,7 @@ import (
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/log"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
 )
@@ -71,11 +72,23 @@ func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 	return reg.indexer.SaveAnnotatedAsset(ctx, a.AssetID, m, a.sortID)
 }
 
-func (reg *Registry) ProcessBlocks(ctx context.Context) {
+func (reg *Registry) ProcessBlocks(ctx context.Context, host, dbURL string) {
 	if reg.indexer == nil || reg.pinStore == nil {
 		return
 	}
-	reg.pinStore.ProcessBlocks(ctx, reg.chain, PinName, reg.indexAssets)
+	go reg.pinStore.Listen(ctx, PinName, dbURL)
+	go reg.pinStore.ListenQueue(ctx, PinName, dbURL)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		err := reg.pinStore.ProcessBlock(ctx, reg.chain, host, PinName, reg.indexAssets)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}
 }
 
 // indexAssets is run on every block and indexes all non-local assets.

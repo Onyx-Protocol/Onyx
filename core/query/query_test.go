@@ -17,7 +17,7 @@ import (
 func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Time, *account.Account, *account.Account, *asset.Asset, *asset.Asset) {
 	time1 := time.Now()
 
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
 	pinStore := pin.NewStore(db)
@@ -28,8 +28,10 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	assets.IndexAssets(indexer, pinStore)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
-	go assets.ProcessBlocks(ctx)
-	go indexer.ProcessBlocks(ctx)
+	go pinStore.QueueBlocks(ctx, c, asset.PinName)
+	go pinStore.QueueBlocks(ctx, c, TxPinName)
+	go assets.ProcessBlocks(ctx, "testhost", dbURL)
+	go indexer.ProcessBlocks(ctx, "testhost", dbURL)
 
 	acct1, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {

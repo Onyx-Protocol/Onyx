@@ -20,7 +20,7 @@ import (
 )
 
 func TestMockHSM(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c)
@@ -28,7 +28,8 @@ func TestMockHSM(t *testing.T) {
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore), pinStore)
-	go accounts.ProcessBlocks(ctx)
+	go pinStore.QueueBlocks(ctx, c, account.PinName)
+	go accounts.ProcessBlocks(ctx, "testhost", dbURL)
 	mockhsm := mockhsm.New(db)
 
 	xpub1, err := mockhsm.XCreate(ctx, "")

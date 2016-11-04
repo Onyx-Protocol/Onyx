@@ -213,10 +213,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
-	// Start listeners
-	go pinStore.Listen(ctx, account.PinName, *dbURL)
-	go pinStore.Listen(ctx, asset.PinName, *dbURL)
-	go pinStore.Listen(ctx, query.TxPinName, *dbURL)
 
 	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, c, pinStore)
@@ -228,6 +224,31 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		indexer.RegisterAnnotator(accounts.AnnotateTxs)
 		assets.IndexAssets(indexer, pinStore)
 		accounts.IndexAccounts(indexer, pinStore)
+
+		// Start processors
+		go accounts.ProcessBlocks(ctx, processID, *dbURL)
+		go assets.ProcessBlocks(ctx, processID, *dbURL)
+		go indexer.ProcessBlocks(ctx, processID, *dbURL)
+
+		go func() {
+			<-c.Ready()
+			height := c.Height()
+			if height > 0 {
+				height = height - 1
+			}
+			err := pinStore.CreatePin(ctx, account.PinName, height)
+			if err != nil {
+				chainlog.Fatal(ctx, chainlog.KeyError, err)
+			}
+			err = pinStore.CreatePin(ctx, asset.PinName, height)
+			if err != nil {
+				chainlog.Fatal(ctx, chainlog.KeyError, err)
+			}
+			err = pinStore.CreatePin(ctx, query.TxPinName, height)
+			if err != nil {
+				chainlog.Fatal(ctx, chainlog.KeyError, err)
+			}
+		}()
 	}
 
 	hsm := mockhsm.New(db)
@@ -295,26 +316,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		fetchhealth = h.HealthSetter("fetch")
 	)
 
-	go func() {
-		<-c.Ready()
-		height := c.Height()
-		if height > 0 {
-			height = height - 1
-		}
-		err := pinStore.CreatePin(ctx, account.PinName, height)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-		err = pinStore.CreatePin(ctx, asset.PinName, height)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-		err = pinStore.CreatePin(ctx, query.TxPinName, height)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-	}()
-
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,
 	// otherwise there's a data race within protocol.Chain.
@@ -325,12 +326,11 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
 		}
-		if !*indexTxs {
-			return
+		if *indexTxs {
+			go pinStore.QueueBlocks(ctx, c, account.PinName)
+			go pinStore.QueueBlocks(ctx, c, asset.PinName)
+			go pinStore.QueueBlocks(ctx, c, query.TxPinName)
 		}
-		go h.Accounts.ProcessBlocks(ctx)
-		go h.Assets.ProcessBlocks(ctx)
-		go h.Indexer.ProcessBlocks(ctx)
 	})
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

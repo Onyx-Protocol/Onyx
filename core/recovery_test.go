@@ -45,7 +45,8 @@ func TestRecovery(t *testing.T) {
 	accounts := account.NewManager(db, c)
 	assets.IndexAssets(indexer, pinStore)
 	accounts.IndexAccounts(indexer, pinStore)
-	go accounts.ProcessBlocks(ctx)
+	go pinStore.QueueBlocks(ctx, c, account.PinName)
+	go accounts.ProcessBlocks(ctx, "testhost", dbURL)
 
 	// Setup the transaction query indexer to index every transaction.
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
@@ -119,7 +120,7 @@ func TestRecovery(t *testing.T) {
 
 		ctx := context.Background()
 		go func() {
-			err := generateBlock(ctx, t, wrappedDB, timestamp)
+			err := generateBlock(ctx, t, wrappedDB, dbURL, timestamp)
 			ch <- err
 		}()
 
@@ -160,7 +161,7 @@ func TestRecovery(t *testing.T) {
 
 		// We crashed at some point during block generation. Do it again,
 		// without crashing.
-		err = generateBlock(ctx, t, wrappedDB, timestamp)
+		err = generateBlock(ctx, t, wrappedDB, dbURL, timestamp)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -184,7 +185,7 @@ func TestRecovery(t *testing.T) {
 	}
 }
 
-func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, timestamp time.Time) error {
+func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, dbURL string, timestamp time.Time) error {
 	store, pool := txdb.New(db)
 	b1, err := store.GetBlock(ctx, 1)
 	if err != nil {
@@ -200,7 +201,8 @@ func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, timestamp time
 	// Setup the transaction query indexer to index every transaction.
 	assets.IndexAssets(indexer, pinStore)
 	accounts.IndexAccounts(indexer, pinStore)
-	go accounts.ProcessBlocks(ctx)
+	go pinStore.QueueBlocks(ctx, c, account.PinName)
+	go accounts.ProcessBlocks(ctx, "testhost", dbURL)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 

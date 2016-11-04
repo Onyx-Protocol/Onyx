@@ -10,6 +10,7 @@ import (
 	"chain/database/sql"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/log"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 )
@@ -86,11 +87,23 @@ func (m *Manager) IndexUnconfirmedUTXOs(ctx context.Context, tx *bc.Tx) error {
 	return errors.Wrap(err, "upserting confirmed account utxos")
 }
 
-func (m *Manager) ProcessBlocks(ctx context.Context) {
+func (m *Manager) ProcessBlocks(ctx context.Context, host, dbURL string) {
 	if m.indexer == nil || m.pinStore == nil {
 		return
 	}
-	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, m.indexAccountUTXOs)
+	go m.pinStore.Listen(ctx, PinName, dbURL)
+	go m.pinStore.ListenQueue(ctx, PinName, dbURL)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		err := m.pinStore.ProcessBlock(ctx, m.chain, host, PinName, m.indexAccountUTXOs)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}
 }
 
 func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {

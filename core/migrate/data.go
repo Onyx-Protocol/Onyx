@@ -30,4 +30,14 @@ var migrations = []migration{
 			height bigint DEFAULT 0 NOT NULL
 		);
 	`},
+	{Name: "2016-11-07.0.core.add-block-processor-queue.sql", SQL: `
+		CREATE TABLE block_processor_queue (
+			name text NOT NULL,
+			height bigint NOT NULL,
+			held_by text,
+			held_at timestamptz,
+			PRIMARY KEY (name, height)
+		);
+		ALTER TABLE block_processors ADD COLUMN queued_height bigint DEFAULT 0 NOT NULL;
+	`},
 }
