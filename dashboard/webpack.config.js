@@ -65,7 +65,7 @@ let loaders = config.module.loaders
 
 for (let item of loaders) {
   if (item.loader) {
-    item.loader = item.loader.replace('css-loader','css-loader?modules&importLoaders=1&localIdentName=[name]__[local]__[hash:base64:5]')
+    item.loader = item.loader.replace('css-loader','css-loader?module&importLoaders=1&localIdentName=[name]__[local]__[hash:base64:5]')
   }
   if ('.scss'.match(item.test) != null) {
     item.loader = item.loader.replace('sass-loader','sass-loader!sass-resources-loader')
