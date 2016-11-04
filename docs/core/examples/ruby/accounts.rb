@@ -91,13 +91,15 @@ chain.transactions.submit(signed_spending_tx)
 # endsnippet
 
 # snippet create-control-program
-bob_program = chain.accounts.create_control_program(alias: 'bob')
+bob_program = chain.accounts.create_control_program(
+  alias: 'bob'
+).control_program
 # endsnippet
 
 # snippet transfer-to-control-program
 spending_tx2 = chain.transactions.build do |b|
   b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 10
-  b.control_with_program control_program: bob_program.control_program, asset_alias: 'gold', amount: 10
+  b.control_with_program control_program: bob_program, asset_alias: 'gold', amount: 10
 end
 
 chain.transactions.submit(signer.sign(spending_tx2))
