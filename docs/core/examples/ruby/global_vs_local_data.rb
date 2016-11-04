@@ -39,43 +39,27 @@ chain.accounts.create(
 
 # snippet issue
 issuance = chain.transactions.build do |b|
-  b.issue
-    asset_alias: 'gold',
-    amount: 100,
-  b.control_with_account
-    account_alias: 'alice',
-    asset_alias: 'gold',
-    amount: 100,
-  ).build(client)
+  b.issue asset_alias: 'gold', amount: 100
+  b.control_with_account account_alias: 'alice', asset_alias: 'gold', amount: 100
+end
 
 chain.transactions.submit(signer.sign(issuance))
 # endsnippet
 
 # snippet spend
 spending = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'alice',
-    asset_alias: 'gold',
-    amount: 10,)
-  .addAction(new Transaction.Action.ControlWithAccount()
-    account_alias: 'bob',
-    asset_alias: 'gold',
-    amount: 10,
-  ).build(client)
+  b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 10
+  b.control_with_account account_alias: 'bob', asset_alias: 'gold', amount: 10
+end
 
 chain.transactions.submit(signer.sign(spending))
 # endsnippet
 
 # snippet retire
 retirement = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'bob',
-    asset_alias: 'gold',
-    amount: 5,
-  b.retire
-    asset_alias: 'gold',
-    amount: 5,
-  ).build(client)
+  b.spend_from_account account_alias: 'bob', asset_alias: 'gold', amount: 5
+  b.retire asset_alias: 'gold', amount: 5
+end
 
 chain.transactions.submit(signer.sign(retirement))
 # endsnippet
