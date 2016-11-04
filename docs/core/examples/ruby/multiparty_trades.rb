@@ -2,144 +2,113 @@ require 'chain'
 
 # This demo is written to run on either one or two cores. Simply provide
 # different URLs to the following clients for the two-core version.
-Client aliceCore = Chain::Client.new
-Client bobCore = Chain::Client.new
-signer = Chain::HSMSigner.new
+alice_core = Chain::Client.new
+bob_core = Chain::Client.new(url: 'http://localhost:1998')
 
-alice_dollar_key = MockHsm.Key.create(aliceCore)
-signer.add_key(alice_dollar_key, MockHsm.getSignerClient(aliceCore))
+alice_signer = Chain::HSMSigner.new
+bob_signer = Chain::HSMSigner.new
 
-bob_buck_key = MockHsm.Key.create(bobCore)
-signer.add_key(bob_buck_key, MockHsm.getSignerClient(bobCore))
+alice_dollar_key = alice_core.mock_hsm.keys.create
+alice_signer.add_key(alice_dollar_key, alice_core.mock_hsm.signer_conn)
 
-alice_key = MockHsm.Key.create(aliceCore)
-signer.add_key(alice_key, MockHsm.getSignerClient(aliceCore))
+bob_buck_key = bob_core.mock_hsm.keys.create
+bob_signer.add_key(bob_buck_key, bob_core.mock_hsm.signer_conn)
 
-bob_key = MockHsm.Key.create(bobCore)
-signer.add_key(bob_key, MockHsm.getSignerClient(bobCore))
+alice_key = alice_core.mock_hsm.keys.create
+alice_signer.add_key(alice_key, alice_core.mock_hsm.signer_conn)
 
-Asset aliceDollar = chain.assets.create(
-  alias: 'aliceDollar',
+bob_key = bob_core.mock_hsm.keys.create
+bob_signer.add_key(bob_key, bob_core.mock_hsm.signer_conn)
+
+alice_dollar = alice_core.assets.create(
+  alias: 'alice_dollar',
   root_xpubs: [alice_dollar_key.xpub],
   quorum: 1,
-  .create(aliceCore)
+)
 
-Asset bobBuck = chain.assets.create(
-  alias: 'bobBuck',
+bob_buck = bob_core.assets.create(
+  alias: 'bob_buck',
   root_xpubs: [bob_buck_key.xpub],
   quorum: 1,
-  .create(bobCore)
+)
 
-Account alice = chain.accounts.create(
+alice = alice_core.accounts.create(
   alias: 'alice',
   root_xpubs: [alice_key.xpub],
   quorum: 1,
-  .create(aliceCore)
+)
 
-Account bob = chain.accounts.create(
+bob = bob_core.accounts.create(
   alias: 'bob',
   root_xpubs: [bob_key.xpub],
   quorum: 1,
-  .create(bobCore)
+)
 
-chain.transactions.submit(aliceCore, signer.sign(chain.transactions.build do |b|
-  b.issue
-    asset_alias: 'aliceDollar',
-    amount: 1000,
-  b.control_with_account
-    account_alias: 'alice',
-    asset_alias: 'aliceDollar',
-    amount: 1000,
-  ).build(aliceCore)
-))
+tx = alice_core.transactions.build do |b|
+  b.issue asset_alias: 'alice_dollar', amount: 1000
+  b.control_with_account account_alias: 'alice', asset_alias: 'alice_dollar', amount: 1000
+end
 
-chain.transactions.submit(bobCore, signer.sign(chain.transactions.build do |b|
-  b.issue
-    asset_alias: 'bobBuck',
-    amount: 1000,
-  b.control_with_account
-    account_alias: 'bob',
-    asset_alias: 'bobBuck',
-    amount: 1000,
-  ).build(bobCore)
-))
+alice_core.transactions.submit(alice_signer.sign(tx))
 
-if (aliceCore.equals(bobCore)) {
-  sameCore(aliceCore)
-}
+tx = bob_core.transactions.build do |b|
+  b.issue asset_alias: 'bob_buck', amount: 1000
+  b.control_with_account account_alias: 'bob', asset_alias: 'bob_buck', amount: 1000
+end
 
-crossCore(aliceCore, bobCore, alice, bob, aliceDollar.id, bobBuck.id)
-}
+bob_core.transactions.submit(bob_signer.sign(tx))
 
-public static void sameCore(chain) throws Exception {
-# snippet same-core-trade
-trade = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'alice',
-    asset_alias: 'aliceDollar',
-    amount: 50,
-  b.control_with_account
-    account_alias: 'alice',
-    asset_alias: 'bobBuck',
-    amount: 100,
-  b.spend_from_account
-    account_alias: 'bob',
-    asset_alias: 'bobBuck',
-    amount: 100,
-  b.control_with_account
-    account_alias: 'bob',
-    asset_alias: 'aliceDollar',
-    amount: 50,
-  ).build(client)
+if alice_core.opts[:url] == bob_core.opts[:url]
+  chain = alice_core
+  signer = alice_signer
+  signer.add_key(bob_key, chain.mock_hsm.signer_conn)
 
-chain.transactions.submit(signer.sign(trade))
-# endsnippet
-}
+  # SAME-CORE TRADE
 
-public static void crossCore(
-Client aliceCore, Client bobCore,
-Account alice, Account bob,
-String aliceDollarAssetId, String bobBuckAssetId
-) throws Exception {
-# snippet build-trade-alice
-aliceTrade = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'alice',
-    asset_alias: 'aliceDollar',
-    amount: 50,
-  b.control_with_account
-    account_alias: 'alice',
-    .setAssetId(bobBuckAssetId)
-    amount: 100,
-  ).build(aliceCore)
-# endsnippet
+  # snippet same-core-trade
+  trade = chain.transactions.build do |b|
+    b.spend_from_account account_alias: 'alice', asset_alias: 'alice_dollar', amount: 50
+    b.control_with_account account_alias: 'alice', asset_alias: 'bob_buck', amount: 100
+    b.spend_from_account account_alias: 'bob', asset_alias: 'bob_buck', amount: 100
+    b.control_with_account account_alias: 'bob', asset_alias: 'alice_dollar', amount: 50
+  end
 
-# snippet sign-trade-alice
-aliceTradeSigned = signer.sign(aliceTrade.allowAdditionalActions())
-# endsnippet
+  chain.transactions.submit(signer.sign(trade))
+  # endsnippet
+else
+  # CROSS-CORE TRADE
 
-# snippet base-transaction-alice
-String baseTransactionFromAlice = aliceTradeSigned.rawTransaction
-# endsnippet
+  alice_dollar_asset_id = alice_dollar.id
+  bob_buck_asset_id = bob_buck.id
 
-# snippet build-trade-bob
-bobTrade = chain.transactions.build do |b|
-  .setBaseTransaction(baseTransactionFromAlice)
-  b.spend_from_account
-    account_alias: 'bob',
-    asset_alias: 'bobBuck',
-    amount: 100,
-  b.control_with_account
-    account_alias: 'bob',
-    .setAssetId(aliceDollarAssetId)
-    amount: 50,
-  ).build(bobCore)
-# endsnippet
+  # snippet build-trade-alice
+  alice_trade = alice_core.transactions.build do |b|
+    b.spend_from_account account_alias: 'alice', asset_alias: 'alice_dollar', amount: 50
+    b.control_with_account account_alias: 'alice', asset_id: bob_buck_asset_id, amount: 100
+  end
+  # endsnippet
 
-# snippet sign-trade-bob
-bobTradeSigned = signer.sign(bobTrade)
-# endsnippet
+  # snippet sign-trade-alice
+  alice_trade_signed = alice_signer.sign(alice_trade.allow_additional_actions)
+  # endsnippet
 
-# snippet submit-trade-bob
-chain.transactions.submit(bobCore, bobTradeSigned)
-# endsnippet
+  # snippet base-transaction-alice
+  base_tx_from_alice = alice_trade_signed.raw_transaction
+  # endsnippet
+
+  # snippet build-trade-bob
+  bob_trade = bob_core.transactions.build do |b|
+    b.base_transaction base_tx_from_alice
+    b.spend_from_account account_alias: 'bob', asset_alias: 'bob_buck', amount: 100
+    b.control_with_account account_alias: 'bob', asset_id: alice_dollar_asset_id, amount: 50
+  end
+  # endsnippet
+
+  # snippet sign-trade-bob
+  bob_trade_signed = bob_signer.sign(bob_trade)
+  # endsnippet
+
+  # snippet submit-trade-bob
+  bob_core.transactions.submit(bob_trade_signed)
+  # endsnippet
+end
