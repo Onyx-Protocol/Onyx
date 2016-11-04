@@ -7,135 +7,111 @@ key = chain.mock_hsm.keys.create
 signer.add_key(key, chain.mock_hsm.signer_conn)
 
 # snippet asset-builders
-List<Asset.Builder> assetBuilders = Arrays.asList(
-  chain.assets.create(
-    alias: 'gold',
-    root_xpubs: [key.xpub],
-    quorum: 1,,
-  chain.assets.create(
-    alias: 'silver',
-    root_xpubs: [key.xpub],
-    quorum: 1,,
-  chain.assets.create(
-    alias: 'bronze',
-    root_xpubs: [key.xpub],
-    quorum: [0],
-)
+assets_to_build = [{
+  alias: 'gold',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+}, {
+  alias: 'silver',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+}, {
+  alias: 'bronze',
+  root_xpubs: [key.xpub],
+  quorum: 0,
+}]
 # endsnippet
 
 # snippet asset-create-batch
-BatchResponse<Asset> assetBatch = Asset.createBatch(client, assetBuilders)
+asset_batch = chain.assets.create_batch(assets_to_build)
 # endsnippet
 
 # snippet asset-create-handle-errors
-for (int i = 0 i < assetBatch.size() i++) {
-  if (assetBatch.isError(i)) {
-    APIException error = assetBatch.errorsByIndex().get(i)
-    puts('asset ' + i + ' error: ' + error)
-  } else {
-    Asset asset = assetBatch.successesByIndex().get(i)
-    puts('asset ' + i + ' created, ID: ' + asset.id)
-  }
-}
+asset_batch.errors.each do |index, err|
+  puts "asset #{index} error: #{err}"
+end
+
+asset_batch.successes.each do |index, asset|
+  puts "asset #{index} created, ID: #{asset.id}"
+end
 # endsnippet
 
 # snippet nondeterministic-errors
-assetBuilders = Arrays.asList(
-  chain.assets.create(
-    alias: 'platinum',
-    root_xpubs: [key.xpub],
-    quorum: 1,,
-  chain.assets.create(
-    alias: 'platinum',
-    root_xpubs: [key.xpub],
-    quorum: 1,,
-  chain.assets.create(
-    alias: 'platinum',
-    root_xpubs: [key.xpub],
-    quorum: 1,
-)
+assets_to_build = [{
+  alias: 'platinum',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+}, {
+  alias: 'platinum',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+}, {
+  alias: 'platinum',
+  root_xpubs: [key.xpub],
+  quorum: 1,
+}]
 # endsnippet
 
-assetBatch = Asset.createBatch(client, assetBuilders)
+asset_batch = chain.assets.create_batch(assets_to_build)
 
-for (int i = 0 i < assetBatch.size() i++) {
-  if (assetBatch.isError(i)) {
-    APIException error = assetBatch.errorsByIndex().get(i)
-    puts('asset ' + i + ' error: ' + error)
-  } else {
-    Asset asset = assetBatch.successesByIndex().get(i)
-    puts('asset ' + i + ' created, ID: ' + asset.id)
-  }
-}
+asset_batch.errors.each do |index, err|
+  puts "asset #{index} error: #{err}"
+end
 
-chain.accounts.create(
-  alias: 'alice',
-  root_xpubs: [key.xpub],
-  quorum: 1,
-)
+asset_batch.successes.each do |index, asset|
+  puts "asset #{index} created, ID: #{asset.id}"
+end
 
-chain.accounts.create(
-  alias: 'bob',
-  root_xpubs: [key.xpub],
-  quorum: 1,
-)
+# Some setup for the next examples.
+
+chain.accounts.create(alias: 'alice', root_xpubs: [key.xpub], quorum: 1)
+chain.accounts.create(alias: 'bob', root_xpubs: [key.xpub], quorum: 1)
 
 # snippet batch-build-builders
-List<Transaction.Builder> txBuilders = Arrays.asList(
-  chain.transactions.build do |b|
-    b.issue
-      asset_alias: 'gold',
-      amount: 100,
-    b.control_with_account
-      account_alias: 'alice',
-      asset_alias: 'gold',
-      amount: 100,
-    ),
-  chain.transactions.build do |b|
-    b.issue
-      asset_alias: 'not-a-real-asset',
-      amount: 100,
-    b.control_with_account
-      account_alias: 'alice',
-      asset_alias: 'not-a-real-asset',
-      amount: 100,
-    ),
-  chain.transactions.build do |b|
-    b.issue
-      asset_alias: 'silver',
-      amount: 100,
-    b.control_with_account
-      account_alias: 'alice',
-      asset_alias: 'silver',
-      amount: 100,
-    )
-)
+transactions_to_build = []
+
+transactions_to_build << Chain::Transaction::Builder.new do |b|
+  b.issue asset_alias: 'gold', amount: 100
+  b.control_with_account account_alias: 'alice', asset_alias: 'gold', amount: 100
+end
+
+transactions_to_build << Chain::Transaction::Builder.new do |b|
+  b.issue asset_alias: 'not-a-real-asset', amount: 100
+  b.control_with_account account_alias: 'alice', asset_alias: 'not-a-real-asset', amount: 100
+end
+
+transactions_to_build << Chain::Transaction::Builder.new do |b|
+  b.issue asset_alias: 'silver', amount: 100
+  b.control_with_account account_alias: 'alice', asset_alias: 'silver', amount: 100
+end
 # endsnippet
 
 # snippet batch-build-handle-errors
-BatchResponse<Transaction.Template> buildTxBatch = Transaction.buildBatch(client, txBuilders)
+build_batch = chain.transactions.build_batch(transactions_to_build)
 
-for(Map.Entry<Integer, APIException> err : buildTxBatch.errorsByIndex().entrySet()) {
-  puts('Error building transaction ' + err.getKey() + ': ' + err.getValue())
-}
+build_batch.errors.each do |index, err|
+  puts "Error building transaction #{index}: #{err}"
+end
 # endsnippet
 
 # snippet batch-sign
-BatchResponse<Transaction.Template> signTxBatch = signer.signBatch(buildTxBatch.successes())
+transactions_to_sign = build_batch.successes.values
+sign_batch = signer.sign_batch(transactions_to_sign)
 
-for(Map.Entry<Integer, APIException> err : signTxBatch.errorsByIndex().entrySet()) {
-  puts('Error signing transaction ' + err.getKey() + ': ' + err.getValue())
-}
+sign_batch.errors.each do |index, err|
+  puts "Error signing transaction #{index}: #{err}"
+end
 # endsnippet
 
 # snippet batch-submit
-BatchResponse<Transaction.SubmitResponse> submitTxBatch = Transaction.submitBatch(client, signTxBatch.successes())
+transactions_to_submit = sign_batch.successes.values
+submit_batch = chain.transactions.submit_batch(transactions_to_submit)
 
-for(Map.Entry<Integer, APIException> err : submitTxBatch.errorsByIndex().entrySet()) {
-  puts('Error submitting transaction ' + err.getKey() + ': ' + err.getValue())
-}
+submit_batch.errors.each do |index, err|
+  puts "Error submitting transaction #{index}: #{err}"
+end
 
-for(Map.Entry<Integer, Transaction.SubmitResponse> success : submitTxBatch.successesByIndex().entrySet()) {
-  puts('' + success.getKey() + ' submitted, ID: ' + success.getValue().id)
-}
+submit_batch.successes.each do |index, submission|
+  puts "Transaction #{index} submitted, ID: #{submission.id}"
+end
 # endsnippet
