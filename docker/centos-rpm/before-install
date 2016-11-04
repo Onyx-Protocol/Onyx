@@ -1,0 +1,1 @@
+/usr/sbin/adduser -r --shell /bin/bash cored
