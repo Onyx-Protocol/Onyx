@@ -28,41 +28,31 @@ var (
 	ErrReserved = errors.New("reservation found outputs already reserved")
 )
 
-type (
-	DBReserver struct {
-		DB *sql.DB
-	}
+type DBReserver struct {
+	DB *sql.DB
+}
 
-	UTXO struct {
-		bc.Outpoint
-		bc.AssetAmount
-		Script []byte
+type UTXO struct {
+	bc.Outpoint
+	bc.AssetAmount
+	Script []byte
 
-		AccountID           string
-		ControlProgramIndex uint64
-	}
+	AccountID           string
+	ControlProgramIndex uint64
+}
 
-	// Change represents reserved units beyond what was asked for.
-	// Total reservation is for Amount+Source.Amount.
-	Change struct {
-		Source Source
-		Amount uint64
-	}
+type Source struct {
+	bc.AssetAmount
+	AccountID   string `json:"account_id"`
+	TxHash      *bc.Hash
+	OutputIndex *uint32
+	ClientToken *string `json:"client_token"`
+}
 
-	Source struct {
-		AssetID     bc.AssetID `json:"asset_id"`
-		AccountID   string     `json:"account_id"`
-		TxHash      *bc.Hash
-		OutputIndex *uint32
-		Amount      uint64
-		ClientToken *string `json:"client_token"`
-	}
-)
-
-func (res *DBReserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (reservationID int32, utxo *UTXO, err error) {
+func (res *DBReserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (int32, *UTXO, error) {
 	dbtx, err := res.DB.Begin(ctx)
 	if err != nil {
-		return 0, nil, errors.Wrap(err, "begin transaction for reserving utxos")
+		return 0, nil, errors.Wrap(err, "begin transaction for reserving utxo")
 	}
 	defer dbtx.Rollback(ctx)
 
@@ -81,7 +71,7 @@ func (res *DBReserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint
 			SELECT * FROM reserve_utxo($1, $2, $3, $4)
 				AS (reservation_id INT, already_existed BOOLEAN, utxo_exists BOOLEAN)
 		`
-		utxosQ = `
+		utxoQ = `
 			SELECT account_id, asset_id, amount, control_program_index, control_program
 			FROM account_utxos
 			WHERE reservation_id = $1 LIMIT 1
@@ -89,6 +79,7 @@ func (res *DBReserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint
 	)
 
 	var (
+		reservationID  int32
 		alreadyExisted bool
 		utxoExists     bool
 	)
@@ -115,7 +106,7 @@ func (res *DBReserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint
 		controlProg  []byte
 	)
 
-	err = dbtx.QueryRow(ctx, utxosQ, reservationID).Scan(&accountID, &assetID, &amount, &programIndex, &controlProg)
+	err = dbtx.QueryRow(ctx, utxoQ, reservationID).Scan(&accountID, &assetID, &amount, &programIndex, &controlProg)
 	if err == stdsql.ErrNoRows {
 		return 0, nil, pg.ErrUserInputNotFound
 	}
@@ -128,7 +119,7 @@ func (res *DBReserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint
 		return 0, nil, errors.Wrap(err, "commit transaction for reserving utxo")
 	}
 
-	utxo = &UTXO{
+	utxo := &UTXO{
 		Outpoint: bc.Outpoint{
 			Hash:  txHash,
 			Index: pos,
@@ -148,13 +139,10 @@ func (res *DBReserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint
 // Reserve reserves account UTXOs to cover the provided sources. If
 // UTXOs are successfully reserved, it's the responsbility of the
 // caller to cancel them if an error occurs.
-func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time) (reservationID int32, u []*UTXO, c []Change, err error) {
-	var reserved []*UTXO
-	var change []Change
-
+func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time) (reservationID int32, reserved []*UTXO, change uint64, err error) {
 	dbtx, err := res.DB.Begin(ctx)
 	if err != nil {
-		return 0, nil, nil, errors.Wrap(err, "begin transaction for reserving utxos")
+		return 0, nil, 0, errors.Wrap(err, "begin transaction for reserving utxos")
 	}
 	defer dbtx.Rollback(ctx)
 
@@ -165,7 +153,7 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 	// we're trying to reserve them.)
 	_, err = dbtx.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
-		return 0, nil, nil, errors.Wrap(err, "acquire lock for reserving utxos")
+		return 0, nil, 0, errors.Wrap(err, "acquire lock for reserving utxos")
 	}
 
 	const (
@@ -183,11 +171,6 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 	var (
 		txHash   stdsql.NullString
 		outIndex stdsql.NullInt64
-
-		alreadyExisted bool
-		existingChange uint64
-		reservedAmount uint64
-		insufficient   bool
 	)
 
 	if source.TxHash != nil {
@@ -200,8 +183,15 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 		outIndex.Int64 = int64(*source.OutputIndex)
 	}
 
+	var (
+		alreadyExisted bool
+		existingChange uint64
+		reservedAmount uint64
+		insufficient   bool
+	)
+
 	// Create a reservation row and reserve the utxos. If this reservation
-	// has alredy been processed in a previous request:
+	// has already been processed in a previous request:
 	//  * the existing reservation ID will be returned
 	//  * already_existed will be TRUE
 	//  * existing_change will be the change value for the existing
@@ -214,44 +204,40 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 		&insufficient,
 	)
 	if err != nil {
-		return 0, nil, nil, errors.Wrap(err, "reserve utxos")
+		return 0, nil, 0, errors.Wrap(err, "reserve utxos")
 	}
 	if reservationID <= 0 {
 		if insufficient {
-			return 0, nil, nil, ErrInsufficient
+			return 0, nil, 0, ErrInsufficient
 		}
-		return 0, nil, nil, ErrReserved
+		return 0, nil, 0, ErrReserved
 	}
 
 	if alreadyExisted && existingChange > 0 {
 		// This reservation already exists from a previous request
-		change = append(change, Change{source, existingChange})
+		change = existingChange
 	} else if reservedAmount > source.Amount {
-		change = append(change, Change{source, reservedAmount - source.Amount})
+		change = reservedAmount - source.Amount
 	}
 
-	err = pg.ForQueryRows(ctx, dbtx, utxosQ, reservationID, func(
-		hash bc.Hash,
-		index uint32,
-		amount uint64,
-		programIndex uint64,
-		script []byte,
-	) {
-		utxo := UTXO{
-			Outpoint:            bc.Outpoint{Hash: hash, Index: index},
-			Script:              script,
-			AssetAmount:         bc.AssetAmount{AssetID: source.AssetID, Amount: amount},
-			AccountID:           source.AccountID,
-			ControlProgramIndex: programIndex,
-		}
-		reserved = append(reserved, &utxo)
-	})
+	err = pg.ForQueryRows(ctx, dbtx, utxosQ, reservationID,
+		func(hash bc.Hash, index uint32, amount uint64, programIndex uint64, script []byte) {
+			utxo := UTXO{
+				Outpoint:            bc.Outpoint{Hash: hash, Index: index},
+				Script:              script,
+				AssetAmount:         bc.AssetAmount{AssetID: source.AssetID, Amount: amount},
+				AccountID:           source.AccountID,
+				ControlProgramIndex: programIndex,
+			}
+			reserved = append(reserved, &utxo)
+		},
+	)
 	if err != nil {
-		return 0, nil, nil, errors.Wrap(err, "query reservation members")
+		return reservationID, nil, 0, errors.Wrap(err, "query reservation members")
 	}
 	err = dbtx.Commit(ctx)
 	if err != nil {
-		return 0, nil, nil, errors.Wrap(err, "commit transaction for reserving utxos")
+		return reservationID, nil, 0, errors.Wrap(err, "commit transaction for reserving utxos")
 	}
 	return reservationID, reserved, change, err
 }
