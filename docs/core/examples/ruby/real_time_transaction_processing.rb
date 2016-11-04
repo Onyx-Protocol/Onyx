@@ -11,13 +11,13 @@ new Thread(() -> {
 
 # snippet issue
 issuance = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.Issue()
-    .setAssetAlias('gold')
-    .setAmount(100)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('gold')
-    .setAmount(100)
+  b.issue
+    asset_alias: 'gold',
+    amount: 100,
+  b.control_with_account
+    account_alias: 'alice',
+    asset_alias: 'gold',
+    amount: 100,
   ).build(client)
 
 chain.transactions.submit(signer.sign(issuance))
@@ -27,14 +27,14 @@ sleep(1)
 
 # snippet transfer
 transfer = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.SpendFromAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('gold')
-    .setAmount(50)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('gold')
-    .setAmount(50)
+  b.spend_from_account
+    account_alias: 'alice',
+    asset_alias: 'gold',
+    amount: 50,
+  b.control_with_account
+    account_alias: 'bob',
+    asset_alias: 'gold',
+    amount: 50,
   ).build(client)
 
 chain.transactions.submit(signer.sign(transfer))

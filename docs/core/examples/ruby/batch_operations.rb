@@ -82,31 +82,31 @@ chain.accounts.create(
 # snippet batch-build-builders
 List<Transaction.Builder> txBuilders = Arrays.asList(
   chain.transactions.build do |b|
-    .addAction(new Transaction.Action.Issue()
-      .setAssetAlias('gold')
-      .setAmount(100)
-    ).addAction(new Transaction.Action.ControlWithAccount()
-      .setAccountAlias('alice')
-      .setAssetAlias('gold')
-      .setAmount(100)
+    b.issue
+      asset_alias: 'gold',
+      amount: 100,
+    b.control_with_account
+      account_alias: 'alice',
+      asset_alias: 'gold',
+      amount: 100,
     ),
   chain.transactions.build do |b|
-    .addAction(new Transaction.Action.Issue()
-      .setAssetAlias('not-a-real-asset')
-      .setAmount(100)
-    ).addAction(new Transaction.Action.ControlWithAccount()
-      .setAccountAlias('alice')
-      .setAssetAlias('not-a-real-asset')
-      .setAmount(100)
+    b.issue
+      asset_alias: 'not-a-real-asset',
+      amount: 100,
+    b.control_with_account
+      account_alias: 'alice',
+      asset_alias: 'not-a-real-asset',
+      amount: 100,
     ),
   chain.transactions.build do |b|
-    .addAction(new Transaction.Action.Issue()
-      .setAssetAlias('silver')
-      .setAmount(100)
-    ).addAction(new Transaction.Action.ControlWithAccount()
-      .setAccountAlias('alice')
-      .setAssetAlias('silver')
-      .setAmount(100)
+    b.issue
+      asset_alias: 'silver',
+      amount: 100,
+    b.control_with_account
+      account_alias: 'alice',
+      asset_alias: 'silver',
+      amount: 100,
     )
 )
 # endsnippet

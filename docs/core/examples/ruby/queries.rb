@@ -5,8 +5,8 @@ setup(client)
 
 # snippet list-alice-transactions
 aliceTransactions = chain.transactions.query
-  .setFilter('inputs(account_alias=$1) OR outputs(account_alias=$1)')
-  .addFilterParameter('alice')
+  filter: 'inputs(account_alias=$1, OR outputs(account_alias=$1)')
+  filter_params: ['alice'],
   .execute(client)
 
 while (aliceTransactions.hasNext()) {
@@ -27,8 +27,8 @@ while (aliceTransactions.hasNext()) {
 
 # snippet list-local-transactions
 localTransactions = chain.transactions.query
-  .setFilter('is_local=$1')
-  .addFilterParameter('yes')
+  filter: 'is_local=$1',
+  filter_params: ['yes'],
   .execute(client)
 
 while (localTransactions.hasNext()) {
@@ -39,8 +39,8 @@ while (localTransactions.hasNext()) {
 
 # snippet list-local-assets
 localAssets = chain.assets.query
-  .setFilter('is_local=$1')
-  .addFilterParameter('yes')
+  filter: 'is_local=$1',
+  filter_params: ['yes'],
   .execute(client)
 
 while (localAssets.hasNext()) {
@@ -51,8 +51,8 @@ while (localAssets.hasNext()) {
 
 # snippet list-usd-assets
 usdAssets = chain.assets.query
-  .setFilter('definition.currency=$1')
-  .addFilterParameter('USD')
+  filter: 'definition.currency=$1',
+  filter_params: ['USD'],
   .execute(client)
 
 while (usdAssets.hasNext()) {
@@ -63,8 +63,8 @@ while (usdAssets.hasNext()) {
 
 # snippet list-checking-accounts
 checkingAccounts = chain.accounts.query
-  .setFilter('tags.type=$1')
-  .addFilterParameter('checking')
+  filter: 'tags.type=$1',
+  filter_params: ['checking'],
   .execute(client)
 
 while (checkingAccounts.hasNext()) {
@@ -74,9 +74,9 @@ while (checkingAccounts.hasNext()) {
 # endsnippet
 
 # snippet list-alice-unspents
-UnspentOutput.Items aliceUnspentOuputs = new UnspentOutput.QueryBuilder()
-  .setFilter('account_alias=$1')
-  .addFilterParameter('alice')
+aliceUnspentOuputs = chain.unspent_outputs.query()
+  filter: 'account_alias=$1',
+  filter_params: ['alice'],
   .execute(client)
 
 while (aliceUnspentOuputs.hasNext()) {
@@ -87,8 +87,8 @@ while (aliceUnspentOuputs.hasNext()) {
 
 # snippet account-balance
 bank1Balances = chain.balances.query
-  .setFilter('account_alias=$1')
-  .addFilterParameter('bank1')
+  filter: 'account_alias=$1',
+  filter_params: ['bank1'],
   .execute(client)
 
 while (bank1Balances.hasNext()) {
@@ -102,8 +102,8 @@ while (bank1Balances.hasNext()) {
 
 # snippet usd-iou-circulation
 bank1UsdIouBalances = chain.balances.query
-  .setFilter('asset_alias=$1')
-  .addFilterParameter('bank1_usd_iou')
+  filter: 'asset_alias=$1',
+  filter_params: ['bank1_usd_iou'],
   .execute(client)
 
 bank1UsdIouCirculation = bank1UsdIouBalances.next()
@@ -112,8 +112,8 @@ puts('Total circulation of Bank 1 USD IOU: ' + bank1UsdIouCirculation.amount)
 
 # snippet account-balance-sum-by-currency
 bank1CurrencyBalances = chain.balances.query
-  .setFilter('account_alias=$1')
-  .addFilterParameter('bank1')
+  filter: 'account_alias=$1',
+  filter_params: ['bank1'],
   .setSumBy(Arrays.asList('asset_definition.currency'))
   .execute(client)
 
@@ -145,7 +145,7 @@ chain.assets.create(
 
 chain.accounts.create(
   alias: 'alice',
-  .addTag('type', 'checking')
+  type: 'checking',
   root_xpubs: [key.xpub],
   quorum: 1,
 )
@@ -157,39 +157,39 @@ chain.accounts.create(
 )
 
 chain.transactions.submit(signer.sign(chain.transactions.build do |b|
-  .addAction(new Transaction.Action.Issue()
-    .setAssetAlias('gold')
-    .setAmount(1000))
-  .addAction(new Transaction.Action.Issue()
-    .setAssetAlias('silver')
-    .setAmount(1000))
+  b.issue
+    asset_alias: 'gold',
+    amount: 1000,)
+  b.issue
+    asset_alias: 'silver',
+    amount: 1000,)
   .addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('gold')
-    .setAmount(1000))
+    account_alias: 'alice',
+    asset_alias: 'gold',
+    amount: 1000,)
   .addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('silver')
-    .setAmount(1000))
+    account_alias: 'bob',
+    asset_alias: 'silver',
+    amount: 1000,)
   .build(client)))
 
 chain.transactions.submit(signer.sign(chain.transactions.build do |b|
-  .addAction(new Transaction.Action.SpendFromAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('gold')
-    .setAmount(10))
-  .addAction(new Transaction.Action.SpendFromAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('silver')
-    .setAmount(10))
+  b.spend_from_account
+    account_alias: 'alice',
+    asset_alias: 'gold',
+    amount: 10,)
+  b.spend_from_account
+    account_alias: 'bob',
+    asset_alias: 'silver',
+    amount: 10,)
   .addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('silver')
-    .setAmount(10))
+    account_alias: 'alice',
+    asset_alias: 'silver',
+    amount: 10,)
   .addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('gold')
-    .setAmount(10))
+    account_alias: 'bob',
+    asset_alias: 'gold',
+    amount: 10,)
   .build(client)))
 
 chain.assets.create(
@@ -226,38 +226,38 @@ chain.accounts.create(
 )
 
 chain.transactions.submit(signer.sign(chain.transactions.build do |b|
-  .addAction(new Transaction.Action.Issue()
-    .setAssetAlias('bank1_usd_iou')
-    .setAmount(2000000)
-  ).addAction(new Transaction.Action.Issue()
-    .setAssetAlias('bank2_usd_iou')
-    .setAmount(2000000)
-  ).addAction(new Transaction.Action.Issue()
-    .setAssetAlias('bank1_euro_iou')
-    .setAmount(2000000)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bank1')
-    .setAssetAlias('bank1_usd_iou')
-    .setAmount(1000000)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bank1')
-    .setAssetAlias('bank1_euro_iou')
-    .setAmount(1000000)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bank1')
-    .setAssetAlias('bank2_usd_iou')
-    .setAmount(1000000)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bank2')
-    .setAssetAlias('bank1_usd_iou')
-    .setAmount(1000000)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bank2')
-    .setAssetAlias('bank1_euro_iou')
-    .setAmount(1000000)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bank2')
-    .setAssetAlias('bank2_usd_iou')
-    .setAmount(1000000)
+  b.issue
+    asset_alias: 'bank1_usd_iou',
+    amount: 2000000,
+  )b.issue
+    asset_alias: 'bank2_usd_iou',
+    amount: 2000000,
+  )b.issue
+    asset_alias: 'bank1_euro_iou',
+    amount: 2000000,
+  b.control_with_account
+    account_alias: 'bank1',
+    asset_alias: 'bank1_usd_iou',
+    amount: 1000000,
+  b.control_with_account
+    account_alias: 'bank1',
+    asset_alias: 'bank1_euro_iou',
+    amount: 1000000,
+  b.control_with_account
+    account_alias: 'bank1',
+    asset_alias: 'bank2_usd_iou',
+    amount: 1000000,
+  b.control_with_account
+    account_alias: 'bank2',
+    asset_alias: 'bank1_usd_iou',
+    amount: 1000000,
+  b.control_with_account
+    account_alias: 'bank2',
+    asset_alias: 'bank1_euro_iou',
+    amount: 1000000,
+  b.control_with_account
+    account_alias: 'bank2',
+    asset_alias: 'bank2_usd_iou',
+    amount: 1000000,
   ).build(client)
 ))

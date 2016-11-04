@@ -42,24 +42,24 @@ Account bob = chain.accounts.create(
   .create(bobCore)
 
 chain.transactions.submit(aliceCore, signer.sign(chain.transactions.build do |b|
-  .addAction(new Transaction.Action.Issue()
-    .setAssetAlias('aliceDollar')
-    .setAmount(1000)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('aliceDollar')
-    .setAmount(1000)
+  b.issue
+    asset_alias: 'aliceDollar',
+    amount: 1000,
+  b.control_with_account
+    account_alias: 'alice',
+    asset_alias: 'aliceDollar',
+    amount: 1000,
   ).build(aliceCore)
 ))
 
 chain.transactions.submit(bobCore, signer.sign(chain.transactions.build do |b|
-  .addAction(new Transaction.Action.Issue()
-    .setAssetAlias('bobBuck')
-    .setAmount(1000)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('bobBuck')
-    .setAmount(1000)
+  b.issue
+    asset_alias: 'bobBuck',
+    amount: 1000,
+  b.control_with_account
+    account_alias: 'bob',
+    asset_alias: 'bobBuck',
+    amount: 1000,
   ).build(bobCore)
 ))
 
@@ -73,22 +73,22 @@ crossCore(aliceCore, bobCore, alice, bob, aliceDollar.id, bobBuck.id)
 public static void sameCore(chain) throws Exception {
 # snippet same-core-trade
 trade = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.SpendFromAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('aliceDollar')
-    .setAmount(50)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('bobBuck')
-    .setAmount(100)
-  ).addAction(new Transaction.Action.SpendFromAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('bobBuck')
-    .setAmount(100)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('aliceDollar')
-    .setAmount(50)
+  b.spend_from_account
+    account_alias: 'alice',
+    asset_alias: 'aliceDollar',
+    amount: 50,
+  b.control_with_account
+    account_alias: 'alice',
+    asset_alias: 'bobBuck',
+    amount: 100,
+  )b.spend_from_account
+    account_alias: 'bob',
+    asset_alias: 'bobBuck',
+    amount: 100,
+  b.control_with_account
+    account_alias: 'bob',
+    asset_alias: 'aliceDollar',
+    amount: 50,
   ).build(client)
 
 chain.transactions.submit(signer.sign(trade))
@@ -102,14 +102,14 @@ String aliceDollarAssetId, String bobBuckAssetId
 ) throws Exception {
 # snippet build-trade-alice
 aliceTrade = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.SpendFromAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('aliceDollar')
-    .setAmount(50)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('alice')
+  b.spend_from_account
+    account_alias: 'alice',
+    asset_alias: 'aliceDollar',
+    amount: 50,
+  b.control_with_account
+    account_alias: 'alice',
     .setAssetId(bobBuckAssetId)
-    .setAmount(100)
+    amount: 100,
   ).build(aliceCore)
 # endsnippet
 
@@ -124,14 +124,14 @@ String baseTransactionFromAlice = aliceTradeSigned.rawTransaction
 # snippet build-trade-bob
 bobTrade = chain.transactions.build do |b|
   .setBaseTransaction(baseTransactionFromAlice)
-  .addAction(new Transaction.Action.SpendFromAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('bobBuck')
-    .setAmount(100)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bob')
+  b.spend_from_account
+    account_alias: 'bob',
+    asset_alias: 'bobBuck',
+    amount: 100,
+  b.control_with_account
+    account_alias: 'bob',
     .setAssetId(aliceDollarAssetId)
-    .setAmount(50)
+    amount: 50,
   ).build(bobCore)
 # endsnippet
 

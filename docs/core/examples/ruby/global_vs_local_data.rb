@@ -38,13 +38,13 @@ chain.accounts.create(
 
 # snippet issue
 issuance = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.Issue()
-    .setAssetAlias('gold')
-    .setAmount(100)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('gold')
-    .setAmount(100)
+  b.issue
+    asset_alias: 'gold',
+    amount: 100,
+  b.control_with_account
+    account_alias: 'alice',
+    asset_alias: 'gold',
+    amount: 100,
   ).build(client)
 
 chain.transactions.submit(signer.sign(issuance))
@@ -52,14 +52,14 @@ chain.transactions.submit(signer.sign(issuance))
 
 # snippet spend
 spending = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.SpendFromAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('gold')
-    .setAmount(10))
+  b.spend_from_account
+    account_alias: 'alice',
+    asset_alias: 'gold',
+    amount: 10,)
   .addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('gold')
-    .setAmount(10)
+    account_alias: 'bob',
+    asset_alias: 'gold',
+    amount: 10,
   ).build(client)
 
 chain.transactions.submit(signer.sign(spending))
@@ -67,13 +67,13 @@ chain.transactions.submit(signer.sign(spending))
 
 # snippet retire
 retirement = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.SpendFromAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('gold')
-    .setAmount(5)
+  b.spend_from_account
+    account_alias: 'bob',
+    asset_alias: 'gold',
+    amount: 5,
   ).addAction(new Transaction.Action.Retire()
-    .setAssetAlias('gold')
-    .setAmount(5)
+    asset_alias: 'gold',
+    amount: 5,
   ).build(client)
 
 chain.transactions.submit(signer.sign(retirement))

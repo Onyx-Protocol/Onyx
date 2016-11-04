@@ -23,13 +23,13 @@ chain.accounts.create(
 )
 
 unsigned = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.Issue()
-    .setAssetAlias('gold')
-    .setAmount(100)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('gold')
-    .setAmount(100)
+  b.issue
+    asset_alias: 'gold',
+    amount: 100,
+  b.control_with_account
+    account_alias: 'alice',
+    asset_alias: 'gold',
+    amount: 100,
   ).build(client)
 
 # snippet sign-transaction

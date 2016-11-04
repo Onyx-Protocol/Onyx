@@ -23,60 +23,52 @@ chain.accounts.create(
   quorum: 1,
 )
 
-issuanceTx = chain.transactions.submit(
+issuance_tx = chain.transactions.submit(
   client,
   signer.sign(
     chain.transactions.build do |b|
-      .addAction(new Transaction.Action.Issue()
-        .setAssetAlias('gold')
-        .setAmount(200)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias('alice')
-        .setAssetAlias('gold')
-        .setAmount(100)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias('alice')
-        .setAssetAlias('gold')
-        .setAmount(100)
-      ).build(client)
+      b.issue asset_alias: 'gold', amount: 200
+      b.control_with_account account_alias: 'alice', asset_alias: 'gold', amount: 100
+      b.control_with_account account_alias: 'alice', asset_alias: 'gold', amount: 100
+    end
   )
 )
 
 # snippet alice-unspent-outputs
-UnspentOutput.Items aliceUnspentOutputs = new UnspentOutput.QueryBuilder()
-  .setFilter('account_alias=$1')
-  .addFilterParameter('alice')
+aliceUnspentOutputs = chain.unspent_outputs.query()
+  filter: 'account_alias=$1',
+  filter_params: ['alice'],
   .execute(client)
 
 while (aliceUnspentOutputs.hasNext()) {
   UnspentOutput utxo = aliceUnspentOutputs.next()
-  puts('Unspent output in alice account: ' + utxo.transactionId + ':' + utxo.position)
+  puts('Unspent output in alice account: ' + utxo.transaction_id + ':' + utxo.position)
 }
 # endsnippet
 
 # snippet gold-unspent-outputs
-UnspentOutput.Items goldUnspentOutputs = new UnspentOutput.QueryBuilder()
-  .setFilter('asset_alias=$1')
-  .addFilterParameter('gold')
+goldUnspentOutputs = chain.unspent_outputs.query()
+  filter: 'asset_alias=$1',
+  filter_params: ['gold'],
   .execute(client)
 
 while (goldUnspentOutputs.hasNext()) {
   UnspentOutput utxo = goldUnspentOutputs.next()
-  puts('Unspent output containing gold: ' + utxo.transactionId + ':' + utxo.position)
+  puts('Unspent output containing gold: ' + utxo.transaction_id + ':' + utxo.position)
 }
 # endsnippet
 
-String prevTransactionId = issuanceTx.id
+String prevTransactionId = issuance_tx.id
 
 # snippet build-transaction-all
 spendOutput = chain.transactions.build do |b|
   .addAction(new Transaction.Action.SpendAccountUnspentOutput()
     .setTransactionId(prevTransactionId)
     .setPosition(0)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('gold')
-    .setAmount(100)
+  b.control_with_account
+    account_alias: 'bob',
+    asset_alias: 'gold',
+    amount: 100,
   ).build(client)
 # endsnippet
 
@@ -87,14 +79,14 @@ spendOutputWithChange = chain.transactions.build do |b|
   .addAction(new Transaction.Action.SpendAccountUnspentOutput()
     .setTransactionId(prevTransactionId)
     .setPosition(1)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('bob')
-    .setAssetAlias('gold')
-    .setAmount(40)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('alice')
-    .setAssetAlias('gold')
-    .setAmount(60)
+  b.control_with_account
+    account_alias: 'bob',
+    asset_alias: 'gold',
+    amount: 40,
+  b.control_with_account
+    account_alias: 'alice',
+    asset_alias: 'gold',
+    amount: 60,
   ).build(client)
 # endsnippet
 

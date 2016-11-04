@@ -19,7 +19,9 @@ chain.assets.create(
   alias: 'acme_common',
   root_xpubs: [asset_key.xpub],
   quorum: 1,
-  .addTag('internal_rating', '1')
+  tags: {
+    internal_rating: '1',
+  },
   .addDefinitionField('issuer', 'Acme Inc.')
   .addDefinitionField('type', 'security')
   .addDefinitionField('subtype', 'private')
@@ -32,7 +34,9 @@ chain.assets.create(
   alias: 'acme_preferred',
   root_xpubs: [asset_key.xpub],
   quorum: 1,
-  .addTag('internal_rating', '2')
+  tags: {
+    internal_rating: '2',
+  },
   .addDefinitionField('issuer', 'Acme Inc.')
   .addDefinitionField('type', 'security')
   .addDefinitionField('subtype', 'private')
@@ -42,8 +46,8 @@ chain.assets.create(
 
 # snippet list-local-assets
 localAssets = chain.assets.query
-  .setFilter('is_local=$1')
-  .addFilterParameter('yes')
+  filter: 'is_local=$1',
+  filter_params: ['yes'],
   .execute(client)
 
 while (localAssets.hasNext()) {
@@ -54,22 +58,22 @@ while (localAssets.hasNext()) {
 
 # snippet list-private-preferred-securities
 common = chain.assets.query
-  .setFilter('definition.type=$1 AND definition.subtype=$2 AND definition.class=$3')
-  .addFilterParameter('security')
-  .addFilterParameter('private')
-  .addFilterParameter('preferred')
+  filter: 'definition.type=$1 AND definition.subtype=$2 AND definition.class=$3',
+  filter_params: ['security'],
+  filter_params: ['private'],
+  filter_params: ['preferred'],
   .execute(client)
 # endsnippet
 
 # snippet build-issue
 issuanceTransaction = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.Issue()
-    .setAssetAlias('acme_common')
-    .setAmount(1000)
-  ).addAction(new Transaction.Action.ControlWithAccount()
-    .setAccountAlias('acme_treasury')
-    .setAssetAlias('acme_common')
-    .setAmount(1000)
+  b.issue
+    asset_alias: 'acme_common',
+    amount: 1000,
+  b.control_with_account
+    account_alias: 'acme_treasury',
+    asset_alias: 'acme_common',
+    amount: 1000,
   ).build(client)
 # endsnippet
 
@@ -81,19 +85,19 @@ signedIssuanceTransaction = signer.sign(issuanceTransaction)
 chain.transactions.submit(signedIssuanceTransaction)
 # endsnippet
 
-ControlProgram externalProgram = chain.accounts.create_control_program()
-  .controlWithAccountByAlias('acme_treasury')
+externalProgram = chain.accounts.create_control_program()
+  alias: 'acme_treasury'
 )
 
 # snippet external-issue
 externalIssuance = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.Issue()
-    .setAssetAlias('acme_preferred')
-    .setAmount(2000)
-  ).addAction(new Transaction.Action.ControlWithProgram()
-    .setControlProgram(externalProgram)
-    .setAssetAlias('acme_preferred')
-    .setAmount(2000)
+  b.issue
+    asset_alias: 'acme_preferred',
+    amount: 2000,
+  )b.control_with_program
+    control_program: externalProgram,
+    asset_alias: 'acme_preferred',
+    amount: 2000,
   ).build(client)
 
 chain.transactions.submit(signer.sign(externalIssuance))
@@ -101,13 +105,13 @@ chain.transactions.submit(signer.sign(externalIssuance))
 
 # snippet build-retire
 retirementTransaction = chain.transactions.build do |b|
-  .addAction(new Transaction.Action.SpendFromAccount()
-    .setAccountAlias('acme_treasury')
-    .setAssetAlias('acme_common')
-    .setAmount(50)
+  b.spend_from_account
+    account_alias: 'acme_treasury',
+    asset_alias: 'acme_common',
+    amount: 50,
   ).addAction(new Transaction.Action.Retire()
-    .setAssetAlias('acme_common')
-    .setAmount(50)
+    asset_alias: 'acme_common',
+    amount: 50,
   ).build(client)
 # endsnippet
 
@@ -121,9 +125,9 @@ chain.transactions.submit(signedRetirementTransaction)
 
 # snippet list-issuances
 acmeCommonIssuances = chain.transactions.query
-  .setFilter('inputs(action=$1 AND asset_alias=$2)')
-  .addFilterParameter('issue')
-  .addFilterParameter('acme_common')
+  filter: 'inputs(action=$1 AND asset_alias=$2,')
+  filter_params: ['issue'],
+  filter_params: ['acme_common'],
   .execute(client)
 
 while (acmeCommonIssuances.hasNext()) {
@@ -134,9 +138,9 @@ while (acmeCommonIssuances.hasNext()) {
 
 # snippet list-transfers
 acmeCommonTransfers = chain.transactions.query
-  .setFilter('inputs(action=$1 AND asset_alias=$2)')
-  .addFilterParameter('spend')
-  .addFilterParameter('acme_common')
+  filter: 'inputs(action=$1 AND asset_alias=$2,')
+  filter_params: ['spend'],
+  filter_params: ['acme_common'],
   .execute(client)
 
 while (acmeCommonTransfers.hasNext()) {
@@ -147,9 +151,9 @@ while (acmeCommonTransfers.hasNext()) {
 
 # snippet list-retirements
 acmeCommonRetirements = chain.transactions.query
-  .setFilter('outputs(action=$1 AND asset_alias=$2)')
-  .addFilterParameter('retire')
-  .addFilterParameter('acme_common')
+  filter: 'outputs(action=$1 AND asset_alias=$2,')
+  filter_params: ['retire'],
+  filter_params: ['acme_common'],
   .execute(client)
 
 while (acmeCommonRetirements.hasNext()) {
@@ -160,8 +164,8 @@ while (acmeCommonRetirements.hasNext()) {
 
 # snippet list-acme-common-balance
 acmeCommonBalances = chain.balances.query
-  .setFilter('asset_alias=$1')
-  .addFilterParameter('acme_common')
+  filter: 'asset_alias=$1',
+  filter_params: ['acme_common'],
   .execute(client)
 
 acmeCommonBalance = acmeCommonBalances.next()
@@ -170,8 +174,8 @@ puts('Total circulation of Acme Common: ' + acmeCommonBalance.amount)
 
 # snippet list-acme-balance
 acmeAnyBalances = chain.balances.query
-  .setFilter('asset_definition.issuer=$1')
-  .addFilterParameter('Acme Inc.')
+  filter: 'asset_definition.issuer=$1',
+  filter_params: ['Acme Inc.'],
   .execute(client)
 
 while (acmeAnyBalances.hasNext()) {
@@ -184,13 +188,13 @@ while (acmeAnyBalances.hasNext()) {
 # endsnippet
 
 # snippet list-acme-common-unspents
-UnspentOutput.Items acmeCommonUnspentOutputs = new UnspentOutput.QueryBuilder()
-  .setFilter('asset_alias=$1')
-  .addFilterParameter('acme_common')
+acmeCommonUnspentOutputs = chain.unspent_outputs.query()
+  filter: 'asset_alias=$1',
+  filter_params: ['acme_common'],
   .execute(client)
 
 while (acmeCommonUnspentOutputs.hasNext()) {
   UnspentOutput utxo = acmeCommonUnspentOutputs.next()
-  puts('Acme Common held in output ' + utxo.transactionId + ':' + utxo.position)
+  puts('Acme Common held in output ' + utxo.transaction_id + ':' + utxo.position)
 }
 # endsnippet
