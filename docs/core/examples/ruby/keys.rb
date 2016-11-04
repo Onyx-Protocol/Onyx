@@ -24,14 +24,9 @@ chain.accounts.create(
 )
 
 unsigned = chain.transactions.build do |b|
-  b.issue
-    asset_alias: 'gold',
-    amount: 100,
-  b.control_with_account
-    account_alias: 'alice',
-    asset_alias: 'gold',
-    amount: 100,
-  ).build(client)
+  b.issue asset_alias: 'gold', amount: 100
+  b.control_with_account account_alias: 'alice', asset_alias: 'gold', amount: 100
+end
 
 # snippet sign-transaction
 signed = signer.sign(unsigned)
