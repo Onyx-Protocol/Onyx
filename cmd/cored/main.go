@@ -208,15 +208,15 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	}
 
 	// Set up the pin store for block processing
-	pinStore := &pin.Store{DB: db}
+	pinStore := pin.NewStore(db)
 	err = pinStore.LoadAll(ctx)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	// Start listeners
-	go pinStore.Pin(account.PinName).Listen(ctx, *dbURL)
-	go pinStore.Pin(asset.PinName).Listen(ctx, *dbURL)
-	go pinStore.Pin(query.TxPinName).Listen(ctx, *dbURL)
+	go pinStore.Listen(ctx, account.PinName, *dbURL)
+	go pinStore.Listen(ctx, asset.PinName, *dbURL)
+	go pinStore.Listen(ctx, query.TxPinName, *dbURL)
 
 	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, c, pinStore)
@@ -294,6 +294,26 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		genhealth   = h.HealthSetter("generator")
 		fetchhealth = h.HealthSetter("fetch")
 	)
+
+	go func() {
+		<-c.Ready()
+		height := c.Height()
+		if height > 0 {
+			height = height - 1
+		}
+		err := pinStore.CreatePin(ctx, account.PinName, height)
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
+		}
+		err = pinStore.CreatePin(ctx, asset.PinName, height)
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
+		}
+		err = pinStore.CreatePin(ctx, query.TxPinName, height)
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
+		}
+	}()
 
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,

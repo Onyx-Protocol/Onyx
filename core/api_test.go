@@ -29,7 +29,8 @@ func TestBuildFinal(t *testing.T) {
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
-	pinStore := &pin.Store{DB: db}
+	pinStore := pin.NewStore(db)
+	coretest.CreatePins(ctx, t, pinStore)
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore), pinStore)
 	go accounts.ProcessBlocks(ctx)
 
@@ -60,8 +61,7 @@ func TestBuildFinal(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
-	accountPin := pinStore.Pin(account.PinName)
-	<-accountPin.WaitForHeight(c.Height())
+	<-pinStore.WaitForPin(account.PinName, c.Height())
 
 	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
@@ -139,7 +139,8 @@ func TestAccountTransfer(t *testing.T) {
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
-	pinStore := &pin.Store{DB: db}
+	pinStore := pin.NewStore(db)
+	coretest.CreatePins(ctx, t, pinStore)
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore), pinStore)
 	go accounts.ProcessBlocks(ctx)
 
@@ -169,8 +170,7 @@ func TestAccountTransfer(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
-	accountPin := pinStore.Pin(account.PinName)
-	<-accountPin.WaitForHeight(c.Height())
+	<-pinStore.WaitForPin(account.PinName, c.Height())
 
 	// new source
 	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
@@ -203,7 +203,8 @@ func TestTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
-	pinStore := &pin.Store{DB: db}
+	pinStore := pin.NewStore(db)
+	coretest.CreatePins(ctx, t, pinStore)
 	handler := &Handler{
 		Chain:    c,
 		Assets:   asset.NewRegistry(db, c),
@@ -252,8 +253,7 @@ func TestTransfer(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
-	accountPin := pinStore.Pin(account.PinName)
-	<-accountPin.WaitForHeight(c.Height())
+	<-pinStore.WaitForPin(account.PinName, c.Height())
 
 	// Now transfer
 	buildReqFmt := `

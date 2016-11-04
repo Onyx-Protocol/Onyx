@@ -38,7 +38,8 @@ func TestRecovery(t *testing.T) {
 	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	store, pool := txdb.New(db)
 	c := prottest.NewChainWithStorage(t, store, pool)
-	pinStore := &pin.Store{DB: db}
+	pinStore := pin.NewStore(db)
+	coretest.CreatePins(ctx, t, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
@@ -118,7 +119,7 @@ func TestRecovery(t *testing.T) {
 
 		ctx := context.Background()
 		go func() {
-			err := generateBlock(ctx, wrappedDB, timestamp)
+			err := generateBlock(ctx, t, wrappedDB, timestamp)
 			ch <- err
 		}()
 
@@ -159,7 +160,7 @@ func TestRecovery(t *testing.T) {
 
 		// We crashed at some point during block generation. Do it again,
 		// without crashing.
-		err = generateBlock(ctx, wrappedDB, timestamp)
+		err = generateBlock(ctx, t, wrappedDB, timestamp)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -183,14 +184,15 @@ func TestRecovery(t *testing.T) {
 	}
 }
 
-func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
+func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, timestamp time.Time) error {
 	store, pool := txdb.New(db)
 	b1, err := store.GetBlock(ctx, 1)
 	if err != nil {
 		return err
 	}
 	c, err := protocol.NewChain(ctx, b1.Hash(), store, pool, nil)
-	pinStore := &pin.Store{DB: db}
+	pinStore := pin.NewStore(db)
+	coretest.CreatePins(ctx, t, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)

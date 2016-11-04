@@ -20,7 +20,8 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
-	pinStore := &pin.Store{DB: db}
+	pinStore := pin.NewStore(db)
+	coretest.CreatePins(ctx, t, pinStore)
 	indexer := NewIndexer(db, c, pinStore)
 	accounts := account.NewManager(db, c)
 	assets := asset.NewRegistry(db, c)
@@ -55,8 +56,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	coretest.IssueAssets(ctx, t, c, assets, accounts, asset2.AssetID, 100, acct1.ID)
 
 	prottest.MakeBlock(t, c)
-	<-pinStore.Pin(asset.PinName).WaitForHeight(c.Height())
-	<-pinStore.Pin(TxPinName).WaitForHeight(c.Height())
+	<-pinStore.WaitForPin(TxPinName, c.Height())
 
 	time2 := time.Now()
 

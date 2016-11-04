@@ -164,7 +164,7 @@ func (ind *Indexer) waitForAndFetchTransactions(ctx context.Context, queryStr st
 		)
 
 		for h := ind.c.Height(); len(txs) == 0; h++ {
-			<-ind.pinStore.Pin(TxPinName).WaitForHeight(h)
+			<-ind.pinStore.WaitForPin(TxPinName, h)
 			if err != nil {
 				resp <- fetchResp{nil, nil, err}
 				return

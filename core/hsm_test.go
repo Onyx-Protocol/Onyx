@@ -25,7 +25,8 @@ func TestMockHSM(t *testing.T) {
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c)
 	accounts := account.NewManager(db, c)
-	pinStore := &pin.Store{DB: db}
+	pinStore := pin.NewStore(db)
+	coretest.CreatePins(ctx, t, pinStore)
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore), pinStore)
 	go accounts.ProcessBlocks(ctx)
 	mockhsm := mockhsm.New(db)
@@ -70,8 +71,7 @@ func TestMockHSM(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
-	accountPin := pinStore.Pin(account.PinName)
-	<-accountPin.WaitForHeight(c.Height())
+	<-pinStore.WaitForPin(account.PinName, c.Height())
 
 	xferSrc1 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil)
 	xferSrc2 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct2.ID, nil, nil)

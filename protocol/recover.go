@@ -67,5 +67,8 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 			return nil, nil, errors.Wrap(err, "committing block")
 		}
 	}
+
+	close(c.ready)
+
 	return b, snapshot, nil
 }
