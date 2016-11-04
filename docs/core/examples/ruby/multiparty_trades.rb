@@ -4,6 +4,7 @@ require 'chain'
 # different URLs to the following clients for the two-core version.
 Client aliceCore = Chain::Client.new
 Client bobCore = Chain::Client.new
+signer = Chain::HSMSigner.new
 
 alice_dollar_key = MockHsm.Key.create(aliceCore)
 signer.add_key(alice_dollar_key, MockHsm.getSignerClient(aliceCore))

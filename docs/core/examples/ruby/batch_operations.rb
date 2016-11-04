@@ -1,6 +1,7 @@
 require 'chain'
 
 chain = Chain::Client.new
+signer = Chain::HSMSigner.new
 
 key = chain.mock_hsm.keys.create
 signer.add_key(key, chain.mock_hsm.signer_conn)

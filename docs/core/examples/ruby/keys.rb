@@ -7,6 +7,7 @@ key = chain.mock_hsm.keys.create
 # endsnippet
 
 # snippet signer-add-key
+signer = Chain::HSMSigner.new # Holds multiple keys.
 signer.add_key(key, chain.mock_hsm.signer_conn)
 # endsnippet
 

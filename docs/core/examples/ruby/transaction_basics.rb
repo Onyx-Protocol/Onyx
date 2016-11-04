@@ -2,6 +2,7 @@ require 'chain'
 
 chain = Chain::Client.new
 Client otherCoreClient = Chain::Client.new
+signer = Chain::HSMSigner.new
 setup(client, otherCoreClient)
 
 # snippet issue-within-core

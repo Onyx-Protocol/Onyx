@@ -1,6 +1,7 @@
 require 'chain'
 
 chain = Chain::Client.new
+signer = Chain::HSMSigner.new
 setup(client)
 
 # snippet processing-thread
