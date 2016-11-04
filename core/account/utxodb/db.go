@@ -139,7 +139,7 @@ func (res *DBReserver) ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint
 // Reserve reserves account UTXOs to cover the provided sources. If
 // UTXOs are successfully reserved, it's the responsbility of the
 // caller to cancel them if an error occurs.
-func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time) (int32, []*UTXO, uint64, error) {
+func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time) (reservationID int32, reserved []*UTXO, change uint64, err error) {
 	dbtx, err := res.DB.Begin(ctx)
 	if err != nil {
 		return 0, nil, 0, errors.Wrap(err, "begin transaction for reserving utxos")
@@ -184,7 +184,6 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 	}
 
 	var (
-		reservationID  int32
 		alreadyExisted bool
 		existingChange uint64
 		reservedAmount uint64
@@ -214,15 +213,12 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 		return 0, nil, 0, ErrReserved
 	}
 
-	var change uint64
 	if alreadyExisted && existingChange > 0 {
 		// This reservation already exists from a previous request
 		change = existingChange
 	} else if reservedAmount > source.Amount {
 		change = reservedAmount - source.Amount
 	}
-
-	var reserved []*UTXO
 
 	err = pg.ForQueryRows(ctx, dbtx, utxosQ, reservationID,
 		func(hash bc.Hash, index uint32, amount uint64, programIndex uint64, script []byte) {
