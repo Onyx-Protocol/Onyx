@@ -162,7 +162,7 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 	//  * already_existed will be TRUE
 	//  * existing_change will be the change value for the existing
 	//    reservation row.
-	err := res.DB.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, outIndex, source.Amount, exp, source.ClientToken).Scan(
+	err = res.DB.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, outIndex, source.Amount, exp, source.ClientToken).Scan(
 		&reservationID,
 		&alreadyExisted,
 		&existingChange,
@@ -179,7 +179,6 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 		return 0, nil, 0, ErrReserved
 	}
 
-	var change uint64
 	if alreadyExisted && existingChange > 0 {
 		// This reservation already exists from a previous request
 		change = existingChange
@@ -192,7 +191,6 @@ func (res *DBReserver) Reserve(ctx context.Context, source Source, exp time.Time
 	// back.
 	var utxoTotal uint64
 
-	var reserved []*UTXO
 	err = pg.ForQueryRows(ctx, res.DB, utxosQ, reservationID,
 		func(hash bc.Hash, index uint32, amount uint64, programIndex uint64, script []byte) {
 			utxo := UTXO{
