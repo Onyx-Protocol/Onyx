@@ -63,6 +63,9 @@ func main() {
 		log.Fatal("must set heroku user credentials")
 	}
 
+	// scale down testnet bot
+	updateHerokuApp("/chain-core-ccte/formation", `{"updates":[{"type":"web", "quantity":0}]}`)
+
 	empty := json.RawMessage("{}")
 	must(gen.Call(ctx, "/reset", &empty, nil))
 	must(sig1.Call(ctx, "/reset", &empty, nil))
@@ -114,18 +117,23 @@ func main() {
 		"generator_access_token": genCore.netTok,
 	}, nil))
 
-	method := "PATCH"
-	url := "https://api.heroku.com/apps/chain-testnet-info/config-vars"
-	r := strings.NewReader(`{"BLOCKCHAIN_ID":"` + resp.BlockchainID + `"}`)
-	req, err := http.NewRequest(method, url, r)
+	// update blockchain id and scale up bot
+	updateHerokuApp("/chain-testnet-info/config-vars", `{"BLOCKCHAIN_ID":"`+resp.BlockchainID+`"}`)
+	updateHerokuApp("/chain-core-ccte/config-vars", `{"BLOCKCHAIN_ID":"`+resp.BlockchainID+`"}`)
+	updateHerokuApp("/chain-core-ccte/formation", `{"updates":[{"type":"web", "quantity":1}]}`)
+}
+
+func updateHerokuApp(endpoint, body string) {
+	r := strings.NewReader(body)
+	req, err := http.NewRequest("PATCH", "https://api.heroku.com/apps"+endpoint, r)
 	must(err)
 	req.Header.Add("Accept", "application/vnd.heroku+json; version=3")
 	req.Header.Add("Content-type", "application/json")
 	req.SetBasicAuth(os.Getenv("HEROKU_API_USER"), os.Getenv("HEROKU_API_KEY"))
-	response, err := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	must(err)
-	defer response.Body.Close()
-	io.Copy(os.Stdout, response.Body)
+	defer resp.Body.Close()
+	io.Copy(os.Stdout, resp.Body)
 }
 
 func must(err error) {
