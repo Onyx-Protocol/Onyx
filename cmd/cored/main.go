@@ -315,7 +315,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		}
 	}()
 
-	h.Leadership = leader.Run(db, *listenAddr, func(ctx context.Context) {
+	h.Leader = leader.Run(db, *listenAddr, func(ctx context.Context) {
 		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
 		if conf.IsGenerator {
 			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)

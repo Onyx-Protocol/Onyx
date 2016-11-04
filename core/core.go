@@ -59,7 +59,7 @@ func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
 			"is_configured": false,
 		}, nil
 	}
-	if h.Leadership.IsLeading() {
+	if h.Leader.IsLeading() {
 		return h.leaderInfo(ctx)
 	} else {
 		var resp map[string]interface{}

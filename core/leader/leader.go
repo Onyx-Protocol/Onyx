@@ -13,12 +13,8 @@ import (
 	"chain/log"
 )
 
-type Leadership interface {
-	IsLeading() bool
-	Address(ctx context.Context) (string, error)
-}
-
-type leadership struct {
+// Leadership describes the leader process of Chain Core.
+type Leadership struct {
 	db      pg.DB
 	key     string
 	lead    func(context.Context)
@@ -31,7 +27,7 @@ type leadership struct {
 }
 
 // IsLeading returns true if this process is the core leader.
-func (l *leadership) IsLeading() bool {
+func (l *Leadership) IsLeading() bool {
 	l.mu.Lock()
 	leading := l.leading
 	l.mu.Unlock()
@@ -48,12 +44,12 @@ func (l *leadership) IsLeading() bool {
 //
 // The Chain Core has up to a 10-second refractory period after
 // shutdown, during which no process can become the new leader.
-func Run(db *sql.DB, addr string, lead func(context.Context)) Leadership {
+func Run(db *sql.DB, addr string, lead func(context.Context)) *Leadership {
 	ctx := context.Background()
 	// We use our process's address as the key, because it's unique
 	// among all processes within a Core and it allows a restarted
 	// leader to immediately return to its leadership.
-	l := &leadership{
+	l := &Leadership{
 		db:      db,
 		key:     addr,
 		lead:    lead,
@@ -70,7 +66,7 @@ func Run(db *sql.DB, addr string, lead func(context.Context)) Leadership {
 	return l
 }
 
-func (l *leadership) update(ctx context.Context) {
+func (l *Leadership) update(ctx context.Context) {
 	const (
 		insertQ = `
 			INSERT INTO leader (leader_key, address, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
@@ -142,7 +138,7 @@ func (l *leadership) update(ctx context.Context) {
 
 // Address retrieves the IP address of the current
 // core leader.
-func (l *leadership) Address(ctx context.Context) (string, error) {
+func (l *Leadership) Address(ctx context.Context) (string, error) {
 	const q = `SELECT address FROM leader`
 
 	var addr string
