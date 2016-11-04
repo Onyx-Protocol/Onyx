@@ -196,21 +196,21 @@ chain.assets.create(
   alias: 'bank1_usd_iou',
   root_xpubs: [key.xpub],
   quorum: 1,
-  .addDefinitionField('currency', 'USD')
+    currency: 'USD',
 )
 
 chain.assets.create(
   alias: 'bank1_euro_iou',
   root_xpubs: [key.xpub],
   quorum: 1,
-  .addDefinitionField('currency', 'Euro')
+    currency: 'Euro',
 )
 
 chain.assets.create(
   alias: 'bank2_usd_iou',
   root_xpubs: [key.xpub],
   quorum: 1,
-  .addDefinitionField('currency', 'USD')
+    currency: 'USD',
 )
 
 chain.accounts.create(
@@ -229,10 +229,10 @@ chain.transactions.submit(signer.sign(chain.transactions.build do |b|
   b.issue
     asset_alias: 'bank1_usd_iou',
     amount: 2000000,
-  )b.issue
+  b.issue
     asset_alias: 'bank2_usd_iou',
     amount: 2000000,
-  )b.issue
+  b.issue
     asset_alias: 'bank1_euro_iou',
     amount: 2000000,
   b.control_with_account

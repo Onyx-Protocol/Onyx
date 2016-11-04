@@ -71,7 +71,7 @@ retirement = chain.transactions.build do |b|
     account_alias: 'bob',
     asset_alias: 'gold',
     amount: 5,
-  ).addAction(new Transaction.Action.Retire()
+  b.retire
     asset_alias: 'gold',
     amount: 5,
   ).build(client)

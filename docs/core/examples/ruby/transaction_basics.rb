@@ -31,7 +31,7 @@ issuanceToProgram = chain.transactions.build do |b|
   b.issue
     asset_alias: 'gold',
     amount: 10,
-  )b.control_with_program
+  b.control_with_program
     control_program: bob_program.controlProgram,
     asset_alias: 'gold',
     amount: 10,
@@ -71,7 +71,7 @@ paymentToProgram = chain.transactions.build do |b|
     account_alias: 'alice',
     asset_alias: 'gold',
     amount: 10,
-  )b.control_with_program
+  b.control_with_program
     control_program: bob_program.controlProgram,
     asset_alias: 'gold',
     amount: 10,
@@ -89,7 +89,7 @@ if (client.equals(otherCoreClient)) {
       account_alias: 'alice',
       asset_alias: 'gold',
       amount: 10,
-    )b.spend_from_account
+    b.spend_from_account
       account_alias: 'alice',
       asset_alias: 'silver',
       amount: 20,
@@ -121,15 +121,15 @@ multiAssetToProgram = chain.transactions.build do |b|
     account_alias: 'alice',
     asset_alias: 'gold',
     amount: 10,
-  )b.spend_from_account
+  b.spend_from_account
     account_alias: 'alice',
     asset_alias: 'silver',
     amount: 20,
-  )b.control_with_program
+  b.control_with_program
     control_program: bob_program.controlProgram,
     asset_alias: 'gold',
     amount: 10,
-  )b.control_with_program
+  b.control_with_program
     control_program: bob_program.controlProgram,
     asset_alias: 'silver',
     amount: 20,
@@ -146,7 +146,7 @@ retirement = chain.transactions.build do |b|
     account_alias: 'alice',
     asset_alias: 'gold',
     amount: 50,
-  ).addAction(new Transaction.Action.Retire()
+  b.retire
     asset_alias: 'gold',
     amount: 50,
   ).build(client)

@@ -15,7 +15,7 @@ paymentToProgram = chain.transactions.build do |b|
     account_alias: 'bob',
     asset_alias: 'gold',
     amount: 10,
-  )b.control_with_program
+  b.control_with_program
     control_program: aliceProgram.controlProgram,
     asset_alias: 'gold',
     amount: 10,
@@ -30,7 +30,7 @@ retirement = chain.transactions.build do |b|
     account_alias: 'alice',
     asset_alias: 'gold',
     amount: 10,
-  ).addAction(new Transaction.Action.Retire()
+  b.retire
     asset_alias: 'gold',
     amount: 10,
   ).build(client)

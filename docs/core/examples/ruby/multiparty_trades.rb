@@ -81,7 +81,7 @@ trade = chain.transactions.build do |b|
     account_alias: 'alice',
     asset_alias: 'bobBuck',
     amount: 100,
-  )b.spend_from_account
+  b.spend_from_account
     account_alias: 'bob',
     asset_alias: 'bobBuck',
     amount: 100,
