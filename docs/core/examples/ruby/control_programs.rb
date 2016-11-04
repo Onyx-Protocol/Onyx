@@ -24,49 +24,33 @@ chain.accounts.create(
   quorum: 1,
 )
 
-chain.transactions.submit(signer.sign(chain.transactions.build do |b|
-  b.issue
-    asset_alias: 'gold',
-    amount: 100,
-  b.control_with_account
-    account_alias: 'bob',
-    asset_alias: 'gold',
-    amount: 100,
-  ).build(client)
-))
+tx = chain.transactions.build do |b|
+  b.issue asset_alias: 'gold', amount: 100
+  b.control_with_account account_alias: 'bob', asset_alias: 'gold', amount: 100
+end
+
+chain.transactions.submit(signer.sign(tx))
 
 # snippet create-control-program
-aliceProgram = chain.accounts.create_control_program()
+alice_program = chain.accounts.create_control_program(
   alias: 'alice'
-)
+).control_program
 # endsnippet
 
 # snippet build-transaction
-paymentToProgram = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'bob',
-    asset_alias: 'gold',
-    amount: 10,
-  b.control_with_program
-    control_program: aliceProgram.controlProgram,
-    asset_alias: 'gold',
-    amount: 10,
-  ).build(client)
+payment_to_program = chain.transactions.build do |b|
+  b.spend_from_account account_alias: 'bob', asset_alias: 'gold', amount: 10
+  b.control_with_program control_program: alice_program, asset_alias: 'gold', amount: 10
+end
 
-chain.transactions.submit(signer.sign(paymentToProgram))
+chain.transactions.submit(signer.sign(payment_to_program))
 # endsnippet
 
 # snippet retire
 retirement = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'alice',
-    asset_alias: 'gold',
-    amount: 10,
-  b.retire
-    asset_alias: 'gold',
-    amount: 10,
-  ).build(client)
+  b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 10
+  b.retire asset_alias: 'gold', amount: 10
+end
 
 chain.transactions.submit(signer.sign(retirement))
 # endsnippet
-}
