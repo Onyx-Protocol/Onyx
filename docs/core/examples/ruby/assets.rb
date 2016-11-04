@@ -1,6 +1,7 @@
 require 'chain'
 
 chain = Chain::Client.new
+signer = Chain::HSMSigner.new
 
 asset_key = chain.mock_hsm.keys.create
 signer.add_key(asset_key, chain.mock_hsm.signer_conn)
@@ -22,10 +23,12 @@ chain.assets.create(
   tags: {
     internal_rating: '1',
   },
-  .addDefinitionField('issuer', 'Acme Inc.')
-  .addDefinitionField('type', 'security')
-  .addDefinitionField('subtype', 'private')
-  .addDefinitionField('class', 'common')
+  definition: {
+    issuer: 'Acme Inc.',
+    type: 'security',
+    subtype: 'private',
+    class: 'common',
+  },
 )
 # endsnippet
 
@@ -37,164 +40,126 @@ chain.assets.create(
   tags: {
     internal_rating: '2',
   },
-  .addDefinitionField('issuer', 'Acme Inc.')
-  .addDefinitionField('type', 'security')
-  .addDefinitionField('subtype', 'private')
-  .addDefinitionField('class', 'perferred')
+  definition: {
+    issuer: 'Acme Inc.',
+    type: 'security',
+    subtype: 'private',
+    class: 'preferred',
+  },
 )
 # endsnippet
 
 # snippet list-local-assets
-localAssets = chain.assets.query
+chain.assets.query(
   filter: 'is_local=$1',
   filter_params: ['yes'],
-  .execute(client)
-
-while (localAssets.hasNext()) {
-  Asset asset = localAssets.next()
-  puts('Local asset: ' + asset.alias)
-}
+).each do |a|
+  puts "Local asset: #{a.alias}"
+end
 # endsnippet
 
 # snippet list-private-preferred-securities
-common = chain.assets.query
+chain.assets.query(
   filter: 'definition.type=$1 AND definition.subtype=$2 AND definition.class=$3',
-  filter_params: ['security'],
-  filter_params: ['private'],
-  filter_params: ['preferred'],
-  .execute(client)
+  filter_params: ['security', 'private', 'preferred'],
+).each do |a|
+  puts "Private preferred security: #{a.alias}"
+end
 # endsnippet
 
 # snippet build-issue
-issuanceTransaction = chain.transactions.build do |b|
-  b.issue
-    asset_alias: 'acme_common',
-    amount: 1000,
-  b.control_with_account
-    account_alias: 'acme_treasury',
-    asset_alias: 'acme_common',
-    amount: 1000,
-  ).build(client)
+issuance_tx = chain.transactions.build do |b|
+  b.issue asset_alias: 'acme_common', amount: 1000
+  b.control_with_account account_alias: 'acme_treasury', asset_alias: 'acme_common', amount: 1000
+end
 # endsnippet
 
 # snippet sign-issue
-signedIssuanceTransaction = signer.sign(issuanceTransaction)
+signed_issuance_tx = signer.sign(issuance_tx)
 # endsnippet
 
 # snippet submit-issue
-chain.transactions.submit(signedIssuanceTransaction)
+chain.transactions.submit(signed_issuance_tx)
 # endsnippet
 
-externalProgram = chain.accounts.create_control_program()
+external_program = chain.accounts.create_control_program(
   alias: 'acme_treasury'
-)
+).control_program
 
 # snippet external-issue
-externalIssuance = chain.transactions.build do |b|
-  b.issue
-    asset_alias: 'acme_preferred',
-    amount: 2000,
-  )b.control_with_program
-    control_program: externalProgram,
-    asset_alias: 'acme_preferred',
-    amount: 2000,
-  ).build(client)
+external_issuance = chain.transactions.build do |b|
+  b.issue asset_alias: 'acme_preferred', amount: 2000
+  b.control_with_program control_program: external_program, asset_alias: 'acme_preferred', amount: 2000
+end
 
-chain.transactions.submit(signer.sign(externalIssuance))
+chain.transactions.submit(signer.sign(external_issuance))
 # endsnippet
 
 # snippet build-retire
-retirementTransaction = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'acme_treasury',
-    asset_alias: 'acme_common',
-    amount: 50,
-  ).addAction(new Transaction.Action.Retire()
-    asset_alias: 'acme_common',
-    amount: 50,
-  ).build(client)
+retirement_tx = chain.transactions.build do |b|
+  b.spend_from_account account_alias: 'acme_treasury', asset_alias: 'acme_common', amount: 50
+  b.retire asset_alias: 'acme_common', amount: 50
+end
 # endsnippet
 
 # snippet sign-retire
-signedRetirementTransaction = signer.sign(retirementTransaction)
+signed_retirement_tx = signer.sign(retirement_tx)
 # endsnippet
 
 # snippet submit-retire
-chain.transactions.submit(signedRetirementTransaction)
+chain.transactions.submit(signed_retirement_tx)
 # endsnippet
 
 # snippet list-issuances
-acmeCommonIssuances = chain.transactions.query
-  filter: 'inputs(action=$1 AND asset_alias=$2,')
-  filter_params: ['issue'],
-  filter_params: ['acme_common'],
-  .execute(client)
-
-while (acmeCommonIssuances.hasNext()) {
-  tx = acmeCommonIssuances.next()
-  puts('Acme Common issued in tx ' + tx.id)
-}
+chain.transactions.query(
+  filter: 'inputs(type=$1 AND asset_alias=$2)',
+  filter_params: ['issue', 'acme_common'],
+).each do |t|
+  puts "Acme Common issued in tx #{t.id}"
+end
 # endsnippet
 
 # snippet list-transfers
-acmeCommonTransfers = chain.transactions.query
-  filter: 'inputs(action=$1 AND asset_alias=$2,')
-  filter_params: ['spend'],
-  filter_params: ['acme_common'],
-  .execute(client)
-
-while (acmeCommonTransfers.hasNext()) {
-  tx = acmeCommonTransfers.next()
-  puts('Acme Common transferred in tx ' + tx.id)
-}
+chain.transactions.query(
+  filter: 'inputs(type=$1 AND asset_alias=$2)',
+  filter_params: ['spend', 'acme_common'],
+).each do |t|
+  puts "Acme Common transferred in tx #{t.id}"
+end
 # endsnippet
 
 # snippet list-retirements
-acmeCommonRetirements = chain.transactions.query
-  filter: 'outputs(action=$1 AND asset_alias=$2,')
-  filter_params: ['retire'],
-  filter_params: ['acme_common'],
-  .execute(client)
-
-while (acmeCommonRetirements.hasNext()) {
-  tx = acmeCommonRetirements.next()
-  puts('Acme Common retired in tx ' + tx.id)
-}
+chain.transactions.query(
+  filter: 'outputs(type=$1 AND asset_alias=$2)',
+  filter_params: ['retire', 'acme_common'],
+).each do |t|
+  puts "Acme Common retired in tx #{t.id}"
+end
 # endsnippet
 
 # snippet list-acme-common-balance
-acmeCommonBalances = chain.balances.query
+chain.balances.query(
   filter: 'asset_alias=$1',
   filter_params: ['acme_common'],
-  .execute(client)
-
-acmeCommonBalance = acmeCommonBalances.next()
-puts('Total circulation of Acme Common: ' + acmeCommonBalance.amount)
+).each do |b|
+  puts "Total circulation of Acme Common: #{b.amount}"
+end
 # endsnippet
 
 # snippet list-acme-balance
-acmeAnyBalances = chain.balances.query
+chain.balances.query(
   filter: 'asset_definition.issuer=$1',
   filter_params: ['Acme Inc.'],
-  .execute(client)
-
-while (acmeAnyBalances.hasNext()) {
-  stockBalance = acmeAnyBalances.next()
-  puts(
-    'Total circulation of Acme stock ' + stockBalance.sumBy.get('asset_alias') +
-    ': ' + stockBalance.amount
-  )
-}
+).each do |b|
+  puts "Total circulation of Acme stock #{b.sum_by['asset_alias']}: #{b.amount}"
+end
 # endsnippet
 
 # snippet list-acme-common-unspents
-acmeCommonUnspentOutputs = chain.unspent_outputs.query()
+chain.unspent_outputs.query(
   filter: 'asset_alias=$1',
   filter_params: ['acme_common'],
-  .execute(client)
-
-while (acmeCommonUnspentOutputs.hasNext()) {
-  UnspentOutput utxo = acmeCommonUnspentOutputs.next()
-  puts('Acme Common held in output ' + utxo.transaction_id + ':' + utxo.position)
-}
+).each do |u|
+  puts "Acme Common held in output #{u.transaction_id}:#{u.position}"
+end
 # endsnippet
