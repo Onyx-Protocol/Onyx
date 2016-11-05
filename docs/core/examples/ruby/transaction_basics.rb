@@ -1,201 +1,126 @@
 require 'chain'
 
+# This demo is written to run on either one or two cores. Simply provide
+# different URLs to the following clients for the two-core version.
 chain = Chain::Client.new
-Client otherCoreClient = Chain::Client.new
+other_core = Chain::Client.new
+
 signer = Chain::HSMSigner.new
-setup(client, otherCoreClient)
+
+alice_key = chain.mock_hsm.keys.create
+signer.add_key(alice_key, chain.mock_hsm.signer_conn)
+
+bob_key = other_core.mock_hsm.keys.create
+
+chain.assets.create(alias: 'gold', root_xpubs: [alice_key.xpub], quorum: 1)
+chain.assets.create(alias: 'silver', root_xpubs: [alice_key.xpub], quorum: 1)
+chain.accounts.create(alias: 'alice', root_xpubs: [alice_key.xpub], quorum: 1)
+other_core.accounts.create(alias: 'bob', root_xpubs: [bob_key.xpub], quorum: 1)
+
+chain.transactions.submit(signer.sign(chain.transactions.build { |b|
+  b.issue asset_alias: 'silver', amount: 1000
+  b.control_with_account account_alias: 'alice', asset_alias: 'silver', amount: 1000
+}))
 
 # snippet issue-within-core
 issuance = chain.transactions.build do |b|
-  b.issue
-    asset_alias: 'gold',
-    amount: 1000,
-  b.control_with_account
-    account_alias: 'alice',
-    asset_alias: 'gold',
-    amount: 1000,
-  ).build(client)
+  b.issue asset_alias: 'gold', amount: 1000
+  b.control_with_account account_alias: 'alice', asset_alias: 'gold', amount: 1000
+end
 
-signedIssuance = signer.sign(issuance)
+signed_issuance = signer.sign(issuance)
 
-chain.transactions.submit(signedIssuance)
+chain.transactions.submit(signed_issuance)
 # endsnippet
 
 # snippet create-bob-issue-program
-bob_program = chain.accounts.create_control_program()
+bob_program = other_core.accounts.create_control_program(
   alias: 'bob'
-  .create(otherCoreClient)
+).control_program
 # endsnippet
 
 # snippet issue-to-bob-program
-issuanceToProgram = chain.transactions.build do |b|
-  b.issue
-    asset_alias: 'gold',
-    amount: 10,
-  b.control_with_program
-    control_program: bob_program.controlProgram,
-    asset_alias: 'gold',
-    amount: 10,
-  ).build(client)
+issuance_to_program = chain.transactions.build do |b|
+  b.issue asset_alias: 'gold', amount: 10
+  b.control_with_program control_program: bob_program, asset_alias: 'gold', amount: 10
+end
 
-signedIssuanceToProgram = signer.sign(issuanceToProgram)
+signed_issuance_to_program = signer.sign(issuance_to_program)
 
-chain.transactions.submit(signedIssuanceToProgram)
+chain.transactions.submit(signed_issuance_to_program)
 # endsnippet
 
-# snippet pay-within-core
-payment = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'alice',
-    asset_alias: 'gold',
-    amount: 10,
-  b.control_with_account
-    account_alias: 'bob',
-    asset_alias: 'gold',
-    amount: 10,
-  ).build(client)
+if (chain.opts[:url] == other_core.opts[:url])
+  # snippet pay-within-core
+  payment = chain.transactions.build do |b|
+    b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 10
+    b.control_with_account account_alias: 'bob', asset_alias: 'gold', amount: 10
+  end
 
-signedPayment = signer.sign(payment)
+  signed_payment = signer.sign(payment)
 
-chain.transactions.submit(signedPayment)
-# endsnippet
+  chain.transactions.submit(signed_payment)
+  # endsnippet
+end
 
 # snippet create-bob-payment-program
-bob_program = chain.accounts.create_control_program()
+bob_program = other_core.accounts.create_control_program(
   alias: 'bob'
-  .create(otherCoreClient)
+).control_program
 # endsnippet
 
 # snippet pay-between-cores
-paymentToProgram = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'alice',
-    asset_alias: 'gold',
-    amount: 10,
-  b.control_with_program
-    control_program: bob_program.controlProgram,
-    asset_alias: 'gold',
-    amount: 10,
-  ).build(client)
+payment_to_program = chain.transactions.build do |b|
+  b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 10
+  b.control_with_program control_program: bob_program, asset_alias: 'gold', amount: 10
+end
 
-signedPaymentToProgram = signer.sign(paymentToProgram)
+signed_payment_to_program = signer.sign(payment_to_program)
 
-chain.transactions.submit(signedPaymentToProgram)
+chain.transactions.submit(signed_payment_to_program)
 # endsnippet
 
-if (client.equals(otherCoreClient)) {
+if (chain.opts[:url] == other_core.opts[:url])
   # snippet multiasset-within-core
-  multiAssetPayment = chain.transactions.build do |b|
-    b.spend_from_account
-      account_alias: 'alice',
-      asset_alias: 'gold',
-      amount: 10,
-    b.spend_from_account
-      account_alias: 'alice',
-      asset_alias: 'silver',
-      amount: 20,
-    b.control_with_account
-      account_alias: 'bob',
-      asset_alias: 'gold',
-      amount: 10,
-    b.control_with_account
-      account_alias: 'bob',
-      asset_alias: 'silver',
-      amount: 20,
-    ).build(client)
+  multi_asset_payment = chain.transactions.build do |b|
+    b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 10
+    b.spend_from_account account_alias: 'alice', asset_alias: 'silver', amount: 20
+    b.control_with_account account_alias: 'bob', asset_alias: 'gold', amount: 10
+    b.control_with_account account_alias: 'bob', asset_alias: 'silver', amount: 20
+  end
 
-  signedMultiAssetPayment = signer.sign(multiAssetPayment)
+  signed_multi_asset_payment = signer.sign(multi_asset_payment)
 
-  chain.transactions.submit(signedMultiAssetPayment)
+  chain.transactions.submit(signed_multi_asset_payment)
   # endsnippet
-}
+end
 
 # snippet create-bob-multiasset-program
-bob_program = chain.accounts.create_control_program()
+bob_program = other_core.accounts.create_control_program(
   alias: 'bob'
-  .create(otherCoreClient)
+).control_program
 # endsnippet
 
 # snippet multiasset-between-cores
-multiAssetToProgram = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'alice',
-    asset_alias: 'gold',
-    amount: 10,
-  b.spend_from_account
-    account_alias: 'alice',
-    asset_alias: 'silver',
-    amount: 20,
-  b.control_with_program
-    control_program: bob_program.controlProgram,
-    asset_alias: 'gold',
-    amount: 10,
-  b.control_with_program
-    control_program: bob_program.controlProgram,
-    asset_alias: 'silver',
-    amount: 20,
-  ).build(client)
+multi_asset_to_program = chain.transactions.build do |b|
+  b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 10
+  b.spend_from_account account_alias: 'alice', asset_alias: 'silver', amount: 20
+  b.control_with_program control_program: bob_program, asset_alias: 'gold', amount: 10
+  b.control_with_program control_program: bob_program, asset_alias: 'silver', amount: 20
+end
 
-signedMultiAssetToProgram = signer.sign(multiAssetToProgram)
+signed_multi_asset_to_program = signer.sign(multi_asset_to_program)
 
-chain.transactions.submit(signedMultiAssetToProgram)
+chain.transactions.submit(signed_multi_asset_to_program)
 # endsnippet
 
 # snippet retire
 retirement = chain.transactions.build do |b|
-  b.spend_from_account
-    account_alias: 'alice',
-    asset_alias: 'gold',
-    amount: 50,
-  b.retire
-    asset_alias: 'gold',
-    amount: 50,
-  ).build(client)
+  b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 50
+  b.retire asset_alias: 'gold', amount: 50
+end
 
-signedRetirement = signer.sign(retirement)
+signed_retirement = signer.sign(retirement)
 
-chain.transactions.submit(signedRetirement)
+chain.transactions.submit(signed_retirement)
 # endsnippet
-}
-
-public static void setup(chain, Client otherCoreClient) throws Exception {
-alice_key = chain.mock_hsm.keys.create
-signer.add_key(alice_key, chain.mock_hsm.signer_conn)
-
-bob_key = MockHsm.Key.create(otherCoreClient)
-signer.add_key(bob_key, MockHsm.getSignerClient(otherCoreClient))
-
-chain.assets.create(
-  alias: 'gold',
-  root_xpubs: [alice_key.xpub],
-  quorum: 1,
-)
-
-chain.assets.create(
-  alias: 'silver',
-  root_xpubs: [alice_key.xpub],
-  quorum: 1,
-)
-
-chain.accounts.create(
-  alias: 'alice',
-  root_xpubs: [alice_key.xpub],
-  quorum: 1,
-)
-
-chain.accounts.create(
-  alias: 'bob',
-  root_xpubs: [bob_key.xpub],
-  quorum: 1,
-  .create(otherCoreClient)
-
-chain.transactions.submit(signer.sign(chain.transactions.build do |b|
-  b.issue
-    asset_alias: 'silver',
-    amount: 1000,
-  b.control_with_account
-    account_alias: 'alice',
-    asset_alias: 'silver',
-    amount: 1000,
-  ).build(client)
-))
