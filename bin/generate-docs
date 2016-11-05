@@ -23,6 +23,18 @@ cp target/chain-sdk-java*[[:digit:]].jar $java_dest_path/chain-sdk-latest.jar
 mkdir -p $javadoc_dest_path
 cp -R target/apidocs/* $javadoc_dest_path
 
+ruby_dest_path=$compile_dest_path/ruby
+ruby_yardoc_dest_path=$ruby_dest_path/doc
+
+echo
+echo "Building Ruby SDK documentation..."
+
+cd $CHAIN/sdk/ruby
+bundle
+bundle exec yardoc 'lib/**/*.rb'
+mkdir -p $ruby_yardoc_dest_path
+cp -R doc/* $ruby_yardoc_dest_path
+
 echo
 echo "Documentation generated. Output directory:"
 echo $compile_dest_path

@@ -1,3 +1,3 @@
 module Chain
-  VERSION = '1.0.20161104'
+  VERSION = '1.0.0.pre'
 end
