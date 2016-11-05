@@ -3,7 +3,7 @@ require 'chain'
 # This demo is written to run on either one or two cores. Simply provide
 # different URLs to the following clients for the two-core version.
 alice_core = Chain::Client.new
-bob_core = Chain::Client.new(url: 'http://localhost:1998')
+bob_core = Chain::Client.new
 
 alice_signer = Chain::HSMSigner.new
 bob_signer = Chain::HSMSigner.new
