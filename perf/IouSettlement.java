@@ -214,7 +214,7 @@ class Bank {
     List<Transaction.Template> templates = Transaction.buildBatch(client, builders).successes();
     List<Transaction.Template> signedTemplates = HsmSigner.signBatch(templates).successes();
     List<Transaction.SubmitResponse> txs =
-        Transaction.submitBatch(client, signedTemplates).successes();
+        Transaction.submitBatch(client, signedTemplates, "confirmed").successes();
   }
 }
 

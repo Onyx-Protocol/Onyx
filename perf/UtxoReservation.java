@@ -35,7 +35,7 @@ public class UtxoReservation {
     System.exit(0);
   }
 
-  static final int utxosPerDenomination = 5;
+  static final int utxosPerDenomination = 100;
   static final int utxoDenominations = 5;
 
   static long totalPerAccount() {
@@ -101,7 +101,7 @@ public class UtxoReservation {
     }
     Transaction.Template template = builder.build(client);
     Transaction.Template signedTemplate = HsmSigner.sign(template);
-    Transaction.SubmitResponse tx = Transaction.submit(client, signedTemplate);
+    Transaction.SubmitResponse tx = Transaction.submit(client, signedTemplate, "confirmed");
   }
 
   static void transact(Client client) throws Exception {
@@ -110,8 +110,8 @@ public class UtxoReservation {
     Account alice = getAccount(client, "alice");
     Account bob = getAccount(client, "bob");
 
-    final int iterations = 600; // 10 minutes
-    final int concurrentPayments = 80;
+    final int iterations = 300; // 5 minutes
+    final int concurrentPayments = 250;
     final int maxPerPayment = (int) totalPerAccount() / concurrentPayments;
 
     Random r = new Random();
@@ -164,7 +164,7 @@ public class UtxoReservation {
                     .setAccountId(to.id));
     Transaction.Template template = builder.build(client);
     Transaction.Template signedTemplate = HsmSigner.sign(template);
-    Transaction.SubmitResponse tx = Transaction.submit(client, signedTemplate);
+    Transaction.SubmitResponse tx = Transaction.submit(client, signedTemplate, "confirmed");
   }
 
   static Asset getAsset(Client client, String alias) throws Exception {
