@@ -42,7 +42,7 @@ class Assets {
       .addDefinitionField("issuer", "Acme Inc.")
       .addDefinitionField("type", "security")
       .addDefinitionField("subtype", "private")
-      .addDefinitionField("class", "perferred")
+      .addDefinitionField("class", "preferred")
       .create(client);
     // endsnippet
 
@@ -59,12 +59,17 @@ class Assets {
     // endsnippet
 
     // snippet list-private-preferred-securities
-    Asset.Items common = new Asset.QueryBuilder()
+    Asset.Items preferred = new Asset.QueryBuilder()
       .setFilter("definition.type=$1 AND definition.subtype=$2 AND definition.class=$3")
       .addFilterParameter("security")
       .addFilterParameter("private")
       .addFilterParameter("preferred")
       .execute(client);
+
+    while (preferred.hasNext()) {
+      Asset asset = preferred.next();
+      System.out.println("Private preferred security: " + asset.alias);
+    }
     // endsnippet
 
     // snippet build-issue
@@ -127,7 +132,7 @@ class Assets {
 
     // snippet list-issuances
     Transaction.Items acmeCommonIssuances = new Transaction.QueryBuilder()
-      .setFilter("inputs(action=$1 AND asset_alias=$2)")
+      .setFilter("inputs(type=$1 AND asset_alias=$2)")
       .addFilterParameter("issue")
       .addFilterParameter("acme_common")
       .execute(client);
@@ -140,7 +145,7 @@ class Assets {
 
     // snippet list-transfers
     Transaction.Items acmeCommonTransfers = new Transaction.QueryBuilder()
-      .setFilter("inputs(action=$1 AND asset_alias=$2)")
+      .setFilter("inputs(type=$1 AND asset_alias=$2)")
       .addFilterParameter("spend")
       .addFilterParameter("acme_common")
       .execute(client);
@@ -153,7 +158,7 @@ class Assets {
 
     // snippet list-retirements
     Transaction.Items acmeCommonRetirements = new Transaction.QueryBuilder()
-      .setFilter("outputs(action=$1 AND asset_alias=$2)")
+      .setFilter("outputs(type=$1 AND asset_alias=$2)")
       .addFilterParameter("retire")
       .addFilterParameter("acme_common")
       .execute(client);
