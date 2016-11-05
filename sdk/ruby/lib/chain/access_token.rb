@@ -35,7 +35,7 @@ module Chain
         ))
       end
 
-      # @param [Hash] query
+      # @param [Hash] opts
       # @return [Query]
       def query(opts = {})
         Query.new(client, opts)

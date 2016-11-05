@@ -68,7 +68,7 @@ module Chain
         ) { |item| Template.new(item) }
       end
 
-      # @param [Array<Builder>] builder
+      # @param [Array<Builder>] builders
       # @return [Array<Template>]
       def build_batch(builders)
         client.conn.batch_request(
@@ -86,7 +86,7 @@ module Chain
         ) { |item| SubmitResponse.new(item) }
       end
 
-      # @param [Array<Template>] template
+      # @param [Array<Template>] templates
       # @return [Array<SubmitResponse>]
       def submit_batch(templates)
         client.conn.batch_request(
