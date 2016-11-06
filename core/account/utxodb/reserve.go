@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/golang/groupcache/singleflight"
+
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -106,15 +108,17 @@ func (re *Reserver) Reserve(ctx context.Context, source Source, amount uint64, c
 }
 
 func (re *Reserver) reserve(ctx context.Context, source Source, amount uint64, clientToken *string, exp time.Time) (res *Reservation, err error) {
+	sourceReserver := re.source(source)
+
 	// Find the set of UTXOs that match this source.
-	utxos, err := findMatchingUTXOs(ctx, re.db, source)
+	utxos, err := sourceReserver.findMatchingUTXOs(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// Try to reserve the right amount.
 	rid := atomic.AddUint64(&re.nextReservationID, 1)
-	reserved, total, err := re.source(source).reserve(rid, amount, utxos)
+	reserved, total, err := sourceReserver.reserve(rid, amount, utxos)
 	if err != nil {
 		return nil, err
 	}
@@ -218,14 +222,9 @@ func (re *Reserver) ExpireReservations(ctx context.Context) error {
 		}
 	}
 
-	// Cleanup any source reservers that don't have anything reserved.
-	re.sourcesMu.Lock()
-	for src, sr := range re.sources {
-		if len(sr.reserved) == 0 {
-			delete(re.sources, src)
-		}
-	}
-	re.sourcesMu.Unlock()
+	// TODO(jackson): Cleanup any source reservers that don't have
+	// anything reserved. It'll be a little tricky because of our
+	// locking scheme.
 	return nil
 }
 
@@ -239,6 +238,7 @@ func (re *Reserver) source(src Source) *sourceReserver {
 	}
 
 	sr = &sourceReserver{
+		db:       re.db,
 		source:   src,
 		reserved: make(map[bc.Outpoint]uint64),
 	}
@@ -247,10 +247,20 @@ func (re *Reserver) source(src Source) *sourceReserver {
 }
 
 type sourceReserver struct {
+	db     pg.DB
 	source Source
+	group  singleflight.Group
 
 	mu       sync.Mutex
 	reserved map[bc.Outpoint]uint64
+}
+
+func (sr *sourceReserver) findMatchingUTXOs(ctx context.Context) ([]*UTXO, error) {
+	srcID := fmt.Sprintf("%s-%s", sr.source.AssetID, sr.source.AccountID)
+	untypedUTXOs, err := sr.group.Do(srcID, func() (interface{}, error) {
+		return findMatchingUTXOs(ctx, sr.db, sr.source)
+	})
+	return untypedUTXOs.([]*UTXO), err
 }
 
 func (sr *sourceReserver) reserve(rid uint64, amount uint64, utxos []*UTXO) ([]*UTXO, uint64, error) {
