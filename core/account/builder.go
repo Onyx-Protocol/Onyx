@@ -56,14 +56,10 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 	}
 
 	src := utxodb.Source{
-		AssetAmount: bc.AssetAmount{
-			AssetID: a.AssetID,
-			Amount:  a.Amount,
-		},
-		AccountID:   a.AccountID,
-		ClientToken: a.ClientToken,
+		AssetID:   a.AssetID,
+		AccountID: a.AccountID,
 	}
-	res, err := a.accounts.utxoDB.Reserve(ctx, src, maxTime)
+	res, err := a.accounts.utxoDB.Reserve(ctx, src, a.Amount, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, errors.Wrap(err, "reserving utxos")
 	}
@@ -130,7 +126,7 @@ func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuil
 		return nil, err
 	}
 
-	acct, err := a.accounts.findByID(ctx, res.AccountID)
+	acct, err := a.accounts.findByID(ctx, res.Source.AccountID)
 	if err != nil {
 		return nil, err
 	}
