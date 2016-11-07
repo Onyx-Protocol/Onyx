@@ -25,6 +25,69 @@ import (
 	"chain/testutil"
 )
 
+func TestSighashCheck(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := context.Background()
+	info, err := bootdb(ctx, db, t)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = issue(ctx, t, info, info.acctA.ID, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = issue(ctx, t, info, info.acctB.ID, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	prottest.MakeBlock(t, info.Chain)
+	<-info.pinStore.WaitForPin(account.PinName, info.Chain.Height())
+
+	assetAmount := bc.AssetAmount{
+		AssetID: info.asset.AssetID,
+		Amount:  1,
+	}
+	spendAction1 := info.NewSpendAction(assetAmount, info.acctA.ID, nil, nil)
+	controlAction1 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
+
+	tpl1, err := Build(ctx, nil, []Action{spendAction1, controlAction1}, time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tpl1.AllowAdditional = true
+	coretest.SignTxTemplate(t, ctx, tpl1, &info.privKeyAccounts)
+	err = CheckTxSighashCommitment(bc.NewTx(*tpl1.Transaction))
+	if err == nil {
+		t.Error("unexpected success from checkTxSighashCommitment")
+	}
+
+	spendAction2a := info.NewSpendAction(assetAmount, info.acctB.ID, nil, nil)
+	controlAction2 := info.NewControlAction(assetAmount, info.acctA.ID, nil)
+
+	tpl2a, err := Build(ctx, tpl1.Transaction, []Action{spendAction2a, controlAction2}, time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	coretest.SignTxTemplate(t, ctx, tpl2a, &info.privKeyAccounts)
+	err = CheckTxSighashCommitment(bc.NewTx(*tpl2a.Transaction))
+	if err != nil {
+		t.Errorf("unexpected failure from checkTxSighashCommitment (case 1): %v", err)
+	}
+
+	issueAction2b := info.NewIssueAction(assetAmount, nil)
+	tpl2b, err := Build(ctx, tpl1.Transaction, []Action{issueAction2b, controlAction2}, time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	coretest.SignTxTemplate(t, ctx, tpl2b, &info.privKeyAsset)
+	err = CheckTxSighashCommitment(bc.NewTx(*tpl2b.Transaction))
+	if err != nil {
+		t.Errorf("unexpected failure from checkTxSighashCommitment (case 2): %v", err)
+	}
+}
+
 // TestConflictingTxsInPool tests creating conflicting transactions, and
 // ensures that they both make it into the tx pool. Then, when a block
 // lands, only one of the txs should be confirmed.

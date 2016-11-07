@@ -89,20 +89,23 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 	sigHasher := bc.NewSigHasher(&tx.TxData)
 
 	for i, inp := range tx.Inputs {
-		spend, ok := inp.TypedInput.(*bc.SpendInput)
-		if !ok {
-			continue
+		var args [][]byte
+		switch t := inp.TypedInput.(type) {
+		case *bc.SpendInput:
+			args = t.Arguments
+			allIssuances = false
+		case *bc.IssuanceInput:
+			args = t.Arguments
 		}
-		allIssuances = false
-		if len(spend.Arguments) < 3 {
+		if len(args) < 3 {
 			// A conforming arguments list contains
 			// [... arg1 arg2 ... argN N sig1 sig2 ... sigM prog]
 			// The args are the opaque arguments to prog. In the case where
 			// N is 0 (prog takes no args), and assuming there must be at
-			// least one signature, spend.Arguments has a minimum length of 3.
+			// least one signature, args has a minimum length of 3.
 			continue
 		}
-		prog := spend.Arguments[len(spend.Arguments)-1]
+		prog := args[len(args)-1]
 		if len(prog) != 35 {
 			continue
 		}
