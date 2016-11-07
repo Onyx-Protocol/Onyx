@@ -57,9 +57,6 @@ var config = getConfig({
   }
 })
 
-// Enable babel-polyfill
-config.entry = ['babel-polyfill', './src/app.js']
-
 // Enable CSS modules
 let loaders = config.module.loaders
 
@@ -105,8 +102,12 @@ config.plugins.push(new webpack.DefinePlugin({
 
 config.output.publicPath = publicPath
 
-
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV == 'production') {
+  // Enable babel-polyfill
+  // NOTE: this breaks hot module reloading in development. Compile this in for
+  // production builds to support polyfill features for legacy browsers
+  config.entry = ['babel-polyfill', './src/app.js']
+} else {
   // Support source maps for Babel
   config.devtool = 'eval-cheap-module-source-map'
 }
