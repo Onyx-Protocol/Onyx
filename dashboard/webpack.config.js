@@ -108,7 +108,7 @@ config.output.publicPath = publicPath
 
 if (process.env.NODE_ENV !== 'production') {
   // Support source maps for Babel
-  config.devtool = 'source-map'
+  config.devtool = 'eval-cheap-module-source-map'
 }
 
 module.exports = config
