@@ -100,14 +100,12 @@ config.plugins.push(new webpack.DefinePlugin({
   'process.env.TESTNET_GENERATOR_URL': JSON.stringify(process.env.TESTNET_GENERATOR_URL),
 }))
 
+// Enable babel-polyfill
+config.entry.push('babel-polyfill')
+
 config.output.publicPath = publicPath
 
-if (process.env.NODE_ENV == 'production') {
-  // Enable babel-polyfill
-  // NOTE: this breaks hot module reloading in development. Compile this in for
-  // production builds to support polyfill features for legacy browsers
-  config.entry = ['babel-polyfill', './src/app.js']
-} else {
+if (process.env.NODE_ENV !== 'production') {
   // Support source maps for Babel
   config.devtool = 'eval-cheap-module-source-map'
 }
