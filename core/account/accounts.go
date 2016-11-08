@@ -28,10 +28,11 @@ var ErrDuplicateAlias = errors.New("duplicate account alias")
 
 func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 	return &Manager{
-		db:     db,
-		chain:  chain,
-		utxoDB: &utxodb.DBReserver{DB: db},
-		cache:  lru.New(maxAccountCache),
+		db:         db,
+		chain:      chain,
+		utxoDB:     &utxodb.DBReserver{DB: db},
+		cache:      lru.New(maxAccountCache),
+		aliasCache: lru.New(maxAccountCache),
 	}
 }
 
@@ -43,8 +44,9 @@ type Manager struct {
 	indexer  Saver
 	pinStore *pin.Store
 
-	cacheMu sync.Mutex
-	cache   *lru.Cache
+	cacheMu    sync.Mutex
+	cache      *lru.Cache
+	aliasCache *lru.Cache
 
 	acpMu        sync.Mutex
 	acpIndexNext uint64 // next acp index in our block
@@ -124,14 +126,25 @@ func (m *Manager) Create(ctx context.Context, xpubs []string, quorum int, alias 
 
 // FindByAlias retrieves an account's Signer record by its alias
 func (m *Manager) FindByAlias(ctx context.Context, alias string) (*signers.Signer, error) {
-	const q = `SELECT account_id FROM accounts WHERE alias=$1`
 	var accountID string
-	err := m.db.QueryRow(ctx, q, alias).Scan(&accountID)
-	if err == stdsql.ErrNoRows {
-		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "alias: %s", alias)
-	}
-	if err != nil {
-		return nil, errors.Wrap(err)
+
+	m.cacheMu.Lock()
+	cachedID, ok := m.aliasCache.Get(alias)
+	m.cacheMu.Unlock()
+	if ok {
+		accountID = cachedID.(string)
+	} else {
+		const q = `SELECT account_id FROM accounts WHERE alias=$1`
+		err := m.db.QueryRow(ctx, q, alias).Scan(&accountID)
+		if err == stdsql.ErrNoRows {
+			return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "alias: %s", alias)
+		}
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		m.cacheMu.Lock()
+		m.aliasCache.Add(alias, accountID)
+		m.cacheMu.Unlock()
 	}
 	return m.findByID(ctx, accountID)
 }
