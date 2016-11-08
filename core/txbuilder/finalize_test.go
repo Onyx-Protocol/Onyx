@@ -26,9 +26,9 @@ import (
 )
 
 func TestSighashCheck(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
-	info, err := bootdb(ctx, db, t)
+	info, err := bootdb(ctx, db, dbURL, t)
 	if err != nil {
 		t.Fatal(err)
 	}
