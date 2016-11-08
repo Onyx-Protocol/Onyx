@@ -57,15 +57,21 @@ var config = getConfig({
   }
 })
 
-// Enable CSS modules
+// Customize loader configuration
 let loaders = config.module.loaders
 
 for (let item of loaders) {
-  if (item.loader) {
+  // Enable CSS module support
+  if (item.loader && item.loader.indexOf('css-loader') > 0) {
     item.loader = item.loader.replace('css-loader','css-loader?module&importLoaders=1&localIdentName=[name]__[local]__[hash:base64:5]')
   }
   if ('.scss'.match(item.test) != null) {
     item.loader = item.loader.replace('sass-loader','sass-loader!sass-resources-loader')
+  }
+
+  // Enable babel-loader caching
+  if (item.loader == 'babel-loader') {
+    item.loader = 'babel-loader?cacheDirectory'
   }
 }
 
