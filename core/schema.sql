@@ -1149,4 +1149,4 @@ ALTER TABLE ONLY account_utxos
 insert into migrations (filename, hash) values ('2016-10-17.0.core.schema-snapshot.sql', 'cff5210e2d6af410719c223a76443f73c5c12fe875f0efecb9a0a5937cf029cd');
 insert into migrations (filename, hash) values ('2016-10-19.0.core.add-core-id.sql', '9353da072a571d7a633140f2a44b6ac73ffe9e27223f7c653ccdef8df3e8139e');
 insert into migrations (filename, hash) values ('2016-10-31.0.core.add-block-processors.sql', '9e9488e0039337967ef810b09a8f7822e23b3918a49a6308f02db24ddf3e490f');
-insert into migrations (filename, hash) values ('2016-11-4.0.core.add-block-processor-queue.sql', 'b77d84a4423562cd7f1d7a5c1d91829e078758db55d2553edccdfe52e6d710a5');
+insert into migrations (filename, hash) values ('2016-11-07.0.core.add-block-processor-queue.sql', 'b77d84a4423562cd7f1d7a5c1d91829e078758db55d2553edccdfe52e6d710a5');
