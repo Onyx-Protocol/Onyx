@@ -46,10 +46,10 @@ psql core -f $CHAIN/core/schema.sql
 # TODO(boymanjor): generate credentials
 
 echo 'installing cored'
-go install -tags 'insecure_disable_https_redirect' chain/cmd/cored
+go install -race -tags 'insecure_disable_https_redirect' chain/cmd/cored
 
 echo 'installing corectl'
-go install chain/cmd/corectl
+go install -race chain/cmd/corectl
 
 echo 'running integration tests'
 $GOPATH/bin/corectl config-generator
