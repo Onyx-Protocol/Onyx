@@ -30,4 +30,5 @@ var migrations = []migration{
 			height bigint DEFAULT 0 NOT NULL
 		);
 	`},
+	{Name: "2016-11-07.0.core.remove-client-token-not-null.sql", SQL: "ALTER TABLE txfeeds ALTER COLUMN client_token DROP NOT NULL;\n"},
 }
