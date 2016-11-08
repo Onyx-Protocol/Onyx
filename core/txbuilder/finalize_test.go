@@ -43,7 +43,7 @@ func TestSighashCheck(t *testing.T) {
 	}
 
 	prottest.MakeBlock(t, info.Chain)
-	<-info.pinStore.WaitForPin(account.PinName, info.Chain.Height())
+	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
@@ -111,7 +111,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	dumpState(ctx, t, db)
 	prottest.MakeBlock(t, info.Chain)
 	dumpState(ctx, t, db)
-	<-info.pinStore.WaitForPin(account.PinName, info.Chain.Height())
+	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
@@ -153,7 +153,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	// Make a block, which should reject one of the txs.
 	dumpState(ctx, t, db)
 	b := prottest.MakeBlock(t, info.Chain)
-	<-info.pinStore.WaitForPin(account.PinName, info.Chain.Height())
+	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	dumpState(ctx, t, db)
 	if len(b.Transactions) != 1 {
@@ -179,7 +179,7 @@ func TestTransferConfirmed(t *testing.T) {
 	prottest.MakeBlock(t, info.Chain)
 	dumpState(ctx, t, db)
 
-	<-info.pinStore.WaitForPin(account.PinName, info.Chain.Height())
+	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {

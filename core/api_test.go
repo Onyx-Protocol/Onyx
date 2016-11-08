@@ -61,7 +61,7 @@ func TestBuildFinal(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
-	<-pinStore.WaitForPin(account.PinName, c.Height())
+	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
@@ -170,7 +170,7 @@ func TestAccountTransfer(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
-	<-pinStore.WaitForPin(account.PinName, c.Height())
+	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// new source
 	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
@@ -253,7 +253,7 @@ func TestTransfer(t *testing.T) {
 
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(t, c)
-	<-pinStore.WaitForPin(account.PinName, c.Height())
+	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// Now transfer
 	buildReqFmt := `

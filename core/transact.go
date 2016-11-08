@@ -226,7 +226,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-h.PinStore.WaitForAll(height):
+	case <-h.PinStore.AllWaiter(height):
 	}
 
 	return nil
@@ -239,7 +239,7 @@ func waitForTxInBlock(ctx context.Context, c *protocol.Chain, tx *bc.Tx, height 
 		case <-ctx.Done():
 			return 0, ctx.Err()
 
-		case <-c.WaitForBlock(height):
+		case <-c.BlockWaiter(height):
 			b, err := c.GetBlock(ctx, height)
 			if err != nil {
 				return 0, errors.Wrap(err, "getting block that just landed")

@@ -22,7 +22,7 @@ func TestWaitForPin(t *testing.T) {
 		select {
 		case <-ctx.Done():
 			ch <- ctx.Err()
-		case <-s.WaitForPin("test", 1):
+		case <-s.PinWaiter("test", 1):
 			ch <- nil
 		}
 	}(sctx)

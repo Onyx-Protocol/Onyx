@@ -40,7 +40,7 @@ func TestGeneratorRecovery(t *testing.T) {
 
 	// Wait for the block to land, and then make sure it's the same block
 	// that was pending before we ran Generate.
-	<-c.WaitForBlock(pendingBlock.Height)
+	<-c.BlockWaiter(pendingBlock.Height)
 	confirmedBlock, err := c.GetBlock(ctx, pendingBlock.Height)
 	if err != nil {
 		testutil.FatalErr(t, err)

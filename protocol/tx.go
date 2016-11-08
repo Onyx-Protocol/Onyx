@@ -24,7 +24,7 @@ import (
 // resolved when a block lands.
 //
 // It is an error to call AddTx before the initial block has landed.
-// Use WaitForBlock to guarantee this.
+// Use BlockWaiter to guarantee this.
 func (c *Chain) AddTx(ctx context.Context, tx *bc.Tx) error {
 	err := c.ValidateTxCached(tx)
 	if err != nil {
