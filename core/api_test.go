@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	"chain/core/asset"
 	"chain/core/config"
 	"chain/core/coretest"
-	"chain/core/leader"
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/txbuilder"
@@ -201,6 +199,14 @@ func TestMux(t *testing.T) {
 	(&Handler{Config: &config.Config{}}).init()
 }
 
+type alwaysLeader struct {
+	Leader
+}
+
+func (l alwaysLeader) IsLeading() bool {
+	return true
+}
+
 func TestTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
@@ -212,6 +218,7 @@ func TestTransfer(t *testing.T) {
 		Assets:   asset.NewRegistry(db, c),
 		Accounts: account.NewManager(db, c),
 		Indexer:  query.NewIndexer(db, c, pinStore),
+		Leader:   alwaysLeader{},
 		DB:       db,
 	}
 	handler.Assets.IndexAssets(handler.Indexer, pinStore)
@@ -220,14 +227,6 @@ func TestTransfer(t *testing.T) {
 	handler.Indexer.RegisterAnnotator(handler.Accounts.AnnotateTxs)
 	handler.Indexer.RegisterAnnotator(handler.Assets.AnnotateTxs)
 	handler.init()
-
-	// TODO(jackson): Replace this with a mock leader.
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go leader.Run(db, ":1999", func(ctx context.Context) {
-		wg.Done()
-	})
-	wg.Wait()
 
 	assetAlias := "some-asset"
 	account1Alias := "first-account"
