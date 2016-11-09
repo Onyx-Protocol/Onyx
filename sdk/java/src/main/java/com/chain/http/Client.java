@@ -14,6 +14,7 @@ import java.util.List;
 import com.google.gson.Gson;
 
 import com.squareup.okhttp.CertificatePinner;
+import com.squareup.okhttp.ConnectionPool;
 import com.squareup.okhttp.Credentials;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
@@ -61,8 +62,7 @@ public class Client {
     }
 
     this.url = url;
-    this.httpClient = new OkHttpClient();
-    this.httpClient.setFollowRedirects(false);
+    this.httpClient = this.defaultHttpClient();
   }
 
   /**
@@ -347,6 +347,9 @@ public class Client {
     httpClient.setReadTimeout(30, TimeUnit.SECONDS);
     httpClient.setWriteTimeout(30, TimeUnit.SECONDS);
     httpClient.setConnectTimeout(30, TimeUnit.SECONDS);
+
+    // 50 max idle conns, 2 minute max keep alive
+    httpClient.setConnectionPool(new ConnectionPool(50, 120000));
     return httpClient;
   }
 
