@@ -39,7 +39,7 @@ func (ind *Indexer) ProcessBlocks(ctx context.Context) {
 // IndexTransactions is registered as a block callback on the Chain. It
 // saves all annotated transactions to the database.
 func (ind *Indexer) IndexTransactions(ctx context.Context, b *bc.Block) error {
-	<-ind.pinStore.WaitForPin(asset.PinName, b.Height)
+	<-ind.pinStore.PinWaiter(asset.PinName, b.Height)
 
 	err := ind.insertBlock(ctx, b)
 	if err != nil {

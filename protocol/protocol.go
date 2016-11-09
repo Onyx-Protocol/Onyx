@@ -33,7 +33,7 @@ and compose transactions.
 To publish a new transaction, prepare your transaction
 (select outputs, and compose and sign the tx) and send the
 transaction to the network's generator. To wait for
-confirmation, call WaitForBlock on successive block heights
+confirmation, call BlockWaiter on successive block heights
 and inspect the blockchain state until you find that the
 transaction has been either confirmed or rejected. Note
 that transactions may be malleable if there's no commitment
@@ -215,7 +215,7 @@ func (c *Chain) setState(b *bc.Block, s *state.Snapshot) {
 // but it is an error to wait for a block far in the future.
 // WaitForBlockSoon will timeout if the context times out.
 // To wait unconditionally, the caller should use WaitForBlock.
-func (c *Chain) WaitForBlockSoon(ctx context.Context, height uint64) <-chan error {
+func (c *Chain) BlockSoonWaiter(ctx context.Context, height uint64) <-chan error {
 	ch := make(chan error, 1)
 
 	go func() {
@@ -226,7 +226,7 @@ func (c *Chain) WaitForBlockSoon(ctx context.Context, height uint64) <-chan erro
 		}
 
 		select {
-		case <-c.WaitForBlock(height):
+		case <-c.BlockWaiter(height):
 			ch <- nil
 		case <-ctx.Done():
 			ch <- ctx.Err()
@@ -238,7 +238,7 @@ func (c *Chain) WaitForBlockSoon(ctx context.Context, height uint64) <-chan erro
 
 // WaitForBlock returns a channel that
 // waits for the block at the given height.
-func (c *Chain) WaitForBlock(height uint64) <-chan struct{} {
+func (c *Chain) BlockWaiter(height uint64) <-chan struct{} {
 	ch := make(chan struct{}, 1)
 	go func() {
 		c.state.cond.L.Lock()

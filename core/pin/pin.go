@@ -37,7 +37,7 @@ func (s *Store) ProcessBlocks(ctx context.Context, c *protocol.Chain, pinName st
 		case <-ctx.Done(): // leader deposed
 			log.Error(ctx, ctx.Err())
 			return
-		case <-c.WaitForBlock(height + 1):
+		case <-c.BlockWaiter(height + 1):
 			block, err := c.GetBlock(ctx, height+1)
 			if err != nil {
 				log.Error(ctx, err)
@@ -99,7 +99,7 @@ func (s *Store) pin(name string) <-chan *pin {
 	return ch
 }
 
-func (s *Store) WaitForPin(pinName string, height uint64) <-chan struct{} {
+func (s *Store) PinWaiter(pinName string, height uint64) <-chan struct{} {
 	ch := make(chan struct{}, 1)
 	p := <-s.pin(pinName)
 	go func() {
@@ -113,7 +113,7 @@ func (s *Store) WaitForPin(pinName string, height uint64) <-chan struct{} {
 	return ch
 }
 
-func (s *Store) WaitForAll(height uint64) <-chan struct{} {
+func (s *Store) AllWaiter(height uint64) <-chan struct{} {
 	ch := make(chan struct{}, 1)
 	go func() {
 		var pins []string
@@ -123,7 +123,7 @@ func (s *Store) WaitForAll(height uint64) <-chan struct{} {
 		}
 		s.mu.Unlock()
 		for _, name := range pins {
-			<-s.WaitForPin(name, height)
+			<-s.PinWaiter(name, height)
 		}
 		ch <- struct{}{}
 	}()

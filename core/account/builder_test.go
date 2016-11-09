@@ -42,7 +42,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	accounts.IndexAccounts(indexer, pinStore)
 	go accounts.ProcessBlocks(ctx)
 	prottest.MakeBlock(t, c)
-	<-pinStore.WaitForPin(account.PinName, c.Height())
+	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	assetAmount1 := bc.AssetAmount{
 		AssetID: asset,
@@ -96,7 +96,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	accounts.IndexAccounts(indexer, pinStore)
 	go accounts.ProcessBlocks(ctx)
 	prottest.MakeBlock(t, c)
-	<-pinStore.WaitForPin(account.PinName, c.Height())
+	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	source := accounts.NewSpendUTXOAction(out.Outpoint)
 	buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
@@ -145,7 +145,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	accounts.IndexAccounts(indexer, pinStore)
 	go accounts.ProcessBlocks(ctx)
 	prottest.MakeBlock(t, c)
-	<-pinStore.WaitForPin(account.PinName, c.Height())
+	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
 		buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))

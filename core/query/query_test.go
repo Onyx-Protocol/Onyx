@@ -56,7 +56,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	coretest.IssueAssets(ctx, t, c, assets, accounts, asset2.AssetID, 100, acct1.ID)
 
 	prottest.MakeBlock(t, c)
-	<-pinStore.WaitForPin(TxPinName, c.Height())
+	<-pinStore.PinWaiter(TxPinName, c.Height())
 
 	time2 := time.Now()
 
