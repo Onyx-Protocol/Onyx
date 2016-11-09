@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -346,12 +345,11 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, source Source) ([]*UTXO, e
 				ControlProgramIndex: cpIndex,
 			})
 		})
+	// TODO(jackson): This has the potential to be a large number of UTXOs.
+	// If we need to, we can cache UTXOs or at least avoid reading UTXOs once
+	// we've found enough to satisfy the reservation.
 	if err != nil {
 		return nil, errors.Wrap(err)
-	}
-	for i := range utxos {
-		j := rand.Intn(i + 1)
-		utxos[i], utxos[j] = utxos[j], utxos[i]
 	}
 	return utxos, nil
 }
