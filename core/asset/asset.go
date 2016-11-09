@@ -34,6 +34,7 @@ func NewRegistry(db pg.DB, chain *protocol.Chain) *Registry {
 		chain:            chain,
 		initialBlockHash: chain.InitialBlockHash,
 		cache:            lru.New(maxAssetCache),
+		aliasCache:       lru.New(maxAssetCache),
 	}
 }
 
@@ -45,8 +46,9 @@ type Registry struct {
 	initialBlockHash bc.Hash
 	pinStore         *pin.Store
 
-	cacheMu sync.Mutex
-	cache   *lru.Cache
+	cacheMu    sync.Mutex
+	cache      *lru.Cache
+	aliasCache *lru.Cache
 }
 
 func (reg *Registry) IndexAssets(indexer Saver, pinStore *pin.Store) {
@@ -136,7 +138,21 @@ func (reg *Registry) findByID(ctx context.Context, id bc.AssetID) (*Asset, error
 // FindByAlias retrieves an Asset record along with its signer,
 // given an asset alias.
 func (reg *Registry) FindByAlias(ctx context.Context, alias string) (*Asset, error) {
-	return assetQuery(ctx, reg.db, "assets.alias=$1", alias)
+	reg.cacheMu.Lock()
+	cachedID, ok := reg.aliasCache.Get(alias)
+	reg.cacheMu.Unlock()
+	if ok {
+		return reg.findByID(ctx, cachedID.(bc.AssetID))
+	}
+	a, err := assetQuery(ctx, reg.db, "assets.alias=$1", alias)
+	if err != nil {
+		return nil, err
+	}
+	reg.cacheMu.Lock()
+	reg.aliasCache.Add(alias, a.AssetID)
+	reg.cacheMu.Unlock()
+	return a, nil
+
 }
 
 // insertAsset adds the asset to the database. If the asset has a client token,
