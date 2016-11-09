@@ -38,16 +38,13 @@ func (s *Store) ProcessBlock(ctx context.Context, c *protocol.Chain, processID, 
 	if err != nil {
 		return err
 	}
+	defer s.Release(ctx, processID, name, height)
 	block, err := c.GetBlock(ctx, height)
 	if err != nil {
 		return err
 	}
 	err = f(ctx, block)
 	if err != nil {
-		releaseErr := s.Release(ctx, processID, name, height)
-		if err != nil {
-			log.Error(ctx, releaseErr)
-		}
 		return err
 	}
 	return s.Complete(ctx, processID, name, height)
