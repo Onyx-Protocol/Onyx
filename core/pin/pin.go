@@ -14,10 +14,7 @@ import (
 	"chain/protocol/bc"
 )
 
-const (
-	queueTimeout = time.Second * 5
-	queueCheck   = time.Millisecond * 500
-)
+const queueTimeout = time.Second * 5
 
 type Store struct {
 	db pg.DB
