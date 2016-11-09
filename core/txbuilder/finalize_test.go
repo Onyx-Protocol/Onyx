@@ -123,6 +123,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+	unsignedTx := *firstTemplate.Transaction
 	coretest.SignTxTemplate(t, ctx, firstTemplate, &info.privKeyAccounts)
 	tx := bc.NewTx(*firstTemplate.Transaction)
 	err = FinalizeTx(ctx, info.Chain, tx)
@@ -130,17 +131,13 @@ func TestConflictingTxsInPool(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	// Make the utxo available for reserving again
-	err = cancel(ctx, db, []bc.Outpoint{firstTemplate.Transaction.Inputs[0].TypedInput.(*bc.SpendInput).Outpoint})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Build the second tx
-	dest2 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
-	secondTemplate, err := Build(ctx, nil, []Action{spendAction, dest2}, time.Now().Add(time.Minute))
-	if err != nil {
-		t.Fatal(err)
+	// Slighly tweak the first tx so it has a different hash, but
+	// still consumes the same UTXOs.
+	unsignedTx.MaxTime++
+	secondTemplate := &Template{
+		Transaction:         &unsignedTx,
+		SigningInstructions: firstTemplate.SigningInstructions,
+		Local:               true,
 	}
 	coretest.SignTxTemplate(t, ctx, secondTemplate, &info.privKeyAccounts)
 	err = FinalizeTx(ctx, info.Chain, bc.NewTx(*secondTemplate.Transaction))
