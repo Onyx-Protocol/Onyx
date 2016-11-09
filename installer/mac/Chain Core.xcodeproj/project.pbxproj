@@ -79,6 +79,7 @@
 		20BC087B1DC93051002A3C1E /* ClientLauncher.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ClientLauncher.swift; path = ChainCore/ClientLauncher.swift; sourceTree = "<group>"; };
 		20BC087E1DC93237002A3C1E /* makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = makefile; path = pg/src/makefile; sourceTree = "<group>"; };
 		20C5E44E1DB0A28100C8CB2D /* TaskCleaner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = TaskCleaner.swift; path = ChainCore/TaskCleaner.swift; sourceTree = "<group>"; };
+		20DED1371DD3C04900B81D66 /* updates-dev.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = "updates-dev.xml"; sourceTree = "<group>"; };
 		830658E41D536F2E00BA1752 /* Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Extensions.swift; path = ChainCore/Extensions.swift; sourceTree = "<group>"; };
 		830B4B251D1C132300F16762 /* ServerManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ServerManager.swift; path = ChainCore/ServerManager.swift; sourceTree = "<group>"; };
 		831C84AC1D771B4800FA5F59 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = ChainCore/Vendor/Sparkle.framework; sourceTree = "<group>"; };
@@ -131,6 +132,7 @@
 			isa = PBXGroup;
 			children = (
 				20A50E541DA586D900F36C00 /* updates.xml */,
+				20DED1371DD3C04900B81D66 /* updates-dev.xml */,
 			);
 			name = Updates;
 			path = updates;
