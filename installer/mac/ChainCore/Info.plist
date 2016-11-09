@@ -49,6 +49,6 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUFeedURL</key>
-	<string>https://download.chain.com/mac/updates.xml</string>
+	<string>https://download.chain.com/mac/$(UPDATES_PATH)</string>
 </dict>
 </plist>
