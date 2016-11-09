@@ -18,7 +18,7 @@
 .title {
   color: $text-strong-color;
   font-weight: bold;
-  font-size: 18px;
+  font-size: $font-size-section-title;
   text-transform: uppercase;
   margin-bottom: $gutter-size;
 }

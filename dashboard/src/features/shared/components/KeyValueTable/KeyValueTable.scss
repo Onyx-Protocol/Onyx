@@ -30,7 +30,7 @@
   color: $text-strong-color;
   font-weight: bold;
   width: 200px;
-  font-size: 13px;
+  font-size: $font-size-caps;
   font-family: Nitti Grotesk;
   text-align: right;
   letter-spacing: 0.2px;
@@ -38,7 +38,7 @@
 }
 
 .value, .pre {
-  font-size: 14px;
+  font-size: $font-size-code;
   color: $text-table-value-color;
 }
 

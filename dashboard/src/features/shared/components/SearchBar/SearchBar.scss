@@ -49,11 +49,10 @@
   border: 1px solid $border-color;
   border-radius: 25px;
   color: $text-light-color;
-  font-size: 13px;
   padding: 0px 10px;
   position: absolute;
   right: $gutter-size/2;
-  bottom: 9px;
+  bottom: 8px;
 
   &:hover {
     cursor: pointer;

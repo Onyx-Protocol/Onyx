@@ -20,7 +20,7 @@
 .emptyLabel {
   color: $text-strong-color;
   display: block;
-  font-size: 24px;
+  font-size: $font-size-page-title;
   padding-bottom: $gutter-size;
   width: 250px;
   margin: 0 auto;
@@ -28,7 +28,6 @@
 }
 
 .code {
-  font-size: 20px;
   padding: 2px 6px;
-  font-size: 18px;
+  font-size: $font-size-section-title;
 }
