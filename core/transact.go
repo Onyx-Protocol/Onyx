@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"chain/core/fetch"
+	"chain/core/leader"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
@@ -70,6 +71,15 @@ func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilde
 
 // POST /build-transaction
 func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) {
+	// If we're not the leader, we don't have access to the current
+	// reservations. Forward the build call to the leader process.
+	// TODO(jackson): Distribute reservations across cored processes.
+	if !leader.IsLeading() {
+		var resp map[string]interface{}
+		err := h.forwardToLeader(ctx, "/build-transaction", buildReqs, &resp)
+		return resp, err
+	}
+
 	responses := make([]interface{}, len(buildReqs))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))

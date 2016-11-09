@@ -56,14 +56,10 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 	}
 
 	src := utxodb.Source{
-		AssetAmount: bc.AssetAmount{
-			AssetID: a.AssetID,
-			Amount:  a.Amount,
-		},
-		AccountID:   a.AccountID,
-		ClientToken: a.ClientToken,
+		AssetID:   a.AssetID,
+		AccountID: a.AccountID,
 	}
-	rid, reserved, change, err := a.accounts.utxoDB.Reserve(ctx, src, maxTime)
+	res, err := a.accounts.utxoDB.Reserve(ctx, src, a.Amount, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, errors.Wrap(err, "reserving utxos")
 	}
@@ -74,7 +70,7 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		changeOuts []*bc.TxOutput
 	)
 
-	for _, r := range reserved {
+	for _, r := range res.UTXOs {
 		txInput, sigInst, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating inputs")
@@ -83,19 +79,19 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		txins = append(txins, txInput)
 		tplInsts = append(tplInsts, sigInst)
 	}
-	if change > 0 {
+	if res.Change > 0 {
 		acp, err := a.accounts.CreateControlProgram(ctx, a.AccountID, true)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating control program")
 		}
-		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, change, acp, nil))
+		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, res.Change, acp, nil))
 	}
 
 	br := &txbuilder.BuildResult{
 		Inputs:              txins,
 		Outputs:             changeOuts,
 		SigningInstructions: tplInsts,
-		Rollback:            canceler(ctx, a.accounts, rid),
+		Rollback:            canceler(ctx, a.accounts, res.ID),
 	}
 	return br, nil
 }
@@ -124,17 +120,18 @@ type spendUTXOAction struct {
 }
 
 func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
-	rid, r, err := a.accounts.utxoDB.ReserveUTXO(ctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
+	out := bc.Outpoint{Hash: a.TxHash, Index: a.TxOut}
+	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, out, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, err
 	}
 
-	acct, err := a.accounts.findByID(ctx, r.AccountID)
+	acct, err := a.accounts.findByID(ctx, res.Source.AccountID)
 	if err != nil {
 		return nil, err
 	}
 
-	txInput, sigInst, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
+	txInput, sigInst, err := utxoToInputs(ctx, acct, res.UTXOs[0], a.ReferenceData)
 	if err != nil {
 		return nil, err
 	}
@@ -142,12 +139,12 @@ func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuil
 	return &txbuilder.BuildResult{
 		Inputs:              []*bc.TxInput{txInput},
 		SigningInstructions: []*txbuilder.SigningInstruction{sigInst},
-		Rollback:            canceler(ctx, a.accounts, rid),
+		Rollback:            canceler(ctx, a.accounts, res.ID),
 	}, nil
 }
 
 // Best-effort cancellation attempt to put in txbuilder.BuildResult.Rollback.
-func canceler(ctx context.Context, m *Manager, rid int32) func() {
+func canceler(ctx context.Context, m *Manager, rid uint64) func() {
 	return func() {
 		err := m.utxoDB.Cancel(ctx, rid)
 		if err != nil {

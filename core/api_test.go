@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"chain/core/asset"
 	"chain/core/config"
 	"chain/core/coretest"
+	"chain/core/leader"
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/txbuilder"
@@ -218,6 +220,14 @@ func TestTransfer(t *testing.T) {
 	handler.Indexer.RegisterAnnotator(handler.Accounts.AnnotateTxs)
 	handler.Indexer.RegisterAnnotator(handler.Assets.AnnotateTxs)
 	handler.init()
+
+	// TODO(jackson): Replace this with a mock leader.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go leader.Run(db, ":1999", func(ctx context.Context) {
+		wg.Done()
+	})
+	wg.Wait()
 
 	assetAlias := "some-asset"
 	account1Alias := "first-account"

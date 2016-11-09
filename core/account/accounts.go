@@ -30,7 +30,7 @@ func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 	return &Manager{
 		db:         db,
 		chain:      chain,
-		utxoDB:     &utxodb.DBReserver{DB: db},
+		utxoDB:     utxodb.NewReserver(db),
 		cache:      lru.New(maxAccountCache),
 		aliasCache: lru.New(maxAccountCache),
 	}
@@ -40,7 +40,7 @@ func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 type Manager struct {
 	db       *sql.DB
 	chain    *protocol.Chain
-	utxoDB   *utxodb.DBReserver
+	utxoDB   *utxodb.Reserver
 	indexer  Saver
 	pinStore *pin.Store
 

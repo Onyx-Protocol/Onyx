@@ -75,8 +75,8 @@ var (
 	race          []interface{} // initialized in race.go
 	httpsRedirect = true        // initialized in insecure.go
 
-	blockPeriod              = 1 * time.Second
-	expireReservationsPeriod = time.Minute
+	blockPeriod              = time.Second
+	expireReservationsPeriod = time.Second
 )
 
 func init() {
