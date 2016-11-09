@@ -139,6 +139,8 @@ func TestConflictingTxsInPool(t *testing.T) {
 		SigningInstructions: firstTemplate.SigningInstructions,
 		Local:               true,
 	}
+	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Program = nil
+	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Sigs = nil
 	coretest.SignTxTemplate(t, ctx, secondTemplate, &info.privKeyAccounts)
 	err = FinalizeTx(ctx, info.Chain, bc.NewTx(*secondTemplate.Transaction))
 	if err != nil {
