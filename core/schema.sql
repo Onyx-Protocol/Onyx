@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -704,7 +704,7 @@ CREATE TABLE txfeeds (
     alias text,
     filter text,
     after text,
-    client_token text NOT NULL
+    client_token text
 );
 
 
@@ -1128,3 +1128,4 @@ ALTER TABLE ONLY account_utxos
 insert into migrations (filename, hash) values ('2016-10-17.0.core.schema-snapshot.sql', 'cff5210e2d6af410719c223a76443f73c5c12fe875f0efecb9a0a5937cf029cd');
 insert into migrations (filename, hash) values ('2016-10-19.0.core.add-core-id.sql', '9353da072a571d7a633140f2a44b6ac73ffe9e27223f7c653ccdef8df3e8139e');
 insert into migrations (filename, hash) values ('2016-10-31.0.core.add-block-processors.sql', '9e9488e0039337967ef810b09a8f7822e23b3918a49a6308f02db24ddf3e490f');
+insert into migrations (filename, hash) values ('2016-11-07.0.core.remove-client-token-not-null.sql', 'fbae17999936bfc88a537f27fe72ae2de501894f3ea5d9488f3298fd05c59700');
