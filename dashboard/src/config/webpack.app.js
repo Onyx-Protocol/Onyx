@@ -7,8 +7,11 @@ var path = require('path')
 // Set base path to JS and CSS files when
 // required by other files
 let publicPath = '/'
+let outPath = 'public'
 if (process.env.NODE_ENV === 'production') {
   publicPath = '/dashboard/'
+} else {
+  outPath = 'node_modules/dashboard-dlls'
 }
 
 // Creates a webpack config object. The
@@ -22,7 +25,7 @@ var config = getConfig({
   // commonly named `www` or `public`. This
   // is where your fully static site should
   // end up for simple deployment.
-  out: 'public',
+  out: outPath,
 
   output: {
     hash: true
