@@ -11,12 +11,6 @@ import (
 	"chain/log"
 )
 
-// New creates a Store and Pool backed by the txdb with the provided
-// db handle.
-func New(db pg.DB) (*Store, *Pool) {
-	return NewStore(db), NewPool(db)
-}
-
 func ListenBlocks(ctx context.Context, dbURL string) (<-chan uint64, error) {
 	listener, err := pg.NewListener(ctx, dbURL, "newblock")
 	if err != nil {
