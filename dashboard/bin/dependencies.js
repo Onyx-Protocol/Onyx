@@ -1,3 +1,5 @@
+// Original from https://github.com/mxstbr/react-boilerplate/
+
 /*eslint-env node*/
 
 // No need to build the DLL in production
