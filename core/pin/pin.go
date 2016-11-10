@@ -54,11 +54,6 @@ func (s *Store) HeightToProcess(ctx context.Context, processID, name string) (ui
 	p := <-s.pin(name)
 	<-p.waitForQueue()
 	for {
-		select {
-		case <-ctx.Done():
-			return 0, ctx.Err()
-		case <-p.queueListener:
-		}
 		const q = `
 			WITH block AS (
 				SELECT name, height FROM block_processor_queue
@@ -75,6 +70,11 @@ func (s *Store) HeightToProcess(ctx context.Context, processID, name string) (ui
 		var height uint64
 		err := s.db.QueryRow(ctx, q, name, time.Now().Add(-queueTimeout), processID, time.Now()).Scan(&height)
 		if err == sql.ErrNoRows {
+			select {
+			case <-ctx.Done():
+				return 0, ctx.Err()
+			case <-p.queueListener:
+			}
 			continue
 		}
 		if err != nil {
@@ -124,9 +124,9 @@ func (s *Store) Release(ctx context.Context, processID, name string, height uint
 			WHERE (name, height)=($1, $2) AND held_by=$3
 			RETURNING name, height
 		)
-		SELECT pg_notify(name, height) FROM updated;
+		SELECT pg_notify('pinqueue-' || name, height::text) FROM updated;
 	`
-	_, err := s.db.Exec(ctx, q, name, height)
+	_, err := s.db.Exec(ctx, q, name, height, processID)
 	return errors.Wrap(err)
 }
 
