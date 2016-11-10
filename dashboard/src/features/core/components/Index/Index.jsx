@@ -88,7 +88,7 @@ class Index extends React.Component {
                 </tr>}
               {!this.props.core.generator &&
                 <tr>
-                  <td className={styles.row_label}>Generator Access Token:</td>
+                  <td className={styles.row_label}>Network Access Token:</td>
                   <td><code>{this.props.core.generatorAccessToken}</code></td>
                 </tr>}
               <tr>

@@ -152,7 +152,7 @@ class Index extends React.Component {
                 placeholder='https://<block-generator-host>'
                 fieldProps={generator_url} />
               <TextField
-                title='Generator Access Token'
+                title='Network Access Token'
                 placeholder='token-id:9e5f139755366add8c76'
                 fieldProps={generator_access_token} />
               <TextField
