@@ -27,13 +27,15 @@
   background: none;
 }
 
-.odd td {
-  background: $background-emphasis-color;
+td {
+  border-bottom: 1px solid $border-light-color;
+}
+tr:last-of-type td {
+  border-bottom: none;
 }
 
 .colLabel {
   color: $text-light-color;
-  font-size: 14px;
   text-align: right;
   width: 5%;
 }

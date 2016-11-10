@@ -3,6 +3,7 @@
     display: block;
     padding: 1px 0;
     color: $highlight-inverse-color;
+    font-size: $font-size-nav;
   }
 
   .active,
@@ -28,7 +29,7 @@
 
 .navigationTitle {
   color: $highlight-inverse-color;
-  font-size: 13px;
+  font-size: $font-size-caps;
   text-transform: uppercase;
   padding: 3px 0;
 }
