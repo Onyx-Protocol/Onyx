@@ -2,26 +2,21 @@
 
 ## Usage
 
-### Installing the library
+### Get the gem
 
-#### Via Rubygems
+The Ruby SDK is available [via Rubygems](https://rubygems.org/gems/chain-sdk). Make sure to use the most recent version whose major and minor versions (`major.minor.x`) match your version of Chain Core. Ruby 2 is required.
 
-TBA
-
-#### Via downloaded .gem
-
-Install the gem into your gem library:
+For most applications, you can simply add the following to your `Gemfile`:
 
 ```
-gem install --local chain-sdk-<VERSION>.gem
+gem 'chain-sdk', '~> 1.0.0', require: 'chain'
 ```
 
 ### In your code
 
 ```
-require 'chain'
-
 chain = Chain::Client.new
+signer = Chain::HSMSigner.new
 ```
 
 ## Testing
