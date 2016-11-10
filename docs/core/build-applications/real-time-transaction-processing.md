@@ -6,9 +6,10 @@ You can use **transaction feeds** to process transactions as they arrive on the 
 
 ### Sample Code
 
-All code samples in this guide are extracted from a single Java file.
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
-<a href="../examples/java/RealTimeTransactionProcessing.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+- [Java](../examples/java/RealTimeTransactionProcessing.java)
+- [Ruby](../examples/ruby/real_time_transaction_processing.rb)
 
 ## Example
 

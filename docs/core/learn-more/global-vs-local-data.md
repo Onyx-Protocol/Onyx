@@ -76,9 +76,10 @@ Asset tags are a local-only supplement to the asset definition and can be used t
 
 ## Examples
 
-All of the following code samples are extracted from a single, runnable Java file.
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
-<a href="../examples/java/GlobalVsLocalData.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+- [Java](../examples/java/GlobalVsLocalData.java)
+- [Ruby](../examples/ruby/global_vs_local_data.rb)
 
 ### Create accounts with tags
 

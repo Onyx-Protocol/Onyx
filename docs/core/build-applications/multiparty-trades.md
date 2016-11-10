@@ -12,9 +12,10 @@ Please make sure you’ve read [Transaction Basics](../build-applications/transa
 
 ### Sample Code
 
-All code samples in this guide are extracted from a single Java file.
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
-<a href="../examples/java/MultipartyTrades.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+- [Java](../examples/java/MultipartyTrades.java)
+- [Ruby](../examples/ruby/multiparty_trades.rb)
 
 ## Example: Trading within the same core and application
 

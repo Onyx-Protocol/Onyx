@@ -28,9 +28,10 @@ This guide assumes you know the basic functions presented in the [5-Minute Guide
 
 ### Sample Code
 
-All code samples in this guide are extracted from a single Java file.
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
-<a href="../examples/java/Accounts.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+- [Java](../examples/java/Accounts.java)
+- [Ruby](../examples/ruby/accounts.rb)
 
 ## Create account
 

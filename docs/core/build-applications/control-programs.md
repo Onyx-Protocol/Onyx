@@ -16,9 +16,10 @@ This guide will walk you through the basic types of control programs available i
 
 ### Sample Code
 
-All code samples in this guide are extracted from a single Java file.
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
-<a href="../examples/java/ControlPrograms.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+- [Java](../examples/java/ControlPrograms.java)
+- [Ruby](../examples/ruby/control_programs.rb)
 
 ## Account control programs
 

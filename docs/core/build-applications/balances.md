@@ -20,9 +20,10 @@ This guide will walk you through a few basic balance queries:
 
 ### Sample Code
 
-All code samples in this guide are extracted from a single Java file.
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
-<a href="../examples/java/Balances.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+- [Java](../examples/java/Balances.java)
+- [Ruby](../examples/ruby/balances.rb)
 
 ## List account balances
 

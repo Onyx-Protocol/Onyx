@@ -8,7 +8,7 @@ If you have feature requests or feedback, we want to hear from you. Join us on [
 
 ## Near Term
 
-* Ruby and Node.JS SDKs
+* JavaScript SDK
 * Support for updating consensus programs
 
 ## Medium Term
