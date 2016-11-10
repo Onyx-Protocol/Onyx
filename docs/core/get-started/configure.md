@@ -21,8 +21,8 @@ For more information, see [operating a blockchain](../learn-more/blockchain-oper
 This connects to an existing blockchain whose block generator is already configured. You must supply the following information to join:
 
 * Block generator URL
+* Network access token
 * Blockchain ID
-* Network token
 
 Once configured, Chain Core will begin downloading blockchain data from the block generator. Once your Core is up to date with the network it will receive new blocks as they are created.
 
