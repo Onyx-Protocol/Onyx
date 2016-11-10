@@ -148,7 +148,7 @@ class SearchBar extends React.Component {
             </span>}
 
             {/* This is required for form submission */}
-            <input type='submit' className={styles.submit} />
+            <input type='submit' className={styles.submit} tabIndex='-1' />
         </form>
 
         <span className={styles.queryTime}>
