@@ -168,7 +168,7 @@ class SearchBar extends React.Component {
           </span>}
         </span>
           <a href="/docs/core/build-applications/queries" target="_blank" className={styles.viewdocs}>
-            View Docs
+            Queries
           </a>
       </div>
     )
