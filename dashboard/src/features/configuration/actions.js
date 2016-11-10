@@ -1,4 +1,4 @@
-import chain from 'chain'
+import chain from '_chain'
 import { context } from 'utility/environment'
 import { actions as coreActions } from 'features/core'
 import { fetchTestnetInfo } from 'features/testnet/actions'
