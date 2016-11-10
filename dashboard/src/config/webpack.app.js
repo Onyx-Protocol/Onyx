@@ -38,7 +38,8 @@ var config = getConfig({
   html: function (context) {
     return {
       'index.html': context.defaultTemplate({
-        publicPath: publicPath
+        publicPath: publicPath,
+        head: process.env.NODE_ENV !== 'production' ? '<script data-dll="true" src="/dependencies.dll.js"></script>' : '',
       })
     }
   },
@@ -114,6 +115,12 @@ config.output.publicPath = publicPath
 if (process.env.NODE_ENV !== 'production') {
   // Support source maps for Babel
   config.devtool = 'eval-cheap-module-source-map'
+
+  // Use DLL
+  config.plugins.push(new webpack.DllReferencePlugin({
+    context: process.cwd(),
+    manifest: require(path.resolve(process.cwd(), 'node_modules/dashboard-dlls/manifest.json')),
+  }))
 }
 
 module.exports = config

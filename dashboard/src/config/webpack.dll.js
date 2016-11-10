@@ -18,7 +18,7 @@ const outputPath = join(process.cwd(), 'node_modules/dashboard-dlls')
 
 const config = require('./webpack.base')({
   context: process.cwd(),
-  entry: {dashboardDeps: Object.keys(pkg.dependencies)},
+  entry: {dependencies: Object.keys(pkg.dependencies)},
   devtool: 'eval',
   output: {
     filename: '[name].dll.js',
@@ -28,7 +28,7 @@ const config = require('./webpack.base')({
   plugins: [
     new webpack.DllPlugin({
       name: '[name]',
-      path: join(outputPath, '[name].json')
+      path: join(outputPath, 'manifest.json')
     }),
   ],
 })
