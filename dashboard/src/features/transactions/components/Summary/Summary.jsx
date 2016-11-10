@@ -103,7 +103,7 @@ class Summary extends React.Component {
     return(<table className={styles.main}>
       <tbody>
         {items.map((item, index) =>
-          <tr key={index} className={index % 2 == 0 ? '' : styles.odd}>
+          <tr key={index}>
             <td className={styles.colAction}>{item.type}</td>
             <td className={styles.colLabel}>amount</td>
             <td className={styles.colAmount}>

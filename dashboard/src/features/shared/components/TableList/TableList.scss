@@ -8,19 +8,20 @@
 
   code {
     padding: 0;
-    font-size: 14px;
+    font-size: $font-size-code;
   }
 
   td {
-    border-top: 1px solid $background-content-color;
+    border-top: 1px solid $border-light-color;
     overflow: hidden;
     text-overflow: ellipsis;
     color: $text-color;
+    line-height: 20px;
   }
 
   th {
     color: $text-strong-color;
-    font-size: 13px;
+    font-size: $font-size-caps;
     text-transform: uppercase;
     font-weight: bold;
   }

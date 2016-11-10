@@ -1,16 +1,8 @@
 .title {
-  font-size: 28px;
+  font-size: $font-size-h2;
   font-weight: normal;
   margin-top: $gutter-size;
   margin-bottom: $gutter-size;
-}
-
-.subtitle {
-  font-size: 20px;
-  color: $text-color;
-  font-weight: normal;
-  margin-top: 0;
-  padding-bottom: 1em;
 }
 
 .choices {
@@ -70,7 +62,7 @@
 
   .choice_title{
     display: block;
-    font-size: 18px;
+    font-size: $font-size-section-title;
     margin: 12px 0;
     color: $text-strong-color;
     font-weight: bold;

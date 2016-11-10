@@ -27,10 +27,10 @@
 .label {
   background: $background-color;
   border-right: 1px solid $border-color;
-  color: $text-table-label-color;
+  color: $text-strong-color;
   font-weight: bold;
   width: 200px;
-  font-size: 13px;
+  font-size: $font-size-caps;
   font-family: Nitti Grotesk;
   text-align: right;
   letter-spacing: 0.2px;
@@ -38,8 +38,7 @@
 }
 
 .value, .pre {
-  font-size: 14px;
-  background-color: $background-emphasis-color;
+  font-size: $font-size-code;
   color: $text-table-value-color;
 }
 

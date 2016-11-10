@@ -11,9 +11,6 @@
   }
 }
 
-.label {
-  font-weight: bold;
-}
 
 .button {
   border: 2px solid $highlight-default;
@@ -21,7 +18,7 @@
   cursor: pointer;
   display: block;
   line-height: 26px;
-  font-size: 20px;
+  font-size: $font-size-btn-lg;
   height: 30px;
   width: 30px;
   border-radius: 15px;

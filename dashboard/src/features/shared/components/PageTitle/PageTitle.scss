@@ -7,7 +7,7 @@
   align-items: center;
   code {
     display: inline-block;
-    font-size: 14px;
+    font-size: $font-size-code;
     font-weight: normal;
     margin-left: 3px;
     vertical-align: middle;
@@ -31,7 +31,7 @@
 
 .crumbs {
   display: flex;
-  font-size: 22px;
+  font-size: $font-size-page-title;
   list-style-type: none;
   margin: 0;
   padding: 0;

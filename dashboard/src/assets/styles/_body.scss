@@ -133,7 +133,7 @@ a:focus {
 }
 .btn-lg {
   height: 44px;
-  font-size: 18px;
+  font-size: $font-size-btn-lg;
 }
 .label-primary {
   color: $text-color;
@@ -142,6 +142,6 @@ a:focus {
 }
 .close {
   text-shadow: none;
-  font-size: 27px;
+  font-size: $font-size-close;
   font-weight: normal;
 }

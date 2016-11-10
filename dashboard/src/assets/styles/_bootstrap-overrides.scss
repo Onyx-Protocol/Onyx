@@ -1,6 +1,15 @@
 $grid-gutter-width: 30px;
 
-$font-size-base: 16px;
+$font-size-caps: 13px;
+$font-size-code: $font-size-caps;
+$font-size-base: 15px;
+$font-size-nav: 16px;
+$font-size-form-section-title: $font-size-nav;
+$font-size-section-title: 18px;
+$font-size-btn-lg: $font-size-section-title;
+$font-size-page-title: 22px;
+$font-size-close: 26px;
+$font-size-h2: 28px;
 $line-height-base: 1.7;
 $font-family-sans-serif: "Nitti Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
 $font-family-monospace: "Nitti", Menlo, Monaco, Consolas, "Courier New", monospace;
