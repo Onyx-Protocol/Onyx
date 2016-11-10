@@ -1,5 +1,3 @@
-#! /usr/bin/env node
-
 import { cd, mkdir, echo, ShellString, cat, test } from 'shelljs'
 import commandLineCommands from 'command-line-commands'
 import commandLineArgs from 'command-line-args'
@@ -53,7 +51,7 @@ switch (command) {
 
     let path = options.path
     if (path === undefined) {
-      echo("No component name specified.\nUsage: `npm run generate-component My/Name`")
+      echo('No component name specified.\nUsage: `npm run generate-component My/Name`')
       break
     }
 
@@ -64,7 +62,7 @@ switch (command) {
     ShellString(baseJsx(name)).to(path + `/${name}.jsx`)
     ShellString(baseScss).to(path + `/${name}.scss`)
 
-    let indexPath = path.split('/').slice(0,-1).join('/') + "/index.js"
+    let indexPath = path.split('/').slice(0,-1).join('/') + '/index.js'
     if (test('-f', indexPath)) {
       let contents = cat(indexPath)
 

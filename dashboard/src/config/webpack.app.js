@@ -1,5 +1,8 @@
 /*eslint-env node*/
 
+// TODO: this should be broken up into `dev` and `prod`
+// configuration variants
+
 var webpack = require('webpack')
 var getConfig = require('hjs-webpack')
 var path = require('path')
@@ -7,8 +10,11 @@ var path = require('path')
 // Set base path to JS and CSS files when
 // required by other files
 let publicPath = '/'
+let outPath = 'public'
 if (process.env.NODE_ENV === 'production') {
   publicPath = '/dashboard/'
+} else {
+  outPath = 'node_modules/dashboard-dlls'
 }
 
 // Creates a webpack config object. The
@@ -22,7 +28,7 @@ var config = getConfig({
   // commonly named `www` or `public`. This
   // is where your fully static site should
   // end up for simple deployment.
-  out: 'public',
+  out: outPath,
 
   output: {
     hash: true
@@ -38,7 +44,8 @@ var config = getConfig({
   html: function (context) {
     return {
       'index.html': context.defaultTemplate({
-        publicPath: publicPath
+        publicPath: publicPath,
+        head: process.env.NODE_ENV !== 'production' ? '<script data-dll="true" src="/dependencies.dll.js"></script>' : '',
       })
     }
   },
@@ -57,18 +64,21 @@ var config = getConfig({
   }
 })
 
-// Enable babel-polyfill
-config.entry = ['babel-polyfill', './src/app.js']
-
-// Enable CSS modules
+// Customize loader configuration
 let loaders = config.module.loaders
 
 for (let item of loaders) {
-  if (item.loader) {
-    item.loader = item.loader.replace('css-loader','css-loader?modules&importLoaders=1&localIdentName=[name]__[local]__[hash:base64:5]')
+  // Enable CSS module support
+  if (item.loader && item.loader.indexOf('css-loader') > 0) {
+    item.loader = item.loader.replace('css-loader','css-loader?module&importLoaders=1&localIdentName=[name]__[local]__[hash:base64:5]')
   }
   if ('.scss'.match(item.test) != null) {
     item.loader = item.loader.replace('sass-loader','sass-loader!sass-resources-loader')
+  }
+
+  // Enable babel-loader caching
+  if (item.loader == 'babel-loader') {
+    item.loader = 'babel-loader?cacheDirectory'
   }
 }
 
@@ -103,12 +113,20 @@ config.plugins.push(new webpack.DefinePlugin({
   'process.env.TESTNET_GENERATOR_URL': JSON.stringify(process.env.TESTNET_GENERATOR_URL),
 }))
 
-config.output.publicPath = publicPath
+// Enable babel-polyfill
+config.entry.push('babel-polyfill')
 
+config.output.publicPath = publicPath
 
 if (process.env.NODE_ENV !== 'production') {
   // Support source maps for Babel
-  config.devtool = 'source-map'
+  config.devtool = 'eval-cheap-module-source-map'
+
+  // Use DLL
+  config.plugins.push(new webpack.DllReferencePlugin({
+    context: process.cwd(),
+    manifest: require(path.resolve(process.cwd(), 'node_modules/dashboard-dlls/manifest.json')),
+  }))
 }
 
 module.exports = config

@@ -1,6 +1,6 @@
 import { connect } from 'react-redux'
 import { context } from 'utility/environment'
-import chain from 'chain'
+import chain from '_chain'
 import { PageContent, ErrorBanner, PageTitle } from 'features/shared/components'
 import React from 'react'
 import styles from './Index.scss'

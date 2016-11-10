@@ -1,4 +1,4 @@
-import chain from 'chain'
+import chain from '_chain'
 import { context, pageSize } from 'utility/environment'
 import { push, replace } from 'react-router-redux'
 

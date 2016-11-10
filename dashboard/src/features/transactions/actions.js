@@ -1,5 +1,5 @@
 import uuid from 'uuid'
-import chain from 'chain'
+import chain from '_chain'
 import { context } from 'utility/environment'
 import { parseNonblankJSON } from 'utility/string'
 import { push } from 'react-router-redux'
