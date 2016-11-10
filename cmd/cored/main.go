@@ -44,6 +44,7 @@ import (
 	"chain/net/http/limit"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/mempool"
 )
 
 const (
@@ -201,7 +202,8 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
-	store, pool := txdb.New(db)
+	pool := mempool.New()
+	store := txdb.NewStore(db)
 	c, err := protocol.NewChain(ctx, conf.BlockchainID, store, pool, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
