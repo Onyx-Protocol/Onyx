@@ -1,4 +1,6 @@
 /*eslint-env node*/
+// TODO: this should be broken up into `dev` and `prod`
+// configuration variants
 
 var webpack = require('webpack')
 var getConfig = require('hjs-webpack')
