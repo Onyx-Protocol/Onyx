@@ -1,4 +1,4 @@
-import chain from 'chain'
+import chain from '_chain'
 import { context } from 'utility/environment'
 import { baseCreateActions, baseListActions } from 'features/shared/actions'
 
