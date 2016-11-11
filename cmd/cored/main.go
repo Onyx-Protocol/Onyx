@@ -49,6 +49,7 @@ import (
 const (
 	httpReadTimeout  = 2 * time.Minute
 	httpWriteTimeout = time.Hour
+	version          = "?" // most recent release version, adjusted manually
 )
 
 var (
@@ -83,6 +84,7 @@ func init() {
 	expvar.NewString("buildtag").Set(buildTag)
 	expvar.NewString("builddate").Set(buildDate)
 	expvar.NewString("buildcommit").Set(buildCommit)
+	expvar.NewString("version").Set(version)
 	expvar.NewString("runtime.GOOS").Set(runtime.GOOS)
 	expvar.NewString("runtime.GOARCH").Set(runtime.GOARCH)
 	expvar.NewString("runtime.Version").Set(runtime.Version())

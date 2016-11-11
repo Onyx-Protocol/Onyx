@@ -99,6 +99,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 
 	buildCommit := json.RawMessage(expvar.Get("buildcommit").String())
 	buildDate := json.RawMessage(expvar.Get("builddate").String())
+	version := json.RawMessage(expvar.Get("version").String())
 
 	m := map[string]interface{}{
 		"is_configured":                     true,
@@ -116,6 +117,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		"core_id":                           h.Config.ID,
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
+		"version":                           &version,
 		"health":                            h.health(),
 	}
 
