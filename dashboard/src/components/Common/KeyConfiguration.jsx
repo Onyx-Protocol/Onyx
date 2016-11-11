@@ -1,6 +1,5 @@
 import React from 'react'
-import { XpubField } from '../Common'
-import { SelectField } from 'features/shared/components'
+import { SelectField, XpubField } from 'features/shared/components'
 
 const rangeOptions = [1,2,3,4,5,6].map(val => ({label: val, value: val}))
 

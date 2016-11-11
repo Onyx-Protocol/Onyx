@@ -1,9 +1,9 @@
 import React from 'react'
 import styles from './XpubField.scss'
-import { SelectField, FieldLabel } from 'features/shared/components'
-import { TextField } from '../'
+import { SelectField, FieldLabel } from '../'
+import { TextField } from 'components/Common'
 import { connect } from 'react-redux'
-import { actions } from 'features/mockhsm'
+import actions from 'features/mockhsm/actions'
 
 const methodOptions = {
   generate: 'Generate new Mock HSM key',
