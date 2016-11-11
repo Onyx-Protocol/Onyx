@@ -18,7 +18,8 @@ class XpubField extends React.Component {
     this.state = {
       generate: '',
       mockhsm: '',
-      provide: ''
+      provide: '',
+      autofocusInput: false
     }
   }
 
@@ -42,6 +43,7 @@ class XpubField extends React.Component {
     const typeOnChange = event => {
       const value = typeProps.onChange(event).value
       valueProps.onChange(this.state[value] || '')
+      this.setState({ autofocusInput: true })
     }
 
     const valueOnChange = event => {
@@ -51,13 +53,16 @@ class XpubField extends React.Component {
 
     const fields = {
       'mockhsm': <SelectField options={mockhsmKeys}
+        autoFocus={this.state.autofocusInput}
         valueKey='xpub'
         labelKey='label'
         fieldProps={{...valueProps, onChange: valueOnChange}} />,
       'provide': <TextField
+        autoFocus={this.state.autofocusInput}
         fieldProps={{...valueProps, onChange: valueOnChange}}
         placeholder='Enter Xpub' />,
       'generate': <TextField
+        autoFocus={this.state.autofocusInput}
         fieldProps={{...valueProps, onChange: valueOnChange}}
         placeholder='Alias for generated key (leave blank for automatic value)' />,
     }

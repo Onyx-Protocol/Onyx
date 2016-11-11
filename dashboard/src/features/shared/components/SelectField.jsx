@@ -21,7 +21,9 @@ class SelectField extends React.Component {
     return(
       <div className='form-group'>
         {this.props.title && <FieldLabel>{this.props.title}</FieldLabel>}
-        <select className='form-control' {...fieldProps}>
+        <select
+          className='form-control' {...fieldProps}
+          autoFocus={!!this.props.autoFocus}>
           {!this.props.skipEmpty && <option value=''>{emptyLabel}</option>}
 
           {options.map((option) =>
