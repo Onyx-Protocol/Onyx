@@ -222,22 +222,24 @@ func interpolateCode(md []byte, hostPath string) []byte {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, pat) {
-			var snippath, snippet string
 			fields := strings.Fields(line)
-			if len(fields) >= 2 {
-				snippath = fields[1]
-			}
-			if len(fields) >= 3 {
-				snippet = fields[2]
+			if len(fields) < 3 {
+				fmt.Fprintln(w, "Error: invalid snippet:", line)
+				continue
 			}
 
-			if path.IsAbs(snippath) {
-				snippath = path.Join(os.Getenv("CHAIN"), snippath)
-			} else {
-				snippath = path.Join(hostPath, snippath)
+			snippet := fields[1]
+			paths := fields[2:]
+
+			for _, p := range paths {
+				if path.IsAbs(p) {
+					p = path.Join(os.Getenv("CHAIN"), p)
+				} else {
+					p = path.Join(hostPath, p)
+				}
+				writeCode(w, p, snippet)
 			}
 
-			writeCode(w, snippath, snippet)
 			continue
 		}
 		fmt.Fprintln(w, line)
