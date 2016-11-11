@@ -49,40 +49,45 @@ class XpubField extends React.Component {
       this.setState({ [typeProps.value]: value })
     }
 
+    const fields = {
+      'mockhsm': <SelectField options={mockhsmKeys}
+        valueKey='xpub'
+        labelKey='label'
+        fieldProps={{...valueProps, onChange: valueOnChange}} />,
+      'provide': <TextField
+        fieldProps={{...valueProps, onChange: valueOnChange}}
+        placeholder='Enter Xpub' />,
+      'generate': <TextField
+        fieldProps={{...valueProps, onChange: valueOnChange}}
+        placeholder='Alias for generated key (leave blank for automatic value)' />,
+    }
+
     return (
       <div className={styles.main}>
         <FieldLabel>Key {this.props.index + 1}</FieldLabel>
 
-        <div className={styles.options}>
+        <table className={styles.options}>
           {Object.keys(methodOptions).map((key) =>
-            <label key={`key-${this.props.index}-option-${key}`}>
-              <input type='radio'
-                name={`keys-${this.props.index}`}
-                onChange={typeOnChange}
-                checked={key == typeProps.value}
-                value={key}
-              />
-              {methodOptions[key]}
-            </label>
+            <tr>
+              <td className={styles.label}>
+                <label key={`key-${this.props.index}-option-${key}`}>
+                  <input type='radio'
+                    className={styles.radio}
+                    name={`keys-${this.props.index}`}
+                    onChange={typeOnChange}
+                    checked={key == typeProps.value}
+                    value={key}
+                  />
+                  {methodOptions[key]}
+                </label>
+              </td>
+
+              <td className={styles.field}>
+                {typeProps.value == key && fields[key]}
+              </td>
+            </tr>
           )}
-        </div>
-
-        {typeProps.value == 'mockhsm' &&
-          <SelectField options={mockhsmKeys}
-            valueKey='xpub'
-            labelKey='label'
-            fieldProps={{...valueProps, onChange: valueOnChange}} />
-        }
-
-        {typeProps.value == 'provide' &&
-          <TextField
-            fieldProps={{...valueProps, onChange: valueOnChange}}
-            placeholder='Enter Xpub' />}
-
-        {typeProps.value == 'generate' &&
-          <TextField
-            fieldProps={{...valueProps, onChange: valueOnChange}}
-            placeholder='Alias for generated key (leave blank for automatic value)' />}
+        </table>
       </div>
     )
   }

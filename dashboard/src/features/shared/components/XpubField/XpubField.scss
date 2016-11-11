@@ -10,12 +10,29 @@
 }
 
 .options {
+  width: 100%;
+
+  td { border: none; }
+}
+
+.options .radio {
+  margin-right: 8px;
+}
+
+
+.label {
+  width: 220px;
+
   label {
     font-weight: normal;
-    padding-right: $grid-gutter-width;
+    line-height: 36px;
   }
+}
 
-  input {
-    margin-right: 8px;
+.field {
+  :global {
+    .form-group {
+      margin: 0;
+    }
   }
 }
