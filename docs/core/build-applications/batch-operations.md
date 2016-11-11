@@ -14,9 +14,11 @@ Operations that support batching include:
 * Submitting transactions
 
 ### Sample Code
-All code samples in this guide are extracted from a single Java file.
 
-<a href="../examples/java/BatchOperations.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
+
+- [Java](../examples/java/BatchOperations.java)
+- [Ruby](../examples/ruby/batch_operations.rb)
 
 ## Example: Creating assets in a batch
 

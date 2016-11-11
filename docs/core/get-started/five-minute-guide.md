@@ -14,9 +14,11 @@ This guide will walk you through the basic functions of Chain Core:
 * [Retire asset units from an account](#retire-asset-units)
 
 ### Sample Code
-All code samples in this guide are extracted from a single Java file.
 
-<a href="../examples/java/FiveMinuteGuide.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
+
+- [Java](../examples/java/FiveMinuteGuide.java)
+- [Ruby](../examples/ruby/five_minute_guide.rb)
 
 ## Initialize the SDK
 
