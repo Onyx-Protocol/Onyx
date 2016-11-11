@@ -324,13 +324,13 @@ func (sr *sourceReserver) cancel(res *Reservation) {
 
 func findMatchingUTXOs(ctx context.Context, db pg.DB, source Source) ([]*UTXO, error) {
 	const q = `
-		SELECT tx_hash, index, amount, control_program_index, control_program, confirmed_in
-		FROM account_utxos a
+		SELECT tx_hash, index, amount, control_program_index, control_program
+		FROM account_utxos
 		WHERE account_id = $1 AND asset_id = $2
 	`
 	var utxos []*UTXO
 	err := pg.ForQueryRows(ctx, db, q, source.AccountID, source.AssetID,
-		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte, confirmedIn *uint64) {
+		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte) {
 			utxos = append(utxos, &UTXO{
 				Outpoint: bc.Outpoint{
 					Hash:  txHash,
