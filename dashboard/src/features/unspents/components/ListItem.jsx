@@ -6,8 +6,9 @@ class ListItem extends React.Component {
   render() {
     const item = {...this.props.item}
     delete item.id
-
-    return(<KeyValueTable items={buildInOutDisplay(item)} />)
+    return(<KeyValueTable
+            title={`${item.transaction_id} - ${item.position}`}
+            items={buildInOutDisplay(item)} />)
   }
 }
 
