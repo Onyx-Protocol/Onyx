@@ -36,7 +36,7 @@ func (m *MemPool) Insert(ctx context.Context, tx *bc.Tx) error {
 func (m *MemPool) Dump(context.Context) ([]*bc.Tx, error) {
 	m.mu.Lock()
 	txs := m.pool
-	m.pool = make([]*bc.Tx, 0, len(txs))
+	m.pool = nil
 	m.mu.Unlock()
 	return txs, nil
 }
