@@ -74,7 +74,7 @@ const mapDispatchToProps = ( dispatch ) => ({
       filter = `asset_alias='${item.alias}'`
     }
 
-    dispatch(actions.balance.pushList({filter: filter}))
+    dispatch(actions.balance.pushList({ filter }))
   },
 })
 

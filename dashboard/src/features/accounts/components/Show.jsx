@@ -95,9 +95,7 @@ const mapDispatchToProps = ( dispatch ) => ({
       filter = `inputs(account_alias='${item.alias}') OR outputs(account_alias='${item.alias}')`
     }
 
-    dispatch(actions.transaction.pushList({
-      filter: filter
-    }))
+    dispatch(actions.transaction.pushList({ filter }))
   },
   showBalances: (item) => {
     let filter = `account_id='${item.id}'`
@@ -105,9 +103,7 @@ const mapDispatchToProps = ( dispatch ) => ({
       filter = `account_alias='${item.alias}'`
     }
 
-    dispatch(actions.balance.pushList({
-      filter: filter
-    }))
+    dispatch(actions.balance.pushList({ filter }))
   },
   createControlProgram: (data) => dispatch(actions.account.createControlProgram(data)),
   showControlProgram: (body) => dispatch(actions.app.showModal(
