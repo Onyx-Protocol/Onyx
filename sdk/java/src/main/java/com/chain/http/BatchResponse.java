@@ -40,7 +40,7 @@ public class BatchResponse<T> {
           continue;
         }
 
-        successesByIndex.put(i, serializer.fromJson(elem, tClass));
+        successesByIndex.put(i, (T) serializer.fromJson(elem, tClass));
       }
     } catch (IllegalStateException e) {
       throw new JSONException(

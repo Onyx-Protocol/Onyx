@@ -179,7 +179,10 @@ public class UtxoReservation {
 
   static Account getAccount(Client client, String alias) throws Exception {
     Account.Items accounts =
-        new Account.QueryBuilder().setFilter("alias = $1").addFilterParameter(alias).execute(client);
+        new Account.QueryBuilder()
+            .setFilter("alias = $1")
+            .addFilterParameter(alias)
+            .execute(client);
     if (accounts.list.size() != 1) {
       throw new Exception(String.format("missing account: %s", alias));
     }

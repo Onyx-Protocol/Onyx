@@ -205,7 +205,8 @@ public class Asset {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Asset create(Client client) throws ChainException {
-      return client.singletonBatchRequest("create-asset", Arrays.asList(this), Asset.class, APIException.class);
+      return client.singletonBatchRequest(
+          "create-asset", Arrays.asList(this), Asset.class, APIException.class);
     }
 
     /**

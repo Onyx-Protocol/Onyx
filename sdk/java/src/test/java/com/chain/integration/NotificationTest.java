@@ -40,9 +40,16 @@ public class NotificationTest {
 
     new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(client);
 
-    Transaction.Feed txfeed = Transaction.Feed.create(client, feed, filter);
+    final Transaction.Feed txfeed = Transaction.Feed.create(client, feed, filter);
     ExecutorService executor = Executors.newFixedThreadPool(1);
-    Callable<Transaction> task = () -> txfeed.next(client);
+
+    Callable<Transaction> task =
+        new Callable<Transaction>() {
+          @Override
+          public Transaction call() throws Exception {
+            return txfeed.next(client);
+          }
+        };
     Future<Transaction> future = executor.submit(task);
 
     Transaction.Template issuance =

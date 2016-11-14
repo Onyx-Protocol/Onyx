@@ -105,4 +105,10 @@ public abstract class PagedItems<T> implements Iterator<T> {
       }
     }
   }
+
+  /**
+   * This method is unsupported.
+   * @throws UnsupportedOperationException
+   */
+  public void remove() throws UnsupportedOperationException { throw new UnsupportedOperationException(); }
 }
