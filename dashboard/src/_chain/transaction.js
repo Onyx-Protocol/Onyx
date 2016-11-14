@@ -7,7 +7,7 @@ class Transaction extends buildClass('transaction') {
       throw errors.create(
         errors.types.BAD_REQUEST,
         errors.formatErrMsg(resp, ''),
-        resp
+        {body: resp}
       )
     }
     return resp

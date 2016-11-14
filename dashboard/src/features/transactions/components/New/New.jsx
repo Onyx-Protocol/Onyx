@@ -57,18 +57,11 @@ class Form extends React.Component {
             response.actions = []
 
             err.data.forEach((error) => {
-              const message = [error.message]
-              if (error.detail) message.push(error.detail)
-              response.actions[error.data.action_index] = {type: message.join(': ')}
+              response.actions[error.data.action_index] = {type: error}
             })
-
-            response['_error'] = 'There was a problem with one or more actions'
-          } else {
-            const message = [err.message]
-            if (err.detail) message.push(err.detail)
-            response['_error'] = message.join(': ')
           }
 
+          response['_error'] = err
           return reject(response)
         })
     })

@@ -3,7 +3,10 @@ import styles from './ErrorBanner.scss'
 
 class ErrorBanner extends React.Component {
   render() {
-    const error = this.props.error || {}
+    let error = this.props.error || {}
+    if (typeof error == 'string') {
+      error = {chainMessage: error}
+    }
 
     return (
       <div className={styles.main}>
