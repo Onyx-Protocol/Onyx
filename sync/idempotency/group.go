@@ -56,6 +56,11 @@ func (g *Group) Once(key string, fn func() (interface{}, error)) (interface{}, e
 	g.mu.Unlock()
 
 	c.val, c.err = fn()
+	if c.err != nil {
+		g.mu.Lock()
+		delete(g.m, key)
+		g.mu.Unlock()
+	}
 	c.wg.Done()
 
 	return c.val, c.err
