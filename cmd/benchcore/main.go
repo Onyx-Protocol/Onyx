@@ -164,8 +164,10 @@ func main() {
 	must(scpPut(db.addr, corectlBin, "corectl", 0755))
 	mustRunOn(db.addr, fmt.Sprintf(initdbsh, slowQueryThreshold/time.Millisecond))
 	token, err := scpGet(db.addr, "token.txt")
+	token = bytes.TrimSpace(token)
 	must(err)
 	networkToken, err := scpGet(db.addr, "network-token.txt")
+	networkToken = bytes.TrimSpace(networkToken)
 	must(err)
 	fmt.Println(string(token))
 	fmt.Println(string(networkToken))
@@ -181,7 +183,7 @@ func main() {
 	}
 
 	log.Println("init client")
-	accessToken := strings.TrimSpace(string(token))
+	accessToken := string(token)
 	coreURL := "http://" + cored.privAddr + ":1999"
 	log.Println("core URL:", coreURL)
 	publicCoreURL := "http://" + cored.addr + ":1999"
