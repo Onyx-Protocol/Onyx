@@ -5,6 +5,7 @@ import {
   KeyValueTable,
   PageContent,
   PageTitle,
+  RawJson,
 } from 'features/shared/components'
 
 class Show extends BaseShow {
@@ -45,15 +46,10 @@ class Show extends BaseShow {
         />
 
         <PageContent>
-          <button className='btn btn-link' onClick={this.toggleJson}>
-            {this.state.jsonVisible ? 'Hide' : 'Show'}
-            {' '}
-            JSON
-          </button>
-
-          {this.state.jsonVisible && <pre>
-              {JSON.stringify(item, null, ' ')}
-            </pre>}
+          <RawJson
+            item={item}
+            toggleJson={this.toggleJson}
+            jsonVisible={this.state.jsonVisible} />
 
           <KeyValueTable
             title='Details'
