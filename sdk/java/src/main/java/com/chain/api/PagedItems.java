@@ -25,11 +25,6 @@ public abstract class PagedItems<T> implements Iterator<T> {
   private int pos;
 
   /**
-   * Keeps track of whether it is safe to call {@link PagedItems#remove()}
-   */
-  private boolean canRemove;
-
-  /**
    * Page of api objects returned from the most recent query.
    */
   @Expose(serialize = false)
@@ -59,7 +54,6 @@ public abstract class PagedItems<T> implements Iterator<T> {
     this.pos = 0;
     this.list = new ArrayList<>();
     this.lastPage = false;
-    this.canRemove = false;
   }
 
   /**
@@ -83,7 +77,6 @@ public abstract class PagedItems<T> implements Iterator<T> {
    * @return api object of type T
    */
   public T next() {
-    canRemove = true;
     return list.get(pos++);
   }
 
@@ -114,13 +107,8 @@ public abstract class PagedItems<T> implements Iterator<T> {
   }
 
   /**
-   * Removes the last element returned by {@link PagedItems#next()} from the underlying collection.
+   * This method is unsupported.
+   * @throws UnsupportedOperationException
    */
-  public void remove() throws IllegalStateException {
-    if (!canRemove) {
-      throw new IllegalStateException();
-    }
-    this.list.remove(pos - 1);
-    this.canRemove = false;
-  }
+  public void remove() throws UnsupportedOperationException { throw new UnsupportedOperationException(); }
 }

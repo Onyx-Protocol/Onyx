@@ -145,13 +145,13 @@ public class Client {
    */
   public <T> BatchResponse<T> batchRequest(
       String action, Object body, final Type tClass, final Type eClass) throws ChainException {
-    ResponseCreator<T> rc =
-        new ResponseCreator<T>() {
-          public T create(Response response, Gson deserializer) throws ChainException, IOException {
-            return (T) new BatchResponse<T>(response, deserializer, tClass, eClass);
+    ResponseCreator<BatchResponse<T>> rc =
+        new ResponseCreator<BatchResponse<T>>() {
+          public BatchResponse<T> create(Response response, Gson deserializer) throws ChainException, IOException {
+            return new BatchResponse<>(response, deserializer, tClass, eClass);
           }
         };
-    return (BatchResponse<T>) post(action, body, rc);
+    return post(action, body, rc);
   }
 
   /**
