@@ -41,6 +41,15 @@ build:
           bin/cfmt
           git diff --exit-code
     - script:
+        name: gas
+        code: |
+          go get github.com/GoASTScanner/gas
+          cd $GOPATH/src/chain
+          # TODO: Remove exclusions on gas checks
+          # G101: Hardcoded credentials (Presently only false positives)
+          # G204: Unsafe command execution (Presently only affects build tools)
+          gas -quiet -exclude=G101,G204 ./{cmd,core}/**/*.go
+    - script:
         name: check for tk and xxx
         code: |
           p='(xxx|(tk)+)' # can't write inline or it'll match this file
