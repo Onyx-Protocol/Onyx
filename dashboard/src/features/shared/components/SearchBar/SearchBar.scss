@@ -75,22 +75,6 @@
     cursor: pointer;
   }
 }
-.viewdocs {
-  background-image: url('assets/images/info.png');
-  background-repeat: no-repeat;
-  background-size: 15px 15px;
-  background-position: 5px center;
-  display: inline-block;
-  padding: 4px 5px 4px 28px;
-  margin-left: 18px;
-}
-.viewdocs,
-.viewdocs:hover,
-.viewdocs:focus {
-  color: $text-color;
-  opacity: 0.66;
-  text-decoration: underline;
-}
 
 .queryTime {
   display: inline-block;

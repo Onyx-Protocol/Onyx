@@ -26,8 +26,23 @@ class EmptyList extends React.Component {
     } else if (!this.props.showFirstTimeFlow) {
       classNames.push(styles.noResults)
       emptyBlock = <div>
-        <span className={styles.emptyLabel}>No results for query:</span>
+        <span className={`${styles.emptyLabel} ${styles.noResultsLabel}`}>No results for query:</span>
         <code className={styles.code}>{this.props.currentFilter.filter}</code>
+        <div className={styles.filterHelp}>
+          <p>To learn how to query the API, please refer to the documentation:</p>
+          <ol className={styles.filterHelpList}>
+            <li>
+              <a href="/docs/core/build-applications/queries#filters" target="_blank" className={styles.filterHelpListItem}>
+                Filters
+              </a>
+            </li>
+            <li>
+              <a href="/docs/core/reference/api-objects" target="_blank" className={styles.filterHelpListItem}>
+                API Objects
+              </a>
+            </li>
+          </ol>
+        </div>
       </div>
     }
 
