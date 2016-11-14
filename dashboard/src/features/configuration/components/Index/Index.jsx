@@ -34,7 +34,7 @@ class Index extends React.Component {
 
     return new Promise((resolve, reject) => {
       this.props.submitForm(data)
-        .catch((err) => reject({type: err.message}))
+        .catch((err) => reject({type: err}))
     })
   }
 
@@ -68,8 +68,8 @@ class Index extends React.Component {
     let configSubmit = [
       (type.error && <ErrorBanner
         key='configError'
-        title='There was a problem configuring your core:'
-        message={type.error}
+        title='There was a problem configuring your core'
+        error={type.error}
       />),
       <button
         key='configSubmit'
