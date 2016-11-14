@@ -5,6 +5,7 @@ import {
   KeyValueTable,
   PageContent,
   PageTitle,
+  RawJsonButton,
 } from 'features/shared/components'
 
 class Show extends BaseShow {
@@ -31,7 +32,7 @@ class Show extends BaseShow {
     if (item) {
       const title = <span>
         {'Account '}
-        <code>{item.alias ? item.alias :item.id}</code>
+        <code>{item.alias ? item.alias : item.id}</code>
       </span>
 
       view = <div>
@@ -49,7 +50,8 @@ class Show extends BaseShow {
             title='Details'
             actions={[
               <button key='show-txs' className='btn btn-link' onClick={this.props.showTransactions.bind(this, item)}>Transactions</button>,
-              <button key='show-balances' className='btn btn-link' onClick={this.props.showBalances.bind(this, item)}>Balances</button>
+              <button key='show-balances' className='btn btn-link' onClick={this.props.showBalances.bind(this, item)}>Balances</button>,
+              <RawJsonButton key='raw-json' item={item} title={`account-${item.id}.json`}/>
             ]}
             items={[
               {label: 'ID', value: item.id},

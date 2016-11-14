@@ -5,6 +5,7 @@ import {
   PageContent,
   KeyValueTable,
   Section,
+  RawJsonButton,
 } from 'features/shared/components'
 
 import { Summary } from './'
@@ -27,7 +28,11 @@ class Show extends BaseShow {
         <PageTitle title={title} />
 
         <PageContent>
-          <Section title='Summary'>
+          <Section
+            title='Summary'
+            actions={[
+              <RawJsonButton key='raw-json' item={item} title={`tx-${item.id}.json`}/>
+            ]}>
             <Summary transaction={item} />
           </Section>
 
