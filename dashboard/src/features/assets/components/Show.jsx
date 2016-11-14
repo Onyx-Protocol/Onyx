@@ -4,6 +4,7 @@ import {
   PageContent,
   PageTitle,
   KeyValueTable,
+  RawJsonButton,
 } from 'features/shared/components'
 
 class Show extends BaseShow {
@@ -26,7 +27,8 @@ class Show extends BaseShow {
             actions={[
               <button className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
                 Circulation
-              </button>
+              </button>,
+              <RawJsonButton key='raw-json' item={item} title={`asset-${item.id}.json`}/>
             ]}
             items={[
               {label: 'ID', value: item.id},
