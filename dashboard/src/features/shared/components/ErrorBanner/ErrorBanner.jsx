@@ -9,13 +9,15 @@ class ErrorBanner extends React.Component {
       <div className={styles.main}>
         {this.props.title && <strong>{this.props.title}<br/></strong>}
 
-        <span>{error.chainMessage}{error.detail ? `: ${error.detail}` : ''}</span><br/>
+        <div className={(error.code || error.requestId) ? styles.message : ''}>
+          {error.chainMessage}{error.detail ? `: ${error.detail}` : ''}
+        </div>
 
         {error.code &&
-          <span>Error Code: <strong>{error.code}</strong><br/></span>}
+          <div className={styles.extra}>Error Code: <strong>{error.code}</strong></div>}
 
         {error.requestId &&
-          <span>Request ID: <strong>{error.requestId}</strong><br/></span>}
+          <div className={styles.extra}>Request ID: <strong>{error.requestId}</strong></div>}
       </div>
     )
   }
