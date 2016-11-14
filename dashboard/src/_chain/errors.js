@@ -1,6 +1,13 @@
 const lib = {
   create: function(type, message, props = {}) {
-    let err = new Error(message)
+    let err
+    if (props.body) {
+      err = lib.newBatchError(props.body, props.requestId)
+      delete props.body
+    } else {
+      err = new Error(message)
+    }
+
     err = Object.assign(err, props, {
       chainClientError: true,
       type: type,
@@ -16,15 +23,19 @@ const lib = {
     return v && v.code && !v.stack
   },
 
-  newBatchError: function (opts) {
-    let err = new Error(lib.formatErrMsg(opts))
-    err.code = opts.code
-    err.chainMessage = opts.message
-    err.detail = opts.detail
-    err.resp = opts.resp
+  newBatchError: function (body, requestId = false) {
+    let err = new Error(lib.formatErrMsg(body, requestId))
+    err.code = body.code
+    err.chainMessage = body.message
+    err.detail = body.detail
+    if (requestId) {
+      err.requestId = requestId
+    }
+    err.resp = body.resp
     return err
   },
 
+  // TODO: remove me in favor of ErrorBanner.jsx rendering
   formatErrMsg: function(body, requestId) {
     let tokens = []
 
