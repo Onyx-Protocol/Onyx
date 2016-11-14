@@ -10,57 +10,7 @@ import (
 	"chain/database/sql"
 	"chain/errors"
 	"chain/protocol/bc"
-	"chain/testutil"
 )
-
-func TestPoolTxs(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := context.Background()
-
-	_, err := dbtx.Exec(ctx, `
-		INSERT INTO pool_txs (tx_hash, data)
-		VALUES (
-			'70dd2c70c5c1e859c32bcc4415d15c70a95c977e0c35c115541f692f00ffbe9c',
-			decode('07010200000000000568656c6c6f', 'hex')
-		);
-	`)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	pool := NewPool(dbtx)
-	got, err := pool.Dump(ctx)
-	if err != nil {
-		t.Fatalf("err got = %v want nil", err)
-	}
-
-	wantTx := bc.NewTx(bc.TxData{
-		Version:       1,
-		ReferenceData: []byte("hello"),
-	})
-	want := []*bc.Tx{wantTx}
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("txs do not match")
-		for _, tx := range got {
-			t.Logf("\tgot %v", tx)
-		}
-		for _, tx := range want {
-			t.Logf("\twant %v", tx)
-		}
-	}
-}
-
-func TestInsertPoolTx(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := context.Background()
-	tx := bc.NewTx(bc.TxData{ReferenceData: []byte("tx")})
-	err := (&Pool{dbtx}).Insert(ctx, tx)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-}
 
 func TestGetBlock(t *testing.T) {
 	ctx := context.Background()

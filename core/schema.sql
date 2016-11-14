@@ -429,17 +429,6 @@ CREATE SEQUENCE pool_tx_sort_id_seq
 
 
 --
--- Name: pool_txs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE UNLOGGED TABLE pool_txs (
-    tx_hash text NOT NULL,
-    data bytea NOT NULL,
-    sort_id bigint DEFAULT nextval('pool_tx_sort_id_seq'::regclass) NOT NULL
-);
-
-
---
 -- Name: query_blocks; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -714,22 +703,6 @@ ALTER TABLE ONLY mockhsm
 
 
 --
--- Name: pool_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY pool_txs
-    ADD CONSTRAINT pool_txs_pkey PRIMARY KEY (tx_hash);
-
-
---
--- Name: pool_txs_sort_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY pool_txs
-    ADD CONSTRAINT pool_txs_sort_id_key UNIQUE (sort_id);
-
-
---
 -- Name: query_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -915,3 +888,4 @@ insert into migrations (filename, hash) values ('2016-10-19.0.core.add-core-id.s
 insert into migrations (filename, hash) values ('2016-10-31.0.core.add-block-processors.sql', '9e9488e0039337967ef810b09a8f7822e23b3918a49a6308f02db24ddf3e490f');
 insert into migrations (filename, hash) values ('2016-11-07.0.core.remove-client-token-not-null.sql', 'fbae17999936bfc88a537f27fe72ae2de501894f3ea5d9488f3298fd05c59700');
 insert into migrations (filename, hash) values ('2016-11-09.0.utxodb.drop-reservations.sql', '99bbf49814a12d2fee7430710d493958dc634e3395ac8c4839f084116a3e58be');
+insert into migrations (filename, hash) values ('2016-11-10.0.txdb.drop-pool-txs.sql', 'c52f610d5bd471cde5fbc083681e201f026b0cab89e7beeaa6a071ebbb99ff69');

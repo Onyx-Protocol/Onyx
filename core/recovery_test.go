@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lib/pq"
-
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
@@ -18,11 +16,11 @@ import (
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/mempool"
 	"chain/protocol/prottest"
 )
 
@@ -36,7 +34,8 @@ func TestRecovery(t *testing.T) {
 	// Setup the test environment using a clean db.
 	ctx := context.Background()
 	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	store, pool := txdb.New(db)
+	pool := mempool.New()
+	store := txdb.NewStore(db)
 	c := prottest.NewChainWithStorage(t, store, pool)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
@@ -73,11 +72,7 @@ func TestRecovery(t *testing.T) {
 		accounts.NewSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil),
 	})
 
-	// Save a copy of the pool txs
-	var poolTxs []*bc.TxData
-	err := pg.ForQueryRows(ctx, db, `SELECT data FROM pool_txs`, func(tx bc.TxData) {
-		poolTxs = append(poolTxs, &tx)
-	})
+	poolTxs, err := pool.Dump(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +114,7 @@ func TestRecovery(t *testing.T) {
 
 		ctx := context.Background()
 		go func() {
-			err := generateBlock(ctx, t, wrappedDB, timestamp)
+			err := generateBlock(ctx, t, wrappedDB, timestamp, poolTxs)
 			ch <- err
 		}()
 
@@ -131,40 +126,17 @@ func TestRecovery(t *testing.T) {
 		if ok {
 			// The driver never crashed the goroutine, so n is now greater than
 			// the total number of queries performed during `generateBlock`.
-			databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "pool_txs", "*_id_seq"))
+			databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "*_id_seq"))
 			break
-		}
-
-		// At some point, generateBlock deletes the contents of the tx
-		// pool. If it crashes at that point, those txs are lost and
-		// recovery won't produce the same output as on all the other
-		// runs. In a running network this isn't too big a deal because
-		// the submitters of the pool txs will resubmit them if they fail
-		// to appear in a block. We simulate that in this case by
-		// replacing the deleted pool txs before trying to recover.
-
-		hashes := make([]string, 0, len(poolTxs))
-		txstrs := make([][]byte, 0, len(poolTxs))
-		for _, poolTx := range poolTxs {
-			hashes = append(hashes, poolTx.Hash().String())
-			txstr, err := poolTx.Value()
-			if err != nil {
-				t.Fatal(err)
-			}
-			txstrs = append(txstrs, txstr.([]byte))
-		}
-		_, err = wrappedDB.Exec(ctx, `INSERT INTO pool_txs (tx_hash, data) VALUES (unnest($1::text[]), unnest($2::bytea[])) ON CONFLICT (tx_hash) DO NOTHING`, pq.StringArray(hashes), pq.ByteaArray(txstrs))
-		if err != nil {
-			t.Fatal(err)
 		}
 
 		// We crashed at some point during block generation. Do it again,
 		// without crashing.
-		err = generateBlock(ctx, t, wrappedDB, timestamp)
+		err = generateBlock(ctx, t, wrappedDB, timestamp, poolTxs)
 		if err != nil {
 			t.Fatal(err)
 		}
-		databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "pool_txs", "*_id_seq"))
+		databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "*_id_seq"))
 	}
 
 	if len(databaseDumps) < 2 {
@@ -184,12 +156,20 @@ func TestRecovery(t *testing.T) {
 	}
 }
 
-func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, timestamp time.Time) error {
-	store, pool := txdb.New(db)
+func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, timestamp time.Time, poolTxs []*bc.Tx) error {
+	store := txdb.NewStore(db)
 	b1, err := store.GetBlock(ctx, 1)
 	if err != nil {
 		return err
 	}
+	pool := mempool.New()
+	for _, tx := range poolTxs {
+		err = pool.Insert(ctx, tx)
+		if err != nil {
+			return err
+		}
+	}
+
 	c, err := protocol.NewChain(ctx, b1.Hash(), store, pool, nil)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
