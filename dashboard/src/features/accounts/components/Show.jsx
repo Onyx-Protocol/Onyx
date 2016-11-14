@@ -45,6 +45,16 @@ class Show extends BaseShow {
         />
 
         <PageContent>
+          <button className='btn btn-link' onClick={this.toggleJson}>
+            {this.state.jsonVisible ? 'Hide' : 'Show'}
+            {' '}
+            JSON
+          </button>
+
+          {this.state.jsonVisible && <pre>
+              {JSON.stringify(item, null, ' ')}
+            </pre>}
+
           <KeyValueTable
             title='Details'
             actions={[
