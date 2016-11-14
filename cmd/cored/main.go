@@ -100,7 +100,7 @@ func main() {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	db.SetMaxOpenConns(*maxDBConns)
-	db.SetMaxIdleConns(100)
+	db.SetMaxIdleConns(*maxDBConns)
 
 	err = migrate.Run(db)
 	if err != nil {
