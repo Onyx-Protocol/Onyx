@@ -289,7 +289,7 @@ type submitArg struct {
 // POST /submit-transaction
 func (h *Handler) submit(ctx context.Context, x submitArg) (interface{}, error) {
 	if !leader.IsLeading() {
-		var resp map[string]interface{}
+		var resp json.RawMessage
 		err := h.forwardToLeader(ctx, "/submit-transaction", x, &resp)
 		return resp, err
 	}
