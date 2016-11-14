@@ -257,16 +257,8 @@ func (sr *sourceReserver) findMatchingUTXOs(ctx context.Context) ([]*UTXO, error
 }
 
 func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64) ([]*UTXO, uint64, error) {
-	var reserved uint64
+	var reserved, unavailable uint64
 	var reservedUTXOs []*UTXO
-
-	balance, err := calculateBalance(ctx, sr.db, sr.source)
-	if err != nil {
-		return nil, 0, err
-	}
-	if balance < amount {
-		return nil, 0, ErrInsufficient
-	}
 
 	// Find the set of UTXOs that match this source.
 	utxos, err := sr.findMatchingUTXOs(ctx)
@@ -279,6 +271,7 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 	for _, utxo := range utxos {
 		// If the UTXO is already reserved, skip it.
 		if _, ok := sr.reserved[utxo.Outpoint]; ok {
+			unavailable += utxo.Amount
 			continue
 		}
 
@@ -288,6 +281,11 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 		if reserved >= amount {
 			break
 		}
+	}
+	if reserved+unavailable < amount {
+		// Even if everything was available, this account wouldn't have
+		// enough to satisfy the request.
+		return nil, 0, ErrInsufficient
 	}
 	if reserved < amount {
 		// The account has enough for the request, but some is tied up in
@@ -321,16 +319,6 @@ func (sr *sourceReserver) cancel(res *Reservation) {
 	for _, utxo := range res.UTXOs {
 		delete(sr.reserved, utxo.Outpoint)
 	}
-}
-
-func calculateBalance(ctx context.Context, db pg.DB, source Source) (uint64, error) {
-	const q = `
-		SELECT SUM(amount) FROM account_utxos
-		WHERE account_id = $1 AND asset_id = $2
-	`
-	var balance uint64
-	err := db.QueryRow(ctx, q, source.AccountID, source.AssetID).Scan(&balance)
-	return balance, errors.Wrap(err)
 }
 
 func findMatchingUTXOs(ctx context.Context, db pg.DB, source Source) ([]*UTXO, error) {
