@@ -4,7 +4,6 @@ import KeyConfiguration from './KeyConfiguration'
 import Navbar from './Navbar'
 import ObjectSelectorField from './ObjectSelectorField/ObjectSelectorField'
 import TextField from './TextField/TextField'
-import XpubField from './XpubField/XpubField'
 
 export {
   Autocomplete,
@@ -13,5 +12,4 @@ export {
   Navbar,
   ObjectSelectorField,
   TextField,
-  XpubField,
 }

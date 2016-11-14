@@ -1,9 +1,9 @@
 import React from 'react'
 import styles from './XpubField.scss'
-import { SelectField, FieldLabel } from 'features/shared/components'
-import { TextField } from '../'
+import { SelectField, FieldLabel } from '../'
+import { TextField } from 'components/Common'
 import { connect } from 'react-redux'
-import { actions } from 'features/mockhsm'
+import actions from 'features/mockhsm/actions'
 
 const methodOptions = {
   generate: 'Generate new Mock HSM key',
@@ -18,7 +18,8 @@ class XpubField extends React.Component {
     this.state = {
       generate: '',
       mockhsm: '',
-      provide: ''
+      provide: '',
+      autofocusInput: false
     }
   }
 
@@ -42,6 +43,7 @@ class XpubField extends React.Component {
     const typeOnChange = event => {
       const value = typeProps.onChange(event).value
       valueProps.onChange(this.state[value] || '')
+      this.setState({ autofocusInput: true })
     }
 
     const valueOnChange = event => {
@@ -49,40 +51,48 @@ class XpubField extends React.Component {
       this.setState({ [typeProps.value]: value })
     }
 
+    const fields = {
+      'mockhsm': <SelectField options={mockhsmKeys}
+        autoFocus={this.state.autofocusInput}
+        valueKey='xpub'
+        labelKey='label'
+        fieldProps={{...valueProps, onChange: valueOnChange}} />,
+      'provide': <TextField
+        autoFocus={this.state.autofocusInput}
+        fieldProps={{...valueProps, onChange: valueOnChange}}
+        placeholder='Enter Xpub' />,
+      'generate': <TextField
+        autoFocus={this.state.autofocusInput}
+        fieldProps={{...valueProps, onChange: valueOnChange}}
+        placeholder='Alias for generated key (leave blank for automatic value)' />,
+    }
+
     return (
       <div className={styles.main}>
         <FieldLabel>Key {this.props.index + 1}</FieldLabel>
 
-        <div className={styles.options}>
+        <table className={styles.options}>
           {Object.keys(methodOptions).map((key) =>
-            <label key={`key-${this.props.index}-option-${key}`}>
-              <input type='radio'
-                name={`keys-${this.props.index}`}
-                onChange={typeOnChange}
-                checked={key == typeProps.value}
-                value={key}
-              />
-              {methodOptions[key]}
-            </label>
+            <tr>
+              <td className={styles.label}>
+                <label key={`key-${this.props.index}-option-${key}`}>
+                  <input type='radio'
+                    className={styles.radio}
+                    name={`keys-${this.props.index}`}
+                    onChange={typeOnChange}
+                    checked={key == typeProps.value}
+                    value={key}
+                  />
+                  {methodOptions[key]}
+                </label>
+              </td>
+
+              <td className={styles.field}>
+                {typeProps.value == key && fields[key]}
+              </td>
+            </tr>
           )}
-        </div>
-
-        {typeProps.value == 'mockhsm' &&
-          <SelectField options={mockhsmKeys}
-            valueKey='xpub'
-            labelKey='label'
-            fieldProps={{...valueProps, onChange: valueOnChange}} />
-        }
-
-        {typeProps.value == 'provide' &&
-          <TextField
-            fieldProps={{...valueProps, onChange: valueOnChange}}
-            placeholder='Enter Xpub' />}
-
-        {typeProps.value == 'generate' &&
-          <TextField
-            fieldProps={{...valueProps, onChange: valueOnChange}}
-            placeholder='Alias for generated key (leave blank for automatic value)' />}
+        </table>
       </div>
     )
   }

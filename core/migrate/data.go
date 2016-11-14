@@ -40,4 +40,5 @@ var migrations = []migration{
 		DROP FUNCTION reserve_utxo(text, bigint, timestamp with time zone, text);
 		DROP FUNCTION reserve_utxos(text, text, text, bigint, bigint, timestamp with time zone, text);
 	`},
+	{Name: "2016-11-10.0.txdb.drop-pool-txs.sql", SQL: `DROP TABLE pool_txs;`},
 }

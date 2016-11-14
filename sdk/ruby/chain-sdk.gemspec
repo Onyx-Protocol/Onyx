@@ -7,8 +7,9 @@ Gem::Specification.new do |s|
   s.description = 'The Official Ruby SDK for the Chain Core Developer Edition'
   s.summary = 'The Official Ruby SDK for the Chain Core Developer Edition'
   s.licenses = ['Apache-2.0']
+  s.homepage = 'https://github.com/chain/chain/tree/main/sdk/ruby'
 
-  s.files = ['README.md']
+  s.files = ['README.md', 'LICENSE']
   s.files += Dir['lib/**/*.rb']
 
   s.require_path = 'lib'

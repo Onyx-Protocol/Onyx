@@ -39,9 +39,10 @@ If you haven't already, you should first check out the [5-Minute Guide](../get-s
 
 ### Sample Code
 
-All code samples in this guide are extracted from a single Java file.
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
-<a href="../examples/java/TransactionBasics.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+- [Java](../examples/java/TransactionBasics.java)
+- [Ruby](../examples/ruby/transaction_basics.rb)
 
 ## Creating transactions
 
@@ -57,15 +58,15 @@ Rather than forcing you to manipulate inputs, outputs and change directly, the C
 
 There are seven types of actions:
 
-Action                                  | Description                                                                                                                                              
+Action                                  | Description
 ----------------------------------------|------------------------------------------------------------------------------------
-Issue                                   | Issues new units of a specified asset.                                                                                                                   
+Issue                                   | Issues new units of a specified asset.
 Spend from account                      | Spends units of a specified asset from a specified account. Automatically handles locating outputs with enough units, and the creation of change outputs.
-Spend an unspent output from an account | Spends an entire, specific unspent output in an account. Change must be handled manually, using other actions.                                           
-Control with account                    | Receives units of a specified asset into a specified account.                                                                                            
-Control with program                    | Receives units of an asset into a specificed control program. Used when making a payment to an external party/account in another Chain Core.             
-Retire                                  | Retires units of a specified asset.                                                                                                                      
-Set transaction reference data          | Sets arbitrary reference data on the transaction.                                                                                                        
+Spend an unspent output from an account | Spends an entire, specific unspent output in an account. Change must be handled manually, using other actions.
+Control with account                    | Receives units of a specified asset into a specified account.
+Control with program                    | Receives units of an asset into a specificed control program. Used when making a payment to an external party/account in another Chain Core.
+Retire                                  | Retires units of a specified asset.
+Set transaction reference data          | Sets arbitrary reference data on the transaction.
 
 #### Reference data
 

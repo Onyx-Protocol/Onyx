@@ -97,9 +97,10 @@ This guide will walk you through several examples of queries:
 
 ### Sample Code
 
-All code samples in this guide are extracted from a single Java file.
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
-<a href="../examples/java/Queries.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+- [Java](../examples/java/Queries.java)
+- [Ruby](../examples/ruby/queries.rb)
 
 ## Transactions
 

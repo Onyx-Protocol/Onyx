@@ -20,6 +20,7 @@ import Section from './Section/Section'
 import SelectField from './SelectField'
 import SubmitIndicator from './SubmitIndicator/SubmitIndicator'
 import TableList from './TableList/TableList'
+import XpubField from './XpubField/XpubField'
 
 export {
   BaseList,
@@ -44,4 +45,5 @@ export {
   SelectField,
   SubmitIndicator,
   TableList,
+  XpubField,
 }

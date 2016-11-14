@@ -48,8 +48,8 @@ class Show extends BaseShow {
           <KeyValueTable
             title='Details'
             actions={[
-              <button key='show-txs' className='btn btn-link' onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>,
-              <button key='show-balances' className='btn btn-link' onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
+              <button key='show-txs' className='btn btn-link' onClick={this.props.showTransactions.bind(this, item)}>Transactions</button>,
+              <button key='show-balances' className='btn btn-link' onClick={this.props.showBalances.bind(this, item)}>Balances</button>
             ]}
             items={[
               {label: 'ID', value: item.id},
@@ -57,7 +57,6 @@ class Show extends BaseShow {
               {label: 'Tags', value: item.tags},
               {label: 'Keys', value: item.keys.length},
               {label: 'Quorum', value: item.quorum},
-
             ]}
           />
 
@@ -90,15 +89,21 @@ const mapStateToProps = (state, ownProps) => ({
 
 const mapDispatchToProps = ( dispatch ) => ({
   fetchItem: (id) => dispatch(actions.account.fetchItems({filter: `id='${id}'`})),
-  showTransactions: (id) => {
-    dispatch(actions.transaction.pushList({
-      filter: `inputs(account_id='${id}') OR outputs(account_id='${id}')`
-    }))
+  showTransactions: (item) => {
+    let filter = `inputs(account_id='${item.id}') OR outputs(account_id='${item.id}')`
+    if (item.alias) {
+      filter = `inputs(account_alias='${item.alias}') OR outputs(account_alias='${item.alias}')`
+    }
+
+    dispatch(actions.transaction.pushList({ filter }))
   },
-  showBalances: (id) => {
-    dispatch(actions.balance.pushList({
-      filter: `account_id='${id}'`
-    }))
+  showBalances: (item) => {
+    let filter = `account_id='${item.id}'`
+    if (item.alias) {
+      filter = `account_alias='${item.alias}'`
+    }
+
+    dispatch(actions.balance.pushList({ filter }))
   },
   createControlProgram: (data) => dispatch(actions.account.createControlProgram(data)),
   showControlProgram: (body) => dispatch(actions.app.showModal(

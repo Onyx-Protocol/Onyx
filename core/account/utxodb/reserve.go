@@ -109,15 +109,9 @@ func (re *Reserver) Reserve(ctx context.Context, source Source, amount uint64, c
 func (re *Reserver) reserve(ctx context.Context, source Source, amount uint64, clientToken *string, exp time.Time) (res *Reservation, err error) {
 	sourceReserver := re.source(source)
 
-	// Find the set of UTXOs that match this source.
-	utxos, err := sourceReserver.findMatchingUTXOs(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Try to reserve the right amount.
 	rid := atomic.AddUint64(&re.nextReservationID, 1)
-	reserved, total, err := sourceReserver.reserve(rid, amount, utxos)
+	reserved, total, err := sourceReserver.reserve(ctx, rid, amount)
 	if err != nil {
 		return nil, err
 	}
@@ -262,9 +256,15 @@ func (sr *sourceReserver) findMatchingUTXOs(ctx context.Context) ([]*UTXO, error
 	return untypedUTXOs.([]*UTXO), err
 }
 
-func (sr *sourceReserver) reserve(rid uint64, amount uint64, utxos []*UTXO) ([]*UTXO, uint64, error) {
+func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64) ([]*UTXO, uint64, error) {
 	var reserved, unavailable uint64
 	var reservedUTXOs []*UTXO
+
+	// Find the set of UTXOs that match this source.
+	utxos, err := sr.findMatchingUTXOs(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
@@ -282,7 +282,6 @@ func (sr *sourceReserver) reserve(rid uint64, amount uint64, utxos []*UTXO) ([]*
 			break
 		}
 	}
-
 	if reserved+unavailable < amount {
 		// Even if everything was available, this account wouldn't have
 		// enough to satisfy the request.
@@ -324,13 +323,13 @@ func (sr *sourceReserver) cancel(res *Reservation) {
 
 func findMatchingUTXOs(ctx context.Context, db pg.DB, source Source) ([]*UTXO, error) {
 	const q = `
-		SELECT tx_hash, index, amount, control_program_index, control_program, confirmed_in
-		FROM account_utxos a
+		SELECT tx_hash, index, amount, control_program_index, control_program
+		FROM account_utxos
 		WHERE account_id = $1 AND asset_id = $2
 	`
 	var utxos []*UTXO
 	err := pg.ForQueryRows(ctx, db, q, source.AccountID, source.AssetID,
-		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte, confirmedIn *uint64) {
+		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte) {
 			utxos = append(utxos, &UTXO{
 				Outpoint: bc.Outpoint{
 					Hash:  txHash,

@@ -286,9 +286,14 @@ type submitArg struct {
 	WaitUntil    string `json:"wait_until"` // values none, confirmed, processed. default: processed
 }
 
-// POST /v3/transact/submit
-// Idempotent
-func (h *Handler) submit(ctx context.Context, x submitArg) interface{} {
+// POST /submit-transaction
+func (h *Handler) submit(ctx context.Context, x submitArg) (interface{}, error) {
+	if !leader.IsLeading() {
+		var resp json.RawMessage
+		err := h.forwardToLeader(ctx, "/submit-transaction", x, &resp)
+		return resp, err
+	}
+
 	responses := make([]interface{}, len(x.Transactions))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
@@ -312,5 +317,5 @@ func (h *Handler) submit(ctx context.Context, x submitArg) interface{} {
 	}
 
 	wg.Wait()
-	return responses
+	return responses, nil
 }

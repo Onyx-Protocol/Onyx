@@ -13,9 +13,10 @@ This guide will walk you through the basic functions of an unspent output:
 
 ### Sample Code
 
-All code samples in this guide are extracted from a single Java file.
+All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
-<a href="../examples/java/UnspentOutputs.java" class="downloadBtn btn success" target="\_blank">View Sample Code</a>
+- [Java](../examples/java/UnspentOutputs.java)
+- [Ruby](../examples/ruby/unspent_outputs.rb)
 
 ## List unspent outputs
 

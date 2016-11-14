@@ -69,12 +69,12 @@ const mapStateToProps = (state, ownProps) => ({
 const mapDispatchToProps = ( dispatch ) => ({
   fetchItem: (id) => dispatch(actions.asset.fetchItems({filter: `id='${id}'`})),
   showCirculation: (item) => {
-    let query = `asset_id='${item.id}'`
+    let filter = `asset_id='${item.id}'`
     if (item.alias) {
-      query = `asset_alias='${item.alias}'`
+      filter = `asset_alias='${item.alias}'`
     }
 
-    dispatch(actions.balance.pushList({filter: query}))
+    dispatch(actions.balance.pushList({ filter }))
   },
 })
 
