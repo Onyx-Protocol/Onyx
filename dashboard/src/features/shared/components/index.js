@@ -13,7 +13,7 @@ import NotFound from './NotFound'
 import PageContent from './PageContent/PageContent'
 import PageTitle from './PageTitle/PageTitle'
 import Pagination from './Pagination/Pagination'
-import RawJson from './RawJson/RawJson'
+import RawJsonButton from './RawJsonButton'
 import RelativeTime from './RelativeTime'
 import RoutingContainer from './RoutingContainer'
 import SearchBar from './SearchBar/SearchBar'
@@ -39,7 +39,7 @@ export {
   PageContent,
   PageTitle,
   Pagination,
-  RawJson,
+  RawJsonButton,
   RelativeTime,
   RoutingContainer,
   SearchBar,

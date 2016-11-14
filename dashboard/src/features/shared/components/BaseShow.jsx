@@ -5,14 +5,7 @@ export default class BaseShow extends React.Component {
   constructor(props) {
     super(props)
 
-    this.state = {
-      jsonVisible: true
-    }
-    this.toggleJson = this.toggleJson.bind(this)
-  }
-
-  toggleJson() {
-    this.setState({jsonVisible: !this.state.jsonVisible})
+    this.state = {}
   }
 
   componentDidMount() {
