@@ -86,7 +86,12 @@ class Client {
         throw errors.create(
           errType,
           errors.formatErrMsg(body, requestId),
-          {response: resp, status: resp.status}
+          {
+            response: resp,
+            status: resp.status,
+            body: body,
+            requestId: requestId
+          }
         )
       })
     })

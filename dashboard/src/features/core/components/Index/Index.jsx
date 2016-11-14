@@ -104,13 +104,9 @@ class Index extends React.Component {
     let testnetErr
     if (onTestnet) {
       if (testnetBlockchainMismatch) {
-        testnetErr = <span>
-          Chain Testnet has been reset. Please reset your core below.
-        </span>
+        testnetErr = 'Chain Testnet has been reset. Please reset your core below.'
       } else if (testnetNetworkMismatch) {
-        testnetErr = <span>
-          This core is no longer compatible with Testnet. <a href='https://chain.com/docs' target='_blank'>Please upgrade Chain Core</a>.
-        </span>
+        testnetErr = {message: <span>This core is no longer compatible with Testnet. <a href='https://chain.com/docs' target='_blank'>Please upgrade Chain Core</a>.</span>}
       }
     }
 
@@ -138,7 +134,7 @@ class Index extends React.Component {
             </tbody>
           </table>
 
-          {testnetErr && <ErrorBanner title='Chain Testnet error' message={testnetErr} />}
+          {testnetErr && <ErrorBanner title='Chain Testnet error' error={testnetErr} />}
         </div>
       </div>
     )

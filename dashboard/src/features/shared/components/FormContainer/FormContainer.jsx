@@ -17,7 +17,7 @@ class FormContainer extends React.Component {
                 {this.props.error &&
                   <ErrorBanner
                     title='Error submitting form'
-                    message={this.props.error.toString()} />}
+                    error={this.props.error} />}
 
                 <div className={styles.submit}>
                   <button type='submit' className='btn btn-primary' disabled={this.props.submitting}>

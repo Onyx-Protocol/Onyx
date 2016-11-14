@@ -43,7 +43,7 @@ class Login extends React.Component {
             {error &&
               <ErrorBanner
                 title='Error logging in'
-                message={error.toString()} />}
+                error={error} />}
 
             <button type='submit' className='btn btn-primary' disabled={submitting}>
               Log In
