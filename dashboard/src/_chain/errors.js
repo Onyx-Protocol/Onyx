@@ -3,7 +3,6 @@ const lib = {
     let err
     if (props.body) {
       err = lib.newBatchError(props.body, props.requestId)
-      delete props.body
     } else {
       err = new Error(message)
     }
