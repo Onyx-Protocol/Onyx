@@ -28,9 +28,7 @@ const lib = {
     err.code = body.code
     err.chainMessage = body.message
     err.detail = body.detail
-    if (requestId) {
-      err.requestId = requestId
-    }
+    err.requestId = requestId
     err.resp = body.resp
     return err
   },

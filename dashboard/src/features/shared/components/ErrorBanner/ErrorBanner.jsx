@@ -5,16 +5,17 @@ class ErrorBanner extends React.Component {
   render() {
     let error = this.props.error || {}
     if (typeof error == 'string') {
-      error = {chainMessage: error}
+      error = {message: error}
     }
+    const message = error.chainMessage || error.message
 
     return (
       <div className={styles.main}>
         {this.props.title && <strong>{this.props.title}<br/></strong>}
 
-        {error.chainMessage &&
+        {message &&
           <div className={(error.code || error.requestId) ? styles.message : ''}>
-            {error.chainMessage}{error.detail ? `: ${error.detail}` : ''}
+            {message}{error.detail ? `: ${error.detail}` : ''}
           </div>}
 
         {error.code &&
