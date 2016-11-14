@@ -175,7 +175,8 @@ public class Account {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Account create(Client client) throws ChainException {
-      return client.singletonBatchRequest("create-account", Arrays.asList(this), Account.class, APIException.class);
+      return client.singletonBatchRequest(
+          "create-account", Arrays.asList(this), Account.class, APIException.class);
     }
 
     /**

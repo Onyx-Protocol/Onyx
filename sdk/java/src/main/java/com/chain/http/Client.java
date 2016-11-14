@@ -120,12 +120,14 @@ public class Client {
    * @return the result of the post request
    * @throws ChainException
    */
-  public <T> T request(String action, Object body, Type tClass) throws ChainException {
-    return post(
-        action,
-        body,
-        (Response response, Gson deserializer) ->
-            deserializer.fromJson(response.body().charStream(), tClass));
+  public <T> T request(String action, Object body, final Type tClass) throws ChainException {
+    ResponseCreator<T> rc =
+        new ResponseCreator<T>() {
+          public T create(Response response, Gson deserializer) throws IOException {
+            return deserializer.fromJson(response.body().charStream(), tClass);
+          }
+        };
+    return post(action, body, rc);
   }
 
   /**
@@ -141,13 +143,15 @@ public class Client {
    * @return the result of the post request
    * @throws ChainException
    */
-  public <T> BatchResponse<T> batchRequest(String action, Object body, Type tClass, Type eClass)
-      throws ChainException {
-    return post(
-        action,
-        body,
-        (Response response, Gson deserializer) ->
-            new BatchResponse(response, deserializer, tClass, eClass));
+  public <T> BatchResponse<T> batchRequest(
+      String action, Object body, final Type tClass, final Type eClass) throws ChainException {
+    ResponseCreator<T> rc =
+        new ResponseCreator<T>() {
+          public T create(Response response, Gson deserializer) throws ChainException, IOException {
+            return (T) new BatchResponse<T>(response, deserializer, tClass, eClass);
+          }
+        };
+    return (BatchResponse<T>) post(action, body, rc);
   }
 
   /**
@@ -166,32 +170,33 @@ public class Client {
    * @return the result of the post request
    * @throws ChainException
    */
-  public <T> T singletonBatchRequest(String action, Object body, Type tClass, Type eClass)
-      throws ChainException {
-    return post(
-        action,
-        body,
-        (Response response, Gson deserializer) -> {
-          BatchResponse<T> batch = new BatchResponse(response, deserializer, tClass, eClass);
+  public <T> T singletonBatchRequest(
+      String action, Object body, final Type tClass, final Type eClass) throws ChainException {
+    ResponseCreator<T> rc =
+        new ResponseCreator<T>() {
+          public T create(Response response, Gson deserializer) throws ChainException, IOException {
+            BatchResponse<T> batch = new BatchResponse<>(response, deserializer, tClass, eClass);
 
-          List<APIException> errors = batch.errors();
-          if (errors.size() == 1) {
-            // This throw must occur within this lambda in order for APIClient's
-            // retry logic to take effect.
-            throw errors.get(0);
+            List<APIException> errors = batch.errors();
+            if (errors.size() == 1) {
+              // This throw must occur within this lambda in order for APIClient's
+              // retry logic to take effect.
+              throw errors.get(0);
+            }
+
+            List<T> successes = batch.successes();
+            if (successes.size() == 1) {
+              return successes.get(0);
+            }
+
+            // We should never get here, unless there is a bug in either the SDK or
+            // API code, causing a non-singleton response.
+            throw new ChainException(
+                "Invalid singleton repsonse, request ID "
+                    + batch.response().headers().get("Chain-Request-ID"));
           }
-
-          List<T> successes = batch.successes();
-          if (successes.size() == 1) {
-            return successes.get(0);
-          }
-
-          // We should never get here, unless there is a bug in either the SDK or
-          // API code, causing a non-singleton response.
-          throw new ChainException(
-              "Invalid singleton repsonse, request ID "
-                  + batch.response().headers().get("Chain-Request-ID"));
-        });
+        };
+    return post(action, body, rc);
   }
 
   /**
@@ -272,7 +277,7 @@ public class Client {
     /**
      * Deserializes an HTTP response into a Java object of type T.
      * @param response HTTP response object
-     * @param deserializer json deseriazlier
+     * @param deserializer json deserializer
      * @return an object of type T
      * @throws ChainException
      * @throws IOException
@@ -288,7 +293,7 @@ public class Client {
    * @return a response deserialized into type T
    * @throws ChainException
    */
-  public <T> T post(String path, Object body, ResponseCreator<T> respCreator)
+  private <T> T post(String path, Object body, ResponseCreator<T> respCreator)
       throws ChainException {
     RequestBody requestBody = RequestBody.create(this.JSON, serializer.toJson(body));
     Request req;
