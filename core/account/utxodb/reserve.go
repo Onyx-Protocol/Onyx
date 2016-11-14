@@ -290,9 +290,9 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 		reserved += utxo.Amount
 		reservedUTXOs = append(reservedUTXOs, utxo)
 		if reserved >= amount {
+			cachedIdx = i
 			break
 		}
-		cachedIdx = i
 	}
 	if reserved >= amount {
 		// We've found enough to satisfy the request.
