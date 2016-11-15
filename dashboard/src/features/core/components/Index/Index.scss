@@ -16,6 +16,11 @@
   white-space: pre;
 }
 
+.row_value {
+  white-space: pre;
+  text-align: right;
+}
+
 .block_hash {
   display: block;
   word-wrap: break-word;
@@ -55,8 +60,9 @@ h4 {
 }
 
 .replication_lag {
+  display: inline-block;
+  float: right;
   border-radius: $border-radius-base;
-  display: block;
   color: white;
   padding: 0 8px;
   line-height: 1.5;

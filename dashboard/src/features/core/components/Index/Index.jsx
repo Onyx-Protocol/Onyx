@@ -119,11 +119,11 @@ class Index extends React.Component {
             <tbody>
               <tr>
                 <td className={styles.row_label}>Generator Block:</td>
-                <td>{this.props.core.generatorBlockHeight}</td>
+                <td className={styles.row_value}>{this.props.core.generatorBlockHeight}</td>
               </tr>
               <tr>
                 <td className={styles.row_label}>Local Block:</td>
-                <td>{this.props.core.blockHeight}</td>
+                <td className={styles.row_value}>{this.props.core.blockHeight}</td>
               </tr>
               <tr>
                 <td className={styles.row_label}>Replication Lag:</td>
