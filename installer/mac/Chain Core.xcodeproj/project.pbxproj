@@ -21,10 +21,6 @@
 		208663E81D9C8AFD00D32EB2 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 208663E71D9C8AFD00D32EB2 /* WebKit.framework */; };
 		20889C761DA5AD8600C39E3D /* DashboardWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20889C751DA5AD8600C39E3D /* DashboardWindowController.swift */; };
 		208D132C1D99CD02006E68D0 /* ChainCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208D132B1D99CD02006E68D0 /* ChainCore.swift */; };
-		20BC08761DC9303A002A3C1E /* build_chain.sh in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08721DC9303A002A3C1E /* build_chain.sh */; };
-		20BC08771DC9303A002A3C1E /* copy_postgres.sh in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08731DC9303A002A3C1E /* copy_postgres.sh */; };
-		20BC08781DC9303A002A3C1E /* patch_loader_path.rb in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08741DC9303A002A3C1E /* patch_loader_path.rb */; };
-		20BC08791DC9303A002A3C1E /* update_appcast.rb in Resources */ = {isa = PBXBuildFile; fileRef = 20BC08751DC9303A002A3C1E /* update_appcast.rb */; };
 		20BC087C1DC93051002A3C1E /* ClientLauncher.applescript in Sources */ = {isa = PBXBuildFile; fileRef = 20BC087A1DC93051002A3C1E /* ClientLauncher.applescript */; };
 		20BC087D1DC93051002A3C1E /* ClientLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20BC087B1DC93051002A3C1E /* ClientLauncher.swift */; };
 		20C5E44F1DB0A28100C8CB2D /* TaskCleaner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C5E44E1DB0A28100C8CB2D /* TaskCleaner.swift */; };
@@ -79,6 +75,7 @@
 		20BC087B1DC93051002A3C1E /* ClientLauncher.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ClientLauncher.swift; path = ChainCore/ClientLauncher.swift; sourceTree = "<group>"; };
 		20BC087E1DC93237002A3C1E /* makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = makefile; path = pg/src/makefile; sourceTree = "<group>"; };
 		20C5E44E1DB0A28100C8CB2D /* TaskCleaner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = TaskCleaner.swift; path = ChainCore/TaskCleaner.swift; sourceTree = "<group>"; };
+		20DED1391DD3DE9800B81D66 /* renamesha256.rb */ = {isa = PBXFileReference; lastKnownFileType = text.script.ruby; name = renamesha256.rb; path = tools/renamesha256.rb; sourceTree = "<group>"; };
 		830658E41D536F2E00BA1752 /* Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Extensions.swift; path = ChainCore/Extensions.swift; sourceTree = "<group>"; };
 		830B4B251D1C132300F16762 /* ServerManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ServerManager.swift; path = ChainCore/ServerManager.swift; sourceTree = "<group>"; };
 		831C84AC1D771B4800FA5F59 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = ChainCore/Vendor/Sparkle.framework; sourceTree = "<group>"; };
@@ -144,6 +141,7 @@
 				20BC08731DC9303A002A3C1E /* copy_postgres.sh */,
 				20BC08741DC9303A002A3C1E /* patch_loader_path.rb */,
 				20BC08751DC9303A002A3C1E /* update_appcast.rb */,
+				20DED1391DD3DE9800B81D66 /* renamesha256.rb */,
 			);
 			name = Tools;
 			sourceTree = "<group>";
@@ -268,14 +266,10 @@
 				20239A651DB14CE000DA27B3 /* Nitti Medium.otf in Resources */,
 				20239A681DB14CE000DA27B3 /* NittiGrotesk-Medium.otf in Resources */,
 				20239A641DB14CE000DA27B3 /* Nitti Light.otf in Resources */,
-				20BC08791DC9303A002A3C1E /* update_appcast.rb in Resources */,
-				20BC08781DC9303A002A3C1E /* patch_loader_path.rb in Resources */,
 				20239A691DB14CE000DA27B3 /* NittiGrotesk-Normal.otf in Resources */,
 				83FB57201D1B05F000A903A3 /* Assets.xcassets in Resources */,
-				20BC08771DC9303A002A3C1E /* copy_postgres.sh in Resources */,
 				83FB57231D1B05F000A903A3 /* Main.storyboard in Resources */,
 				20239A6A1DB14CE000DA27B3 /* NittiGrotesk-SemiLight.otf in Resources */,
-				20BC08761DC9303A002A3C1E /* build_chain.sh in Resources */,
 				20239A631DB14CE000DA27B3 /* Nitti Bold.otf in Resources */,
 				20239A671DB14CE000DA27B3 /* NittiGrotesk-Bold.otf in Resources */,
 			);
