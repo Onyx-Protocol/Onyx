@@ -1,4 +1,4 @@
-package utxodb
+package account
 
 import (
 	"context"
@@ -42,7 +42,7 @@ func TestCancelReservation(t *testing.T) {
 	}
 	out := bc.Outpoint{Hash: h, Index: 0}
 
-	utxoDB := NewReserver(db)
+	utxoDB := newReserver(db)
 	res, err := utxoDB.ReserveUTXO(ctx, out, nil, time.Now())
 	if err != nil {
 		t.Fatal(err)
