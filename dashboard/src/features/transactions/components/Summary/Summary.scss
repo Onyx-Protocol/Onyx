@@ -11,6 +11,23 @@
     padding-bottom: 6px;
     padding-right: 10px;
   }
+
+  td {
+    border-bottom: 1px solid $border-light-color;
+  }
+  tr:last-of-type td {
+    border-bottom: none;
+  }
+
+  a {
+    .rawId {
+      color: $highlight-default;
+    }
+
+    &:hover .rawId {
+      text-decoration: underline;
+    }
+  }
 }
 
 .colAction {
@@ -27,13 +44,6 @@
   background: none;
 }
 
-td {
-  border-bottom: 1px solid $border-light-color;
-}
-tr:last-of-type td {
-  border-bottom: none;
-}
-
 .colLabel {
   color: $text-light-color;
   text-align: right;
@@ -46,14 +56,4 @@ tr:last-of-type td {
   text-overflow: ellipsis;
   max-width: 150px;
   vertical-align: middle;
-}
-
-a {
-  .rawId {
-    color: $highlight-default;
-  }
-
-  &:hover .rawId {
-    text-decoration: underline;
-  }
 }
