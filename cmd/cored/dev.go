@@ -25,9 +25,9 @@ func resetInDevIfRequested(db pg.DB) {
 		ctx := context.Background()
 		switch *reset {
 		case "blockchain":
-			err = coreunsafe.ResetBlockchain(ctx, db)
+			err = coreunsafe.ResetBlockchain(ctx, db) // #nosec
 		case "everything":
-			err = coreunsafe.ResetEverything(ctx, db)
+			err = coreunsafe.ResetEverything(ctx, db) // #nosec
 		default:
 			log.Fatal(ctx, log.KeyError, fmt.Errorf("unrecognized argument to reset: %s", *reset))
 		}

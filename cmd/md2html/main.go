@@ -125,7 +125,7 @@ func convert(dest string) error {
 			destFile += ".html"
 		}
 
-		err = os.MkdirAll(filepath.Dir(destFile), 0777)
+		err = os.MkdirAll(filepath.Dir(destFile), 0777) // #nosec
 		if err != nil {
 			return err
 		}

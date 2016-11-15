@@ -15,7 +15,7 @@ func reset(db *sql.DB, args []string) {
 	}
 
 	ctx := context.Background()
-	err := coreunsafe.ResetEverything(ctx, db)
+	err := coreunsafe.ResetEverything(ctx, db) // #nosec
 	if err != nil {
 		fatalln("error:", err)
 	}
