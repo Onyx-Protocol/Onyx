@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"chain/core/fetch"
-	"chain/core/leader"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
@@ -74,7 +73,7 @@ func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interfa
 	// If we're not the leader, we don't have access to the current
 	// reservations. Forward the build call to the leader process.
 	// TODO(jackson): Distribute reservations across cored processes.
-	if !leader.IsLeading() {
+	if !h.Leader.IsLeading() {
 		var resp map[string]interface{}
 		err := h.forwardToLeader(ctx, "/build-transaction", buildReqs, &resp)
 		return resp, err

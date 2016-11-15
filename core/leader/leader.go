@@ -13,18 +13,25 @@ import (
 	"chain/log"
 )
 
-var (
-	isLeading bool
-	lock      sync.Mutex
-)
+// Leadership describes the leader process of Chain Core.
+type Leadership struct {
+	db      pg.DB
+	key     string
+	lead    func(context.Context)
+	address string
 
-// IsLeading returns true if this process is
-// the core leader.
-func IsLeading() bool {
-	lock.Lock()
-	l := isLeading
-	lock.Unlock()
-	return l
+	// state
+	mu      sync.Mutex
+	leading bool
+	cancel  func()
+}
+
+// IsLeading returns true if this process is the core leader.
+func (l *Leadership) IsLeading() bool {
+	l.mu.Lock()
+	leading := l.leading
+	l.mu.Unlock()
+	return leading
 }
 
 // Run runs as a goroutine, trying once every five seconds to become
@@ -37,12 +44,12 @@ func IsLeading() bool {
 //
 // The Chain Core has up to a 10-second refractory period after
 // shutdown, during which no process can become the new leader.
-func Run(db *sql.DB, addr string, lead func(context.Context)) {
+func Run(db *sql.DB, addr string, lead func(context.Context)) *Leadership {
 	ctx := context.Background()
 	// We use our process's address as the key, because it's unique
 	// among all processes within a Core and it allows a restarted
 	// leader to immediately return to its leadership.
-	l := &leader{
+	l := &Leadership{
 		db:      db,
 		key:     addr,
 		lead:    lead,
@@ -50,25 +57,16 @@ func Run(db *sql.DB, addr string, lead func(context.Context)) {
 	}
 	log.Messagef(ctx, "Using leaderKey: %q", l.key)
 
-	update(ctx, l)
-	for range time.Tick(5 * time.Second) {
-		update(ctx, l)
-	}
+	l.update(ctx)
+	go func() {
+		for range time.Tick(5 * time.Second) {
+			l.update(ctx)
+		}
+	}()
+	return l
 }
 
-type leader struct {
-	// config
-	db      *sql.DB
-	key     string
-	lead    func(context.Context)
-	address string
-
-	// state
-	leading bool
-	cancel  func()
-}
-
-func update(ctx context.Context, l *leader) {
+func (l *Leadership) update(ctx context.Context) {
 	const (
 		insertQ = `
 			INSERT INTO leader (leader_key, address, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
@@ -81,7 +79,7 @@ func update(ctx context.Context, l *leader) {
 		`
 	)
 
-	if l.leading {
+	if l.IsLeading() {
 		res, err := l.db.Exec(ctx, updateQ, l.key)
 		if err == nil {
 			rowsAffected, err := res.RowsAffected()
@@ -98,14 +96,11 @@ func update(ctx context.Context, l *leader) {
 			log.Error(ctx, err)
 		}
 		log.Messagef(ctx, "No longer core leader")
+		l.mu.Lock()
 		l.cancel()
 		l.leading = false
-
-		lock.Lock()
-		isLeading = false
-		lock.Unlock()
-
 		l.cancel = nil
+		l.mu.Unlock()
 	} else {
 		// Try to put this process's key into the leader table.  It
 		// succeeds if the table's empty or the existing row (there can be
@@ -131,24 +126,23 @@ func update(ctx context.Context, l *leader) {
 
 		log.Messagef(ctx, "I am the core leader")
 
-		l.leading = true
-
-		lock.Lock()
-		isLeading = true
-		lock.Unlock()
-
-		ctx, l.cancel = context.WithCancel(ctx)
+		ctx, cancel := context.WithCancel(ctx)
 		go l.lead(ctx)
+
+		l.mu.Lock()
+		l.leading = true
+		l.cancel = cancel
+		l.mu.Unlock()
 	}
 }
 
 // Address retrieves the IP address of the current
 // core leader.
-func Address(ctx context.Context, db pg.DB) (string, error) {
+func (l *Leadership) Address(ctx context.Context) (string, error) {
 	const q = `SELECT address FROM leader`
 
 	var addr string
-	err := db.QueryRow(ctx, q).Scan(&addr)
+	err := l.db.QueryRow(ctx, q).Scan(&addr)
 	if err != nil {
 		return "", errors.Wrap(err, "could not fetch leader address")
 	}

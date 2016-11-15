@@ -10,7 +10,6 @@ import (
 
 	"chain/core/config"
 	"chain/core/fetch"
-	"chain/core/leader"
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/httpjson"
@@ -60,7 +59,7 @@ func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
 			"is_configured": false,
 		}, nil
 	}
-	if leader.IsLeading() {
+	if h.Leader.IsLeading() {
 		return h.leaderInfo(ctx)
 	} else {
 		var resp map[string]interface{}

@@ -14,7 +14,6 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/config"
-	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/pin"
 	"chain/core/query"
@@ -49,6 +48,11 @@ var (
 	errLeaderElection = errors.New("no leader; pending election")
 )
 
+type Leader interface {
+	IsLeading() bool
+	Address(ctx context.Context) (string, error)
+}
+
 // Handler serves the Chain HTTP API
 type Handler struct {
 	Chain         *protocol.Chain
@@ -60,6 +64,7 @@ type Handler struct {
 	Indexer       *query.Indexer
 	TxFeeds       *txfeed.Tracker
 	AccessTokens  *accesstoken.CredentialStore
+	Leader        Leader
 	Config        *config.Config
 	DB            pg.DB
 	Addr          string
@@ -276,7 +281,7 @@ func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, 
 		if f == nil {
 			return nil, errNotFound // TODO(kr): is this really the right error here?
 		}
-		if leader.IsLeading() {
+		if h.Leader.IsLeading() {
 			return f(ctx, b)
 		}
 		var resp []byte
@@ -290,7 +295,7 @@ func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, 
 // request. For that reason, it cannot be used outside of a request-
 // handling context.
 func (h *Handler) forwardToLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
-	addr, err := leader.Address(ctx, h.DB)
+	addr, err := h.Leader.Address(ctx)
 	if err != nil {
 		return errors.Wrap(err)
 	}

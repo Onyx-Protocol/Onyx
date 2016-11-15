@@ -317,10 +317,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		}
 	}()
 
-	// Note, it's important for any services that will install blockchain
-	// callbacks to be initialized before leader.Run() and the http server,
-	// otherwise there's a data race within protocol.Chain.
-	go leader.Run(db, *listenAddr, func(ctx context.Context) {
+	h.Leader = leader.Run(db, *listenAddr, func(ctx context.Context) {
 		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
 		if conf.IsGenerator {
 			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
