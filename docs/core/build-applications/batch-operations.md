@@ -30,7 +30,7 @@ Batch operations take similar input to their non-batch analogs, except that in b
 
 For our example, we’ll create a list of builder objects for our assets, one for each asset we want to create:
 
-$code ../examples/java/BatchOperations.java asset-builders
+$code asset-builders ../examples/java/BatchOperations.java ../examples/ruby/batch_operations.rb
 
 Note that we’re attempting to create the `bronze` asset with an invalid value for the `quorum` parameter. This will generate an API error, and since we’re performing a batch operation, we’ll have to handle the error in a special way.
 
@@ -38,7 +38,7 @@ Note that we’re attempting to create the `bronze` asset with an invalid value 
 
 All batch method names in the SDK end with `Batch`, and they return a special batch response object:
 
-$code ../examples/java/BatchOperations.java asset-create-batch
+$code asset-create-batch ../examples/java/BatchOperations.java ../examples/ruby/batch_operations.rb
 
 #### Handling the response
 
@@ -46,7 +46,7 @@ If there is a problem affecting the entire batch request, such as a network erro
 
 The `BatchResponse` object provides an easy interface for determining which items in the request successed, and which ones resulted in an error. We can iterate over the items in the batch response (there is one for every parameter object in the original request) and print out whether the operation succeeded or failed.
 
-$code ../examples/java/BatchOperations.java asset-create-handle-errors
+$code asset-create-handle-errors ../examples/java/BatchOperations.java ../examples/ruby/batch_operations.rb
 
 In our example, we expect at least one of the items in the batch request to fail, since we provided an invalid value for the `bronze` asset’s `quorum` parameter. This produces the following output:
 
@@ -60,7 +60,7 @@ asset 2 error: com.chain.exception.APIException: Code: CH200 Message: Quorum mus
 
 Batch operations are parallelized on the server side, so there may be some non-deterministic error behavior if items in your batch request conflict with each other. Consider the following example:
 
-$code ../examples/java/BatchOperations.java nondeterministic-errors
+$code nondeterministic-errors ../examples/java/BatchOperations.java ../examples/ruby/batch_operations.rb
 
 Here, all three asset builders are attempting to create an asset with the alias `platinum`. Aliases must be unique, so only one will succeed. Due to parallelization, it’s possible to get results that appear to be out-of-order relative to the original request. For example, it’s possible for the last item in the request to succeed while the first two produce errors:
 
@@ -78,11 +78,11 @@ Each of the three primary steps of transacting in Chain Core--building, signing,
 
 First, we’ll put together a list of transaction builders:
 
-$code ../examples/java/BatchOperations.java batch-build-builders
+$code batch-build-builders ../examples/java/BatchOperations.java ../examples/ruby/batch_operations.rb
 
 The second transaction (index `1`) in our list is attempting to issue a non-existent asset, so we expect it to fail. If we make the batch request, we can iterate over the response errors and display any errors.
 
-$code ../examples/java/BatchOperations.java batch-build-handle-errors
+$code batch-build-handle-errors ../examples/java/BatchOperations.java ../examples/ruby/batch_operations.rb
 
 This error handling loop should produce the following output:
 
@@ -94,13 +94,13 @@ Error building transaction 1: com.chain.exception.APIException: Code: CH002 Mess
 
 Let’s move on and try to sign and submit the transactions that we successfully built. We can extract the successful responses using the `successes()` method and pass them to `signBatch`:
 
-$code ../examples/java/BatchOperations.java batch-sign
+$code batch-sign ../examples/java/BatchOperations.java ../examples/ruby/batch_operations.rb
 
 #### Submitting
 
 Assuming there are no errors in signing, we can submit our batch of transactions:
 
-$code ../examples/java/BatchOperations.java batch-submit
+$code batch-submit ../examples/java/BatchOperations.java ../examples/ruby/batch_operations.rb
 
 Finally, assuming there are no errors during submission, we should see the following output:
 

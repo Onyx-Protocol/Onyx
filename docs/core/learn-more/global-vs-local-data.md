@@ -83,16 +83,16 @@ All code samples in this guide can be viewed in a single, runnable script. Avail
 
 ### Create accounts with tags
 
-$code ../examples/java/GlobalVsLocalData.java create-accounts-with-tags
+$code create-accounts-with-tags ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb
 
 ### Create assets with tags and definition
 
-$code ../examples/java/GlobalVsLocalData.java create-asset-with-tags-and-definition
+$code create-asset-with-tags-and-definition ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb
 
 ### Create transaction with transaction-level reference data
 
-$code ../examples/java/GlobalVsLocalData.java build-tx-with-tx-ref-data
+$code build-tx-with-tx-ref-data ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb
 
 ### Create transaction with action-level reference data
 
-$code ../examples/java/GlobalVsLocalData.java build-tx-with-action-ref-data
+$code build-tx-with-action-ref-data ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb

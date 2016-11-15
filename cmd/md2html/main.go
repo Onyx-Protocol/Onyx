@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/russross/blackfriday"
@@ -19,6 +20,12 @@ import (
 
 var layoutPlaceholder = []byte("{{Body}}")
 var documentNamePlaceholder = []byte("{{Filename}}")
+
+var extToLang = map[string]string{
+	"java": "Java",
+	"rb":   "Ruby",
+	"js":   "JavaScript",
+}
 
 func main() {
 	var dest = ":8080"
@@ -222,22 +229,30 @@ func interpolateCode(md []byte, hostPath string) []byte {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, pat) {
-			var snippath, snippet string
 			fields := strings.Fields(line)
-			if len(fields) >= 2 {
-				snippath = fields[1]
-			}
-			if len(fields) >= 3 {
-				snippet = fields[2]
+			if len(fields) < 3 {
+				fmt.Fprintln(w, "Error: invalid snippet:", line)
+				continue
 			}
 
-			if path.IsAbs(snippath) {
-				snippath = path.Join(os.Getenv("CHAIN"), snippath)
-			} else {
-				snippath = path.Join(hostPath, snippath)
+			snippet := fields[1]
+			paths := fields[2:]
+
+			fmt.Fprintln(w, "<div class='snippet-set'>")
+
+			for _, p := range paths {
+				if path.IsAbs(p) {
+					p = path.Join(os.Getenv("CHAIN"), p)
+				} else {
+					p = path.Join(hostPath, p)
+				}
+				writeCode(w, p, snippet)
 			}
 
-			writeCode(w, snippath, snippet)
+			writeCodeSelector(w, paths)
+
+			fmt.Fprintln(w, "</div>")
+
 			continue
 		}
 		fmt.Fprintln(w, line)
@@ -245,15 +260,37 @@ func interpolateCode(md []byte, hostPath string) []byte {
 	return w.Bytes()
 }
 
-func writeCode(w io.Writer, path, snippet string) {
-	s, err := readSnippet(path, snippet)
-	if err != nil {
-		s = err.Error()
-	} else {
-		s = removeCommonIndent(s)
+func writeCodeSelector(w io.Writer, paths []string) {
+	var exts []string
+	for _, p := range paths {
+		exts = append(exts, extension(p))
+	}
+	sort.Strings(exts)
+
+	if len(exts) < 2 {
+		return
 	}
 
-	fmt.Fprintln(w, "```\n"+s+"\n```")
+	fmt.Fprintln(w, "<ul>")
+	for _, e := range exts {
+		fmt.Fprintln(w, "<li><span data-docs-lang='"+e+"'>")
+		fmt.Fprintln(w, extToLang[e])
+		fmt.Fprintln(w, "</span></li>")
+	}
+	fmt.Fprintln(w, "</ul>")
+}
+
+func writeCode(w io.Writer, path, snippet string) {
+	code, err := readSnippet(path, snippet)
+	if err != nil {
+		code = err.Error()
+	} else {
+		code = removeCommonIndent(code)
+	}
+
+	ext := extension(path)
+
+	fmt.Fprintln(w, "<pre class='"+ext+"'><code>"+code+"</code></pre>")
 }
 
 func readSnippet(path, snippet string) (string, error) {
@@ -419,4 +456,12 @@ func formatSidenotes(source []byte) []byte {
 		fmt.Fprintln(w, line)
 	}
 	return w.Bytes()
+}
+
+func extension(s string) string {
+	toks := strings.Split(s, ".")
+	if len(toks) < 2 {
+		return ""
+	}
+	return toks[len(toks)-1]
 }

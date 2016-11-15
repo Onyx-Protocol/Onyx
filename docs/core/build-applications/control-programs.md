@@ -31,11 +31,11 @@ Although all control programs in one account are controlled by keys derived from
 
 If Alice wishes to be paid gold by an external party (Bob), she first creates a new control program in her account:
 
-$code ../examples/java/ControlPrograms.java create-control-program
+$code create-control-program ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb
 
 She then delivers the control program to Bob, who provides it to the transaction builder:
 
-$code ../examples/java/ControlPrograms.java build-transaction
+$code build-transaction ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb
 
 ## Retirement control programs
 
@@ -45,7 +45,7 @@ A retirement control program is a very simple control program with a single pred
 
 To retire units of gold from Alice's account, we use the `SpendFromAccount` and `Retire` actions on the `Transaction.QueryBuilder`, which prompts Chain Core to create the retirement control program and spent to it from Alice's account.
 
-$code ../examples/java/ControlPrograms.java retire
+$code retire ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb
 
 ## Custom control programs
 
