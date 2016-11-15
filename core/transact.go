@@ -123,7 +123,7 @@ func (h *Handler) submitSingle(ctx context.Context, x submitSingleArg) (interfac
 
 	err := h.finalizeTxWait(ctx, x.tpl, x.waitUntil)
 	if err != nil {
-		return nil, errors.Wrap(err, "tx %s", x.tpl.Transaction.Hash())
+		return nil, errors.Wrapf(err, "tx %s", x.tpl.Transaction.Hash())
 	}
 
 	return map[string]string{"id": x.tpl.Transaction.Hash().String()}, nil
