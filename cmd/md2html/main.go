@@ -290,7 +290,7 @@ func writeCode(w io.Writer, path, snippet string) {
 
 	ext := extension(path)
 
-	fmt.Fprintln(w, "<pre class='snippet "+ext+"'><code>"+code+"</code></pre>")
+	fmt.Fprintln(w, "<pre class='"+ext+"'><code>"+code+"</code></pre>")
 }
 
 func readSnippet(path, snippet string) (string, error) {
