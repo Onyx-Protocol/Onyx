@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"  xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Chain Core Developer Edition Updates</title>
+    <link>https://download.chain.com/mac/updates-dev.xml</link>
+    <description>Most recent changes with links to updates.</description>
+    <language>en</language>
+      <item>
+        <title>Chain Core Developer Edition 1.0.dev2</title>
+        <description>
+          <![CDATA[
+            <ul>
+              <li>Public release.</li>
+            </ul>
+          ]]>
+        </description>
+        <pubDate>Wed, 09 Nov 2016 13:31:49 -0800</pubDate>
+        <enclosure 
+        	url="https://download.chain.com/mac/Chain_Core_1.0.dev2.zip"
+        	sparkle:version="1.0.dev2"
+        	length="53544295"
+        	type="application/octet-stream"
+        	sparkle:dsaSignature=""
+        	/>
+      </item>
+  </channel>
+</rss>

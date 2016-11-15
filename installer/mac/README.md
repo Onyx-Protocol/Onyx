@@ -28,14 +28,14 @@ Make sure you do `make clean` before re-build. Later we will improve this by pat
 
 ## Release process
 
-1. Bump the APP_VERSION in project settings.
-2. Bump the DB_VERSION in project settings if necessary (this will make the app create separate database and ignore all previous data).
-3. Build and Archive the app.
+1. Bump the `APP_VERSION` in project settings.
+2. Bump the `DB_VERSION` in project settings if necessary (this will make the app create separate database and ignore all previous data).
+3. Build and Archive the app. Duplicate the default scheme and change configuration from `Release` to `DevRelease` if you want to make a development release without affecting existing users of the stable version of the app.
 4. Export with Developer ID signature to the `updates` folder.
 5. Place `Chain Core.app` in the `updates` folder directly, without extra stuff.
 6. Run `tools/update_appcast.rb`. 
-7. Edit `updates/updates.xml` to specify relevant release notes.
-8. Upload the latest `Chain_Core_X.Y.zip`, `Chain_Core.zip`, and `updates.xml` to the server specified in the `tools/update_appcast.rb`. 
+7. Edit `updates/updates(-dev).xml` to specify relevant release notes.
+8. Upload the latest `Chain_Core_X.Y.zip`, `Chain_Core.zip`, and `updates(-dev).xml` to the server specified in the Info.plist (SUFeedURL). 
 
 
 ## License
