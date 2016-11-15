@@ -1352,3 +1352,42 @@ and (-webkit-min-device-pixel-ratio: 2) {
         white-space: pre-wrap;
     }
 }
+
+.snippet-set {
+    margin-top: 18px;
+}
+
+.snippet-set pre {
+    margin: 0 !important;
+}
+
+.snippet-set ul {
+    margin: 0 !important;
+    list-style-type: none;
+    text-align: right;
+    font-size: 14px;
+}
+
+.snippet-set li {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+.snippet-set li span {
+    color: #00BFAA;
+}
+
+.snippet-set li span.selected {
+    font-weight: bold;
+}
+
+.snippet-set li span:hover {
+    cursor: pointer;
+}
+
+.snippet-set li + li::before {
+    content: "•";
+    margin-left: 3px;
+    margin-right: 3px;
+}
