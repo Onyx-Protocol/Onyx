@@ -123,7 +123,7 @@ func (h *Handler) submitSingle(ctx context.Context, x submitSingleArg) (interfac
 
 	err := h.finalizeTxWait(ctx, x.tpl, x.waitUntil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "tx %s", x.tpl.Transaction.Hash())
 	}
 
 	return map[string]string{"id": x.tpl.Transaction.Hash().String()}, nil
@@ -262,7 +262,7 @@ func waitForTxInBlock(ctx context.Context, c *protocol.Chain, tx *bc.Tx, height 
 			}
 
 			if tx.MaxTime > 0 && tx.MaxTime < b.TimestampMS {
-				return 0, txbuilder.ErrRejected
+				return 0, errors.Wrap(txbuilder.ErrRejected, "transaction max time exceeded")
 			}
 
 			// might still be in pool or might be rejected; we can't
