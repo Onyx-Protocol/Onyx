@@ -2,7 +2,7 @@
 
 set -veou pipefail
 
-${DATABASE_URL:?must be set}
+: ${DATABASE_URL:?must be set}
 
 # waitForGenerator blocks the script and greps
 # the generator's output for a log message signifying
