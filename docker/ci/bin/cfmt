@@ -1,7 +1,0 @@
-#!/bin/bash
-
-set -ve
-
-cd $CHAIN
-bin/cfmt
-git diff --exit-code

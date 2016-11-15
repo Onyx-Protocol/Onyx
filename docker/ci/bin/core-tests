@@ -2,6 +2,8 @@
 
 set -veou pipefail
 
+${DB_URL_TEST:?must be set}
+
 # run unit tests
 go version
 go env

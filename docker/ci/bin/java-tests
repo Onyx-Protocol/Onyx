@@ -2,14 +2,16 @@
 
 set -veou pipefail
 
+${DATABASE_URL:?must be set}
+
 # waitForGenerator blocks the script and greps
 # the generator's output for a log message signifying
 # the generator is fully initialized. It will timeout
-# after 30s.
+# after 5s.
 waitForGenerator() {(
 	set +e
 	start=`date +%s`
-	while [ $(( `date +%s` - $start )) -lt 30 ]; do
+	while [ $(( `date +%s` - $start )) -lt 5 ]; do
 		grep "I am the core leader" $initlog >/dev/null
 		if [[ $? -eq 0 ]]; then
 			break
