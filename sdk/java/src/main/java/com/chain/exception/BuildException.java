@@ -18,6 +18,7 @@ public class BuildException extends APIException {
       /**
        * The index of the action that caused this error.
        */
+      @SerializedName("index")
       public Integer index;
     }
 
