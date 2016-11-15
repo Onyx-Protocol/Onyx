@@ -1,19 +1,8 @@
-package txdb
+package mempool
 
-import (
-	"context"
+import "chain/protocol/bc"
 
-	"chain/log"
-	"chain/protocol/bc"
-)
-
-func topSort(ctx context.Context, txs []*bc.Tx) []*bc.Tx {
-	if isTopSorted(ctx, txs) {
-		return txs
-	}
-
-	log.Messagef(ctx, "set of %d txs not in topo order; sorting", len(txs))
-
+func topSort(txs []*bc.Tx) []*bc.Tx {
 	if len(txs) == 1 {
 		return txs
 	}
@@ -70,7 +59,7 @@ func topSort(ctx context.Context, txs []*bc.Tx) []*bc.Tx {
 	return l
 }
 
-func isTopSorted(ctx context.Context, txs []*bc.Tx) bool {
+func isTopSorted(txs []*bc.Tx) bool {
 	exists := make(map[bc.Hash]bool)
 	seen := make(map[bc.Hash]bool)
 	for _, tx := range txs {
