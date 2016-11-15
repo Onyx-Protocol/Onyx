@@ -11,6 +11,8 @@ services:
 
 cored:
   steps:
+    - inz/npm-install@1.1.5:
+      cwd: dashboard/
     - script:
         name: core tests
         code: |
@@ -20,8 +22,6 @@ cored:
         name: gofmt
         code: |
           /usr/bin/gofmt
-    - inz/npm-install@1.1.5:
-      cwd: dashboard/
     - script:
         name: dashboard tests
         code: |
