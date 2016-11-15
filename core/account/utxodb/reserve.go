@@ -38,7 +38,6 @@ type UTXO struct {
 	bc.AssetAmount
 	Script []byte
 
-	ConfirmedIn         uint64
 	AccountID           string
 	ControlProgramIndex uint64
 }
@@ -246,29 +245,13 @@ type sourceReserver struct {
 	group  singleflight.Group
 
 	mu       sync.Mutex
-	cached   []*UTXO
 	reserved map[bc.Outpoint]uint64
 }
 
 func (sr *sourceReserver) findMatchingUTXOs(ctx context.Context) ([]*UTXO, error) {
 	srcID := fmt.Sprintf("%s-%s", sr.source.AssetID, sr.source.AccountID)
 	untypedUTXOs, err := sr.group.Do(srcID, func() (interface{}, error) {
-		utxos, err := findMatchingUTXOs(ctx, sr.db, sr.source)
-		if err != nil {
-			return nil, err
-		}
-
-		var cached []*UTXO
-		for _, u := range utxos {
-			if u.ConfirmedIn > 0 {
-				cached = append(cached, u)
-			}
-		}
-
-		sr.mu.Lock()
-		sr.cached = cached
-		sr.mu.Unlock()
-		return utxos, err
+		return findMatchingUTXOs(ctx, sr.db, sr.source)
 	})
 	return untypedUTXOs.([]*UTXO), err
 }
@@ -276,36 +259,6 @@ func (sr *sourceReserver) findMatchingUTXOs(ctx context.Context) ([]*UTXO, error
 func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64) ([]*UTXO, uint64, error) {
 	var reserved, unavailable uint64
 	var reservedUTXOs []*UTXO
-
-	// First try to reserve using only confirmed, cached UTXOs.
-	sr.mu.Lock()
-	utxos := sr.cached
-	cachedIdx := 0
-	for i, utxo := range utxos {
-		// If the UTXO is already reserved, skip it.
-		if _, ok := sr.reserved[utxo.Outpoint]; ok {
-			continue
-		}
-
-		reserved += utxo.Amount
-		reservedUTXOs = append(reservedUTXOs, utxo)
-		if reserved >= amount {
-			cachedIdx = i
-			break
-		}
-	}
-	if reserved >= amount {
-		// We've found enough to satisfy the request.
-		for _, utxo := range reservedUTXOs {
-			sr.reserved[utxo.Outpoint] = rid
-		}
-		sr.cached = sr.cached[cachedIdx:]
-		sr.mu.Unlock()
-		return reservedUTXOs, reserved, nil
-	}
-	sr.mu.Unlock()
-	reserved = 0
-	reservedUTXOs = nil
 
 	// Find the set of UTXOs that match this source.
 	utxos, err := sr.findMatchingUTXOs(ctx)
@@ -370,18 +323,13 @@ func (sr *sourceReserver) cancel(res *Reservation) {
 
 func findMatchingUTXOs(ctx context.Context, db pg.DB, source Source) ([]*UTXO, error) {
 	const q = `
-		SELECT tx_hash, index, amount, control_program_index, control_program, confirmed_in
+		SELECT tx_hash, index, amount, control_program_index, control_program
 		FROM account_utxos
 		WHERE account_id = $1 AND asset_id = $2
 	`
 	var utxos []*UTXO
 	err := pg.ForQueryRows(ctx, db, q, source.AccountID, source.AssetID,
-		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte, confirmedIn *uint64) {
-			var confirmedHeight uint64
-			if confirmedIn != nil {
-				confirmedHeight = *confirmedIn
-			}
-
+		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte) {
 			utxos = append(utxos, &UTXO{
 				Outpoint: bc.Outpoint{
 					Hash:  txHash,
@@ -394,7 +342,6 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, source Source) ([]*UTXO, e
 				Script:              controlProg,
 				AccountID:           source.AccountID,
 				ControlProgramIndex: cpIndex,
-				ConfirmedIn:         confirmedHeight,
 			})
 		})
 	// TODO(jackson): This has the potential to be a large number of UTXOs.
