@@ -1,4 +1,4 @@
-package utxodb
+package account
 
 import (
 	"context"
@@ -32,8 +32,8 @@ var (
 	ErrReserved = errors.New("reservation found outputs already reserved")
 )
 
-// UTXO describes an individual account UTXO.
-type UTXO struct {
+// utxo describes an individual account utxo.
+type utxo struct {
 	bc.Outpoint
 	bc.AssetAmount
 	Script []byte
@@ -42,72 +42,72 @@ type UTXO struct {
 	ControlProgramIndex uint64
 }
 
-func (u *UTXO) source() Source {
-	return Source{AssetID: u.AssetID, AccountID: u.AccountID}
+func (u *utxo) source() source {
+	return source{AssetID: u.AssetID, AccountID: u.AccountID}
 }
 
-// Source describes the criteria to use when selecting UTXOs.
-type Source struct {
+// source describes the criteria to use when selecting UTXOs.
+type source struct {
 	AssetID   bc.AssetID
 	AccountID string
 }
 
-// Reservation describes a reservation of a set of UTXOs belonging
+// reservation describes a reservation of a set of UTXOs belonging
 // to a particular account. Reservations are immutable.
-type Reservation struct {
+type reservation struct {
 	ID          uint64
-	Source      Source
-	UTXOs       []*UTXO
+	Source      source
+	UTXOs       []*utxo
 	Change      uint64
 	Expiry      time.Time
 	ClientToken *string
 }
 
-func NewReserver(db pg.DB) *Reserver {
-	return &Reserver{
+func newReserver(db pg.DB) *reserver {
+	return &reserver{
 		db:           db,
-		reservations: make(map[uint64]*Reservation),
-		sources:      make(map[Source]*sourceReserver),
+		reservations: make(map[uint64]*reservation),
+		sources:      make(map[source]*sourceReserver),
 	}
 }
 
-// Reserver implements a UTXO reserver that stores reservations
+// reserver implements a utxo reserver that stores reservations
 // in-memory. It relies on the account_utxos table for the source of
 // truth of valid UTXOs but tracks which of those UTXOs are reserved
 // in-memory.
 //
 // To reduce latency and prevent deadlock, no two mutexes (either on
-// Reserver or sourceReserver) should be held at the same time
+// reserver or sourceReserver) should be held at the same time
 //
-// Reserver ensures idempotency of reservations until the reservation
+// reserver ensures idempotency of reservations until the reservation
 // expiration.
-type Reserver struct {
+type reserver struct {
 	db                pg.DB
 	nextReservationID uint64
 	idempotency       idempotency.Group
 
 	reservationsMu sync.Mutex
-	reservations   map[uint64]*Reservation
+	reservations   map[uint64]*reservation
 
 	sourcesMu sync.Mutex
-	sources   map[Source]*sourceReserver
+	sources   map[source]*sourceReserver
 }
 
 // Reserve selects and reserves UTXOs according to the critera provided
 // in source. The resulting reservation expires at exp.
-func (re *Reserver) Reserve(ctx context.Context, source Source, amount uint64, clientToken *string, exp time.Time) (*Reservation, error) {
+func (re *reserver) Reserve(ctx context.Context, src source, amount uint64, clientToken *string, exp time.Time) (*reservation, error) {
 	if clientToken == nil {
-		return re.reserve(ctx, source, amount, clientToken, exp)
+		return re.reserve(ctx, src, amount, clientToken, exp)
 	}
 
 	untypedRes, err := re.idempotency.Once(*clientToken, func() (interface{}, error) {
-		return re.reserve(ctx, source, amount, clientToken, exp)
+		return re.reserve(ctx, src, amount, clientToken, exp)
 	})
-	return untypedRes.(*Reservation), err
+	return untypedRes.(*reservation), err
 }
 
-func (re *Reserver) reserve(ctx context.Context, source Source, amount uint64, clientToken *string, exp time.Time) (res *Reservation, err error) {
-	sourceReserver := re.source(source)
+func (re *reserver) reserve(ctx context.Context, src source, amount uint64, clientToken *string, exp time.Time) (res *reservation, err error) {
+	sourceReserver := re.source(src)
 
 	// Try to reserve the right amount.
 	rid := atomic.AddUint64(&re.nextReservationID, 1)
@@ -116,9 +116,9 @@ func (re *Reserver) reserve(ctx context.Context, source Source, amount uint64, c
 		return nil, err
 	}
 
-	res = &Reservation{
+	res = &reservation{
 		ID:          rid,
-		Source:      source,
+		Source:      src,
 		UTXOs:       reserved,
 		Expiry:      exp,
 		ClientToken: clientToken,
@@ -136,9 +136,9 @@ func (re *Reserver) reserve(ctx context.Context, source Source, amount uint64, c
 	return res, nil
 }
 
-// ReserveUTXO reserves a specific UTXO for spending. The resulting
+// ReserveUTXO reserves a specific utxo for spending. The resulting
 // reservation expires at exp.
-func (re *Reserver) ReserveUTXO(ctx context.Context, out bc.Outpoint, clientToken *string, exp time.Time) (*Reservation, error) {
+func (re *reserver) ReserveUTXO(ctx context.Context, out bc.Outpoint, clientToken *string, exp time.Time) (*reservation, error) {
 	if clientToken == nil {
 		return re.reserveUTXO(ctx, out, exp, nil)
 	}
@@ -146,25 +146,25 @@ func (re *Reserver) ReserveUTXO(ctx context.Context, out bc.Outpoint, clientToke
 	untypedRes, err := re.idempotency.Once(*clientToken, func() (interface{}, error) {
 		return re.reserveUTXO(ctx, out, exp, clientToken)
 	})
-	return untypedRes.(*Reservation), err
+	return untypedRes.(*reservation), err
 }
 
-func (re *Reserver) reserveUTXO(ctx context.Context, out bc.Outpoint, exp time.Time, clientToken *string) (*Reservation, error) {
-	utxo, err := findSpecificUTXO(ctx, re.db, out)
+func (re *reserver) reserveUTXO(ctx context.Context, out bc.Outpoint, exp time.Time, clientToken *string) (*reservation, error) {
+	u, err := findSpecificUTXO(ctx, re.db, out)
 	if err != nil {
 		return nil, err
 	}
 
 	rid := atomic.AddUint64(&re.nextReservationID, 1)
-	err = re.source(utxo.source()).reserveUTXO(rid, utxo)
+	err = re.source(u.source()).reserveUTXO(rid, u)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &Reservation{
+	res := &reservation{
 		ID:          rid,
-		Source:      utxo.source(),
-		UTXOs:       []*UTXO{utxo},
+		Source:      u.source(),
+		UTXOs:       []*utxo{u},
 		Expiry:      exp,
 		ClientToken: clientToken,
 	}
@@ -176,7 +176,7 @@ func (re *Reserver) reserveUTXO(ctx context.Context, out bc.Outpoint, exp time.T
 
 // Cancel makes a best-effort attempt at canceling the reservation with
 // the provided ID.
-func (re *Reserver) Cancel(ctx context.Context, rid uint64) error {
+func (re *reserver) Cancel(ctx context.Context, rid uint64) error {
 	re.reservationsMu.Lock()
 	res, ok := re.reservations[rid]
 	delete(re.reservations, rid)
@@ -193,10 +193,10 @@ func (re *Reserver) Cancel(ctx context.Context, rid uint64) error {
 
 // ExpireReservations cleans up all reservations that have expired,
 // making their UTXOs available for reservation again.
-func (re *Reserver) ExpireReservations(ctx context.Context) error {
+func (re *reserver) ExpireReservations(ctx context.Context) error {
 	// Remove records of any reservations that have expired.
 	now := time.Now()
-	var canceled []*Reservation
+	var canceled []*reservation
 	re.reservationsMu.Lock()
 	for rid, res := range re.reservations {
 		if res.Expiry.Before(now) {
@@ -221,7 +221,7 @@ func (re *Reserver) ExpireReservations(ctx context.Context) error {
 	return nil
 }
 
-func (re *Reserver) source(src Source) *sourceReserver {
+func (re *reserver) source(src source) *sourceReserver {
 	re.sourcesMu.Lock()
 	defer re.sourcesMu.Unlock()
 
@@ -232,7 +232,7 @@ func (re *Reserver) source(src Source) *sourceReserver {
 
 	sr = &sourceReserver{
 		db:       re.db,
-		source:   src,
+		src:      src,
 		reserved: make(map[bc.Outpoint]uint64),
 	}
 	re.sources[src] = sr
@@ -240,25 +240,25 @@ func (re *Reserver) source(src Source) *sourceReserver {
 }
 
 type sourceReserver struct {
-	db     pg.DB
-	source Source
-	group  singleflight.Group
+	db    pg.DB
+	src   source
+	group singleflight.Group
 
 	mu       sync.Mutex
 	reserved map[bc.Outpoint]uint64
 }
 
-func (sr *sourceReserver) findMatchingUTXOs(ctx context.Context) ([]*UTXO, error) {
-	srcID := fmt.Sprintf("%s-%s", sr.source.AssetID, sr.source.AccountID)
+func (sr *sourceReserver) findMatchingUTXOs(ctx context.Context) ([]*utxo, error) {
+	srcID := fmt.Sprintf("%s-%s", sr.src.AssetID, sr.src.AccountID)
 	untypedUTXOs, err := sr.group.Do(srcID, func() (interface{}, error) {
-		return findMatchingUTXOs(ctx, sr.db, sr.source)
+		return findMatchingUTXOs(ctx, sr.db, sr.src)
 	})
-	return untypedUTXOs.([]*UTXO), err
+	return untypedUTXOs.([]*utxo), err
 }
 
-func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64) ([]*UTXO, uint64, error) {
+func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64) ([]*utxo, uint64, error) {
 	var reserved, unavailable uint64
-	var reservedUTXOs []*UTXO
+	var reservedUTXOs []*utxo
 
 	// Find the set of UTXOs that match this source.
 	utxos, err := sr.findMatchingUTXOs(ctx)
@@ -269,13 +269,13 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
 	for _, utxo := range utxos {
-		// If the UTXO is already reserved, skip it.
+		// If the utxo is already reserved, skip it.
 		if _, ok := sr.reserved[utxo.Outpoint]; ok {
 			unavailable += utxo.Amount
 			continue
 		}
 
-		// This UTXO is available for the taking.
+		// This utxo is available for the taking.
 		reserved += utxo.Amount
 		reservedUTXOs = append(reservedUTXOs, utxo)
 		if reserved >= amount {
@@ -300,7 +300,7 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 	return reservedUTXOs, reserved, nil
 }
 
-func (sr *sourceReserver) reserveUTXO(rid uint64, utxo *UTXO) error {
+func (sr *sourceReserver) reserveUTXO(rid uint64, utxo *utxo) error {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
 
@@ -313,7 +313,7 @@ func (sr *sourceReserver) reserveUTXO(rid uint64, utxo *UTXO) error {
 	return nil
 }
 
-func (sr *sourceReserver) cancel(res *Reservation) {
+func (sr *sourceReserver) cancel(res *reservation) {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
 	for _, utxo := range res.UTXOs {
@@ -321,26 +321,26 @@ func (sr *sourceReserver) cancel(res *Reservation) {
 	}
 }
 
-func findMatchingUTXOs(ctx context.Context, db pg.DB, source Source) ([]*UTXO, error) {
+func findMatchingUTXOs(ctx context.Context, db pg.DB, src source) ([]*utxo, error) {
 	const q = `
 		SELECT tx_hash, index, amount, control_program_index, control_program
 		FROM account_utxos
 		WHERE account_id = $1 AND asset_id = $2
 	`
-	var utxos []*UTXO
-	err := pg.ForQueryRows(ctx, db, q, source.AccountID, source.AssetID,
+	var utxos []*utxo
+	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID,
 		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte) {
-			utxos = append(utxos, &UTXO{
+			utxos = append(utxos, &utxo{
 				Outpoint: bc.Outpoint{
 					Hash:  txHash,
 					Index: index,
 				},
 				AssetAmount: bc.AssetAmount{
 					Amount:  amount,
-					AssetID: source.AssetID,
+					AssetID: src.AssetID,
 				},
 				Script:              controlProg,
-				AccountID:           source.AccountID,
+				AccountID:           src.AccountID,
 				ControlProgramIndex: cpIndex,
 			})
 		})
@@ -353,13 +353,13 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, source Source) ([]*UTXO, e
 	return utxos, nil
 }
 
-func findSpecificUTXO(ctx context.Context, db pg.DB, out bc.Outpoint) (*UTXO, error) {
+func findSpecificUTXO(ctx context.Context, db pg.DB, out bc.Outpoint) (*utxo, error) {
 	const q = `
 		SELECT account_id, asset_id, amount, control_program_index, control_program
 		FROM account_utxos
 		WHERE tx_hash = $1 AND index = $2
 	`
-	u := new(UTXO)
+	u := new(utxo)
 	err := db.QueryRow(ctx, q, out.Hash, out.Index).Scan(&u.AccountID, &u.AssetID, &u.Amount, &u.ControlProgramIndex, &u.Script)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound

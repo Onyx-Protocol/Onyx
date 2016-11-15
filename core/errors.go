@@ -5,7 +5,6 @@ import (
 
 	"chain/core/accesstoken"
 	"chain/core/account"
-	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/config"
@@ -131,8 +130,8 @@ var (
 		txbuilder.ErrNoTxSighashCommitment: errorInfo{400, "CH736", "Transaction is not final, additional actions still allowed"},
 
 		// account action error namespace (76x)
-		utxodb.ErrInsufficient: errorInfo{400, "CH760", "Insufficient funds for tx"},
-		utxodb.ErrReserved:     errorInfo{400, "CH761", "Some outputs are reserved; try again"},
+		account.ErrInsufficient: errorInfo{400, "CH760", "Insufficient funds for tx"},
+		account.ErrReserved:     errorInfo{400, "CH761", "Some outputs are reserved; try again"},
 
 		// Mock HSM error namespace (80x)
 		mockhsm.ErrInvalidAfter:         errorInfo{400, "CH801", "Invalid `after` in query"},

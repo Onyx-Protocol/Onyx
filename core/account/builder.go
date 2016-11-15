@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"chain/core/account/utxodb"
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	chainjson "chain/encoding/json"
@@ -55,7 +54,7 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		return nil, errors.Wrap(err, "get account info")
 	}
 
-	src := utxodb.Source{
+	src := source{
 		AssetID:   a.AssetID,
 		AccountID: a.AccountID,
 	}
@@ -153,7 +152,7 @@ func canceler(ctx context.Context, m *Manager, rid uint64) func() {
 	}
 }
 
-func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxodb.UTXO, refData []byte) (
+func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData []byte) (
 	*bc.TxInput,
 	*txbuilder.SigningInstruction,
 	error,
