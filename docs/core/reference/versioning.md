@@ -6,10 +6,10 @@ Chain Core versioning falls into two categories: **package** versioning and **ne
 
 Package versioning applies to the pieces of software that work together to participate in a blockchain network. For example, the Chain Core Mac app and the Java SDK.
 
-Network versioning applies to the network API - the interface through which different Chain Cores on a network comunicate to exchange transactions and blocks. Any breaking changes to the network API interface or Chain protocol are reflected by a change to the network version.
+Network versioning applies to the network API - the interface through which different Chain Cores on a network communicate to exchange transactions and blocks. Any breaking changes to the network API interface or Chain protocol are reflected by a change to the network version.
 
 ## Package Versioning
-The various packages of Chain Core each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatablity between packages. For example, if you are a running a version of the Chain Core Mac app whose first two numbers are **1.1**, then you should also use a version of an SDK whose first two numbers are also **1.1**.
+The various packages of Chain Core each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages. For example, if you are a running a version of the Chain Core Mac app whose first two numbers are **1.1**, then you should also use a version of an SDK whose first two numbers are also **1.1**.
 
 Sometimes we make bugfixes and minor feature updates to individual software packages. When this occurs, we update the third number in the version string for that package only. This number doesn't affect compatibility with other packages. For example, you can safely use version **1.1.1** of the Chain Core Mac App with version **1.1.3** of the Java SDK.
 
