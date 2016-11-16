@@ -1,6 +1,7 @@
 package query
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -94,9 +95,11 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 }
 
 func constructOutputsQuery(expr filter.SQLExpr, timestampMS uint64, after *OutputsAfter, limit int) (string, []interface{}) {
-	// TODO(jackson): refactor to use bytes.Buffer for consistency
-	// with the other construct(...)Query functions.
-	sql := fmt.Sprintf("SELECT block_height, tx_pos, output_index, data FROM %s", pq.QuoteIdentifier("annotated_outputs"))
+	var sql bytes.Buffer
+
+	sql.WriteString("SELECT block_height, tx_pos, output_index, data FROM ")
+	sql.WriteString(pq.QuoteIdentifier("annotated_outputs"))
+	sql.WriteString(" WHERE ")
 
 	vals := make([]interface{}, 0, 4+len(expr.Values))
 	vals = append(vals, expr.Values...)
@@ -106,10 +109,11 @@ func constructOutputsQuery(expr filter.SQLExpr, timestampMS uint64, after *Outpu
 
 	where := strings.TrimSpace(expr.SQL)
 	timespanExpr := fmt.Sprintf("timespan @> $%d::int8", timestampValIndex)
+
 	if where == "" {
-		where = timespanExpr
+		sql.WriteString(timespanExpr)
 	} else {
-		where = fmt.Sprintf("(%s) AND %s", where, timespanExpr)
+		sql.WriteString(fmt.Sprintf("(%s) AND %s", where, timespanExpr))
 	}
 
 	if after != nil {
@@ -122,10 +126,10 @@ func constructOutputsQuery(expr filter.SQLExpr, timestampMS uint64, after *Outpu
 		vals = append(vals, after.lastIndex)
 		lastIndexValIndex := len(vals)
 
-		where = fmt.Sprintf("%s AND (block_height, tx_pos, output_index) < ($%d, $%d, $%d)", where, lastBlockHeightValIndex, lastTxPosValIndex, lastIndexValIndex)
+		sql.WriteString(fmt.Sprintf(" AND (block_height, tx_pos, output_index) < ($%d, $%d, $%d)", lastBlockHeightValIndex, lastTxPosValIndex, lastIndexValIndex))
 	}
 
-	sql += fmt.Sprintf(" WHERE %s ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT %d", where, limit)
+	sql.WriteString(fmt.Sprintf(" ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT %d", limit))
 
-	return sql, vals
+	return sql.String(), vals
 }
