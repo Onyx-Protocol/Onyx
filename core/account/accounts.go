@@ -31,7 +31,7 @@ func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 	return &Manager{
 		db:          db,
 		chain:       chain,
-		utxoDB:      newReserver(db),
+		utxoDB:      newReserver(db, chain),
 		cache:       lru.New(maxAccountCache),
 		aliasCache:  lru.New(maxAccountCache),
 		delayedACPs: make(map[*txbuilder.TemplateBuilder][]*controlProgram),

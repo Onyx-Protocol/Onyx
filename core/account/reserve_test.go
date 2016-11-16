@@ -7,6 +7,8 @@ import (
 
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
+	"chain/protocol/state"
 )
 
 const sampleAccountUTXOs = `
@@ -23,6 +25,7 @@ const sampleAccountUTXOs = `
 
 func TestCancelReservation(t *testing.T) {
 	ctx := context.Background()
+	c := prottest.NewChain(t)
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 
 	_, err := db.Exec(ctx, sampleAccountUTXOs)
@@ -42,7 +45,14 @@ func TestCancelReservation(t *testing.T) {
 	}
 	out := bc.Outpoint{Hash: h, Index: 0}
 
-	utxoDB := newReserver(db)
+	// Fake the output in the state tree.
+	_, s := c.State()
+	err = s.Tree.Insert(state.OutputKey(out), []byte{0xc0, 0x01, 0xca, 0xfe})
+	if err != nil {
+		t.Error(err)
+	}
+
+	utxoDB := newReserver(db, c)
 	res, err := utxoDB.ReserveUTXO(ctx, out, nil, time.Now())
 	if err != nil {
 		t.Fatal(err)
