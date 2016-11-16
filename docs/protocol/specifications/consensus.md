@@ -108,7 +108,7 @@ The block generator collects transactions to include in each block it generates.
 **Algorithm:**
 
 1. [Validate the transaction](validation.md#validate-transaction) with respect to the current blockchain state, but using system timestamp instead of the latest block timestamp; if invalid, halt and return false.
-2. If the transaction contains at least one [issuance input with asset version 1](data.md#asset-version-1-issuance-commitment) and a non-empty nonce:
+2. If the transaction contains at least one [issuance entry](data.md#issuance-entry) with a non-empty nonce:
     1. Test that transaction minimum timestamp plus the [maximum issuance window](#generator-state) is greater or equal to the transaction maximum timestamp; if not, halt and return false.
 3. Add the transaction to the transaction pool.
 4. Return true.
@@ -177,9 +177,7 @@ See also the note in the [Make Block](#make-block) algorithm.
     1. The block version must equal 1.
     2. For every transaction in the block:
         1. Transaction version must equal 1.
-        2. [Transaction common witness](data.md#transaction-common-witness) string must be empty.
-        3. Every [input witness](data.md#transaction-input-witness) must contain only the fields defined in this version of the protocol (no additional data included).
-        4. Every [output witness](data.md#transaction-output-witness) must be empty.
+        2. Every [entry witness](data.md#entry-witness) must contain only the fields defined in this version of the protocol (no additional data included).
 6. Check that the block's timestamp is less than 2 minutes after the system time. If it is not, halt and return nothing.
 7. Compute the [block signature hash](data.md#block-signature-hash) for the block.
 8. Sign the signature hash with the signing key, yielding a [signature](data.md#signature).
