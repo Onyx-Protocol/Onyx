@@ -36,7 +36,7 @@ var (
 type utxo struct {
 	bc.Outpoint
 	bc.AssetAmount
-	Script []byte
+	ControlProgram []byte
 
 	AccountID           string
 	ControlProgramIndex uint64
@@ -339,7 +339,7 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, src source) ([]*utxo, erro
 					Amount:  amount,
 					AssetID: src.AssetID,
 				},
-				Script:              controlProg,
+				ControlProgram:      controlProg,
 				AccountID:           src.AccountID,
 				ControlProgramIndex: cpIndex,
 			})
@@ -360,7 +360,7 @@ func findSpecificUTXO(ctx context.Context, db pg.DB, out bc.Outpoint) (*utxo, er
 		WHERE tx_hash = $1 AND index = $2
 	`
 	u := new(utxo)
-	err := db.QueryRow(ctx, q, out.Hash, out.Index).Scan(&u.AccountID, &u.AssetID, &u.Amount, &u.ControlProgramIndex, &u.Script)
+	err := db.QueryRow(ctx, q, out.Hash, out.Index).Scan(&u.AccountID, &u.AssetID, &u.Amount, &u.ControlProgramIndex, &u.ControlProgram)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	} else if err != nil {
