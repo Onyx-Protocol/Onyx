@@ -13,16 +13,9 @@ import (
 	"chain/protocol/state"
 )
 
-const (
-	// unconfirmedExpiration configures when an unconfirmed UTXO must
-	// be confirmed in a block before it expires and is deleted. If a
-	// UTXO is deleted but later confirmed, it'll be re-inserted.
-	unconfirmedExpiration = 5
-
-	// PinName is used to identify the pin associated with
-	// the account block processor.
-	PinName = "account"
-)
+// PinName is used to identify the pin associated with
+// the account block processor.
+const PinName = "account"
 
 // A Saver is responsible for saving an annotated account object.
 // for indexing and retrieval.
@@ -64,27 +57,6 @@ type output struct {
 	keyIndex  uint64
 }
 
-// IndexUnconfirmedUTXOs looks up a transaction's control programs for matching
-// account control programs. If any control programs match, the unconfirmed
-// UTXOs are inserted into account_utxos with an expiry_height. If not confirmed
-// by the expiry_height, the UTXOs will be deleted (and assumed rejected).
-func (m *Manager) IndexUnconfirmedUTXOs(ctx context.Context, tx *bc.Tx) error {
-	stateOuts := make([]*state.Output, 0, len(tx.Outputs))
-	for i, out := range tx.Outputs {
-		stateOutput := &state.Output{
-			TxOutput: *out,
-			Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(i)},
-		}
-		stateOuts = append(stateOuts, stateOutput)
-	}
-	accOuts, err := m.loadAccountInfo(ctx, stateOuts)
-	if err != nil {
-		return errors.Wrap(err, "loading account info")
-	}
-	err = m.upsertUnconfirmedAccountOutputs(ctx, accOuts, m.chain.Height()+unconfirmedExpiration)
-	return errors.Wrap(err, "upserting confirmed account utxos")
-}
-
 func (m *Manager) ProcessBlocks(ctx context.Context) {
 	if m.indexer == nil || m.pinStore == nil {
 		return
@@ -123,17 +95,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
 	_, err = m.db.Exec(ctx, delQ, deltxhash, delindex)
-	if err != nil {
-		return errors.Wrap(err, "deleting spent account utxos")
-	}
-
-	// Delete any unconfirmed account UTXOs that are now expired because they
-	// have not been confirmed after several blocks.
-	const expiryQ = `
-		DELETE FROM account_utxos WHERE expiry_height <= $1 AND confirmed_in IS NULL
-	`
-	_, err = m.db.Exec(ctx, expiryQ, b.Height)
-	return errors.Wrap(err, "deleting expired account utxos")
+	return errors.Wrap(err, "deleting spent account utxos")
 }
 
 func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.StringArray, index pg.Uint32s) {
@@ -189,51 +151,6 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]
 	return result, nil
 }
 
-// upsertUnconfirmedAccountOutputs records the account data for unconfirmed
-// account utxos.
-func (m *Manager) upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*output, expiryHeight uint64) error {
-	var (
-		txHash    pq.StringArray
-		index     pg.Uint32s
-		assetID   pq.StringArray
-		amount    pq.Int64Array
-		accountID pq.StringArray
-		cpIndex   pq.Int64Array
-		program   pq.ByteaArray
-		metadata  pq.ByteaArray
-	)
-	for _, out := range outs {
-		txHash = append(txHash, out.Outpoint.Hash.String())
-		index = append(index, out.Outpoint.Index)
-		assetID = append(assetID, out.AssetID.String())
-		amount = append(amount, int64(out.Amount))
-		accountID = append(accountID, out.AccountID)
-		cpIndex = append(cpIndex, int64(out.keyIndex))
-		program = append(program, out.ControlProgram)
-		metadata = append(metadata, out.ReferenceData)
-	}
-
-	const q = `
-		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, account_id, control_program_index,
-			control_program, metadata, expiry_height)
-		SELECT unnest($1::text[]), unnest($2::bigint[]), unnest($3::text[]),  unnest($4::bigint[]),
-			   unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), unnest($8::bytea[]), $9
-		ON CONFLICT (tx_hash, index) DO NOTHING;
-	`
-	_, err := m.db.Exec(ctx, q,
-		txHash,
-		index,
-		assetID,
-		amount,
-		accountID,
-		cpIndex,
-		program,
-		metadata,
-		expiryHeight,
-	)
-	return errors.Wrap(err, "committing db transaction")
-}
-
 // upsertConfirmedAccountOutputs records the account data for confirmed utxos.
 // If the account utxo already exists (because it's from a local tx), the
 // block confirmation data will in the row will be updated.
@@ -263,15 +180,14 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 
 	const q = `
 		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, account_id, control_program_index,
-			control_program, metadata, confirmed_in, block_pos, block_timestamp, expiry_height)
+			control_program, metadata, confirmed_in, block_pos, block_timestamp)
 		SELECT unnest($1::text[]), unnest($2::bigint[]), unnest($3::text[]),  unnest($4::bigint[]),
 			   unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), unnest($8::bytea[]),
-			   $9, unnest($10::bigint[]), $11, NULL
+			   $9, unnest($10::bigint[]), $11
 		ON CONFLICT (tx_hash, index) DO UPDATE SET
 			confirmed_in    = excluded.confirmed_in,
 			block_pos       = excluded.block_pos,
-			block_timestamp = excluded.block_timestamp,
-			expiry_height   = excluded.expiry_height;
+			block_timestamp = excluded.block_timestamp;
 	`
 	_, err := m.db.Exec(ctx, q,
 		txHash,

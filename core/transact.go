@@ -207,19 +207,6 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 	if err != nil {
 		return err
 	}
-
-	// As a rule we only index confirmed blockchain data to prevent dirty
-	// reads, but here we're explicitly breaking that rule iff all of the
-	// inputs to the transaction are from locally-controlled keys. In that
-	// case, we're confident that this tx will be confirmed, so we relax
-	// that constraint to allow use of unconfirmed change, etc.
-	if txTemplate.Local {
-		err := h.Accounts.IndexUnconfirmedUTXOs(ctx, tx)
-		if err != nil {
-			return errors.Wrap(err, "indexing unconfirmed account utxos")
-		}
-	}
-
 	if waitUntil == "none" {
 		return nil
 	}
@@ -228,7 +215,6 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 	if err != nil {
 		return err
 	}
-
 	if waitUntil == "confirmed" {
 		return nil
 	}

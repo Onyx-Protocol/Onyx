@@ -195,10 +195,9 @@ CREATE TABLE account_utxos (
     control_program_index bigint NOT NULL,
     control_program bytea NOT NULL,
     metadata bytea NOT NULL,
-    confirmed_in bigint,
-    block_pos integer,
-    block_timestamp bigint,
-    expiry_height bigint
+    confirmed_in bigint NOT NULL,
+    block_pos integer NOT NULL,
+    block_timestamp bigint NOT NULL
 );
 
 
@@ -796,13 +795,6 @@ CREATE INDEX account_utxos_account_id_asset_id_tx_hash_idx ON account_utxos USIN
 
 
 --
--- Name: account_utxos_expiry_height_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX account_utxos_expiry_height_idx ON account_utxos USING btree (expiry_height) WHERE (confirmed_in IS NULL);
-
-
---
 -- Name: annotated_accounts_jsondata_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -890,3 +882,4 @@ insert into migrations (filename, hash) values ('2016-11-07.0.core.remove-client
 insert into migrations (filename, hash) values ('2016-11-09.0.utxodb.drop-reservations.sql', '99bbf49814a12d2fee7430710d493958dc634e3395ac8c4839f084116a3e58be');
 insert into migrations (filename, hash) values ('2016-11-10.0.txdb.drop-pool-txs.sql', 'c52f610d5bd471cde5fbc083681e201f026b0cab89e7beeaa6a071ebbb99ff69');
 insert into migrations (filename, hash) values ('2016-11-16.0.account.drop-cp-id.sql', '149dd9ff2107e12452180bb73716a0985547bae843e5f99e5441717d6ec64a00');
+insert into migrations (filename, hash) values ('2016-11-18.0.account.confirmed-utxos.sql', 'b01e126edfcfe97f94eeda46f5a0eab6752e907104cecf247e90886f92795e94');
