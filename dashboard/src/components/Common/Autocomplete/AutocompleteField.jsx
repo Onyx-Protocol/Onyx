@@ -89,5 +89,5 @@ export const mapStateToProps = (type) => (state) => ({
 
 export const mapDispatchToProps = (type) => (dispatch) => ({
   didLoadAutocomplete: () => dispatch(actions[type].didLoadAutocomplete),
-  fetchAll: (cb) => dispatch(actions[type].fetchAll(cb))
+  fetchAll: () => dispatch(actions[type].fetchAll())
 })
