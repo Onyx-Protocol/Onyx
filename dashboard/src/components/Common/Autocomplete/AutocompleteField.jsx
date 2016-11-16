@@ -44,9 +44,8 @@ class AutocompleteField extends React.Component {
     if (this.props.autocompleteIsLoaded) {
       this.setState({suggestions: this.getSuggestions(value)})
     } else {
-      this.props.fetchAll(() => {
+      this.props.fetchAll().then(() => {
         this.setState({suggestions: this.getSuggestions(value)})
-      }).then(() => {
         this.props.didLoadAutocomplete()
       })
     }
