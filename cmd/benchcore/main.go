@@ -506,6 +506,10 @@ func makeEC2(role string, inst *instance, wg *sync.WaitGroup) {
 			}
 			return fmt.Errorf("instance %s state %s (%s)", inst.id, *state.Name, reason)
 		}
+		if info.PrivateIPAddress == nil || info.PublicIPAddress == nil {
+			return errRetry
+		}
+
 		inst.privAddr = *info.PrivateIPAddress
 		inst.addr = *info.PublicIPAddress
 		return nil
