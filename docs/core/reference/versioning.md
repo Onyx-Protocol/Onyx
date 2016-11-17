@@ -1,8 +1,8 @@
-# Chain Core Versioning
+# Chain Versioning
 
 ## Summary
 
-There are three distinct Chain Core versioning schemes:
+There are three distinct Chain versioning schemes:
 * **core** versioning
 * **network** versioning
 * **signer** versioning
