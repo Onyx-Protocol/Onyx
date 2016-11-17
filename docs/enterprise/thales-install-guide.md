@@ -10,6 +10,7 @@ interface.
 
 To begin using the Thales nShield Connect with Chain Core, you must
 have the following files supplied by Chain:
+
 - `xprvseemodule.sar`, the firmware (or “SEE machine”) to be loaded
   into the HSM;
 - `userdata.bin`, a file of associated data to be signed and loaded
