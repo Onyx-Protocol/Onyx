@@ -26,7 +26,7 @@ func (n noOpWriter) Write(d []byte) (int, error) {
 func (n noOpWriter) WriteHeader(int) {}
 
 func BenchmarkGzipSmall(b *testing.B) {
-	r, _ := http.NewRequest("GET", "/foo", nil)
+	r, _ := http.NewRequest("GET", "/foo", nil) // #nosec
 	r.Header.Set("accept-encoding", "gzip")
 	h := Handler{http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write(small)

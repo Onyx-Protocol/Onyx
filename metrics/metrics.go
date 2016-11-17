@@ -78,7 +78,7 @@ func (l *Latency) Reset() {
 func (l *Latency) String() string {
 	var b bytes.Buffer
 	fmt.Fprintf(&b, `{"Histogram":`)
-	h, _ := json.Marshal((&l.hdr).Export())
+	h, _ := json.Marshal((&l.hdr).Export()) // #nosec
 	b.Write(h)
 	fmt.Fprintf(&b, `,"Over":%d,"Timestamp":%d,"Max":%d}`, l.nover, l.time.Unix(), l.max)
 	return b.String()

@@ -47,7 +47,7 @@ func main() {
 	cclog.Println("Please wait while we check Postgres...")
 
 	// Set up postgres logging
-	f, err := os.OpenFile(`C:/Program Files (x86)/Chain/postgres.log`, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, err := os.OpenFile(`C:/Program Files (x86)/Chain/postgres.log`, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666) // #nosec
 	if err != nil {
 		cclog.Fatal("Error opening postgres.log file: " + err.Error())
 	}
@@ -167,7 +167,7 @@ func main() {
 // append to the config file
 func rewriteConfig() error {
 	c := pgDataDir + "/postgresql.conf"
-	f, err := os.OpenFile(c, os.O_APPEND, 0666)
+	f, err := os.OpenFile(c, os.O_APPEND, 0666) // #nosec
 	if err != nil {
 		return errors.New("could not open postgresql.conf: " + err.Error())
 	}
