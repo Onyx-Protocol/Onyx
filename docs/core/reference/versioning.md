@@ -94,7 +94,7 @@ The build version of a specific package may change independently of other packag
 
 ### Semantics
 
-This scheme has semantics that are unique to Chain Core, despite superficial similarities to other versioning schemes such as [Semantic Versioning](http://semver.org/).
+This scheme has semantics that are unique to Chain signer software packages, despite superficial similarities to other versioning schemes such as [Semantic Versioning](http://semver.org/).
 
 #### Compatibility between packages
 Signer software packages are compatible if their major and minor versions are no more than one number apart. For example, if you are running version 1.1.x of `signerd`, you can use version 1.0.x, 1.1.x, or 1.2.x of the Thales Codesafe HSM firmware.
