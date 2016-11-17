@@ -2,25 +2,28 @@
 
 ## Summary
 
-Chain Core versioning falls into two categories: **package** versioning and **network** versioning.
+There are three distinct Chain Core versioning schemes:
+* **core** versioning
+* **network** versioning
+* **signer** versioning
 
-Package versioning applies to the pieces of software that work together to participate in a blockchain network. For example, the Chain Core Mac app and the Java SDK.
+Core versioning applies to the pieces of software that comprise, package, or directly interact with Chain Core. For example, the Chain Core Mac app and the Java SDK.
 
 Network versioning applies to the network API - the interface through which different Chain Cores on a network communicate to exchange transactions and blocks. Any breaking changes to the network API interface or Chain protocol are reflected by a change to the network version.
 
-## Package Versioning
+Signer versioning applies to the pieces of software that facilitate transaction and block signing. These versions will change infrequently.
+
+## Core Versioning
 The various packages of Chain Core each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages. For example, if you are a running a version of the Chain Core Mac app whose first two numbers are **1.1**, then you should also use a version of an SDK whose first two numbers are also **1.1**.
 
 Sometimes we make bugfixes and minor feature updates to individual software packages. When this occurs, we update the third number in the version string for that package only. This number doesn't affect compatibility with other packages. For example, you can safely use version **1.1.1** of the Chain Core Mac App with version **1.1.3** of the Java SDK.
 
 ### Scope
 
-The package versioning scheme covers a suite of individual software packages that make up Chain Core, including:
+The core versioning scheme covers a suite of individual software packages that make up Chain Core, including:
 
 - `cored`, the Chain Core server daemon
 - `corectl`, a CLI utility for operating Chain Core
-- `signerd`, the HSM signing server daemon
-- HSM firmware
 - Client API SDKs, such as the Java and Ruby SDKs
 - the Chain Core Mac app
 - the Chain Core Windows app
@@ -59,6 +62,16 @@ The network version will be incremented each time there is a breaking change in 
 
 ### Breaking changes
 An upgrade in network version constitutes a breaking change at the network level. Any upgrade to the network version will be included in a new package version of Chain Core software and documented as a breaking network change in the release notes.
+
+## Signer Versioning
+The various packages of signing software each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages. For example, if you are a running a version of `signerd` whose first two numbers are **1.1**, then you should also use a version of the Thales Codesafe HSM firmware whose first two numbers are also **1.1**.
+
+### Scope
+The signer versioning scheme covers the following pieces of software:
+
+- Chain Core MockHSM
+- `signerd`, the HSM signing server daemon
+- Thales Codesafe HSM firmware
 
 
 ## Notes
