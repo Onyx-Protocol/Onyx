@@ -39,8 +39,9 @@ You must also perform the following steps:
    - `generatekey --batch seeinteg plainname=xprvseemoduledevusk`
    - `tct2 --sign-and-pack -k xprvseemoduledevusk --machine-key=68bcec164114318f31b2e353bef9e8b1ce67872e -o userdata.sar -i userdata.bin`
    
-   (The hex value here is the hash of the key that Chain used to sign
-   the SEE machine.)
+   The hex value here is the hash of the key that Chain used to sign
+   the SEE machine. **Important**: this hash is of a _development key_ and
+   should not be trusted for production.
    
 -  On the client host, use the “nfast” utilities from Thales to
    install the signed firmware and userdata files.
