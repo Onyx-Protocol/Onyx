@@ -29,7 +29,7 @@ class EmptyList extends React.Component {
         <span className={`${styles.emptyLabel} ${styles.noResultsLabel}`}>No results for query:</span>
         <code className={styles.code}>{this.props.currentFilter.filter}</code>
         <div className={styles.queryHelp}>
-          <p>To learn how to query the API, pleare refer to the documentation:</p>
+          <p>To learn how to query the API, please refer to the documentation:</p>
           <ol className={styles.queryHelpList}>
             <li className={styles.queryHelpListItem}><a href="/docs/core/build-applications/queries" target="_blank">Queries</a></li>
             <li className={styles.queryHelpListItem}><a href="/docs/core/reference/api-objects" target="_blank">API Objects</a></li>
