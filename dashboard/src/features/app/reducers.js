@@ -41,11 +41,15 @@ export const flashMessages = (state = new Map(), action) => {
     }
 
     case 'CREATED_MOCKHSM': {
-      return new Map(state).set(uuid.v4(), success('Created key'))
+      return new Map(state).set(uuid.v4(), success(<p>
+        Created key. <Link to='mockhsms/create'>Create another?</Link>
+      </p>))
     }
 
     case 'CREATED_TRANSACTIONFEED': {
-      return new Map(state).set(uuid.v4(), success('Created transaction feed'))
+      return new Map(state).set(uuid.v4(), success(<p>
+        Created transaction feed. <Link to='transaction-feeds/create'>Create another?</Link>
+      </p>))
     }
 
     case 'DELETED_CLIENT_ACCESS_TOKEN':
