@@ -46,7 +46,7 @@ func main() {
 		}
 		rel := ent.Name() // in case root is a file
 		if path != root {
-			rel, _ = filepath.Rel(root, path)
+			rel, _ = filepath.Rel(root, path) // #nosec
 		}
 		fmt.Printf("%q: %q,\n", rel, b)
 		return nil
