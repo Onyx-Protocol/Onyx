@@ -3,6 +3,7 @@
 ## Summary
 
 There are three distinct Chain versioning schemes:
+
 * **core** versioning
 * **network** versioning
 * **signer** versioning
