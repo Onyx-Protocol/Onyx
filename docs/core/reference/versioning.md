@@ -88,7 +88,7 @@ These numbers represent, in order:
 
 The major version is shared by all signer packages. If there is a change in the major version, then there will be a new release of all signer software packages.
 
-The minor version is shared by all signer packages with a tolerance of `n+/-1`.
+The minor version is shared by all signer packages with a tolerance of `+/-1`.
 
 The build version of a specific package may change independently of other packages.
 
