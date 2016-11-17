@@ -14,7 +14,7 @@ Network versioning applies to the network API - the interface through which diff
 Signer versioning applies to the pieces of software that facilitate transaction and block signing. These versions will change infrequently.
 
 ## Core Versioning
-The various packages of Chain Core each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages, with a tolerance of `+/-1`. For example, if you are a running a version of the Chain Core Mac app whose first two numbers are **1.1**, you can use a version of an SDK whose first two numbers are **1.0**, **1.1**, or **1.2**.
+The various packages of the Chain Core suite each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages, with a tolerance of `+/-1`. For example, if you are a running a version of the Chain Core Mac app whose first two numbers are **1.1**, you can use a version of an SDK whose first two numbers are **1.0**, **1.1**, or **1.2**.
 
 Sometimes we make bugfixes and minor feature updates to individual software packages. When this occurs, we update the third number in the version string for that package only. This number doesn't affect compatibility with other packages. For example, you can safely use version **1.1.1** of the Chain Core Mac App with version **1.1.3** of the Java SDK.
 
