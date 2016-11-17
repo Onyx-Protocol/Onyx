@@ -159,7 +159,8 @@ class Form extends React.Component {
                 <tr>
                   <td><input id='submit_action_submit' type='radio' {...submit_action} value='submit' checked={submit_action.value == 'submit'} /></td>
                   <td>
-                    <label htmlFor='submit_action_submit'>Submit transaction to blockchain</label><br></br>
+                    <label htmlFor='submit_action_submit'>Submit transaction to blockchain</label>
+                    <br />
                     <label htmlFor='submit_action_submit' className={styles.submitDescription}>
                       This transaction will be signed by the Mock HSM and submitted to the blockchain.
                     </label>
@@ -168,7 +169,8 @@ class Form extends React.Component {
                 <tr>
                   <td><input id='submit_action_generate' type='radio' {...submit_action} value='generate' checked={submit_action.value == 'generate'} /></td>
                   <td>
-                    <label htmlFor='submit_action_generate'>Allow additional actions</label><br></br>
+                    <label htmlFor='submit_action_generate'>Allow additional actions</label>
+                    <br />
                     <label htmlFor='submit_action_generate' className={styles.submitDescription}>
                       These actions will be signed by the Mock HSM and returned as a
                       transaction hex string, which should be used as the base
