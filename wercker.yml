@@ -41,6 +41,18 @@ build:
           bin/cfmt
           git diff --exit-code
     - script:
+        name: gas
+        code: |
+          git clone https://github.com/GoASTScanner/gas $GOPATH/src/github.com/GoASTScanner/gas
+          # gas is somewhat unstable, so pin to a known-good commit hash
+          cd $GOPATH/src/github.com/GoASTScanner/gas && git reset --hard d30c5cde3613e9ba0129febda849e4d4df1d57cd
+          go install github.com/GoASTScanner/gas
+          cd $GOPATH/src/chain
+          # TODO: Remove exclusions on gas checks
+          # G101: Hardcoded credentials (Presently only false positives)
+          # G204: Unsafe command execution (Presently only affects build tools)
+          gas -quiet -exclude=G101,G204 ./{cmd,core}/**/*.go
+    - script:
         name: check for tk and xxx
         code: |
           p='(xxx|(tk)+)' # can't write inline or it'll match this file
