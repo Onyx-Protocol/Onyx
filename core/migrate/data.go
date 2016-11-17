@@ -41,4 +41,9 @@ var migrations = []migration{
 		DROP FUNCTION reserve_utxos(text, text, text, bigint, bigint, timestamp with time zone, text);
 	`},
 	{Name: "2016-11-10.0.txdb.drop-pool-txs.sql", SQL: `DROP TABLE pool_txs;`},
+	{Name: "2016-11-16.0.account.drop-cp-id.sql", SQL: `
+		ALTER TABLE account_control_programs DROP COLUMN id;
+		DROP INDEX account_control_programs_control_program_idx;
+		ALTER TABLE account_control_programs ADD PRIMARY KEY (control_program);
+	`},
 }

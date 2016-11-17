@@ -175,7 +175,6 @@ CREATE SEQUENCE account_control_program_seq
 --
 
 CREATE TABLE account_control_programs (
-    id text DEFAULT next_chain_id('acp'::text) NOT NULL,
     signer_id text NOT NULL,
     key_index bigint NOT NULL,
     control_program bytea NOT NULL,
@@ -543,6 +542,14 @@ ALTER TABLE ONLY access_tokens
 
 
 --
+-- Name: account_control_programs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY account_control_programs
+    ADD CONSTRAINT account_control_programs_pkey PRIMARY KEY (control_program);
+
+
+--
 -- Name: account_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -775,13 +782,6 @@ ALTER TABLE ONLY txfeeds
 
 
 --
--- Name: account_control_programs_control_program_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX account_control_programs_control_program_idx ON account_control_programs USING btree (control_program);
-
-
---
 -- Name: account_utxos_account_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -889,3 +889,4 @@ insert into migrations (filename, hash) values ('2016-10-31.0.core.add-block-pro
 insert into migrations (filename, hash) values ('2016-11-07.0.core.remove-client-token-not-null.sql', 'fbae17999936bfc88a537f27fe72ae2de501894f3ea5d9488f3298fd05c59700');
 insert into migrations (filename, hash) values ('2016-11-09.0.utxodb.drop-reservations.sql', '99bbf49814a12d2fee7430710d493958dc634e3395ac8c4839f084116a3e58be');
 insert into migrations (filename, hash) values ('2016-11-10.0.txdb.drop-pool-txs.sql', 'c52f610d5bd471cde5fbc083681e201f026b0cab89e7beeaa6a071ebbb99ff69');
+insert into migrations (filename, hash) values ('2016-11-16.0.account.drop-cp-id.sql', '149dd9ff2107e12452180bb73716a0985547bae843e5f99e5441717d6ec64a00');
