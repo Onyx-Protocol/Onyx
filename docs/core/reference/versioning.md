@@ -7,11 +7,11 @@ There are three distinct Chain versioning schemes:
 * **network** versioning
 * **signer** versioning
 
-Core versioning applies to the pieces of software that comprise, package, or directly interact with Chain Core. For example, the Chain Core Mac app and the Java SDK.
+Core versioning applies to the main pieces of software that comprise, package, or directly interact with Chain Core (excluding those that facilitate transaction and block signing). For example, the Chain Core Mac app and the Java SDK.
 
 Network versioning applies to the network API - the interface through which different Chain Cores on a network communicate to exchange transactions and blocks. Any breaking changes to the network API interface or the data structures as defined by the  Chain protocol are reflected by a change to the network version.
 
-Signer versioning applies to the pieces of software that facilitate transaction and block signing. These versions will change infrequently.
+Signer versioning applies to the pieces of software that operate or interact with HSMs to facilitate transaction and block signing. These versions will change infrequently.
 
 ## Core Versioning
 The various packages of the Chain Core suite each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages, with a tolerance of `+/-1`. For example, if you are a running a version of the Chain Core Mac app whose first two numbers are **1.1**, you can use a version of an SDK whose first two numbers are **1.0**, **1.1**, or **1.2**.
