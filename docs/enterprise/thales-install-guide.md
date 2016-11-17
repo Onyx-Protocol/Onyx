@@ -1,4 +1,4 @@
-# Using the Thales nShield Connect Hardware Security Module with Chain Core
+# Using a Thales HSM with Chain Core
 
 The security of assets and accounts in Chain Core depends on strong
 cryptographic keys that must be kept secure themselves. Chain
