@@ -18,6 +18,7 @@ class Form extends React.Component {
     this.removeActionItem = this.removeActionItem.bind(this)
     this.toggleDropwdown = this.toggleDropwdown.bind(this)
     this.closeDropdown = this.closeDropdown.bind(this)
+    this.disableSubmit = this.disableSubmit.bind(this)
   }
 
   toggleDropwdown() {
@@ -34,6 +35,10 @@ class Form extends React.Component {
       reference_data: '{\n\t\n}'
     })
     this.closeDropdown()
+  }
+
+  disableSubmit(actions) {
+    return actions.length == 0 & !this.state.showAdvanced
   }
 
   removeActionItem(index) {
@@ -87,7 +92,8 @@ class Form extends React.Component {
         submitLabel={submitLabel}
         onSubmit={handleSubmit(this.submitWithValidation)}
         showSubmitIndicator={true}
-        submitting={submitting} >
+        submitting={submitting}
+        disabled={this.disableSubmit(actions)} >
 
         <FormSection title='Actions'>
           <p className={styles.actionInfo}>
@@ -154,6 +160,7 @@ class Form extends React.Component {
                   <td><input id='submit_action_submit' type='radio' {...submit_action} value='submit' checked={submit_action.value == 'submit'} /></td>
                   <td>
                     <label htmlFor='submit_action_submit'>Submit transaction to blockchain</label>
+                    <br />
                     <label htmlFor='submit_action_submit' className={styles.submitDescription}>
                       This transaction will be signed by the Mock HSM and submitted to the blockchain.
                     </label>
@@ -163,6 +170,7 @@ class Form extends React.Component {
                   <td><input id='submit_action_generate' type='radio' {...submit_action} value='generate' checked={submit_action.value == 'generate'} /></td>
                   <td>
                     <label htmlFor='submit_action_generate'>Allow additional actions</label>
+                    <br />
                     <label htmlFor='submit_action_generate' className={styles.submitDescription}>
                       These actions will be signed by the Mock HSM and returned as a
                       transaction hex string, which should be used as the base
