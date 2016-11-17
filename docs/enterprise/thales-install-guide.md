@@ -8,6 +8,19 @@ partnered with the vendor Thales to integrate its industry-leading HSM
 hardware, the **nShield Connect**, with the Chain Core programming
 interface.
 
+To begin using the Thales nShield Connect with Chain Core, you must
+have the following files supplied by Chain:
+- `xprvseemodule.sxf`, the firmware (or “SEE machine”) to be signed
+  and loaded into the HSM;
+- `userdata.bin`, a file of associated data to be signed and loaded
+  into the HSM;
+- `xprvseetool`, a Linux binary for creating a key in the HSM suitable
+  for use in Chain Core;
+- `signerd`, a Linux binary implementing a server for responding to
+  transaction-signing requests.
+  
+You must also perform the following steps:
+
 -  Set up the HSM(s) and the client host(s) according to the
    directions from Thales
    - Install CodeSafe software on client host(s)
