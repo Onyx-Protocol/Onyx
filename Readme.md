@@ -1,8 +1,8 @@
 # Chain Core Developer Edition
 
-Chain Core is software designed to operate and connect to highly scalable permissioned blockchain networks conforming to the Chain Protocol. Each network maintains a cryptographically-secured transaction log, known as a blockchain, which allows partipicants to define, issue, and transfer digital assets on a multi-asset shared ledger. Digital assets share a common, interoperable format and can represent any units of value that are guaranteed by a trusted issuer — such as currencies, bonds, securities, IOUs, or loyalty points. Each Chain Core holds a copy of the ledger and independently validates each update, or "block," while a federation of block signers ensures global consistency of the ledger. 
+**Chain Core** is software designed to operate and connect to highly scalable permissioned blockchain networks conforming to the Chain Protocol. Each network maintains a cryptographically-secured transaction log, known as a blockchain, which allows partipicants to define, issue, and transfer digital assets on a multi-asset shared ledger. Digital assets share a common, interoperable format and can represent any units of value that are guaranteed by a trusted issuer — such as currencies, bonds, securities, IOUs, or loyalty points. Each Chain Core holds a copy of the ledger and independently validates each update, or “block,” while a federation of block signers ensures global consistency of the ledger. 
 
-Chain Core Developer Edition is a free, downloadable version of Chain Core that is open source and licensed under the AGPL. Individuals and organizations use Chain Core Developer Edition to learn, experiment, and build prototypes.
+**Chain Core Developer Edition** is a free, downloadable version of Chain Core that is open source and licensed under the AGPL. Individuals and organizations use Chain Core Developer Edition to learn, experiment, and build prototypes.
 
 Chain Core Developer Edition can be run locally on Mac, Windows, or Linux to create a new blockchain network, connect to an existing blockchain network, or connect to the public Chain testnet, operated by Chain, Microsoft, and Cornell University’s IC3.
 
@@ -37,7 +37,7 @@ export CHAIN=$GOPATH/src/chain
 ```
 
 You should also add `$CHAIN/bin` to your path (as well as
-`$GOPATH/bin`, if it isn't already):
+`$GOPATH/bin`, if it isn’t already):
 
 ```
 PATH=$GOPATH/bin:$CHAIN/bin:$PATH
@@ -102,7 +102,7 @@ $ cp -r $GOPATH/src/github.com/kr/pretty $CHAIN/vendor/github.com/kr/pretty
 $ rm -rf $CHAIN/vendor/github.com/kr/pretty/.git
 ```
 
-(Note: don't put a trailing slash (`/`) on these paths.
+(Note: don’t put a trailing slash (`/`) on these paths.
 It can change the behavior of cp and put the files
 in the wrong place.)
 
