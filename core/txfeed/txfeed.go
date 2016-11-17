@@ -2,6 +2,7 @@
 package txfeed
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 
@@ -103,25 +104,27 @@ func txfeedByClientToken(ctx context.Context, db pg.DB, clientToken string) (*Tx
 }
 
 func (t *Tracker) Find(ctx context.Context, id, alias string) (*TxFeed, error) {
-	where := ` WHERE `
-	if id != "" {
-		where += `id=$1`
-	} else {
-		where += `alias=$1`
-		id = alias
-	}
+	var q bytes.Buffer
 
-	q := `
+	q.WriteString(`
 		SELECT id, alias, filter, after
 		FROM txfeeds
-	` + where
+		WHERE
+	`)
+
+	if id != "" {
+		q.WriteString(`id=$1`)
+	} else {
+		q.WriteString(`alias=$1`)
+		id = alias
+	}
 
 	var (
 		feed     TxFeed
 		sqlAlias sql.NullString
 	)
 
-	err := t.DB.QueryRow(ctx, q, id).Scan(&feed.ID, &sqlAlias, &feed.Filter, &feed.After)
+	err := t.DB.QueryRow(ctx, q.String(), id).Scan(&feed.ID, &sqlAlias, &feed.Filter, &feed.After)
 	if err != nil {
 		return nil, err
 	}
@@ -134,17 +137,18 @@ func (t *Tracker) Find(ctx context.Context, id, alias string) (*TxFeed, error) {
 }
 
 func (t *Tracker) Delete(ctx context.Context, id, alias string) error {
-	where := ` WHERE `
+	var q bytes.Buffer
+
+	q.WriteString(`DELETE FROM txfeeds WHERE `)
+
 	if id != "" {
-		where += `id=$1`
+		q.WriteString(`id=$1`)
 	} else {
-		where += `alias=$1`
+		q.WriteString(`alias=$1`)
 		id = alias
 	}
 
-	q := `DELETE FROM txfeeds` + where
-
-	res, err := t.DB.Exec(ctx, q, id)
+	res, err := t.DB.Exec(ctx, q.String(), id)
 	if err != nil {
 		return err
 	}
@@ -162,19 +166,20 @@ func (t *Tracker) Delete(ctx context.Context, id, alias string) error {
 }
 
 func (t *Tracker) Update(ctx context.Context, id, alias, after, prev string) (*TxFeed, error) {
-	where := ` WHERE `
+	var q bytes.Buffer
+
+	q.WriteString(`UPDATE txfeeds SET after=$1 WHERE `)
+
 	if id != "" {
-		where += `id=$2`
+		q.WriteString(`id=$2`)
 	} else {
-		where += `alias=$2`
+		q.WriteString(`alias=$2`)
 		id = alias
 	}
 
-	q := `
-		UPDATE txfeeds SET after=$1
-	` + where + ` AND after=$3`
+	q.WriteString(` AND after=$3`)
 
-	res, err := t.DB.Exec(ctx, q, after, id, prev)
+	res, err := t.DB.Exec(ctx, q.String(), after, id, prev)
 	if err != nil {
 		return nil, err
 	}
