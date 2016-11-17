@@ -97,7 +97,7 @@ The build version of a specific package may change independently of other packag
 This scheme has semantics that are unique to Chain Core, despite superficial similarities to other versioning schemes such as [Semantic Versioning](http://semver.org/).
 
 #### Compatibility between packages
-Software packages in the Chain Core suite are compatible if their major and minor versions are no more than one number apart. For example, if you are running version 1.1.x of the Chain Core server, you can use version 1.0.x, 1.1.x, or 1.2.x of the Java SDK.
+Signer software packages are compatible if their major and minor versions are no more than one number apart. For example, if you are running version 1.1.x of `signerd`, you can use version 1.0.x, 1.1.x, or 1.2.x of the Thales Codesafe HSM firmware.
 
 #### Breaking changes and backward compatibility
 
