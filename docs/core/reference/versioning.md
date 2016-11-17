@@ -9,7 +9,7 @@ There are three distinct Chain Core versioning schemes:
 
 Core versioning applies to the pieces of software that comprise, package, or directly interact with Chain Core. For example, the Chain Core Mac app and the Java SDK.
 
-Network versioning applies to the network API - the interface through which different Chain Cores on a network communicate to exchange transactions and blocks. Any breaking changes to the network API interface or Chain protocol are reflected by a change to the network version.
+Network versioning applies to the network API - the interface through which different Chain Cores on a network communicate to exchange transactions and blocks. Any breaking changes to the network API interface or the data structures as defined by the  Chain protocol are reflected by a change to the network version.
 
 Signer versioning applies to the pieces of software that facilitate transaction and block signing. These versions will change infrequently.
 
