@@ -20,7 +20,7 @@ Sometimes we make bugfixes and minor feature updates to individual software pack
 
 ### Scope
 
-The core versioning scheme covers a suite of individual software packages that make up Chain Core, including:
+The core versioning scheme covers a suite of individual software packages:
 
 - `cored`, the Chain Core server daemon
 - `corectl`, a CLI utility for operating Chain Core
@@ -70,7 +70,7 @@ The various packages of signing software each use a three number versioning sche
 Sometimes we make bugfixes and minor feature updates to individual software packages. When this occurs, we update the third number in the version string for that package only. This number doesn't affect compatibility with other packages. For example, you can safely use version **1.1.1** of `signerd` with version **1.1.3** of the Thales Codesafe HSM firmware.
 
 ### Scope
-The signer versioning scheme covers the following pieces of software:
+The signer versioning scheme covers the following packages:
 
 - Chain Core MockHSM
 - `signerd`, the HSM signing server daemon
