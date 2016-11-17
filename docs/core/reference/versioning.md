@@ -14,7 +14,7 @@ Network versioning applies to the network API - the interface through which diff
 Signer versioning applies to the pieces of software that facilitate transaction and block signing. These versions will change infrequently.
 
 ## Core Versioning
-The various packages of Chain Core each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages, with a tolerance of 'n+/-1'. For example, if you are a running a version of the Chain Core Mac app whose first two numbers are **1.1**, you can use a version of an SDK whose first two numbers are **1.0**, **1.1**, or **1.2**.
+The various packages of Chain Core each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages, with a tolerance of `+/-1`. For example, if you are a running a version of the Chain Core Mac app whose first two numbers are **1.1**, you can use a version of an SDK whose first two numbers are **1.0**, **1.1**, or **1.2**.
 
 Sometimes we make bugfixes and minor feature updates to individual software packages. When this occurs, we update the third number in the version string for that package only. This number doesn't affect compatibility with other packages. For example, you can safely use version **1.1.1** of the Chain Core Mac App with version **1.1.3** of the Java SDK.
 
@@ -41,7 +41,7 @@ These numbers represent, in order:
 
 The major version is shared by all software packages in the Chain Core suite. If there is a change in the major version, then there will be a new release of all software packages in the suite.
 
-The minor version is shared is shared by all packages with a tolerance of `n+/-1`.
+The minor version is shared is shared by all packages with a tolerance of `+/-1`.
 
 The build version of a specific package may change independently of other packages.
 
@@ -65,7 +65,7 @@ The network version will be incremented each time there is a breaking change in 
 An upgrade in network version constitutes a breaking change at the network level. Any upgrade to the network version will be included in a new package version of Chain Core software and documented as a breaking network change in the release notes.
 
 ## Signer Versioning
-The various packages of signing software each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages. For example, if you are a running a version of `signerd` whose first two numbers are **1.1**, then you should also use a version of the Thales Codesafe HSM firmware whose first two numbers are also **1.1**.
+The various packages of signing software each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages, with a tolerance of `+/-1`. For example, if you are a running a version of `signerd` whose first two numbers are **1.1**,  you can use a version of the Thales Codesafe HSM firmware whose first two numbers are **1.0**, **1.1**, or **1.2**.
 
 Sometimes we make bugfixes and minor feature updates to individual software packages. When this occurs, we update the third number in the version string for that package only. This number doesn't affect compatibility with other packages. For example, you can safely use version **1.1.1** of `signerd` with version **1.1.3** of the Thales Codesafe HSM firmware.
 
