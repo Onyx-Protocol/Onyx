@@ -328,7 +328,11 @@ module Chain
           actions: actions,
           base_transaction: @base_transaction,
           ttl: @ttl,
-        }
+        }.select do |k,v|
+          # TODO: Patches an issue in Chain Core 1.0 where nil values are rejected
+          # Remove in 1.1.0 or later
+          v != nil
+        end
       end
 
       # @return [String]
