@@ -8,7 +8,7 @@ partnered with the vendor Thales to integrate its industry-leading HSM
 hardware, the **nShield Connect**, with the Chain Core programming
 interface.
 
-1. Set up the HSM(s) and the client host(s) according to the
+-  Set up the HSM(s) and the client host(s) according to the
    directions from Thales
    - Install CodeSafe software on client host(s)
    - Initialize the Remote File System
@@ -21,7 +21,7 @@ interface.
    choices.  Refer to the Thales documentation for details.  Note:
    Chain has tested this using 64-bit Ubuntu Linux on the client host.
 
-2. On the client host, use the “nfast” utilities from Thales to create
+-  On the client host, use the “nfast” utilities from Thales to create
    a _code-signing key_ and a signed copy of the Chain firmware.
    - `generatekey --batch seeinteg plainname=xprvseemoduledevcsk`
    - `tct2 --sign-and-pack -k xprvseemoduledevcsk --is-machine -o xprvseemodule.sar -i xprvseemodule.sxf`
@@ -30,16 +30,16 @@ interface.
    Core Enterprise Edition, which will include an already-signed copy
    of the Chain firmware.
 
-3. On the client host, use the “nfast” utilities from Thales to create
+-  On the client host, use the “nfast” utilities from Thales to create
    a _user-data signing key_ and a signed copy of the userdata file.
    - `generatekey --batch seeinteg plainname=xprvseemoduledevusk`
    - `tct2 --sign-and-pack -k xprvseemoduledevusk --machine-key-ident=xprvseemoduledevcsk -o userdata.sar -i userdata.bin`
    
-4. On the client host, use the “nfast” utilities from Thales to
+-  On the client host, use the “nfast” utilities from Thales to
    install the signed firmware and userdata files.
    - `loadmache xprvseemodule.sar userdata.sar`
 
-5. On the client host, use the `xprvseetool` binary from Chain to
+-  On the client host, use the `xprvseetool` binary from Chain to
    create a private key in the HSM.
    - `xprvseetool gen xprvseemoduledevusk`
 
@@ -52,7 +52,7 @@ interface.
    Enterprise Edition will permit the creation, storage, and use of
    arbitrarily many keys.
 
-6. On the client host, run the `signerd` binary from Chain.
+-  On the client host, run the `signerd` binary from Chain.
    - `signerd`
    
    This launches an HTTP+JSON server listening for `/sign-transaction`
