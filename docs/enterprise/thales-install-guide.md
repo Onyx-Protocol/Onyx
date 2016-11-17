@@ -10,8 +10,8 @@ interface.
 
 To begin using the Thales nShield Connect with Chain Core, you must
 have the following files supplied by Chain:
-- `xprvseemodule.sxf`, the firmware (or “SEE machine”) to be signed
-  and loaded into the HSM;
+- `xprvseemodule.sar`, the firmware (or “SEE machine”) to be loaded
+  into the HSM;
 - `userdata.bin`, a file of associated data to be signed and loaded
   into the HSM;
 - `xprvseetool`, a Linux binary for creating a key in the HSM suitable
@@ -35,18 +35,12 @@ You must also perform the following steps:
    Chain has tested this using 64-bit Ubuntu Linux on the client host.
 
 -  On the client host, use the “nfast” utilities from Thales to create
-   a _code-signing key_ and a signed copy of the Chain firmware.
-   - `generatekey --batch seeinteg plainname=xprvseemoduledevcsk`
-   - `tct2 --sign-and-pack -k xprvseemoduledevcsk --is-machine -o xprvseemodule.sar -i xprvseemodule.sxf`
-
-   This step will not be required in the production version of Chain
-   Core Enterprise Edition, which will include an already-signed copy
-   of the Chain firmware.
-
--  On the client host, use the “nfast” utilities from Thales to create
    a _user-data signing key_ and a signed copy of the userdata file.
    - `generatekey --batch seeinteg plainname=xprvseemoduledevusk`
-   - `tct2 --sign-and-pack -k xprvseemoduledevusk --machine-key-ident=xprvseemoduledevcsk -o userdata.sar -i userdata.bin`
+   - `tct2 --sign-and-pack -k xprvseemoduledevusk --machine-key=68bcec164114318f31b2e353bef9e8b1ce67872e -o userdata.sar -i userdata.bin`
+   
+   (The hex value here is the hash of the key that Chain used to sign
+   the SEE machine.)
    
 -  On the client host, use the “nfast” utilities from Thales to
    install the signed firmware and userdata files.
