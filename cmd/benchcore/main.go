@@ -33,7 +33,7 @@ import (
 
 var (
 	flagD        = flag.Bool("d", false, "delete instances from previous runs")
-	flagP        = flag.Bool("p", false, "capture cpu and heap profiles from cored")
+	flagP        = flag.Bool("p", false, "capture cpu, heap, and trace profiles from cored")
 	flagQ        = flag.Duration("q", 0, "capture SQL slow queries")
 	flagWith     = flag.String("with", "", "upload the provided file alongside the java program")
 	flagInstance = flag.String("instance", "m3.xlarge", "the EC2 instance size to use")
@@ -587,52 +587,30 @@ func profile(coreURL, clientToken string) {
 
 	ticker := time.Tick(profileFrequency)
 	for {
-		captureHeap(coreURL, username, password, time.Now())
-		captureCPU(coreURL, username, password, time.Now())
+		captureProfile(coreURL+"/debug/pprof/heap", username, password, "heap", time.Now())
+		captureProfile(coreURL+"/debug/pprof/profile", username, password, "cpu", time.Now())
+		captureProfile(coreURL+"/debug/pprof/trace?seconds=15", username, password, "trace", time.Now())
 		<-ticker
 	}
 }
 
-func captureHeap(coreURL, username, password string, t time.Time) {
-	req, err := http.NewRequest("GET", coreURL+"/debug/pprof/heap", nil)
+func captureProfile(url, username, password, typ string, t time.Time) {
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Printf("error getting heap profile: %s\n", err)
+		log.Printf("error getting %s profile: %s\n", typ, err)
 		return
 	}
 	req.SetBasicAuth(username, password)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Printf("error getting heap profile: %s\n", err)
+		log.Printf("error getting %s profile: %s\n", typ, err)
 		return
 	}
 	defer resp.Body.Close()
-	out, err := os.Create(fmt.Sprintf("heap%d", t.Unix()))
+	out, err := os.Create(fmt.Sprintf("%s%d", typ, t.Unix()))
 	if err != nil {
-		log.Printf("error creating heap file: %s\n", err)
-		return
-	}
-	defer out.Close()
-	io.Copy(out, resp.Body)
-}
-
-func captureCPU(coreURL, username, password string, t time.Time) {
-	req, err := http.NewRequest("GET", coreURL+"/debug/pprof/profile", nil)
-	if err != nil {
-		log.Printf("error getting cpu profile: %s\n", err)
-		return
-	}
-	req.SetBasicAuth(username, password)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Printf("error getting cpu profile: %s\n", err)
-		return
-	}
-	defer resp.Body.Close()
-	out, err := os.Create(fmt.Sprintf("cpu%d", t.Unix()))
-	if err != nil {
-		log.Printf("error creating cpu file: %s\n", err)
+		log.Printf("error creating %s file: %s\n", typ, err)
 		return
 	}
 	defer out.Close()
