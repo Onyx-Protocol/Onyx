@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ve
 
 # TODO: Remove exclusions on gas checks
 # G101: Hardcoded credentials (Presently only false positives)
