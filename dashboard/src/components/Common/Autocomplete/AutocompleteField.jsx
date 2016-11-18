@@ -38,7 +38,7 @@ class AutocompleteField extends React.Component {
   renderSuggestion(suggestion) {
     return (
       <div onMouseOver={this.handleHover.bind(this, suggestion.alias)}>
-        <span className="suggestionAlias">{suggestion.alias}</span>
+        <span>{suggestion.alias}</span>
       </div>
     )
   }
