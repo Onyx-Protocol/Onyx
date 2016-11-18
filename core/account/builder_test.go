@@ -56,7 +56,10 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	tpl := builder.Build()
+	tpl, err := builder.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
 	if !reflect.DeepEqual(tpl.Transaction.Inputs, wantTxIns) {
@@ -104,7 +107,10 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	tpl := builder.Build()
+	tpl, err := builder.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
 
@@ -156,7 +162,10 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
-		tpl := builder.Build()
+		tpl, err := builder.Build()
+		if err != nil {
+			t.Fatal(err)
+		}
 		if len(tpl.Transaction.Inputs) != 1 {
 			t.Fatalf("got %d result utxo, expected 1 result utxo", len(tpl.Transaction.Inputs))
 		}

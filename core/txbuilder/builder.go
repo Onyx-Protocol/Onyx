@@ -18,6 +18,8 @@ type TemplateBuilder struct {
 	minTimeMS           uint64
 	referenceData       []byte
 	rollbacks           []func()
+	callbacks           []func() error
+	values              map[interface{}]interface{}
 }
 
 func (b *TemplateBuilder) AddInput(in *bc.TxInput, sigInstruction *SigningInstruction) error {
@@ -54,6 +56,12 @@ func (b *TemplateBuilder) OnRollback(rollbackFn func()) {
 	b.rollbacks = append(b.rollbacks, rollbackFn)
 }
 
+// OnBuild registers a function that will be run after all
+// actions have been successfully built.
+func (b *TemplateBuilder) OnBuild(buildFn func() error) {
+	b.callbacks = append(b.callbacks, buildFn)
+}
+
 func (b *TemplateBuilder) setReferenceData(data []byte) error {
 	if b.base != nil && len(b.base.ReferenceData) != 0 && !bytes.Equal(b.base.ReferenceData, data) {
 		return errors.Wrap(ErrBadRefData)
@@ -71,7 +79,15 @@ func (b *TemplateBuilder) rollback() {
 	}
 }
 
-func (b *TemplateBuilder) Build() *Template {
+func (b *TemplateBuilder) Build() (*Template, error) {
+	// Run any building callbacks.
+	for _, cb := range b.callbacks {
+		err := cb()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	tpl := &Template{Transaction: b.base}
 	if tpl.Transaction == nil {
 		tpl.Transaction = &bc.TxData{
@@ -108,5 +124,5 @@ func (b *TemplateBuilder) Build() *Template {
 		tpl.SigningInstructions = append(tpl.SigningInstructions, instruction)
 		tpl.Transaction.Inputs = append(tpl.Transaction.Inputs, in)
 	}
-	return tpl
+	return tpl, nil
 }
