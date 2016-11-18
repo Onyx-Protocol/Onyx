@@ -1033,6 +1033,9 @@ paths:
             type: array
             items:
               type: object
+              required:
+                - root_xpubs
+                - quorum
               properties:
                 alias:
                   type: string
@@ -1089,6 +1092,9 @@ paths:
             type: array
             items:
               type: object
+              required:
+                - root_xpubs
+                - quorum
               properties:
                 alias:
                   type: string
@@ -1418,6 +1424,8 @@ paths:
           in: body
           schema:
             type: object
+            required:
+              - id
             properties:
               id:
                 type: string
