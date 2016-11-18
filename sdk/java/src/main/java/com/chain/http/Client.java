@@ -147,7 +147,8 @@ public class Client {
       String action, Object body, final Type tClass, final Type eClass) throws ChainException {
     ResponseCreator<BatchResponse<T>> rc =
         new ResponseCreator<BatchResponse<T>>() {
-          public BatchResponse<T> create(Response response, Gson deserializer) throws ChainException, IOException {
+          public BatchResponse<T> create(Response response, Gson deserializer)
+              throws ChainException, IOException {
             return new BatchResponse<>(response, deserializer, tClass, eClass);
           }
         };
