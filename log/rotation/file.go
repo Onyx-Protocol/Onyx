@@ -28,7 +28,7 @@ type File struct {
 }
 
 // Create creates a log writing to the named file
-// with mode 0666 (before umask),
+// with mode 0644 (before umask),
 // appending to it if it already exists.
 // It will rotate to files name.1, name.2,
 // up to name.n.
@@ -83,11 +83,14 @@ func (f *File) write(p []byte) (int, error) {
 	}
 	if f.f == nil {
 		var err error
-		f.f, err = os.OpenFile(f.base, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+		f.f, err = os.OpenFile(f.base, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644) // #nosec
 		if err != nil {
 			return 0, err
 		}
-		f.w, _ = f.f.Seek(0, 2)
+		f.w, err = f.f.Seek(0, os.SEEK_END)
+		if err != nil {
+			return 0, err
+		}
 	}
 	n, err := f.f.Write(p)
 	f.w += int64(n)

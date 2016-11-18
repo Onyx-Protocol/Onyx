@@ -227,7 +227,10 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 			} else {
 				program = input.ControlProgram()
 			}
-			scriptStr, _ := vm.Disassemble(program)
+			scriptStr, e := vm.Disassemble(program)
+			if e != nil {
+				scriptStr = "disassembly failed: " + e.Error()
+			}
 			args := input.Arguments()
 			hexArgs := make([]string, 0, len(args))
 			for _, arg := range args {

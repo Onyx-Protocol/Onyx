@@ -21,7 +21,7 @@ var emptyHash = sha3.Sum256(nil)
 
 // String returns the bytes of h encoded in hex.
 func (h Hash) String() string {
-	b, _ := h.MarshalText()
+	b, _ := h.MarshalText() // #nosec
 	return string(b)
 }
 

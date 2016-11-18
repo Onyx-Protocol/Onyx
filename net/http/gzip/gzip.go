@@ -13,7 +13,7 @@ import (
 
 var pool = sync.Pool{
 	New: func() interface{} {
-		w, _ := gzip.NewWriterLevel(nil, gzip.BestSpeed)
+		w, _ := gzip.NewWriterLevel(nil, gzip.BestSpeed) // #nosec
 		return w
 	},
 }
