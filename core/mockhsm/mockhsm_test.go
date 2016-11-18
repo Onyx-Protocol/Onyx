@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/agl/ed25519"
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/crypto/ed25519"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 )

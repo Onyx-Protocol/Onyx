@@ -1,15 +1,16 @@
 package testutil
 
 import (
-	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
+	"github.com/agl/ed25519"
+
+	"chain/crypto/chainkd"
 )
 
 var (
 	TestXPub chainkd.XPub
 	TestXPrv chainkd.XPrv
-	TestPub  ed25519.PublicKey
-	TestPubs []ed25519.PublicKey
+	TestPub  *[ed25519.PublicKeySize]byte
+	TestPubs []*[ed25519.PublicKeySize]byte
 )
 
 type zeroReader struct{}
@@ -28,5 +29,5 @@ func init() {
 		panic(err)
 	}
 	TestPub = TestXPub.PublicKey()
-	TestPubs = []ed25519.PublicKey{TestPub}
+	TestPubs = []*[ed25519.PublicKeySize]byte{TestPub}
 }

@@ -4,15 +4,16 @@ package mockhsm
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"strconv"
 	"sync"
 
+	"github.com/agl/ed25519"
 	"github.com/lib/pq"
 
-	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/chainkd"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -33,7 +34,7 @@ type HSM struct {
 
 	cacheMu sync.Mutex
 	kdCache map[chainkd.XPub]chainkd.XPrv
-	edCache map[string]ed25519.PrivateKey // ed25519.PublicKeys must be turned into strings before being used as map keys
+	edCache map[string]*[ed25519.PrivateKeySize]byte // ed25519.PublicKeys must be turned into strings before being used as map keys
 }
 
 type XPub struct {
@@ -42,15 +43,15 @@ type XPub struct {
 }
 
 type Pub struct {
-	Alias *string           `json:"alias"`
-	Pub   ed25519.PublicKey `json:"pub"`
+	Alias *string                      `json:"alias"`
+	Pub   *[ed25519.PublicKeySize]byte `json:"pub"`
 }
 
 func New(db pg.DB) *HSM {
 	return &HSM{
 		db:      db,
 		kdCache: make(map[chainkd.XPub]chainkd.XPrv),
-		edCache: make(map[string]ed25519.PrivateKey),
+		edCache: make(map[string]*[ed25519.PrivateKeySize]byte),
 	}
 }
 
@@ -105,7 +106,7 @@ func (h *HSM) GetOrCreate(ctx context.Context, alias string) (*Pub, bool, error)
 }
 
 func (h *HSM) createEd25519Key(ctx context.Context, alias string, get bool) (*Pub, bool, error) {
-	pub, prv, err := ed25519.GenerateKey(nil)
+	pub, prv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, false, err
 	}
@@ -116,7 +117,7 @@ func (h *HSM) createEd25519Key(ctx context.Context, alias string, get bool) (*Pu
 		ptrAlias = &alias
 	}
 	const q = `INSERT INTO mockhsm (pub, prv, alias, key_type) VALUES ($1, $2, $3, 'ed25519')`
-	_, err = h.db.Exec(ctx, q, []byte(pub), []byte(prv), sqlAlias)
+	_, err = h.db.Exec(ctx, q, pub[:], prv[:], sqlAlias)
 	if err != nil {
 		if pg.IsUniqueViolation(err) {
 			if !get {
@@ -128,7 +129,11 @@ func (h *HSM) createEd25519Key(ctx context.Context, alias string, get bool) (*Pu
 			if err != nil {
 				return nil, false, errors.Wrapf(err, "reading existing pub with alias %s", alias)
 			}
-			return &Pub{Pub: ed25519.PublicKey(pubBytes), Alias: ptrAlias}, false, nil
+			if len(pubBytes) != ed25519.PublicKeySize {
+				return nil, false, fmt.Errorf("bad public key size %d", len(pubBytes))
+			}
+			var pubbuf [ed25519.PublicKeySize]byte
+			return &Pub{Pub: &pubbuf, Alias: ptrAlias}, false, nil
 		}
 		return nil, false, errors.Wrap(err, "storing new pub")
 	}
@@ -237,29 +242,36 @@ func (h *HSM) DeleteChainKDKey(ctx context.Context, xpub chainkd.XPub) error {
 	return err
 }
 
-func (h *HSM) loadEd25519Key(ctx context.Context, pub ed25519.PublicKey) (prv ed25519.PrivateKey, err error) {
+func (h *HSM) loadEd25519Key(ctx context.Context, pub *[ed25519.PublicKeySize]byte) (prv *[ed25519.PrivateKeySize]byte, err error) {
 	h.cacheMu.Lock()
 	defer h.cacheMu.Unlock()
 
-	pubStr := string(pub)
+	pubStr := string(pub[:])
 
 	if prv, ok := h.edCache[pubStr]; ok {
 		return prv, nil
 	}
 
-	err = h.db.QueryRow(ctx, "SELECT prv FROM mockhsm WHERE pub = $1 AND key_type='ed25519'", []byte(pub)).Scan(&prv)
+	var prvBytes []byte
+	err = h.db.QueryRow(ctx, "SELECT prv FROM mockhsm WHERE pub = $1 AND key_type='ed25519'", pub[:]).Scan(&prvBytes)
 	if err == sql.ErrNoRows {
 		return prv, ErrNoKey
 	}
 	if err != nil {
 		return prv, err
 	}
+	if len(prvBytes) != ed25519.PrivateKeySize {
+		return prv, fmt.Errorf("bad private key size %d", len(prvBytes))
+	}
+	var prvBuf [ed25519.PrivateKeySize]byte
+	copy(prvBuf[:], prvBytes)
+	prv = &prvBuf
 	h.edCache[pubStr] = prv
 	return prv, nil
 }
 
 // Sign looks up the prv given the pub and signs the given msg.
-func (h *HSM) Sign(ctx context.Context, pub ed25519.PublicKey, msg []byte) ([]byte, error) {
+func (h *HSM) Sign(ctx context.Context, pub *[ed25519.PublicKeySize]byte, msg []byte) (*[ed25519.SignatureSize]byte, error) {
 	prv, err := h.loadEd25519Key(ctx, pub)
 	if err != nil {
 		return nil, err

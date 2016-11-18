@@ -11,11 +11,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/agl/ed25519"
+
 	"chain/core/accesstoken"
 	"chain/core/config"
 	"chain/core/migrate"
 	"chain/core/mockhsm"
-	"chain/crypto/ed25519"
 	"chain/database/sql"
 	"chain/env"
 	"chain/log"

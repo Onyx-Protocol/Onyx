@@ -6,8 +6,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/agl/ed25519"
+
 	"chain/core/mockhsm"
-	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol"
@@ -26,7 +27,7 @@ var ErrInvalidKey = errors.New("misconfigured signer public key")
 
 // Signer validates and signs blocks.
 type Signer struct {
-	Pub ed25519.PublicKey
+	Pub *[ed25519.PublicKeySize]byte
 	hsm *mockhsm.HSM
 	db  pg.DB
 	c   *protocol.Chain
@@ -34,7 +35,7 @@ type Signer struct {
 
 // New returns a new Signer that validates blocks with c and signs
 // them with k.
-func New(pub ed25519.PublicKey, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
+func New(pub *[ed25519.PublicKeySize]byte, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
 	return &Signer{
 		Pub: pub,
 		hsm: hsm,
@@ -45,7 +46,7 @@ func New(pub ed25519.PublicKey, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *
 
 // SignBlock computes the signature for the block using
 // the private key in s.  It does not validate the block.
-func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) (*[ed25519.SignatureSize]byte, error) {
 	hash := b.HashForSig()
 	sig, err := s.hsm.Sign(ctx, s.Pub, hash[:])
 	if err != nil {
@@ -64,7 +65,7 @@ func (s *Signer) String() string {
 //
 // This function fails if this node has ever signed a different block at the
 // same height as b.
-func (s *Signer) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (s *Signer) ValidateAndSignBlock(ctx context.Context, b *bc.Block) (*[ed25519.SignatureSize]byte, error) {
 	err := <-s.c.BlockSoonWaiter(ctx, b.Height-1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", b.Height-1)

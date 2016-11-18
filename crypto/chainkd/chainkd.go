@@ -7,8 +7,8 @@ import (
 	"hash"
 	"io"
 
-	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/internal/edwards25519"
+	"github.com/agl/ed25519"
+	"github.com/agl/ed25519/edwards25519"
 )
 
 type (
@@ -175,12 +175,19 @@ func (xprv XPrv) Sign(msg []byte) []byte {
 }
 
 func (xpub XPub) Verify(msg []byte, sig []byte) bool {
-	return ed25519.Verify(xpub.PublicKey(), msg, sig)
+	if len(sig) != ed25519.SignatureSize {
+		return false
+	}
+	var sigbuf [ed25519.SignatureSize]byte
+	copy(sigbuf[:], sig)
+	return ed25519.Verify(xpub.PublicKey(), msg, &sigbuf)
 }
 
 // PublicKey extracts the ed25519 public key from an xpub.
-func (xpub XPub) PublicKey() ed25519.PublicKey {
-	return ed25519.PublicKey(xpub[:32])
+func (xpub XPub) PublicKey() *[ed25519.PublicKeySize]byte {
+	var pub [ed25519.PublicKeySize]byte
+	copy(pub[:], xpub[:32])
+	return &pub
 }
 
 func hashKeySaltSelector(out []byte, version byte, key, salt, sel []byte) {

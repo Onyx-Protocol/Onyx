@@ -61,7 +61,7 @@ func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 			var keys []map[string]interface{}
 			for _, pubkey := range pubkeys {
 				keys = append(keys, map[string]interface{}{
-					"asset_pubkey": json.HexBytes(pubkey),
+					"asset_pubkey": json.HexBytes(pubkey[:]),
 				})
 			}
 			m["keys"] = keys

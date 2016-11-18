@@ -11,7 +11,7 @@ import (
 	"chain/core/pin"
 	"chain/core/query"
 	. "chain/core/txbuilder"
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/chainkd"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"

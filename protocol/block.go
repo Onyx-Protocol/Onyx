@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"chain/crypto/ed25519"
+	"github.com/agl/ed25519"
+
 	"chain/errors"
 	"chain/log"
 	"chain/protocol/bc"
@@ -195,7 +196,7 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 	return errors.Wrap(err, "validation")
 }
 
-func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
+func NewInitialBlock(pubkeys []*[ed25519.PublicKeySize]byte, nSigs int, timestamp time.Time) (*bc.Block, error) {
 	script, err := vmutil.BlockMultiSigProgram(pubkeys, nSigs)
 	if err != nil {
 		return nil, err

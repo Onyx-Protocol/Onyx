@@ -12,7 +12,7 @@ import (
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/txbuilder"
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/chainkd"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"

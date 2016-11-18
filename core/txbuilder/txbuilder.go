@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/chainkd"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/math/checked"

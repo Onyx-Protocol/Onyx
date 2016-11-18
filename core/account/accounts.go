@@ -12,7 +12,7 @@ import (
 
 	"chain/core/pin"
 	"chain/core/signers"
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/chainkd"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"

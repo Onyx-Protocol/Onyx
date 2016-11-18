@@ -1,7 +1,8 @@
 package vmutil
 
 import (
-	"chain/crypto/ed25519"
+	"github.com/agl/ed25519"
+
 	"chain/errors"
 	"chain/protocol/vm"
 )
@@ -20,7 +21,7 @@ func IsUnspendable(prog []byte) bool {
 // signed the block for success.  An ErrBadValue will be returned if
 // nrequired is larger than the number of keys provided.  The result
 // is: BLOCKSIGHASH <pubkey>... <nrequired> <npubkeys> CHECKMULTISIG
-func BlockMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
+func BlockMultiSigProgram(pubkeys []*[ed25519.PublicKeySize]byte, nrequired int) ([]byte, error) {
 	err := checkMultiSigParams(int64(nrequired), int64(len(pubkeys)))
 	if err != nil {
 		return nil, err
@@ -28,13 +29,13 @@ func BlockMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, e
 	builder := NewBuilder()
 	builder.AddOp(vm.OP_BLOCKSIGHASH)
 	for _, key := range pubkeys {
-		builder.AddData(key)
+		builder.AddData(key[:])
 	}
 	builder.AddInt64(int64(nrequired)).AddInt64(int64(len(pubkeys))).AddOp(vm.OP_CHECKMULTISIG)
 	return builder.Program, nil
 }
 
-func ParseBlockMultiSigProgram(script []byte) ([]ed25519.PublicKey, int, error) {
+func ParseBlockMultiSigProgram(script []byte) ([]*[ed25519.PublicKeySize]byte, int, error) {
 	pops, err := vm.ParseProgram(script)
 	if err != nil {
 		return nil, 0, err
@@ -63,17 +64,19 @@ func ParseBlockMultiSigProgram(script []byte) ([]ed25519.PublicKey, int, error) 
 
 	firstPubkeyIndex := len(pops) - 3 - int(npubkeys)
 
-	pubkeys := make([]ed25519.PublicKey, 0, npubkeys)
+	pubkeys := make([]*[ed25519.PublicKeySize]byte, 0, npubkeys)
 	for i := firstPubkeyIndex; i < firstPubkeyIndex+int(npubkeys); i++ {
 		if len(pops[i].Data) != ed25519.PublicKeySize {
 			return nil, 0, err
 		}
-		pubkeys = append(pubkeys, ed25519.PublicKey(pops[i].Data))
+		var pub [ed25519.PublicKeySize]byte
+		copy(pub[:], pops[i].Data)
+		pubkeys = append(pubkeys, &pub)
 	}
 	return pubkeys, int(nrequired), nil
 }
 
-func P2SPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
+func P2SPMultiSigProgram(pubkeys []*[ed25519.PublicKeySize]byte, nrequired int) ([]byte, error) {
 	err := checkMultiSigParams(int64(nrequired), int64(len(pubkeys)))
 	if err != nil {
 		return nil, err
@@ -84,7 +87,7 @@ func P2SPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, er
 	builder.AddOp(vm.OP_DUP).AddOp(vm.OP_TOALTSTACK) // stash a copy of the predicate
 	builder.AddOp(vm.OP_SHA3)                        // stack is now [... NARGS SIG SIG SIG PREDICATEHASH]
 	for _, p := range pubkeys {
-		builder.AddData(p)
+		builder.AddData(p[:])
 	}
 	builder.AddInt64(int64(nrequired))                     // stack is now [... SIG SIG SIG PREDICATEHASH PUB PUB PUB M]
 	builder.AddInt64(int64(len(pubkeys)))                  // stack is now [... SIG SIG SIG PREDICATEHASH PUB PUB PUB M N]
@@ -94,7 +97,7 @@ func P2SPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, er
 	return builder.Program, nil
 }
 
-func ParseP2SPMultiSigProgram(program []byte) ([]ed25519.PublicKey, int, error) {
+func ParseP2SPMultiSigProgram(program []byte) ([]*[ed25519.PublicKeySize]byte, int, error) {
 	pops, err := vm.ParseProgram(program)
 	if err != nil {
 		return nil, 0, err
@@ -125,12 +128,14 @@ func ParseP2SPMultiSigProgram(program []byte) ([]ed25519.PublicKey, int, error) 
 
 	firstPubkeyIndex := len(pops) - 7 - int(npubkeys)
 
-	pubkeys := make([]ed25519.PublicKey, 0, npubkeys)
+	pubkeys := make([]*[ed25519.PublicKeySize]byte, 0, npubkeys)
 	for i := firstPubkeyIndex; i < firstPubkeyIndex+int(npubkeys); i++ {
 		if len(pops[i].Data) != ed25519.PublicKeySize {
 			return nil, 0, err
 		}
-		pubkeys = append(pubkeys, ed25519.PublicKey(pops[i].Data))
+		var pub [ed25519.PublicKeySize]byte
+		copy(pub[:], pops[i].Data)
+		pubkeys = append(pubkeys, &pub)
 	}
 	return pubkeys, int(nrequired), nil
 }

@@ -3,7 +3,7 @@ package chainkd
 import (
 	"io"
 
-	"chain/crypto/ed25519"
+	"github.com/agl/ed25519"
 )
 
 // Utility functions
@@ -16,8 +16,8 @@ func NewXKeys(r io.Reader) (xprv XPrv, xpub XPub, err error) {
 	return xprv, xprv.XPub(), nil
 }
 
-func XPubKeys(xpubs []XPub) []ed25519.PublicKey {
-	res := make([]ed25519.PublicKey, 0, len(xpubs))
+func XPubKeys(xpubs []XPub) []*[ed25519.PublicKeySize]byte {
+	res := make([]*[ed25519.PublicKeySize]byte, 0, len(xpubs))
 	for _, xpub := range xpubs {
 		res = append(res, xpub.PublicKey())
 	}

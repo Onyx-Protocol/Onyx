@@ -5,7 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/crypto/ed25519"
+	"github.com/agl/ed25519"
+
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
@@ -31,7 +32,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	}
 
 	// Create the issuance program of a remote asset.
-	issuanceProgram, err := programWithDefinition([]ed25519.PublicKey{testutil.TestPub}, 1, []byte(def))
+	issuanceProgram, err := programWithDefinition([]*[ed25519.PublicKeySize]byte{testutil.TestPub}, 1, []byte(def))
 	if err != nil {
 		t.Fatal(err)
 	}
