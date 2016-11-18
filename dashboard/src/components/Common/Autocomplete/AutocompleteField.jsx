@@ -60,8 +60,8 @@ class AutocompleteField extends React.Component {
 
   tabCheck(event, suggestions, fieldProps) {
     if (event.keyCode == 9) {
-      var suggestion = suggestions[0]["alias"]
-      var input = fieldProps.value.toLowerCase()
+      const suggestion = suggestions[0]["alias"]
+      const input = fieldProps.value.toLowerCase()
       if (suggestion.toLowerCase().startsWith(input)) {
         fieldProps.onChange(suggestion)
       }
