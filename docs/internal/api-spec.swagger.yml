@@ -5,7 +5,7 @@ info:
   description: This API description is for reference only. It should NOT be used
     to automatically generate client software for the Chain Core API. Instead,
     please use the official SDKs.
-  version: 1.0.0
+  version: N/A
 basePath: /
 consumes:
   - application/json
