@@ -90,7 +90,14 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		Inputs:              txins,
 		Outputs:             changeOuts,
 		SigningInstructions: tplInsts,
-		Rollback:            canceler(ctx, a.accounts, res.ID),
+		Rollback: func() {
+			// We're not going to use the control programs so cache them for
+			// the next build call.
+			for _, change := range changeOuts {
+				a.accounts.cacheControlProgram(a.AccountID, true, change.ControlProgram)
+			}
+			cancel(ctx, a.accounts, res.ID)
+		},
 	}
 	return br, nil
 }
@@ -138,17 +145,15 @@ func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuil
 	return &txbuilder.BuildResult{
 		Inputs:              []*bc.TxInput{txInput},
 		SigningInstructions: []*txbuilder.SigningInstruction{sigInst},
-		Rollback:            canceler(ctx, a.accounts, res.ID),
+		Rollback:            func() { cancel(ctx, a.accounts, res.ID) },
 	}, nil
 }
 
-// Best-effort cancellation attempt to put in txbuilder.BuildResult.Rollback.
-func canceler(ctx context.Context, m *Manager, rid uint64) func() {
-	return func() {
-		err := m.utxoDB.Cancel(ctx, rid)
-		if err != nil {
-			log.Error(ctx, err)
-		}
+// Best-effort cancellation attempt to use in txbuilder.BuildResult.Rollback.
+func cancel(ctx context.Context, m *Manager, rid uint64) {
+	err := m.utxoDB.Cancel(ctx, rid)
+	if err != nil {
+		log.Error(ctx, err)
 	}
 }
 
@@ -210,5 +215,12 @@ func (a *controlAction) Build(ctx context.Context, maxTime time.Time) (*txbuilde
 		return nil, err
 	}
 	out := bc.NewTxOutput(a.AssetID, a.Amount, acp, a.ReferenceData)
-	return &txbuilder.BuildResult{Outputs: []*bc.TxOutput{out}}, nil
+	return &txbuilder.BuildResult{
+		Outputs: []*bc.TxOutput{out},
+		Rollback: func() {
+			// If we need to rollback, hang on to the control program so that
+			// we can use it in a future build.
+			a.accounts.cacheControlProgram(a.AccountID, false, acp)
+		},
+	}, nil
 }

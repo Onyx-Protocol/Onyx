@@ -32,6 +32,8 @@ func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 		utxoDB:     newReserver(db),
 		cache:      lru.New(maxAccountCache),
 		aliasCache: lru.New(maxAccountCache),
+		acpChange:  make(map[string][][]byte),
+		acpReceive: make(map[string][][]byte),
 	}
 }
 
@@ -46,6 +48,11 @@ type Manager struct {
 	cacheMu    sync.Mutex
 	cache      *lru.Cache
 	aliasCache *lru.Cache
+
+	// Pre-created, unusued account control programs
+	acpCacheMu sync.Mutex
+	acpChange  map[string][][]byte
+	acpReceive map[string][][]byte
 
 	acpMu        sync.Mutex
 	acpIndexNext uint64 // next acp index in our block
@@ -166,9 +173,36 @@ func (m *Manager) findByID(ctx context.Context, id string) (*signers.Signer, err
 	return account, nil
 }
 
+func (m *Manager) cacheControlProgram(accountID string, change bool, acp []byte) {
+	m.acpCacheMu.Lock()
+	if change {
+		m.acpChange[accountID] = append(m.acpChange[accountID], acp)
+	} else {
+		m.acpReceive[accountID] = append(m.acpReceive[accountID], acp)
+	}
+	m.acpCacheMu.Unlock()
+}
+
 // CreateControlProgram creates a control program
 // that is tied to the Account and stores it in the database.
-func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, change bool) ([]byte, error) {
+func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, change bool) (acp []byte, err error) {
+	// First check if we have any already-created, unused control
+	// programs that we can use.
+	m.acpCacheMu.Lock()
+	if change && len(m.acpChange[accountID]) > 0 {
+		cached := m.acpChange[accountID]
+		acp = cached[len(cached)-1]
+		m.acpChange[accountID] = cached[:len(cached)-1]
+	} else if !change && len(m.acpReceive[accountID]) > 0 {
+		cached := m.acpReceive[accountID]
+		acp = cached[len(cached)-1]
+		m.acpReceive[accountID] = cached[:len(cached)-1]
+	}
+	m.acpCacheMu.Unlock()
+	if acp != nil {
+		return acp, nil
+	}
+
 	account, err := m.findByID(ctx, accountID)
 	if err != nil {
 		return nil, err
@@ -182,16 +216,15 @@ func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, ch
 	path := signers.Path(account, signers.AccountKeySpace, idx)
 	derivedXPubs := chainkd.DeriveXPubs(account.XPubs, path)
 	derivedPKs := chainkd.XPubKeys(derivedXPubs)
-	control, err := vmutil.P2SPMultiSigProgram(derivedPKs, account.Quorum)
+	acp, err = vmutil.P2SPMultiSigProgram(derivedPKs, account.Quorum)
 	if err != nil {
 		return nil, err
 	}
-	err = m.insertAccountControlProgram(ctx, account.ID, idx, control, change)
+	err = m.insertAccountControlProgram(ctx, account.ID, idx, acp, change)
 	if err != nil {
 		return nil, err
 	}
-
-	return control, nil
+	return acp, nil
 }
 
 func (m *Manager) insertAccountControlProgram(ctx context.Context, accountID string, idx uint64, control []byte, change bool) error {
