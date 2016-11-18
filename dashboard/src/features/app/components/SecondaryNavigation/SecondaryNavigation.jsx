@@ -26,19 +26,19 @@ class SecondaryNavigation extends React.Component {
           <li>
             <Link to='/core' activeClassName={styles.active}>
               {navIcon('core', styles)}
-              Core Status
+              Core status
             </Link>
           </li>
           <li>
             <Link to='/access_tokens/client' activeClassName={styles.active}>
               {navIcon('client', styles)}
-              Client Tokens
+              Client tokens
             </Link>
           </li>
           <li>
             <Link to='/access_tokens/network' activeClassName={styles.active}>
             {navIcon('network', styles)}
-              Network Tokens
+              Network tokens
             </Link>
           </li>
 

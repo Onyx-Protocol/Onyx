@@ -2,7 +2,7 @@ import React from 'react'
 import { connect } from 'react-redux'
 import { Flash } from 'features/shared/components'
 import { Link } from 'react-router'
-import { humanize } from 'utility/string'
+import { humanize, capitalize } from 'utility/string'
 import makeRoutes from 'routes'
 import actions from 'actions'
 import styles from './PageTitle.scss'
@@ -19,7 +19,7 @@ class PageTitle extends React.Component {
               {this.props.breadcrumbs.map(crumb =>
                 <li className={styles.crumb} key={crumb.name}>
                   {!crumb.last && <Link to={crumb.path}>
-                    {crumb.name}
+                    {capitalize(crumb.name)}
                     <img src={chevron} className={styles.chevron} />
                   </Link>}
 

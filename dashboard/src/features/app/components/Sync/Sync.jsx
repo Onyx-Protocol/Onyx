@@ -24,7 +24,7 @@ class Sync extends React.Component {
 
       return <ul className={`${navStyles.navigation} ${styles.main}`}>
         {onTestnet &&
-          <li className={navStyles.navigationTitle}>testnet snapshot</li>
+          <li className={navStyles.navigationTitle}>chain testnet snapshot</li>
         }
         {!onTestnet &&
           <li className={navStyles.navigationTitle}>snapshot sync</li>
@@ -39,7 +39,7 @@ class Sync extends React.Component {
     const elems = []
 
     if (onTestnet) {
-      elems.push(<li key='sync-title' className={navStyles.navigationTitle}>testnet sync</li>)
+      elems.push(<li key='sync-title' className={navStyles.navigationTitle}>chain testnet sync</li>)
     } else {
       elems.push(<li key='sync-title' className={navStyles.navigationTitle}>generator sync</li>)
     }
@@ -55,7 +55,7 @@ class Sync extends React.Component {
       elems.push(<li key='sync-error'>
         <Link to='/core'>
           {navIcon('error', navStyles)}
-          <span className={styles.testnetError}>Testnet Error</span>
+          <span className={styles.testnetError}>Chain Testnet error</span>
         </Link>
       </li>)
     } else {

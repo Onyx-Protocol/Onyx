@@ -9,7 +9,6 @@ export const capitalize = (string) => {
 export const humanize = (string) => {
   return string
     .replace(/_/g, ' ')
-    .replace(/(\w+)/g, (match) => capitalize(match))
 }
 
 export const parseNonblankJSON = (json) => {

@@ -6,9 +6,9 @@ import { connect } from 'react-redux'
 import actions from 'features/mockhsm/actions'
 
 const methodOptions = {
-  generate: 'Generate new Mock HSM key',
-  mockhsm: 'Use existing Mock HSM key',
-  provide: 'Provide existing Xpub',
+  generate: 'Generate new MockHSM key',
+  mockhsm: 'Use existing MockHSM key',
+  provide: 'Provide existing xpub',
 }
 
 class XpubField extends React.Component {
@@ -60,7 +60,7 @@ class XpubField extends React.Component {
       'provide': <TextField
         autoFocus={this.state.autofocusInput}
         fieldProps={{...valueProps, onChange: valueOnChange}}
-        placeholder='Enter Xpub' />,
+        placeholder='Enter xpub' />,
       'generate': <TextField
         autoFocus={this.state.autofocusInput}
         fieldProps={{...valueProps, onChange: valueOnChange}}

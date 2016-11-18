@@ -1,7 +1,7 @@
 import React from 'react'
 import actions from 'actions'
 import { connect as reduxConnect } from 'react-redux'
-import { pluralize, humanize } from 'utility/string'
+import { pluralize, capitalize, humanize } from 'utility/string'
 import { PageContent, PageTitle, Pagination, SearchBar } from '../'
 import EmptyList from './EmptyList'
 import { pageSize } from 'utility/environment'
@@ -21,7 +21,7 @@ class ItemList extends React.Component {
 
     let header = <div>
       <PageTitle
-        title={label}
+        title={capitalize(label)}
         actions={actions}
       />
 

@@ -6,7 +6,7 @@ const type = 'unspent'
 const newStateToProps = (state, ownProps) => ({
   ...BaseList.mapStateToProps(type, ListItem)(state, ownProps),
   skipCreate: true,
-  label: 'Unspent Outputs'
+  label: 'Unspent outputs'
 })
 
 export default BaseList.connect(

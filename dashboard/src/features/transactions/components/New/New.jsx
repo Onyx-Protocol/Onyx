@@ -80,15 +80,15 @@ class Form extends React.Component {
       submitting
     } = this.props
 
-    let submitLabel = 'Submit Transaction'
+    let submitLabel = 'Submit transaction'
     if (submit_action.value == 'generate') {
-      submitLabel = 'Generate Transaction Hex'
+      submitLabel = 'Generate transaction hex'
     }
 
     return(
       <FormContainer
         error={error}
-        label='New Transaction'
+        label='New transaction'
         submitLabel={submitLabel}
         onSubmit={handleSubmit(this.submitWithValidation)}
         showSubmitIndicator={true}
@@ -117,16 +117,16 @@ class Form extends React.Component {
               <DropdownButton
                 className={`btn btn-default ${styles.addAction}`}
                 id='input-dropdown-addon'
-                title='+ Add Action'
+                title='+ Add action'
                 onSelect={this.addActionItem}
               >
                 <MenuItem eventKey='issue'>Issue</MenuItem>
-                <MenuItem eventKey='spend_account'>Spend from Account</MenuItem>
-                <MenuItem eventKey='spend_account_unspent_output'>Spend Unspent Output</MenuItem>
-                <MenuItem eventKey='control_account'>Control with Account</MenuItem>
-                <MenuItem eventKey='control_program'>Control with Program</MenuItem>
+                <MenuItem eventKey='spend_account'>Spend from account</MenuItem>
+                <MenuItem eventKey='spend_account_unspent_output'>Spend unspent output</MenuItem>
+                <MenuItem eventKey='control_account'>Control with account</MenuItem>
+                <MenuItem eventKey='control_program'>Control with program</MenuItem>
                 <MenuItem eventKey='retire_asset'>Retire</MenuItem>
-                <MenuItem eventKey='set_transaction_reference_data'>Set Transaction Reference Data</MenuItem>
+                <MenuItem eventKey='set_transaction_reference_data'>Set transaction reference data</MenuItem>
               </DropdownButton>
             </div>
         </FormSection>
@@ -162,7 +162,7 @@ class Form extends React.Component {
                     <label htmlFor='submit_action_submit'>Submit transaction to blockchain</label>
                     <br />
                     <label htmlFor='submit_action_submit' className={styles.submitDescription}>
-                      This transaction will be signed by the Mock HSM and submitted to the blockchain.
+                      This transaction will be signed by the MockHSM and submitted to the blockchain.
                     </label>
                   </td>
                 </tr>
@@ -172,7 +172,7 @@ class Form extends React.Component {
                     <label htmlFor='submit_action_generate'>Allow additional actions</label>
                     <br />
                     <label htmlFor='submit_action_generate' className={styles.submitDescription}>
-                      These actions will be signed by the Mock HSM and returned as a
+                      These actions will be signed by the MockHSM and returned as a
                       transaction hex string, which should be used as the base
                       transaction in a multi-party swap. This transaction will be
                       valid for one hour.

@@ -32,7 +32,7 @@ class Form extends React.Component {
     return(
       <FormContainer
         error={error}
-        label='New Asset'
+        label='New asset'
         onSubmit={handleSubmit(this.submitWithErrors)}
         submitting={submitting} >
 

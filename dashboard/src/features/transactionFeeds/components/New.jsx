@@ -28,7 +28,7 @@ class New extends React.Component {
     return(
       <FormContainer
         error={error}
-        label='New Transaction Feed'
+        label='New transaction feed'
         onSubmit={handleSubmit(this.submitWithErrors)}
         submitting={submitting} >
 
