@@ -969,10 +969,9 @@ definitions:
         type: object
         properties:
           errors:
-            description: A list of error messages received from the generator.
-            type: array
-            items:
-              type: string
+            description: A key/value object mapping error names to error
+              messages.
+            type: object
 
   MockHSMKey:
     type: object
