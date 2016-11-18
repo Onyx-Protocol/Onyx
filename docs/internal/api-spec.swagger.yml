@@ -1133,9 +1133,9 @@ paths:
       description: Creates one or more control programs.
       responses:
         200:
-          description: A list of accounts and/or error messages. Items in the
-            list may be Error objects in case of errors, but Swagger 2.0 does
-            not allow for polymorphic array items.
+          description: A list of control programs and/or error messages. Items
+            in the list may be Error objects in case of errors, but Swagger 2.0
+            does not allow for polymorphic array items.
           schema:
             type: array
             items:
@@ -1174,7 +1174,9 @@ paths:
       description: Builds one or more transactions.
       responses:
         200:
-          description: A list of unsigned transaction templates.
+          description: A list of transaction templates and/or errors. Items in
+            the list may be Error objects in case of errors, but Swagger 2.0
+            does not allow for polymorphic array items.
           schema:
             $ref: '#/definitions/TransactionTemplate'
       parameters:
