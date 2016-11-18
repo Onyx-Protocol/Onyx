@@ -3,10 +3,6 @@
 set -veo pipefail
 
 cd $CHAIN
-test -z "$(go fmt $(go list ./...|grep -v vendor))"
-test -z "$(./bin/gochainimports -l .|grep -v vendor)"
-
-# check for tk and xxx
 p='(xxx|(tk)+)' # can't write inline or it'll match this file
 if egrep -Iinr '//.*\b'$p'\b' $(ls -1|egrep -v 'vendor|generated')
 then exit 1

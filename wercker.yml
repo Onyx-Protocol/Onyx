@@ -1,4 +1,4 @@
-box: chaindev/ci:20161115
+box: chaindev/ci:20161118
 # To update the docker image for this "box",
 # see $CHAIN/docker/ci.
 
@@ -11,21 +11,29 @@ services:
 
 cored:
   steps:
-    - inz/npm-install@1.1.5:
-      cwd: dashboard/
     - script:
         name: core tests
         code: |
           cp -a $WERCKER_SOURCE_DIR $CHAIN
-          DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" /usr/bin/core-tests
+          DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" core-tests
     - script:
         name: gofmt
         code: |
-          /usr/bin/gofmt
+          run-gofmt
+    - script:
+        name: gas
+        code: |
+          run-gas
+    - script:
+        name: check for tk and xxx
+        code: |
+          check-tk-xxx
+    - inz/npm-install@1.1.5:
+      cwd: $CHAIN/dashboard/
     - script:
         name: dashboard tests
         code: |
-          /usr/bin/dashboard-tests
+          dashboard-tests
 
 java:
   steps:
@@ -33,8 +41,8 @@ java:
         name: java tests
         code: |
           cp -a $WERCKER_SOURCE_DIR $CHAIN
-          DATABASE_URL="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" CACHE_DIR="$WERCKER_CACHE_DIR/maven" /usr/bin/java-tests
+          DATABASE_URL="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/core-test?sslmode=disable" CACHE_DIR="$WERCKER_CACHE_DIR/maven" java-tests
     - script:
-        name: javafmt
+        name: jfmt
         code: |
-          /usr/bin/javafmt
+          run-jfmt
