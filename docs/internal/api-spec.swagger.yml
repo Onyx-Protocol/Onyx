@@ -14,6 +14,17 @@ produces:
 
 definitions:
 
+  OkMessage:
+    description: A default response for successful requests that have no
+      meaningful response data.
+    type: object
+    required:
+      - message
+    properties:
+      message:
+        type: string
+        description: The value "ok".
+
   Error:
     type: object
     required:
@@ -77,7 +88,7 @@ definitions:
         description: A list of aliases of MockHSMKeys to return.
       after:
         type: string
-        description: An opaque cursor.
+        description: An opaque cursor, used for pagination.
 
   Asset:
     type: object
@@ -170,7 +181,7 @@ definitions:
         description: A list of parameters to be interpolated into the filter.
       after:
         type: string
-        description: An opaque cursor.
+        description: An opaque cursor, used for pagination.
 
   Account:
     type: object
@@ -251,7 +262,7 @@ definitions:
         description: A list of parameters to be interpolated into the filter.
       after:
         type: string
-        description: An opaque cursor.
+        description: An opaque cursor, used for pagination.
 
   ControlProgram:
     type: object
@@ -512,7 +523,7 @@ definitions:
           occur. Defaults to 1000 (1 second).
       after:
         type: string
-        description: An opaque cursor.
+        description: An opaque cursor, used for pagination.
 
   TransactionBuilder:
     type: object
@@ -729,6 +740,277 @@ definitions:
               signer will provide signatures over the entire transaction, so
               that the signatures are invalid if additional actions are added to
               the transaction.
+
+  TransactionSubmitResponse:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: string
+        description: The unique ID of the transaction.
+
+  Balance:
+    type: object
+    required:
+      - amount
+      - sum_by
+    properties:
+      amount:
+        type: integer
+        description: The total amount of assets controlled by assets whose
+          sum_by properties are the same.
+      sum_by:
+        type: object
+        description: A map of output property names to property values. The
+          balance object represents the total asset amount for all assets whose
+          sum_by properties are equal to the corresponding values in this
+          object.
+
+  BalancePage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Balance'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/BalanceQuery'
+
+  BalanceQuery:
+    type: object
+    properties:
+      filter:
+        type: string
+        description: Filter string to apply to result set.
+      filter_params:
+        type: array
+        items:
+          type: string
+        description: A list of parameters to be interpolated into the filter.
+      sum_by:
+        type: array
+        items:
+          type: string
+        description: The balance query will sum amounts of outputs who share
+          identical values for the properties given in this parameter.
+      timestamp:
+        type: integer
+        description: A millisecond Unix timestamp. By using this parameter, you
+          can perform queries that reflect the state of the blockchain at
+          different points in time.
+
+  UnspentOutputPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/TransactionOutput'
+        description: Note that outputs of type "retire" are not considered
+          unspent, so they will never be returned by the '/list-unspent-outputs'
+          endpoint.
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/UnspentOutputQuery'
+
+  UnspentOutputQuery:
+    type: object
+    properties:
+      filter:
+        type: string
+        description: Filter string to apply to result set.
+      filter_params:
+        type: array
+        items:
+          type: string
+        description: A list of parameters to be interpolated into the filter.
+      timestamp:
+        type: integer
+        description: A millisecond Unix timestamp. By using this parameter, you
+          can perform queries that reflect the state of the blockchain at
+          different points in time.
+      after:
+        type: string
+        description: An opaque cursor, used for pagination.
+
+  TransactionFeed:
+    type: object
+    required:
+      - id
+      - alias
+      - filter
+      - after
+    properties:
+      id:
+        type: string
+        description: The transaction feed's unique ID.
+      alias:
+        type: string
+        description: The transaction feed's unique alias.
+      filter:
+        type: string
+        description: A valid filter string for the `/list-transactions`
+          endpoint. The transaction feed will be composed of future
+          transactions that match the filter.
+      after:
+        type: string
+        description: A cursor indicating the current position of the feed.
+          Applications will update this value as they consume the feed.
+
+  TransactionFeedPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/TransactionFeed'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/TransactionFeedQuery'
+
+  TransactionFeedQuery:
+    type: object
+    properties:
+      after:
+        type: string
+        description: An opaque cursor, used for pagination.
+
+  AccessToken:
+    type: object
+    required:
+      - id
+      - type
+      - created_at
+    properties:
+      id:
+        type: string
+        description: The unique, user-provided ID of the access token.
+      type:
+        type: string
+        description: Either "client" or "network". "client" tokens grant access
+          to the Client API, described in this document. "network" tokens grant
+          access to the core-to-core network API.
+      created_at:
+        type: string
+        description: An RFC3339 timestamp indicating when the token was created.
+
+  AccessTokenPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/AccessToken'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/AccessTokenQuery'
+
+  AccessTokenQuery:
+    type: object
+    properties:
+      after:
+        type: string
+        description: An opaque cursor, used for pagination.
+
+  CoreInfo:
+    type: object
+    required:
+      - is_configured
+    properties:
+      is_configured:
+        type: boolean
+        description: Whether the core has been configured.
+      configured_at:
+        type: string
+        description: An RFC3339 timestamp indicating when the core was
+          configured.
+      is_signer:
+        type: boolean
+        description: Whether the core is a co-signer of blocks proposed by the
+          generator.
+      is_generator:
+        type: boolean
+        description: Whether the core is the blockchain's block generator.
+      generator_url:
+        type: string
+        description: The URL of the block generator.
+      generator_access_token:
+        type: string
+        description: The network access token being used to connect to the
+          block generator.
+      blockchain_id:
+        type: string
+        description: The unique ID of the blockchain.
+      block_height:
+        type: integer
+        description: The most recent block received by the local core.
+      generator_block_height:
+        type: integer
+        description: The most recent block added to the blockchain by the block
+          generator.
+      generator_block_height_fetched_at:
+        type: string
+        description: An RFC3339 timestamp indicating the last successful
+          retrieval of the generator's block height.
+      is_production:
+        type: boolean
+        description: Whether the core was compiled for production. Services such
+          as the MockHSM are not available in production mode.
+      network_rpc_version:
+        type: integer
+        description: A version number indicating core-to-core compatibility. If
+          two cores advertise different network RPC versions, they cannot
+          interact with one another.
+      core_id:
+        type: string
+        description: The unique ID of the core, generated at configuration.
+      build_commit:
+        type: string
+        description: The commit SHA of the core source code, at which the core
+          binary was compiled.
+      build_date:
+        type: string
+        description: The date the core binary was compiled.
+      health:
+        description: Information on the health of the core, including error
+          messages received from the generator.
+        type: object
+        properties:
+          errors:
+            description: A list of error messages received from the generator.
+            type: array
+            items:
+              type: string
 
 paths:
 
@@ -969,13 +1251,7 @@ paths:
           schema:
             type: array
             items:
-              type: object
-              required:
-                - id
-              properties:
-                id:
-                  type: string
-                  description: The unique ID of the transaction.
+              $ref: '#/definitions/TransactionSubmitResponse'
       parameters:
         - name: body
           in: body
@@ -997,3 +1273,281 @@ paths:
           in: body
           schema:
             $ref: '#/definitions/TransactionQuery'
+
+  '/list-balances':
+    post:
+      description: Returns a page of balances matching the specified query. Note
+        that while this endpoint is implemented using pagination, it currently
+        returns all possible results in a single page.
+      responses:
+        200:
+          description: A page of balances.
+          schema:
+            $ref: '#/definitions/BalancePage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/BalanceQuery'
+
+  '/list-unspent-outputs':
+    post:
+      description: Returns a page of unspent outputs.
+      responses:
+        200:
+          description: A page of unspent outputs.
+          schema:
+            $ref: '#/definitions/UnspentOutputPage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/UnspentOutputQuery'
+
+  '/create-transaction-feed':
+    post:
+      description: Creates a new transaction feed.
+      responses:
+        200:
+          description: A new transaction feed.
+          schema:
+            $ref: '#/definitions/TransactionFeed'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              alias:
+                type: string
+                description: A unique alias for the transaction feed.
+              filter:
+                type: string
+                description: A valid filter string for the `/list-transactions`
+                  endpoint. The transaction feed will be composed of future
+                  transactions that match the filter.
+
+  '/get-transaction-feed':
+    post:
+      description: Retrieves a single transaction feed.
+      responses:
+        200:
+          description: A transaction feed.
+          schema:
+            $ref: '#/definitions/TransactionFeed'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The unique ID of a transaction feed. Either `id` or
+                  `alias` is required.
+              alias:
+                type: string
+                description: The unique alias of a transaction feed. Either `id`
+                  or `alias` is required.
+
+  '/list-transactions-feeds':
+    post:
+      description: Returns a page of transaction feeds defined on the core.
+      responses:
+        200:
+          description: A page of transaction feeds.
+          schema:
+            $ref: '#/definitions/TransactionFeedPage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/TransactionFeedQuery'
+
+  '/update-transaction-feed':
+    post:
+      description: Updates a transaction feed's position.
+      responses:
+        200:
+          description: The updated transaction feed.
+          schema:
+            $ref: '#/definitions/TransactionFeed'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - after
+            properties:
+              id:
+                type: string
+                description: The unique ID of a transaction feed. Either `id` or
+                  `alias` is required.
+              alias:
+                type: string
+                description: The unique alias of a transaction feed. Either `id`
+                  or `alias` is required.
+              after:
+                type: string
+                description: The new cursor value for the feed.
+              previous_after:
+                type: string
+                description: An optional parameter for optimistic concurrency
+                  control. Provide the previous `after` value to prevent multiple
+                  consumers from accidentally rewinding the feed.
+
+  '/delete-transaction-feed':
+    post:
+      description: Deletes a transaction feed.
+      responses:
+        200:
+          description: A default success message.
+          schema:
+            $ref: '#/definitions/OkMessage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The unique ID of a transaction feed. Either `id` or
+                  `alias` is required.
+              alias:
+                type: string
+                description: The unique alias of a transaction feed. Either `id`
+                  or `alias` is required.
+
+  '/create-access-token':
+    post:
+      description: Creates a new access token.
+      responses:
+        200:
+          description: A new access token.
+          schema:
+            allOf:
+              - $ref: '#/definitions/AccessToken'
+              - type: object
+                required:
+                  - token
+                properties:
+                  token:
+                    type: string
+                    description: The full access token string, to be used for
+                      logging into the dashboard and authenticating SDK
+                      requests. This is only returned when the token is created.
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - id
+              - type
+            properties:
+              id:
+                type: string
+                description: A unique ID for the new access token.
+              type:
+                type: string
+                description: Either "client" or "network". "client" tokens
+                  grant access to the Client API, described in this document.
+                  "network" tokens grant access to the core-to-core network API.
+
+  '/list-access-tokens':
+    post:
+      description: Returns a page of access tokens matching the specified query.
+      responses:
+        200:
+          description: A page of access tokens.
+          schema:
+            $ref: '#/definitions/AccessTokenPage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/AccessTokenQuery'
+
+  '/delete-access-token':
+    post:
+      description: Deletes an access token.
+      responses:
+        200:
+          description: A default success message.
+          schema:
+            $ref: '#/definitions/OkMessage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The access token's unique, user-provided ID.
+
+  '/info':
+    post:
+      description: Returns information about the core.
+      responses:
+        200:
+          description: Information about the core.
+          schema:
+            $ref: '#/definitions/CoreInfo'
+
+  '/configure':
+    post:
+      description: Configures an unconfigured core.
+      responses:
+        200:
+          description: A default success message.
+          schema:
+            $ref: '#/definitions/OkMessage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - is_generator
+            properties:
+              is_generator:
+                type: boolean
+                description: Whether the local core will be a block generator
+                  for the blockchain; i.e., you are starting a new blockchain on
+                  the local core. `false` if you are connecting to a
+                  pre-existing blockchain.
+              generator_url:
+                type: string
+                description: A URL for the block generator. Required if
+                  `is_generator` is false.
+              generator_access_token:
+                type: string
+                description: A network access token provided by administrators
+                  of the block generator. Required if `is_generator` is false.
+              blockchain_id:
+                type: string
+                description: The unique ID of the generator's blockchain.
+                  Required if `is_generator` is false.
+
+  '/reset':
+    post:
+      description: Resets the state of the core, and restarts the process.
+      responses:
+        200:
+          description: A default success message.
+          schema:
+            $ref: '#/definitions/OkMessage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              everything:
+                type: boolean
+                description: If `true`, all objects including access tokens and
+                  MockHSM keys will be deleted. If `false`, then access tokens
+                  and MockHSM keys will be preserved.
