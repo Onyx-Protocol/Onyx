@@ -11,6 +11,17 @@ consumes:
   - application/json
 produces:
   - application/json
+securityDefinitions:
+  accessToken:
+    type: basic
+    description: The Client API is authenticated. via HTTP Basic Auth. Basic
+      auth credentials consist of a user-provided token ID passed via the
+      username field, and a randomly-generated token secret passed via the
+      password field. The ID and secret together are referred to collectively as
+      a "token". By default, Chain Core instances do not require authentication
+      if requests originate from localhost.
+security:
+  - accessToken: []
 
 definitions:
 
