@@ -184,10 +184,7 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 		SELECT unnest($1::text[]), unnest($2::bigint[]), unnest($3::text[]),  unnest($4::bigint[]),
 			   unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), unnest($8::bytea[]),
 			   $9, unnest($10::bigint[]), $11
-		ON CONFLICT (tx_hash, index) DO UPDATE SET
-			confirmed_in    = excluded.confirmed_in,
-			block_pos       = excluded.block_pos,
-			block_timestamp = excluded.block_timestamp;
+		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
 	_, err := m.db.Exec(ctx, q,
 		txHash,
