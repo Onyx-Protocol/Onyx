@@ -761,7 +761,9 @@ definitions:
         items:
           type: string
         description: The balance query will sum amounts of outputs who share
-          identical values for the properties given in this parameter.
+          identical values for the properties given in this parameter. Defaults
+          to `["asset_id", "asset_alias"]`, which groups outputs together by
+          asset.
       timestamp:
         type: integer
         description: A millisecond Unix timestamp. By using this parameter, you
