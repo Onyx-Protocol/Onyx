@@ -46,50 +46,6 @@ definitions:
         description: Whether the error is potentially transient/temporary. If
           false, there is usually a problem with the user request.
 
-  MockHSMKey:
-    type: object
-    required:
-      - alias
-      - xpub
-    properties:
-      alias:
-        type: string
-        description: A user-provided, unique alias for the key.
-      xpub:
-        type: string
-        description: The extended public key that can be used as a root xpub for
-          creating accounts and assets.
-
-  MockHSMKeyPage:
-    type: object
-    required:
-      - items
-      - last_page
-      - next
-    properties:
-      items:
-        type: array
-        items:
-          $ref: '#/definitions/MockHSMKey'
-      last_page:
-        type: boolean
-        description: Whether this is the last page of results for the given
-          query.
-      next:
-        $ref: '#/definitions/MockHSMKeyQuery'
-
-  MockHSMKeyQuery:
-    type: object
-    properties:
-      aliases:
-        type: array
-        items:
-          - type: string
-        description: A list of aliases of the MockHSMKeys to be returned.
-      after:
-        type: string
-        description: An opaque cursor, used for pagination.
-
   Asset:
     type: object
     required:
@@ -1012,72 +968,51 @@ definitions:
             items:
               type: string
 
+  MockHSMKey:
+    type: object
+    required:
+      - alias
+      - xpub
+    properties:
+      alias:
+        type: string
+        description: A user-provided, unique alias for the key.
+      xpub:
+        type: string
+        description: The extended public key that can be used as a root xpub for
+          creating accounts and assets.
+
+  MockHSMKeyPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/MockHSMKey'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/MockHSMKeyQuery'
+
+  MockHSMKeyQuery:
+    type: object
+    properties:
+      aliases:
+        type: array
+        items:
+          - type: string
+        description: A list of aliases of the MockHSMKeys to be returned.
+      after:
+        type: string
+        description: An opaque cursor, used for pagination.
+
 paths:
-
-  '/mockhsm/create-key':
-    post:
-      description: Creates a new MockHSM key.
-      responses:
-        200:
-          description: A MockHSM key.
-          schema:
-            $ref: '#/definitions/MockHSMKey'
-      parameters:
-        - name: body
-          in: body
-          schema:
-            type: object
-            properties:
-              alias:
-                type: string
-                description: A unique alias for the MockHSMKey.
-
-  '/mockhsm/list-keys':
-    post:
-      description: Returns a page of MockHSM keys matching the specified query.
-      responses:
-        200:
-          description: A page of MockHSM keys.
-          schema:
-            $ref: '#/definitions/MockHSMKeyPage'
-      parameters:
-        - name: body
-          in: body
-          schema:
-            $ref: '#/definitions/MockHSMKeyQuery'
-
-  '/mockhsm/sign-transaction':
-    post:
-      description: Sign a list of transactions using the MockHSM.
-      responses:
-        200:
-          description: A list of transaction templates and/or errors. Items in
-            the list may be Error objects in case of errors, but Swagger 2.0
-            does not allow for polymorphic array items.
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/TransactionTemplate'
-      parameters:
-        - name: body
-          in: body
-          schema:
-            type: object
-            required:
-              - xpubs
-              - transactions
-            properties:
-              xpubs:
-                type: array
-                items:
-                  type: string
-                description: A list of xpubs that the signer should provide
-                  signatures for.
-              transactions:
-                type: array
-                items:
-                  $ref: '#/definitions/SignerTransactionTemplate'
-                description: A list of transactions to be signed by the signer.
 
   '/create-asset':
     post:
@@ -1551,3 +1486,68 @@ paths:
                 description: If `true`, all objects including access tokens and
                   MockHSM keys will be deleted. If `false`, then access tokens
                   and MockHSM keys will be preserved.
+
+  '/mockhsm/create-key':
+    post:
+      description: Creates a new MockHSM key.
+      responses:
+        200:
+          description: A MockHSM key.
+          schema:
+            $ref: '#/definitions/MockHSMKey'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              alias:
+                type: string
+                description: A unique alias for the MockHSMKey.
+
+  '/mockhsm/list-keys':
+    post:
+      description: Returns a page of MockHSM keys matching the specified query.
+      responses:
+        200:
+          description: A page of MockHSM keys.
+          schema:
+            $ref: '#/definitions/MockHSMKeyPage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/MockHSMKeyQuery'
+
+  '/mockhsm/sign-transaction':
+    post:
+      description: Sign a list of transactions using the MockHSM.
+      responses:
+        200:
+          description: A list of transaction templates and/or errors. Items in
+            the list may be Error objects in case of errors, but Swagger 2.0
+            does not allow for polymorphic array items.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TransactionTemplate'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - xpubs
+              - transactions
+            properties:
+              xpubs:
+                type: array
+                items:
+                  type: string
+                description: A list of xpubs that the signer should provide
+                  signatures for.
+              transactions:
+                type: array
+                items:
+                  $ref: '#/definitions/SignerTransactionTemplate'
+                description: A list of transactions to be signed by the signer.
