@@ -1,12 +1,13 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
 
-	"chain/crypto/ed25519"
+	"github.com/agl/ed25519"
 )
 
 func main() {
@@ -15,15 +16,19 @@ func main() {
 	}
 	switch os.Args[1] {
 	case "gen":
-		_, prv, err := ed25519.GenerateKey(nil)
+		_, prv, err := ed25519.GenerateKey(rand.Reader)
 		must(err)
-		os.Stdout.Write(prv)
+		os.Stdout.Write(prv[:])
 
 	case "pub":
 		prv, err := ioutil.ReadAll(os.Stdin)
 		must(err)
-		pub := ed25519.PrivateKey(prv).Public().(ed25519.PublicKey)
-		os.Stdout.Write([]byte(pub))
+		if len(prv) != ed25519.PrivateKeySize {
+			panic(fmt.Errorf("bad private key size %d", len(prv)))
+		}
+		// Abstraction violation: would prefer this code didn't know that
+		// prv[32:] is the pubkey.
+		os.Stdout.Write(prv[32:])
 
 	case "sign":
 		if len(os.Args) < 3 {
@@ -34,8 +39,13 @@ func main() {
 		must(err)
 		msg, err := ioutil.ReadAll(os.Stdin)
 		must(err)
-		sig := ed25519.Sign(ed25519.PrivateKey(prv), msg)
-		os.Stdout.Write(sig)
+		if len(prv) != ed25519.PrivateKeySize {
+			panic(fmt.Errorf("bad private key size %d", len(prv)))
+		}
+		var prvbuf [ed25519.PrivateKeySize]byte
+		copy(prvbuf[:], prv)
+		sig := ed25519.Sign(&prvbuf, msg)
+		os.Stdout.Write(sig[:])
 
 	case "verify":
 		args := os.Args[2:]
@@ -56,7 +66,17 @@ func main() {
 		must(err)
 		msg, err := ioutil.ReadAll(os.Stdin)
 		must(err)
-		ok := ed25519.Verify(ed25519.PublicKey(pub), msg, sig)
+		if len(pub) != ed25519.PublicKeySize {
+			panic(fmt.Errorf("bad public key size %d", len(pub)))
+		}
+		var pubbuf [ed25519.PublicKeySize]byte
+		copy(pubbuf[:], pub)
+		if len(sig) != ed25519.PublicKeySize {
+			panic(fmt.Errorf("bad signature size %d", len(sig)))
+		}
+		var sigbuf [ed25519.SignatureSize]byte
+		copy(sigbuf[:], sig)
+		ok := ed25519.Verify(&pubbuf, msg, &sigbuf)
 		if !silent {
 			if ok {
 				fmt.Println("OK")

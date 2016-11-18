@@ -9,7 +9,7 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/chainkd"
 	"chain/database/pg"
 	"chain/errors"
 )

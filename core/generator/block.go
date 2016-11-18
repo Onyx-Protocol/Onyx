@@ -6,7 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"chain/crypto/ed25519"
+	"github.com/agl/ed25519"
+
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
@@ -91,8 +92,8 @@ func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	goodSigs := make([][]byte, len(pubkeys))
-	replies := make([][]byte, len(g.signers))
+	goodSigs := make([]*[ed25519.SignatureSize]byte, len(pubkeys))
+	replies := make([]*[ed25519.SignatureSize]byte, len(g.signers))
 	done := make(chan int, len(g.signers))
 	for i, signer := range g.signers {
 		go getSig(ctx, signer, b, &replies[i], i, done)
@@ -116,11 +117,13 @@ func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 	if nready < quorum {
 		return fmt.Errorf("got %d of %d needed signatures", nready, quorum)
 	}
-	b.Witness = nonNilSigs(goodSigs)
+	for _, gs := range nonNilSigs(goodSigs) {
+		b.Witness = append(b.Witness, gs[:])
+	}
 	return nil
 }
 
-func indexKey(keys []ed25519.PublicKey, msg, sig []byte) int {
+func indexKey(keys []*[ed25519.PublicKeySize]byte, msg []byte, sig *[ed25519.SignatureSize]byte) int {
 	for i, key := range keys {
 		if ed25519.Verify(key, msg, sig) {
 			return i
@@ -129,7 +132,7 @@ func indexKey(keys []ed25519.PublicKey, msg, sig []byte) int {
 	return -1
 }
 
-func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, sig *[]byte, i int, done chan int) {
+func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, sig **[ed25519.SignatureSize]byte, i int, done chan int) {
 	var err error
 	*sig, err = signer.SignBlock(ctx, b)
 	if err != nil && ctx.Err() != context.Canceled {
@@ -138,7 +141,7 @@ func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, sig *[]byte, i
 	done <- i
 }
 
-func nonNilSigs(a [][]byte) (b [][]byte) {
+func nonNilSigs(a []*[ed25519.SignatureSize]byte) (b []*[ed25519.SignatureSize]byte) {
 	for _, p := range a {
 		if p != nil {
 			b = append(b, p)

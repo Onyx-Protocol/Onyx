@@ -2,13 +2,15 @@ package protocol
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/agl/ed25519"
+
 	"golang.org/x/crypto/sha3"
 
-	"chain/crypto/ed25519"
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -77,11 +79,11 @@ func TestAddTxBadMaxIssuanceWindow(t *testing.T) {
 }
 
 type testDest struct {
-	privKey ed25519.PrivateKey
+	privKey *[ed25519.PrivateKeySize]byte
 }
 
 func newDest(t testing.TB) *testDest {
-	_, priv, err := ed25519.GenerateKey(nil)
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -95,12 +97,13 @@ func (d *testDest) sign(t testing.TB, tx *bc.TxData, index int) {
 	prog, _ := vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", txsighash[:]))
 	h := sha3.Sum256(prog)
 	sig := ed25519.Sign(d.privKey, h[:])
-	tx.Inputs[index].SetArguments([][]byte{vm.Int64Bytes(0), sig, prog})
+	tx.Inputs[index].SetArguments([][]byte{vm.Int64Bytes(0), sig[:], prog})
 }
 
 func (d testDest) controlProgram() ([]byte, error) {
-	pub := d.privKey.Public().(ed25519.PublicKey)
-	return vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pub}, 1)
+	var pub [ed25519.PublicKeySize]byte
+	copy(pub[:], d.privKey[32:])
+	return vmutil.P2SPMultiSigProgram([]*[ed25519.PublicKeySize]byte{&pub}, 1)
 }
 
 type testAsset struct {

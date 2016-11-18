@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/agl/ed25519"
 	"github.com/kr/secureheader"
 
 	"chain/core"
@@ -34,7 +35,6 @@ import (
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/core/txfeed"
-	"chain/crypto/ed25519"
 	"chain/database/sql"
 	"chain/env"
 	"chain/errors"
@@ -234,15 +234,20 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 
 	hsm := mockhsm.New(db)
 	var generatorSigners []generator.BlockSigner
-	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
+	var signBlockHandler func(context.Context, *bc.Block) (*[ed25519.SignatureSize]byte, error)
 	if conf.IsSigner {
 		blockPub, err := hex.DecodeString(conf.BlockPub)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
-		s := blocksigner.New(blockPub, hsm, db, c)
+		if len(blockPub) != ed25519.PublicKeySize {
+			chainlog.Fatal(ctx, chainlog.KeyError, fmt.Errorf("bad public key size %d", len(blockPub)))
+		}
+		var pubbuf [ed25519.PublicKeySize]byte
+		copy(pubbuf[:], blockPub)
+		s := blocksigner.New(&pubbuf, hsm, db, c)
 		generatorSigners = append(generatorSigners, s) // "local" signer
-		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
+		signBlockHandler = func(ctx context.Context, b *bc.Block) (*[ed25519.SignatureSize]byte, error) {
 			sig, err := s.ValidateAndSignBlock(ctx, b)
 			if errors.Root(err) == blocksigner.ErrInvalidKey {
 				chainlog.Fatal(ctx, chainlog.KeyError, err)
@@ -345,7 +350,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 // that may sign blocks produced by this generator.
 type remoteSigner struct {
 	Client *rpc.Client
-	Key    ed25519.PublicKey
+	Key    *[ed25519.PublicKeySize]byte
 }
 
 func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, conf *config.Config) (a []*remoteSigner) {
@@ -365,12 +370,14 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 			BuildTag:     buildTag,
 			BlockchainID: blockchainID,
 		}
-		a = append(a, &remoteSigner{Client: client, Key: ed25519.PublicKey(signer.Pubkey)})
+		var pbuf [ed25519.PublicKeySize]byte
+		copy(pbuf[:], signer.Pubkey)
+		a = append(a, &remoteSigner{Client: client, Key: &pbuf})
 	}
 	return a
 }
 
-func (s *remoteSigner) SignBlock(ctx context.Context, b *bc.Block) (signature []byte, err error) {
+func (s *remoteSigner) SignBlock(ctx context.Context, b *bc.Block) (signature *[ed25519.SignatureSize]byte, err error) {
 	// TODO(kr): We might end up serializing b multiple
 	// times in multiple calls to different remoteSigners.
 	// Maybe optimize that if it makes a difference.

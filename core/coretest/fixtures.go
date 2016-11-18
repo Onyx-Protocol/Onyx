@@ -10,7 +10,7 @@ import (
 	"chain/core/asset"
 	"chain/core/pin"
 	"chain/core/txbuilder"
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/chainkd"
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"

@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/agl/ed25519"
 	"github.com/golang/groupcache/lru"
 	"github.com/lib/pq"
 
 	"chain/core/pin"
 	"chain/core/signers"
-	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/chainkd"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol"
@@ -305,7 +305,7 @@ func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
 	return json.MarshalIndent(def, "", "  ")
 }
 
-func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, error) {
+func programWithDefinition(pubkeys []*[ed25519.PublicKeySize]byte, nrequired int, definition []byte) ([]byte, error) {
 	issuanceProg, err := vmutil.P2SPMultiSigProgram(pubkeys, nrequired)
 	if err != nil {
 		return nil, err

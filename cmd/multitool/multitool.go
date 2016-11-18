@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha512"
 	"encoding/binary"
 	"encoding/hex"
@@ -18,10 +19,10 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
+	"github.com/agl/ed25519"
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/chainkd"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
 )
@@ -245,11 +246,11 @@ func derive(args []string) {
 }
 
 func genprv(_ []string) {
-	_, prv, err := ed25519.GenerateKey(nil)
+	_, prv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		errorf("unexpected error %s", err)
 	}
-	fmt.Println(hex.EncodeToString(prv))
+	fmt.Println(hex.EncodeToString(prv[:]))
 }
 
 func genxprv(_ []string) {
@@ -286,8 +287,8 @@ func pub(args []string) {
 		fmt.Println(xprv.XPub().String())
 		return
 	}
-	prv := ed25519.PrivateKey(mustDecodeHex(inp))
-	pub := prv.Public().(ed25519.PublicKey)
+	prv := mustDecodeHex(inp)
+	pub := prv[32:]
 	fmt.Println(hex.EncodeToString(pub))
 }
 
@@ -369,8 +370,11 @@ func sign(args []string) {
 		}
 		signed = xprv.Sign(msg)
 	} else {
-		prv := ed25519.PrivateKey(mustDecodeHex(keyInp))
-		signed = ed25519.Sign(prv, msg)
+		prv := mustDecodeHex(keyInp)
+		var prvbuf [ed25519.PrivateKeySize]byte
+		copy(prvbuf[:], prv)
+		s := ed25519.Sign(&prvbuf, msg)
+		signed = s[:]
 	}
 
 	fmt.Println(hex.EncodeToString(signed))
@@ -487,8 +491,12 @@ func verify(args []string) {
 		verified = xpub.Verify(msg, sig)
 
 	case 64:
-		pub := ed25519.PublicKey(mustDecodeHex(keyInp))
-		verified = ed25519.Verify(pub, msg, sig)
+		pub := mustDecodeHex(keyInp)
+		var pubbuf [ed25519.PublicKeySize]byte
+		copy(pubbuf[:], pub)
+		var sigbuf [ed25519.SignatureSize]byte
+		copy(sigbuf[:], sig)
+		verified = ed25519.Verify(&pubbuf, msg, &sigbuf)
 
 	default:
 		errorf("could not parse key")

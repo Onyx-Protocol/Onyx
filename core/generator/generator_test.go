@@ -2,10 +2,12 @@ package generator
 
 import (
 	"context"
+	"crypto/rand"
 	"testing"
 	"time"
 
-	"chain/crypto/ed25519"
+	"github.com/agl/ed25519"
+
 	"chain/database/pg/pgtest"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -59,7 +61,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	pubKey, privKey, err := ed25519.GenerateKey(nil)
+	pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -115,11 +117,11 @@ func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
 }
 
 type testSigner struct {
-	pubKey  ed25519.PublicKey
-	privKey ed25519.PrivateKey
+	pubKey  *[ed25519.PublicKeySize]byte
+	privKey *[ed25519.PrivateKeySize]byte
 }
 
-func (s testSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (s testSigner) SignBlock(ctx context.Context, b *bc.Block) (*[ed25519.SignatureSize]byte, error) {
 	hash := b.HashForSig()
 	return ed25519.Sign(s.privKey, hash[:]), nil
 }

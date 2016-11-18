@@ -8,6 +8,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/agl/ed25519"
+
 	"chain/database/pg"
 	"chain/log"
 	"chain/protocol"
@@ -21,7 +23,7 @@ type BlockSigner interface {
 	// SignBlock returns an ed25519 signature over the block's sighash.
 	// See also the Chain Protocol spec for the complete required behavior
 	// of a block signer.
-	SignBlock(context.Context, *bc.Block) (signature []byte, err error)
+	SignBlock(context.Context, *bc.Block) (signature *[ed25519.SignatureSize]byte, err error)
 }
 
 // generator produces new blocks on an interval.

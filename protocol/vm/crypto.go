@@ -5,10 +5,11 @@ import (
 	"crypto/sha256"
 	"hash"
 
+	"github.com/agl/ed25519"
+
 	"golang.org/x/crypto/ripemd160"
 	"golang.org/x/crypto/sha3"
 
-	"chain/crypto/ed25519"
 	"chain/math/checked"
 )
 
@@ -54,6 +55,7 @@ func opCheckSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
+
 	pubkeyBytes, err := vm.pop(true)
 	if err != nil {
 		return err
@@ -61,6 +63,9 @@ func opCheckSig(vm *virtualMachine) error {
 	if len(pubkeyBytes) != ed25519.PublicKeySize {
 		return vm.pushBool(false, true)
 	}
+	var pubkeybuf [ed25519.PublicKeySize]byte
+	copy(pubkeybuf[:], pubkeyBytes)
+
 	msg, err := vm.pop(true)
 	if err != nil {
 		return err
@@ -68,11 +73,18 @@ func opCheckSig(vm *virtualMachine) error {
 	if len(msg) != 32 {
 		return ErrBadValue
 	}
+
 	sig, err := vm.pop(true)
 	if err != nil {
 		return err
 	}
-	return vm.pushBool(ed25519.Verify(ed25519.PublicKey(pubkeyBytes), msg, sig), true)
+	if len(sig) != ed25519.SignatureSize {
+		return vm.pushBool(false, true)
+	}
+	var sigbuf [ed25519.SignatureSize]byte
+	copy(sigbuf[:], sig)
+
+	return vm.pushBool(ed25519.Verify(&pubkeybuf, msg, &sigbuf), true)
 }
 
 func opCheckMultiSig(vm *virtualMachine) error {
@@ -110,25 +122,25 @@ func opCheckMultiSig(vm *virtualMachine) error {
 	if len(msg) != 32 {
 		return ErrBadValue
 	}
-	sigs := make([][]byte, 0, numSigs)
+	sigs := make([][ed25519.SignatureSize]byte, numSigs)
 	for i := int64(0); i < numSigs; i++ {
 		sig, err := vm.pop(true)
 		if err != nil {
 			return err
 		}
-		sigs = append(sigs, sig)
+		copy(sigs[i][:], sig)
 	}
 
-	pubkeys := make([]ed25519.PublicKey, 0, numPubkeys)
-	for _, p := range pubkeyByteses {
+	pubkeys := make([][ed25519.PublicKeySize]byte, numPubkeys)
+	for i, p := range pubkeyByteses {
 		if len(p) != ed25519.PublicKeySize {
 			return vm.pushBool(false, true)
 		}
-		pubkeys = append(pubkeys, ed25519.PublicKey(p))
+		copy(pubkeys[i][:], p)
 	}
 
 	for len(sigs) > 0 && len(pubkeys) > 0 {
-		if ed25519.Verify(pubkeys[0], msg, sigs[0]) {
+		if ed25519.Verify(&pubkeys[0], msg, &sigs[0]) {
 			sigs = sigs[1:]
 		}
 		pubkeys = pubkeys[1:]

@@ -5,7 +5,7 @@ import (
 
 	"chain/core/mockhsm"
 	"chain/core/txbuilder"
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/chainkd"
 	"chain/errors"
 	"chain/net/http/httpjson"
 )

@@ -1,10 +1,10 @@
 package vmutil
 
 import (
-	"bytes"
+	"crypto/rand"
 	"testing"
 
-	"chain/crypto/ed25519"
+	"github.com/agl/ed25519"
 )
 
 // TestIsUnspendable ensures the IsUnspendable function returns the expected
@@ -50,7 +50,7 @@ func Test00Multisig(t *testing.T) {
 }
 
 func Test01Multisig(t *testing.T) {
-	pubkeys := []ed25519.PublicKey{{}}
+	pubkeys := []*[ed25519.PublicKeySize]byte{{}}
 	_, err := BlockMultiSigProgram(pubkeys, 0)
 	if err == nil {
 		t.Fatal("BlockMultiSigScript(1, 0) = success want error")
@@ -72,9 +72,9 @@ func TestParse00Multisig(t *testing.T) {
 }
 
 func TestP2SP(t *testing.T) {
-	pub1, _, _ := ed25519.GenerateKey(nil)
-	pub2, _, _ := ed25519.GenerateKey(nil)
-	prog, _ := P2SPMultiSigProgram([]ed25519.PublicKey{pub1, pub2}, 1)
+	pub1, _, _ := ed25519.GenerateKey(rand.Reader)
+	pub2, _, _ := ed25519.GenerateKey(rand.Reader)
+	prog, _ := P2SPMultiSigProgram([]*[ed25519.PublicKeySize]byte{pub1, pub2}, 1)
 	pubs, n, err := ParseP2SPMultiSigProgram(prog)
 	if err != nil {
 		t.Fatal(err)
@@ -82,18 +82,18 @@ func TestP2SP(t *testing.T) {
 	if n != 1 {
 		t.Errorf("expected nrequired=1, got %d", n)
 	}
-	if !bytes.Equal(pubs[0], pub1) {
-		t.Errorf("expected first pubkey to be %x, got %x", pub1, pubs[0])
+	if *pubs[0] != *pub1 {
+		t.Errorf("expected first pubkey to be %x, got %x", pub1[:], pubs[0][:])
 	}
-	if !bytes.Equal(pubs[1], pub2) {
-		t.Errorf("expected second pubkey to be %x, got %x", pub2, pubs[1])
+	if *pubs[1] != *pub2 {
+		t.Errorf("expected second pubkey to be %x, got %x", pub2[:], pubs[1][:])
 	}
 }
 
 func TestBlockMultisig(t *testing.T) {
-	pub1, _, _ := ed25519.GenerateKey(nil)
-	pub2, _, _ := ed25519.GenerateKey(nil)
-	prog, _ := BlockMultiSigProgram([]ed25519.PublicKey{pub1, pub2}, 1)
+	pub1, _, _ := ed25519.GenerateKey(rand.Reader)
+	pub2, _, _ := ed25519.GenerateKey(rand.Reader)
+	prog, _ := BlockMultiSigProgram([]*[ed25519.PublicKeySize]byte{pub1, pub2}, 1)
 	pubs, n, err := ParseBlockMultiSigProgram(prog)
 	if err != nil {
 		t.Fatal(err)
@@ -101,10 +101,10 @@ func TestBlockMultisig(t *testing.T) {
 	if n != 1 {
 		t.Errorf("expected nrequired=1, got %d", n)
 	}
-	if !bytes.Equal(pubs[0], pub1) {
-		t.Errorf("expected first pubkey to be %x, got %x", pub1, pubs[0])
+	if *pubs[0] != *pub1 {
+		t.Errorf("expected first pubkey to be %x, got %x", pub1[:], pubs[0][:])
 	}
-	if !bytes.Equal(pubs[1], pub2) {
-		t.Errorf("expected second pubkey to be %x, got %x", pub2, pubs[1])
+	if *pubs[1] != *pub2 {
+		t.Errorf("expected second pubkey to be %x, got %x", pub2[:], pubs[1][:])
 	}
 }

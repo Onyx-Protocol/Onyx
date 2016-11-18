@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/agl/ed25519"
+
 	"chain/core/accesstoken"
 	"chain/core/account"
 	"chain/core/asset"
@@ -64,7 +66,7 @@ type Handler struct {
 	DB            pg.DB
 	Addr          string
 	AltAuth       func(*http.Request) bool
-	Signer        func(context.Context, *bc.Block) ([]byte, error)
+	Signer        func(context.Context, *bc.Block) (*[ed25519.SignatureSize]byte, error)
 	RequestLimits []RequestLimit
 
 	once           sync.Once
@@ -271,17 +273,17 @@ func webAssetsHandler(next http.Handler) http.Handler {
 	})
 }
 
-func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, error)) func(context.Context, *bc.Block) ([]byte, error) {
-	return func(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) (*[ed25519.SignatureSize]byte, error)) func(context.Context, *bc.Block) (*[ed25519.SignatureSize]byte, error) {
+	return func(ctx context.Context, b *bc.Block) (*[ed25519.SignatureSize]byte, error) {
 		if f == nil {
 			return nil, errNotFound // TODO(kr): is this really the right error here?
 		}
 		if leader.IsLeading() {
 			return f(ctx, b)
 		}
-		var resp []byte
+		var resp [ed25519.SignatureSize]byte
 		err := h.forwardToLeader(ctx, "/rpc/signer/sign-block", b, &resp)
-		return resp, err
+		return &resp, err
 	}
 }
 

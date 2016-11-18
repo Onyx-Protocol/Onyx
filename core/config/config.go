@@ -7,13 +7,15 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"time"
+
+	"github.com/agl/ed25519"
 
 	"chain/core/mockhsm"
 	"chain/core/rpc"
 	"chain/core/txdb"
-	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/database/sql"
 	chainjson "chain/encoding/json"
@@ -126,9 +128,9 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		}
 	}
 
-	var signingKeys []ed25519.PublicKey
+	var signingKeys []*[ed25519.PublicKeySize]byte
 	if c.IsSigner {
-		var blockPub ed25519.PublicKey
+		var blockPub *[ed25519.PublicKeySize]byte
 		if c.BlockPub == "" {
 			hsm := mockhsm.New(db)
 			corePub, created, err := hsm.GetOrCreate(ctx, autoBlockKeyAlias)
@@ -136,7 +138,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 				return err
 			}
 			blockPub = corePub.Pub
-			blockPubStr := hex.EncodeToString(blockPub)
+			blockPubStr := hex.EncodeToString(blockPub[:])
 			if created {
 				log.Messagef(ctx, "Generated new block-signing key %s\n", blockPubStr)
 			} else {
@@ -144,10 +146,16 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			}
 			c.BlockPub = blockPubStr
 		} else {
-			blockPub, err = hex.DecodeString(c.BlockPub)
+			p, err := hex.DecodeString(c.BlockPub)
 			if err != nil {
 				return err
 			}
+			if len(p) != ed25519.PublicKeySize {
+				return fmt.Errorf("bad public key size %d", len(p))
+			}
+			var pbuf [ed25519.PublicKeySize]byte
+			copy(pbuf[:], p)
+			blockPub = &pbuf
 		}
 		signingKeys = append(signingKeys, blockPub)
 	}
@@ -161,7 +169,9 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			if len(signer.Pubkey) != ed25519.PublicKeySize {
 				return errors.Wrap(ErrBadSignerPubkey, err.Error())
 			}
-			signingKeys = append(signingKeys, ed25519.PublicKey(signer.Pubkey))
+			var pubbuf [ed25519.PublicKeySize]byte
+			copy(pubbuf[:], signer.Pubkey)
+			signingKeys = append(signingKeys, &pubbuf)
 		}
 
 		if c.Quorum == 0 && len(signingKeys) > 0 {
