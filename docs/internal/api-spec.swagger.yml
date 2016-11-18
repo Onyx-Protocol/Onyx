@@ -104,7 +104,7 @@ definitions:
         description: A public key that appears in the asset's issuance program.
       asset_derivation_path:
         type: string
-        description: The derivation path from which `asset_pubkey` was derived.
+        description: The derivation path through which `asset_pubkey` was derived.
 
   AssetPage:
     type: object
@@ -185,7 +185,7 @@ definitions:
           are derived.
       account_derivation_path:
         type: string
-        description: The derivation path from which `account_xpub` was derived.
+        description: The derivation path through which `account_xpub` was derived.
 
   AccountPage:
     type: object
