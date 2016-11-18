@@ -540,22 +540,164 @@ definitions:
           ControlWithProgramAction, and RetireAction.
 
   IssueAction:
+    description: This action adds an issuance input for the specified asset to
+      the transaction.
     type: object
+    required:
+      - amount
+    properties:
+      asset_id:
+        type: string
+        description: The unique ID of the asset being issued. Either `asset_id`
+          or `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the asset being issued. Either
+          `asset_id` or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the asset to be issued.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
 
   SpendFromAccountAction:
+    description: This action adds spending inputs to the transaction that use
+      funds from the specified account. It adds change outputs where necessary.
     type: object
+    required:
+      - amount
+    properties:
+      account_id:
+        type: string
+        description: The unique ID of the spending account. Either `account_id`
+          or `account_alias` is required.
+      account_alias:
+        type: string
+        description: The unique alias of the spending account. Either
+          `account_id` or `account_alias` is required.
+      asset_id:
+        type: string
+        description: The unique ID of the outgoing asset. Either `asset_id` or
+          `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the outgoing asset. Either `asset_id`
+          or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the outgoing asset.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
 
   SpendFromAccountUnspentOutputAction:
+    description: This action spends a specific output controlled by an account
+      on the local core. The entire sum of assets controlled in the output will
+      be spent, and the user is required to handle change manually.
     type: object
+    required:
+      - transaction_id
+      - position
+    properties:
+      transaction_id:
+        type: string
+        description: The unique ID of the transaction containing the output
+          being spent.
+      position:
+        type: string
+        description: The output's index relative to other outputs in the
+          containing transaction.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
 
   ControlWithAccountAction:
+    description: This action adds an output to the transaction that controls
+      some amount of an asset with a control program in the specified account.
     type: object
+    required:
+      - amount
+    properties:
+      account_id:
+        type: string
+        description: The unique ID of the receiving account. Either `account_id`
+          or `account_alias` is required.
+      account_alias:
+        type: string
+        description: The unique alias of the receiving account. Either
+          `account_id` or `account_alias` is required.
+      asset_id:
+        type: string
+        description: The unique ID of the incoming asset. Either `asset_id` or
+          `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the incoming asset. Either `asset_id`
+          or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the incoming asset.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
 
   ControlWithProgramAction:
+    description: This action adds an output to the transaction that controls
+      some amount of an asset with a control program in the specified control
+      program. Typically, this is used to make payments to control programs
+      created from accounts that are not on the local core.
     type: object
+    required:
+      - control_program
+      - amount
+    properties:
+      control_program:
+        type: string
+        description: The control program that will receive the incoming asset
+          amount.
+      asset_id:
+        type: string
+        description: The unique ID of the incoming asset. Either `asset_id` or
+          `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the incoming asset. Either `asset_id`
+          or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the incoming asset.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
 
   RetireAction:
+    description: This action removes a quantity of assets from circulation on
+      the blockchain.
     type: object
+    required:
+      - amount
+    properties:
+      asset_id:
+        type: string
+        description: The unique ID of the asset to be retired. Either `asset_id`
+          or `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the asset to be retired. Either
+          `asset_id` or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the asset to be retired.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
 
   TransactionTemplate:
     type: object
