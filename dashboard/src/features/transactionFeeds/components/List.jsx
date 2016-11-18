@@ -25,7 +25,7 @@ const dispatch = (dispatch) => ({
 export default BaseList.connect(
   BaseList.mapStateToProps(type, ListItem, {
     skipQuery: true,
-    label: 'Transaction Feeds'
+    label: 'transaction feeds'
   }),
   dispatch
 )

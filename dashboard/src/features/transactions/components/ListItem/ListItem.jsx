@@ -20,7 +20,7 @@ class ListItem extends React.Component {
             </span>
           </div>
           <Link className={styles.viewLink} to={`/transactions/${item.id}`}>
-            View Details
+            View details
           </Link>
         </div>
 

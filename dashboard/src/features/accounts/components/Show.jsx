@@ -40,7 +40,7 @@ class Show extends BaseShow {
           title={title}
           actions={[
             <button className='btn btn-link' onClick={this.createControlProgram}>
-              Create Control Program
+              Create control program
             </button>
           ]}
         />

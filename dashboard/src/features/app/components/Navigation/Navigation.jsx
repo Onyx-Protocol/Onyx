@@ -38,7 +38,7 @@ class Navigation extends React.Component {
           <li>
             <Link to='/unspents' activeClassName={styles.active}>
               {navIcon('unspent', styles)}
-              Unspent Outputs
+              Unspent outputs
             </Link>
           </li>
         </ul>
@@ -48,7 +48,7 @@ class Navigation extends React.Component {
           <li>
             <Link to='/mockhsms' activeClassName={styles.active}>
               {navIcon('mockhsm', styles)}
-              Mock HSM
+              MockHSM
             </Link>
           </li>
           <li>

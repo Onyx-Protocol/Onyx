@@ -32,7 +32,7 @@ class Form extends React.Component {
     return(
       <FormContainer
         error={error}
-        label='New Account'
+        label='New account'
         onSubmit={handleSubmit(this.submitWithErrors)}
         submitting={submitting} >
 

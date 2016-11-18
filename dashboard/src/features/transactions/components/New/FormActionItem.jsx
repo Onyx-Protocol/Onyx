@@ -18,12 +18,12 @@ const TRANSACTION_REFERENCE_DATA = 'set_transaction_reference_data'
 
 const actionLabels = {
   [ISSUE_KEY]: 'Issue',
-  [SPEND_ACCOUNT_KEY]: 'Spend from Account',
-  [SPEND_UNSPENT_KEY]: 'Spend Unspent Output',
-  [CONTROL_ACCOUNT_KEY]: 'Control with Account',
-  [CONTROL_PROGRAM_KEY]: 'Control with Program',
+  [SPEND_ACCOUNT_KEY]: 'Spend from account',
+  [SPEND_UNSPENT_KEY]: 'Spend unspent output',
+  [CONTROL_ACCOUNT_KEY]: 'Control with account',
+  [CONTROL_PROGRAM_KEY]: 'Control with program',
   [RETIRE_ASSET_KEY]: 'Retire',
-  [TRANSACTION_REFERENCE_DATA]: 'Set Transaction Reference Data',
+  [TRANSACTION_REFERENCE_DATA]: 'Set transaction reference data',
 }
 
 const visibleFields = {

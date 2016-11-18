@@ -11,7 +11,7 @@ class ListItem extends React.Component {
         <td><code>{item.id}</code></td>
         <td>
           <Link to={`/accounts/${item.id}`}>
-            View Details →
+            View details →
           </Link>
         </td>
       </tr>
