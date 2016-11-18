@@ -75,8 +75,8 @@ definitions:
         description: The keys listed in the asset's issuance program.
       quorum:
         type: integer
-        description: The number of signatures from different keys that must be
-          provided in a valid issuance transaction.
+        description: The number of signatures required for valid issuances of
+          this asset.
       definition:
         type: object
         description: Arbitrary key/value information specified by the asset's
@@ -162,8 +162,8 @@ definitions:
           account.
       quorum:
         type: integer
-        description: The number of signatures from different keys that must be
-          provided in a valid issuance transaction.
+        description: The number of signatures required for spending funds
+          controlled by the account's control programs.
       tags:
         type: object
         description: Arbitrary key/value information associated with the account
