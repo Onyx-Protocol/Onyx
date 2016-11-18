@@ -498,13 +498,17 @@ definitions:
       actions:
         type: array
         items:
-          type: object
+          $ref: '#/definitions/TransactionBuilderAction'
         description: A list of actions to perform in the transaction, such as
-          issuing, spending, controlling, or retiring assets. Since Swagger 2.0
-          does not allow for polymorphic arrays, the types are not listed here.
-          Please refer to descriptions of IssueAction, SpendFromAccountAction,
-          SpendFromAccountUnspentOutputAction, ControlWithAccountAction,
-          ControlWithProgramAction, and RetireAction.
+          issuing, spending, controlling, or retiring assets.
+
+  TransactionBuilderAction:
+    type: object
+    description: There are several types of actions for building transactions.
+      Since Swagger 2.0 does not allow for polymorphic types, the individual
+      properties are not listed here. Please refer to the definitions of
+      IssueAction, SpendFromAccountAction, SpendFromAccountUnspentOutputAction,
+      ControlWithAccountAction, ControlWithProgramAction, and RetireAction.
 
   IssueAction:
     description: This action adds an issuance input for the specified asset to
