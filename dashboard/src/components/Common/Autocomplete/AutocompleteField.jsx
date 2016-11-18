@@ -15,6 +15,7 @@ class AutocompleteField extends React.Component {
     this.renderSuggestion = this.renderSuggestion.bind(this)
     this.onSuggestionsFetchRequested = this.onSuggestionsFetchRequested.bind(this)
     this.onSuggestionsClearRequested = this.onSuggestionsClearRequested.bind(this)
+    this.tabCheck = this.tabCheck.bind(this)
   }
 
   getSuggestions(value) {
@@ -57,6 +58,16 @@ class AutocompleteField extends React.Component {
     })
   }
 
+  tabCheck(event, suggestions, fieldProps) {
+    if (event.keyCode == 9) {
+      var suggestion = suggestions[0]["alias"]
+      var input = fieldProps.value.toLowerCase()
+      if (suggestion.toLowerCase().startsWith(input)) {
+        fieldProps.onChange(suggestion)
+      }
+    }
+  }
+
   render() {
     const { suggestions } = this.state
     const { fieldProps } = this.props
@@ -74,7 +85,8 @@ class AutocompleteField extends React.Component {
           className: `form-control ${this.props.className}`,
           value: fieldProps.value,
           placeholder: this.props.placeholder,
-          onChange: (event, { newValue }) => fieldProps.onChange(newValue) }}
+          onChange: (event, { newValue }) => fieldProps.onChange(newValue),
+          onKeyDown: (event) => this.tabCheck(event, suggestions, fieldProps)}}
       />
     )
   }
