@@ -12,22 +12,6 @@ consumes:
 produces:
   - application/json
 
-paths:
-
-  '/list-transactions':
-    post:
-      description: Fetches a page of transactions matching the specified query.
-      responses:
-        200:
-          description: A page of transactions.
-          schema:
-            $ref: '#/definitions/TransactionPage'
-      parameters:
-        - name: body
-          in: body
-          schema:
-            $ref: '#/definitions/TransactionQuery'
-
 definitions:
 
   Error:
@@ -51,6 +35,233 @@ definitions:
         description: Whether the error is potentially transient/temporary. If
           false, there is usually a problem with the user request.
 
+  MockHSMKey:
+    type: object
+    required:
+      - alias
+      - xpub
+    properties:
+      alias:
+        type: string
+        description: A user-provided, unique alias for the key.
+      xpub:
+        type: string
+        description: The extended public key that can be used as a root xpub for
+          creating accounts and assets.
+
+  MockHSMKeyPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/MockHSMKey'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/MockHSMKeyQuery'
+
+  MockHSMKeyQuery:
+    type: object
+    properties:
+      aliases:
+        type: array
+        items:
+          - type: string
+        description: A list of aliases of MockHSMKeys to return.
+      after:
+        type: string
+        description: An opaque cursor.
+
+  Asset:
+    type: object
+    required:
+      - id
+      - issuance_program
+      - keys
+      - quorum
+      - definition
+      - is_local
+    properties:
+      id:
+        type: string
+        description: The unique ID of the asset, derived from its issuance
+          program.
+      alias:
+        type: string
+        description: A user-provided, unique alias for the account. Only present
+          if `is_local` is "yes".
+      issuance_program:
+        type: string
+        description: The issuance program that must be satisfied for valid
+          issuances of this asset.
+      keys:
+        type: array
+        items:
+          $ref: '#/definitions/AssetKey'
+        description: The keys listed in the asset's issuance program.
+      quorum:
+        type: integer
+        description: The number of signatures from different keys that must be
+          provided in a valid issuance transaction.
+      definition:
+        type: object
+        description: Arbitrary key/value information specified by the asset's
+          issuer.
+      tags:
+        type: object
+        description: Arbitrary key/value information associated with the asset
+          on the local core. Only present if `is_local` is "yes".
+      is_local:
+        type: string
+        description: Either "yes" or "no". "yes" if the asset was created on the
+          local core. "no" otherwise.
+
+  AssetKey:
+    type: object
+    required:
+      - asset_pubkey
+    properties:
+      root_xpub:
+        type: string
+        description: The root xpub from which `asset_pubkey` was derived. Only
+          present for local assets.
+      asset_pubkey:
+        type: string
+        description: A public key that appears in the asset's issuance program.
+      asset_derivation_path:
+        type: string
+        description: The derivation path from which `asset_pubkey` was derived.
+
+  AssetPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Asset'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/AssetQuery'
+
+  AssetQuery:
+    type: object
+    properties:
+      filter:
+        type: string
+        description: Filter string to apply to result set.
+      filter_params:
+        type: array
+        items:
+          type: string
+        description: A list of parameters to be interpolated into the filter.
+      after:
+        type: string
+        description: An opaque cursor.
+
+  Account:
+    type: object
+    required:
+      - id
+      - alias
+      - keys
+      - quorum
+      - tags
+    properties:
+      id:
+        type: string
+        description: The unique ID of the account.
+      alias:
+        type: string
+        description: A user-provided, unique alias for the account.
+      keys:
+        type: array
+        items:
+          $ref: '#/definitions/AccountKey'
+        description: The keys listed in control programs created under this
+          account.
+      quorum:
+        type: integer
+        description: The number of signatures from different keys that must be
+          provided in a valid issuance transaction.
+      tags:
+        type: object
+        description: Arbitrary key/value information associated with the account
+          on the local core.
+
+  AccountKey:
+    type: object
+    required:
+      - root_xpub
+      - account_xpub
+      - account_derivation_path
+    properties:
+      root_xpub:
+        type: string
+        description: The root xpub from which `account_xpub` was derived.
+      account_xpub:
+        type: string
+        description: The extended public key from which control program pubkeys
+          are derived.
+      account_derivation_path:
+        type: string
+        description: The derivation path from which `account_xpub` was derived.
+
+  AccountPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Account'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/AccountQuery'
+
+  AccountQuery:
+    type: object
+    properties:
+      filter:
+        type: string
+        description: Filter string to apply to result set.
+      filter_params:
+        type: array
+        items:
+          type: string
+        description: A list of parameters to be interpolated into the filter.
+      after:
+        type: string
+        description: An opaque cursor.
+
+  ControlProgram:
+    type: object
+    required:
+      - control_program
+    properties:
+      control_program:
+        type: string
+        description: The raw hex of the control program.
+
   Transaction:
     type: object
     required:
@@ -66,7 +277,7 @@ definitions:
     properties:
       id:
         type: string
-        description: The unique identifier of the transaction, generated from a
+        description: The unique ID of the transaction, generated from a
           hash of its contents.
       timestamp:
         type: string
@@ -75,8 +286,7 @@ definitions:
           block's timestamp.
       block_id:
         type: string
-        description: The unique identifier of the block containing the
-          transaction.
+        description: The unique ID of the block containing the transaction.
       block_height:
         type: integer
         description: The index within the blockchain of the block containing the
@@ -303,3 +513,345 @@ definitions:
       after:
         type: string
         description: An opaque cursor.
+
+  TransactionBuilder:
+    type: object
+    required:
+      - actions
+    properties:
+      base_transaction:
+        type: string
+        description: The base transaction onto which actions may be added. Only
+          used when completing multi-party swap transactions.
+      ttl:
+        type: integer
+        description: A duration in milliseconds indicating how long the proposed
+          transaction will be valid. Outputs reserved for this transaction will
+          remain reserved for this time.
+      actions:
+        type: array
+        items:
+          type: object
+        description: A list of actions to perform in the transaction, such as
+          issuing, spending, controlling, or retiring assets. Since Swagger 2.0
+          does not allow for polymorphic arrays, the types are not listed here.
+          Please refer to descriptions of IssueAction, SpendFromAccountAction,
+          SpendFromAccountUnspentOutputAction, ControlWithAccountAction,
+          ControlWithProgramAction, and RetireAction.
+
+  IssueAction:
+    type: object
+
+  SpendFromAccountAction:
+    type: object
+
+  SpendFromAccountUnspentOutputAction:
+    type: object
+
+  ControlWithAccountAction:
+    type: object
+
+  ControlWithProgramAction:
+    type: object
+
+  RetireAction:
+    type: object
+
+  TransactionTemplate:
+    type: object
+    required:
+      - raw_transaction
+      - signing_instructions
+    properties:
+      raw_transaction:
+        type: string
+        description: The hex-encoded raw transaction.
+      signing_instructions:
+        type: array
+        items:
+          type: object
+        description: A list of opaque signing instructions, read by the signer.
+
+  SignerTransactionTemplate:
+    description: A transaction template extended with user-provided signing
+      options, used as an argument to an HSM signer, such as the MockHSM's
+      signer.
+    allOf:
+      - $ref: '#/definitions/TransactionTemplate'
+      - type: object
+        properties:
+          allow_additional_transactions:
+            type: boolean
+            description: If true, the signer will sign the transaction such that
+              additional participants may add to the transaction. If false, the
+              signer will provide signatures over the entire transaction, so
+              that the signatures are invalid if additional actions are added to
+              the transaction.
+
+paths:
+
+  '/mockhsm/create-key':
+    post:
+      description: Creates a new MockHSM key.
+      responses:
+        200:
+          description: A MockHSM key.
+          schema:
+            $ref: '#/definitions/MockHSMKey'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              alias:
+                type: string
+                description: A unique alias for the MockHSMKey.
+
+  '/mockhsm/list-keys':
+    post:
+      description: Returns a page of MockHSM keys matching the specified query.
+      responses:
+        200:
+          description: A page of MockHSM keys.
+          schema:
+            $ref: '#/definitions/MockHSMKeyPage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/MockHSMKeyQuery'
+
+  '/mockhsm/sign-transaction':
+    post:
+      description: Sign a list of transactions using the MockHSM.
+      responses:
+        200:
+          description: A list of transaction templates and/or errors. Items in
+            the list may be Error objects in case of errors, but Swagger 2.0
+            does not allow for polymorphic array items.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TransactionTemplate'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - xpubs
+              - transactions
+            properties:
+              xpubs:
+                type: array
+                items:
+                  type: string
+                description: A list of xpubs that the signer should provide
+                  signatures for.
+              transactions:
+                type: array
+                items:
+                  $ref: '#/definitions/SignerTransactionTemplate'
+                description: A list of transactions to be signed by the signer.
+
+  '/create-asset':
+    post:
+      description: Creates one or more new assets.
+      responses:
+        200:
+          description: A list of assets and/or error messages. Items in the
+            list may be Error objects in case of errors, but Swagger 2.0 does
+            not allow for polymorphic array items.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Asset'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                alias:
+                  type: string
+                  description: A unique alias for the asset.
+                root_xpubs:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of xpubs from which pubkeys will be
+                    derived and placed into the asset's issuance program.
+                quorum:
+                  type: integer
+                  description: The number of signatures required for valid
+                    issuances of this asset.
+                definition:
+                  type: object
+                  description: Arbitrary key/value information that will be
+                    committed to the blockchain when the asset is issued.
+                tags:
+                  type: object
+                  description: Arbitrary key/value information that is
+                    associated with the asset on the local core.
+
+  '/list-assets':
+    post:
+      description: Returns a page of assets matching the specified query.
+      responses:
+        200:
+          description: A page of assets.
+          schema:
+            $ref: '#/definitions/AssetPage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/AssetQuery'
+
+  '/create-account':
+    post:
+      description: Creates one or more new accounts.
+      responses:
+        200:
+          description: A list of accounts and/or error messages. Items in the
+            list may be Error objects in case of errors, but Swagger 2.0 does
+            not allow for polymorphic array items.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Account'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                alias:
+                  type: string
+                  description: A unique alias for the account.
+                root_xpubs:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of xpubs from which the account's control
+                    program pubkeys will be derived.
+                quorum:
+                  type: integer
+                  description: The number of signatures required for spending
+                    funds controlled by the account's control programs.
+                tags:
+                  type: object
+                  description: Arbitrary key/value information that is
+                    associated with the account.
+
+  '/list-accounts':
+    post:
+      description: Returns a page of accounts matching the specified query.
+      responses:
+        200:
+          description: A page of accounts.
+          schema:
+            $ref: '#/definitions/AccountPage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/AccountQuery'
+
+  '/create-control-program':
+    post:
+      description: Create one or more control programs.
+      responses:
+        200:
+          description: A list of accounts and/or error messages. Items in the
+            list may be Error objects in case of errors, but Swagger 2.0 does
+            not allow for polymorphic array items.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ControlProgram'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: array
+            items:
+              type: object
+              required:
+                - type
+                - params
+              properties:
+                type:
+                  type: string
+                  description: Currently, only "account" is accepted.
+                params:
+                  type: object
+                  description: Parameters for creating the control program.
+                    Currently, only parameters for the "account" type are
+                    accepted.
+                  properties:
+                    account_id:
+                      type: string
+                      description: The unique ID of the account. Either
+                        `account_id` or `account_alias` is required.
+                    account_alias:
+                      type: string
+                      description: The unique alias of the account. Either
+                        `account_id` or `account_alias` is required.
+
+  '/build-transaction':
+    post:
+      description: Builds one or more transactions.
+      responses:
+        200:
+          description: A list of unsigned transaction templates.
+          schema:
+            $ref: '#/definitions/TransactionTemplate'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/TransactionBuilder'
+
+  '/submit-transaction':
+    post:
+      description: Submits one or more signed transactions.
+      responses:
+        200:
+          description: A list of transaction IDs.
+          schema:
+            type: array
+            items:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  description: The unique ID of the transaction.
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TransactionTemplate'
+
+  '/list-transactions':
+    post:
+      description: Returns a page of transactions matching the specified query.
+      responses:
+        200:
+          description: A page of transactions.
+          schema:
+            $ref: '#/definitions/TransactionPage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/TransactionQuery'
