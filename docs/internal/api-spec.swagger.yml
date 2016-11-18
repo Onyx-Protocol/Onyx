@@ -85,7 +85,7 @@ definitions:
         type: array
         items:
           - type: string
-        description: A list of aliases of MockHSMKeys to return.
+        description: A list of aliases of the MockHSMKeys to be returned.
       after:
         type: string
         description: An opaque cursor, used for pagination.
