@@ -1038,6 +1038,10 @@ paths:
           description: A list of assets and/or error messages. Items in the
             list may be Error objects in case of errors, but Swagger 2.0 does
             not allow for polymorphic array items.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             type: array
             items:
@@ -1081,6 +1085,10 @@ paths:
       responses:
         200:
           description: A page of assets.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/AssetPage'
       parameters:
@@ -1097,6 +1105,10 @@ paths:
           description: A list of accounts and/or error messages. Items in the
             list may be Error objects in case of errors, but Swagger 2.0 does
             not allow for polymorphic array items.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             type: array
             items:
@@ -1136,6 +1148,10 @@ paths:
       responses:
         200:
           description: A page of accounts.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/AccountPage'
       parameters:
@@ -1152,6 +1168,10 @@ paths:
           description: A list of control programs and/or error messages. Items
             in the list may be Error objects in case of errors, but Swagger 2.0
             does not allow for polymorphic array items.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             type: array
             items:
@@ -1193,6 +1213,10 @@ paths:
           description: A list of transaction templates and/or errors. Items in
             the list may be Error objects in case of errors, but Swagger 2.0
             does not allow for polymorphic array items.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionTemplate'
       parameters:
@@ -1207,6 +1231,10 @@ paths:
       responses:
         200:
           description: A list of transaction IDs.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             type: array
             items:
@@ -1225,6 +1253,10 @@ paths:
       responses:
         200:
           description: A page of transactions.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionPage'
       parameters:
@@ -1241,6 +1273,10 @@ paths:
       responses:
         200:
           description: A page of balances.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/BalancePage'
       parameters:
@@ -1255,6 +1291,10 @@ paths:
       responses:
         200:
           description: A page of unspent outputs.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/UnspentOutputPage'
       parameters:
@@ -1269,6 +1309,10 @@ paths:
       responses:
         200:
           description: A new transaction feed.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionFeed'
       parameters:
@@ -1292,6 +1336,10 @@ paths:
       responses:
         200:
           description: A transaction feed.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionFeed'
       parameters:
@@ -1315,6 +1363,10 @@ paths:
       responses:
         200:
           description: A page of transaction feeds.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionFeedPage'
       parameters:
@@ -1329,6 +1381,10 @@ paths:
       responses:
         200:
           description: The updated transaction feed.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionFeed'
       parameters:
@@ -1362,6 +1418,10 @@ paths:
       responses:
         200:
           description: A default success message.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/OkMessage'
       parameters:
@@ -1385,6 +1445,10 @@ paths:
       responses:
         200:
           description: A new access token.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             allOf:
               - $ref: '#/definitions/AccessToken'
@@ -1421,6 +1485,10 @@ paths:
       responses:
         200:
           description: A page of access tokens.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/AccessTokenPage'
       parameters:
@@ -1435,6 +1503,10 @@ paths:
       responses:
         200:
           description: A default success message.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/OkMessage'
       parameters:
@@ -1455,6 +1527,10 @@ paths:
       responses:
         200:
           description: Information about the core.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/CoreInfo'
 
@@ -1464,6 +1540,10 @@ paths:
       responses:
         200:
           description: A default success message.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/OkMessage'
       parameters:
@@ -1499,6 +1579,10 @@ paths:
       responses:
         200:
           description: A default success message.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/OkMessage'
       parameters:
@@ -1519,6 +1603,10 @@ paths:
       responses:
         200:
           description: A MockHSM key.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/MockHSMKey'
       parameters:
@@ -1537,6 +1625,10 @@ paths:
       responses:
         200:
           description: A page of MockHSM keys.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/MockHSMKeyPage'
       parameters:
@@ -1553,6 +1645,10 @@ paths:
           description: A list of transaction templates and/or errors. Items in
             the list may be Error objects in case of errors, but Swagger 2.0
             does not allow for polymorphic array items.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
           schema:
             type: array
             items:
