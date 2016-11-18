@@ -1,0 +1,305 @@
+---
+swagger: '2.0'
+info:
+  title: Chain Core API
+  description: This API description is for reference only. It should NOT be used
+    to automatically generate client software for the Chain Core API. Instead,
+    please use the official SDKs.
+  version: 1.0.0
+basePath: /
+consumes:
+  - application/json
+produces:
+  - application/json
+
+paths:
+
+  '/list-transactions':
+    post:
+      description: Fetches a page of transactions matching the specified query.
+      responses:
+        200:
+          description: A page of transactions.
+          schema:
+            $ref: '#/definitions/TransactionPage'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/TransactionQuery'
+
+definitions:
+
+  Error:
+    type: object
+    required:
+      - code
+      - message
+      - temporary
+    properties:
+      code:
+        type: string
+        description: A machine-readable error code.
+      message:
+        type: string
+        description: A human-readable error message.
+      detail:
+        type: string
+        description: Request-specific details about the error.
+      temporary:
+        type: boolean
+        description: Whether the error is potentially transient/temporary. If
+          false, there is usually a problem with the user request.
+
+  Transaction:
+    type: object
+    required:
+      - id
+      - timestamp
+      - block_id
+      - block_height
+      - position
+      - reference_data
+      - is_local
+      - inputs
+      - outputs
+    properties:
+      id:
+        type: string
+        description: The unique identifier of the transaction, generated from a
+          hash of its contents.
+      timestamp:
+        type: string
+        description: An RFC3339 timestamp indicating the time the transaction
+          was added to the blockchain. This is the same as the containing
+          block's timestamp.
+      block_id:
+        type: string
+        description: The unique identifier of the block containing the
+          transaction.
+      block_height:
+        type: integer
+        description: The index within the blockchain of the block containing the
+          transaction.
+      position:
+        type: integer
+        description: The index of the transaction within the containing block.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data added by the
+          transaction's participants.
+      is_local:
+        type: string
+        description: Either "yes" or "no". "yes" if the transaction contains any
+          inputs or outputs that are considered local. "no" otherwise.
+      inputs:
+        type: array
+        items:
+          $ref: '#/definitions/TransactionInput'
+        description: A list of the transaction's inputs.
+      outputs:
+        type: array
+        items:
+          $ref: '#/definitions/TransactionOutput'
+        description: A list of the transaction's outputs.
+
+  TransactionInput:
+    type: object
+    required:
+      - type
+      - asset_id
+      - asset_definition
+      - asset_is_local
+      - amount
+      - reference_data
+      - is_local
+    properties:
+      type:
+        type: string
+        description: Either "spend" or "issue".
+      asset_id:
+        type: string
+        description: The unique ID of the asset being issued or spent.
+      asset_alias:
+        type: string
+        description: The alias associated with the asset on the local core. Only
+          present if `asset_is_local` is "yes".
+      asset_definition:
+        type: object
+        description: Arbitrary key/value information specified by the asset's
+          issuer.
+      asset_tags:
+        type: object
+        description: Arbitrary key/value information associated with the asset
+          on the local core. Only present if `asset_is_local` is "yes".
+      asset_is_local:
+        type: string
+        description: Either "yes" or "no". "yes" if the asset being spend/issued
+          is local to this core. "no" otherwise.
+      amount:
+        type: integer
+        description: The amount of the asset being spent/issued.
+      spent_output:
+        $ref: '#/definitions/SpentOutput'
+      account_id:
+        type: string
+        description: The unique ID of the account. Only present if `SpentOutput`
+          is controlled by an account on this core.
+      account_alias:
+        type: string
+        description: The alias of the account. Only present if `SpentOutput`
+          is controlled by an account on this core.
+      account_tags:
+        type: object
+        description: Arbitrary key/value data associated with the account. Only
+          present if `SpentOutput` is controlled by an account on this core.
+      issuance_program:
+        type: string
+        description: The issuance program that defines the asset ID. Only
+          present if `type` is "issue".
+      reference_data:
+        type: object
+        description: Arbitrary key/value data added to the transaction by the
+          spender/issuer.
+      is_local:
+        type: string
+        description: Either "yes" or "no". "yes" if `type` is "issue" and
+          `asset_is_local` is "yes", OR if `type` is "spend" and
+          `account_is_local` is "yes". "no" otherwise.
+
+  SpentOutput:
+    type: object
+    required:
+      - transaction_id
+      - position
+    properties:
+      transaction_id:
+        type: string
+        description: The unique ID of the transaction containing the output.
+      position:
+        type: integer
+        description: The position of the output within the containing
+          tranasction's outputs.
+
+  TransactionOutput:
+    type: object
+    required:
+      - type
+      - asset_id
+      - asset_definition
+      - asset_is_local
+      - amount
+      - reference_data
+      - is_local
+    properties:
+      type:
+        type: string
+        description: Either "control" or "retire".
+      purpose:
+        type: string
+        description: Either "receive" or "change". Only present if `type` is
+          "control" and the controlling account is local to this core.
+      position:
+        type: integer
+        description: The index of the output among the transaction's outputs.
+      asset_id:
+        type: string
+        description: The unique ID of the asset being controlled or retired.
+      asset_alias:
+        type: string
+        description: The alias associated with the asset on the local core. Only
+          present if `asset_is_local` is "yes".
+      asset_definition:
+        type: object
+        description: Arbitrary key/value information specified by the asset's
+          issuer.
+      asset_tags:
+        type: object
+        description: Arbitrary key/value information associated with the asset
+          on the local core. Only present if `asset_is_local` is "yes".
+      asset_is_local:
+        type: string
+        description: Either "yes" or "no". "yes" if the asset being spend/issued
+          is local to this core. "no" otherwise.
+      amount:
+        type: integer
+        description: The amount of the asset being controlled/retired.
+      account_id:
+        type: string
+        description: The unique ID of the account. Only present if `type` is
+          "control" and the controlling account is local to this core.
+      account_alias:
+        type: string
+        description: The alias of the account. Only present if `type` is
+          "control" and the controlling account is local to this core.
+      account_tags:
+        type: object
+        description: Arbitrary key/value data associated with the account. Only
+          present if `type` is "control" and the controlling account is local to
+          this core.
+      control_program:
+        type: string
+        description: The control program that must be satisfied in order for the
+          output to be spent. When `type` is "retire", this control program
+          always fails validation.
+      reference_data:
+        type: object
+        description: Arbitrary key/value data added to the transaction by the
+          transaction's participants.
+      is_local:
+        type: string
+        description: Either "yes" or "no". "yes" if `type` is "control" and the
+          account is local to this core. "no" otherwise.
+
+  TransactionPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Transaction'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/TransactionQuery'
+
+  TransactionQuery:
+    type: object
+    properties:
+      filter:
+        type: string
+        description: Filter string to apply to result set.
+      filter_params:
+        type: array
+        items:
+          type: string
+        description: A list of parameters to be interpolated into the filter.
+      start_time:
+        type: integer
+        description: A Unix timestamp in milliseconds. When specified, only
+          transactions with a block time greater than the start time will be
+          returned.
+      end_time:
+        type: integer
+        description: A Unix timestamp in milliseconds. When specified, only
+          transactions with a block time less than the start time will be
+          returned.
+      ascending_with_long_poll:
+        type: boolean
+        description: If true, the results will be returned in ascending
+          chronological order, and the request will remain open until results
+          matching the filter arrive on the blockchain, or the timeout is
+          reached.
+      timeout:
+        type: integer
+        description: A time in milliseconds after which a server timeout should
+          occur. Defaults to 1000 (1 second).
+      after:
+        type: string
+        description: An opaque cursor.
