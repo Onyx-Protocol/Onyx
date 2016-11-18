@@ -3,11 +3,7 @@
 package txbuilder
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"math"
-	"sync"
 	"time"
 
 	"chain/crypto/ed25519/chainkd"
@@ -33,129 +29,37 @@ var (
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
 func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Time) (*Template, error) {
-	var local bool
-	if tx == nil {
-		tx = &bc.TxData{
-			Version: bc.CurrentTransactionVersion,
-		}
-		local = true
+	builder := TemplateBuilder{
+		base:    tx,
+		maxTime: maxTime,
 	}
 
-	type res struct {
-		buildResult *BuildResult
-		err         error
-	}
-	results := make([]res, len(actions))
-	var wg sync.WaitGroup
-	wg.Add(len(actions))
-	for i := range actions {
-		i := i
-		go func() {
-			defer wg.Done()
-			buildResult, err := actions[i].Build(ctx, maxTime)
-			results[i] = res{buildResult, err}
-		}()
-	}
-
-	wg.Wait()
-	var (
-		tplSigInsts []*SigningInstruction
-		errs        []error
-		rollbacks   []func()
-	)
-result:
-	for i, v := range results {
-		if v.err != nil {
-			err := errors.WithData(v.err, "index", i)
-			errs = append(errs, err)
-			continue result
-		}
-		buildResult := v.buildResult
-		for _, in := range buildResult.Inputs {
-			if in.Amount() > math.MaxInt64 {
-				err := errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", in.Amount())
-				err = errors.WithData(err, "index", i)
-				errs = append(errs, err)
-				continue result
-			}
-		}
-		for _, out := range buildResult.Outputs {
-			if out.Amount > math.MaxInt64 {
-				err := errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", out.Amount)
-				err = errors.WithData(err, "index", i)
-				errs = append(errs, err)
-				continue result
-			}
-		}
-
-		if len(buildResult.Inputs) != len(buildResult.SigningInstructions) {
-			// This would only happen from a bug in our system
-			err := errors.Wrap(fmt.Errorf("%T returned different number of inputs and signing instructions", actions[i]))
+	// Build all of the actions, updating the builder.
+	var errs []error
+	for i, action := range actions {
+		err := action.Build(ctx, maxTime, &builder)
+		if err != nil {
 			err = errors.WithData(err, "index", i)
 			errs = append(errs, err)
-			continue result
-		}
-
-		for i := range buildResult.Inputs {
-			buildResult.SigningInstructions[i].Position = len(tx.Inputs)
-
-			// Empty signature arrays should be serialized as empty arrays, not null.
-			if buildResult.SigningInstructions[i].WitnessComponents == nil {
-				buildResult.SigningInstructions[i].WitnessComponents = []WitnessComponent{}
-			}
-
-			tplSigInsts = append(tplSigInsts, buildResult.SigningInstructions[i])
-			tx.Inputs = append(tx.Inputs, buildResult.Inputs[i])
-		}
-
-		tx.Outputs = append(tx.Outputs, buildResult.Outputs...)
-
-		if len(buildResult.ReferenceData) > 0 {
-			if len(tx.ReferenceData) != 0 && !bytes.Equal(tx.ReferenceData, buildResult.ReferenceData) {
-				// There can be only one! ...caller that sets reference data
-				return nil, errors.Wrap(ErrBadRefData)
-			}
-			tx.ReferenceData = buildResult.ReferenceData
-		}
-
-		if buildResult.MinTimeMS > 0 {
-			if buildResult.MinTimeMS > tx.MinTime {
-				tx.MinTime = buildResult.MinTimeMS
-			}
-		}
-
-		if buildResult.Rollback != nil {
-			rollbacks = append(rollbacks, buildResult.Rollback)
 		}
 	}
 
+	// If there were any errors, rollback and return a composite error.
 	if len(errs) > 0 {
-		rollback(rollbacks)
+		builder.rollback()
 		return nil, errors.WithData(ErrAction, "actions", errs)
 	}
 
-	err := checkBlankCheck(tx)
+	// Build the transaction template.
+	tpl := builder.Build()
+
+	err := checkBlankCheck(tpl.Transaction)
 	if err != nil {
-		rollback(rollbacks)
+		builder.rollback()
 		return nil, err
 	}
 
-	if tx.MaxTime == 0 || tx.MaxTime > bc.Millis(maxTime) {
-		tx.MaxTime = bc.Millis(maxTime)
-	}
-
-	tpl := &Template{
-		Transaction:         tx,
-		SigningInstructions: tplSigInsts,
-		Local:               local,
-	}
 	return tpl, nil
-}
-
-func rollback(rollbacks []func()) {
-	for _, f := range rollbacks {
-		f()
-	}
 }
 
 // KeyIDs produces KeyIDs from a list of xpubs and a derivation path

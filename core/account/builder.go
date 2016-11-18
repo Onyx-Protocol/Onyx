@@ -37,7 +37,7 @@ type spendAction struct {
 	ClientToken   *string       `json:"client_token"`
 }
 
-func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
+func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder.TemplateBuilder) error {
 	var missing []string
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")
@@ -46,12 +46,12 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {
-		return nil, txbuilder.MissingFieldsError(missing...)
+		return txbuilder.MissingFieldsError(missing...)
 	}
 
 	acct, err := a.accounts.findByID(ctx, a.AccountID)
 	if err != nil {
-		return nil, errors.Wrap(err, "get account info")
+		return errors.Wrap(err, "get account info")
 	}
 
 	src := source{
@@ -60,39 +60,34 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 	}
 	res, err := a.accounts.utxoDB.Reserve(ctx, src, a.Amount, a.ClientToken, maxTime)
 	if err != nil {
-		return nil, errors.Wrap(err, "reserving utxos")
+		return errors.Wrap(err, "reserving utxos")
 	}
 
-	var (
-		txins      []*bc.TxInput
-		tplInsts   []*txbuilder.SigningInstruction
-		changeOuts []*bc.TxOutput
-	)
+	// Cancel the reservation if the build gets rolled back.
+	b.OnRollback(canceler(ctx, a.accounts, res.ID))
 
 	for _, r := range res.UTXOs {
 		txInput, sigInst, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
 		if err != nil {
-			return nil, errors.Wrap(err, "creating inputs")
+			return errors.Wrap(err, "creating inputs")
 		}
-
-		txins = append(txins, txInput)
-		tplInsts = append(tplInsts, sigInst)
+		err = b.AddInput(txInput, sigInst)
+		if err != nil {
+			return errors.Wrap(err, "adding inputs")
+		}
 	}
+
 	if res.Change > 0 {
 		acp, err := a.accounts.CreateControlProgram(ctx, a.AccountID, true)
 		if err != nil {
-			return nil, errors.Wrap(err, "creating control program")
+			return errors.Wrap(err, "creating control program")
 		}
-		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, res.Change, acp, nil))
+		err = b.AddOutput(bc.NewTxOutput(a.AssetID, res.Change, acp, nil))
+		if err != nil {
+			return errors.Wrap(err, "adding change output")
+		}
 	}
-
-	br := &txbuilder.BuildResult{
-		Inputs:              txins,
-		Outputs:             changeOuts,
-		SigningInstructions: tplInsts,
-		Rollback:            canceler(ctx, a.accounts, res.ID),
-	}
-	return br, nil
+	return nil
 }
 
 func (m *Manager) NewSpendUTXOAction(outpoint bc.Outpoint) txbuilder.Action {
@@ -118,28 +113,23 @@ type spendUTXOAction struct {
 	ClientToken   *string       `json:"client_token"`
 }
 
-func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
+func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder.TemplateBuilder) error {
 	out := bc.Outpoint{Hash: a.TxHash, Index: a.TxOut}
 	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, out, a.ClientToken, maxTime)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	b.OnRollback(canceler(ctx, a.accounts, res.ID))
 
 	acct, err := a.accounts.findByID(ctx, res.Source.AccountID)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
 	txInput, sigInst, err := utxoToInputs(ctx, acct, res.UTXOs[0], a.ReferenceData)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	return &txbuilder.BuildResult{
-		Inputs:              []*bc.TxInput{txInput},
-		SigningInstructions: []*txbuilder.SigningInstruction{sigInst},
-		Rollback:            canceler(ctx, a.accounts, res.ID),
-	}, nil
+	return b.AddInput(txInput, sigInst)
 }
 
 // Best-effort cancellation attempt to put in txbuilder.BuildResult.Rollback.
@@ -193,7 +183,7 @@ type controlAction struct {
 	ReferenceData chainjson.Map `json:"reference_data"`
 }
 
-func (a *controlAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
+func (a *controlAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder.TemplateBuilder) error {
 	var missing []string
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")
@@ -202,13 +192,12 @@ func (a *controlAction) Build(ctx context.Context, maxTime time.Time) (*txbuilde
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {
-		return nil, txbuilder.MissingFieldsError(missing...)
+		return txbuilder.MissingFieldsError(missing...)
 	}
 
 	acp, err := a.accounts.CreateControlProgram(ctx, a.AccountID, false)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	out := bc.NewTxOutput(a.AssetID, a.Amount, acp, a.ReferenceData)
-	return &txbuilder.BuildResult{Outputs: []*bc.TxOutput{out}}, nil
+	return b.AddOutput(bc.NewTxOutput(a.AssetID, a.Amount, acp, a.ReferenceData))
 }
