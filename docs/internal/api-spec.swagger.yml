@@ -1130,7 +1130,7 @@ paths:
 
   '/create-control-program':
     post:
-      description: Create one or more control programs.
+      description: Creates one or more control programs.
       responses:
         200:
           description: A list of accounts and/or error messages. Items in the
@@ -1529,7 +1529,7 @@ paths:
 
   '/mockhsm/sign-transaction':
     post:
-      description: Sign a list of transactions using the MockHSM.
+      description: Signs a list of transactions using the MockHSM.
       responses:
         200:
           description: A list of transaction templates and/or errors. Items in
