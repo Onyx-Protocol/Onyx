@@ -50,27 +50,28 @@ func TestAccountSourceReserve(t *testing.T) {
 	}
 	source := accounts.NewSpendAction(assetAmount1, accID, nil, nil)
 
-	buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
+	var builder txbuilder.TemplateBuilder
+	err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
+	tpl, err := builder.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
-
-	if !reflect.DeepEqual(buildResult.Inputs, wantTxIns) {
-		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", buildResult.Inputs, wantTxIns)
+	if !reflect.DeepEqual(tpl.Transaction.Inputs, wantTxIns) {
+		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tpl.Transaction.Inputs, wantTxIns)
 	}
-
-	if len(buildResult.Outputs) != 1 {
+	if len(tpl.Transaction.Outputs) != 1 {
 		t.Errorf("expected 1 change output")
 	}
-
-	if buildResult.Outputs[0].Amount != 1 {
+	if tpl.Transaction.Outputs[0].Amount != 1 {
 		t.Errorf("expected change amount to be 1")
 	}
-
-	if !programInAccount(ctx, t, db, buildResult.Outputs[0].ControlProgram, accID) {
+	if !programInAccount(ctx, t, db, tpl.Transaction.Outputs[0].ControlProgram, accID) {
 		t.Errorf("expected change control program to belong to account")
 	}
 }
@@ -99,16 +100,22 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	source := accounts.NewSpendUTXOAction(out.Outpoint)
-	buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
+
+	var builder txbuilder.TemplateBuilder
+	err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
 	if err != nil {
 		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	tpl, err := builder.Build()
+	if err != nil {
 		t.Fatal(err)
 	}
 
 	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
 
-	if !reflect.DeepEqual(buildResult.Inputs, wantTxIns) {
-		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", buildResult.Inputs, wantTxIns)
+	if !reflect.DeepEqual(tpl.Transaction.Inputs, wantTxIns) {
+		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tpl.Transaction.Inputs, wantTxIns)
 	}
 }
 
@@ -148,15 +155,21 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
-		buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
+		var builder txbuilder.TemplateBuilder
+
+		err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
-		if len(buildResult.Inputs) != 1 {
-			t.Fatalf("expected 1 result utxo")
+		tpl, err := builder.Build()
+		if err != nil {
+			t.Fatal(err)
 		}
-		return buildResult.Inputs
+		if len(tpl.Transaction.Inputs) != 1 {
+			t.Fatalf("got %d result utxo, expected 1 result utxo", len(tpl.Transaction.Inputs))
+		}
+		return tpl.Transaction.Inputs
 	}
 
 	var (

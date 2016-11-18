@@ -24,11 +24,15 @@ import (
 
 type testAction bc.AssetAmount
 
-func (t testAction) Build(ctx context.Context, maxTime time.Time) (*BuildResult, error) {
+func (t testAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
 	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
 	tplIn := &SigningInstruction{}
-	change := bc.NewTxOutput(t.AssetID, t.Amount, []byte("change"), nil)
-	return &BuildResult{Inputs: []*bc.TxInput{in}, Outputs: []*bc.TxOutput{change}, SigningInstructions: []*SigningInstruction{tplIn}}, nil
+
+	err := b.AddInput(in, tplIn)
+	if err != nil {
+		return err
+	}
+	return b.AddOutput(bc.NewTxOutput(t.AssetID, t.Amount, []byte("change"), nil))
 }
 
 func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *controlProgramAction {
@@ -97,8 +101,15 @@ func TestBuild(t *testing.T) {
 	// setting tx refdata twice should fail
 	actions = append(actions, &setTxRefDataAction{Data: []byte("lmnop")})
 	_, err = Build(ctx, nil, actions, expiryTime)
-	if errors.Root(err) != ErrBadRefData {
-		t.Errorf("got error %v, want ErrBadRefData", err)
+	if errors.Root(err) != ErrAction {
+		t.Errorf("got error %#v, want ErrAction", err)
+	}
+	errs := errors.Data(err)["actions"].([]error)
+	if len(errs) != 1 {
+		t.Errorf("got error %v action errors, want 1", len(errs))
+	}
+	if errors.Root(errs[0]) != ErrBadRefData {
+		t.Errorf("got error %v in action error, want ErrBadRefData", errs[0])
 	}
 }
 
