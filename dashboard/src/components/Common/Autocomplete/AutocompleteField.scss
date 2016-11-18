@@ -20,10 +20,19 @@
 
 .suggestion {
   border-bottom: 1px solid $input-border;
-  padding: 12px;
 
   &:last-child {
     border: none;
+  }
+
+  div {
+    padding: 0;
+  }
+  
+  span {
+    padding: 12px;
+    display: inline-block;
+    width: 100%;
   }
 }
 

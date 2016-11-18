@@ -37,7 +37,9 @@ class AutocompleteField extends React.Component {
 
   renderSuggestion(suggestion) {
     return (
-      <span>{suggestion.alias}</span>
+      <div onMouseOver={this.handleHover.bind(this, suggestion.alias)}>
+        <span className="suggestionAlias">{suggestion.alias}</span>
+      </div>
     )
   }
 
@@ -56,6 +58,10 @@ class AutocompleteField extends React.Component {
     this.setState({
       suggestions: []
     })
+  }
+
+  handleHover(suggestion) {
+    this.props.fieldProps.onChange(suggestion)
   }
 
   tabCheck(event, suggestions, fieldProps) {
