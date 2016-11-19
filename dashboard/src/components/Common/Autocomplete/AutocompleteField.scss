@@ -25,10 +25,14 @@
     border: none;
   }
 
+  &:first-child {
+    @extend .suggestionFocused;
+  }
+
   div {
     padding: 0;
   }
-  
+
   span {
     padding: 12px;
     display: inline-block;
@@ -38,5 +42,5 @@
 
 .suggestionFocused {
   color: $brand-primary;
-  background: $page-header-border-color;
+  background: #e6e6e6;
 }

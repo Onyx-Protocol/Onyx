@@ -15,7 +15,6 @@ class AutocompleteField extends React.Component {
     this.renderSuggestion = this.renderSuggestion.bind(this)
     this.onSuggestionsFetchRequested = this.onSuggestionsFetchRequested.bind(this)
     this.onSuggestionsClearRequested = this.onSuggestionsClearRequested.bind(this)
-    this.tabCheck = this.tabCheck.bind(this)
   }
 
   getSuggestions(value) {
@@ -37,7 +36,7 @@ class AutocompleteField extends React.Component {
 
   renderSuggestion(suggestion) {
     return (
-      <div onMouseOver={this.handleHover.bind(this, suggestion.alias)}>
+      <div onMouseOver={() => this.props.fieldProps.onChange(suggestion.alias)}>
         <span>{suggestion.alias}</span>
       </div>
     )
@@ -60,16 +59,12 @@ class AutocompleteField extends React.Component {
     })
   }
 
-  handleHover(suggestion) {
-    this.props.fieldProps.onChange(suggestion)
-  }
-
-  tabCheck(event, suggestions, fieldProps) {
-    if (event.keyCode == 9) {
-      const suggestion = suggestions[0]["alias"]
-      const input = fieldProps.value.toLowerCase()
+  tabCheck(keyCode) {
+    if (keyCode == 9 || keyCode == 13) {
+      const suggestion = this.state.suggestions[0]["alias"]
+      const input = this.props.fieldProps.value.toLowerCase()
       if (suggestion.toLowerCase().startsWith(input)) {
-        fieldProps.onChange(suggestion)
+        this.props.fieldProps.onChange(suggestion)
       }
     }
   }
@@ -92,7 +87,7 @@ class AutocompleteField extends React.Component {
           value: fieldProps.value,
           placeholder: this.props.placeholder,
           onChange: (event, { newValue }) => fieldProps.onChange(newValue),
-          onKeyDown: (event) => this.tabCheck(event, suggestions, fieldProps)}}
+          onKeyDown: (event) => this.tabCheck(event.keyCode)}}
       />
     )
   }
