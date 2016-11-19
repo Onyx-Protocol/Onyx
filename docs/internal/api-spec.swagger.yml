@@ -56,6 +56,9 @@ definitions:
         type: boolean
         description: Whether the error is potentially transient/temporary. If
           false, there is usually a problem with the user request.
+      data:
+        type: object
+        description: Arbitrary error-specific data.
 
   Asset:
     type: object
@@ -1028,6 +1031,35 @@ definitions:
         type: string
         description: An opaque cursor, used for pagination.
 
+responses:
+
+  ClientError:
+    description: Error object returned when there is a correctible problem in
+      the client's request.
+    schema:
+      $ref: '#/definitions/Error'
+
+  NotAuthenticatedError:
+    description: Error object returned when an invalid access token is provided.
+    schema:
+      $ref: '#/definitions/Error'
+
+  TimeoutError:
+    description: Error object returned when the request timed out on the server
+      side.
+    schema:
+      $ref: '#/definitions/Error'
+
+  RateLimitError:
+    description: Error object returned when the client is being rate-limited.
+    schema:
+      $ref: '#/definitions/Error'
+
+  InternalServerError:
+    description: Error object returned for internal server errors.
+    schema:
+      $ref: '#/definitions/Error'
+
 paths:
 
   '/create-asset':
@@ -1046,6 +1078,16 @@ paths:
             type: array
             items:
               $ref: '#/definitions/Asset'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1091,6 +1133,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/AssetPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1113,6 +1165,16 @@ paths:
             type: array
             items:
               $ref: '#/definitions/Account'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1154,6 +1216,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/AccountPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1176,6 +1248,16 @@ paths:
             type: array
             items:
               $ref: '#/definitions/ControlProgram'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1219,6 +1301,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionTemplate'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1239,6 +1331,16 @@ paths:
             type: array
             items:
               $ref: '#/definitions/TransactionSubmitResponse'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1259,6 +1361,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1279,6 +1391,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/BalancePage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1297,6 +1419,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/UnspentOutputPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1315,6 +1447,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionFeed'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1342,6 +1484,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionFeed'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1369,6 +1521,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionFeedPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1387,6 +1549,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/TransactionFeed'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1424,6 +1596,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/OkMessage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1461,6 +1643,16 @@ paths:
                     description: The full access token string, to be used for
                       logging into the dashboard and authenticating SDK
                       requests. This is only returned when the token is created.
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1491,6 +1683,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/AccessTokenPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1509,6 +1711,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/OkMessage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1533,6 +1745,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/CoreInfo'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
 
   '/configure':
     post:
@@ -1546,6 +1768,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/OkMessage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1585,6 +1817,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/OkMessage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1609,6 +1851,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/MockHSMKey'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1631,6 +1883,16 @@ paths:
               description: A unique random ID, generated for all incoming requests.
           schema:
             $ref: '#/definitions/MockHSMKeyPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1653,6 +1915,16 @@ paths:
             type: array
             items:
               $ref: '#/definitions/TransactionTemplate'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
