@@ -32,7 +32,6 @@ class AutocompleteField extends React.Component {
     return suggestions
   }
 
-
   getSuggestionValue(suggestion) {
     return suggestion.alias
   }
