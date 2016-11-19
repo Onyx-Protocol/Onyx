@@ -4,7 +4,7 @@ Chain Core SDKs enable your appplication to communicate with Chain Core.
 
 ## Java
 
-The Java SDK is available as a self-contained JAR file, with dependencies compiled in. Java 7 is required.
+The Java SDK is available as a self-contained JAR file, with dependencies compiled in. Java 7+ is required.
 
 <a href="../../java/chain-sdk-latest.jar" class="downloadBtn btn success" target="_blank">
   Download Java SDK
