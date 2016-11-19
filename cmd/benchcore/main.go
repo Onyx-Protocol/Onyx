@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -67,9 +68,44 @@ var (
 	profileFrequency = time.Minute * 3
 )
 
-var amis = map[string]string{
-	"m3.xlarge":   "ami-40d28157", // Ubuntu LTS 16.04
-	"m4.16xlarge": "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
+var instanceConfigs = map[string]instanceConfig{
+	"m3.xlarge": instanceConfig{
+		AMI:                     "ami-40d28157", // Ubuntu LTS 16.04
+		CoredMaxDBConns:         "500",
+		MaxConnections:          530,
+		SharedBuffers:           "2GB",
+		EffectiveCacheSize:      "11GB", // ~3/4 total mem
+		WorkMem:                 "8MB",
+		MaintenanceWorkMem:      "512MB",
+		MaxWALSize:              "1GB",
+		WALBuffers:              "8MB",
+		LogMinDurationStatement: 2000,
+	},
+	"m4.16xlarge": instanceConfig{
+		AMI:                     "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
+		CoredMaxDBConns:         "1000",
+		MaxConnections:          1030,
+		SharedBuffers:           "30GB",
+		EffectiveCacheSize:      "192GB", // ~3/4 total mem
+		WorkMem:                 "64MB",
+		MaintenanceWorkMem:      "1GB",
+		MaxWALSize:              "4GB",
+		WALBuffers:              "8MB",
+		LogMinDurationStatement: 2000,
+	},
+}
+
+type instanceConfig struct {
+	AMI                     string
+	CoredMaxDBConns         string
+	MaxConnections          uint64
+	SharedBuffers           string
+	EffectiveCacheSize      string
+	WorkMem                 string
+	MaintenanceWorkMem      string
+	MaxWALSize              string
+	WALBuffers              string
+	LogMinDurationStatement int
 }
 
 func sshAuthMethods(agentSock, privKeyPEM string) (m []ssh.AuthMethod) {
@@ -122,6 +158,12 @@ func main() {
 		os.Exit(2)
 	}
 
+	conf, ok := instanceConfigs[*flagInstance]
+	if !ok {
+		log.Fatalf("unsupported instance type %s", *flagInstance)
+	}
+	conf.LogMinDurationStatement = int(slowQueryThreshold / time.Millisecond)
+
 	progName := flag.Arg(0)
 	testJava, err := ioutil.ReadFile(progName)
 	must(err)
@@ -144,9 +186,9 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(3)
 	log.Println("starting EC2 instances")
-	go makeEC2("pg", &db, &wg)
-	go makeEC2("cored", &cored, &wg)
-	go makeEC2("client", &client, &wg)
+	go makeEC2("pg", conf.AMI, &db, &wg)
+	go makeEC2("cored", conf.AMI, &cored, &wg)
+	go makeEC2("client", conf.AMI, &client, &wg)
 	killInstanceIDs = append(killInstanceIDs, &db.id, &cored.id, &client.id)
 
 	coredBin := mustBuildCored()
@@ -162,7 +204,13 @@ func main() {
 	log.Println("init database")
 	must(scpPut(db.addr, schema, "schema.sql", 0644))
 	must(scpPut(db.addr, corectlBin, "corectl", 0755))
-	mustRunOn(db.addr, fmt.Sprintf(initdbsh, slowQueryThreshold/time.Millisecond))
+
+	tpl, err := template.New("initdb").Parse(initdbsh)
+	must(err)
+	var buf bytes.Buffer
+	must(tpl.Execute(&buf, conf))
+	mustRunOn(db.addr, string(buf.Bytes()))
+
 	token, err := scpGet(db.addr, "token.txt")
 	token = bytes.TrimSpace(token)
 	must(err)
@@ -177,7 +225,7 @@ func main() {
 
 	log.Println("init cored hosts")
 	must(scpPut(cored.addr, coredBin, "cored", 0755))
-	go mustRunOn(cored.addr, coredsh, "dbURL", dbURL)
+	go mustRunOn(cored.addr, coredsh, "dbURL", dbURL, "dbConns", conf.CoredMaxDBConns)
 	if *flagP {
 		writeFile("cored", coredBin)
 	}
@@ -434,16 +482,11 @@ func mustRunOn(host, sh string, keyval ...string) {
 	}
 }
 
-func makeEC2(role string, inst *instance, wg *sync.WaitGroup) {
+func makeEC2(role string, ami string, inst *instance, wg *sync.WaitGroup) {
 	defer wg.Done()
 	runtoken := randString()
 	var n int64 = 1
 	tru := true
-
-	ami := amis[*flagInstance]
-	if ami == "" {
-		log.Fatalf("unsupported instance type %s", *flagInstance)
-	}
 
 	var resv *ec2.Reservation
 	retry(func() (err error) {
@@ -694,12 +737,17 @@ ident_file = '/etc/postgresql/9.5/main/pg_ident.conf'
 external_pid_file = '/var/run/postgresql/9.5-main.pid'
 listen_addresses = '*'
 port = 5432
-max_connections = 130
+max_connections = {{.MaxConnections}}
 unix_socket_directories = '/var/run/postgresql'
 ssl = true
 ssl_cert_file = '/etc/ssl/certs/ssl-cert-snakeoil.pem'
 ssl_key_file = '/etc/ssl/private/ssl-cert-snakeoil.key'
-shared_buffers = 128MB
+shared_buffers = {{.SharedBuffers}}
+effective_cache_size = {{.EffectiveCacheSize}}
+work_mem = {{.WorkMem}}
+maintenance_work_mem = {{.MaintenanceWorkMem}}
+max_wal_size = {{.MaxWALSize}}
+wal_buffers = {{.WALBuffers}}
 dynamic_shared_memory_type = posix
 log_timezone = 'UTC'
 stats_temp_directory = '/var/run/postgresql/9.5-main.pg_stat_tmp'
@@ -717,7 +765,7 @@ log_destination = 'csvlog'
 log_directory = '/var/log/postgresql'
 log_filename = 'benchcore-queries.log'
 log_file_mode = 0644
-log_min_duration_statement = %d
+log_min_duration_statement = {{.LogMinDurationStatement}}
 EOF
 
 cat <<EOF >/etc/postgresql/9.5/main/pg_hba.conf
@@ -754,7 +802,7 @@ ulimit -n 65535
 
 sudo -u ubuntu bash <<EOFUBUNTU
 export DATABASE_URL='{{dbURL}}'
-export MAXDBCONNS=100
+export MAXDBCONNS={{dbConns}}
 export GOTRACEBACK=crash
 ./cored 2>&1 | tee -a cored.log
 EOFUBUNTU
