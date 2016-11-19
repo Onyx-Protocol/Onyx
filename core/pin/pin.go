@@ -2,6 +2,7 @@ package pin
 
 import (
 	"context"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -31,27 +32,15 @@ func NewStore(db pg.DB) *Store {
 
 func (s *Store) ProcessBlocks(ctx context.Context, c *protocol.Chain, pinName string, cb func(context.Context, *bc.Block) error) {
 	p := <-s.pin(pinName)
+	height := p.getHeight()
 	for {
-		height := p.getHeight()
 		select {
 		case <-ctx.Done(): // leader deposed
 			log.Error(ctx, ctx.Err())
 			return
 		case <-c.BlockWaiter(height + 1):
-			block, err := c.GetBlock(ctx, height+1)
-			if err != nil {
-				log.Error(ctx, err)
-				continue
-			}
-			err = cb(ctx, block)
-			if err != nil {
-				log.Error(ctx, err)
-				continue
-			}
-			err = p.raiseTo(ctx, block.Height)
-			if err != nil {
-				log.Error(ctx, err)
-			}
+			go p.processBlock(ctx, c, height+1, cb)
+			height++
 		}
 	}
 }
@@ -179,9 +168,10 @@ func (s *Store) Listen(ctx context.Context, pinName, dbURL string) {
 }
 
 type pin struct {
-	mu     sync.Mutex
-	cond   sync.Cond
-	height uint64
+	mu        sync.Mutex
+	cond      sync.Cond
+	height    uint64
+	completed []uint64
 
 	db   pg.DB
 	name string
@@ -199,25 +189,71 @@ func (p *pin) getHeight() uint64 {
 	return p.height
 }
 
-func (p *pin) raiseTo(ctx context.Context, height uint64) error {
+func (p *pin) processBlock(ctx context.Context, c *protocol.Chain, height uint64, cb func(context.Context, *bc.Block) error) {
+	for {
+		block, err := c.GetBlock(ctx, height)
+		if err != nil {
+			log.Error(ctx, err)
+			continue
+		}
+		err = cb(ctx, block)
+		if err != nil {
+			log.Error(ctx, err)
+			continue
+		}
+		err = p.complete(ctx, block.Height)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+		break
+	}
+}
+
+func (p *pin) complete(ctx context.Context, height uint64) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	p.completed = append(p.completed, height)
+	sort.Sort(uint64s(p.completed))
+
+	var (
+		max = p.height
+		i   int
+	)
+	for i = 0; i < len(p.completed); i++ {
+		if p.completed[i] <= max {
+			continue
+		} else if p.completed[i] > max+1 {
+			break
+		}
+		max = p.completed[i]
+	}
+
+	if max < p.height {
+		return nil
+	}
+
 	const q = `UPDATE block_processors SET height=$1 WHERE height<$1 AND name=$2`
-	_, err := p.db.Exec(ctx, q, height, p.name)
+	_, err := p.db.Exec(ctx, q, max, p.name)
 	if err != nil {
 		return err
 	}
 
 	const notifyQ = `SELECT pg_notify($1, $2)`
-	_, err = p.db.Exec(ctx, notifyQ, "pin-"+p.name, height)
+	_, err = p.db.Exec(ctx, notifyQ, "pin-"+p.name, max)
 	if err != nil {
 		return err
 	}
 
-	if height > p.height {
-		p.height = height
-		p.cond.Broadcast()
-	}
+	p.completed = p.completed[i:]
+	p.height = max
+	p.cond.Broadcast()
+
 	return nil
 }
+
+type uint64s []uint64
+
+func (a uint64s) Len() int           { return len(a) }
+func (a uint64s) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a uint64s) Less(i, j int) bool { return a[i] < a[j] }
