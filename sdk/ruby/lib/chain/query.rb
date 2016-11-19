@@ -5,7 +5,7 @@ module Chain
     # @return [Client]
     attr_reader :client
 
-    def initialize(client, first_query)
+    def initialize(client, first_query = {})
       @client = client
       @first_query = first_query
     end
