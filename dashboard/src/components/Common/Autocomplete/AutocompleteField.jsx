@@ -59,8 +59,14 @@ class AutocompleteField extends React.Component {
     })
   }
 
-  tabCheck(keyCode) {
-    if (keyCode == 9 || keyCode == 13) {
+  keyCheck(event) {
+    // Fills input with top suggestion if key pressed was either
+    // tab (keyCode 9), or enter/return (keyCode 13)
+    if (event.keyCode == 9 || event.keyCode == 13) {
+
+      // Prevent form submission if key pressed was enter/return
+      event.keyCode == 13 && event.preventDefault()
+
       const suggestion = this.state.suggestions[0]["alias"]
       const input = this.props.fieldProps.value.toLowerCase()
       if (suggestion.toLowerCase().startsWith(input)) {
@@ -87,7 +93,7 @@ class AutocompleteField extends React.Component {
           value: fieldProps.value,
           placeholder: this.props.placeholder,
           onChange: (event, { newValue }) => fieldProps.onChange(newValue),
-          onKeyDown: (event) => this.tabCheck(event.keyCode)}}
+          onKeyDown: (event) => this.keyCheck(event)}}
       />
     )
   }

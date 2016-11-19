@@ -25,10 +25,6 @@
     border: none;
   }
 
-  &:first-child {
-    @extend .suggestionFocused;
-  }
-
   div {
     padding: 0;
   }
