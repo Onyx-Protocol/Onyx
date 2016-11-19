@@ -23,6 +23,26 @@ securityDefinitions:
 security:
   - accessToken: []
 
+# Common definitions, defined as YAML node anchors.
+'x-common':
+
+  commonHeaders: &commonHeaders
+    'Chain-Request-ID':
+      type: string
+      description: A unique random ID, generated for all incoming requests.
+
+  commonErrorResponses: &commonErrorResponses
+    400:
+      $ref: '#/responses/ClientError'
+    401:
+      $ref: '#/responses/NotAuthenticatedError'
+    408:
+      $ref: '#/responses/TimeoutError'
+    429:
+      $ref: '#/responses/RateLimitError'
+    500:
+      $ref: '#/responses/InternalServerError'
+
 definitions:
 
   OkMessage:
@@ -1036,27 +1056,37 @@ responses:
   ClientError:
     description: Error object returned when there is a correctible problem in
       the client's request.
+    headers:
+      <<: *commonHeaders
     schema:
       $ref: '#/definitions/Error'
 
   NotAuthenticatedError:
     description: Error object returned when an invalid access token is provided.
+    headers:
+      <<: *commonHeaders
     schema:
       $ref: '#/definitions/Error'
 
   TimeoutError:
     description: Error object returned when the request timed out on the server
       side.
+    headers:
+      <<: *commonHeaders
     schema:
       $ref: '#/definitions/Error'
 
   RateLimitError:
     description: Error object returned when the client is being rate-limited.
+    headers:
+      <<: *commonHeaders
     schema:
       $ref: '#/definitions/Error'
 
   InternalServerError:
     description: Error object returned for internal server errors.
+    headers:
+      <<: *commonHeaders
     schema:
       $ref: '#/definitions/Error'
 
@@ -1066,28 +1096,17 @@ paths:
     post:
       description: Creates one or more new assets.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A list of assets and/or error messages. Items in the
             list may be Error objects in case of errors, but Swagger 2.0 does
             not allow for polymorphic array items.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             type: array
             items:
               $ref: '#/definitions/Asset'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1125,24 +1144,13 @@ paths:
     post:
       description: Returns a page of assets matching the specified query.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A page of assets.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/AssetPage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1153,28 +1161,17 @@ paths:
     post:
       description: Creates one or more new accounts.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A list of accounts and/or error messages. Items in the
             list may be Error objects in case of errors, but Swagger 2.0 does
             not allow for polymorphic array items.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             type: array
             items:
               $ref: '#/definitions/Account'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1208,24 +1205,13 @@ paths:
     post:
       description: Returns a page of accounts matching the specified query.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A page of accounts.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/AccountPage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1236,28 +1222,17 @@ paths:
     post:
       description: Creates one or more control programs.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A list of control programs and/or error messages. Items
             in the list may be Error objects in case of errors, but Swagger 2.0
             does not allow for polymorphic array items.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             type: array
             items:
               $ref: '#/definitions/ControlProgram'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1291,26 +1266,15 @@ paths:
     post:
       description: Builds one or more transactions.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A list of transaction templates and/or errors. Items in
             the list may be Error objects in case of errors, but Swagger 2.0
             does not allow for polymorphic array items.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/TransactionTemplate'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1321,26 +1285,15 @@ paths:
     post:
       description: Submits one or more signed transactions.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A list of transaction IDs.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             type: array
             items:
               $ref: '#/definitions/TransactionSubmitResponse'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1353,24 +1306,13 @@ paths:
     post:
       description: Returns a page of transactions matching the specified query.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A page of transactions.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/TransactionPage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1383,24 +1325,13 @@ paths:
         that while this endpoint is implemented using pagination, it currently
         returns all possible results in a single page.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A page of balances.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/BalancePage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1411,24 +1342,13 @@ paths:
     post:
       description: Returns a page of unspent outputs.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A page of unspent outputs.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/UnspentOutputPage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1439,24 +1359,13 @@ paths:
     post:
       description: Creates a new transaction feed.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A new transaction feed.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/TransactionFeed'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1476,24 +1385,13 @@ paths:
     post:
       description: Retrieves a single transaction feed.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A transaction feed.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/TransactionFeed'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1513,24 +1411,13 @@ paths:
     post:
       description: Returns a page of transaction feeds defined on the core.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A page of transaction feeds.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/TransactionFeedPage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1541,24 +1428,13 @@ paths:
     post:
       description: Updates a transaction feed's position.
       responses:
+        <<: *commonErrorResponses
         200:
           description: The updated transaction feed.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/TransactionFeed'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1588,24 +1464,13 @@ paths:
     post:
       description: Deletes a transaction feed.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A default success message.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/OkMessage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1625,12 +1490,11 @@ paths:
     post:
       description: Creates a new access token.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A new access token.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             allOf:
               - $ref: '#/definitions/AccessToken'
@@ -1643,16 +1507,6 @@ paths:
                     description: The full access token string, to be used for
                       logging into the dashboard and authenticating SDK
                       requests. This is only returned when the token is created.
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1675,24 +1529,13 @@ paths:
     post:
       description: Returns a page of access tokens matching the specified query.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A page of access tokens.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/AccessTokenPage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1703,24 +1546,13 @@ paths:
     post:
       description: Deletes an access token.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A default success message.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/OkMessage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1737,47 +1569,25 @@ paths:
     post:
       description: Returns information about the core.
       responses:
+        <<: *commonErrorResponses
         200:
           description: Information about the core.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/CoreInfo'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
 
   '/configure':
     post:
       description: Configures an unconfigured core.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A default success message.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/OkMessage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1809,24 +1619,13 @@ paths:
     post:
       description: Resets the state of the core, and restarts the process.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A default success message.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/OkMessage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1843,24 +1642,13 @@ paths:
     post:
       description: Creates a new MockHSM key.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A MockHSM key.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/MockHSMKey'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1875,24 +1663,13 @@ paths:
     post:
       description: Returns a page of MockHSM keys matching the specified query.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A page of MockHSM keys.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             $ref: '#/definitions/MockHSMKeyPage'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
@@ -1903,28 +1680,17 @@ paths:
     post:
       description: Signs a list of transactions using the MockHSM.
       responses:
+        <<: *commonErrorResponses
         200:
           description: A list of transaction templates and/or errors. Items in
             the list may be Error objects in case of errors, but Swagger 2.0
             does not allow for polymorphic array items.
           headers:
-            'Chain-Request-ID':
-              type: string
-              description: A unique random ID, generated for all incoming requests.
+            <<: *commonHeaders
           schema:
             type: array
             items:
               $ref: '#/definitions/TransactionTemplate'
-        400:
-          $ref: '#/responses/ClientError'
-        401:
-          $ref: '#/responses/NotAuthenticatedError'
-        408:
-          $ref: '#/responses/TimeoutError'
-        429:
-          $ref: '#/responses/RateLimitError'
-        500:
-          $ref: '#/responses/InternalServerError'
       parameters:
         - name: body
           in: body
