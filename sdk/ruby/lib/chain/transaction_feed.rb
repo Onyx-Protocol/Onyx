@@ -3,6 +3,7 @@ require 'securerandom'
 require_relative './client_module'
 require_relative './connection'
 require_relative './constants'
+require_relative './query'
 require_relative './response_object'
 
 module Chain
@@ -94,6 +95,30 @@ module Chain
         TransactionFeed.new(client.conn.request('get-transaction-feed', opts), client.conn)
       end
 
+      # @param [Hash] opts
+      # @option opts [String] :id ID of the transaction feed. You must provide either :id or :alias.
+      # @option opts [String] :alias ID of the transaction feed. You must provide either :id or :alias.
+      # @return [void]
+      def delete(opts)
+        client.conn.request('delete-transaction-feed', opts)
+        nil
+      end
+
+      # @return [Query]
+      def query
+        Query.new(client)
+      end
+
+    end
+
+    class Query < Chain::Query
+      def fetch(query)
+        client.conn.request('list-transaction-feeds', query)
+      end
+
+      def translate(raw)
+        TransactionFeed.new(raw, client.conn)
+      end
     end
 
   end

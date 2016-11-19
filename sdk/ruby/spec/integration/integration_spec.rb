@@ -315,6 +315,20 @@ context 'Chain SDK integration test' do
     t.join
 
     expect(consumed).to eq(produced)
+
+    # Query transaction feeds
+
+    expect(
+      chain.transaction_feeds.query.map(&:alias)
+    ).to eq(['spends', 'issuances'])
+
+    # Delete transaction feeds
+
+    expect(chain.transaction_feeds.delete(alias: :issuances)).to be_nil
+
+    expect(
+      chain.transaction_feeds.query.map(&:alias)
+    ).to eq(['spends'])
   end
 
 end
