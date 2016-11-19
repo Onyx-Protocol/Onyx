@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/golang/groupcache/lru"
+	"github.com/lib/pq"
 
 	"chain/core/pin"
 	"chain/core/signers"
+	"chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/sql"
@@ -27,11 +29,12 @@ var ErrDuplicateAlias = errors.New("duplicate account alias")
 
 func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
 	return &Manager{
-		db:         db,
-		chain:      chain,
-		utxoDB:     newReserver(db),
-		cache:      lru.New(maxAccountCache),
-		aliasCache: lru.New(maxAccountCache),
+		db:          db,
+		chain:       chain,
+		utxoDB:      newReserver(db),
+		cache:       lru.New(maxAccountCache),
+		aliasCache:  lru.New(maxAccountCache),
+		delayedACPs: make(map[*txbuilder.TemplateBuilder][]*controlProgram),
 	}
 }
 
@@ -46,6 +49,9 @@ type Manager struct {
 	cacheMu    sync.Mutex
 	cache      *lru.Cache
 	aliasCache *lru.Cache
+
+	delayedACPsMu sync.Mutex
+	delayedACPs   map[*txbuilder.TemplateBuilder][]*controlProgram
 
 	acpMu        sync.Mutex
 	acpIndexNext uint64 // next acp index in our block
@@ -166,9 +172,14 @@ func (m *Manager) findByID(ctx context.Context, id string) (*signers.Signer, err
 	return account, nil
 }
 
-// CreateControlProgram creates a control program
-// that is tied to the Account and stores it in the database.
-func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, change bool) ([]byte, error) {
+type controlProgram struct {
+	accountID      string
+	keyIndex       uint64
+	controlProgram []byte
+	change         bool
+}
+
+func (m *Manager) createControlProgram(ctx context.Context, accountID string, change bool) (*controlProgram, error) {
 	account, err := m.findByID(ctx, accountID)
 	if err != nil {
 		return nil, err
@@ -186,20 +197,48 @@ func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, ch
 	if err != nil {
 		return nil, err
 	}
-	err = m.insertAccountControlProgram(ctx, account.ID, idx, control, change)
+	return &controlProgram{
+		accountID:      account.ID,
+		keyIndex:       idx,
+		controlProgram: control,
+		change:         change,
+	}, nil
+}
+
+// CreateControlProgram creates a control program
+// that is tied to the Account and stores it in the database.
+func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, change bool) ([]byte, error) {
+	cp, err := m.createControlProgram(ctx, accountID, change)
 	if err != nil {
 		return nil, err
 	}
 
-	return control, nil
+	err = m.insertAccountControlProgram(ctx, cp)
+	if err != nil {
+		return nil, err
+	}
+	return cp.controlProgram, nil
 }
 
-func (m *Manager) insertAccountControlProgram(ctx context.Context, accountID string, idx uint64, control []byte, change bool) error {
+func (m *Manager) insertAccountControlProgram(ctx context.Context, progs ...*controlProgram) error {
 	const q = `
 		INSERT INTO account_control_programs (signer_id, key_index, control_program, change)
-		VALUES($1, $2, $3, $4)
+		SELECT unnest($1::text[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::boolean[])
 	`
-	_, err := m.db.Exec(ctx, q, accountID, idx, control, change)
+	var (
+		accountIDs   pq.StringArray
+		keyIndexes   pq.Int64Array
+		controlProgs pq.ByteaArray
+		change       pq.BoolArray
+	)
+	for _, p := range progs {
+		accountIDs = append(accountIDs, p.accountID)
+		keyIndexes = append(keyIndexes, int64(p.keyIndex))
+		controlProgs = append(controlProgs, p.controlProgram)
+		change = append(change, p.change)
+	}
+
+	_, err := m.db.Exec(ctx, q, accountIDs, keyIndexes, controlProgs, change)
 	return errors.Wrap(err)
 }
 

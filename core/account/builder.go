@@ -78,11 +78,15 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder
 	}
 
 	if res.Change > 0 {
-		acp, err := a.accounts.CreateControlProgram(ctx, a.AccountID, true)
+		acp, err := a.accounts.createControlProgram(ctx, a.AccountID, true)
 		if err != nil {
 			return errors.Wrap(err, "creating control program")
 		}
-		err = b.AddOutput(bc.NewTxOutput(a.AssetID, res.Change, acp, nil))
+
+		// Don't insert the control program until callbacks are executed.
+		a.accounts.insertControlProgramDelayed(ctx, b, acp)
+
+		err = b.AddOutput(bc.NewTxOutput(a.AssetID, res.Change, acp.controlProgram, nil))
 		if err != nil {
 			return errors.Wrap(err, "adding change output")
 		}
@@ -195,9 +199,41 @@ func (a *controlAction) Build(ctx context.Context, maxTime time.Time, b *txbuild
 		return txbuilder.MissingFieldsError(missing...)
 	}
 
-	acp, err := a.accounts.CreateControlProgram(ctx, a.AccountID, false)
+	// Produce a control program, but don't insert it into the database yet.
+	acp, err := a.accounts.createControlProgram(ctx, a.AccountID, false)
 	if err != nil {
 		return err
 	}
-	return b.AddOutput(bc.NewTxOutput(a.AssetID, a.Amount, acp, a.ReferenceData))
+	a.accounts.insertControlProgramDelayed(ctx, b, acp)
+
+	return b.AddOutput(bc.NewTxOutput(a.AssetID, a.Amount, acp.controlProgram, a.ReferenceData))
+}
+
+// insertControlProgramDelayed takes a template builder and an account
+// control program that hasn't been inserted to the database yet. It
+// registers callbacks on the TemplateBuilder so that all of the template's
+// account control programs are batch inserted if building the rest of
+// the template is successful.
+func (m *Manager) insertControlProgramDelayed(ctx context.Context, b *txbuilder.TemplateBuilder, acp *controlProgram) {
+	m.delayedACPsMu.Lock()
+	m.delayedACPs[b] = append(m.delayedACPs[b], acp)
+	m.delayedACPsMu.Unlock()
+
+	b.OnRollback(func() {
+		m.delayedACPsMu.Lock()
+		delete(m.delayedACPs, b)
+		m.delayedACPsMu.Unlock()
+	})
+	b.OnBuild(func() error {
+		m.delayedACPsMu.Lock()
+		acps := m.delayedACPs[b]
+		delete(m.delayedACPs, b)
+		m.delayedACPsMu.Unlock()
+
+		// Insert all of the account control programs at once.
+		if len(acps) == 0 {
+			return nil
+		}
+		return m.insertAccountControlProgram(ctx, acps...)
+	})
 }
