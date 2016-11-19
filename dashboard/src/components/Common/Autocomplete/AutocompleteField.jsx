@@ -24,9 +24,12 @@ class AutocompleteField extends React.Component {
       return []
     }
 
-    const regex = new RegExp(escapedValue, 'i')
+    const regex = new RegExp('^' + escapedValue, 'i')
 
-    return this.props.items.filter(item => regex.test(item.alias))
+    const suggestions = this.props.items.filter(item => regex.test(item.alias))
+    suggestions.sort((a,b) => a.alias.localeCompare(b.alias))
+
+    return suggestions
   }
 
 
