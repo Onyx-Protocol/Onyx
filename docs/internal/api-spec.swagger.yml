@@ -5,30 +5,36 @@ info:
   description: This API description is for reference only. It should NOT be used
     to automatically generate client software for the Chain Core API. Instead,
     please use the official SDKs.
-  version: 1.0.0
+  version: N/A
 basePath: /
 consumes:
   - application/json
 produces:
   - application/json
-
-paths:
-
-  '/list-transactions':
-    post:
-      description: Fetches a page of transactions matching the specified query.
-      responses:
-        200:
-          description: A page of transactions.
-          schema:
-            $ref: '#/definitions/TransactionPage'
-      parameters:
-        - name: body
-          in: body
-          schema:
-            $ref: '#/definitions/TransactionQuery'
+securityDefinitions:
+  accessToken:
+    type: basic
+    description: The Client API is authenticated. via HTTP Basic Auth. Basic
+      auth credentials consist of a user-provided token ID passed via the
+      username field, and a randomly-generated token secret passed via the
+      password field. The ID and secret together are referred to collectively as
+      a "token". By default, Chain Core instances do not require authentication
+      if requests originate from localhost.
+security:
+  - accessToken: []
 
 definitions:
+
+  OkMessage:
+    description: A default response for successful requests that have no
+      meaningful response data.
+    type: object
+    required:
+      - message
+    properties:
+      message:
+        type: string
+        description: The value "ok".
 
   Error:
     type: object
@@ -50,6 +56,192 @@ definitions:
         type: boolean
         description: Whether the error is potentially transient/temporary. If
           false, there is usually a problem with the user request.
+      data:
+        type: object
+        description: Arbitrary error-specific data.
+
+  Asset:
+    type: object
+    required:
+      - id
+      - issuance_program
+      - keys
+      - quorum
+      - definition
+      - is_local
+    properties:
+      id:
+        type: string
+        description: The unique ID of the asset, derived from its issuance
+          program.
+      alias:
+        type: string
+        description: A user-provided, unique alias for the account. Only present
+          if `is_local` is "yes".
+      issuance_program:
+        type: string
+        description: The issuance program that must be satisfied for valid
+          issuances of this asset.
+      keys:
+        type: array
+        items:
+          $ref: '#/definitions/AssetKey'
+        description: The keys listed in the asset's issuance program.
+      quorum:
+        type: integer
+        description: The number of signatures required for valid issuances of
+          this asset.
+      definition:
+        type: object
+        description: Arbitrary key/value information specified by the asset's
+          issuer.
+      tags:
+        type: object
+        description: Arbitrary key/value information associated with the asset
+          on the local core. Only present if `is_local` is "yes".
+      is_local:
+        type: string
+        description: Either "yes" or "no". "yes" if the asset was created on the
+          local core. "no" otherwise.
+
+  AssetKey:
+    type: object
+    required:
+      - asset_pubkey
+    properties:
+      root_xpub:
+        type: string
+        description: The root xpub from which `asset_pubkey` was derived. Only
+          present for local assets.
+      asset_pubkey:
+        type: string
+        description: A public key that appears in the asset's issuance program.
+      asset_derivation_path:
+        type: string
+        description: The derivation path through which `asset_pubkey` was derived.
+
+  AssetPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Asset'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/AssetQuery'
+
+  AssetQuery:
+    type: object
+    properties:
+      filter:
+        type: string
+        description: Filter string to apply to result set.
+      filter_params:
+        type: array
+        items:
+          type: string
+        description: A list of parameters to be interpolated into the filter.
+      after:
+        type: string
+        description: An opaque cursor, used for pagination.
+
+  Account:
+    type: object
+    required:
+      - id
+      - alias
+      - keys
+      - quorum
+      - tags
+    properties:
+      id:
+        type: string
+        description: The unique ID of the account.
+      alias:
+        type: string
+        description: A user-provided, unique alias for the account.
+      keys:
+        type: array
+        items:
+          $ref: '#/definitions/AccountKey'
+        description: The keys listed in control programs created under this
+          account.
+      quorum:
+        type: integer
+        description: The number of signatures required for spending funds
+          controlled by the account's control programs.
+      tags:
+        type: object
+        description: Arbitrary key/value information associated with the account
+          on the local core.
+
+  AccountKey:
+    type: object
+    required:
+      - root_xpub
+      - account_xpub
+      - account_derivation_path
+    properties:
+      root_xpub:
+        type: string
+        description: The root xpub from which `account_xpub` was derived.
+      account_xpub:
+        type: string
+        description: The extended public key from which control program pubkeys
+          are derived.
+      account_derivation_path:
+        type: string
+        description: The derivation path through which `account_xpub` was derived.
+
+  AccountPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Account'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/AccountQuery'
+
+  AccountQuery:
+    type: object
+    properties:
+      filter:
+        type: string
+        description: Filter string to apply to result set.
+      filter_params:
+        type: array
+        items:
+          type: string
+        description: A list of parameters to be interpolated into the filter.
+      after:
+        type: string
+        description: An opaque cursor, used for pagination.
+
+  ControlProgram:
+    type: object
+    required:
+      - control_program
+    properties:
+      control_program:
+        type: string
+        description: The raw hex of the control program.
 
   Transaction:
     type: object
@@ -66,7 +258,7 @@ definitions:
     properties:
       id:
         type: string
-        description: The unique identifier of the transaction, generated from a
+        description: The unique ID of the transaction, generated from a
           hash of its contents.
       timestamp:
         type: string
@@ -75,8 +267,7 @@ definitions:
           block's timestamp.
       block_id:
         type: string
-        description: The unique identifier of the block containing the
-          transaction.
+        description: The unique ID of the block containing the transaction.
       block_height:
         type: integer
         description: The index within the blockchain of the block containing the
@@ -302,4 +493,1455 @@ definitions:
           occur. Defaults to 1000 (1 second).
       after:
         type: string
-        description: An opaque cursor.
+        description: An opaque cursor, used for pagination.
+
+  TransactionBuilder:
+    type: object
+    required:
+      - actions
+    properties:
+      base_transaction:
+        type: string
+        description: The base transaction onto which actions may be added. Only
+          used when completing multi-party swap transactions.
+      ttl:
+        type: integer
+        description: A duration in milliseconds indicating how long the proposed
+          transaction will be valid. Outputs reserved for this transaction will
+          remain reserved for this time.
+      actions:
+        type: array
+        items:
+          $ref: '#/definitions/TransactionBuilderAction'
+        description: A list of actions to perform in the transaction, such as
+          issuing, spending, controlling, or retiring assets.
+
+  TransactionBuilderAction:
+    type: object
+    description: There are several types of actions for building transactions.
+      Since Swagger 2.0 does not allow for polymorphic types, the individual
+      properties are not listed here. Please refer to the definitions of
+      IssueAction, SpendFromAccountAction, SpendFromAccountUnspentOutputAction,
+      ControlWithAccountAction, ControlWithProgramAction, and RetireAction.
+
+  IssueAction:
+    description: This action adds an issuance input for the specified asset to
+      the transaction.
+    type: object
+    required:
+      - amount
+    properties:
+      asset_id:
+        type: string
+        description: The unique ID of the asset being issued. Either `asset_id`
+          or `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the asset being issued. Either
+          `asset_id` or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the asset to be issued.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
+
+  SpendFromAccountAction:
+    description: This action adds spending inputs to the transaction that use
+      funds from the specified account. It adds change outputs where necessary.
+    type: object
+    required:
+      - amount
+    properties:
+      account_id:
+        type: string
+        description: The unique ID of the spending account. Either `account_id`
+          or `account_alias` is required.
+      account_alias:
+        type: string
+        description: The unique alias of the spending account. Either
+          `account_id` or `account_alias` is required.
+      asset_id:
+        type: string
+        description: The unique ID of the outgoing asset. Either `asset_id` or
+          `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the outgoing asset. Either `asset_id`
+          or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the outgoing asset.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
+
+  SpendFromAccountUnspentOutputAction:
+    description: This action spends a specific output controlled by an account
+      on the local core. The entire sum of assets controlled in the output will
+      be spent, and the user is required to handle change manually.
+    type: object
+    required:
+      - transaction_id
+      - position
+    properties:
+      transaction_id:
+        type: string
+        description: The unique ID of the transaction containing the output
+          being spent.
+      position:
+        type: string
+        description: The output's index relative to other outputs in the
+          containing transaction.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
+
+  ControlWithAccountAction:
+    description: This action adds an output to the transaction that controls
+      some amount of an asset with a control program in the specified account.
+    type: object
+    required:
+      - amount
+    properties:
+      account_id:
+        type: string
+        description: The unique ID of the receiving account. Either `account_id`
+          or `account_alias` is required.
+      account_alias:
+        type: string
+        description: The unique alias of the receiving account. Either
+          `account_id` or `account_alias` is required.
+      asset_id:
+        type: string
+        description: The unique ID of the incoming asset. Either `asset_id` or
+          `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the incoming asset. Either `asset_id`
+          or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the incoming asset.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
+
+  ControlWithProgramAction:
+    description: This action adds an output to the transaction that controls
+      some amount of an asset with a control program in the specified control
+      program. Typically, this is used to make payments to control programs
+      created from accounts that are not on the local core.
+    type: object
+    required:
+      - control_program
+      - amount
+    properties:
+      control_program:
+        type: string
+        description: The control program that will receive the incoming asset
+          amount.
+      asset_id:
+        type: string
+        description: The unique ID of the incoming asset. Either `asset_id` or
+          `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the incoming asset. Either `asset_id`
+          or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the incoming asset.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
+
+  RetireAction:
+    description: This action removes a quantity of assets from circulation on
+      the blockchain.
+    type: object
+    required:
+      - amount
+    properties:
+      asset_id:
+        type: string
+        description: The unique ID of the asset to be retired. Either `asset_id`
+          or `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the asset to be retired. Either
+          `asset_id` or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the asset to be retired.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
+
+  TransactionTemplate:
+    type: object
+    required:
+      - raw_transaction
+      - signing_instructions
+    properties:
+      raw_transaction:
+        type: string
+        description: The hex-encoded raw transaction.
+      signing_instructions:
+        type: array
+        items:
+          type: object
+        description: A list of opaque signing instructions, read by the signer.
+
+  SignerTransactionTemplate:
+    description: A transaction template extended with user-provided signing
+      options, used as an argument to an HSM signer, such as the MockHSM's
+      signer.
+    allOf:
+      - $ref: '#/definitions/TransactionTemplate'
+      - type: object
+        properties:
+          allow_additional_transactions:
+            type: boolean
+            description: If true, the signer will sign the transaction such that
+              additional participants may add to the transaction. If false, the
+              signer will provide signatures over the entire transaction, so
+              that the signatures are invalid if additional actions are added to
+              the transaction.
+
+  TransactionSubmitResponse:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: string
+        description: The unique ID of the transaction.
+
+  Balance:
+    type: object
+    required:
+      - amount
+      - sum_by
+    properties:
+      amount:
+        type: integer
+        description: The total amount of assets controlled by assets whose
+          sum_by properties are the same.
+      sum_by:
+        type: object
+        description: A map of output property names to property values. The
+          balance object represents the total asset amount for all assets whose
+          sum_by properties are equal to the corresponding values in this
+          object.
+
+  BalancePage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Balance'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/BalanceQuery'
+
+  BalanceQuery:
+    type: object
+    properties:
+      filter:
+        type: string
+        description: Filter string to apply to result set.
+      filter_params:
+        type: array
+        items:
+          type: string
+        description: A list of parameters to be interpolated into the filter.
+      sum_by:
+        type: array
+        items:
+          type: string
+        description: The balance query will sum amounts of outputs who share
+          identical values for the properties given in this parameter. Defaults
+          to `["asset_id", "asset_alias"]`, which groups outputs together by
+          asset.
+      timestamp:
+        type: integer
+        description: A millisecond Unix timestamp. By using this parameter, you
+          can perform queries that reflect the state of the blockchain at
+          different points in time.
+
+  UnspentOutputPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/TransactionOutput'
+        description: Note that outputs of type "retire" are not considered
+          unspent, so they will never be returned by the '/list-unspent-outputs'
+          endpoint.
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/UnspentOutputQuery'
+
+  UnspentOutputQuery:
+    type: object
+    properties:
+      filter:
+        type: string
+        description: Filter string to apply to result set.
+      filter_params:
+        type: array
+        items:
+          type: string
+        description: A list of parameters to be interpolated into the filter.
+      timestamp:
+        type: integer
+        description: A millisecond Unix timestamp. By using this parameter, you
+          can perform queries that reflect the state of the blockchain at
+          different points in time.
+      after:
+        type: string
+        description: An opaque cursor, used for pagination.
+
+  TransactionFeed:
+    type: object
+    required:
+      - id
+      - alias
+      - filter
+      - after
+    properties:
+      id:
+        type: string
+        description: The transaction feed's unique ID.
+      alias:
+        type: string
+        description: The transaction feed's unique alias.
+      filter:
+        type: string
+        description: A valid filter string for the `/list-transactions`
+          endpoint. The transaction feed will be composed of future
+          transactions that match the filter.
+      after:
+        type: string
+        description: A cursor indicating the current position of the feed.
+          Applications will update this value as they consume the feed.
+
+  TransactionFeedPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/TransactionFeed'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/TransactionFeedQuery'
+
+  TransactionFeedQuery:
+    type: object
+    properties:
+      after:
+        type: string
+        description: An opaque cursor, used for pagination.
+
+  AccessToken:
+    type: object
+    required:
+      - id
+      - type
+      - created_at
+    properties:
+      id:
+        type: string
+        description: The unique, user-provided ID of the access token.
+      type:
+        type: string
+        description: Either "client" or "network". "client" tokens grant access
+          to the Client API, described in this document. "network" tokens grant
+          access to the core-to-core network API.
+      created_at:
+        type: string
+        description: An RFC3339 timestamp indicating when the token was created.
+
+  AccessTokenPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/AccessToken'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/AccessTokenQuery'
+
+  AccessTokenQuery:
+    type: object
+    properties:
+      after:
+        type: string
+        description: An opaque cursor, used for pagination.
+
+  CoreInfo:
+    type: object
+    required:
+      - is_configured
+    properties:
+      is_configured:
+        type: boolean
+        description: Whether the core has been configured.
+      configured_at:
+        type: string
+        description: An RFC3339 timestamp indicating when the core was
+          configured.
+      is_signer:
+        type: boolean
+        description: Whether the core is a co-signer of blocks proposed by the
+          generator.
+      is_generator:
+        type: boolean
+        description: Whether the core is the blockchain's block generator.
+      generator_url:
+        type: string
+        description: The URL of the block generator.
+      generator_access_token:
+        type: string
+        description: The network access token being used to connect to the
+          block generator.
+      blockchain_id:
+        type: string
+        description: The unique ID of the blockchain.
+      block_height:
+        type: integer
+        description: The most recent block received by the local core.
+      generator_block_height:
+        type: integer
+        description: The most recent block added to the blockchain by the block
+          generator.
+      generator_block_height_fetched_at:
+        type: string
+        description: An RFC3339 timestamp indicating the last successful
+          retrieval of the generator's block height.
+      is_production:
+        type: boolean
+        description: Whether the core was compiled for production. Services such
+          as the MockHSM are not available in production mode.
+      network_rpc_version:
+        type: integer
+        description: A version number indicating core-to-core compatibility. If
+          two cores advertise different network RPC versions, they cannot
+          interact with one another.
+      core_id:
+        type: string
+        description: The unique ID of the core, generated at configuration.
+      build_commit:
+        type: string
+        description: The commit SHA of the core source code, at which the core
+          binary was compiled.
+      build_date:
+        type: string
+        description: The date the core binary was compiled.
+      health:
+        description: Information on the health of the core, including error
+          messages received from the generator.
+        type: object
+        properties:
+          errors:
+            description: A key/value object mapping error names to error
+              messages.
+            type: object
+
+  MockHSMKey:
+    type: object
+    required:
+      - alias
+      - xpub
+    properties:
+      alias:
+        type: string
+        description: A user-provided, unique alias for the key.
+      xpub:
+        type: string
+        description: The extended public key that can be used as a root xpub for
+          creating accounts and assets.
+
+  MockHSMKeyPage:
+    type: object
+    required:
+      - items
+      - last_page
+      - next
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/MockHSMKey'
+      last_page:
+        type: boolean
+        description: Whether this is the last page of results for the given
+          query.
+      next:
+        $ref: '#/definitions/MockHSMKeyQuery'
+
+  MockHSMKeyQuery:
+    type: object
+    properties:
+      aliases:
+        type: array
+        items:
+          - type: string
+        description: A list of aliases of the MockHSMKeys to be returned.
+      after:
+        type: string
+        description: An opaque cursor, used for pagination.
+
+responses:
+
+  ClientError:
+    description: Error object returned when there is a correctible problem in
+      the client's request.
+    schema:
+      $ref: '#/definitions/Error'
+
+  NotAuthenticatedError:
+    description: Error object returned when an invalid access token is provided.
+    schema:
+      $ref: '#/definitions/Error'
+
+  TimeoutError:
+    description: Error object returned when the request timed out on the server
+      side.
+    schema:
+      $ref: '#/definitions/Error'
+
+  RateLimitError:
+    description: Error object returned when the client is being rate-limited.
+    schema:
+      $ref: '#/definitions/Error'
+
+  InternalServerError:
+    description: Error object returned for internal server errors.
+    schema:
+      $ref: '#/definitions/Error'
+
+paths:
+
+  '/create-asset':
+    post:
+      description: Creates one or more new assets.
+      responses:
+        200:
+          description: A list of assets and/or error messages. Items in the
+            list may be Error objects in case of errors, but Swagger 2.0 does
+            not allow for polymorphic array items.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Asset'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: array
+            items:
+              type: object
+              required:
+                - root_xpubs
+                - quorum
+              properties:
+                alias:
+                  type: string
+                  description: A unique alias for the asset.
+                root_xpubs:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of xpubs from which pubkeys will be
+                    derived and placed into the asset's issuance program.
+                quorum:
+                  type: integer
+                  description: The number of signatures required for valid
+                    issuances of this asset.
+                definition:
+                  type: object
+                  description: Arbitrary key/value information that will be
+                    committed to the blockchain when the asset is issued.
+                tags:
+                  type: object
+                  description: Arbitrary key/value information that is
+                    associated with the asset on the local core.
+
+  '/list-assets':
+    post:
+      description: Returns a page of assets matching the specified query.
+      responses:
+        200:
+          description: A page of assets.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/AssetPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/AssetQuery'
+
+  '/create-account':
+    post:
+      description: Creates one or more new accounts.
+      responses:
+        200:
+          description: A list of accounts and/or error messages. Items in the
+            list may be Error objects in case of errors, but Swagger 2.0 does
+            not allow for polymorphic array items.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Account'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: array
+            items:
+              type: object
+              required:
+                - root_xpubs
+                - quorum
+              properties:
+                alias:
+                  type: string
+                  description: A unique alias for the account.
+                root_xpubs:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of xpubs from which the account's control
+                    program pubkeys will be derived.
+                quorum:
+                  type: integer
+                  description: The number of signatures required for spending
+                    funds controlled by the account's control programs.
+                tags:
+                  type: object
+                  description: Arbitrary key/value information that is
+                    associated with the account.
+
+  '/list-accounts':
+    post:
+      description: Returns a page of accounts matching the specified query.
+      responses:
+        200:
+          description: A page of accounts.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/AccountPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/AccountQuery'
+
+  '/create-control-program':
+    post:
+      description: Creates one or more control programs.
+      responses:
+        200:
+          description: A list of control programs and/or error messages. Items
+            in the list may be Error objects in case of errors, but Swagger 2.0
+            does not allow for polymorphic array items.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ControlProgram'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: array
+            items:
+              type: object
+              required:
+                - type
+                - params
+              properties:
+                type:
+                  type: string
+                  description: Currently, only "account" is accepted.
+                params:
+                  type: object
+                  description: Parameters for creating the control program.
+                    Currently, only parameters for the "account" type are
+                    accepted.
+                  properties:
+                    account_id:
+                      type: string
+                      description: The unique ID of the account. Either
+                        `account_id` or `account_alias` is required.
+                    account_alias:
+                      type: string
+                      description: The unique alias of the account. Either
+                        `account_id` or `account_alias` is required.
+
+  '/build-transaction':
+    post:
+      description: Builds one or more transactions.
+      responses:
+        200:
+          description: A list of transaction templates and/or errors. Items in
+            the list may be Error objects in case of errors, but Swagger 2.0
+            does not allow for polymorphic array items.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/TransactionTemplate'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/TransactionBuilder'
+
+  '/submit-transaction':
+    post:
+      description: Submits one or more signed transactions.
+      responses:
+        200:
+          description: A list of transaction IDs.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TransactionSubmitResponse'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TransactionTemplate'
+
+  '/list-transactions':
+    post:
+      description: Returns a page of transactions matching the specified query.
+      responses:
+        200:
+          description: A page of transactions.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/TransactionPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/TransactionQuery'
+
+  '/list-balances':
+    post:
+      description: Returns a page of balances matching the specified query. Note
+        that while this endpoint is implemented using pagination, it currently
+        returns all possible results in a single page.
+      responses:
+        200:
+          description: A page of balances.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/BalancePage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/BalanceQuery'
+
+  '/list-unspent-outputs':
+    post:
+      description: Returns a page of unspent outputs.
+      responses:
+        200:
+          description: A page of unspent outputs.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/UnspentOutputPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/UnspentOutputQuery'
+
+  '/create-transaction-feed':
+    post:
+      description: Creates a new transaction feed.
+      responses:
+        200:
+          description: A new transaction feed.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/TransactionFeed'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              alias:
+                type: string
+                description: A unique alias for the transaction feed.
+              filter:
+                type: string
+                description: A valid filter string for the `/list-transactions`
+                  endpoint. The transaction feed will be composed of future
+                  transactions that match the filter.
+
+  '/get-transaction-feed':
+    post:
+      description: Retrieves a single transaction feed.
+      responses:
+        200:
+          description: A transaction feed.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/TransactionFeed'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The unique ID of a transaction feed. Either `id` or
+                  `alias` is required.
+              alias:
+                type: string
+                description: The unique alias of a transaction feed. Either `id`
+                  or `alias` is required.
+
+  '/list-transactions-feeds':
+    post:
+      description: Returns a page of transaction feeds defined on the core.
+      responses:
+        200:
+          description: A page of transaction feeds.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/TransactionFeedPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/TransactionFeedQuery'
+
+  '/update-transaction-feed':
+    post:
+      description: Updates a transaction feed's position.
+      responses:
+        200:
+          description: The updated transaction feed.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/TransactionFeed'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - after
+            properties:
+              id:
+                type: string
+                description: The unique ID of a transaction feed. Either `id` or
+                  `alias` is required.
+              alias:
+                type: string
+                description: The unique alias of a transaction feed. Either `id`
+                  or `alias` is required.
+              after:
+                type: string
+                description: The new cursor value for the feed.
+              previous_after:
+                type: string
+                description: An optional parameter for optimistic concurrency
+                  control. Provide the previous `after` value to prevent multiple
+                  consumers from accidentally rewinding the feed.
+
+  '/delete-transaction-feed':
+    post:
+      description: Deletes a transaction feed.
+      responses:
+        200:
+          description: A default success message.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/OkMessage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The unique ID of a transaction feed. Either `id` or
+                  `alias` is required.
+              alias:
+                type: string
+                description: The unique alias of a transaction feed. Either `id`
+                  or `alias` is required.
+
+  '/create-access-token':
+    post:
+      description: Creates a new access token.
+      responses:
+        200:
+          description: A new access token.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            allOf:
+              - $ref: '#/definitions/AccessToken'
+              - type: object
+                required:
+                  - token
+                properties:
+                  token:
+                    type: string
+                    description: The full access token string, to be used for
+                      logging into the dashboard and authenticating SDK
+                      requests. This is only returned when the token is created.
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - id
+              - type
+            properties:
+              id:
+                type: string
+                description: A unique ID for the new access token.
+              type:
+                type: string
+                description: Either "client" or "network". "client" tokens
+                  grant access to the Client API, described in this document.
+                  "network" tokens grant access to the core-to-core network API.
+
+  '/list-access-tokens':
+    post:
+      description: Returns a page of access tokens matching the specified query.
+      responses:
+        200:
+          description: A page of access tokens.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/AccessTokenPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/AccessTokenQuery'
+
+  '/delete-access-token':
+    post:
+      description: Deletes an access token.
+      responses:
+        200:
+          description: A default success message.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/OkMessage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                type: string
+                description: The access token's unique, user-provided ID.
+
+  '/info':
+    post:
+      description: Returns information about the core.
+      responses:
+        200:
+          description: Information about the core.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/CoreInfo'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+
+  '/configure':
+    post:
+      description: Configures an unconfigured core.
+      responses:
+        200:
+          description: A default success message.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/OkMessage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - is_generator
+            properties:
+              is_generator:
+                type: boolean
+                description: Whether the local core will be a block generator
+                  for the blockchain; i.e., you are starting a new blockchain on
+                  the local core. `false` if you are connecting to a
+                  pre-existing blockchain.
+              generator_url:
+                type: string
+                description: A URL for the block generator. Required if
+                  `is_generator` is false.
+              generator_access_token:
+                type: string
+                description: A network access token provided by administrators
+                  of the block generator. Required if `is_generator` is false.
+              blockchain_id:
+                type: string
+                description: The unique ID of the generator's blockchain.
+                  Required if `is_generator` is false.
+
+  '/reset':
+    post:
+      description: Resets the state of the core, and restarts the process.
+      responses:
+        200:
+          description: A default success message.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/OkMessage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              everything:
+                type: boolean
+                description: If `true`, all objects including access tokens and
+                  MockHSM keys will be deleted. If `false`, then access tokens
+                  and MockHSM keys will be preserved.
+
+  '/mockhsm/create-key':
+    post:
+      description: Creates a new MockHSM key.
+      responses:
+        200:
+          description: A MockHSM key.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/MockHSMKey'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              alias:
+                type: string
+                description: A unique alias for the MockHSMKey.
+
+  '/mockhsm/list-keys':
+    post:
+      description: Returns a page of MockHSM keys matching the specified query.
+      responses:
+        200:
+          description: A page of MockHSM keys.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            $ref: '#/definitions/MockHSMKeyPage'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/MockHSMKeyQuery'
+
+  '/mockhsm/sign-transaction':
+    post:
+      description: Signs a list of transactions using the MockHSM.
+      responses:
+        200:
+          description: A list of transaction templates and/or errors. Items in
+            the list may be Error objects in case of errors, but Swagger 2.0
+            does not allow for polymorphic array items.
+          headers:
+            'Chain-Request-ID':
+              type: string
+              description: A unique random ID, generated for all incoming requests.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TransactionTemplate'
+        400:
+          $ref: '#/responses/ClientError'
+        401:
+          $ref: '#/responses/NotAuthenticatedError'
+        408:
+          $ref: '#/responses/TimeoutError'
+        429:
+          $ref: '#/responses/RateLimitError'
+        500:
+          $ref: '#/responses/InternalServerError'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required:
+              - xpubs
+              - transactions
+            properties:
+              xpubs:
+                type: array
+                items:
+                  type: string
+                description: A list of xpubs that the signer should provide
+                  signatures for.
+              transactions:
+                type: array
+                items:
+                  $ref: '#/definitions/SignerTransactionTemplate'
+                description: A list of transactions to be signed by the signer.
