@@ -46,4 +46,12 @@ var migrations = []migration{
 		DROP INDEX account_control_programs_control_program_idx;
 		ALTER TABLE account_control_programs ADD PRIMARY KEY (control_program);
 	`},
+	{Name: "2016-11-18.0.account.confirmed-utxos.sql", SQL: `
+		DELETE FROM account_utxos WHERE confirmed_in IS NULL;
+		ALTER TABLE account_utxos
+			DROP COLUMN expiry_height,
+			ALTER COLUMN confirmed_in SET NOT NULL,
+			ALTER COLUMN block_pos SET NOT NULL,
+			ALTER COLUMN block_timestamp SET NOT NULL;
+	`},
 }
