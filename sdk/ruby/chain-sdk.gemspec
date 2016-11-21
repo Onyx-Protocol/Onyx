@@ -4,8 +4,8 @@ Gem::Specification.new do |s|
   s.name = 'chain-sdk'
   s.version = Chain::VERSION
   s.authors = ['Chain Engineering']
-  s.description = 'The Official Ruby SDK for the Chain Core Developer Edition'
-  s.summary = 'The Official Ruby SDK for the Chain Core Developer Edition'
+  s.description = 'The Official Ruby SDK for Chain Core'
+  s.summary = 'The Official Ruby SDK for Chain Core'
   s.licenses = ['Apache-2.0']
   s.homepage = 'https://github.com/chain/chain/tree/main/sdk/ruby'
 
