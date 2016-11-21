@@ -1,3 +1,5 @@
+'use strict'
+
 const AccessToken = require('./accessToken')
 const Account = require('./account')
 const Asset = require('./asset')
