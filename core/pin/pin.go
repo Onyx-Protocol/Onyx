@@ -13,6 +13,8 @@ import (
 	"chain/protocol/bc"
 )
 
+const processorWorkers = 10
+
 type Store struct {
 	db pg.DB
 
@@ -39,8 +41,14 @@ func (s *Store) ProcessBlocks(ctx context.Context, c *protocol.Chain, pinName st
 			log.Error(ctx, ctx.Err())
 			return
 		case <-c.BlockWaiter(height + 1):
-			go p.processBlock(ctx, c, height+1, cb)
-			height++
+			select {
+			case <-ctx.Done():
+				log.Error(ctx, ctx.Err())
+				return
+			case p.sem <- true:
+				go p.processBlock(ctx, c, height+1, cb)
+				height++
+			}
 		}
 	}
 }
@@ -175,10 +183,11 @@ type pin struct {
 
 	db   pg.DB
 	name string
+	sem  chan bool
 }
 
 func newPin(db pg.DB, name string, height uint64) *pin {
-	p := &pin{db: db, name: name, height: height}
+	p := &pin{db: db, name: name, height: height, sem: make(chan bool, 10)}
 	p.cond.L = &p.mu
 	return p
 }
@@ -190,6 +199,7 @@ func (p *pin) getHeight() uint64 {
 }
 
 func (p *pin) processBlock(ctx context.Context, c *protocol.Chain, height uint64, cb func(context.Context, *bc.Block) error) {
+	defer func() { <-p.sem }()
 	for {
 		block, err := c.GetBlock(ctx, height)
 		if err != nil {
