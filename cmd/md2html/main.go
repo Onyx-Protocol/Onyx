@@ -24,7 +24,7 @@ var documentNamePlaceholder = []byte("{{Filename}}")
 var extToLang = map[string]string{
 	"java": "Java",
 	"rb":   "Ruby",
-	"js":   "JavaScript",
+	"js":   "Node",
 }
 
 func main() {
