@@ -81,6 +81,7 @@ var (
 )
 
 func init() {
+	expvar.NewString("prod").Set(prod)
 	expvar.NewString("buildtag").Set(buildTag)
 	expvar.NewString("builddate").Set(buildDate)
 	expvar.NewString("buildcommit").Set(buildCommit)
