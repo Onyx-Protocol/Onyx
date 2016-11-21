@@ -27,7 +27,7 @@ func TestWaitForPin(t *testing.T) {
 		}
 	}(sctx)
 
-	err := p.raiseTo(ctx, 1)
+	err := p.complete(ctx, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
