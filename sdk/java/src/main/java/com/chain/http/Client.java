@@ -245,6 +245,16 @@ public class Client {
   }
 
   /**
+   * Sets the max idle http connections and how long they should be kept alive.
+   * @param maxIdle the maximum number of idle connections to keep in the pool
+   * @param keepAliveDuration the number of time units an idle connection is kept open in the pool
+   * @param unit the unit of time
+   */
+  public void setConnectionPool(int maxIdle, long keepAliveDuration, TimeUnit unit) {
+    this.httpClient.setConnectionPool(new ConnectionPool(maxIdle, unit.toMillis(keepAliveDuration)));
+  }
+
+  /**
    * Sets the default read timeout for new connections. A value of 0 means no timeout.
    * @param timeout the number of time units for the default timeout
    * @param unit the unit of time
