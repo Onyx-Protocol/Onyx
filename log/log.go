@@ -19,6 +19,8 @@ import (
 	"chain/net/http/reqid"
 )
 
+const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
+
 var (
 	logWriterMu sync.Mutex // protects the following
 	logWriter   io.Writer  = os.Stdout
@@ -118,7 +120,7 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 		"%s=%s %s=%s %s=%s",
 		KeyReqID, formatValue(reqid.FromContext(ctx)),
 		KeyCaller, vcaller,
-		KeyTime, formatValue(t.Format(time.RFC3339Nano)),
+		KeyTime, formatValue(t.Format(rfc3339NanoFixed)),
 	)
 	if s := reqid.CoreIDFromContext(ctx); s != "" {
 		out += " " + KeyCoreID + "=" + formatValue(reqid.CoreIDFromContext(ctx))
