@@ -1,9 +1,9 @@
 This is the dockerfile that produces the docker image
-we user in $CHAIN/wercker.yml.
+we use for continuous integration.
 
 To update it, do:
 
-	TAG=chaindev/wercker:`date +%Y%m%d`
+	TAG=chaindev/ci:`date +%Y%m%d`
 	docker build --tag $TAG .
 	docker push $TAG
 

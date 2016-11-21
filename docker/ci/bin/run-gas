@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -ve
+
+# TODO: Remove exclusions on gas checks
+# G101: Hardcoded credentials (Presently only false positives)
+# G204: Unsafe command execution (Presently only affects build tools)
+gas -quiet -exclude=G101,G204 ./{cmd,core}/**/*.go

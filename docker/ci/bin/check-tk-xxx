@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -veo pipefail
+
+cd $CHAIN
+p='(xxx|(tk)+)' # can't write inline or it'll match this file
+if egrep -Iinr '//.*\b'$p'\b' $(ls -1|egrep -v 'vendor|generated')
+then exit 1
+fi
