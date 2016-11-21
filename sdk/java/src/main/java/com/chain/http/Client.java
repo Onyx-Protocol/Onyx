@@ -50,19 +50,17 @@ public class Client {
     }
   }
 
+  public Client(Builder builder) {
+    this.url = builder.url;
+    this.accessToken = builder.accessToken;
+    this.httpClient = buildHttpClient(builder);
+  }
+
   /**
    * Create a new http Client object using the default development host URL.
    */
   public Client() {
-    URL url;
-    try {
-      url = new URL("http://localhost:1999");
-    } catch (MalformedURLException e) {
-      throw new RuntimeException("invalid default development URL", e);
-    }
-
-    this.url = url;
-    this.httpClient = this.defaultHttpClient();
+    this(new Builder());
   }
 
   /**
@@ -71,12 +69,7 @@ public class Client {
    * @param url the URL of the Chain Core or HSM
    */
   public Client(String url) throws BadURLException {
-    try {
-      this.url = new URL(url);
-    } catch (MalformedURLException e) {
-      throw new BadURLException(e.getMessage());
-    }
-    this.httpClient = this.defaultHttpClient();
+    this(new Builder().setURL(url));
   }
 
   /**
@@ -85,8 +78,7 @@ public class Client {
    * @param url the URL of the Chain Core or HSM
    */
   public Client(URL url) {
-    this.url = url;
-    this.httpClient = this.defaultHttpClient();
+    this(new Builder().setURL(url));
   }
 
   /**
@@ -96,8 +88,7 @@ public class Client {
    * @param accessToken a Client API access token
    */
   public Client(String url, String accessToken) throws BadURLException {
-    this(url);
-    this.accessToken = accessToken;
+    this(new Builder().setURL(url).setAccessToken(accessToken));
   }
 
   /**
@@ -107,8 +98,7 @@ public class Client {
    * @param accessToken a Client API access token
    */
   public Client(URL url, String accessToken) {
-    this(url);
-    this.accessToken = accessToken;
+    this(new Builder().setURL(url).setAccessToken(accessToken));
   }
 
   /**
@@ -347,15 +337,22 @@ public class Client {
     throw exception;
   }
 
-  private OkHttpClient defaultHttpClient() {
+  private OkHttpClient buildHttpClient(Builder builder) {
     OkHttpClient httpClient = new OkHttpClient();
     httpClient.setFollowRedirects(false);
-    httpClient.setReadTimeout(30, TimeUnit.SECONDS);
-    httpClient.setWriteTimeout(30, TimeUnit.SECONDS);
-    httpClient.setConnectTimeout(30, TimeUnit.SECONDS);
+    httpClient.setReadTimeout(builder.readTimeout, builder.readTimeoutUnit);
+    httpClient.setWriteTimeout(builder.writeTimeout, builder.writeTimeoutUnit);
+    httpClient.setConnectTimeout(builder.connectTimeout, builder.connectTimeoutUnit);
 
-    // 50 max idle conns, 2 minute max keep alive
-    httpClient.setConnectionPool(new ConnectionPool(50, 120000));
+    httpClient.setConnectionPool(builder.pool);
+
+    if (builder.proxy != null) {
+      httpClient.setProxy(builder.proxy);
+    }
+    if (builder.cp != null) {
+      httpClient.setCertificatePinner(builder.cp);
+    }
+
     return httpClient;
   }
 
@@ -471,5 +468,139 @@ public class Client {
 
     Client other = (Client) o;
     return this.identifier().equals(other.identifier());
+  }
+
+  /**
+   * A builder class for creating client objects
+   */
+  public static class Builder {
+    private URL url;
+    private String accessToken;
+    private CertificatePinner cp;
+    private long connectTimeout;
+    private TimeUnit connectTimeoutUnit;
+    private long readTimeout;
+    private TimeUnit readTimeoutUnit;
+    private long writeTimeout;
+    private TimeUnit writeTimeoutUnit;
+    private Proxy proxy;
+    private ConnectionPool pool;
+
+    public Builder() {
+      this.setDefaults();
+    }
+
+    private void setDefaults() {
+      try {
+        this.url = new URL("http://localhost:1999");
+      } catch (MalformedURLException e) {
+        throw new RuntimeException("invalid default development URL", e);
+      }
+      this.setReadTimeout(30, TimeUnit.SECONDS);
+      this.setWriteTimeout(30, TimeUnit.SECONDS);
+      this.setConnectTimeout(30, TimeUnit.SECONDS);
+      this.setConnectionPool(50, 2, TimeUnit.MINUTES);
+    }
+
+    /**
+     * Sets the URL for the client
+     * @param url the URL of the Chain Core or HSM
+     */
+    public Builder setURL(String url) throws BadURLException {
+      try {
+        this.url = new URL(url);
+      } catch (MalformedURLException e) {
+        throw new BadURLException(e.getMessage());
+      }
+      return this;
+    }
+
+    /**
+     * Sets the URL for the client
+     * @param url the URL of the Chain Core or HSM
+     */
+    public Builder setURL(URL url) {
+      this.url = url;
+      return this;
+    }
+
+    /**
+     * Sets the access token for the client
+     * @param accessToken The access token for the Chain Core or HSM
+     */
+    public Builder setAccessToken(String accessToken) {
+      this.accessToken = accessToken;
+      return this;
+    }
+
+    /**
+     * Sets the certificate pinner for the client
+     * @param provider certificate provider
+     * @param subjPubKeyInfoHash public key hash
+     */
+    public Builder pinCertificate(String provider, String subjPubKeyInfoHash) {
+      this.cp = new CertificatePinner.Builder().add(provider, subjPubKeyInfoHash).build();
+      return this;
+    }
+
+    /**
+     * Sets the connect timeout for the client
+     * @param timeout the number of time units for the default timeout
+     * @param unit the unit of time
+     */
+    public Builder setConnectTimeout(long timeout, TimeUnit unit) {
+      this.connectTimeout = timeout;
+      this.connectTimeoutUnit = unit;
+      return this;
+    }
+
+    /**
+     * Sets the read timeout for the client
+     * @param timeout the number of time units for the default timeout
+     * @param unit the unit of time
+     */
+    public Builder setReadTimeout(long timeout, TimeUnit unit) {
+      this.readTimeout = timeout;
+      this.readTimeoutUnit = unit;
+      return this;
+    }
+
+    /**
+     * Sets the write timeout for the client
+     * @param timeout the number of time units for the default timeout
+     * @param unit the unit of time
+     */
+    public Builder setWriteTimeout(long timeout, TimeUnit unit) {
+      this.writeTimeout = timeout;
+      this.writeTimeoutUnit = unit;
+      return this;
+    }
+
+    /**
+     * Sets the proxy for the client
+     * @param proxy
+     */
+    public Builder setProxy(Proxy proxy) {
+      this.proxy = proxy;
+      return this;
+    }
+
+    /**
+     * Sets the connection pool for the client
+     * @param maxIdle the maximum number of idle http connections in the pool
+     * @param timeout the number of time units until an idle http connection in the pool is closed
+     * @param unit the unit of time
+     */
+    public Builder setConnectionPool(int maxIdle, long timeout, TimeUnit unit) {
+      this.pool = new ConnectionPool(maxIdle, unit.toMillis(timeout));
+      return this;
+    }
+
+    /**
+     * Builds a client with all of the provided parameters.
+     */
+    public Client build() {
+      return new Client(this);
+    }
   }
 }
