@@ -468,12 +468,11 @@ An *asset version* is a variable-length integer encoded as [varint63](#varint63)
 
 Globally unique identifier of a given asset. Each [asset version](#asset-version) defines its own method to compute the asset ID, but an asset ID is always guaranteed to be unique across all asset versions and across all blockchains.
 
-**Asset version 1** defines asset ID as the [SHA3-256](#sha3) of the following structure:
+Asset ID is defined as the [SHA3-256](#sha3) of the following structure:
 
 Field            | Type          | Description
 -----------------|---------------|-------------------------------------------------
 Initial Block ID | sha3-256      | Hash of the first block in this blockchain.
-Asset Version    | varint63      | [Version](#asset-version) of this asset.
 VM Version       | varint63      | [Version of the VM](#vm-version) for the issuance program.
 Issuance Program | varstring31   | Program used in the issuance input.
 
