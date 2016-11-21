@@ -187,7 +187,7 @@ type pin struct {
 }
 
 func newPin(db pg.DB, name string, height uint64) *pin {
-	p := &pin{db: db, name: name, height: height, sem: make(chan bool, 10)}
+	p := &pin{db: db, name: name, height: height, sem: make(chan bool, processorWorkers)}
 	p.cond.L = &p.mu
 	return p
 }
