@@ -229,7 +229,7 @@ func (p *pin) complete(ctx context.Context, height uint64) error {
 		max = p.completed[i]
 	}
 
-	if max < p.height {
+	if max == p.height {
 		return nil
 	}
 
