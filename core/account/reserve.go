@@ -8,11 +8,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/groupcache/singleflight"
-
 	"chain/database/pg"
 	"chain/errors"
+	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/state"
 	"chain/sync/idempotency"
 )
 
@@ -40,6 +40,8 @@ type utxo struct {
 
 	AccountID           string
 	ControlProgramIndex uint64
+
+	confirmedIn, blockPos uint64
 }
 
 func (u *utxo) source() source {
@@ -63,8 +65,9 @@ type reservation struct {
 	ClientToken *string
 }
 
-func newReserver(db pg.DB) *reserver {
+func newReserver(db pg.DB, c *protocol.Chain) *reserver {
 	return &reserver{
+		c:            c,
 		db:           db,
 		reservations: make(map[uint64]*reservation),
 		sources:      make(map[source]*sourceReserver),
@@ -82,6 +85,7 @@ func newReserver(db pg.DB) *reserver {
 // reserver ensures idempotency of reservations until the reservation
 // expiration.
 type reserver struct {
+	c                 *protocol.Chain
 	db                pg.DB
 	nextReservationID uint64
 	idempotency       idempotency.Group
@@ -154,6 +158,9 @@ func (re *reserver) reserveUTXO(ctx context.Context, out bc.Outpoint, exp time.T
 	if err != nil {
 		return nil, err
 	}
+	if !re.checkUTXO(u) {
+		return nil, pg.ErrUserInputNotFound
+	}
 
 	rid := atomic.AddUint64(&re.nextReservationID, 1)
 	err = re.source(u.source()).reserveUTXO(rid, u)
@@ -221,6 +228,11 @@ func (re *reserver) ExpireReservations(ctx context.Context) error {
 	return nil
 }
 
+func (re *reserver) checkUTXO(u *utxo) bool {
+	_, s := re.c.State()
+	return s.Tree.ContainsKey(state.OutputKey(u.Outpoint))
+}
+
 func (re *reserver) source(src source) *sourceReserver {
 	re.sourcesMu.Lock()
 	defer re.sourcesMu.Unlock()
@@ -233,6 +245,8 @@ func (re *reserver) source(src source) *sourceReserver {
 	sr = &sourceReserver{
 		db:       re.db,
 		src:      src,
+		validFn:  re.checkUTXO,
+		cached:   make(map[bc.Outpoint]*utxo),
 		reserved: make(map[bc.Outpoint]uint64),
 	}
 	re.sources[src] = sr
@@ -240,34 +254,67 @@ func (re *reserver) source(src source) *sourceReserver {
 }
 
 type sourceReserver struct {
-	db    pg.DB
-	src   source
-	group singleflight.Group
+	db         pg.DB
+	src        source
+	validFn    func(u *utxo) bool
+	lastHeight uint64
+	lastIndex  uint64
 
 	mu       sync.Mutex
+	cached   map[bc.Outpoint]*utxo
 	reserved map[bc.Outpoint]uint64
-}
-
-func (sr *sourceReserver) findMatchingUTXOs(ctx context.Context) ([]*utxo, error) {
-	srcID := fmt.Sprintf("%s-%s", sr.src.AssetID, sr.src.AccountID)
-	untypedUTXOs, err := sr.group.Do(srcID, func() (interface{}, error) {
-		return findMatchingUTXOs(ctx, sr.db, sr.src)
-	})
-	return untypedUTXOs.([]*utxo), err
 }
 
 func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64) ([]*utxo, uint64, error) {
 	var reserved, unavailable uint64
 	var reservedUTXOs []*utxo
 
+	// First try to reserve using only cached UTXOs.
+	sr.mu.Lock()
+	for o, u := range sr.cached {
+		// If the UTXO is already reserved, skip it.
+		if _, ok := sr.reserved[u.Outpoint]; ok {
+			continue
+		}
+		// Cached utxos aren't guaranteed to still be valid; they may
+		// have been spent. Verify that that the outputs are still in
+		// the state tree.
+		if !sr.validFn(u) {
+			delete(sr.cached, o)
+			continue
+		}
+
+		reserved += u.Amount
+		reservedUTXOs = append(reservedUTXOs, u)
+		if reserved >= amount {
+			break
+		}
+	}
+	if reserved >= amount {
+		// We've found enough to satisfy the request.
+		for _, u := range reservedUTXOs {
+			sr.reserved[u.Outpoint] = rid
+		}
+		sr.mu.Unlock()
+		return reservedUTXOs, reserved, nil
+	}
+	sr.mu.Unlock()
+	reserved = 0
+	reservedUTXOs = nil
+
 	// Find the set of UTXOs that match this source.
-	utxos, err := sr.findMatchingUTXOs(ctx)
+	utxos, err := findMatchingUTXOs(ctx, sr.db, sr.src, sr.lastHeight, sr.lastIndex)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
+	for _, u := range utxos {
+		sr.cached[u.Outpoint] = u
+		sr.lastHeight, sr.lastIndex = u.confirmedIn, u.blockPos
+	}
+
 	for _, utxo := range utxos {
 		// If the utxo is already reserved, skip it.
 		if _, ok := sr.reserved[utxo.Outpoint]; ok {
@@ -294,8 +341,8 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 	}
 
 	// We've found enough to satisfy the request.
-	for _, utxo := range reservedUTXOs {
-		sr.reserved[utxo.Outpoint] = rid
+	for _, u := range reservedUTXOs {
+		sr.reserved[u.Outpoint] = rid
 	}
 	return reservedUTXOs, reserved, nil
 }
@@ -321,15 +368,16 @@ func (sr *sourceReserver) cancel(res *reservation) {
 	}
 }
 
-func findMatchingUTXOs(ctx context.Context, db pg.DB, src source) ([]*utxo, error) {
+func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height, pos uint64) ([]*utxo, error) {
 	const q = `
-		SELECT tx_hash, index, amount, control_program_index, control_program
+		SELECT tx_hash, index, amount, control_program_index, control_program, confirmed_in, block_pos
 		FROM account_utxos
-		WHERE account_id = $1 AND asset_id = $2
+		WHERE account_id = $1 AND asset_id = $2 AND (confirmed_in, block_pos) > ($3, $4)
+		ORDER BY confirmed_in ASC, block_pos ASC
 	`
 	var utxos []*utxo
-	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID,
-		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte) {
+	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID, height, pos,
+		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte, confirmedIn, blockPos uint64) {
 			utxos = append(utxos, &utxo{
 				Outpoint: bc.Outpoint{
 					Hash:  txHash,
@@ -342,11 +390,10 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, src source) ([]*utxo, erro
 				ControlProgram:      controlProg,
 				AccountID:           src.AccountID,
 				ControlProgramIndex: cpIndex,
+				confirmedIn:         confirmedIn,
+				blockPos:            blockPos,
 			})
 		})
-	// TODO(jackson): This has the potential to be a large number of UTXOs.
-	// If we need to, we can cache UTXOs or at least avoid reading UTXOs once
-	// we've found enough to satisfy the reservation.
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

@@ -95,6 +95,15 @@ func walk(n *node, walkFn WalkFunc) error {
 	return err
 }
 
+// ContainsKey returns true if the key contains the provided
+// key, without checking its corresponding hash.
+func (t *Tree) ContainsKey(bkey []byte) bool {
+	if t.root == nil {
+		return false
+	}
+	return t.lookup(t.root, bitKey(bkey)) != nil
+}
+
 // Contains returns true if the tree contains the provided
 // key, value pair.
 func (t *Tree) Contains(bkey, val []byte) bool {
