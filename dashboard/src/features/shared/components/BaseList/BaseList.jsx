@@ -40,6 +40,7 @@ class ItemList extends React.Component {
           {header}
 
           <EmptyList
+            emptyContent={this.props.emptyContent}
             type={this.props.type}
             objectName={objectName}
             newButton={newButton}
