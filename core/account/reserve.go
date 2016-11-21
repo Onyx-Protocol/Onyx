@@ -40,6 +40,8 @@ type utxo struct {
 
 	AccountID           string
 	ControlProgramIndex uint64
+
+	confirmedIn, blockPos uint64
 }
 
 func (u *utxo) source() source {
@@ -252,9 +254,11 @@ func (re *reserver) source(src source) *sourceReserver {
 }
 
 type sourceReserver struct {
-	db      pg.DB
-	src     source
-	validFn func(u *utxo) bool
+	db         pg.DB
+	src        source
+	validFn    func(u *utxo) bool
+	lastHeight uint64
+	lastIndex  uint64
 
 	mu       sync.Mutex
 	cached   map[bc.Outpoint]*utxo
@@ -290,7 +294,6 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 		// We've found enough to satisfy the request.
 		for _, u := range reservedUTXOs {
 			sr.reserved[u.Outpoint] = rid
-			delete(sr.cached, u.Outpoint)
 		}
 		sr.mu.Unlock()
 		return reservedUTXOs, reserved, nil
@@ -300,7 +303,7 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 	reservedUTXOs = nil
 
 	// Find the set of UTXOs that match this source.
-	utxos, err := findMatchingUTXOs(ctx, sr.db, sr.src)
+	utxos, err := findMatchingUTXOs(ctx, sr.db, sr.src, sr.lastHeight, sr.lastIndex)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -309,6 +312,7 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 	defer sr.mu.Unlock()
 	for _, u := range utxos {
 		sr.cached[u.Outpoint] = u
+		sr.lastHeight, sr.lastIndex = u.confirmedIn, u.blockPos
 	}
 
 	for _, utxo := range utxos {
@@ -364,15 +368,16 @@ func (sr *sourceReserver) cancel(res *reservation) {
 	}
 }
 
-func findMatchingUTXOs(ctx context.Context, db pg.DB, src source) ([]*utxo, error) {
+func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height, pos uint64) ([]*utxo, error) {
 	const q = `
-		SELECT tx_hash, index, amount, control_program_index, control_program
+		SELECT tx_hash, index, amount, control_program_index, control_program, confirmed_in, block_pos
 		FROM account_utxos
-		WHERE account_id = $1 AND asset_id = $2
+		WHERE account_id = $1 AND asset_id = $2 AND (confirmed_in, block_pos) > ($3, $4)
+		ORDER BY confirmed_in ASC, block_pos ASC
 	`
 	var utxos []*utxo
-	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID,
-		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte) {
+	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID, height, pos,
+		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte, confirmedIn, blockPos uint64) {
 			utxos = append(utxos, &utxo{
 				Outpoint: bc.Outpoint{
 					Hash:  txHash,
@@ -385,6 +390,8 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, src source) ([]*utxo, erro
 				ControlProgram:      controlProg,
 				AccountID:           src.AccountID,
 				ControlProgramIndex: cpIndex,
+				confirmedIn:         confirmedIn,
+				blockPos:            blockPos,
 			})
 		})
 	if err != nil {
