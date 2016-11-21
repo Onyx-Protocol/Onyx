@@ -267,7 +267,7 @@ func waitForTxInBlock(ctx context.Context, c *protocol.Chain, tx *bc.Tx, height 
 }
 
 type submitArg struct {
-	Transactions []*txbuilder.Template
+	Transactions []txbuilder.Template
 	wait         chainjson.Duration
 	WaitUntil    string `json:"wait_until"` // values none, confirmed, processed. default: processed
 }
@@ -290,7 +290,7 @@ func (h *Handler) submit(ctx context.Context, x submitArg) (interface{}, error) 
 			defer batchRecover(subctx, &responses[i])
 
 			tx, err := h.submitSingle(subctx, submitSingleArg{
-				tpl:       x.Transactions[i],
+				tpl:       &x.Transactions[i],
 				wait:      x.wait,
 				waitUntil: x.WaitUntil,
 			})
