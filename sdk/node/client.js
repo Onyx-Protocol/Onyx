@@ -3,12 +3,15 @@
 // use the ponyfill for unsupported browsers.
 const { fetch } = require('fetch-ponyfill')()
 
+const mockHsm = require('./mockHsm')
 const errors = require('./errors')
 
 class Client {
   constructor(baseUrl, clientToken) {
-    this.baseUrl = baseUrl
-    this.clientToken = clientToken
+    this.baseUrl = baseUrl || 'http://localhost:1999'
+    this.clientToken = clientToken || ''
+
+    this.mockHsm = mockHsm(this)
   }
 
   request(path, body = {}) {
