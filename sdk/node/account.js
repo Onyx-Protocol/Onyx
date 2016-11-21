@@ -1,3 +1,5 @@
-import buildClass from './buildClass'
+const buildClass = require('./buildClass')
 
-export default buildClass('account')
+const Account = buildClass('account')
+
+module.exports = Account

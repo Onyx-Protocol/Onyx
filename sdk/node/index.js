@@ -1,17 +1,17 @@
-import AccessToken from './accessToken'
-import Account from './account'
-import Asset from './asset'
-import Balance from './balance'
-import Context from './context'
-import ControlProgram from './controlProgram'
-import Core from './core'
-import MockHsm from './mockHsm'
-import Transaction from './transaction'
-import TransactionFeed from './transactionFeed'
-import Unspent from './unspent'
-import errors from './errors'
+const AccessToken = require('./accessToken')
+const Account = require('./account')
+const Asset = require('./asset')
+const Balance = require('./balance')
+const Context = require('./context')
+const ControlProgram = require('./controlProgram')
+const Core = require('./core')
+const MockHsm = require('./mockHsm')
+const Transaction = require('./transaction')
+const TransactionFeed = require('./transactionFeed')
+const Unspent = require('./unspent')
+const errors = require('./errors')
 
-export default {
+module.exports = {
   AccessToken,
   Account,
   Asset,

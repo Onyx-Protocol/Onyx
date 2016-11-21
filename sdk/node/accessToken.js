@@ -1,7 +1,7 @@
-import buildClass from './buildClass'
-import uuid from 'uuid'
+const buildClass = require('./buildClass')
+const uuid = require('uuid')
 
-export default class AccessToken extends buildClass('access-token') {
+class AccessToken extends buildClass('access-token') {
   create(context) {
     let body = Object.assign({ client_token: uuid.v4() }, this)
     return context.client.request('/create-access-token', body)
@@ -12,3 +12,5 @@ export default class AccessToken extends buildClass('access-token') {
     return context.client.request('/delete-access-token', {id})
   }
 }
+
+module.exports = AccessToken

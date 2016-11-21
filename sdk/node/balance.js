@@ -1,5 +1,5 @@
-import buildClass from './buildClass'
+const buildClass = require('./buildClass')
 
-const balance = buildClass('balance')
+const Balance = buildClass('balance')
 
-export default balance
+module.exports = Balance

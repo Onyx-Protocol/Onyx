@@ -1,10 +1,10 @@
-import Client from './client'
+const Client = require('./client')
 
 class Context {
   constructor(config) {
-    this.config = {...config}
+    this.config = Object.assign({}, config)
     this.client = new Client(config.url, config.clientToken)
   }
 }
 
-export default Context
+module.exports = Context

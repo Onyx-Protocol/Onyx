@@ -15,5 +15,9 @@
     "url": "https://github.com/chain/chain"
   },
   "author": "Chain Engineering",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "dependencies": {
+    "fetch-ponyfill": "^3.0.2",
+    "uuid": "~3.0.0"
+  }
 }

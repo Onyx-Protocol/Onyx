@@ -1,6 +1,8 @@
-export default class ControlProgram {
+class ControlProgram {
   static create(body, context) {
     return context.client.request('/create-control-program', body)
       .then(data => data[0])
   }
 }
+
+module.exports = ControlProgram

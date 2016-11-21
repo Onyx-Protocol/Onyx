@@ -1,8 +1,8 @@
-import buildClass from './buildClass'
-import uuid from 'uuid'
-import Transaction from './transaction'
+const buildClass = require('./buildClass')
+const uuid = require('uuid')
+const Transaction = require('./transaction')
 
-export default class MockHsm extends buildClass('mockhsm', {
+class MockHsm extends buildClass('mockhsm', {
   listPath: '/mockhsm/list-keys'
 }) {
   create(context) {
@@ -19,3 +19,5 @@ export default class MockHsm extends buildClass('mockhsm', {
     }).then(data => data.map((item) => new Transaction(item)))
   }
 }
+
+module.exports = MockHsm

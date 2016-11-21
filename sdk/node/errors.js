@@ -64,4 +64,4 @@ const lib = {
   }
 }
 
-export default lib
+module.exports = lib

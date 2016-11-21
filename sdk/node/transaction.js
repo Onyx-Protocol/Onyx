@@ -1,5 +1,5 @@
-import buildClass from './buildClass'
-import errors from './errors'
+const buildClass = require('./buildClass')
+const errors = require('./errors')
 
 class Transaction extends buildClass('transaction') {
   checkForError(resp) {
@@ -34,4 +34,4 @@ class Transaction extends buildClass('transaction') {
 delete Transaction.create
 delete Transaction.prototype.create
 
-export default Transaction
+module.exports = Transaction

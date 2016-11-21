@@ -1,7 +1,7 @@
-import buildClass from './buildClass'
-import uuid from 'uuid'
+const buildClass = require('./buildClass')
+const uuid = require('uuid')
 
-export default class TransactionFeed extends buildClass('transaction-feed') {
+class TransactionFeed extends buildClass('transaction-feed') {
   create(context) {
     let body = Object.assign({ client_token: uuid.v4() }, this)
     return context.client.request('/create-transaction-feed', body)
@@ -12,3 +12,5 @@ export default class TransactionFeed extends buildClass('transaction-feed') {
     return context.client.request('/delete-transaction-feed', {id})
   }
 }
+
+module.exports = TransactionFeed

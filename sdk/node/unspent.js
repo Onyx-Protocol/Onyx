@@ -1,3 +1,5 @@
-import buildClass from './buildClass'
+const buildClass = require('./buildClass')
 
-export default buildClass('unspent-output')
+const UnspentOutput = buildClass('unspent-output')
+
+module.exports = UnspentOutput

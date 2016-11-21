@@ -1,3 +1,5 @@
-import buildClass from './buildClass'
+const buildClass = require('./buildClass')
 
-export default buildClass('asset')
+const Asset = buildClass('asset')
+
+module.exports = Asset

@@ -1,4 +1,4 @@
-export default class Core {
+class Core {
   static reset(context) {
     return context.client.request('/reset', {everything: true})
   }
@@ -15,3 +15,5 @@ export default class Core {
     return context.client.request('/info')
   }
 }
+
+module.exports = Core

@@ -1,7 +1,7 @@
-import uuid from 'uuid'
+const uuid = require('uuid')
 
-import Page from './page'
-import errors from './errors'
+const Page = require('./page')
+const errors = require('./errors')
 
 function buildClass(type, options = {}) {
   const createPath = options.createPath || `/create-${type}`
@@ -37,4 +37,4 @@ function buildClass(type, options = {}) {
   }
 }
 
-export default buildClass
+module.exports = buildClass

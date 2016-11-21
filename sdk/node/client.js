@@ -3,7 +3,7 @@
 // use the ponyfill for unsupported browsers.
 const { fetch } = require('fetch-ponyfill')()
 
-import errors from './errors'
+const errors = require('./errors')
 
 class Client {
   constructor(baseUrl, clientToken) {
@@ -98,4 +98,4 @@ class Client {
   }
 }
 
-export default Client
+module.exports = Client
