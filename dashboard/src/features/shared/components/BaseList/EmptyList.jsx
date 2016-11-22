@@ -13,24 +13,22 @@ class EmptyList extends React.Component {
     if (!this.props.loadedOnce) {
       emptyBlock = <span>LOADING…</span>
     } else if (this.props.showFirstTimeFlow && this.props.skipCreate) {
-      emptyBlock = <div className={styles.objectHelp}>{this.props.emptyContent}</div>
+      emptyBlock = <div>{this.props.emptyContent}</div>
     } else if (this.props.showFirstTimeFlow) {
       emptyBlock = <div>
-        <div className={styles.objectHelp}>
-          {this.props.emptyContent}
-          {this.props.newButton}
-        </div>
+        {this.props.emptyContent}
+        {this.props.newButton}
       </div>
     } else if (!this.props.showFirstTimeFlow) {
       classNames.push(styles.noResults)
       emptyBlock = <div>
         <span className={`${styles.emptyLabel} ${styles.noResultsLabel}`}>No results for query:</span>
         <code className={styles.code}>{this.props.currentFilter.filter}</code>
-        <div className={styles.objectHelp}>
+        <div className={styles.emptyContainer}>
           <p>To learn how to query the API, please refer to the documentation:</p>
-          <ol>
-            <li><a href="/docs/core/build-applications/queries" target="_blank">Queries</a></li>
-            <li><a href="/docs/core/reference/api-objects" target="_blank">API Objects</a></li>
+          <ol className={styles.emptyList}>
+            <li className={styles.emptyListItem}><a href="/docs/core/build-applications/queries" target="_blank">Queries</a></li>
+            <li className={styles.emptyListItem}><a href="/docs/core/reference/api-objects" target="_blank">API Objects</a></li>
           </ol>
         </div>
       </div>
