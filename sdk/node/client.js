@@ -6,18 +6,21 @@ const { fetch } = require('fetch-ponyfill')()
 const mockHsm = require('./mockHsm')
 const assets = require('./assets')
 const accounts = require('./accounts')
+const transactions = require('./transactions')
+
 const errors = require('./errors')
 
 class Client {
-  constructor(baseUrl, clientToken) {
+  constructor(baseUrl, token) {
     this.baseUrl = baseUrl || 'http://localhost:1999'
-    this.clientToken = clientToken || ''
+    this.token = token || ''
 
     console.log(this)
 
     this.mockHsm = mockHsm(this)
     this.assets = assets(this)
     this.accounts = accounts(this)
+    this.transactions = transactions(this)
   }
 
   request(path, body = {}) {
@@ -45,8 +48,8 @@ class Client {
       body: JSON.stringify(body)
     }
 
-    if (this.clientToken) {
-      req.headers['Authorization'] = `Basic ${btoa(this.clientToken)}`
+    if (this.token) {
+      req.headers['Authorization'] = `Basic ${btoa(this.token)}`
     }
 
     return fetch(this.baseUrl + path, req).catch((err) => {

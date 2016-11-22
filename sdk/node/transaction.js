@@ -1,37 +1,41 @@
-const buildClass = require('./buildClass')
-const errors = require('./errors')
+// TODO: replace with default handler in requestSingle/requestBatch variants
+cosnt checkForError = (resp) => {
+  if ('code' in resp) {
+    throw errors.create(
+      errors.types.BAD_REQUEST,
+      errors.formatErrMsg(resp, ''),
+      {body: resp}
+    )
+  }
+  return resp
+}
 
-class Transaction extends buildClass('transaction') {
-  checkForError(resp) {
-    if ('code' in resp) {
-      throw errors.create(
-        errors.types.BAD_REQUEST,
-        errors.formatErrMsg(resp, ''),
-        {body: resp}
-      )
-    }
-    return resp
+class TransactionBuilder {
+  constructor() {
+    this.actions = []
   }
 
-  build(context) {
-    let body = [this]
-    return context.client.request('/build-transaction', body)
-      .then(resp => this.checkForError(resp[0]))
+  issue(params) {
+    this.actions = Object.assign({}, params, {type: 'issue'})
   }
 
-  submit(context) {
-    return this.constructor.submit([this], context)
-      .then(resp => this.checkForError(resp[0]))
-  }
-
-  static submit(signedTransactions, context) {
-    let body = {transactions: signedTransactions}
-    return context.client.request('/submit-transaction', body)
-      .then(resp => resp.map((item) => new Transaction(item)))
+  controlWithAccount(params) {
+    this.actions = Object.assign({}, params, {type: 'control_with_account'})
   }
 }
 
-delete Transaction.create
-delete Transaction.prototype.create
+module.exports = (client) => {
+  return {
+    build: (builderBlock) => {
+      const builder = new TransactionBuilder()
+      builderBlock(builder)
 
-module.exports = Transaction
+      return client.request('/build-transaction', [builder])
+        .then(resp => checkForError(resp[0]))
+    },
+    submit: (signed) => {
+      return client.request('/submit-transaction', {transactions: [signed]})
+        .then(resp => checkForError(resp[0]))
+    }
+  }
+}
