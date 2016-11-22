@@ -266,14 +266,39 @@ type sourceReserver struct {
 }
 
 func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64) ([]*utxo, uint64, error) {
-	var reserved, unavailable uint64
-	var reservedUTXOs []*utxo
+	reservedUTXOs, reservedAmount, err := sr.reserveFromCache(rid, amount)
+	if err == nil {
+		return reservedUTXOs, reservedAmount, nil
+	}
 
-	// First try to reserve using only cached UTXOs.
+	// Find the set of UTXOs that match this source.
+	utxos, err := findMatchingUTXOs(ctx, sr.db, sr.src, sr.lastHeight, sr.lastIndex)
+	if err != nil {
+		return nil, 0, err
+	}
+
 	sr.mu.Lock()
+	for _, u := range utxos {
+		sr.cached[u.Outpoint] = u
+		sr.lastHeight, sr.lastIndex = u.confirmedIn, u.blockPos
+	}
+	sr.mu.Unlock()
+
+	return sr.reserveFromCache(rid, amount)
+}
+
+func (sr *sourceReserver) reserveFromCache(rid uint64, amount uint64) ([]*utxo, uint64, error) {
+	var (
+		reserved, unavailable uint64
+		reservedUTXOs         []*utxo
+	)
+	sr.mu.Lock()
+	defer sr.mu.Unlock()
+
 	for o, u := range sr.cached {
 		// If the UTXO is already reserved, skip it.
 		if _, ok := sr.reserved[u.Outpoint]; ok {
+			unavailable += u.Amount
 			continue
 		}
 		// Cached utxos aren't guaranteed to still be valid; they may
@@ -286,45 +311,6 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 
 		reserved += u.Amount
 		reservedUTXOs = append(reservedUTXOs, u)
-		if reserved >= amount {
-			break
-		}
-	}
-	if reserved >= amount {
-		// We've found enough to satisfy the request.
-		for _, u := range reservedUTXOs {
-			sr.reserved[u.Outpoint] = rid
-		}
-		sr.mu.Unlock()
-		return reservedUTXOs, reserved, nil
-	}
-	sr.mu.Unlock()
-	reserved = 0
-	reservedUTXOs = nil
-
-	// Find the set of UTXOs that match this source.
-	utxos, err := findMatchingUTXOs(ctx, sr.db, sr.src, sr.lastHeight, sr.lastIndex)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	sr.mu.Lock()
-	defer sr.mu.Unlock()
-	for _, u := range utxos {
-		sr.cached[u.Outpoint] = u
-		sr.lastHeight, sr.lastIndex = u.confirmedIn, u.blockPos
-	}
-
-	for _, utxo := range utxos {
-		// If the utxo is already reserved, skip it.
-		if _, ok := sr.reserved[utxo.Outpoint]; ok {
-			unavailable += utxo.Amount
-			continue
-		}
-
-		// This utxo is available for the taking.
-		reserved += utxo.Amount
-		reservedUTXOs = append(reservedUTXOs, utxo)
 		if reserved >= amount {
 			break
 		}
@@ -344,6 +330,7 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 	for _, u := range reservedUTXOs {
 		sr.reserved[u.Outpoint] = rid
 	}
+
 	return reservedUTXOs, reserved, nil
 }
 
