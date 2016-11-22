@@ -8,6 +8,8 @@ import (
 	"chain/database/pg"
 )
 
+var prod = "yes"
+
 func resetInDevIfRequested(db pg.DB) {}
 
 func authLoopbackInDev(req *http.Request) bool {

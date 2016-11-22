@@ -32,8 +32,8 @@ const (
 )
 
 func isProduction() bool {
-	bt := expvar.Get("buildtag")
-	return bt != nil && bt.String() != `"dev"`
+	p := expvar.Get("prod")
+	return p != nil && p.String() == `"yes"`
 }
 
 func (h *Handler) reset(ctx context.Context, req struct {

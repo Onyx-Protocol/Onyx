@@ -15,7 +15,10 @@ import (
 	"chain/log"
 )
 
-var reset = env.String("RESET", "")
+var (
+	reset = env.String("RESET", "")
+	prod  = "no"
+)
 
 func resetInDevIfRequested(db pg.DB) {
 	if *reset != "" {
