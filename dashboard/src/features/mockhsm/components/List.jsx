@@ -4,7 +4,7 @@ import ListItem from './ListItem'
 
 const type = 'mockhsm'
 
-const EmptyContent = <div>
+const EmptyContent = <div className="emptyContainer">
   <p>
     Cryptographic private keys are the primary authorization mechanism on a blockchain.
     They control both the issuance and transfer of assets. For development

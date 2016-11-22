@@ -5,7 +5,7 @@ import { actions } from 'features/transactionFeeds'
 
 const type = 'transactionFeed'
 
-const EmptyContent = <div>
+const EmptyContent = <div className="emptyContainer">
   <p>
     Transaction feeds can be used to process transactions as they arrive on the
     blockchain. This is helpful for real-time applications such as notifications

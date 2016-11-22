@@ -10,7 +10,6 @@ class ItemList extends React.Component {
   render() {
     const label = this.props.label || pluralize(humanize(this.props.type))
     const objectName = label.slice(0,-1)
-    const showWelcome = this.props.showWelcome || false
     const newLabel = 'New ' + objectName
     const actions = [...(this.props.actions || [])]
     const newButton = <button key='showCreate' className='btn btn-primary' onClick={this.props.showCreate}>
@@ -41,7 +40,6 @@ class ItemList extends React.Component {
           {header}
 
           <EmptyList
-            showWelcome={showWelcome}
             emptyContent={this.props.emptyContent}
             type={this.props.type}
             objectName={objectName}

@@ -26,32 +26,32 @@
   margin: 0 auto;
   line-height: 26px;
 }
+
 .noResultsLabel {
   padding-bottom: 0;
 }
+
 .code {
   padding: 2px 6px;
   font-size: $font-size-section-title;
 }
-.objectHelp {
-  padding-bottom: $gutter-size;
-  width: 350px;
-  border: 1px solid $border-color;
-  margin: $gutter-size auto;
-  padding: $gutter-size/2;
-  text-align: left;
 
-  ol {
+.objectHelp {
+  :global(.emptyContainer) {
+    padding-bottom: $gutter-size;
+    width: 350px;
+    border: 1px solid $border-color;
+    margin: $gutter-size auto;
+    padding: $gutter-size/2;
+    text-align: left;
+  }
+
+  :global(.emptyList) {
     padding-left: $gutter-size/2;
     margin-bottom: 0px;
   }
 
-  li {
+  :global(.emptyListItem) {
     padding-left: 6px;
-  }
-
-  button {
-    display: block;
-    margin: 0 auto;
   }
 }

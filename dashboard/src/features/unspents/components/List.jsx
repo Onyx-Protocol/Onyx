@@ -4,7 +4,7 @@ import ListItem from './ListItem'
 
 const type = 'unspent'
 
-const EmptyContent = <div>
+const EmptyContent = <div className="emptyContainer">
   <p>
     You do not have any unspent outputs.
   </p>

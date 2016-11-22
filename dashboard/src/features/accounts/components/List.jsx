@@ -4,7 +4,7 @@ import ListItem from './ListItem'
 
 const type = 'account'
 
-const EmptyContent = <div>
+const EmptyContent = <div className="emptyContainer">
   <p>
     An account is an object in Chain Core that tracks ownership
     of assets on a blockchain by creating and tracking control programs.
