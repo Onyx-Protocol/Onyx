@@ -372,7 +372,7 @@ If the remaining run limit is less than 256, execution fails immediately.
     2. [Standard memory cost](#standard-memory-cost) of all items left on the child VM’s data stack.
     3. [Standard memory cost](#standard-memory-cost) of all items left on the child VM’s alt stack.
 9. The total post-execution cost is then calculated as a sum of the following values:
-    1. Refund of the [standard memory cost](#standard-memory-cost) of the top three items on the parent’s data stack (`limit`, `predicate`, `n`).
+    1. Refund of the [standard memory cost](#standard-memory-cost) of the top two items on the parent’s data stack (`predicate`, `n`).
     2. –256 (refunds cost of allocating memory for the child VM).
     3. +64 (cost of creating the child VM).
     4. `–leftover` (refund for the unused run limit and released memory within the child VM).
