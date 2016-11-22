@@ -23,8 +23,8 @@ var (
 )
 
 func isProduction() bool {
-	bt := expvar.Get("prod")
-	return bt != nil && bt.String() == `"yes"`
+	p := expvar.Get("prod")
+	return p != nil && p.String() == `"yes"`
 }
 
 // ResetBlockchain deletes all blockchain data, resulting in an
