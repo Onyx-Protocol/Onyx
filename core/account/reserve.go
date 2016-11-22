@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"chain/core/pin"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol"
@@ -40,8 +41,6 @@ type utxo struct {
 
 	AccountID           string
 	ControlProgramIndex uint64
-
-	confirmedIn, blockPos uint64
 }
 
 func (u *utxo) source() source {
@@ -65,10 +64,11 @@ type reservation struct {
 	ClientToken *string
 }
 
-func newReserver(db pg.DB, c *protocol.Chain) *reserver {
+func newReserver(db pg.DB, c *protocol.Chain, pinStore *pin.Store) *reserver {
 	return &reserver{
 		c:            c,
 		db:           db,
+		pinStore:     pinStore,
 		reservations: make(map[uint64]*reservation),
 		sources:      make(map[source]*sourceReserver),
 	}
@@ -87,6 +87,7 @@ func newReserver(db pg.DB, c *protocol.Chain) *reserver {
 type reserver struct {
 	c                 *protocol.Chain
 	db                pg.DB
+	pinStore          *pin.Store
 	nextReservationID uint64
 	idempotency       idempotency.Group
 
@@ -243,9 +244,12 @@ func (re *reserver) source(src source) *sourceReserver {
 	}
 
 	sr = &sourceReserver{
-		db:       re.db,
-		src:      src,
-		validFn:  re.checkUTXO,
+		db:      re.db,
+		src:     src,
+		validFn: re.checkUTXO,
+		heightFn: func() uint64 {
+			return re.pinStore.Height(PinName)
+		},
 		cached:   make(map[bc.Outpoint]*utxo),
 		reserved: make(map[bc.Outpoint]uint64),
 	}
@@ -254,15 +258,15 @@ func (re *reserver) source(src source) *sourceReserver {
 }
 
 type sourceReserver struct {
-	db         pg.DB
-	src        source
-	validFn    func(u *utxo) bool
-	lastHeight uint64
-	lastIndex  uint64
+	db       pg.DB
+	src      source
+	validFn  func(u *utxo) bool
+	heightFn func() uint64
 
-	mu       sync.Mutex
-	cached   map[bc.Outpoint]*utxo
-	reserved map[bc.Outpoint]uint64
+	mu         sync.Mutex
+	cached     map[bc.Outpoint]*utxo
+	reserved   map[bc.Outpoint]uint64
+	lastHeight uint64
 }
 
 func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64) ([]*utxo, uint64, error) {
@@ -272,17 +276,10 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 	}
 
 	// Find the set of UTXOs that match this source.
-	utxos, err := findMatchingUTXOs(ctx, sr.db, sr.src, sr.lastHeight, sr.lastIndex)
+	err = sr.refillCache(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
-
-	sr.mu.Lock()
-	for _, u := range utxos {
-		sr.cached[u.Outpoint] = u
-		sr.lastHeight, sr.lastIndex = u.confirmedIn, u.blockPos
-	}
-	sr.mu.Unlock()
 
 	return sr.reserveFromCache(rid, amount)
 }
@@ -355,16 +352,42 @@ func (sr *sourceReserver) cancel(res *reservation) {
 	}
 }
 
-func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height, pos uint64) ([]*utxo, error) {
+func (sr *sourceReserver) refillCache(ctx context.Context) error {
+	sr.mu.Lock()
+	lastHeight := sr.lastHeight
+	sr.mu.Unlock()
+
+	curHeight := sr.heightFn()
+	if lastHeight >= curHeight {
+		return nil
+	}
+
+	utxos, err := findMatchingUTXOs(ctx, sr.db, sr.src, lastHeight)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	sr.mu.Lock()
+	if curHeight > sr.lastHeight {
+		sr.lastHeight = curHeight
+	}
+	for _, u := range utxos {
+		sr.cached[u.Outpoint] = u
+	}
+	sr.mu.Unlock()
+
+	return nil
+}
+
+func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height uint64) ([]*utxo, error) {
 	const q = `
-		SELECT tx_hash, index, amount, control_program_index, control_program, confirmed_in, block_pos
+		SELECT tx_hash, index, amount, control_program_index, control_program
 		FROM account_utxos
-		WHERE account_id = $1 AND asset_id = $2 AND (confirmed_in, block_pos) > ($3, $4)
-		ORDER BY confirmed_in ASC, block_pos ASC
+		WHERE account_id = $1 AND asset_id = $2 AND confirmed_in > $3
 	`
 	var utxos []*utxo
-	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID, height, pos,
-		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte, confirmedIn, blockPos uint64) {
+	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID, height,
+		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte) {
 			utxos = append(utxos, &utxo{
 				Outpoint: bc.Outpoint{
 					Hash:  txHash,
@@ -377,8 +400,6 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height, pos ui
 				ControlProgram:      controlProg,
 				AccountID:           src.AccountID,
 				ControlProgramIndex: cpIndex,
-				confirmedIn:         confirmedIn,
-				blockPos:            blockPos,
 			})
 		})
 	if err != nil {

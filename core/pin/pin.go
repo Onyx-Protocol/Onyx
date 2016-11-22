@@ -72,6 +72,11 @@ func (s *Store) CreatePin(ctx context.Context, name string, height uint64) error
 	return nil
 }
 
+func (s *Store) Height(name string) uint64 {
+	p := <-s.pin(name)
+	return p.getHeight()
+}
+
 func (s *Store) LoadAll(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
