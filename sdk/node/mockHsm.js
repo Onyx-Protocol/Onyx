@@ -19,12 +19,13 @@ const uuid = require('uuid')
 //   }
 // }
 
-module.exports = function (client) {
+module.exports = (client) => {
   return {
     keys: {
-      create: function(params = {}) {
+      create: (params = {}) => {
         let body = Object.assign({ client_token: uuid.v4() }, params)
         return client.request('/mockhsm/create-key', body)
+          .then(data => data)
       }
     }
   }
