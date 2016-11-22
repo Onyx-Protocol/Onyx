@@ -3,7 +3,8 @@ import { BaseList, TableList } from 'features/shared/components'
 import ListItem from './ListItem'
 
 const type = 'asset'
-let EmptyContent = <div>
+
+const EmptyContent = <div>
   <p>
     An asset is a type of value that can be issued on a blockchain.
     All units of a given asset are fungible. Units of an asset can be

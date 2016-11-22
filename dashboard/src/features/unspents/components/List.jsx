@@ -3,7 +3,8 @@ import { BaseList } from 'features/shared/components'
 import ListItem from './ListItem'
 
 const type = 'unspent'
-let EmptyContent = <div>
+
+const EmptyContent = <div>
   <p>
     You do not have any unspent outputs.
   </p>

@@ -3,7 +3,8 @@ import { BaseList, TableList } from 'features/shared/components'
 import ListItem from './ListItem'
 
 const type = 'account'
-let EmptyContent = <div>
+
+const EmptyContent = <div>
   <p>
     An account is an object in Chain Core that tracks ownership
     of assets on a blockchain by creating and tracking control programs.

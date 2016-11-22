@@ -5,7 +5,7 @@ import actions from 'actions'
 
 const type = 'transaction'
 
-let EmptyContent = <div>
+const EmptyContent = <div>
   <p>
     To build your first transaction, you will need to:
   </p>
