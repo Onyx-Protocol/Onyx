@@ -52,7 +52,7 @@ func TestCancelReservation(t *testing.T) {
 		t.Error(err)
 	}
 
-	utxoDB := newReserver(db, c)
+	utxoDB := newReserver(db, c, nil)
 	res, err := utxoDB.ReserveUTXO(ctx, out, nil, time.Now())
 	if err != nil {
 		t.Fatal(err)

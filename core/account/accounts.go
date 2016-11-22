@@ -31,7 +31,7 @@ func NewManager(db *sql.DB, chain *protocol.Chain, pinStore *pin.Store) *Manager
 	return &Manager{
 		db:          db,
 		chain:       chain,
-		utxoDB:      newReserver(db, chain),
+		utxoDB:      newReserver(db, chain, pinStore),
 		pinStore:    pinStore,
 		cache:       lru.New(maxAccountCache),
 		aliasCache:  lru.New(maxAccountCache),
