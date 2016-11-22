@@ -272,7 +272,7 @@ Amount                | varint63            | Amount being issued.
 Field                 | Type                  | Description
 ----------------------|-----------------------|----------------------------------------------------------
 Type                  | byte                  | Equals 0x01 indicating the “spend” type.
-Outpoint Reference    | [Outpoint](#outpoint) | [Transaction ID](#transaction-id) and index of the output being spent.
+Outpoint Reference    | sha3-256              | [Outpoint](#outpoint) hash containing [transaction ID](#transaction-id) and index of the output being spent.
 Output Commitment     | [Output Commitment](#transaction-output-commitment) | Optional output commitment used as the source for this input. Presence of this field is controlled by [serialization flags](#transaction-serialization-flags): if switched off, this field is excluded from the spend entirely.
 —                     | —                     | Additional fields may be added by future extensions.
 
@@ -326,14 +326,13 @@ Program Arguments       | [varstring31]           | [Signatures](#signature) and
 
 ### Outpoint
 
-An *outpoint* uniquely specifies a single transaction output.
+An *outpoint* uniquely specifies a single transaction output. It is defined as SHA3-256 hash of the following structure:
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
 Transaction ID          | sha3-256                | [Transaction ID](#transaction-id) of the referenced transaction.
-Output Index            | varint31                | Index (zero-based) of the [output](#transaction-output) within the transaction.
-
-Note: In the transaction wire format, outpoint uses the [varint encoding](#varint31) for the output index, but in the [assets merkle tree](#assets-merkle-root) a fixed-length big-endian encoding is used for lexicographic ordering of unspent outputs.
+Output Index            | uint64le                | Index (zero-based) of the [output](#transaction-output) within the transaction, serialized as a 64-bit integer using little-endian convention.
+Output Commitment Hash  | sha3-256                | SHA3-256 hash of the [output commitment](#transaction-output-commitment) at the specified output.
 
 
 
@@ -503,10 +502,8 @@ The tree contains [non-retired](#retired-asset) unspent outputs (one or more per
 
 Key                       | Value
 --------------------------|------------------------------
-`<txhash><index int32be>` | [SHA3-256](#sha3) of the [output commitment](#transaction-output-commitment) 
+[Outpoint](#outpoint)     | [SHA3-256](#sha3) of the [output commitment](#transaction-output-commitment)
 
-
-Note: unspent output indices are encoded with a fixed-length big-endian format to support lexicographic ordering.
 
 ### Merkle Root
 
