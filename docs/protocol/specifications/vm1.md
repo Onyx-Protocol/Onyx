@@ -197,24 +197,20 @@ Certain arithmetic operations use conservative bounds checks (explicitly specifi
 
 #### String to Number
 
-1. If the string is longer than 8 bytes, fail execution.
-2. If the string is shorter than 8 bytes, right-pad it by appending `0x00` bytes to get an 8-byte string.
-3. Interpret the 8-byte string as a [little-endian](https://en.wikipedia.org/wiki/Endianness#Little-endian) 64-bit integer, using [two's complement representation](https://en.wikipedia.org/wiki/Two%27s_complement).
+1. If the string is not exactly 8 bytes long, fail execution.
+2. Interpret the 8-byte string as a [little-endian](https://en.wikipedia.org/wiki/Endianness#Little-endian) 64-bit integer, using [two's complement representation](https://en.wikipedia.org/wiki/Two%27s_complement).
 
 #### Number to String
 
 1. Create an 8-byte string matching the representation of the number as a [little-endian](https://en.wikipedia.org/wiki/Endianness#Little-endian) 64-bit integer, using [two's complement representation](https://en.wikipedia.org/wiki/Two%27s_complement) for negative integers.
-2. Trim the string by removing any `0x00` bytes from the right side.
 
-
-
-Value          | String (hexadecimal)        | Size in bytes
----------------|-----------------------------|------------------
-0              | `“”`                        | 0
-1              | `“01”`                      | 1
-–1             | `“ff ff ff ff ff ff ff ff”` | 8
-2^63 - 1 (max) | `“ff ff ff ff ff ff ff 7f”` | 8
--2^63 (min)    | `“00 00 00 00 00 00 00 80”` | 8
+Value          | String (hexadecimal)
+---------------|-----------------------------
+0              | `“00 00 00 00 00 00 00 00”`
+1              | `“01 00 00 00 00 00 00 00”`
+–1             | `“ff ff ff ff ff ff ff ff”`
+2^63 - 1 (max) | `“ff ff ff ff ff ff ff 7f”`
+-2^63 (min)    | `“00 00 00 00 00 00 00 80”`
 
 ## Failure conditions
 
