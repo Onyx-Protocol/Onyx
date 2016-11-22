@@ -10,6 +10,7 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
+	"chain/encoding/bufpool"
 	"chain/errors"
 )
 
@@ -33,7 +34,8 @@ type Block struct {
 // This guarantees that blocks will get deserialized correctly
 // when being parsed from HTTP requests.
 func (b *Block) MarshalText() ([]byte, error) {
-	buf := new(bytes.Buffer)
+	buf := bufpool.Get()
+	defer bufpool.Put(buf)
 	_, err := b.WriteTo(buf)
 	if err != nil {
 		return nil, err

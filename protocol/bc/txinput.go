@@ -8,6 +8,7 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
+	"chain/encoding/bufpool"
 )
 
 type (
@@ -281,12 +282,13 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 // assumes w has sticky errors
 func (t TxInput) writeTo(w io.Writer, serflags uint8) {
 	blockchain.WriteVarint63(w, t.AssetVersion) // TODO(bobg): check and return error
-	buf := new(bytes.Buffer)
+	buf := bufpool.Get()
+	defer bufpool.Put(buf)
 	t.WriteInputCommitment(buf)
 	blockchain.WriteVarstr31(w, buf.Bytes())
 	blockchain.WriteVarstr31(w, t.ReferenceData)
 	if serflags&SerWitness != 0 {
-		buf := new(bytes.Buffer)
+		buf.Reset()
 		t.writeInputWitness(buf)
 		blockchain.WriteVarstr31(w, buf.Bytes())
 	}
