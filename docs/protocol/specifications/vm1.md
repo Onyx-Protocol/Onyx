@@ -883,44 +883,6 @@ Code  | Stack Diagram     | Cost
 Pops two [booleans](#vm-boolean) from the data stack. Pushes `false` to the data stack if both are `false` and pushes `true` otherwise.
 
 
-#### NUMEQUAL
-
-Code  | Stack Diagram   | Cost
-------|-----------------|----------------------------
-0x9c  | (x y → x == y)  | 2; [standard memory cost](#standard-memory-cost)
-
-Pops two [numbers](#vm-number) from the data stack. Pushes `true` to the data stack if they are equal and pushes `false` otherwise.
-
-Note that two strings representing the same number may differ due to redundant leading zeros.
-
-Fails if either of `x` or `y` is not a valid [VM number](#vm-number).
-
-
-#### NUMEQUALVERIFY
-
-Code  | Stack Diagram   | Cost
-------|-----------------|----------------------------
-0x9d  | (x y → ∅)       | 2; [standard memory cost](#standard-memory-cost)
-
-Equivalent to [NUMEQUAL](#numequal) [VERIFY](#verify).
-
-Pops two [numbers](#vm-number) from the data stack, and fails if they are not equal.
-
-Fails if either of `x` or `y` is not a valid [VM number](#vm-number), or if they are not numerically equal.
-
-
-#### NUMNOTEQUAL
-
-Code  | Stack Diagram   | Cost
-------|-----------------|----------------------------
-0x9e  | (x y → x ≠ y)   | 2; [standard memory cost](#standard-memory-cost)
-
-Pops two [numbers](#vm-number) from the data stack, results in `false` if they are equal and in `true` otherwise, and pushes the result to the data stack.
-
-Note that two strings representing the same number may differ due to redundant leading zeros.
-
-Fails if either of `x` or `y` is not a valid [VM number](#vm-number).
-
 
 #### LESSTHAN
 
@@ -1273,7 +1235,7 @@ Fails if executed in the [transaction context](#transaction-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0x9c, 0x9d, 0x9e, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion and have no effect on the state of the VM apart from reducing run limit by 1.
 
