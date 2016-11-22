@@ -16,6 +16,7 @@ class EmptyList extends React.Component {
       emptyBlock = <div className={styles.objectHelp}>{this.props.emptyContent}</div>
     } else if (this.props.showFirstTimeFlow) {
       emptyBlock = <div>
+        {this.props.showWelcome && <h2>Welcome to Chain Core!</h2>}
         <div className={styles.objectHelp}>
           {this.props.emptyContent}
           {this.props.newButton}
