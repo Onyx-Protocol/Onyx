@@ -103,30 +103,13 @@ func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interfa
 	return responses, nil
 }
 
-type submitSingleArg struct {
-	tpl       *txbuilder.Template
-	wait      chainjson.Duration
-	waitUntil string
-}
-
-func (h *Handler) submitSingle(ctx context.Context, x submitSingleArg) (interface{}, error) {
-	// TODO(bobg): Set up an expiring context object outside this
-	// function, perhaps in handler.ServeHTTPContext, and perhaps
-	// initialize the timeout from the HTTP Timeout field.  (Or just
-	// switch to gRPC.)
-	timeout := x.wait.Duration
-	if timeout <= 0 {
-		timeout = 30 * time.Second
-	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	err := h.finalizeTxWait(ctx, x.tpl, x.waitUntil)
+func (h *Handler) submitSingle(ctx context.Context, tpl *txbuilder.Template, waitUntil string) (interface{}, error) {
+	err := h.finalizeTxWait(ctx, tpl, waitUntil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "tx %s", x.tpl.Transaction.Hash())
+		return nil, errors.Wrapf(err, "tx %s", tpl.Transaction.Hash())
 	}
 
-	return map[string]string{"id": x.tpl.Transaction.Hash().String()}, nil
+	return map[string]string{"id": tpl.Transaction.Hash().String()}, nil
 }
 
 // recordSubmittedTx records a lower bound height at which the tx
@@ -280,6 +263,14 @@ func (h *Handler) submit(ctx context.Context, x submitArg) (interface{}, error) 
 		return resp, err
 	}
 
+	// Setup a timeout for the provided wait duration.
+	timeout := x.wait.Duration
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	responses := make([]interface{}, len(x.Transactions))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
@@ -289,11 +280,7 @@ func (h *Handler) submit(ctx context.Context, x submitArg) (interface{}, error) 
 			defer wg.Done()
 			defer batchRecover(subctx, &responses[i])
 
-			tx, err := h.submitSingle(subctx, submitSingleArg{
-				tpl:       &x.Transactions[i],
-				wait:      x.wait,
-				waitUntil: x.WaitUntil,
-			})
+			tx, err := h.submitSingle(subctx, &x.Transactions[i], x.WaitUntil)
 			if err != nil {
 				responses[i] = err
 			} else {
