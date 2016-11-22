@@ -309,6 +309,7 @@ VM Version              | varint63                | [Version of the VM](#vm-vers
 Issuance Program        | varstring31             | Predicate defining the conditions of issue.
 Program Arguments Count | varint31                | Number of [program arguments](#program-arguments) that follow.
 Program Arguments       | [varstring31]           | [Signatures](#signature) and other data satisfying the spent output’s predicate. Used to initialize the [data stack](vm1.md#vm-state) of the VM that executes an issuance or an control program.
+Asset Definition        | varstring31             | Arbitrary string or its [optional hash](#optional-hash), depending on [serialization flags](#transaction-serialization-flags).
 —                       | —                       | Additional fields may be added by future extensions.
 
 Note: nodes must verify that the initial block ID and issuance program are valid and match the declared asset ID in the [issuance commitment](#asset-version-1-issuance-commitment).
@@ -454,7 +455,6 @@ The control program is a program specifying a predicate for transferring an asse
 
 The issuance program is a [program](#program) specifying a predicate for issuing an asset within an [input issuance commitment](#asset-version-1-issuance-commitment). The asset ID is derived from the issuance program, guaranteeing the authenticity of the issuer.
 
-Issuance programs must start with a [PUSHDATA](vm1.md#pushdata) opcode, followed by the [asset definition](#asset-definition), followed by a [DROP](vm1.md#drop) opcode.
 
 ### Program Arguments
 
@@ -470,17 +470,18 @@ Globally unique identifier of a given asset. Each [asset version](#asset-version
 
 Asset ID is defined as the [SHA3-256](#sha3) of the following structure:
 
-Field            | Type          | Description
------------------|---------------|-------------------------------------------------
-Initial Block ID | sha3-256      | Hash of the first block in this blockchain.
-VM Version       | varint63      | [Version of the VM](#vm-version) for the issuance program.
-Issuance Program | varstring31   | Program used in the issuance input.
+Field                 | Type          | Description
+----------------------|---------------|-------------------------------------------------
+Initial Block ID      | sha3-256      | Hash of the first block in this blockchain.
+VM Version            | varint63      | [Version of the VM](#vm-version) for the issuance program.
+Issuance Program      | varstring31   | Program used in the issuance input.
+Asset Definition Hash | varstring31   | [Optional hash](#optional-hash) of the asset definition data.
+
 
 ### Asset Definition
 
 An asset definition is an arbitrary binary string that corresponds to a particular [asset ID](#asset-id). Each asset version may define its own method to declare and commit to asset definitions.
 
-For version 1 assets, asset definitions are included in the issuance program. Issuance programs must start with a [PUSHDATA](vm1.md#pushdata) opcode, followed by the asset definition, followed by a [DROP](vm1.md#drop) opcode. Since the issuance program is part of the string hashed to determine an asset ID, the asset definition for a particular asset ID is immutable.
 
 ### Retired Asset
 
