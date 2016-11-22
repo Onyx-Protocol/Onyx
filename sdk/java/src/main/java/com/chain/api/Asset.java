@@ -128,7 +128,9 @@ public class Asset {
   }
 
   /**
-   * A builder class for generating asset queries.
+   * Asset.QueryBuilder utilizes the builder pattern to create {@link Asset} queries.<br>
+   * The possible parameters for each query can be found on the {@link BaseQueryBuilder} class.<br>
+   * All parameters are optional, and should be set to filter the results accordingly.
    */
   public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
     /**
@@ -150,7 +152,8 @@ public class Asset {
   }
 
   /**
-   * A builder class for creating asset objects.
+   * Asset.Builder utilizes the builder pattern to create {@link Asset} objects.
+   * The following attributes are required to be set: {@link #rootXpubs}, {@link #quorum}.
    */
   public static class Builder {
     /**
@@ -171,13 +174,15 @@ public class Asset {
 
     /**
      * The list of keys used to create the issuance program for the asset.<br>
-     * Signatures from these keys are required for issuing units of the asset.
+     * Signatures from these keys are required for issuing units of the asset.<br>
+     * <strong>Must set with {@link #addRootXpub(String)} or {@link #setRootXpubs(List)} before calling {@link #create(Client)}.</strong>
      */
     @SerializedName("root_xpubs")
     public List<String> rootXpubs;
 
     /**
-     * The number of keys required to sign an issuance of the asset.
+     * The number of keys required to sign an issuance of the asset.<br>
+     * <strong>Must set with {@link #setQuorum(int)} before calling {@link #create(Client)}.</strong>
      */
     public int quorum;
 
@@ -271,6 +276,7 @@ public class Asset {
 
     /**
      * Sets the quorum of the issuance program.
+     * <strong>Must be called before {@link #create(Client)}.</strong>
      * @param quorum proposed quorum
      * @return updated builder object
      */
@@ -280,7 +286,8 @@ public class Asset {
     }
 
     /**
-     * Adds a key to the builder's list.
+     * Adds a key to the builder's list.<br>
+     * <strong>Either this or {@link #setRootXpubs(List)} must be called before {@link #create(Client)}.</strong>
      * @param xpub key
      * @return updated builder object.
      */
@@ -290,8 +297,9 @@ public class Asset {
     }
 
     /**
-     * Sets the builder's list of keys.
-     * <strong>Note:</strong> any existing keys will be replaced.
+     * Sets the builder's list of keys.<br>
+     * <strong>Note:</strong> any existing keys will be replaced.<br>
+     * <strong>Either this or {@link #addRootXpub(String)} must be called before {@link #create(Client)}.</strong>
      * @param xpubs list of xpubs
      * @return updated builder object
      */
