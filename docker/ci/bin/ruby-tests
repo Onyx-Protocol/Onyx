@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -veou pipefail
+
+: ${DATABASE_URL:?must be set}
+
+setup-core
+cd $CHAIN/sdk/ruby
+bundle exec rspec

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -veou pipefail
+
+: ${DATABASE_URL:?must be set}
+
+# waitForGenerator blocks the script and greps
+# the generator's output for a log message signifying
+# the generator is fully initialized. It will timeout
+# after 5s.
+waitForGenerator() {(
+	set +e
+	start=`date +%s`
+	while [ $(( `date +%s` - $start )) -lt 5 ]; do
+		grep "I am the core leader" $initlog >/dev/null
+		if [[ $? -eq 0 ]]; then
+			break
+		fi
+	done
+)}
+
+PATH=$GOPATH/bin:$PATH:$CHAIN/bin
+go install -tags 'insecure_disable_https_redirect' chain/cmd/cored
+go install chain/cmd/corectl
+$GOPATH/bin/corectl config-generator
+initlog=`mktemp`
+$GOPATH/bin/cored 2>&1 | tee $initlog &
+waitForGenerator
