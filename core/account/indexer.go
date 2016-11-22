@@ -58,7 +58,7 @@ type output struct {
 }
 
 func (m *Manager) ProcessBlocks(ctx context.Context) {
-	if m.indexer == nil || m.pinStore == nil {
+	if m.pinStore == nil {
 		return
 	}
 	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, m.indexAccountUTXOs)

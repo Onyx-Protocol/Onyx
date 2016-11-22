@@ -26,9 +26,9 @@ func TestAccountSourceReserve(t *testing.T) {
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
 		ctx      = context.Background()
 		c        = prottest.NewChain(t)
-		accounts = account.NewManager(db, c)
-		assets   = asset.NewRegistry(db, c)
 		pinStore = pin.NewStore(db)
+		accounts = account.NewManager(db, c, pinStore)
+		assets   = asset.NewRegistry(db, c, pinStore)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -38,8 +38,8 @@ func TestAccountSourceReserve(t *testing.T) {
 
 	coretest.CreatePins(ctx, t, pinStore)
 	// Make a block so that account UTXOs are available to spend.
-	assets.IndexAssets(indexer, pinStore)
-	accounts.IndexAccounts(indexer, pinStore)
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
 	prottest.MakeBlock(t, c)
 	<-pinStore.PinWaiter(account.PinName, c.Height())
@@ -81,9 +81,9 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
 		ctx      = context.Background()
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(db, c)
-		accounts = account.NewManager(db, c)
 		pinStore = pin.NewStore(db)
+		accounts = account.NewManager(db, c, pinStore)
+		assets   = asset.NewRegistry(db, c, pinStore)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -93,8 +93,8 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 	coretest.CreatePins(ctx, t, pinStore)
 	// Make a block so that account UTXOs are available to spend.
-	assets.IndexAssets(indexer, pinStore)
-	accounts.IndexAccounts(indexer, pinStore)
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
 	prottest.MakeBlock(t, c)
 	<-pinStore.PinWaiter(account.PinName, c.Height())
@@ -124,9 +124,9 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
 		ctx      = context.Background()
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(db, c)
-		accounts = account.NewManager(db, c)
 		pinStore = pin.NewStore(db)
+		accounts = account.NewManager(db, c, pinStore)
+		assets   = asset.NewRegistry(db, c, pinStore)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
 		accID        = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -148,8 +148,8 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 
 	coretest.CreatePins(ctx, t, pinStore)
 	// Make a block so that account UTXOs are available to spend.
-	assets.IndexAssets(indexer, pinStore)
-	accounts.IndexAccounts(indexer, pinStore)
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
 	prottest.MakeBlock(t, c)
 	<-pinStore.PinWaiter(account.PinName, c.Height())

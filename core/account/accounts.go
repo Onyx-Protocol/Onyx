@@ -27,11 +27,12 @@ const maxAccountCache = 100
 
 var ErrDuplicateAlias = errors.New("duplicate account alias")
 
-func NewManager(db *sql.DB, chain *protocol.Chain) *Manager {
+func NewManager(db *sql.DB, chain *protocol.Chain, pinStore *pin.Store) *Manager {
 	return &Manager{
 		db:          db,
 		chain:       chain,
 		utxoDB:      newReserver(db, chain),
+		pinStore:    pinStore,
 		cache:       lru.New(maxAccountCache),
 		aliasCache:  lru.New(maxAccountCache),
 		delayedACPs: make(map[*txbuilder.TemplateBuilder][]*controlProgram),
@@ -58,9 +59,8 @@ type Manager struct {
 	acpIndexCap  uint64 // points to end of block
 }
 
-func (m *Manager) IndexAccounts(indexer Saver, pinStore *pin.Store) {
+func (m *Manager) IndexAccounts(indexer Saver) {
 	m.indexer = indexer
-	m.pinStore = pinStore
 }
 
 // ExpireReservations removes reservations that have expired periodically.

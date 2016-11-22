@@ -40,10 +40,10 @@ func TestRecovery(t *testing.T) {
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)
-	assets := asset.NewRegistry(db, c)
-	accounts := account.NewManager(db, c)
-	assets.IndexAssets(indexer, pinStore)
-	accounts.IndexAccounts(indexer, pinStore)
+	assets := asset.NewRegistry(db, c, pinStore)
+	accounts := account.NewManager(db, c, pinStore)
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
 
 	// Setup the transaction query indexer to index every transaction.
@@ -174,12 +174,12 @@ func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, timestamp time
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)
-	assets := asset.NewRegistry(db, c)
-	accounts := account.NewManager(db, c)
+	assets := asset.NewRegistry(db, c, pinStore)
+	accounts := account.NewManager(db, c, pinStore)
 
 	// Setup the transaction query indexer to index every transaction.
-	assets.IndexAssets(indexer, pinStore)
-	accounts.IndexAccounts(indexer, pinStore)
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
