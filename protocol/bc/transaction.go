@@ -355,7 +355,7 @@ func (p Outpoint) String() string {
 
 // WriteTo writes p to w.
 // It assumes w has sticky errors.
-func (p Outpoint) WriteTo(w io.Writer) (int64, error) {
+func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
 	n, err := w.Write(p.Hash[:])
 	if err != nil {
 		return int64(n), err
@@ -381,7 +381,7 @@ func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
 }
 
 // assumes w has sticky errors
-func (a AssetAmount) writeTo(w io.Writer) {
+func (a *AssetAmount) writeTo(w io.Writer) {
 	w.Write(a.AssetID[:])
 	blockchain.WriteVarint63(w, a.Amount) // TODO(bobg): check and return error
 }
