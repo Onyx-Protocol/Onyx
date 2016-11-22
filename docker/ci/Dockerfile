@@ -1,6 +1,7 @@
 FROM golang:1.7.3-alpine
 
 RUN apk --no-cache add bash clang git g++ make nodejs openjdk8 python perl \
+    ruby ruby-bigdecimal ruby-bundler ruby-io-console ruby-irb ruby-json \
     && MAVEN_VERSION=3.3.9 \
     && cd /usr/share \
     && wget -q http://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz -O - | tar xzf - \
