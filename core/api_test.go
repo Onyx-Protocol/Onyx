@@ -29,11 +29,11 @@ func TestBuildFinal(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(db, c)
-	accounts := account.NewManager(db, c)
 	pinStore := pin.NewStore(db)
+	accounts := account.NewManager(db, c, pinStore)
+	assets := asset.NewRegistry(db, c, pinStore)
 	coretest.CreatePins(ctx, t, pinStore)
-	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore), pinStore)
+	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
 	go accounts.ProcessBlocks(ctx)
 
 	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
@@ -139,11 +139,11 @@ func TestAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(db, c)
-	accounts := account.NewManager(db, c)
 	pinStore := pin.NewStore(db)
+	assets := asset.NewRegistry(db, c, pinStore)
+	accounts := account.NewManager(db, c, pinStore)
 	coretest.CreatePins(ctx, t, pinStore)
-	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore), pinStore)
+	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
 	go accounts.ProcessBlocks(ctx)
 
 	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
@@ -209,13 +209,13 @@ func TestTransfer(t *testing.T) {
 	coretest.CreatePins(ctx, t, pinStore)
 	handler := &Handler{
 		Chain:    c,
-		Assets:   asset.NewRegistry(db, c),
-		Accounts: account.NewManager(db, c),
+		Assets:   asset.NewRegistry(db, c, pinStore),
+		Accounts: account.NewManager(db, c, pinStore),
 		Indexer:  query.NewIndexer(db, c, pinStore),
 		DB:       db,
 	}
-	handler.Assets.IndexAssets(handler.Indexer, pinStore)
-	handler.Accounts.IndexAccounts(handler.Indexer, pinStore)
+	handler.Assets.IndexAssets(handler.Indexer)
+	handler.Accounts.IndexAccounts(handler.Indexer)
 	go handler.Accounts.ProcessBlocks(ctx)
 	handler.Indexer.RegisterAnnotator(handler.Accounts.AnnotateTxs)
 	handler.Indexer.RegisterAnnotator(handler.Assets.AnnotateTxs)

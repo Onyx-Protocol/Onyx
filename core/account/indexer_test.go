@@ -14,7 +14,7 @@ import (
 
 func TestLoadAccountInfo(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t))
+	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 
 	acc := m.createTestAccount(ctx, t, "", nil)
@@ -41,7 +41,7 @@ func TestLoadAccountInfo(t *testing.T) {
 
 func TestDeleteUTXOs(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t))
+	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 
 	assetID := bc.AssetID{}

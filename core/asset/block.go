@@ -72,7 +72,7 @@ func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 }
 
 func (reg *Registry) ProcessBlocks(ctx context.Context) {
-	if reg.indexer == nil || reg.pinStore == nil {
+	if reg.pinStore == nil {
 		return
 	}
 	reg.pinStore.ProcessBlocks(ctx, reg.chain, PinName, reg.indexAssets)
@@ -131,6 +131,10 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 		func(assetID bc.AssetID) { newAssetIDs = append(newAssetIDs, assetID) })
 	if err != nil {
 		return errors.Wrap(err, "error indexing non-local assets")
+	}
+
+	if reg.indexer == nil {
+		return nil
 	}
 
 	// newAssetIDs now contains only the asset IDs of new, non-local

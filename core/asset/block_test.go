@@ -21,7 +21,7 @@ func (f fakeSaver) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, o
 }
 
 func TestIndexNonLocalAssets(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t))
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
 	ctx := context.Background()
 
 	// Create a local asset which should be unaffected by a block landing.

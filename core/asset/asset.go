@@ -28,11 +28,12 @@ const maxAssetCache = 100
 
 var ErrDuplicateAlias = errors.New("duplicate asset alias")
 
-func NewRegistry(db pg.DB, chain *protocol.Chain) *Registry {
+func NewRegistry(db pg.DB, chain *protocol.Chain, pinStore *pin.Store) *Registry {
 	return &Registry{
 		db:               db,
 		chain:            chain,
 		initialBlockHash: chain.InitialBlockHash,
+		pinStore:         pinStore,
 		cache:            lru.New(maxAssetCache),
 		aliasCache:       lru.New(maxAssetCache),
 	}
@@ -51,9 +52,8 @@ type Registry struct {
 	aliasCache *lru.Cache
 }
 
-func (reg *Registry) IndexAssets(indexer Saver, pinStore *pin.Store) {
+func (reg *Registry) IndexAssets(indexer Saver) {
 	reg.indexer = indexer
-	reg.pinStore = pinStore
 }
 
 type Asset struct {

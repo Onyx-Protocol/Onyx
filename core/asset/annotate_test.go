@@ -11,7 +11,7 @@ import (
 )
 
 func TestAnnotateTxs(t *testing.T) {
-	reg := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t))
+	reg := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
 	ctx := context.Background()
 
 	tags1 := map[string]interface{}{"foo": "bar"}

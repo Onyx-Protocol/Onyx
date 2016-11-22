@@ -219,18 +219,18 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	// Start listeners
 	go pinStore.Listen(ctx, account.PinName, *dbURL)
 	go pinStore.Listen(ctx, asset.PinName, *dbURL)
-	go pinStore.Listen(ctx, query.TxPinName, *dbURL)
 
 	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, c, pinStore)
 
-	assets := asset.NewRegistry(db, c)
-	accounts := account.NewManager(db, c)
+	assets := asset.NewRegistry(db, c, pinStore)
+	accounts := account.NewManager(db, c, pinStore)
 	if *indexTxs {
+		go pinStore.Listen(ctx, query.TxPinName, *dbURL)
 		indexer.RegisterAnnotator(assets.AnnotateTxs)
 		indexer.RegisterAnnotator(accounts.AnnotateTxs)
-		assets.IndexAssets(indexer, pinStore)
-		accounts.IndexAccounts(indexer, pinStore)
+		assets.IndexAssets(indexer)
+		accounts.IndexAccounts(indexer)
 	}
 
 	hsm := mockhsm.New(db)
@@ -328,12 +328,11 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
 		}
-		if !*indexTxs {
-			return
-		}
 		go h.Accounts.ProcessBlocks(ctx)
 		go h.Assets.ProcessBlocks(ctx)
-		go h.Indexer.ProcessBlocks(ctx)
+		if *indexTxs {
+			go h.Indexer.ProcessBlocks(ctx)
+		}
 	})
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

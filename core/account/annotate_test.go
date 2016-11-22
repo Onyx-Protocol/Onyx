@@ -14,7 +14,7 @@ import (
 
 func TestAnnotateTxs(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t))
+	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 	acc1 := m.createTestAccount(ctx, t, "", nil)
 	acc2 := m.createTestAccount(ctx, t, "", map[string]interface{}{"one": "foo", "two": "bar"})
