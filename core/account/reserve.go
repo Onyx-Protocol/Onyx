@@ -274,6 +274,7 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 	for o, u := range sr.cached {
 		// If the UTXO is already reserved, skip it.
 		if _, ok := sr.reserved[u.Outpoint]; ok {
+			unavailable += u.Amount
 			continue
 		}
 		// Cached utxos aren't guaranteed to still be valid; they may
@@ -299,8 +300,6 @@ func (sr *sourceReserver) reserve(ctx context.Context, rid uint64, amount uint64
 		return reservedUTXOs, reserved, nil
 	}
 	sr.mu.Unlock()
-	reserved = 0
-	reservedUTXOs = nil
 
 	// Find the set of UTXOs that match this source.
 	utxos, err := findMatchingUTXOs(ctx, sr.db, sr.src, sr.lastHeight, sr.lastIndex)
