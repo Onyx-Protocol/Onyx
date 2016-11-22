@@ -661,18 +661,6 @@ public class Transaction {
         this.put("amount", amount);
         return this;
       }
-
-      /**
-       * Sets the actions's time-to-live, which indicates how long the output
-       * will be reserved. Passing zero will use the default TTL, which is
-       * 300000ms (5 minutes).
-       * @param ttlMS the ttl, in milliseconds
-       * @return updated action object
-       */
-      public Issue setTTL(long ttlMS) {
-        this.put("ttl", ttlMS);
-        return this;
-      }
     }
 
     /**
@@ -718,18 +706,6 @@ public class Transaction {
        */
       public SpendAccountUnspentOutput setPosition(int pos) {
         this.put("position", pos);
-        return this;
-      }
-
-      /**
-       * Sets the actions's time-to-live, which indicates how long the output
-       * will be reserved. Passing zero will use the default TTL, which is
-       * 300000ms (5 minutes).
-       * @param ttlMS the ttl, in milliseconds
-       * @return updated action object
-       */
-      public SpendAccountUnspentOutput setTTL(long ttlMS) {
-        this.put("ttl", ttlMS);
         return this;
       }
     }
@@ -801,18 +777,6 @@ public class Transaction {
        */
       public SpendFromAccount setAmount(long amount) {
         this.put("amount", amount);
-        return this;
-      }
-
-      /**
-       * Sets the actions's time-to-live, which indicates how long the output
-       * will be reserved. Passing zero will use the default TTL, which is
-       * 300000ms (5 minutes).
-       * @param ttlMS the ttl, in milliseconds
-       * @return updated action object
-       */
-      public SpendFromAccount setTTL(long ttlMS) {
-        this.put("ttl", ttlMS);
         return this;
       }
     }
