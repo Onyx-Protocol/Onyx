@@ -10,6 +10,7 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
+	"chain/encoding/bufpool"
 	"chain/errors"
 )
 
@@ -33,7 +34,8 @@ type Block struct {
 // This guarantees that blocks will get deserialized correctly
 // when being parsed from HTTP requests.
 func (b *Block) MarshalText() ([]byte, error) {
-	buf := new(bytes.Buffer)
+	buf := bufpool.GetBuffer()
+	defer bufpool.PutBuffer(buf)
 	_, err := b.WriteTo(buf)
 	if err != nil {
 		return nil, err
@@ -65,7 +67,8 @@ func (b *Block) Scan(val interface{}) error {
 
 // Value fulfills the sql.driver.Valuer interface.
 func (b *Block) Value() (driver.Value, error) {
-	buf := new(bytes.Buffer)
+	buf := bufpool.GetBuffer()
+	defer bufpool.PutBuffer(buf)
 	_, err := b.WriteTo(buf)
 	if err != nil {
 		return nil, err
@@ -171,7 +174,8 @@ func (bh *BlockHeader) Scan(val interface{}) error {
 }
 
 func (bh *BlockHeader) Value() (driver.Value, error) {
-	buf := new(bytes.Buffer)
+	buf := bufpool.GetBuffer()
+	defer bufpool.PutBuffer(buf)
 	_, err := bh.WriteTo(buf)
 	if err != nil {
 		return nil, err

@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"chain/encoding/blockchain"
+	"chain/encoding/bufpool"
 )
 
 // TODO(bobg): Review serialization/deserialization logic for
@@ -115,7 +116,8 @@ func (to TxOutput) Commitment() []byte {
 }
 
 func (oc OutputCommitment) writeTo(w io.Writer, assetVersion uint64) {
-	b := new(bytes.Buffer)
+	b := bufpool.GetBuffer()
+	defer bufpool.PutBuffer(b)
 	if assetVersion == 1 {
 		oc.AssetAmount.writeTo(b)
 		blockchain.WriteVarint63(b, oc.VMVersion) // TODO(bobg): check and return error
