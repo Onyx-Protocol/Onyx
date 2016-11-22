@@ -1,0 +1,57 @@
+#!/bin/sh
+set -e
+
+usage() {
+  echo "Usage: $0 <releaseRef> <outputDir>"
+  echo
+  echo "Envvars:"
+  echo "GOOS:   target OS"
+  echo "GOARCH: target CPU architecture"
+  echo "DATE:   build date; defaults to now"
+  exit 1
+}
+
+trap usage ERR
+
+if [ -z "$1" -o -z "$2" ]; then
+  usage
+fi
+
+releaseRef=$1
+cd $2; outputDir=`pwd` # verify output dir and expand to absolute
+
+echo "Building ref $releaseRef to output directory $outputDir..."
+
+# Clone repository into tempdir and check out specified release ref.
+buildGoPath=`mktemp -d`
+trap "rm -rf $buildGoPath" EXIT
+
+newChain=$buildGoPath/src/chain
+mkdir -p $newChain
+git clone $CHAIN $newChain
+cd $newChain
+git checkout $releaseRef
+
+# Cross-compilation args for cored and corectl
+export GOPATH=$buildGoPath
+export GOOS
+export GOARCH
+
+echo "building cored..."
+
+version=`echo $releaseRef | sed -e s/^cmd\.cored-//` # version is extracted if releaseRef fits cmd.cored-<version> pattern
+commit=`git rev-parse HEAD`
+DATE=${DATE:-`date +%s`} # date can be set via envvar
+ldflags="-X main.buildTag=$version -X main.buildCommit=$commit -X main.buildDate=$DATE"
+
+go build\
+  -tags 'insecure_disable_https_redirect'\
+  -ldflags "$ldflags"\
+  -o $outputDir/cored\
+  chain/cmd/cored
+
+echo "building corectl..."
+
+go build\
+  -o "$outputDir/corectl"\
+  chain/cmd/corectl
