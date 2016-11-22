@@ -104,7 +104,9 @@ public class Account {
   }
 
   /**
-   * A builder class for generating account queries.
+   * Account.QueryBuilder utilizes the builder pattern to create {@link Account} queries.<br>
+   * The possible parameters for each query can be found on the {@link BaseQueryBuilder} class.<br>
+   * All parameters are optional, and should be set to filter the results accordingly.
    */
   public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
     /**
@@ -126,7 +128,8 @@ public class Account {
   }
 
   /**
-   * A builder class for creating account objects.
+   * Account.Builder utilizes the builder pattern to create {@link Account} objects.
+   * The following attributes are required to be set: {@link #rootXpubs}, {@link #quorum}.
    */
   public static class Builder {
     /**
@@ -135,13 +138,15 @@ public class Account {
     public String alias;
 
     /**
-     * The number of keys required to sign transactions for the account.
+     * The number of keys required to sign transactions for the account.<br>
+     * <strong>Must set with {@link #setQuorum(int)} before calling {@link #create(Client)}.</strong>
      */
     public int quorum;
 
     /**
      * The list of keys used to create control programs under the account.<br>
-     * Signatures from these keys are required for spending funds held in the account.
+     * Signatures from these keys are required for spending funds held in the account.<br>
+     * <strong>Must set with {@link #addRootXpub(String)} or {@link #setRootXpubs(List)} before calling {@link #create(Client)}.</strong>
      */
     @SerializedName("root_xpubs")
     public List<String> rootXpubs;
@@ -191,6 +196,7 @@ public class Account {
 
     /**
      * Sets the quorum for control programs.
+     * <strong>Must be called before {@link #create(Client)}.</strong>
      * @param quorum proposed quorum
      * @return updated builder object
      */
@@ -200,7 +206,8 @@ public class Account {
     }
 
     /**
-     * Adds a key to the builder's list.
+     * Adds a key to the builder's list.<br>
+     * <strong>Either this or {@link #setRootXpubs(List)} must be called before {@link #create(Client)}.</strong>
      * @param xpub key
      * @return updated builder object.
      */
@@ -210,8 +217,9 @@ public class Account {
     }
 
     /**
-     * Sets the builder's list of keys.
-     * <strong>Note:</strong> any existing keys will be replaced.
+     * Sets the builder's list of keys.<br>
+     * <strong>Note:</strong> any existing keys will be replaced.<br>
+     * <strong>Either this or {@link #addRootXpub(String)} must be called before {@link #create(Client)}.</strong>
      * @param xpubs list of xpubs
      * @return updated builder object
      */

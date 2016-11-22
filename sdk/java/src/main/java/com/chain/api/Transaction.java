@@ -82,7 +82,9 @@ public class Transaction {
   }
 
   /**
-   * A builder class for transaction queries.
+   * Transaction.QueryBuilder utilizes the builder pattern to create {@link Transaction} queries.<br>
+   * The possible parameters for each query can be found on this class as well as the {@link BaseQueryBuilder} class.<br>
+   * All parameters are optional, and should be set to filter the results accordingly.
    */
   public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
     /**
@@ -628,7 +630,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the asset to be issued using its alias
+       * Specifies the asset to be issued using its alias.<br>
+       * <strong>Either this or {@link Issue#setAssetId(String)}  must be called.</strong>
        * @param alias alias of the asset to be issued
        * @return updated action object
        */
@@ -638,7 +641,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the asset to be issued using its id
+       * Specifies the asset to be issued using its id.<br>
+       * <strong>Either this or {@link Issue#setAssetAlias(String)} must be called.</strong>
        * @param id id of the asset to be issued
        * @return updated action object
        */
@@ -648,7 +652,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the amount of the asset to be issued
+       * Specifies the amount of the asset to be issued.<br>
+       * <strong>Must be called.</strong>
        * @param amount number of units of the asset to be issued
        * @return updated action object
        */
@@ -658,7 +663,9 @@ public class Transaction {
       }
 
       /**
-       * Specifies the time to live for this action.
+       * Sets the actions's time-to-live, which indicates how long the output
+       * will be reserved. Passing zero will use the default TTL, which is
+       * 300000ms (5 minutes).
        * @param ttlMS the ttl, in milliseconds
        * @return updated action object
        */
@@ -680,7 +687,9 @@ public class Transaction {
       }
 
       /**
-       * Specifies the unspent output to be spent
+       * Specifies the unspent output to be spent.<br>
+       * <strong>Either this or a combination of {@link SpendAccountUnspentOutput#setTransactionId(String)}
+       * and {@link SpendAccountUnspentOutput#setPosition(int)} must be called.</strong>
        * @param unspentOutput unspent output to be spent
        * @return updated action object
        */
@@ -690,18 +699,32 @@ public class Transaction {
         return this;
       }
 
+      /**
+       * Specifies the transaction id of the unspent output to be spent.<br>
+       * <strong>Must be called with {@link SpendAccountUnspentOutput#setPosition(int)}.</strong>
+       * @param id
+       * @return
+       */
       public SpendAccountUnspentOutput setTransactionId(String id) {
         this.put("transaction_id", id);
         return this;
       }
 
+      /**
+       * Specifies the position in the transaction of the unspent output to be spent.<br>
+       * <strong>Must be called with {@link SpendAccountUnspentOutput#setTransactionId(String)}.</strong>
+       * @param pos
+       * @return
+       */
       public SpendAccountUnspentOutput setPosition(int pos) {
         this.put("position", pos);
         return this;
       }
 
       /**
-       * Specifies the time to live for this action.
+       * Sets the actions's time-to-live, which indicates how long the output
+       * will be reserved. Passing zero will use the default TTL, which is
+       * 300000ms (5 minutes).
        * @param ttlMS the ttl, in milliseconds
        * @return updated action object
        */
@@ -724,7 +747,8 @@ public class Transaction {
 
       /**
        * Specifies the spending account using its alias.<br>
-       * <strong>Must</strong> be used with {@link SpendFromAccount#setAssetAlias(String)}
+       * <strong>Either this or {@link SpendFromAccount#setAccountId(String)} must be called.</strong><br>
+       * <strong>Must be used with {@link SpendFromAccount#setAssetAlias(String)}.</strong>
        * @param alias alias of the spending account
        * @return updated action object
        */
@@ -735,7 +759,8 @@ public class Transaction {
 
       /**
        * Specifies the spending account using its id.<br>
-       * <strong>Must</strong> be used with {@link SpendFromAccount#setAssetId(String)}
+       * <strong>Either this or {@link SpendFromAccount#setAccountAlias(String)} must be called.</strong><br>
+       * <strong>Must be used with {@link SpendFromAccount#setAssetId(String)}.</strong>
        * @param id id of the spending account
        * @return updated action object
        */
@@ -745,9 +770,10 @@ public class Transaction {
       }
 
       /**
-       * Specifies the asset to be spent using its alias
+       * Specifies the asset to be spent using its alias.<br>
+       * <strong>Either this or {@link SpendFromAccount#setAssetId(String)} must be called.</strong><br>
+       * <strong>Must be used with {@link SpendFromAccount#setAccountAlias(String)}.</strong>
        * @param alias alias of the asset to be spent
-       * <strong>Must</strong> be used with {@link SpendFromAccount#setAccountAlias(String)}}
        * @return updated action object
        */
       public SpendFromAccount setAssetAlias(String alias) {
@@ -756,9 +782,10 @@ public class Transaction {
       }
 
       /**
-       * Specifies the asset to be spent using its id
+       * Specifies the asset to be spent using its id.<br>
+       * <strong>Either this or {@link SpendFromAccount#setAssetAlias(String)} must be called.</strong><br>
+       * <strong>Must be used with {@link SpendFromAccount#setAccountId(String)}.</strong><br>
        * @param id id of the asset to be spent
-       * <strong>Must</strong> be used with {@link SpendFromAccount#setAccountId(String)}
        * @return updated action object
        */
       public SpendFromAccount setAssetId(String id) {
@@ -767,7 +794,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the amount of asset to be spent
+       * Specifies the amount of asset to be spent.<br>
+       * <strong>Must be called.</strong>
        * @param amount number of units of the asset to be spent
        * @return updated action object
        */
@@ -777,7 +805,9 @@ public class Transaction {
       }
 
       /**
-       * Specifies the time to live for this action.
+       * Sets the actions's time-to-live, which indicates how long the output
+       * will be reserved. Passing zero will use the default TTL, which is
+       * 300000ms (5 minutes).
        * @param ttlMS the ttl, in milliseconds
        * @return updated action object
        */
@@ -800,7 +830,8 @@ public class Transaction {
 
       /**
        * Specifies the controlling account using its alias.<br>
-       * <strong>Must</strong> be used with {@link ControlWithAccount#setAssetAlias(String)}
+       * <strong>Either this or {@link ControlWithAccount#setAccountId(String)} must be called.</strong><br>
+       * <strong>Must be used with {@link ControlWithAccount#setAssetAlias(String)}.</strong>
        * @param alias alias of the controlling account
        * @return updated action object
        */
@@ -811,7 +842,8 @@ public class Transaction {
 
       /**
        * Specifies the controlling account using its id.<br>
-       * <strong>Must</strong> be used with {@link ControlWithAccount#setAssetId(String)}
+       * <strong>Either this or {@link ControlWithAccount#setAccountAlias(String)} must be called.</strong><br>
+       * <strong>Must be used with {@link ControlWithAccount#setAssetId(String)}.</strong>
        * @param id id of the controlling account
        * @return updated action object
        */
@@ -822,7 +854,8 @@ public class Transaction {
 
       /**
        * Specifies the asset to be controlled using its alias.<br>
-       * <strong>Must</strong> be used with {@link ControlWithAccount#setAccountAlias(String)}
+       * <strong>Either this or {@link ControlWithAccount#setAssetId(String)} must be called.</strong><br>
+       * <strong>Must be used with {@link ControlWithAccount#setAccountAlias(String)}.</strong>
        * @param alias alias of the asset to be controlled
        * @return updated action object
        */
@@ -833,7 +866,8 @@ public class Transaction {
 
       /**
        * Specifies the asset to be controlled using its id.<br>
-       * <strong>Must</strong> be used with {@link ControlWithAccount#setAccountId(String)}
+       * <strong>Either this or {@link ControlWithAccount#setAssetAlias(String)} must be called.</strong><br>
+       * <strong>Must be used with {@link ControlWithAccount#setAccountId(String)}.</strong>
        * @param id id of the asset to be controlled
        * @return updated action object
        */
@@ -843,7 +877,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the amount of the asset to be controlled.
+       * Specifies the amount of the asset to be controlled.<br>
+       * <strong>Must be called.</strong>
        * @param amount number of units of the asset to be controlled
        * @return updated action object
        */
@@ -865,7 +900,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the control program to be used.
+       * Specifies the control program to be used.<br>
+       * <strong>Either this or {@link ControlWithProgram#setControlProgram(String)} must be called.</strong>
        * @param controlProgram the control program to be used
        * @return updated action object
        */
@@ -875,7 +911,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the control program to be used.
+       * Specifies the control program to be used.<br>
+       * <strong>Either this or {@link ControlWithProgram#setControlProgram(ControlProgram)} must be called.</strong>
        * @param controlProgram the control program (as a string) to be used
        * @return updated action object
        */
@@ -885,7 +922,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the asset to be controlled using its alias
+       * Specifies the asset to be controlled using its alias.<br>
+       * <strong>Either this or {@link ControlWithProgram#setAssetId(String)} must be called.</strong>
        * @param alias alias of the asset to be controlled
        * @return updated action object
        */
@@ -895,7 +933,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the asset to be controlled using its id
+       * Specifies the asset to be controlled using its id.<br>
+       * <strong>Either this or {@link ControlWithProgram#setAssetAlias(String)} must be called.</strong>
        * @param id id of the asset to be controlled
        * @return updated action object
        */
@@ -905,7 +944,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the amount of the asset to be controlled.
+       * Specifies the amount of the asset to be controlled.<br>
+       * <strong>Must be called.</strong>
        * @param amount number of units of the asset to be controlled
        * @return updated action object
        */
@@ -928,7 +968,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the amount of the asset to be retired.
+       * Specifies the amount of the asset to be retired.<br>
+       * <strong>Must be called.</strong>
        * @param amount number of units of the asset to be retired
        * @return updated action object
        */
@@ -938,7 +979,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the asset to be retired using its alias
+       * Specifies the asset to be retired using its alias.<br>
+       * <strong>Either this or {@link Retire#setAssetId(String)}  must be called.</strong>
        * @param alias alias of the asset to be retired
        * @return updated action object
        */
@@ -948,7 +990,8 @@ public class Transaction {
       }
 
       /**
-       * Specifies the asset to be retired using its id
+       * Specifies the asset to be retired using its id.<br>
+       * <strong>Either this or {@link Retire#setAssetAlias(String)} must be called.</strong>
        * @param id id of the asset to be retired
        * @return updated action object
        */
@@ -1013,7 +1056,9 @@ public class Transaction {
   }
 
   /**
-   * A builder class for transaction templates.
+   * Transaction.Builder utilizes the builder pattern to create {@link Transaction.Template} objects.
+   * At minimum, a {@link Action.Issue} or {@link Action.SpendFromAccount}/{@link Action.SpendAccountUnspentOutput}
+   * must be coupled with a {@link Action.ControlWithAccount}/{@link Action.ControlWithProgram} before calling {@link #build(Client)}.
    */
   public static class Builder {
     /**
@@ -1067,7 +1112,7 @@ public class Transaction {
     }
 
     /**
-     * Sets the rawTransaction that will be added to the current template.
+     * Sets the base transaction that will be added to the current template.
      */
     public Builder setBaseTransaction(String baseTransaction) {
       this.baseTransaction = baseTransaction;
