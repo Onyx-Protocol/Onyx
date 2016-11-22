@@ -15,14 +15,14 @@ Promise.resolve().then(() => {
 }).then(key => {
   // snippet signer-add-key
   const signer = new chain.HsmSigner()
-  signer.addKey(key, client.mockHsm.signerUrl)
+  signer.addKey(key.xpub, client.mockHsm.signerUrl)
   // endsnippet
 
-  // _signer = signer
+  _signer = signer
   return key
 }).then(key => {
   // snippet create-asset
-  client.assets.create({
+  const goldPromise = client.assets.create({
     alias: 'gold',
     root_xpubs: [key.xpub],
     quorum: 1,
@@ -30,7 +30,7 @@ Promise.resolve().then(() => {
   // endsnippet
 
   // snippet create-account-alice
-  client.accounts.create({
+  const alicePromise = client.accounts.create({
     alias: 'alice',
     root_xpubs: [key.xpub],
     quorum: 1
@@ -38,62 +38,77 @@ Promise.resolve().then(() => {
   // endsnippet
 
   // snippet create-account-bob
-  client.accounts.create({
+  const bobPromise = client.accounts.create({
     alias: 'bob',
     root_xpubs: [key.xpub],
     quorum: 1
   })
   // endsnippet
+
+  return Promise.all([goldPromise, alicePromise, bobPromise])
 }).then(() => {
-  // snippet issue
-  client.transactions.build(function (builder) {
-    builder.issue({
-      asset_alias: 'gold',
-      amount: 100
-    })
-    build.controlWithAccount({
-      account_alias: 'alice',
-      asset_alias: 'gold',
-      amount: 100
-    })
-  }).then(issuance => {
-    return signer.sign(issuance)
-  }).then(signed => {
-    return client.transactions.submit(signed)
-  })
-  // endsnippet
+  const signer = _signer
 
+  Promise.resolve().then(() =>
 
-  // snippet spend
-  // const spending = client.transactions.build(function (builder) {
-  //   builder.spendFromAccount({
-  //     account_alias: 'alice'
-  //     asset_alias: 'gold',
-  //     amount: 10
-  //   })
-  //   build.controlWithAccount({
-  //     account_alias: 'bob',
-  //     asset_alias: 'gold',
-  //     amount: 10
-  //   })
-  // })
-  //
-  // client.transactions.submit(signer.sign(spending))
-  // endsnippet
-  //
-  // snippet retire
-  // const retirement = client.transactions.build(function (builder) {
-  //   builder.spendFromAccount({
-  //     account_alias: 'alice'
-  //     asset_alias: 'gold',
-  //     amount: 5
-  //   })
-  //   build.retire({
-  //     asset_alias: 'gold',
-  //     amount: 5
-  //   })
-  // })
-  //
-  // client.transactions.submit(signer.sign(retirement))
-  // endsnippet
+    // snippet issue
+    client.transactions.build(function (builder) {
+      builder.issue({
+        asset_alias: 'gold',
+        amount: 100
+      })
+      builder.controlWithAccount({
+        account_alias: 'alice',
+        asset_alias: 'gold',
+        amount: 100
+      })
+    }).then(issuance => {
+      return signer.sign(issuance)
+    }).then(signed => {
+      return client.transactions.submit(signed)
+    })
+    // endsnippet
+
+  ).then(() =>
+
+    // snippet spend
+    client.transactions.build(function (builder) {
+      builder.spendFromAccount({
+        account_alias: 'alice',
+        asset_alias: 'gold',
+        amount: 10
+      })
+      builder.controlWithAccount({
+        account_alias: 'bob',
+        asset_alias: 'gold',
+        amount: 10
+      })
+    }).then(issuance => {
+      return signer.sign(issuance)
+    }).then(signed => {
+      return client.transactions.submit(signed)
+    })
+    // endsnippet
+
+  ).then(() =>
+
+    // snippet retire
+    client.transactions.build(function (builder) {
+      builder.spendFromAccount({
+        account_alias: 'alice',
+        asset_alias: 'gold',
+        amount: 5
+      })
+      builder.retire({
+        asset_alias: 'gold',
+        amount: 5
+      })
+    }).then(issuance => {
+      return signer.sign(issuance)
+    }).then(signed => {
+      return client.transactions.submit(signed)
+    })
+    // endsnippet
+
+  )
 })

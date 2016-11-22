@@ -15,8 +15,6 @@ class Client {
     this.baseUrl = baseUrl || 'http://localhost:1999'
     this.token = token || ''
 
-    console.log(this)
-
     this.mockHsm = mockHsm(this)
     this.assets = assets(this)
     this.accounts = accounts(this)

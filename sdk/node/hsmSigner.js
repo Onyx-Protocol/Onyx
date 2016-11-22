@@ -2,7 +2,7 @@ const Client = require('./client')
 
 class HsmSigner {
   constructor() {
-    signerConnections = {}
+    this.signerConnections = {}
   }
 
   addKey(xpub, url, token = '') {
@@ -19,17 +19,23 @@ class HsmSigner {
   }
 
   sign(template) {
-    let promise = Promise.resolve()
+    let promise = Promise.resolve(template)
 
     if (Object.keys(this.signerConnections).length == 0) {
       return promise.then(() => template)
     }
 
-    for (var signer in this.signerConnections) {
-      if (object.hasOwnProperty(signer)) {
+    for (let signerId in this.signerConnections) {
+      const signer = this.signerConnections[signerId]
 
-      }
+      promise = promise.then(nextTemplate =>
+        signer.connection.request('/sign-transaction', {
+          transactions: [nextTemplate],
+          xpubs: signer.xpubs
+      })).then(resp => resp[0])
     }
+
+    return promise
   }
 }
 

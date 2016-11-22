@@ -27,6 +27,8 @@ module.exports = (client) => {
         return client.request('/mockhsm/create-key', body)
           .then(data => data)
       }
-    }
+    },
+
+    signerUrl: 'http://localhost:1999/mockhsm'
   }
 }

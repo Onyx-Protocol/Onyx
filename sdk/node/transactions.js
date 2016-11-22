@@ -1,5 +1,7 @@
+const errors = require('./errors')
+
 // TODO: replace with default handler in requestSingle/requestBatch variants
-cosnt checkForError = (resp) => {
+function checkForError(resp) {
   if ('code' in resp) {
     throw errors.create(
       errors.types.BAD_REQUEST,
@@ -16,11 +18,27 @@ class TransactionBuilder {
   }
 
   issue(params) {
-    this.actions = Object.assign({}, params, {type: 'issue'})
+    this.actions.push(Object.assign({}, params, {type: 'issue'}))
   }
 
   controlWithAccount(params) {
-    this.actions = Object.assign({}, params, {type: 'control_with_account'})
+    this.actions.push(Object.assign({}, params, {type: 'control_account'}))
+  }
+
+  controlWithProgram(params) {
+    this.actions.push(Object.assign({}, params, {type: 'control_program'}))
+  }
+
+  spendFromAccount(params) {
+    this.actions.push(Object.assign({}, params, {type: 'spend_account'}))
+  }
+
+  spendUnspentOutput(params) {
+    this.actions.push(Object.assign({}, params, {type: 'spend_account_unspent_output'}))
+  }
+
+  retire(params) {
+    this.actions.push(Object.assign({}, params, {type: 'control_program', control_program: '6a'}))
   }
 }
 
