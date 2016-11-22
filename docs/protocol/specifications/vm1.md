@@ -1004,23 +1004,6 @@ Fails if any of `x`, `y`, or `z` is not a valid [VM number](#vm-number).
 
 ### Cryptographic instructions
 
-#### RIPEMD160
-
-Code  | Stack Diagram                  | Cost
-------|--------------------------------|-----------------------------------------------------
-0xa6  | (a → RIPEMD160(a))             | max(64, 4·L<sub>a</sub>) + [standard memory cost](#standard-memory-cost)
-
-Replaces top stack item with its [RIPEMD-160](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html) hash value.
-
-
-#### SHA1
-
-Code  | Stack Diagram                  | Cost
-------|--------------------------------|-----------------------------------------------------
-0xa7  | (a → SHA1(a))                  | max(64, 4·L<sub>a</sub>) + [standard memory cost](#standard-memory-cost)
-
-Replaces top stack item with its [SHA-1](https://tools.ietf.org/html/rfc3174) hash value.
-
 
 #### SHA256
 
@@ -1277,7 +1260,7 @@ Fails if executed in the [transaction context](#transaction-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion and have no effect on the state of the VM apart from reducing run limit by 1.
 
