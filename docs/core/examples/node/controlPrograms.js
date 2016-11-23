@@ -42,12 +42,12 @@ client.mockHsm.keys.create().then(key => {
   signed => client.transactions.submit(signed)
 ).then(() => {
   // snippet create-control-program
-  const aliceProgramProimse = client.accounts.createControlProgram({
+  const aliceProgramPromise = client.accounts.createControlProgram({
     alias: 'alice',
   })
   // endsnippet
 
-  return aliceProgramProimse
+  return aliceProgramPromise
 }).then(aliceProgram => {
   // snippet build-transaction
   return client.transactions.build(function (builder) {

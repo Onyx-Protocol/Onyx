@@ -1,3 +1,4 @@
+const shared = require('./shared')
 const errors = require('./errors')
 
 // TODO: replace with default handler in requestSingle/requestBatch variants
@@ -44,6 +45,7 @@ class TransactionBuilder {
 
 module.exports = (client) => {
   return {
+    query: (params) => shared.query(client, '/list-transactions', params),
     build: (builderBlock) => {
       const builder = new TransactionBuilder()
       builderBlock(builder)

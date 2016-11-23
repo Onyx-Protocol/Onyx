@@ -3,10 +3,12 @@
 // use the ponyfill for unsupported browsers.
 const { fetch } = require('fetch-ponyfill')()
 
-const mockHsm = require('./mockHsm')
-const assets = require('./assets')
 const accounts = require('./accounts')
+const assets = require('./assets')
+const balances = require('./balances')
+const mockHsm = require('./mockHsm')
 const transactions = require('./transactions')
+const unspentOutputs = require('./unspentOutputs')
 
 const errors = require('./errors')
 
@@ -15,10 +17,12 @@ class Client {
     this.baseUrl = baseUrl || 'http://localhost:1999'
     this.token = token || ''
 
-    this.mockHsm = mockHsm(this)
-    this.assets = assets(this)
     this.accounts = accounts(this)
+    this.assets = assets(this)
+    this.balances = balances(this)
+    this.mockHsm = mockHsm(this)
     this.transactions = transactions(this)
+    this.unspentOutputs = unspentOutputs(this)
   }
 
   request(path, body = {}) {

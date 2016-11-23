@@ -3,6 +3,7 @@ const shared = require('./shared')
 module.exports = (client) => {
   return {
     create: (params) => shared.create(client, '/create-account', params),
+    query: (params) => shared.query(client, '/list-accounts', params),
     createControlProgram: (opts = {}) => {
       const body = {type: 'account'}
 
