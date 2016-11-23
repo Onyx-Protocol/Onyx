@@ -70,7 +70,7 @@ var instanceConfigs = map[string]instanceConfig{
 	"default": instanceConfig{
 		AMI:                     "ami-40d28157", // Ubuntu LTS 16.04
 		InstanceType:            "m3.xlarge",
-		CoredMaxDBConns:         "500",
+		CoredMaxDBConns:         "1000",
 		PostgresAMI:             "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
 		PostgresInstanceType:    "i2.xlarge",
 		MaxConnections:          1030,
