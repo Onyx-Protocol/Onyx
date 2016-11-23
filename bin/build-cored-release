@@ -18,7 +18,10 @@ if [ -z "$1" -o -z "$2" ]; then
 fi
 
 releaseRef=$1
-cd $2; outputDir=`pwd` # verify output dir and expand to absolute
+
+# verify output dir and expand to absolute
+cd $2 > /dev/null
+outputDir=`pwd`
 
 echo "Building ref $releaseRef to output directory $outputDir..."
 
@@ -55,3 +58,5 @@ echo "building corectl..."
 go build\
   -o "$outputDir/corectl"\
   chain/cmd/corectl
+
+echo "Done, build artifacts placed in $outputDir"
