@@ -33,22 +33,20 @@ import (
 )
 
 var (
-	flagD        = flag.Bool("d", false, "delete instances from previous runs")
-	flagP        = flag.Bool("p", false, "capture cpu, heap, and trace profiles from cored")
-	flagQ        = flag.Duration("q", 0, "capture SQL slow queries")
-	flagWith     = flag.String("with", "", "upload the provided file alongside the java program")
-	flagInstance = flag.String("instance", "m3.xlarge", "the EC2 instance size to use")
-	flagDBStats  = flag.Bool("dbstats", false, "capture database query statistics")
+	flagD       = flag.Bool("d", false, "delete instances from previous runs")
+	flagP       = flag.Bool("p", false, "capture cpu, heap, and trace profiles from cored")
+	flagQ       = flag.Duration("q", 0, "capture SQL slow queries")
+	flagWith    = flag.String("with", "", "upload the provided file alongside the java program")
+	flagConfig  = flag.String("config", "default", "the instance configuration to use")
+	flagDBStats = flag.Bool("dbstats", false, "capture database query statistics")
 
-	appName     = "benchcore"
-	testRunID   = appName + randString()
-	blockDevice = "/dev/xvdb" // must match initdbsh
-	volumeSize  = int64(500)
-	subnetID    = "subnet-80560fd9"
-	key         = os.Getenv("USER")
-	user        = os.Getenv("USER")
-	schemaPath  = os.Getenv("CHAIN") + "/core/schema.sql"
-	sdkDir      = os.Getenv("CHAIN") + "/sdk/java"
+	appName    = "benchcore"
+	testRunID  = appName + randString()
+	subnetID   = "subnet-80560fd9"
+	key        = os.Getenv("USER")
+	user       = os.Getenv("USER")
+	schemaPath = os.Getenv("CHAIN") + "/core/schema.sql"
+	sdkDir     = os.Getenv("CHAIN") + "/sdk/java"
 
 	awsConfig = &aws.Config{Region: aws.String("us-east-1")}
 	ec2client = ec2.New(awsConfig)
@@ -69,35 +67,49 @@ var (
 )
 
 var instanceConfigs = map[string]instanceConfig{
-	"m3.xlarge": instanceConfig{
+	"default": instanceConfig{
 		AMI:                     "ami-40d28157", // Ubuntu LTS 16.04
-		CoredMaxDBConns:         "500",
-		MaxConnections:          530,
-		SharedBuffers:           "2GB",
-		EffectiveCacheSize:      "11GB", // ~3/4 total mem
-		WorkMem:                 "8MB",
+		InstanceType:            "m3.xlarge",
+		CoredMaxDBConns:         "1000",
+		PostgresAMI:             "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
+		PostgresInstanceType:    "i2.xlarge",
+		MaxConnections:          1030,
+		SharedBuffers:           "15GB",
+		EffectiveCacheSize:      "45GB", // ~3/4 total mem
+		WorkMem:                 "32MB",
 		MaintenanceWorkMem:      "512MB",
-		MaxWALSize:              "1GB",
-		WALBuffers:              "8MB",
+		MaxWALSize:              "2GB",
+		WALBuffers:              "64MB",
 		LogMinDurationStatement: 2000,
 	},
-	"m4.16xlarge": instanceConfig{
+	"max": instanceConfig{
 		AMI:                     "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
+		InstanceType:            "m4.16xlarge",
 		CoredMaxDBConns:         "1000",
+		PostgresAMI:             "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
+		PostgresInstanceType:    "i2.4xlarge",
 		MaxConnections:          1030,
 		SharedBuffers:           "30GB",
-		EffectiveCacheSize:      "192GB", // ~3/4 total mem
+		EffectiveCacheSize:      "85GB", // ~3/4 total mem
 		WorkMem:                 "64MB",
 		MaintenanceWorkMem:      "1GB",
 		MaxWALSize:              "4GB",
-		WALBuffers:              "8MB",
+		WALBuffers:              "64MB",
 		LogMinDurationStatement: 2000,
 	},
 }
 
 type instanceConfig struct {
-	AMI                     string
-	CoredMaxDBConns         string
+	// cored & client instance
+	AMI          string
+	InstanceType string
+
+	// Cored configuration
+	CoredMaxDBConns string
+
+	// Postgres configuration
+	PostgresInstanceType    string
+	PostgresAMI             string
 	MaxConnections          uint64
 	SharedBuffers           string
 	EffectiveCacheSize      string
@@ -158,9 +170,9 @@ func main() {
 		os.Exit(2)
 	}
 
-	conf, ok := instanceConfigs[*flagInstance]
+	conf, ok := instanceConfigs[*flagConfig]
 	if !ok {
-		log.Fatalf("unsupported instance type %s", *flagInstance)
+		log.Fatalf("unsupported instance type %s", *flagConfig)
 	}
 	conf.LogMinDurationStatement = int(slowQueryThreshold / time.Millisecond)
 
@@ -186,9 +198,9 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(3)
 	log.Println("starting EC2 instances")
-	go makeEC2("pg", conf.AMI, &db, &wg)
-	go makeEC2("cored", conf.AMI, &cored, &wg)
-	go makeEC2("client", conf.AMI, &client, &wg)
+	go makeEC2("pg", conf, &db, &wg)
+	go makeEC2("cored", conf, &cored, &wg)
+	go makeEC2("client", conf, &client, &wg)
 	killInstanceIDs = append(killInstanceIDs, &db.id, &cored.id, &client.id)
 
 	coredBin := mustBuildCored()
@@ -482,31 +494,26 @@ func mustRunOn(host, sh string, keyval ...string) {
 	}
 }
 
-func makeEC2(role string, ami string, inst *instance, wg *sync.WaitGroup) {
+func makeEC2(role string, conf instanceConfig, inst *instance, wg *sync.WaitGroup) {
 	defer wg.Done()
 	runtoken := randString()
 	var n int64 = 1
-	tru := true
+
+	ami, typ := conf.AMI, conf.InstanceType
+	if role == "pg" {
+		ami, typ = conf.PostgresAMI, conf.PostgresInstanceType
+	}
 
 	var resv *ec2.Reservation
 	retry(func() (err error) {
 		resv, err = ec2client.RunInstances(&ec2.RunInstancesInput{
 			ClientToken:  &runtoken,
 			ImageID:      &ami,
-			InstanceType: flagInstance,
+			InstanceType: &typ,
 			KeyName:      &key,
 			MinCount:     &n,
 			MaxCount:     &n,
 			SubnetID:     &subnetID,
-
-			BlockDeviceMappings: []*ec2.BlockDeviceMapping{{
-				DeviceName: &blockDevice,
-				EBS: &ec2.EBSBlockDevice{
-					DeleteOnTermination: &tru,
-					VolumeSize:          &volumeSize,
-					VolumeType:          aws.String("st1"),
-				},
-			}},
 		})
 		return err
 	})
