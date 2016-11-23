@@ -74,10 +74,14 @@ func ForQueryRows(ctx context.Context, db DB, query string, args ...interface{})
 
 	fnVal := reflect.ValueOf(fnArg)
 
-	for rows.Next() {
-		argPtrVals := make([]reflect.Value, 0, fnType.NumIn())
-		scanArgs := make([]interface{}, 0, fnType.NumIn())
+	argPtrVals := make([]reflect.Value, 0, fnType.NumIn())
+	scanArgs := make([]interface{}, 0, fnType.NumIn())
+	fnArgs := make([]reflect.Value, 0, fnType.NumIn())
 
+	for rows.Next() {
+		argPtrVals = argPtrVals[:0]
+		scanArgs = scanArgs[:0]
+		fnArgs = fnArgs[:0]
 		for i := 0; i < fnType.NumIn(); i++ {
 			argType := fnType.In(i)
 			argPtrVal := reflect.New(argType)
@@ -88,7 +92,6 @@ func ForQueryRows(ctx context.Context, db DB, query string, args ...interface{})
 		if err != nil {
 			return errors.Wrap(err, "scan")
 		}
-		fnArgs := make([]reflect.Value, 0, fnType.NumIn())
 		for _, argPtrVal := range argPtrVals {
 			fnArgs = append(fnArgs, argPtrVal.Elem())
 		}
