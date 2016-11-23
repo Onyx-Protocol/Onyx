@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/kr/secureheader"
@@ -81,7 +82,13 @@ var (
 )
 
 func init() {
+	version := "?"
+	if strings.HasPrefix(buildTag, "cmd.cored-") {
+		version = strings.TrimPrefix(buildTag, "cmd.cored-")
+	}
+
 	expvar.NewString("prod").Set(prod)
+	expvar.NewString("version").Set(version)
 	expvar.NewString("buildtag").Set(buildTag)
 	expvar.NewString("builddate").Set(buildDate)
 	expvar.NewString("buildcommit").Set(buildCommit)

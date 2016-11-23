@@ -990,6 +990,9 @@ definitions:
       core_id:
         type: string
         description: The unique ID of the core, generated at configuration.
+      version:
+        type: string
+        description: The release version of cored, the Chain Core server binary.
       build_commit:
         type: string
         description: The commit SHA of the core source code, at which the core
