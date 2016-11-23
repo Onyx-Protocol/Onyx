@@ -163,8 +163,6 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 		accountID pq.StringArray
 		cpIndex   pq.Int64Array
 		program   pq.ByteaArray
-		metadata  pq.ByteaArray
-		blockPos  pg.Uint32s
 	)
 	for _, out := range outs {
 		txHash = append(txHash, out.Outpoint.Hash.String())
@@ -174,16 +172,13 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 		accountID = append(accountID, out.AccountID)
 		cpIndex = append(cpIndex, int64(out.keyIndex))
 		program = append(program, out.ControlProgram)
-		metadata = append(metadata, out.ReferenceData)
-		blockPos = append(blockPos, pos[out.Outpoint.Hash])
 	}
 
 	const q = `
 		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, account_id, control_program_index,
-			control_program, metadata, confirmed_in, block_pos, block_timestamp)
+			control_program, confirmed_in)
 		SELECT unnest($1::text[]), unnest($2::bigint[]), unnest($3::text[]),  unnest($4::bigint[]),
-			   unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), unnest($8::bytea[]),
-			   $9, unnest($10::bigint[]), $11
+			   unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), $8
 		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
 	_, err := m.db.Exec(ctx, q,
@@ -194,10 +189,7 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 		accountID,
 		cpIndex,
 		program,
-		metadata,
 		block.Height,
-		blockPos,
-		block.TimestampMS,
 	)
 	return errors.Wrap(err)
 }

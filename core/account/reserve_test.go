@@ -14,13 +14,11 @@ import (
 const sampleAccountUTXOs = `
 	INSERT INTO account_utxos
 	(tx_hash, index, asset_id, amount, account_id, control_program_index,
-     control_program, metadata, confirmed_in, block_pos, block_timestamp)
-	VALUES (
+     control_program, confirmed_in) VALUES (
 		'270b725a94429496a178c56b390a89d03f801fe2ee992d90cf4fdf7d7855318e',
 		0,
 		'df1df9d4f66437ab5be715e4d1faeb29d24c80a6dc8276d6a630f05c5f1f7693',
-		1000, 'accEXAMPLE', 1, '\x6a'::bytea, '\x'::bytea, 1, 2, extract(epoch from now())
-	);
+		1000, 'accEXAMPLE', 1, '\x6a'::bytea, 1);
 `
 
 func TestCancelReservation(t *testing.T) {
