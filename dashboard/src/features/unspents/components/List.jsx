@@ -14,7 +14,7 @@ const EmptyContent = <div className="emptyContainer">
   </p>
   <p>
     Learn more about the basic functions of unspent outputs in the&nbsp;
-    <a href="/docs/core/build-applications/accounts" target="_blank">Unspent Outputs</a> guide
+    <a href="/docs/core/build-applications/unspent-outputs" target="_blank">Unspent Outputs</a> guide
     of the documentation.
   </p>
 </div>
