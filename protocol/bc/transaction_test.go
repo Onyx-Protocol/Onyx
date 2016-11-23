@@ -414,3 +414,17 @@ func BenchmarkTxOutputWriteToFalse(b *testing.B) {
 		output.writeTo(ew, serRequired)
 	}
 }
+
+func BenchmarkAssetAmountWriteTo(b *testing.B) {
+	aa := AssetAmount{}
+	for i := 0; i < b.N; i++ {
+		aa.writeTo(ioutil.Discard)
+	}
+}
+
+func BenchmarkOutpointWriteTo(b *testing.B) {
+	o := Outpoint{}
+	for i := 0; i < b.N; i++ {
+		o.WriteTo(ioutil.Discard)
+	}
+}
