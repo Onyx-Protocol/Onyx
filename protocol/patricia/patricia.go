@@ -45,13 +45,14 @@ func Reconstruct(vals []Leaf) (*Tree, error) {
 	t := new(Tree)
 	for _, kv := range vals {
 		key := bitKey(kv.Key)
+		hash := kv.Hash
 		if t.root == nil {
-			t.root = &node{key: key, hash: kv.Hash, isLeaf: true}
+			t.root = &node{key: key, hash: &hash, isLeaf: true}
 			continue
 		}
 
 		var err error
-		t.root, err = t.insert(t.root, key, kv.Hash)
+		t.root, err = t.insert(t.root, key, hash)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +84,7 @@ func Walk(t *Tree, walkFn WalkFunc) error {
 
 func walk(n *node, walkFn WalkFunc) error {
 	if n.isLeaf {
-		return walkFn(Leaf{Key: n.Key(), Hash: n.hash})
+		return walkFn(Leaf{Key: n.Key(), Hash: *n.hash})
 	}
 
 	err := walk(n.children[0], walkFn)
@@ -156,7 +157,7 @@ func (t *Tree) Insert(bkey, val []byte) error {
 	sha3pool.Put256(h)
 
 	if t.root == nil {
-		t.root = &node{key: key, hash: hash, isLeaf: true}
+		t.root = &node{key: key, hash: &hash, isLeaf: true}
 		return nil
 	}
 
@@ -174,7 +175,7 @@ func (t *Tree) insert(n *node, key []uint8, hash bc.Hash) (*node, error) {
 		n = &node{
 			isLeaf: true,
 			key:    n.key,
-			hash:   hash,
+			hash:   &hash,
 		}
 		return n, nil
 	}
@@ -193,7 +194,7 @@ func (t *Tree) insert(n *node, key []uint8, hash bc.Hash) (*node, error) {
 		newNode := new(node)
 		*newNode = *n
 		newNode.children[bit] = child // mutation is ok because newNode hasn't escaped yet
-		newNode.hash = hashChildren(newNode.children)
+		newNode.hash = nil
 		return newNode, nil
 	}
 
@@ -203,11 +204,10 @@ func (t *Tree) insert(n *node, key []uint8, hash bc.Hash) (*node, error) {
 	}
 	newNode.children[key[common]] = &node{
 		key:    key,
-		hash:   hash,
+		hash:   &hash,
 		isLeaf: true,
 	}
 	newNode.children[1-key[common]] = n
-	newNode.hash = hashChildren(newNode.children)
 	return newNode, nil
 }
 
@@ -252,7 +252,7 @@ func (t *Tree) delete(n *node, key []uint8) (*node, error) {
 	*newNode = *n
 	newNode.key = newChild.key[:len(n.key)] // only use slices of leaf node keys
 	newNode.children[bit] = newChild
-	newNode.hash = hashChildren(newNode.children)
+	newNode.hash = nil
 
 	return newNode, nil
 }
@@ -306,7 +306,7 @@ func commonPrefixLen(a, b []uint8) int {
 // node is a leaf or branch node in a tree
 type node struct {
 	key      []uint8
-	hash     bc.Hash
+	hash     *bc.Hash
 	isLeaf   bool
 	children [2]*node
 }
@@ -317,14 +317,20 @@ func (n *node) Key() []byte { return byteKey(n.key) }
 
 // Hash will return the hash for this node.
 func (n *node) Hash() bc.Hash {
-	return n.hash
+	if n.hash != nil {
+		return *n.hash
+	}
+	hash := hashChildren(n.children)
+	n.hash = &hash
+	return hash
 }
 
 func hashChildren(children [2]*node) (hash bc.Hash) {
 	h := sha3pool.Get256()
 	h.Write(interiorPrefix)
 	for _, c := range children {
-		h.Write(c.hash[:])
+		childHash := c.Hash()
+		h.Write(childHash[:])
 	}
 
 	h.Read(hash[:])
