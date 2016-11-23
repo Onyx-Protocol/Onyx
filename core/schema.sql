@@ -781,17 +781,10 @@ ALTER TABLE ONLY txfeeds
 
 
 --
--- Name: account_utxos_account_id; Type: INDEX; Schema: public; Owner: -
+-- Name: account_utxos_asset_id_account_id_confirmed_in_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX account_utxos_account_id ON account_utxos USING btree (account_id);
-
-
---
--- Name: account_utxos_account_id_asset_id_tx_hash_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX account_utxos_account_id_asset_id_tx_hash_idx ON account_utxos USING btree (account_id, asset_id, tx_hash);
+CREATE INDEX account_utxos_asset_id_account_id_confirmed_in_idx ON account_utxos USING btree (asset_id, account_id, confirmed_in);
 
 
 --
@@ -883,3 +876,4 @@ insert into migrations (filename, hash) values ('2016-11-09.0.utxodb.drop-reserv
 insert into migrations (filename, hash) values ('2016-11-10.0.txdb.drop-pool-txs.sql', 'c52f610d5bd471cde5fbc083681e201f026b0cab89e7beeaa6a071ebbb99ff69');
 insert into migrations (filename, hash) values ('2016-11-16.0.account.drop-cp-id.sql', '149dd9ff2107e12452180bb73716a0985547bae843e5f99e5441717d6ec64a00');
 insert into migrations (filename, hash) values ('2016-11-18.0.account.confirmed-utxos.sql', 'b01e126edfcfe97f94eeda46f5a0eab6752e907104cecf247e90886f92795e94');
+insert into migrations (filename, hash) values ('2016-11.22.0.account.utxos-indexes.sql', 'a6015dfb4070b4fa0fe7c9615101229e81cfd79ad578e807600b6aa50472d710');

@@ -54,4 +54,9 @@ var migrations = []migration{
 			ALTER COLUMN block_pos SET NOT NULL,
 			ALTER COLUMN block_timestamp SET NOT NULL;
 	`},
+	{Name: "2016-11-22.0.account.utxos-indexes.sql", SQL: `
+		DROP INDEX account_utxos_account_id;
+		DROP INDEX account_utxos_account_id_asset_id_tx_hash_idx;
+		CREATE INDEX ON account_utxos (asset_id, account_id, confirmed_in);
+	`},
 }
