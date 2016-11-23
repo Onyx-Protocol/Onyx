@@ -58,5 +58,9 @@ var migrations = []migration{
 		DROP INDEX account_utxos_account_id;
 		DROP INDEX account_utxos_account_id_asset_id_tx_hash_idx;
 		CREATE INDEX ON account_utxos (asset_id, account_id, confirmed_in);
+		ALTER TABLE account_utxos
+			DROP COLUMN metadata,
+			DROP COLUMN block_pos,
+			DROP COLUMN block_timestamp;
 	`},
 }
