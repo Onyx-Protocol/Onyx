@@ -43,10 +43,9 @@ export GOARCH
 
 echo "building cored..."
 
-version=`echo $releaseRef | sed -e s/^cmd\.cored-//` # version is extracted if releaseRef fits cmd.cored-<version> pattern
 commit=`git rev-parse HEAD`
 DATE=${DATE:-`date +%s`} # date can be set via envvar
-ldflags="-X main.buildTag=$version -X main.buildCommit=$commit -X main.buildDate=$DATE"
+ldflags="-X main.buildTag=$releaseRef -X main.buildCommit=$commit -X main.buildDate=$DATE"
 
 go build\
   -tags 'insecure_disable_https_redirect'\
