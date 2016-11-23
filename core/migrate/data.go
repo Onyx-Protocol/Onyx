@@ -63,4 +63,8 @@ var migrations = []migration{
 			DROP COLUMN block_pos,
 			DROP COLUMN block_timestamp;
 	`},
+	{Name: "2016-11-23.0.query.jsonb-path-ops.sql", SQL: `
+		DROP INDEX annotated_txs_data;
+		CREATE INDEX ON annotated_txs USING GIN (data jsonb_path_ops);
+	`},
 }

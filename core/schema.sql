@@ -827,10 +827,10 @@ CREATE INDEX annotated_outputs_timespan_idx ON annotated_outputs USING gist (tim
 
 
 --
--- Name: annotated_txs_data; Type: INDEX; Schema: public; Owner: -
+-- Name: annotated_txs_data_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX annotated_txs_data ON annotated_txs USING gin (data);
+CREATE INDEX annotated_txs_data_idx ON annotated_txs USING gin (data jsonb_path_ops);
 
 
 --
@@ -874,3 +874,4 @@ insert into migrations (filename, hash) values ('2016-11-10.0.txdb.drop-pool-txs
 insert into migrations (filename, hash) values ('2016-11-16.0.account.drop-cp-id.sql', '149dd9ff2107e12452180bb73716a0985547bae843e5f99e5441717d6ec64a00');
 insert into migrations (filename, hash) values ('2016-11-18.0.account.confirmed-utxos.sql', 'b01e126edfcfe97f94eeda46f5a0eab6752e907104cecf247e90886f92795e94');
 insert into migrations (filename, hash) values ('2016-11-22.0.account.utxos-indexes.sql', 'f3ea43f592cb06a36b040f0b0b9626ee9174d26d36abef44e68114d0c0aace98');
+insert into migrations (filename, hash) values ('2016-11-23.0.query.jsonb-path-ops.sql', 'adb15b9a6b7b223a17dbfd5f669e44c500b343568a563f87e1ae67ba0f938d55');
