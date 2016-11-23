@@ -257,7 +257,7 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 		}
 
 		// Remove the consumed output from the state tree.
-		prevoutKey, _ := state.OutputTreeItem(state.Prevout(in))
+		prevoutKey := state.OutputKey(in.Outpoint())
 		err := snapshot.Tree.Delete(prevoutKey)
 		if err != nil {
 			return err
