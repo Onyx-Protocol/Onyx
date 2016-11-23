@@ -8,6 +8,7 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
+	"chain/encoding/bufpool"
 )
 
 type (
@@ -289,7 +290,8 @@ func (t TxInput) writeTo(w io.Writer, serflags uint8) {
 }
 
 func (t TxInput) InputCommitmentBytes() []byte {
-	inputCommitment := new(bytes.Buffer)
+	inputCommitment := bufpool.GetBuffer()
+	defer bufpool.PutBuffer(inputCommitment)
 	if t.AssetVersion == 1 {
 		switch inp := t.TypedInput.(type) {
 		case *IssuanceInput:
@@ -309,7 +311,8 @@ func (t TxInput) InputCommitmentBytes() []byte {
 }
 
 func (t TxInput) inputWitnessBytes() []byte {
-	inputWitness := new(bytes.Buffer)
+	inputWitness := bufpool.GetBuffer()
+	defer bufpool.PutBuffer(inputWitness)
 	if t.AssetVersion == 1 {
 		var arguments [][]byte
 		switch inp := t.TypedInput.(type) {

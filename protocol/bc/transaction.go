@@ -10,6 +10,7 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
+	"chain/encoding/bufpool"
 	"chain/errors"
 )
 
@@ -102,7 +103,8 @@ func (tx *TxData) Scan(val interface{}) error {
 }
 
 func (tx *TxData) Value() (driver.Value, error) {
-	b := new(bytes.Buffer)
+	b := bufpool.GetBuffer()
+	defer bufpool.PutBuffer(b)
 	_, err := tx.WriteTo(b)
 	if err != nil {
 		return nil, err
