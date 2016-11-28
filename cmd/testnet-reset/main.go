@@ -47,11 +47,16 @@ func main() {
 	ctx := context.Background()
 	env.Parse()
 
-	cur := time.Now()
+	pst, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		log.Fatal(err)
+	}
+	cur := time.Now().In(pst)
+	log.Println("current time:", cur)
 	max := cur.Add(time.Hour).Weekday()
 	min := cur.Add(-1 * time.Hour).Weekday()
 	if *scheduled && (min != time.Saturday || max != time.Sunday) {
-		log.Println("only run Sunday at midnight +/- an hour")
+		log.Println("only run Sunday at midnight PST +/- an hour")
 		os.Exit(0)
 	}
 
