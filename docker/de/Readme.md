@@ -61,7 +61,7 @@ $ docker exec -it chaincore /bin/sh
 ####Check the logs of a stopped container
 If a container was exited prematurely, you can receive a command prompt from inside it by running:
 ```
-$ docker run -it -v /path/to/store/db:/var/lib/postgresql/data -v /path/to/store/logs:/var/log/chain --entrypoint /bin/sh chaincore
+$ docker run -it -v /path/to/store/db:/var/lib/postgresql/data -v /path/to/store/logs:/var/log/chain --entrypoint /bin/sh chaincore/developer
 ```
 >**Note:** this command creates a new container and should only be used when persisting the container data.
 
