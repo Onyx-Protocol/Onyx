@@ -12,6 +12,10 @@ const unspentOutputs = require('./unspentOutputs')
 
 const errors = require('./errors')
 
+
+/**
+ * Chain API Client
+ */
 class Client {
   constructor(baseUrl, token) {
     this.baseUrl = baseUrl || 'http://localhost:1999'
