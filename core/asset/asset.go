@@ -131,8 +131,7 @@ func (reg *Registry) findByID(ctx context.Context, id bc.AssetID) (*Asset, error
 	}
 
 	untypedAsset, err := reg.idGroup.Do(id.String(), func() (interface{}, error) {
-		asset, err := assetQuery(ctx, reg.db, "assets.id=$1", id)
-		return asset, err
+		return assetQuery(ctx, reg.db, "assets.id=$1", id)
 	})
 	if err != nil {
 		return nil, err
