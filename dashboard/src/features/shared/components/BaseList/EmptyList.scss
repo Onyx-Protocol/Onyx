@@ -17,7 +17,7 @@
   height: 70px;
 }
 
-.emptyLabel {
+:global(.emptyLabel), .emptyLabel {
   color: $text-strong-color;
   display: block;
   font-size: $font-size-page-title;

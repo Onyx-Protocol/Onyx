@@ -5,18 +5,12 @@ import { actions } from 'features/transactionFeeds'
 
 const type = 'transactionFeed'
 
-const EmptyContent = <div className="emptyContainer">
+const emptyListContent = <div className="emptyContainer">
   <p>
-    Transaction feeds can be used to process transactions as they arrive on the
-    blockchain. This is helpful for real-time applications such as notifications
-    or live-updating interfaces.
+    Transaction feeds enable real-time processing of transactions as they arrive on the blockchain.
   </p>
-  <p>
-    Learn more about how transaction feeds can eliminate the need for polling or
-    keeping state in your application by checking out the&nbsp;
-    <a href="/docs/core/build-applications/real-time-transaction-processing" target="_blank">Real-time Transaction Processing</a> guide
-    in the documentation.
-  </p>
+  Learn more about how to use&nbsp;
+  <a href="/docs/core/build-applications/real-time-transaction-processing" target="_blank">transaction feeds</a>.
 </div>
 
 const dispatch = (dispatch) => ({
@@ -41,7 +35,7 @@ export default BaseList.connect(
   BaseList.mapStateToProps(type, ListItem, {
     skipQuery: true,
     label: 'transaction feeds',
-    emptyContent: EmptyContent
+    emptyContent: emptyListContent
   }),
   dispatch
 )

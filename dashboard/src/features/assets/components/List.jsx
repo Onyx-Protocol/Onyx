@@ -4,17 +4,11 @@ import ListItem from './ListItem'
 
 const type = 'asset'
 
-const EmptyContent = <div className="emptyContainer">
+const emptyListContent = <div className="emptyContainer">
   <p>
-    An asset is a type of value that can be issued on a blockchain.
-    All units of a given asset are fungible. Units of an asset can be
-    transacted directly between parties without the involvement of the issuer.
+    Assets are different types of value that may be issued and exchanged on the blockchain.
   </p>
-  <p>
-    Learn more about how to issue assets and transact between parties by
-    checking out the <a href="/docs/core/build-applications/assets" target="_blank">Assets</a> guide
-    in the documentation.
-  </p>
+  Learn more about how to use <a href="/docs/core/build-applications/assets" target="_blank">assets</a>.
 </div>
 
 export default BaseList.connect(
@@ -23,7 +17,7 @@ export default BaseList.connect(
     wrapperProps: {
       titles: ['Asset Alias', 'Asset ID']
     },
-    emptyContent: EmptyContent
+    emptyContent: emptyListContent
   }),
   BaseList.mapDispatchToProps(type)
 )

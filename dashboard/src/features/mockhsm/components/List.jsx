@@ -4,17 +4,11 @@ import ListItem from './ListItem'
 
 const type = 'mockhsm'
 
-const EmptyContent = <div className="emptyContainer">
+const emptyListContent = <div className="emptyContainer">
   <p>
-    Cryptographic private keys are the primary authorization mechanism on a blockchain.
-    They control both the issuance and transfer of assets. For development
-    environments, Chain Core provides a convenient MockHSM.
+    MockHSM keys are used for creating accounts and assets while your application is still in development.
   </p>
-  <p>
-    Learn more about how to create MockHSM keys and use them to sign transactions
-    in the <a href="/docs/core/build-applications/keys" target="_blank">Keys</a> guide
-    of the documentation.
-  </p>
+  Learn more about how to use <a href="/docs/core/build-applications/keys" target="_blank">MockHSM keys</a>.
 </div>
 
 export default BaseList.connect(
@@ -25,7 +19,7 @@ export default BaseList.connect(
     wrapperProps: {
       titles: ['Alias', 'xpub']
     },
-    emptyContent: EmptyContent
+    emptyContent: emptyListContent
   }),
   BaseList.mapDispatchToProps(type)
 )

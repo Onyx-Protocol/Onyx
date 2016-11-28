@@ -5,7 +5,7 @@ import actions from 'actions'
 
 const type = 'transaction'
 
-const EmptyContent = <div>
+const emptyListContent = <div>
   <h2>Welcome to Chain Core!</h2>
   <div className="emptyContainer">
     <p>
@@ -16,11 +16,10 @@ const EmptyContent = <div>
       <li className="emptyListItem"><a href="/assets/create">create an asset</a></li>
     </ol>
     <br />
-    <p>
-      Learn more about how to build transactions and check balances by checking
-      out the <a href="/docs/core/build-applications/transaction-basics" target="_blank">Transactions</a> guide
-      in the documentation.
-    </p>
+    Learn more about how to build, sign, and submit&nbsp;
+    <a href="/docs/core/build-applications/transaction-basics" target="_blank">
+      transactions
+    </a>.
   </div>
 </div>
 
@@ -43,7 +42,7 @@ export default BaseList.connect(
   (state, ownProps) => ({
     ...BaseList.mapStateToProps(type, ListItem)(state, ownProps),
     blockHeight: state.core.blockHeight,
-    emptyContent: EmptyContent
+    emptyContent: emptyListContent
   }),
   (dispatch) => ({
     ...BaseList.mapDispatchToProps(type)(dispatch),
