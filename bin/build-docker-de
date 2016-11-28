@@ -4,7 +4,6 @@ set -xue
 cleanup() {
   rm -f $CHAIN/docker/de/cored
   rm -f $CHAIN/docker/de/corectl
-  rm -f $CHAIN/docker/de/build-cored-release
 }
 trap cleanup EXIT
 
