@@ -23,7 +23,7 @@ import (
 	"chain/protocol/vmutil"
 )
 
-const maxAccountCache = 100
+const maxAccountCache = 1000
 
 var ErrDuplicateAlias = errors.New("duplicate account alias")
 

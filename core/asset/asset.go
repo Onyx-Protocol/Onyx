@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/golang/groupcache/lru"
+	"github.com/golang/groupcache/singleflight"
 	"github.com/lib/pq"
 
 	"chain/core/pin"
@@ -24,7 +25,7 @@ import (
 	"chain/protocol/vmutil"
 )
 
-const maxAssetCache = 100
+const maxAssetCache = 1000
 
 var ErrDuplicateAlias = errors.New("duplicate asset alias")
 
@@ -46,6 +47,9 @@ type Registry struct {
 	indexer          Saver
 	initialBlockHash bc.Hash
 	pinStore         *pin.Store
+
+	idGroup    singleflight.Group
+	aliasGroup singleflight.Group
 
 	cacheMu    sync.Mutex
 	cache      *lru.Cache
@@ -125,10 +129,15 @@ func (reg *Registry) findByID(ctx context.Context, id bc.AssetID) (*Asset, error
 	if ok {
 		return cached.(*Asset), nil
 	}
-	asset, err := assetQuery(ctx, reg.db, "assets.id=$1", id)
+
+	untypedAsset, err := reg.idGroup.Do(id.String(), func() (interface{}, error) {
+		return assetQuery(ctx, reg.db, "assets.id=$1", id)
+	})
 	if err != nil {
 		return nil, err
 	}
+
+	asset := untypedAsset.(*Asset)
 	reg.cacheMu.Lock()
 	reg.cache.Add(id, asset)
 	reg.cacheMu.Unlock()
@@ -144,12 +153,19 @@ func (reg *Registry) FindByAlias(ctx context.Context, alias string) (*Asset, err
 	if ok {
 		return reg.findByID(ctx, cachedID.(bc.AssetID))
 	}
-	a, err := assetQuery(ctx, reg.db, "assets.alias=$1", alias)
+
+	untypedAsset, err := reg.aliasGroup.Do(alias, func() (interface{}, error) {
+		asset, err := assetQuery(ctx, reg.db, "assets.alias=$1", alias)
+		return asset, err
+	})
 	if err != nil {
 		return nil, err
 	}
+
+	a := untypedAsset.(*Asset)
 	reg.cacheMu.Lock()
 	reg.aliasCache.Add(alias, a.AssetID)
+	reg.cache.Add(a.AssetID, a)
 	reg.cacheMu.Unlock()
 	return a, nil
 
