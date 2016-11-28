@@ -1,7 +1,5 @@
 .empty {
-  background: $background-color;
   text-align: center;
-
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -43,6 +41,7 @@
   margin: $gutter-size auto;
   padding: $gutter-size/2;
   text-align: left;
+  background: $background-color;
 
   :global(.emptyList), .emptyList {
     padding-left: $gutter-size/2;
