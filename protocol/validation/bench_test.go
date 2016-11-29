@@ -1,42 +1,55 @@
-package validation
+package validation_test
 
 import (
 	"context"
-	"encoding/json"
-	"io/ioutil"
 	"testing"
+	"time"
 
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 	"chain/protocol/state"
+	"chain/protocol/validation"
 )
 
 func BenchmarkValidateBlock(b *testing.B) {
 	b.StopTimer()
 	ctx := context.Background()
-	jsonBlocks, err := ioutil.ReadFile("./blocks.json")
+
+	c := prottest.NewChain(b)
+	b1, s := c.State()
+
+	// Generate a large block to validate.
+	for i := 0; i < 1000; i++ {
+		err := c.AddTx(ctx, prottest.NewIssuanceTx(b, c))
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+	nextBlock, _, err := c.GenerateBlock(ctx, b1, s, time.Now())
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	var blocks []*bc.Block
-	err = json.Unmarshal(jsonBlocks, &blocks)
-	if err != nil {
-		b.Fatal(err)
-	}
-	if blocks[0].Height != 1 {
-		b.Fatal("first test block must have height 1")
-	}
-	initialBlockHash := blocks[0].Hash()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		var current *bc.Block
-		snapshot := state.Empty()
-		for _, block := range blocks {
-			err := ValidateBlockForAccept(ctx, snapshot, initialBlockHash, current, block, CheckTxWellFormed)
-			if err != nil {
-				b.Fatal(err)
-			}
-			current = block
+		st := state.Copy(s)
+		err := validation.ValidateBlockForAccept(ctx, st, b1.Hash(), b1, nextBlock, validation.CheckTxWellFormed)
+		if err != nil {
+			b.Fatal(err)
 		}
+	}
+}
+
+func BenchmarkCalcMerkleRoot(b *testing.B) {
+	b.StopTimer()
+	c := prottest.NewChain(b)
+	var txs []*bc.Tx
+	for i := 0; i < 5000; i++ {
+		txs = append(txs, prottest.NewIssuanceTx(b, c))
+	}
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		validation.CalcMerkleRoot(txs)
 	}
 }
