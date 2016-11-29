@@ -13,7 +13,7 @@ We don't check `.exe`s into git, so you'll have to provide them yourself. There 
 
 1. `cored.exe`
 2. `ChainMgr.exe`
-3. The Postgres Installer, called `postgresql-9.5.4-2-windows-x64.exe`
+3. The Postgres Installer, called `postgresql-9.5.5-1-windows-x64.exe`
 4. The VC++ Redistributable for Visual Studio 2013 (which is required to run the Postgres Installer), called `vcredist_x64.exe`
 
 You will want to put them into this directory like this:
@@ -26,7 +26,7 @@ You will want to put them into this directory like this:
       | ChainMgr.exe
    |-ChainPackage
    |-Postgres
-      | postgresql-9.5.4-2-windows-x64.exe
+      | postgresql-9.5.5-1-windows-x64.exe
       | vcredist_x64.exe
 ```
 
@@ -72,7 +72,7 @@ candle Bundle.wxs \
   -arch x64 \
   -ext WixBalExtension \
   -dChainPackage.TargetPath='Z:\chain\installer\windows\ChainPackage\ChainCoreInstaller.msi' \
-  -dPostgresPackage.TargetPath='Z:\chain\installer\windows\Postgres\postgresql-9.5.4-2-windows-x64.exe' \
+  -dPostgresPackage.TargetPath='Z:\chain\installer\windows\Postgres\postgresql-9.5.5-1-windows-x64.exe' \
   -dVCRPackage.TargetPath='Z:\chain\installer\windows\Postgres\vcredist_x64.exe'
 ```
 (but obviously sub out your path for my target paths)
