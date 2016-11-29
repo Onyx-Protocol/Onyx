@@ -82,7 +82,6 @@ Promise.all([
   }).then(issuance => signer.sign(issuance))
     .then(signed => client.transactions.submit(signed))
 ).then(() => {
-
   // snippet build-transfer
   const spendPromise = client.transactions.build(function (builder) {
     builder.spendFromAccount({
