@@ -317,23 +317,24 @@ func (n *node) Key() []byte { return byteKey(n.key) }
 
 // Hash will return the hash for this node.
 func (n *node) Hash() bc.Hash {
-	if n.hash != nil {
-		return *n.hash
-	}
-	hash := hashChildren(n.children)
-	n.hash = &hash
-	return hash
+	n.calcHash()
+	return *n.hash
 }
 
-func hashChildren(children [2]*node) (hash bc.Hash) {
-	h := sha3pool.Get256()
-	h.Write(interiorPrefix)
-	for _, c := range children {
-		childHash := c.Hash()
-		h.Write(childHash[:])
+func (n *node) calcHash() {
+	if n.hash != nil {
+		return
 	}
 
+	h := sha3pool.Get256()
+	h.Write(interiorPrefix)
+	for _, c := range n.children {
+		c.calcHash()
+		h.Write(c.hash[:])
+	}
+
+	var hash bc.Hash
 	h.Read(hash[:])
+	n.hash = &hash
 	sha3pool.Put256(h)
-	return hash
 }
