@@ -108,10 +108,8 @@ func (to TxOutput) WitnessHash() Hash {
 	return emptyHash
 }
 
-func (to TxOutput) Commitment() []byte {
-	var buf bytes.Buffer
-	to.OutputCommitment.writeTo(&buf, to.AssetVersion)
-	return buf.Bytes()
+func (to TxOutput) WriteCommitment(w io.Writer) {
+	to.OutputCommitment.writeTo(w, to.AssetVersion)
 }
 
 func (oc OutputCommitment) writeTo(w io.Writer, assetVersion uint64) {

@@ -42,9 +42,15 @@ func OutputKey(o bc.Outpoint) (bkey []byte) {
 	return b.Bytes()
 }
 
+func outputBytes(o *Output) []byte {
+	var b bytes.Buffer
+	o.WriteCommitment(&b)
+	return b.Bytes()
+}
+
 // OutputTreeItem returns the key of an output in the state tree,
 // as well as the output commitment (a second []byte) for Inserts
 // into the state tree.
 func OutputTreeItem(o *Output) (bkey, commitment []byte) {
-	return OutputKey(o.Outpoint), o.Commitment()
+	return OutputKey(o.Outpoint), outputBytes(o)
 }
