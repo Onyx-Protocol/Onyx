@@ -503,7 +503,7 @@ CREATE TABLE snapshots (
 --
 
 CREATE TABLE submitted_txs (
-    tx_id text NOT NULL,
+    tx_hash bytea NOT NULL,
     height bigint NOT NULL,
     submitted_at timestamp without time zone DEFAULT now() NOT NULL
 );
@@ -750,7 +750,7 @@ ALTER TABLE ONLY snapshots
 --
 
 ALTER TABLE ONLY submitted_txs
-    ADD CONSTRAINT submitted_txs_pkey PRIMARY KEY (tx_id);
+    ADD CONSTRAINT submitted_txs_pkey PRIMARY KEY (tx_hash);
 
 
 --
@@ -875,3 +875,4 @@ insert into migrations (filename, hash) values ('2016-11-16.0.account.drop-cp-id
 insert into migrations (filename, hash) values ('2016-11-18.0.account.confirmed-utxos.sql', 'b01e126edfcfe97f94eeda46f5a0eab6752e907104cecf247e90886f92795e94');
 insert into migrations (filename, hash) values ('2016-11-22.0.account.utxos-indexes.sql', 'f3ea43f592cb06a36b040f0b0b9626ee9174d26d36abef44e68114d0c0aace98');
 insert into migrations (filename, hash) values ('2016-11-23.0.query.jsonb-path-ops.sql', 'adb15b9a6b7b223a17dbfd5f669e44c500b343568a563f87e1ae67ba0f938d55');
+insert into migrations (filename, hash) values ('2016-11-28.0.core.submitted-txs-hash.sql', 'cabbd7fd79a2b672b2d3c854783bde3b8245fe666c50261c3335a0c0501ff2ea');

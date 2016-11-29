@@ -73,3 +73,40 @@ func TestAccountTransferSpendChange(t *testing.T) {
 		t.Errorf("len(b.Transactions) = %d, want 1", len(b.Transactions))
 	}
 }
+
+func TestRecordSubmittedTxs(t *testing.T) {
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
+
+	testCases := []struct {
+		hash   bc.Hash
+		height uint64
+		want   uint64
+	}{
+		{
+			hash:   bc.Hash{0x01},
+			height: 2,
+			want:   2,
+		},
+		{
+			hash:   bc.Hash{0x02},
+			height: 3,
+			want:   3,
+		},
+		{
+			hash:   bc.Hash{0x01},
+			height: 3,
+			want:   2,
+		},
+	}
+
+	for i, tc := range testCases {
+		got, err := recordSubmittedTx(ctx, dbtx, tc.hash, tc.height)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != tc.want {
+			t.Errorf("%d: got %d want %d for hash %s", i, got, tc.want, tc.hash)
+		}
+	}
+}
