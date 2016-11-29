@@ -1,0 +1,16 @@
+{
+  "source": {
+    "include": ["./lib"]
+  },
+  "opts": {
+    "readme": "./README.md",
+    "destination": "./doc",
+    "recurse": true,
+    "template": "./node_modules/ink-docstrap/template"
+  },
+  "templates": {
+    "systemName": "Chain Node.js SDK",
+    "theme": "cosmo",
+    "linenums": true
+  }
+}

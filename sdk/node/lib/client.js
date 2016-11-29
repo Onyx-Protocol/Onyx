@@ -3,7 +3,7 @@
 // use the ponyfill for unsupported browsers.
 const { fetch } = require('fetch-ponyfill')()
 
-const accounts = require('./accounts')
+const Accounts = require('./accounts')
 const assets = require('./assets')
 const balances = require('./balances')
 const mockHsm = require('./mockHsm')
@@ -17,15 +17,52 @@ const errors = require('./errors')
  * Chain API Client
  */
 class Client {
+  /**
+   * constructor - create a new Chain client object capable of interacting with
+   * the specified Chain Core
+   *
+   * @param  {string} baseUrl Chain Core URL
+   * @param  {string} token   Chain Core client token for API access
+   * @return {Client}
+   */
   constructor(baseUrl, token) {
     this.baseUrl = baseUrl || 'http://localhost:1999'
     this.token = token || ''
 
-    this.accounts = accounts(this)
+    /**
+     * API actions for accounts
+     * @type {Accounts}
+     */
+    this.accounts = new Accounts(this)
+
+    /**
+     * API actions for assets
+     * @type {Assets}
+     */
     this.assets = assets(this)
+
+    /**
+     * API actions for balances
+     * @type {Balances}
+     */
     this.balances = balances(this)
+
+    /**
+     * API actions for the Mock HSM
+     * @type {MockHSM}
+     */
     this.mockHsm = mockHsm(this)
+
+    /**
+     * API actions for transactions
+     * @type {Transactions}
+     */
     this.transactions = transactions(this)
+
+    /**
+     * API actions for unspent outputs
+     * @type {UnspentOutputs}
+     */
     this.unspentOutputs = unspentOutputs(this)
   }
 
