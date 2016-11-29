@@ -88,7 +88,7 @@ func NewIssuanceInput(nonce []byte, amount uint64, referenceData []byte, initial
 	}
 }
 
-func (t TxInput) AssetAmount() AssetAmount {
+func (t *TxInput) AssetAmount() AssetAmount {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
 		return AssetAmount{
 			AssetID: ii.AssetID(),
@@ -99,7 +99,7 @@ func (t TxInput) AssetAmount() AssetAmount {
 	return si.AssetAmount
 }
 
-func (t TxInput) AssetID() AssetID {
+func (t *TxInput) AssetID() AssetID {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
 		return ii.AssetID()
 	}
@@ -107,7 +107,7 @@ func (t TxInput) AssetID() AssetID {
 	return si.AssetID
 }
 
-func (t TxInput) Amount() uint64 {
+func (t *TxInput) Amount() uint64 {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
 		return ii.Amount
 	}
@@ -115,21 +115,21 @@ func (t TxInput) Amount() uint64 {
 	return si.Amount
 }
 
-func (t TxInput) ControlProgram() []byte {
+func (t *TxInput) ControlProgram() []byte {
 	if si, ok := t.TypedInput.(*SpendInput); ok {
 		return si.ControlProgram
 	}
 	return nil
 }
 
-func (t TxInput) IssuanceProgram() []byte {
+func (t *TxInput) IssuanceProgram() []byte {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
 		return ii.IssuanceProgram
 	}
 	return nil
 }
 
-func (t TxInput) Arguments() [][]byte {
+func (t *TxInput) Arguments() [][]byte {
 	switch inp := t.TypedInput.(type) {
 	case *IssuanceInput:
 		return inp.Arguments
@@ -280,7 +280,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 }
 
 // assumes w has sticky errors
-func (t TxInput) writeTo(w io.Writer, serflags uint8) {
+func (t *TxInput) writeTo(w io.Writer, serflags uint8) {
 	blockchain.WriteVarint63(w, t.AssetVersion) // TODO(bobg): check and return error
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
@@ -294,7 +294,7 @@ func (t TxInput) writeTo(w io.Writer, serflags uint8) {
 	}
 }
 
-func (t TxInput) WriteInputCommitment(w io.Writer) {
+func (t *TxInput) WriteInputCommitment(w io.Writer) {
 	if t.AssetVersion == 1 {
 		switch inp := t.TypedInput.(type) {
 		case *IssuanceInput:
@@ -312,7 +312,7 @@ func (t TxInput) WriteInputCommitment(w io.Writer) {
 	}
 }
 
-func (t TxInput) writeInputWitness(w io.Writer) {
+func (t *TxInput) writeInputWitness(w io.Writer) {
 	if t.AssetVersion == 1 {
 		var arguments [][]byte
 		switch inp := t.TypedInput.(type) {
@@ -331,7 +331,7 @@ func (t TxInput) writeInputWitness(w io.Writer) {
 	}
 }
 
-func (t TxInput) WitnessHash() Hash {
+func (t *TxInput) WitnessHash() Hash {
 	var h Hash
 	sha := sha3pool.Get256()
 	defer sha3pool.Put256(sha)
@@ -340,17 +340,17 @@ func (t TxInput) WitnessHash() Hash {
 	return h
 }
 
-func (t TxInput) Outpoint() (o Outpoint) {
+func (t *TxInput) Outpoint() (o Outpoint) {
 	if si, ok := t.TypedInput.(*SpendInput); ok {
 		o = si.Outpoint
 	}
 	return o
 }
 
-func (si SpendInput) IsIssuance() bool { return false }
+func (si *SpendInput) IsIssuance() bool { return false }
 
-func (ii IssuanceInput) IsIssuance() bool { return true }
+func (ii *IssuanceInput) IsIssuance() bool { return true }
 
-func (ii IssuanceInput) AssetID() AssetID {
+func (ii *IssuanceInput) AssetID() AssetID {
 	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion)
 }
