@@ -52,7 +52,6 @@ func main() {
 		log.Fatal(err)
 	}
 	cur := time.Now().In(pst)
-	log.Println("current time:", cur)
 	max := cur.Add(time.Hour).Weekday()
 	min := cur.Add(-1 * time.Hour).Weekday()
 	if *scheduled && (min != time.Saturday || max != time.Sunday) {
