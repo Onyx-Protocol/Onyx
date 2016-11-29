@@ -52,7 +52,7 @@ func Reconstruct(vals []Leaf) (*Tree, error) {
 		}
 
 		var err error
-		t.root, err = t.insert(t.root, key, hash)
+		t.root, err = t.insert(t.root, key, &hash)
 		if err != nil {
 			return nil, err
 		}
@@ -162,11 +162,11 @@ func (t *Tree) Insert(bkey, val []byte) error {
 	}
 
 	var err error
-	t.root, err = t.insert(t.root, key, hash)
+	t.root, err = t.insert(t.root, key, &hash)
 	return err
 }
 
-func (t *Tree) insert(n *node, key []uint8, hash bc.Hash) (*node, error) {
+func (t *Tree) insert(n *node, key []uint8, hash *bc.Hash) (*node, error) {
 	if bytes.Equal(n.key, key) {
 		if !n.isLeaf {
 			return n, errors.Wrap(ErrPrefix)
@@ -175,7 +175,7 @@ func (t *Tree) insert(n *node, key []uint8, hash bc.Hash) (*node, error) {
 		n = &node{
 			isLeaf: true,
 			key:    n.key,
-			hash:   &hash,
+			hash:   hash,
 		}
 		return n, nil
 	}
@@ -204,7 +204,7 @@ func (t *Tree) insert(n *node, key []uint8, hash bc.Hash) (*node, error) {
 	}
 	newNode.children[key[common]] = &node{
 		key:    key,
-		hash:   &hash,
+		hash:   hash,
 		isLeaf: true,
 	}
 	newNode.children[1-key[common]] = n
