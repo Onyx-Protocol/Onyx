@@ -1,24 +1,20 @@
 import React from 'react'
-import { BaseList } from 'features/shared/components'
+import { BaseList, EmptyContent } from 'features/shared/components'
 import ListItem from './ListItem/ListItem'
 import actions from 'actions'
 
 const type = 'transaction'
 
-const emptyListContent = <div className="emptyContainer">
-  <h2>Welcome to Chain Core!</h2>
-  <div className="emptyContent">
-    To build your first transaction, you will need to:
-    <ol className="emptyList">
-      <li className="emptyListItem"><a href="/accounts/create">create an account</a></li>
-      <li className="emptyListItem"><a href="/assets/create">create an asset</a></li>
-    </ol>
-    Learn more about how to build, sign, and submit&nbsp;
-    <a href="/docs/core/build-applications/transaction-basics" target="_blank">
-      transactions
-    </a>.
-  </div>
-</div>
+const emptyListContent = <EmptyContent title="Welcome to Chain Core!">
+  To build your first transaction, you will need to:
+  <ol>
+    <li><a href="/accounts/create">create an account</a></li>
+    <li><a href="/assets/create">create an asset</a></li>
+  </ol>
+  <a href="/docs/core/build-applications/transaction-basics" target="_blank">
+    Learn more
+  </a> about how to build, sign, and submit transactions.
+</EmptyContent>
 
 class List extends React.Component {
   componentWillReceiveProps(nextProps) {

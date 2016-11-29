@@ -1,24 +1,20 @@
 import React from 'react'
-import { BaseList, TableList } from 'features/shared/components'
+import { BaseList, TableList, EmptyContent } from 'features/shared/components'
 import Item from  './ListItem'
 import actions from 'actions'
 
 const clientType = 'client_access_token'
 const networkType = 'network_access_token'
 
-const emptyContentClient = <div className="emptyContainer">
-  <div className="emptyContent">
-    Client access tokens provide access to accounts, assets, transactions, and
-    other objects on this core. If you're connecting to this core via localhost,
-    you don't need an access token.
-  </div>
-</div>
+const emptyContentClient = <EmptyContent>
+  Client access tokens provide access to accounts, assets, transactions, and
+  other objects on this core. If you're connecting to this core via localhost,
+  you don't need an access token.
+</EmptyContent>
 
-const emptyContentNetwork = <div className="emptyContainer">
-  <div className="emptyContent">
-    Network access tokens allow other Chain Core instances to connect to this core.
-  </div>
-</div>
+const emptyContentNetwork = <EmptyContent>
+  Network access tokens allow other Chain Core instances to connect to this core.
+</EmptyContent>
 
 const stateToProps = (type, emptyListContent) => (state, ownProps) =>
   BaseList.mapStateToProps(type, Item, {

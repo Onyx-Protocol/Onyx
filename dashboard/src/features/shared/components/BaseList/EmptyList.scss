@@ -32,26 +32,3 @@
   padding: 2px 6px;
   font-size: $font-size-section-title;
 }
-
-:global(.emptyContainer), .emptyContainer {
-  margin: $gutter-size auto;
-  width: 350px;
-
-  :global(.emptyContent), .emptyContent {
-    border: 1px solid $border-color;
-    padding: $gutter-size/2;
-    text-align: left;
-    background: $background-color;
-  }
-
-  :global(.emptyList), .emptyList {
-    padding-left: $gutter-size/2;
-    margin-bottom: 0px;
-    padding-top: 10px;
-    padding-bottom: 10px;
-  }
-
-  :global(.emptyListItem), .emptyListItem {
-    padding-left: 6px;
-  }
-}
