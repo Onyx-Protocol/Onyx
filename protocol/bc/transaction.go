@@ -209,26 +209,26 @@ func (tx *TxData) Hash() Hash {
 // WitnessHash is the combined hash of the
 // transactions hash and signature data hash.
 // It is used to compute the TxRoot of a block.
-func (tx *TxData) WitnessHash() Hash {
-	var b bytes.Buffer
+func (tx *TxData) WitnessHash() (hash Hash) {
+	hasher := sha3pool.Get256()
+	defer sha3pool.Put256(hasher)
 
 	txhash := tx.Hash()
-	b.Write(txhash[:])
+	hasher.Write(txhash[:])
 
-	blockchain.WriteVarint31(&b, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
+	blockchain.WriteVarint31(hasher, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
 	for _, txin := range tx.Inputs {
 		h := txin.WitnessHash()
-		b.Write(h[:])
+		hasher.Write(h[:])
 	}
 
-	blockchain.WriteVarint31(&b, uint64(len(tx.Outputs))) // TODO(bobg): check and return error
+	blockchain.WriteVarint31(hasher, uint64(len(tx.Outputs))) // TODO(bobg): check and return error
 	for _, txout := range tx.Outputs {
 		h := txout.WitnessHash()
-		b.Write(h[:])
+		hasher.Write(h[:])
 	}
 
-	var hash Hash
-	sha3pool.Sum256(hash[:], b.Bytes())
+	hasher.Read(hash[:])
 	return hash
 }
 

@@ -3,8 +3,7 @@ package validation
 import (
 	"math"
 
-	"golang.org/x/crypto/sha3"
-
+	"chain/crypto/sha3pool"
 	"chain/protocol/bc"
 )
 
@@ -15,20 +14,34 @@ var (
 
 // CalcMerkleRoot creates a merkle tree from a slice of transactions
 // and returns the root hash of the tree.
-func CalcMerkleRoot(transactions []*bc.Tx) bc.Hash {
+func CalcMerkleRoot(transactions []*bc.Tx) (root bc.Hash) {
 	switch {
 	case len(transactions) == 0:
-		return sha3.Sum256(nil)
+		sha3pool.Sum256(root[:], nil)
+		return root
 
 	case len(transactions) == 1:
+		h := sha3pool.Get256()
+		defer sha3pool.Put256(h)
+
 		witHash := transactions[0].WitnessHash()
-		return sha3.Sum256(append(leafPrefix, witHash[:]...))
+		h.Write(leafPrefix)
+		h.Write(witHash[:])
+		h.Read(root[:])
+		return root
 
 	default:
 		k := prevPowerOfTwo(len(transactions))
 		left := CalcMerkleRoot(transactions[:k])
 		right := CalcMerkleRoot(transactions[k:])
-		return sha3.Sum256(append(append(interiorPrefix, left[:]...), right[:]...))
+
+		h := sha3pool.Get256()
+		defer sha3pool.Put256(h)
+		h.Write(interiorPrefix)
+		h.Write(left[:])
+		h.Write(right[:])
+		h.Read(root[:])
+		return root
 	}
 }
 
