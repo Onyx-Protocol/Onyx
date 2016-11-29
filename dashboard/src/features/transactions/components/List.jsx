@@ -5,17 +5,14 @@ import actions from 'actions'
 
 const type = 'transaction'
 
-const emptyListContent = <div>
+const emptyListContent = <div className="emptyContainer">
   <h2>Welcome to Chain Core!</h2>
-  <div className="emptyContainer">
-    <p>
-      To build your first transaction, you will need to:
-    </p>
+  <div className="emptyContent">
+    To build your first transaction, you will need to:
     <ol className="emptyList">
       <li className="emptyListItem"><a href="/accounts/create">create an account</a></li>
       <li className="emptyListItem"><a href="/assets/create">create an asset</a></li>
     </ol>
-    <br />
     Learn more about how to build, sign, and submit&nbsp;
     <a href="/docs/core/build-applications/transaction-basics" target="_blank">
       transactions

@@ -6,11 +6,13 @@ import { actions } from 'features/transactionFeeds'
 const type = 'transactionFeed'
 
 const emptyListContent = <div className="emptyContainer">
-  <p>
-    Transaction feeds enable real-time processing of transactions as they arrive on the blockchain.
-  </p>
-  Learn more about how to use&nbsp;
-  <a href="/docs/core/build-applications/real-time-transaction-processing" target="_blank">transaction feeds</a>.
+  <div className="emptyContent">
+    <p>
+      Transaction feeds enable real-time processing of transactions as they arrive on the blockchain.
+    </p>
+    Learn more about how to use&nbsp;
+    <a href="/docs/core/build-applications/real-time-transaction-processing" target="_blank">transaction feeds</a>.
+  </div>
 </div>
 
 const dispatch = (dispatch) => ({

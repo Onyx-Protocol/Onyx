@@ -4,8 +4,10 @@ import ListItem from './ListItem'
 
 const type = 'unspent'
 
-const emptyListContent = <div className="emptyLabel">
-  There are no unspent outputs on the blockchain
+const emptyListContent = <div className="emptyContainer">
+  <div className="emptyLabel">
+    There are no unspent outputs on the blockchain
+  </div>
 </div>
 
 const newStateToProps = (state, ownProps) => ({

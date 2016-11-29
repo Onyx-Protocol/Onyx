@@ -5,10 +5,12 @@ import ListItem from './ListItem'
 const type = 'account'
 
 const emptyListContent = <div className="emptyContainer">
-  <p>
-    Accounts are used to store, receive, and transfer assets on the blockchain.
-  </p>
-  Learn more about how to use <a href="/docs/core/build-applications/accounts" target="_blank">accounts</a>.
+  <div className="emptyContent">
+    <p>
+      Accounts are used to store, receive, and transfer assets on the blockchain.
+    </p>
+    Learn more about how to use <a href="/docs/core/build-applications/accounts" target="_blank">accounts</a>.
+  </div>
 </div>
 
 export default BaseList.connect(

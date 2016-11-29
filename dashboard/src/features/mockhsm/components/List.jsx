@@ -5,10 +5,12 @@ import ListItem from './ListItem'
 const type = 'mockhsm'
 
 const emptyListContent = <div className="emptyContainer">
-  <p>
-    MockHSM keys are used for creating accounts and assets while your application is still in development.
-  </p>
-  Learn more about how to use <a href="/docs/core/build-applications/keys" target="_blank">MockHSM keys</a>.
+  <div className="emptyContent">
+    <p>
+      MockHSM keys are used for creating accounts and assets while your application is still in development.
+    </p>
+    Learn more about how to use <a href="/docs/core/build-applications/keys" target="_blank">MockHSM keys</a>.
+  </div>
 </div>
 
 export default BaseList.connect(

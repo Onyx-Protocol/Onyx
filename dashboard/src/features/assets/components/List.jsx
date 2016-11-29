@@ -5,10 +5,12 @@ import ListItem from './ListItem'
 const type = 'asset'
 
 const emptyListContent = <div className="emptyContainer">
-  <p>
-    Assets are different types of value that may be issued and exchanged on the blockchain.
-  </p>
-  Learn more about how to use <a href="/docs/core/build-applications/assets" target="_blank">assets</a>.
+  <div className="emptyContent">
+    <p>
+      Assets are different types of value that may be issued and exchanged on the blockchain.
+    </p>
+    Learn more about how to use <a href="/docs/core/build-applications/assets" target="_blank">assets</a>.
+  </div>
 </div>
 
 export default BaseList.connect(

@@ -21,7 +21,7 @@ class EmptyList extends React.Component {
       </div>
     } else if (!this.props.showFirstTimeFlow) {
       classNames.push(styles.noResults)
-      emptyBlock = <div>
+      emptyBlock = <div className={styles.emptyContainer}>
         <span className={`${styles.emptyLabel} ${styles.noResultsLabel}`}>No results for query:</span>
         <code className={styles.code}>{this.props.currentFilter.filter}</code>
       </div>
