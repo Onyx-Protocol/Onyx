@@ -105,15 +105,15 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
 	blockchain.WriteVarstr31(w, nil)
 }
 
-func (to TxOutput) WitnessHash() Hash {
+func (to *TxOutput) WitnessHash() Hash {
 	return emptyHash
 }
 
-func (to TxOutput) WriteCommitment(w io.Writer) {
+func (to *TxOutput) WriteCommitment(w io.Writer) {
 	to.OutputCommitment.writeTo(w, to.AssetVersion)
 }
 
-func (oc OutputCommitment) writeTo(w io.Writer, assetVersion uint64) {
+func (oc *OutputCommitment) writeTo(w io.Writer, assetVersion uint64) {
 	b := bufpool.Get()
 	defer bufpool.Put(b)
 	if assetVersion == 1 {
