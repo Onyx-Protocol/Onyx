@@ -35,6 +35,27 @@ func BenchmarkInserts(b *testing.B) {
 	}
 }
 
+func BenchmarkInsertsRootHash(b *testing.B) {
+	const nodes = 10000
+	for i := 0; i < b.N; i++ {
+		r := rand.New(rand.NewSource(12345))
+		tr := new(Tree)
+		for j := 0; j < nodes; j++ {
+			var h [32]byte
+			_, err := r.Read(h[:])
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			err = tr.Insert(h[:], h[:])
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+		tr.RootHash()
+	}
+}
+
 func TestRootHashBug(t *testing.T) {
 	tr := new(Tree)
 
