@@ -83,21 +83,9 @@ func TestRecordSubmittedTxs(t *testing.T) {
 		height uint64
 		want   uint64
 	}{
-		{
-			hash:   bc.Hash{0x01},
-			height: 2,
-			want:   2,
-		},
-		{
-			hash:   bc.Hash{0x02},
-			height: 3,
-			want:   3,
-		},
-		{
-			hash:   bc.Hash{0x01},
-			height: 3,
-			want:   2,
-		},
+		{hash: bc.Hash{0x01}, height: 2, want: 2},
+		{hash: bc.Hash{0x02}, height: 3, want: 3},
+		{hash: bc.Hash{0x01}, height: 3, want: 2},
 	}
 
 	for i, tc := range testCases {
