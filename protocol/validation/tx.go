@@ -126,6 +126,7 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 	// of inputs and outputs balance, and check that both input and output sums
 	// are less than 2^63 so that they don't overflow their int64 representation.
 	parity := make(map[bc.AssetID]int64)
+	commitments := make(map[string]int)
 
 	for i, txin := range tx.Inputs {
 		if tx.Version == 1 && txin.AssetVersion != 1 {
@@ -164,12 +165,12 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 			}
 		}
 
-		for j := 0; j < i; j++ {
-			other := tx.Inputs[j]
-			if bytes.Equal(txin.InputCommitmentBytes(), other.InputCommitmentBytes()) {
-				return errors.WithDetailf(ErrBadTx, "input %d is a duplicate of %d", j, i)
-			}
+		buf := new(bytes.Buffer)
+		txin.WriteInputCommitment(buf)
+		if inp, ok := commitments[string(buf.Bytes())]; ok {
+			return errors.WithDetailf(ErrBadTx, "input %d is a duplicate of %d", i, inp)
 		}
+		commitments[string(buf.Bytes())] = i
 	}
 
 	if len(tx.Outputs) > math.MaxInt32 {

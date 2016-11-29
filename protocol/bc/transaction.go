@@ -391,7 +391,6 @@ func writeRefData(w io.Writer, data []byte, serflags byte) {
 	if serflags&SerMetadata != 0 {
 		blockchain.WriteVarstr31(w, data) // TODO(bobg): check and return error
 	} else {
-		h := fastHash(data)
-		blockchain.WriteVarstr31(w, h)
+		writeFastHash(w, data)
 	}
 }
