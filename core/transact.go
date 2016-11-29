@@ -119,18 +119,30 @@ func (h *Handler) submitSingle(ctx context.Context, tpl *txbuilder.Template, wai
 //
 // If the tx has already been submitted, it returns the existing
 // height.
-// TODO(jackson): Prune entries older than some threshold periodically.
-func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHeight uint64) (height uint64, err error) {
-	const q = `
-		WITH inserted AS (
-			INSERT INTO submitted_txs (tx_id, height) VALUES($1, $2)
-			ON CONFLICT DO NOTHING RETURNING height
-		)
-		SELECT height FROM inserted
-		UNION
-		SELECT height FROM submitted_txs WHERE tx_id = $1
+func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHeight uint64) (uint64, error) {
+	const insertQ = `
+		INSERT INTO submitted_txs (tx_hash, height) VALUES($1, $2)
+		ON CONFLICT DO NOTHING
 	`
-	err = db.QueryRow(ctx, q, txHash, currentHeight).Scan(&height)
+	res, err := db.Exec(ctx, insertQ, txHash[:], currentHeight)
+	if err != nil {
+		return 0, err
+	}
+	inserted, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	if inserted == 1 {
+		return currentHeight, nil
+	}
+
+	// The insert didn't affect any rows, meaning there was already an entry
+	// for this transaction hash.
+	const selectQ = `
+		SELECT height FROM submitted_txs WHERE tx_hash = $1
+	`
+	var height uint64
+	err = db.QueryRow(ctx, selectQ, txHash[:]).Scan(&height)
 	return height, err
 }
 

@@ -67,4 +67,9 @@ var migrations = []migration{
 		DROP INDEX annotated_txs_data;
 		CREATE INDEX ON annotated_txs USING GIN (data jsonb_path_ops);
 	`},
+	{Name: "2016-11-28.0.core.submitted-txs-hash.sql", SQL: `
+		ALTER TABLE submitted_txs
+			ALTER COLUMN tx_id SET DATA TYPE bytea USING decode(tx_id,'hex');
+		ALTER TABLE submitted_txs RENAME COLUMN tx_id TO tx_hash;
+	`},
 }
