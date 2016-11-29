@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"chain/errors"
-	"chain/protocol/bc"
+	"chain-stealth/crypto/ca"
+	chainjson "chain-stealth/encoding/json"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
 )
 
 // Template represents a partially- or fully-signed transaction.
@@ -27,7 +29,60 @@ type Template struct {
 	// as a whole, and any change to the tx invalidates the signature.
 	AllowAdditional bool `json:"allow_additional_actions"`
 
+	ConfidentialityInstructions []*ConfidentialityInstruction `json:"confidentiality_instructions"`
+
 	sigHasher *bc.SigHasher
+}
+
+type ConfidentialityInstruction struct {
+	Type                     string             `json:"type"` // 'input' or 'output'
+	Value                    uint64             `json:"value"`
+	AssetID                  bc.AssetID         `json:"asset_id"`
+	AssetCommitment          ca.AssetCommitment `json:"asset_commitment"`
+	ValueBlindingFactor      ca.Scalar          `json:"value_blinding_factor"`
+	CumulativeBlindingFactor ca.Scalar          `json:"cumulative_blinding_factor"`
+}
+
+func (ci *ConfidentialityInstruction) IsInput() bool {
+	return ci.Type == "input"
+}
+
+func (ci *ConfidentialityInstruction) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"type":                       ci.Type,
+		"value":                      ci.Value,
+		"asset_id":                   ci.AssetID.String(),
+		"asset_commitment":           chainjson.HexBytes(ci.AssetCommitment.Bytes()),
+		"value_blinding_factor":      chainjson.HexBytes(ci.ValueBlindingFactor[:]),
+		"cumulative_blinding_factor": chainjson.HexBytes(ci.CumulativeBlindingFactor[:]),
+	})
+}
+
+func (ci *ConfidentialityInstruction) UnmarshalJSON(b []byte) error {
+	var x struct {
+		Type                     string             `json:"type"`
+		Value                    uint64             `json:"value"`
+		AssetID                  bc.AssetID         `json:"asset_id"`
+		AssetCommitment          chainjson.HexBytes `json:"asset_commitment"`
+		ValueBlindingFactor      chainjson.HexBytes `json:"value_blinding_factor"`
+		CumulativeBlindingFactor chainjson.HexBytes `json:"cumulative_blinding_factor"`
+	}
+	err := json.Unmarshal(b, &x)
+	if err != nil {
+		return err
+	}
+	var ac [32]byte
+	copy(ac[:], x.AssetCommitment)
+	err = ci.AssetCommitment.FromBytes(&ac)
+	if err != nil {
+		return err
+	}
+	ci.Type = x.Type
+	ci.Value = x.Value
+	ci.AssetID = x.AssetID
+	copy(ci.ValueBlindingFactor[:], x.ValueBlindingFactor)
+	copy(ci.CumulativeBlindingFactor[:], x.CumulativeBlindingFactor)
+	return nil
 }
 
 func (t *Template) Hash(idx int) bc.Hash {

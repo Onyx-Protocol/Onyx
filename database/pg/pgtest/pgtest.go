@@ -14,9 +14,9 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/database/pg"
-	"chain/database/sql"
-	"chain/testutil"
+	"chain-stealth/database/pg"
+	"chain-stealth/database/sql"
+	"chain-stealth/testutil"
 )
 
 var (

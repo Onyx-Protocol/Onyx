@@ -5,17 +5,18 @@ import (
 	"testing"
 	"time"
 
-	"chain/core/account"
-	"chain/core/asset"
-	"chain/core/coretest"
-	"chain/core/pin"
-	"chain/core/query"
-	"chain/core/txbuilder"
-	"chain/database/pg/pgtest"
-	"chain/protocol/bc"
-	"chain/protocol/mempool"
-	"chain/protocol/prottest"
-	"chain/testutil"
+	"chain-stealth/core/account"
+	"chain-stealth/core/asset"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/core/coretest"
+	"chain-stealth/core/pin"
+	"chain-stealth/core/query"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/mempool"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/testutil"
 )
 
 func TestAccountTransferSpendChange(t *testing.T) {
@@ -24,8 +25,9 @@ func TestAccountTransferSpendChange(t *testing.T) {
 	c := prottest.NewChain(t)
 	p := mempool.New()
 	pinStore := pin.NewStore(db)
-	assets := asset.NewRegistry(db, c, pinStore)
-	accounts := account.NewManager(db, c, pinStore)
+	conf := &confidentiality.Storage{DB: db}
+	assets := asset.NewRegistry(db, c, pinStore, conf)
+	accounts := account.NewManager(db, c, pinStore, conf)
 	coretest.CreatePins(ctx, t, pinStore)
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
 	go accounts.ProcessBlocks(ctx)
@@ -44,7 +46,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 	source := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
 	dest := accounts.NewControlAction(assetAmt, acc.ID, nil)
 
-	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{source, dest}, time.Now().Add(time.Minute))
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{source, dest}, nil, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +63,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 
 	// Add a new source, spending the change output produced above.
 	source = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
-	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{source, dest}, time.Now().Add(time.Minute))
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{source, dest}, nil, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -11,6 +11,7 @@ Chain, Inc. provides production-grade software called [Chain Core](https://chain
 ## Documents
 
 * [Data Model Specification](data.md)
+* [Confidential Assets Specification](confidential-assets.md)
 * [Validation Protocol](validation.md)
 * [Consensus Protocol](consensus.md)
 * [Virtual Machine Specification](vm1.md)

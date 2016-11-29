@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"testing"
 
-	"chain/database/pg"
-	"chain/errors"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
 )
 
 func TestErrInfo(t *testing.T) {

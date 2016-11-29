@@ -6,12 +6,12 @@ import (
 	"context"
 	"fmt"
 
-	"chain/core/mockhsm"
-	"chain/crypto/ed25519"
-	"chain/database/pg"
-	"chain/errors"
-	"chain/protocol"
-	"chain/protocol/bc"
+	"chain-stealth/core/mockhsm"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
 )
 
 // ErrConsensusChange is returned from ValidateAndSignBlock

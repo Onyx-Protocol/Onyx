@@ -3,11 +3,11 @@ package core
 import (
 	"context"
 
-	"chain/core/mockhsm"
-	"chain/core/txbuilder"
-	"chain/crypto/ed25519/chainkd"
-	"chain/errors"
-	"chain/net/http/httpjson"
+	"chain-stealth/core/mockhsm"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/crypto/ed25519/chainkd"
+	"chain-stealth/errors"
+	"chain-stealth/net/http/httpjson"
 )
 
 func (h *Handler) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {

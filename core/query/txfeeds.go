@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"chain/core/txfeed"
-	"chain/errors"
+	"chain-stealth/core/txfeed"
+	"chain-stealth/errors"
 )
 
 // TxFeeds queries the blockchain for txfeeds matching the query.

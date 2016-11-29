@@ -6,9 +6,9 @@ import (
 	"context"
 	"strconv"
 
-	"chain/database/pg"
-	"chain/errors"
-	"chain/log"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/log"
 )
 
 func ListenBlocks(ctx context.Context, dbURL string) (<-chan uint64, error) {

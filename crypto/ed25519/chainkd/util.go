@@ -3,7 +3,7 @@ package chainkd
 import (
 	"io"
 
-	"chain/crypto/ed25519"
+	"chain-stealth/crypto/ed25519"
 )
 
 // Utility functions

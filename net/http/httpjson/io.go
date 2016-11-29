@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"reflect"
 
-	"chain/errors"
-	"chain/log"
+	"chain-stealth/errors"
+	"chain-stealth/log"
 )
 
 // ErrBadRequest indicates the user supplied malformed JSON input,

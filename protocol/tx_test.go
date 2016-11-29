@@ -8,12 +8,12 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"chain/crypto/ed25519"
-	"chain/protocol/bc"
-	"chain/protocol/state"
-	"chain/protocol/vm"
-	"chain/protocol/vmutil"
-	"chain/testutil"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/vm"
+	"chain-stealth/protocol/vmutil"
+	"chain-stealth/testutil"
 )
 
 func TestBadMaxIssuanceWindow(t *testing.T) {
@@ -67,7 +67,7 @@ type testAsset struct {
 func newAsset(t testing.TB) *testAsset {
 	dest := newDest(t)
 	cp, _ := dest.controlProgram()
-	assetID := bc.ComputeAssetID(cp, bc.Hash{}, 1)
+	assetID := bc.ComputeAssetID(cp, bc.Hash{}, 1, 1)
 
 	return &testAsset{
 		AssetID:  assetID,

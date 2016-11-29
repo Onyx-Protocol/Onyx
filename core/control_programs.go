@@ -5,10 +5,10 @@ import (
 	stdjson "encoding/json"
 	"sync"
 
-	"chain/encoding/json"
-	"chain/errors"
-	"chain/net/http/httpjson"
-	"chain/net/http/reqid"
+	"chain-stealth/encoding/json"
+	"chain-stealth/errors"
+	"chain-stealth/net/http/httpjson"
+	"chain-stealth/net/http/reqid"
 )
 
 // POST /create-control-program
@@ -68,13 +68,14 @@ func (h *Handler) createAccountControlProgram(ctx context.Context, input []byte)
 		accountID = acc.ID
 	}
 
-	controlProgram, err := h.Accounts.CreateControlProgram(ctx, accountID, false)
+	controlProgram, key, err := h.Accounts.CreateControlProgram(ctx, accountID, false)
 	if err != nil {
 		return nil, err
 	}
 
 	ret := map[string]interface{}{
-		"control_program": json.HexBytes(controlProgram),
+		"control_program":     json.HexBytes(controlProgram),
+		"confidentiality_key": json.HexBytes(key[:]),
 	}
 	return ret, nil
 }

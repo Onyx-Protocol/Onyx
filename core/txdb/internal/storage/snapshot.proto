@@ -5,9 +5,13 @@ package chain.core.txdb.internal.storage;
 // Snapshot represents a snapshot of the blockchain, including the state
 // tree and issuance memory.
 message Snapshot {
-  // Nodes contains every node within the state tree, including interior nodes.
+  // Nodes contains every node within the v1 state tree, including interior nodes.
   // The nodes are ordered according to a pre-order traversal.
   repeated StateTreeNode nodes = 1;
+
+  // Nodes2 contains every node within the v2 state tree, including interior nodes.
+  // The nodes are ordered according to a pre-order traversal.
+  repeated StateTreeNode nodes2 = 3;
 
   // Issuances contains the record of recent issuances for ensuring uniqueness
   // of issuances.

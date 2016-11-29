@@ -1,6 +1,6 @@
 package vm
 
-import "chain/math/checked"
+import "chain-stealth/math/checked"
 
 func opCat(vm *virtualMachine) error {
 	err := vm.applyCost(4)

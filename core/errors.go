@@ -3,22 +3,22 @@ package core
 import (
 	"context"
 
-	"chain/core/accesstoken"
-	"chain/core/account"
-	"chain/core/asset"
-	"chain/core/blocksigner"
-	"chain/core/config"
-	"chain/core/mockhsm"
-	"chain/core/query"
-	"chain/core/query/filter"
-	"chain/core/rpc"
-	"chain/core/signers"
-	"chain/core/txbuilder"
-	"chain/core/txfeed"
-	"chain/database/pg"
-	"chain/errors"
-	"chain/net/http/httpjson"
-	"chain/protocol"
+	"chain-stealth/core/accesstoken"
+	"chain-stealth/core/account"
+	"chain-stealth/core/asset"
+	"chain-stealth/core/blocksigner"
+	"chain-stealth/core/config"
+	"chain-stealth/core/mockhsm"
+	"chain-stealth/core/query"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/core/rpc"
+	"chain-stealth/core/signers"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/core/txfeed"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/net/http/httpjson"
+	"chain-stealth/protocol"
 )
 
 // errorInfo contains a set of error codes to send to the user.
@@ -113,13 +113,14 @@ var (
 
 		// Transaction error namespace (7xx)
 		// Build error namespace (70x)
-		txbuilder.ErrBadRefData: errorInfo{400, "CH700", "Reference data does not match previous transaction's reference data"},
-		errBadActionType:        errorInfo{400, "CH701", "Invalid action type"},
-		errBadAlias:             errorInfo{400, "CH702", "Invalid alias on action"},
-		errBadAction:            errorInfo{400, "CH703", "Invalid action object"},
-		txbuilder.ErrBadAmount:  errorInfo{400, "CH704", "Invalid asset amount"},
-		txbuilder.ErrBlankCheck: errorInfo{400, "CH705", "Unsafe transaction: leaves assets to be taken without requiring payment"},
-		txbuilder.ErrAction:     errorInfo{400, "CH706", "One or more actions had an error: see attached data"},
+		txbuilder.ErrBadRefData:            errorInfo{400, "CH700", "Reference data does not match previous transaction's reference data"},
+		errBadActionType:                   errorInfo{400, "CH701", "Invalid action type"},
+		errBadAlias:                        errorInfo{400, "CH702", "Invalid alias on action"},
+		errBadAction:                       errorInfo{400, "CH703", "Invalid action object"},
+		txbuilder.ErrBadAmount:             errorInfo{400, "CH704", "Invalid asset amount"},
+		txbuilder.ErrBlankCheck:            errorInfo{400, "CH705", "Unsafe transaction: leaves assets to be taken without requiring payment"},
+		txbuilder.ErrAction:                errorInfo{400, "CH706", "One or more actions had an error: see attached data"},
+		txbuilder.ErrBadConfidentialityKey: errorInfo{400, "CH707", "A confidentiality key doesn't match the stored key for a control program"},
 
 		// Submit error namespace (73x)
 		txbuilder.ErrMissingRawTx:          errorInfo{400, "CH730", "Missing raw transaction"},

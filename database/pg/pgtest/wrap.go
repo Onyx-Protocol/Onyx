@@ -7,7 +7,7 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/database/sql"
+	"chain-stealth/database/sql"
 )
 
 // WrapDB opens a new connection to the database at the provided URL,

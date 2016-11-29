@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"chain/errors"
-	"chain/net/http/reqid"
+	"chain-stealth/errors"
+	"chain-stealth/net/http/reqid"
 )
 
 // Chain-specific header fields

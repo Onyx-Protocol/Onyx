@@ -5,16 +5,16 @@ import (
 	"testing"
 	"time"
 
-	"chain/crypto/ed25519"
-	"chain/database/pg/pgtest"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/mempool"
-	"chain/protocol/prottest"
-	"chain/protocol/state"
-	"chain/protocol/validation"
-	"chain/protocol/vm"
-	"chain/testutil"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/mempool"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/validation"
+	"chain-stealth/protocol/vm"
+	"chain-stealth/testutil"
 )
 
 func TestGeneratorRecovery(t *testing.T) {

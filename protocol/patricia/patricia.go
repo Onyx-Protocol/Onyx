@@ -14,9 +14,9 @@ package patricia
 import (
 	"bytes"
 
-	"chain/crypto/sha3pool"
-	"chain/errors"
-	"chain/protocol/bc"
+	"chain-stealth/crypto/sha3pool"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
 )
 
 // ErrPrefix is returned from Insert or Delete if

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"chain/errors"
+	"chain-stealth/errors"
 )
 
 var wd, _ = os.Getwd()

@@ -5,13 +5,15 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg/pgtest"
-	"chain/protocol/prottest"
-	"chain/testutil"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/testutil"
 )
 
 func TestAnnotateTxs(t *testing.T) {
-	reg := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
+	db := pgtest.NewTx(t)
+	reg := NewRegistry(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 
 	tags1 := map[string]interface{}{"foo": "bar"}
@@ -40,6 +42,7 @@ func TestAnnotateTxs(t *testing.T) {
 				map[string]interface{}{
 					"asset_id": "unknown",
 				},
+				map[string]interface{}{}, // no asset ID (confidential)
 			},
 			"outputs": []interface{}{
 				map[string]interface{}{
@@ -51,6 +54,7 @@ func TestAnnotateTxs(t *testing.T) {
 				map[string]interface{}{
 					"asset_id": "unknown",
 				},
+				map[string]interface{}{}, // no asset ID (confidential)
 			},
 		},
 	}
@@ -75,6 +79,9 @@ func TestAnnotateTxs(t *testing.T) {
 					"asset_is_local":   "no",
 					"asset_definition": map[string]interface{}{},
 				},
+				map[string]interface{}{
+					"asset_is_local": "no",
+				},
 			},
 			"outputs": []interface{}{
 				map[string]interface{}{
@@ -95,11 +102,14 @@ func TestAnnotateTxs(t *testing.T) {
 					"asset_is_local":   "no",
 					"asset_definition": map[string]interface{}{},
 				},
+				map[string]interface{}{
+					"asset_is_local": "no",
+				},
 			},
 		},
 	}
 
-	err = reg.AnnotateTxs(ctx, txs)
+	err = reg.AnnotateTxs(ctx, txs, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

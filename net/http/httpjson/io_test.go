@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"chain/log"
+	"chain-stealth/log"
 )
 
 func TestWriteArray(t *testing.T) {

@@ -52,6 +52,7 @@ var config = getConfig({
 
   // Proxy API requests to local core server
   devServer: {
+    port: process.env.PORT || 3000,
     proxy: {
       context: '/api',
       options: {

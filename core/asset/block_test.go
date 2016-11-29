@@ -5,11 +5,13 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/crypto/ed25519"
-	"chain/database/pg/pgtest"
-	"chain/protocol/bc"
-	"chain/protocol/prottest"
-	"chain/testutil"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/crypto/ca"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/testutil"
 )
 
 const def = `{"currency":"USD"}`
@@ -21,7 +23,8 @@ func (f fakeSaver) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, o
 }
 
 func TestIndexNonLocalAssets(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
+	db := pgtest.NewTx(t)
+	r := NewRegistry(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 
 	// Create a local asset which should be unaffected by a block landing.
@@ -35,6 +38,12 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	txin, _, err := bc.NewConfidentialIssuanceInput([]byte{0x01}, 10000, nil, local.InitialBlockHash, local.IssuanceProgram, nil, ca.RecordKey{0x01})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Height: 22,
@@ -45,28 +54,22 @@ func TestIndexNonLocalAssets(t *testing.T) {
 					Inputs: []*bc.TxInput{
 						{ // non-local asset
 							AssetVersion: 1,
-							TypedInput: &bc.IssuanceInput{
-								InitialBlock:    r.initialBlockHash,
-								Amount:          10000,
-								IssuanceProgram: issuanceProgram,
-								VMVersion:       1,
+							TypedInput: &bc.IssuanceInput1{
+								Amount: 10000,
+								AssetWitness: bc.AssetWitness{
+									InitialBlock:    r.initialBlockHash,
+									IssuanceProgram: issuanceProgram,
+									VMVersion:       1,
+								},
 							},
 						},
-						{ // local asset
-							AssetVersion: 1,
-							TypedInput: &bc.IssuanceInput{
-								InitialBlock:    r.initialBlockHash,
-								Amount:          10000,
-								IssuanceProgram: local.IssuanceProgram,
-								VMVersion:       1,
-							},
-						},
+						txin, // local asset
 					},
 				},
 			},
 		},
 	}
-	remoteAssetID := b.Transactions[0].Inputs[0].AssetID()
+	remoteAssetID, _ := b.Transactions[0].Inputs[0].AssetID()
 
 	var assetsSaved []bc.AssetID
 	r.indexer = fakeSaver(func(ctx context.Context, assetID bc.AssetID, obj map[string]interface{}, sortID string) error {

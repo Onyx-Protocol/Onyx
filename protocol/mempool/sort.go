@@ -1,6 +1,6 @@
 package mempool
 
-import "chain/protocol/bc"
+import "chain-stealth/protocol/bc"
 
 func topSort(txs []*bc.Tx) []*bc.Tx {
 	if len(txs) == 1 {
@@ -16,10 +16,11 @@ func topSort(txs []*bc.Tx) []*bc.Tx {
 	children := make(map[bc.Hash][]bc.Hash)
 	for node, tx := range nodes {
 		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
+			outpoint, ok := in.Outpoint()
+			if !ok {
 				continue
 			}
-			if prev := in.Outpoint().Hash; nodes[prev] != nil {
+			if prev := outpoint.Hash; nodes[prev] != nil {
 				if children[prev] == nil {
 					children[prev] = make([]bc.Hash, 0, 1)
 				}
@@ -67,10 +68,11 @@ func isTopSorted(txs []*bc.Tx) bool {
 	}
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
+			outpoint, ok := in.Outpoint()
+			if !ok {
 				continue
 			}
-			h := in.Outpoint().Hash
+			h := outpoint.Hash
 			if exists[h] && !seen[h] {
 				return false
 			}

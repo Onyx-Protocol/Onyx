@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"chain/errors"
-	"chain/protocol/bc"
-	"chain/protocol/state"
-	"chain/protocol/validation"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/validation"
 )
 
 // Recover performs crash recovery, restoring the blockchain
@@ -51,9 +51,13 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "applying block")
 		}
-		if b.AssetsMerkleRoot != snapshot.Tree.RootHash() {
-			return nil, nil, fmt.Errorf("block %d has state root %s; snapshot has root %s",
-				b.Height, b.AssetsMerkleRoot, snapshot.Tree.RootHash())
+		if b.AssetsMerkleRoot1 != snapshot.Tree1.RootHash() {
+			return nil, nil, fmt.Errorf("block %d has state (v1) root %s; snapshot has root %s",
+				b.Height, b.AssetsMerkleRoot1, snapshot.Tree1.RootHash())
+		}
+		if b.Version == 2 && b.AssetsMerkleRoot2 != snapshot.Tree2.RootHash() {
+			return nil, nil, fmt.Errorf("block %d has state (v2) root %s; snapshot has root %s",
+				b.Height, b.AssetsMerkleRoot2, snapshot.Tree2.RootHash())
 		}
 	}
 	if b != nil {

@@ -5,12 +5,12 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg"
-	"chain/database/pg/pgtest"
-	"chain/database/sql"
-	"chain/errors"
-	"chain/protocol/bc"
-	"chain/testutil"
+	"chain-stealth/database/pg"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/database/sql"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/testutil"
 )
 
 func TestGetBlock(t *testing.T) {
@@ -41,7 +41,7 @@ func TestGetBlock(t *testing.T) {
 				'A', 'B', 'C', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			},
-			AssetsMerkleRoot: bc.Hash{
+			AssetsMerkleRoot1: bc.Hash{
 				'X', 'Y', 'Z', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			},

@@ -5,13 +5,15 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg/pgtest"
-	"chain/protocol/prottest"
-	"chain/testutil"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/testutil"
 )
 
 func TestDefineAsset(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
+	db := pgtest.NewTx(t)
+	r := NewRegistry(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 
 	keys := []string{testutil.TestXPub.String()}
@@ -36,7 +38,8 @@ func TestDefineAsset(t *testing.T) {
 }
 
 func TestDefineAssetIdempotency(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
+	db := pgtest.NewTx(t)
+	r := NewRegistry(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 	token := "test_token"
 	keys := []string{testutil.TestXPub.String()}
@@ -56,7 +59,8 @@ func TestDefineAssetIdempotency(t *testing.T) {
 }
 
 func TestFindAssetByID(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
+	db := pgtest.NewTx(t)
+	r := NewRegistry(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 	keys := []string{testutil.TestXPub.String()}
 	asset, err := r.Define(ctx, keys, 1, nil, "", nil, nil)
@@ -74,7 +78,8 @@ func TestFindAssetByID(t *testing.T) {
 }
 
 func TestAssetByClientToken(t *testing.T) {
-	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
+	db := pgtest.NewTx(t)
+	r := NewRegistry(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 	keys := []string{testutil.TestXPub.String()}
 	token := "test_token"

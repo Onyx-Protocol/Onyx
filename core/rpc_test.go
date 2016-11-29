@@ -5,10 +5,10 @@ import (
 	"context"
 	"testing"
 
-	"chain/core/txdb"
-	"chain/database/pg/pgtest"
-	"chain/protocol/prottest"
-	"chain/testutil"
+	"chain-stealth/core/txdb"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/testutil"
 )
 
 func TestGetBlock(t *testing.T) {

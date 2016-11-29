@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 
-	"chain/errors"
+	"chain-stealth/errors"
 )
 
 var ErrBadRequest = errors.New("bad request")

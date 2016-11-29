@@ -11,7 +11,8 @@
   * [Check block is well-formed](#check-block-is-well-formed)
   * [Validate block](#validate-block)
   * [Validate transaction](#validate-transaction)
-  * [Validate transaction input](#validate-transaction-input)
+  * [Validate transaction input version 1](#validate-transaction-input-version-1)
+  * [Validate transaction input version 2](#validate-transaction-input-version-2)
   * [Check transaction is well-formed](#check-transaction-is-well-formed)
   * [Apply block](#apply-block)
   * [Apply transaction](#apply-transaction)
@@ -46,7 +47,8 @@ A *blockchain state* comprises:
 
 * A [block header](data.md#block-header).
 * A *timestamp* equal to the timestamp in the [block header](data.md#block-header).
-* The set of [non-retired](data.md#retired-asset) unspent outputs in the block’s [assets merkle tree](data.md#assets-merkle-root).
+* The set of [non-retired](data.md#retired-asset) unspent outputs with asset version 1 in the block’s [assets merkle tree v1](data.md#assets-merkle-root-version-1).
+* The set of [non-retired](data.md#retired-asset) unspent outputs with asset version 2 in the block’s [assets merkle tree v2](data.md#assets-merkle-root-version-2).
 * An *issuance memory*: a set of (issuance hash, expiration timestamp) pairs. It records recent issuance inputs in the state in order to detect duplicates.
 
 
@@ -79,10 +81,11 @@ A new node starts here when joining a new network (with height = 1).
 
 1. [Make an initial block](#make-initial-block) with the input block’s timestamp and [consensus program](data.md#consensus-program).
 2. The created block must equal the input block; if not, halt and return false.
-3. Allocate an empty unspent output set.
-4. The initial block and these empty sets together constitute the *initial state*.
-5. Assign the initial state to the current blockchain state.
-6. Return true.
+3. Allocate empty unspent output sets for assets version 1 and 2.
+4. Allocate an empty issuance memory set.
+5. The initial block and these empty sets together constitute the *initial state*.
+6. Assign the initial state to the current blockchain state.
+7. Return true.
 
 
 ### Join existing network
@@ -97,8 +100,13 @@ A new node starts here when joining a running network (with height > 1). In that
 
 **Algorithm:**
 
-1. Compute the [assets merkle root](data.md#assets-merkle-root) of the state.
-2. The block commitment in the input state must contain the computed assets merkle root; if not, halt and return false.
+1. If block version is 1:
+    1. Compute the [assets merkle root version 1](data.md#assets-merkle-root-version-1) of the state.
+    2. The block commitment in the input state must contain the computed assets merkle root; if not, halt and return false.
+2. If block version is 2:
+    1. Compute the [assets merkle root version 1](data.md#assets-merkle-root-version-1) of the state.
+    2. Compute the [assets merkle root version 2](data.md#assets-merkle-root-version-2) of the state.
+    3. The block commitment in the input state must contain both computed assets merkle roots; if not, halt and return false.
 3. Assign the input state to the current blockchain state.
 4. Return true.
 
@@ -142,11 +150,16 @@ A new node starts here when joining a running network (with height > 1). In that
 
 **Algorithm:**
 
-1. [Evaluate](#evaluate-predicate) the [consensus program](data.md#consensus-program) of the blockchain state as a predicate using VM version 1 with the program arguments of the block witness initializing the data stack.
-2. [Validate the block](#validate-block) with respect to the current blockchain state; if invalid, halt and return false.
-3. [Apply the block](#apply-block) to the current blockchain state, yielding a new state.
-4. Replace the current blockchain state with the new state.
-5. Return true.
+1. [Evaluate](#evaluate-predicate) the [consensus program](data.md#consensus-program) of the blockchain state as a predicate using:
+    * VM version 1,
+    * program arguments of the block witness initializing the data stack,
+    * context: [block](vm1.md#vm-state),
+    * [Expansion Reserved](vm1.md#vm-state) set to `true`.
+2. If the evaluation returns false, halt and return false.
+3. [Validate the block](#validate-block) with respect to the current blockchain state; if invalid, halt and return false.
+4. [Apply the block](#apply-block) to the current blockchain state, yielding a new state.
+5. Replace the current blockchain state with the new state.
+6. Return true.
 
 
 
@@ -181,18 +194,25 @@ A new node starts here when joining a running network (with height > 1). In that
 2. Test that the block’s version is greater or equal the block version in the blockchain state; if not, halt and return false.
 3. Test that the block contains the [block witness](data.md#block-witness) and the list of transactions (e.g. serialized with [flags](data.md#block-serialization-flags) 0x03); otherwise, halt and return false.
 4. If the block’s version is 1:
-    * Test that the [block commitment](data.md#block-commitment) contains only the fields defined in this version of the protocol; if it contains additional fields, halt and return false.
+    * Test that the [block commitment](data.md#block-commitment) contains only the fields defined in the version 1 of the protocol; if it contains additional fields, halt and return false.
     * Test that the [block witness](data.md#block-witness) contains only a program arguments field; if it contains additional fields, halt and return false.
-5. Test that the block’s [height](data.md#block) is one greater than the height of the blockchain state; if not, halt and return false.
-6. Test that the block’s [previous block ID](data.md#block) is equal to the [block ID](data.md#block-id) of the state; if not, halt and return false.
-7. Test that the block’s timestamp is greater than the timestamp of the blockchain state; if not, halt and return false.
-8. Let S be the input blockchain state.
-9. For each transaction in the block, in order:
+5. If the block’s version is 2:
+    * Test that the [block commitment](data.md#block-commitment) contains only the fields defined in the version 2 of the protocol; if it contains additional fields, halt and return false.
+    * Test that the [block witness](data.md#block-witness) contains only a program arguments field; if it contains additional fields, halt and return false.
+6. Test that the block’s [height](data.md#block) is one greater than the height of the blockchain state; if not, halt and return false.
+7. Test that the block’s [previous block ID](data.md#block) is equal to the [block ID](data.md#block-id) of the state; if not, halt and return false.
+8. Test that the block’s timestamp is greater than the timestamp of the blockchain state; if not, halt and return false.
+9. Let S be the input blockchain state.
+10. For each transaction in the block, in order:
     1. [Validate the transaction](#validate-transaction) with respect to S; if invalid, halt and return false.
     2. [Apply the transaction](#apply-transaction) to S, yielding a new state S′.
-    3. Test that [assets merkle root](data.md#assets-merkle-root) of S′ is equal to the assets merkle root declared in the block commitment; if not, halt and return false.
-    4. Replace S with S′.
-10. Return true.
+    3. If the block’s version is 1:
+        1. Test that [assets merkle roots version 1](data.md#assets-merkle-root-version-1) of S′ is equal to the assets merkle root declared in the block commitment; if not, halt and return false.
+    4. If the block’s version is 2:
+        1. Test that [assets merkle roots version 1](data.md#assets-merkle-root-version-1) of S′ is equal to the assets merkle root version 1 declared in the block commitment; if not, halt and return false.
+        2. Test that [assets merkle roots version 2](data.md#assets-merkle-root-version-1) of S′ is equal to the assets merkle root version 2 declared in the block commitment; if not, halt and return false.
+    5. Replace S with S′.
+11. Return true.
 
 
 
@@ -212,23 +232,23 @@ A transaction is said to be *valid* with respect to a particular blockchain stat
 1. Test that the [transaction is well-formed](#check-transaction-is-well-formed); if not, halt and return false.
 2. If the block version in the blockchain state is 1:
     1. Test that transaction version equals 1. If it is not, halt and return false.
-3. If the transaction minimum time is greater than zero:
+3. If the block version in the blockchain state is 2:
+    1. Test that transaction version equals 1 or 2. If it is not, halt and return false.
+4. If the transaction minimum time is greater than zero:
     1. Test that the timestamp of the blockchain state is greater than or equal to the transaction minimum time; if not, halt and return false.
-4. If the transaction maximum time is greater than zero:
+5. If the transaction maximum time is greater than zero:
     1. Test that the timestamp of the blockchain state is less than or equal to the transaction maximum time; if not, halt and return false.
-5. If all inputs in transaction are [issuance with asset version 1](data.md#asset-version-1-issuance-commitment), test if at least one of them has a non-empty nonce. If all have empty nonces, halt and return false.
-    * Note: this means that transaction uniqueness is guaranteed not only by spending inputs and issuance inputs with non-empty nonce, but also by future inputs of unknown asset versions. The future asset versions will provide rules enforcing transaction uniqueness.
-6. For each [issuance input with asset version 1](data.md#asset-version-1-issuance-commitment) and a non-empty nonce, test the following conditions. If any condition is not satisfied, halt and return false:
+6. For each issuance input with asset version [1](data.md#asset-version-1-issuance-commitment) or [2](data.md#asset-version-1-issuance-commitment) and a non-empty nonce, test the following conditions. If any condition is not satisfied, halt and return false:
     1. Both transaction minimum and maximum timestamps are not zero.
     2. State’s timestamp is greater or equal to the transaction minimum timestamp.
     3. State’s timestamp is less or equal to the transaction maximum timestamp.
     4. Input’s [issuance hash](data.md#issuance-hash) does not appear in the state’s issuance memory.
-7. For every input in the transaction with asset version equal 1, [validate that input](#validate-transaction-input) with respect to the blockchain state; if invalid, halt and return false.
-8. Return true.
+7. For every input in the transaction with asset version equal 1, [validate that input](#validate-transaction-input-1) with respect to the blockchain state; if invalid, halt and return false.
+8. For every input in the transaction with asset version equal 2, [validate that input](#validate-transaction-input-2) with respect to the blockchain state; if invalid, halt and return false.
+9. Return true.
 
 
-
-### Validate transaction input
+### Validate transaction input version 1
 
 **Inputs:**
 
@@ -239,16 +259,67 @@ A transaction is said to be *valid* with respect to a particular blockchain stat
 
 **Algorithm:**
 
-1. If the input is an *issuance*:
+1. If the input is an issuance:
     1. Test that the *initial block ID* declared in the witness matches the initial block ID of the current blockchain; if not, halt and return false.
-    2. Compute [asset ID](data.md#asset-id) from the initial block ID, asset version 1, and the *VM version* and *issuance program* declared in the witness. If the resulting asset ID is not equal to the declared asset ID in the issuance commitment, halt and return false.
-    3. [Evaluate](#evaluate-predicate) its [issuance program](data.md#issuance-program), for the VM version specified in the issuance commitment and with the [input witness](data.md#transaction-input-witness) [program arguments](data.md#program-arguments); if execution fails, halt and return false.
-2. If the input is a *spend*:
+    2. Compute [asset ID](data.md#asset-id) from the initial block ID, input’s asset version, and the *VM version* and *issuance program* declared in the witness. If the resulting asset ID is not equal to the declared asset ID in the issuance commitment, halt and return false.
+    3. [Evaluate](#evaluate-predicate) its [issuance program](data.md#issuance-program) with:
+        * VM version as specified in the issuance commitment,
+        * arguments as specified in the [input witness](data.md#transaction-input-witness) [program arguments](data.md#program-arguments),
+        * context: [asset version 1](vm1.md#asset-version-1-context),
+        * [Expansion Reserved](vm1.md#vm-state) set to `true` if transaction version is 1 or 2, otherwise set to `false`.
+    4. If the evaluation returns false, halt and return false.
+2. If the input is a spend:
     1. Load an output from the state as identified by the input’s [spent output reference](data.md#outpoint), yielding a *previous output*.
     2. If the previous output does not exist, halt and return false.
-    3. [Evaluate](#evaluate-predicate) the previous output’s control program, for the VM version specified in the previous output and with the [input witness](data.md#transaction-input-witness) program arguments.
+    3. [Evaluate](#evaluate-predicate) the previous output’s control program with:
+        * VM version set the one specified in the previous output,
+        * arguments as specified in the [input witness](data.md#transaction-input-witness) program arguments,
+        * context: [asset version 1](vm1.md#asset-version-1-context),
+        * [Expansion Reserved](vm1.md#vm-state) set to `true` if transaction version is 1 or 2, otherwise set to `false`.
     4. If the evaluation returns false, halt and return false.
 3. Return true.
+
+
+### Validate transaction input version 2
+
+**Inputs:**
+
+1. transaction input with asset version 2,
+2. blockchain state.
+
+**Output:** true or false.
+
+**Algorithm:**
+
+1. If the input is an issuance:
+    1. For each choice in the list of [Asset Issuance Choices](data.md#asset-issuance-choice):
+        1. Test that the *initial block ID* declared in the witness matches the initial block ID of the current blockchain; if not, halt and return false.
+        2. Compute the [asset ID](data.md#asset-id) from the initial block ID, asset version 2, and the *VM version* and *issuance program* declared in the asset issuance choice.
+        3. [Evaluate](#evaluate-predicate) the asset ID’s [issuance program](data.md#issuance-program) with:
+            * VM version as specified in the issuance commitment,
+            * arguments as specified in the choice program arguments,
+            * context: [asset version 2 issuance choice](vm1.md#asset-version-2-issuance-choice-context),
+            * [Expansion Reserved](vm1.md#vm-state) set to `true` if transaction version is 1 or 2, otherwise set to `false`.
+        4. If the evaluation returns false, halt and return false.
+    2. [Evaluate](#evaluate-predicate) the issuance signature program specified in the [issuance range proof](confidential-asset.md#asset-issuance-range-proof) with:
+        * VM version as specified in the issuance commitment,
+        * arguments as specified in the choice program arguments,
+        * context: [asset version 2 input](vm1.md#asset-version-2-input-context),
+        * [Expansion Reserved](vm1.md#vm-state) set to `true` if transaction version is 1 or 2, otherwise set to `false`.
+    3. If the evaluation returns false, halt and return false.
+        from the witness with the program arguments specified in the witness; if execution fails, halt and return false.
+2. If the input is a spend:
+    1. Load an output from the state as identified by the input’s [spent output reference](data.md#outpoint), yielding a *previous output*.
+    2. If the previous output does not exist, halt and return false.
+    3. [Evaluate](#evaluate-predicate) the previous output’s control program with:
+        * VM version set the one specified in the previous output,
+        * arguments as specified in the [input witness](data.md#transaction-input-witness) program arguments,
+        * context: [asset version 2 input](vm1.md#asset-version-2-input),
+        * [Expansion Reserved](vm1.md#vm-state) set to `true` if transaction version is 1 or 2, otherwise set to `false`.
+    4. If the evaluation returns false, halt and return false.
+3. Return true.
+
+Note: validity of the issuance range proofs is verified earlier using [Check transaction is well-formed](#check-transaction-is-well-formed) procedure.
 
 
 ### Check transaction is well-formed
@@ -263,24 +334,35 @@ A transaction is said to be *valid* with respect to a particular blockchain stat
 2. Test that the transaction has at least one input; if not, halt and return false.
 3. Ensure that each [input commitment](data.md#transaction-input-commitment) appears only once; if there is a duplicate, halt and return false.
 4. If the transaction maximum time is greater than zero test that it is greater than or equal to the minimum time; if not, halt and return false.
-5. If transaction version equals 1, check each of the following conditions. If any are not satisfied, halt and return false:
-    1. [Transaction common fields](data.md#transaction-common-fields) string must contain only the fields defined in this version of the protocol (no additional data included).
+5. If all inputs in transaction are [issuances with asset version 1](data.md#asset-version-1-issuance-commitment) or [issuances with asset version 2](data.md#asset-version-2-issuance-commitment), test if at least one of them has a non-empty nonce. If all have empty nonces, halt and return false.
+    * Note: this means that transaction uniqueness is guaranteed not only by spending inputs and issuance inputs with non-empty nonce, but also by future inputs of unknown asset versions. The future asset versions will provide rules enforcing transaction uniqueness.
+6. If transaction version equals 1, check each of the following conditions. If any are not satisfied, halt and return false:
+    1. [Transaction common fields](data.md#transaction-common-fields) string must contain only the fields defined in the version 1 of the protocol (no additional data included).
     2. Every [input](data.md#transaction-input) [asset version](data.md#asset-version) must equal 1.
     3. Every [output](data.md#transaction-output) [asset version](data.md#asset-version) must equal 1.
     4. For each input, test that the [input commitment](data.md#transaction-input-commitment) contains only the fields defined in this version of the protocol (no additional data included).
     5. For each output, test that the [output commitment](data.md#transaction-output-commitment) contains only the fields defined in this version of the protocol (no additional data included); if not, halt and return false.
     6. Test that all VM versions in the transaction are 1 (including the VM version in the [issuance input witness](data.md#asset-version-1-issuance-witness)); if not, halt and return false.
-    7. Every control program must not contain any [expansion opcodes](vm1.md#expansion-opcodes).
-    8. Note: unknown suffixes (additional fields) in [transaction common witness](data.md#transaction-common-witness), [input witnesses](data.md#transaction-input-witness) and [output witnesses](data.md#transaction-output-witness) are not checked here; they are permitted.
-6. For inputs and outputs with asset version 1:
+    7. Note: unknown suffixes (additional fields) in [transaction common witness](data.md#transaction-common-witness), [input witnesses](data.md#transaction-input-witness) and [output witnesses](data.md#transaction-output-witness) are not checked here; they are permitted.
+7. If transaction version equals 2, check each of the following conditions. If any are not satisfied, halt and return false:
+    1. [Transaction common fields](data.md#transaction-common-fields) string must contain only the fields defined in the version 2 of the protocol (no additional data included).
+    2. Every [input](data.md#transaction-input) [asset version](data.md#asset-version) must equal 1 or 2.
+    3. Every [output](data.md#transaction-output) [asset version](data.md#asset-version) must equal 1 or 2.
+    4. For each input, test that the [input commitment](data.md#transaction-input-commitment) contains only the fields defined in this version of the protocol (no additional data included).
+    5. For each output, test that the [output commitment](data.md#transaction-output-commitment) contains only the fields defined in this version of the protocol (no additional data included); if not, halt and return false.
+    6. Test that all VM versions in the transaction are 1 (including the VM version in the [issuance input witness](data.md#asset-version-1-issuance-witness)); if not, halt and return false.
+    7. Note: unknown suffixes (additional fields) in [transaction common witness](data.md#transaction-common-witness), [input witnesses](data.md#transaction-input-witness) and [output witnesses](data.md#transaction-output-witness) are not checked here; they are permitted.
+8. For inputs and outputs with asset version 1:
     1. For each asset on these inputs and outputs:
         1. Sum the input amounts of that asset and sum the output amounts of that asset.
         2. Test that both input and output sums are less than 2<sup>63</sup>; if not, halt and return false.
         3. Test that the input sum equals the output sum; if not, halt and return false.
         4. Check that there is at least one input with that asset ID; if not, halt and return false.
-7. Return true.
+9. For inputs and outputs with asset version 2:
+    1. [Verify confidential assets](confidential-assets.md#verify-transaction) using all inputs and outputs with asset version 2. For issuance inputs derive list of asset IDs from the [Asset Issuance Choice](data.md#asset-issuance-choice) instances. If verification fails, halt and return false.
+10. Return true.
 
-Note: requirement for the input and output sums to be below 2<sup>63</sup> implies that all intermediate sums and individual amounts must also be below 2<sup>63</sup> which simplifies implementation that uses native 64-bit unsigned integers.
+Note: requirement for the input and output sums (for assets version 1) to be below 2<sup>63</sup> implies that all intermediate sums and individual amounts must also be below 2<sup>63</sup> which simplifies implementation that uses native 64-bit unsigned integers.
 
 
 
@@ -318,14 +400,20 @@ Note: requirement for the input and output sums to be below 2<sup>63</sup> impli
 1. For each spend input with asset version 1 in the transaction:
     1. Delete the previous output (referenced by the input’s [outpoint](data.md#outpoint)) from S, yielding a new state S′.
     2. Replace S with S′.
-2. For each output with asset version 1 in the transaction:
-    1. Add that output to the unspent output set in S, yielding a new state S′.
+2. For each spend input with asset version 2 in the transaction:
+    1. Delete the previous output (referenced by the input’s [outpoint](data.md#outpoint)) from S, yielding a new state S′.
     2. Replace S with S′.
-3. For all [asset version 1 issuance inputs](data.md#asset-version-1-issuance-commitment) with non-empty *nonce* string:
+3. For each output with asset version 1 in the transaction:
+    1. Add that output to the unspent output set version 1 in S, yielding a new state S′.
+    2. Replace S with S′.
+4. For each output with asset version 2 in the transaction:
+    1. Add that output to the unspent output set version 2 in S, yielding a new state S′.
+    2. Replace S with S′.
+5. For all issuance inputs with asset version [1](data.md#asset-version-1-issuance-commitment) or [2](data.md#asset-version-2-issuance-commitment) with a non-empty *nonce* string:
     1. Compute the [issuance hash](data.md#issuance-hash) H.
     2. Add (H, transaction maximum timestamp) to the issuance memory in S, yielding a new state S′.
     3. Replace S with S′.
-4. Return S.
+6. Return S.
 
 
 ### Evaluate predicate
@@ -334,14 +422,16 @@ Note: requirement for the input and output sums to be below 2<sup>63</sup> impli
 
 1. VM version,
 2. program,
-3. list of program arguments.
+3. list of program arguments,
+4. expansion reservation flag,
+5. execution context.
 
 **Output:** true or false.
 
 **Algorithm:**
 
 1. If the [VM version](vm1.md#versioning) is > 1, halt and return true.
-2. [Create a VM with initial state](vm1.md#vm-state).
+2. [Create a VM](vm1.md#vm-state) with initial state, a given expansion reservation flag and a given execution context.
 3. [Prepare VM](vm1.md#prepare-vm).
 4. Set the VM’s program to the predicate program and execute [Verify Predicate](vm1.md#verify-predicate) operation. If it fails, halt and return false.
 5. Return true.

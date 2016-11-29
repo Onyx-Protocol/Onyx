@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"math"
 
-	"chain/core/query"
-	"chain/core/txfeed"
-	"chain/errors"
-	"chain/net/http/httpjson"
+	"chain-stealth/core/query"
+	"chain-stealth/core/txfeed"
+	"chain-stealth/errors"
+	"chain-stealth/net/http/httpjson"
 )
 
 // POST /create-txfeed

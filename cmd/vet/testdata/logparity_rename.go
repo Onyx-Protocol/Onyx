@@ -2,7 +2,7 @@
 
 package testdata
 
-import chainlog "chain/log"
+import chainlog "chain-stealth/log"
 
 // This function never executes, but it serves as a simple test for the program.
 // Test with (cd ..; go test).

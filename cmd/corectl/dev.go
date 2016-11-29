@@ -5,8 +5,8 @@ package main
 import (
 	"context"
 
-	"chain/core/coreunsafe"
-	"chain/database/sql"
+	"chain-stealth/core/coreunsafe"
+	"chain-stealth/database/sql"
 )
 
 func reset(db *sql.DB, args []string) {

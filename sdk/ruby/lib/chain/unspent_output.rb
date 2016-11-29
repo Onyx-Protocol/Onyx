@@ -69,6 +69,14 @@ module Chain
     # @return [Boolean]
     attrib :is_local
 
+    # @!attribute [r] confidential
+    # @return [Boolean]
+    attrib :confidential
+
+    # @!attribute [r] readable
+    # @return [Boolean]
+    attrib :readable
+
     class ClientModule < Chain::ClientModule
       # @param [Hash] query
       # @return Query

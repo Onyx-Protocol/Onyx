@@ -4,7 +4,7 @@ import (
 	"os"
 	"syscall"
 
-	chainsyscall "chain/syscall"
+	chainsyscall "chain-stealth/syscall"
 )
 
 func path() (name string, err error) {

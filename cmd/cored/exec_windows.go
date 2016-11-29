@@ -8,8 +8,8 @@ import (
 	"strings"
 	"syscall"
 
-	"chain/core"
-	"chain/os/program"
+	"chain-stealth/core"
+	"chain-stealth/os/program"
 )
 
 // We have to do some tricks here because we can't use exec.

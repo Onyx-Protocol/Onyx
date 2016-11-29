@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"chain/crypto/ed25519"
+	"chain-stealth/crypto/ed25519"
 )
 
 // TestIsUnspendable ensures the IsUnspendable function returns the expected

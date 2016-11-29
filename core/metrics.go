@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"chain/metrics"
-	"chain/net/http/reqid"
+	"chain-stealth/metrics"
+	"chain-stealth/net/http/reqid"
 )
 
 var (

@@ -10,7 +10,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/errors"
+	"chain-stealth/crypto/ca"
+	"chain-stealth/errors"
 )
 
 func TestTransaction(t *testing.T) {
@@ -18,7 +19,7 @@ func TestTransaction(t *testing.T) {
 	initialBlockHashHex := "03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"
 	initialBlockHash := mustDecodeHash(initialBlockHashHex)
 
-	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1)
+	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1, 1)
 
 	cases := []struct {
 		tx          *Tx
@@ -45,7 +46,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // outputs count
 				"00"), // reference data
 			hash:        mustDecodeHash("74e60d94a75848b48fc79eac11a1d39f41e1b32046cf948929b729a57b75d5be"),
-			witnessHash: mustDecodeHash("536cef3158d7ea51194b370e02f27265e8584ff4df1cd2829de0074c11f1f1b2"),
+			witnessHash: mustDecodeHash("87f80a62c95421ab5c42b7e2787b472a84856461dd01397f2c37f096f0ef1ab4"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -93,8 +94,8 @@ func TestTransaction(t *testing.T) {
 				"066f7574707574" + // output 0, reference data
 				"00" + // output 0, output witness
 				"0869737375616e6365"), // reference data
-			hash:        mustDecodeHash("d5d90a4b6b179ec4c49badcec24f3c8890b3c03ed7f397a2de89b3f873de74a7"),
-			witnessHash: mustDecodeHash("34a7b5eb0a40dbab132b4a4c0ca90044efc9d086d84503e1fb9175d12230ed1f"),
+			hash:        mustDecodeHash("00a206b43da69b7e003a8c0cee6be5579d77cef4585d46ebc18803c869676205"),
+			witnessHash: mustDecodeHash("fc5b7699f82b4e9ca4f7ac29d0b81dcdccae9cf86e72d69d8f0688a00a380299"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -103,8 +104,8 @@ func TestTransaction(t *testing.T) {
 					NewSpendInput(mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), 0, nil, AssetID{}, 1000000000000, []byte{1}, []byte("input")),
 				},
 				Outputs: []*TxOutput{
-					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1), 600000000000, []byte{1}, nil),
-					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1), 400000000000, []byte{2}, nil),
+					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1, 1), 600000000000, []byte{1}, nil),
+					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1, 1), 400000000000, []byte{2}, nil),
 				},
 				MinTime:       1492590000,
 				MaxTime:       1492590591,
@@ -148,8 +149,8 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 1, reference data
 				"00" + // output 1, output witness
 				"0c646973747269627574696f6e"), // reference data
-			hash:        mustDecodeHash("d2587bdb93c65cd89d2d648f2adba54f9997d8e2d649bd222288519cb7224f49"),
-			witnessHash: mustDecodeHash("a87eac712f74deb95bda148cc37375a0d8e16003a992b8d70531f7089dca4333"),
+			hash:        mustDecodeHash("199e9f14b8f0ec18dc55606e8b56ed8f68af6c57ae4d650ccbc3e680c9702ca0"),
+			witnessHash: mustDecodeHash("7b56f768428da4b94f5daf440dd2067b8dd3484f3142b92e35cdadeac9849df3"),
 		},
 	}
 
@@ -162,7 +163,11 @@ func TestTransaction(t *testing.T) {
 		if test.tx.Hash != test.hash {
 			t.Errorf("test %d: hash = %s want %x", i, test.tx.Hash, test.hash)
 		}
-		if g := test.tx.WitnessHash(); g != test.witnessHash {
+		g, err := test.tx.WitnessHash()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if g != test.witnessHash {
 			t.Errorf("test %d: witness hash = %s want %x", i, g, test.witnessHash)
 		}
 
@@ -175,7 +180,7 @@ func TestTransaction(t *testing.T) {
 			t.Errorf("test %d: error unmarshaling tx from json: %s", i, err)
 		}
 		if !reflect.DeepEqual(test.tx, &txFromJSON) {
-			t.Errorf("test %d: bc.Tx -> json -> bc.Tx: got:\n%s\nwant:\n%s", i, spew.Sdump(&txFromJSON), spew.Sdump(test.tx))
+			t.Errorf("test %d: Tx -> json -> Tx: got:\n%s\nwant:\n%s", i, spew.Sdump(&txFromJSON), spew.Sdump(test.tx))
 		}
 
 		tx1 := new(TxData)
@@ -261,8 +266,43 @@ func TestInvalidIssuance(t *testing.T) {
 		"0869737375616e6365")
 	tx := new(TxData)
 	err := tx.UnmarshalText([]byte(hex))
-	if err != errBadAssetID {
+	if errors.Root(err) != errBadAssetID {
 		t.Errorf("want errBadAssetID, got %v", err)
+	}
+}
+
+func TestTransactionV2MarshalUnmarshal(t *testing.T) {
+	rek := ca.RecordKey{0xc0, 0x01}
+	issuanceProg := []byte{0x03}
+	initial := Hash{0x05}
+
+	assetID := ComputeAssetID(issuanceProg, initial, 2, 1)
+	in, cavals, err := NewConfidentialIssuanceInput([]byte{0x01}, 100, nil, initial, issuanceProg, [][]byte{[]byte{0x02}}, rek)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := NewTxOutputv2(assetID, 100, []byte{0xbe, 0xef}, nil, rek, cavals.AssetCommitment, cavals.CumulativeBlindingFactor)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := NewTx(TxData{
+		Version:       2,
+		Inputs:        []*TxInput{in},
+		Outputs:       []*TxOutput{out},
+		MinTime:       1492590000,
+		MaxTime:       1492590591,
+		ReferenceData: []byte("example reference data"),
+	})
+	b, err := tx.MarshalText()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var got Tx
+	err = got.UnmarshalText(b)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -297,7 +337,7 @@ func TestOutpointWriteErr(t *testing.T) {
 }
 
 func TestTxHashForSig(t *testing.T) {
-	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1)
+	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1, 1)
 	tx := &TxData{
 		Version: 1,
 		Inputs: []*TxInput{
@@ -313,8 +353,8 @@ func TestTxHashForSig(t *testing.T) {
 		idx      int
 		wantHash string
 	}{
-		{0, "698a33855c638fc17c49fa0a2e297a47df4d89498bf7294f8b187cf77e05aa5a"},
-		{1, "d5ec94cb0ca0ab1f8ccaae3f0310aa254f18f8877b0225a65965aab544302e69"},
+		{0, "28a9b3c9cfbd0d7a4a549a2c8099a29e726d958e59a971fa6ab2497144f47d73"},
+		{1, "6e8ccd2676d6184eb5275fd8816713eb3d6d51e798af280bd2cceeff95a10d4e"},
 	}
 
 	sigHasher := NewSigHasher(tx)
@@ -427,4 +467,9 @@ func BenchmarkOutpointWriteTo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		o.WriteTo(ioutil.Discard)
 	}
+}
+
+func init() {
+	spew.Config.DisableMethods = true
+	spew.Config.DisablePointerMethods = true
 }

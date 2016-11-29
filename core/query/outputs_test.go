@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"chain/core/query/filter"
-	"chain/database/pg/pgtest"
-	"chain/protocol"
-	"chain/protocol/bc"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
 )
 
 func TestDecodeOutputsAfter(t *testing.T) {

@@ -20,10 +20,10 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
-	"chain/protocol/bc"
-	"chain/protocol/vm"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/crypto/ed25519/chainkd"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/vm"
 )
 
 // A timed reader times out its Read() operation after a specified
@@ -174,7 +174,7 @@ func assetid(args []string) {
 	initialBlockInp, _ = input(args, 1, usedStdin)
 	issuance := mustDecodeHex(issuanceInp)
 	initialBlock := mustDecodeHash(initialBlockInp)
-	assetID := bc.ComputeAssetID(issuance, initialBlock, 1)
+	assetID := bc.ComputeAssetID(issuance, initialBlock, 1, 1)
 	fmt.Println(assetID.String())
 }
 

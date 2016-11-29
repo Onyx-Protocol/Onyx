@@ -1,0 +1,13 @@
+syntax = "proto3";
+option go_package = "storage";
+package chain.core.account.internal.storage;
+
+// ConfidentialAssetParams represents the parameters relevant to a
+// particular output blinded via Confidential Assets.
+message ConfidentialAssetParams {
+  bytes cumulative_blinding_factor = 1;
+  bytes value_blinding_factor      = 2;
+  bytes asset_commitment           = 3;
+  bytes value_commitment           = 4;
+  uint64 value                     = 5;
+}

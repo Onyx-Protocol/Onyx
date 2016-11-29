@@ -3,7 +3,7 @@ package bitcoin
 import (
 	"io"
 
-	"chain/errors"
+	"chain-stealth/errors"
 )
 
 // ErrSize indicates the size of a string or []byte being read

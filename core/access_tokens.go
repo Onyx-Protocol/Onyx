@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"chain/core/accesstoken"
-	"chain/net/http/httpjson"
+	"chain-stealth/core/accesstoken"
+	"chain-stealth/net/http/httpjson"
 )
 
 var errCurrentToken = errors.New("token cannot delete itself")

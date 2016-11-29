@@ -88,7 +88,7 @@ func TestMarshalBlock(t *testing.T) {
 func TestEmptyBlock(t *testing.T) {
 	block := Block{
 		BlockHeader: BlockHeader{
-			Version: NewBlockVersion,
+			Version: 1,
 			Height:  1,
 		},
 	}
@@ -146,7 +146,7 @@ func TestEmptyBlock(t *testing.T) {
 func TestSmallBlock(t *testing.T) {
 	block := Block{
 		BlockHeader: BlockHeader{
-			Version: NewBlockVersion,
+			Version: 1,
 			Height:  1,
 		},
 		Transactions: []*Tx{NewTx(TxData{Version: CurrentTransactionVersion})},
@@ -165,7 +165,7 @@ func TestSmallBlock(t *testing.T) {
 		"01" + // witness extensible string length
 		"00" + // witness num witness args
 		"01" + // num transactions
-		"070102000000000000") // transaction
+		"07020200000100000000") // transaction
 	want, _ := hex.DecodeString(wantHex)
 	if !bytes.Equal(got, want) {
 		t.Errorf("small block bytes = %x want %x", got, want)

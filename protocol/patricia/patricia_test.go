@@ -10,9 +10,9 @@ import (
 	"testing"
 	"testing/quick"
 
-	"golang.org/x/crypto/sha3"
+	"chain-stealth/protocol/bc"
 
-	"chain/protocol/bc"
+	"golang.org/x/crypto/sha3"
 )
 
 func BenchmarkInserts(b *testing.B) {

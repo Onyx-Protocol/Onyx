@@ -7,9 +7,9 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/crypto/ed25519"
-	"chain/database/pg/pgtest"
-	"chain/errors"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/errors"
 )
 
 func TestMockHSMChainKDKeys(t *testing.T) {

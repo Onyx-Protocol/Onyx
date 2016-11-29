@@ -5,16 +5,17 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg/pgtest"
-	"chain/protocol/bc"
-	"chain/protocol/prottest"
-	"chain/protocol/state"
-	"chain/testutil"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/protocol/state"
+	"chain-stealth/testutil"
 )
 
 func TestLoadAccountInfo(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t), nil)
+	m := NewManager(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 
 	acc := m.createTestAccount(ctx, t, "", nil)
@@ -24,12 +25,12 @@ func TestLoadAccountInfo(t *testing.T) {
 	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
 
 	outs := []*state.Output{{
-		TxOutput: *to1,
+		TypedOutput: to1.TypedOutput,
 	}, {
-		TxOutput: *to2,
+		TypedOutput: to2.TypedOutput,
 	}}
 
-	got, err := m.loadAccountInfo(ctx, outs)
+	got, _, err := m.loadAccountInfo(ctx, outs)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -41,7 +42,7 @@ func TestLoadAccountInfo(t *testing.T) {
 
 func TestDeleteUTXOs(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t), nil)
+	m := NewManager(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 
 	assetID := bc.AssetID{}

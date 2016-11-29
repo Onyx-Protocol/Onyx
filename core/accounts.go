@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"chain/core/signers"
-	"chain/net/http/reqid"
+	"chain-stealth/core/signers"
+	"chain-stealth/net/http/reqid"
 )
 
 // This type enforces JSON field ordering in API output.

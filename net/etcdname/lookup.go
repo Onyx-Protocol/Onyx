@@ -12,7 +12,7 @@ import (
 
 	"github.com/coreos/etcd/client"
 
-	"chain/log"
+	"chain-stealth/log"
 )
 
 var (

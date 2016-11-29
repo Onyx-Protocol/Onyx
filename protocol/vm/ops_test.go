@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/errors"
+	"chain-stealth/errors"
 )
 
 func TestParseOp(t *testing.T) {

@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"chain/protocol/bc"
-	"chain/protocol/prottest"
-	"chain/protocol/state"
-	"chain/protocol/validation"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/validation"
 )
 
 func BenchmarkValidateTx(b *testing.B) {

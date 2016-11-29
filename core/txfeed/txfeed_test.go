@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/core/query/filter"
-	"chain/database/pg/pgtest"
-	"chain/errors"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/errors"
 )
 
 func TestInsertTxFeed(t *testing.T) {

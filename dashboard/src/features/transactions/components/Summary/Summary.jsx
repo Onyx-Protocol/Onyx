@@ -14,31 +14,40 @@ class Summary extends React.Component {
     const normalized = {}
 
     inouts.forEach(inout => {
-      let asset = normalized[inout.asset_id]
-      if (!asset) asset = normalized[inout.asset_id] = {
+      let assetId = inout.asset_id
+      if (inout.readable != 'yes') {
+        assetId = 'confidential'
+      }
+
+      let asset = normalized[assetId]
+      if (!asset) asset = normalized[assetId] = {
         alias: inout.asset_alias,
-        issue: 0,
-        retire: 0
+        issue: {amount :0},
+        retire: {amount: 0},
+        accounts: {}
       }
 
       if (['issue', 'retire'].includes(inout.type)) {
-        asset[inout.type] += inout.amount
+        asset[inout.type].amount += (inout.amount || 0)
+        if (inout.readable != 'yes') asset[inout.type].hidden = true
       } else {
         let accountKey = inout.account_id || 'external'
-        let account = asset[accountKey]
-        if (!account) account = asset[accountKey] = {
-          alias: inout.account_alias,
-          spend: 0,
-          control: 0
+        let account = asset.accounts[accountKey]
+        if (!account) account = asset.accounts[accountKey] = {
+          id: inout.account_id,
+          alias: inout.account_alias || 'external',
+          spend: {amount: 0},
+          control: {amount: 0}
         }
 
         if (inout.type == 'spend') {
-          account.spend += inout.amount
+          account.spend.amount += (inout.amount || 0)
         } else if (inout.type == 'control' && inout.purpose == 'change') {
-          account.spend -= inout.amount
+          account.spend.amount -= (inout.amount || 0)
         } else if (inout.type == 'control') {
-          account.control += inout.amount
+          account.control.amount += (inout.amount || 0)
         }
+        if (inout.readable != 'yes') account[inout.type].hidden = true
       }
     })
 
@@ -50,45 +59,47 @@ class Summary extends React.Component {
     const summary = this.normalizeInouts(inouts)
     const items = []
 
-    Object.keys(summary).forEach((asset_id) => {
-      const asset = summary[asset_id]
-      const nonAccountTypes = ['issue','retire']
+    Object.keys(summary).forEach(assetId => {
+      const asset = summary[assetId]
 
-      nonAccountTypes.forEach((type) => {
-        if (asset[type] > 0) {
+      const actions = ['issue','retire']
+      actions.forEach((type) => {
+        if (asset[type].hidden) {
+          items.push({
+            type: INOUT_TYPES[type],
+            hidden: true
+          })
+        } else if (asset[type].amount > 0) {
           items.push({
             type: INOUT_TYPES[type],
             rawAction: type,
-            amount: asset[type],
-            asset: asset.alias ? asset.alias : <code className={styles.rawId}>{asset_id}</code>,
-            assetId: asset_id,
+            amount: asset[type].amount,
+            asset: asset.alias ? asset.alias : <code className={styles.rawId}>{assetId}</code>,
+            assetId: assetId,
           })
         }
       })
 
-
-      Object.keys(asset).forEach((account_id) => {
-        if (nonAccountTypes.includes(account_id)) return
-        const account = asset[account_id]
-        if (!account) return
-
-        if (account_id == 'external') {
-          account.alias= 'external'
-          account_id = null
-        }
-
+      Object.values(asset.accounts).forEach(account => {
         const accountTypes = ['spend', 'control']
         accountTypes.forEach((type) => {
-          if (account[type] > 0) {
+          if (!account[type]) return
+
+          if (account[type].hidden) {
+            items.push({
+              type: INOUT_TYPES[type],
+              hidden: true
+            })
+          } else if (account[type].amount > 0) {
             items.push({
               type: INOUT_TYPES[type],
               rawAction: type,
-              amount: account[type],
-              asset: asset.alias ? asset.alias : <code className={styles.rawId}>{asset_id}</code>,
-              assetId: asset_id,
+              amount: account[type].amount,
+              asset: asset.alias ? asset.alias : <code className={styles.rawId}>{assetId}</code>,
+              assetId: assetId,
               direction: type == 'spend' ? 'from' : 'to',
               account: account.alias ? account.alias : <code className={styles.rawId}>{account_id}</code>,
-              accountId: account_id,
+              accountId: account.id,
             })
           }
         })
@@ -100,6 +111,15 @@ class Summary extends React.Component {
       return ordering.indexOf(a.rawAction) - ordering.indexOf(b.rawAction)
     })
 
+    if (items.length == 0) {
+      return null
+    }
+
+    const confidentialIcon = <span className={styles.confidential}>
+      <span className={`${styles.icon} glyphicon glyphicon-lock`} />
+      confidential
+    </span>
+
     return(<table className={styles.main}>
       <tbody>
         {items.map((item, index) =>
@@ -107,13 +127,17 @@ class Summary extends React.Component {
             <td className={styles.colAction}>{item.type}</td>
             <td className={styles.colLabel}>amount</td>
             <td className={styles.colAmount}>
-              <code className={styles.amount}>{item.amount}</code>
+              {item.hidden
+                ? confidentialIcon
+                : <code className={styles.amount}>{item.amount}</code>}
             </td>
             <td className={styles.colLabel}>asset</td>
             <td className={styles.colAccount}>
-              <Link to={`/assets/${item.assetId}`}>
-                {item.asset}
-              </Link>
+              {item.hidden
+                ? confidentialIcon
+                : <Link to={`/assets/${item.assetId}`}>
+                  {item.asset}
+                </Link>}
             </td>
             <td className={styles.colLabel}>{item.account && 'account'}</td>
             <td className={styles.colAccount}>

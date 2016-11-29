@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	chainjson "chain/encoding/json"
-	"chain/errors"
-	"chain/net/http/httpjson"
-	"chain/protocol/bc"
+	chainjson "chain-stealth/encoding/json"
+	"chain-stealth/errors"
+	"chain-stealth/net/http/httpjson"
+	"chain-stealth/protocol/bc"
 )
 
 // getBlockRPC returns the block at the requested height.

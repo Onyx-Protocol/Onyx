@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"chain/errors"
-	"chain/net/http/reqid"
+	"chain-stealth/errors"
+	"chain-stealth/net/http/reqid"
 )
 
 func TestSetOutput(t *testing.T) {

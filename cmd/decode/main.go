@@ -11,8 +11,8 @@ import (
 	"os"
 	"strings"
 
-	"chain/protocol/bc"
-	"chain/protocol/vm"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/vm"
 )
 
 const help = `

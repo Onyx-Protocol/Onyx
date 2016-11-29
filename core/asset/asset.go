@@ -13,28 +13,30 @@ import (
 	"github.com/golang/groupcache/singleflight"
 	"github.com/lib/pq"
 
-	"chain/core/pin"
-	"chain/core/signers"
-	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
-	"chain/database/pg"
-	"chain/errors"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/core/pin"
+	"chain-stealth/core/signers"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/crypto/ed25519/chainkd"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/vm"
+	"chain-stealth/protocol/vmutil"
 )
 
 const maxAssetCache = 1000
 
 var ErrDuplicateAlias = errors.New("duplicate asset alias")
 
-func NewRegistry(db pg.DB, chain *protocol.Chain, pinStore *pin.Store) *Registry {
+func NewRegistry(db pg.DB, chain *protocol.Chain, pinStore *pin.Store, keys *confidentiality.Storage) *Registry {
 	return &Registry{
 		db:               db,
 		chain:            chain,
 		initialBlockHash: chain.InitialBlockHash,
 		pinStore:         pinStore,
+		confidentiality:  keys,
 		cache:            lru.New(maxAssetCache),
 		aliasCache:       lru.New(maxAssetCache),
 	}
@@ -47,6 +49,7 @@ type Registry struct {
 	indexer          Saver
 	initialBlockHash bc.Hash
 	pinStore         *pin.Store
+	confidentiality  *confidentiality.Storage
 
 	idGroup    singleflight.Group
 	aliasGroup singleflight.Group
@@ -95,7 +98,7 @@ func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, def
 		Definition:       definition,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: reg.initialBlockHash,
-		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1),
+		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 2, 1),
 		Signer:           assetSigner,
 		Tags:             tags,
 	}

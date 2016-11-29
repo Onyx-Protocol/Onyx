@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"chain/database/pg/pgtest"
+	"chain-stealth/database/pg/pgtest"
 )
 
 func TestWaitForPin(t *testing.T) {

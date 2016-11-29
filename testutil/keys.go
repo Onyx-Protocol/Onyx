@@ -1,8 +1,8 @@
 package testutil
 
 import (
-	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/crypto/ed25519/chainkd"
 )
 
 var (

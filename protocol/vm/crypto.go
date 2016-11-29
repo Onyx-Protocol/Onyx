@@ -8,8 +8,8 @@ import (
 	"golang.org/x/crypto/ripemd160"
 	"golang.org/x/crypto/sha3"
 
-	"chain/crypto/ed25519"
-	"chain/math/checked"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/math/checked"
 )
 
 func opRipemd160(vm *virtualMachine) error {

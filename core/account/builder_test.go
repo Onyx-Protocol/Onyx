@@ -7,18 +7,19 @@ import (
 	"testing"
 	"time"
 
-	"chain/core/account"
-	"chain/core/asset"
-	"chain/core/coretest"
-	"chain/core/pin"
-	"chain/core/query"
-	"chain/core/txbuilder"
-	"chain/database/pg"
-	"chain/database/pg/pgtest"
-	"chain/protocol/bc"
-	"chain/protocol/mempool"
-	"chain/protocol/prottest"
-	"chain/testutil"
+	"chain-stealth/core/account"
+	"chain-stealth/core/asset"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/core/coretest"
+	"chain-stealth/core/pin"
+	"chain-stealth/core/query"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/database/pg"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/mempool"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/testutil"
 )
 
 func TestAccountSourceReserve(t *testing.T) {
@@ -28,8 +29,9 @@ func TestAccountSourceReserve(t *testing.T) {
 		c        = prottest.NewChain(t)
 		p        = mempool.New()
 		pinStore = pin.NewStore(db)
-		accounts = account.NewManager(db, c, pinStore)
-		assets   = asset.NewRegistry(db, c, pinStore)
+		conf     = &confidentiality.Storage{DB: db}
+		accounts = account.NewManager(db, c, pinStore, conf)
+		assets   = asset.NewRegistry(db, c, pinStore, conf)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -51,8 +53,8 @@ func TestAccountSourceReserve(t *testing.T) {
 	}
 	source := accounts.NewSpendAction(assetAmount1, accID, nil, nil)
 
-	var builder txbuilder.TemplateBuilder
-	err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
+	builder := txbuilder.NewTemplateBuilder()
+	err := source.Build(ctx, time.Now().Add(time.Minute), builder)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -61,19 +63,23 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
-	if !reflect.DeepEqual(tpl.Transaction.Inputs, wantTxIns) {
-		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tpl.Transaction.Inputs, wantTxIns)
+	if len(tpl.Transaction.Inputs) != 1 {
+		t.Errorf("got %d inputs want %d", len(tpl.Transaction.Inputs), 1)
+	}
+	in, ok := tpl.Transaction.Inputs[0].TypedInput.(*bc.SpendInput)
+	if !ok {
+		t.Errorf("got %#v, want a spend input", tpl.Transaction.Inputs[0])
+	}
+	if in.Outpoint != out.Outpoint {
+		t.Errorf("for input's prevout got %#v; want %#v", in.Outpoint, out.Outpoint)
 	}
 	if len(tpl.Transaction.Outputs) != 1 {
-		t.Errorf("expected 1 change output")
+		t.Fatal("expected 1 change output")
 	}
-	if tpl.Transaction.Outputs[0].Amount != 1 {
-		t.Errorf("expected change amount to be 1")
-	}
-	if !programInAccount(ctx, t, db, tpl.Transaction.Outputs[0].ControlProgram, accID) {
+	if !programInAccount(ctx, t, db, tpl.Transaction.Outputs[0].Program(), accID) {
 		t.Errorf("expected change control program to belong to account")
 	}
+	// TODO(jackson): decrypt the change output and verify its amount is 1
 }
 
 func TestAccountSourceUTXOReserve(t *testing.T) {
@@ -83,8 +89,9 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		c        = prottest.NewChain(t)
 		p        = mempool.New()
 		pinStore = pin.NewStore(db)
-		accounts = account.NewManager(db, c, pinStore)
-		assets   = asset.NewRegistry(db, c, pinStore)
+		conf     = &confidentiality.Storage{DB: db}
+		accounts = account.NewManager(db, c, pinStore, conf)
+		assets   = asset.NewRegistry(db, c, pinStore, conf)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -102,8 +109,8 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 	source := accounts.NewSpendUTXOAction(out.Outpoint)
 
-	var builder txbuilder.TemplateBuilder
-	err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
+	builder := txbuilder.NewTemplateBuilder()
+	err := source.Build(ctx, time.Now().Add(time.Minute), builder)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -112,10 +119,15 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
-
-	if !reflect.DeepEqual(tpl.Transaction.Inputs, wantTxIns) {
-		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tpl.Transaction.Inputs, wantTxIns)
+	if len(tpl.Transaction.Inputs) != 1 {
+		t.Errorf("got %d inputs want %d", len(tpl.Transaction.Inputs), 1)
+	}
+	in, ok := tpl.Transaction.Inputs[0].TypedInput.(*bc.SpendInput)
+	if !ok {
+		t.Errorf("got %#v, want a spend input", tpl.Transaction.Inputs[0])
+	}
+	if in.Outpoint != out.Outpoint {
+		t.Errorf("for input's prevout got %#v; want %#v", in.Outpoint, out.Outpoint)
 	}
 }
 
@@ -126,8 +138,9 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		c        = prottest.NewChain(t)
 		p        = mempool.New()
 		pinStore = pin.NewStore(db)
-		accounts = account.NewManager(db, c, pinStore)
-		assets   = asset.NewRegistry(db, c, pinStore)
+		conf     = &confidentiality.Storage{DB: db}
+		accounts = account.NewManager(db, c, pinStore, conf)
+		assets   = asset.NewRegistry(db, c, pinStore, conf)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
 		accID        = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -156,9 +169,8 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
-		var builder txbuilder.TemplateBuilder
-
-		err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
+		builder := txbuilder.NewTemplateBuilder()
+		err := source.Build(ctx, time.Now().Add(time.Minute), builder)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}

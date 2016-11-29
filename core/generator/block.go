@@ -6,15 +6,15 @@ import (
 	"sync"
 	"time"
 
-	"chain/crypto/ed25519"
-	"chain/database/pg"
-	"chain/database/sql"
-	"chain/errors"
-	"chain/log"
-	"chain/metrics"
-	"chain/protocol/bc"
-	"chain/protocol/state"
-	"chain/protocol/vmutil"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/database/pg"
+	"chain-stealth/database/sql"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/metrics"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/vmutil"
 )
 
 // errTooFewSigners is returned when a block-signing attempt finds

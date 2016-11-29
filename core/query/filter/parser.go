@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"chain/errors"
+	"chain-stealth/errors"
 )
 
 // ErrBadFilter is returned from Parse when

@@ -5,14 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"chain/core/account"
-	"chain/core/asset"
-	"chain/core/coretest"
-	"chain/core/pin"
-	"chain/database/pg/pgtest"
-	"chain/protocol/mempool"
-	"chain/protocol/prottest"
-	"chain/testutil"
+	"chain-stealth/core/account"
+	"chain-stealth/core/asset"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/core/coretest"
+	"chain-stealth/core/pin"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/mempool"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/testutil"
 )
 
 func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Time, *account.Account, *account.Account, *asset.Asset, *asset.Asset) {
@@ -24,12 +25,15 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	indexer := NewIndexer(db, c, pinStore)
-	accounts := account.NewManager(db, c, pinStore)
-	assets := asset.NewRegistry(db, c, pinStore)
+	conf := &confidentiality.Storage{DB: db}
+	assets := asset.NewRegistry(db, c, pinStore, conf)
+	accounts := account.NewManager(db, c, pinStore, conf)
 	assets.IndexAssets(indexer)
+	indexer.RegisterAnnotator(conf.AnnotateTxs)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 	go assets.ProcessBlocks(ctx)
+	go accounts.ProcessBlocks(ctx)
 	go indexer.ProcessBlocks(ctx)
 
 	acct1, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)

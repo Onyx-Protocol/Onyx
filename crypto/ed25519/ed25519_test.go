@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	"chain/crypto/ed25519/internal/edwards25519"
+	"chain-stealth/crypto/ed25519/edwards25519"
 )
 
 type zeroReader struct{}

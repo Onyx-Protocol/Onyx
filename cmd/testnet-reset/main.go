@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"chain/core/rpc"
-	"chain/env"
+	"chain-stealth/core/rpc"
+	"chain-stealth/env"
 )
 
 var scheduled = env.Bool("SCHEDULED", true)

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math"
 
-	"chain/errors"
-	"chain/math/checked"
+	"chain-stealth/errors"
+	"chain-stealth/math/checked"
 )
 
 type Op uint8
@@ -216,6 +216,10 @@ const (
 	OP_NONCE         Op = 0xcc
 	OP_NEXTPROGRAM   Op = 0xcd
 	OP_BLOCKTIME     Op = 0xce
+
+	OP_ASSETCOMMITMENT Op = 0xd0
+	OP_VALUECOMMITMENT Op = 0xd1
+	OP_ISSUANCEKEY     Op = 0xd2
 )
 
 type opInfo struct {
@@ -329,6 +333,10 @@ var (
 		OP_NONCE:         {OP_NONCE, "NONCE", opNonce},
 		OP_NEXTPROGRAM:   {OP_NEXTPROGRAM, "NEXTPROGRAM", opNextProgram},
 		OP_BLOCKTIME:     {OP_BLOCKTIME, "BLOCKTIME", opBlockTime},
+
+		OP_ASSETCOMMITMENT: {OP_ASSETCOMMITMENT, "ASSETCOMMITMENT", opAssetCommitment},
+		OP_VALUECOMMITMENT: {OP_VALUECOMMITMENT, "VALUECOMMITMENT", opValueCommitment},
+		OP_ISSUANCEKEY:     {OP_ISSUANCEKEY, "ISSUANCEKEY", opIssuanceKey},
 	}
 
 	opsByName map[string]opInfo

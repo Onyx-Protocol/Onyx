@@ -8,12 +8,12 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"chain/crypto/ed25519/chainkd"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/vm"
-	"chain/protocol/vmutil"
-	"chain/testutil"
+	"chain-stealth/crypto/ed25519/chainkd"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/vm"
+	"chain-stealth/protocol/vmutil"
+	"chain-stealth/testutil"
 )
 
 // NewIssuanceTx creates a new signed, issuance transaction issuing 100 units
@@ -54,13 +54,15 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 	}
 	txin := bc.NewIssuanceInput(nonce[:], 100, nil, b1.Hash(), issuanceProgram, nil)
 
+	assetID, _ := txin.AssetID()
+
 	tx := bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		MinTime: bc.Millis(time.Now().Add(-5 * time.Minute)),
 		MaxTime: bc.Millis(time.Now().Add(5 * time.Minute)),
 		Inputs:  []*bc.TxInput{txin},
 		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(txin.AssetID(), 100, []byte{0xbe, 0xef}, nil),
+			bc.NewTxOutput(assetID, 100, []byte{0xbe, 0xef}, nil),
 		},
 	}
 

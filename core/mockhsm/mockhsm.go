@@ -11,10 +11,10 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/chainkd"
-	"chain/database/pg"
-	"chain/errors"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/crypto/ed25519/chainkd"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
 )
 
 // listKeyMaxAliases limits the alias filter to a sane maximum size.

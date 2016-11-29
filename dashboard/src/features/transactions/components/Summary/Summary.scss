@@ -57,3 +57,12 @@
   max-width: 150px;
   vertical-align: middle;
 }
+
+.confidential {
+
+  .icon {
+    color: $text-strong-color;
+    font-size: 0.7em;
+    margin-right: 5px;
+  }
+}

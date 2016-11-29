@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"chain/core/asset"
-	"chain/core/pin"
-	"chain/core/query"
-	"chain/database/pg/pgtest"
-	"chain/protocol/bc"
-	"chain/protocol/prottest"
+	"chain-stealth/core/asset"
+	"chain-stealth/core/pin"
+	"chain-stealth/core/query"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/prottest"
 )
 
 func TestQueryWithClockSkew(t *testing.T) {

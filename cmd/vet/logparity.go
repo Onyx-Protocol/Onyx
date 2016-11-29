@@ -30,7 +30,7 @@ func checkLogCall(f *File, node ast.Node) {
 		return
 	}
 
-	if fun.FullName() != "chain/log.Write" && fun.FullName() != "chain/log.Fatal" {
+	if fun.FullName() != "chain-stealth/log.Write" && fun.FullName() != "chain-stealth/log.Fatal" {
 		return
 	}
 

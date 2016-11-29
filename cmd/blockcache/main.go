@@ -19,15 +19,15 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/lib/pq"
 
-	"chain/core"
-	"chain/core/fetch"
-	"chain/core/rpc"
-	"chain/env"
-	"chain/errors"
-	"chain/log"
-	"chain/net/http/httpjson"
-	"chain/protocol"
-	"chain/protocol/bc"
+	"chain-stealth/core"
+	"chain-stealth/core/fetch"
+	"chain-stealth/core/rpc"
+	"chain-stealth/env"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/net/http/httpjson"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
 )
 
 var (

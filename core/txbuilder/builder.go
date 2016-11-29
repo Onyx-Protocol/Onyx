@@ -2,46 +2,93 @@ package txbuilder
 
 import (
 	"bytes"
+	"fmt"
 	"math"
-	"time"
 
-	"chain/errors"
-	"chain/protocol/bc"
+	"chain-stealth/crypto/ca"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
 )
 
 type TemplateBuilder struct {
 	base                *bc.TxData
-	maxTime             time.Time
 	inputs              []*bc.TxInput
-	outputs             []*bc.TxOutput
-	signingInstructions []*SigningInstruction
+	signingInstructions []*SigningInstruction // parallel inputs
+	signedInputs        []*bc.TxInput
+	rawOutputs          []*bc.TxOutput
+	encryptedOutputs    []*bc.TxOutput
+	outputREKs          []ca.RecordKey // parallel to encryptedOutputs
+	confInstructions    []*ConfidentialityInstruction
 	minTimeMS           uint64
+	maxTimeMS           uint64
 	referenceData       []byte
 	rollbacks           []func()
 	callbacks           []func() error
-	values              map[interface{}]interface{}
 }
 
-func (b *TemplateBuilder) AddInput(in *bc.TxInput, sigInstruction *SigningInstruction) error {
-	if in.Amount() > math.MaxInt64 {
-		return errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", in.Amount())
+func NewTemplateBuilder() *TemplateBuilder {
+	return &TemplateBuilder{} // TODO: delete this func
+}
+
+func (b *TemplateBuilder) AddRawInput(in *bc.TxInput, sigInstruction *SigningInstruction) error {
+	if amt, ok := in.Amount(); ok && amt > math.MaxInt64 {
+		return errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", amt)
 	}
 	b.inputs = append(b.inputs, in)
 	b.signingInstructions = append(b.signingInstructions, sigInstruction)
 	return nil
 }
 
-func (b *TemplateBuilder) AddOutput(o *bc.TxOutput) error {
-	if o.Amount > math.MaxInt64 {
-		return errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", o.Amount)
+func (b *TemplateBuilder) AddInput(in *bc.TxInput, aa bc.AssetAmount, sigInstruction *SigningInstruction, v *bc.CAValues) error {
+	if aa.Amount > math.MaxInt64 {
+		return errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", aa.Amount)
 	}
-	b.outputs = append(b.outputs, o)
+
+	b.inputs = append(b.inputs, in)
+	b.confInstructions = append(b.confInstructions, &ConfidentialityInstruction{
+		Type:                     "input",
+		Value:                    aa.Amount,
+		AssetID:                  aa.AssetID,
+		AssetCommitment:          v.AssetCommitment,
+		ValueBlindingFactor:      v.ValueBlindingFactor,
+		CumulativeBlindingFactor: v.CumulativeBlindingFactor,
+	})
+	b.signingInstructions = append(b.signingInstructions, sigInstruction)
+	return nil
+}
+
+func (b *TemplateBuilder) AddRawOutput(o *bc.TxOutput) error {
+	if amt, ok := o.Amount(); ok && amt > math.MaxInt64 {
+		return errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", amt)
+	}
+
+	b.rawOutputs = append(b.rawOutputs, o)
+	return nil
+}
+
+func (b *TemplateBuilder) AddEncryptedOutput(o *bc.TxOutput, rek ca.RecordKey) error {
+	aa, ok := o.GetAssetAmount()
+	if !ok {
+		return errors.New("provided output is already encrypted")
+	}
+	if aa.Amount > math.MaxInt64 {
+		return errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", aa.Amount)
+	}
+
+	b.encryptedOutputs = append(b.encryptedOutputs, o)
+	b.outputREKs = append(b.outputREKs, rek)
 	return nil
 }
 
 func (b *TemplateBuilder) RestrictMinTimeMS(ms uint64) {
 	if ms > b.minTimeMS {
 		b.minTimeMS = ms
+	}
+}
+
+func (b *TemplateBuilder) RestrictMaxTimeMS(ms uint64) {
+	if ms < b.maxTimeMS || b.maxTimeMS == 0 {
+		b.maxTimeMS = ms
 	}
 }
 
@@ -100,8 +147,8 @@ func (b *TemplateBuilder) Build() (*Template, error) {
 	if b.minTimeMS > 0 && b.minTimeMS > tpl.Transaction.MinTime {
 		tpl.Transaction.MinTime = b.minTimeMS
 	}
-	if tpl.Transaction.MaxTime == 0 || tpl.Transaction.MaxTime > bc.Millis(b.maxTime) {
-		tpl.Transaction.MaxTime = bc.Millis(b.maxTime)
+	if tpl.Transaction.MaxTime == 0 || tpl.Transaction.MaxTime > b.maxTimeMS {
+		tpl.Transaction.MaxTime = b.maxTimeMS
 	}
 
 	// Set transaction reference data if applicable.
@@ -109,8 +156,8 @@ func (b *TemplateBuilder) Build() (*Template, error) {
 		tpl.Transaction.ReferenceData = b.referenceData
 	}
 
-	// Add all the built outputs.
-	tpl.Transaction.Outputs = append(tpl.Transaction.Outputs, b.outputs...)
+	// Add all of the presigned inputs.
+	tpl.Transaction.Inputs = append(tpl.Transaction.Inputs, b.signedInputs...)
 
 	// Add all the built inputs and their corresponding signing instructions.
 	for i, in := range b.inputs {
@@ -124,5 +171,90 @@ func (b *TemplateBuilder) Build() (*Template, error) {
 		tpl.SigningInstructions = append(tpl.SigningInstructions, instruction)
 		tpl.Transaction.Inputs = append(tpl.Transaction.Inputs, in)
 	}
+
+	// Add all of the raw outputs first.
+	tpl.Transaction.Outputs = append(tpl.Transaction.Outputs, b.rawOutputs...)
+
+	// Organize confidentiality instructions into a map, keyed by asset ID
+	// and a slice of asset commitments.
+	seenCommitments := make(map[ca.AssetCommitment]bool)
+	assetCommitments := make([]ca.AssetCommitment, 0, len(b.confInstructions))
+	confInstructions := make(map[bc.AssetID]*ConfidentialityInstruction)
+	for _, ci := range b.confInstructions {
+		if !ci.IsInput() || seenCommitments[ci.AssetCommitment] {
+			continue
+		}
+		confInstructions[ci.AssetID] = ci
+		seenCommitments[ci.AssetCommitment] = true
+		assetCommitments = append(assetCommitments, ci.AssetCommitment)
+	}
+
+	// Add all of the encrypted outputs.
+	if len(b.encryptedOutputs) > 0 {
+		// Encrypt all but one of the outputs, saving the last one for
+		// the excess factor.
+		for i, o := range b.encryptedOutputs[:len(b.encryptedOutputs)-1] {
+			aid, _ := o.AssetID()
+			ci := confInstructions[aid]
+			if ci == nil {
+				return nil, fmt.Errorf("missing confidentiality instructions for %s", aid)
+			}
+			encrypted, vals, err := bc.EncryptedOutput(o, b.outputREKs[i], assetCommitments, ci.CumulativeBlindingFactor, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			tpl.Transaction.Outputs = append(tpl.Transaction.Outputs, encrypted)
+			b.confInstructions = append(b.confInstructions, &ConfidentialityInstruction{
+				Type:                     "output",
+				Value:                    vals.Value,
+				AssetID:                  aid,
+				AssetCommitment:          vals.AssetCommitment,
+				ValueBlindingFactor:      vals.ValueBlindingFactor,
+				CumulativeBlindingFactor: vals.CumulativeBlindingFactor,
+			})
+		}
+
+		// Balance the blinding factors.
+		// Every build call that adds a new encrypted output will have
+		// balanced blinding factors.
+		var inputBFTuples, outputBFTuples []ca.BFTuple
+		for _, ci := range b.confInstructions {
+			tup := ca.BFTuple{
+				Value: ci.Value,
+				C:     ci.CumulativeBlindingFactor,
+				F:     ci.ValueBlindingFactor,
+			}
+			if ci.IsInput() {
+				inputBFTuples = append(inputBFTuples, tup)
+			} else {
+				outputBFTuples = append(outputBFTuples, tup)
+			}
+		}
+		excess := ca.BalanceBlindingFactors(inputBFTuples, outputBFTuples)
+
+		// Encrypt the final output using the excess blinding factor.
+		lastIdx := len(b.encryptedOutputs) - 1
+		lastOut, lastREK := b.encryptedOutputs[lastIdx], b.outputREKs[lastIdx]
+		aid, _ := lastOut.AssetID()
+		ci := confInstructions[aid]
+		if ci == nil {
+			return nil, fmt.Errorf("missing confidentiality instructions for %s", aid)
+		}
+		encrypted, vals, err := bc.EncryptedOutput(lastOut, lastREK, assetCommitments, ci.CumulativeBlindingFactor, &excess)
+		if err != nil {
+			return nil, errors.Wrap(err, "encrypting output")
+		}
+		tpl.Transaction.Outputs = append(tpl.Transaction.Outputs, encrypted)
+		b.confInstructions = append(b.confInstructions, &ConfidentialityInstruction{
+			Type:                     "output",
+			Value:                    vals.Value,
+			AssetCommitment:          vals.AssetCommitment,
+			ValueBlindingFactor:      vals.ValueBlindingFactor,
+			CumulativeBlindingFactor: vals.CumulativeBlindingFactor,
+		})
+	}
+
+	tpl.ConfidentialityInstructions = b.confInstructions
 	return tpl, nil
 }

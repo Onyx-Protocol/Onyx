@@ -6,18 +6,19 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg/pgtest"
-	"chain/errors"
-	"chain/protocol/prottest"
-	"chain/protocol/vm"
-	"chain/testutil"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/protocol/vm"
+	"chain-stealth/testutil"
 )
 
 var dummyXPub = testutil.TestXPub.String()
 
 func TestCreateAccount(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t), nil)
+	m := NewManager(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 
 	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
@@ -39,7 +40,7 @@ func TestCreateAccount(t *testing.T) {
 
 func TestCreateAccountIdempotency(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t), nil)
+	m := NewManager(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 	var clientToken = "a-unique-client-token"
 
@@ -58,7 +59,7 @@ func TestCreateAccountIdempotency(t *testing.T) {
 
 func TestCreateAccountReusedAlias(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t), nil)
+	m := NewManager(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 	m.createTestAccount(ctx, t, "some-account", nil)
 
@@ -71,7 +72,7 @@ func TestCreateAccountReusedAlias(t *testing.T) {
 func TestCreateControlProgram(t *testing.T) {
 	// use pgtest.NewDB for deterministic postgres sequences
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t), nil)
+	m := NewManager(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 
 	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
@@ -79,7 +80,7 @@ func TestCreateControlProgram(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	got, err := m.CreateControlProgram(ctx, account.ID, false)
+	got, _, err := m.CreateControlProgram(ctx, account.ID, false)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -109,7 +110,7 @@ func (m *Manager) createTestControlProgram(ctx context.Context, t testing.TB, ac
 		accountID = account.ID
 	}
 
-	acp, err := m.CreateControlProgram(ctx, accountID, false)
+	acp, _, err := m.CreateControlProgram(ctx, accountID, false)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -118,7 +119,7 @@ func (m *Manager) createTestControlProgram(ctx context.Context, t testing.TB, ac
 
 func TestFindByID(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t), nil)
+	m := NewManager(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 	account := m.createTestAccount(ctx, t, "", nil)
 
@@ -134,7 +135,7 @@ func TestFindByID(t *testing.T) {
 
 func TestFindByAlias(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t), nil)
+	m := NewManager(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 	account := m.createTestAccount(ctx, t, "some-alias", nil)
 

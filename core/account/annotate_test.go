@@ -7,14 +7,15 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg/pgtest"
-	"chain/protocol/prottest"
-	"chain/testutil"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/prottest"
+	"chain-stealth/testutil"
 )
 
 func TestAnnotateTxs(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t), nil)
+	m := NewManager(db, prottest.NewChain(t), nil, &confidentiality.Storage{DB: db})
 	ctx := context.Background()
 	acc1 := m.createTestAccount(ctx, t, "", nil)
 	acc2 := m.createTestAccount(ctx, t, "", map[string]interface{}{"one": "foo", "two": "bar"})
@@ -52,7 +53,7 @@ func TestAnnotateTxs(t *testing.T) {
 		},
 	}}
 
-	err := m.AnnotateTxs(ctx, txs)
+	err := m.AnnotateTxs(ctx, txs, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

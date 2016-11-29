@@ -24,8 +24,8 @@ import (
 	"database/sql/driver"
 	"fmt"
 
-	"chain/errors"
-	"chain/log"
+	"chain-stealth/errors"
+	"chain-stealth/log"
 )
 
 // Register makes a database driver available by the provided name.

@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"chain/crypto/ed25519"
+	"chain-stealth/crypto/ed25519"
 )
 
 func main() {

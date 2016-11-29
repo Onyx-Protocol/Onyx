@@ -200,9 +200,11 @@ context 'Chain SDK integration test' do
 
     cp = chain.accounts.create_control_program(alias: :alice)
     expect(cp.control_program).not_to be_empty
+    expect(cp.confidentiality_key).not_to be_empty
 
     cp = chain.accounts.create_control_program(id: alice.id)
     expect(cp.control_program).not_to be_empty
+    expect(cp.confidentiality_key).not_to be_empty
 
     expect {
       # Bad parameters

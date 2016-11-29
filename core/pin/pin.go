@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"sync"
 
-	"chain/database/pg"
-	"chain/errors"
-	"chain/log"
-	"chain/protocol"
-	"chain/protocol/bc"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
 )
 
 const processorWorkers = 10

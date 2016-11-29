@@ -3,7 +3,7 @@ package prottest
 import (
 	"testing"
 
-	"chain/protocol/validation"
+	"chain-stealth/protocol/validation"
 )
 
 func TestNewIssuance(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"context"
 	"database/sql"
 
-	"chain/core/query/filter"
-	"chain/database/pg"
-	"chain/errors"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
 )
 
 var ErrDuplicateAlias = errors.New("duplicate feed alias")

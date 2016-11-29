@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"chain/database/pg/pgtest"
+	"chain-stealth/database/pg/pgtest"
 )
 
 // Adapted from encoding/base32.

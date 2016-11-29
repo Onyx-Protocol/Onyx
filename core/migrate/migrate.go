@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"chain/database/pg"
-	"chain/errors"
-	"chain/log"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/log"
 )
 
 // Run runs all built-in migrations.

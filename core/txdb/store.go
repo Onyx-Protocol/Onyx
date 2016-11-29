@@ -3,11 +3,11 @@ package txdb
 import (
 	"context"
 
-	"chain/database/pg"
-	"chain/errors"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/state"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
 )
 
 // A Store encapsulates storage for blockchain validation.

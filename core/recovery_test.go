@@ -9,19 +9,20 @@ import (
 	"testing"
 	"time"
 
-	"chain/core/account"
-	"chain/core/asset"
-	"chain/core/coretest"
-	"chain/core/pin"
-	"chain/core/query"
-	"chain/core/txbuilder"
-	"chain/core/txdb"
-	"chain/database/pg/pgtest"
-	"chain/database/sql"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/mempool"
-	"chain/protocol/prottest"
+	"chain-stealth/core/account"
+	"chain-stealth/core/asset"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/core/coretest"
+	"chain-stealth/core/pin"
+	"chain-stealth/core/query"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/core/txdb"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/database/sql"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/mempool"
+	"chain-stealth/protocol/prottest"
 )
 
 // TestRecovery tests end-to-end blockchain recovery from an exit
@@ -39,14 +40,16 @@ func TestRecovery(t *testing.T) {
 	c := prottest.NewChainWithStorage(t, store)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
+	conf := &confidentiality.Storage{DB: db}
 	indexer := query.NewIndexer(db, c, pinStore)
-	assets := asset.NewRegistry(db, c, pinStore)
-	accounts := account.NewManager(db, c, pinStore)
+	assets := asset.NewRegistry(db, c, pinStore, conf)
+	accounts := account.NewManager(db, c, pinStore, conf)
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
 
 	// Setup the transaction query indexer to index every transaction.
+	indexer.RegisterAnnotator(conf.AnnotateTxs)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 
@@ -162,14 +165,16 @@ func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, timestamp time
 	c, err := protocol.NewChain(ctx, b1.Hash(), store, nil)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
+	conf := &confidentiality.Storage{DB: db}
 	indexer := query.NewIndexer(db, c, pinStore)
-	assets := asset.NewRegistry(db, c, pinStore)
-	accounts := account.NewManager(db, c, pinStore)
+	assets := asset.NewRegistry(db, c, pinStore, conf)
+	accounts := account.NewManager(db, c, pinStore, conf)
 
 	// Setup the transaction query indexer to index every transaction.
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
+	indexer.RegisterAnnotator(conf.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 

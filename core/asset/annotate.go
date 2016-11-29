@@ -7,12 +7,13 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/database/pg"
-	"chain/errors"
-	"chain/log"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/protocol/bc"
 )
 
-func (reg *Registry) AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
+func (reg *Registry) AnnotateTxs(ctx context.Context, txs []map[string]interface{}, _ []*bc.Tx) error {
 	assetIDStrMap := make(map[string]bool)
 
 	// Collect all of the asset IDs appearing in the entire block. We only
@@ -29,6 +30,12 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []map[string]interface
 				log.Error(ctx, errors.Wrap(fmt.Errorf("bad output type %T", outObj)))
 				continue
 			}
+
+			// Skip the output if we're not privy to its asset ID.
+			if _, ok := out["asset_id"]; !ok {
+				continue
+			}
+
 			assetIDStr, ok := out["asset_id"].(string)
 			if !ok {
 				log.Error(ctx, errors.Wrap(fmt.Errorf("bad asset_id type %T", out["asset_id"])))
@@ -99,6 +106,14 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []map[string]interface
 				log.Error(ctx, errors.Wrap(fmt.Errorf("bad input type %T", m)))
 				continue
 			}
+			// If we don't know the asset_id, we can't annotate with asset
+			// details. We do know that the asset isn't local if we can't
+			// unblind the asset ID.
+			if _, ok := asMap["asset_id"]; !ok {
+				asMap["asset_is_local"] = "no"
+				continue
+			}
+
 			assetIDStr, ok := asMap["asset_id"].(string)
 			if !ok {
 				log.Error(ctx, errors.Wrap(fmt.Errorf("bad asset_id type %T", asMap["asset_id"])))

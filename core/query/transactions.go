@@ -8,8 +8,8 @@ import (
 	"math"
 	"strconv"
 
-	"chain/core/query/filter"
-	"chain/errors"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/errors"
 )
 
 var (

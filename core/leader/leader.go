@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"chain/database/pg"
-	"chain/database/sql"
-	"chain/errors"
-	"chain/log"
+	"chain-stealth/database/pg"
+	"chain-stealth/database/sql"
+	"chain-stealth/errors"
+	"chain-stealth/log"
 )
 
 var (

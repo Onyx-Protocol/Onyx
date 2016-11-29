@@ -4,10 +4,10 @@ import (
 	"strconv"
 	"sync"
 
+	"chain-stealth/protocol/bc"
+
 	"github.com/golang/groupcache/lru"
 	"github.com/golang/groupcache/singleflight"
-
-	"chain/protocol/bc"
 )
 
 const maxCachedBlocks = 30

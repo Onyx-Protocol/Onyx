@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"chain/net/etcdname"
+	"chain-stealth/net/etcdname"
 )
 
 var knownNetworks = map[string]bool{

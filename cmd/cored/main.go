@@ -18,34 +18,35 @@ import (
 
 	"github.com/kr/secureheader"
 
-	"chain/core"
-	"chain/core/accesstoken"
-	"chain/core/account"
-	"chain/core/asset"
-	"chain/core/blocksigner"
-	"chain/core/config"
-	"chain/core/fetch"
-	"chain/core/generator"
-	"chain/core/leader"
-	"chain/core/migrate"
-	"chain/core/mockhsm"
-	"chain/core/pin"
-	"chain/core/query"
-	"chain/core/rpc"
-	"chain/core/txbuilder"
-	"chain/core/txdb"
-	"chain/core/txfeed"
-	"chain/crypto/ed25519"
-	"chain/database/sql"
-	"chain/env"
-	"chain/errors"
-	chainlog "chain/log"
-	"chain/log/rotation"
-	"chain/log/splunk"
-	"chain/net/http/limit"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/mempool"
+	"chain-stealth/core"
+	"chain-stealth/core/accesstoken"
+	"chain-stealth/core/account"
+	"chain-stealth/core/asset"
+	"chain-stealth/core/blocksigner"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/core/config"
+	"chain-stealth/core/fetch"
+	"chain-stealth/core/generator"
+	"chain-stealth/core/leader"
+	"chain-stealth/core/migrate"
+	"chain-stealth/core/mockhsm"
+	"chain-stealth/core/pin"
+	"chain-stealth/core/query"
+	"chain-stealth/core/rpc"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/core/txdb"
+	"chain-stealth/core/txfeed"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/database/sql"
+	"chain-stealth/env"
+	"chain-stealth/errors"
+	chainlog "chain-stealth/log"
+	"chain-stealth/log/rotation"
+	"chain-stealth/log/splunk"
+	"chain-stealth/net/http/limit"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/mempool"
 )
 
 const (
@@ -241,10 +242,12 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, c, pinStore)
 
-	assets := asset.NewRegistry(db, c, pinStore)
-	accounts := account.NewManager(db, c, pinStore)
+	confidentialityStorage := &confidentiality.Storage{DB: db}
+	assets := asset.NewRegistry(db, c, pinStore, confidentialityStorage)
+	accounts := account.NewManager(db, c, pinStore, confidentialityStorage)
 	if *indexTxs {
 		go pinStore.Listen(ctx, query.TxPinName, *dbURL)
+		indexer.RegisterAnnotator(confidentialityStorage.AnnotateTxs)
 		indexer.RegisterAnnotator(assets.AnnotateTxs)
 		indexer.RegisterAnnotator(accounts.AnnotateTxs)
 		assets.IndexAssets(indexer)
@@ -281,21 +284,22 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	go core.CleanupSubmittedTxs(ctx, db)
 
 	h := &core.Handler{
-		Chain:        c,
-		Store:        store,
-		PinStore:     pinStore,
-		Assets:       assets,
-		Accounts:     accounts,
-		HSM:          hsm,
-		Submitter:    submitter,
-		TxFeeds:      &txfeed.Tracker{DB: db},
-		Indexer:      indexer,
-		AccessTokens: &accesstoken.CredentialStore{DB: db},
-		Config:       conf,
-		DB:           db,
-		Addr:         *listenAddr,
-		Signer:       signBlockHandler,
-		AltAuth:      authLoopbackInDev,
+		Chain:           c,
+		Store:           store,
+		PinStore:        pinStore,
+		Assets:          assets,
+		Accounts:        accounts,
+		HSM:             hsm,
+		Submitter:       submitter,
+		TxFeeds:         &txfeed.Tracker{DB: db},
+		Indexer:         indexer,
+		AccessTokens:    &accesstoken.CredentialStore{DB: db},
+		Confidentiality: confidentialityStorage,
+		Config:          conf,
+		DB:              db,
+		Addr:            *listenAddr,
+		Signer:          signBlockHandler,
+		AltAuth:         authLoopbackInDev,
 	}
 	if *rpsToken > 0 {
 		h.RequestLimits = append(h.RequestLimits, core.RequestLimit{

@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"chain/protocol/bc"
+	"chain-stealth/encoding/bufpool"
 )
 
 func opCheckOutput(vm *virtualMachine) error {
@@ -59,16 +59,18 @@ func opCheckOutput(vm *virtualMachine) error {
 	if o.AssetVersion != 1 {
 		return vm.pushBool(false, true)
 	}
-	if o.Amount != uint64(amount) {
+	oAmount, ok := o.Amount()
+	if !ok || oAmount != uint64(amount) {
 		return vm.pushBool(false, true)
 	}
-	if o.VMVersion != uint64(vmVersion) {
+	if o.VMVer() != uint64(vmVersion) {
 		return vm.pushBool(false, true)
 	}
-	if !bytes.Equal(o.ControlProgram, prog) {
+	if !bytes.Equal(o.Program(), prog) {
 		return vm.pushBool(false, true)
 	}
-	if !bytes.Equal(o.AssetID[:], assetID) {
+	oAssetID, ok := o.AssetID()
+	if !ok || !bytes.Equal(oAssetID[:], assetID) {
 		return vm.pushBool(false, true)
 	}
 	if len(refdatahash) > 0 {
@@ -90,7 +92,10 @@ func opAsset(vm *virtualMachine) error {
 		return err
 	}
 
-	assetID := vm.tx.Inputs[vm.inputIndex].AssetID()
+	assetID, ok := vm.tx.Inputs[vm.inputIndex].AssetID()
+	if !ok {
+		return fmt.Errorf("blinded asset ID")
+	}
 	return vm.push(assetID[:], true)
 }
 
@@ -104,7 +109,10 @@ func opAmount(vm *virtualMachine) error {
 		return err
 	}
 
-	amount := vm.tx.Inputs[vm.inputIndex].Amount()
+	amount, ok := vm.tx.Inputs[vm.inputIndex].Amount()
+	if !ok {
+		return fmt.Errorf("blinded amount")
+	}
 	return vm.pushInt64(int64(amount), true)
 }
 
@@ -118,16 +126,7 @@ func opProgram(vm *virtualMachine) error {
 		return err
 	}
 
-	var prog []byte
-	inp := vm.tx.Inputs[vm.inputIndex]
-	switch inp := inp.TypedInput.(type) {
-	case *bc.IssuanceInput:
-		prog = inp.IssuanceProgram
-	case *bc.SpendInput:
-		prog = inp.ControlProgram
-	}
-
-	return vm.push(prog, true)
+	return vm.push(vm.mainprog, true)
 }
 
 func opMinTime(vm *virtualMachine) error {
@@ -217,7 +216,7 @@ func opOutpoint(vm *virtualMachine) error {
 		return err
 	}
 
-	outpoint := txin.Outpoint()
+	outpoint, _ := txin.Outpoint()
 
 	err = vm.push(outpoint.Hash[:], true)
 	if err != nil {
@@ -231,18 +230,18 @@ func opNonce(vm *virtualMachine) error {
 		return ErrContext
 	}
 
-	txin := vm.tx.Inputs[vm.inputIndex]
-	ii, ok := txin.TypedInput.(*bc.IssuanceInput)
-	if !ok {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	return vm.push(ii.Nonce, true)
+	txin := vm.tx.Inputs[vm.inputIndex]
+	nonce, ok := txin.Nonce()
+	if !ok {
+		return ErrContext
+	}
+
+	return vm.push(nonce, true)
 }
 
 func opNextProgram(vm *virtualMachine) error {
@@ -268,4 +267,69 @@ func opBlockTime(vm *virtualMachine) error {
 		return fmt.Errorf("block timestamp out of range")
 	}
 	return vm.pushInt64(int64(vm.block.TimestampMS), true)
+}
+
+func opAssetCommitment(vm *virtualMachine) error {
+	if vm.tx == nil {
+		return ErrContext
+	}
+	err := vm.applyCost(1)
+	if err != nil {
+		return err
+	}
+	txin := vm.tx.Inputs[vm.inputIndex]
+	if txin.AssetVersion == 1 {
+		if vm.expansionReserved {
+			return ErrDisallowedOpcode
+		}
+		return nil
+	}
+	ac := txin.AssetCommitment()
+	return vm.push(ac.Bytes(), true)
+}
+
+func opValueCommitment(vm *virtualMachine) error {
+	if vm.tx == nil {
+		return ErrContext
+	}
+	err := vm.applyCost(1)
+	if err != nil {
+		return err
+	}
+	txin := vm.tx.Inputs[vm.inputIndex]
+	if txin.AssetVersion == 1 {
+		if vm.expansionReserved {
+			return ErrDisallowedOpcode
+		}
+		return nil
+	}
+	vc := txin.ValueCommitment()
+	return vm.push(vc.Bytes(), true)
+}
+
+func opIssuanceKey(vm *virtualMachine) error {
+	if vm.tx == nil {
+		return ErrContext
+	}
+	err := vm.applyCost(1)
+	if err != nil {
+		return err
+	}
+	txin := vm.tx.Inputs[vm.inputIndex]
+	if txin.AssetVersion == 1 {
+		if vm.expansionReserved {
+			return ErrDisallowedOpcode
+		}
+		return nil
+	}
+	if vm.issuanceKey == nil {
+		return fmt.Errorf("no issuance key")
+	}
+	buf := bufpool.Get()
+	defer bufpool.Put(buf)
+	err = vm.issuanceKey.WriteTo(buf)
+	if err != nil {
+		return err
+	}
+	return vm.push(buf.Bytes(), true)
 }

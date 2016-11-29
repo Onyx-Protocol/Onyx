@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"chain/core/accesstoken"
-	"chain/errors"
+	"chain-stealth/core/accesstoken"
+	"chain-stealth/errors"
 )
 
 var errNotAuthenticated = errors.New("not authenticated")

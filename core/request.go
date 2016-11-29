@@ -3,9 +3,10 @@ package core
 import (
 	"context"
 
-	"chain/encoding/json"
-	"chain/errors"
-	"chain/protocol/bc"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/encoding/json"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
 )
 
 var (
@@ -15,9 +16,10 @@ var (
 )
 
 type buildRequest struct {
-	Tx      *bc.TxData               `json:"base_transaction"`
-	Actions []map[string]interface{} `json:"actions"`
-	TTL     json.Duration            `json:"ttl"`
+	Tx                          *bc.TxData                              `json:"base_transaction"`
+	Actions                     []map[string]interface{}                `json:"actions"`
+	TTL                         json.Duration                           `json:"ttl"`
+	ConfidentialityInstructions []*txbuilder.ConfidentialityInstruction `json:"confidentiality_instructions"`
 }
 
 func (h *Handler) filterAliases(ctx context.Context, br *buildRequest) error {

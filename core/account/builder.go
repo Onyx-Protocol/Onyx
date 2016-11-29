@@ -1,16 +1,17 @@
 package account
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"time"
 
-	"chain/core/signers"
-	"chain/core/txbuilder"
-	chainjson "chain/encoding/json"
-	"chain/errors"
-	"chain/log"
-	"chain/protocol/bc"
+	"chain-stealth/core/signers"
+	"chain-stealth/core/txbuilder"
+	chainjson "chain-stealth/encoding/json"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/protocol/bc"
 )
 
 func (m *Manager) NewSpendAction(amt bc.AssetAmount, accountID string, refData chainjson.Map, clientToken *string) txbuilder.Action {
@@ -67,11 +68,12 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder
 	b.OnRollback(canceler(ctx, a.accounts, res.ID))
 
 	for _, r := range res.UTXOs {
-		txInput, sigInst, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
+		txInput, sigInst, caValues, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
 		if err != nil {
 			return errors.Wrap(err, "creating inputs")
 		}
-		err = b.AddInput(txInput, sigInst)
+
+		err = b.AddInput(txInput, r.AssetAmount, sigInst, caValues)
 		if err != nil {
 			return errors.Wrap(err, "adding inputs")
 		}
@@ -86,7 +88,7 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder
 		// Don't insert the control program until callbacks are executed.
 		a.accounts.insertControlProgramDelayed(ctx, b, acp)
 
-		err = b.AddOutput(bc.NewTxOutput(a.AssetID, res.Change, acp.controlProgram, nil))
+		err = b.AddEncryptedOutput(bc.NewTxOutput(a.AssetID, res.Change, acp.controlProgram, nil), acp.confidentialityKey)
 		if err != nil {
 			return errors.Wrap(err, "adding change output")
 		}
@@ -140,11 +142,11 @@ func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time, b *txbui
 	if err != nil {
 		return err
 	}
-	txInput, sigInst, err := utxoToInputs(ctx, acct, res.UTXOs[0], a.ReferenceData)
+	txInput, sigInst, caValues, err := utxoToInputs(ctx, acct, res.UTXOs[0], a.ReferenceData)
 	if err != nil {
 		return err
 	}
-	return b.AddInput(txInput, sigInst)
+	return b.AddInput(txInput, res.UTXOs[0].AssetAmount, sigInst, caValues)
 }
 
 // Best-effort cancellation attempt to put in txbuilder.BuildResult.Rollback.
@@ -160,10 +162,16 @@ func canceler(ctx context.Context, m *Manager, rid uint64) func() {
 func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData []byte) (
 	*bc.TxInput,
 	*txbuilder.SigningInstruction,
+	*bc.CAValues,
 	error,
 ) {
-	txInput := bc.NewSpendInput(u.Hash, u.Index, nil, u.AssetID, u.Amount, u.ControlProgram, refData)
+	var prevout bc.Outputv2
+	err := prevout.ReadFrom(bytes.NewReader(u.RawOutput))
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
+	txInput := bc.NewConfidentialSpend(u.Outpoint, &prevout, refData)
 	sigInst := &txbuilder.SigningInstruction{
 		AssetAmount: u.AssetAmount,
 	}
@@ -173,7 +181,7 @@ func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData
 
 	sigInst.AddWitnessKeys(keyIDs, account.Quorum)
 
-	return txInput, sigInst, nil
+	return txInput, sigInst, u.CAValues, nil
 }
 
 func (m *Manager) NewControlAction(amt bc.AssetAmount, accountID string, refData chainjson.Map) txbuilder.Action {
@@ -217,7 +225,8 @@ func (a *controlAction) Build(ctx context.Context, maxTime time.Time, b *txbuild
 	}
 	a.accounts.insertControlProgramDelayed(ctx, b, acp)
 
-	return b.AddOutput(bc.NewTxOutput(a.AssetID, a.Amount, acp.controlProgram, a.ReferenceData))
+	txout := bc.NewTxOutput(a.AssetID, a.Amount, acp.controlProgram, a.ReferenceData)
+	return b.AddEncryptedOutput(txout, acp.confidentialityKey)
 }
 
 // insertControlProgramDelayed takes a template builder and an account
@@ -241,10 +250,11 @@ func (m *Manager) insertControlProgramDelayed(ctx context.Context, b *txbuilder.
 		delete(m.delayedACPs, b)
 		m.delayedACPsMu.Unlock()
 
-		// Insert all of the account control programs at once.
 		if len(acps) == 0 {
 			return nil
 		}
+
+		// Insert all of the account control programs at once.
 		return m.insertAccountControlProgram(ctx, acps...)
 	})
 }

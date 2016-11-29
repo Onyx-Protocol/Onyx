@@ -1,9 +1,9 @@
 package query
 
 import (
-	"chain/core/pin"
-	"chain/database/pg"
-	"chain/protocol"
+	"chain-stealth/core/pin"
+	"chain-stealth/database/pg"
+	"chain-stealth/protocol"
 )
 
 // NewIndexer constructs a new indexer for indexing transactions.

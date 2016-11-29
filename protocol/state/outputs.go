@@ -3,35 +3,34 @@ package state
 import (
 	"bytes"
 
-	"chain/errors"
-	"chain/protocol/bc"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
 )
 
 // Output represents a spent or unspent output
 // for the validation process.
 type Output struct {
 	bc.Outpoint
-	bc.TxOutput
+	bc.TypedOutput
 }
 
 // NewOutput creates a new Output.
-func NewOutput(o bc.TxOutput, p bc.Outpoint) *Output {
+func NewOutput(o bc.TypedOutput, p bc.Outpoint) *Output {
 	return &Output{
-		TxOutput: o,
-		Outpoint: p,
+		TypedOutput: o,
+		Outpoint:    p,
 	}
 }
 
-// Prevout returns the Output consumed by the provided tx input. It
-// only includes the output data that is embedded within inputs (ex,
-// excludes reference data).
+// Prevout returns the Output consumed by the provided tx input, which
+// should be a spend. It only includes the output data that is
+// embedded within inputs (ex, excludes reference data).
 func Prevout(in *bc.TxInput) *Output {
-	assetAmount := in.AssetAmount()
-	t := bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, in.ControlProgram(), nil)
-	return &Output{
-		Outpoint: in.Outpoint(),
-		TxOutput: *t,
+	sp, ok := in.TypedInput.(*bc.SpendInput)
+	if !ok {
+		return nil
 	}
+	return NewOutput(sp.TypedOutput, sp.Outpoint)
 }
 
 // OutputKey returns the key of an output in the state tree.
@@ -42,9 +41,9 @@ func OutputKey(o bc.Outpoint) (bkey []byte) {
 	return b.Bytes()
 }
 
-func outputBytes(o *Output) []byte {
+func OutputBytes(o *Output) []byte {
 	var b bytes.Buffer
-	o.WriteCommitment(&b)
+	o.TypedOutput.WriteTo(&b)
 	return b.Bytes()
 }
 
@@ -52,5 +51,5 @@ func outputBytes(o *Output) []byte {
 // as well as the output commitment (a second []byte) for Inserts
 // into the state tree.
 func OutputTreeItem(o *Output) (bkey, commitment []byte) {
-	return OutputKey(o.Outpoint), outputBytes(o)
+	return OutputKey(o.Outpoint), OutputBytes(o)
 }

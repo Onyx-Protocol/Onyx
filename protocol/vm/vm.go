@@ -1,20 +1,28 @@
 package vm
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
+	"strings"
 
 	// TODO(bobg): very little of this package depends on bc, consider trying to remove the dependency
-	"chain/protocol/bc"
+	"chain-stealth/crypto/ca"
+	"chain-stealth/protocol/bc"
 )
 
 const initialRunLimit = 10000
 
 type virtualMachine struct {
-	program      []byte
+	program      []byte // the program currently executing
+	mainprog     []byte // the outermost program, returned by OP_PROGRAM
 	pc, nextPC   uint32
 	runLimit     int64
 	deferredCost int64
+
+	issuanceKey *ca.Point
+
+	expansionReserved bool
 
 	// Stores the data parsed out of an opcode. Used as input to
 	// data-pushing opcodes.
@@ -55,39 +63,61 @@ func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 
 	txinput := tx.Inputs[inputIndex]
 
-	var program []byte
+	expansionReserved := tx.Version == 1 || tx.Version == 2
+
+	sigHasher := bc.NewSigHasher(&tx.TxData)
+
+	f := func(vmversion uint64, prog []byte, args [][]byte, issuanceKey *ca.Point) (bool, error) {
+		if vmversion != 1 {
+			return false, ErrUnsupportedVM
+		}
+
+		vm := virtualMachine{
+			tx:         tx,
+			inputIndex: inputIndex,
+			sigHasher:  sigHasher,
+
+			issuanceKey: issuanceKey,
+
+			expansionReserved: expansionReserved,
+
+			mainprog: prog,
+			program:  prog,
+			runLimit: initialRunLimit,
+		}
+		for _, arg := range args {
+			err := vm.push(arg, false)
+			if err != nil {
+				return false, err
+			}
+		}
+		ok, err := vm.run()
+		return ok, wrapErr(err, &vm, args)
+	}
+
 	switch inp := txinput.TypedInput.(type) {
-	case *bc.IssuanceInput:
-		if inp.VMVersion != 1 {
-			return false, ErrUnsupportedVM
+	case *bc.IssuanceInput1:
+		return f(inp.VMVersion, inp.IssuanceProgram, inp.Arguments, nil)
+	case *bc.IssuanceInput2:
+		iarp := inp.IssuanceAssetRangeProof()
+		for i, c := range inp.AssetChoices {
+			var issuanceKey *ca.Point
+			if iarp != nil {
+				issuanceKey = &iarp.Y[i]
+			}
+			ok, err := f(c.VMVersion, c.IssuanceProgram, c.Arguments, issuanceKey)
+			if err != nil {
+				return false, err
+			}
+			if !ok {
+				return false, nil
+			}
 		}
-		program = inp.IssuanceProgram
+		return f(inp.VMVersion(), inp.Program(), inp.Arguments(), nil)
 	case *bc.SpendInput:
-		if inp.VMVersion != 1 {
-			return false, ErrUnsupportedVM
-		}
-		program = inp.ControlProgram
-	default:
-		return false, ErrUnsupportedTx
+		return f(inp.VMVer(), inp.Program(), inp.Arguments, nil)
 	}
-
-	vm := virtualMachine{
-		tx:         tx,
-		inputIndex: inputIndex,
-		sigHasher:  bc.NewSigHasher(&tx.TxData),
-
-		program:  program,
-		runLimit: initialRunLimit,
-	}
-
-	for _, arg := range txinput.Arguments() {
-		err := vm.push(arg, false)
-		if err != nil {
-			return false, err
-		}
-	}
-
-	return vm.run()
+	return false, fmt.Errorf("transaction input %d has unknown type %T", inputIndex, txinput.TypedInput)
 }
 
 func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (ok bool, err error) {
@@ -104,6 +134,9 @@ func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (bool, error) {
 	vm := virtualMachine{
 		block: block,
 
+		expansionReserved: true,
+
+		mainprog: prev.ConsensusProgram,
 		program:  prev.ConsensusProgram,
 		runLimit: initialRunLimit,
 	}
@@ -115,7 +148,8 @@ func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (bool, error) {
 		}
 	}
 
-	return vm.run()
+	ok, err := vm.run()
+	return ok, wrapErr(err, &vm, block.Witness)
 }
 
 func (vm *virtualMachine) run() (bool, error) {
@@ -136,10 +170,6 @@ func (vm *virtualMachine) step() error {
 		return err
 	}
 
-	if vm.isDisallowedOpcode(inst.Op) {
-		return ErrDisallowedOpcode
-	}
-
 	vm.nextPC = vm.pc + inst.Len
 
 	if TraceOut != nil {
@@ -149,6 +179,14 @@ func (vm *virtualMachine) step() error {
 			fmt.Fprintf(TraceOut, " %x", inst.Data)
 		}
 		fmt.Fprint(TraceOut, "\n")
+	}
+
+	if isExpansion[inst.Op] {
+		if vm.expansionReserved {
+			return ErrDisallowedOpcode
+		}
+		vm.pc = vm.nextPC
+		return vm.applyCost(1)
 	}
 
 	vm.deferredCost = 0
@@ -161,7 +199,6 @@ func (vm *virtualMachine) step() error {
 	if err != nil {
 		return err
 	}
-
 	vm.pc = vm.nextPC
 
 	if TraceOut != nil {
@@ -171,16 +208,6 @@ func (vm *virtualMachine) step() error {
 	}
 
 	return nil
-}
-
-func (vm *virtualMachine) isDisallowedOpcode(op Op) bool {
-	if vm.tx == nil {
-		return false
-	}
-	if vm.tx.Version != 1 {
-		return false
-	}
-	return isExpansion[op]
 }
 
 func (vm *virtualMachine) push(data []byte, deferred bool) error {
@@ -257,4 +284,35 @@ func stackCost(stack [][]byte) int64 {
 		result += int64(len(item))
 	}
 	return result
+}
+
+type Error struct {
+	Err  error
+	Prog []byte
+	Args [][]byte
+}
+
+func (vmerr Error) Error() string {
+	dis, err := Disassemble(vmerr.Prog)
+	if err != nil {
+		dis = "???"
+	}
+
+	args := make([]string, 0, len(vmerr.Args))
+	for _, a := range vmerr.Args {
+		args = append(args, hex.EncodeToString(a))
+	}
+
+	return fmt.Sprintf("%s [prog %x = %s; args %s]", vmerr.Err.Error(), vmerr.Prog, dis, strings.Join(args, " "))
+}
+
+func wrapErr(err error, vm *virtualMachine, args [][]byte) error {
+	if err == nil {
+		return nil
+	}
+	return Error{
+		Err:  err,
+		Prog: vm.program,
+		Args: args,
+	}
 }

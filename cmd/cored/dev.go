@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"os"
 
-	"chain/core/coreunsafe"
-	"chain/database/pg"
-	"chain/env"
-	"chain/log"
+	"chain-stealth/core/coreunsafe"
+	"chain-stealth/database/pg"
+	"chain-stealth/env"
+	"chain-stealth/log"
 )
 
 var (

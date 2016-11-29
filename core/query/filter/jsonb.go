@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"chain/errors"
+	"chain-stealth/errors"
 )
 
 func jsonValue(expr expr, pvals map[int]interface{}) (v interface{}, path []string) {

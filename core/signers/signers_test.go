@@ -6,10 +6,10 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg"
-	"chain/database/pg/pgtest"
-	"chain/errors"
-	"chain/testutil"
+	"chain-stealth/database/pg"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/errors"
+	"chain-stealth/testutil"
 )
 
 var dummyXPub = "48161b6ca79fe3ae248eaf1a32c66a07db901d81ec3f172b16d3ca8b0de37cd8c49975a24499c5d7a40708f4f13d5445cf87fed54ef5a4a5c47a7689a12e73f9"

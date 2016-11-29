@@ -14,8 +14,8 @@ import (
 
 	"github.com/lib/pq"
 
-	chainsql "chain/database/sql"
-	chainnet "chain/net"
+	chainsql "chain-stealth/database/sql"
+	chainnet "chain-stealth/net"
 )
 
 // DB holds methods common to the DB, Tx, and Stmt types

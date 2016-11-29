@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"chain/errors"
-	"chain/log"
-	"chain/net/http/httpjson"
-	"chain/net/http/reqid"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/net/http/httpjson"
+	"chain-stealth/net/http/reqid"
 )
 
 // errBadReqHeader indicates the user supplied a malformed request header,

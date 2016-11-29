@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"chain/core/account"
-	"chain/core/asset"
-	"chain/core/pin"
-	"chain/core/txbuilder"
-	"chain/crypto/ed25519/chainkd"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/state"
-	"chain/testutil"
+	"chain-stealth/core/account"
+	"chain-stealth/core/asset"
+	"chain-stealth/core/pin"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/crypto/ed25519/chainkd"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
+	"chain-stealth/testutil"
 )
 
 func CreatePins(ctx context.Context, t testing.TB, s *pin.Store) {
@@ -51,7 +51,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
 		assets.NewIssueAction(assetAmount, nil), // does not support reference data
 		accounts.NewControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil),
-	}, time.Now().Add(time.Minute))
+	}, nil, time.Now().Add(time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -64,13 +64,13 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 	}
 
 	return state.Output{
-		Outpoint: bc.Outpoint{Hash: tpl.Transaction.Hash(), Index: 0},
-		TxOutput: *tpl.Transaction.Outputs[0],
+		Outpoint:    bc.Outpoint{Hash: tpl.Transaction.Hash(), Index: 0},
+		TypedOutput: tpl.Transaction.Outputs[0].TypedOutput,
 	}
 }
 
 func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, actions []txbuilder.Action) *bc.Tx {
-	template, err := txbuilder.Build(ctx, nil, actions, time.Now().Add(time.Minute))
+	template, err := txbuilder.Build(ctx, nil, actions, nil, time.Now().Add(time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

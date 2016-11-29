@@ -11,14 +11,14 @@ import (
 	"strconv"
 	"time"
 
-	"chain/core/accesstoken"
-	"chain/core/config"
-	"chain/core/migrate"
-	"chain/core/mockhsm"
-	"chain/crypto/ed25519"
-	"chain/database/sql"
-	"chain/env"
-	"chain/log"
+	"chain-stealth/core/accesstoken"
+	"chain-stealth/core/config"
+	"chain-stealth/core/migrate"
+	"chain-stealth/core/mockhsm"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/database/sql"
+	"chain-stealth/env"
+	"chain-stealth/log"
 )
 
 // config vars

@@ -7,10 +7,10 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/core/asset"
-	"chain/database/pg"
-	"chain/errors"
-	"chain/protocol/bc"
+	"chain-stealth/core/asset"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
 )
 
 const (
@@ -21,10 +21,11 @@ const (
 
 // Annotator describes a function capable of adding annotations
 // to transactions, inputs and outputs.
-type Annotator func(ctx context.Context, txs []map[string]interface{}) error
+type Annotator func(context.Context, []map[string]interface{}, []*bc.Tx) error
 
 // RegisterAnnotator adds an additional annotator capable of mutating
-// the annotated transaction object.
+// the annotated transaction object. Annotators are invoked in the order
+// that they are registered.
 func (ind *Indexer) RegisterAnnotator(annotator Annotator) {
 	ind.annotators = append(ind.annotators, annotator)
 }
@@ -77,7 +78,7 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[
 	}
 
 	for _, annotator := range ind.annotators {
-		err := annotator(ctx, annotatedTxsDecoded)
+		err := annotator(ctx, annotatedTxsDecoded, b.Transactions)
 		if err != nil {
 			return nil, errors.Wrap(err, "adding external annotations")
 		}
@@ -117,9 +118,9 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 
 	for pos, tx := range b.Transactions {
 		for _, in := range tx.Inputs {
-			if !in.IsIssuance() {
-				prevoutHashes = append(prevoutHashes, in.Outpoint().Hash.String())
-				prevoutIndexes = append(prevoutIndexes, in.Outpoint().Index)
+			if outpoint, ok := in.Outpoint(); ok {
+				prevoutHashes = append(prevoutHashes, outpoint.Hash.String())
+				prevoutIndexes = append(prevoutIndexes, outpoint.Index)
 			}
 		}
 

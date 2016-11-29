@@ -3,14 +3,17 @@ package account
 import (
 	"context"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/lib/pq"
 
-	"chain/core/signers"
-	"chain/database/pg"
-	"chain/encoding/json"
-	"chain/errors"
-	"chain/protocol/bc"
-	"chain/protocol/state"
+	"chain-stealth/core/account/internal/storage"
+	"chain-stealth/core/signers"
+	"chain-stealth/database/pg"
+	"chain-stealth/encoding/json"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
 )
 
 // PinName is used to identify the pin associated with
@@ -72,18 +75,23 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 		blockPositions[tx.Hash] = uint32(i)
 		for j, out := range tx.Outputs {
 			stateOutput := &state.Output{
-				TxOutput: *out,
-				Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(j)},
+				TypedOutput: out.TypedOutput,
+				Outpoint:    bc.Outpoint{Hash: tx.Hash, Index: uint32(j)},
 			}
 			outs = append(outs, stateOutput)
 		}
 	}
-	accOuts, err := m.loadAccountInfo(ctx, outs)
+	accOuts, accStateOuts, err := m.loadAccountInfo(ctx, outs)
 	if err != nil {
 		return errors.Wrap(err, "loading account info from control programs")
 	}
 
-	err = m.upsertConfirmedAccountOutputs(ctx, accOuts, blockPositions, b)
+	decryptedAmts, caParams, err := m.confidentiality.DecryptOutputs(ctx, accStateOuts)
+	if err != nil {
+		return errors.Wrap(err, "decrypting confidential output amounts")
+	}
+
+	err = m.upsertConfirmedAccountOutputs(ctx, accOuts, decryptedAmts, caParams, blockPositions, b)
 	if err != nil {
 		return errors.Wrap(err, "upserting confirmed account utxos")
 	}
@@ -101,10 +109,10 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.StringArray, index pg.Uint32s) {
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
+			o, ok := in.Outpoint()
+			if !ok {
 				continue
 			}
-			o := in.Outpoint()
 			txhash = append(txhash, o.Hash.String())
 			index = append(index, o.Index)
 		}
@@ -115,10 +123,10 @@ func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.StringArray, index pg.Uint32s) {
 // loadAccountInfo turns a set of state.Outputs into a set of
 // outputs by adding account annotations.  Outputs that can't be
 // annotated are excluded from the result.
-func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, error) {
+func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, []*state.Output, error) {
 	outsByScript := make(map[string][]*state.Output, len(outs))
 	for _, out := range outs {
-		scriptStr := string(out.ControlProgram)
+		scriptStr := string(out.Program())
 		outsByScript[scriptStr] = append(outsByScript[scriptStr], out)
 	}
 
@@ -128,6 +136,7 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]
 	}
 
 	result := make([]*output, 0, len(outs))
+	stateOuts := make([]*state.Output, 0, len(outs))
 
 	const q = `
 		SELECT signer_id, key_index, control_program
@@ -142,43 +151,86 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]
 				keyIndex:  keyIndex,
 			}
 			result = append(result, newOut)
+			stateOuts = append(stateOuts, out)
 		}
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return result, nil
+	return result, stateOuts, nil
 }
 
 // upsertConfirmedAccountOutputs records the account data for confirmed utxos.
 // If the account utxo already exists (because it's from a local tx), the
 // block confirmation data will in the row will be updated.
-func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[bc.Hash]uint32, block *bc.Block) error {
+func (m *Manager) upsertConfirmedAccountOutputs(
+	ctx context.Context,
+	outs []*output,
+	decryptedAAs map[bc.Outpoint]bc.AssetAmount,
+	caValues map[bc.Outpoint]*bc.CAValues,
+	pos map[bc.Hash]uint32,
+	block *bc.Block,
+) error {
 	var (
-		txHash    pq.StringArray
-		index     pg.Uint32s
-		assetID   pq.StringArray
-		amount    pq.Int64Array
-		accountID pq.StringArray
-		cpIndex   pq.Int64Array
-		program   pq.ByteaArray
+		txHash      pq.StringArray
+		index       pg.Uint32s
+		assetID     pq.StringArray
+		amount      pq.Int64Array
+		accountID   pq.StringArray
+		cpIndex     pq.Int64Array
+		program     pq.ByteaArray
+		rawOuts     pq.ByteaArray
+		rawCAParams pq.ByteaArray
 	)
 	for _, out := range outs {
+		aa, ok := out.GetAssetAmount()
+
+		if !ok {
+			// Maybe the output is just encrypted?
+			aa, ok = decryptedAAs[out.Outpoint]
+		}
+
+		if !ok {
+			// This output was sent to a control program managed by this Core,
+			// but we're unable to decrypt the details!
+			log.Messagef(ctx, "output sent to %s control program but unable to decrypt it", out.AccountID)
+			continue
+		}
+
+		var err error
+		var encodedParams []byte
+		if vals, ok := caValues[out.Outpoint]; ok {
+			encodedParams, err = proto.Marshal(&storage.ConfidentialAssetParams{
+				Value:                    vals.Value,
+				AssetCommitment:          vals.AssetCommitment.Bytes(),
+				CumulativeBlindingFactor: vals.CumulativeBlindingFactor[:],
+				ValueCommitment:          vals.ValueCommitment.Bytes(),
+				ValueBlindingFactor:      vals.ValueBlindingFactor[:],
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		raw := state.OutputBytes(&out.Output)
+
 		txHash = append(txHash, out.Outpoint.Hash.String())
 		index = append(index, out.Outpoint.Index)
-		assetID = append(assetID, out.AssetID.String())
-		amount = append(amount, int64(out.Amount))
+		assetID = append(assetID, aa.AssetID.String())
+		amount = append(amount, int64(aa.Amount)) // TODO(bobg): range-check aa.Amount before casting to int64
 		accountID = append(accountID, out.AccountID)
 		cpIndex = append(cpIndex, int64(out.keyIndex))
-		program = append(program, out.ControlProgram)
+		program = append(program, out.Program())
+		rawOuts = append(rawOuts, raw)
+		rawCAParams = append(rawCAParams, encodedParams)
 	}
 
 	const q = `
 		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, account_id, control_program_index,
-			control_program, confirmed_in)
+			control_program, confirmed_in, raw_output, ca_params)
 		SELECT unnest($1::text[]), unnest($2::bigint[]), unnest($3::text[]),  unnest($4::bigint[]),
-			   unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), $8
+		unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), $8, unnest($9::bytea[]), unnest($10::bytea[])
 		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
 	_, err := m.db.Exec(ctx, q,
@@ -190,6 +242,8 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 		cpIndex,
 		program,
 		block.Height,
+		rawOuts,
+		rawCAParams,
 	)
 	return errors.Wrap(err)
 }

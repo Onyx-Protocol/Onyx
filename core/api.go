@@ -10,30 +10,31 @@ import (
 	"sync"
 	"time"
 
-	"chain/core/accesstoken"
-	"chain/core/account"
-	"chain/core/asset"
-	"chain/core/config"
-	"chain/core/leader"
-	"chain/core/mockhsm"
-	"chain/core/pin"
-	"chain/core/query"
-	"chain/core/rpc"
-	"chain/core/txbuilder"
-	"chain/core/txdb"
-	"chain/core/txfeed"
-	"chain/database/pg"
-	"chain/encoding/json"
-	"chain/errors"
-	"chain/generated/dashboard"
-	"chain/generated/docs"
-	"chain/net/http/gzip"
-	"chain/net/http/httpjson"
-	"chain/net/http/limit"
-	"chain/net/http/reqid"
-	"chain/net/http/static"
-	"chain/protocol"
-	"chain/protocol/bc"
+	"chain-stealth/core/accesstoken"
+	"chain-stealth/core/account"
+	"chain-stealth/core/asset"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/core/config"
+	"chain-stealth/core/leader"
+	"chain-stealth/core/mockhsm"
+	"chain-stealth/core/pin"
+	"chain-stealth/core/query"
+	"chain-stealth/core/rpc"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/core/txdb"
+	"chain-stealth/core/txfeed"
+	"chain-stealth/database/pg"
+	"chain-stealth/encoding/json"
+	"chain-stealth/errors"
+	"chain-stealth/generated/dashboard"
+	"chain-stealth/generated/docs"
+	"chain-stealth/net/http/gzip"
+	"chain-stealth/net/http/httpjson"
+	"chain-stealth/net/http/limit"
+	"chain-stealth/net/http/reqid"
+	"chain-stealth/net/http/static"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
 )
 
 const (
@@ -51,22 +52,23 @@ var (
 
 // Handler serves the Chain HTTP API
 type Handler struct {
-	Chain         *protocol.Chain
-	Store         *txdb.Store
-	PinStore      *pin.Store
-	Assets        *asset.Registry
-	Accounts      *account.Manager
-	HSM           *mockhsm.HSM
-	Indexer       *query.Indexer
-	TxFeeds       *txfeed.Tracker
-	AccessTokens  *accesstoken.CredentialStore
-	Config        *config.Config
-	Submitter     txbuilder.Submitter
-	DB            pg.DB
-	Addr          string
-	AltAuth       func(*http.Request) bool
-	Signer        func(context.Context, *bc.Block) ([]byte, error)
-	RequestLimits []RequestLimit
+	Chain           *protocol.Chain
+	Store           *txdb.Store
+	PinStore        *pin.Store
+	Assets          *asset.Registry
+	Accounts        *account.Manager
+	HSM             *mockhsm.HSM
+	Indexer         *query.Indexer
+	TxFeeds         *txfeed.Tracker
+	AccessTokens    *accesstoken.CredentialStore
+	Confidentiality *confidentiality.Storage
+	Config          *config.Config
+	Submitter       txbuilder.Submitter
+	DB              pg.DB
+	Addr            string
+	AltAuth         func(*http.Request) bool
+	Signer          func(context.Context, *bc.Block) ([]byte, error)
+	RequestLimits   []RequestLimit
 
 	once           sync.Once
 	handler        http.Handler
@@ -98,8 +100,10 @@ func (h *Handler) init() {
 	// Setup the available transact actions.
 	h.actionDecoders = map[string]func(data []byte) (txbuilder.Action, error){
 		"control_account":                h.Accounts.DecodeControlAction,
-		"control_program":                txbuilder.DecodeControlProgramAction,
+		"control_program":                txbuilder.ControlProgramActionDecoder(h.Confidentiality),
 		"issue":                          h.Assets.DecodeIssueAction,
+		"add_raw_transaction":            txbuilder.DecodeRawTransactionAction,
+		"retire":                         txbuilder.RetireActionDecoder(h.Confidentiality),
 		"spend_account":                  h.Accounts.DecodeSpendAction,
 		"spend_account_unspent_output":   h.Accounts.DecodeSpendUTXOAction,
 		"set_transaction_reference_data": txbuilder.DecodeSetTxRefDataAction,

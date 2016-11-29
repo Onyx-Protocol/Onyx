@@ -1,9 +1,9 @@
 package vmutil
 
 import (
-	"chain/crypto/ed25519"
-	"chain/errors"
-	"chain/protocol/vm"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/vm"
 )
 
 var (

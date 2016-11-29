@@ -72,4 +72,44 @@ var migrations = []migration{
 			ALTER COLUMN tx_id SET DATA TYPE bytea USING decode(tx_id,'hex');
 		ALTER TABLE submitted_txs RENAME COLUMN tx_id TO tx_hash;
 	`},
+	{Name: "2016-11-30.0.confidentiality.sql", SQL: `
+		CREATE TABLE confidentiality_keys (
+			control_program bytea NOT NULL,
+			key             bytea NOT NULL,
+			PRIMARY KEY (control_program)
+		);
+	`},
+	{Name: "2016-12-02.0.confidentiality-issuances.sql", SQL: `
+		ALTER TABLE confidentiality_keys
+			DROP CONSTRAINT confidentiality_keys_pkey,
+			ALTER COLUMN control_program DROP NOT NULL,
+			ADD COLUMN issuance_hash bytea,
+			ADD PRIMARY KEY (control_program, issuance_hash);
+	`},
+	{Name: "2016-12-02.1.confidentiality-nonce.sql", SQL: `
+		ALTER TABLE confidentiality_keys
+			RENAME COLUMN issuance_hash TO issuance_nonce;
+	`},
+	{Name: "2016-12-05.0.account.raw-outputs.sql", SQL: `
+		ALTER TABLE account_utxos
+			ADD COLUMN raw_output bytea NOT NULL;
+	`},
+	{Name: "2016-12-05.1.account.ca-params.sql", SQL: `
+		ALTER TABLE account_utxos
+			ADD COLUMN ca_params bytea DEFAULT NULL;
+	`},
+	{Name: "2016-12-05.2.confidentiality_keys.sql", SQL: `
+		ALTER TABLE confidentiality_keys
+			DROP CONSTRAINT confidentiality_keys_pkey,
+			DROP COLUMN issuance_nonce,
+			ADD PRIMARY KEY(control_program);
+	`},
+	{Name: "2016-12-05.3.confidentiality.issuances.sql", SQL: `
+		CREATE TABLE confidential_issuances (
+			asset_id text   NOT NULL,
+			nonce    bytea  NOT NULL,
+			amount   bigint NOT NULL,
+			PRIMARY KEY(asset_id, nonce)
+		);
+	`},
 }

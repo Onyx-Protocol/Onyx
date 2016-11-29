@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 
-	"chain/core/rpc"
-	"chain/errors"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/validation"
-	"chain/protocol/vm"
+	"chain-stealth/core/rpc"
+	"chain-stealth/errors"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/validation"
+	"chain-stealth/protocol/vm"
 )
 
 var (
@@ -63,13 +63,12 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 	sigHasher := bc.NewSigHasher(&tx.TxData)
 
 	for i, inp := range tx.Inputs {
-		var args [][]byte
-		switch t := inp.TypedInput.(type) {
-		case *bc.SpendInput:
-			args = t.Arguments
+		if !inp.IsIssuance() {
 			allIssuances = false
-		case *bc.IssuanceInput:
-			args = t.Arguments
+		}
+		args, ok := inp.Arguments()
+		if !ok {
+			// xxx
 		}
 		if len(args) < 3 {
 			// A conforming arguments list contains

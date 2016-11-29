@@ -11,41 +11,45 @@ import (
 	"github.com/golang/groupcache/lru"
 	"github.com/lib/pq"
 
-	"chain/core/pin"
-	"chain/core/signers"
-	"chain/core/txbuilder"
-	"chain/crypto/ed25519/chainkd"
-	"chain/database/pg"
-	"chain/database/sql"
-	"chain/errors"
-	"chain/log"
-	"chain/protocol"
-	"chain/protocol/vmutil"
+	"chain-stealth/core/confidentiality"
+	"chain-stealth/core/pin"
+	"chain-stealth/core/signers"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/crypto/ca"
+	"chain-stealth/crypto/ed25519/chainkd"
+	"chain-stealth/database/pg"
+	"chain-stealth/database/sql"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/vmutil"
 )
 
 const maxAccountCache = 1000
 
 var ErrDuplicateAlias = errors.New("duplicate account alias")
 
-func NewManager(db *sql.DB, chain *protocol.Chain, pinStore *pin.Store) *Manager {
+func NewManager(db *sql.DB, chain *protocol.Chain, pinStore *pin.Store, keys *confidentiality.Storage) *Manager {
 	return &Manager{
-		db:          db,
-		chain:       chain,
-		utxoDB:      newReserver(db, chain, pinStore),
-		pinStore:    pinStore,
-		cache:       lru.New(maxAccountCache),
-		aliasCache:  lru.New(maxAccountCache),
-		delayedACPs: make(map[*txbuilder.TemplateBuilder][]*controlProgram),
+		db:              db,
+		chain:           chain,
+		utxoDB:          newReserver(db, chain, pinStore),
+		pinStore:        pinStore,
+		confidentiality: keys,
+		cache:           lru.New(maxAccountCache),
+		aliasCache:      lru.New(maxAccountCache),
+		delayedACPs:     make(map[*txbuilder.TemplateBuilder][]*controlProgram),
 	}
 }
 
 // Manager stores accounts and their associated control programs.
 type Manager struct {
-	db       *sql.DB
-	chain    *protocol.Chain
-	utxoDB   *reserver
-	indexer  Saver
-	pinStore *pin.Store
+	db              *sql.DB
+	chain           *protocol.Chain
+	utxoDB          *reserver
+	indexer         Saver
+	pinStore        *pin.Store
+	confidentiality *confidentiality.Storage
 
 	cacheMu    sync.Mutex
 	cache      *lru.Cache
@@ -173,10 +177,11 @@ func (m *Manager) findByID(ctx context.Context, id string) (*signers.Signer, err
 }
 
 type controlProgram struct {
-	accountID      string
-	keyIndex       uint64
-	controlProgram []byte
-	change         bool
+	accountID          string
+	keyIndex           uint64
+	controlProgram     []byte
+	confidentialityKey ca.RecordKey
+	change             bool
 }
 
 func (m *Manager) createControlProgram(ctx context.Context, accountID string, change bool) (*controlProgram, error) {
@@ -197,27 +202,34 @@ func (m *Manager) createControlProgram(ctx context.Context, accountID string, ch
 	if err != nil {
 		return nil, err
 	}
+
+	rek, err := confidentiality.NewKey()
+	if err != nil {
+		return nil, err
+	}
+
 	return &controlProgram{
-		accountID:      account.ID,
-		keyIndex:       idx,
-		controlProgram: control,
-		change:         change,
+		accountID:          account.ID,
+		keyIndex:           idx,
+		controlProgram:     control,
+		confidentialityKey: rek,
+		change:             change,
 	}, nil
 }
 
 // CreateControlProgram creates a control program
 // that is tied to the Account and stores it in the database.
-func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, change bool) ([]byte, error) {
+func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, change bool) (prog []byte, key [32]byte, err error) {
 	cp, err := m.createControlProgram(ctx, accountID, change)
 	if err != nil {
-		return nil, err
+		return nil, key, err
 	}
 
 	err = m.insertAccountControlProgram(ctx, cp)
 	if err != nil {
-		return nil, err
+		return nil, key, err
 	}
-	return cp.controlProgram, nil
+	return cp.controlProgram, cp.confidentialityKey, nil
 }
 
 func (m *Manager) insertAccountControlProgram(ctx context.Context, progs ...*controlProgram) error {
@@ -230,15 +242,25 @@ func (m *Manager) insertAccountControlProgram(ctx context.Context, progs ...*con
 		keyIndexes   pq.Int64Array
 		controlProgs pq.ByteaArray
 		change       pq.BoolArray
+		keys         []*confidentiality.Key
 	)
 	for _, p := range progs {
 		accountIDs = append(accountIDs, p.accountID)
 		keyIndexes = append(keyIndexes, int64(p.keyIndex))
 		controlProgs = append(controlProgs, p.controlProgram)
 		change = append(change, p.change)
+		keys = append(keys, &confidentiality.Key{
+			ControlProgram: p.controlProgram,
+			Key:            p.confidentialityKey,
+		})
 	}
 
-	_, err := m.db.Exec(ctx, q, accountIDs, keyIndexes, controlProgs, change)
+	err := m.confidentiality.StoreKeys(ctx, keys)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	_, err = m.db.Exec(ctx, q, accountIDs, keyIndexes, controlProgs, change)
 	return errors.Wrap(err)
 }
 

@@ -10,9 +10,9 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"chain/crypto/sha3pool"
-	"chain/encoding/blockchain"
-	"chain/errors"
+	"chain-stealth/crypto/sha3pool"
+	"chain-stealth/encoding/blockchain"
+	"chain-stealth/errors"
 )
 
 // Hash represents a 256-bit hash.  By convention, Hash objects are
@@ -97,12 +97,13 @@ func ParseHash(s string) (h Hash, err error) {
 	return h, errors.Wrap(err, "decode hex")
 }
 
-func writeFastHash(w io.Writer, d []byte) {
+func WriteFastHash(w io.Writer, d []byte) error {
 	if len(d) == 0 {
-		blockchain.WriteVarstr31(w, nil)
-		return
+		_, err := blockchain.WriteVarstr31(w, nil)
+		return err
 	}
 	var h [32]byte
 	sha3pool.Sum256(h[:], d)
-	blockchain.WriteVarstr31(w, h[:])
+	_, err := blockchain.WriteVarstr31(w, h[:])
+	return err
 }

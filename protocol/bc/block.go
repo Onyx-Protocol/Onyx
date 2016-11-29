@@ -8,10 +8,10 @@ import (
 	"io"
 	"time"
 
-	"chain/crypto/sha3pool"
-	"chain/encoding/blockchain"
-	"chain/encoding/bufpool"
-	"chain/errors"
+	"chain-stealth/crypto/sha3pool"
+	"chain-stealth/encoding/blockchain"
+	"chain-stealth/encoding/bufpool"
+	"chain-stealth/errors"
 )
 
 const (
@@ -83,13 +83,13 @@ func (b *Block) readFrom(r io.Reader) error {
 	if serflags&SerBlockTransactions == SerBlockTransactions {
 		n, _, err := blockchain.ReadVarint31(r)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "reading number of transactions")
 		}
 		for ; n > 0; n-- {
 			var data TxData
 			err = data.readFrom(r)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "reading transaction %d", len(b.Transactions))
 			}
 			// TODO(kr): store/reload hashes;
 			// don't compute here if not necessary.
@@ -117,9 +117,6 @@ func (b *Block) writeTo(w io.Writer, serflags uint8) {
 	}
 }
 
-// NewBlockVersion is the version to use when creating new blocks.
-const NewBlockVersion = 1
-
 // BlockHeader describes necessary data of the block.
 type BlockHeader struct {
 	// Version of the block.
@@ -144,10 +141,11 @@ type BlockHeader struct {
 	// included in the block.
 	TransactionsMerkleRoot Hash
 
-	// AssetsMerkleRoot is the root hash of the Merkle Patricia Tree of
-	// the set of unspent outputs with asset version 1 after applying
+	// AssetsMerkleRoot1 and AssetsMerkleRoot2 are the root hashes of
+	// the Merkle Patricia Trees of the set of unspent outputs with
+	// asset version 1 and asset version 2 (respectively) after applying
 	// the block.
-	AssetsMerkleRoot Hash
+	AssetsMerkleRoot1, AssetsMerkleRoot2 Hash
 
 	// ConsensusProgram is the predicate for validating the next block.
 	ConsensusProgram []byte
@@ -238,16 +236,28 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 	if err != nil {
 		return 0, err
 	}
-	if len(commitment) < 64 {
-		return 0, fmt.Errorf("block commitment string too short")
-	}
-	copy(bh.TransactionsMerkleRoot[:], commitment[:32])
-	copy(bh.AssetsMerkleRoot[:], commitment[32:64])
 
-	progReader := bytes.NewReader(commitment[64:])
-	bh.ConsensusProgram, _, err = blockchain.ReadVarstr31(progReader)
+	commitmentReader := bytes.NewReader(commitment)
+	_, err = io.ReadFull(commitmentReader, bh.TransactionsMerkleRoot[:])
 	if err != nil {
 		return 0, err
+	}
+	_, err = io.ReadFull(commitmentReader, bh.AssetsMerkleRoot1[:])
+	if err != nil {
+		return 0, err
+	}
+	bh.ConsensusProgram, _, err = blockchain.ReadVarstr31(commitmentReader)
+	if err != nil {
+		return 0, err
+	}
+	if bh.Version == 2 {
+		_, err = io.ReadFull(commitmentReader, bh.AssetsMerkleRoot2[:])
+		if err != nil {
+			return 0, err
+		}
+	}
+	if commitmentReader.Len() > 0 {
+		return 0, fmt.Errorf("block commitment contains unexpected data")
 	}
 
 	if serflags[0]&SerBlockWitness == SerBlockWitness {
@@ -267,6 +277,9 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 				return 0, errors.Wrap(err, "reading block witness")
 			}
 			bh.Witness = append(bh.Witness, wb)
+		}
+		if witnessReader.Len() > 0 {
+			return 0, fmt.Errorf("block witness contains unexpected data")
 		}
 	}
 
@@ -311,10 +324,13 @@ func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
 
 	var commitment bytes.Buffer
 	commitment.Write(bh.TransactionsMerkleRoot[:])
-	commitment.Write(bh.AssetsMerkleRoot[:])
+	commitment.Write(bh.AssetsMerkleRoot1[:])
 	_, err = blockchain.WriteVarstr31(&commitment, bh.ConsensusProgram)
 	if err != nil {
 		return err
+	}
+	if bh.Version == 2 {
+		commitment.Write(bh.AssetsMerkleRoot2[:])
 	}
 
 	_, err = blockchain.WriteVarstr31(w, commitment.Bytes())

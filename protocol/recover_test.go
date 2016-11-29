@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"chain/protocol/bc"
-	"chain/protocol/memstore"
-	"chain/protocol/state"
-	"chain/protocol/validation"
-	"chain/testutil"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/memstore"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/validation"
+	"chain-stealth/testutil"
 )
 
 func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
@@ -55,15 +55,17 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 }
 
 func createEmptyBlock(block *bc.Block, snapshot *state.Snapshot) *bc.Block {
+	root, _ := validation.CalcMerkleRoot(nil)
 	return &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:                bc.NewBlockVersion,
+			Version:                1,
 			Height:                 block.Height + 1,
 			PreviousBlockHash:      block.Hash(),
 			TimestampMS:            bc.Millis(time.Now()),
 			ConsensusProgram:       block.ConsensusProgram,
-			TransactionsMerkleRoot: validation.CalcMerkleRoot(nil),
-			AssetsMerkleRoot:       snapshot.Tree.RootHash(),
+			TransactionsMerkleRoot: root,
+			AssetsMerkleRoot1:      snapshot.Tree1.RootHash(),
+			AssetsMerkleRoot2:      snapshot.Tree2.RootHash(),
 		},
 	}
 }

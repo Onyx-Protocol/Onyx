@@ -6,10 +6,10 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/core/query/filter"
-	"chain/database/pg/pgtest"
-	"chain/errors"
-	"chain/protocol"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/errors"
+	"chain-stealth/protocol"
 )
 
 func TestDecodeTxAfter(t *testing.T) {

@@ -13,13 +13,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"chain/core/rpc"
-	"chain/core/txdb"
-	"chain/errors"
-	"chain/log"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/state"
+	"chain-stealth/core/rpc"
+	"chain-stealth/core/txdb"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
 )
 
 const heightPollingPeriod = 3 * time.Second
@@ -354,8 +354,11 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 		// Something seriously funny is still afoot.
 		return errors.New("generator provided snapshot but could not provide block")
 	}
-	if snapshotBlock.AssetsMerkleRoot != snapshot.Tree.RootHash() {
-		return errors.New("snapshot merkle root doesn't match block")
+	if snapshotBlock.AssetsMerkleRoot1 != snapshot.Tree1.RootHash() {
+		return errors.New("snapshot merkle root (v1) doesn't match block")
+	}
+	if snapshotBlock.AssetsMerkleRoot2 != snapshot.Tree2.RootHash() {
+		return errors.New("snapshot merkle root (v2) doesn't match block")
 	}
 
 	// Commit the snapshot, initial block and snapshot block.

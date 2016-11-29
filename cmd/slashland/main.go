@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"chain/env"
+	"chain-stealth/env"
 )
 
 const slashLandUsage = `

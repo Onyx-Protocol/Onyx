@@ -3,8 +3,8 @@ package core
 import (
 	"testing"
 
-	"chain/core/query"
-	"chain/errors"
+	"chain-stealth/core/query"
+	"chain-stealth/errors"
 )
 
 func TestTxFeedIsBefore(t *testing.T) {

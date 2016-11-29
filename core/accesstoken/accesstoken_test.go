@@ -9,8 +9,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/database/pg/pgtest"
-	"chain/errors"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/errors"
 )
 
 func TestCreate(t *testing.T) {

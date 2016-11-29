@@ -8,8 +8,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/core/query/filter"
-	"chain/protocol/bc"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/protocol/bc"
 )
 
 func TestConstructBalancesQuery(t *testing.T) {

@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
-	"chain/crypto/sha3pool"
-	chainjson "chain/encoding/json"
-	"chain/errors"
-	"chain/protocol/bc"
-	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"chain-stealth/crypto/sha3pool"
+	chainjson "chain-stealth/encoding/json"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/vm"
+	"chain-stealth/protocol/vmutil"
 )
 
 // SignFunc is the function passed into Sign that produces
@@ -164,8 +164,8 @@ func buildSigProgram(tpl *Template, index int) []byte {
 		maxTimeMS: tpl.Transaction.MaxTime,
 	})
 	inp := tpl.Transaction.Inputs[index]
-	if !inp.IsIssuance() {
-		constraints = append(constraints, outpointConstraint(inp.Outpoint()))
+	if outpoint, ok := inp.Outpoint(); ok {
+		constraints = append(constraints, outpointConstraint(outpoint))
 	}
 
 	// Commitment to the tx-level refdata is conditional on it being
@@ -179,10 +179,14 @@ func buildSigProgram(tpl *Template, index int) []byte {
 	constraints = append(constraints, refdataConstraint{inp.ReferenceData, false})
 
 	for i, out := range tpl.Transaction.Outputs {
+		assetAmount, ok := out.GetAssetAmount()
+		if !ok {
+			continue
+		}
 		c := &payConstraint{
 			Index:       i,
-			AssetAmount: out.AssetAmount,
-			Program:     out.ControlProgram,
+			AssetAmount: assetAmount,
+			Program:     out.Program(),
 		}
 		if len(out.ReferenceData) > 0 {
 			var h [32]byte

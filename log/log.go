@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"chain/errors"
-	"chain/net/http/reqid"
+	"chain-stealth/errors"
+	"chain-stealth/net/http/reqid"
 )
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"

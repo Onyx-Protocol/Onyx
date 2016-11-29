@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/memstore"
-	"chain/protocol/state"
-	"chain/testutil"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/memstore"
+	"chain-stealth/protocol/state"
+	"chain-stealth/testutil"
 )
 
 var (

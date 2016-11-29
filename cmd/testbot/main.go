@@ -17,7 +17,7 @@ import (
 
 	"github.com/kr/s3"
 
-	"chain/env"
+	"chain-stealth/env"
 )
 
 var (

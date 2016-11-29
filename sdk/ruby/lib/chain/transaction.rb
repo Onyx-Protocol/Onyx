@@ -197,6 +197,16 @@ module Chain
       # @return [Boolean]
       attrib :is_local
 
+      # @!attribute [r] confidential
+      # A flag indicating if the input is encrypted on the blockchain.
+      # @return [Boolean]
+      attrib :confidential
+
+      # @!attribute [r] readable
+      # A flag indicating if the input's details are readable by this Core.
+      # @return [Boolean]
+      attrib :readable
+
       class SpentOutput < ResponseObject
         # @!attribute [r] transaction_id
         # Unique transaction identifier.
@@ -293,6 +303,16 @@ module Chain
       # A flag indicating if the output is local.
       # @return [Boolean]
       attrib :is_local
+
+      # @!attribute [r] confidential
+      # A flag indicating if the output is encrypted on the blockchain.
+      # @return [Boolean]
+      attrib :confidential
+
+      # @!attribute [r] readable
+      # A flag indicating if the output's details are readable by this Core.
+      # @return [Boolean]
+      attrib :readable
     end
 
     class Builder
@@ -322,11 +342,18 @@ module Chain
         self
       end
 
+      # @return [Builder]
+      def confidentiality_instructions(inst)
+          @confidentialityInst = inst
+          self
+      end
+
       # @return [Hash]
       def to_h
         {
           actions: actions,
           base_transaction: @base_transaction,
+          confidentiality_instructions: @confidentialityInst,
           ttl: @ttl,
         }.select do |k,v|
           # TODO: Patches an issue in Chain Core 1.0 where nil values are rejected
@@ -362,6 +389,12 @@ module Chain
           type: :set_transaction_reference_data,
           reference_data: reference_data,
         )
+      end
+
+      # Adds the body of another raw transaction to this transaction.
+      # @return [Builder]
+      def add_raw_transaction(params)
+        add_action(params.merge(type: :add_raw_transaction))
       end
 
       # Add an issuance action.
@@ -423,7 +456,9 @@ module Chain
       #                                   You must specify either an ID or an alias.
       # @option params [String] :asset_alias Asset alias specifying the asset to be controlled.
       #                                   You must specify either an ID or an alias.
-      # @option params [String] :control_program The control program to be used
+      # @option params [String] :control_program The hex-encoded control program to be used
+      # @option params [String] :confidentiality_key The hex-encoded confidentiality key for
+      #                                              the control program.
       # @option params [Integer] :amount amount of the asset to be controlled.
       # @return [Builder]
       def control_with_program(params)
@@ -439,10 +474,7 @@ module Chain
       # @option params [Integer] :amount Amount of the asset to be retired.
       # @return [Builder]
       def retire(params)
-        add_action(params.merge(
-          type: :control_program,
-          control_program: '6a'
-        ))
+        add_action(params.merge(type: :retire))
       end
     end
 
@@ -460,6 +492,10 @@ module Chain
       # @!attribute [r] signing_instructions
       # @return [String]
       attrib :signing_instructions
+
+      # @!attribute [r] confidentiality_instructions
+      # @return [String]
+      attrib :confidentiality_instructions
 
       # @return [Template]
       def allow_additional_actions

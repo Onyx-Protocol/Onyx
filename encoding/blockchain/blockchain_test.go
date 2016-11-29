@@ -2,8 +2,10 @@ package blockchain
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"math"
+	"reflect"
 	"testing"
 )
 
@@ -75,8 +77,7 @@ func TestVarint31(t *testing.T) {
 		if !bytes.Equal(c.want, b.Bytes()) {
 			t.Errorf("WriteVarint31(%d): got %x, want %x", c.n, b.Bytes(), c.want)
 		}
-		b = bytes.NewBuffer(b.Bytes())
-		v, n, err := ReadVarint31(b)
+		v, n, err := ReadVarint31(bytes.NewReader(b.Bytes()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -129,8 +130,7 @@ func TestVarint63(t *testing.T) {
 		if !bytes.Equal(c.want, b.Bytes()) {
 			t.Errorf("WriteVarint63(%d): got %x, want %x", c.n, b.Bytes(), c.want)
 		}
-		b = bytes.NewBuffer(b.Bytes())
-		v, n, err := ReadVarint63(b)
+		v, n, err := ReadVarint63(bytes.NewReader(b.Bytes()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -154,13 +154,94 @@ func TestVarstring31(t *testing.T) {
 	if !bytes.Equal(b.Bytes(), want) {
 		t.Errorf("got %x, want %x", b.Bytes(), want)
 	}
-	b = bytes.NewBuffer(want)
-	s, _, err = ReadVarstr31(b)
+	s, _, err = ReadVarstr31(bytes.NewReader(want))
 	if err != nil {
 		t.Fatal(err)
 	}
 	want = []byte{10, 11, 12}
 	if !bytes.Equal(s, want) {
 		t.Errorf("got %x, expected %x", s, want)
+	}
+}
+
+func TestVarstrList(t *testing.T) {
+	for i := 0; i < 4; i++ {
+		// make a list of i+1 strs, each with length i+1, each make of repeating byte i
+		strs := make([][]byte, 0, i+1)
+		for j := 0; j <= i; j++ {
+			str := make([]byte, 0, i+1)
+			for k := 0; k <= i; k++ {
+				str = append(str, byte(i))
+			}
+			strs = append(strs, str)
+		}
+		var buf bytes.Buffer
+		_, err := WriteVarstrList(&buf, strs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		strs2, _, err := ReadVarstrList(bytes.NewReader(buf.Bytes()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(strs, strs2) {
+			t.Errorf("got %v, want %v", strs2, strs)
+		}
+	}
+}
+
+func TestExtensibleString(t *testing.T) {
+	for i := 0; i < 4; i++ {
+		// make a string of length i+1
+		str := make([]byte, 0, i+1)
+		for j := 0; j <= i; j++ {
+			str = append(str, byte(i))
+		}
+		var buf bytes.Buffer
+		_, err := WriteExtensibleString(&buf, func(w io.Writer) error {
+			_, err := w.Write(str)
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var str2 []byte
+		b := buf.Bytes()
+		_, err = ReadExtensibleString(bytes.NewReader(b), true, func(r io.Reader) error {
+			str2, err = ioutil.ReadAll(r)
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(str, str2) {
+			t.Errorf("got %x, want %x", str2, str)
+		}
+		_, err = ReadExtensibleString(bytes.NewReader(b[:i]), false, func(r io.Reader) error {
+			return nil
+		})
+		switch err {
+		case nil:
+			t.Errorf("got no error, want io.EOF")
+		case io.EOF, io.ErrUnexpectedEOF:
+		default:
+			t.Errorf("got error %s, want io.EOF", err)
+		}
+		_, err = ReadExtensibleString(bytes.NewReader(b), false, func(r io.Reader) error {
+			return nil
+		})
+		if err != nil {
+			t.Error(err)
+		}
+		_, err = ReadExtensibleString(bytes.NewReader(b), true, func(r io.Reader) error {
+			return nil
+		})
+		switch err {
+		case nil:
+			t.Errorf("got no error, want ErrLeftover")
+		case ErrLeftover:
+		default:
+			t.Errorf("got error %s, want ErrLeftover")
+		}
 	}
 }

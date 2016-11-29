@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"chain/database/pg"
-	"chain/errors"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
 )
 
 func TestWriteHTTPError(t *testing.T) {

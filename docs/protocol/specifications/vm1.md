@@ -73,6 +73,8 @@ Execution of any of the following instructions results in immediate failure:
 * [CHECKOUTPUT](#checkoutput)
 * [ASSET](#asset)
 * [AMOUNT](#amount)
+* [ASSETCOMMITMENT](#assetcommitment)
+* [VALUECOMMITMENT](#valuecommitment)
 * [MINTIME](#mintime)
 * [MAXTIME](#maxtime)
 * [TXREFDATAHASH](#txrefdatahash)
@@ -80,17 +82,45 @@ Execution of any of the following instructions results in immediate failure:
 * [INDEX](#index)
 * [OUTPOINT](#outpoint)
 * [NONCE](#nonce)
+* [ISSUANCEKEY](#issuancekey)
 
 
-### Transaction context
+### Transaction contexts
 
-Transaction context is defined by the pair of the entire transaction and the index of one of its inputs indicating the “current input”.
+Transaction context is defined by the pair of the entire transaction and the index of one of its inputs indicating the current input.
+
+#### Asset Version 1 Context
 
 Execution of any of the following instructions results in immediate failure:
 
 * [BLOCKSIGHASH](#blocksighash)
 * [NEXTPROGRAM](#nextprogram)
 * [BLOCKTIME](#blocktime)
+
+The following instructions are treated as [expansion instructions](#expansion-opcodes):
+
+* [ASSETCOMMITMENT](#assetcommitment)
+* [VALUECOMMITMENT](#valuecommitment)
+* [ISSUANCEKEY](#issuancekey)
+
+
+#### Asset Version 2 Input Context
+
+Execution of any of the following instructions results in immediate failure:
+
+* [BLOCKSIGHASH](#blocksighash)
+* [NEXTPROGRAM](#nextprogram)
+* [BLOCKTIME](#blocktime)
+* [ISSUANCEKEY](#issuancekey)
+
+#### Asset Version 2 Issuance Choice Context
+
+Execution of any of the following instructions results in immediate failure:
+
+* [BLOCKSIGHASH](#blocksighash)
+* [NEXTPROGRAM](#nextprogram)
+* [BLOCKTIME](#blocktime)
+
 
 
 ## VM state
@@ -104,7 +134,9 @@ Execution of any of the following instructions results in immediate failure:
 5. Run Limit
 6. Execution Context:
     a. Block
-    b. (Transaction, Input Index)
+    b. (Asset Version 1, Transaction, Input Index)
+    c. (Asset Version 2, Transaction, Input Index)
+7. Expansion Reserved (boolean)
 
 **Initial State** has empty stacks, uninitialized program, PC set to zero, and *run limit* set to 10,000.
 
@@ -116,7 +148,10 @@ Execution of any of the following instructions results in immediate failure:
 
 **Run Limit** is a built-in 64-bit integer specifying remaining total cost of execution. Run limit is decreased by the cost of each instruction and also affected by data added to and removed from the data stack and alt stack. Every byte added to either stack costs 1 unit, and every byte removed from either stack refunds 1 unit. (This includes explicit additions and removals by stack-manipulating instructions such as PUSHDATA and DROP, and also implicit additions and removals as when other instructions consume arguments and produce results.)
 
-**Execution Context** is either a [block context](#block-context) or [transaction context](#transaction-context).
+**Execution Context** is either a [block context](#block-context) or [transaction context](#transaction-contexts).
+
+**Expansion Reserved** is a flag indicating whether expansion opcodes are forbidden from use in this VM instance. If set to `true`, [expansion opcodes](#expansion-opcodes) fail execution.
+
 
 
 ## Operations
@@ -365,7 +400,7 @@ If the remaining run limit is less than 256, execution fails immediately.
 3. Coerces `n` to an [integer](#vm-number).
 4. If `limit` equals zero, sets it to the VM's remaining run limit minus 256.
 5. Reduces VM’s run limit by `256 + limit`.
-6. Instantiates a new VM instance (“child VM”) with its run limit set to `limit`.
+6. Instantiates a new VM instance (“child VM”) with its run limit set to `limit` and with the same _Execution Context_ and the same _Expansion Reserved_ flag as set in the current VM.
 7. Moves the top `n` items from the parent VM’s data stack to the child VM’s data stack without incurring run limit refund or charge of their [standard memory cost](#standard-memory-cost) in either VM. The order of the moved items is unchanged. The memory cost of these items will be refunded when the child VM pops them, or when the child VM is destroyed and its parent VM is refunded.
 8. Child VM evaluates the predicate and pushes `true` to the parent VM data stack if the evaluation did not fail and the child VM’s data stack is non-empty with a `true` value on top (this implements the same semantics as for the top-level [verify predicate](#verify-predicate) operation). It pushes `false` otherwise. Note that the parent VM does not fail when the child VM exhausts its run limit or otherwise fails.
 9. After the child VM finishes execution (normally or due to a failure), the parent VM’s run limit is refunded with a `leftover` value computed as a sum of the following values:
@@ -1100,7 +1135,7 @@ Returns the [block signature hash](data.md#block-signature-hash).
 
 Typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
 
-Fails if executed in the [transaction context](#transaction-context).
+Fails if executed in a [transaction context](#transaction-contexts).
 
 
 
@@ -1122,13 +1157,13 @@ Code  | Stack Diagram                                        | Cost
 1. Pops 6 items from the data stack: `index`, `refdatahash`, `amount`, `assetid`, `version`, `prog`.
 2. Fails if `index` is negative or not a valid [number](#vm-number).
 3. Fails if the number of outputs is less or equal to `index`.
-4. Fails if `amount` and `version` are not non-negative [numbers](#vm-number).
+4. Fails if `version` is not a non-negative [number](#vm-number).
 5. Finds a transaction output at the given `index`.
 6. If the output satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
     1. control program equals `prog`,
     2. VM version equals `version`,
-    3. asset ID equals `assetid`,
-    4. amount equals `amount`,
+    3. asset ID or [asset ID commitment](confidential-assets.md#asset-id-commitment) (whichever is present) equals `assetid`,
+    4. amount or [value commitment](confidential-assets.md#value-commitment) (whichever is present) equals `amount`,
     5. `refdatahash` is an empty string or it matches the [SHA3-256](data.md#sha3) hash of the reference data.
 
 Fails if executed in the [block context](#block-context).
@@ -1138,9 +1173,11 @@ Fails if executed in the [block context](#block-context).
 
 Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
-0xc2  | (∅ → assetid)   | 1; [standard memory cost](#standard-memory-cost)
+0xc2  | (∅ → assetid)  | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes the asset ID assigned to the current input on the data stack.
+
+Fails if asset ID is blinded on the current input.
 
 Fails if executed in the [block context](#block-context).
 
@@ -1149,9 +1186,11 @@ Fails if executed in the [block context](#block-context).
 
 Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
-0xc3  | (∅ → amount)    | 1; [standard memory cost](#standard-memory-cost)
+0xc3  | (∅ → amount)   | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes the amount assigned to the current input on the data stack.
+
+Fails if amount is blinded on the current input.
 
 Fails if executed in the [block context](#block-context).
 
@@ -1162,7 +1201,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc4  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
-1. In [transaction context](#transaction-context):
+1. In [transaction context](#transaction-contexts):
   * For spend inputs: pushes the control program from the output being spent.
   * For issuance inputs: pushes the issuance program.
 2. In [block context](#block-context):
@@ -1258,7 +1297,7 @@ Code  | Stack Diagram  | Cost
 
 Pushes the [next consensus program](data.md#consensus-program) specified in the current block header.
 
-Fails if executed in the [transaction context](#transaction-context).
+Fails if executed in a [transaction context](#transaction-contexts).
 
 
 #### BLOCKTIME
@@ -1269,19 +1308,66 @@ Code  | Stack Diagram   | Cost
 
 Pushes the block timestamp in milliseconds on the data stack.
 
-Fails if executed in the [transaction context](#transaction-context).
+Fails if executed in a [transaction context](#transaction-contexts).
 
+
+#### ASSETCOMMITMENT
+
+Code  | Stack Diagram           | Cost
+------|-------------------------|-----------------------------------------------------
+0xd0  | (∅ → assetcommitment)   | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes the [asset ID commitment](confidential-assets.md#asset-id-commitment) assigned to the current input on the data stack.
+
+This instruction is treated as [expansion](#expansion-opcodes) in [Asset Version 1 Context](#asset-version-1-context).
+
+Fails if asset ID is not blinded on the current input.
+
+Fails if executed in the [block context](#block-context).
+
+
+#### VALUECOMMITMENT
+
+Code  | Stack Diagram             | Cost
+------|---------------------------|-----------------------------------------------------
+0xd1  | (∅ → valuecommitment)     | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes the [value commitment](confidential-assets.md#value-commitment) assigned to the current input on the data stack.
+
+This instruction is treated as [expansion](#expansion-opcodes) in [Asset Version 2 Context](#asset-version-1-context).
+
+Fails if amount is not blinded on the current input.
+
+Fails if executed in the [block context](#block-context).
+
+#### ISSUANCEKEY
+
+Code  | Stack Diagram             | Cost
+------|---------------------------|-----------------------------------------------------
+0xd2  | (∅ → issuancekey)         | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes the issuance key from the [issuance asset range proof](confidential-assets.md#issuance-asset-range-proof) at the index corresponding to the current asset ID in the [asset issuance choice](data.md#asset-issuance-choice).
+
+This instruction is treated as [expansion](#expansion-opcodes) in [Asset Version 1 Context](#asset-version-1-context).
+
+Fails if executed in [Asset Version 2 Input Context](#asset-version-2-input-context)
+
+Fails if [issuance asset range proof](confidential-assets.md#issuance-asset-range-proof) is empty.
 
 
 ### Expansion opcodes
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcf, 0xd3..0xff  | (∅ → ∅)     | 1
 
-The unassigned codes are reserved for future expansion and have no effect on the state of the VM apart from reducing run limit by 1.
+The unassigned codes are reserved for future expansion.
 
+If [Expansion Reserved](#vm-state) is set to `true`, an expansion opcode fails execution.
 
+If [Expansion Reserved](#vm-state) is set to `false`, an expansion opcode has no effect on the state of the VM apart from reducing run limit by 1.
+
+Note: depending on [execution context](#execution-context), additional opcodes not mentioned in the list above are treated as expansion opcodes and behave according to [Expansion Reserved](#vm-state) flag.
 
 
 

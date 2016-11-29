@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"chain/errors"
-	"chain/log"
-	"chain/protocol/bc"
-	"chain/protocol/vmutil"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/vmutil"
 )
 
 func transactionObject(orig *bc.Tx, b *bc.Block, indexInBlock uint32) map[string]interface{} {
@@ -38,17 +38,33 @@ func transactionObject(orig *bc.Tx, b *bc.Block, indexInBlock uint32) map[string
 }
 
 func transactionInput(in *bc.TxInput) map[string]interface{} {
-	obj := map[string]interface{}{
-		"asset_id":       in.AssetID().String(),
-		"amount":         in.Amount(),
-		"reference_data": unmarshalReferenceData(in.ReferenceData),
-		"input_witness":  hexSlices(in.Arguments()),
+	args, ok := in.Arguments()
+	if !ok {
+		// xxx
 	}
+	obj := map[string]interface{}{
+		"reference_data": unmarshalReferenceData(in.ReferenceData),
+		"input_witness":  hexSlices(args),
+	}
+
+	assetAmount, ok := in.AssetAmount()
+	if ok {
+		obj["asset_id"] = assetAmount.AssetID.String()
+		obj["amount"] = assetAmount.Amount
+	}
+
 	if in.IsIssuance() {
+		prog, ok := in.IssuanceProgram()
+		if !ok {
+			// xxx
+		}
 		obj["type"] = "issue"
-		obj["issuance_program"] = hex.EncodeToString(in.IssuanceProgram())
+		obj["issuance_program"] = hex.EncodeToString(prog)
 	} else {
-		outpoint := in.Outpoint()
+		outpoint, ok := in.Outpoint()
+		if !ok {
+			// xxx
+		}
 		obj["type"] = "spend"
 		obj["control_program"] = hex.EncodeToString(in.ControlProgram())
 		obj["spent_output"] = map[string]interface{}{
@@ -62,13 +78,17 @@ func transactionInput(in *bc.TxInput) map[string]interface{} {
 func transactionOutput(out *bc.TxOutput, idx uint32) map[string]interface{} {
 	obj := map[string]interface{}{
 		"position":        idx,
-		"asset_id":        out.AssetID.String(),
-		"amount":          out.Amount,
-		"control_program": hex.EncodeToString(out.ControlProgram),
+		"control_program": hex.EncodeToString(out.Program()),
 		"reference_data":  unmarshalReferenceData(out.ReferenceData),
 	}
 
-	if vmutil.IsUnspendable(out.ControlProgram) {
+	assetAmount, ok := out.GetAssetAmount()
+	if ok {
+		obj["asset_id"] = assetAmount.AssetID.String()
+		obj["amount"] = assetAmount.Amount
+	}
+
+	if vmutil.IsUnspendable(out.Program()) {
 		obj["type"] = "retire"
 	} else {
 		obj["type"] = "control"

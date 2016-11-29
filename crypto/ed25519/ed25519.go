@@ -22,7 +22,7 @@ import (
 	"io"
 	"strconv"
 
-	"chain/crypto/ed25519/internal/edwards25519"
+	"chain-stealth/crypto/ed25519/edwards25519"
 )
 
 const (

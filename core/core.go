@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"chain/core/config"
-	"chain/core/fetch"
-	"chain/core/leader"
-	"chain/errors"
-	"chain/log"
-	"chain/net/http/httpjson"
+	"chain-stealth/core/config"
+	"chain-stealth/core/fetch"
+	"chain-stealth/core/leader"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/net/http/httpjson"
 )
 
 var (

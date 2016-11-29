@@ -8,13 +8,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"chain/core/pin"
-	"chain/database/pg"
-	"chain/errors"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/state"
-	"chain/sync/idempotency"
+	"github.com/golang/protobuf/proto"
+
+	"chain-stealth/core/account/internal/storage"
+	"chain-stealth/core/pin"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
+	"chain-stealth/sync/idempotency"
 )
 
 var (
@@ -38,9 +41,11 @@ type utxo struct {
 	bc.Outpoint
 	bc.AssetAmount
 	ControlProgram []byte
+	RawOutput      []byte
 
 	AccountID           string
 	ControlProgramIndex uint64
+	CAValues            *bc.CAValues
 }
 
 func (u *utxo) source() source {
@@ -231,7 +236,7 @@ func (re *reserver) ExpireReservations(ctx context.Context) error {
 
 func (re *reserver) checkUTXO(u *utxo) bool {
 	_, s := re.c.State()
-	return s.Tree.ContainsKey(state.OutputKey(u.Outpoint))
+	return s.ContainsKey(state.OutputKey(u.Outpoint), 0)
 }
 
 func (re *reserver) source(src source) *sourceReserver {
@@ -381,13 +386,29 @@ func (sr *sourceReserver) refillCache(ctx context.Context) error {
 
 func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height uint64) ([]*utxo, error) {
 	const q = `
-		SELECT tx_hash, index, amount, control_program_index, control_program
+		SELECT tx_hash, index, amount, control_program_index, control_program, raw_output, ca_params
 		FROM account_utxos
 		WHERE account_id = $1 AND asset_id = $2 AND confirmed_in > $3
 	`
 	var utxos []*utxo
 	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID, height,
-		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte) {
+		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg, rawOutput, rawCAParams []byte) error {
+
+			var cap storage.ConfidentialAssetParams
+			var v *bc.CAValues
+
+			if len(rawCAParams) > 0 {
+				err := proto.Unmarshal(rawCAParams, &cap)
+				if err != nil {
+					return err
+				}
+
+				v, err = caValues(&cap)
+				if err != nil {
+					return err
+				}
+			}
+
 			utxos = append(utxos, &utxo{
 				Outpoint: bc.Outpoint{
 					Hash:  txHash,
@@ -398,9 +419,12 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height uint64)
 					AssetID: src.AssetID,
 				},
 				ControlProgram:      controlProg,
+				RawOutput:           rawOutput,
 				AccountID:           src.AccountID,
 				ControlProgramIndex: cpIndex,
+				CAValues:            v,
 			})
+			return nil
 		})
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -410,17 +434,58 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height uint64)
 
 func findSpecificUTXO(ctx context.Context, db pg.DB, out bc.Outpoint) (*utxo, error) {
 	const q = `
-		SELECT account_id, asset_id, amount, control_program_index, control_program
+		SELECT account_id, asset_id, amount, control_program_index, control_program, raw_output, ca_params
 		FROM account_utxos
 		WHERE tx_hash = $1 AND index = $2
 	`
 	u := new(utxo)
-	err := db.QueryRow(ctx, q, out.Hash, out.Index).Scan(&u.AccountID, &u.AssetID, &u.Amount, &u.ControlProgramIndex, &u.ControlProgram)
+
+	var rawCAParams []byte
+	err := db.QueryRow(ctx, q, out.Hash, out.Index).Scan(&u.AccountID, &u.AssetID, &u.Amount, &u.ControlProgramIndex, &u.ControlProgram, &u.RawOutput, &rawCAParams)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	} else if err != nil {
 		return nil, errors.Wrap(err)
 	}
+
+	if len(rawCAParams) > 0 {
+		var params storage.ConfidentialAssetParams
+		err := proto.Unmarshal(rawCAParams, &params)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		u.CAValues, err = caValues(&params)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
+
 	u.Outpoint = out
 	return u, nil
+}
+
+func caValues(cap *storage.ConfidentialAssetParams) (*bc.CAValues, error) {
+	var ac, vc, c, f [32]byte
+	copy(ac[:], cap.AssetCommitment)
+	copy(vc[:], cap.ValueCommitment)
+	copy(c[:], cap.CumulativeBlindingFactor)
+	copy(f[:], cap.ValueBlindingFactor)
+
+	var err error
+	v := new(bc.CAValues)
+
+	err = v.AssetCommitment.FromBytes(&ac)
+	if err != nil {
+		return nil, err
+	}
+
+	err = v.ValueCommitment.FromBytes(vc)
+	if err != nil {
+		return nil, err
+	}
+
+	v.CumulativeBlindingFactor = c
+	v.ValueBlindingFactor = f
+	v.Value = cap.Value
+	return v, nil
 }

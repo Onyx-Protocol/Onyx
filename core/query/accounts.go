@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"chain/core/query/filter"
-	"chain/errors"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/errors"
 )
 
 // SaveAnnotatedAccount saves an annotated account to the query indexes.

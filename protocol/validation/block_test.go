@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"chain/errors"
-	"chain/protocol/bc"
-	"chain/protocol/state"
-	"chain/protocol/vm"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/vm"
 )
 
 // emptyMerkleRoot is the SHA3-256 of "".

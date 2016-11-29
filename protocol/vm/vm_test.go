@@ -9,8 +9,8 @@ import (
 	"testing"
 	"testing/quick"
 
-	"chain/errors"
-	"chain/protocol/bc"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
 )
 
 type tracebuf struct {
@@ -202,15 +202,17 @@ func TestVerifyTxInput(t *testing.T) {
 		want: true,
 	}, {
 		input: &bc.TxInput{
-			TypedInput: &bc.IssuanceInput{
-				VMVersion: 2,
+			TypedInput: &bc.IssuanceInput1{
+				AssetWitness: bc.AssetWitness{
+					VMVersion: 2,
+				},
 			},
 		},
 		wantErr: ErrUnsupportedVM,
 	}, {
 		input: &bc.TxInput{
 			TypedInput: &bc.SpendInput{
-				OutputCommitment: bc.OutputCommitment{
+				TypedOutput: &bc.Outputv1{
 					VMVersion: 2,
 				},
 			},
@@ -226,9 +228,6 @@ func TestVerifyTxInput(t *testing.T) {
 			[][]byte{make([]byte, 50001)},
 		),
 		wantErr: ErrRunLimitExceeded,
-	}, {
-		input:   &bc.TxInput{},
-		wantErr: ErrUnsupportedTx,
 	}}
 
 	for i, c := range cases {
@@ -239,11 +238,11 @@ func TestVerifyTxInput(t *testing.T) {
 		got, gotErr := VerifyTxInput(tx, 0)
 
 		if gotErr != c.wantErr {
-			t.Errorf("VerifyTxInput(%+v) err = %v want %v", i, gotErr, c.wantErr)
+			t.Errorf("VerifyTxInput(%d) err = %v want %v", i, gotErr, c.wantErr)
 		}
 
 		if got != c.want {
-			t.Errorf("VerifyTxInput(%+v) = %v want %v", i, got, c.want)
+			t.Errorf("VerifyTxInput(%d) = %v want %v", i, got, c.want)
 		}
 	}
 }
@@ -398,6 +397,24 @@ func TestStep(t *testing.T) {
 			tx:       &bc.Tx{},
 		},
 		wantErr: ErrRunLimitExceeded,
+	}, {
+		startVM: &virtualMachine{
+			program:           []byte{255},
+			runLimit:          100,
+			expansionReserved: true,
+		},
+		wantErr: ErrDisallowedOpcode,
+	}, {
+		startVM: &virtualMachine{
+			program:  []byte{255},
+			runLimit: 100,
+		},
+		wantVM: &virtualMachine{
+			program:  []byte{255},
+			runLimit: 99,
+			pc:       1,
+			nextPC:   1,
+		},
 	}}
 
 	for i, c := range cases {

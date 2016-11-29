@@ -1,6 +1,6 @@
 package vmutil
 
-import "chain/protocol/vm"
+import "chain-stealth/protocol/vm"
 
 type Builder struct {
 	Program []byte

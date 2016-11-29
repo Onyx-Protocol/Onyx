@@ -1,6 +1,7 @@
 package bc
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"golang.org/x/crypto/sha3"
@@ -9,7 +10,7 @@ import (
 func TestComputeAssetID(t *testing.T) {
 	issuanceScript := []byte{1}
 	initialBlockHash := mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5")
-	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1)
+	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1, 1)
 
 	unhashed := append([]byte{}, initialBlockHash[:]...)
 	unhashed = append(unhashed, 0x01) // assetVersion
@@ -32,6 +33,17 @@ func BenchmarkComputeAssetID(b *testing.B) {
 	)
 
 	for i := 0; i < b.N; i++ {
-		assetIDSink = ComputeAssetID(issuanceScript, initialBlockHash, 1)
+		assetIDSink = ComputeAssetID(issuanceScript, initialBlockHash, 1, 1)
 	}
+}
+
+func mustDecodeHash(hash string) (h [32]byte) {
+	if len(hash) != hex.EncodedLen(len(h)) {
+		panic("wrong length hash")
+	}
+	_, err := hex.Decode(h[:], []byte(hash))
+	if err != nil {
+		panic(err)
+	}
+	return h
 }

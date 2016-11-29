@@ -8,9 +8,9 @@ import (
 	"log"
 	"os"
 
-	"chain/core/migrate"
-	_ "chain/database/pg"
-	"chain/database/sql"
+	"chain-stealth/core/migrate"
+	_ "chain-stealth/database/pg"
+	"chain-stealth/database/sql"
 )
 
 const help = `Usage: migratedb [-d url] [-status]

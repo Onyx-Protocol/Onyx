@@ -2,16 +2,15 @@ package validation
 
 import (
 	"bytes"
-	"encoding/hex"
 	"math"
-	"strings"
 
-	"chain/errors"
-	"chain/math/checked"
-	"chain/protocol/bc"
-	"chain/protocol/state"
-	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"chain-stealth/crypto/ca"
+	"chain-stealth/errors"
+	"chain-stealth/math/checked"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/vm"
+	"chain-stealth/protocol/vmutil"
 )
 
 var (
@@ -21,6 +20,44 @@ var (
 	// ErrFalseVMResult is one of the ways for a transaction to fail validation
 	ErrFalseVMResult = errors.New("false VM result")
 )
+
+var (
+	// "suberrors" for ErrBadTx
+	errTxVersion              = errors.New("unknown transaction version")
+	errNotYet                 = errors.New("block time is before transaction min time")
+	errTooLate                = errors.New("block time is after transaction max time")
+	errWrongBlockchain        = errors.New("issuance is for different blockchain")
+	errTimelessIssuance       = errors.New("zero mintime or maxtime not allowed in issuance with non-empty nonce")
+	errIssuanceTime           = errors.New("timestamp outside issuance input's time window")
+	errDuplicateIssuance      = errors.New("duplicate issuance transaction")
+	errInvalidOutput          = errors.New("invalid output")
+	errNoInputs               = errors.New("inputs are missing")
+	errTooManyInputs          = errors.New("number of inputs overflows uint32")
+	errAllEmptyNonceIssuances = errors.New("all inputs are issuances with empty nonce fields")
+	errMisorderedTime         = errors.New("positive maxtime must be >= mintime")
+	errAssetVersion           = errors.New("unknown asset version")
+	errInputTooBig            = errors.New("input value exceeds maximum value of int64")
+	errInputSumTooBig         = errors.New("sum of inputs overflows the allowed asset amount")
+	errVMVersion              = errors.New("unknown vm version")
+	errDuplicateInput         = errors.New("duplicate input")
+	errTooManyOutputs         = errors.New("number of outputs overflows int32")
+	errEmptyOutput            = errors.New("output value must be greater than 0")
+	errOutputTooBig           = errors.New("output value exceeds maximum value of int64")
+	errOutputSumTooBig        = errors.New("sum of outputs overflows the allowed asset amount")
+	errUnbalancedV1           = errors.New("amounts for asset are not balanced on v1 inputs and outputs")
+)
+
+func badTxErr(suberr error) error {
+	err := errors.WithData(ErrBadTx, "badtx", suberr)
+	err = errors.WithDetail(err, suberr.Error())
+	return err
+}
+
+func badTxErrf(suberr error, f string, args ...interface{}) error {
+	err := errors.WithData(ErrBadTx, "badtx", suberr)
+	err = errors.WithDetailf(err, f, args...)
+	return err
+}
 
 // ConfirmTx validates the given transaction against the given state tree
 // before it's added to a block. If tx is invalid, it returns a non-nil
@@ -32,37 +69,50 @@ var (
 //
 // ConfirmTx must not mutate the snapshot or the block.
 func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, block *bc.Block, tx *bc.Tx) error {
-	if block.Version == 1 && tx.Version != 1 {
-		return errors.WithDetailf(ErrBadTx, "unknown transaction version %d for block version 1", tx.Version)
+	if tx.Version < 1 || tx.Version > block.Version {
+		return badTxErrf(errTxVersion, "unknown transaction version %d for block version %d", tx.Version, block.Version)
 	}
 
 	if block.TimestampMS < tx.MinTime {
-		return errors.WithDetail(ErrBadTx, "block time is before transaction min time")
+		return badTxErr(errNotYet)
 	}
 	if tx.MaxTime > 0 && block.TimestampMS > tx.MaxTime {
-		return errors.WithDetail(ErrBadTx, "block time is after transaction max time")
+		return badTxErr(errTooLate)
 	}
 
 	for i, txin := range tx.Inputs {
-		if ii, ok := txin.TypedInput.(*bc.IssuanceInput); ok {
-			if txin.AssetVersion != 1 {
+		if txin.IsIssuance() {
+			if txin.AssetVersion != 1 && txin.AssetVersion != 2 {
 				continue
 			}
-			if ii.InitialBlock != initialBlockHash {
-				return errors.WithDetail(ErrBadTx, "issuance is for different blockchain")
+			switch inp := txin.TypedInput.(type) {
+			case *bc.IssuanceInput1:
+				if inp.InitialBlock != initialBlockHash {
+					return badTxErr(errWrongBlockchain)
+				}
+			case *bc.IssuanceInput2:
+				for _, c := range inp.AssetChoices {
+					if c.InitialBlock != initialBlockHash {
+						return badTxErr(errWrongBlockchain)
+					}
+				}
 			}
-			if len(ii.Nonce) == 0 {
+			nonce, _ := txin.Nonce()
+			if len(nonce) == 0 {
 				continue
+			}
+			if tx.MinTime == 0 || tx.MaxTime == 0 {
+				return badTxErr(errTimelessIssuance)
 			}
 			if block.TimestampMS < tx.MinTime || block.TimestampMS > tx.MaxTime {
-				return errors.WithDetail(ErrBadTx, "timestamp outside issuance input's time window")
+				return badTxErr(errIssuanceTime)
 			}
 			iHash, err := tx.IssuanceHash(i)
 			if err != nil {
 				return err
 			}
 			if _, ok2 := snapshot.Issuances[iHash]; ok2 {
-				return errors.WithDetail(ErrBadTx, "duplicate issuance transaction")
+				return badTxErr(errDuplicateIssuance)
 			}
 			continue
 		}
@@ -71,8 +121,12 @@ func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, block *bc.Blo
 
 		// Lookup the prevout in the blockchain state tree.
 		k, val := state.OutputTreeItem(state.Prevout(txin))
-		if !snapshot.Tree.Contains(k, val) {
-			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid", txin.Outpoint().String(), i)
+		if !snapshot.Contains(k, val, txin.AssetVersion) {
+			outpoint, ok := txin.Outpoint()
+			if !ok {
+				return badTxErrf(errInvalidOutput, "output for input %d is invalid", i)
+			}
+			return badTxErrf(errInvalidOutput, "output %s for input %d is invalid", outpoint.String(), i)
 		}
 	}
 	return nil
@@ -88,67 +142,75 @@ func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, block *bc.Blo
 // supporting detail otherwise.
 func CheckTxWellFormed(tx *bc.Tx) error {
 	if len(tx.Inputs) == 0 {
-		return errors.WithDetail(ErrBadTx, "inputs are missing")
+		return badTxErr(errNoInputs)
 	}
 
 	if len(tx.Inputs) > math.MaxInt32 {
-		return errors.WithDetail(ErrBadTx, "number of inputs overflows uint32")
+		return badTxErr(errTooManyInputs)
 	}
 
-	// Are all inputs issuances, all with asset version 1, and all with empty nonces?
+	// Are all inputs issuances, all with asset version 1 or 2, and all with empty nonces?
 	allIssuancesWithEmptyNonces := true
 	for _, txin := range tx.Inputs {
-		if txin.AssetVersion != 1 {
+		if txin.AssetVersion != 1 && txin.AssetVersion != 2 {
 			allIssuancesWithEmptyNonces = false
 			break
 		}
-		ii, ok := txin.TypedInput.(*bc.IssuanceInput)
+		nonce, ok := txin.Nonce()
 		if !ok {
 			allIssuancesWithEmptyNonces = false
 			break
 		}
-		if len(ii.Nonce) > 0 {
+		if len(nonce) > 0 {
 			allIssuancesWithEmptyNonces = false
 			break
 		}
 	}
 	if allIssuancesWithEmptyNonces {
-		return errors.WithDetail(ErrBadTx, "all inputs are issuances with empty nonce fields")
+		return badTxErr(errAllEmptyNonceIssuances)
 	}
 
 	// Check that the transaction maximum time is greater than or equal to the
 	// minimum time, if it is greater than 0.
 	if tx.MaxTime > 0 && tx.MaxTime < tx.MinTime {
-		return errors.WithDetail(ErrBadTx, "positive maxtime must be >= mintime")
+		return badTxErr(errMisorderedTime)
 	}
 
 	// Check that each input commitment appears only once. Also check that sums
-	// of inputs and outputs balance, and check that both input and output sums
+	// of inputs and outputs balance (for asset v1), and check that both input and output sums
 	// are less than 2^63 so that they don't overflow their int64 representation.
 	parity := make(map[bc.AssetID]int64)
 	commitments := make(map[string]int)
 
+	// For asset v2, accumulate items for use in a call to VerifyConfidentialAssets
+	var (
+		v2issuances []ca.Issuance
+		v2spends    []ca.Spend // contains the prevout commitments of spend inputs
+		v2outputs   []ca.Output
+	)
+
 	for i, txin := range tx.Inputs {
-		if tx.Version == 1 && txin.AssetVersion != 1 {
-			return errors.WithDetailf(ErrBadTx, "unknown asset version %d in input %d for transaction version 1", txin.AssetVersion, i)
+		if (tx.Version == 1 || tx.Version == 2) && (txin.AssetVersion < 1 || txin.AssetVersion > tx.Version) {
+			return badTxErrf(errAssetVersion, "unknown asset version %d in input %d for transaction version %d", txin.AssetVersion, i, tx.Version)
 		}
 
-		assetID := txin.AssetID()
-
-		if txin.Amount() > math.MaxInt64 {
-			return errors.WithDetail(ErrBadTx, "input value exceeds maximum value of int64")
+		if txin.AssetVersion == 1 {
+			assetID, _ := txin.AssetID()
+			amount, _ := txin.Amount()
+			if amount > math.MaxInt64 {
+				return badTxErr(errInputTooBig)
+			}
+			sum, ok := checked.AddInt64(parity[assetID], int64(amount))
+			if !ok {
+				return badTxErrf(errInputSumTooBig, "adding input %d overflows the allowed asset amount", i)
+			}
+			parity[assetID] = sum
 		}
-
-		sum, ok := checked.AddInt64(parity[assetID], int64(txin.Amount()))
-		if !ok {
-			return errors.WithDetailf(ErrBadTx, "adding input %d overflows the allowed asset amount", i)
-		}
-		parity[assetID] = sum
 
 		switch x := txin.TypedInput.(type) {
-		case *bc.IssuanceInput:
-			if tx.Version == 1 && x.VMVersion != 1 {
-				return errors.WithDetailf(ErrBadTx, "unknown vm version %d in input %d for transaction version 1", x.VMVersion, i)
+		case *bc.IssuanceInput1:
+			if (tx.Version == 1 || tx.Version == 2) && x.VMVersion != 1 {
+				return badTxErrf(errVMVersion, "unknown vm version %d in input %d for transaction version %d", x.VMVersion, i, tx.Version)
 			}
 			if txin.AssetVersion != 1 {
 				continue
@@ -157,62 +219,68 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 				continue
 			}
 			if tx.MinTime == 0 || tx.MaxTime == 0 {
-				return errors.WithDetail(ErrBadTx, "issuance input with unbounded time window")
+				return badTxErr(errTimelessIssuance)
 			}
+		case *bc.IssuanceInput2:
+			v2issuances = append(v2issuances, x)
 		case *bc.SpendInput:
-			if tx.Version == 1 && x.VMVersion != 1 {
-				return errors.WithDetailf(ErrBadTx, "unknown vm version %d in input %d for transaction version 1", x.VMVersion, i)
+			if (tx.Version == 1 || tx.Version == 2) && x.VMVer() != 1 {
+				return badTxErrf(errVMVersion, "unknown vm version %d in input %d for transaction version %d", x.VMVer(), i, tx.Version)
+			}
+			if y, ok := x.TypedOutput.(*bc.Outputv2); ok {
+				v2spends = append(v2spends, y)
 			}
 		}
-
 		buf := new(bytes.Buffer)
-		txin.WriteInputCommitment(buf)
+		err := txin.WriteInputCommitment(buf)
+		if err != nil {
+			return err
+		}
 		if inp, ok := commitments[string(buf.Bytes())]; ok {
-			return errors.WithDetailf(ErrBadTx, "input %d is a duplicate of %d", i, inp)
+			return badTxErrf(errDuplicateInput, "input %d is a duplicate of %d", i, inp)
 		}
 		commitments[string(buf.Bytes())] = i
 	}
 
 	if len(tx.Outputs) > math.MaxInt32 {
-		return errors.WithDetail(ErrBadTx, "number of outputs overflows int32")
+		return badTxErr(errTooManyOutputs)
 	}
 
 	// Check that every output has a valid value.
 	for i, txout := range tx.Outputs {
-		if tx.Version == 1 {
-			if txout.AssetVersion != 1 {
-				return errors.WithDetailf(ErrBadTx, "unknown asset version %d in output %d for transaction version 1", txout.AssetVersion, i)
+		if tx.Version == 1 || tx.Version == 2 {
+			if txout.AssetVersion < 1 || txout.AssetVersion > tx.Version {
+				return badTxErrf(errAssetVersion, "unknown asset version %d in output %d for transaction version %d", txout.AssetVersion, i, tx.Version)
 			}
-			if txout.VMVersion != 1 {
-				return errors.WithDetailf(ErrBadTx, "unknown vm version %d in output %d for transaction version 1", txout.VMVersion, i)
+			if txout.VMVer() != 1 {
+				return badTxErrf(errVMVersion, "unknown vm version %d in output %d for transaction version 1", txout.VMVer(), i)
 			}
 		}
 
-		// Transactions cannot have zero-value outputs.
-		// If all inputs have zero value, tx therefore must have no outputs.
-		if txout.Amount == 0 {
-			return errors.WithDetail(ErrBadTx, "output value must be greater than 0")
+		switch x := txout.TypedOutput.(type) {
+		case *bc.Outputv1:
+			// Transactions cannot have zero-value outputs.
+			// If all inputs have zero value, tx therefore must have no outputs.
+			if x.AssetAmount.Amount == 0 {
+				return badTxErr(errEmptyOutput)
+			}
+			if x.AssetAmount.Amount > math.MaxInt64 {
+				return badTxErr(errOutputTooBig)
+			}
+			sum, ok := checked.SubInt64(parity[x.AssetAmount.AssetID], int64(x.AssetAmount.Amount))
+			if !ok {
+				return badTxErrf(errOutputSumTooBig, "adding output %d overflows the allowed asset amount", i)
+			}
+			parity[x.AssetAmount.AssetID] = sum
+		case *bc.Outputv2:
+			v2outputs = append(v2outputs, x)
 		}
-
-		if txout.Amount > math.MaxInt64 {
-			return errors.WithDetail(ErrBadTx, "output value exceeds maximum value of int64")
-		}
-
-		sum, ok := checked.SubInt64(parity[txout.AssetID], int64(txout.Amount))
-		if !ok {
-			return errors.WithDetailf(ErrBadTx, "adding output %d overflows the allowed asset amount", i)
-		}
-		parity[txout.AssetID] = sum
 	}
 
-	for asset, val := range parity {
+	for assetID, val := range parity {
 		if val != 0 {
-			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs", asset)
+			return badTxErrf(errUnbalancedV1, "amounts for asset %s are not balanced on v1 inputs and outputs", assetID)
 		}
-	}
-
-	if len(tx.Inputs) > math.MaxInt32 {
-		return errors.WithDetail(ErrBadTx, "number of inputs overflows int32")
 	}
 
 	for i := range tx.Inputs {
@@ -221,33 +289,26 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 			err = ErrFalseVMResult
 		}
 		if err != nil {
-			input := tx.Inputs[i]
-			var program []byte
-			if input.IsIssuance() {
-				program = input.IssuanceProgram()
-			} else {
-				program = input.ControlProgram()
-			}
-			scriptStr, e := vm.Disassemble(program)
-			if e != nil {
-				scriptStr = "disassembly failed: " + e.Error()
-			}
-			args := input.Arguments()
-			hexArgs := make([]string, 0, len(args))
-			for _, arg := range args {
-				hexArgs = append(hexArgs, hex.EncodeToString(arg))
-			}
-			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (program [%s] args [%s]): %s", i, scriptStr, strings.Join(hexArgs, " "), err)
+			return badTxErrf(err, "validation failed in script execution, input %d", i)
 		}
 	}
+
+	if len(v2issuances) > 0 || len(v2spends) > 0 || len(v2outputs) > 0 {
+		err := ca.VerifyConfidentialAssets(v2issuances, v2spends, v2outputs, tx.ExcessCommitments)
+		if err != nil {
+			return badTxErr(err)
+		}
+	}
+
 	return nil
 }
 
 // ApplyTx updates the state tree with all the changes to the ledger.
 func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 	for i, in := range tx.Inputs {
-		if ii, ok := in.TypedInput.(*bc.IssuanceInput); ok {
-			if len(ii.Nonce) > 0 {
+		if in.IsIssuance() {
+			nonce, _ := in.Nonce()
+			if len(nonce) > 0 {
 				iHash, err := tx.IssuanceHash(i)
 				if err != nil {
 					return err
@@ -258,20 +319,21 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 		}
 
 		// Remove the consumed output from the state tree.
-		prevoutKey := state.OutputKey(in.Outpoint())
-		err := snapshot.Tree.Delete(prevoutKey)
+		outpoint, _ := in.Outpoint()
+		prevoutKey := state.OutputKey(outpoint)
+		err := snapshot.Delete(prevoutKey)
 		if err != nil {
 			return err
 		}
 	}
 
 	for i, out := range tx.Outputs {
-		if vmutil.IsUnspendable(out.ControlProgram) {
+		if vmutil.IsUnspendable(out.Program()) {
 			continue
 		}
 		// Insert new outputs into the state tree.
-		o := state.NewOutput(*out, bc.Outpoint{Hash: tx.Hash, Index: uint32(i)})
-		err := snapshot.Tree.Insert(state.OutputTreeItem(o))
+		o := state.NewOutput(out.TypedOutput, bc.Outpoint{Hash: tx.Hash, Index: uint32(i)})
+		err := snapshot.Insert(o)
 		if err != nil {
 			return err
 		}

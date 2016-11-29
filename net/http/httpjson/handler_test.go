@@ -9,7 +9,7 @@ import (
 	"testing"
 	"testing/iotest"
 
-	"chain/errors"
+	"chain-stealth/errors"
 )
 
 func TestHandler(t *testing.T) {

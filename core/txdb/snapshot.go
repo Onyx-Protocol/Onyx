@@ -5,13 +5,13 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"chain/core/txdb/internal/storage"
-	"chain/database/pg"
-	"chain/database/sql"
-	"chain/errors"
-	"chain/protocol/bc"
-	"chain/protocol/patricia"
-	"chain/protocol/state"
+	"chain-stealth/core/txdb/internal/storage"
+	"chain-stealth/database/pg"
+	"chain-stealth/database/sql"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/patricia"
+	"chain-stealth/protocol/state"
 )
 
 // DecodeSnapshot decodes a snapshot from the Chain Core's binary,
@@ -23,14 +23,23 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 		return nil, errors.Wrap(err, "unmarshaling state snapshot proto")
 	}
 
-	leaves := make([]patricia.Leaf, len(storedSnapshot.Nodes))
-	for i, node := range storedSnapshot.Nodes {
-		leaves[i].Key = node.Key
-		copy(leaves[i].Hash[:], node.Hash)
+	reconstructTree := func(nodes []*storage.Snapshot_StateTreeNode) (*patricia.Tree, error) {
+		leaves := make([]patricia.Leaf, len(nodes))
+		for i, node := range nodes {
+			leaves[i].Key = node.Key
+			copy(leaves[i].Hash[:], node.Hash)
+		}
+		return patricia.Reconstruct(leaves)
 	}
-	tree, err := patricia.Reconstruct(leaves)
+
+	tree1, err := reconstructTree(storedSnapshot.Nodes)
 	if err != nil {
-		return nil, errors.Wrap(err, "reconstructing state tree")
+		return nil, errors.Wrap(err, "reconstructing state (v1) tree")
+	}
+
+	tree2, err := reconstructTree(storedSnapshot.Nodes2)
+	if err != nil {
+		return nil, errors.Wrap(err, "reconstructing state (v2) tree")
 	}
 
 	issuances := make(state.PriorIssuances, len(storedSnapshot.Issuances))
@@ -41,14 +50,15 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 	}
 
 	return &state.Snapshot{
-		Tree:      tree,
+		Tree1:     tree1,
+		Tree2:     tree2,
 		Issuances: issuances,
 	}, nil
 }
 
 func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot, blockHeight uint64) error {
 	var storedSnapshot storage.Snapshot
-	err := patricia.Walk(snapshot.Tree, func(l patricia.Leaf) error {
+	err := patricia.Walk(snapshot.Tree1, func(l patricia.Leaf) error {
 		storedSnapshot.Nodes = append(storedSnapshot.Nodes, &storage.Snapshot_StateTreeNode{
 			Key:  l.Key,
 			Hash: l.Hash[:],

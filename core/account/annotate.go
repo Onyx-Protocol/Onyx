@@ -9,13 +9,14 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/database/pg"
-	"chain/errors"
-	"chain/log"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/protocol/bc"
 )
 
 // AnnotateTxs adds account data to transactions
-func (m *Manager) AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
+func (m *Manager) AnnotateTxs(ctx context.Context, txs []map[string]interface{}, _ []*bc.Tx) error {
 	controlMaps := make(map[string][]map[string]interface{})
 	outputMaps := make(map[string][]map[string]interface{})
 	var controlPrograms [][]byte

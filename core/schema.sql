@@ -194,7 +194,9 @@ CREATE TABLE account_utxos (
     account_id text NOT NULL,
     control_program_index bigint NOT NULL,
     control_program bytea NOT NULL,
-    confirmed_in bigint NOT NULL
+    confirmed_in bigint NOT NULL,
+    raw_output bytea NOT NULL,
+    ca_params bytea
 );
 
 
@@ -329,6 +331,27 @@ CREATE SEQUENCE chain_id_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
+
+
+--
+-- Name: confidential_issuances; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE confidential_issuances (
+    asset_id text NOT NULL,
+    nonce bytea NOT NULL,
+    amount bigint NOT NULL
+);
+
+
+--
+-- Name: confidentiality_keys; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE confidentiality_keys (
+    control_program bytea NOT NULL,
+    key bytea NOT NULL
+);
 
 
 --
@@ -658,6 +681,22 @@ ALTER TABLE ONLY blocks
 
 
 --
+-- Name: confidential_issuances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY confidential_issuances
+    ADD CONSTRAINT confidential_issuances_pkey PRIMARY KEY (asset_id, nonce);
+
+
+--
+-- Name: confidentiality_keys_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY confidentiality_keys
+    ADD CONSTRAINT confidentiality_keys_pkey PRIMARY KEY (control_program);
+
+
+--
 -- Name: config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -876,3 +915,10 @@ insert into migrations (filename, hash) values ('2016-11-18.0.account.confirmed-
 insert into migrations (filename, hash) values ('2016-11-22.0.account.utxos-indexes.sql', 'f3ea43f592cb06a36b040f0b0b9626ee9174d26d36abef44e68114d0c0aace98');
 insert into migrations (filename, hash) values ('2016-11-23.0.query.jsonb-path-ops.sql', 'adb15b9a6b7b223a17dbfd5f669e44c500b343568a563f87e1ae67ba0f938d55');
 insert into migrations (filename, hash) values ('2016-11-28.0.core.submitted-txs-hash.sql', 'cabbd7fd79a2b672b2d3c854783bde3b8245fe666c50261c3335a0c0501ff2ea');
+insert into migrations (filename, hash) values ('2016-11-30.0.confidentiality.sql', 'd04d80527195dc397cd5367134b18a98c96959ca0b3ccc14ef86021c30b7d96e');
+insert into migrations (filename, hash) values ('2016-12-02.0.confidentiality-issuances.sql', '937301617d19662b89a972aece058674cecef7e60916453a8029607027a10e84');
+insert into migrations (filename, hash) values ('2016-12-02.1.confidentiality-nonce.sql', '955ed3e74cf7cd3be82f1b007d3034ff57763ba329229593af51f6118a3521a9');
+insert into migrations (filename, hash) values ('2016-12-05.0.account.raw-outputs.sql', '8b92dd825766d0cf694ce8191f197b195f6e3f433c14e0b4af16caf879513655');
+insert into migrations (filename, hash) values ('2016-12-05.1.account.ca-params.sql', '64635a011fa451956975328b89d5be71b67a84abe846d00eeb36980b407a84ef');
+insert into migrations (filename, hash) values ('2016-12-05.2.confidentiality_keys.sql', 'a6531a07419af96f2cd1201b459f3d626dc98ddfd13eb0f5c9ceb997ea229df2');
+insert into migrations (filename, hash) values ('2016-12-05.3.confidentiality.issuances.sql', '8b3c999092ad2c0ab445eb3a71060c42d1a26bc55488a52a4803e278f949c926');

@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"chain/core/query/filter"
-	"chain/errors"
-	"chain/protocol/bc"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
 )
 
 // SaveAnnotatedAsset saves an annotated asset to the query indexes.

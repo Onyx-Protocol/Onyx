@@ -6,42 +6,46 @@ import (
 	"fmt"
 	"math"
 
-	"chain/core/query"
-	"chain/core/query/filter"
-	"chain/errors"
-	"chain/net/http/httpjson"
+	"chain-stealth/core/query"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/errors"
+	"chain-stealth/net/http/httpjson"
 )
 
 // These types enforce the ordering of JSON fields in API output.
 type (
 	txinResp struct {
 		Type            interface{} `json:"type"`
-		AssetID         interface{} `json:"asset_id"`
+		AssetID         interface{} `json:"asset_id,omitempty"`
 		AssetAlias      interface{} `json:"asset_alias,omitempty"`
 		AssetDefinition interface{} `json:"asset_definition"`
 		AssetTags       interface{} `json:"asset_tags,omitempty"`
 		AssetIsLocal    interface{} `json:"asset_is_local"`
-		Amount          interface{} `json:"amount"`
+		Amount          interface{} `json:"amount,omitempty"`
 		IssuanceProgram interface{} `json:"issuance_program,omitempty"`
 		SpentOutput     interface{} `json:"spent_output,omitempty"`
 		*txAccount
 		ReferenceData interface{} `json:"reference_data"`
 		IsLocal       interface{} `json:"is_local"`
+		Confidential  interface{} `json:"confidential"`
+		Readable      interface{} `json:"readable"`
 	}
 	txoutResp struct {
 		Type            interface{} `json:"type"`
 		Purpose         interface{} `json:"purpose,omitempty"`
 		Position        interface{} `json:"position"`
-		AssetID         interface{} `json:"asset_id"`
+		AssetID         interface{} `json:"asset_id,omitempty"`
 		AssetAlias      interface{} `json:"asset_alias,omitempty"`
-		AssetDefinition interface{} `json:"asset_definition"`
-		AssetTags       interface{} `json:"asset_tags"`
+		AssetDefinition interface{} `json:"asset_definition,omitempty"`
+		AssetTags       interface{} `json:"asset_tags,omitempty"`
 		AssetIsLocal    interface{} `json:"asset_is_local"`
-		Amount          interface{} `json:"amount"`
+		Amount          interface{} `json:"amount,omitempty"`
 		*txAccount
 		ControlProgram interface{} `json:"control_program"`
 		ReferenceData  interface{} `json:"reference_data"`
 		IsLocal        interface{} `json:"is_local"`
+		Confidential   interface{} `json:"confidential"`
+		Readable       interface{} `json:"readable"`
 	}
 	txResp struct {
 		ID            interface{} `json:"id"`
@@ -166,6 +170,8 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 				txAccount:       txAccountFromMap(in),
 				ReferenceData:   in["reference_data"],
 				IsLocal:         in["is_local"],
+				Confidential:    in["confidential"],
+				Readable:        in["readable"],
 			}
 			inResps = append(inResps, r)
 		}
@@ -185,6 +191,8 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 				ControlProgram:  out["control_program"],
 				ReferenceData:   out["reference_data"],
 				IsLocal:         out["is_local"],
+				Confidential:    out["confidential"],
+				Readable:        out["readable"],
 			}
 			outResps = append(outResps, r)
 		}
@@ -316,18 +324,20 @@ type utxoResp struct {
 	Purpose         interface{} `json:"purpose"`
 	TransactionID   interface{} `json:"transaction_id"`
 	Position        interface{} `json:"position"`
-	AssetID         interface{} `json:"asset_id"`
-	AssetAlias      interface{} `json:"asset_alias"`
-	AssetDefinition interface{} `json:"asset_definition"`
-	AssetTags       interface{} `json:"asset_tags"`
+	AssetID         interface{} `json:"asset_id,omitempty"`
+	AssetAlias      interface{} `json:"asset_alias,omitempty"`
+	AssetDefinition interface{} `json:"asset_definition,omitempty"`
+	AssetTags       interface{} `json:"asset_tags,omitempty"`
 	AssetIsLocal    interface{} `json:"asset_is_local"`
-	Amount          interface{} `json:"amount"`
+	Amount          interface{} `json:"amount,omitempty"`
 	AccountID       interface{} `json:"account_id"`
 	AccountAlias    interface{} `json:"account_alias"`
 	AccountTags     interface{} `json:"account_tags"`
 	ControlProgram  interface{} `json:"control_program"`
 	ReferenceData   interface{} `json:"reference_data"`
 	IsLocal         interface{} `json:"is_local"`
+	Confidential    interface{} `json:"confidential"`
+	Readable        interface{} `json:"readable"`
 }
 
 // POST /list-unspent-outputs
@@ -389,6 +399,8 @@ func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (resu
 			ControlProgram:  out["control_program"],
 			ReferenceData:   out["reference_data"],
 			IsLocal:         out["is_local"],
+			Confidential:    out["confidential"],
+			Readable:        out["readable"],
 		}
 		resp = append(resp, r)
 	}

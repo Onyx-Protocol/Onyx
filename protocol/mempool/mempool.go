@@ -9,8 +9,8 @@ import (
 	"context"
 	"sync"
 
-	"chain/log"
-	"chain/protocol/bc"
+	"chain-stealth/log"
+	"chain-stealth/protocol/bc"
 )
 
 // MemPool satisfies the txbuilder.Submitter interface.

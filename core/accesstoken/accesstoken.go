@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"time"
 
-	"chain/crypto/sha3pool"
-	"chain/database/pg"
-	"chain/errors"
+	"chain-stealth/crypto/sha3pool"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
 )
 
 const tokenSize = 32

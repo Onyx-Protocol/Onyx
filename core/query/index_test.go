@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"chain/core/coretest"
-	"chain/core/pin"
-	"chain/database/pg/pgtest"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/prottest"
+	"chain-stealth/core/coretest"
+	"chain-stealth/core/pin"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/prottest"
 )
 
 func TestIndexBlock(t *testing.T) {

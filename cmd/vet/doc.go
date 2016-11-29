@@ -54,4 +54,4 @@ These flags configure the behavior of vet:
 	-v
 		Verbose mode
 */
-package main // import "chain/cmd/vet"
+package main // import "chain-stealth/cmd/vet"

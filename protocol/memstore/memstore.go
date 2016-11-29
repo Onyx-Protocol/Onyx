@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"sync"
 
-	"chain/protocol/bc"
-	"chain/protocol/state"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
 )
 
 // MemStore satisfies the protocol.Store interface.

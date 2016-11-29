@@ -2,12 +2,11 @@ package bc
 
 import (
 	"database/sql/driver"
+	"io"
 
-	"chain/crypto/sha3pool"
-	"chain/encoding/blockchain"
+	"chain-stealth/crypto/sha3pool"
+	"chain-stealth/encoding/blockchain"
 )
-
-const assetVersion = 1
 
 // AssetID is the Hash256 of the issuance script for the asset and the
 // initial block of the chain where it appears.
@@ -22,7 +21,7 @@ func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 
 // ComputeAssetID computes the asset ID of the asset defined by
 // the given issuance program and initial block hash.
-func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint64) (assetID AssetID) {
+func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, assetVersion, vmVersion uint64) (assetID AssetID) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 	h.Write(initialHash[:])
@@ -31,4 +30,29 @@ func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint
 	blockchain.WriteVarstr31(h, issuanceProgram) // TODO(bobg): check and return error
 	h.Read(assetID[:])
 	return assetID
+}
+
+type AssetAmount struct {
+	AssetID AssetID `json:"asset_id"`
+	Amount  uint64  `json:"amount"`
+}
+
+// assumes r has sticky errors
+func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
+	n1, err := io.ReadFull(r, a.AssetID[:])
+	if err != nil {
+		return n1, err
+	}
+	var n2 int
+	a.Amount, n2, err = blockchain.ReadVarint63(r)
+	return n1 + n2, err
+}
+
+func (a *AssetAmount) writeTo(w io.Writer) error {
+	_, err := w.Write(a.AssetID[:])
+	if err != nil {
+		return err
+	}
+	_, err = blockchain.WriteVarint63(w, a.Amount)
+	return err
 }

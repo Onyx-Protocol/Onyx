@@ -42,12 +42,14 @@ function preprocessTransaction(formParams) {
       }
     })
 
-    // HACK: Check for retire actions and replace with OP_FAIL control programs.
-    // TODO: update JS SDK to support Java SDK builder style.
-    if (a.type == 'retire_asset') {
-      a.type = 'control_program'
-      a.control_program = '6a' // OP_FAIL hex byte
+    const controlProgram = a.control_program
+    if (controlProgram != null && controlProgram.indexOf(':') >= 0) {
+      const [program, key] = controlProgram.split(':')
+      a.control_program = program
+      a.confidentiality_key = key
     }
+
+    // TODO: update JS SDK to support Java SDK builder style.
 
     try {
       a.reference_data = parseNonblankJSON(a.reference_data)

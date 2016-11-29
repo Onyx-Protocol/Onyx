@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"chain/protocol/bc"
-	"chain/protocol/mempool"
-	"chain/protocol/memstore"
-	"chain/protocol/state"
-	"chain/testutil"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/mempool"
+	"chain-stealth/protocol/memstore"
+	"chain-stealth/protocol/state"
+	"chain-stealth/testutil"
 )
 
 func TestGetBlock(t *testing.T) {
@@ -131,7 +131,7 @@ func TestGenerateBlock(t *testing.T) {
 	c, b1 := newTestChain(t, now)
 
 	initialBlockHash := b1.Hash()
-	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1)
+	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1, 1)
 
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
@@ -176,16 +176,16 @@ func TestGenerateBlock(t *testing.T) {
 
 	// TODO(bobg): verify these hashes are correct
 	var wantTxRoot, wantAssetsRoot bc.Hash
-	copy(wantTxRoot[:], mustDecodeHex("d0e593c846d7b189bd3e2f55e680016b14989329af1c5e388ff246caedf04bd3"))
-	copy(wantAssetsRoot[:], mustDecodeHex("903d9a10ece41f86b7c2cf23c25b09c2086b321d6d63e2ec7fc7405f84121542"))
+	copy(wantTxRoot[:], mustDecodeHex("c4904a4ca68b54638ff58a19e85a6324d7fd3a48f22fb476df4968da54faf078"))
+	copy(wantAssetsRoot[:], mustDecodeHex("5c118f39bf42b3fd86c404960dc2632d2e5bbc510a70ead3cf5730bbbe626960"))
 
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:                bc.NewBlockVersion,
+			Version:                2,
 			Height:                 2,
 			PreviousBlockHash:      b1.Hash(),
 			TransactionsMerkleRoot: wantTxRoot,
-			AssetsMerkleRoot:       wantAssetsRoot,
+			AssetsMerkleRoot1:      wantAssetsRoot,
 			TimestampMS:            bc.Millis(now),
 			ConsensusProgram:       b1.ConsensusProgram,
 		},

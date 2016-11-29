@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"chain/crypto/ed25519"
-	"chain/errors"
-	"chain/log"
-	"chain/protocol/bc"
-	"chain/protocol/state"
-	"chain/protocol/validation"
-	"chain/protocol/vmutil"
+	"chain-stealth/crypto/ed25519"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/validation"
+	"chain-stealth/protocol/vmutil"
 )
 
 // maxBlockTxs limits the number of transactions
@@ -53,7 +53,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 
 	b = &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:           bc.NewBlockVersion,
+			Version:           2,
 			Height:            prev.Height + 1,
 			PreviousBlockHash: prev.Hash(),
 			TimestampMS:       timestampMS,
@@ -77,8 +77,12 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}
-	b.TransactionsMerkleRoot = validation.CalcMerkleRoot(b.Transactions)
-	b.AssetsMerkleRoot = result.Tree.RootHash()
+	b.TransactionsMerkleRoot, err = validation.CalcMerkleRoot(b.Transactions)
+	if err != nil {
+		return nil, nil, err
+	}
+	b.AssetsMerkleRoot1 = result.Tree1.RootHash()
+	b.AssetsMerkleRoot2 = result.Tree2.RootHash()
 	return b, result, nil
 }
 
@@ -201,13 +205,17 @@ func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 	if err != nil {
 		return nil, err
 	}
+	root, err := validation.CalcMerkleRoot([]*bc.Tx{}) // calculate the zero value of the tx merkle root
+	if err != nil {
+		return nil, err
+	}
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:                bc.NewBlockVersion,
+			Version:                1,
 			Height:                 1,
 			TimestampMS:            bc.Millis(timestamp),
 			ConsensusProgram:       script,
-			TransactionsMerkleRoot: validation.CalcMerkleRoot([]*bc.Tx{}), // calculate the zero value of the tx merkle root
+			TransactionsMerkleRoot: root,
 		},
 	}
 	return b, nil

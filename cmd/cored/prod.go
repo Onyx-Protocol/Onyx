@@ -5,7 +5,7 @@ package main
 import (
 	"net/http"
 
-	"chain/database/pg"
+	"chain-stealth/database/pg"
 )
 
 var prod = "yes"

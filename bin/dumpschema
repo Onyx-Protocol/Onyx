@@ -8,7 +8,7 @@ then
 fi
 
 # be sure to pick up latest migrations
-go install chain/cmd/migratedb
+go install `basename $CHAIN`/cmd/migratedb
 
 db=tmp_db_for_dump_schema
 dropdb --if-exists $db

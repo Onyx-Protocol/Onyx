@@ -8,13 +8,13 @@ import (
 	"context"
 	"time"
 
-	"chain/database/pg"
-	"chain/log"
-	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/mempool"
-	"chain/protocol/state"
-	"chain/protocol/validation"
+	"chain-stealth/database/pg"
+	"chain-stealth/log"
+	"chain-stealth/protocol"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/mempool"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/validation"
 )
 
 // A BlockSigner signs blocks.

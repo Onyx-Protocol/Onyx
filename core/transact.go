@@ -6,15 +6,15 @@ import (
 	"sync"
 	"time"
 
-	"chain/core/fetch"
-	"chain/core/leader"
-	"chain/core/txbuilder"
-	"chain/database/pg"
-	chainjson "chain/encoding/json"
-	"chain/errors"
-	"chain/log"
-	"chain/net/http/reqid"
-	"chain/protocol/bc"
+	"chain-stealth/core/fetch"
+	"chain-stealth/core/leader"
+	"chain-stealth/core/txbuilder"
+	"chain-stealth/database/pg"
+	chainjson "chain-stealth/encoding/json"
+	"chain-stealth/errors"
+	"chain-stealth/log"
+	"chain-stealth/net/http/reqid"
+	"chain-stealth/protocol/bc"
 )
 
 var defaultTxTTL = 5 * time.Minute
@@ -53,7 +53,7 @@ func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilde
 		ttl = defaultTxTTL
 	}
 	maxTime := time.Now().Add(ttl)
-	tpl, err := txbuilder.Build(ctx, req.Tx, actions, maxTime)
+	tpl, err := txbuilder.Build(ctx, req.Tx, actions, req.ConfidentialityInstructions, maxTime)
 	if errors.Root(err) == txbuilder.ErrAction {
 		err = errors.WithData(err, "actions", errInfoBodyList(errors.Data(err)["actions"].([]error)))
 	}
@@ -61,9 +61,12 @@ func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilde
 		return nil, err
 	}
 
-	// ensure null is never returned for signing instructions
+	// ensure null is never returned for instructions
 	if tpl.SigningInstructions == nil {
 		tpl.SigningInstructions = []*txbuilder.SigningInstruction{}
+	}
+	if tpl.ConfidentialityInstructions == nil {
+		tpl.ConfidentialityInstructions = []*txbuilder.ConfidentialityInstruction{}
 	}
 	return tpl, nil
 }

@@ -6,5 +6,10 @@ module Chain
     # Hex-encoded string representation of the control program.
     # @return [String]
     attrib :control_program
+
+    # @!attribute [r] confidentiality_key
+    # Hex-encoded string representation of the confidentiality key.
+    # @return [String]
+    attrib :confidentiality_key
   end
 end

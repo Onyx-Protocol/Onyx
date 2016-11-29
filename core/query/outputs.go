@@ -10,8 +10,8 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/core/query/filter"
-	"chain/errors"
+	"chain-stealth/core/query/filter"
+	"chain-stealth/errors"
 )
 
 var defaultOutputsAfter = OutputsAfter{

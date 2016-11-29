@@ -13,8 +13,8 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/database/pg"
-	"chain/errors"
+	"chain-stealth/database/pg"
+	"chain-stealth/errors"
 )
 
 var (

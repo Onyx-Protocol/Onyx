@@ -8,9 +8,9 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	chainjson "chain/encoding/json"
-	"chain/protocol/bc"
-	"chain/protocol/vm"
+	chainjson "chain-stealth/encoding/json"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/vm"
 )
 
 func TestInferConstraints(t *testing.T) {

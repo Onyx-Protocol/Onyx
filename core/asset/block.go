@@ -5,12 +5,12 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/core/signers"
-	"chain/database/pg"
-	"chain/encoding/json"
-	"chain/errors"
-	"chain/protocol/bc"
-	"chain/protocol/vmutil"
+	"chain-stealth/core/signers"
+	"chain-stealth/database/pg"
+	"chain-stealth/encoding/json"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/vmutil"
 )
 
 // PinName is used to identify the pin
@@ -90,17 +90,38 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 			if !in.IsIssuance() {
 				continue
 			}
-			if seen[in.AssetID()] {
-				continue
+
+			switch is := in.TypedInput.(type) {
+			case *bc.IssuanceInput1:
+				assetID := is.AssetWitness.AssetID(in.AssetVersion)
+				if seen[assetID] {
+					continue
+				}
+				definition, err := definitionFromProgram(is.IssuanceProgram)
+				if err != nil {
+					continue
+				}
+				seen[assetID] = true
+				assetIDs = append(assetIDs, assetID.String())
+				definitions = append(definitions, string(definition))
+				issuancePrograms = append(issuancePrograms, is.IssuanceProgram)
+
+			case *bc.IssuanceInput2:
+				for _, choice := range is.AssetChoices {
+					assetID := choice.AssetID(in.AssetVersion)
+					if seen[assetID] {
+						continue
+					}
+					definition, err := definitionFromProgram(choice.IssuanceProgram)
+					if err != nil {
+						continue
+					}
+					seen[assetID] = true
+					assetIDs = append(assetIDs, assetID.String())
+					definitions = append(definitions, string(definition))
+					issuancePrograms = append(issuancePrograms, choice.IssuanceProgram)
+				}
 			}
-			definition, err := definitionFromProgram(in.IssuanceProgram())
-			if err != nil {
-				continue
-			}
-			seen[in.AssetID()] = true
-			assetIDs = append(assetIDs, in.AssetID().String())
-			definitions = append(definitions, string(definition))
-			issuancePrograms = append(issuancePrograms, in.IssuanceProgram())
 		}
 	}
 	if len(assetIDs) == 0 {

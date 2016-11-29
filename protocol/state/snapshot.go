@@ -2,8 +2,10 @@
 package state
 
 import (
-	"chain/protocol/bc"
-	"chain/protocol/patricia"
+	"fmt"
+
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/patricia"
 )
 
 // PriorIssuances maps an "issuance hash" to the time (in Unix millis)
@@ -11,10 +13,56 @@ import (
 type PriorIssuances map[bc.Hash]uint64
 
 // Snapshot encompasses a snapshot of entire blockchain state. It
-// consists of a patricia state tree and the issuances memory.
+// consists of two patricia state trees (one for asset-v1 outputs, one
+// for asset-v2) and the issuances memory.
 type Snapshot struct {
-	Tree      *patricia.Tree
-	Issuances PriorIssuances
+	Tree1, Tree2 *patricia.Tree
+	Issuances    PriorIssuances
+}
+
+func (s *Snapshot) Insert(o *Output) error {
+	var tree *patricia.Tree
+	switch o.TypedOutput.(type) {
+	case *bc.Outputv1:
+		tree = s.Tree1
+	case *bc.Outputv2:
+		tree = s.Tree2
+	default:
+		return fmt.Errorf("unknown output type %T", o.TypedOutput)
+	}
+	return tree.Insert(OutputTreeItem(o))
+}
+
+func (s *Snapshot) Delete(key []byte) error {
+	err := s.Tree1.Delete(key)
+	if err != nil {
+		return err
+	}
+	return s.Tree2.Delete(key)
+}
+
+func (s *Snapshot) ContainsKey(bkey []byte, version uint64) bool {
+	switch version {
+	case 0:
+		return s.Tree1.ContainsKey(bkey) || s.Tree2.ContainsKey(bkey)
+	case 1:
+		return s.Tree1.ContainsKey(bkey)
+	case 2:
+		return s.Tree2.ContainsKey(bkey)
+	}
+	return false
+}
+
+func (s *Snapshot) Contains(bkey, val []byte, version uint64) bool {
+	switch version {
+	case 0: // "unknown"
+		return s.Tree1.Contains(bkey, val) || s.Tree2.Contains(bkey, val)
+	case 1:
+		return s.Tree1.Contains(bkey, val)
+	case 2:
+		return s.Tree2.Contains(bkey, val)
+	}
+	return false
 }
 
 // PruneIssuances modifies a Snapshot, removing all issuance hashes
@@ -35,7 +83,8 @@ func Copy(original *Snapshot) *Snapshot {
 	// We already handle it that way in many places (with explicit
 	// calls to Copy to get the right behavior).
 	c := &Snapshot{
-		Tree:      patricia.Copy(original.Tree),
+		Tree1:     patricia.Copy(original.Tree1),
+		Tree2:     patricia.Copy(original.Tree2),
 		Issuances: make(PriorIssuances, len(original.Issuances)),
 	}
 	for k, v := range original.Issuances {
@@ -47,7 +96,8 @@ func Copy(original *Snapshot) *Snapshot {
 // Empty returns an empty state snapshot.
 func Empty() *Snapshot {
 	return &Snapshot{
-		Tree:      new(patricia.Tree),
+		Tree1:     new(patricia.Tree),
+		Tree2:     new(patricia.Tree),
 		Issuances: make(PriorIssuances),
 	}
 }

@@ -9,11 +9,11 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"chain/errors"
-	"chain/protocol/bc"
-	"chain/protocol/state"
-	"chain/protocol/vm"
-	"chain/protocol/vmutil"
+	"chain-stealth/errors"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
+	"chain-stealth/protocol/vm"
+	"chain-stealth/protocol/vmutil"
 )
 
 // Errors returned by the block validation functions.
@@ -86,7 +86,10 @@ func ValidateBlock(ctx context.Context, snapshot *state.Snapshot, initialBlockHa
 				return err
 			}
 		}
-		if block.AssetsMerkleRoot != snapshot.Tree.RootHash() {
+		if block.AssetsMerkleRoot1 != snapshot.Tree1.RootHash() {
+			return ErrBadStateRoot
+		}
+		if block.Version == 2 && block.AssetsMerkleRoot2 != snapshot.Tree2.RootHash() {
 			return ErrBadStateRoot
 		}
 		return nil
@@ -141,7 +144,10 @@ func validateBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
 		}
 	}
 
-	txMerkleRoot := CalcMerkleRoot(block.Transactions)
+	txMerkleRoot, err := CalcMerkleRoot(block.Transactions)
+	if err != nil {
+		return err
+	}
 	// can be modified to allow soft fork
 	if block.TransactionsMerkleRoot != txMerkleRoot {
 		return ErrBadTxRoot

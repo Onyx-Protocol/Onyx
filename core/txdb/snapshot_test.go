@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg/pgtest"
-	"chain/protocol/bc"
-	"chain/protocol/state"
+	"chain-stealth/database/pg/pgtest"
+	"chain-stealth/protocol/bc"
+	"chain-stealth/protocol/state"
 )
 
 type pair struct {
@@ -80,13 +80,13 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		t.Logf("Applying changeset %d\n", i)
 
 		for _, insert := range changeset.inserts {
-			err := snapshot.Tree.Insert([]byte(insert.key), insert.hash)
+			err := snapshot.Tree1.Insert([]byte(insert.key), insert.hash)
 			if err != nil {
 				t.Fatal(err)
 			}
 		}
 		for _, key := range changeset.deletes {
-			err := snapshot.Tree.Delete([]byte(key))
+			err := snapshot.Tree1.Delete([]byte(key))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -103,7 +103,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		}
 
 		for _, lookup := range changeset.lookups {
-			if !snapshot.Tree.Contains([]byte(lookup.key), lookup.hash) {
+			if !snapshot.Tree1.Contains([]byte(lookup.key), lookup.hash) {
 				t.Errorf("Lookup(%s, %s) = false, want true", lookup.key, lookup.hash)
 			}
 		}
@@ -111,8 +111,8 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		if height != uint64(i) {
 			t.Fatalf("%d: state snapshot height got=%d want=%d", i, height, uint64(i))
 		}
-		if loadedSnapshot.Tree.RootHash() != snapshot.Tree.RootHash() {
-			t.Fatalf("%d: Wrote %s to db, read %s from db\n", i, snapshot.Tree.RootHash(), loadedSnapshot.Tree.RootHash())
+		if loadedSnapshot.Tree1.RootHash() != snapshot.Tree1.RootHash() {
+			t.Fatalf("%d: Wrote %s to db, read %s from db\n", i, snapshot.Tree1.RootHash(), loadedSnapshot.Tree1.RootHash())
 		}
 		if !reflect.DeepEqual(loadedSnapshot.Issuances, snapshot.Issuances) {
 			t.Fatalf("%d: Wrote %#v issuances to db, read %#v from db\n", i, snapshot.Issuances, loadedSnapshot.Issuances)
@@ -150,7 +150,7 @@ func benchmarkStoreSnapshot(nodes, issuances int, b *testing.B) {
 			b.Fatal(err)
 		}
 
-		err = snapshot.Tree.Insert(h[:], h[:])
+		err = snapshot.Tree1.Insert(h[:], h[:])
 		if err != nil {
 			b.Fatal(err)
 		}
