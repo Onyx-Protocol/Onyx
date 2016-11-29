@@ -8,7 +8,7 @@ const emptyListContent = <EmptyContent>
   <p>
     Assets are different types of value that may be issued and exchanged on the blockchain.
   </p>
-  Learn more about how to use <a href="/docs/core/build-applications/assets" target="_blank">assets</a>.
+  <a href="/docs/core/build-applications/assets" target="_blank">Learn more</a> about how to use assets.
 </EmptyContent>
 
 export default BaseList.connect(
@@ -17,7 +17,7 @@ export default BaseList.connect(
     wrapperProps: {
       titles: ['Asset Alias', 'Asset ID']
     },
-    emptyContent: emptyListContent
+    firstTimeContent: emptyListContent
   }),
   BaseList.mapDispatchToProps(type)
 )

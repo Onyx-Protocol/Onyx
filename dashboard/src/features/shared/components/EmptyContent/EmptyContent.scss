@@ -20,3 +20,13 @@
     padding-left: 6px;
   }
 }
+
+.emptyLabel {
+  color: $text-strong-color;
+  display: block;
+  font-size: $font-size-page-title;
+  padding-bottom: $gutter-size;
+  width: 250px;
+  margin: 0 auto;
+  line-height: 26px;
+}

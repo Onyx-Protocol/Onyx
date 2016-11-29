@@ -8,7 +8,7 @@ const emptyListContent = <EmptyContent>
   <p>
     MockHSM keys are used for creating accounts and assets while your application is still in development.
   </p>
-  Learn more about how to use <a href="/docs/core/build-applications/keys" target="_blank">MockHSM keys</a>.
+  <a href="/docs/core/build-applications/keys" target="_blank">Learn more</a> about how to use MockHSM keys.
 </EmptyContent>
 
 export default BaseList.connect(
@@ -19,7 +19,7 @@ export default BaseList.connect(
     wrapperProps: {
       titles: ['Alias', 'xpub']
     },
-    emptyContent: emptyListContent
+    firstTimeContent: emptyListContent
   }),
   BaseList.mapDispatchToProps(type)
 )

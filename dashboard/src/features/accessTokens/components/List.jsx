@@ -23,7 +23,7 @@ const stateToProps = (type, emptyListContent) => (state, ownProps) =>
     wrapperProps: {
       titles: ['Token ID'],
     },
-    emptyContent: emptyListContent
+    firstTimeContent: emptyListContent
   })(state, ownProps)
 
 

@@ -35,7 +35,7 @@ export default BaseList.connect(
   (state, ownProps) => ({
     ...BaseList.mapStateToProps(type, ListItem)(state, ownProps),
     blockHeight: state.core.blockHeight,
-    emptyContent: emptyListContent
+    firstTimeContent: emptyListContent
   }),
   (dispatch) => ({
     ...BaseList.mapDispatchToProps(type)(dispatch),

@@ -9,8 +9,9 @@ const emptyListContent = <EmptyContent>
   <p>
     Transaction feeds enable real-time processing of transactions as they arrive on the blockchain.
   </p>
-  Learn more about how to use&nbsp;
-  <a href="/docs/core/build-applications/real-time-transaction-processing" target="_blank">transaction feeds</a>.
+  <a href="/docs/core/build-applications/real-time-transaction-processing" target="_blank">
+    Learn more
+  </a> about how to use transaction feeds.
 </EmptyContent>
 
 const dispatch = (dispatch) => ({
@@ -35,7 +36,7 @@ export default BaseList.connect(
   BaseList.mapStateToProps(type, ListItem, {
     skipQuery: true,
     label: 'transaction feeds',
-    emptyContent: emptyListContent
+    firstTimeContent: emptyListContent
   }),
   dispatch
 )

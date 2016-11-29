@@ -40,7 +40,7 @@ class ItemList extends React.Component {
           {header}
 
           <EmptyList
-            emptyContent={this.props.emptyContent}
+            firstTimeContent={this.props.firstTimeContent}
             type={this.props.type}
             objectName={objectName}
             newButton={newButton}

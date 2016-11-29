@@ -13,10 +13,10 @@ class EmptyList extends React.Component {
     if (!this.props.loadedOnce) {
       emptyBlock = <span>LOADING…</span>
     } else if (this.props.showFirstTimeFlow && this.props.skipCreate) {
-      emptyBlock = <div>{this.props.emptyContent}</div>
+      emptyBlock = this.props.firstTimeContent
     } else if (this.props.showFirstTimeFlow) {
       emptyBlock = <div>
-        {this.props.emptyContent}
+        {this.props.firstTimeContent}
         {this.props.newButton}
       </div>
     } else if (!this.props.showFirstTimeFlow) {
@@ -44,6 +44,8 @@ EmptyList.propTypes = {
   skipCreate: React.PropTypes.bool,
   loadedOnce: React.PropTypes.bool,
   currentFilter: React.PropTypes.object,
+  showFirstTimeFlow: React.PropTypes.bool,
+  firstTimeContent: React.PropTypes.object
 }
 
 export default EmptyList

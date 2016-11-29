@@ -8,7 +8,7 @@ const emptyListContent = <EmptyContent>
   <p>
     Accounts are used to store, receive, and transfer assets on the blockchain.
   </p>
-  Learn more about how to use <a href="/docs/core/build-applications/accounts" target="_blank">accounts</a>.
+  <a href="/docs/core/build-applications/accounts" target="_blank">Learn more</a> about how to use accounts.
 </EmptyContent>
 
 export default BaseList.connect(
@@ -17,7 +17,7 @@ export default BaseList.connect(
     wrapperProps: {
       titles: ['Account Alias', 'Account ID']
     },
-    emptyContent: emptyListContent
+    firstTimeContent: emptyListContent
   }),
   BaseList.mapDispatchToProps(type)
 )
