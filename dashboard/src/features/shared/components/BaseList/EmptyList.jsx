@@ -24,6 +24,13 @@ class EmptyList extends React.Component {
       emptyBlock = <div className={styles.emptyContainer}>
         <span className={`${styles.emptyLabel} ${styles.noResultsLabel}`}>No results for query:</span>
         <code className={styles.code}>{this.props.currentFilter.filter}</code>
+        <div className={styles.emptyContent}>
+          To learn how to query the API, please refer to the documentation:
+          <ol>
+            <li><a href="/docs/core/build-applications/queries" target="_blank">Queries</a></li>
+            <li><a href="/docs/core/reference/api-objects" target="_blank">API Objects</a></li>
+          </ol>
+        </div>
       </div>
     }
 
