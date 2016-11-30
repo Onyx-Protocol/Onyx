@@ -97,8 +97,8 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder
 func (m *Manager) NewSpendUTXOAction(outpoint bc.Outpoint) txbuilder.Action {
 	return &spendUTXOAction{
 		accounts: m,
-		TxHash:   outpoint.Hash,
-		TxOut:    outpoint.Index,
+		TxHash:   &outpoint.Hash,
+		TxOut:    &outpoint.Index,
 	}
 }
 
@@ -110,15 +110,26 @@ func (m *Manager) DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
 
 type spendUTXOAction struct {
 	accounts *Manager
-	TxHash   bc.Hash `json:"transaction_id"`
-	TxOut    uint32  `json:"position"`
+	TxHash   *bc.Hash `json:"transaction_id"`
+	TxOut    *uint32  `json:"position"`
 
 	ReferenceData chainjson.Map `json:"reference_data"`
 	ClientToken   *string       `json:"client_token"`
 }
 
 func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder.TemplateBuilder) error {
-	out := bc.Outpoint{Hash: a.TxHash, Index: a.TxOut}
+	var missing []string
+	if a.TxHash == nil {
+		missing = append(missing, "transaction_id")
+	}
+	if a.TxOut == nil {
+		missing = append(missing, "position")
+	}
+	if len(missing) > 0 {
+		return txbuilder.MissingFieldsError(missing...)
+	}
+
+	out := bc.Outpoint{Hash: *a.TxHash, Index: *a.TxOut}
 	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, out, a.ClientToken, maxTime)
 	if err != nil {
 		return err

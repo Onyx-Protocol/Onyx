@@ -21,8 +21,19 @@ type controlProgramAction struct {
 	ReferenceData json.Map      `json:"reference_data"`
 }
 
-func (c *controlProgramAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
-	out := bc.NewTxOutput(c.AssetID, c.Amount, c.Program, c.ReferenceData)
+func (a *controlProgramAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
+	var missing []string
+	if len(a.Program) == 0 {
+		missing = append(missing, "control_program")
+	}
+	if a.AssetID == (bc.AssetID{}) {
+		missing = append(missing, "asset_id")
+	}
+	if len(missing) > 0 {
+		return MissingFieldsError(missing...)
+	}
+
+	out := bc.NewTxOutput(a.AssetID, a.Amount, a.Program, a.ReferenceData)
 	return b.AddOutput(out)
 }
 
@@ -37,5 +48,8 @@ type setTxRefDataAction struct {
 }
 
 func (a *setTxRefDataAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
+	if len(a.Data) == 0 {
+		return MissingFieldsError("reference_data")
+	}
 	return b.setReferenceData(a.Data)
 }
