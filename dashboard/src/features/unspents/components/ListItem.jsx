@@ -14,7 +14,7 @@ class ListItem extends React.Component {
               </span>
              }
             actions={[
-              <RawJsonButton key='raw-json' item={item} title={`utxo-${item.transaction_id}-${item.position}.json`}/>
+              <RawJsonButton key='raw-json' item={item} />
             ]}
             items={buildInOutDisplay(item)} />)
   }

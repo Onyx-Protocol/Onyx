@@ -28,7 +28,7 @@ class Show extends BaseShow {
               <button className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
                 Circulation
               </button>,
-              <RawJsonButton key='raw-json' item={item} title={`asset-${item.id}.json`}/>
+              <RawJsonButton key='raw-json' item={item} />
             ]}
             items={[
               {label: 'ID', value: item.id},
