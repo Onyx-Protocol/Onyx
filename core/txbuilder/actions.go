@@ -70,6 +70,17 @@ type retireAction struct {
 }
 
 func (a *retireAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
+	var missing []string
+	if a.AssetID == (bc.AssetID{}) {
+		missing = append(missing, "asset_id")
+	}
+	if a.Amount == 0 {
+		missing = append(missing, "amount")
+	}
+	if len(missing) > 0 {
+		return MissingFieldsError(missing...)
+	}
+
 	out := bc.NewTxOutput(a.AssetID, a.Amount, retirementProgram, a.ReferenceData)
 	return b.AddOutput(out)
 }
