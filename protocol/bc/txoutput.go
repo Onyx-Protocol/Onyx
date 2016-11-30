@@ -105,7 +105,7 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
 	blockchain.WriteVarstr31(w, nil)
 }
 
-func (to *TxOutput) WitnessHash() Hash {
+func (to *TxOutput) witnessHash() Hash {
 	return emptyHash
 }
 

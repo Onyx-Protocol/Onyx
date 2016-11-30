@@ -331,7 +331,7 @@ func (t *TxInput) writeInputWitness(w io.Writer) {
 	}
 }
 
-func (t *TxInput) WitnessHash() Hash {
+func (t *TxInput) witnessHash() Hash {
 	var h Hash
 	sha := sha3pool.Get256()
 	defer sha3pool.Put256(sha)
