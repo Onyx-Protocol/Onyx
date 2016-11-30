@@ -11,7 +11,7 @@ class Keys {
     // endsnippet
 
     // snippet signer-add-key
-    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(key, client);
     // endsnippet
 
     new Asset.Builder()

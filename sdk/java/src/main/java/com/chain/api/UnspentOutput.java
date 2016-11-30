@@ -8,8 +8,13 @@ import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
 
+import com.chain.proto.FilterParam;
+import com.chain.proto.ListUnspentOutputsQuery;
+import com.chain.proto.ListUnspentOutputsResponse;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.annotations.SerializedName;
 
+import java.util.List;
 import java.util.Map;
 
 public class UnspentOutput {
@@ -113,7 +118,7 @@ public class UnspentOutput {
   /**
    * A paged collection of unspent outputs returned from a query.
    */
-  public static class Items extends PagedItems<UnspentOutput> {
+  public static class Items extends PagedItems<UnspentOutput, ListUnspentOutputsQuery> {
     /**
      * Requests a page of unspent outputs based on an underlying query.
      * @return a collection of unspent output objects
@@ -121,12 +126,42 @@ public class UnspentOutput {
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
      * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
-     * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
+    @Override
     public Items getPage() throws ChainException {
-      Items items = this.client.request("list-unspent-outputs", this.next, Items.class);
+      ListUnspentOutputsResponse resp = this.client.app().listUnspentOutputs(this.next);
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
+
+      Items items = new Items();
+      items.list =
+          this.client.deserialize(
+              new String(resp.getItems().toByteArray()),
+              new TypeToken<List<UnspentOutput>>() {}.getType());
+      items.lastPage = resp.getLastPage();
+      items.next = resp.getNext();
       items.setClient(this.client);
       return items;
+    }
+
+    public void setNext(Query query) {
+      ListUnspentOutputsQuery.Builder builder = ListUnspentOutputsQuery.newBuilder();
+      if (query.filter != null && !query.filter.isEmpty()) {
+        builder.setFilter(query.filter);
+      }
+      if (query.after != null && !query.after.isEmpty()) {
+        builder.setAfter(query.after);
+      }
+      builder.setTimestamp(query.timestamp);
+
+      if (query.filterParams != null) {
+        for (Query.FilterParam param : query.filterParams) {
+          builder.addFilterParams(param.toProtobuf());
+        }
+      }
+
+      this.next = builder.build();
     }
   }
 
@@ -141,7 +176,6 @@ public class UnspentOutput {
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
      * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
-     * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Items execute(Client client) throws ChainException {
       Items items = new Items();

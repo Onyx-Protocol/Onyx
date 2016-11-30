@@ -7,6 +7,7 @@ import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
 import com.chain.http.Client;
+import com.chain.proto.*;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -20,24 +21,6 @@ import java.util.Map;
  */
 public class MockHsm {
   /**
-   * Returns a new client that knows how to make requests to the mock HSM.
-   * @param client client object that makes request to the core
-   * @return new client object
-   * @throws BadURLException
-   */
-  public static Client getSignerClient(Client client) throws BadURLException {
-    try {
-      URL signerUrl = new URL(client.url().toString() + "/mockhsm");
-      if (client.hasAccessToken()) {
-        return new Client(signerUrl, client.accessToken());
-      }
-      return new Client(signerUrl);
-    } catch (MalformedURLException e) {
-      throw new BadURLException(e.getMessage());
-    }
-  }
-
-  /**
    * A class representing an extended public key. An instance of this class
    * stores a link to the mock HSM holding the corresponding private key.
    */
@@ -50,7 +33,12 @@ public class MockHsm {
     /**
      * Hex-encoded string representation of the key.
      */
-    public String xpub;
+    public byte[] xpub;
+
+    private Key(XPub proto) {
+      this.alias = proto.getAlias();
+      this.xpub = proto.getXpub().toByteArray();
+    }
 
     /**
      * Creates a key object.
@@ -63,8 +51,7 @@ public class MockHsm {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public static Key create(Client client) throws ChainException {
-      Key key = client.request("mockhsm/create-key", null, Key.class);
-      return key;
+      return create(client, null);
     }
 
     /**
@@ -79,16 +66,22 @@ public class MockHsm {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public static Key create(Client client, String alias) throws ChainException {
-      Map<String, Object> req = new HashMap<>();
-      req.put("alias", alias);
-      Key key = client.request("mockhsm/create-key", req, Key.class);
-      return key;
+      CreateKeyRequest.Builder req = CreateKeyRequest.newBuilder();
+      if (alias != null) {
+        req.setAlias(alias);
+      }
+      CreateKeyResponse resp = client.hsm().createKey(req.build());
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
+
+      return new Key(resp.getXpub());
     }
 
     /**
      * A paged collection of key objects returned from the core.
      */
-    public static class Items extends PagedItems<Key> {
+    public static class Items extends PagedItems<Key, ListKeysQuery> {
       /**
        * Requests a page of key objects from the core.
        * @return a collection of key objects
@@ -100,9 +93,31 @@ public class MockHsm {
        */
       @Override
       public Items getPage() throws ChainException {
-        Items items = this.client.request("mockhsm/list-keys", this.next, Items.class);
+        ListKeysResponse resp = this.client.hsm().listKeys(this.next);
+        if (resp.hasError()) {
+          throw new APIException(resp.getError());
+        }
+
+        Items items = new Items();
+        for (com.chain.proto.XPub key : resp.getItemsList()) {
+          items.list.add(new Key(key));
+        }
+        items.lastPage = resp.getLastPage();
+        items.next = resp.getNext();
         items.setClient(this.client);
         return items;
+      }
+
+      public void setNext(Query query) {
+        ListKeysQuery.Builder builder = ListKeysQuery.newBuilder();
+        if (query.aliases != null && !query.aliases.isEmpty()) {
+          builder.addAllAliases(query.aliases);
+        }
+        if (query.after != null && !query.after.isEmpty()) {
+          builder.setAfter(query.after);
+        }
+
+        this.next = builder.build();
       }
     }
 

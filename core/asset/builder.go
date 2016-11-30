@@ -3,9 +3,9 @@ package asset
 import (
 	"context"
 	"crypto/rand"
-	"encoding/json"
 	"time"
 
+	"chain/core/pb"
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/database/pg"
@@ -22,16 +22,23 @@ func (reg *Registry) NewIssueAction(assetAmount bc.AssetAmount, referenceData ch
 	}
 }
 
-func (reg *Registry) DecodeIssueAction(data []byte) (txbuilder.Action, error) {
-	a := &issueAction{assets: reg}
-	err := json.Unmarshal(data, a)
-	return a, err
+func (reg *Registry) DecodeIssueAction(proto *pb.Action_Issue) (txbuilder.Action, error) {
+	assetID, err := bc.AssetIDFromBytes(proto.Asset.GetAssetId())
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	a := &issueAction{
+		assets:        reg,
+		AssetAmount:   bc.AssetAmount{AssetID: assetID, Amount: proto.Amount},
+		ReferenceData: proto.ReferenceData,
+	}
+	return a, nil
 }
 
 type issueAction struct {
 	assets *Registry
 	bc.AssetAmount
-	ReferenceData chainjson.Map `json:"reference_data"`
+	ReferenceData []byte
 }
 
 func (a *issueAction) Build(ctx context.Context, builder *txbuilder.TemplateBuilder) error {
@@ -57,10 +64,9 @@ func (a *issueAction) Build(ctx context.Context, builder *txbuilder.TemplateBuil
 
 	txin := bc.NewIssuanceInput(nonce[:], a.Amount, a.ReferenceData, asset.InitialBlockHash, asset.IssuanceProgram, nil, assetdef)
 
-	tplIn := &txbuilder.SigningInstruction{AssetAmount: a.AssetAmount}
+	tplIn := &pb.TxTemplate_SigningInstruction{AssetId: a.AssetID[:], Amount: a.Amount}
 	path := signers.Path(asset.Signer, signers.AssetKeySpace)
-	keyIDs := txbuilder.KeyIDs(asset.Signer.XPubs, path)
-	tplIn.AddWitnessKeys(keyIDs, asset.Signer.Quorum)
+	tplIn.WitnessComponents = append(tplIn.WitnessComponents, pb.SignatureWitness(asset.Signer.XPubs, path, asset.Signer.Quorum))
 
 	builder.RestrictMinTime(time.Now())
 	return builder.AddInput(txin, tplIn)

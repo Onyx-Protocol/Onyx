@@ -2,7 +2,10 @@ package com.chain.api;
 
 import com.chain.exception.*;
 import com.chain.http.*;
+import com.chain.proto.*;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.annotations.SerializedName;
+import com.google.protobuf.ByteString;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +67,7 @@ public class Transaction {
   /**
    * Paged results of a transaction query.
    */
-  public static class Items extends PagedItems<Transaction> {
+  public static class Items extends PagedItems<Transaction, ListTxsQuery> {
     /**
      * Returns a new page of transactions based on the underlying query.
      * @return a page of transactions
@@ -74,10 +77,46 @@ public class Transaction {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
+    @Override
     public Items getPage() throws ChainException {
-      Items items = this.client.request("list-transactions", this.next, Items.class);
+      ListTxsResponse resp = this.client.app().listTxs(this.next);
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
+      Items items = new Items();
+      items.list =
+          this.client.deserialize(
+              new String(resp.getItems().toByteArray()),
+              new TypeToken<List<Transaction>>() {}.getType());
+      items.lastPage = resp.getLastPage();
+      items.next = resp.getNext();
       items.setClient(this.client);
       return items;
+    }
+
+    public void setNext(Query query) {
+      ListTxsQuery.Builder builder =
+          ListTxsQuery.newBuilder()
+              .setAscendingWithLongPoll(query.ascendingWithLongPoll)
+              .setStartTime(query.startTime)
+              .setEndTime(query.endTime);
+      if (query.timeout > 0) {
+        builder.setTimeout(Long.valueOf(query.timeout).toString() + "ms");
+      }
+      if (query.filter != null && !query.filter.isEmpty()) {
+        builder.setFilter(query.filter);
+      }
+      if (query.after != null && !query.after.isEmpty()) {
+        builder.setAfter(query.after);
+      }
+
+      if (query.filterParams != null) {
+        for (Query.FilterParam param : query.filterParams) {
+          builder.addFilterParams(param.toProtobuf());
+        }
+      }
+
+      this.next = builder.build();
     }
   }
 
@@ -350,7 +389,7 @@ public class Transaction {
      * A hex-encoded representation of a transaction template.
      */
     @SerializedName("raw_transaction")
-    public String rawTransaction;
+    public byte[] rawTransaction;
 
     /**
      * The list of signing instructions for inputs in the transaction.
@@ -372,6 +411,31 @@ public class Transaction {
      */
     @SerializedName("allow_additional_actions")
     private boolean allowAdditionalActions;
+
+    public Template() {}
+
+    public Template(TxTemplate proto) {
+      this.rawTransaction = proto.getRawTransaction().toByteArray();
+      this.signingInstructions =
+          SigningInstruction.fromProtobuf(proto.getSigningInstructionsList());
+      this.local = proto.getLocal();
+      this.allowAdditionalActions = proto.getAllowAdditionalActions();
+    }
+
+    public TxTemplate toProtobuf() {
+      TxTemplate.Builder tpl = TxTemplate.newBuilder();
+      if (this.rawTransaction != null) {
+        tpl.setRawTransaction(ByteString.copyFrom(this.rawTransaction));
+      }
+      if (this.signingInstructions != null) {
+        for (SigningInstruction sig : this.signingInstructions) {
+          tpl.addSigningInstructions(sig.toProtobuf());
+        }
+      }
+      tpl.setLocal(this.local);
+      tpl.setAllowAdditionalActions(this.allowAdditionalActions);
+      return tpl.build();
+    }
 
     /**
      * allowAdditionalActions causes the transaction to be signed so
@@ -398,7 +462,7 @@ public class Transaction {
        * The id of the asset being issued or spent.
        */
       @SerializedName("asset_id")
-      public String assetID;
+      public byte[] assetID;
 
       /**
        * The number of units of the asset being issued or spent.
@@ -415,6 +479,37 @@ public class Transaction {
        */
       @SerializedName("witness_components")
       public WitnessComponent[] witnessComponents;
+
+      private SigningInstruction(TxTemplate.SigningInstruction proto) {
+        this.position = proto.getPosition();
+        this.assetID = proto.getAssetId().toByteArray();
+        this.amount = proto.getAmount();
+        this.witnessComponents = WitnessComponent.fromProtobuf(proto.getWitnessComponentsList());
+      }
+
+      private static List<SigningInstruction> fromProtobuf(
+          List<TxTemplate.SigningInstruction> protos) {
+        ArrayList<SigningInstruction> sigs = new ArrayList();
+        for (TxTemplate.SigningInstruction proto : protos) {
+          sigs.add(new SigningInstruction(proto));
+        }
+        return sigs;
+      }
+
+      private TxTemplate.SigningInstruction toProtobuf() {
+        TxTemplate.SigningInstruction.Builder proto = TxTemplate.SigningInstruction.newBuilder();
+        if (this.assetID != null) {
+          proto.setAssetId(ByteString.copyFrom(this.assetID));
+        }
+        proto.setAmount(this.amount);
+        proto.setPosition(this.position);
+        if (this.witnessComponents != null) {
+          for (WitnessComponent comp : this.witnessComponents) {
+            proto.addWitnessComponents(comp.toProtobuf());
+          }
+        }
+        return proto.build();
+      }
     }
 
     /**
@@ -423,14 +518,9 @@ public class Transaction {
     public static class WitnessComponent {
       /**
        * The type of witness component.<br>
-       * Possible types are "data" and "signature".
+       * Possible types are "signature".
        */
       public String type;
-
-      /**
-       * Data to be included in the input witness (null unless type is "data").
-       */
-      public String data;
 
       /**
        * The number of signatures required for an input (null unless type is "signature").
@@ -447,12 +537,62 @@ public class Transaction {
        * inferred during signing from aspects of the
        * transaction.
        */
-      public String program;
+      public byte[] program;
 
       /**
        * The list of signatures made with the specified keys (null unless type is "signature").
        */
-      public String[] signatures;
+      public byte[][] signatures;
+
+      private WitnessComponent(TxTemplate.WitnessComponent proto) {
+        switch (proto.getComponentCase()) {
+          case SIGNATURE:
+            this.type = "signature";
+            TxTemplate.SignatureComponent sigComp = proto.getSignature();
+            this.quorum = sigComp.getQuorum();
+            this.keys = KeyID.fromProtobuf(sigComp.getKeyIdsList());
+            this.program = sigComp.getProgram().toByteArray();
+            this.signatures = new byte[sigComp.getSignaturesCount()][];
+            for (int i = 0; i < sigComp.getSignaturesCount(); i++) {
+              this.signatures[i] = sigComp.getSignatures(i).toByteArray();
+            }
+        }
+      }
+
+      private static WitnessComponent[] fromProtobuf(List<TxTemplate.WitnessComponent> protos) {
+        WitnessComponent[] comps = new WitnessComponent[protos.size()];
+        for (int i = 0; i < protos.size(); i++) {
+          comps[i] = new WitnessComponent(protos.get(i));
+        }
+        return comps;
+      }
+
+      private TxTemplate.WitnessComponent toProtobuf() {
+        TxTemplate.WitnessComponent.Builder proto = TxTemplate.WitnessComponent.newBuilder();
+
+        switch (this.type) {
+          case "signature":
+            TxTemplate.SignatureComponent.Builder sigComp =
+                TxTemplate.SignatureComponent.newBuilder();
+            sigComp.setQuorum(this.quorum);
+            if (this.program != null) {
+              sigComp.setProgram(ByteString.copyFrom(this.program));
+            }
+            if (this.signatures != null) {
+              for (byte[] sig : this.signatures) {
+                sigComp.addSignatures(ByteString.copyFrom(sig));
+              }
+            }
+            if (this.keys != null) {
+              for (KeyID key : this.keys) {
+                sigComp.addKeyIds(key.toProtobuf());
+              }
+            }
+            proto.setSignature(sigComp);
+        }
+
+        return proto.build();
+      }
     }
 
     /**
@@ -462,13 +602,44 @@ public class Transaction {
       /**
        * The extended public key associated with the private key used to sign.
        */
-      public String xpub;
+      public byte[] xpub;
 
       /**
        * The derivation path of the extended public key.
        */
       @SerializedName("derivation_path")
-      public String[] derivationPath;
+      public byte[][] derivationPath;
+
+      private KeyID(TxTemplate.KeyID proto) {
+        this.xpub = proto.getXpub().toByteArray();
+        this.derivationPath = new byte[proto.getDerivationPathCount()][];
+        for (int i = 0; i < proto.getDerivationPathCount(); i++) {
+          this.derivationPath[i] = proto.getDerivationPath(i).toByteArray();
+        }
+      }
+
+      private static KeyID[] fromProtobuf(List<TxTemplate.KeyID> protos) {
+        KeyID[] keys = new KeyID[protos.size()];
+        for (int i = 0; i < protos.size(); i++) {
+          keys[i] = new KeyID(protos.get(i));
+        }
+        return keys;
+      }
+
+      private TxTemplate.KeyID toProtobuf() {
+        TxTemplate.KeyID.Builder proto = TxTemplate.KeyID.newBuilder();
+        if (this.xpub != null) {
+          proto.setXpub(ByteString.copyFrom(this.xpub));
+        }
+
+        if (this.derivationPath != null) {
+          for (byte[] path : this.derivationPath) {
+            proto.addDerivationPath(ByteString.copyFrom(path));
+          }
+        }
+
+        return proto.build();
+      }
     }
   }
 
@@ -495,7 +666,42 @@ public class Transaction {
    */
   public static BatchResponse<Template> buildBatch(
       Client client, List<Transaction.Builder> builders) throws ChainException {
-    return client.batchRequest("build-transaction", builders, Template.class, BuildException.class);
+    ArrayList<BuildTxsRequest.Request> reqs = new ArrayList();
+    for (Transaction.Builder builder : builders) {
+      BuildTxsRequest.Request.Builder req = BuildTxsRequest.Request.newBuilder();
+      if (builder.ttl > 0) {
+        req.setTtl(Long.valueOf(builder.ttl).toString() + "ms");
+      }
+      if (builder.baseTransaction != null) {
+        req.setTransaction(ByteString.copyFrom(builder.baseTransaction));
+      }
+      if (builder.actions != null) {
+        for (Action action : builder.actions) {
+          req.addActions(action.toProtobuf(client));
+        }
+      }
+      reqs.add(req.build());
+    }
+
+    BuildTxsRequest req = BuildTxsRequest.newBuilder().addAllRequests(reqs).build();
+    TxsResponse resp = client.app().buildTxs(req);
+    if (resp.hasError()) {
+      throw new APIException(resp.getError());
+    }
+
+    Map<Integer, Template> successes = new LinkedHashMap();
+    Map<Integer, APIException> errors = new LinkedHashMap();
+
+    for (int i = 0; i < resp.getResponsesCount(); i++) {
+      TxsResponse.Response r = resp.getResponses(i);
+      if (r.hasError()) {
+        errors.put(i, new APIException(r.getError()));
+      } else {
+        successes.put(i, new Template(r.getTemplate()));
+      }
+    }
+
+    return new BatchResponse<Template>(successes, errors);
   }
 
   /**
@@ -511,10 +717,7 @@ public class Transaction {
    */
   public static BatchResponse<SubmitResponse> submitBatch(Client client, List<Template> templates)
       throws ChainException {
-    HashMap<String, Object> body = new HashMap<>();
-    body.put("transactions", templates);
-    return client.batchRequest(
-        "submit-transaction", body, SubmitResponse.class, APIException.class);
+    return submitBatch(client, templates, null);
   }
 
   /**
@@ -531,11 +734,34 @@ public class Transaction {
    */
   public static BatchResponse<SubmitResponse> submitBatch(
       Client client, List<Template> templates, String waitUntil) throws ChainException {
-    HashMap<String, Object> body = new HashMap<>();
-    body.put("transactions", templates);
-    body.put("wait_until", waitUntil);
-    return client.batchRequest(
-        "submit-transaction", body, SubmitResponse.class, APIException.class);
+    SubmitTxsRequest.Builder req = SubmitTxsRequest.newBuilder();
+    if (waitUntil != null) {
+      req.setWaitUntil(waitUntil);
+    }
+    for (Template template : templates) {
+      req.addTransactions(template.toProtobuf());
+    }
+
+    SubmitTxsResponse resp = client.app().submitTxs(req.build());
+    if (resp.hasError()) {
+      throw new APIException(resp.getError());
+    }
+
+    Map<Integer, SubmitResponse> successes = new LinkedHashMap();
+    Map<Integer, APIException> errors = new LinkedHashMap();
+
+    for (int i = 0; i < resp.getResponsesCount(); i++) {
+      SubmitTxsResponse.Response r = resp.getResponses(i);
+      if (r.hasError()) {
+        errors.put(i, new APIException(r.getError()));
+      } else {
+        SubmitResponse sr = new SubmitResponse();
+        sr.id = r.getId();
+        successes.put(i, sr);
+      }
+    }
+
+    return new BatchResponse<SubmitResponse>(successes, errors);
   }
 
   /**
@@ -550,10 +776,7 @@ public class Transaction {
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
   public static SubmitResponse submit(Client client, Template template) throws ChainException {
-    HashMap<String, Object> body = new HashMap<>();
-    body.put("transactions", Arrays.asList(template));
-    return client.singletonBatchRequest(
-        "submit-transaction", body, SubmitResponse.class, APIException.class);
+    return submit(client, template, "");
   }
 
   /**
@@ -570,24 +793,27 @@ public class Transaction {
    */
   public static SubmitResponse submit(Client client, Template template, String waitUntil)
       throws ChainException {
-    HashMap<String, Object> body = new HashMap<>();
-    body.put("transactions", Arrays.asList(template));
-    body.put("wait_until", waitUntil);
-    return client.singletonBatchRequest(
-        "submit-transaction", body, SubmitResponse.class, APIException.class);
+    BatchResponse<SubmitResponse> resp = Transaction.submitBatch(client, Arrays.asList(template));
+    if (resp.isError(0)) {
+      throw resp.errorsByIndex().get(0);
+    }
+    return resp.successesByIndex().get(0);
   }
 
   /**
    * Base class representing actions that can be taken within a transaction.
    */
-  public static class Action extends HashMap<String, Object> {
+  abstract public static class Action {
+
+    protected String clientToken;
+    protected Map<String, Object> referenceData;
     /**
      * Default constructor initializes list and sets the client token.
      */
     public Action() {
       // Several action types require client_token as an idempotency key.
       // It's safest to include a default value for this param.
-      this.put("client_token", UUID.randomUUID().toString());
+      clientToken = UUID.randomUUID().toString();
     }
 
     /**
@@ -598,10 +824,8 @@ public class Transaction {
      * @return updated action object
      */
     public Action addReferenceDataField(String key, Object value) {
-      Map<String, Object> referenceData = (HashMap<String, Object>) this.get("reference_data");
       if (referenceData == null) {
         referenceData = new HashMap<>();
-        this.put("reference_data", referenceData);
       }
       referenceData.put(key, value);
       return this;
@@ -614,29 +838,36 @@ public class Transaction {
      * @return updated action object
      */
     public Action setReferenceData(Map<String, Object> referenceData) {
-      this.put("reference_data", referenceData);
+      this.referenceData = referenceData;
       return this;
     }
+
+    abstract com.chain.proto.Action toProtobuf(Client client);
 
     /**
      * Represents an issuance action.
      */
     public static class Issue extends Action {
+
+      private String assetAlias;
+      private byte[] assetID;
+      private long amount;
+
       /**
        * Default constructor defines the action type as "issue"
        */
       public Issue() {
-        this.put("type", "issue");
+        super();
       }
 
       /**
        * Specifies the asset to be issued using its alias.<br>
-       * <strong>Either this or {@link Issue#setAssetId(String)}  must be called.</strong>
+       * <strong>Either this or {@link Issue#setAssetId(byte[])}  must be called.</strong>
        * @param alias alias of the asset to be issued
        * @return updated action object
        */
       public Issue setAssetAlias(String alias) {
-        this.put("asset_alias", alias);
+        assetAlias = alias;
         return this;
       }
 
@@ -647,7 +878,12 @@ public class Transaction {
        * @return updated action object
        */
       public Issue setAssetId(String id) {
-        this.put("asset_id", id);
+        assetID = Util.hexStringToByteArray(id);
+        return this;
+      }
+
+      public Issue setAssetId(byte[] id) {
+        assetID = id;
         return this;
       }
 
@@ -658,8 +894,26 @@ public class Transaction {
        * @return updated action object
        */
       public Issue setAmount(long amount) {
-        this.put("amount", amount);
+        this.amount = amount;
         return this;
+      }
+
+      @Override
+      protected com.chain.proto.Action toProtobuf(Client client) {
+        com.chain.proto.Action.Issue.Builder builder = com.chain.proto.Action.Issue.newBuilder();
+        builder.setAmount(amount);
+        if (referenceData != null) {
+          builder.setReferenceData(ByteString.copyFrom(client.serialize(referenceData)));
+        }
+        AssetIdentifier.Builder id = AssetIdentifier.newBuilder();
+        if (assetID != null) {
+          id.setAssetId(ByteString.copyFrom(assetID));
+        } else if (assetAlias != null && !assetAlias.isEmpty()) {
+          id.setAssetAlias(assetAlias);
+        }
+        builder.setAsset(id);
+
+        return com.chain.proto.Action.newBuilder().setIssue(builder).build();
       }
     }
 
@@ -667,11 +921,14 @@ public class Transaction {
      * Represents a spend action taken on a particular unspent output.
      */
     public static class SpendAccountUnspentOutput extends Action {
+      private byte[] transactionID;
+      private int position;
+
       /**
        * Default constructor defines the action type as "spend_account_unspent_output"
        */
       public SpendAccountUnspentOutput() {
-        this.put("type", "spend_account_unspent_output");
+        super();
       }
 
       /**
@@ -694,7 +951,12 @@ public class Transaction {
        * @return
        */
       public SpendAccountUnspentOutput setTransactionId(String id) {
-        this.put("transaction_id", id);
+        transactionID = Util.hexStringToByteArray(id);
+        return this;
+      }
+
+      public SpendAccountUnspentOutput setTransactionId(byte[] id) {
+        transactionID = id;
         return this;
       }
 
@@ -705,8 +967,23 @@ public class Transaction {
        * @return
        */
       public SpendAccountUnspentOutput setPosition(int pos) {
-        this.put("position", pos);
+        position = pos;
         return this;
+      }
+
+      protected com.chain.proto.Action toProtobuf(Client client) {
+        com.chain.proto.Action.SpendAccountUnspentOutput.Builder builder =
+            com.chain.proto.Action.SpendAccountUnspentOutput.newBuilder();
+        if (referenceData != null) {
+          builder.setReferenceData(ByteString.copyFrom(client.serialize(referenceData)));
+        }
+        builder.setClientToken(clientToken);
+        if (transactionID != null) {
+          builder.setTxId(ByteString.copyFrom(transactionID));
+        }
+        builder.setPosition(position);
+
+        return com.chain.proto.Action.newBuilder().setSpendAccountUnspentOutput(builder).build();
       }
     }
 
@@ -714,11 +991,17 @@ public class Transaction {
      * Represents a spend action taken on a particular account.
      */
     public static class SpendFromAccount extends Action {
+      private String accountID;
+      private String accountAlias;
+      private byte[] assetID;
+      private String assetAlias;
+      private long amount;
+
       /**
        * Default constructor defines the action type as "spend_account"
        */
       public SpendFromAccount() {
-        this.put("type", "spend_account");
+        super();
       }
 
       /**
@@ -729,7 +1012,7 @@ public class Transaction {
        * @return updated action object
        */
       public SpendFromAccount setAccountAlias(String alias) {
-        this.put("account_alias", alias);
+        accountAlias = alias;
         return this;
       }
 
@@ -741,7 +1024,7 @@ public class Transaction {
        * @return updated action object
        */
       public SpendFromAccount setAccountId(String id) {
-        this.put("account_id", id);
+        accountID = id;
         return this;
       }
 
@@ -753,7 +1036,7 @@ public class Transaction {
        * @return updated action object
        */
       public SpendFromAccount setAssetAlias(String alias) {
-        this.put("asset_alias", alias);
+        assetAlias = alias;
         return this;
       }
 
@@ -765,7 +1048,12 @@ public class Transaction {
        * @return updated action object
        */
       public SpendFromAccount setAssetId(String id) {
-        this.put("asset_id", id);
+        assetID = Util.hexStringToByteArray(id);
+        return this;
+      }
+
+      public SpendFromAccount setAssetId(byte[] id) {
+        assetID = id;
         return this;
       }
 
@@ -776,8 +1064,36 @@ public class Transaction {
        * @return updated action object
        */
       public SpendFromAccount setAmount(long amount) {
-        this.put("amount", amount);
+        this.amount = amount;
         return this;
+      }
+
+      protected com.chain.proto.Action toProtobuf(Client client) {
+        com.chain.proto.Action.SpendAccount.Builder builder =
+            com.chain.proto.Action.SpendAccount.newBuilder();
+        builder.setAmount(amount);
+        builder.setClientToken(clientToken);
+        if (referenceData != null) {
+          builder.setReferenceData(ByteString.copyFrom(client.serialize(referenceData)));
+        }
+
+        AssetIdentifier.Builder assetID = AssetIdentifier.newBuilder();
+        if (this.assetID != null) {
+          assetID.setAssetId(ByteString.copyFrom(this.assetID));
+        } else if (assetAlias != null && !assetAlias.isEmpty()) {
+          assetID.setAssetAlias(assetAlias);
+        }
+        builder.setAsset(assetID);
+
+        AccountIdentifier.Builder accountID = AccountIdentifier.newBuilder();
+        if (this.accountID != null && !this.accountID.isEmpty()) {
+          accountID.setAccountId(this.accountID);
+        } else if (accountAlias != null && !accountAlias.isEmpty()) {
+          accountID.setAccountAlias(accountAlias);
+        }
+        builder.setAccount(accountID);
+
+        return com.chain.proto.Action.newBuilder().setSpendAccount(builder).build();
       }
     }
 
@@ -785,11 +1101,18 @@ public class Transaction {
      * Represents a control action taken on a particular account.
      */
     public static class ControlWithAccount extends Action {
+
+      private String accountID;
+      private String accountAlias;
+      private byte[] assetID;
+      private String assetAlias;
+      private long amount;
+
       /**
        * Default constructor defines the action type as "control_account"
        */
       public ControlWithAccount() {
-        this.put("type", "control_account");
+        super();
       }
 
       /**
@@ -800,7 +1123,7 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithAccount setAccountAlias(String alias) {
-        this.put("account_alias", alias);
+        accountAlias = alias;
         return this;
       }
 
@@ -812,7 +1135,7 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithAccount setAccountId(String id) {
-        this.put("account_id", id);
+        accountID = id;
         return this;
       }
 
@@ -824,7 +1147,7 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithAccount setAssetAlias(String alias) {
-        this.put("asset_alias", alias);
+        assetAlias = alias;
         return this;
       }
 
@@ -836,7 +1159,12 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithAccount setAssetId(String id) {
-        this.put("asset_id", id);
+        assetID = Util.hexStringToByteArray(id);
+        return this;
+      }
+
+      public ControlWithAccount setAssetId(byte[] id) {
+        assetID = id;
         return this;
       }
 
@@ -847,8 +1175,35 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithAccount setAmount(long amount) {
-        this.put("amount", amount);
+        this.amount = amount;
         return this;
+      }
+
+      protected com.chain.proto.Action toProtobuf(Client client) {
+        com.chain.proto.Action.ControlAccount.Builder builder =
+            com.chain.proto.Action.ControlAccount.newBuilder();
+        builder.setAmount(amount);
+        if (referenceData != null) {
+          builder.setReferenceData(ByteString.copyFrom(client.serialize(referenceData)));
+        }
+
+        AssetIdentifier.Builder assetID = AssetIdentifier.newBuilder();
+        if (this.assetID != null) {
+          assetID.setAssetId(ByteString.copyFrom(this.assetID));
+        } else if (assetAlias != null && !assetAlias.isEmpty()) {
+          assetID.setAssetAlias(assetAlias);
+        }
+        builder.setAsset(assetID);
+
+        AccountIdentifier.Builder accountID = AccountIdentifier.newBuilder();
+        if (this.accountID != null && !this.accountID.isEmpty()) {
+          accountID.setAccountId(this.accountID);
+        } else if (accountAlias != null && !accountAlias.isEmpty()) {
+          accountID.setAccountAlias(accountAlias);
+        }
+        builder.setAccount(accountID);
+
+        return com.chain.proto.Action.newBuilder().setControlAccount(builder).build();
       }
     }
 
@@ -856,11 +1211,16 @@ public class Transaction {
      * Represents a control action taken on a control program.
      */
     public static class ControlWithProgram extends Action {
+      private byte[] controlProgram;
+      private byte[] assetID;
+      private String assetAlias;
+      private long amount;
+
       /**
        * Default constructor defines the action type as "control_program"
        */
       public ControlWithProgram() {
-        this.put("type", "control_program");
+        super();
       }
 
       /**
@@ -870,7 +1230,7 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithProgram setControlProgram(ControlProgram controlProgram) {
-        this.put("control_program", controlProgram.controlProgram);
+        this.controlProgram = controlProgram.controlProgram;
         return this;
       }
 
@@ -881,7 +1241,12 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithProgram setControlProgram(String controlProgram) {
-        this.put("control_program", controlProgram);
+        this.controlProgram = Util.hexStringToByteArray(controlProgram);
+        return this;
+      }
+
+      public ControlWithProgram setControlProgram(byte[] controlProgram) {
+        this.controlProgram = controlProgram;
         return this;
       }
 
@@ -892,7 +1257,7 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithProgram setAssetAlias(String alias) {
-        this.put("asset_alias", alias);
+        assetAlias = alias;
         return this;
       }
 
@@ -903,7 +1268,12 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithProgram setAssetId(String id) {
-        this.put("asset_id", id);
+        assetID = Util.hexStringToByteArray(id);
+        return this;
+      }
+
+      public ControlWithProgram setAssetId(byte[] id) {
+        assetID = id;
         return this;
       }
 
@@ -914,8 +1284,30 @@ public class Transaction {
        * @return updated action object
        */
       public ControlWithProgram setAmount(long amount) {
-        this.put("amount", amount);
+        this.amount = amount;
         return this;
+      }
+
+      protected com.chain.proto.Action toProtobuf(Client client) {
+        com.chain.proto.Action.ControlProgram.Builder builder =
+            com.chain.proto.Action.ControlProgram.newBuilder();
+        builder.setAmount(amount);
+        if (controlProgram != null) {
+          builder.setControlProgram(ByteString.copyFrom(controlProgram));
+        }
+        if (referenceData != null) {
+          builder.setReferenceData(ByteString.copyFrom(client.serialize(referenceData)));
+        }
+
+        AssetIdentifier.Builder assetID = AssetIdentifier.newBuilder();
+        if (this.assetID != null) {
+          assetID.setAssetId(ByteString.copyFrom(this.assetID));
+        } else if (assetAlias != null && !assetAlias.isEmpty()) {
+          assetID.setAssetAlias(assetAlias);
+        }
+        builder.setAsset(assetID);
+
+        return com.chain.proto.Action.newBuilder().setControlProgram(builder).build();
       }
     }
 
@@ -923,12 +1315,15 @@ public class Transaction {
      * Represents a retire action.
      */
     public static class Retire extends Action {
+      private long amount;
+      private byte[] assetID;
+      private String assetAlias;
+
       /**
        * Default constructor defines the action type as "control_program"
        */
       public Retire() {
-        this.put("type", "control_program");
-        this.put("control_program", ControlProgram.retireProgram());
+        super();
       }
 
       /**
@@ -938,7 +1333,7 @@ public class Transaction {
        * @return updated action object
        */
       public Retire setAmount(long amount) {
-        this.put("amount", amount);
+        this.amount = amount;
         return this;
       }
 
@@ -949,7 +1344,7 @@ public class Transaction {
        * @return updated action object
        */
       public Retire setAssetAlias(String alias) {
-        this.put("asset_alias", alias);
+        assetAlias = alias;
         return this;
       }
 
@@ -960,8 +1355,33 @@ public class Transaction {
        * @return updated action object
        */
       public Retire setAssetId(String id) {
-        this.put("asset_id", id);
+        assetID = Util.hexStringToByteArray(id);
         return this;
+      }
+
+      public Retire setAssetId(byte[] id) {
+        assetID = id;
+        return this;
+      }
+
+      protected com.chain.proto.Action toProtobuf(Client client) {
+        com.chain.proto.Action.ControlProgram.Builder builder =
+            com.chain.proto.Action.ControlProgram.newBuilder();
+        builder.setAmount(amount);
+        builder.setControlProgram(ByteString.copyFrom(ControlProgram.retireProgram()));
+        if (referenceData != null) {
+          builder.setReferenceData(ByteString.copyFrom(client.serialize(referenceData)));
+        }
+
+        AssetIdentifier.Builder assetID = AssetIdentifier.newBuilder();
+        if (this.assetID != null) {
+          assetID.setAssetId(ByteString.copyFrom(this.assetID));
+        } else if (assetAlias != null && !assetAlias.isEmpty()) {
+          assetID.setAssetAlias(assetAlias);
+        }
+        builder.setAsset(assetID);
+
+        return com.chain.proto.Action.newBuilder().setControlProgram(builder).build();
       }
     }
 
@@ -971,7 +1391,7 @@ public class Transaction {
      */
     public static class SetTransactionReferenceData extends Action {
       public SetTransactionReferenceData() {
-        this.put("type", "set_transaction_reference_data");
+        super();
       }
 
       public SetTransactionReferenceData(Map<String, Object> referenceData) {
@@ -979,43 +1399,15 @@ public class Transaction {
         setReferenceData(referenceData);
       }
 
-      /**
-       * Adds a k,v pair to the action's reference data object.<br>
-       * Since most/all current action types use the reference_data parameter, we provide this method in the base class to avoid repetition.
-       * @param key key of the reference data field
-       * @param value value of reference data field
-       * @return updated SetTransactionReferenceData object
-       */
-      public Action addReferenceDataField(String key, Object value) {
-        Map<String, Object> referenceData = (HashMap<String, Object>) this.get("reference_data");
-        if (referenceData == null) {
-          referenceData = new HashMap<>();
-          this.put("reference_data", referenceData);
+      protected com.chain.proto.Action toProtobuf(Client client) {
+        com.chain.proto.Action.SetTxReferenceData.Builder builder =
+            com.chain.proto.Action.SetTxReferenceData.newBuilder();
+        if (referenceData != null) {
+          builder.setData(ByteString.copyFrom(client.serialize(referenceData)));
         }
-        referenceData.put(key, value);
-        return this;
-      }
 
-      /**
-       * Specifies the reference data.<br>
-       * @param referenceData reference data to embed into the action
-       * @return updated SetTransactionReferenceData object
-       */
-      public SetTransactionReferenceData setReferenceData(Map<String, Object> referenceData) {
-        this.put("reference_data", referenceData);
-        return this;
+        return com.chain.proto.Action.newBuilder().setSetTxReferenceData(builder).build();
       }
-    }
-
-    /**
-     * Sets a k,v parameter pair.
-     * @param key the key on the parameter object
-     * @param value the corresponding value
-     * @return updated action object
-     */
-    public Action setParameter(String key, Object value) {
-      this.put(key, value);
-      return this;
     }
   }
 
@@ -1029,7 +1421,7 @@ public class Transaction {
      * Hex-encoded serialization of a transaction to add to the current template.
      */
     @SerializedName("base_transaction")
-    private String baseTransaction;
+    private byte[] baseTransaction;
 
     /**
      * List of actions in a transaction.
@@ -1055,8 +1447,11 @@ public class Transaction {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Template build(Client client) throws ChainException {
-      return client.singletonBatchRequest(
-          "build-transaction", Arrays.asList(this), Template.class, BuildException.class);
+      BatchResponse<Template> resp = Transaction.buildBatch(client, Arrays.asList(this));
+      if (resp.isError(0)) {
+        throw resp.errorsByIndex().get(0);
+      }
+      return resp.successesByIndex().get(0);
     }
 
     /**
@@ -1070,7 +1465,7 @@ public class Transaction {
      * Sets the baseTransaction field and initializes the actions lists.<br>
      * This constructor can be used when executing an atomic swap and the counter party has sent an initialized tx template.
      */
-    public Builder(String baseTransaction) {
+    public Builder(byte[] baseTransaction) {
       this.setBaseTransaction(baseTransaction);
       this.actions = new ArrayList<>();
     }
@@ -1078,7 +1473,7 @@ public class Transaction {
     /**
      * Sets the base transaction that will be added to the current template.
      */
-    public Builder setBaseTransaction(String baseTransaction) {
+    public Builder setBaseTransaction(byte[] baseTransaction) {
       this.baseTransaction = baseTransaction;
       return this;
     }
@@ -1135,6 +1530,13 @@ public class Transaction {
     private ListIterator<Transaction> txIter;
     private Transaction lastTx;
 
+    private Feed(TxFeed proto) {
+      this.id = proto.getId();
+      this.alias = proto.getAlias();
+      this.filter = proto.getFilter();
+      this.after = proto.getAfter();
+    }
+
     /**
      * Creates a feed.
      *
@@ -1145,11 +1547,21 @@ public class Transaction {
      * @throws ChainException
      */
     public static Feed create(Client client, String alias, String filter) throws ChainException {
-      Map<String, Object> req = new HashMap<>();
-      req.put("alias", alias);
-      req.put("filter", filter);
-      req.put("client_token", UUID.randomUUID().toString());
-      return client.request("create-transaction-feed", req, Feed.class);
+      CreateTxFeedRequest.Builder req = CreateTxFeedRequest.newBuilder();
+      req.setClientToken(UUID.randomUUID().toString());
+      if (alias != null && !alias.isEmpty()) {
+        req.setAlias(alias);
+      }
+      if (filter != null && !filter.isEmpty()) {
+        req.setFilter(filter);
+      }
+
+      TxFeedResponse resp = client.app().createTxFeed(req.build());
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
+
+      return new Feed(resp.getResponse());
     }
 
     /**
@@ -1161,9 +1573,12 @@ public class Transaction {
      * @throws ChainException
      */
     public static Feed getByID(Client client, String id) throws ChainException {
-      Map<String, Object> req = new HashMap<>();
-      req.put("id", id);
-      return client.request("get-transaction-feed", req, Feed.class);
+      TxFeedResponse resp = client.app().getTxFeed(GetTxFeedRequest.newBuilder().setId(id).build());
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
+
+      return new Feed(resp.getResponse());
     }
 
     /**
@@ -1175,18 +1590,20 @@ public class Transaction {
      * @throws ChainException
      */
     public static Feed getByAlias(Client client, String alias) throws ChainException {
-      Map<String, Object> req = new HashMap<>();
-      req.put("alias", alias);
-      return client.request("get-transaction-feed", req, Feed.class);
+      TxFeedResponse resp =
+          client.app().getTxFeed(GetTxFeedRequest.newBuilder().setAlias(alias).build());
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
+
+      return new Feed(resp.getResponse());
     }
 
     /**
      * Retrieves the next transaction matching the feed's filter criteria.
      * If no such transaction is available, this method will block until a
      * matching transaction arrives in the blockchain, or if the specified
-     * timeout is reached. To avoid client-side timeouts, be sure to call
-     * {@link Client#setReadTimeout(long, TimeUnit)} (long, TimeUnit)} with appropriate
-     * parameters.
+     * timeout is reached.
      *
      * @param client client object that makes requests to core
      * @param timeout number of milliseconds before the server-side long-poll should time out
@@ -1213,9 +1630,7 @@ public class Transaction {
     /**
      * Retrieves the next transaction matching the feed's filter criteria.
      * If no such transaction is available, this method will block until a
-     * matching transaction arrives in the blockchain. To avoid client-side
-     * timeouts, be sure to call {@link Client#setReadTimeout(long, TimeUnit)}
-     * with appropriate parameters.
+     * matching transaction arrives in the blockchain.
      *
      * @param client client object that makes requests to core
      * @return a transaction object
@@ -1244,11 +1659,18 @@ public class Transaction {
       // It technically uses an unsigned 64-bit int for the end specifier, but
       // Long.MAX_VALUE should suffice.
       String newAfter = "" + lastTx.blockHeight + ":" + lastTx.position + "-" + Long.MAX_VALUE;
-      Map<String, Object> req = new HashMap<>();
-      req.put("id", this.id);
-      req.put("previous_after", this.after);
-      req.put("after", newAfter);
-      client.request("update-transaction-feed", req, Feed.class);
+
+      UpdateTxFeedRequest req =
+          UpdateTxFeedRequest.newBuilder()
+              .setId(this.id)
+              .setPreviousAfter(this.after)
+              .setAfter(newAfter)
+              .build();
+
+      TxFeedResponse resp = client.app().updateTxFeed(req);
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
 
       this.after = newAfter;
     }

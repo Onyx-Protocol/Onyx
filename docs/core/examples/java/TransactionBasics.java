@@ -165,10 +165,10 @@ class TransactionBasics {
 
   public static void setup(Client client, Client otherCoreClient) throws Exception {
     MockHsm.Key aliceKey = MockHsm.Key.create(client);
-    HsmSigner.addKey(aliceKey, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(aliceKey, client);
 
     MockHsm.Key bobKey = MockHsm.Key.create(otherCoreClient);
-    HsmSigner.addKey(bobKey, MockHsm.getSignerClient(otherCoreClient));
+    HsmSigner.addKey(bobKey, otherCoreClient);
 
     new Asset.Builder()
       .setAlias("gold")

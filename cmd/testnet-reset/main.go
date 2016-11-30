@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/hex"
 	"io"
 	"log"
 	"net/http"
@@ -10,36 +10,45 @@ import (
 	"strings"
 	"time"
 
+	"chain/core/pb"
 	"chain/core/rpc"
 	"chain/env"
+	"chain/protocol/bc"
 )
 
 var scheduled = env.Bool("SCHEDULED", true)
 
 type core struct {
 	netTok string
-	pubkey string
+	pubkey []byte
+	url    string
 }
 
-func coreEnv(prefix string) (*rpc.Client, core) {
-	var core core
-	core.netTok = os.Getenv(prefix + "_NETWORK_TOKEN")
-	core.pubkey = os.Getenv(prefix + "_PUBKEY")
-	url := os.Getenv(prefix + "_URL")
+func coreEnv(prefix string) (pb.AppClient, core) {
+	var (
+		c   core
+		err error
+	)
+	c.netTok = os.Getenv(prefix + "_NETWORK_TOKEN")
+	c.pubkey, err = hex.DecodeString(os.Getenv(prefix + "_PUBKEY"))
+	if err != nil {
+		log.Fatalf("bad %s_PUBKEY: %s", prefix, os.Getenv(prefix+"_PUBKEY"))
+	}
+	c.url = os.Getenv(prefix + "_URL")
 	clientTok := os.Getenv(prefix + "_CLIENT_TOKEN")
 
-	if url == "" || clientTok == "" || core.netTok == "" || core.pubkey == "" {
+	if c.url == "" || clientTok == "" || c.netTok == "" || len(c.pubkey) == 0 {
 		log.Fatalf("please set %s_URL %[1]s_CLIENT_TOKEN %[1]s_NETWORK_TOKEN %[1]s_PUBKEY", prefix)
 	}
 
-	client := &rpc.Client{
-		BaseURL:     url,
-		AccessToken: clientTok,
-		Username:    "testnet-resetter", // for user-agent, not auth
-		BuildTag:    "none",
+	conn, err := rpc.NewGRPCConn(c.url, clientTok, "", "")
+	if err != nil {
+		log.Fatal("could not create grpc connection")
 	}
 
-	return client, core
+	client := pb.NewAppClient(conn.Conn)
+
+	return client, c
 }
 
 func main() {
@@ -66,60 +75,57 @@ func main() {
 	// scale down testnet bot
 	updateHerokuApp("/chain-core-ccte/formation", `{"updates":[{"type":"web", "quantity":0}]}`)
 
-	empty := json.RawMessage("{}")
-	must(gen.Call(ctx, "/reset", &empty, nil))
-	must(sig1.Call(ctx, "/reset", &empty, nil))
-	must(sig2.Call(ctx, "/reset", &empty, nil))
+	must(reduce(gen.Reset(ctx, &pb.ResetRequest{})))
+	must(reduce(sig1.Reset(ctx, &pb.ResetRequest{})))
+	must(reduce(sig2.Reset(ctx, &pb.ResetRequest{})))
 
 	time.Sleep(time.Second) // give them time to restart
 
 	// configure generator
-	must(gen.Call(ctx, "/configure", map[string]interface{}{
-		"is_signer":    true,
-		"block_pub":    genCore.pubkey,
-		"is_generator": true,
-		"quorum":       2,
-		"block_signer_urls": []map[string]interface{}{
-			{
-				"pubkey":       sig1Core.pubkey,
-				"url":          sig1.BaseURL,
-				"access_token": sig1Core.netTok,
-			},
-			{
-				"pubkey":       sig2Core.pubkey,
-				"url":          sig2.BaseURL,
-				"access_token": sig2Core.netTok,
-			},
+	must(reduce(gen.Configure(ctx, &pb.ConfigureRequest{
+		IsSigner:    true,
+		BlockPub:    genCore.pubkey,
+		IsGenerator: true,
+		Quorum:      2,
+		BlockSignerUrls: []*pb.ConfigureRequest_BlockSigner{{
+			Pubkey:      sig1Core.pubkey,
+			Url:         sig1Core.url,
+			AccessToken: sig1Core.netTok,
 		},
-	}, nil))
+			{
+				Pubkey:      sig2Core.pubkey,
+				Url:         sig2Core.url,
+				AccessToken: sig2Core.netTok,
+			}},
+	})))
 
 	time.Sleep(time.Second) // give generator time to restart
 
-	var resp struct {
-		BlockchainID string `json:"blockchain_id"`
-	}
-	must(gen.Call(ctx, "/info", "", &resp))
-	log.Println("blockchain ID", resp.BlockchainID)
+	resp, err := gen.Info(ctx, nil)
+	must(err)
 
 	// configure signers
-	must(sig1.Call(ctx, "/configure", map[string]interface{}{
-		"is_signer":              true,
-		"block_pub":              sig1Core.pubkey,
-		"blockchain_id":          resp.BlockchainID,
-		"generator_url":          gen.BaseURL,
-		"generator_access_token": genCore.netTok,
-	}, nil))
-	must(sig2.Call(ctx, "/configure", map[string]interface{}{
-		"is_signer":              true,
-		"block_pub":              sig2Core.pubkey,
-		"blockchain_id":          resp.BlockchainID,
-		"generator_url":          gen.BaseURL,
-		"generator_access_token": genCore.netTok,
-	}, nil))
+	must(reduce(sig1.Configure(ctx, &pb.ConfigureRequest{
+		IsSigner:             true,
+		BlockPub:             sig1Core.pubkey,
+		BlockchainId:         resp.BlockchainId,
+		GeneratorUrl:         genCore.url,
+		GeneratorAccessToken: genCore.netTok,
+	})))
+	must(reduce(sig2.Configure(ctx, &pb.ConfigureRequest{
+		IsSigner:             true,
+		BlockPub:             sig2Core.pubkey,
+		BlockchainId:         resp.BlockchainId,
+		GeneratorUrl:         genCore.url,
+		GeneratorAccessToken: genCore.netTok,
+	})))
+
+	var blockchainID bc.Hash
+	copy(blockchainID[:], resp.BlockchainId)
 
 	// update blockchain id and scale up bot
-	updateHerokuApp("/chain-testnet-info/config-vars", `{"BLOCKCHAIN_ID":"`+resp.BlockchainID+`"}`)
-	updateHerokuApp("/chain-core-ccte/config-vars", `{"BLOCKCHAIN_ID":"`+resp.BlockchainID+`"}`)
+	updateHerokuApp("/chain-testnet-info/config-vars", `{"BLOCKCHAIN_ID":"`+blockchainID.String()+`"}`)
+	updateHerokuApp("/chain-core-ccte/config-vars", `{"BLOCKCHAIN_ID":"`+blockchainID.String()+`"}`)
 	updateHerokuApp("/chain-core-ccte/formation", `{"updates":[{"type":"web", "quantity":1}]}`)
 }
 
@@ -140,4 +146,8 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func reduce(_ interface{}, err error) error {
+	return err
 }

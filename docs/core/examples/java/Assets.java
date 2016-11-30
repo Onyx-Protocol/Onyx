@@ -9,10 +9,10 @@ class Assets {
     Client client = new Client();
 
     MockHsm.Key assetKey = MockHsm.Key.create(client);
-    HsmSigner.addKey(assetKey, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(assetKey, client);
 
     MockHsm.Key accountKey = MockHsm.Key.create(client);
-    HsmSigner.addKey(accountKey, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(accountKey, client);
 
     new Account.Builder()
       .setAlias("acme_treasury")

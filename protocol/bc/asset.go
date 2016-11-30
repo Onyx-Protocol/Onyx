@@ -2,6 +2,7 @@ package bc
 
 import (
 	"database/sql/driver"
+	"errors"
 	"io"
 
 	"chain/crypto/sha3pool"
@@ -9,6 +10,8 @@ import (
 )
 
 const assetVersion = 1
+
+var ErrBadAssetLength = errors.New("wrong byte-length for asset id")
 
 // AssetID is the Hash256 of the issuance script for the asset and the
 // initial block of the chain where it appears.
@@ -20,6 +23,14 @@ func (a *AssetID) UnmarshalText(b []byte) error { return (*Hash)(a).UnmarshalTex
 func (a *AssetID) UnmarshalJSON(b []byte) error { return (*Hash)(a).UnmarshalJSON(b) }
 func (a AssetID) Value() (driver.Value, error)  { return Hash(a).Value() }
 func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
+
+func AssetIDFromBytes(b []byte) (a AssetID, err error) {
+	if len(b) != len(a) {
+		return a, ErrBadAssetLength
+	}
+	copy(a[:], b)
+	return a, nil
+}
 
 // ComputeAssetID computes the asset ID of the asset defined by
 // the given issuance program and initial block hash.

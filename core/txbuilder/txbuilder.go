@@ -6,8 +6,8 @@ import (
 	"context"
 	"time"
 
+	"chain/core/pb"
 	"chain/crypto/ed25519/chainkd"
-	"chain/encoding/json"
 	"chain/errors"
 	"chain/math/checked"
 	"chain/protocol/bc"
@@ -28,7 +28,7 @@ var (
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Time) (*Template, error) {
+func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Time) (*pb.TxTemplate, error) {
 	builder := TemplateBuilder{
 		base:    tx,
 		maxTime: maxTime,
@@ -66,30 +66,29 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 	return tpl, nil
 }
 
-// KeyIDs produces KeyIDs from a list of xpubs and a derivation path
-// (applied to all the xpubs).
-func KeyIDs(xpubs []chainkd.XPub, path [][]byte) []KeyID {
-	result := make([]KeyID, 0, len(xpubs))
-	var hexPath []json.HexBytes
-	for _, p := range path {
-		hexPath = append(hexPath, p)
+func Sign(ctx context.Context, tpl *pb.TxTemplate, xpubs []chainkd.XPub, signFn SignFunc) error {
+	tx, err := bc.NewTxDataFromBytes(tpl.RawTransaction)
+	if err != nil {
+		return err
 	}
-	for _, xpub := range xpubs {
-		result = append(result, KeyID{xpub, hexPath})
-	}
-	return result
-}
-
-func Sign(ctx context.Context, tpl *Template, xpubs []chainkd.XPub, signFn SignFunc) error {
+	wrapper := &Template{TxTemplate: tpl, Tx: tx}
 	for i, sigInst := range tpl.SigningInstructions {
-		for j, c := range sigInst.WitnessComponents {
-			err := c.Sign(ctx, tpl, uint32(i), xpubs, signFn)
+		for j, proto := range sigInst.WitnessComponents {
+			var c WitnessComponent
+			switch proto.Component.(type) {
+			case *pb.TxTemplate_WitnessComponent_Signature:
+				c = (*signatureWitness)(proto.GetSignature())
+			}
+			if c == nil {
+				continue
+			}
+			err := c.Sign(ctx, wrapper, uint32(i), xpubs, signFn)
 			if err != nil {
 				return errors.WithDetailf(err, "adding signature(s) to witness component %d of input %d", j, i)
 			}
 		}
 	}
-	return materializeWitnesses(tpl)
+	return materializeWitnesses(wrapper)
 }
 
 func checkBlankCheck(tx *bc.TxData) error {

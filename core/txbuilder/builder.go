@@ -5,6 +5,7 @@ import (
 	"math"
 	"time"
 
+	"chain/core/pb"
 	"chain/errors"
 	"chain/protocol/bc"
 )
@@ -13,7 +14,7 @@ type TemplateBuilder struct {
 	base                *bc.TxData
 	inputs              []*bc.TxInput
 	outputs             []*bc.TxOutput
-	signingInstructions []*SigningInstruction
+	signingInstructions []*pb.TxTemplate_SigningInstruction
 	minTime             time.Time
 	maxTime             time.Time
 	referenceData       []byte
@@ -21,7 +22,7 @@ type TemplateBuilder struct {
 	callbacks           []func() error
 }
 
-func (b *TemplateBuilder) AddInput(in *bc.TxInput, sigInstruction *SigningInstruction) error {
+func (b *TemplateBuilder) AddInput(in *bc.TxInput, sigInstruction *pb.TxTemplate_SigningInstruction) error {
 	if in.Amount() > math.MaxInt64 {
 		return errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", in.Amount())
 	}
@@ -82,7 +83,7 @@ func (b *TemplateBuilder) rollback() {
 	}
 }
 
-func (b *TemplateBuilder) Build() (*Template, *bc.TxData, error) {
+func (b *TemplateBuilder) Build() (*pb.TxTemplate, *bc.TxData, error) {
 	// Run any building callbacks.
 	for _, cb := range b.callbacks {
 		err := cb()
@@ -91,7 +92,7 @@ func (b *TemplateBuilder) Build() (*Template, *bc.TxData, error) {
 		}
 	}
 
-	tpl := &Template{}
+	tpl := &pb.TxTemplate{}
 	tx := b.base
 	if tx == nil {
 		tx = &bc.TxData{
@@ -121,13 +122,16 @@ func (b *TemplateBuilder) Build() (*Template, *bc.TxData, error) {
 		instruction := b.signingInstructions[i]
 		instruction.Position = uint32(len(tx.Inputs))
 
-		// Empty signature arrays should be serialized as empty arrays, not null.
-		if instruction.WitnessComponents == nil {
-			instruction.WitnessComponents = []WitnessComponent{}
-		}
 		tpl.SigningInstructions = append(tpl.SigningInstructions, instruction)
 		tx.Inputs = append(tx.Inputs, in)
 	}
-	tpl.Transaction = tx
+
+	var buf bytes.Buffer
+	_, err := tx.WriteTo(&buf)
+	if err != nil {
+		return nil, nil, err
+	}
+	tpl.RawTransaction = buf.Bytes()
+
 	return tpl, tx, nil
 }

@@ -9,13 +9,13 @@ class GlobalVsLocalData {
     Client client = new Client();
 
     MockHsm.Key assetKey = MockHsm.Key.create(client);
-    HsmSigner.addKey(assetKey, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(assetKey, client);
 
     MockHsm.Key aliceKey = MockHsm.Key.create(client);
-    HsmSigner.addKey(aliceKey, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(aliceKey, client);
 
     MockHsm.Key bobKey = MockHsm.Key.create(client);
-    HsmSigner.addKey(bobKey, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(bobKey, client);
 
     // snippet create-accounts-with-tags
     new Account.Builder()

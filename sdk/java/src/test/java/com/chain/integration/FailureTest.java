@@ -31,8 +31,8 @@ public class FailureTest {
 
   public void testCreateKey() throws Exception {
     try {
-      MockHsm.Key.create(new Client(new URL("http://wrong")));
-    } catch (HTTPException e) {
+      MockHsm.Key.create(new Client("http://wrong", ""));
+    } catch (io.grpc.StatusRuntimeException e) {
       return;
     }
     throw new Exception("expecting APIException");
@@ -80,7 +80,7 @@ public class FailureTest {
 
   public void testSignTransaction() throws Exception {
     client = TestUtils.generateClient();
-    HsmSigner.addKey(MockHsm.Key.create(client), MockHsm.getSignerClient(client));
+    HsmSigner.addKey(MockHsm.Key.create(client), client);
     try {
       HsmSigner.sign(new Transaction.Template());
     } catch (APIException e) {

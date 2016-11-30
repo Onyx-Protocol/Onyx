@@ -5,7 +5,6 @@ package fetch
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"math"
 	"math/rand"
 	"net"
@@ -13,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"chain/core/rpc"
+	"chain/core/pb"
 	"chain/core/txdb"
 	"chain/errors"
 	"chain/log"
@@ -54,7 +53,7 @@ func SnapshotProgress() *Snapshot {
 // It returns when its context is canceled.
 // After each attempt to fetch and apply a block, it calls health
 // to report either an error or nil to indicate success.
-func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error)) {
+func Fetch(ctx context.Context, c *protocol.Chain, peer pb.NodeClient, health func(error)) {
 	// Fetch the generator height periodically.
 	go pollGeneratorHeight(ctx, peer)
 
@@ -130,7 +129,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 // and the other for reading errors. Progress will halt unless callers are
 // reading from both. DownloadBlocks will continue even if it encounters errors,
 // until its context is done.
-func DownloadBlocks(ctx context.Context, peer *rpc.Client, height uint64) (chan *bc.Block, chan error) {
+func DownloadBlocks(ctx context.Context, peer pb.NodeClient, height uint64) (chan *bc.Block, chan error) {
 	blockch := make(chan *bc.Block)
 	errch := make(chan error)
 	go func() {
@@ -167,7 +166,7 @@ func DownloadBlocks(ctx context.Context, peer *rpc.Client, height uint64) (chan 
 	return blockch, errch
 }
 
-func pollGeneratorHeight(ctx context.Context, peer *rpc.Client) {
+func pollGeneratorHeight(ctx context.Context, peer pb.NodeClient) {
 	updateGeneratorHeight(ctx, peer)
 
 	ticker := time.NewTicker(heightPollingPeriod)
@@ -183,7 +182,7 @@ func pollGeneratorHeight(ctx context.Context, peer *rpc.Client) {
 	}
 }
 
-func updateGeneratorHeight(ctx context.Context, peer *rpc.Client) {
+func updateGeneratorHeight(ctx context.Context, peer pb.NodeClient) {
 	gh, err := getHeight(ctx, peer)
 	if err != nil {
 		logNetworkError(ctx, err)
@@ -229,32 +228,35 @@ func timeoutBackoffDur(n uint) time.Duration {
 
 // getBlock sends a get-block RPC request to another Core
 // for the next block.
-func getBlock(ctx context.Context, peer *rpc.Client, height uint64, timeout time.Duration) (*bc.Block, error) {
+func getBlock(ctx context.Context, peer pb.NodeClient, height uint64, timeout time.Duration) (*bc.Block, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var block *bc.Block
-	err := peer.Call(ctx, "/rpc/get-block", height, &block)
+	resp, err := peer.GetBlock(ctx, &pb.GetBlockRequest{Height: height})
 	if ctx.Err() == context.DeadlineExceeded {
 		return nil, nil
 	}
-	return block, errors.Wrap(err, "get blocks rpc")
+	if err != nil {
+		return nil, errors.Wrap(err, "get blocks rpc")
+	}
+
+	block, err := bc.NewBlockFromBytes(resp.Block)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse rpc block")
+	}
+
+	return block, nil
 }
 
 // getHeight sends a get-height RPC request to another Core for
 // the latest height that that peer knows about.
-func getHeight(ctx context.Context, peer *rpc.Client) (uint64, error) {
-	var resp map[string]uint64
-	err := peer.Call(ctx, "/rpc/block-height", nil, &resp)
+func getHeight(ctx context.Context, peer pb.NodeClient) (uint64, error) {
+	resp, err := peer.GetBlockHeight(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrap(err, "could not get remote block height")
 	}
-	h, ok := resp["block_height"]
-	if !ok {
-		return 0, errors.New("unexpected response from generator")
-	}
 
-	return h, nil
+	return resp.Height, nil
 }
 
 func logNetworkError(ctx context.Context, err error) {
@@ -292,15 +294,17 @@ func (s *Snapshot) done() {
 // to the store. It should only be called on freshly configured cores--
 // cores that have been operating should replay all transactions so that
 // they can index them properly.
-func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, attempt int) error {
+func fetchSnapshot(ctx context.Context, peer pb.NodeClient, s protocol.Store, attempt int) error {
 	const getBlockTimeout = 30 * time.Second
 	const readSnapshotTimeout = 30 * time.Second
 
 	info := &Snapshot{Attempt: attempt}
-	err := peer.Call(ctx, "/rpc/get-snapshot-info", nil, &info)
+	resp, err := peer.GetSnapshotInfo(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "getting snapshot info")
 	}
+	info.Height = resp.Height
+	info.Size = resp.Size
 	if info.Height == 0 {
 		return nil
 	}
@@ -312,20 +316,13 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 	downloadCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	// Download the snapshot, recording our progress as we go.
-	body, err := peer.CallRaw(downloadCtx, "/rpc/get-snapshot", info.Height)
+	snapResp, err := peer.GetSnapshot(downloadCtx, &pb.GetSnapshotRequest{Height: info.Height})
 	if err != nil {
 		return errors.Wrap(err, "getting snapshot")
 	}
-	defer body.Close()
 
 	// Wrap the response body reader in our progress reader.
-	info.progressReader.reader = body
-	info.progressReader.setTimeout(readSnapshotTimeout, cancel)
-	b, err := ioutil.ReadAll(&info.progressReader)
-	if err != nil {
-		return err
-	}
-	snapshot, err := txdb.DecodeSnapshot(b)
+	snapshot, err := txdb.DecodeSnapshot(snapResp.Data)
 	if err != nil {
 		return err
 	}

@@ -2,22 +2,28 @@ package txbuilder
 
 import (
 	"context"
-	stdjson "encoding/json"
 
-	"chain/encoding/json"
+	"chain/core/pb"
+	"chain/errors"
 	"chain/protocol/bc"
 )
 
-func DecodeControlProgramAction(data []byte) (Action, error) {
-	a := new(controlProgramAction)
-	err := stdjson.Unmarshal(data, a)
-	return a, err
+func DecodeControlProgramAction(proto *pb.Action_ControlProgram) (Action, error) {
+	assetID, err := bc.AssetIDFromBytes(proto.Asset.GetAssetId())
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	return &controlProgramAction{
+		AssetAmount:   bc.AssetAmount{AssetID: assetID, Amount: proto.Amount},
+		Program:       proto.ControlProgram,
+		ReferenceData: proto.ReferenceData,
+	}, nil
 }
 
 type controlProgramAction struct {
 	bc.AssetAmount
-	Program       json.HexBytes `json:"control_program"`
-	ReferenceData json.Map      `json:"reference_data"`
+	Program       []byte
+	ReferenceData []byte
 }
 
 func (a *controlProgramAction) Build(ctx context.Context, b *TemplateBuilder) error {
@@ -36,14 +42,12 @@ func (a *controlProgramAction) Build(ctx context.Context, b *TemplateBuilder) er
 	return b.AddOutput(out)
 }
 
-func DecodeSetTxRefDataAction(data []byte) (Action, error) {
-	a := new(setTxRefDataAction)
-	err := stdjson.Unmarshal(data, a)
-	return a, err
+func DecodeSetTxRefDataAction(proto *pb.Action_SetTxReferenceData) (Action, error) {
+	return &setTxRefDataAction{Data: proto.Data}, nil
 }
 
 type setTxRefDataAction struct {
-	Data json.Map `json:"reference_data"`
+	Data []byte
 }
 
 func (a *setTxRefDataAction) Build(ctx context.Context, b *TemplateBuilder) error {

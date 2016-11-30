@@ -10,7 +10,7 @@ class BatchOperations {
     Client client = new Client();
 
     MockHsm.Key key = MockHsm.Key.create(client);
-    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(key, client);
 
     // snippet asset-builders
     List<Asset.Builder> assetBuilders = Arrays.asList(

@@ -17,7 +17,6 @@ import (
 	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
 	"chain/database/sql"
-	chainjson "chain/encoding/json"
 	"chain/env"
 	"chain/log"
 )
@@ -119,13 +118,11 @@ func configGenerator(db *sql.DB, args []string) {
 	}
 
 	conf := &config.Config{
-		IsGenerator: true,
-		IsSigner:    *isSigner,
-		Quorum:      quorum,
-		Signers:     signers,
-		MaxIssuanceWindow: chainjson.Duration{
-			Duration: *maxIssuanceWindow,
-		},
+		IsGenerator:       true,
+		IsSigner:          *isSigner,
+		Quorum:            quorum,
+		Signers:           signers,
+		MaxIssuanceWindow: *maxIssuanceWindow,
 	}
 
 	ctx := context.Background()
@@ -197,10 +194,16 @@ func configNongenerator(db *sql.DB, args []string) {
 	if err != nil {
 		fatalln("error: invalid blockchain ID:", err)
 	}
+
+	pubkey, err := hex.DecodeString(*flagK)
+	if err != nil {
+		fatalln("error: invalid pubkey: ", *flagK)
+	}
+
 	conf.GeneratorURL = args[1]
 	conf.GeneratorAccessToken = *flagT
 	conf.IsSigner = *flagK != ""
-	conf.BlockPub = *flagK
+	conf.BlockPub = pubkey
 
 	ctx := context.Background()
 	err = config.Configure(ctx, db, &conf)

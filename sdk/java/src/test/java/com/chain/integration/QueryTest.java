@@ -1,13 +1,7 @@
 package com.chain.integration;
 
 import com.chain.TestUtils;
-import com.chain.api.Account;
-import com.chain.api.Asset;
-import com.chain.api.Balance;
-import com.chain.api.ControlProgram;
-import com.chain.api.MockHsm;
-import com.chain.api.Transaction;
-import com.chain.api.UnspentOutput;
+import com.chain.api.*;
 import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
 
@@ -96,7 +90,7 @@ public class QueryTest {
   public void testTransactionQuery() throws Exception {
     client = TestUtils.generateClient();
     key = MockHsm.Key.create(client);
-    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(key, client);
     String alice = "QueryTest.testTransactionQuery.alice";
     String asset = "QueryTest.testTransactionQuery.asset";
     String test = "QueryTest.testTransactionQuery.test";
@@ -191,7 +185,7 @@ public class QueryTest {
   public void testBalanceQuery() throws Exception {
     client = TestUtils.generateClient();
     key = MockHsm.Key.create(client);
-    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(key, client);
     String asset = "QueryTest.testBalanceQuery.asset";
     String alice = "QueryTest.testBalanceQuery.alice";
     String test = "QueryTest.testBalanceQuery.test";
@@ -249,7 +243,7 @@ public class QueryTest {
   public void testUnspentOutputQuery() throws Exception {
     client = TestUtils.generateClient();
     key = MockHsm.Key.create(client);
-    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(key, client);
     String asset = "QueryTest.testUnspentOutputQuery.asset";
     String alice = "QueryTest.testUnspentOutputQuery.alice";
     String test = "QueryTest.testUnspentOutputQuery.test";
@@ -286,7 +280,8 @@ public class QueryTest {
     UnspentOutput.Items items =
         new UnspentOutput.QueryBuilder()
             .setFilter("reference_data.test=$1")
-            .setFilterParameters(Arrays.asList((Object) test))
+            .setFilterParameters(
+                Arrays.asList((Query.FilterParam) new Query.FilterParam.StringParam(test)))
             .setTimestamp(System.currentTimeMillis() - 100000000000L)
             .execute(client);
     assertEquals(0, items.list.size());
@@ -294,7 +289,8 @@ public class QueryTest {
     items =
         new UnspentOutput.QueryBuilder()
             .setFilter("reference_data.test=$1")
-            .setFilterParameters(Arrays.asList((Object) test))
+            .setFilterParameters(
+                Arrays.asList((Query.FilterParam) new Query.FilterParam.StringParam(test)))
             .execute(client);
     UnspentOutput unspent = items.next();
     assertNotNull(unspent.type);

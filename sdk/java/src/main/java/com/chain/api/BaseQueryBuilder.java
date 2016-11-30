@@ -2,6 +2,7 @@ package com.chain.api;
 
 import com.chain.exception.ChainException;
 import com.chain.http.Client;
+import com.chain.proto.FilterParam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +57,23 @@ public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
    * @param param parameter to be added
    * @return updated builder object
    */
-  public T addFilterParameter(Object param) {
+  public T addFilterParameter(String param) {
+    return this.addFilterParameter(new Query.FilterParam.StringParam(param));
+  }
+
+  public T addFilterParameter(boolean param) {
+    return this.addFilterParameter(new Query.FilterParam.BoolParam(param));
+  }
+
+  public T addFilterParameter(long param) {
+    return this.addFilterParameter(new Query.FilterParam.LongParam(param));
+  }
+
+  public T addFilterParameter(byte[] param) {
+    return this.addFilterParameter(new Query.FilterParam.BytesParam(param));
+  }
+
+  public T addFilterParameter(Query.FilterParam param) {
     this.next.filterParams.add(param);
     return (T) this;
   }
@@ -66,7 +83,7 @@ public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
    * <strong>Note:</strong> any existing filter params will be replaced.
    * @param params list of parameters to be added
    */
-  public T setFilterParameters(List<Object> params) {
+  public T setFilterParameters(List<Query.FilterParam> params) {
     this.next.filterParams = new ArrayList<>(params);
     return (T) this;
   }

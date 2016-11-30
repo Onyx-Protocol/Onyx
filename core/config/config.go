@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"chain/core/mockhsm"
+	"chain/core/pb"
 	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/database/sql"
-	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
 	"chain/protocol"
@@ -39,23 +39,23 @@ var (
 
 // Config encapsulates Core-level, persistent configuration options.
 type Config struct {
-	ID                   string  `json:"id"`
-	IsSigner             bool    `json:"is_signer"`
-	IsGenerator          bool    `json:"is_generator"`
-	BlockchainID         bc.Hash `json:"blockchain_id"`
-	GeneratorURL         string  `json:"generator_url"`
-	GeneratorAccessToken string  `json:"generator_access_token"`
+	ID                   string
+	IsSigner             bool
+	IsGenerator          bool
+	BlockchainID         bc.Hash
+	GeneratorURL         string
+	GeneratorAccessToken string
 	ConfiguredAt         time.Time
-	BlockPub             string        `json:"block_pub"`
-	Signers              []BlockSigner `json:"block_signer_urls"`
+	BlockPub             []byte
+	Signers              []BlockSigner
 	Quorum               int
-	MaxIssuanceWindow    chainjson.Duration
+	MaxIssuanceWindow    time.Duration
 }
 
 type BlockSigner struct {
-	AccessToken string             `json:"access_token"`
-	Pubkey      chainjson.HexBytes `json:"pubkey"`
-	URL         string             `json:"url"`
+	AccessToken string
+	Pubkey      []byte
+	URL         string
 }
 
 // Load loads the stored configuration, if any, from the database.
@@ -97,7 +97,7 @@ func Load(ctx context.Context, db pg.DB) (*Config, error) {
 		}
 	}
 
-	c.MaxIssuanceWindow = chainjson.Duration{time.Duration(miw) * time.Millisecond}
+	c.MaxIssuanceWindow = time.Duration(miw) * time.Millisecond
 	return c, nil
 }
 
@@ -130,25 +130,21 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	var signingKeys []ed25519.PublicKey
 	if c.IsSigner {
 		var blockPub ed25519.PublicKey
-		if c.BlockPub == "" {
+		if len(c.BlockPub) == 0 {
 			hsm := mockhsm.New(db)
 			corePub, created, err := hsm.GetOrCreate(ctx, autoBlockKeyAlias)
 			if err != nil {
 				return err
 			}
 			blockPub = corePub.Pub
-			blockPubStr := hex.EncodeToString(blockPub)
 			if created {
-				log.Messagef(ctx, "Generated new block-signing key %s\n", blockPubStr)
+				log.Messagef(ctx, "Generated new block-signing key %x\n", blockPub)
 			} else {
-				log.Messagef(ctx, "Using block-signing key %s\n", blockPubStr)
+				log.Messagef(ctx, "Using block-signing key %x\n", blockPub)
 			}
-			c.BlockPub = blockPubStr
+			c.BlockPub = blockPub
 		} else {
-			blockPub, err = hex.DecodeString(c.BlockPub)
-			if err != nil {
-				return err
-			}
+			blockPub = c.BlockPub
 		}
 		signingKeys = append(signingKeys, blockPub)
 	}
@@ -188,7 +184,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		}
 
 		c.BlockchainID = initialBlockHash
-		chain.MaxIssuanceWindow = c.MaxIssuanceWindow.Duration
+		chain.MaxIssuanceWindow = c.MaxIssuanceWindow
 	}
 
 	var blockSignerData []byte
@@ -223,26 +219,24 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.GeneratorURL,
 		c.GeneratorAccessToken,
 		blockSignerData,
-		bc.DurationMillis(c.MaxIssuanceWindow.Duration),
+		bc.DurationMillis(c.MaxIssuanceWindow),
 	)
 	return err
 }
 
 func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) error {
-	client := &rpc.Client{
-		BaseURL:      url,
-		AccessToken:  accessToken,
-		BlockchainID: blockchainID,
+	conn, err := rpc.NewGRPCConn(url, accessToken, blockchainID, "")
+	if err != nil {
+		return err
 	}
-	var x struct {
-		BlockHeight uint64 `json:"block_height"`
-	}
-	err := client.Call(ctx, "/rpc/block-height", nil, &x)
+	defer conn.Conn.Close()
+	conn.BlockchainID = blockchainID
+	resp, err := pb.NewNodeClient(conn.Conn).GetBlockHeight(ctx, nil)
 	if err != nil {
 		return errors.Wrap(ErrBadGenerator, err.Error())
 	}
 
-	if x.BlockHeight < 1 {
+	if resp.Height < 1 {
 		return ErrBadGenerator
 	}
 

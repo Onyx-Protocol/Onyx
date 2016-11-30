@@ -2,12 +2,10 @@ package core
 
 import (
 	"expvar"
-	"net/http"
 	"sync"
 	"time"
 
 	"chain/metrics"
-	"chain/net/http/reqid"
 )
 
 var (
@@ -15,33 +13,29 @@ var (
 	latencies = map[string]*metrics.RotatingLatency{}
 
 	latencyRange = map[string]time.Duration{
-		networkRPCPrefix + "get-block":         20 * time.Second,
-		networkRPCPrefix + "get-blocks":        20 * time.Second,
-		networkRPCPrefix + "signer/sign-block": 5 * time.Second,
-		networkRPCPrefix + "get-snapshot":      30 * time.Second,
+		"pb.Network.GetBlock":    20 * time.Second,
+		"pb.Network.GetSnapshot": 30 * time.Second,
+		"pb.Signer.SignBlock":    5 * time.Second,
 		// the rest have a default range
 	}
 )
 
 // latency returns a rotating latency histogram for the given request.
-func latency(tab *http.ServeMux, req *http.Request) *metrics.RotatingLatency {
+func latency(m string) *metrics.RotatingLatency {
 	latencyMu.Lock()
 	defer latencyMu.Unlock()
-	if l := latencies[req.URL.Path]; l != nil {
+	if l := latencies[m]; l != nil {
 		return l
 	}
-	// Create a histogram only if the path is legit.
-	if _, pat := tab.Handler(req); pat == req.URL.Path {
-		d, ok := latencyRange[req.URL.Path]
-		if !ok {
-			d = 100 * time.Millisecond
-		}
-		l := metrics.NewRotatingLatency(5, d)
-		latencies[req.URL.Path] = l
-		metrics.PublishLatency(req.URL.Path, l)
-		return l
+
+	d, ok := latencyRange[m]
+	if !ok {
+		d = 100 * time.Millisecond
 	}
-	return nil
+	l := metrics.NewRotatingLatency(5, d)
+	latencies[m] = l
+	metrics.PublishLatency(m, l)
+	return l
 }
 
 var (
@@ -50,13 +44,6 @@ var (
 	ncoreTime time.Time
 	coresSeen map[string]bool
 )
-
-func coreCounter(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		countCore(reqid.CoreIDFromContext(req.Context()))
-		h.ServeHTTP(w, req)
-	})
-}
 
 func countCore(id string) {
 	t := time.Now()

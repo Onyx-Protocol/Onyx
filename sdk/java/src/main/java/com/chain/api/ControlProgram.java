@@ -2,12 +2,13 @@ package com.chain.api;
 
 import com.chain.exception.*;
 import com.chain.http.*;
+import com.chain.proto.CreateControlProgramsRequest;
+import com.chain.proto.CreateControlProgramsResponse;
 import com.google.gson.annotations.SerializedName;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.naming.ldap.Control;
+import java.lang.reflect.Array;
+import java.util.*;
 
 /**
  * A predicate to be satisfied when transferring assets.
@@ -17,14 +18,19 @@ public class ControlProgram {
    * Hex-encoded string representation of the control program.
    */
   @SerializedName("control_program")
-  public String controlProgram;
+  public byte[] controlProgram;
 
   /**
    * Generates hex representation of a "retire" control program.
    * @return hex-encoded "retire" program
    */
-  public static String retireProgram() {
-    return "6a";
+  public static byte[] retireProgram() {
+    byte[] resp = {0x6a};
+    return resp;
+  }
+
+  private ControlProgram(byte[] program) {
+    this.controlProgram = program;
   }
 
   /**
@@ -40,8 +46,47 @@ public class ControlProgram {
    */
   public static BatchResponse<ControlProgram> createBatch(Client client, List<Builder> programs)
       throws ChainException {
-    return client.batchRequest(
-        "create-control-program", programs, ControlProgram.class, APIException.class);
+    ArrayList<CreateControlProgramsRequest.Request> reqs = new ArrayList();
+    for (Builder program : programs) {
+      CreateControlProgramsRequest.Request.Builder b =
+          CreateControlProgramsRequest.Request.newBuilder();
+      if (program.type != null) {
+        switch (program.type) {
+          case "account":
+            CreateControlProgramsRequest.Account.Builder account =
+                CreateControlProgramsRequest.Account.newBuilder();
+            if (program.params.containsKey("account_id")) {
+              account.setAccountId(program.params.get("account_id").toString());
+            } else if (program.params.containsKey("account_alias")) {
+              account.setAccountAlias(program.params.get("account_alias").toString());
+            }
+            b.setAccount(account);
+        }
+      }
+      reqs.add(b.build());
+    }
+
+    CreateControlProgramsRequest req =
+        CreateControlProgramsRequest.newBuilder().addAllRequests(reqs).build();
+    CreateControlProgramsResponse resp = client.app().createControlPrograms(req);
+
+    if (resp.hasError()) {
+      throw new APIException(resp.getError());
+    }
+
+    Map<Integer, ControlProgram> successes = new LinkedHashMap();
+    Map<Integer, APIException> errors = new LinkedHashMap();
+
+    for (int i = 0; i < resp.getResponsesCount(); i++) {
+      CreateControlProgramsResponse.Response r = resp.getResponses(i);
+      if (r.hasError()) {
+        errors.put(i, new APIException(r.getError()));
+      } else {
+        successes.put(i, new ControlProgram(r.getControlProgram().toByteArray()));
+      }
+    }
+
+    return new BatchResponse<ControlProgram>(successes, errors);
   }
 
   /**
@@ -78,8 +123,11 @@ public class ControlProgram {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public ControlProgram create(Client client) throws ChainException {
-      return client.singletonBatchRequest(
-          "create-control-program", Arrays.asList(this), ControlProgram.class, APIException.class);
+      BatchResponse<ControlProgram> resp = ControlProgram.createBatch(client, Arrays.asList(this));
+      if (resp.isError(0)) {
+        throw resp.errorsByIndex().get(0);
+      }
+      return resp.successesByIndex().get(0);
     }
 
     /**

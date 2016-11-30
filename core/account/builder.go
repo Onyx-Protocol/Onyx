@@ -2,17 +2,16 @@ package account
 
 import (
 	"context"
-	"encoding/json"
 
+	"chain/core/pb"
 	"chain/core/signers"
 	"chain/core/txbuilder"
-	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
 	"chain/protocol/bc"
 )
 
-func (m *Manager) NewSpendAction(amt bc.AssetAmount, accountID string, refData chainjson.Map, clientToken *string) txbuilder.Action {
+func (m *Manager) NewSpendAction(amt bc.AssetAmount, accountID string, refData []byte, clientToken *string) txbuilder.Action {
 	return &spendAction{
 		accounts:      m,
 		AssetAmount:   amt,
@@ -22,18 +21,30 @@ func (m *Manager) NewSpendAction(amt bc.AssetAmount, accountID string, refData c
 	}
 }
 
-func (m *Manager) DecodeSpendAction(data []byte) (txbuilder.Action, error) {
-	a := &spendAction{accounts: m}
-	err := json.Unmarshal(data, a)
-	return a, err
+func (m *Manager) DecodeSpendAction(proto *pb.Action_SpendAccount) (txbuilder.Action, error) {
+	assetID, err := bc.AssetIDFromBytes(proto.Asset.GetAssetId())
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	var ct *string
+	if proto.ClientToken != "" {
+		ct = &proto.ClientToken
+	}
+	return &spendAction{
+		accounts:      m,
+		AssetAmount:   bc.AssetAmount{AssetID: assetID, Amount: proto.Amount},
+		AccountID:     proto.Account.GetAccountId(),
+		ReferenceData: proto.ReferenceData,
+		ClientToken:   ct,
+	}, nil
 }
 
 type spendAction struct {
 	accounts *Manager
 	bc.AssetAmount
-	AccountID     string        `json:"account_id"`
-	ReferenceData chainjson.Map `json:"reference_data"`
-	ClientToken   *string       `json:"client_token"`
+	AccountID     string
+	ReferenceData []byte
+	ClientToken   *string
 }
 
 func (a *spendAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
@@ -101,19 +112,33 @@ func (m *Manager) NewSpendUTXOAction(outpoint bc.Outpoint) txbuilder.Action {
 	}
 }
 
-func (m *Manager) DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
-	a := &spendUTXOAction{accounts: m}
-	err := json.Unmarshal(data, a)
-	return a, err
+func (m *Manager) DecodeSpendUTXOAction(proto *pb.Action_SpendAccountUnspentOutput) (txbuilder.Action, error) {
+	txhash, err := bc.HashFromBytes(proto.TxId)
+	if err != nil {
+		return nil, err
+	}
+
+	var ct *string
+	if proto.ClientToken != "" {
+		ct = &proto.ClientToken
+	}
+
+	return &spendUTXOAction{
+		accounts:      m,
+		TxHash:        &txhash,
+		TxOut:         &proto.Position,
+		ReferenceData: proto.ReferenceData,
+		ClientToken:   ct,
+	}, nil
 }
 
 type spendUTXOAction struct {
 	accounts *Manager
-	TxHash   *bc.Hash `json:"transaction_id"`
-	TxOut    *uint32  `json:"position"`
+	TxHash   *bc.Hash
+	TxOut    *uint32
 
-	ReferenceData chainjson.Map `json:"reference_data"`
-	ClientToken   *string       `json:"client_token"`
+	ReferenceData []byte
+	ClientToken   *string
 }
 
 func (a *spendUTXOAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
@@ -158,24 +183,24 @@ func canceler(ctx context.Context, m *Manager, rid uint64) func() {
 
 func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData []byte) (
 	*bc.TxInput,
-	*txbuilder.SigningInstruction,
+	*pb.TxTemplate_SigningInstruction,
 	error,
 ) {
 	txInput := bc.NewSpendInput(u.Hash, u.Index, nil, u.AssetID, u.Amount, u.ControlProgram, refData)
 
-	sigInst := &txbuilder.SigningInstruction{
-		AssetAmount: u.AssetAmount,
+	sigInst := &pb.TxTemplate_SigningInstruction{
+		AssetId: u.AssetID[:],
+		Amount:  u.Amount,
 	}
 
 	path := signers.Path(account, signers.AccountKeySpace, u.ControlProgramIndex)
-	keyIDs := txbuilder.KeyIDs(account.XPubs, path)
 
-	sigInst.AddWitnessKeys(keyIDs, account.Quorum)
+	sigInst.WitnessComponents = append(sigInst.WitnessComponents, pb.SignatureWitness(account.XPubs, path, account.Quorum))
 
 	return txInput, sigInst, nil
 }
 
-func (m *Manager) NewControlAction(amt bc.AssetAmount, accountID string, refData chainjson.Map) txbuilder.Action {
+func (m *Manager) NewControlAction(amt bc.AssetAmount, accountID string, refData []byte) txbuilder.Action {
 	return &controlAction{
 		accounts:      m,
 		AssetAmount:   amt,
@@ -184,17 +209,24 @@ func (m *Manager) NewControlAction(amt bc.AssetAmount, accountID string, refData
 	}
 }
 
-func (m *Manager) DecodeControlAction(data []byte) (txbuilder.Action, error) {
-	a := &controlAction{accounts: m}
-	err := json.Unmarshal(data, a)
-	return a, err
+func (m *Manager) DecodeControlAction(proto *pb.Action_ControlAccount) (txbuilder.Action, error) {
+	assetID, err := bc.AssetIDFromBytes(proto.Asset.GetAssetId())
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	return &controlAction{
+		accounts:      m,
+		AssetAmount:   bc.AssetAmount{AssetID: assetID, Amount: proto.Amount},
+		AccountID:     proto.Account.GetAccountId(),
+		ReferenceData: proto.ReferenceData,
+	}, nil
 }
 
 type controlAction struct {
 	accounts *Manager
 	bc.AssetAmount
-	AccountID     string        `json:"account_id"`
-	ReferenceData chainjson.Map `json:"reference_data"`
+	AccountID     string
+	ReferenceData []byte
 }
 
 func (a *controlAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {

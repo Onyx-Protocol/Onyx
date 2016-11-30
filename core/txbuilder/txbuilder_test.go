@@ -11,9 +11,9 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
+	"chain/core/pb"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/chainkd"
-	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
@@ -25,7 +25,7 @@ type testAction bc.AssetAmount
 
 func (t testAction) Build(ctx context.Context, b *TemplateBuilder) error {
 	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
-	tplIn := &SigningInstruction{}
+	tplIn := &pb.TxTemplate_SigningInstruction{}
 
 	err := b.AddInput(in, tplIn)
 	if err != nil {
@@ -55,32 +55,30 @@ func TestBuild(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	want := &Template{
-		Transaction: &bc.TxData{
-			Version: 1,
-			MaxTime: bc.Millis(expiryTime),
-			Inputs: []*bc.TxInput{
-				bc.NewSpendInput([32]byte{255}, 0, nil, [32]byte{1}, 5, nil, nil),
-			},
-			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput([32]byte{2}, 6, []byte("dest"), nil),
-				bc.NewTxOutput([32]byte{1}, 5, []byte("change"), nil),
-			},
-			ReferenceData: []byte("xyz"),
+	wantTx := &bc.TxData{
+		Version: 1,
+		MaxTime: bc.Millis(expiryTime),
+		Inputs: []*bc.TxInput{
+			bc.NewSpendInput([32]byte{255}, 0, nil, [32]byte{1}, 5, nil, nil),
 		},
-		SigningInstructions: []*SigningInstruction{{
-			WitnessComponents: []WitnessComponent{},
-		}},
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput([32]byte{2}, 6, []byte("dest"), nil),
+			bc.NewTxOutput([32]byte{1}, 5, []byte("change"), nil),
+		},
+		ReferenceData: []byte("xyz"),
+	}
+	wantSIs := []*pb.TxTemplate_SigningInstruction{{}}
+
+	gotTx, err := bc.NewTxDataFromBytes(got.RawTransaction)
+
+	if !reflect.DeepEqual(gotTx, wantTx) {
+		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", gotTx, wantTx)
+		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", gotTx.Inputs, wantTx.Inputs)
+		t.Errorf("got tx outputs:\n\t%#v\nwant tx outputs:\n\t%#v", gotTx.Outputs, wantTx.Outputs)
 	}
 
-	if !reflect.DeepEqual(got.Transaction, want.Transaction) {
-		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", got.Transaction, want.Transaction)
-		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", got.Transaction.Inputs, want.Transaction.Inputs)
-		t.Errorf("got tx outputs:\n\t%#v\nwant tx outputs:\n\t%#v", got.Transaction.Outputs, want.Transaction.Outputs)
-	}
-
-	if !reflect.DeepEqual(got.SigningInstructions, want.SigningInstructions) {
-		t.Errorf("got signing instructions:\n\t%#v\nwant signing instructions:\n\t%#v", got.SigningInstructions, want.SigningInstructions)
+	if !reflect.DeepEqual(got.SigningInstructions, wantSIs) {
+		t.Errorf("got signing instructions:\n\t%#v\nwant signing instructions:\n\t%#v", got.SigningInstructions, wantSIs)
 	}
 
 	// setting tx refdata twice should fail
@@ -118,27 +116,31 @@ func TestMaterializeWitnesses(t *testing.T) {
 	}
 
 	prog, err := vm.Assemble(fmt.Sprintf("MAXTIME 0x804cf05736 LESSTHAN VERIFY 0 0 5 0x%x 1 0x76a914c5d128911c28776f56baaac550963f7b88501dc388c0 CHECKOUTPUT", assetID[:]))
-	h := sha3.Sum256(prog)
-	sig := privkey.Sign(h[:])
 	if err != nil {
 		t.Fatal(err)
 	}
+	h := sha3.Sum256(prog)
+	sig := privkey.Sign(h[:])
 
 	tpl := &Template{
-		Transaction: unsigned,
-		SigningInstructions: []*SigningInstruction{{
-			WitnessComponents: []WitnessComponent{
-				&SignatureWitness{
-					Quorum: 1,
-					Keys: []KeyID{{
-						XPub:           pubkey,
-						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
+		Tx: unsigned,
+		TxTemplate: &pb.TxTemplate{
+			SigningInstructions: []*pb.TxTemplate_SigningInstruction{{
+				WitnessComponents: []*pb.TxTemplate_WitnessComponent{{
+					Component: &pb.TxTemplate_WitnessComponent_Signature{
+						Signature: &pb.TxTemplate_SignatureComponent{
+							Quorum: 1,
+							KeyIds: []*pb.TxTemplate_KeyID{{
+								Xpub:           pubkey[:],
+								DerivationPath: [][]byte{{0, 0, 0, 0}},
+							}},
+							Program:    prog,
+							Signatures: [][]byte{sig},
+						},
 					}},
-					Program: prog,
-					Sigs:    []json.HexBytes{sig},
 				},
-			},
-		}},
+			}},
+		},
 	}
 
 	want := [][]byte{
@@ -152,7 +154,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	got := tpl.Transaction.Inputs[0].Arguments()
+	got := tpl.Tx.Inputs[0].Arguments()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
@@ -186,7 +188,8 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	}
 
 	tpl := &Template{
-		Transaction: unsigned,
+		Tx:         unsigned,
+		TxTemplate: &pb.TxTemplate{},
 	}
 	h := tpl.Hash(0)
 	builder := vmutil.NewBuilder()
@@ -205,49 +208,52 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	}
 
 	// Test with more signatures than required, in correct order
-	tpl.SigningInstructions = []*SigningInstruction{{
-		WitnessComponents: []WitnessComponent{
-			&SignatureWitness{
-				Quorum: 2,
-				Keys: []KeyID{
-					{
-						XPub:           pubkey1,
-						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
+	tpl.SigningInstructions = []*pb.TxTemplate_SigningInstruction{{
+		WitnessComponents: []*pb.TxTemplate_WitnessComponent{{
+			Component: &pb.TxTemplate_WitnessComponent_Signature{
+				Signature: &pb.TxTemplate_SignatureComponent{
+					Quorum: 2,
+					KeyIds: []*pb.TxTemplate_KeyID{
+						{
+							Xpub:           pubkey1[:],
+							DerivationPath: [][]byte{{0, 0, 0, 0}},
+						},
+						{
+							Xpub:           pubkey2[:],
+							DerivationPath: [][]byte{{0, 0, 0, 0}},
+						},
+						{
+							Xpub:           pubkey3[:],
+							DerivationPath: [][]byte{{0, 0, 0, 0}},
+						},
 					},
-					{
-						XPub:           pubkey2,
-						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
-					},
-					{
-						XPub:           pubkey3,
-						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
-					},
+					Program:    prog,
+					Signatures: [][]byte{sig1, sig2, sig3},
 				},
-				Program: prog,
-				Sigs:    []json.HexBytes{sig1, sig2, sig3},
 			},
-		},
+		}},
 	}}
 	err = materializeWitnesses(tpl)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	got := tpl.Transaction.Inputs[0].Arguments()
+	got := tpl.Tx.Inputs[0].Arguments()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
 
 	// Test with exact amount of signatures required, in correct order
-	component, ok := tpl.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness)
+	_, ok := tpl.SigningInstructions[0].WitnessComponents[0].Component.(*pb.TxTemplate_WitnessComponent_Signature)
 	if !ok {
 		t.Fatal("expecting WitnessComponent of type SignatureWitness")
 	}
-	component.Sigs = []json.HexBytes{sig1, sig2}
+	component := tpl.SigningInstructions[0].WitnessComponents[0].GetSignature()
+	component.Signatures = [][]byte{sig1, sig2}
 	err = materializeWitnesses(tpl)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	got = tpl.Transaction.Inputs[0].Arguments()
+	got = tpl.Tx.Inputs[0].Arguments()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}

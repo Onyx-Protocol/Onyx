@@ -1,11 +1,16 @@
 package com.chain.signing;
 
 import com.chain.api.MockHsm;
+import com.chain.api.Util;
 import com.chain.http.BatchResponse;
 
 import com.chain.api.Transaction;
 import com.chain.exception.*;
 import com.chain.http.Client;
+import com.chain.proto.SignTxsRequest;
+import com.chain.proto.TxTemplate;
+import com.chain.proto.TxsResponse;
+import com.google.protobuf.ByteString;
 
 import java.util.*;
 
@@ -20,7 +25,7 @@ public class HsmSigner {
    * corresponding private keys stored in remote HSM servers. The hsm
    * objects are configured to make requests to the HSMs.
    */
-  private static Map<Client, List<String>> hsmXPubs = new HashMap();
+  private static Map<Client, List<ByteString>> hsmXPubs = new HashMap();
 
   /**
    * Adds an entry to the HsmSigner's hsm client-to-keys map.
@@ -28,8 +33,16 @@ public class HsmSigner {
    * @param hsm the hsm object
    */
   public static void addKey(String xpub, Client hsm) {
+    addKey(ByteString.copyFrom(Util.hexStringToByteArray(xpub)), hsm);
+  }
+
+  public static void addKey(byte[] xpub, Client hsm) {
+    addKey(ByteString.copyFrom(xpub), hsm);
+  }
+
+  private static void addKey(ByteString xpub, Client hsm) {
     if (!hsmXPubs.containsKey(hsm)) {
-      hsmXPubs.put(hsm, new ArrayList<String>());
+      hsmXPubs.put(hsm, new ArrayList<ByteString>());
     }
     hsmXPubs.get(hsm).add(xpub);
   }
@@ -40,7 +53,7 @@ public class HsmSigner {
    * @param hsm the hsm object
    */
   public static void addKey(MockHsm.Key key, Client hsm) {
-    addKey(key.xpub, hsm);
+    addKey(ByteString.copyFrom(key.xpub), hsm);
   }
 
   /**
@@ -50,7 +63,7 @@ public class HsmSigner {
    */
   public static void addKeys(List<MockHsm.Key> keys, Client hsm) {
     for (MockHsm.Key key : keys) {
-      addKey(key.xpub, hsm);
+      addKey(key, hsm);
     }
   }
 
@@ -61,16 +74,11 @@ public class HsmSigner {
    * @throws ChainException
    */
   public static Transaction.Template sign(Transaction.Template template) throws ChainException {
-    for (Map.Entry<Client, List<String>> entry : hsmXPubs.entrySet()) {
-      Client hsm = entry.getKey();
-      HashMap<String, Object> body = new HashMap();
-      body.put("transactions", Arrays.asList(template));
-      body.put("xpubs", entry.getValue());
-      template =
-          hsm.singletonBatchRequest(
-              "sign-transaction", body, Transaction.Template.class, APIException.class);
+    BatchResponse<Transaction.Template> resp = signBatch(Arrays.asList(template));
+    if (resp.isError(0)) {
+      throw resp.errorsByIndex().get(0);
     }
-    return template;
+    return resp.successesByIndex().get(0);
   }
 
   /**
@@ -84,51 +92,58 @@ public class HsmSigner {
   // step and only send txs to the HSM that holds the proper key material to sign.
   public static BatchResponse<Transaction.Template> signBatch(List<Transaction.Template> tmpls)
       throws ChainException {
-    int[] originalIndex = new int[tmpls.size()];
+    List<Integer> originalIndex = new ArrayList();
     for (int i = 0; i < tmpls.size(); i++) {
-      originalIndex[i] = i;
+      originalIndex.add(i);
     }
 
     Map<Integer, APIException> errors = new HashMap<>();
 
-    for (Map.Entry<Client, List<String>> entry : hsmXPubs.entrySet()) {
+    List<TxTemplate> protos = new ArrayList();
+    for (Transaction.Template tmpl : tmpls) {
+      protos.add(tmpl.toProtobuf());
+    }
+
+    for (Map.Entry<Client, List<ByteString>> entry : hsmXPubs.entrySet()) {
       Client hsm = entry.getKey();
-      HashMap<String, Object> requestBody = new HashMap();
-      requestBody.put("transactions", tmpls);
-      requestBody.put("xpubs", entry.getValue());
-      BatchResponse<Transaction.Template> batch =
-          hsm.batchRequest(
-              "sign-transaction", requestBody, Transaction.Template.class, APIException.class);
+      SignTxsRequest.Builder req = SignTxsRequest.newBuilder();
+      req.addAllXpubs(entry.getValue());
+      req.addAllTransactions(protos);
+
+      TxsResponse resp = hsm.hsm().signTxs(req.build());
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
 
       // We need to work towards a single, final BatchResponse that uses the
       // original indexes. For the next cycle, we should retain only those
       // templates for which the most recent sign response was successful, and
       // maintain a mapping of each template's index in the upcoming request
       // to its original index.
-      List<Transaction.Template> nextTmpls = new ArrayList<>();
-      int[] nextOriginalIndex = new int[batch.successesByIndex().size()];
+      List<TxTemplate> nextProtos = new ArrayList<>();
+      List<Integer> nextOriginalIndex = new ArrayList();
 
-      for (int i = 0; i < tmpls.size(); i++) {
-        if (batch.isSuccess(i)) {
-          nextTmpls.add(batch.successesByIndex().get(i));
-          nextOriginalIndex[nextTmpls.size() - 1] = originalIndex[i];
+      for (int i = 0; i < resp.getResponsesCount(); i++) {
+        if (resp.getResponses(i).hasError()) {
+          errors.put(originalIndex.get(i), new APIException(resp.getResponses(i).getError()));
         } else {
-          errors.put(originalIndex[i], batch.errorsByIndex().get(i));
+          nextProtos.add(resp.getResponses(i).getTemplate());
+          nextOriginalIndex.add(originalIndex.get(i));
         }
       }
 
-      tmpls = nextTmpls;
+      protos = nextProtos;
       originalIndex = nextOriginalIndex;
 
       // Early out if we have no templates remaining for the next cycle.
-      if (tmpls.isEmpty()) {
+      if (protos.isEmpty()) {
         break;
       }
     }
 
     Map<Integer, Transaction.Template> successes = new HashMap<>();
-    for (int i = 0; i < tmpls.size(); i++) {
-      successes.put(originalIndex[i], tmpls.get(i));
+    for (int i = 0; i < protos.size(); i++) {
+      successes.put(originalIndex.get(i), new Transaction.Template(protos.get(i)));
     }
 
     return new BatchResponse<>(successes, errors);
