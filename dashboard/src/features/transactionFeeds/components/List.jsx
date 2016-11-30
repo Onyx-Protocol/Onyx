@@ -5,7 +5,7 @@ import { actions } from 'features/transactionFeeds'
 
 const type = 'transactionFeed'
 
-const emptyListContent = <EmptyContent>
+const firstTimeContent = <EmptyContent>
   <p>
     Transaction feeds enable real-time processing of transactions as they arrive on the blockchain.
   </p>
@@ -36,7 +36,7 @@ export default BaseList.connect(
   BaseList.mapStateToProps(type, ListItem, {
     skipQuery: true,
     label: 'transaction feeds',
-    firstTimeContent: emptyListContent
+    firstTimeContent
   }),
   dispatch
 )

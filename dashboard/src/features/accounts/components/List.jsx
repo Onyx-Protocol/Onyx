@@ -4,7 +4,7 @@ import ListItem from './ListItem'
 
 const type = 'account'
 
-const emptyListContent = <EmptyContent>
+const firstTimeContent = <EmptyContent>
   <p>
     Accounts are used to store, receive, and transfer assets on the blockchain.
   </p>
@@ -17,7 +17,7 @@ export default BaseList.connect(
     wrapperProps: {
       titles: ['Account Alias', 'Account ID']
     },
-    firstTimeContent: emptyListContent
+    firstTimeContent
   }),
   BaseList.mapDispatchToProps(type)
 )

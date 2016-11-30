@@ -4,7 +4,7 @@ import ListItem from './ListItem'
 
 const type = 'mockhsm'
 
-const emptyListContent = <EmptyContent>
+const firstTimeContent = <EmptyContent>
   <p>
     MockHSM keys are used for creating accounts and assets while your application is still in development.
   </p>
@@ -19,7 +19,7 @@ export default BaseList.connect(
     wrapperProps: {
       titles: ['Alias', 'xpub']
     },
-    firstTimeContent: emptyListContent
+    firstTimeContent
   }),
   BaseList.mapDispatchToProps(type)
 )

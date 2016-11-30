@@ -4,7 +4,7 @@ import ListItem from './ListItem'
 
 const type = 'asset'
 
-const emptyListContent = <EmptyContent>
+const firstTimeContent = <EmptyContent>
   <p>
     Assets are different types of value that may be issued and exchanged on the blockchain.
   </p>
@@ -17,7 +17,7 @@ export default BaseList.connect(
     wrapperProps: {
       titles: ['Asset Alias', 'Asset ID']
     },
-    firstTimeContent: emptyListContent
+    firstTimeContent
   }),
   BaseList.mapDispatchToProps(type)
 )

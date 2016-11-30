@@ -5,7 +5,7 @@ import actions from 'actions'
 
 const type = 'transaction'
 
-const emptyListContent = <EmptyContent title="Welcome to Chain Core!">
+const firstTimeContent = <EmptyContent title="Welcome to Chain Core!">
   To build your first transaction, you will need to:
   <ol>
     <li><a href="/accounts/create">create an account</a></li>
@@ -35,7 +35,7 @@ export default BaseList.connect(
   (state, ownProps) => ({
     ...BaseList.mapStateToProps(type, ListItem)(state, ownProps),
     blockHeight: state.core.blockHeight,
-    firstTimeContent: emptyListContent
+    firstTimeContent
   }),
   (dispatch) => ({
     ...BaseList.mapDispatchToProps(type)(dispatch),
