@@ -7,7 +7,11 @@ import (
 
 	"chain/encoding/json"
 	"chain/protocol/bc"
+	"chain/protocol/vm"
+	"chain/protocol/vmutil"
 )
+
+var retirementProgram = vmutil.NewBuilder().AddOp(vm.OP_FAIL).Program
 
 func DecodeControlProgramAction(data []byte) (Action, error) {
 	a := new(controlProgramAction)
@@ -52,4 +56,20 @@ func (a *setTxRefDataAction) Build(ctx context.Context, maxTime time.Time, b *Te
 		return MissingFieldsError("reference_data")
 	}
 	return b.setReferenceData(a.Data)
+}
+
+func DecodeRetireAction(data []byte) (Action, error) {
+	a := new(retireAction)
+	err := stdjson.Unmarshal(data, a)
+	return a, err
+}
+
+type retireAction struct {
+	bc.AssetAmount
+	ReferenceData json.Map `json:"reference_data"`
+}
+
+func (a *retireAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
+	out := bc.NewTxOutput(a.AssetID, a.Amount, retirementProgram, a.ReferenceData)
+	return b.AddOutput(out)
 }

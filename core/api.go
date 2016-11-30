@@ -99,6 +99,7 @@ func (h *Handler) init() {
 		"control_account":                h.Accounts.DecodeControlAction,
 		"control_program":                txbuilder.DecodeControlProgramAction,
 		"issue":                          h.Assets.DecodeIssueAction,
+		"retire":                         txbuilder.DecodeRetireAction,
 		"spend_account":                  h.Accounts.DecodeSpendAction,
 		"spend_account_unspent_output":   h.Accounts.DecodeSpendUTXOAction,
 		"set_transaction_reference_data": txbuilder.DecodeSetTxRefDataAction,
