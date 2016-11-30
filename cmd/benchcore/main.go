@@ -78,7 +78,7 @@ var instanceConfigs = map[string]instanceConfig{
 		EffectiveCacheSize:      "45GB", // ~3/4 total mem
 		WorkMem:                 "32MB",
 		MaintenanceWorkMem:      "512MB",
-		MaxWALSize:              "2GB",
+		MaxWALSize:              "4GB",
 		WALBuffers:              "64MB",
 		LogMinDurationStatement: 2000,
 	},
@@ -93,7 +93,7 @@ var instanceConfigs = map[string]instanceConfig{
 		EffectiveCacheSize:      "85GB", // ~3/4 total mem
 		WorkMem:                 "64MB",
 		MaintenanceWorkMem:      "1GB",
-		MaxWALSize:              "4GB",
+		MaxWALSize:              "8GB",
 		WALBuffers:              "64MB",
 		LogMinDurationStatement: 2000,
 	},
