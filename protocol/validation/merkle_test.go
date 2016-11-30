@@ -51,18 +51,16 @@ func TestCalcMerkleRoot(t *testing.T) {
 	for _, c := range cases {
 		var txs []*bc.Tx
 		for _, wit := range c.witnesses {
-			txs = append(txs, &bc.Tx{
-				TxData: bc.TxData{
-					Inputs: []*bc.TxInput{
-						&bc.TxInput{
-							AssetVersion: 1,
-							TypedInput: &bc.SpendInput{
-								Arguments: wit,
-							},
+			txs = append(txs, bc.NewTx(bc.TxData{
+				Inputs: []*bc.TxInput{
+					&bc.TxInput{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							Arguments: wit,
 						},
 					},
 				},
-			})
+			}))
 		}
 		got := CalcMerkleRoot(txs)
 		if !bytes.Equal(got[:], c.want[:]) {
