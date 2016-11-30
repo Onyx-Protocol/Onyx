@@ -949,8 +949,7 @@ public class Transaction {
        * Default constructor defines the action type as "control_program"
        */
       public Retire() {
-        this.put("type", "control_program");
-        this.put("control_program", ControlProgram.retireProgram());
+        this.put("type", "retire");
       }
 
       /**

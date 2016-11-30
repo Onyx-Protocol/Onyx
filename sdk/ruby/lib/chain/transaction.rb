@@ -457,10 +457,7 @@ module Chain
       # @option params [Integer] :amount Amount of the asset to be retired.
       # @return [Builder]
       def retire(params)
-        add_action(params.merge(
-          type: :control_program,
-          control_program: '6a'
-        ))
+        add_action(params.merge(type: :retire))
       end
     end
 
