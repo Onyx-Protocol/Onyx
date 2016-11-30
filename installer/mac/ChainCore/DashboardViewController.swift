@@ -212,9 +212,5 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
         webViewOld?.goForward(sender)
     }
 
-    @IBAction func print(_ sender: Any?) {
-        NSPrintOperation(view: webView ?? webViewOld ?? self.view).run()
-    }
-
 }
 
