@@ -13,26 +13,22 @@ class EmptyList extends React.Component {
     if (!this.props.loadedOnce) {
       emptyBlock = <span>LOADING…</span>
     } else if (this.props.showFirstTimeFlow && this.props.skipCreate) {
-      emptyBlock = <div>
-        <span className={styles.emptyLabel}>
-          There are no {this.props.objectName.toLowerCase()}s on the blockchain
-        </span>
-      </div>
+      emptyBlock = this.props.firstTimeContent
     } else if (this.props.showFirstTimeFlow) {
       emptyBlock = <div>
-        <span className={styles.emptyLabel}>Create your first {this.props.objectName}</span>
+        {this.props.firstTimeContent}
         {this.props.newButton}
       </div>
     } else if (!this.props.showFirstTimeFlow) {
       classNames.push(styles.noResults)
-      emptyBlock = <div>
+      emptyBlock = <div className={styles.emptyContainer}>
         <span className={`${styles.emptyLabel} ${styles.noResultsLabel}`}>No results for query:</span>
         <code className={styles.code}>{this.props.currentFilter.filter}</code>
-        <div className={styles.queryHelp}>
-          <p>To learn how to query the API, please refer to the documentation:</p>
-          <ol className={styles.queryHelpList}>
-            <li className={styles.queryHelpListItem}><a href="/docs/core/build-applications/queries" target="_blank">Queries</a></li>
-            <li className={styles.queryHelpListItem}><a href="/docs/core/reference/api-objects" target="_blank">API Objects</a></li>
+        <div className={styles.emptyContent}>
+          To learn how to query the API, please refer to the documentation:
+          <ol>
+            <li><a href="/docs/core/build-applications/queries" target="_blank">Queries</a></li>
+            <li><a href="/docs/core/reference/api-objects" target="_blank">API Objects</a></li>
           </ol>
         </div>
       </div>
@@ -55,6 +51,8 @@ EmptyList.propTypes = {
   skipCreate: React.PropTypes.bool,
   loadedOnce: React.PropTypes.bool,
   currentFilter: React.PropTypes.object,
+  showFirstTimeFlow: React.PropTypes.bool,
+  firstTimeContent: React.PropTypes.object
 }
 
 export default EmptyList
