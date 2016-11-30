@@ -16,9 +16,11 @@
   background: $background-color;
   padding: 30px;
   position: absolute;
-  top: 150px;
+  top: 10%;
   left: calc(50% - 250px);
   width: 500px;
+  max-height: 80%;
+  overflow: scroll;
 
   pre {
     white-space: pre-wrap;
@@ -28,6 +30,11 @@
     color: $text-color;
     line-height: 1.4;
   }
+}
+
+.wide {
+  left: calc(50% - 425px);
+  width: 850px;
 }
 
 .cancel {

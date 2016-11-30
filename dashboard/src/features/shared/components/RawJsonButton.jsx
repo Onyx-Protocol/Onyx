@@ -28,7 +28,9 @@ const mapStateToProps = () => ({})
 const mapDispatchToProps = ( dispatch ) => ({
   showRawJson: (body) => dispatch(actions.app.showModal(
     body,
-    actions.app.hideModal()
+    actions.app.hideModal(),
+    null,
+    { wide: true }
   )),
 })
 
