@@ -31,7 +31,7 @@ class Show extends BaseShow {
           <Section
             title='Summary'
             actions={[
-              <RawJsonButton key='raw-json' item={item} title={`tx-${item.id}.json`}/>
+              <RawJsonButton key='raw-json' item={item} />
             ]}>
             <Summary transaction={item} />
           </Section>

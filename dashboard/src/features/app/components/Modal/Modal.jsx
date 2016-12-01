@@ -25,7 +25,7 @@ class Modal extends React.Component {
     return(
       <div className={styles.main}>
         <div className={styles.backdrop} onClick={backdropAction}></div>
-        <div className={styles.content}>
+        <div className={`${this.props.options.wide && styles.wide} ${styles.content}`}>
           {body}
 
           <button className={`btn btn-${this.props.options.danger ? 'danger' : 'primary'} ${styles.accept}`} onClick={accept}>OK</button>
