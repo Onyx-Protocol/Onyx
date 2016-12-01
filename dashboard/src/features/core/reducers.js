@@ -206,6 +206,8 @@ const snapshot = (state = null, action) => {
   return state
 }
 
+const version = (state, action) => coreConfigReducer('version', state, 'N/A', action)
+
 export default combineReducers({
   blockchainId,
   blockHeight,
@@ -231,4 +233,5 @@ export default combineReducers({
   snapshot,
   syncEstimates,
   validToken,
+  version,
 })
