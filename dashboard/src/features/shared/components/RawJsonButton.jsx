@@ -2,13 +2,7 @@ import React from 'react'
 
 class RawJsonButton extends React.Component {
   showRawJson(item){
-    this.props.showRawJson(
-    <div>
-      <pre>
-        {JSON.stringify(item, null, 2)}
-      </pre>
-    </div>
-    )
+    this.props.showRawJson(<pre>{JSON.stringify(item, null, 2)}</pre>)
   }
 
   render() {
@@ -23,8 +17,6 @@ class RawJsonButton extends React.Component {
 import { connect } from 'react-redux'
 import actions from 'actions'
 
-const mapStateToProps = () => ({})
-
 const mapDispatchToProps = ( dispatch ) => ({
   showRawJson: (body) => dispatch(actions.app.showModal(
     body,
@@ -35,6 +27,6 @@ const mapDispatchToProps = ( dispatch ) => ({
 })
 
 export default connect(
-  mapStateToProps,
+  () => ({}),
   mapDispatchToProps
 )(RawJsonButton)
