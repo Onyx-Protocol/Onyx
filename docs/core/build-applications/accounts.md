@@ -41,17 +41,17 @@ All code samples in this guide can be viewed in a single, runnable script. Avail
 
 Create an account for Alice.
 
-$code create-account-alice ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code create-account-alice ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 Create an account for Bob.
 
-$code create-account-bob ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code create-account-bob ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 ## List accounts by tags
 
 To list all savings accounts, we build an accounts query, filtering on the `type` tag.
 
-$code list-accounts-by-tag ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code list-accounts-by-tag ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 ## Transfer asset units between local accounts
 
@@ -59,27 +59,27 @@ To transfer assets between accounts within a Chain Core, we can build a transact
 
 We will build a transaction transferring to units of gold from Alice’s account to Bob’s account.
 
-$code build-transfer ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code build-transfer ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 Once we have built the transaction, we need to sign it with the key used to create Alice’s account. Note: We do not need to sign on behalf of Bob’s account, because Bob is not spending any assets - only receiving.
 
-$code sign-transfer ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code sign-transfer ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 Once we have signed the transaction, we can submit it for inclusion in the blockchain.
 
-$code submit-transfer ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code submit-transfer ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 ## Receive asset units from an external party
 
 Account IDs and aliases are local Chain Core data. They do not exist in the blockchain. When an external party wishes to transfer assets to your account, you must first create a control program for the account. We will create a control program for Bob’s account, which we can then send to the external party (see following example).
 
-$code create-control-program ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code create-control-program ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 ## Transfer asset units to an external party
 
 If you wish to transfer asset units to an external party, you must first request a control program from them. You can then build, sign, and submit a transaction sending asset units to their control program. We will use the control program we created in Bob’s account to demonstrate this external facing functionality.
 
-$code transfer-to-control-program ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code transfer-to-control-program ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 ## List account transactions
 
@@ -87,7 +87,7 @@ Chain Core keeps a time-ordered list of all transactions in the blockchain. Thes
 
 To list transactions involving Alice’s account, we build a transaction query, filtering on transactions where Alice spent or controlled any asset units.
 
-$code list-account-txs ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code list-account-txs ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 ## List account balances
 
@@ -95,8 +95,8 @@ The balance of an asset in an account is the sum of all units in unspent outputs
 
 To list the balances of all assets in Alice’s account, we build a balance query, filtering on Alice’s account alias.
 
-$code list-account-balances ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code list-account-balances ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 To list all the unspent outputs that comprise the balance of gold in Alice’s account, we build an unspent outputs query, filtering on Alice’s account alias and the gold asset alias.
 
-$code list-account-unspent-outputs ../examples/java/Accounts.java ../examples/ruby/accounts.rb
+$code list-account-unspent-outputs ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
