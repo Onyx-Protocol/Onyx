@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/kr/secureheader"
@@ -50,6 +51,7 @@ import (
 const (
 	httpReadTimeout  = 2 * time.Minute
 	httpWriteTimeout = time.Hour
+	latestVersion    = "1.0.1"
 )
 
 var (
@@ -81,7 +83,19 @@ var (
 )
 
 func init() {
+	var version string
+	if strings.HasPrefix(buildTag, "cmd.cored-") {
+		// build tag with cmd.cored- prefix indicates official release
+		version = latestVersion
+	} else if buildTag != "?" {
+		version = latestVersion + "-" + buildTag
+	} else {
+		// -dev suffix indicates intermediate, non-release build
+		version = latestVersion + "-dev"
+	}
+
 	expvar.NewString("prod").Set(prod)
+	expvar.NewString("version").Set(version)
 	expvar.NewString("buildtag").Set(buildTag)
 	expvar.NewString("builddate").Set(buildDate)
 	expvar.NewString("buildcommit").Set(buildCommit)

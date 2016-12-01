@@ -97,6 +97,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		}
 	}
 
+	version := json.RawMessage(expvar.Get("version").String())
 	buildCommit := json.RawMessage(expvar.Get("buildcommit").String())
 	buildDate := json.RawMessage(expvar.Get("builddate").String())
 
@@ -114,6 +115,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		"is_production":                     isProduction(),
 		"network_rpc_version":               networkRPCVersion,
 		"core_id":                           h.Config.ID,
+		"version":                           &version,
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
 		"health":                            h.health(),
