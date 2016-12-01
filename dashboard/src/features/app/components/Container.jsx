@@ -90,8 +90,6 @@ export default connect(
     authOk: !state.core.requireClientToken || state.core.validToken,
     configKnown: state.core.configKnown,
     configured: state.core.configured,
-    buildCommit: state.core.buildCommit,
-    buildDate: state.core.buildDate,
     onTestnet: state.core.onTestnet,
   }),
   (dispatch) => ({

@@ -29,23 +29,7 @@ export const configuredAt = (state, action) => {
   }
   return value
 }
-export const buildCommit = (state, action) => {
-  let value = coreConfigReducer('build_commit', state, '', action)
-  if (value === '?') {
-    value = 'Local development'
-  } else if (value != '') {
-    value = value.substring(0,18)
-  }
-  return value
-}
-export const buildDate = (state, action) => {
-  let value = coreConfigReducer('build_date', state, '', action)
-  if (value !== '') {
-    value = moment(value, 'X').format(LONG_TIME_FORMAT)
-  }
 
-  return value
-}
 export const production = (state, action) =>
   coreConfigReducer('is_production', state, false, action)
 export const blockHeight = (state, action) =>
@@ -211,8 +195,6 @@ const version = (state, action) => coreConfigReducer('version', state, 'N/A', ac
 export default combineReducers({
   blockchainId,
   blockHeight,
-  buildCommit,
-  buildDate,
   connected,
   clientToken,
   configKnown,
