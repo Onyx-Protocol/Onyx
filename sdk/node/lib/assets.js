@@ -17,6 +17,11 @@ class Assets {
     this.create = (params) => shared.create(client, '/create-asset', params)
 
     /**
+     * Create multiple new assets
+     */
+    this.createBatch = (params) => shared.createBatch(client, '/create-asset', params)
+
+    /**
      * Get a list of assets matching the specified filter
      */
     this.query = (params) => shared.query(client, '/list-assets', params)

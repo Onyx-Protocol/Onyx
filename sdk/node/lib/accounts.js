@@ -18,6 +18,11 @@ class Accounts {
     this.create = (params) => shared.create(client, '/create-account', params),
 
     /**
+     * Create multiple new acconts
+     */
+    this.createBatch = (params) => shared.createBatch(client, '/create-account', params)
+
+    /**
      * Get a list of accounts matching the specified filter
      */
     this.query = (params) => shared.query(client, '/list-accounts', params),

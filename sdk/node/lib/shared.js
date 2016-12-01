@@ -14,12 +14,21 @@ module.exports = {
       return data[0]
     })
   },
+
+  createBatch : (client, path, params = []) => {
+    params = params.map((item) =>
+      Object.assign({ client_token: uuid.v4() }, item))
+
+    return client.request(path, params).then(response => {
+      return {
+        successes: response.filter((item) => !item.code),
+        errors: response.filter((item) => item.code),
+        response: response,
+      }
+    })
+  },
+
   query: (client, path, params = {}) => {
-    // console.log(this)
-    // console.log(this.constructor)
-    //
-    // console.log(path)
-    // console.log(params)
     return client.request(path, params)
       .then(data => new Page(data))
   }
