@@ -79,6 +79,10 @@ module Chain
       # @return [String]
       attrib :core_id
 
+      # @!attribute [r] version
+      # @return [String]
+      attrib :version
+
       # @!attribute [r] build_commit
       # @return [String]
       attrib :build_commit
