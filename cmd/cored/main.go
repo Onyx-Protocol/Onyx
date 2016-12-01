@@ -51,6 +51,7 @@ import (
 const (
 	httpReadTimeout  = 2 * time.Minute
 	httpWriteTimeout = time.Hour
+	latestVersion    = "1.0.1"
 )
 
 var (
@@ -82,9 +83,15 @@ var (
 )
 
 func init() {
-	version := "?"
+	var version string
 	if strings.HasPrefix(buildTag, "cmd.cored-") {
-		version = strings.TrimPrefix(buildTag, "cmd.cored-")
+		// build tag with cmd.cored- prefix indicates official release
+		version = latestVersion
+	} else if buildTag != "?" {
+		version = latestVersion + "-" + buildTag
+	} else {
+		// -dev suffix indicates intermediate, non-release build
+		version = latestVersion + "-dev"
 	}
 
 	expvar.NewString("prod").Set(prod)
