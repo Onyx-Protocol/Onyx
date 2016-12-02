@@ -8,7 +8,6 @@ import (
 
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
@@ -23,19 +22,19 @@ var (
 // along with an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
 func NewChain(tb testing.TB) *protocol.Chain {
-	return NewChainWithStorage(tb, memstore.New(), mempool.New())
+	return NewChainWithStorage(tb, memstore.New())
 }
 
-// NewChainWithStorage makes a new Chain using store and pool for
-// storage, along with an initial block using a 0/0 multisig program.
+// NewChainWithStorage makes a new Chain using store for storage, along
+// with an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
-func NewChainWithStorage(tb testing.TB, store protocol.Store, pool protocol.Pool) *protocol.Chain {
+func NewChainWithStorage(tb testing.TB, store protocol.Store) *protocol.Chain {
 	ctx := context.Background()
 	b1, err := protocol.NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	c, err := protocol.NewChain(ctx, b1.Hash(), store, pool, nil)
+	c, err := protocol.NewChain(ctx, b1.Hash(), store, nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -54,7 +53,7 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store, pool protocol.Pool
 // MakeBlock always makes a block;
 // if there are no transactions in the pool,
 // it makes an empty block.
-func MakeBlock(tb testing.TB, c *protocol.Chain) *bc.Block {
+func MakeBlock(tb testing.TB, c *protocol.Chain, txs []*bc.Tx) *bc.Block {
 	ctx := context.Background()
 	curBlock, err := c.GetBlock(ctx, c.Height())
 	if err != nil {
@@ -68,7 +67,7 @@ func MakeBlock(tb testing.TB, c *protocol.Chain) *bc.Block {
 		curState = state.Empty()
 	}
 
-	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
+	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now(), txs)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

@@ -9,70 +9,26 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
-	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/state"
-	"chain/protocol/validation"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 	"chain/testutil"
 )
 
-func TestIdempotentAddTx(t *testing.T) {
+func TestBadMaxIssuanceWindow(t *testing.T) {
 	ctx := context.Background()
 	c, b1 := newTestChain(t, time.Now())
-
-	issueTx, _, _ := issue(t, nil, nil, 1)
-
-	err := c.AddTx(ctx, issueTx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	// still idempotent after block lands
-	block, tree, err := c.GenerateBlock(ctx, b1, state.Empty(), time.Now())
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	err = c.CommitBlock(ctx, block, tree)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	err = c.AddTx(ctx, issueTx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-}
-
-func TestAddTx(t *testing.T) {
-	ctx := context.Background()
-	c, _ := newTestChain(t, time.Now())
-
-	issueTx, _, dest1 := issue(t, nil, nil, 1)
-	err := c.AddTx(ctx, issueTx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	transferTx := transfer(t, stateOut(issueTx, 0), dest1, newDest(t))
-
-	err = c.AddTx(ctx, transferTx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-}
-
-func TestAddTxBadMaxIssuanceWindow(t *testing.T) {
-	ctx := context.Background()
-	c, _ := newTestChain(t, time.Now())
 	c.MaxIssuanceWindow = time.Second
 
 	issueTx, _, _ := issue(t, nil, nil, 1)
-	err := c.AddTx(ctx, issueTx)
-	if errors.Root(err) != validation.ErrBadTx {
-		t.Errorf("expected err to have Root %s, got %s", validation.ErrBadTx, errors.Root(err))
+
+	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), time.Now(), []*bc.Tx{issueTx})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Transactions) != 0 {
+		t.Error("expected issuance past max issuance window to be rejected")
 	}
 }
 
@@ -142,27 +98,4 @@ func issue(t testing.TB, asset *testAsset, dest *testDest, amount uint64) (*bc.T
 	asset.sign(t, tx, 0)
 
 	return bc.NewTx(*tx), asset, dest
-}
-
-func transfer(t testing.TB, out *state.Output, from, to *testDest) *bc.Tx {
-	cp, _ := to.controlProgram()
-	tx := &bc.TxData{
-		Version: bc.CurrentTransactionVersion,
-		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil),
-		},
-		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(out.AssetID, out.Amount, cp, nil),
-		},
-	}
-	from.sign(t, tx, 0)
-
-	return bc.NewTx(*tx)
-}
-
-func stateOut(tx *bc.Tx, index int) *state.Output {
-	return &state.Output{
-		TxOutput: *tx.Outputs[index],
-		Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(index)},
-	}
 }

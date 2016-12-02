@@ -41,7 +41,7 @@ func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) 
 //
 // After generating the block, the pending transaction pool will be
 // empty.
-func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, result *state.Snapshot, err error) {
+func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time, txs []*bc.Tx) (b *bc.Block, result *state.Snapshot, err error) {
 	timestampMS := bc.Millis(now)
 	if timestampMS < prev.TimestampMS {
 		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
@@ -50,11 +50,6 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 	// Make a copy of the state that we can apply our changes to.
 	result = state.Copy(snapshot)
 	result.PruneIssuances(timestampMS)
-
-	txs, err := c.pool.Dump(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "get pool TXs")
-	}
 
 	b = &bc.Block{
 		BlockHeader: bc.BlockHeader{
@@ -69,6 +64,12 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 	for _, tx := range txs {
 		if len(b.Transactions) >= maxBlockTxs {
 			break
+		}
+
+		// TODO(jackson): Should this go in ConfirmTx too?
+		err = c.checkIssuanceWindow(tx)
+		if err != nil {
+			continue
 		}
 
 		if validation.ConfirmTx(result, c.InitialBlockHash, b, tx) == nil {

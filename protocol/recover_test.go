@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/memstore"
 	"chain/protocol/state"
 	"chain/protocol/validation"
@@ -15,12 +14,11 @@ import (
 
 func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 	store := memstore.New()
-	pool := mempool.New()
 	b, err := NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	c1, err := NewChain(context.Background(), b.Hash(), store, pool, nil)
+	c1, err := NewChain(context.Background(), b.Hash(), store, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +36,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 		}
 	}
 
-	c2, err := NewChain(context.Background(), b.Hash(), store, mempool.New(), nil)
+	c2, err := NewChain(context.Background(), b.Hash(), store, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
