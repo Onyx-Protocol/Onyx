@@ -18,6 +18,10 @@ class TransactionBuilder {
     this.actions = []
   }
 
+  baseTransaction(raw_tx) {
+    this.base_transaction = raw_tx
+  }
+
   issue(params) {
     this.actions.push(Object.assign({}, params, {type: 'issue'}))
   }
