@@ -1,6 +1,6 @@
 # Chain Core Mac Installer changelog
 
-## 1.0.2 (November 30, 2016)
+## 1.0.2 (December 2, 2016)
 
 * Update to Chain Core 1.0.2
 * Resolve compatibility issues with OS X Yosemite

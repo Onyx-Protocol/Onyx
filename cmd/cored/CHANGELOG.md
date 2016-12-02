@@ -1,6 +1,6 @@
 # cored changelog
 
-## 1.0.2 (November 30, 2016)
+## 1.0.2 (December 2, 2016)
 
 * Resolved issue with some transactions being incorrectly marked as "not final"
   ([#160](https://github.com/chain/chain/issues/160), [#161](https://github.com/chain/chain/pulls/161))
