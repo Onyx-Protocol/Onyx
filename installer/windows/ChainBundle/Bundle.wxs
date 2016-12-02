@@ -21,24 +21,27 @@
     <Variable Name="OptionInstallPostgres" bal:Overridable="yes" Type="numeric" Persisted="yes" Value="1" />
     <Variable Name="PgInstallFolder" bal:Overridable="yes" Type="string" Value="[InstallFolder]Postgres" />
 
+    <!-- <Chain> is actually an element specific to Wix
+        (http://wixtoolset.org/documentation/manual/v3/xsd/wix/chain.html)
+        and not a custom addition.  -->
     <Chain>
+      <MsiPackage Id="ChainPackage" SourceFile="$(var.ChainPackage.TargetPath)">
+        <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
+        <MsiProperty Name="PORT" Value="[PORT]" />
+      </MsiPackage>
+
       <ExePackage
       	SourceFile="$(var.PostgresPackage.TargetPath)"
 	InstallCommand="--mode unattended --prefix &quot;[PgInstallFolder]&quot; --extract-only 1"
 	InstallCondition="OptionInstallPostgres" />
 
-       <ExePackage
+     <ExePackage
         SourceFile="$(var.VCRPackage.TargetPath)"
         Cache="yes"
         PerMachine="yes"
         Compressed="yes"
         InstallCommand="/q"
         InstallCondition="OptionInstallPostgres" />
-
-      <MsiPackage Id="ChainPackage" SourceFile="$(var.ChainPackage.TargetPath)">
-        <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
-        <MsiProperty Name="PORT" Value="[PORT]" />
-      </MsiPackage>
     </Chain>
   </Bundle>
 </Wix>
