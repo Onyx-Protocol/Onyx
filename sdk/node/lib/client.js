@@ -9,6 +9,7 @@ const balances = require('./balances')
 const mockHsm = require('./mockHsm')
 const transactions = require('./transactions')
 const unspentOutputs = require('./unspentOutputs')
+const transactionFeeds = require('./transactionFeeds')
 
 const errors = require('./errors')
 
@@ -58,6 +59,12 @@ class Client {
      * @type {Transactions}
      */
     this.transactions = transactions(this)
+
+    /**
+     * API actions for transaction feeds
+     * @type {TransactionFeeds}
+     */
+    this.transactionFeeds = new transactionFeeds(this)
 
     /**
      * API actions for unspent outputs
