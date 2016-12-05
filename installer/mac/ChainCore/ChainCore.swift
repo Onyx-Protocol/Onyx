@@ -130,6 +130,8 @@ class ChainCore: NSObject {
             "DATABASE_URL": databaseURL,
             "LISTEN":       ":\(port)",
             "LOGFILE":      self.logURL.path,
+
+            // FIXME: cored binaries built with bin/build-cored-release have trouble acquiring a default user for Postgres connections. This ensures the current user's login name is always available in the environment.
             "USER":         NSUserName(),
         ]
         //task.standardOutput = Pipe()
