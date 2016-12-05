@@ -129,7 +129,8 @@ class ChainCore: NSObject {
         task.environment = [
             "DATABASE_URL": databaseURL,
             "LISTEN":       ":\(port)",
-            "LOGFILE":      self.logURL.path
+            "LOGFILE":      self.logURL.path,
+            "USER":         NSUserName(),
         ]
         //task.standardOutput = Pipe()
         //task.standardError = Pipe()

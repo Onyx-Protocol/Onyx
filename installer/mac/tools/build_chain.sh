@@ -7,8 +7,6 @@ export CHAIN="${SOURCE_DIR}/../.."
 export GOPATH="${CHAIN}/../.."
 export PATH="${PATH}:/usr/local/go/bin"
 
-ENV
-
 tempBuildPath=`mktemp -d`
 trap "rm -rf $tempBuildPath" EXIT
 "${CHAIN}/bin/build-cored-release" cmd.cored-1.0.2 $tempBuildPath
