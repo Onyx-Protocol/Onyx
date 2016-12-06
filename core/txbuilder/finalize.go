@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 
+	"chain/core/rpc"
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -18,6 +19,12 @@ var (
 	ErrMissingRawTx        = errors.New("missing raw tx")
 	ErrBadInstructionCount = errors.New("too many signing instructions in template")
 )
+
+// Submitter submits a transaction to the generator so that it may
+// be confirmed in a block.
+type Submitter interface {
+	Submit(ctx context.Context, tx *bc.Tx) error
+}
 
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
@@ -94,4 +101,17 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 	}
 
 	return nil
+}
+
+// RemoteGenerator implements the Submitter interface and submits the
+// transaction to a remote generator.
+// TODO(jackson): This implementation maybe belongs elsewhere.
+type RemoteGenerator struct {
+	Peer *rpc.Client
+}
+
+func (rg *RemoteGenerator) Submit(ctx context.Context, tx *bc.Tx) error {
+	err := rg.Peer.Call(ctx, "/rpc/submit", tx, nil)
+	err = errors.Wrap(err, "generator transaction notice")
+	return err
 }
