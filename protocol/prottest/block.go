@@ -46,7 +46,7 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store) *protocol.Chain {
 	return c
 }
 
-// MakeBlock makes a new block from the pool in c, commits it, and returns it.
+// MakeBlock makes a new block from txs, commits it, and returns it.
 // It assumes c's consensus program requires 0 signatures.
 // (This is true for chains returned by NewChain.)
 // If c requires more than 0 signatures, MakeBlock will fail.
