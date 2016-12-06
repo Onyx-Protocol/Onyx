@@ -1,4 +1,5 @@
 const uuid = require('uuid')
+const MAX_BLOCK_HEIGHT = (2 * 63) - 1
 
 /**
  * TransactionFeedItem
@@ -7,6 +8,7 @@ const uuid = require('uuid')
 class TransactionFeedItem {
 
   constructor(feed, client) {
+    let next_after
     this.filter = feed['filter']
     this.after = feed['after']
     this.id = feed['id']
@@ -15,22 +17,21 @@ class TransactionFeedItem {
      *
      */
     this.consume = (timeout = 24*60*60) => {
-      console.log("hey")
       let query = {
          filter: this.filter,
          after: this.after,
          timeout: (timeout * 1000),
          ascending_with_long_poll: true
       }
-        client.request('/list-transactions', query)
-        .then((page) => {
-          console.log(query)
-          query = page['next']
-          page['items'].forEach((tx) => {
-            console.log(tx)
-            next_after = tx
-          })
+      client.request('/list-transactions', query)
+      .then((page) => {
+        console.log(query)
+        query = page['next']
+        page['items'].forEach((tx) => {
+          console.log(tx)
+          next_after = tx['block_height'] + ':' + tx['position'] + '-' + MAX_BLOCK_HEIGHT
         })
+      })
      },
 
     this.ack = () => {
