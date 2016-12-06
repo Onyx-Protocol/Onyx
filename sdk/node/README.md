@@ -11,3 +11,20 @@ For most applications, you can simply add Chain to your `package.json` with the 
 ```
 npm install --save chain-sdk
 ```
+
+### In your code
+
+```
+const chain = require('chain-sdk')
+
+const client = new chain.Client()
+const signer = new chain.HsmSigner()
+```
+
+## Testing
+
+To run integration tests, run an instance of Chain Core on localhost:1999. Then run:
+
+```
+npm test
+```
