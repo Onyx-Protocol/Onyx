@@ -51,7 +51,7 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store) *protocol.Chain {
 // (This is true for chains returned by NewChain.)
 // If c requires more than 0 signatures, MakeBlock will fail.
 // MakeBlock always makes a block;
-// if there are no transactions in the pool,
+// if there are no transactions in txs,
 // it makes an empty block.
 func MakeBlock(tb testing.TB, c *protocol.Chain, txs []*bc.Tx) *bc.Block {
 	ctx := context.Background()
