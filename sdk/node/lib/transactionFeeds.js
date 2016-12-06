@@ -1,6 +1,56 @@
 const uuid = require('uuid')
 
 /**
+ * TransactionFeedItem
+ * @class
+ */
+class TransactionFeedItem {
+
+  constructor(feed, client) {
+    this.filter = feed['filter']
+    this.after = feed['after']
+    this.id = feed['id']
+    this.alias = feed['alias']
+    /**
+     *
+     */
+    this.consume = (timeout = 24*60*60) => {
+      console.log("hey")
+      let query = {
+         filter: this.filter,
+         after: this.after,
+         timeout: (timeout * 1000),
+         ascending_with_long_poll: true
+      }
+        client.request('/list-transactions', query)
+        .then((page) => {
+          console.log(query)
+          query = page['next']
+          page['items'].forEach((tx) => {
+            console.log(tx)
+            next_after = tx
+          })
+        })
+     },
+
+    this.ack = () => {
+      client.request(
+        'update-transaction-feed',
+        {
+          id: this.id,
+          after: next_after,
+          previous_after: this.after
+        }
+      ).then(() => {
+        this.after = next_after
+        next_after = null
+      })
+
+    }
+  }
+}
+
+/**
  * TransactionFeed
  * @class
  */
@@ -26,7 +76,7 @@ class TransactionFeeds {
      */
     this.get = (params) => {
       return client.request('/get-transaction-feed', params)
-      .then(data => data)
+      .then(data => new TransactionFeedItem(Object.assign(data), client))
     },
 
     /**
