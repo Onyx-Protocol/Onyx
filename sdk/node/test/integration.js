@@ -13,6 +13,12 @@ const balanceByAssetAlias = (balances) => {
   })
 }
 
+const chai = require("chai")
+const chaiAsPromised = require("chai-as-promised")
+chai.use(chaiAsPromised)
+
+const expect = chai.expect
+
 describe('Chain SDK integration test', function() {
   it('integration test', function() {
     const client = new chain.Client()
@@ -24,6 +30,7 @@ describe('Chain SDK integration test', function() {
     const silverAlias = `silver-${uuid.v4()}`
     const bronzeAlias = `bronze-${uuid.v4()}`
     const copperAlias = `copper-${uuid.v4()}`
+    const tokenId = `token-${uuid.v4()}`
 
     let aliceKey, bobKey, goldKey, silverKey, otherKey, aliceId
 
@@ -31,7 +38,35 @@ describe('Chain SDK integration test', function() {
 
     // Access tokens
 
-    // TBD
+    .then(() =>
+      expect(client.accessTokens.create({
+        type: 'client',
+        id: tokenId
+      })).to.be.fulfilled
+    )
+    .then(resp => {
+      expect(resp.token).to.not.be.empty
+    })
+    .then(() =>
+      expect(client.accessTokens.create({
+        type: 'client',
+        id: 'foobar'
+      }))
+      // Using same ID twice will trigger a duplicate ID error
+      .to.be.rejectedWith('CH302')
+    )
+    .then(() => expect(client.accessTokens.query()).to.be.fulfilled )
+    .then(resp => expect(resp.items.map(item => item.id)).to.contain(tokenId))
+
+    .then(() => expect(client.accessTokens.query({type: 'client'})).to.be.fulfilled )
+    .then(resp => expect(resp.items.map(item => item.id)).to.contain(tokenId))
+
+    .then(() => expect(client.accessTokens.query({type: 'network'})).to.be.fulfilled )
+    .then(resp => expect(resp.items.map(item => item.id)).to.not.contain(tokenId))
+
+    .then(() => expect(client.accessTokens.delete(tokenId)).to.be.fulfilled )
+    .then(() => expect(client.accessTokens.query()).to.be.fulfilled )
+    .then(resp => expect(resp.items.map(item => item.id)).to.not.contain(tokenId))
 
     // Key creation and signer setup
 

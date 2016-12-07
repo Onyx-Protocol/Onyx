@@ -35,7 +35,7 @@ class Client {
      * API actions for access tokens
      * @type {AccessTokens}
      */
-    this.AccessTokens = new AccessTokens(this)
+    this.accessTokens = new AccessTokens(this)
 
     /**
      * API actions for accounts

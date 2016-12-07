@@ -3,15 +3,23 @@ const errors = require('./errors')
 const Page = require('./page')
 
 module.exports = {
-  create: (client, path, params = {}) => {
-    let object = Object.assign({ client_token: uuid.v4() }, params)
+  create: (client, path, params = {}, opts = {}) => {
+    const object = Object.assign({ client_token: uuid.v4() }, params)
+    let body = object
+    if (!opts.skipArray) {
+      body = [body]
+    }
 
-    return client.request(path, [object]).then(data => {
+    return client.request(path, body).then(data => {
       if (errors.isBatchError(data[0])) {
         throw errors.newBatchError(data[0])
       }
 
-      return data[0]
+      if (typeof data === 'Array') {
+        return data[0]
+      } else {
+        return data
+      }
     })
   },
 
