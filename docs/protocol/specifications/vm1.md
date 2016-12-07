@@ -167,6 +167,8 @@ All items on the data and alt stacks are binary strings. Some instructions accep
 
 In the stack diagrams accompanying the definition of each operation, `x` and `y` denote [numbers](#vm-number), `m` and `n` denote non-negative [numbers](#vm-number), and `p` and `q` denote [booleans](#vm-boolean). If coercion fails (or if stack items designated as `m` or `n` coerce to negative numbers), the operation fails.
 
+The maximum length of a string on the VM stack is 65535 bytes.
+
 ### VM String
 
 An ordered sequence of 0 or more bytes.
@@ -269,7 +271,7 @@ Opcode **0x4c** is followed by a 1-byte length prefix encoding a length `n`, the
 
 Opcode **0x4d** is followed by a 2-byte little-endian length prefix encoding a length `n`, then `n` bytes of data to push (supports up to 65535 bytes).
 
-Opcode **0x4e** is followed by a 4-byte little-endian length prefix encoding a length `n`, then `n` bytes of data to push (supports up to 4294967295 bytes).
+Opcode **0x4e** is disabled and causes execution to fail.
 
 Each of these operations fails if they are not followed by the expected number of bytes of data.
 
