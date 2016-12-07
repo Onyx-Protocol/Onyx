@@ -165,13 +165,13 @@ Most instructions use only the data stack by removing some items and then placin
 
 All items on the data and alt stacks are binary strings. Some instructions accept or return items of other types. When values of those types are pushed to or popped from the data stack, they are coerced to and from strings in accordance with the rules specified below.
 
-In the stack diagrams accompanying the definition of each operation, `x` and `y` denote [numbers](#vm-number), `m` and `n` denote non-negative [numbers](#vm-number), and `p` and `q` denote [booleans](#vm-boolean). If coercion fails (or if stack items designated as `m` or `n` coerce to negative numbers), the operation fails.
+In the stack diagrams accompanying the definition of each operation, `x` and `y` denote [numbers](#vm-number), `m` and `n` denote non-negative [numbers](#vm-number), `p` and `q` denote [booleans](#vm-boolean), and `list` denotes a [list](#vm-list). If coercion fails (or if stack items designated as `m` or `n` coerce to negative numbers), the operation fails.
 
 The maximum length of a string on the VM stack is 65535 bytes.
 
 ### VM String
 
-An ordered sequence of 0 or more bytes.
+An ordered sequence of `n` bytes, where `0 <= n < 65536`.
 
 In this document, single bytes are represented in hexadecimal form with a `0x` base prefix, i.e. `0x00` or `0xff`.
 
@@ -208,8 +208,6 @@ Certain arithmetic operations use conservative bounds checks (explicitly specifi
 1. Create an 8-byte string matching the representation of the number as a [little-endian](https://en.wikipedia.org/wiki/Endianness#Little-endian) 64-bit integer, using [two's complement representation](https://en.wikipedia.org/wiki/Two%27s_complement) for negative integers.
 2. Trim the string by removing any `0x00` bytes from the right side.
 
-
-
 Value          | String (hexadecimal)        | Size in bytes
 ---------------|-----------------------------|------------------
 0              | `“”`                        | 0
@@ -217,6 +215,32 @@ Value          | String (hexadecimal)        | Size in bytes
 –1             | `“ff ff ff ff ff ff ff ff”` | 8
 2^63 - 1 (max) | `“ff ff ff ff ff ff ff 7f”` | 8
 -2^63 (min)    | `“00 00 00 00 00 00 00 80”` | 8
+
+### VM List
+
+A list of 0 or more binary strings. Like other data types, a list is stored on the data stack as a single string. Lists are serialized and deserialized to and from strings in accordance with the below rules.
+
+#### String to List
+
+1. Start with an empty list.
+2. Until the string has length 0:
+  1. Slice the first two bytes from the string and interpret them as a 2-byte little-endian integer `n`.
+  2. Slice the first `n` bytes from the string, and append the sliced `n`-length string to the list.
+
+If at any point there are insufficient remaining bytes in the string, fail execution.
+
+#### List to String
+
+Concatenate all items in the list, with each item prefixed by its length (represented as a 2-byte little-endian integer).
+
+Value               | String (hexadecimal)        |
+--------------------|-----------------------------|
+()                  | `""`                        |
+(`""`)              | `“00 00”`                   |
+(`""`, `""`)        | `“00 00 00 00”`             |
+(`"ff"`)            | `“01 00 ff”`                |
+(`"ff"`, `"ee dd"`) | `"01 00 ff 02 00 ee dd`     |
+
 
 ## Failure conditions
 
@@ -227,7 +251,7 @@ Validation fails when:
 * a [FAIL](#fail) instruction is executed
 * the run limit is below the value required by the current instruction
 * an invalid encoding is detected for keys or [signatures](data.md#signature)
-* coercion fails for [numbers](#vm-number)
+* coercion fails for [numbers](#vm-number) or [lists](#vm-list)
 * a bounds check fails for one of the [splice](#splice-operators) or [numeric](#logical-and-numeric-operators) instructions
 * the program execution finishes with an empty data stack
 * the program execution finishes with a [false](#vm-boolean) item on the top of the data stack
@@ -1105,7 +1129,53 @@ Typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
 Fails if executed in the [transaction context](#transaction-context).
 
 
+### List instructions
 
+#### PACK
+
+Code  | Stack Diagram   | Cost
+------|-----------------|-----------------------------------------------------
+0xb0  | (item<sub>n-1</sub> ... item<sub>0</sub> n → list) | n; L<sub>list</sub> + 
+[standard memory cost](#standard-memory-cost)
+
+Pops a number `n` from the data stack, then pops `n` items from the stack and combines them into a [VM list](#vm-list) (with the topmost item as the first item in the list), then serializes and pushes that list to the stack.
+
+Fails if `n` is not a valid non-negative [number](#vm-number).
+
+
+#### UNPACK
+
+Code  | Stack Diagram   | Cost
+------|-----------------|-----------------------------------------------------
+0xb1  | (list n → item<sub>n-1</sub> ... item<sub>0</sub>) | n + L<sub>list</sub>;
+[standard memory cost](#standard-memory-cost)
+
+Pops a number `n` from the data stack, then pops a [VM list](#vm-list) of length `n` from the data stack, deserializes it, and pushes each of its items to the data stack (with the first item of the list ending up on the top of the stack).
+
+Fails if `n` is not a valid non-negative [number](#vm-number), or if `items` is not a [VM list](#vm-list) of length `n`.
+
+
+#### ELEMENT
+
+Code  | Stack Diagram   | Cost
+------|-----------------|-----------------------------------------------------
+0xb2  | (list m → item<sub>m</sub>) | m; L<sub>items</sub> + 
+[standard memory cost](#standard-memory-cost)
+
+Pops a number `m` from the data stack, then pops a [VM list](#vm-list) from the stack, deserializes it, and pushes the `m`th item to the data stack.
+
+Fails if `m` is not a valid non-negative [number](#vm-number), or if `list` is not a [VM list](#vm-list) of length greater than `m`.
+
+#### SLICE
+
+Code  | Stack Diagram   | Cost
+------|-----------------|-----------------------------------------------------
+0xb3  | (items end start → items[start:end]| end + L<sub>items</sub>;
+[standard memory cost](#standard-memory-cost)
+
+Pops two numbers `start` and `end` from the data stack, then pops a [VM list](#vm-list) from the stack, deserializes it, and pushes a new list with all items from `list` with index `i` such that `start <= i < end`.
+
+Fails if `start` and `end` are not valid non-negative [numbers](#vm-number), or if `list` is not a [VM list](#vm-list) of length greater than or equal to `end`.
 
 
 ### Introspection instructions
@@ -1275,11 +1345,13 @@ Fails if executed in the [transaction context](#transaction-context).
 
 
 
+
+
 ### Expansion opcodes
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa9, 0xab, 0xb4..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion and have no effect on the state of the VM apart from reducing run limit by 1.
 
