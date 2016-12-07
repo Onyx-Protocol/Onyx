@@ -11,6 +11,17 @@ import (
 	"chain/protocol/validation"
 )
 
+func BenchmarkValidateTx(b *testing.B) {
+	c := prottest.NewChain(b)
+	tx := prottest.NewIssuanceTx(b, c)
+	for i := 0; i < b.N; i++ {
+		err := validation.CheckTxWellFormed(tx)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func BenchmarkValidateBlock(b *testing.B) {
 	b.StopTimer()
 	ctx := context.Background()
