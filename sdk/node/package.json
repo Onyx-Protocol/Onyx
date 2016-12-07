@@ -12,7 +12,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "docs": "jsdoc -c jsdoc.conf.json",
-    "test": "mocha"
+    "test": "mocha -t 60000"
   },
   "dependencies": {
     "fetch-ponyfill": "^3.0.2",

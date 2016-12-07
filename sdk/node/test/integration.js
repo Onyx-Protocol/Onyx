@@ -25,7 +25,7 @@ describe('Chain SDK integration test', function() {
     const bronzeAlias = `bronze-${uuid.v4()}`
     const copperAlias = `copper-${uuid.v4()}`
 
-    let aliceKey, bobKey, goldKey, silverKey, otherKey
+    let aliceKey, bobKey, goldKey, silverKey, otherKey, aliceId
 
     return Promise.resolve()
 
@@ -61,7 +61,9 @@ describe('Chain SDK integration test', function() {
     .then(() => Promise.all([
       client.accounts.create({alias: aliceAlias, root_xpubs: [aliceKey.xpub], quorum: 1}),
       client.accounts.create({alias: bobAlias, root_xpubs: [bobKey.xpub], quorum: 1})
-    ]))
+    ])).then(accounts => {
+      aliceId = accounts[0].id
+    })
 
     .then(() => client.accounts.create({alias: 'david'}))
     .catch(exception => {
@@ -222,6 +224,51 @@ describe('Chain SDK integration test', function() {
       assert.deepEqual(balances[1], {[goldAlias]: 10, [silverAlias]: 180})
     })
 
+    // Batch transaction TBD
+
+    // Control program creation
+
+    .then(() => client.accounts.createControlProgram({alias: aliceAlias}))
+    .then((cp) => assert(cp.control_program))
+
+    .then(() => client.accounts.createControlProgram({id: aliceId}))
+    .then((cp) => assert(cp.control_program))
+
+    .then(() => client.accounts.createControlProgram())
+    .catch(exception => {
+      // Bad parameters
+      assert.ok(exception instanceof Error)
+    })
+
+    // Pay to control program
+
+    .then(() => client.accounts.createControlProgram({alias: aliceAlias}))
+    .then((cp) => client.transactions.build( function(builder) {
+      builder.issue({
+        asset_alias: goldAlias,
+        amount: 1
+      })
+      builder.controlWithProgram({
+        asset_alias: goldAlias,
+        amount: 1,
+        control_program: cp.control_program
+      })
+    }))
+    .then((issuance) => signer.sign(issuance))
+    .then((signed) => client.transactions.submit(signed))
+
+    // Transaction feeds
+
+    .then(() => Promise.all([
+      client.transactionFeeds.create({
+        alias: 'issuances',
+        filter: "inputs(type='issue')"
+      })
+      client.transactionFeeds.create({
+        alias: 'spends',
+        filter: "inputs(type='spend')"
+      })
+    ]))
 
   })
 })
