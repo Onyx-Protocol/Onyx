@@ -3,6 +3,7 @@
 // use the ponyfill for unsupported browsers.
 const { fetch } = require('fetch-ponyfill')()
 
+const AccessTokens = require('./accessTokens')
 const Accounts = require('./accounts')
 const Assets = require('./assets')
 const balances = require('./balances')
@@ -29,6 +30,12 @@ class Client {
   constructor(baseUrl, token) {
     this.baseUrl = baseUrl || 'http://localhost:1999'
     this.token = token || ''
+
+    /**
+     * API actions for access tokens
+     * @type {AccessTokens}
+     */
+    this.AccessTokens = new AccessTokens(this)
 
     /**
      * API actions for accounts

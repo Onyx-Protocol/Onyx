@@ -32,7 +32,7 @@ class Accounts {
      * Create a new account
      * @param {Accounts~createRequest} params - Parameters for account creation
      */
-    this.create = (params) => shared.create(client, '/create-account', params),
+    this.create = (params) => shared.create(client, '/create-account', params)
 
     /**
      * Create multiple new acconts
@@ -44,7 +44,7 @@ class Accounts {
      * Get a list of accounts matching the specified filter
      * @param {Filter} [params={}] Filter and pagination information
      */
-    this.query = (params = {}) => shared.query(client, '/list-accounts', params),
+    this.query = (params = {}) => shared.query(client, '/list-accounts', params)
 
     /**
      * Create a new control program
