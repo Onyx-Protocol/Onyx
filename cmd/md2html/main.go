@@ -285,7 +285,7 @@ func writeCode(w io.Writer, path, snippet string) {
 	if err != nil {
 		code = err.Error()
 	} else {
-		code = removeCommonIndent(code)
+		code = escapeHTML(removeCommonIndent(code))
 	}
 
 	ext := extension(path)
@@ -417,6 +417,34 @@ func markdown(source []byte) []byte {
 	extensions |= blackfriday.EXTENSION_AUTO_HEADER_IDS
 
 	return blackfriday.Markdown(source, renderer, extensions)
+}
+
+func escapeHTML(src string) string {
+	escapes := map[rune]string{
+		'"': "&quot;",
+		'&': "&amp;",
+		'<': "&lt;",
+		'>': "&gt;",
+	}
+
+	var (
+		runes = []rune(src)
+		res   []rune
+		start int
+	)
+	for i, r := range runes {
+		if e, ok := escapes[r]; ok {
+			res = append(res, runes[start:i]...) // add everything since last escaped char
+			res = append(res, []rune(e)...)      // add the escaped version of the char
+			start = i + 1
+		}
+	}
+
+	if start < len(runes) {
+		res = append(res, runes[start:]...) // add remainder
+	}
+
+	return string(res)
 }
 
 // Very rude, but compatible with our code rewrite of local .md links to their post-processed URLs.
