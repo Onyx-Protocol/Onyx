@@ -30,6 +30,8 @@ describe('Chain SDK integration test', function() {
     const silverAlias = `silver-${uuid.v4()}`
     const bronzeAlias = `bronze-${uuid.v4()}`
     const copperAlias = `copper-${uuid.v4()}`
+    const issuancesAlias = `issuances-${uuid.v4()}`
+    const spendsAlias = `spends-${uuid.v4()}`
     const tokenId = `token-${uuid.v4()}`
 
     let aliceKey, bobKey, goldKey, silverKey, otherKey, aliceId
@@ -50,7 +52,7 @@ describe('Chain SDK integration test', function() {
     .then(() =>
       expect(client.accessTokens.create({
         type: 'client',
-        id: 'foobar'
+        id: tokenId
       }))
       // Using same ID twice will trigger a duplicate ID error
       .to.be.rejectedWith('CH302')
@@ -97,14 +99,14 @@ describe('Chain SDK integration test', function() {
       client.accounts.create({alias: aliceAlias, root_xpubs: [aliceKey.xpub], quorum: 1}),
       client.accounts.create({alias: bobAlias, root_xpubs: [bobKey.xpub], quorum: 1})
     ])).then(accounts => {
-      aliceId = accounts[0].id
+      aliceId = accounts[0][0].id
     })
 
-    .then(() => client.accounts.create({alias: 'david'}))
-    .catch(exception => {
+    .then(() =>
+      expect(client.accounts.create({alias: 'david'}))
       // Request is missing key fields
-      assert.ok(exception instanceof Error)
-    })
+      .to.be.rejectedWith('CH202')
+    )
 
     // Batch account creation
 
@@ -126,11 +128,11 @@ describe('Chain SDK integration test', function() {
       client.assets.create({alias: silverAlias, root_xpubs: [silverKey.xpub], quorum: 1})
     ]))
 
-    .then(() => client.assets.create({alias: 'unobtanium'}))
-    .catch(exception => {
+    .then(() =>
+      expect(client.assets.create({alias: 'unobtanium'}))
       // Request is missing key fields
-      assert.ok(exception instanceof Error)
-    })
+      .to.be.rejectedWith('CH202')
+    )
 
     // Batch asset creation
 
@@ -148,7 +150,7 @@ describe('Chain SDK integration test', function() {
     // Basic issuance
 
     .then(() =>
-      client.transactions.build( function(builder){
+      expect(client.transactions.build( function(builder){
         builder.issue({
           asset_alias: goldAlias,
           amount: 100
@@ -167,9 +169,9 @@ describe('Chain SDK integration test', function() {
           asset_alias: silverAlias,
           amount: 200
         })
-      })
-      .then((issuance) => signer.sign(issuance))
-      .then((signed) => client.transactions.submit(signed))
+      })).to.be.fulfilled
+      .then((issuance) => expect(signer.sign(issuance)).to.be.fulfilled)
+      .then((signed) => expect(client.transactions.submit(signed)).to.be.fulfilled)
     )
 
     .then(() => Promise.all([
@@ -183,72 +185,76 @@ describe('Chain SDK integration test', function() {
 
     // Bad singleton build call
 
-    .then(() => client.transactions.build( function(builder) {
-      builder.issue({
-        asset_alias: "unobtanium",
-        amount: 100
-      })
-    }))
-    .catch(exception => {
+    .then(() =>
+      expect(client.transactions.build( function(builder) {
+        builder.issue({
+          asset_alias: "unobtanium",
+          amount: 100
+        })
+      }))
       // Non-existent asset
-      assert.ok(exception instanceof Error)
-    })
+      .to.be.rejectedWith('CH002')
+    )
 
     // Bad singleton submit call
 
-    .then(() => client.transactions.build( function(builder) {
-      builder.issue({
-        asset_alias: goldAlias,
-        amount: 1
-      })
-      builder.controlWithAccount({
-        account_alias: aliceAlias,
-        asset_alias: goldAlias,
-        amount: 100
-      })
-    }))
-    .then((issuance) => signer.sign(issuance))
-    .then((signed) => client.transactions.submit(signed))
-    .catch(exception => {
-      // unbalanced transaction
-      assert.ok(exception instanceof Error)
-    })
+    .then(() =>
+      expect(client.transactions.build( function(builder) {
+        builder.issue({
+          asset_alias: goldAlias,
+          amount: 1
+        })
+        builder.controlWithAccount({
+          account_alias: aliceAlias,
+          asset_alias: goldAlias,
+          amount: 100
+        })
+      })).to.be.fulfilled)
+      .then((issuance) => expect(signer.sign(issuance)).to.be.fulfilled)
+      .then((signed) =>
+        expect(client.transactions.submit(signed))
+        // unbalanced transaction
+        .to.be.rejectedWith('CH735')
+      )
 
     // Atomic swap
 
-    .then(() => client.transactions.build( function(builder) {
-      builder.spendFromAccount({
-        account_alias: aliceAlias,
-        asset_alias: goldAlias,
-        amount: 10
-      })
-      builder.controlWithAccount({
-        account_alias: aliceAlias,
-        asset_alias: silverAlias,
-        amount: 20
-      })
-    })
-    .then((swapProposal) => {
-      swapProposal.allow_additional_actions = true
-      return signer.sign(swapProposal)
-    })
-    .then((swapProposal) =>
-      client.transactions.build( function(builder) {
-        builder.baseTransaction(swapProposal.raw_transaction)
+    .then(() =>
+      expect(client.transactions.build( function(builder) {
         builder.spendFromAccount({
-          account_alias: bobAlias,
-          asset_alias: silverAlias,
-          amount: 20
-        })
-        builder.controlWithAccount({
-          account_alias: bobAlias,
+          account_alias: aliceAlias,
           asset_alias: goldAlias,
           amount: 10
         })
+        builder.controlWithAccount({
+          account_alias: aliceAlias,
+          asset_alias: silverAlias,
+          amount: 20
+        })
       }))
-      .then((swapTx) => signer.sign(swapTx))
-      .then((signed) => client.transactions.submit(signed))
-    )
+      .to.be.fulfilled
+      .then((swapProposal) => {
+        swapProposal.allow_additional_actions = true
+        return expect(signer.sign(swapProposal)).to.be.fulfilled
+      })
+      .then((swapProposal) =>
+        expect(client.transactions.build( function(builder) {
+          builder.baseTransaction(swapProposal.raw_transaction)
+          builder.spendFromAccount({
+            account_alias: bobAlias,
+            asset_alias: silverAlias,
+            amount: 20
+          })
+          builder.controlWithAccount({
+            account_alias: bobAlias,
+            asset_alias: goldAlias,
+            amount: 10
+          })
+        }))
+        .to.be.fulfilled)
+        .then((swapTx) => expect(signer.sign(swapTx)).to.be.fulfilled)
+        .then((signed) => expect(client.transactions.submit(signed)).to.be.fulfilled)
+      )
 
     .then(() => Promise.all([
       balanceByAssetAlias(client.balances.query({filter: `account_alias='${aliceAlias}'`})),
@@ -263,44 +269,52 @@ describe('Chain SDK integration test', function() {
 
     // Control program creation
 
-    .then(() => client.accounts.createControlProgram({alias: aliceAlias}))
-    .then((cp) => assert(cp.control_program))
+    .then(() =>
+      expect(client.accounts.createControlProgram({alias: aliceAlias})).to.be.fulfilled)
+    .then((cp) => assert(cp[0].control_program))
 
-    .then(() => client.accounts.createControlProgram({id: aliceId}))
-    .then((cp) => assert(cp.control_program))
+    .then(() =>
+      expect(client.accounts.createControlProgram({id: aliceId})).to.be.fulfilled)
+    .then((cp) => assert(cp[0].control_program))
 
-    .then(() => client.accounts.createControlProgram())
-    .catch(exception => {
-      // Bad parameters
-      assert.ok(exception instanceof Error)
-    })
+    .then(() =>
+      // Empty alias/id
+      expect(client.accounts.createControlProgram({}))
+      .to.be.rejectedWith('CH003'))
+
+    .then(() =>
+      // Non-existent alias
+      expect(client.accounts.createControlProgram({alias: "unobtalias"}))
+      .to.be.rejectedWith('CH002'))
 
     // Pay to control program
 
-    .then(() => client.accounts.createControlProgram({alias: aliceAlias}))
-    .then((cp) => client.transactions.build( function(builder) {
-      builder.issue({
-        asset_alias: goldAlias,
-        amount: 1
-      })
-      builder.controlWithProgram({
-        asset_alias: goldAlias,
-        amount: 1,
-        control_program: cp.control_program
-      })
-    }))
-    .then((issuance) => signer.sign(issuance))
-    .then((signed) => client.transactions.submit(signed))
+    .then(() =>
+      expect(client.accounts.createControlProgram({alias: aliceAlias})).to.be.fulfilled)
+    .then((cp) =>
+      expect(client.transactions.build( function(builder) {
+        builder.issue({
+          asset_alias: goldAlias,
+          amount: 1
+        })
+        builder.controlWithProgram({
+          asset_alias: goldAlias,
+          amount: 1,
+          control_program: cp[0].control_program
+        })
+      })).to.be.fulfilled)
+    .then((issuance) => expect(signer.sign(issuance)).to.be.fulfilled)
+    .then((signed) => expect(client.transactions.submit(signed)).to.be.fulfilled)
 
     // Transaction feeds
 
     .then(() => Promise.all([
       client.transactionFeeds.create({
-        alias: 'issuances',
+        alias: issuancesAlias,
         filter: "inputs(type='issue')"
-      })
+      }),
       client.transactionFeeds.create({
-        alias: 'spends',
+        alias: spendsAlias,
         filter: "inputs(type='spend')"
       })
     ]))
