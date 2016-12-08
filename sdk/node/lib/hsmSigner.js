@@ -37,6 +37,32 @@ class HsmSigner {
 
     return promise
   }
+
+  signBatch(templates) {
+    let promise = Promise.resolve(templates)
+
+    if (Object.keys(this.signerConnections).length == 0) {
+      return promise.then(() => templates)
+    }
+
+    for (let signerId in this.signerConnections) {
+      const signer = this.signerConnections[signerId]
+
+      promise = promise.then(nextTemplates =>
+        signer.connection.request('/sign-transaction', {
+          transactions: nextTemplates,
+          xpubs: signer.xpubs
+      })).then(resp => {
+        return {
+          successes: resp.filter((item) => !item.code),
+          errors: resp.filter((item) => item.code),
+          response: resp,
+        }
+      })
+    }
+
+    return promise
+  }
 }
 
 module.exports = HsmSigner

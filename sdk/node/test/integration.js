@@ -265,7 +265,53 @@ describe('Chain SDK integration test', function() {
       assert.deepEqual(balances[1], {[goldAlias]: 10, [silverAlias]: 180})
     })
 
-    // Batch transaction TBD
+    // Batch transactions
+
+    .then(() => client.transactions.buildBatch([
+        (builder) => {
+          builder.issue({
+            asset_alias: goldAlias,
+            amount: 100
+          })
+          builder.controlWithAccount({
+            account_alias: aliceAlias,
+            asset_alias: goldAlias,
+            amount: 100
+          })
+        },
+
+        (builder) => {
+          builder.issue({
+            asset_alias: 'foobar'
+          })
+        },
+
+        (builder) => {
+          builder.issue({
+            asset_alias: goldAlias,
+            amount: 50
+          })
+          builder.controlWithAccount({
+            account_alias: aliceAlias,
+            asset_alias: goldAlias,
+            amount: 100
+          })
+        },
+
+        (builder) => {
+          builder.issue({
+            asset_alias: silverAlias,
+            amount: 50
+          })
+          builder.controlWithAccount({
+            account_alias: bobAlias,
+            asset_alias: silverAlias,
+            amount: 50
+          })
+        }])
+    )
+    .then((buildBatch) => signer.signBatch(buildBatch.successes))
+    .then((signedBatch) => client.transactions.submitBatch(signedBatch.successes))
 
     // Control program creation
 

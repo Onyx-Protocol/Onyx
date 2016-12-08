@@ -57,9 +57,28 @@ module.exports = (client) => {
       return client.request('/build-transaction', [builder])
         .then(resp => checkForError(resp[0]))
     },
+    buildBatch: (builderBlocks) => {
+      const builders = builderBlocks.map((builderBlock) => {
+        const builder = new TransactionBuilder()
+        builderBlock(builder)
+        return builder
+      })
+
+      return shared.createBatch(client, '/build-transaction', builders)
+    },
     submit: (signed) => {
       return client.request('/submit-transaction', {transactions: [signed]})
         .then(resp => checkForError(resp[0]))
+    },
+    submitBatch: (signed) => {
+      return client.request('/submit-transaction', {transactions: signed})
+        .then(resp => {
+          return {
+            successes: resp.filter((item) => !item.code),
+            errors: resp.filter((item) => item.code),
+            response: resp,
+          }
+        })
     }
   }
 }
