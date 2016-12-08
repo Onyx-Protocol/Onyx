@@ -5,48 +5,96 @@ const MAX_BLOCK_HEIGHT = (2 * 63) - 1
  * TransactionFeedItem
  * @class
  */
-class TransactionFeedItem {
+class TransactionFeed {
 
   constructor(feed, client) {
-    let next_after
-    this.filter = feed['filter']
-    this.after = feed['after']
-    this.id = feed['id']
-    this.alias = feed['alias']
+    let nextAfter
+    let after = feed['after']
+    const filter = feed['filter']
+    const id = feed['id']
+    const alias = feed['alias']
+
+    const ack = () => client.request('/update-transaction-feed', {
+      id,
+      after: nextAfter,
+      previous_after: after
+    }).then(() => { after = nextAfter })
+
+    const query = params => client.transactions.query(params)
+
     /**
      *
      */
-    this.consume = (timeout = 24*60*60) => {
-      let query = {
-         filter: this.filter,
-         after: this.after,
-         timeout: (timeout * 1000),
-         ascending_with_long_poll: true
-      }
-      client.request('/list-transactions', query)
-      .then((page) => {
-        console.log(query)
-        query = page['next']
-        page['items'].forEach((tx) => {
-          console.log(tx)
-          next_after = tx['block_height'] + ':' + tx['position'] + '-' + MAX_BLOCK_HEIGHT
-        })
-      })
-     },
+    this.consume = (consumer, timeout = 24*60*60) => {
+      var self = this
 
-    this.ack = () => {
-      client.request(
-        'update-transaction-feed',
-        {
-          id: this.id,
-          after: next_after,
-          previous_after: this.after
+      return new Promise((resolve, reject) => {
+        let queryArgs = {
+          filter,
+          after,
+          timeout: (timeout * 1000),
+          ascending_with_long_poll: true,
         }
-      ).then(() => {
-        this.after = next_after
-        next_after = null
-      })
 
+        const nextPage = () => {
+          query(queryArgs).then(page => {
+            let index = 0
+            let prevItem
+
+            const done = shouldAck => {
+              let p
+              if (shouldAck) {
+                p = ack(prevItem)
+              } else {
+                p = Promise.resolve()
+              }
+              p.then(resolve).catch(reject)
+            }
+
+            const next = shouldAck => {
+              let p
+              if (shouldAck && prevItem) {
+                p = ack(prevItem)
+              } else {
+                p = Promise.resolve()
+              }
+
+              p.then(() => {
+                if (index >= page.items.length) {
+                  queryArgs = page.next
+                  nextPage()
+                  return
+                }
+
+                prevItem = page.items[index]
+                nextAfter = `${prevItem.block_height}:${prevItem.position}-${MAX_BLOCK_HEIGHT}`
+                index++
+
+                // Pass the next item to the consumer, as well as three loop
+                // operations:
+                //
+                // - next(shouldAck): maybe ack, then continue/long-poll to next item
+                // - done(shouldAck): maybe ack, then terminate the loop by fulfilling the outer promise
+                // - fail(err): terminate the loop by rejecting the outer promise.
+                //              Use this if you want to bubble an async error up to
+                //              the outer promise catch function.
+                //
+                // The consumer can also terminate the loop by returning a promise
+                // that will reject.
+
+                let res = consumer(prevItem, next, done, reject)
+                if (res && typeof res.catch === 'function') {
+                  res.catch(reject)
+                }
+              }).catch(reject) // fail consume loop on ack failure, or on thrown exceptions from "then" function
+            }
+
+            next()
+          }).catch(reject) // fail consume loop on query failure
+        }
+
+        nextPage()
+      })
     }
   }
 }
@@ -69,16 +117,16 @@ class TransactionFeeds {
     this.create = (params = {}) => {
       let body = Object.assign({ client_token: uuid.v4() }, params)
       return client.request('/create-transaction-feed', body)
-        .then(data => data)
-    },
+        .then(data => new TransactionFeed(data, client))
+    }
 
     /**
      * get feed given an id/alias
      */
     this.get = (params) => {
       return client.request('/get-transaction-feed', params)
-      .then(data => new TransactionFeedItem(Object.assign(data), client))
-    },
+      .then(data => new TransactionFeed(data, client))
+    }
 
     /**
      * delete a transaction feed given an id/alias
@@ -86,7 +134,7 @@ class TransactionFeeds {
     this.delete = (params) => {
       client.request('/delete-transaction-feed', params)
       .then(data => data)
-    },
+    }
 
     /**
      *
