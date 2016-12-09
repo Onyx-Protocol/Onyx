@@ -30,13 +30,12 @@ func BenchmarkValidateBlock(b *testing.B) {
 	b1, s := c.State()
 
 	// Generate a large block to validate.
+	var txs []*bc.Tx
 	for i := 0; i < 1000; i++ {
-		err := c.AddTx(ctx, prottest.NewIssuanceTx(b, c))
-		if err != nil {
-			b.Fatal(err)
-		}
+		txs = append(txs, prottest.NewIssuanceTx(b, c))
 	}
-	nextBlock, _, err := c.GenerateBlock(ctx, b1, s, time.Now())
+
+	nextBlock, _, err := c.GenerateBlock(ctx, b1, s, time.Now(), txs)
 	if err != nil {
 		b.Fatal(err)
 	}

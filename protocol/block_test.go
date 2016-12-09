@@ -19,7 +19,6 @@ func TestGetBlock(t *testing.T) {
 	ctx := context.Background()
 
 	b1 := &bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
-	emptyPool := mempool.New()
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
 	oneBlock.SaveBlock(ctx, b1)
@@ -35,7 +34,7 @@ func TestGetBlock(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		c, err := NewChain(ctx, b1.Hash(), test.store, emptyPool, nil)
+		c, err := NewChain(ctx, b1.Hash(), test.store, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -51,7 +50,7 @@ func TestGetBlock(t *testing.T) {
 
 func TestNoTimeTravel(t *testing.T) {
 	ctx := context.Background()
-	c, err := NewChain(ctx, bc.Hash{}, memstore.New(), mempool.New(), nil)
+	c, err := NewChain(ctx, bc.Hash{}, memstore.New(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,15 +161,17 @@ func TestGenerateBlock(t *testing.T) {
 			},
 		}),
 	}
+
+	p := mempool.New()
 	for _, tx := range txs {
-		err := c.pool.Insert(ctx, tx)
+		err := p.Submit(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 	}
 
-	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now)
+	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now, p.Dump(ctx))
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -205,7 +206,7 @@ func TestValidateBlockForSig(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	c, err := NewChain(ctx, initialBlock.Hash(), memstore.New(), mempool.New(), nil)
+	c, err := NewChain(ctx, initialBlock.Hash(), memstore.New(), nil)
 	if err != nil {
 		t.Fatal("unexpected error ", err)
 	}
@@ -228,7 +229,7 @@ func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	c, err = NewChain(ctx, b1.Hash(), memstore.New(), mempool.New(), nil)
+	c, err = NewChain(ctx, b1.Hash(), memstore.New(), nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -255,7 +256,7 @@ func makeEmptyBlock(tb testing.TB, c *Chain) {
 
 	curState := state.Empty()
 
-	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
+	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now(), nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

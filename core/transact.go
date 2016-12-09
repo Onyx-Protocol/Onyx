@@ -14,7 +14,6 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/reqid"
-	"chain/protocol"
 	"chain/protocol/bc"
 )
 
@@ -198,7 +197,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 		return errors.Wrap(err, "saving tx submitted height")
 	}
 
-	err = txbuilder.FinalizeTx(ctx, h.Chain, tx)
+	err = txbuilder.FinalizeTx(ctx, h.Chain, h.Submitter, tx)
 	if err != nil {
 		return err
 	}
@@ -206,7 +205,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 		return nil
 	}
 
-	height, err = waitForTxInBlock(ctx, h.Chain, tx, height)
+	height, err = h.waitForTxInBlock(ctx, tx, height)
 	if err != nil {
 		return err
 	}
@@ -223,15 +222,15 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 	return nil
 }
 
-func waitForTxInBlock(ctx context.Context, c *protocol.Chain, tx *bc.Tx, height uint64) (uint64, error) {
+func (h *Handler) waitForTxInBlock(ctx context.Context, tx *bc.Tx, height uint64) (uint64, error) {
 	for {
 		height++
 		select {
 		case <-ctx.Done():
 			return 0, ctx.Err()
 
-		case <-c.BlockWaiter(height):
-			b, err := c.GetBlock(ctx, height)
+		case <-h.Chain.BlockWaiter(height):
+			b, err := h.Chain.GetBlock(ctx, height)
 			if err != nil {
 				return 0, errors.Wrap(err, "getting block that just landed")
 			}
@@ -250,7 +249,7 @@ func waitForTxInBlock(ctx context.Context, c *protocol.Chain, tx *bc.Tx, height 
 			// tell definitively until its max time elapses.
 
 			// Re-insert into the pool in case it was dropped.
-			err = txbuilder.FinalizeTx(ctx, c, tx)
+			err = txbuilder.FinalizeTx(ctx, h.Chain, h.Submitter, tx)
 			if err != nil {
 				return 0, err
 			}

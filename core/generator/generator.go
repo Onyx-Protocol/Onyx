@@ -12,6 +12,7 @@ import (
 	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/mempool"
 	"chain/protocol/state"
 	"chain/protocol/validation"
 )
@@ -29,6 +30,7 @@ type generator struct {
 	// config
 	db      pg.DB
 	chain   *protocol.Chain
+	pool    *mempool.MemPool
 	signers []BlockSigner
 
 	// latestBlock and latestSnapshot are current as long as this
@@ -47,6 +49,7 @@ type generator struct {
 func Generate(
 	ctx context.Context,
 	c *protocol.Chain,
+	pool *mempool.MemPool,
 	s []BlockSigner,
 	db pg.DB,
 	period time.Duration,
@@ -62,6 +65,7 @@ func Generate(
 	g := &generator{
 		db:             db,
 		chain:          c,
+		pool:           pool,
 		signers:        s,
 		latestBlock:    recoveredBlock,
 		latestSnapshot: recoveredSnapshot,

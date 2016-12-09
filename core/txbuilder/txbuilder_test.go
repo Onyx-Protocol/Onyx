@@ -46,7 +46,7 @@ func TestBuild(t *testing.T) {
 	ctx := context.Background()
 	pool := mempool.New()
 
-	err := pool.Insert(ctx, &bc.Tx{
+	err := pool.Submit(ctx, &bc.Tx{
 		Hash: [32]byte{255},
 		TxData: bc.TxData{
 			Outputs: []*bc.TxOutput{

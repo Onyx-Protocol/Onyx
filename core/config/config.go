@@ -21,7 +21,6 @@ import (
 	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/state"
 )
 
@@ -176,7 +175,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		initialBlockHash := block.Hash()
 
 		store := txdb.NewStore(db.(*sql.DB))
-		chain, err := protocol.NewChain(ctx, initialBlockHash, store, mempool.New(), nil)
+		chain, err := protocol.NewChain(ctx, initialBlockHash, store, nil)
 		if err != nil {
 			return err
 		}

@@ -46,7 +46,7 @@ func CreateAsset(ctx context.Context, t testing.TB, assets *asset.Registry, def 
 	return asset.AssetID
 }
 
-func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, assets *asset.Registry, accounts *account.Manager, assetID bc.AssetID, amount uint64, accountID string) state.Output {
+func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, assets *asset.Registry, accounts *account.Manager, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
 
 	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
@@ -59,7 +59,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, assets *a
 
 	SignTxTemplate(t, ctx, tpl, &testutil.TestXPrv)
 
-	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, s, bc.NewTx(*tpl.Transaction))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -70,7 +70,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, assets *a
 	}
 }
 
-func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []txbuilder.Action) *bc.Tx {
+func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, actions []txbuilder.Action) *bc.Tx {
 	template, err := txbuilder.Build(ctx, nil, actions, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -80,7 +80,7 @@ func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []tx
 	SignTxTemplate(t, ctx, template, &testutil.TestXPrv)
 
 	tx := bc.NewTx(*template.Transaction)
-	err = txbuilder.FinalizeTx(ctx, c, tx)
+	err = txbuilder.FinalizeTx(ctx, c, s, tx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

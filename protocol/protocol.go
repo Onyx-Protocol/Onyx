@@ -13,9 +13,6 @@ Generator
 A generator has two basic jobs: collecting transactions from
 other nodes and putting them into blocks.
 
-To add a transaction to the pending transaction pool, call
-AddTx for each one.
-
 To add a new block to the blockchain, call GenerateBlock,
 sign the block (possibly collecting signatures from other
 parties), and call CommitBlock.
@@ -82,20 +79,6 @@ type Store interface {
 	SaveSnapshot(context.Context, uint64, *state.Snapshot) error
 }
 
-// Pool provides storage for transactions in the pending
-// transaction pool.
-type Pool interface {
-	// Insert adds a transaction to the pool.
-	// It doesn't check for validity, or whether the transaction
-	// conflicts with another.
-	// It is required to be idempotent.
-	Insert(context.Context, *bc.Tx) error
-
-	// Dump wipes the pending transaction pool and returns all
-	// transactions that were in the pool.
-	Dump(context.Context) ([]*bc.Tx, error)
-}
-
 // Chain provides a complete, minimal blockchain database. It
 // delegates the underlying storage to other objects, and uses
 // validation logic from package validation to decide what
@@ -111,7 +94,6 @@ type Chain struct {
 		snapshot *state.Snapshot // current only if leader
 	}
 	store Store
-	pool  Pool
 
 	lastQueuedSnapshot time.Time
 	pendingSnapshots   chan pendingSnapshot
@@ -126,11 +108,10 @@ type pendingSnapshot struct {
 }
 
 // NewChain returns a new Chain using store as the underlying storage.
-func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, pool Pool, heights <-chan uint64) (*Chain, error) {
+func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, heights <-chan uint64) (*Chain, error) {
 	c := &Chain{
 		InitialBlockHash: initialBlockHash,
 		store:            store,
-		pool:             pool,
 		pendingSnapshots: make(chan pendingSnapshot, 1),
 		prevalidated: prevalidatedTxsCache{
 			lru: lru.New(maxCachedValidatedTxs),

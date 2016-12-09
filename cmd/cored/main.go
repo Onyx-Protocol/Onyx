@@ -200,6 +200,9 @@ func main() {
 }
 
 func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, processID string) http.Handler {
+	pool := mempool.New()
+
+	var submitter txbuilder.Submitter
 	var remoteGenerator *rpc.Client
 	if !conf.IsGenerator {
 		remoteGenerator = &rpc.Client{
@@ -210,16 +213,17 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 			BuildTag:     buildTag,
 			BlockchainID: conf.BlockchainID.String(),
 		}
+		submitter = &txbuilder.RemoteGenerator{Peer: remoteGenerator}
+	} else {
+		submitter = pool
 	}
-	txbuilder.Generator = remoteGenerator
 
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
-	pool := mempool.New()
 	store := txdb.NewStore(db)
-	c, err := protocol.NewChain(ctx, conf.BlockchainID, store, pool, heights)
+	c, err := protocol.NewChain(ctx, conf.BlockchainID, store, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
@@ -283,6 +287,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		Assets:       assets,
 		Accounts:     accounts,
 		HSM:          hsm,
+		Submitter:    submitter,
 		TxFeeds:      &txfeed.Tracker{DB: db},
 		Indexer:      indexer,
 		AccessTokens: &accesstoken.CredentialStore{DB: db},
@@ -338,7 +343,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
 		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
 		if conf.IsGenerator {
-			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
+			go generator.Generate(ctx, c, pool, generatorSigners, db, blockPeriod, genhealth)
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
 		}

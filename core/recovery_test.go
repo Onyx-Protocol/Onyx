@@ -36,7 +36,7 @@ func TestRecovery(t *testing.T) {
 	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	pool := mempool.New()
 	store := txdb.NewStore(db)
-	c := prottest.NewChainWithStorage(t, store, pool)
+	c := prottest.NewChainWithStorage(t, store)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)
@@ -59,25 +59,21 @@ func TestRecovery(t *testing.T) {
 		bob     = coretest.CreateAccount(ctx, t, accounts, "bob", nil)
 	)
 	// Issue some apples to Alice and a dollar to Bob.
-	_ = coretest.IssueAssets(ctx, t, c, assets, accounts, apple, 10, alice)
-	_ = coretest.IssueAssets(ctx, t, c, assets, accounts, usd, 1, bob)
+	_ = coretest.IssueAssets(ctx, t, c, pool, assets, accounts, apple, 10, alice)
+	_ = coretest.IssueAssets(ctx, t, c, pool, assets, accounts, usd, 1, bob)
 
-	prottest.MakeBlock(t, c)
+	prottest.MakeBlock(t, c, pool.Dump(ctx))
 
 	// Submit a transfer between Alice and Bob but don't publish it in a block.
-	coretest.Transfer(ctx, t, c, []txbuilder.Action{
+	coretest.Transfer(ctx, t, c, pool, []txbuilder.Action{
 		accounts.NewControlAction(bc.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
 		accounts.NewControlAction(bc.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
 		accounts.NewSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil),
 		accounts.NewSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil),
 	})
+	poolTxs := pool.Dump(ctx)
 
-	poolTxs, err := pool.Dump(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = db.Close()
+	err := db.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,15 +158,8 @@ func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, timestamp time
 	if err != nil {
 		return err
 	}
-	pool := mempool.New()
-	for _, tx := range poolTxs {
-		err = pool.Insert(ctx, tx)
-		if err != nil {
-			return err
-		}
-	}
 
-	c, err := protocol.NewChain(ctx, b1.Hash(), store, pool, nil)
+	c, err := protocol.NewChain(ctx, b1.Hash(), store, nil)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)
@@ -189,7 +178,7 @@ func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, timestamp time
 		return err
 	}
 
-	b, s, err := c.GenerateBlock(ctx, block, snapshot, timestamp)
+	b, s, err := c.GenerateBlock(ctx, block, snapshot, timestamp, poolTxs)
 	if err != nil {
 		return err
 	}

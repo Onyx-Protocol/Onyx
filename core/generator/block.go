@@ -43,7 +43,8 @@ func (g *generator) makeBlock(ctx context.Context) error {
 	t0 := time.Now()
 	defer recordSince(t0)
 
-	b, s, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
+	txs := g.pool.Dump(ctx)
+	b, s, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now(), txs)
 	if err != nil {
 		return errors.Wrap(err, "generate")
 	}

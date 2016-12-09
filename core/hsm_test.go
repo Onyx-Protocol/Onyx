@@ -15,6 +15,7 @@ import (
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/mempool"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -23,6 +24,7 @@ func TestMockHSM(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
+	p := mempool.New()
 	pinStore := pin.NewStore(db)
 	assets := asset.NewRegistry(db, c, pinStore)
 	accounts := account.NewManager(db, c, pinStore)
@@ -64,13 +66,13 @@ func TestMockHSM(t *testing.T) {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, p, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	prottest.MakeBlock(t, c)
+	prottest.MakeBlock(t, c, p.Dump(ctx))
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	xferSrc1 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil)
