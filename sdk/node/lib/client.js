@@ -9,8 +9,8 @@ const Assets = require('./assets')
 const balances = require('./balances')
 const mockHsm = require('./mockHsm')
 const transactions = require('./transactions')
-const unspentOutputs = require('./unspentOutputs')
-const transactionFeeds = require('./transactionFeeds')
+const UnspentOutputs = require('./unspentOutputs')
+const TransactionFeeds = require('./transactionFeeds')
 
 const errors = require('./errors')
 
@@ -71,13 +71,13 @@ class Client {
      * API actions for transaction feeds
      * @type {TransactionFeeds}
      */
-    this.transactionFeeds = new transactionFeeds(this)
+    this.transactionFeeds = new TransactionFeeds(this)
 
     /**
      * API actions for unspent outputs
      * @type {UnspentOutputs}
      */
-    this.unspentOutputs = unspentOutputs(this)
+    this.unspentOutputs = new UnspentOutputs(this)
   }
 
   request(path, body = {}) {

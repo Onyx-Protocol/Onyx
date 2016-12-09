@@ -1,7 +1,7 @@
 const shared = require('./shared')
 
 /**
- * Account
+ * Accounts
  * @class
  */
 class Accounts {
