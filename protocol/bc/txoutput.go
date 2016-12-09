@@ -7,6 +7,7 @@ import (
 
 	"chain/encoding/blockchain"
 	"chain/encoding/bufpool"
+	"chain/types"
 )
 
 // TODO(bobg): Review serialization/deserialization logic for
@@ -20,17 +21,17 @@ type (
 	}
 
 	OutputCommitment struct {
-		AssetAmount
+		types.AssetAmount
 		VMVersion      uint64
 		ControlProgram []byte
 	}
 )
 
-func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxOutput {
+func NewTxOutput(assetID types.AssetID, amount uint64, controlProgram, referenceData []byte) *TxOutput {
 	return &TxOutput{
 		AssetVersion: 1,
 		OutputCommitment: OutputCommitment{
-			AssetAmount: AssetAmount{
+			AssetAmount: types.AssetAmount{
 				AssetID: assetID,
 				Amount:  amount,
 			},
@@ -75,7 +76,7 @@ func (oc *OutputCommitment) readFrom(r io.Reader, txVersion, assetVersion uint64
 	}
 
 	rb := bytes.NewBuffer(b)
-	n1, err := oc.AssetAmount.readFrom(rb)
+	n1, err := oc.AssetAmount.ReadFrom(rb)
 	if err != nil {
 		return n, err
 	}
@@ -105,8 +106,8 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
 	blockchain.WriteVarstr31(w, nil)
 }
 
-func (to *TxOutput) witnessHash() Hash {
-	return emptyHash
+func (to *TxOutput) witnessHash() types.Hash {
+	return types.EmptyHash
 }
 
 func (to *TxOutput) WriteCommitment(w io.Writer) {
@@ -117,7 +118,7 @@ func (oc *OutputCommitment) writeTo(w io.Writer, assetVersion uint64) {
 	b := bufpool.Get()
 	defer bufpool.Put(b)
 	if assetVersion == 1 {
-		oc.AssetAmount.writeTo(b)
+		oc.AssetAmount.WriteTo(b)
 		blockchain.WriteVarint63(b, oc.VMVersion) // TODO(bobg): check and return error
 		blockchain.WriteVarstr31(b, oc.ControlProgram)
 	}

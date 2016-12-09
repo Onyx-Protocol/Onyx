@@ -11,6 +11,7 @@ import (
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
+	"chain/types"
 )
 
 // PinName is used to identify the pin
@@ -22,7 +23,7 @@ const PinName = "asset"
 // If the Core is configured not to provide search services,
 // SaveAnnotatedAsset can be a no-op.
 type Saver interface {
-	SaveAnnotatedAsset(context.Context, bc.AssetID, map[string]interface{}, string) error
+	SaveAnnotatedAsset(context.Context, types.AssetID, map[string]interface{}, string) error
 }
 
 func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
@@ -83,7 +84,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 	var (
 		assetIDs, definitions pq.StringArray
 		issuancePrograms      pq.ByteaArray
-		seen                  = make(map[bc.AssetID]bool)
+		seen                  = make(map[types.AssetID]bool)
 	)
 	for _, tx := range b.Transactions {
 		for _, in := range tx.Inputs {
@@ -126,9 +127,9 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 			UNION
 		SELECT id FROM assets WHERE first_block_height = $6
 	`
-	var newAssetIDs []bc.AssetID
+	var newAssetIDs []types.AssetID
 	err := pg.ForQueryRows(ctx, reg.db, q, assetIDs, issuancePrograms, definitions, b.Time(), reg.initialBlockHash, b.Height,
-		func(assetID bc.AssetID) { newAssetIDs = append(newAssetIDs, assetID) })
+		func(assetID types.AssetID) { newAssetIDs = append(newAssetIDs, assetID) })
 	if err != nil {
 		return errors.Wrap(err, "error indexing non-local assets")
 	}

@@ -22,6 +22,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/mempool"
 	"chain/protocol/prottest"
+	"chain/types"
 )
 
 // TestRecovery tests end-to-end blockchain recovery from an exit
@@ -66,10 +67,10 @@ func TestRecovery(t *testing.T) {
 
 	// Submit a transfer between Alice and Bob but don't publish it in a block.
 	coretest.Transfer(ctx, t, c, []txbuilder.Action{
-		accounts.NewControlAction(bc.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
-		accounts.NewControlAction(bc.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
-		accounts.NewSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil),
-		accounts.NewSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil),
+		accounts.NewControlAction(types.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
+		accounts.NewControlAction(types.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
+		accounts.NewSpendAction(types.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil),
+		accounts.NewSpendAction(types.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil),
 	})
 
 	poolTxs, err := pool.Dump(ctx)

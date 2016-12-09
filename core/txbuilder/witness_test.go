@@ -11,16 +11,17 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
+	"chain/types"
 )
 
 func TestInferConstraints(t *testing.T) {
 	tpl := &Template{
 		Transaction: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.Hash{}, 1, nil, bc.AssetID{}, 123, nil, []byte{1}),
+				bc.NewSpendInput(types.Hash{}, 1, nil, types.AssetID{}, 123, nil, []byte{1}),
 			},
 			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(bc.AssetID{}, 123, []byte{10, 11, 12}, nil),
+				bc.NewTxOutput(types.AssetID{}, 123, []byte{10, 11, 12}, nil),
 			},
 			MinTime: 1,
 			MaxTime: 2,
@@ -39,8 +40,8 @@ func TestInferConstraints(t *testing.T) {
 
 func TestWitnessJSON(t *testing.T) {
 	si := &SigningInstruction{
-		AssetAmount: bc.AssetAmount{
-			AssetID: bc.AssetID{0xff},
+		AssetAmount: types.AssetAmount{
+			AssetID: types.AssetID{0xff},
 			Amount:  21,
 		},
 		Position: 17,

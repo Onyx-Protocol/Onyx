@@ -8,7 +8,7 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/httpjson"
-	"chain/protocol/bc"
+	"chain/types"
 )
 
 // getBlockRPC returns the block at the requested height.
@@ -40,9 +40,9 @@ func (h *Handler) getBlocksRPC(ctx context.Context, afterHeight uint64) ([]chain
 }
 
 type snapshotInfoResp struct {
-	Height       uint64  `json:"height"`
-	Size         uint64  `json:"size"`
-	BlockchainID bc.Hash `json:"blockchain_id"`
+	Height       uint64     `json:"height"`
+	Size         uint64     `json:"size"`
+	BlockchainID types.Hash `json:"blockchain_id"`
 }
 
 func (h *Handler) getSnapshotInfoRPC(ctx context.Context) (resp snapshotInfoResp, err error) {

@@ -11,6 +11,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/errors"
+	"chain/types"
 )
 
 func TestTransaction(t *testing.T) {
@@ -18,7 +19,7 @@ func TestTransaction(t *testing.T) {
 	initialBlockHashHex := "03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"
 	initialBlockHash := mustDecodeHash(initialBlockHashHex)
 
-	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1)
+	assetID := types.ComputeAssetID(issuanceScript, initialBlockHash, 1, 1)
 
 	cases := []struct {
 		tx          *Tx
@@ -54,7 +55,7 @@ func TestTransaction(t *testing.T) {
 					NewIssuanceInput([]byte{10, 9, 8}, 1000000000000, []byte("input"), initialBlockHash, issuanceScript, [][]byte{[]byte{1, 2, 3}}),
 				},
 				Outputs: []*TxOutput{
-					NewTxOutput(AssetID{}, 1000000000000, []byte{1}, []byte("output")),
+					NewTxOutput(types.AssetID{}, 1000000000000, []byte{1}, []byte("output")),
 				},
 				MinTime:       0,
 				MaxTime:       0,
@@ -100,11 +101,11 @@ func TestTransaction(t *testing.T) {
 			tx: NewTx(TxData{
 				Version: 1,
 				Inputs: []*TxInput{
-					NewSpendInput(mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), 0, nil, AssetID{}, 1000000000000, []byte{1}, []byte("input")),
+					NewSpendInput(mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), 0, nil, types.AssetID{}, 1000000000000, []byte{1}, []byte("input")),
 				},
 				Outputs: []*TxOutput{
-					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1), 600000000000, []byte{1}, nil),
-					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1), 400000000000, []byte{2}, nil),
+					NewTxOutput(types.ComputeAssetID(issuanceScript, initialBlockHash, 1, 1), 600000000000, []byte{1}, nil),
+					NewTxOutput(types.ComputeAssetID(issuanceScript, initialBlockHash, 1, 1), 400000000000, []byte{2}, nil),
 				},
 				MinTime:       1492590000,
 				MaxTime:       1492590591,
@@ -194,21 +195,21 @@ func TestHasIssuance(t *testing.T) {
 		want bool
 	}{{
 		tx: &TxData{
-			Inputs: []*TxInput{NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil)},
+			Inputs: []*TxInput{NewIssuanceInput(nil, 0, nil, types.Hash{}, nil, nil)},
 		},
 		want: true,
 	}, {
 		tx: &TxData{
 			Inputs: []*TxInput{
-				NewSpendInput(Hash{}, 0, nil, AssetID{}, 0, nil, nil),
-				NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil),
+				NewSpendInput(types.Hash{}, 0, nil, types.AssetID{}, 0, nil, nil),
+				NewIssuanceInput(nil, 0, nil, types.Hash{}, nil, nil),
 			},
 		},
 		want: true,
 	}, {
 		tx: &TxData{
 			Inputs: []*TxInput{
-				NewSpendInput(Hash{}, 0, nil, AssetID{}, 0, nil, nil),
+				NewSpendInput(types.Hash{}, 0, nil, types.AssetID{}, 0, nil, nil),
 			},
 		},
 		want: false,
@@ -297,12 +298,12 @@ func TestOutpointWriteErr(t *testing.T) {
 }
 
 func TestTxHashForSig(t *testing.T) {
-	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1)
+	assetID := types.ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1, 1)
 	tx := &TxData{
 		Version: 1,
 		Inputs: []*TxInput{
-			NewSpendInput(mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151"), 0, [][]byte{[]byte{1}}, AssetID{}, 0, nil, []byte("input1")),
-			NewSpendInput(mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151"), 1, [][]byte{[]byte{2}}, AssetID{}, 0, nil, nil),
+			NewSpendInput(mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151"), 0, [][]byte{[]byte{1}}, types.AssetID{}, 0, nil, []byte("input1")),
+			NewSpendInput(mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151"), 1, [][]byte{[]byte{2}}, types.AssetID{}, 0, nil, nil),
 		},
 		Outputs: []*TxOutput{
 			NewTxOutput(assetID, 1000000000000, []byte{3}, nil),
@@ -364,8 +365,8 @@ func BenchmarkTxWriteToFalse(b *testing.B) {
 func BenchmarkTxWriteToTrue200(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < 200; i++ {
-		tx.Inputs = append(tx.Inputs, NewSpendInput(Hash{}, 0, nil, AssetID{}, 0, nil, nil))
-		tx.Outputs = append(tx.Outputs, NewTxOutput(AssetID{}, 0, nil, nil))
+		tx.Inputs = append(tx.Inputs, NewSpendInput(types.Hash{}, 0, nil, types.AssetID{}, 0, nil, nil))
+		tx.Outputs = append(tx.Outputs, NewTxOutput(types.AssetID{}, 0, nil, nil))
 	}
 	for i := 0; i < b.N; i++ {
 		tx.writeTo(ioutil.Discard, 0)
@@ -375,8 +376,8 @@ func BenchmarkTxWriteToTrue200(b *testing.B) {
 func BenchmarkTxWriteToFalse200(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < 200; i++ {
-		tx.Inputs = append(tx.Inputs, NewSpendInput(Hash{}, 0, nil, AssetID{}, 0, nil, nil))
-		tx.Outputs = append(tx.Outputs, NewTxOutput(AssetID{}, 0, nil, nil))
+		tx.Inputs = append(tx.Inputs, NewSpendInput(types.Hash{}, 0, nil, types.AssetID{}, 0, nil, nil))
+		tx.Outputs = append(tx.Outputs, NewTxOutput(types.AssetID{}, 0, nil, nil))
 	}
 	for i := 0; i < b.N; i++ {
 		tx.writeTo(ioutil.Discard, serRequired)
@@ -384,7 +385,7 @@ func BenchmarkTxWriteToFalse200(b *testing.B) {
 }
 
 func BenchmarkTxInputWriteToTrue(b *testing.B) {
-	input := NewSpendInput(Hash{}, 0, nil, AssetID{}, 0, nil, nil)
+	input := NewSpendInput(types.Hash{}, 0, nil, types.AssetID{}, 0, nil, nil)
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		input.writeTo(ew, 0)
@@ -392,7 +393,7 @@ func BenchmarkTxInputWriteToTrue(b *testing.B) {
 }
 
 func BenchmarkTxInputWriteToFalse(b *testing.B) {
-	input := NewSpendInput(Hash{}, 0, nil, AssetID{}, 0, nil, nil)
+	input := NewSpendInput(types.Hash{}, 0, nil, types.AssetID{}, 0, nil, nil)
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		input.writeTo(ew, serRequired)
@@ -400,7 +401,7 @@ func BenchmarkTxInputWriteToFalse(b *testing.B) {
 }
 
 func BenchmarkTxOutputWriteToTrue(b *testing.B) {
-	output := NewTxOutput(AssetID{}, 0, nil, nil)
+	output := NewTxOutput(types.AssetID{}, 0, nil, nil)
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		output.writeTo(ew, 0)
@@ -408,7 +409,7 @@ func BenchmarkTxOutputWriteToTrue(b *testing.B) {
 }
 
 func BenchmarkTxOutputWriteToFalse(b *testing.B) {
-	output := NewTxOutput(AssetID{}, 0, nil, nil)
+	output := NewTxOutput(types.AssetID{}, 0, nil, nil)
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		output.writeTo(ew, serRequired)
@@ -416,9 +417,9 @@ func BenchmarkTxOutputWriteToFalse(b *testing.B) {
 }
 
 func BenchmarkAssetAmountWriteTo(b *testing.B) {
-	aa := AssetAmount{}
+	aa := types.AssetAmount{}
 	for i := 0; i < b.N; i++ {
-		aa.writeTo(ioutil.Discard)
+		aa.WriteTo(ioutil.Discard)
 	}
 }
 

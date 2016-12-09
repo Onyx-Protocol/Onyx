@@ -20,9 +20,10 @@ import (
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 	"chain/testutil"
+	"chain/types"
 )
 
-type testAction bc.AssetAmount
+type testAction types.AssetAmount
 
 func (t testAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
 	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
@@ -35,7 +36,7 @@ func (t testAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBui
 	return b.AddOutput(bc.NewTxOutput(t.AssetID, t.Amount, []byte("change"), nil))
 }
 
-func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *controlProgramAction {
+func newControlProgramAction(assetAmt types.AssetAmount, script []byte) *controlProgramAction {
 	return &controlProgramAction{
 		AssetAmount: assetAmt,
 		Program:     script,
@@ -59,8 +60,8 @@ func TestBuild(t *testing.T) {
 	}
 
 	actions := []Action{
-		newControlProgramAction(bc.AssetAmount{AssetID: [32]byte{2}, Amount: 6}, []byte("dest")),
-		testAction(bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5}),
+		newControlProgramAction(types.AssetAmount{AssetID: [32]byte{2}, Amount: 6}, []byte("dest")),
+		testAction(types.AssetAmount{AssetID: [32]byte{1}, Amount: 5}),
 		&setTxRefDataAction{Data: []byte("xyz")},
 	}
 	expiryTime := time.Now().Add(time.Minute)
@@ -114,13 +115,13 @@ func TestBuild(t *testing.T) {
 }
 
 func TestMaterializeWitnesses(t *testing.T) {
-	var initialBlockHash bc.Hash
+	var initialBlockHash types.Hash
 	privkey, pubkey, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
+	assetID := types.ComputeAssetID(issuanceProg, initialBlockHash, 1, 1)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
 		Version: 1,
@@ -174,7 +175,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 }
 
 func TestSignatureWitnessMaterialize(t *testing.T) {
-	var initialBlockHash bc.Hash
+	var initialBlockHash types.Hash
 	privkey1, pubkey1, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -188,7 +189,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		t.Fatal(err)
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
+	assetID := types.ComputeAssetID(issuanceProg, initialBlockHash, 1, 1)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
 		Version: 1,
@@ -285,10 +286,10 @@ func mustDecodeHex(str string) []byte {
 }
 
 func TestTxSighashCommitment(t *testing.T) {
-	var initialBlockHash bc.Hash
+	var initialBlockHash types.Hash
 
 	issuanceProg := []byte{byte(vm.OP_TRUE)}
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
+	assetID := types.ComputeAssetID(issuanceProg, initialBlockHash, 1, 1)
 
 	// Tx with only issuance inputs is OK
 	tx := bc.NewTx(bc.TxData{
@@ -319,7 +320,7 @@ func TestTxSighashCommitment(t *testing.T) {
 			{
 				AssetVersion: 1,
 				OutputCommitment: bc.OutputCommitment{
-					AssetAmount: bc.AssetAmount{
+					AssetAmount: types.AssetAmount{
 						AssetID: assetID,
 						Amount:  2,
 					},
@@ -341,7 +342,7 @@ func TestTxSighashCommitment(t *testing.T) {
 		AssetVersion: 1,
 		TypedInput: &bc.SpendInput{
 			OutputCommitment: bc.OutputCommitment{
-				AssetAmount: bc.AssetAmount{
+				AssetAmount: types.AssetAmount{
 					AssetID: assetID,
 					Amount:  2,
 				},
@@ -360,7 +361,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	// Tx with a spend input committing to the wrong txsighash is not OK
 	spendInput := &bc.SpendInput{
 		OutputCommitment: bc.OutputCommitment{
-			AssetAmount: bc.AssetAmount{
+			AssetAmount: types.AssetAmount{
 				AssetID: assetID,
 				Amount:  3,
 			},
@@ -388,7 +389,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	// Tx with a spend input committing to the right txsighash is OK
 	spendInput = &bc.SpendInput{
 		OutputCommitment: bc.OutputCommitment{
-			AssetAmount: bc.AssetAmount{
+			AssetAmount: types.AssetAmount{
 				AssetID: assetID,
 				Amount:  4,
 			},
@@ -421,56 +422,56 @@ func TestCheckBlankCheck(t *testing.T) {
 		want error
 	}{{
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(types.Hash{}, 0, nil, types.AssetID{0}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 3, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(types.Hash{}, 0, nil, types.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(types.AssetID{0}, 3, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil),
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{1}, 5, nil, nil),
+				bc.NewSpendInput(types.Hash{}, 0, nil, types.AssetID{0}, 5, nil, nil),
+				bc.NewSpendInput(types.Hash{}, 0, nil, types.AssetID{1}, 5, nil, nil),
 			},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(types.AssetID{0}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(types.Hash{}, 0, nil, types.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(bc.AssetID{0}, math.MaxInt64, nil, nil),
-				bc.NewTxOutput(bc.AssetID{0}, 7, nil, nil),
+				bc.NewTxOutput(types.AssetID{0}, math.MaxInt64, nil, nil),
+				bc.NewTxOutput(types.AssetID{0}, 7, nil, nil),
 			},
 		},
 		want: ErrBadAmount,
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil),
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, math.MaxInt64, nil, nil),
+				bc.NewSpendInput(types.Hash{}, 0, nil, types.AssetID{0}, 5, nil, nil),
+				bc.NewSpendInput(types.Hash{}, 0, nil, types.AssetID{0}, math.MaxInt64, nil, nil),
 			},
 		},
 		want: ErrBadAmount,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(types.Hash{}, 0, nil, types.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(types.AssetID{0}, 5, nil, nil)},
 		},
 		want: nil,
 	}, {
 		tx: &bc.TxData{
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(types.AssetID{0}, 5, nil, nil)},
 		},
 		want: nil,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{1}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(types.Hash{}, 0, nil, types.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(types.AssetID{1}, 5, nil, nil)},
 		},
 		want: nil,
 	}}

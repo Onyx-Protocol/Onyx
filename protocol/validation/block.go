@@ -14,6 +14,7 @@ import (
 	"chain/protocol/state"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
+	"chain/types"
 )
 
 // Errors returned by the block validation functions.
@@ -32,7 +33,7 @@ var (
 // See $CHAIN/protocol/doc/spec/validation.md#accept-block.
 // It evaluates the prevBlock's consensus program,
 // then calls ValidateBlock.
-func ValidateBlockForAccept(ctx context.Context, snapshot *state.Snapshot, initialBlockHash bc.Hash, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
+func ValidateBlockForAccept(ctx context.Context, snapshot *state.Snapshot, initialBlockHash types.Hash, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
 	if prevBlock != nil {
 		ok, err := vm.VerifyBlockHeader(&prevBlock.BlockHeader, block)
 		if err == nil && !ok {
@@ -57,7 +58,7 @@ func ValidateBlockForAccept(ctx context.Context, snapshot *state.Snapshot, initi
 // See $CHAIN/protocol/doc/spec/validation.md#validate-block.
 // Note that it does not execute prevBlock's consensus program.
 // (See ValidateBlockForAccept for that.)
-func ValidateBlock(ctx context.Context, snapshot *state.Snapshot, initialBlockHash bc.Hash, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
+func ValidateBlock(ctx context.Context, snapshot *state.Snapshot, initialBlockHash types.Hash, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
 
 	var g errgroup.Group
 	// Do all of the unparallelizable work, plus validating the block

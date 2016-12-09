@@ -16,6 +16,7 @@ import (
 	"chain/net/http/reqid"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
 var defaultTxTTL = 5 * time.Minute
@@ -119,7 +120,7 @@ func (h *Handler) submitSingle(ctx context.Context, tpl *txbuilder.Template, wai
 //
 // If the tx has already been submitted, it returns the existing
 // height.
-func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHeight uint64) (uint64, error) {
+func recordSubmittedTx(ctx context.Context, db pg.DB, txHash types.Hash, currentHeight uint64) (uint64, error) {
 	const insertQ = `
 		INSERT INTO submitted_txs (tx_hash, height) VALUES($1, $2)
 		ON CONFLICT DO NOTHING

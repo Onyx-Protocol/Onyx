@@ -9,6 +9,7 @@ import (
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/encoding/bufpool"
+	"chain/types"
 )
 
 type (
@@ -42,7 +43,7 @@ type (
 		// might not be present).
 
 		// Witness
-		InitialBlock    Hash
+		InitialBlock    types.Hash
 		VMVersion       uint64
 		IssuanceProgram []byte
 		Arguments       [][]byte
@@ -51,7 +52,7 @@ type (
 
 var errBadAssetID = errors.New("asset ID does not match other issuance parameters")
 
-func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxInput {
+func NewSpendInput(txhash types.Hash, index uint32, arguments [][]byte, assetID types.AssetID, amount uint64, controlProgram, referenceData []byte) *TxInput {
 	return &TxInput{
 		AssetVersion:  1,
 		ReferenceData: referenceData,
@@ -61,7 +62,7 @@ func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetI
 				Index: index,
 			},
 			OutputCommitment: OutputCommitment{
-				AssetAmount: AssetAmount{
+				AssetAmount: types.AssetAmount{
 					AssetID: assetID,
 					Amount:  amount,
 				},
@@ -73,7 +74,7 @@ func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetI
 	}
 }
 
-func NewIssuanceInput(nonce []byte, amount uint64, referenceData []byte, initialBlock Hash, issuanceProgram []byte, arguments [][]byte) *TxInput {
+func NewIssuanceInput(nonce []byte, amount uint64, referenceData []byte, initialBlock types.Hash, issuanceProgram []byte, arguments [][]byte) *TxInput {
 	return &TxInput{
 		AssetVersion:  1,
 		ReferenceData: referenceData,
@@ -88,9 +89,9 @@ func NewIssuanceInput(nonce []byte, amount uint64, referenceData []byte, initial
 	}
 }
 
-func (t *TxInput) AssetAmount() AssetAmount {
+func (t *TxInput) AssetAmount() types.AssetAmount {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
-		return AssetAmount{
+		return types.AssetAmount{
 			AssetID: ii.AssetID(),
 			Amount:  ii.Amount,
 		}
@@ -99,7 +100,7 @@ func (t *TxInput) AssetAmount() AssetAmount {
 	return si.AssetAmount
 }
 
-func (t *TxInput) AssetID() AssetID {
+func (t *TxInput) AssetID() types.AssetID {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
 		return ii.AssetID()
 	}
@@ -162,7 +163,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	var (
 		ii      *IssuanceInput
 		si      *SpendInput
-		assetID AssetID
+		assetID types.AssetID
 	)
 	if t.AssetVersion == 1 {
 		icBuf := bytes.NewBuffer(inputCommitment)
@@ -227,7 +228,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 		return err
 	}
 
-	if assetVersion == 1 { // TODO(bobg): also test serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
+	if t.AssetVersion == 1 { // TODO(bobg): also test serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
 		iwBuf := bytes.NewBuffer(inputWitness)
 		if ii != nil {
 			// read IssuanceInput witness
@@ -246,7 +247,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 				return err
 			}
 
-			computedAssetID := ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion)
+			computedAssetID := types.ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, t.AssetVersion, ii.VMVersion)
 			if computedAssetID != assetID {
 				return errBadAssetID
 			}
@@ -331,8 +332,8 @@ func (t *TxInput) writeInputWitness(w io.Writer) {
 	}
 }
 
-func (t *TxInput) witnessHash() Hash {
-	var h Hash
+func (t *TxInput) witnessHash() types.Hash {
+	var h types.Hash
 	sha := sha3pool.Get256()
 	defer sha3pool.Put256(sha)
 	t.writeInputWitness(sha)
@@ -351,6 +352,6 @@ func (si *SpendInput) IsIssuance() bool { return false }
 
 func (ii *IssuanceInput) IsIssuance() bool { return true }
 
-func (ii *IssuanceInput) AssetID() AssetID {
-	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion)
+func (ii *IssuanceInput) AssetID() types.AssetID {
+	return types.ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, 1, ii.VMVersion)
 }

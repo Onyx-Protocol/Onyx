@@ -12,9 +12,10 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
-func (reg *Registry) NewIssueAction(assetAmount bc.AssetAmount, referenceData chainjson.Map) txbuilder.Action {
+func (reg *Registry) NewIssueAction(assetAmount types.AssetAmount, referenceData chainjson.Map) txbuilder.Action {
 	return &issueAction{
 		assets:        reg,
 		AssetAmount:   assetAmount,
@@ -30,12 +31,12 @@ func (reg *Registry) DecodeIssueAction(data []byte) (txbuilder.Action, error) {
 
 type issueAction struct {
 	assets *Registry
-	bc.AssetAmount
+	types.AssetAmount
 	ReferenceData chainjson.Map `json:"reference_data"`
 }
 
 func (a *issueAction) Build(ctx context.Context, maxTime time.Time, builder *txbuilder.TemplateBuilder) error {
-	if a.AssetID == (bc.AssetID{}) {
+	if a.AssetID == (types.AssetID{}) {
 		return txbuilder.MissingFieldsError("asset_id")
 	}
 

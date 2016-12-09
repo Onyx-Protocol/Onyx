@@ -8,6 +8,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/state"
 	"chain/protocol/vm"
+	"chain/types"
 )
 
 // emptyMerkleRoot is the SHA3-256 of "".
@@ -28,7 +29,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}{{
 		desc: "bad prev block hash",
 		header: bc.BlockHeader{
-			PreviousBlockHash:      bc.Hash{},
+			PreviousBlockHash:      types.Hash{},
 			TransactionsMerkleRoot: emptyMerkleRoot,
 			Height:                 2,
 			Witness:                [][]byte{{0x04}},

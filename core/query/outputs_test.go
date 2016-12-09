@@ -11,6 +11,7 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
 func TestDecodeOutputsAfter(t *testing.T) {
@@ -140,7 +141,7 @@ func TestConstructOutputsQuery(t *testing.T) {
 func TestQueryOutputs(t *testing.T) {
 	type (
 		assetAccountAmount struct {
-			bc.AssetAmount
+			types.AssetAmount
 			AccountID string
 		}
 		testcase struct {
@@ -169,7 +170,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{asset1.AssetID.String()},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
+				{types.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
 			},
 		},
 		{
@@ -177,7 +178,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{"USD"},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
+				{types.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
 			},
 		},
 		{
@@ -190,7 +191,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{asset2.AssetID.String()},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
+				{types.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
 			},
 		},
 		{
@@ -204,8 +205,8 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{acct1.ID},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
+				{types.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
+				{types.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
 			},
 		},
 		{
@@ -225,7 +226,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{asset1.AssetID.String(), acct1.ID},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
+				{types.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
 			},
 		},
 		{

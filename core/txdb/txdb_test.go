@@ -10,6 +10,7 @@ import (
 	"chain/database/sql"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
 func TestGetBlock(t *testing.T) {
@@ -36,11 +37,11 @@ func TestGetBlock(t *testing.T) {
 			Version:           1,
 			Height:            1,
 			PreviousBlockHash: [32]byte{'1', '2', '3'},
-			TransactionsMerkleRoot: bc.Hash{
+			TransactionsMerkleRoot: types.Hash{
 				'A', 'B', 'C', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			},
-			AssetsMerkleRoot: bc.Hash{
+			AssetsMerkleRoot: types.Hash{
 				'X', 'Y', 'Z', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			},

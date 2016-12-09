@@ -11,6 +11,7 @@ import (
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/state"
+	"chain/types"
 )
 
 // PinName is used to identify the pin associated with
@@ -67,7 +68,7 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	// Upsert any UTXOs belonging to accounts managed by this Core.
 	outs := make([]*state.Output, 0, len(b.Transactions))
-	blockPositions := make(map[bc.Hash]uint32, len(b.Transactions))
+	blockPositions := make(map[types.Hash]uint32, len(b.Transactions))
 	for i, tx := range b.Transactions {
 		blockPositions[tx.Hash] = uint32(i)
 		for j, out := range tx.Outputs {
@@ -154,7 +155,7 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]
 // upsertConfirmedAccountOutputs records the account data for confirmed utxos.
 // If the account utxo already exists (because it's from a local tx), the
 // block confirmation data will in the row will be updated.
-func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[bc.Hash]uint32, block *bc.Block) error {
+func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[types.Hash]uint32, block *bc.Block) error {
 	var (
 		txHash    pq.StringArray
 		index     pg.Uint32s

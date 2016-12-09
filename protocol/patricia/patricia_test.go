@@ -1,6 +1,7 @@
 package patricia
 
 import (
+	"chain/types"
 	"fmt"
 	"log"
 	"math/rand"
@@ -11,8 +12,6 @@ import (
 	"testing/quick"
 
 	"golang.org/x/crypto/sha3"
-
-	"chain/protocol/bc"
 )
 
 func BenchmarkInserts(b *testing.B) {
@@ -495,7 +494,7 @@ func TestByteKey(t *testing.T) {
 	}
 }
 
-func makeVals(num int) (vals [][]byte, hashes []bc.Hash) {
+func makeVals(num int) (vals [][]byte, hashes []types.Hash) {
 	for i := 0; i < num; i++ {
 		v := sha3.Sum256([]byte{byte(i)})
 		vals = append(vals, v[:])
@@ -547,19 +546,19 @@ func bools(lit string) []uint8 {
 	return append(b[:31*8], b[32*8-len(lit):]...)
 }
 
-func hashForNonLeaf(a, b bc.Hash) bc.Hash {
+func hashForNonLeaf(a, b types.Hash) types.Hash {
 	d := []byte{0x01}
 	d = append(d, a[:]...)
 	d = append(d, b[:]...)
 	return sha3.Sum256(d)
 }
 
-func hashPtr(h bc.Hash) *bc.Hash {
+func hashPtr(h types.Hash) *types.Hash {
 	return &h
 }
 
 func mustDecodeHash(s string) []byte {
-	var h bc.Hash
+	var h types.Hash
 	err := h.UnmarshalText([]byte(strings.TrimSpace(s)))
 	if err != nil {
 		log.Fatalf("error decoding hash: %s", err)

@@ -7,9 +7,9 @@ import (
 	"chain/crypto/sha3pool"
 	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/protocol/bc"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
+	"chain/types"
 )
 
 // SignFunc is the function passed into Sign that produces
@@ -187,7 +187,7 @@ func buildSigProgram(tpl *Template, index int) []byte {
 		if len(out.ReferenceData) > 0 {
 			var h [32]byte
 			sha3pool.Sum256(h[:], out.ReferenceData)
-			c.RefDataHash = (*bc.Hash)(&h)
+			c.RefDataHash = (*types.Hash)(&h)
 		}
 		constraints = append(constraints, c)
 	}

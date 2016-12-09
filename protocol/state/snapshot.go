@@ -2,13 +2,13 @@
 package state
 
 import (
-	"chain/protocol/bc"
 	"chain/protocol/patricia"
+	"chain/types"
 )
 
 // PriorIssuances maps an "issuance hash" to the time (in Unix millis)
 // at which it should expire from the issuance memory.
-type PriorIssuances map[bc.Hash]uint64
+type PriorIssuances map[types.Hash]uint64
 
 // Snapshot encompasses a snapshot of entire blockchain state. It
 // consists of a patricia state tree and the issuances memory.

@@ -9,6 +9,7 @@ import (
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/validation"
+	"chain/types"
 )
 
 // AddTx inserts tx into the set of "pending" transactions available
@@ -60,7 +61,7 @@ type prevalidatedTxsCache struct {
 	lru *lru.Cache
 }
 
-func (c *prevalidatedTxsCache) lookup(txID bc.Hash) (err error, ok bool) {
+func (c *prevalidatedTxsCache) lookup(txID types.Hash) (err error, ok bool) {
 	c.mu.Lock()
 	v, ok := c.lru.Get(txID)
 	c.mu.Unlock()
@@ -73,7 +74,7 @@ func (c *prevalidatedTxsCache) lookup(txID bc.Hash) (err error, ok bool) {
 	return v.(error), ok
 }
 
-func (c *prevalidatedTxsCache) cache(txID bc.Hash, err error) {
+func (c *prevalidatedTxsCache) cache(txID types.Hash, err error) {
 	c.mu.Lock()
 	c.lru.Add(txID, err)
 	c.mu.Unlock()

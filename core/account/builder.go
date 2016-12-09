@@ -11,9 +11,10 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
-func (m *Manager) NewSpendAction(amt bc.AssetAmount, accountID string, refData chainjson.Map, clientToken *string) txbuilder.Action {
+func (m *Manager) NewSpendAction(amt types.AssetAmount, accountID string, refData chainjson.Map, clientToken *string) txbuilder.Action {
 	return &spendAction{
 		accounts:      m,
 		AssetAmount:   amt,
@@ -31,7 +32,7 @@ func (m *Manager) DecodeSpendAction(data []byte) (txbuilder.Action, error) {
 
 type spendAction struct {
 	accounts *Manager
-	bc.AssetAmount
+	types.AssetAmount
 	AccountID     string        `json:"account_id"`
 	ReferenceData chainjson.Map `json:"reference_data"`
 	ClientToken   *string       `json:"client_token"`
@@ -42,7 +43,7 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")
 	}
-	if a.AssetID == (bc.AssetID{}) {
+	if a.AssetID == (types.AssetID{}) {
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {
@@ -110,8 +111,8 @@ func (m *Manager) DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
 
 type spendUTXOAction struct {
 	accounts *Manager
-	TxHash   *bc.Hash `json:"transaction_id"`
-	TxOut    *uint32  `json:"position"`
+	TxHash   *types.Hash `json:"transaction_id"`
+	TxOut    *uint32     `json:"position"`
 
 	ReferenceData chainjson.Map `json:"reference_data"`
 	ClientToken   *string       `json:"client_token"`
@@ -176,7 +177,7 @@ func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData
 	return txInput, sigInst, nil
 }
 
-func (m *Manager) NewControlAction(amt bc.AssetAmount, accountID string, refData chainjson.Map) txbuilder.Action {
+func (m *Manager) NewControlAction(amt types.AssetAmount, accountID string, refData chainjson.Map) txbuilder.Action {
 	return &controlAction{
 		accounts:      m,
 		AssetAmount:   amt,
@@ -193,7 +194,7 @@ func (m *Manager) DecodeControlAction(data []byte) (txbuilder.Action, error) {
 
 type controlAction struct {
 	accounts *Manager
-	bc.AssetAmount
+	types.AssetAmount
 	AccountID     string        `json:"account_id"`
 	ReferenceData chainjson.Map `json:"reference_data"`
 }
@@ -203,7 +204,7 @@ func (a *controlAction) Build(ctx context.Context, maxTime time.Time, b *txbuild
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")
 	}
-	if a.AssetID == (bc.AssetID{}) {
+	if a.AssetID == (types.AssetID{}) {
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {

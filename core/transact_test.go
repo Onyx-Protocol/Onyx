@@ -15,6 +15,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/testutil"
+	"chain/types"
 )
 
 func TestAccountTransferSpendChange(t *testing.T) {
@@ -34,7 +35,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 	}
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-	assetAmt := bc.AssetAmount{
+	assetAmt := types.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
 	}
@@ -79,13 +80,13 @@ func TestRecordSubmittedTxs(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 
 	testCases := []struct {
-		hash   bc.Hash
+		hash   types.Hash
 		height uint64
 		want   uint64
 	}{
-		{hash: bc.Hash{0x01}, height: 2, want: 2},
-		{hash: bc.Hash{0x02}, height: 3, want: 3},
-		{hash: bc.Hash{0x01}, height: 3, want: 2},
+		{hash: types.Hash{0x01}, height: 2, want: 2},
+		{hash: types.Hash{0x02}, height: 3, want: 3},
+		{hash: types.Hash{0x01}, height: 3, want: 2},
 	}
 
 	for i, tc := range testCases {

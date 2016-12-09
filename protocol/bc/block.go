@@ -12,6 +12,7 @@ import (
 	"chain/encoding/blockchain"
 	"chain/encoding/bufpool"
 	"chain/errors"
+	"chain/types"
 )
 
 const (
@@ -130,7 +131,7 @@ type BlockHeader struct {
 	Height uint64
 
 	// Hash of the previous block in the block chain.
-	PreviousBlockHash Hash
+	PreviousBlockHash types.Hash
 
 	// Time of the block in milliseconds.
 	// Must grow monotonically and can be equal
@@ -142,12 +143,12 @@ type BlockHeader struct {
 	// TransactionsMerkleRoot is the root hash of the Merkle binary hash
 	// tree formed by the transaction witness hashes of all transactions
 	// included in the block.
-	TransactionsMerkleRoot Hash
+	TransactionsMerkleRoot types.Hash
 
 	// AssetsMerkleRoot is the root hash of the Merkle Patricia Tree of
 	// the set of unspent outputs with asset version 1 after applying
 	// the block.
-	AssetsMerkleRoot Hash
+	AssetsMerkleRoot types.Hash
 
 	// ConsensusProgram is the predicate for validating the next block.
 	ConsensusProgram []byte
@@ -182,7 +183,7 @@ func (bh *BlockHeader) Value() (driver.Value, error) {
 }
 
 // Hash returns complete hash of the block header.
-func (bh *BlockHeader) Hash() Hash {
+func (bh *BlockHeader) Hash() types.Hash {
 	h := sha3pool.Get256()
 	bh.WriteTo(h) // error is impossible
 	var v [32]byte
@@ -194,7 +195,7 @@ func (bh *BlockHeader) Hash() Hash {
 // HashForSig returns a hash of the block header without witness.
 // This hash is used for signing the block and verifying the
 // signature.
-func (bh *BlockHeader) HashForSig() Hash {
+func (bh *BlockHeader) HashForSig() types.Hash {
 	h := sha3pool.Get256()
 	bh.WriteForSigTo(h) // error is impossible
 	var v [32]byte

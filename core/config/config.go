@@ -23,6 +23,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/mempool"
 	"chain/protocol/state"
+	"chain/types"
 )
 
 const (
@@ -38,12 +39,12 @@ var (
 
 // Config encapsulates Core-level, persistent configuration options.
 type Config struct {
-	ID                   string  `json:"id"`
-	IsSigner             bool    `json:"is_signer"`
-	IsGenerator          bool    `json:"is_generator"`
-	BlockchainID         bc.Hash `json:"blockchain_id"`
-	GeneratorURL         string  `json:"generator_url"`
-	GeneratorAccessToken string  `json:"generator_access_token"`
+	ID                   string     `json:"id"`
+	IsSigner             bool       `json:"is_signer"`
+	IsGenerator          bool       `json:"is_generator"`
+	BlockchainID         types.Hash `json:"blockchain_id"`
+	GeneratorURL         string     `json:"generator_url"`
+	GeneratorAccessToken string     `json:"generator_access_token"`
 	ConfiguredAt         time.Time
 	BlockPub             string        `json:"block_pub"`
 	Signers              []BlockSigner `json:"block_signer_urls"`

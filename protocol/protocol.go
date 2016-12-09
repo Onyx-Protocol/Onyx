@@ -54,6 +54,7 @@ import (
 	"chain/log"
 	"chain/protocol/bc"
 	"chain/protocol/state"
+	"chain/types"
 )
 
 // maxCachedValidatedTxs is the max number of validated txs to cache.
@@ -101,7 +102,7 @@ type Pool interface {
 // validation logic from package validation to decide what
 // objects can be safely stored.
 type Chain struct {
-	InitialBlockHash  bc.Hash
+	InitialBlockHash  types.Hash
 	MaxIssuanceWindow time.Duration // only used by generators
 
 	state struct {
@@ -126,7 +127,7 @@ type pendingSnapshot struct {
 }
 
 // NewChain returns a new Chain using store as the underlying storage.
-func NewChain(ctx context.Context, initialBlockHash bc.Hash, store Store, pool Pool, heights <-chan uint64) (*Chain, error) {
+func NewChain(ctx context.Context, initialBlockHash types.Hash, store Store, pool Pool, heights <-chan uint64) (*Chain, error) {
 	c := &Chain{
 		InitialBlockHash: initialBlockHash,
 		store:            store,

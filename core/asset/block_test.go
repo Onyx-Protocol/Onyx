@@ -10,13 +10,14 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/testutil"
+	"chain/types"
 )
 
 const def = `{"currency":"USD"}`
 
-type fakeSaver func(context.Context, bc.AssetID, map[string]interface{}, string) error
+type fakeSaver func(context.Context, types.AssetID, map[string]interface{}, string) error
 
-func (f fakeSaver) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, obj map[string]interface{}, sortID string) error {
+func (f fakeSaver) SaveAnnotatedAsset(ctx context.Context, assetID types.AssetID, obj map[string]interface{}, sortID string) error {
 	return f(ctx, assetID, obj, sortID)
 }
 
@@ -68,8 +69,8 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	}
 	remoteAssetID := b.Transactions[0].Inputs[0].AssetID()
 
-	var assetsSaved []bc.AssetID
-	r.indexer = fakeSaver(func(ctx context.Context, assetID bc.AssetID, obj map[string]interface{}, sortID string) error {
+	var assetsSaved []types.AssetID
+	r.indexer = fakeSaver(func(ctx context.Context, assetID types.AssetID, obj map[string]interface{}, sortID string) error {
 		assetsSaved = append(assetsSaved, assetID)
 		return nil
 	})
@@ -78,8 +79,8 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	r.indexAssets(ctx, b)
 
 	// Ensure that the annotated asset got saved to the query indexer.
-	if !reflect.DeepEqual(assetsSaved, []bc.AssetID{remoteAssetID}) {
-		t.Errorf("saved annotated assets got %#v, want %#v", assetsSaved, []bc.AssetID{remoteAssetID})
+	if !reflect.DeepEqual(assetsSaved, []types.AssetID{remoteAssetID}) {
+		t.Errorf("saved annotated assets got %#v, want %#v", assetsSaved, []types.AssetID{remoteAssetID})
 	}
 
 	// Ensure that the asset was saved to the `assets` table.

@@ -11,6 +11,7 @@ import (
 	"chain/errors"
 	"chain/math/checked"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
 var (
@@ -93,7 +94,7 @@ func Sign(ctx context.Context, tpl *Template, xpubs []string, signFn SignFunc) e
 }
 
 func checkBlankCheck(tx *bc.TxData) error {
-	assetMap := make(map[bc.AssetID]int64)
+	assetMap := make(map[types.AssetID]int64)
 	var ok bool
 	for _, in := range tx.Inputs {
 		asset := in.AssetID() // AssetID() is calculated for IssuanceInputs, so grab once

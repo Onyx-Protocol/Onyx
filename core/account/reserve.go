@@ -15,6 +15,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/state"
 	"chain/sync/idempotency"
+	"chain/types"
 )
 
 var (
@@ -36,7 +37,7 @@ var (
 // utxo describes an individual account utxo.
 type utxo struct {
 	bc.Outpoint
-	bc.AssetAmount
+	types.AssetAmount
 	ControlProgram []byte
 
 	AccountID           string
@@ -49,7 +50,7 @@ func (u *utxo) source() source {
 
 // source describes the criteria to use when selecting UTXOs.
 type source struct {
-	AssetID   bc.AssetID
+	AssetID   types.AssetID
 	AccountID string
 }
 
@@ -387,13 +388,13 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height uint64)
 	`
 	var utxos []*utxo
 	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID, height,
-		func(txHash bc.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte) {
+		func(txHash types.Hash, index uint32, amount uint64, cpIndex uint64, controlProg []byte) {
 			utxos = append(utxos, &utxo{
 				Outpoint: bc.Outpoint{
 					Hash:  txHash,
 					Index: index,
 				},
-				AssetAmount: bc.AssetAmount{
+				AssetAmount: types.AssetAmount{
 					Amount:  amount,
 					AssetID: src.AssetID,
 				},

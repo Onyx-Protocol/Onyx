@@ -11,6 +11,7 @@ import (
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
+	"chain/types"
 )
 
 // CurrentTransactionVersion is the current latest
@@ -20,7 +21,7 @@ const CurrentTransactionVersion = 1
 // Tx holds a transaction along with its hash.
 type Tx struct {
 	TxData
-	Hash Hash
+	Hash types.Hash
 }
 
 func (tx *Tx) UnmarshalText(p []byte) error {
@@ -70,8 +71,8 @@ type TxData struct {
 // Outpoint defines a bitcoin data type that is used to track previous
 // transaction outputs.
 type Outpoint struct {
-	Hash  Hash   `json:"hash"`
-	Index uint32 `json:"index"`
+	Hash  types.Hash `json:"hash"`
+	Index uint32     `json:"index"`
 }
 
 // HasIssuance returns true if this transaction has an issuance input.
@@ -197,10 +198,10 @@ func (p *Outpoint) readFrom(r io.Reader) (int, error) {
 // Hash computes the hash of the transaction with reference data fields
 // replaced by their hashes,
 // and stores the result in Hash.
-func (tx *TxData) Hash() Hash {
+func (tx *TxData) Hash() types.Hash {
 	h := sha3pool.Get256()
 	tx.writeTo(h, 0) // error is impossible
-	var v Hash
+	var v types.Hash
 	h.Read(v[:])
 	sha3pool.Put256(h)
 	return v
@@ -209,7 +210,7 @@ func (tx *TxData) Hash() Hash {
 // WitnessHash is the combined hash of the
 // transactions hash and signature data hash.
 // It is used to compute the TxRoot of a block.
-func (tx *Tx) WitnessHash() (hash Hash) {
+func (tx *Tx) WitnessHash() (hash types.Hash) {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 
@@ -231,7 +232,7 @@ func (tx *Tx) WitnessHash() (hash Hash) {
 	return hash
 }
 
-func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
+func (tx *TxData) IssuanceHash(n int) (h types.Hash, err error) {
 	if n < 0 || n >= len(tx.Inputs) {
 		return h, fmt.Errorf("no input %d", n)
 	}
@@ -262,21 +263,21 @@ func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 
 // HashForSig generates the hash required for the specified input's
 // signature.
-func (tx *TxData) HashForSig(idx int) Hash {
+func (tx *TxData) HashForSig(idx int) types.Hash {
 	return NewSigHasher(tx).Hash(idx)
 }
 
 // SigHasher caches a txhash for reuse with multiple inputs.
 type SigHasher struct {
 	txData *TxData
-	txHash *Hash // not computed until needed
+	txHash *types.Hash // not computed until needed
 }
 
 func NewSigHasher(txData *TxData) *SigHasher {
 	return &SigHasher{txData: txData}
 }
 
-func (s *SigHasher) Hash(idx int) Hash {
+func (s *SigHasher) Hash(idx int) types.Hash {
 	if s.txHash == nil {
 		h := s.txData.Hash()
 		s.txHash = &h
@@ -285,7 +286,7 @@ func (s *SigHasher) Hash(idx int) Hash {
 	h.Write((*s.txHash)[:])
 	blockchain.WriteVarint31(h, uint64(idx)) // TODO(bobg): check and return error
 
-	var outHash Hash
+	var outHash types.Hash
 	inp := s.txData.Inputs[idx]
 	si, ok := inp.TypedInput.(*SpendInput)
 	if ok {
@@ -295,11 +296,11 @@ func (s *SigHasher) Hash(idx int) Hash {
 		sha3pool.Sum256(outHash[:], ocBuf.Bytes())
 	} else {
 		// inp is an issuance
-		outHash = emptyHash
+		outHash = types.EmptyHash
 	}
 
 	h.Write(outHash[:])
-	var hash Hash
+	var hash types.Hash
 	h.Read(hash[:])
 	sha3pool.Put256(h)
 	return hash
@@ -363,33 +364,11 @@ func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
 	return int64(n + n2), err
 }
 
-type AssetAmount struct {
-	AssetID AssetID `json:"asset_id"`
-	Amount  uint64  `json:"amount"`
-}
-
-// assumes r has sticky errors
-func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
-	n1, err := io.ReadFull(r, a.AssetID[:])
-	if err != nil {
-		return n1, err
-	}
-	var n2 int
-	a.Amount, n2, err = blockchain.ReadVarint63(r)
-	return n1 + n2, err
-}
-
-// assumes w has sticky errors
-func (a *AssetAmount) writeTo(w io.Writer) {
-	w.Write(a.AssetID[:])
-	blockchain.WriteVarint63(w, a.Amount) // TODO(bobg): check and return error
-}
-
 // assumes w has sticky errors
 func writeRefData(w io.Writer, data []byte, serflags byte) {
 	if serflags&SerMetadata != 0 {
 		blockchain.WriteVarstr31(w, data) // TODO(bobg): check and return error
 	} else {
-		writeFastHash(w, data)
+		types.WriteFastHash(w, data)
 	}
 }

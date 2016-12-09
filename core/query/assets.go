@@ -9,11 +9,11 @@ import (
 
 	"chain/core/query/filter"
 	"chain/errors"
-	"chain/protocol/bc"
+	"chain/types"
 )
 
 // SaveAnnotatedAsset saves an annotated asset to the query indexes.
-func (ind *Indexer) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, asset map[string]interface{}, sortID string) error {
+func (ind *Indexer) SaveAnnotatedAsset(ctx context.Context, assetID types.AssetID, asset map[string]interface{}, sortID string) error {
 	b, err := json.Marshal(asset)
 	if err != nil {
 		return errors.Wrap(err)

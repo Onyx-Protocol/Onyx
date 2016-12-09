@@ -2,6 +2,7 @@ package bc
 
 import (
 	"bytes"
+	"chain/types"
 	"encoding/hex"
 	"encoding/json"
 	"reflect"
@@ -22,7 +23,7 @@ func TestMarshalBlock(t *testing.T) {
 			NewTx(TxData{
 				Version: 1,
 				Outputs: []*TxOutput{
-					NewTxOutput(AssetID{}, 1, nil, nil),
+					NewTxOutput(types.AssetID{}, 1, nil, nil),
 				},
 			}),
 		}}

@@ -9,9 +9,9 @@ import (
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
-	"chain/protocol/bc"
 	"chain/protocol/patricia"
 	"chain/protocol/state"
+	"chain/types"
 )
 
 // DecodeSnapshot decodes a snapshot from the Chain Core's binary,
@@ -35,7 +35,7 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 
 	issuances := make(state.PriorIssuances, len(storedSnapshot.Issuances))
 	for _, issuance := range storedSnapshot.Issuances {
-		var hash bc.Hash
+		var hash types.Hash
 		copy(hash[:], issuance.Hash)
 		issuances[hash] = issuance.ExpiryMs
 	}

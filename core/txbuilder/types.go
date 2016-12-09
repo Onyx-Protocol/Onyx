@@ -7,6 +7,7 @@ import (
 
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
 // Template represents a partially- or fully-signed transaction.
@@ -30,7 +31,7 @@ type Template struct {
 	sigHasher *bc.SigHasher
 }
 
-func (t *Template) Hash(idx int) bc.Hash {
+func (t *Template) Hash(idx int) types.Hash {
 	if t.sigHasher == nil {
 		t.sigHasher = bc.NewSigHasher(t.Transaction)
 	}
@@ -40,13 +41,13 @@ func (t *Template) Hash(idx int) bc.Hash {
 // SigningInstruction gives directions for signing inputs in a TxTemplate.
 type SigningInstruction struct {
 	Position int `json:"position"`
-	bc.AssetAmount
+	types.AssetAmount
 	WitnessComponents []WitnessComponent `json:"witness_components,omitempty"`
 }
 
 func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 	var pre struct {
-		bc.AssetAmount
+		types.AssetAmount
 		Position          int `json:"position"`
 		WitnessComponents []struct {
 			Type string

@@ -11,18 +11,19 @@ import (
 
 	"chain/log"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
 // MemPool satisfies the protocol.Pool interface.
 type MemPool struct {
 	mu     sync.Mutex
 	pool   []*bc.Tx // in topological order
-	hashes map[bc.Hash]bool
+	hashes map[types.Hash]bool
 }
 
 // New returns a new MemPool.
 func New() *MemPool {
-	return &MemPool{hashes: make(map[bc.Hash]bool)}
+	return &MemPool{hashes: make(map[types.Hash]bool)}
 }
 
 // Insert adds a new pending tx to the pending tx pool.
@@ -45,7 +46,7 @@ func (m *MemPool) Dump(ctx context.Context) ([]*bc.Tx, error) {
 	m.mu.Lock()
 	txs := m.pool
 	m.pool = nil
-	m.hashes = make(map[bc.Hash]bool)
+	m.hashes = make(map[types.Hash]bool)
 	m.mu.Unlock()
 
 	if !isTopSorted(txs) {

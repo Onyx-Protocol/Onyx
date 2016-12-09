@@ -16,6 +16,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/state"
 	"chain/testutil"
+	"chain/types"
 )
 
 func CreatePins(ctx context.Context, t testing.TB, s *pin.Store) {
@@ -37,7 +38,7 @@ func CreateAccount(ctx context.Context, t testing.TB, accounts *account.Manager,
 	return acc.ID
 }
 
-func CreateAsset(ctx context.Context, t testing.TB, assets *asset.Registry, def map[string]interface{}, alias string, tags map[string]interface{}) bc.AssetID {
+func CreateAsset(ctx context.Context, t testing.TB, assets *asset.Registry, def map[string]interface{}, alias string, tags map[string]interface{}) types.AssetID {
 	keys := []string{testutil.TestXPub.String()}
 	asset, err := assets.Define(ctx, keys, 1, def, alias, tags, nil)
 	if err != nil {
@@ -46,12 +47,12 @@ func CreateAsset(ctx context.Context, t testing.TB, assets *asset.Registry, def 
 	return asset.AssetID
 }
 
-func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, assets *asset.Registry, accounts *account.Manager, assetID bc.AssetID, amount uint64, accountID string) state.Output {
-	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
+func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, assets *asset.Registry, accounts *account.Manager, assetID types.AssetID, amount uint64, accountID string) state.Output {
+	assetAmount := types.AssetAmount{AssetID: assetID, Amount: amount}
 
 	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
 		assets.NewIssueAction(assetAmount, nil), // does not support reference data
-		accounts.NewControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil),
+		accounts.NewControlAction(types.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil),
 	}, time.Now().Add(time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)

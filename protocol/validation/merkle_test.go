@@ -7,12 +7,13 @@ import (
 
 	"chain/protocol/bc"
 	"chain/protocol/vm"
+	"chain/types"
 )
 
 func TestCalcMerkleRoot(t *testing.T) {
 	cases := []struct {
 		witnesses [][][]byte
-		want      bc.Hash
+		want      types.Hash
 	}{{
 		witnesses: [][][]byte{
 			[][]byte{
@@ -71,9 +72,9 @@ func TestCalcMerkleRoot(t *testing.T) {
 }
 
 func TestDuplicateLeaves(t *testing.T) {
-	var initialBlockHash bc.Hash
+	var initialBlockHash types.Hash
 	trueProg := []byte{byte(vm.OP_TRUE)}
-	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1)
+	assetID := types.ComputeAssetID(trueProg, initialBlockHash, 1, 1)
 	txs := make([]*bc.Tx, 6)
 	for i := uint64(0); i < 6; i++ {
 		now := []byte(time.Now().String())
@@ -98,9 +99,9 @@ func TestDuplicateLeaves(t *testing.T) {
 }
 
 func TestAllDuplicateLeaves(t *testing.T) {
-	var initialBlockHash bc.Hash
+	var initialBlockHash types.Hash
 	trueProg := []byte{byte(vm.OP_TRUE)}
-	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1)
+	assetID := types.ComputeAssetID(trueProg, initialBlockHash, 1, 1)
 	now := []byte(time.Now().String())
 	issuanceInp := bc.NewIssuanceInput(now, 1, nil, initialBlockHash, trueProg, nil)
 
@@ -124,8 +125,8 @@ func TestAllDuplicateLeaves(t *testing.T) {
 	}
 }
 
-func mustParseHash(s string) bc.Hash {
-	h, err := bc.ParseHash(s)
+func mustParseHash(s string) types.Hash {
+	h, err := types.ParseHash(s)
 	if err != nil {
 		panic(err)
 	}

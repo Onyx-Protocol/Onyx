@@ -10,6 +10,7 @@ import (
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
+	"chain/types"
 )
 
 func TestIndexBlock(t *testing.T) {
@@ -42,8 +43,8 @@ func TestAnnotatedTxs(t *testing.T) {
 	indexer := NewIndexer(db, &protocol.Chain{}, nil)
 	b := &bc.Block{
 		Transactions: []*bc.Tx{
-			{Hash: bc.Hash{0: 0x01}},
-			{Hash: bc.Hash{0: 0x02}},
+			{Hash: types.Hash{0: 0x01}},
+			{Hash: types.Hash{0: 0x02}},
 		},
 	}
 	txs, err := indexer.insertAnnotatedTxs(ctx, b)

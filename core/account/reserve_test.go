@@ -9,6 +9,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/protocol/state"
+	"chain/types"
 )
 
 const sampleAccountUTXOs = `
@@ -31,8 +32,8 @@ func TestCancelReservation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var h bc.Hash
-	var assetID bc.AssetID
+	var h types.Hash
+	var assetID types.AssetID
 	err = h.UnmarshalText([]byte("270b725a94429496a178c56b390a89d03f801fe2ee992d90cf4fdf7d7855318e"))
 	if err != nil {
 		t.Fatal(err)

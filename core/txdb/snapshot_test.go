@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"chain/database/pg/pgtest"
-	"chain/protocol/bc"
 	"chain/protocol/state"
+	"chain/types"
 )
 
 type pair struct {
@@ -25,8 +25,8 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		inserts          []pair
 		deletes          []string
 		lookups          []pair
-		newIssuances     map[bc.Hash]uint64
-		deletedIssuances []bc.Hash
+		newIssuances     map[types.Hash]uint64
+		deletedIssuances []types.Hash
 	}{
 		{ // add a single k/v pair
 			inserts: []pair{
@@ -35,8 +35,8 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 					hash: []byte{0x01},
 				},
 			},
-			newIssuances: map[bc.Hash]uint64{
-				bc.Hash{0x01}: 1000,
+			newIssuances: map[types.Hash]uint64{
+				types.Hash{0x01}: 1000,
 			},
 		},
 		{ // empty changeset
@@ -57,13 +57,13 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 				{key: "sup", hash: []byte{0x02}},
 				{key: "dup2", hash: []byte{0x03}},
 			},
-			newIssuances: map[bc.Hash]uint64{
-				bc.Hash{0x02}: 2000,
+			newIssuances: map[types.Hash]uint64{
+				types.Hash{0x02}: 2000,
 			},
 		},
 		{ // delete one pair
 			deletes:          []string{"sup"},
-			deletedIssuances: []bc.Hash{bc.Hash{0x02}},
+			deletedIssuances: []types.Hash{types.Hash{0x02}},
 		},
 		{ // insert and delete at the same time
 			inserts: []pair{
@@ -157,7 +157,7 @@ func benchmarkStoreSnapshot(nodes, issuances int, b *testing.B) {
 	}
 
 	for i := 0; i < issuances; i++ {
-		var h bc.Hash
+		var h types.Hash
 		_, err := r.Read(h[:])
 		if err != nil {
 			b.Fatal(err)

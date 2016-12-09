@@ -10,6 +10,7 @@ import (
 	"chain/protocol/prottest"
 	"chain/protocol/state"
 	"chain/testutil"
+	"chain/types"
 )
 
 func TestLoadAccountInfo(t *testing.T) {
@@ -20,8 +21,8 @@ func TestLoadAccountInfo(t *testing.T) {
 	acc := m.createTestAccount(ctx, t, "", nil)
 	acp := m.createTestControlProgram(ctx, t, acc.ID)
 
-	to1 := bc.NewTxOutput(bc.AssetID{}, 0, acp, nil)
-	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
+	to1 := bc.NewTxOutput(types.AssetID{}, 0, acp, nil)
+	to2 := bc.NewTxOutput(types.AssetID{}, 0, []byte("notfound"), nil)
 
 	outs := []*state.Output{{
 		TxOutput: *to1,
@@ -44,7 +45,7 @@ func TestDeleteUTXOs(t *testing.T) {
 	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 
-	assetID := bc.AssetID{}
+	assetID := types.AssetID{}
 	acp := m.createTestControlProgram(ctx, t, "")
 
 	block1 := &bc.Block{Transactions: []*bc.Tx{

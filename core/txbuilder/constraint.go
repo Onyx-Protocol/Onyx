@@ -5,6 +5,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
+	"chain/types"
 )
 
 // Constraint types express a constraint on an input of a proposed
@@ -84,9 +85,9 @@ func (r refdataConstraint) code() []byte {
 // at the given index, optionally with the given refdatahash.
 type payConstraint struct {
 	Index int
-	bc.AssetAmount
+	types.AssetAmount
 	Program     []byte
-	RefDataHash *bc.Hash
+	RefDataHash *types.Hash
 }
 
 func (p payConstraint) code() []byte {

@@ -16,7 +16,7 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/errors"
-	"chain/protocol/bc"
+	"chain/types"
 )
 
 // ErrPrefix is returned from Insert or Delete if
@@ -37,7 +37,7 @@ type Tree struct {
 // value inserted into the patricia tree.
 type Leaf struct {
 	Key  []byte
-	Hash bc.Hash
+	Hash types.Hash
 }
 
 // Reconstruct builds a tree with the provided leaf nodes.
@@ -115,7 +115,7 @@ func (t *Tree) Contains(bkey, val []byte) bool {
 	key := bitKey(bkey)
 	n := t.lookup(t.root, key)
 
-	var hash bc.Hash
+	var hash types.Hash
 	h := sha3pool.Get256()
 	h.Write(leafPrefix)
 	h.Write(val[:])
@@ -149,7 +149,7 @@ func (t *Tree) lookup(n *node, key []uint8) *node {
 func (t *Tree) Insert(bkey, val []byte) error {
 	key := bitKey(bkey)
 
-	var hash bc.Hash
+	var hash types.Hash
 	h := sha3pool.Get256()
 	h.Write(leafPrefix)
 	h.Write(val)
@@ -166,7 +166,7 @@ func (t *Tree) Insert(bkey, val []byte) error {
 	return err
 }
 
-func (t *Tree) insert(n *node, key []uint8, hash *bc.Hash) (*node, error) {
+func (t *Tree) insert(n *node, key []uint8, hash *types.Hash) (*node, error) {
 	if bytes.Equal(n.key, key) {
 		if !n.isLeaf {
 			return n, errors.Wrap(ErrPrefix)
@@ -258,10 +258,10 @@ func (t *Tree) delete(n *node, key []uint8) (*node, error) {
 }
 
 // RootHash returns the merkle root of the tree.
-func (t *Tree) RootHash() bc.Hash {
+func (t *Tree) RootHash() types.Hash {
 	root := t.root
 	if root == nil {
-		return bc.Hash{}
+		return types.Hash{}
 	}
 	return root.Hash()
 }
@@ -306,7 +306,7 @@ func commonPrefixLen(a, b []uint8) int {
 // node is a leaf or branch node in a tree
 type node struct {
 	key      []uint8
-	hash     *bc.Hash
+	hash     *types.Hash
 	isLeaf   bool
 	children [2]*node
 }
@@ -316,7 +316,7 @@ type node struct {
 func (n *node) Key() []byte { return byteKey(n.key) }
 
 // Hash will return the hash for this node.
-func (n *node) Hash() bc.Hash {
+func (n *node) Hash() types.Hash {
 	n.calcHash()
 	return *n.hash
 }
@@ -333,7 +333,7 @@ func (n *node) calcHash() {
 		h.Write(c.hash[:])
 	}
 
-	var hash bc.Hash
+	var hash types.Hash
 	h.Read(hash[:])
 	n.hash = &hash
 	sha3pool.Put256(h)

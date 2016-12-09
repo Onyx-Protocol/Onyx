@@ -13,6 +13,7 @@ import (
 	"chain/protocol/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
+	"chain/types"
 )
 
 func TestGetBlock(t *testing.T) {
@@ -51,7 +52,7 @@ func TestGetBlock(t *testing.T) {
 
 func TestNoTimeTravel(t *testing.T) {
 	ctx := context.Background()
-	c, err := NewChain(ctx, bc.Hash{}, memstore.New(), mempool.New(), nil)
+	c, err := NewChain(ctx, types.Hash{}, memstore.New(), mempool.New(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +134,7 @@ func TestGenerateBlock(t *testing.T) {
 	c, b1 := newTestChain(t, now)
 
 	initialBlockHash := b1.Hash()
-	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1)
+	assetID := types.ComputeAssetID(nil, initialBlockHash, 1, 1)
 
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
@@ -176,7 +177,7 @@ func TestGenerateBlock(t *testing.T) {
 	}
 
 	// TODO(bobg): verify these hashes are correct
-	var wantTxRoot, wantAssetsRoot bc.Hash
+	var wantTxRoot, wantAssetsRoot types.Hash
 	copy(wantTxRoot[:], mustDecodeHex("d0e593c846d7b189bd3e2f55e680016b14989329af1c5e388ff246caedf04bd3"))
 	copy(wantAssetsRoot[:], mustDecodeHex("903d9a10ece41f86b7c2cf23c25b09c2086b321d6d63e2ec7fc7405f84121542"))
 

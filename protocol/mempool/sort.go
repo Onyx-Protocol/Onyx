@@ -1,19 +1,22 @@
 package mempool
 
-import "chain/protocol/bc"
+import (
+	"chain/protocol/bc"
+	"chain/types"
+)
 
 func topSort(txs []*bc.Tx) []*bc.Tx {
 	if len(txs) == 1 {
 		return txs
 	}
 
-	nodes := make(map[bc.Hash]*bc.Tx)
+	nodes := make(map[types.Hash]*bc.Tx)
 	for _, tx := range txs {
 		nodes[tx.Hash] = tx
 	}
 
-	incomingEdges := make(map[bc.Hash]int)
-	children := make(map[bc.Hash][]bc.Hash)
+	incomingEdges := make(map[types.Hash]int)
+	children := make(map[types.Hash][]types.Hash)
 	for node, tx := range nodes {
 		for _, in := range tx.Inputs {
 			if in.IsIssuance() {
@@ -21,7 +24,7 @@ func topSort(txs []*bc.Tx) []*bc.Tx {
 			}
 			if prev := in.Outpoint().Hash; nodes[prev] != nil {
 				if children[prev] == nil {
-					children[prev] = make([]bc.Hash, 0, 1)
+					children[prev] = make([]types.Hash, 0, 1)
 				}
 				children[prev] = append(children[prev], node)
 				incomingEdges[node]++
@@ -29,7 +32,7 @@ func topSort(txs []*bc.Tx) []*bc.Tx {
 		}
 	}
 
-	var s []bc.Hash
+	var s []types.Hash
 	for node := range nodes {
 		if incomingEdges[node] == 0 {
 			s = append(s, node)
@@ -60,8 +63,8 @@ func topSort(txs []*bc.Tx) []*bc.Tx {
 }
 
 func isTopSorted(txs []*bc.Tx) bool {
-	exists := make(map[bc.Hash]bool)
-	seen := make(map[bc.Hash]bool)
+	exists := make(map[types.Hash]bool)
+	seen := make(map[types.Hash]bool)
 	for _, tx := range txs {
 		exists[tx.Hash] = true
 	}

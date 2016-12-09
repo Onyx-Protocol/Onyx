@@ -5,6 +5,7 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
 var (
@@ -14,7 +15,7 @@ var (
 
 // CalcMerkleRoot creates a merkle tree from a slice of transactions
 // and returns the root hash of the tree.
-func CalcMerkleRoot(transactions []*bc.Tx) (root bc.Hash) {
+func CalcMerkleRoot(transactions []*bc.Tx) (root types.Hash) {
 	switch {
 	case len(transactions) == 0:
 		sha3pool.Sum256(root[:], nil)

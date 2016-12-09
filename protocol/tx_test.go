@@ -16,6 +16,7 @@ import (
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 	"chain/testutil"
+	"chain/types"
 )
 
 func TestIdempotentAddTx(t *testing.T) {
@@ -104,14 +105,14 @@ func (d testDest) controlProgram() ([]byte, error) {
 }
 
 type testAsset struct {
-	bc.AssetID
+	types.AssetID
 	testDest
 }
 
 func newAsset(t testing.TB) *testAsset {
 	dest := newDest(t)
 	cp, _ := dest.controlProgram()
-	assetID := bc.ComputeAssetID(cp, bc.Hash{}, 1)
+	assetID := types.ComputeAssetID(cp, types.Hash{}, 1, 1)
 
 	return &testAsset{
 		AssetID:  assetID,
@@ -131,7 +132,7 @@ func issue(t testing.TB, asset *testAsset, dest *testDest, amount uint64) (*bc.T
 	tx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput([]byte{1}, amount, nil, bc.Hash{}, assetCP, nil),
+			bc.NewIssuanceInput([]byte{1}, amount, nil, types.Hash{}, assetCP, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(asset.AssetID, amount, destCP, nil),

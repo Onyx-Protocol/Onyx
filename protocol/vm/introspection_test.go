@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"chain/protocol/bc"
+	"chain/types"
 )
 
 func TestNextProgram(t *testing.T) {
@@ -86,11 +87,11 @@ func TestBlockTime(t *testing.T) {
 }
 
 func TestOutpointAndNonceOp(t *testing.T) {
-	var zeroHash bc.Hash
+	var zeroHash types.Hash
 	nonce := []byte{36, 37, 38}
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(zeroHash, 0, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
+			bc.NewSpendInput(zeroHash, 0, nil, types.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
 			bc.NewIssuanceInput(nonce, 6, nil, zeroHash, []byte("issueprog"), nil),
 		},
 	})
@@ -150,15 +151,15 @@ func TestIntrospectionOps(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
 		ReferenceData: []byte("txref"),
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
-			bc.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil),
+			bc.NewSpendInput(types.Hash{}, 0, nil, types.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
+			bc.NewIssuanceInput(nil, 6, nil, types.Hash{}, []byte("issueprog"), nil),
 		},
 		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(bc.AssetID{3}, 8, []byte("wrongprog"), nil),
-			bc.NewTxOutput(bc.AssetID{3}, 8, []byte("controlprog"), nil),
-			bc.NewTxOutput(bc.AssetID{2}, 8, []byte("controlprog"), nil),
-			bc.NewTxOutput(bc.AssetID{2}, 7, []byte("controlprog"), nil),
-			bc.NewTxOutput(bc.AssetID{2}, 7, []byte("controlprog"), []byte("outref")),
+			bc.NewTxOutput(types.AssetID{3}, 8, []byte("wrongprog"), nil),
+			bc.NewTxOutput(types.AssetID{3}, 8, []byte("controlprog"), nil),
+			bc.NewTxOutput(types.AssetID{2}, 8, []byte("controlprog"), nil),
+			bc.NewTxOutput(types.AssetID{2}, 7, []byte("controlprog"), nil),
+			bc.NewTxOutput(types.AssetID{2}, 7, []byte("controlprog"), []byte("outref")),
 		},
 		MinTime: 0,
 		MaxTime: 20,

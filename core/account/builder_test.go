@@ -19,6 +19,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/testutil"
+	"chain/types"
 )
 
 func TestAccountSourceReserve(t *testing.T) {
@@ -44,7 +45,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	prottest.MakeBlock(t, c)
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
-	assetAmount1 := bc.AssetAmount{
+	assetAmount1 := types.AssetAmount{
 		AssetID: asset,
 		Amount:  1,
 	}
@@ -133,7 +134,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		asset        = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 		_            = coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 2, accID)
 		_            = coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 2, accID)
-		assetAmount1 = bc.AssetAmount{
+		assetAmount1 = types.AssetAmount{
 			AssetID: asset,
 			Amount:  1,
 		}

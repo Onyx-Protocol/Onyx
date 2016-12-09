@@ -1,4 +1,4 @@
-package bc
+package types
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ import (
 // typically passed as values, not as pointers.
 type Hash [32]byte
 
-var emptyHash = sha3.Sum256(nil)
+var EmptyHash = sha3.Sum256(nil)
 
 // String returns the bytes of h encoded in hex.
 func (h Hash) String() string {
@@ -97,12 +97,13 @@ func ParseHash(s string) (h Hash, err error) {
 	return h, errors.Wrap(err, "decode hex")
 }
 
-func writeFastHash(w io.Writer, d []byte) {
+func WriteFastHash(w io.Writer, d []byte) error {
 	if len(d) == 0 {
-		blockchain.WriteVarstr31(w, nil)
-		return
+		_, err := blockchain.WriteVarstr31(w, nil)
+		return err
 	}
 	var h [32]byte
 	sha3pool.Sum256(h[:], d)
-	blockchain.WriteVarstr31(w, h[:])
+	_, err := blockchain.WriteVarstr31(w, h[:])
+	return err
 }

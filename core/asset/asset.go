@@ -20,9 +20,9 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol"
-	"chain/protocol/bc"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
+	"chain/types"
 )
 
 const maxAssetCache = 1000
@@ -45,7 +45,7 @@ type Registry struct {
 	db               pg.DB
 	chain            *protocol.Chain
 	indexer          Saver
-	initialBlockHash bc.Hash
+	initialBlockHash types.Hash
 	pinStore         *pin.Store
 
 	idGroup    singleflight.Group
@@ -61,11 +61,11 @@ func (reg *Registry) IndexAssets(indexer Saver) {
 }
 
 type Asset struct {
-	AssetID          bc.AssetID
+	AssetID          types.AssetID
 	Alias            *string
 	Definition       map[string]interface{}
 	IssuanceProgram  []byte
-	InitialBlockHash bc.Hash
+	InitialBlockHash types.Hash
 	Signer           *signers.Signer
 	Tags             map[string]interface{}
 	sortID           string
@@ -95,7 +95,7 @@ func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, def
 		Definition:       definition,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: reg.initialBlockHash,
-		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1),
+		AssetID:          types.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1, 1),
 		Signer:           assetSigner,
 		Tags:             tags,
 	}
@@ -122,7 +122,7 @@ func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, def
 }
 
 // findByID retrieves an Asset record along with its signer, given an assetID.
-func (reg *Registry) findByID(ctx context.Context, id bc.AssetID) (*Asset, error) {
+func (reg *Registry) findByID(ctx context.Context, id types.AssetID) (*Asset, error) {
 	reg.cacheMu.Lock()
 	cached, ok := reg.cache.Get(id)
 	reg.cacheMu.Unlock()
@@ -151,7 +151,7 @@ func (reg *Registry) FindByAlias(ctx context.Context, alias string) (*Asset, err
 	cachedID, ok := reg.aliasCache.Get(alias)
 	reg.cacheMu.Unlock()
 	if ok {
-		return reg.findByID(ctx, cachedID.(bc.AssetID))
+		return reg.findByID(ctx, cachedID.(types.AssetID))
 	}
 
 	untypedAsset, err := reg.aliasGroup.Do(alias, func() (interface{}, error) {
@@ -216,7 +216,7 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 
 // insertAssetTags inserts a set of tags for the given assetID.
 // It must take place inside a database transaction.
-func insertAssetTags(ctx context.Context, db pg.DB, assetID bc.AssetID, tags map[string]interface{}) error {
+func insertAssetTags(ctx context.Context, db pg.DB, assetID types.AssetID, tags map[string]interface{}) error {
 	tagsParam, err := mapToNullString(tags)
 	if err != nil {
 		return errors.Wrap(err)

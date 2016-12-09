@@ -22,6 +22,7 @@ import (
 	"chain/protocol/prottest"
 	"chain/protocol/vm"
 	"chain/testutil"
+	"chain/types"
 )
 
 func TestBuildFinal(t *testing.T) {
@@ -41,7 +42,7 @@ func TestBuildFinal(t *testing.T) {
 	}
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-	assetAmt := bc.AssetAmount{
+	assetAmt := types.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
 	}
@@ -151,7 +152,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-	assetAmt := bc.AssetAmount{
+	assetAmt := types.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
 	}
@@ -239,7 +240,7 @@ func TestTransfer(t *testing.T) {
 	assetIDStr := assetID.String()
 
 	// Preface: issue some asset for account1ID to transfer to account2ID
-	issueAssetAmount := bc.AssetAmount{
+	issueAssetAmount := types.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
 	}

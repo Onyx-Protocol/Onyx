@@ -11,6 +11,7 @@ import (
 
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
 type tracebuf struct {
@@ -181,10 +182,10 @@ func TestVerifyTxInput(t *testing.T) {
 		wantErr error
 	}{{
 		input: bc.NewSpendInput(
-			bc.Hash{},
+			types.Hash{},
 			0,
 			[][]byte{{2}, {3}},
-			bc.AssetID{},
+			types.AssetID{},
 			1,
 			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			nil,
@@ -195,7 +196,7 @@ func TestVerifyTxInput(t *testing.T) {
 			nil,
 			1,
 			nil,
-			bc.Hash{},
+			types.Hash{},
 			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			[][]byte{{2}, {3}},
 		),
@@ -221,7 +222,7 @@ func TestVerifyTxInput(t *testing.T) {
 			nil,
 			1,
 			nil,
-			bc.Hash{},
+			types.Hash{},
 			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			[][]byte{make([]byte, 50001)},
 		),
@@ -452,7 +453,7 @@ func TestVerifyTxInputQuickCheck(t *testing.T) {
 			}
 		}()
 		tx := bc.NewTx(bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, witnesses, bc.AssetID{}, 10, program, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(types.Hash{}, 0, witnesses, types.AssetID{}, 10, program, nil)},
 		})
 		verifyTxInput(tx, 0)
 		return true

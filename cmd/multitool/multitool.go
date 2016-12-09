@@ -24,6 +24,7 @@ import (
 	"chain/crypto/ed25519/chainkd"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
+	"chain/types"
 )
 
 // A timed reader times out its Read() operation after a specified
@@ -156,8 +157,8 @@ func mustDecodeHex(s string) []byte {
 	return res
 }
 
-func mustDecodeHash(s string) bc.Hash {
-	var h bc.Hash
+func mustDecodeHash(s string) types.Hash {
+	var h types.Hash
 	err := h.UnmarshalText([]byte(strings.TrimSpace(s)))
 	if err != nil {
 		errorf("error decoding hash: %s", err)
@@ -174,7 +175,7 @@ func assetid(args []string) {
 	initialBlockInp, _ = input(args, 1, usedStdin)
 	issuance := mustDecodeHex(issuanceInp)
 	initialBlock := mustDecodeHash(initialBlockInp)
-	assetID := bc.ComputeAssetID(issuance, initialBlock, 1)
+	assetID := types.ComputeAssetID(issuance, initialBlock, 1, 1)
 	fmt.Println(assetID.String())
 }
 
@@ -502,5 +503,5 @@ func verify(args []string) {
 }
 
 func zerohash(_ []string) {
-	fmt.Println(bc.Hash{}.String())
+	fmt.Println(types.Hash{}.String())
 }

@@ -23,6 +23,7 @@ import (
 	"chain/protocol/prottest"
 	"chain/protocol/state"
 	"chain/testutil"
+	"chain/types"
 )
 
 func TestSighashCheck(t *testing.T) {
@@ -45,7 +46,7 @@ func TestSighashCheck(t *testing.T) {
 	prottest.MakeBlock(t, info.Chain)
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
-	assetAmount := bc.AssetAmount{
+	assetAmount := types.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  1,
 	}
@@ -113,7 +114,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	dumpBlocks(ctx, t, db)
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
-	assetAmount := bc.AssetAmount{
+	assetAmount := types.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  10,
 	}
@@ -220,7 +221,7 @@ func dumpTab(ctx context.Context, t *testing.T, db pg.DB, q string) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var hash bc.Hash
+		var hash types.Hash
 		var tx bc.TxData
 		err = rows.Scan(&hash, &tx)
 		if err != nil {
@@ -243,7 +244,7 @@ func dumpBlocks(ctx context.Context, t *testing.T, db pg.DB) {
 	defer rows.Close()
 	for rows.Next() {
 		var height uint64
-		var hash bc.Hash
+		var hash types.Hash
 		err = rows.Scan(&height, &hash)
 		if err != nil {
 			t.Fatal(err)
@@ -365,7 +366,7 @@ func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
 }
 
 func issue(ctx context.Context, t testing.TB, info *testInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
-	assetAmount := bc.AssetAmount{
+	assetAmount := types.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
@@ -382,7 +383,7 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, destAcctID string,
 }
 
 func transfer(ctx context.Context, t testing.TB, info *testInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
-	assetAmount := bc.AssetAmount{
+	assetAmount := types.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}

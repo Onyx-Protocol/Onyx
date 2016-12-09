@@ -12,6 +12,7 @@ import (
 	"chain/protocol/state"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
+	"chain/types"
 )
 
 var (
@@ -31,7 +32,7 @@ var (
 // to the pool.
 //
 // ConfirmTx must not mutate the snapshot or the block.
-func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, block *bc.Block, tx *bc.Tx) error {
+func ConfirmTx(snapshot *state.Snapshot, initialBlockHash types.Hash, block *bc.Block, tx *bc.Tx) error {
 	if block.Version == 1 && tx.Version != 1 {
 		return errors.WithDetailf(ErrBadTx, "unknown transaction version %d for block version 1", tx.Version)
 	}
@@ -125,7 +126,7 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 	// Check that each input commitment appears only once. Also check that sums
 	// of inputs and outputs balance, and check that both input and output sums
 	// are less than 2^63 so that they don't overflow their int64 representation.
-	parity := make(map[bc.AssetID]int64)
+	parity := make(map[types.AssetID]int64)
 	commitments := make(map[string]int)
 
 	for i, txin := range tx.Inputs {

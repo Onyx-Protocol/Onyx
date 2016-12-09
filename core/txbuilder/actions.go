@@ -7,6 +7,7 @@ import (
 
 	"chain/encoding/json"
 	"chain/protocol/bc"
+	"chain/types"
 )
 
 func DecodeControlProgramAction(data []byte) (Action, error) {
@@ -16,7 +17,7 @@ func DecodeControlProgramAction(data []byte) (Action, error) {
 }
 
 type controlProgramAction struct {
-	bc.AssetAmount
+	types.AssetAmount
 	Program       json.HexBytes `json:"control_program"`
 	ReferenceData json.Map      `json:"reference_data"`
 }
@@ -26,7 +27,7 @@ func (a *controlProgramAction) Build(ctx context.Context, maxTime time.Time, b *
 	if len(a.Program) == 0 {
 		missing = append(missing, "control_program")
 	}
-	if a.AssetID == (bc.AssetID{}) {
+	if a.AssetID == (types.AssetID{}) {
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {
