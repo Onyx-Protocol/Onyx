@@ -72,7 +72,7 @@ describe('Chain SDK integration test', function() {
 
     // Key creation and signer setup
 
-    .then(() => Promise.all([
+    .then(() => expect(Promise.all([
       client.mockHsm.keys.create({alias: aliceAlias}),
       client.mockHsm.keys.create({alias: bobAlias}),
       client.mockHsm.keys.create({alias: goldAlias}),
@@ -80,7 +80,9 @@ describe('Chain SDK integration test', function() {
       client.mockHsm.keys.create({alias: bronzeAlias}),
       client.mockHsm.keys.create({alias: copperAlias}),
       client.mockHsm.keys.create(),
-    ])).then(keys => {
+    ])).to.be.fulfilled)
+
+    .then(keys => {
       aliceKey = keys[0]
       bobKey = keys[1]
       goldKey = keys[2]
@@ -95,10 +97,12 @@ describe('Chain SDK integration test', function() {
 
     // Account creation
 
-    .then(() => Promise.all([
+    .then(() => expect(Promise.all([
       client.accounts.create({alias: aliceAlias, root_xpubs: [aliceKey.xpub], quorum: 1}),
       client.accounts.create({alias: bobAlias, root_xpubs: [bobKey.xpub], quorum: 1})
-    ])).then(accounts => {
+    ])).to.be.fulfilled)
+
+    .then(accounts => {
       aliceId = accounts[0][0].id
     })
 
@@ -111,22 +115,22 @@ describe('Chain SDK integration test', function() {
     // Batch account creation
 
     .then(() =>
-      client.accounts.createBatch([
+      expect(client.accounts.createBatch([
         {alias: `carol-${uuid.v4()}`, root_xpubs: [otherKey.xpub], quorum: 1}, // success
         {alias: 'david'},
         {alias: `eve-${uuid.v4()}`, root_xpubs: [otherKey.xpub], quorum: 1}, // success
-      ])
+      ])).to.be.fulfilled
     ).then(batchResponse => {
-      assert.equal(batchResponse.successes.length, 2)
-      assert.equal(batchResponse.errors.length, 1)
+      assert.equal(batchResponse.successes[1], null)
+      assert.deepEqual([batchResponse.errors[0], batchResponse.errors[2]], [null, null])
     })
 
     // Asset creation
 
-    .then(() => Promise.all([
+    .then(() => expect(Promise.all([
       client.assets.create({alias: goldAlias, root_xpubs: [goldKey.xpub], quorum: 1}),
       client.assets.create({alias: silverAlias, root_xpubs: [silverKey.xpub], quorum: 1})
-    ]))
+    ])).to.be.fulfilled)
 
     .then(() =>
       expect(client.assets.create({alias: 'unobtanium'}))
@@ -137,11 +141,11 @@ describe('Chain SDK integration test', function() {
     // Batch asset creation
 
     .then(() =>
-      client.assets.createBatch([
+      expect(client.assets.createBatch([
         {alias: bronzeAlias, root_xpubs: [otherKey.xpub], quorum: 1}, // success
         {alias: 'unobtanium'},
         {alias: copperAlias, root_xpubs: [otherKey.xpub], quorum: 1}, // success
-      ])
+      ])).to.be.fulfilled
     ).then(batchResponse => {
       assert.equal(batchResponse.successes.length, 2)
       assert.equal(batchResponse.errors.length, 1)
@@ -174,10 +178,10 @@ describe('Chain SDK integration test', function() {
       .then((signed) => expect(client.transactions.submit(signed)).to.be.fulfilled)
     )
 
-    .then(() => Promise.all([
+    .then(() => expect(Promise.all([
       balanceByAssetAlias(client.balances.query({filter: `account_alias='${aliceAlias}'`})),
       balanceByAssetAlias(client.balances.query({filter: `account_alias='${bobAlias}'`}))
-    ]))
+    ])).to.be.fulfilled)
     .then(balances => {
       assert.deepEqual(balances[0], {[goldAlias]: 100})
       assert.deepEqual(balances[1], {[silverAlias]: 200})
@@ -209,13 +213,14 @@ describe('Chain SDK integration test', function() {
           asset_alias: goldAlias,
           amount: 100
         })
-      })).to.be.fulfilled)
-      .then((issuance) => expect(signer.sign(issuance)).to.be.fulfilled)
-      .then((signed) =>
+      })).to.be.fulfilled
+      .then(issuance => expect(signer.sign(issuance)).to.be.fulfilled)
+      .then(signed =>
         expect(client.transactions.submit(signed))
         // unbalanced transaction
         .to.be.rejectedWith('CH735')
       )
+    )
 
     // Atomic swap
 
@@ -267,7 +272,7 @@ describe('Chain SDK integration test', function() {
 
     // Batch transactions
 
-    .then(() => client.transactions.buildBatch([
+    .then(() => expect(client.transactions.buildBatch([
         (builder) => {
           builder.issue({
             asset_alias: goldAlias,
@@ -308,10 +313,10 @@ describe('Chain SDK integration test', function() {
             asset_alias: silverAlias,
             amount: 50
           })
-        }])
+        }])).to.be.fulfilled
     )
-    .then((buildBatch) => signer.signBatch(buildBatch.successes))
-    .then((signedBatch) => client.transactions.submitBatch(signedBatch.successes))
+    .then((buildBatch) => expect(signer.signBatch(buildBatch.successes)).to.be.fulfilled)
+    .then((signedBatch) => expect(client.transactions.submitBatch(signedBatch.successes)).to.be.fulfilled)
 
     // Control program creation
 
@@ -354,7 +359,7 @@ describe('Chain SDK integration test', function() {
 
     // Transaction feeds
 
-    .then(() => Promise.all([
+    .then(() => expect(Promise.all([
       client.transactionFeeds.create({
         alias: issuancesAlias,
         filter: "inputs(type='issue')"
@@ -363,7 +368,6 @@ describe('Chain SDK integration test', function() {
         alias: spendsAlias,
         filter: "inputs(type='spend')"
       })
-    ]))
-
+    ])).to.be.fulfilled)
   })
 })
