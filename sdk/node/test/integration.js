@@ -147,8 +147,8 @@ describe('Chain SDK integration test', function() {
         {alias: copperAlias, root_xpubs: [otherKey.xpub], quorum: 1}, // success
       ])).to.be.fulfilled
     ).then(batchResponse => {
-      assert.equal(batchResponse.successes.length, 2)
-      assert.equal(batchResponse.errors.length, 1)
+      assert.equal(batchResponse.successes[1], null)
+      assert.deepEqual([batchResponse.errors[0], batchResponse.errors[2]], [null, null])
     })
 
     // Basic issuance
@@ -273,6 +273,7 @@ describe('Chain SDK integration test', function() {
     // Batch transactions
 
     .then(() => expect(client.transactions.buildBatch([
+        // Should succeed
         (builder) => {
           builder.issue({
             asset_alias: goldAlias,
@@ -285,12 +286,14 @@ describe('Chain SDK integration test', function() {
           })
         },
 
+        // Should fail at the build step
         (builder) => {
           builder.issue({
             asset_alias: 'foobar'
           })
         },
 
+        // Should fail at the submit step
         (builder) => {
           builder.issue({
             asset_alias: goldAlias,
@@ -303,6 +306,7 @@ describe('Chain SDK integration test', function() {
           })
         },
 
+        // Should succeed
         (builder) => {
           builder.issue({
             asset_alias: silverAlias,
