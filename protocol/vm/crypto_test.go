@@ -68,7 +68,7 @@ func TestCheckSig(t *testing.T) {
 			t.Fatalf("case %d: %s", i, err)
 		}
 		vm := &virtualMachine{
-			program:  prog,
+			curprog:  prog,
 			runLimit: 50000,
 		}
 		ok, err := vm.run()

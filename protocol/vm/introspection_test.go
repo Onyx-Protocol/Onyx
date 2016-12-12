@@ -20,7 +20,7 @@ func TestNextProgram(t *testing.T) {
 	vm := &virtualMachine{
 		runLimit: 50000,
 		block:    block,
-		program:  prog,
+		curprog:  prog,
 	}
 	ok, err := vm.run()
 	if err != nil {
@@ -36,7 +36,7 @@ func TestNextProgram(t *testing.T) {
 	vm = &virtualMachine{
 		runLimit: 50000,
 		block:    block,
-		program:  prog,
+		curprog:  prog,
 	}
 	ok, err = vm.run()
 	if err != nil {
@@ -59,7 +59,7 @@ func TestBlockTime(t *testing.T) {
 	vm := &virtualMachine{
 		runLimit: 50000,
 		block:    block,
-		program:  prog,
+		curprog:  prog,
 	}
 	ok, err := vm.run()
 	if err != nil {
@@ -75,7 +75,7 @@ func TestBlockTime(t *testing.T) {
 	vm = &virtualMachine{
 		runLimit: 50000,
 		block:    block,
-		program:  prog,
+		curprog:  prog,
 	}
 	ok, err = vm.run()
 	if err != nil {
@@ -98,7 +98,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		runLimit:   50000,
 		tx:         tx,
 		inputIndex: 0,
-		program:    []byte{uint8(OP_OUTPOINT)},
+		curprog:    []byte{uint8(OP_OUTPOINT)},
 	}
 	err := vm.step()
 	if err != nil {
@@ -113,7 +113,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		runLimit:   50000,
 		tx:         tx,
 		inputIndex: 1,
-		program:    []byte{uint8(OP_OUTPOINT)},
+		curprog:    []byte{uint8(OP_OUTPOINT)},
 	}
 	err = vm.step()
 	if err != ErrContext {
@@ -124,7 +124,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		runLimit:   50000,
 		tx:         tx,
 		inputIndex: 0,
-		program:    []byte{uint8(OP_NONCE)},
+		curprog:    []byte{uint8(OP_NONCE)},
 	}
 	err = vm.step()
 	if err != ErrContext {
@@ -134,7 +134,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		runLimit:   50000,
 		tx:         tx,
 		inputIndex: 1,
-		program:    []byte{uint8(OP_NONCE)},
+		curprog:    []byte{uint8(OP_NONCE)},
 	}
 	err = vm.step()
 	if err != nil {
@@ -173,8 +173,7 @@ func TestIntrospectionOps(t *testing.T) {
 	cases := []testStruct{{
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				{4},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
@@ -185,7 +184,7 @@ func TestIntrospectionOps(t *testing.T) {
 			},
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49984,
+			runLimit:     50101,
 			deferredCost: -117,
 			tx:           tx,
 			dataStack:    [][]byte{{1}},
@@ -193,8 +192,7 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				{3},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
@@ -205,7 +203,7 @@ func TestIntrospectionOps(t *testing.T) {
 			},
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49984,
+			runLimit:     50102,
 			deferredCost: -118,
 			tx:           tx,
 			dataStack:    [][]byte{{}},
@@ -213,8 +211,7 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				{0},
 				[]byte{},
@@ -225,7 +222,7 @@ func TestIntrospectionOps(t *testing.T) {
 			},
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49984,
+			runLimit:     50070,
 			deferredCost: -86,
 			tx:           tx,
 			dataStack:    [][]byte{{}},
@@ -233,8 +230,6 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       nil,
 			dataStack: [][]byte{
 				{0},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
@@ -248,16 +243,13 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			tx:        tx,
-			dataStack: [][]byte{},
+			tx: tx,
 		},
 		wantErr: ErrDataStackUnderflow,
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				[]byte("controlprog"),
 			},
@@ -266,8 +258,7 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				append([]byte{2}, make([]byte, 31)...),
 				{1},
@@ -278,8 +269,7 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				{7},
 				append([]byte{2}, make([]byte, 31)...),
@@ -291,8 +281,7 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				{7},
@@ -305,8 +294,7 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				{4},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
@@ -320,8 +308,7 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				{4},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
@@ -335,8 +322,7 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				Int64Bytes(-1),
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
@@ -350,8 +336,7 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			tx:       tx,
+			tx: tx,
 			dataStack: [][]byte{
 				{5},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
@@ -380,12 +365,10 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_ASSET,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-			tx:        tx,
+			tx: tx,
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49999,
+			runLimit:     49959,
 			deferredCost: 40,
 			dataStack:    [][]byte{append([]byte{1}, make([]byte, 31)...)},
 			tx:           tx,
@@ -393,12 +376,10 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_AMOUNT,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-			tx:        tx,
+			tx: tx,
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49999,
+			runLimit:     49990,
 			deferredCost: 9,
 			dataStack:    [][]byte{{5}},
 			tx:           tx,
@@ -406,12 +387,11 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_PROGRAM,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-			tx:        tx,
+			mainprog: []byte("spendprog"),
+			tx:       tx,
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49999,
+			runLimit:     49982,
 			deferredCost: 17,
 			dataStack:    [][]byte{[]byte("spendprog")},
 			tx:           tx,
@@ -419,13 +399,13 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_PROGRAM,
 		startVM: &virtualMachine{
+			mainprog:   []byte("issueprog"),
 			runLimit:   50000,
-			dataStack:  [][]byte{},
 			tx:         tx,
 			inputIndex: 1,
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49999,
+			runLimit:     49982,
 			deferredCost: 17,
 			dataStack:    [][]byte{[]byte("issueprog")},
 			tx:           tx,
@@ -434,25 +414,21 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_MINTIME,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-			tx:        tx,
+			tx: tx,
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49999,
+			runLimit:     49991,
 			deferredCost: 8,
-			dataStack:    [][]byte{{}},
 			tx:           tx,
+			dataStack:    [][]byte{[]byte{}},
 		},
 	}, {
 		op: OP_MAXTIME,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-			tx:        tx,
+			tx: tx,
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49999,
+			runLimit:     49990,
 			deferredCost: 9,
 			dataStack:    [][]byte{{20}},
 			tx:           tx,
@@ -460,12 +436,10 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_TXREFDATAHASH,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-			tx:        tx,
+			tx: tx,
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49999,
+			runLimit:     49959,
 			deferredCost: 40,
 			dataStack: [][]byte{{
 				62, 81, 144, 242, 105, 30, 109, 69, 28, 80, 237, 249, 169, 166, 106, 122,
@@ -476,12 +450,10 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_REFDATAHASH,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-			tx:        tx,
+			tx: tx,
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49999,
+			runLimit:     49959,
 			deferredCost: 40,
 			dataStack: [][]byte{{
 				68, 190, 94, 20, 206, 33, 111, 75, 44, 53, 165, 235, 11, 53, 208, 120,
@@ -492,15 +464,13 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_INDEX,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-			tx:        tx,
+			tx: tx,
 		},
 		wantVM: &virtualMachine{
-			runLimit:     49999,
+			runLimit:     49991,
 			deferredCost: 8,
-			dataStack:    [][]byte{{}},
 			tx:           tx,
+			dataStack:    [][]byte{[]byte{}},
 		},
 	}}
 
@@ -514,25 +484,30 @@ func TestIntrospectionOps(t *testing.T) {
 		cases = append(cases, testStruct{
 			op: op,
 			startVM: &virtualMachine{
-				runLimit:  0,
-				dataStack: [][]byte{},
-				tx:        tx,
+				runLimit: 0,
+				tx:       tx,
 			},
 			wantErr: ErrRunLimitExceeded,
 		}, testStruct{
 			op: op,
 			startVM: &virtualMachine{
-				runLimit:  50000,
-				dataStack: [][]byte{},
-				tx:        nil,
+				tx: nil,
 			},
 			wantErr: ErrContext,
 		})
 	}
 
 	for i, c := range cases {
-		err := ops[c.op].fn(c.startVM)
-
+		prog := []byte{byte(c.op)}
+		vm := c.startVM
+		if c.wantErr != ErrRunLimitExceeded {
+			vm.runLimit = 50000
+		}
+		if vm.mainprog == nil {
+			vm.mainprog = prog
+		}
+		vm.curprog = prog
+		_, err := vm.run()
 		if err != c.wantErr {
 			t.Errorf("case %d, op %s: got err = %v want %v", i, ops[c.op].name, err, c.wantErr)
 			continue
@@ -540,9 +515,12 @@ func TestIntrospectionOps(t *testing.T) {
 		if c.wantErr != nil {
 			continue
 		}
-
+		c.wantVM.mainprog = vm.mainprog
+		c.wantVM.curprog = prog
+		c.wantVM.pc = 1
+		c.wantVM.nextPC = 1
 		c.wantVM.sigHasher = c.startVM.sigHasher
-		if !reflect.DeepEqual(c.startVM, c.wantVM) {
+		if !reflect.DeepEqual(vm, c.wantVM) {
 			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, ops[c.op].name, c.startVM, c.wantVM)
 		}
 	}

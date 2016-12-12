@@ -153,7 +153,7 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 		trace := new(tracebuf)
 		TraceOut = trace
 		vm := &virtualMachine{
-			program:   prog,
+			curprog:   prog,
 			runLimit:  initialRunLimit,
 			dataStack: append([][]byte{}, c.args...),
 		}
@@ -226,9 +226,6 @@ func TestVerifyTxInput(t *testing.T) {
 			[][]byte{make([]byte, 50001)},
 		),
 		wantErr: ErrRunLimitExceeded,
-	}, {
-		input:   &bc.TxInput{},
-		wantErr: ErrUnsupportedTx,
 	}}
 
 	for i, c := range cases {
@@ -239,11 +236,11 @@ func TestVerifyTxInput(t *testing.T) {
 		got, gotErr := VerifyTxInput(tx, 0)
 
 		if gotErr != c.wantErr {
-			t.Errorf("VerifyTxInput(%+v) err = %v want %v", i, gotErr, c.wantErr)
+			t.Errorf("VerifyTxInput(%d) err = %v want %v", i, gotErr, c.wantErr)
 		}
 
 		if got != c.want {
-			t.Errorf("VerifyTxInput(%+v) = %v want %v", i, got, c.want)
+			t.Errorf("VerifyTxInput(%d) = %v want %v", i, got, c.want)
 		}
 	}
 }
@@ -281,10 +278,10 @@ func TestRun(t *testing.T) {
 		want    bool
 		wantErr error
 	}{{
-		vm:   &virtualMachine{runLimit: 50000, program: []byte{byte(OP_TRUE)}},
+		vm:   &virtualMachine{runLimit: 50000, curprog: []byte{byte(OP_TRUE)}},
 		want: true,
 	}, {
-		vm:      &virtualMachine{runLimit: 50000, program: []byte{byte(OP_ADD)}},
+		vm:      &virtualMachine{runLimit: 50000, curprog: []byte{byte(OP_ADD)}},
 		wantErr: ErrDataStackUnderflow,
 	}}
 
@@ -313,11 +310,11 @@ func TestStep(t *testing.T) {
 		wantErr error
 	}{{
 		startVM: &virtualMachine{
-			program:  []byte{byte(OP_TRUE)},
+			curprog:  []byte{byte(OP_TRUE)},
 			runLimit: 50000,
 		},
 		wantVM: &virtualMachine{
-			program:   []byte{byte(OP_TRUE)},
+			curprog:   []byte{byte(OP_TRUE)},
 			runLimit:  49990,
 			dataStack: [][]byte{{1}},
 			pc:        1,
@@ -326,13 +323,13 @@ func TestStep(t *testing.T) {
 		},
 	}, {
 		startVM: &virtualMachine{
-			program:   []byte{byte(OP_TRUE), byte(OP_JUMP), byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
+			curprog:   []byte{byte(OP_TRUE), byte(OP_JUMP), byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
 			runLimit:  49990,
 			dataStack: [][]byte{},
 			pc:        1,
 		},
 		wantVM: &virtualMachine{
-			program:      []byte{byte(OP_TRUE), byte(OP_JUMP), byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
+			curprog:      []byte{byte(OP_TRUE), byte(OP_JUMP), byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
 			runLimit:     49989,
 			dataStack:    [][]byte{},
 			data:         []byte{byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
@@ -342,13 +339,13 @@ func TestStep(t *testing.T) {
 		},
 	}, {
 		startVM: &virtualMachine{
-			program:   []byte{byte(OP_TRUE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			curprog:   []byte{byte(OP_TRUE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
 			runLimit:  49995,
 			dataStack: [][]byte{{1}},
 			pc:        1,
 		},
 		wantVM: &virtualMachine{
-			program:      []byte{byte(OP_TRUE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			curprog:      []byte{byte(OP_TRUE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
 			runLimit:     50003,
 			dataStack:    [][]byte{},
 			pc:           0,
@@ -358,13 +355,13 @@ func TestStep(t *testing.T) {
 		},
 	}, {
 		startVM: &virtualMachine{
-			program:   []byte{byte(OP_FALSE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			curprog:   []byte{byte(OP_FALSE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
 			runLimit:  49995,
 			dataStack: [][]byte{{}},
 			pc:        1,
 		},
 		wantVM: &virtualMachine{
-			program:      []byte{byte(OP_FALSE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			curprog:      []byte{byte(OP_FALSE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
 			runLimit:     50002,
 			dataStack:    [][]byte{},
 			pc:           6,
@@ -374,12 +371,12 @@ func TestStep(t *testing.T) {
 		},
 	}, {
 		startVM: &virtualMachine{
-			program:   []byte{255},
+			curprog:   []byte{255},
 			runLimit:  50000,
 			dataStack: [][]byte{},
 		},
 		wantVM: &virtualMachine{
-			program:   []byte{255},
+			curprog:   []byte{255},
 			runLimit:  49999,
 			pc:        1,
 			nextPC:    1,
@@ -387,17 +384,35 @@ func TestStep(t *testing.T) {
 		},
 	}, {
 		startVM: &virtualMachine{
-			program:  []byte{byte(OP_ADD)},
+			curprog:  []byte{byte(OP_ADD)},
 			runLimit: 50000,
 		},
 		wantErr: ErrDataStackUnderflow,
 	}, {
 		startVM: &virtualMachine{
-			program:  []byte{byte(OP_INDEX)},
+			curprog:  []byte{byte(OP_INDEX)},
 			runLimit: 1,
 			tx:       &bc.Tx{},
 		},
 		wantErr: ErrRunLimitExceeded,
+	}, {
+		startVM: &virtualMachine{
+			curprog:           []byte{255},
+			runLimit:          100,
+			expansionReserved: true,
+		},
+		wantErr: ErrDisallowedOpcode,
+	}, {
+		startVM: &virtualMachine{
+			curprog:  []byte{255},
+			runLimit: 100,
+		},
+		wantVM: &virtualMachine{
+			curprog:  []byte{255},
+			runLimit: 99,
+			pc:       1,
+			nextPC:   1,
+		},
 	}}
 
 	for i, c := range cases {
