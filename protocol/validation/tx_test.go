@@ -1046,19 +1046,19 @@ func TestConfirmTx(t *testing.T) {
 			if c.doApply {
 				err = ApplyTx(snapshot, tx)
 				if err != nil {
-					t.Errorf("case %d: confirm succeeded but apply failed: %s", err)
+					t.Errorf("case %d: confirm succeeded but apply failed: %s", i, err)
 					continue
 				}
 				// Apply succeeded, now try to confirm again - it should fail
 				// with "invalid output."
 				err = ConfirmTx(snapshot, initialBlockHash, block, tx)
 				if err == nil {
-					t.Errorf("case %d: confirm and apply succeeded, second confirm succeeded unexpectedly")
+					t.Errorf("case %d: confirm and apply succeeded, second confirm succeeded unexpectedly", i)
 					continue
 				}
 				suberr, _ := errors.Data(err)["badtx"]
 				if suberr != errInvalidOutput {
-					t.Errorf("case %d: confirm and apply succeeded, second confirm failed but with the wrong error: %s", err)
+					t.Errorf("case %d: confirm and apply succeeded, second confirm failed but with the wrong error: %s", i, err)
 				}
 			}
 
