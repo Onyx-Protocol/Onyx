@@ -566,7 +566,7 @@ func TestRangeErrs(t *testing.T) {
 	for i, c := range cases {
 		prog, _ := Assemble(c.prog)
 		vm := &virtualMachine{
-			program:  prog,
+			curprog:  prog,
 			runLimit: 50000,
 		}
 		_, err := vm.run()
