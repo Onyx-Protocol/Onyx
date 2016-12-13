@@ -228,7 +228,7 @@ func TestVerifyTxInput(t *testing.T) {
 		wantErr: ErrRunLimitExceeded,
 	}, {
 		input:   &bc.TxInput{},
-		wantErr: ErrUnsupportedTx,
+		wantErr: ErrUnexpected,
 	}}
 
 	for i, c := range cases {

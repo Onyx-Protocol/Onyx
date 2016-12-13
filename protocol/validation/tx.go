@@ -222,13 +222,7 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 		}
 		if err != nil {
 			input := tx.Inputs[i]
-			var program []byte
-			if input.IsIssuance() {
-				program = input.IssuanceProgram()
-			} else {
-				program = input.ControlProgram()
-			}
-			scriptStr, e := vm.Disassemble(program)
+			scriptStr, e := vm.Disassemble(input.Program())
 			if e != nil {
 				scriptStr = "disassembly failed: " + e.Error()
 			}

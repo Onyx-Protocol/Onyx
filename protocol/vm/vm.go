@@ -55,20 +55,8 @@ func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 
 	txinput := tx.Inputs[inputIndex]
 
-	var program []byte
-	switch inp := txinput.TypedInput.(type) {
-	case *bc.IssuanceInput:
-		if inp.VMVersion != 1 {
-			return false, ErrUnsupportedVM
-		}
-		program = inp.IssuanceProgram
-	case *bc.SpendInput:
-		if inp.VMVersion != 1 {
-			return false, ErrUnsupportedVM
-		}
-		program = inp.ControlProgram
-	default:
-		return false, ErrUnsupportedTx
+	if txinput.VMVersion() != 1 {
+		return false, ErrUnsupportedVM
 	}
 
 	vm := virtualMachine{
@@ -76,7 +64,7 @@ func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 		inputIndex: inputIndex,
 		sigHasher:  bc.NewSigHasher(&tx.TxData),
 
-		program:  program,
+		program:  txinput.Program(),
 		runLimit: initialRunLimit,
 	}
 

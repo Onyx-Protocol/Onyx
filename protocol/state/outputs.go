@@ -27,7 +27,7 @@ func NewOutput(o bc.TxOutput, p bc.Outpoint) *Output {
 // excludes reference data).
 func Prevout(in *bc.TxInput) *Output {
 	assetAmount := in.AssetAmount()
-	t := bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, in.ControlProgram(), nil)
+	t := bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, in.Program(), nil)
 	return &Output{
 		Outpoint: in.Outpoint(),
 		TxOutput: *t,

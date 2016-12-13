@@ -93,14 +93,14 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 			if seen[in.AssetID()] {
 				continue
 			}
-			definition, err := definitionFromProgram(in.IssuanceProgram())
+			definition, err := definitionFromProgram(in.Program())
 			if err != nil {
 				continue
 			}
 			seen[in.AssetID()] = true
 			assetIDs = append(assetIDs, in.AssetID().String())
 			definitions = append(definitions, string(definition))
-			issuancePrograms = append(issuancePrograms, in.IssuanceProgram())
+			issuancePrograms = append(issuancePrograms, in.Program())
 		}
 	}
 	if len(assetIDs) == 0 {
