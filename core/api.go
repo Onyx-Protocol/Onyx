@@ -137,7 +137,9 @@ func (h *Handler) init() {
 	m.Handle("/list-unspent-outputs", needConfig(h.listUnspentOutputs))
 	m.Handle("/reset", needConfig(h.reset))
 
-	m.Handle(networkRPCPrefix+"submit", needConfig(h.Submitter.Submit))
+	m.Handle(networkRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *bc.Tx) error {
+		return h.Submitter.Submit(ctx, tx)
+	}))
 	m.Handle(networkRPCPrefix+"get-blocks", needConfig(h.getBlocksRPC)) // DEPRECATED: use get-block instead
 	m.Handle(networkRPCPrefix+"get-block", needConfig(h.getBlockRPC))
 	m.Handle(networkRPCPrefix+"get-snapshot-info", needConfig(h.getSnapshotInfoRPC))
