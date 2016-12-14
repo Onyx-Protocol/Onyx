@@ -121,20 +121,6 @@ func (t *TxInput) VMVersion() uint64 {
 	return t.TypedInput.vmVersion()
 }
 
-func (t *TxInput) ControlProgram() []byte {
-	if si, ok := t.TypedInput.(*SpendInput); ok {
-		return si.ControlProgram
-	}
-	return nil
-}
-
-func (t *TxInput) IssuanceProgram() []byte {
-	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
-		return ii.IssuanceProgram
-	}
-	return nil
-}
-
 func (t *TxInput) Arguments() [][]byte {
 	switch inp := t.TypedInput.(type) {
 	case *IssuanceInput:
