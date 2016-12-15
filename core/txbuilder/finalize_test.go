@@ -204,6 +204,8 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			b.Fatal(err)
 		}
 		b.Logf("finalized %v", tx.Hash)
+		prottest.MakeBlock(b, info.Chain, p.Dump(ctx))
+		<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 		tx, err = transfer(ctx, b, info, p, info.acctA.ID, info.acctB.ID, 10)
 		if err != nil {
@@ -266,8 +268,54 @@ func BenchmarkGenerateBlock(b *testing.B) {
 }
 
 func benchGenBlock(b *testing.B) {
-	const tx1hex = `0000000101341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5ffffffff6f00473045022100c561a9b4854742bc36c805513b872b2c0a1a367da24710eadd4f3fbc3b1ab41302207cf9eec4e5db694831fe43cf193f23d869291025ac6062199dd6b8998e93e15825512103623fb1fe38ce7e43cf407ec99b061c6d2da0278e80ce094393875c5b94f1ed9051ae0001df03f294bd08930f542a42b91199a8afe1b45c28eeb058cc5e8c8d600e0dd42f0000000000000001000000000000000000000474782d31`
-	const tx2hex = `0000000101341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5ffffffff6e0046304402206ac2db5b49c8f9059d7ecad4f08a1d29e851e321720f590f5426cfbb19840d4402206aacef503d7c3cd065a17c2553b372ca2de0613eba3debc70896c9ab6545029b25512103b050bdde9880d9e8634f12798748cb26e9435a778305f3ae1ddba759d6479b2a51ae00015abad6dfb0de611046ebda5de05bfebc6a08d9a71831b43f2acd554bf54f33180000000000000001000000000000000000000474782d32`
+	const tx1hex = ("07" + // serflags
+		"01" + // transaction version
+		"0a" + // common fields extensible string length
+		"b0bbdcc705" + // common fields, mintime
+		"ffbfdcc705" + // common fields, maxtime
+		"00" + // common witness extensible string length
+		"01" + // inputs count
+		"01" + // input 0, asset version
+		"4c" + // input 0, input commitment length prefix
+		"01" + // input 0, input commitment, "spend" type
+		"dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292" + // input 0, spend input commitment, outpoint tx hash
+		"00" + // input 0, spend input commitment, outpoint index
+		"29" + // input 0, spend input commitment, output commitment length prefix
+		"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, spend input commitment, output commitment, asset id
+		"80a094a58d1d" + // input 0, spend input commitment, output commitment, amount
+		"01" + // input 0, spend input commitment, output commitment, vm version
+		"0101" + // input 0, spend input commitment, output commitment, control program
+		"05696e707574" + // input 0, reference data
+		"01" + // input 0, input witness length prefix
+		"00" + // input 0, input witness, number of args
+		"02" + // outputs count
+		"01" + // output 0, asset version
+		"29" + // output 0, output commitment length
+		"9ed3e85a8c2d3717b5c94bd2db2ab9cab56955b2c4fb4696f345ca97aaab82d6" + // output 0, output commitment, asset id
+		"80e0a596bb11" + // output 0, output commitment, amount
+		"01" + // output 0, output commitment, vm version
+		"0101" + // output 0, output commitment, control program
+		"00" + // output 0, reference data
+		"00" + // output 0, output witness
+		"01" + // output 1, asset version
+		"29" + // output 1, output commitment length
+		"9ed3e85a8c2d3717b5c94bd2db2ab9cab56955b2c4fb4696f345ca97aaab82d6" + // output 1, output commitment, asset id
+		"80c0ee8ed20b" + // output 1, output commitment, amount
+		"01" + // output 1, vm version
+		"0102" + // output 1, output commitment, control program
+		"00" + // output 1, reference data
+		"00" + // output 1, output witness
+		"0c646973747269627574696f6e") // reference data
+
+	const tx2hex = ("07" + // serflags
+		"01" + // transaction version
+		"02" + // common fields extensible string length
+		"00" + // common fields, mintime
+		"00" + // common fields, maxtime
+		"00" + // common witness extensible string length
+		"00" + // inputs count
+		"00" + // outputs count
+		"00") // reference data
 
 	b.StopTimer()
 
