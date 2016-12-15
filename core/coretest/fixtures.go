@@ -11,7 +11,6 @@ import (
 	"chain/core/pin"
 	"chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
-	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -73,8 +72,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, actions []txbuilder.Action) *bc.Tx {
 	template, err := txbuilder.Build(ctx, nil, actions, time.Now().Add(time.Minute))
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	SignTxTemplate(t, ctx, template, &testutil.TestXPrv)
@@ -82,8 +80,7 @@ func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.
 	tx := bc.NewTx(*template.Transaction)
 	err = txbuilder.FinalizeTx(ctx, c, s, tx)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	return tx

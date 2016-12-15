@@ -15,7 +15,6 @@ import (
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/mempool"
 	"chain/protocol/prottest"
@@ -55,8 +54,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	var builder txbuilder.TemplateBuilder
 	err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	tpl, err := builder.Build()
 	if err != nil {
@@ -107,8 +105,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	var builder txbuilder.TemplateBuilder
 	err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	tpl, err := builder.Build()
 	if err != nil {
@@ -163,8 +160,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 
 		err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
 		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
+			testutil.FatalErr(t, err)
 		}
 		tpl, err := builder.Build()
 		if err != nil {

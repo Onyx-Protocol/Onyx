@@ -253,16 +253,14 @@ func TestTransfer(t *testing.T) {
 		handler.Accounts.NewControlAction(issueAssetAmount, account1ID, nil),
 	}, time.Now().Add(time.Minute))
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	coretest.SignTxTemplate(t, ctx, txTemplate, nil)
 
 	err = txbuilder.FinalizeTx(ctx, c, p, bc.NewTx(*txTemplate.Transaction))
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
@@ -280,26 +278,22 @@ func TestTransfer(t *testing.T) {
 	var buildReq buildRequest
 	err = json.Unmarshal([]byte(buildReqStr), &buildReq)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	buildResult, err := handler.build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	jsonResult, err := json.MarshalIndent(buildResult, "", "  ")
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	var parsedResult []map[string]interface{}
 	err = json.Unmarshal(jsonResult, &parsedResult)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	if len(parsedResult) != 1 {
 		t.Errorf("expected build result to have length 1, got %d", len(parsedResult))
@@ -307,8 +301,7 @@ func TestTransfer(t *testing.T) {
 	toSign := inspectTemplate(t, parsedResult[0], account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
 	_, err = handler.submitSingle(ctx, txTemplate, "none")
@@ -326,25 +319,21 @@ func TestTransfer(t *testing.T) {
 	buildReqStr = fmt.Sprintf(buildReqFmt, assetAlias, account2Alias, assetAlias, account1Alias)
 	err = json.Unmarshal([]byte(buildReqStr), &buildReq)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	buildResult, err = handler.build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	jsonResult, err = json.MarshalIndent(buildResult, "", "  ")
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	err = json.Unmarshal(jsonResult, &parsedResult)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	if len(parsedResult) != 1 {
 		t.Errorf("expected build result to have length 1, got %d", len(parsedResult))
@@ -353,8 +342,7 @@ func TestTransfer(t *testing.T) {
 	txTemplate, err = toTxTemplate(ctx, toSign)
 	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	_, err = handler.submitSingle(ctx, txTemplate, "none")
 	if err != nil && errors.Root(err) != context.DeadlineExceeded {

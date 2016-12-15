@@ -66,8 +66,7 @@ func TestBuild(t *testing.T) {
 	expiryTime := time.Now().Add(time.Minute)
 	got, err := Build(ctx, nil, actions, expiryTime)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	want := &Template{
@@ -164,7 +163,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 
 	err = materializeWitnesses(tpl)
 	if err != nil {
-		t.Fatal(withStack(err))
+		testutil.FatalErr(t, err)
 	}
 
 	got := tpl.Transaction.Inputs[0].Arguments()
@@ -245,7 +244,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	}}
 	err = materializeWitnesses(tpl)
 	if err != nil {
-		t.Fatal(withStack(err))
+		testutil.FatalErr(t, err)
 	}
 	got := tpl.Transaction.Inputs[0].Arguments()
 	if !reflect.DeepEqual(got, want) {
@@ -260,20 +259,12 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	component.Sigs = []json.HexBytes{sig1, sig2}
 	err = materializeWitnesses(tpl)
 	if err != nil {
-		t.Fatal(withStack(err))
+		testutil.FatalErr(t, err)
 	}
 	got = tpl.Transaction.Inputs[0].Arguments()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
-}
-
-func withStack(err error) string {
-	s := err.Error()
-	for _, frame := range errors.Stack(err) {
-		s += "\n" + frame.String()
-	}
-	return s
 }
 
 func mustDecodeHex(str string) []byte {
