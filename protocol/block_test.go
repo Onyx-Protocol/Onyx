@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/mempool"
 	"chain/protocol/memstore"
@@ -166,8 +165,7 @@ func TestGenerateBlock(t *testing.T) {
 	for _, tx := range txs {
 		err := p.Submit(ctx, tx)
 		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
+			testutil.FatalErr(t, err)
 		}
 	}
 

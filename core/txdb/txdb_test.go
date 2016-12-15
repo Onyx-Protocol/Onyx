@@ -10,6 +10,7 @@ import (
 	"chain/database/sql"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 func TestGetBlock(t *testing.T) {
@@ -87,14 +88,12 @@ func TestInsertBlock(t *testing.T) {
 	}
 	err := NewStore(dbtx).SaveBlock(ctx, blk)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	// block in database
 	_, err = getBlockByHash(ctx, dbtx, blk.Hash().String())
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 }
