@@ -150,7 +150,7 @@ The `CHECKOUTPUT` instruction provides functionality similar to the `CHECKOUTPUT
 
 [/sidenote]
 
-The protocol also specifies several *block introspection* instructions (`BLOCKSIGHASH`, `NEXTPROGRAM`). These instructions can only be used in consensus programs (since transactions must be capable of being validated independently of the block header).
+The protocol also specifies several *block introspection* instructions (`BLOCKHASH`, `NEXTPROGRAM`). These instructions can only be used in consensus programs (since transactions must be capable of being validated independently of the block header).
 
 #### Control flow
 
@@ -172,7 +172,7 @@ The Chain Protocol’s approach to federated consensus is similar to one describ
 
 [/sidenote]
 
-A consensus program specifies a set of N public keys and uses the `CHECKMULTISIG` and `BLOCKSIGHASH` instructions to confirm that the block witness includes M valid signatures on the block hash (where M and N are parameters of the algorithm).
+A consensus program specifies a set of N public keys and uses the `CHECKMULTISIG` and `BLOCKHASH` instructions to confirm that the block witness includes M valid signatures on the block hash (where M and N are parameters of the algorithm).
 
 Each public key corresponds to a block signer. Block signers should never sign two different blocks with the same height. As long as no more than 2M - N - 1 block signers violate this rule, the blockchain cannot be forked.
 

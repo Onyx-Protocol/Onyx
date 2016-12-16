@@ -181,8 +181,8 @@ See also the note in the [Make Block](#make-block) algorithm.
         3. Every [input witness](data.md#transaction-input-witness) must contain only the fields defined in this version of the protocol (no additional data included).
         4. Every [output witness](data.md#transaction-output-witness) must be empty.
 6. Check that the block's timestamp is less than 2 minutes after the system time. If it is not, halt and return nothing.
-7. Compute the [block signature hash](data.md#block-signature-hash) for the block.
-8. Sign the signature hash with the signing key, yielding a [signature](data.md#signature).
+7. Compute the [block hash](data.md#block-id) for the block.
+8. Sign the hash with the signing key, yielding a [signature](data.md#signature).
 9. Replace the last signed block with the input block.
 10. Return the signature.
 
