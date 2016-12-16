@@ -9,3 +9,4 @@ Usage:
 Input and output are both 32-byte binary strings.
 
 */
+package main
