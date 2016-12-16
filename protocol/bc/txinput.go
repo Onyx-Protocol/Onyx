@@ -20,6 +20,8 @@ type (
 
 	TypedInput interface {
 		IsIssuance() bool
+		Program() []byte
+		vmVersion() uint64
 	}
 
 	SpendInput struct {
@@ -115,18 +117,8 @@ func (t *TxInput) Amount() uint64 {
 	return si.Amount
 }
 
-func (t *TxInput) ControlProgram() []byte {
-	if si, ok := t.TypedInput.(*SpendInput); ok {
-		return si.ControlProgram
-	}
-	return nil
-}
-
-func (t *TxInput) IssuanceProgram() []byte {
-	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
-		return ii.IssuanceProgram
-	}
-	return nil
+func (t *TxInput) VMVersion() uint64 {
+	return t.TypedInput.vmVersion()
 }
 
 func (t *TxInput) Arguments() [][]byte {
@@ -347,10 +339,13 @@ func (t *TxInput) Outpoint() (o Outpoint) {
 	return o
 }
 
-func (si *SpendInput) IsIssuance() bool { return false }
+func (si *SpendInput) IsIssuance() bool  { return false }
+func (si *SpendInput) Program() []byte   { return si.ControlProgram }
+func (si *SpendInput) vmVersion() uint64 { return si.VMVersion }
 
-func (ii *IssuanceInput) IsIssuance() bool { return true }
-
+func (ii *IssuanceInput) IsIssuance() bool  { return true }
+func (ii *IssuanceInput) Program() []byte   { return ii.IssuanceProgram }
+func (ii *IssuanceInput) vmVersion() uint64 { return ii.VMVersion }
 func (ii *IssuanceInput) AssetID() AssetID {
 	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion)
 }

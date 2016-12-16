@@ -46,11 +46,11 @@ func transactionInput(in *bc.TxInput) map[string]interface{} {
 	}
 	if in.IsIssuance() {
 		obj["type"] = "issue"
-		obj["issuance_program"] = hex.EncodeToString(in.IssuanceProgram())
+		obj["issuance_program"] = hex.EncodeToString(in.Program())
 	} else {
 		outpoint := in.Outpoint()
 		obj["type"] = "spend"
-		obj["control_program"] = hex.EncodeToString(in.ControlProgram())
+		obj["control_program"] = hex.EncodeToString(in.Program())
 		obj["spent_output"] = map[string]interface{}{
 			"transaction_id": outpoint.Hash.String(),
 			"position":       outpoint.Index,

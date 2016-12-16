@@ -118,16 +118,7 @@ func opProgram(vm *virtualMachine) error {
 		return err
 	}
 
-	var prog []byte
-	inp := vm.tx.Inputs[vm.inputIndex]
-	switch inp := inp.TypedInput.(type) {
-	case *bc.IssuanceInput:
-		prog = inp.IssuanceProgram
-	case *bc.SpendInput:
-		prog = inp.ControlProgram
-	}
-
-	return vm.push(prog, true)
+	return vm.push(vm.tx.Inputs[vm.inputIndex].Program(), true)
 }
 
 func opMinTime(vm *virtualMachine) error {
