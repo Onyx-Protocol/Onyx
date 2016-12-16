@@ -49,7 +49,8 @@ class TransactionBuilder {
 
 module.exports = (client) => {
   return {
-    query: (params) => shared.query(client, '/list-transactions', params),
+    query: (params) => shared.query(client, this, '/list-transactions', params),
+    // this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
     build: (builderBlock) => {
       const builder = new TransactionBuilder()
       builderBlock(builder)

@@ -106,13 +106,13 @@ class TransactionFeed {
 class TransactionFeeds {
 
   /**
-   * constructor - return TransactionFeeds object configured for specified Chain Core
+   * constructor - return TransactionFeeds object configured for specified Chain Core.
    *
-   * @param  {Client} client Configured Chain client object
+   * @param  {Client} client Configured Chain client object.
    */
   constructor(client) {
     /**
-     * Create a new transaction feed
+     * Create a new transaction feed.
      */
     this.create = (params = {}) => {
       let body = Object.assign({ client_token: uuid.v4() }, params)
@@ -121,7 +121,7 @@ class TransactionFeeds {
     }
 
     /**
-     * get feed given an id/alias
+     * Get single transaction feed specified by id/alias.
      */
     this.get = (params) => {
       return client.request('/get-transaction-feed', params)
@@ -129,7 +129,7 @@ class TransactionFeeds {
     }
 
     /**
-     * delete a transaction feed given an id/alias
+     * Delete a transaction feed given an id/alias.
      */
     this.delete = (params) => {
       client.request('/delete-transaction-feed', params)

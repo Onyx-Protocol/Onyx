@@ -23,7 +23,7 @@ module.exports = {
     })
   },
 
-  createBatch : (client, path, params = []) => {
+  createBatch: (client, path, params = []) => {
     params = params.map((item) =>
       Object.assign({ client_token: uuid.v4() }, item))
 
@@ -36,8 +36,35 @@ module.exports = {
     })
   },
 
-  query: (client, path, params = {}) => {
+  query: (client, owner, path, params = {}) => {
     return client.request(path, params)
-      .then(data => new Page(data))
-  }
+      .then(data => new Page(data, owner))
+  },
+
+  /*
+   * Requires query to be implemented on `owner`
+   */
+  queryAll: (owner, params, processor = () => {}) => {
+    let nextParams = params
+
+    return new Promise((resolve, reject) => {
+      const nextPage = () => {
+        owner.query(nextParams).then(page => {
+          for (let item in page.items) {
+            processor(page.items[item])
+          }
+
+          if (!page.last_page) {
+            nextParams = page.next
+            nextPage()
+            return
+          } else {
+            resolve()
+          }
+        }).catch(reject)
+      }
+
+      nextPage()
+    })
+  },
 }

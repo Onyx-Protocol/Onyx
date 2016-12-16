@@ -44,7 +44,9 @@ class Accounts {
      * Get a list of accounts matching the specified filter
      * @param {Filter} [params={}] Filter and pagination information
      */
-    this.query = (params = {}) => shared.query(client, '/list-accounts', params)
+    this.query = (params = {}) => shared.query(client, this, '/list-accounts', params)
+
+    this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
 
     /**
      * Create a new control program

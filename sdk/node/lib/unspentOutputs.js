@@ -15,7 +15,9 @@ class UnspentOutputs {
      * Get a list of unspent outputs matching the specified filter
      * @param {Filter} [params={}] Filter and pagination information
      */
-    this.query = (params) => shared.query(client, '/list-unspent-outputs', params)
+    this.query = (params) => shared.query(client, this, '/list-unspent-outputs', params)
+
+    this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
   }
 }
 

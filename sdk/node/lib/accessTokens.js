@@ -25,7 +25,9 @@ class AccessTokens {
      * @param {Filter} [params={}] - Pagination information.
      * @param {string} [params.type] - Type of access tokens to retrun
      */
-    this.query = (params = {}) => shared.query(client, '/list-access-tokens', params)
+    this.query = (params = {}) => shared.query(client, this, '/list-access-tokens', params)
+
+    this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
 
     /**
      * Delete the specified access token.

@@ -8,7 +8,7 @@ class Assets {
   /**
    * @typedef Assets~createRequest
    * @type {Object}
-   * 
+   *
    * @property {string} [alias]
    * User specified, unique identifier.
    *
@@ -47,7 +47,9 @@ class Assets {
      * Get a list of assets matching the specified filter
      * @param {Filter} [params={}] Filter and pagination information
      */
-    this.query = (params) => shared.query(client, '/list-assets', params)
+    this.query = (params) => shared.query(client, this, '/list-assets', params)
+
+    this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
   }
 }
 
