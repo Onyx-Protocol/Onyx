@@ -130,9 +130,9 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index uint3
 		if !contains(xpubs, keyID.XPub) {
 			continue
 		}
-		var path [][]byte
-		for _, p := range keyID.DerivationPath {
-			path = append(path, p)
+		path := make([]([]byte), len(keyID.DerivationPath))
+		for i, p := range keyID.DerivationPath {
+			path[i] = p
 		}
 		sigBytes, err := signFn(ctx, keyID.XPub, path, h)
 		if err != nil {
