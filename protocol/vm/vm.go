@@ -2,6 +2,7 @@ package vm
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -12,6 +13,9 @@ import (
 )
 
 const initialRunLimit = 10000
+
+// ErrFalseVMResult is one of the ways for a transaction to fail validation
+var ErrFalseVMResult = errors.New("false VM result")
 
 type virtualMachine struct {
 	program      []byte // the program currently executing
@@ -46,19 +50,18 @@ type virtualMachine struct {
 // execution.
 var TraceOut io.Writer
 
-func VerifyTxInput(tx *bc.Tx, inputIndex int) (ok bool, err error) {
+func VerifyTxInput(tx *bc.Tx, inputIndex int) (err error) {
 	defer func() {
 		if panErr := recover(); panErr != nil {
-			ok = false
 			err = ErrUnexpected
 		}
 	}()
 	return verifyTxInput(tx, inputIndex)
 }
 
-func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
+func verifyTxInput(tx *bc.Tx, inputIndex int) error {
 	if inputIndex < 0 || inputIndex >= len(tx.Inputs) {
-		return false, ErrBadValue
+		return ErrBadValue
 	}
 
 	txinput := tx.Inputs[inputIndex]
@@ -67,9 +70,9 @@ func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 
 	sigHasher := bc.NewSigHasher(&tx.TxData)
 
-	f := func(vmversion uint64, prog []byte, args [][]byte, issuanceKey *ca.Point) (bool, error) {
+	f := func(vmversion uint64, prog []byte, args [][]byte, issuanceKey *ca.Point) error {
 		if vmversion != 1 {
-			return false, ErrUnsupportedVM
+			return ErrUnsupportedVM
 		}
 
 		vm := virtualMachine{
@@ -88,11 +91,11 @@ func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 		for _, arg := range args {
 			err := vm.push(arg, false)
 			if err != nil {
-				return false, err
+				return err
 			}
 		}
-		ok, err := vm.run()
-		return ok, wrapErr(err, &vm, args)
+		err := vm.run()
+		return wrapErr(err, &vm, args)
 	}
 
 	switch inp := txinput.TypedInput.(type) {
@@ -105,32 +108,28 @@ func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 			if iarp != nil {
 				issuanceKey = &iarp.Y[i]
 			}
-			ok, err := f(c.VMVersion, c.IssuanceProgram, c.Arguments, issuanceKey)
+			err := f(c.VMVersion, c.IssuanceProgram, c.Arguments, issuanceKey)
 			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
+				return err
 			}
 		}
 		return f(inp.VMVersion(), inp.Program(), inp.Arguments(), nil)
 	case *bc.SpendInput:
 		return f(inp.VMVer(), inp.Program(), inp.Arguments, nil)
 	}
-	return false, fmt.Errorf("transaction input %d has unknown type %T", inputIndex, txinput.TypedInput)
+	return fmt.Errorf("transaction input %d has unknown type %T", inputIndex, txinput.TypedInput)
 }
 
-func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (ok bool, err error) {
+func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (err error) {
 	defer func() {
 		if panErr := recover(); panErr != nil {
-			ok = false
 			err = ErrUnexpected
 		}
 	}()
 	return verifyBlockHeader(prev, block)
 }
 
-func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (bool, error) {
+func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
 	vm := virtualMachine{
 		block: block,
 
@@ -144,24 +143,27 @@ func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (bool, error) {
 	for _, arg := range block.Witness {
 		err := vm.push(arg, false)
 		if err != nil {
-			return false, err
+			return err
 		}
 	}
 
-	ok, err := vm.run()
-	return ok, wrapErr(err, &vm, block.Witness)
+	err := vm.run()
+	return wrapErr(err, &vm, block.Witness)
 }
 
-func (vm *virtualMachine) run() (bool, error) {
+func (vm *virtualMachine) run() error {
 	for vm.pc = 0; vm.pc < uint32(len(vm.program)); { // handle vm.pc updates in step
 		err := vm.step()
 		if err != nil {
-			return false, err
+			return err
 		}
 	}
 
-	res := len(vm.dataStack) > 0 && AsBool(vm.dataStack[len(vm.dataStack)-1])
-	return res, nil
+	ok := len(vm.dataStack) > 0 && AsBool(vm.dataStack[len(vm.dataStack)-1])
+	if !ok {
+		return ErrFalseVMResult
+	}
+	return nil
 }
 
 func (vm *virtualMachine) step() error {
