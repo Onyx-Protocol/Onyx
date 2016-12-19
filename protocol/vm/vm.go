@@ -272,18 +272,18 @@ type Error struct {
 	Args [][]byte
 }
 
-func (vmerr Error) Error() string {
-	dis, err := Disassemble(vmerr.Prog)
+func (e Error) Error() string {
+	dis, err := Disassemble(e.Prog)
 	if err != nil {
 		dis = "???"
 	}
 
-	args := make([]string, 0, len(vmerr.Args))
-	for _, a := range vmerr.Args {
+	args := make([]string, 0, len(e.Args))
+	for _, a := range e.Args {
 		args = append(args, hex.EncodeToString(a))
 	}
 
-	return fmt.Sprintf("%s [prog %x = %s; args %s]", vmerr.Err.Error(), vmerr.Prog, dis, strings.Join(args, " "))
+	return fmt.Sprintf("%s [prog %x = %s; args %s]", e.Err.Error(), e.Prog, dis, strings.Join(args, " "))
 }
 
 func wrapErr(err error, vm *virtualMachine, args [][]byte) error {
