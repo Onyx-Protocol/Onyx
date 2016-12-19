@@ -61,6 +61,7 @@ func opCheckPredicate(vm *virtualMachine) error {
 	}
 
 	childVM := virtualMachine{
+		ctx:         vm.ctx,
 		mainprog:    vm.mainprog,
 		program:     predicate,
 		runLimit:    limit,
@@ -73,13 +74,13 @@ func opCheckPredicate(vm *virtualMachine) error {
 	}
 	vm.dataStack = vm.dataStack[:l-n]
 
-	ok, childErr := childVM.run()
+	childErr := childVM.run()
 
 	vm.deferCost(-childVM.runLimit)
 	vm.deferCost(-stackCost(childVM.dataStack))
 	vm.deferCost(-stackCost(childVM.altStack))
 
-	err = vm.pushBool(childErr == nil && ok, true)
+	err = vm.pushBool(childErr == nil, true)
 	if err != nil {
 		return err
 	}

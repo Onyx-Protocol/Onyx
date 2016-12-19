@@ -113,7 +113,7 @@ the upstream repo.) Also, make sure the upstream working tree is clean.
 
 ## Deploy Options
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chain/chain/tree/main)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chain/chain-stealth/tree/confidential-assets)
 
 When Chain Core is deployed to a non-local host, all requests require authentication.
 To generate a client access token on Heroku, run the following command:

@@ -1,7 +1,7 @@
 #!/bin/sh
 npm --prefix $CHAIN/dashboard install
 npm --prefix $CHAIN/dashboard run build
-go install chain/cmd/gobundle
+go install chain-stealth/cmd/gobundle
 mkdir -p $CHAIN/generated/dashboard
 gobundle -package dashboard $CHAIN/dashboard/public > $CHAIN/generated/dashboard/dashboard.go
 gofmt -w $CHAIN/generated/dashboard/dashboard.go

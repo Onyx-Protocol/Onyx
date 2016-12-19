@@ -71,15 +71,17 @@ func TestCheckSig(t *testing.T) {
 			program:  prog,
 			runLimit: 50000,
 		}
-		ok, err := vm.run()
-		if (err != nil) != c.err {
-			if c.err {
-				t.Errorf("case %d: expected error, got none", i)
-			} else {
-				t.Errorf("case %d: expected no error, got %s", i, err)
+		err = vm.run()
+		if c.err {
+			if err == nil {
+				t.Errorf("case %d: expected error, got ok result", i)
 			}
-		} else if ok != c.ok {
-			t.Errorf("case %d: ok is %v, expected %v", i, ok, c.ok)
+		} else if c.ok {
+			if err != nil {
+				t.Errorf("case %d: expected ok result, got error %s", i, err)
+			}
+		} else if err != ErrFalseVMResult {
+			t.Errorf("case %d: expected false VM result, got error %s", i, err)
 		}
 	}
 }

@@ -2,7 +2,10 @@ package validation
 
 import (
 	"bytes"
+	"context"
 	"math"
+
+	"golang.org/x/sync/errgroup"
 
 	"chain-stealth/crypto/ca"
 	"chain-stealth/errors"
@@ -13,13 +16,8 @@ import (
 	"chain-stealth/protocol/vmutil"
 )
 
-var (
-	// ErrBadTx is returned for transactions failing validation
-	ErrBadTx = errors.New("invalid transaction")
-
-	// ErrFalseVMResult is one of the ways for a transaction to fail validation
-	ErrFalseVMResult = errors.New("false VM result")
-)
+// ErrBadTx is returned for transactions failing validation
+var ErrBadTx = errors.New("invalid transaction")
 
 var (
 	// "suberrors" for ErrBadTx
@@ -283,14 +281,20 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 		}
 	}
 
+	g, newctx := errgroup.WithContext(context.Background())
 	for i := range tx.Inputs {
-		ok, err := vm.VerifyTxInput(tx, i)
-		if err == nil && !ok {
-			err = ErrFalseVMResult
-		}
-		if err != nil {
-			return badTxErrf(err, "validation failed in script execution, input %d", i)
-		}
+		i := i
+		g.Go(func() error {
+			err := vm.VerifyTxInput(newctx, tx, i)
+			if err != nil {
+				return badTxErrf(err, "validation failed in script execution, input %d", i)
+			}
+			return nil
+		})
+	}
+	err := g.Wait()
+	if err != nil {
+		return err
 	}
 
 	if len(v2issuances) > 0 || len(v2spends) > 0 || len(v2outputs) > 0 {

@@ -12,7 +12,6 @@ import (
 	"chain-stealth/protocol/mempool"
 	"chain-stealth/protocol/prottest"
 	"chain-stealth/protocol/state"
-	"chain-stealth/protocol/validation"
 	"chain-stealth/protocol/vm"
 	"chain-stealth/testutil"
 )
@@ -89,10 +88,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	ok, err := vm.VerifyBlockHeader(&tip.BlockHeader, block)
-	if err == nil && !ok {
-		err = validation.ErrFalseVMResult
-	}
+	err = vm.VerifyBlockHeader(ctx, &tip.BlockHeader, block)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

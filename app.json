@@ -1,7 +1,7 @@
 {
   "name": "Chain Core 1",
   "description": "Enterprise Blockchain",
-  "repository": "https://github.com/chain/chain",
+  "repository": "https://github.com/chain/chain-stealth",
   "logo": "http://chain.com/images/chain-logo.04205b59.png",
   "keywords": ["blockchain", "chain"],
   "success_url": "/dashboard",

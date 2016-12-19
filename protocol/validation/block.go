@@ -34,10 +34,7 @@ var (
 // then calls ValidateBlock.
 func ValidateBlockForAccept(ctx context.Context, snapshot *state.Snapshot, initialBlockHash bc.Hash, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
 	if prevBlock != nil {
-		ok, err := vm.VerifyBlockHeader(&prevBlock.BlockHeader, block)
-		if err == nil && !ok {
-			err = ErrFalseVMResult
-		}
+		err := vm.VerifyBlockHeader(ctx, &prevBlock.BlockHeader, block)
 		if err != nil {
 			pkScriptStr, _ := vm.Disassemble(prevBlock.ConsensusProgram)
 			witnessStrs := make([]string, 0, len(block.Witness))

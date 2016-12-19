@@ -21,12 +21,12 @@ func (t tracebuf) dump() {
 	os.Stdout.Write(t.Bytes())
 }
 
-// Programs that run without error and return a true result.
+// Programs that run without error.
 func TestProgramOK(t *testing.T) {
 	doOKNotOK(t, true)
 }
 
-// Programs that run without error and return a false result.
+// Programs that return an ErrFalseVMResult.
 func TestProgramNotOK(t *testing.T) {
 	doOKNotOK(t, false)
 }
@@ -157,19 +157,13 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 			runLimit:  initialRunLimit,
 			dataStack: append([][]byte{}, c.args...),
 		}
-		ok, err := vm.run()
-		if err == nil {
-			if ok != expectOK {
-				trace.dump()
-				t.Errorf("case %d [%s]: expected %v result, got %v", i, progSrc, expectOK, ok)
-			}
-		} else {
+		err = vm.run()
+		if expectOK && err != nil {
 			trace.dump()
-			t.Errorf("case %d [%s]: unexpected error: %s", i, progSrc, err)
-		}
-		if testing.Verbose() && (ok == expectOK) && err == nil {
+			t.Errorf("case %d [%s]: expected success, got error %s", i, progSrc, err)
+		} else if !expectOK && err != ErrFalseVMResult {
 			trace.dump()
-			fmt.Println("")
+			t.Errorf("case %d [%s]: expected ErrFalseVMResult, got %s", i, progSrc, err)
 		}
 	}
 }
@@ -177,7 +171,6 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 func TestVerifyTxInput(t *testing.T) {
 	cases := []struct {
 		input   *bc.TxInput
-		want    bool
 		wantErr error
 	}{{
 		input: bc.NewSpendInput(
@@ -189,7 +182,6 @@ func TestVerifyTxInput(t *testing.T) {
 			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			nil,
 		),
-		want: true,
 	}, {
 		input: bc.NewIssuanceInput(
 			nil,
@@ -199,7 +191,6 @@ func TestVerifyTxInput(t *testing.T) {
 			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			[][]byte{{2}, {3}},
 		),
-		want: true,
 	}, {
 		input: &bc.TxInput{
 			TypedInput: &bc.IssuanceInput1{
@@ -238,14 +229,10 @@ func TestVerifyTxInput(t *testing.T) {
 			Inputs: []*bc.TxInput{c.input},
 		}}
 
-		got, gotErr := VerifyTxInput(tx, 0)
+		gotErr := VerifyTxInput(nil, tx, 0)
 
 		if errors.Root(gotErr) != c.wantErr {
 			t.Errorf("VerifyTxInput(%d) err = %v want %v", i, gotErr, c.wantErr)
-		}
-
-		if got != c.want {
-			t.Errorf("VerifyTxInput(%d) = %v want %v", i, got, c.want)
 		}
 	}
 }
@@ -258,20 +245,16 @@ func TestVerifyBlockHeader(t *testing.T) {
 		BlockHeader: bc.BlockHeader{ConsensusProgram: []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}},
 	}
 
-	got, gotErr := VerifyBlockHeader(&prevBlock.BlockHeader, block)
+	gotErr := VerifyBlockHeader(nil, &prevBlock.BlockHeader, block)
 	if gotErr != nil {
 		t.Errorf("unexpected error: %v", gotErr)
-	}
-
-	if !got {
-		t.Error("expected true result")
 	}
 
 	block = &bc.Block{
 		BlockHeader: bc.BlockHeader{Witness: [][]byte{make([]byte, 50000)}},
 	}
 
-	_, gotErr = VerifyBlockHeader(&prevBlock.BlockHeader, block)
+	gotErr = VerifyBlockHeader(nil, &prevBlock.BlockHeader, block)
 	if errors.Root(gotErr) != ErrRunLimitExceeded {
 		t.Error("expected block to exceed run limit")
 	}
@@ -280,18 +263,16 @@ func TestVerifyBlockHeader(t *testing.T) {
 func TestRun(t *testing.T) {
 	cases := []struct {
 		vm      *virtualMachine
-		want    bool
 		wantErr error
 	}{{
-		vm:   &virtualMachine{runLimit: 50000, program: []byte{byte(OP_TRUE)}},
-		want: true,
+		vm: &virtualMachine{runLimit: 50000, program: []byte{byte(OP_TRUE)}},
 	}, {
 		vm:      &virtualMachine{runLimit: 50000, program: []byte{byte(OP_ADD)}},
 		wantErr: ErrDataStackUnderflow,
 	}}
 
 	for i, c := range cases {
-		got, gotErr := c.vm.run()
+		gotErr := c.vm.run()
 
 		if gotErr != c.wantErr {
 			t.Errorf("run test %d: got err = %v want %v", i, gotErr, c.wantErr)
@@ -300,10 +281,6 @@ func TestRun(t *testing.T) {
 
 		if c.wantErr != nil {
 			continue
-		}
-
-		if got != c.want {
-			t.Errorf("run test %d: got = %v want %v", i, got, c.want)
 		}
 	}
 }
@@ -474,7 +451,7 @@ func TestVerifyTxInputQuickCheck(t *testing.T) {
 		tx := bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, witnesses, bc.AssetID{}, 10, program, nil)},
 		})
-		verifyTxInput(tx, 0)
+		verifyTxInput(nil, tx, 0)
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -496,7 +473,7 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 		}()
 		prev := &bc.BlockHeader{ConsensusProgram: program}
 		block := &bc.Block{BlockHeader: bc.BlockHeader{Witness: witnesses}}
-		verifyBlockHeader(prev, block)
+		verifyBlockHeader(nil, prev, block)
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
