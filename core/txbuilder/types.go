@@ -3,7 +3,6 @@ package txbuilder
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"chain/errors"
 	"chain/protocol/bc"
@@ -71,10 +70,5 @@ func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 }
 
 type Action interface {
-	// TODO(bobg, jeffomatic): see if there is a way to remove the maxTime
-	// parameter from the build call. One possibility would be to treat TTL as
-	// a transaction-wide default parameter that gets folded into actions that
-	// care about it. This could happen when the build request is being
-	// deserialized.
-	Build(context.Context, time.Time, *TemplateBuilder) error
+	Build(context.Context, *TemplateBuilder) error
 }

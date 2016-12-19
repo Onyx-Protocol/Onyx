@@ -34,7 +34,7 @@ type issueAction struct {
 	ReferenceData chainjson.Map `json:"reference_data"`
 }
 
-func (a *issueAction) Build(ctx context.Context, maxTime time.Time, builder *txbuilder.TemplateBuilder) error {
+func (a *issueAction) Build(ctx context.Context, builder *txbuilder.TemplateBuilder) error {
 	if a.AssetID == (bc.AssetID{}) {
 		return txbuilder.MissingFieldsError("asset_id")
 	}
@@ -59,6 +59,6 @@ func (a *issueAction) Build(ctx context.Context, maxTime time.Time, builder *txb
 	keyIDs := txbuilder.KeyIDs(asset.Signer.XPubs, path)
 	tplIn.AddWitnessKeys(keyIDs, asset.Signer.Quorum)
 
-	builder.RestrictMinTimeMS(bc.Millis(time.Now()))
+	builder.RestrictMinTime(time.Now())
 	return builder.AddInput(txin, tplIn)
 }

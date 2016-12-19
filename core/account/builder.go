@@ -3,7 +3,6 @@ package account
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"chain/core/signers"
 	"chain/core/txbuilder"
@@ -37,7 +36,7 @@ type spendAction struct {
 	ClientToken   *string       `json:"client_token"`
 }
 
-func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder.TemplateBuilder) error {
+func (a *spendAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
 	var missing []string
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")
@@ -58,7 +57,7 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder
 		AssetID:   a.AssetID,
 		AccountID: a.AccountID,
 	}
-	res, err := a.accounts.utxoDB.Reserve(ctx, src, a.Amount, a.ClientToken, maxTime)
+	res, err := a.accounts.utxoDB.Reserve(ctx, src, a.Amount, a.ClientToken, b.MaxTime())
 	if err != nil {
 		return errors.Wrap(err, "reserving utxos")
 	}
@@ -117,7 +116,7 @@ type spendUTXOAction struct {
 	ClientToken   *string       `json:"client_token"`
 }
 
-func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder.TemplateBuilder) error {
+func (a *spendUTXOAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
 	var missing []string
 	if a.TxHash == nil {
 		missing = append(missing, "transaction_id")
@@ -130,7 +129,7 @@ func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time, b *txbui
 	}
 
 	out := bc.Outpoint{Hash: *a.TxHash, Index: *a.TxOut}
-	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, out, a.ClientToken, maxTime)
+	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, out, a.ClientToken, b.MaxTime())
 	if err != nil {
 		return err
 	}
@@ -198,7 +197,7 @@ type controlAction struct {
 	ReferenceData chainjson.Map `json:"reference_data"`
 }
 
-func (a *controlAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder.TemplateBuilder) error {
+func (a *controlAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
 	var missing []string
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")

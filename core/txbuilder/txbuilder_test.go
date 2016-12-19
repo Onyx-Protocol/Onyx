@@ -24,7 +24,7 @@ import (
 
 type testAction bc.AssetAmount
 
-func (t testAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
+func (t testAction) Build(ctx context.Context, b *TemplateBuilder) error {
 	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
 	tplIn := &SigningInstruction{}
 

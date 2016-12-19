@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"reflect"
 	"testing"
-	"time"
 
 	"chain/core/account"
 	"chain/core/asset"
@@ -52,7 +51,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	source := accounts.NewSpendAction(assetAmount1, accID, nil, nil)
 
 	var builder txbuilder.TemplateBuilder
-	err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
+	err := source.Build(ctx, &builder)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -103,7 +102,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	source := accounts.NewSpendUTXOAction(out.Outpoint)
 
 	var builder txbuilder.TemplateBuilder
-	err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
+	err := source.Build(ctx, &builder)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -158,7 +157,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
 		var builder txbuilder.TemplateBuilder
 
-		err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
+		err := source.Build(ctx, &builder)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
