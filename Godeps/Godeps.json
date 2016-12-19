@@ -1,5 +1,5 @@
 {
-  "ImportPath": "chain",
+  "ImportPath": "chain-stealth",
   "GoVersion": "go1.7",
   "Packages": [
     "./..."
