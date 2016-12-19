@@ -1,6 +1,7 @@
 # path configuration
 
 PREFIX=$(PWD)/../build
+TOOLS=$(PWD)/../../tools
 SHAREDPREFIX=$(PREFIX)
 PATH=$(PREFIX)/bin:/bin:/usr/bin:/opt/local/bin
 
@@ -35,7 +36,7 @@ clean: clean-postgresql clean-openssl clean-libxml2
 #########################
 
 postgresql: $(PREFIX)/bin/psql
-	ruby ../../tools/patch_loader_path.rb
+	ruby $(TOOLS)/patch_loader_path.rb
 
 $(PREFIX)/bin/psql: postgresql-$(POSTGRES_VERSION)/GNUmakefile
 	make -C "postgresql-$(POSTGRES_VERSION)" all contrib
@@ -56,7 +57,7 @@ postgresql-$(POSTGRES_VERSION)/configure: postgresql-$(POSTGRES_VERSION).tar.bz2
 
 postgresql-$(POSTGRES_VERSION).tar.bz2-${POSTGRES_SHA256}:
 	$(CURL) "https://ftp.postgresql.org/pub/source/v$(POSTGRES_VERSION)/postgresql-${POSTGRES_VERSION}.tar.bz2"
-	ruby ../../tools/renamesha256.rb postgresql-${POSTGRES_VERSION}.tar.bz2
+	$(TOOLS)/renamesha256.sh postgresql-${POSTGRES_VERSION}.tar.bz2
 
 clean-postgresql:
 	rm -Rf postgresql-$(POSTGRES_VERSION)*
@@ -81,7 +82,7 @@ openssl-${OPENSSL_VERSION}/Configure: openssl-${OPENSSL_VERSION}.tar.gz-${OPENSS
 
 openssl-${OPENSSL_VERSION}.tar.gz-${OPENSSL_SHA256}:
 	$(CURL) "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
-	ruby ../../tools/renamesha256.rb openssl-${OPENSSL_VERSION}.tar.gz
+	$(TOOLS)/renamesha256.sh openssl-${OPENSSL_VERSION}.tar.gz
 	
 clean-openssl:
 	rm -Rf openssl-${OPENSSL_VERSION}*
@@ -106,7 +107,7 @@ libxml2-${LIBXML2_VERSION}/configure: libxml2-${LIBXML2_VERSION}.tar.gz-${LIBXML
 	
 libxml2-${LIBXML2_VERSION}.tar.gz-${LIBXML2_SHA256}:
 	$(CURL) "ftp://xmlsoft.org/libxml2/libxml2-${LIBXML2_VERSION}.tar.gz"
-	ruby ../../tools/renamesha256.rb libxml2-${LIBXML2_VERSION}.tar.gz
+	$(TOOLS)/renamesha256.sh libxml2-${LIBXML2_VERSION}.tar.gz
 	
 clean-libxml2:
 	rm -Rf libxml2-$(LIBXML2_VERSION)*
