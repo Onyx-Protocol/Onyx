@@ -88,7 +88,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	err = vm.VerifyBlockHeader(&tip.BlockHeader, block)
+	err = vm.VerifyBlockHeader(ctx, &tip.BlockHeader, block)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

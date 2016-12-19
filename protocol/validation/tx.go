@@ -2,7 +2,10 @@ package validation
 
 import (
 	"bytes"
+	"context"
 	"math"
+
+	"golang.org/x/sync/errgroup"
 
 	"chain-stealth/crypto/ca"
 	"chain-stealth/errors"
@@ -278,11 +281,20 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 		}
 	}
 
+	g, newctx := errgroup.WithContext(context.Background())
 	for i := range tx.Inputs {
-		err := vm.VerifyTxInput(tx, i)
-		if err != nil {
-			return badTxErrf(err, "validation failed in script execution, input %d", i)
-		}
+		i := i
+		g.Go(func() error {
+			err := vm.VerifyTxInput(newctx, tx, i)
+			if err != nil {
+				return badTxErrf(err, "validation failed in script execution, input %d", i)
+			}
+			return nil
+		})
+	}
+	err := g.Wait()
+	if err != nil {
+		return err
 	}
 
 	if len(v2issuances) > 0 || len(v2spends) > 0 || len(v2outputs) > 0 {

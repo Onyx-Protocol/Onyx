@@ -1,11 +1,14 @@
 package vm
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
+
+	"golang.org/x/sync/errgroup"
 
 	// TODO(bobg): very little of this package depends on bc, consider trying to remove the dependency
 	"chain-stealth/crypto/ca"
@@ -18,6 +21,8 @@ const initialRunLimit = 10000
 var ErrFalseVMResult = errors.New("false VM result")
 
 type virtualMachine struct {
+	ctx context.Context
+
 	program      []byte // the program currently executing
 	mainprog     []byte // the outermost program, returned by OP_PROGRAM
 	pc, nextPC   uint32
@@ -50,16 +55,16 @@ type virtualMachine struct {
 // execution.
 var TraceOut io.Writer
 
-func VerifyTxInput(tx *bc.Tx, inputIndex int) (err error) {
+func VerifyTxInput(ctx context.Context, tx *bc.Tx, inputIndex int) (err error) {
 	defer func() {
 		if panErr := recover(); panErr != nil {
 			err = ErrUnexpected
 		}
 	}()
-	return verifyTxInput(tx, inputIndex)
+	return verifyTxInput(ctx, tx, inputIndex)
 }
 
-func verifyTxInput(tx *bc.Tx, inputIndex int) error {
+func verifyTxInput(ctx context.Context, tx *bc.Tx, inputIndex int) error {
 	if inputIndex < 0 || inputIndex >= len(tx.Inputs) {
 		return ErrBadValue
 	}
@@ -70,12 +75,14 @@ func verifyTxInput(tx *bc.Tx, inputIndex int) error {
 
 	sigHasher := bc.NewSigHasher(&tx.TxData)
 
-	f := func(vmversion uint64, prog []byte, args [][]byte, issuanceKey *ca.Point) error {
+	f := func(ctx context.Context, vmversion uint64, prog []byte, args [][]byte, issuanceKey *ca.Point) error {
 		if vmversion != 1 {
 			return ErrUnsupportedVM
 		}
 
 		vm := virtualMachine{
+			ctx: ctx,
+
 			tx:         tx,
 			inputIndex: inputIndex,
 			sigHasher:  sigHasher,
@@ -100,37 +107,42 @@ func verifyTxInput(tx *bc.Tx, inputIndex int) error {
 
 	switch inp := txinput.TypedInput.(type) {
 	case *bc.IssuanceInput1:
-		return f(inp.VMVersion, inp.IssuanceProgram, inp.Arguments, nil)
+		return f(ctx, inp.VMVersion, inp.IssuanceProgram, inp.Arguments, nil)
 	case *bc.IssuanceInput2:
+		g, newctx := errgroup.WithContext(ctx)
 		iarp := inp.IssuanceAssetRangeProof()
 		for i, c := range inp.AssetChoices {
 			var issuanceKey *ca.Point
 			if iarp != nil {
 				issuanceKey = &iarp.Y[i]
 			}
-			err := f(c.VMVersion, c.IssuanceProgram, c.Arguments, issuanceKey)
-			if err != nil {
-				return err
-			}
+			g.Go(func() error {
+				return f(newctx, c.VMVersion, c.IssuanceProgram, c.Arguments, issuanceKey)
+			})
 		}
-		return f(inp.VMVersion(), inp.Program(), inp.Arguments(), nil)
+		g.Go(func() error {
+			return f(newctx, inp.VMVersion(), inp.Program(), inp.Arguments(), nil)
+		})
+		return g.Wait()
 	case *bc.SpendInput:
-		return f(inp.VMVer(), inp.Program(), inp.Arguments, nil)
+		return f(ctx, inp.VMVer(), inp.Program(), inp.Arguments, nil)
 	}
 	return fmt.Errorf("transaction input %d has unknown type %T", inputIndex, txinput.TypedInput)
 }
 
-func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (err error) {
+func VerifyBlockHeader(ctx context.Context, prev *bc.BlockHeader, block *bc.Block) (err error) {
 	defer func() {
 		if panErr := recover(); panErr != nil {
 			err = ErrUnexpected
 		}
 	}()
-	return verifyBlockHeader(prev, block)
+	return verifyBlockHeader(ctx, prev, block)
 }
 
-func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
+func verifyBlockHeader(ctx context.Context, prev *bc.BlockHeader, block *bc.Block) error {
 	vm := virtualMachine{
+		ctx: ctx,
+
 		block: block,
 
 		expansionReserved: true,
@@ -152,8 +164,16 @@ func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
 }
 
 func (vm *virtualMachine) run() error {
+	ctx := vm.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	for vm.pc = 0; vm.pc < uint32(len(vm.program)); { // handle vm.pc updates in step
-		err := vm.step()
+		err := ctx.Err()
+		if err != nil {
+			return err
+		}
+		err = vm.step()
 		if err != nil {
 			return err
 		}

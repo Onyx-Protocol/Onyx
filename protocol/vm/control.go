@@ -61,6 +61,7 @@ func opCheckPredicate(vm *virtualMachine) error {
 	}
 
 	childVM := virtualMachine{
+		ctx:         vm.ctx,
 		mainprog:    vm.mainprog,
 		program:     predicate,
 		runLimit:    limit,

@@ -226,7 +226,7 @@ func TestVerifyTxInput(t *testing.T) {
 			Inputs: []*bc.TxInput{c.input},
 		}}
 
-		gotErr := VerifyTxInput(tx, 0)
+		gotErr := VerifyTxInput(nil, tx, 0)
 
 		if gotErr != c.wantErr {
 			t.Errorf("VerifyTxInput(%d) err = %v want %v", i, gotErr, c.wantErr)
@@ -242,7 +242,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 		BlockHeader: bc.BlockHeader{ConsensusProgram: []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}},
 	}
 
-	gotErr := VerifyBlockHeader(&prevBlock.BlockHeader, block)
+	gotErr := VerifyBlockHeader(nil, &prevBlock.BlockHeader, block)
 	if gotErr != nil {
 		t.Errorf("unexpected error: %v", gotErr)
 	}
@@ -251,7 +251,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 		BlockHeader: bc.BlockHeader{Witness: [][]byte{make([]byte, 50000)}},
 	}
 
-	gotErr = VerifyBlockHeader(&prevBlock.BlockHeader, block)
+	gotErr = VerifyBlockHeader(nil, &prevBlock.BlockHeader, block)
 	if errors.Root(gotErr) != ErrRunLimitExceeded {
 		t.Error("expected block to exceed run limit")
 	}
@@ -448,7 +448,7 @@ func TestVerifyTxInputQuickCheck(t *testing.T) {
 		tx := bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, witnesses, bc.AssetID{}, 10, program, nil)},
 		})
-		verifyTxInput(tx, 0)
+		verifyTxInput(nil, tx, 0)
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -470,7 +470,7 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 		}()
 		prev := &bc.BlockHeader{ConsensusProgram: program}
 		block := &bc.Block{BlockHeader: bc.BlockHeader{Witness: witnesses}}
-		verifyBlockHeader(prev, block)
+		verifyBlockHeader(nil, prev, block)
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
