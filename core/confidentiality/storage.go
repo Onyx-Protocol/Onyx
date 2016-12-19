@@ -244,8 +244,8 @@ func (s *Storage) AnnotateTxs(ctx context.Context, annotatedTxs []map[string]int
 			m := inputs[j].(map[string]interface{})
 			m["confidential"] = confidential
 			m["readable"] = readable
-			m["asset_commitment"] = json.HexBytes(assetCommitment)
-			m["value_commitment"] = json.HexBytes(valueCommitment)
+			m["asset_id_commitment"] = json.HexBytes(assetCommitment)
+			m["amount_commitment"] = json.HexBytes(valueCommitment)
 			if aa != nil {
 				m["amount"] = aa.Amount
 				m["asset_id"] = aa.AssetID.String()
@@ -258,8 +258,8 @@ func (s *Storage) AnnotateTxs(ctx context.Context, annotatedTxs []map[string]int
 			m["confidential"] = confidential
 			m["readable"] = rreadable
 			if o2, ok := out.TypedOutput.(*bc.Outputv2); ok {
-				m["asset_commitment"] = json.HexBytes(o2.AssetDescriptor().Commitment().Bytes())
-				m["value_commitment"] = json.HexBytes(o2.ValueDescriptor().Commitment().Bytes())
+				m["asset_id_commitment"] = json.HexBytes(o2.AssetDescriptor().Commitment().Bytes())
+				m["amount_commitment"] = json.HexBytes(o2.ValueDescriptor().Commitment().Bytes())
 			}
 			if aa != nil {
 				m["amount"] = aa.Amount
