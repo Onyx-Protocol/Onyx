@@ -11,11 +11,11 @@ import (
 
 type TemplateBuilder struct {
 	base                *bc.TxData
-	maxTime             time.Time
 	inputs              []*bc.TxInput
 	outputs             []*bc.TxOutput
 	signingInstructions []*SigningInstruction
-	minTimeMS           uint64
+	minTime             time.Time
+	maxTime             time.Time
 	referenceData       []byte
 	rollbacks           []func()
 	callbacks           []func() error
@@ -39,10 +39,14 @@ func (b *TemplateBuilder) AddOutput(o *bc.TxOutput) error {
 	return nil
 }
 
-func (b *TemplateBuilder) RestrictMinTimeMS(ms uint64) {
-	if ms > b.minTimeMS {
-		b.minTimeMS = ms
+func (b *TemplateBuilder) RestrictMinTime(t time.Time) {
+	if t.After(b.minTime) {
+		b.minTime = t
 	}
+}
+
+func (b *TemplateBuilder) MaxTime() time.Time {
+	return b.maxTime
 }
 
 // OnRollback registers a function that can be
@@ -97,8 +101,8 @@ func (b *TemplateBuilder) Build() (*Template, error) {
 	}
 
 	// Update min & max times.
-	if b.minTimeMS > 0 && b.minTimeMS > tpl.Transaction.MinTime {
-		tpl.Transaction.MinTime = b.minTimeMS
+	if !b.minTime.IsZero() && bc.Millis(b.minTime) > tpl.Transaction.MinTime {
+		tpl.Transaction.MinTime = bc.Millis(b.minTime)
 	}
 	if tpl.Transaction.MaxTime == 0 || tpl.Transaction.MaxTime > bc.Millis(b.maxTime) {
 		tpl.Transaction.MaxTime = bc.Millis(b.maxTime)

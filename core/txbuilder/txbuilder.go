@@ -37,7 +37,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 	// Build all of the actions, updating the builder.
 	var errs []error
 	for i, action := range actions {
-		err := action.Build(ctx, maxTime, &builder)
+		err := action.Build(ctx, &builder)
 		if err != nil {
 			err = errors.WithData(err, "index", i)
 			errs = append(errs, err)

@@ -3,7 +3,6 @@ package txbuilder
 import (
 	"context"
 	stdjson "encoding/json"
-	"time"
 
 	"chain/encoding/json"
 	"chain/protocol/bc"
@@ -21,7 +20,7 @@ type controlProgramAction struct {
 	ReferenceData json.Map      `json:"reference_data"`
 }
 
-func (a *controlProgramAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
+func (a *controlProgramAction) Build(ctx context.Context, b *TemplateBuilder) error {
 	var missing []string
 	if len(a.Program) == 0 {
 		missing = append(missing, "control_program")
@@ -47,7 +46,7 @@ type setTxRefDataAction struct {
 	Data json.Map `json:"reference_data"`
 }
 
-func (a *setTxRefDataAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
+func (a *setTxRefDataAction) Build(ctx context.Context, b *TemplateBuilder) error {
 	if len(a.Data) == 0 {
 		return MissingFieldsError("reference_data")
 	}
