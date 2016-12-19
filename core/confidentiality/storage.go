@@ -13,6 +13,7 @@ import (
 
 	"chain-stealth/crypto/ca"
 	"chain-stealth/database/pg"
+	"chain-stealth/encoding/json"
 	"chain-stealth/errors"
 	"chain-stealth/log"
 	"chain-stealth/protocol/bc"
@@ -200,9 +201,13 @@ func (s *Storage) AnnotateTxs(ctx context.Context, annotatedTxs []map[string]int
 		for j, in := range tx.Inputs {
 			var aa *bc.AssetAmount
 			var confidential, readable string
+			var assetCommitment, valueCommitment []byte
 
 			switch typedIn := in.TypedInput.(type) {
 			case *bc.IssuanceInput2:
+				assetCommitment = typedIn.AssetDescriptor().Commitment().Bytes()
+				valueCommitment = typedIn.ValueDescriptor().Commitment().Bytes()
+
 				if len(typedIn.AssetChoices) != 1 {
 					confidential, readable = "yes", "no"
 					break
@@ -227,6 +232,11 @@ func (s *Storage) AnnotateTxs(ctx context.Context, annotatedTxs []map[string]int
 				// If the input is a spend input, the asset and amount might be
 				// confidential because the prevout is confidential.
 				confidential, readable, _, aa = decryptOutput(typedIn.TypedOutput, keysByControlProgram)
+
+				if o2, ok := typedIn.TypedOutput.(*bc.Outputv2); ok {
+					assetCommitment = o2.AssetDescriptor().Commitment().Bytes()
+					valueCommitment = o2.ValueDescriptor().Commitment().Bytes()
+				}
 			default:
 				// Other input types (like v1 issuance) are not confidential.
 				confidential, readable = "no", "yes"
@@ -234,6 +244,8 @@ func (s *Storage) AnnotateTxs(ctx context.Context, annotatedTxs []map[string]int
 			m := inputs[j].(map[string]interface{})
 			m["confidential"] = confidential
 			m["readable"] = readable
+			m["asset_commitment"] = json.HexBytes(assetCommitment)
+			m["value_commitment"] = json.HexBytes(valueCommitment)
 			if aa != nil {
 				m["amount"] = aa.Amount
 				m["asset_id"] = aa.AssetID.String()
@@ -245,6 +257,10 @@ func (s *Storage) AnnotateTxs(ctx context.Context, annotatedTxs []map[string]int
 			confidential, rreadable, _, aa := decryptOutput(out.TypedOutput, keysByControlProgram)
 			m["confidential"] = confidential
 			m["readable"] = rreadable
+			if o2, ok := out.TypedOutput.(*bc.Outputv2); ok {
+				m["asset_commitment"] = json.HexBytes(o2.AssetDescriptor().Commitment().Bytes())
+				m["value_commitment"] = json.HexBytes(o2.ValueDescriptor().Commitment().Bytes())
+			}
 			if aa != nil {
 				m["amount"] = aa.Amount
 				m["asset_id"] = aa.AssetID.String()

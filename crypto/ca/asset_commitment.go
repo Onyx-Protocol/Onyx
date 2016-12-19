@@ -7,8 +7,8 @@ type (
 	AssetID         [32]byte // not using bc.AssetID to avoid a circular dependency
 )
 
-func (ac *AssetCommitment) Bytes() []byte {
-	return (*Point)(ac).bytes()
+func (ac AssetCommitment) Bytes() []byte {
+	return (*Point)(&ac).bytes()
 }
 
 func (ac *AssetCommitment) writeTo(w io.Writer) error {

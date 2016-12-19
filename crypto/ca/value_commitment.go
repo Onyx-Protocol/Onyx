@@ -14,8 +14,8 @@ func (vc *ValueCommitment) readFrom(r io.Reader) error {
 	return (*Point)(vc).readFrom(r)
 }
 
-func (vc *ValueCommitment) Bytes() []byte {
-	buf := encodePoint((*Point)(vc))
+func (vc ValueCommitment) Bytes() []byte {
+	buf := encodePoint((*Point)(&vc))
 	return buf[:]
 }
 

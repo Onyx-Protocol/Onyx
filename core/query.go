@@ -21,7 +21,9 @@ type (
 		AssetDefinition interface{} `json:"asset_definition"`
 		AssetTags       interface{} `json:"asset_tags,omitempty"`
 		AssetIsLocal    interface{} `json:"asset_is_local"`
+		AssetCommitment interface{} `json:"asset_commitment,omitempty"`
 		Amount          interface{} `json:"amount,omitempty"`
+		ValueCommitment interface{} `json:"value_commitment,omitempty"`
 		IssuanceProgram interface{} `json:"issuance_program,omitempty"`
 		SpentOutput     interface{} `json:"spent_output,omitempty"`
 		*txAccount
@@ -39,7 +41,9 @@ type (
 		AssetDefinition interface{} `json:"asset_definition,omitempty"`
 		AssetTags       interface{} `json:"asset_tags,omitempty"`
 		AssetIsLocal    interface{} `json:"asset_is_local"`
+		AssetCommitment interface{} `json:"asset_commitment,omitempty"`
 		Amount          interface{} `json:"amount,omitempty"`
+		ValueCommitment interface{} `json:"value_commitment,omitempty"`
 		*txAccount
 		ControlProgram interface{} `json:"control_program"`
 		ReferenceData  interface{} `json:"reference_data"`
@@ -164,7 +168,9 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 				AssetDefinition: in["asset_definition"],
 				AssetTags:       in["asset_tags"],
 				AssetIsLocal:    in["asset_is_local"],
+				AssetCommitment: in["asset_commitment"],
 				Amount:          in["amount"],
+				ValueCommitment: in["value_commitment"],
 				IssuanceProgram: in["issuance_program"],
 				SpentOutput:     in["spent_output"],
 				txAccount:       txAccountFromMap(in),
@@ -186,7 +192,9 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 				AssetDefinition: out["asset_definition"],
 				AssetTags:       out["asset_tags"],
 				AssetIsLocal:    out["asset_is_local"],
+				AssetCommitment: out["asset_commitment"],
 				Amount:          out["amount"],
+				ValueCommitment: out["value_commitment"],
 				txAccount:       txAccountFromMap(out),
 				ControlProgram:  out["control_program"],
 				ReferenceData:   out["reference_data"],
@@ -329,7 +337,9 @@ type utxoResp struct {
 	AssetDefinition interface{} `json:"asset_definition,omitempty"`
 	AssetTags       interface{} `json:"asset_tags,omitempty"`
 	AssetIsLocal    interface{} `json:"asset_is_local"`
+	AssetCommitment interface{} `json:"asset_commitment,omitempty"`
 	Amount          interface{} `json:"amount,omitempty"`
+	ValueCommitment interface{} `json:"value_commitment,omitempty"`
 	AccountID       interface{} `json:"account_id"`
 	AccountAlias    interface{} `json:"account_alias"`
 	AccountTags     interface{} `json:"account_tags"`
@@ -392,7 +402,9 @@ func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (resu
 			AssetDefinition: out["asset_definition"],
 			AssetTags:       out["asset_tags"],
 			AssetIsLocal:    out["asset_is_local"],
+			AssetCommitment: out["asset_commitment"],
 			Amount:          out["amount"],
+			ValueCommitment: out["value_commitment"],
 			AccountID:       out["account_id"],
 			AccountAlias:    out["account_alias"],
 			AccountTags:     out["account_tags"],
