@@ -8,6 +8,7 @@ import (
 
 	// TODO(bobg): very little of this package depends on bc, consider trying to remove the dependency
 	"chain-stealth/crypto/ca"
+	"chain-stealth/errors"
 	"chain-stealth/protocol/bc"
 )
 
@@ -117,7 +118,7 @@ func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 	case *bc.SpendInput:
 		return f(inp.VMVer(), inp.Program(), inp.Arguments, nil)
 	}
-	return false, fmt.Errorf("transaction input %d has unknown type %T", inputIndex, txinput.TypedInput)
+	return false, errors.WithDetailf(ErrUnsupportedTx, "transaction input %d has unknown type %T", inputIndex, txinput.TypedInput)
 }
 
 func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (ok bool, err error) {

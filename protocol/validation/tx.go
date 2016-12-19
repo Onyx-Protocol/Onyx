@@ -253,7 +253,7 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 				return badTxErrf(errAssetVersion, "unknown asset version %d in output %d for transaction version %d", txout.AssetVersion, i, tx.Version)
 			}
 			if txout.VMVer() != 1 {
-				return badTxErrf(errVMVersion, "unknown vm version %d in output %d for transaction version 1", txout.VMVer(), i)
+				return badTxErrf(errVMVersion, "unknown vm version %d in output %d for transaction version %d", txout.VMVer(), i, tx.Version)
 			}
 		}
 

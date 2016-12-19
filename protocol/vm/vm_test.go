@@ -228,6 +228,9 @@ func TestVerifyTxInput(t *testing.T) {
 			[][]byte{make([]byte, 50001)},
 		),
 		wantErr: ErrRunLimitExceeded,
+	}, {
+		input:   &bc.TxInput{},
+		wantErr: ErrUnsupportedTx,
 	}}
 
 	for i, c := range cases {
@@ -237,7 +240,7 @@ func TestVerifyTxInput(t *testing.T) {
 
 		got, gotErr := VerifyTxInput(tx, 0)
 
-		if gotErr != c.wantErr {
+		if errors.Root(gotErr) != c.wantErr {
 			t.Errorf("VerifyTxInput(%d) err = %v want %v", i, gotErr, c.wantErr)
 		}
 
