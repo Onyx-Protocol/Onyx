@@ -238,12 +238,12 @@ func TestVerifyTxInput(t *testing.T) {
 
 		got, gotErr := VerifyTxInput(tx, 0)
 
-		if gotErr != c.wantErr {
-			t.Errorf("VerifyTxInput(%+v) err = %v want %v", i, gotErr, c.wantErr)
+		if errors.Root(gotErr) != c.wantErr {
+			t.Errorf("VerifyTxInput(%d) err = %v want %v", i, gotErr, c.wantErr)
 		}
 
 		if got != c.want {
-			t.Errorf("VerifyTxInput(%+v) = %v want %v", i, got, c.want)
+			t.Errorf("VerifyTxInput(%d) = %v want %v", i, got, c.want)
 		}
 	}
 }
@@ -398,6 +398,24 @@ func TestStep(t *testing.T) {
 			tx:       &bc.Tx{},
 		},
 		wantErr: ErrRunLimitExceeded,
+	}, {
+		startVM: &virtualMachine{
+			program:           []byte{255},
+			runLimit:          100,
+			expansionReserved: true,
+		},
+		wantErr: ErrDisallowedOpcode,
+	}, {
+		startVM: &virtualMachine{
+			program:  []byte{255},
+			runLimit: 100,
+		},
+		wantVM: &virtualMachine{
+			program:  []byte{255},
+			runLimit: 99,
+			pc:       1,
+			nextPC:   1,
+		},
 	}}
 
 	for i, c := range cases {
