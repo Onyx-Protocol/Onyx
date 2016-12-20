@@ -15,17 +15,17 @@ import (
 // These types enforce the ordering of JSON fields in API output.
 type (
 	txinResp struct {
-		Type            interface{} `json:"type"`
-		AssetID         interface{} `json:"asset_id,omitempty"`
-		AssetAlias      interface{} `json:"asset_alias,omitempty"`
-		AssetDefinition interface{} `json:"asset_definition"`
-		AssetTags       interface{} `json:"asset_tags,omitempty"`
-		AssetIsLocal    interface{} `json:"asset_is_local"`
-		AssetCommitment interface{} `json:"asset_commitment,omitempty"`
-		Amount          interface{} `json:"amount,omitempty"`
-		ValueCommitment interface{} `json:"value_commitment,omitempty"`
-		IssuanceProgram interface{} `json:"issuance_program,omitempty"`
-		SpentOutput     interface{} `json:"spent_output,omitempty"`
+		Type              interface{} `json:"type"`
+		AssetID           interface{} `json:"asset_id,omitempty"`
+		AssetIDCommitment interface{} `json:"asset_id_commitment,omitempty"`
+		AssetAlias        interface{} `json:"asset_alias,omitempty"`
+		AssetDefinition   interface{} `json:"asset_definition"`
+		AssetTags         interface{} `json:"asset_tags,omitempty"`
+		AssetIsLocal      interface{} `json:"asset_is_local"`
+		Amount            interface{} `json:"amount,omitempty"`
+		AmountCommitment  interface{} `json:"amount_commitment,omitempty"`
+		IssuanceProgram   interface{} `json:"issuance_program,omitempty"`
+		SpentOutput       interface{} `json:"spent_output,omitempty"`
 		*txAccount
 		ReferenceData interface{} `json:"reference_data"`
 		IsLocal       interface{} `json:"is_local"`
@@ -33,17 +33,17 @@ type (
 		Readable      interface{} `json:"readable"`
 	}
 	txoutResp struct {
-		Type            interface{} `json:"type"`
-		Purpose         interface{} `json:"purpose,omitempty"`
-		Position        interface{} `json:"position"`
-		AssetID         interface{} `json:"asset_id,omitempty"`
-		AssetAlias      interface{} `json:"asset_alias,omitempty"`
-		AssetDefinition interface{} `json:"asset_definition,omitempty"`
-		AssetTags       interface{} `json:"asset_tags,omitempty"`
-		AssetIsLocal    interface{} `json:"asset_is_local"`
-		AssetCommitment interface{} `json:"asset_commitment,omitempty"`
-		Amount          interface{} `json:"amount,omitempty"`
-		ValueCommitment interface{} `json:"value_commitment,omitempty"`
+		Type              interface{} `json:"type"`
+		Purpose           interface{} `json:"purpose,omitempty"`
+		Position          interface{} `json:"position"`
+		AssetID           interface{} `json:"asset_id,omitempty"`
+		AssetIDCommitment interface{} `json:"asset_id_commitment,omitempty"`
+		AssetAlias        interface{} `json:"asset_alias,omitempty"`
+		AssetDefinition   interface{} `json:"asset_definition,omitempty"`
+		AssetTags         interface{} `json:"asset_tags,omitempty"`
+		AssetIsLocal      interface{} `json:"asset_is_local"`
+		Amount            interface{} `json:"amount,omitempty"`
+		AmountCommitment  interface{} `json:"amount_commitment,omitempty"`
 		*txAccount
 		ControlProgram interface{} `json:"control_program"`
 		ReferenceData  interface{} `json:"reference_data"`
@@ -162,45 +162,45 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 		inResps := make([]*txinResp, 0, len(inputs))
 		for _, in := range inputs {
 			r := &txinResp{
-				Type:            in["type"],
-				AssetID:         in["asset_id"],
-				AssetAlias:      in["asset_alias"],
-				AssetDefinition: in["asset_definition"],
-				AssetTags:       in["asset_tags"],
-				AssetIsLocal:    in["asset_is_local"],
-				AssetCommitment: in["asset_commitment"],
-				Amount:          in["amount"],
-				ValueCommitment: in["value_commitment"],
-				IssuanceProgram: in["issuance_program"],
-				SpentOutput:     in["spent_output"],
-				txAccount:       txAccountFromMap(in),
-				ReferenceData:   in["reference_data"],
-				IsLocal:         in["is_local"],
-				Confidential:    in["confidential"],
-				Readable:        in["readable"],
+				Type:              in["type"],
+				AssetID:           in["asset_id"],
+				AssetIDCommitment: in["asset_id_commitment"],
+				AssetAlias:        in["asset_alias"],
+				AssetDefinition:   in["asset_definition"],
+				AssetTags:         in["asset_tags"],
+				AssetIsLocal:      in["asset_is_local"],
+				Amount:            in["amount"],
+				AmountCommitment:  in["amount_commitment"],
+				IssuanceProgram:   in["issuance_program"],
+				SpentOutput:       in["spent_output"],
+				txAccount:         txAccountFromMap(in),
+				ReferenceData:     in["reference_data"],
+				IsLocal:           in["is_local"],
+				Confidential:      in["confidential"],
+				Readable:          in["readable"],
 			}
 			inResps = append(inResps, r)
 		}
 		outResps := make([]*txoutResp, 0, len(outputs))
 		for _, out := range outputs {
 			r := &txoutResp{
-				Type:            out["type"],
-				Purpose:         out["purpose"],
-				Position:        out["position"],
-				AssetID:         out["asset_id"],
-				AssetAlias:      out["asset_alias"],
-				AssetDefinition: out["asset_definition"],
-				AssetTags:       out["asset_tags"],
-				AssetIsLocal:    out["asset_is_local"],
-				AssetCommitment: out["asset_commitment"],
-				Amount:          out["amount"],
-				ValueCommitment: out["value_commitment"],
-				txAccount:       txAccountFromMap(out),
-				ControlProgram:  out["control_program"],
-				ReferenceData:   out["reference_data"],
-				IsLocal:         out["is_local"],
-				Confidential:    out["confidential"],
-				Readable:        out["readable"],
+				Type:              out["type"],
+				Purpose:           out["purpose"],
+				Position:          out["position"],
+				AssetID:           out["asset_id"],
+				AssetAlias:        out["asset_alias"],
+				AssetDefinition:   out["asset_definition"],
+				AssetTags:         out["asset_tags"],
+				AssetIsLocal:      out["asset_is_local"],
+				AssetIDCommitment: out["asset_id_commitment"],
+				Amount:            out["amount"],
+				AmountCommitment:  out["amount_commitment"],
+				txAccount:         txAccountFromMap(out),
+				ControlProgram:    out["control_program"],
+				ReferenceData:     out["reference_data"],
+				IsLocal:           out["is_local"],
+				Confidential:      out["confidential"],
+				Readable:          out["readable"],
 			}
 			outResps = append(outResps, r)
 		}
