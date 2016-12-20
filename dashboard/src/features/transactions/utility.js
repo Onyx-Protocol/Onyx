@@ -6,6 +6,7 @@ const keyNameMappings = {
   position: 'Position',
   spent_output: 'Spent Output',
   asset_id: 'Asset ID',
+  asset_id_candidates: 'Asset ID Candidates',
   asset_id_commitment: 'Asset ID Commitment',
   asset_alias: 'Asset Alias',
   asset_definition: 'Asset Definition',
