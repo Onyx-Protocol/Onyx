@@ -61,8 +61,8 @@ func TestRecovery(t *testing.T) {
 	// Issue some apples to Alice and a dollar to Bob.
 	_ = coretest.IssueAssets(ctx, t, c, pool, assets, accounts, apple, 10, alice)
 	_ = coretest.IssueAssets(ctx, t, c, pool, assets, accounts, usd, 1, bob)
-
 	prottest.MakeBlock(t, c, pool.Dump(ctx))
+	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// Submit a transfer between Alice and Bob but don't publish it in a block.
 	coretest.Transfer(ctx, t, c, pool, []txbuilder.Action{

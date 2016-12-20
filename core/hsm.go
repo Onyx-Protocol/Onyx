@@ -11,11 +11,7 @@ import (
 )
 
 func (h *Handler) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {
-	result, err = h.HSM.XCreate(ctx, in.Alias)
-	if err != nil {
-		return result, err
-	}
-	return result, nil
+	return h.HSM.XCreate(ctx, in.Alias)
 }
 
 func (h *Handler) mockhsmListKeys(ctx context.Context, query requestQuery) (page, error) {

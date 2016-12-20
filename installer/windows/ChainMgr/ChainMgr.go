@@ -30,12 +30,6 @@ const (
 	// Port this db will listen on. Also the year I started kindergarten.
 	pgPort = "1998"
 
-	// Postgres user ("postgres" is the default). NOT the system user.
-	pgUser = "postgres"
-
-	// Password for that postgres user to use.
-	pgPassword = "password"
-
 	// Database name. Changing this requires passing the correct environment vars
 	// to Chain Core.
 	dbName = "core"

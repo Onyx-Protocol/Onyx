@@ -19,7 +19,6 @@ type TemplateBuilder struct {
 	referenceData       []byte
 	rollbacks           []func()
 	callbacks           []func() error
-	values              map[interface{}]interface{}
 }
 
 func (b *TemplateBuilder) AddInput(in *bc.TxInput, sigInstruction *SigningInstruction) error {

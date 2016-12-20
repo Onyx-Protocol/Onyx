@@ -98,7 +98,7 @@ type reserver struct {
 	sources   map[source]*sourceReserver
 }
 
-// Reserve selects and reserves UTXOs according to the critera provided
+// Reserve selects and reserves UTXOs according to the criteria provided
 // in source. The resulting reservation expires at exp.
 func (re *reserver) Reserve(ctx context.Context, src source, amount uint64, clientToken *string, exp time.Time) (*reservation, error) {
 	if clientToken == nil {
