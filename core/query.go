@@ -18,6 +18,7 @@ type (
 		Type              interface{} `json:"type"`
 		AssetID           interface{} `json:"asset_id,omitempty"`
 		AssetIDCommitment interface{} `json:"asset_id_commitment,omitempty"`
+		AssetIDCandidates interface{} `json:"asset_id_candidates,omitempty"`
 		AssetAlias        interface{} `json:"asset_alias,omitempty"`
 		AssetDefinition   interface{} `json:"asset_definition"`
 		AssetTags         interface{} `json:"asset_tags,omitempty"`
@@ -165,6 +166,7 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 				Type:              in["type"],
 				AssetID:           in["asset_id"],
 				AssetIDCommitment: in["asset_id_commitment"],
+				AssetIDCandidates: in["asset_id_candidates"],
 				AssetAlias:        in["asset_alias"],
 				AssetDefinition:   in["asset_definition"],
 				AssetTags:         in["asset_tags"],

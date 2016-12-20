@@ -202,11 +202,16 @@ func (s *Storage) AnnotateTxs(ctx context.Context, annotatedTxs []map[string]int
 			var aa *bc.AssetAmount
 			var confidential, readable string
 			var assetCommitment, valueCommitment []byte
+			var possibleAssetIDs []bc.AssetID
 
 			switch typedIn := in.TypedInput.(type) {
 			case *bc.IssuanceInput2:
 				assetCommitment = typedIn.AssetDescriptor().Commitment().Bytes()
 				valueCommitment = typedIn.ValueDescriptor().Commitment().Bytes()
+
+				for _, assetChoice := range typedIn.AssetChoices {
+					possibleAssetIDs = append(possibleAssetIDs, assetChoice.AssetID(in.AssetVersion))
+				}
 
 				if len(typedIn.AssetChoices) != 1 {
 					confidential, readable = "yes", "no"
@@ -245,6 +250,7 @@ func (s *Storage) AnnotateTxs(ctx context.Context, annotatedTxs []map[string]int
 			m["confidential"] = confidential
 			m["readable"] = readable
 			m["asset_id_commitment"] = json.HexBytes(assetCommitment)
+			m["asset_id_candidates"] = possibleAssetIDs
 			m["amount_commitment"] = json.HexBytes(valueCommitment)
 			if aa != nil {
 				m["amount"] = aa.Amount
