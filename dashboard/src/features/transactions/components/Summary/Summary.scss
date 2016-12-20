@@ -59,10 +59,42 @@
 }
 
 .confidential {
+  position: relative;
+  padding: 10px 15px 0px;
+  margin: -10px -15px 0px;
 
   .icon {
-    color: $text-strong-color;
     font-size: 0.7em;
     margin-right: 5px;
+  }
+
+  .confidentialValue {
+    display: none;
+    background: rgba(0,0,0, 0.65);
+    border-radius: $border-radius-standard;
+    color: white;
+    position: absolute;
+    padding: $gutter-size/2;
+    left: -90px;
+    top: 50px;
+    width: 290px;
+    word-wrap: break-word;
+    z-index: 10;
+
+    &:before {
+      content: " ";
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      margin-left: -10px;
+      border: 10px solid transparent;
+      border-bottom-color: rgba(0,0,0,0.65);
+    }
+  }
+
+  &:hover {
+    .confidentialValue {
+      display: block;
+    }
   }
 }

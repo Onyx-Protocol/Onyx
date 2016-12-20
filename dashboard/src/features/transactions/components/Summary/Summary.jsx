@@ -16,12 +16,13 @@ class Summary extends React.Component {
     inouts.forEach(inout => {
       let assetId = inout.asset_id
       if (inout.readable != 'yes') {
-        assetId = 'confidential'
+        assetId = inout.asset_id_commitment
       }
 
       let asset = normalized[assetId]
       if (!asset) asset = normalized[assetId] = {
         alias: inout.asset_alias,
+        assetCommitment: inout.asset_id_commitment,
         issue: {amount :0},
         retire: {amount: 0},
         accounts: {}
@@ -29,7 +30,10 @@ class Summary extends React.Component {
 
       if (['issue', 'retire'].includes(inout.type)) {
         asset[inout.type].amount += (inout.amount || 0)
-        if (inout.readable != 'yes') asset[inout.type].hidden = true
+        if (inout.readable != 'yes') {
+          asset[inout.type].hidden = true
+          asset[inout.type].amountCommitment = inout.amount_commitment
+        }
       } else {
         let accountKey = inout.account_id || 'external'
         let account = asset.accounts[accountKey]
@@ -47,7 +51,10 @@ class Summary extends React.Component {
         } else if (inout.type == 'control') {
           account.control.amount += (inout.amount || 0)
         }
-        if (inout.readable != 'yes') account[inout.type].hidden = true
+        if (inout.readable != 'yes') {
+          account[inout.type].hidden = true
+          account[inout.type].amountCommitment = inout.amount_commitment
+        }
       }
     })
 
@@ -65,8 +72,12 @@ class Summary extends React.Component {
       const actions = ['issue','retire']
       actions.forEach((type) => {
         if (asset[type].hidden) {
+          console.log(asset);
+          console.log(asset[type]);
           items.push({
             type: INOUT_TYPES[type],
+            assetCommitment: asset.assetCommitment,
+            amountCommitment: asset[type].amountCommitment,
             hidden: true
           })
         } else if (asset[type].amount > 0) {
@@ -88,6 +99,8 @@ class Summary extends React.Component {
           if (account[type].hidden) {
             items.push({
               type: INOUT_TYPES[type],
+              assetCommitment: asset.assetCommitment,
+              amountCommitment: account[type].amountCommitment,
               hidden: true
             })
           } else if (account[type].amount > 0) {
@@ -115,26 +128,34 @@ class Summary extends React.Component {
       return null
     }
 
-    const confidentialIcon = <span className={styles.confidential}>
-      <span className={`${styles.icon} glyphicon glyphicon-lock`} />
-      confidential
-    </span>
+    const confidentialIcon = (value) => (<span className={styles.confidential}>
+      <a href='#' onClick={(e) => e.preventDefault()}>
+        <span className={`${styles.icon} glyphicon glyphicon-lock`} />
+        confidential
+
+        <code className={styles.confidentialValue}>
+          {value}
+        </code>
+      </a>
+    </span>)
 
     return(<table className={styles.main}>
       <tbody>
-        {items.map((item, index) =>
+        {items.map((item, index) => {
+          console.log(item);
+          return (
           <tr key={index}>
             <td className={styles.colAction}>{item.type}</td>
             <td className={styles.colLabel}>amount</td>
             <td className={styles.colAmount}>
               {item.hidden
-                ? confidentialIcon
+                ? confidentialIcon(item.amountCommitment)
                 : <code className={styles.amount}>{item.amount}</code>}
             </td>
             <td className={styles.colLabel}>asset</td>
             <td className={styles.colAccount}>
               {item.hidden
-                ? confidentialIcon
+                ? confidentialIcon(item.assetCommitment)
                 : <Link to={`/assets/${item.assetId}`}>
                   {item.asset}
                 </Link>}
@@ -147,6 +168,7 @@ class Summary extends React.Component {
               {!item.accountId && item.account}
             </td>
           </tr>
+          )}
         )}
       </tbody>
     </table>)
