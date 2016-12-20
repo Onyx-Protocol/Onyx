@@ -1,8 +1,10 @@
 package bc
 
 import (
+	"fmt"
 	"io"
 
+	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
@@ -36,8 +38,14 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "reading asset version")
 	}
+	if txVersion == 1 && to.AssetVersion != 1 {
+		return fmt.Errorf("unrecognized asset version %d for transaction version %d", to.AssetVersion, txVersion)
+	}
 
-	_, err = to.OutputCommitment.readFrom(r, txVersion, to.AssetVersion)
+	all := txVersion == 1
+	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+		return to.OutputCommitment.ReadFrom(r)
+	})
 	if err != nil {
 		return errors.Wrap(err, "reading output commitment")
 	}
@@ -47,10 +55,11 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 		return errors.Wrap(err, "reading reference data")
 	}
 
-	// read and ignore the (empty) output witness
-	_, _, err = blockchain.ReadVarstr31(r)
-
-	return errors.Wrap(err, "reading output witness")
+	// TODO(bobg): test that serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
+	_, err = blockchain.ReadExtensibleString(r, false, func(r io.Reader) error {
+		return to.OutputCommitment.readWitness(r)
+	})
+	return err
 }
 
 func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
@@ -59,7 +68,12 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 		return errors.Wrap(err, "writing asset version")
 	}
 
-	err = to.OutputCommitment.writeTo(w, to.AssetVersion)
+	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+		if to.AssetVersion == 1 {
+			return to.OutputCommitment.WriteTo(w)
+		}
+		return nil
+	})
 	if err != nil {
 		return errors.Wrap(err, "writing output commitment")
 	}
@@ -69,18 +83,26 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 		return errors.Wrap(err, "writing reference data")
 	}
 
-	// write witness (empty in v1)
-	_, err = blockchain.WriteVarstr31(w, nil)
-	if err != nil {
-		return errors.Wrap(err, "writing witness")
+	if serflags&SerWitness != 0 {
+		_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+			return to.OutputCommitment.writeWitness(w)
+		})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (to *TxOutput) witnessHash() Hash {
-	return EmptyStringHash
-}
+func (to *TxOutput) WitnessHash() (hash Hash, err error) {
+	hasher := sha3pool.Get256()
+	defer sha3pool.Put256(hasher)
 
-func (to *TxOutput) WriteCommitment(w io.Writer) {
-	to.OutputCommitment.writeTo(w, to.AssetVersion)
+	err = to.OutputCommitment.writeWitness(hasher)
+	if err != nil {
+		return hash, err
+	}
+
+	hasher.Read(hash[:])
+	return hash, err
 }

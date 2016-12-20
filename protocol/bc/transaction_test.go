@@ -45,7 +45,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // outputs count
 				"00"), // reference data
 			hash:        mustDecodeHash("74e60d94a75848b48fc79eac11a1d39f41e1b32046cf948929b729a57b75d5be"),
-			witnessHash: mustDecodeHash("536cef3158d7ea51194b370e02f27265e8584ff4df1cd2829de0074c11f1f1b2"),
+			witnessHash: mustDecodeHash("87f80a62c95421ab5c42b7e2787b472a84856461dd01397f2c37f096f0ef1ab4"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -163,10 +163,9 @@ func TestTransaction(t *testing.T) {
 		if test.tx.Hash != test.hash {
 			t.Errorf("test %d: hash = %s want %x", i, test.tx.Hash, test.hash)
 		}
-
 		g, err := test.tx.WitnessHash()
 		if err != nil {
-			t.Fatalf("unexpected error %s", err)
+			t.Fatal(err)
 		}
 		if g != test.witnessHash {
 			t.Errorf("test %d: witness hash = %s want %x", i, g, test.witnessHash)
@@ -181,7 +180,7 @@ func TestTransaction(t *testing.T) {
 			t.Errorf("test %d: error unmarshaling tx from json: %s", i, err)
 		}
 		if !reflect.DeepEqual(test.tx, &txFromJSON) {
-			t.Errorf("test %d: bc.Tx -> json -> bc.Tx: got:\n%s\nwant:\n%s", i, spew.Sdump(&txFromJSON), spew.Sdump(test.tx))
+			t.Errorf("test %d: Tx -> json -> Tx: got:\n%s\nwant:\n%s", i, spew.Sdump(&txFromJSON), spew.Sdump(test.tx))
 		}
 
 		tx1 := new(TxData)
@@ -434,4 +433,9 @@ func BenchmarkOutpointWriteTo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		o.WriteTo(ioutil.Discard)
 	}
+}
+
+func init() {
+	spew.Config.DisableMethods = true
+	spew.Config.DisablePointerMethods = true
 }

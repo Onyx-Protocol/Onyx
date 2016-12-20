@@ -44,7 +44,7 @@ func OutputKey(o bc.Outpoint) (bkey []byte) {
 
 func outputBytes(o *Output) []byte {
 	var b bytes.Buffer
-	o.WriteCommitment(&b)
+	o.OutputCommitment.WriteTo(&b)
 	return b.Bytes()
 }
 
