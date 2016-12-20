@@ -72,7 +72,7 @@ func (tx *Tx) WitnessHash() (hash Hash, err error) {
 
 	blockchain.WriteVarint31(hasher, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
 	for _, txin := range tx.Inputs {
-		h, err := txin.WitnessHash()
+		h, err := txin.witnessHash()
 		if err != nil {
 			return hash, err
 		}
@@ -81,7 +81,7 @@ func (tx *Tx) WitnessHash() (hash Hash, err error) {
 
 	blockchain.WriteVarint31(hasher, uint64(len(tx.Outputs))) // TODO(bobg): check and return error
 	for _, txout := range tx.Outputs {
-		h, err := txout.WitnessHash()
+		h, err := txout.witnessHash()
 		if err != nil {
 			return hash, err
 		}

@@ -96,7 +96,7 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 	return nil
 }
 
-func (to *TxOutput) WitnessHash() (hash Hash, err error) {
+func (to *TxOutput) witnessHash() (hash Hash, err error) {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 
