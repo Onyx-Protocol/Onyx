@@ -232,54 +232,38 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 		return 0, err
 	}
 
-	commitment, _, err := blockchain.ReadVarstr31(r)
-	if err != nil {
-		return 0, err
-	}
-
-	commitmentReader := bytes.NewReader(commitment)
-	_, err = io.ReadFull(commitmentReader, bh.TransactionsMerkleRoot[:])
-	if err != nil {
-		return 0, err
-	}
-	_, err = io.ReadFull(commitmentReader, bh.AssetsMerkleRoot1[:])
-	if err != nil {
-		return 0, err
-	}
-	bh.ConsensusProgram, _, err = blockchain.ReadVarstr31(commitmentReader)
-	if err != nil {
-		return 0, err
-	}
-	if bh.Version == 2 {
-		_, err = io.ReadFull(commitmentReader, bh.AssetsMerkleRoot2[:])
+	_, err = blockchain.ReadExtensibleString(r, true, func(r io.Reader) error {
+		_, err := io.ReadFull(r, bh.TransactionsMerkleRoot[:])
 		if err != nil {
-			return 0, err
+			return err
 		}
-	}
-	if commitmentReader.Len() > 0 {
-		return 0, fmt.Errorf("block commitment contains unexpected data")
+		_, err = io.ReadFull(r, bh.AssetsMerkleRoot1[:])
+		if err != nil {
+			return err
+		}
+		bh.ConsensusProgram, _, err = blockchain.ReadVarstr31(r)
+		if err != nil {
+			return err
+		}
+		if bh.Version == 2 {
+			_, err = io.ReadFull(r, bh.AssetsMerkleRoot2[:])
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
 	}
 
 	if serflags[0]&SerBlockWitness == SerBlockWitness {
-		witness, _, err := blockchain.ReadVarstr31(r)
+		_, err = blockchain.ReadExtensibleString(r, true, func(r io.Reader) (err error) {
+			bh.Witness, _, err = blockchain.ReadVarstrList(r)
+			return err
+		})
 		if err != nil {
 			return 0, err
-		}
-
-		witnessReader := bytes.NewReader(witness)
-		n, _, err := blockchain.ReadVarint31(witnessReader)
-		if err != nil {
-			return 0, err
-		}
-		for ; n > 0; n-- {
-			wb, _, err := blockchain.ReadVarstr31(witnessReader)
-			if err != nil {
-				return 0, errors.Wrap(err, "reading block witness")
-			}
-			bh.Witness = append(bh.Witness, wb)
-		}
-		if witnessReader.Len() > 0 {
-			return 0, fmt.Errorf("block witness contains unexpected data")
 		}
 	}
 
@@ -322,38 +306,36 @@ func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
 		return err
 	}
 
-	var commitment bytes.Buffer
-	commitment.Write(bh.TransactionsMerkleRoot[:])
-	commitment.Write(bh.AssetsMerkleRoot1[:])
-	_, err = blockchain.WriteVarstr31(&commitment, bh.ConsensusProgram)
-	if err != nil {
-		return err
-	}
-	if bh.Version == 2 {
-		commitment.Write(bh.AssetsMerkleRoot2[:])
-	}
-
-	_, err = blockchain.WriteVarstr31(w, commitment.Bytes())
+	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+		_, err := w.Write(bh.TransactionsMerkleRoot[:])
+		if err != nil {
+			return err
+		}
+		_, err = w.Write(bh.AssetsMerkleRoot1[:])
+		if err != nil {
+			return err
+		}
+		_, err = blockchain.WriteVarstr31(w, bh.ConsensusProgram)
+		if err != nil {
+			return err
+		}
+		if bh.Version == 2 {
+			_, err = w.Write(bh.AssetsMerkleRoot2[:])
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}
 
 	if serflags&SerBlockWitness == SerBlockWitness {
-		var witnessBuf bytes.Buffer
-
-		_, err = blockchain.WriteVarint31(&witnessBuf, uint64(len(bh.Witness)))
-		if err != nil {
+		_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+			_, err := blockchain.WriteVarstrList(w, bh.Witness)
 			return err
-		}
-
-		for _, witness := range bh.Witness {
-			_, err = blockchain.WriteVarstr31(&witnessBuf, witness)
-			if err != nil {
-				return err
-			}
-		}
-
-		_, err = blockchain.WriteVarstr31(w, witnessBuf.Bytes())
+		})
 		if err != nil {
 			return err
 		}
