@@ -73,7 +73,10 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 		}
 
 		if validation.ConfirmTx(result, c.InitialBlockHash, b, tx) == nil {
-			validation.ApplyTx(result, tx)
+			err = validation.ApplyTx(result, tx)
+			if err != nil {
+				return nil, nil, err
+			}
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}

@@ -4,8 +4,6 @@ package migrate
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	"chain/database/pg"
@@ -83,35 +81,8 @@ const createMigrationTableSQL = `
 	  );
 `
 
-// byFilename implements sort.Interface allowing sorting by the
-// filename of the migration. This should sort by date because of
-// the migration file naming scheme.
-type byFilename []migration
-
-func (m byFilename) Len() int           { return len(m) }
-func (m byFilename) Less(i, j int) bool { return m[i].Name < m[j].Name }
-func (m byFilename) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
-
 func (m migration) String() string {
 	return fmt.Sprintf("%s - %s", m.Name, m.Hash[:5])
-}
-
-// migrationFiles returns a slice of the filenames of all migrations in the
-// given directory.
-func migrationFiles(migrationDirectory string) ([]string, error) {
-	var filenames []string
-	err := filepath.Walk(migrationDirectory, func(name string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if filepath.Ext(name) != ".sql" && filepath.Ext(name) != ".go" {
-			return nil
-		}
-
-		filenames = append(filenames, filepath.Base(name))
-		return nil
-	})
-	return filenames, err
 }
 
 // loadStatus sets AppliedAt on each item of ms that appears

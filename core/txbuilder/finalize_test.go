@@ -135,7 +135,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	// Slighly tweak the first tx so it has a different hash, but
+	// Slightly tweak the first tx so it has a different hash, but
 	// still consumes the same UTXOs.
 	unsignedTx.MaxTime++
 	secondTemplate := &Template{
@@ -216,28 +216,6 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		if i%10 == 0 {
 			prottest.MakeBlock(b, info.Chain, p.Dump(ctx))
 		}
-	}
-}
-
-func dumpTab(ctx context.Context, t *testing.T, db pg.DB, q string) {
-	rows, err := db.Query(ctx, q)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var hash bc.Hash
-		var tx bc.TxData
-		err = rows.Scan(&hash, &tx)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for index, o := range tx.Outputs {
-			t.Logf("hash: %s index: %d pkscript: %x", hash, index, o.ControlProgram)
-		}
-	}
-	if rows.Err() != nil {
-		t.Fatal(rows.Err())
 	}
 }
 

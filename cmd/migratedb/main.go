@@ -26,8 +26,6 @@ var (
 	flagD      = flag.String("d", "postgres:///core?sslmode=disable", "database")
 	flagStatus = flag.Bool("status", false, "print all migrations and their status")
 	flagH      = flag.Bool("h", false, "show help")
-
-	dbURL string
 )
 
 func fatalf(format string, args ...interface{}) {
