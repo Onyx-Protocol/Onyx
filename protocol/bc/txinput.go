@@ -123,7 +123,8 @@ func (t *TxInput) WriteInputCommitment(w io.Writer) (err error) {
 			}
 
 			_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-				return inp.OutputCommitment.WriteTo(w)
+				_, err := inp.OutputCommitment.WriteTo(w)
+				return err
 			})
 			return err
 		}

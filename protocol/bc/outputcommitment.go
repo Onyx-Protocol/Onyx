@@ -14,17 +14,19 @@ type OutputCommitment struct {
 	ControlProgram []byte
 }
 
-func (oc *OutputCommitment) WriteTo(w io.Writer) error {
-	err := oc.AssetAmount.writeTo(w)
+func (oc *OutputCommitment) WriteTo(w io.Writer) (int64, error) {
+	n, err := oc.AssetAmount.writeTo(w)
 	if err != nil {
-		return err
+		return n, err
 	}
-	_, err = blockchain.WriteVarint63(w, oc.VMVersion)
+	n2, err := blockchain.WriteVarint63(w, oc.VMVersion)
+	n += int64(n2)
 	if err != nil {
-		return err
+		return n, err
 	}
-	_, err = blockchain.WriteVarstr31(w, oc.ControlProgram)
-	return err
+	n2, err = blockchain.WriteVarstr31(w, oc.ControlProgram)
+	n += int64(n2)
+	return n, err
 }
 
 // does not write the enclosing extensible string
@@ -32,23 +34,26 @@ func (oc *OutputCommitment) writeWitness(w io.Writer) error {
 	return nil
 }
 
-func (oc *OutputCommitment) ReadFrom(r io.Reader) error {
-	_, err := oc.AssetAmount.readFrom(r)
+func (oc *OutputCommitment) ReadFrom(r io.Reader) (int64, error) {
+	n, err := oc.AssetAmount.readFrom(r)
 	if err != nil {
-		return errors.Wrap(err, "reading asset+amount")
+		return int64(n), errors.Wrap(err, "reading asset+amount")
 	}
 
-	oc.VMVersion, _, err = blockchain.ReadVarint63(r)
+	var n2 int
+	oc.VMVersion, n2, err = blockchain.ReadVarint63(r)
+	n += n2
 	if err != nil {
-		return errors.Wrap(err, "reading VM version")
+		return int64(n), errors.Wrap(err, "reading VM version")
 	}
 
 	if oc.VMVersion != 1 {
-		return fmt.Errorf("unrecognized VM version %d for asset version 1", oc.VMVersion)
+		return int64(n), fmt.Errorf("unrecognized VM version %d for asset version 1", oc.VMVersion)
 	}
 
-	oc.ControlProgram, _, err = blockchain.ReadVarstr31(r)
-	return errors.Wrap(err, "reading control program")
+	oc.ControlProgram, n2, err = blockchain.ReadVarstr31(r)
+	n += n2
+	return int64(n), errors.Wrap(err, "reading control program")
 }
 
 // does not read the enclosing extensible string

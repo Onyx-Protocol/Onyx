@@ -26,7 +26,8 @@ func (si *SpendInput) readCommitment(r io.Reader, txVersion, assetVersion uint64
 	}
 	all := txVersion == 1
 	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
-		return si.OutputCommitment.ReadFrom(r)
+		_, err := si.OutputCommitment.ReadFrom(r)
+		return err
 	})
 	return errors.Wrap(err, "reading output commitment")
 }
