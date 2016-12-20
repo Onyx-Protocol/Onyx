@@ -24,8 +24,7 @@
   * [Intermediate Encryption Key](#intermediate-encryption-key)
   * [Asset ID Encryption Key](#asset-id-encryption-key)
   * [Value Encryption Key](#value-encryption-key)
-  * [Differential Blinding Factor](#differential-blinding-factor)
-  * [Cumulative Blinding Factor](#cumulative-blinding-factor)
+  * [Asset ID Blinding Factor](#asset-id-blinding-factor)
   * [Value Blinding Factor](#value-blinding-factor)
   * [Issuance Asset Range Proof](#issuance-asset-range-proof)
 * [Core algorithms](#core-algorithms)
@@ -215,7 +214,7 @@ Asset ID commitments are pedersen commitments as described in [[CITATION]].
 
 ### Encrypted Asset ID
 
-A 64-byte string consisting of two encrypted elements: [asset ID](data.md#asset-id) and [cumulative blinding factor](#cumulative-blinding-factor) (32 bytes each).
+A 64-byte string consisting of two encrypted elements: [asset ID](data.md#asset-id) and [its blinding factor](#asset-id-blinding-factor) (32 bytes each).
 
 These values are present in the [output commitment](data.md#transaction-output-commitment) along with the [asset range proof](#asset-range-proof). The encrypted asset ID can be decrypted and verified by the recipient against the declared [asset ID commitment](#asset-id-commitment). It also serves as an additional hash-based commitment in case ECDLP ceases to be computationally infeasible.
 
@@ -246,7 +245,7 @@ Field                | Type     | Description
 ---------------------|----------|------------------
 Type                 | byte     | Contains value 0x03 if asset ID is both blinded and encrypted.
 Asset ID Commitment  | [Asset ID Commitment](#asset-id-commitment)  | 32-byte [public key](#public-key) representing asset ID commitment.
-Encrypted Asset ID   | [Encrypted Asset ID](#encrypted-asset-id) | 64-byte sequence representing encrypted asset ID (32 bytes) and its cumulative blinding factor (32 bytes).
+Encrypted Asset ID   | [Encrypted Asset ID](#encrypted-asset-id) | 64-byte sequence representing encrypted asset ID (32 bytes) and its [blinding factor](#asset-id-blinding-factor) (32 bytes).
 
 
 ### Asset Range Proof
@@ -386,24 +385,13 @@ Value encryption key (VEK or `vek`) allows decrypting the amount in the output c
     vek = SHA3-256(0x01 || iek)
 
 
-### Differential Blinding Factor
-
-An integer `d` used to produce an [asset ID commitment](#asset-id-commitment) using another asset ID commitment:
-
-    H’ = H + d·G
-
-Differential blinding factor is computed when [creating a blinded asset ID commitment](#create-blinded-asset-id-commitment).
-
-
-### Cumulative Blinding Factor
+### Asset ID Blinding Factor
 
 An integer `c` used to produce a blinded asset ID commitment out of a [cleartext asset ID commitment](#asset-id-commitment):
 
     H = A + c·G
 
-A cumulative blinding factor `c` for any given asset ID commitment equals a sum of [differential blinding factors](#differential-blinding-factor) from all intermediate [asset ID commitments](#asset-id-commitment) starting with an [nonblinded asset ID commitment](#create-nonblinded-asset-id-commitment) for a cleartext asset ID.
-
-The cumulative blinding factor is computed when [encrypting output commitments](#encrypt-asset-records).
+The asset ID blinding factor is created by [Create Blinded Asset ID Commitment](#create-blinded-asset-id-commitment).
 
 
 ### Value Blinding Factor
@@ -700,20 +688,18 @@ Note: When the s-values are decoded as little-endian integers we must set their 
 
 **Inputs:**
 
-1. `H[j]`: the designated commitment among the input asset ID commitments.
-2. `cprev`: the [cumulative blinding factor](#cumulative-blinding-factor) for the designated commitment `H[j]` such that `H[j] == 8·SHA3-256(assetID) + cprev·G`.
-3. `aek`: the [asset ID encryption key](#asset-id-encryption-key).
+1. `assetID`: the cleartext asset ID.
+2. `aek`: the [asset ID encryption key](#asset-id-encryption-key).
 
-**Outputs:**  `(H’,d)`: the new asset ID commitment and its [differential blinding factor](#differential-blinding-factor) such that `H’ == H[j] + d·G`.
+**Outputs:**  `(H,c)`: the new asset ID commitment and its [blinding factor](#asset-id-blinding-factor) such that `H == A + c·G`.
 
 **Algorithm:**
 
-1. Calculate `secret = SHA3-512(cprev || aek)` where `cprev` is encoded as 256-bit little-endian integer.
-2. Calculate differential blinding factor `d` by reducing the secret modulo subgroup order `L`: `d = secret mod L`.
-3. Calculate new asset ID commitment: `H’ = H[j] + d·G` and encode it as [public key](data.md#public-key).
-4. Return `(H’,d)`.
-
-Note: blinding factor is based on a combined secret based on the secret known to the sender of the input (`cprev`) and the secret known to the recipient (`aek`). This allows to keep the asset ID obfuscated against each of these parties and use a deterministic stateless secret. If the two parties collude, then they can prove to each other the asset ID on the given input and output even without unwinding the ring signature, so the possibility of collusion does not reduce the security of the scheme.
+1. [Created non-blinded asset ID commitment](#create-nonblinded-asset-id-commitment): `A = 8·SHA3-256(assetID || counter)`.
+2. Calculate `secret = SHA3-512(assetID || aek)`.
+3. Calculate [asset ID blinding factor](#asset-id-blinding-factor) `c` by reducing the `secret` modulo subgroup order `L`: `c = secret mod L`.
+4. Calculate blinded asset ID commitment: `H = A + c·G` and encode it as [public key](data.md#public-key).
+5. Return `(H,c)`.
 
 
 ### Encrypt Asset ID
@@ -721,40 +707,42 @@ Note: blinding factor is based on a combined secret based on the secret known to
 **Inputs:**
 
 1. `assetID`: the [asset ID](data.md#asset-id).
-2. `H’`: the [asset ID commitment](#asset-id-commitment) hiding the `assetID`.
-3. `c`: the [cumulative blinding factor](#cumulative-blinding-factor) for the commitment `H’` such that `H’ == 8·SHA3-256(assetID) + c·G`.
+2. `H`: the [asset ID commitment](#asset-id-commitment) hiding the `assetID`.
+3. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) for the commitment `H` such that `H == 8·SHA3-256(assetID || counter) + c·G`.
 4. `aek`: the [asset ID encryption key](#asset-id-encryption-key).
 
-**Output:** `(ea,ec)`, the [encrypted asset ID](#encrypted-asset-id) including the encrypted cumulative blinding factor for `H’`.
+**Output:** `(ea,ec)`, the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `H`.
 
 **Algorithm:**
 
-1. Expand the encryption key: `ek = SHA3-512(aek || H’)`, split the resulting hash in two halves.
+1. Expand the encryption key: `ek = SHA3-512(aek || H)`, split the resulting hash in two halves.
 2. Encrypt the asset ID using the first half: `ea = assetID XOR ek[0,32]`.
-3. Encrypt the cumulative blinding factor using the second half: `ec = c XOR ek[32,32]` where `c` is encoded as a 256-bit little-endian integer.
+3. Encrypt the blinding factor using the second half: `ec = c XOR ek[32,32]` where `c` is encoded as a 256-bit little-endian integer.
 4. Return `(ea,ec)`.
+
+Note: the encrypted pair also acts as a hash-based commitment to plaintext values (provided hash function is collision-resistant).
 
 
 ### Decrypt Asset ID
 
 **Inputs:**
 
-1. `H’`: the [asset ID commitment](#asset-id-commitment) that obfuscates the asset ID.
-2. `(ea,ec)`: the [encrypted asset ID](#encrypted-asset-id) including the encrypted cumulative blinding factor for `H’`.
+1. `H`: the [asset ID commitment](#asset-id-commitment) that obfuscates the asset ID.
+2. `(ea,ec)`: the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `H`.
 3. `aek`: the [asset ID encryption key](#asset-id-encryption-key).
 
 First two inputs must be proven to be committed to a [well-formed transaction](validation.md#check-transaction-is-well-formed).
 
-**Outputs:** `(assetID,c)`: decrypted and verified [asset ID](data.md#asset-id) with its cumulative blinding factor, or `nil` if verification failed.
+**Outputs:** `(assetID,c)`: decrypted and verified [asset ID](data.md#asset-id) with its blinding factor, or `nil` if verification failed.
 
 **Algorithm:**
 
-1. Expand the encryption key: `ek = SHA3-512(aek || H’)`, split the resulting hash in two halves.
+1. Expand the encryption key: `ek = SHA3-512(aek || H)`, split the resulting hash in two halves.
 2. Decrypt the asset ID using the first half: `assetID = ea XOR ek[0,32]`.
-3. Decrypt the cumulative blinding factor using the second half: `c = ec XOR ek[32,32]`.
-4. Calculate `A` as a [nonblinded asset ID commitment](#create-nonblinded-asset-id-commitment): an elliptic curve point `8·decode(SHA3-256(assetID))`.
+3. Decrypt the blinding factor using the second half: `c = ec XOR ek[32,32]`.
+4. Calculate `A` as a [nonblinded asset ID commitment](#create-nonblinded-asset-id-commitment): an elliptic curve point `8·decode(SHA3-256(assetID || counter))`.
 5. Calculate point `P = A + c·G` where `c` is interpreted as a little-endian 256-bit integer.
-6. Verify that `P` equals target commitment `H’`. If not, halt and return `nil`.
+6. Verify that `P` equals target commitment `H`. If not, halt and return `nil`.
 7. Return `(assetID, c)`.
 
 
@@ -763,10 +751,11 @@ First two inputs must be proven to be committed to a [well-formed transaction](v
 **Inputs:**
 
 1. `H’`: the output [asset ID commitment](#asset-id-commitment) for which the range proof is being created.
-2. `(ea,ec)`: the [encrypted asset ID](#encrypted-asset-id) including the encrypted cumulative blinding factor for `H’`.
+2. `(ea,ec)`: the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `H’`.
 3. `{H[i]}`: `n` candidate [asset ID commitments](#asset-id-commitment).
-4. `j`: the index of the designated commitment among the input asset ID commitments, so that `H’ == H[j] + d·G`.
-5. `d`: the [differential blinding factor](#differential-blinding-factor) for the commitment `H’`.
+4. `j`: the index of the designated commitment among the input asset ID commitments, so that `H’ == H[j] + (c’ - c)·G`.
+5. `c’`: the [blinding factor](#asset-id-blinding-factor) for the commitment `H’`.
+6. `c`: the [blinding factor](#asset-id-blinding-factor) for the candidate commitment `H[j]`.
 
 **Output:** an asset range proof consisting of a list of input asset ID commitments and a ring signature.
 
@@ -774,11 +763,11 @@ First two inputs must be proven to be committed to a [well-formed transaction](v
 
 1. Calculate the message to sign: `msg = SHA3-256(0x55 || H’ || H[0] || ... || H[n-1] || ea || ec)`.
 2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments: `P[i] = H’ - H[i]`.
-3. Calculate the private key: `p = d`
+3. Calculate the private key: `p = c’ - c`.
 4. [Create a ring signature](#create-ring-signature) using `msg`, `{P[i]}`, `j`, and `p`.
 5. Return the list of asset ID commitments `{H[i]}` and the ring signature `e[0], s[0], ... s[n-1]`.
 
-Note 1: unlike the [value range proof](#value-range-proof), this ring signature is not used to store encrypted payload data because decrypting it would reveal the asset ID of one of the inputs to the recipient.
+Note: unlike the [value range proof](#value-range-proof), this ring signature is not used to store encrypted payload data because decrypting it would reveal the asset ID of one of the inputs to the recipient.
 
 
 ### Verify Asset Range Proof
@@ -786,7 +775,7 @@ Note 1: unlike the [value range proof](#value-range-proof), this ring signature 
 **Inputs:**
 
 1. `H’`: the target [asset ID commitment](#asset-id-commitment).
-2. `(ea,ec)`: the [encrypted asset ID](#encrypted-asset-id) including the encrypted cumulative blinding factor for `H’`.
+2. `(ea,ec)`: the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `H’`.
 3. The to-be-verified [asset range proof](#asset-range-proof) consisting of:
     1. `{H[i]}`: `n` input [asset ID commitments](#asset-id-commitment).
     2. `e[0], s[0], ... s[n-1]`: the ring signature.
@@ -845,11 +834,11 @@ Note 1: unlike the [value range proof](#value-range-proof), this ring signature 
 
 1. The list of `n` input tuples `{(value[j], c[j], f[j])}`, where:
     * `value[j]`: the amount blinded in the j-th input,
-    * `c[j]`: the [cumulative blinding factor](#cumulative-blinding-factor) in the j-th input (so that `H[j] = A[j] + c[j]·G`),
+    * `c[j]`: the [blinding factor](#asset-id-blinding-factor) in the j-th input (so that `H[j] = A[j] + c[j]·G`),
     * `f[j]`: the [value blinding factor](#value-blinding-factor) used in the j-th input (so that `V[j] = value[j]·H[j] + f[j]·G`).
 2. The list of `m` output tuples `{(value’[i], c’[i], f’[i])}`, where:
     * `value’[i]`: the amount blinded in the i-th output,
-    * `c’[i]`: the [cumulative blinding factor](#cumulative-blinding-factor) in the i-th output (so that `H’[i] = A’[i] + c’[i]·G`),
+    * `c’[i]`: the [blinding factor](#asset-id-blinding-factor) in the i-th output (so that `H’[i] = A’[i] + c’[i]·G`),
     * `f’[i]`: the [value blinding factor](#value-blinding-factor) used in the i-th output (so that `V’[i] = value’[i]·H’[i] + f’[i]·G`).
 
 **Output:** `q`: the excess blinding factor that must be added to the output blinding factors in order to balance inputs and outputs.
@@ -1182,7 +1171,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 **Inputs:**
 
 1. `H`: the [asset ID commitment](#asset-id-commitment).
-2. `c`: the [cumulative blinding factor](#cumulative-blinding-factor) for commitment `H` such that: `H = A + c·G`.
+2. `c`: the [blinding factor](#asset-id-blinding-factor) for commitment `H` such that: `H = A + c·G`.
 3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](data.md#asset-id).
 4. `{Y[i]}`: `n` issuance keys (each a 32-byte [public key](data.md#public-key).
 5. `vmver`: VM version for the issuance signature program.
@@ -1212,6 +1201,9 @@ When creating a confidential issuance, the first step is to construct the rest o
     * index `j`,
     * private key `p`.
 8. Return an issuance range proof consisting of `(e0,{s[i]}, {Y[i]}, vmver, program, [])`.
+
+
+
 
 ### Verify Issuance Asset Range Proof
 
@@ -1282,6 +1274,9 @@ When creating a confidential issuance, the first step is to construct the rest o
     1. [Verify value range proof](#verify-value-range-proof) using `(AD.H, VD.V, evef=(0x00...,0x00...),VRP)`. If verification failed, halt and return `false`.
 3. Return `true`.
 
+
+
+
 ### Verify Confidential Assets
 
 **Inputs:**
@@ -1337,7 +1332,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 2. `VD`: the [value descriptor](#value-descriptor).
 3. `IARP`: the [issuance asset ID range proof](#issuance-asset-range-proof).
 4. `VRP`: the [value range proof](#value-range-proof).
-5. `c`: the [cumulative blinding factor](#cumulative-blinding-factor) for the asset ID commitment `AD.H`.
+5. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) for the asset ID commitment `AD.H`.
 6. `f`: the [value blinding factor](#value-blinding-factor).
 
 In case of failure, returns `nil` instead of the items listed above.
@@ -1348,14 +1343,13 @@ In case of failure, returns `nil` instead of the items listed above.
 2. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
 3. [Create nonblinded asset ID commitment](#create-nonblinded-asset-id-commitment) for all values in `{assetIDs[i]}`: `A[i] = 8·Decode(SHA3(assetIDs[i]))`.
 4. Find `j` index of the `assetID` among `{assetIDs[i]}`. If not found, halt and return `nil`.
-5. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(H,d)` from `(A, 0, aek)`.
-6. Set `c = d`.
-7. [Create Blinded Value Commitment](#create-blinded-value-commitment): compute `(V,f)` from `(vek, value, H, c)`.
-8. [Create Issuance Asset Range Proof](#create-issuance-asset-range-proof): compute `IARP` from `(H, c, {A[i]}, {Y[i]}, vmver’, program’, j, y)`.
-9. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(H, V, (0x00...,0x00...), N, value, {0x00...}, f, rek)`.
-10. Create [blinded asset ID descriptor](#blinded-asset-id-descriptor) `AD` containing `H` and all-zero [encrypted asset ID](#encrypted-asset-id).
-11. Create [blinded value descriptor](#blinded-value-descriptor) `VD` containing `V` and all-zero [encrypted value](#encrypted-value).
-12. Return `(AD, VD, IARP, VRP, c, f)`.
+5. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(H,c)` from `(A, 0, aek)`.
+6. [Create Blinded Value Commitment](#create-blinded-value-commitment): compute `(V,f)` from `(vek, value, H, c)`.
+7. [Create Issuance Asset Range Proof](#create-issuance-asset-range-proof): compute `IARP` from `(H, c, {A[i]}, {Y[i]}, vmver’, program’, j, y)`.
+8. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(H, V, (0x00...,0x00...), N, value, {0x00...}, f, rek)`.
+9. Create [blinded asset ID descriptor](#blinded-asset-id-descriptor) `AD` containing `H` and all-zero [encrypted asset ID](#encrypted-asset-id).
+10. Create [blinded value descriptor](#blinded-value-descriptor) `VD` containing `V` and all-zero [encrypted value](#encrypted-value).
+11. Return `(AD, VD, IARP, VRP, c, f)`.
 
 
 
@@ -1372,7 +1366,7 @@ If the excess factor is provided, it is used to compute a matching blinding fact
 3. `value`: the output amount.
 4. `N`: number of bits to encrypt (`value` must fit within `N` bits).
 5. `{H[i]}`: `n` input [asset ID commitments](#asset-id-commitment).
-6. `c`: input [cumulative blinding factor](#cumulative-blinding-factor) corresponding to one of the asset ID commitments `{H[i]}`.
+6. `c`: input [asset ID blinding factor](#asset-id-blinding-factor) corresponding to one of the asset ID commitments `{H[i]}`.
 7. `plaintext`: binary string that has length of less than `32·(2·N-1)` bytes when encoded as [varstring31](data.md#varstring31).
 8. Optional `q`: the [excess factor](#excess-factor) to have this output balance with the transaction. If omitted, blinding factor is generated at random.
 
@@ -1382,7 +1376,7 @@ If the excess factor is provided, it is used to compute a matching blinding fact
 2. `VD`: the [value descriptor](#value-descriptor).
 3. `ARP`: the [asset ID range proof](#asset-range-proof).
 4. `VRP`: the [value range proof](#value-range-proof).
-5. `c’`: the output [cumulative blinding factor](#cumulative-blinding-factor) for the asset ID commitment `H’`.
+5. `c’`: the output [asset ID blinding factor](#asset-id-blinding-factor) for the asset ID commitment `H’`.
 6. `f’`: the output [value blinding factor](#value-blinding-factor).
 
 In case of failure, returns `nil` instead of the items listed above.
@@ -1397,21 +1391,20 @@ In case of failure, returns `nil` instead of the items listed above.
 6. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
 7. [Create Nonblinded Asset ID Commitment](#create-nonblinded-asset-id-commitment): compute `A` from `assetID`.
 8. Find index `j` among `{H[i]}` such that `H[j] == A + c·G`. If index cannot be found, halt and return `nil`.
-9. [Create Blinded Asset ID Commitment](#create-blinded-asset-id-commitment): compute `(H’,d)` from `(H[j], c, aek)`.
-10. Calculate `c’ = c + d mod L`.
-11. [Encrypt Asset ID](#encrypt-asset-id): compute `(ea,ec)` from `(assetID, H’, c’, aek)`.
-12. [Create Blinded Value Commitment](#create-blinded-value-commitment): compute `(V’,f’)` from `(vek, value, H’)`.
-13. If `q` is provided:
+9. [Create Blinded Asset ID Commitment](#create-blinded-asset-id-commitment): compute `(H’,c’)` from `(H[j], c, aek)`.
+10. [Encrypt Asset ID](#encrypt-asset-id): compute `(ea,ec)` from `(assetID, H’, c’, aek)`.
+11. [Create Blinded Value Commitment](#create-blinded-value-commitment): compute `(V’,f’)` from `(vek, value, H’)`.
+12. If `q` is provided:
     1. Compute `extra` scalar: `extra = q - f’ - value·c’`.
     2. Add `extra` to the value blinding factor: `f’ = f’ + extra`.
     3. Adjust the value commitment too: `V = V + extra·G`.
     4. Note: as a result, the total blinding factor of the output will be equal to `q`.
-14. [Encrypt Value](#encrypt-value): compute `(ev,ef)` from `(V’, value, f’, vek)`.
-15. [Create Asset Range Proof](#create-asset-range-proof): compute `ARP` from `(H’,(ea,ec),{H[i]},j,d)`.
-16. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(H’, V’, (ev,ef), N, value, {pt[i]}, f’, rek)`.
-17. Create [encrypted asset ID descriptor](#encrypted-asset-id-descriptor) `AD` containing `H’` and `(ea,ec)`.
-18. Create [encrypted value descriptor](#encrypted-value-descriptor) `VD` containing `V’` and `(ev,ef)`.
-19. Return `(AD, VD, ARP, VRP, c’, f’)`.
+13. [Encrypt Value](#encrypt-value): compute `(ev,ef)` from `(V’, value, f’, vek)`.
+14. [Create Asset Range Proof](#create-asset-range-proof): compute `ARP` from `(H’,(ea,ec),{H[i]},j,c’,c)`.
+15. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(H’, V’, (ev,ef), N, value, {pt[i]}, f’, rek)`.
+16. Create [encrypted asset ID descriptor](#encrypted-asset-id-descriptor) `AD` containing `H’` and `(ea,ec)`.
+17. Create [encrypted value descriptor](#encrypted-value-descriptor) `VD` containing `V’` and `(ev,ef)`.
+18. Return `(AD, VD, ARP, VRP, c’, f’)`.
 
 
 
@@ -1430,7 +1423,7 @@ This algorithm decrypts fully encrypted amount and asset ID for a given output.
 
 1. `assetID`: the output asset ID.
 2. `value`: the output amount.
-3. `c`: the output [cumulative blinding factor](#cumulative-blinding-factor) for the asset ID commitment `H`.
+3. `c`: the output [asset ID blinding factor](#asset-id-blinding-factor) for the asset ID commitment `H`.
 4. `f`: the output [value blinding factor](#value-blinding-factor).
 5. `plaintext`: the binary string that has length of less than `32·(2·N-1)` bytes when encoded as [varstring31](data.md#varstring31).
 
