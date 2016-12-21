@@ -6,7 +6,7 @@ const { fetch } = require('fetch-ponyfill')()
 const AccessTokens = require('./accessTokens')
 const Accounts = require('./accounts')
 const Assets = require('./assets')
-const balances = require('./balances')
+const Balances = require('./balances')
 const mockHsm = require('./mockHsm')
 const transactions = require('./transactions')
 const UnspentOutputs = require('./unspentOutputs')
@@ -53,7 +53,7 @@ class Client {
      * API actions for balances
      * @type {Balances}
      */
-    this.balances = balances(this)
+    this.balances = new Balances(this)
 
     /**
      * API actions for the Mock HSM

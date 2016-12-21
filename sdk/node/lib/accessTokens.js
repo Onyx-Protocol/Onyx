@@ -14,6 +14,7 @@ class AccessTokens {
 
     /**
      * Create a new access token.
+     *
      * @param {Object} params - Parameters for access token creation.
      * @param {string} params.id - User specified, unique identifier.
      * @param {string} params.type - Either 'client' or 'network'.
@@ -36,6 +37,7 @@ class AccessTokens {
 
     /**
      * Delete the specified access token.
+     * 
      * @param {string} id - Access token ID.
      */
     this.delete = id => client.request('/delete-access-token', {id: id})

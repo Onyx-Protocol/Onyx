@@ -32,23 +32,34 @@ class Assets {
    */
   constructor(client) {
     /**
-     * Create a new asset
+     * Create a new asset.
+     *
      * @param {Assets~createRequest} params - Parameters for asset creation
      */
     this.create = (params) => shared.create(client, '/create-asset', params)
 
     /**
-     * Create multiple new assets
+     * Create multiple new assets.
+     *
      * @param {Assets~createRequest[]} params - Parameters for creation of multiple assets
      */
     this.createBatch = (params) => shared.createBatch(client, '/create-asset', params)
 
     /**
-     * Get a list of assets matching the specified filter
+     * Get one page of assets matching the specified filter
+     *
      * @param {Filter} [params={}] Filter and pagination information
+     * @returns {Page} Requested page of results
      */
     this.query = (params) => shared.query(client, this, '/list-assets', params)
 
+    /**
+     * Request all assets matching the specified filter, calling the
+     * supplied processor callback with each item individually.
+     *
+     * @param {Filter} params Filter and pagination information.
+     * @param {QueryProcessor} processor Processing callback.
+     */
     this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
   }
 }
