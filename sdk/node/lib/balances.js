@@ -29,3 +29,5 @@ class Balances {
     this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
   }
 }
+
+module.exports = Balances

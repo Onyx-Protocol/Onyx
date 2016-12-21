@@ -5,17 +5,19 @@ class HsmSigner {
     this.signerConnections = {}
   }
 
-  addKey(xpub, url, token = '') {
-    const id = [url,token].join('-')
+  addKey(key, client) {
+    const id = `${client.baseUrl}-${client.token || 'noauth'}`
     let connection = this.signerConnections[id]
     if (!connection) {
       connection = this.signerConnections[id] = {
-        connection: new Client(url, token),
+        connection: client,
         xpubs: []
       }
     }
 
-    connection.xpubs.push(xpub)
+    console.log(typeof key);
+
+    // connection.xpubs.push(xpub)
   }
 
   sign(template) {
