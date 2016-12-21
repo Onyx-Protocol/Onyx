@@ -21,13 +21,18 @@ class AccessTokens {
     this.create = params => shared.create(client, '/create-access-token', params, {skipArray: true})
 
     /**
-     * Get a list of access tokens, optionally filtered by type.
+     * Get a list of access tokens sorted by descending creation time,
+     * optionally filtered by type.
+     *
+     * Note: maximum list size is 1000 items
+     *
      * @param {Filter} [params={}] - Pagination information.
      * @param {string} [params.type] - Type of access tokens to retrun
      */
-    this.query = (params = {}) => shared.query(client, this, '/list-access-tokens', params)
-
-    this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
+    this.query = (params) => {
+      params.page_size = 1000
+      return shared.query(client, this, '/list-access-tokens', params)
+    }
 
     /**
      * Delete the specified access token.
