@@ -1,34 +1,30 @@
-const Client = require('./client')
-
 class HsmSigner {
   constructor() {
-    this.signerConnections = {}
+    this.signers = {}
   }
 
-  addKey(key, client) {
-    const id = `${client.baseUrl}-${client.token || 'noauth'}`
-    let connection = this.signerConnections[id]
-    if (!connection) {
-      connection = this.signerConnections[id] = {
-        connection: client,
+  addKey(key, connection) {
+    const id = `${connection.baseUrl}-${connection.token || 'noauth'}`
+    let signer = this.signers[id]
+    if (!signer) {
+      signer = this.signers[id] = {
+        connection: connection,
         xpubs: []
       }
     }
 
-    console.log(typeof key);
-
-    // connection.xpubs.push(xpub)
+    signer.xpubs.push(typeof key == 'string' ? key : key.xpub)
   }
 
   sign(template) {
     let promise = Promise.resolve(template)
 
-    if (Object.keys(this.signerConnections).length == 0) {
+    if (Object.keys(this.signers).length == 0) {
       return promise.then(() => template)
     }
 
-    for (let signerId in this.signerConnections) {
-      const signer = this.signerConnections[signerId]
+    for (let signerId in this.signers) {
+      const signer = this.signers[signerId]
 
       promise = promise.then(nextTemplate =>
         signer.connection.request('/sign-transaction', {
@@ -43,12 +39,12 @@ class HsmSigner {
   signBatch(templates) {
     let promise = Promise.resolve(templates)
 
-    if (Object.keys(this.signerConnections).length == 0) {
+    if (Object.keys(this.signers).length == 0) {
       return promise.then(() => templates)
     }
 
-    for (let signerId in this.signerConnections) {
-      const signer = this.signerConnections[signerId]
+    for (let signerId in this.signers) {
+      const signer = this.signers[signerId]
 
       promise = promise.then(nextTemplates =>
         signer.connection.request('/sign-transaction', {

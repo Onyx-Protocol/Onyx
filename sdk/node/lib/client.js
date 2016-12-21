@@ -55,7 +55,7 @@ class Client {
      */
     this.mockHsm = {
       keys: new MockHsmKeys(this),
-      signerConnection: () => new Connection('http://localhost:1999/mockhsm')
+      signerConnection: new Connection('http://localhost:1999/mockhsm')
     }
 
     /**

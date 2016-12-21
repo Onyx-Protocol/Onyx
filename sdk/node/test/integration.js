@@ -89,10 +89,10 @@ describe('Chain SDK integration test', function() {
       silverKey = keys[3]
       otherKey = keys[4]
 
-      signer.addKey(aliceKey.xpub, client.mockHsm.signerUrl)
-      signer.addKey(bobKey.xpub, client.mockHsm.signerUrl)
-      signer.addKey(goldKey.xpub, client.mockHsm.signerUrl)
-      signer.addKey(silverKey.xpub, client.mockHsm.signerUrl)
+      signer.addKey(aliceKey, client.mockHsm.signerConnection)
+      signer.addKey(bobKey, client.mockHsm.signerConnection)
+      signer.addKey(goldKey, client.mockHsm.signerConnection)
+      signer.addKey(silverKey, client.mockHsm.signerConnection)
     })
 
     // Account creation

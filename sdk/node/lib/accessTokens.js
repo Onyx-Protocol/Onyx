@@ -30,14 +30,14 @@ class AccessTokens {
      * @param {Filter} [params={}] - Pagination information.
      * @param {string} [params.type] - Type of access tokens to retrun
      */
-    this.query = (params) => {
+    this.query = (params = {}) => {
       params.page_size = 1000
       return shared.query(client, this, '/list-access-tokens', params)
     }
 
     /**
      * Delete the specified access token.
-     * 
+     *
      * @param {string} id - Access token ID.
      */
     this.delete = id => client.request('/delete-access-token', {id: id})
