@@ -1,3 +1,6 @@
+/**
+ * @class
+ */
 class Page {
   constructor(data, owner) {
     Object.assign(this, data)

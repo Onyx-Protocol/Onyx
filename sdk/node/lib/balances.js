@@ -1,7 +1,6 @@
 const shared = require('./shared')
 
 /**
- * Balances
  * @class
  */
 class Balances {

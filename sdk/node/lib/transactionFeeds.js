@@ -1,10 +1,6 @@
 const uuid = require('uuid')
 const MAX_BLOCK_HEIGHT = (2 * 63) - 1
 
-/**
- * TransactionFeedItem
- * @class
- */
 class TransactionFeed {
 
   constructor(feed, client) {
@@ -100,7 +96,6 @@ class TransactionFeed {
 }
 
 /**
- * TransactionFeed
  * @class
  */
 class TransactionFeeds {

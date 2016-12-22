@@ -1,14 +1,13 @@
 const shared = require('./shared')
 
 /**
- * UnspentOutputs
  * @class
  */
 class UnspentOutputs {
   /**
-   * constructor - return UnspentOutputs object configured for specified Chain Core
+   * constructor - return UnspentOutputs object configured for specified Chain Core.
    *
-   * @param  {Client} client Configured Chain client object
+   * @param  {Client} client Configured Chain client object.
    */
   constructor(client) {
     /**

@@ -1,7 +1,6 @@
 const shared = require('./shared')
 
 /**
- * AccessTokens
  * @class
  */
 class AccessTokens {

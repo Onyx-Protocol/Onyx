@@ -1,7 +1,6 @@
 const uuid = require('uuid')
 
 /**
- * MockHsm
  * @class
  */
 class MockHsmKeys {

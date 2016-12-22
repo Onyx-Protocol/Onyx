@@ -12,6 +12,7 @@ const TransactionFeeds = require('./transactionFeeds')
 
 /**
  * Chain API Client
+ * @class
  */
 class Client {
   /**

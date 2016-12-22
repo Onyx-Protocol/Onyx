@@ -1,3 +1,6 @@
+/**
+ * @class
+ */
 class HsmSigner {
   constructor() {
     this.signers = {}
