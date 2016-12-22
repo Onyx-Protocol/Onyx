@@ -763,7 +763,7 @@ First two inputs must be proven to be committed to a [well-formed transaction](v
 
 1. Calculate the message to sign: `msg = SHA3-256(0x55 || H’ || H[0] || ... || H[n-1] || ea || ec)`.
 2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments: `P[i] = H’ - H[i]`.
-3. Calculate the private key: `p = c’ - c`.
+3. Calculate the private key: `p = c’ - c mod L`.
 4. [Create a ring signature](#create-ring-signature) using `msg`, `{P[i]}`, `j`, and `p`.
 5. Return the list of asset ID commitments `{H[i]}` and the ring signature `e[0], s[0], ... s[n-1]`.
 
@@ -1344,8 +1344,8 @@ In case of failure, returns `nil` instead of the items listed above.
 3. [Create nonblinded asset ID commitment](#create-nonblinded-asset-id-commitment) for all values in `{assetIDs[i]}`: `A[i] = 8·Decode(SHA3(assetIDs[i]))`.
 4. Find `j` index of the `assetID` among `{assetIDs[i]}`. If not found, halt and return `nil`.
 5. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(H,c)` from `(A, 0, aek)`.
-6. [Create Blinded Value Commitment](#create-blinded-value-commitment): compute `(V,f)` from `(vek, value, H, c)`.
-7. [Create Issuance Asset Range Proof](#create-issuance-asset-range-proof): compute `IARP` from `(H, c, {A[i]}, {Y[i]}, vmver’, program’, j, y)`.
+6. [Create blinded value commitment](#create-blinded-value-commitment): compute `(V,f)` from `(vek, value, H, c)`.
+7. [Create issuance asset range proof](#create-issuance-asset-range-proof): compute `IARP` from `(H, c, {A[i]}, {Y[i]}, vmver’, program’, j, y)`.
 8. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(H, V, (0x00...,0x00...), N, value, {0x00...}, f, rek)`.
 9. Create [blinded asset ID descriptor](#blinded-asset-id-descriptor) `AD` containing `H` and all-zero [encrypted asset ID](#encrypted-asset-id).
 10. Create [blinded value descriptor](#blinded-value-descriptor) `VD` containing `V` and all-zero [encrypted value](#encrypted-value).
@@ -1356,8 +1356,11 @@ In case of failure, returns `nil` instead of the items listed above.
 
 ### Encrypt Output
 
-This algorithm fully encrypts the amount and asset ID of a given output.
+This algorithm encrypts the amount and asset ID of a given output and creates [value range proof](#value-range-proof) with encrypted payload.
 If the excess factor is provided, it is used to compute a matching blinding factor to cancel it out.
+
+This algorithm _does not_ create [asset range proof](#asset-range-proof) (ARP), since it requires knowledge about the input descriptors and one of their blinding factors.
+ARP can be added separately using [Create Asset Range Proof](#create-asset-range-proof).
 
 **Inputs:**
 
@@ -1365,19 +1368,16 @@ If the excess factor is provided, it is used to compute a matching blinding fact
 2. `assetID`: the output asset ID.
 3. `value`: the output amount.
 4. `N`: number of bits to encrypt (`value` must fit within `N` bits).
-5. `{H[i]}`: `n` input [asset ID commitments](#asset-id-commitment).
-6. `c`: input [asset ID blinding factor](#asset-id-blinding-factor) corresponding to one of the asset ID commitments `{H[i]}`.
-7. `plaintext`: binary string that has length of less than `32·(2·N-1)` bytes when encoded as [varstring31](data.md#varstring31).
-8. Optional `q`: the [excess factor](#excess-factor) to have this output balance with the transaction. If omitted, blinding factor is generated at random.
+5. `plaintext`: binary string that has length of less than `32·(2·N-1)` bytes when encoded as [varstring31](data.md#varstring31).
+6. Optional `q`: the [excess factor](#excess-factor) to have this output balance with the transaction. If omitted, blinding factor is generated at random.
 
 **Outputs:**
 
 1. `AD`: the [asset ID descriptor](#asset-id-descriptor).
 2. `VD`: the [value descriptor](#value-descriptor).
-3. `ARP`: the [asset ID range proof](#asset-range-proof).
-4. `VRP`: the [value range proof](#value-range-proof).
-5. `c’`: the output [asset ID blinding factor](#asset-id-blinding-factor) for the asset ID commitment `H’`.
-6. `f’`: the output [value blinding factor](#value-blinding-factor).
+3. `VRP`: the [value range proof](#value-range-proof).
+4. `c’`: the output [asset ID blinding factor](#asset-id-blinding-factor) for the asset ID commitment `H’`.
+5. `f’`: the output [value blinding factor](#value-blinding-factor).
 
 In case of failure, returns `nil` instead of the items listed above.
 
@@ -1389,22 +1389,19 @@ In case of failure, returns `nil` instead of the items listed above.
 4. If `value ≥ 2^N`, halt and return `nil`.
 5. [Derive asset encryption key](#asset-id-encryption-key) `aek` from `rek`.
 6. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
-7. [Create Nonblinded Asset ID Commitment](#create-nonblinded-asset-id-commitment): compute `A` from `assetID`.
-8. Find index `j` among `{H[i]}` such that `H[j] == A + c·G`. If index cannot be found, halt and return `nil`.
-9. [Create Blinded Asset ID Commitment](#create-blinded-asset-id-commitment): compute `(H’,c’)` from `(H[j], c, aek)`.
-10. [Encrypt Asset ID](#encrypt-asset-id): compute `(ea,ec)` from `(assetID, H’, c’, aek)`.
-11. [Create Blinded Value Commitment](#create-blinded-value-commitment): compute `(V’,f’)` from `(vek, value, H’)`.
-12. If `q` is provided:
+7. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(H’,c’)` from `(assetID, aek)`.
+8. [Encrypt asset ID](#encrypt-asset-id): compute `(ea,ec)` from `(assetID, H’, c’, aek)`.
+9. [Create blinded value commitment](#create-blinded-value-commitment): compute `(V’,f’)` from `(vek, value, H’)`.
+10. If `q` is provided:
     1. Compute `extra` scalar: `extra = q - f’ - value·c’`.
     2. Add `extra` to the value blinding factor: `f’ = f’ + extra`.
     3. Adjust the value commitment too: `V = V + extra·G`.
     4. Note: as a result, the total blinding factor of the output will be equal to `q`.
-13. [Encrypt Value](#encrypt-value): compute `(ev,ef)` from `(V’, value, f’, vek)`.
-14. [Create Asset Range Proof](#create-asset-range-proof): compute `ARP` from `(H’,(ea,ec),{H[i]},j,c’,c)`.
-15. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(H’, V’, (ev,ef), N, value, {pt[i]}, f’, rek)`.
-16. Create [encrypted asset ID descriptor](#encrypted-asset-id-descriptor) `AD` containing `H’` and `(ea,ec)`.
-17. Create [encrypted value descriptor](#encrypted-value-descriptor) `VD` containing `V’` and `(ev,ef)`.
-18. Return `(AD, VD, ARP, VRP, c’, f’)`.
+11. [Encrypt Value](#encrypt-value): compute `(ev,ef)` from `(V’, value, f’, vek)`.
+12. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(H’, V’, (ev,ef), N, value, {pt[i]}, f’, rek)`.
+13. Create [encrypted asset ID descriptor](#encrypted-asset-id-descriptor) `AD` containing `H’` and `(ea,ec)`.
+14. Create [encrypted value descriptor](#encrypted-value-descriptor) `VD` containing `V’` and `(ev,ef)`.
+15. Return `(AD, VD, VRP, c’, f’)`.
 
 
 
