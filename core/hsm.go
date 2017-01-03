@@ -15,7 +15,10 @@ func (h *Handler) mockhsmCreateKey(ctx context.Context, in struct{ Alias string 
 }
 
 func (h *Handler) mockhsmListKeys(ctx context.Context, query requestQuery) (page, error) {
-	limit := defGenericPageSize
+	limit := query.PageSize
+	if limit == 0 {
+		limit = defGenericPageSize
+	}
 
 	xpubs, after, err := h.HSM.ListKeys(ctx, query.Aliases, query.After, limit)
 	if err != nil {
