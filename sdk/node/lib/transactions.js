@@ -13,6 +13,9 @@ function checkForError(resp) {
   return resp
 }
 
+/**
+ * @class
+ */
 class TransactionBuilder {
   constructor() {
     this.actions = []
@@ -47,18 +50,44 @@ class TransactionBuilder {
   }
 }
 
-module.exports = (client) => {
-  return {
-    query: (params) => shared.query(client, this, '/list-transactions', params),
-    // this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
-    build: (builderBlock) => {
+/**
+ * @class
+ */
+class Transactions {
+  /**
+   * constructor - return Transactions object configured for specified Chain Core
+   *
+   * @param  {Client} client Configured Chain client object
+   */
+  constructor(client) {
+    /**
+     * Get one page of transactions matching the specified filter
+     *
+     * @param {Filter} [params={}] Filter and pagination information
+     * @returns {Page} Requested page of results
+     */
+    this.query = (params) => shared.query(client, this, '/list-transactions', params)
+
+    /**
+     * Request all transactions matching the specified filter, calling the
+     * supplied processor callback with each item individually.
+     *
+     * @param {Filter} params Filter and pagination information.
+     * @param {QueryProcessor} processor Processing callback.
+     * @return {Promise} A promise resolved upon processing of all items, or
+     *                   rejected on error
+     */
+    this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
+
+    this.build = (builderBlock) => {
       const builder = new TransactionBuilder()
       builderBlock(builder)
 
       return client.request('/build-transaction', [builder])
         .then(resp => checkForError(resp[0]))
-    },
-    buildBatch: (builderBlocks) => {
+    }
+
+    this.buildBatch = (builderBlocks) => {
       const builders = builderBlocks.map((builderBlock) => {
         const builder = new TransactionBuilder()
         builderBlock(builder)
@@ -66,12 +95,14 @@ module.exports = (client) => {
       })
 
       return shared.createBatch(client, '/build-transaction', builders)
-    },
-    submit: (signed) => {
+    }
+
+    this.submit = (signed) => {
       return client.request('/submit-transaction', {transactions: [signed]})
         .then(resp => checkForError(resp[0]))
-    },
-    submitBatch: (signed) => {
+    }
+
+    this.submitBatch = (signed) => {
       return client.request('/submit-transaction', {transactions: signed})
         .then(resp => {
           return {
@@ -83,3 +114,5 @@ module.exports = (client) => {
     }
   }
 }
+
+module.exports = Transactions

@@ -5,7 +5,7 @@ const Accounts = require('./accounts')
 const Assets = require('./assets')
 const Balances = require('./balances')
 const MockHsmKeys = require('./mockHsmKeys')
-const transactions = require('./transactions')
+const Transactions = require('./transactions')
 const UnspentOutputs = require('./unspentOutputs')
 const TransactionFeeds = require('./transactionFeeds')
 
@@ -63,7 +63,7 @@ class Client {
      * API actions for transactions.
      * @type {Transactions}
      */
-    this.transactions = transactions(this)
+    this.transactions = new Transactions(this)
 
     /**
      * API actions for transaction feeds.

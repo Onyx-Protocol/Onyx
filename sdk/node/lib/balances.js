@@ -14,7 +14,7 @@ class Balances {
      * Get one page of balances matching the specified filter
      *
      * @param {Filter} [params={}] Filter and pagination information
-     * @returns {Page} Requested page of results
+     * @returns {Promise<Page>} Requested page of results
      */
     this.query = (params) => shared.query(client, this, '/list-balances', params)
 
@@ -24,6 +24,8 @@ class Balances {
      *
      * @param {Filter} params Filter and pagination information.
      * @param {QueryProcessor} processor Processing callback.
+     * @return {Promise} A promise resolved upon processing of all items, or
+     *                   rejected on error
      */
     this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
   }

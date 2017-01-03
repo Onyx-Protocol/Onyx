@@ -42,7 +42,7 @@ module.exports = {
   },
 
   /*
-   * Requires query to be implemented on `owner`
+   * NOTE: Requires query to be implemented on `owner` object
    */
   queryAll: (owner, params, processor = () => {}) => {
     let nextParams = params

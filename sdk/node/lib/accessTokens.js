@@ -28,6 +28,7 @@ class AccessTokens {
      *
      * @param {Filter} [params={}] - Pagination information.
      * @param {string} [params.type] - Type of access tokens to retrun
+     * @returns {Promise<Page>} Requested page of results
      */
     this.query = (params = {}) => {
       params.page_size = 1000
