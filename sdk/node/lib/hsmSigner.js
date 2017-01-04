@@ -20,6 +20,8 @@ class HsmSigner {
   }
 
   sign(template) {
+    templates = templates.filter((template) => template != null)
+    
     let promise = Promise.resolve(template)
 
     if (Object.keys(this.signers).length == 0) {

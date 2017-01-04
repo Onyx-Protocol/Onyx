@@ -27,11 +27,11 @@ module.exports = {
     params = params.map((item) =>
       Object.assign({ client_token: uuid.v4() }, item))
 
-    return client.request(path, params).then(response => {
+    return client.request(path, params).then(resp => {
       return {
-        successes: response.map((item) => item.code ? null : item),
-        errors: response.map((item) => item.code ? item : null),
-        response: response,
+        successes: resp.map((item) => item.code ? null : item),
+        errors: resp.map((item) => item.code ? item : null),
+        response: resp,
       }
     })
   },
