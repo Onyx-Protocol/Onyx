@@ -197,24 +197,20 @@ Certain arithmetic operations use conservative bounds checks (explicitly specifi
 
 #### String to Number
 
-1. If the string is longer than 8 bytes, fail execution.
-2. If the string is shorter than 8 bytes, right-pad it by appending `0x00` bytes to get an 8-byte string.
-3. Interpret the 8-byte string as a [little-endian](https://en.wikipedia.org/wiki/Endianness#Little-endian) 64-bit integer, using [two's complement representation](https://en.wikipedia.org/wiki/Two%27s_complement).
+1. If the string is not exactly 8 bytes long, fail execution.
+2. Interpret the 8-byte string as a [little-endian](https://en.wikipedia.org/wiki/Endianness#Little-endian) 64-bit integer, using [two's complement representation](https://en.wikipedia.org/wiki/Two%27s_complement).
 
 #### Number to String
 
 1. Create an 8-byte string matching the representation of the number as a [little-endian](https://en.wikipedia.org/wiki/Endianness#Little-endian) 64-bit integer, using [two's complement representation](https://en.wikipedia.org/wiki/Two%27s_complement) for negative integers.
-2. Trim the string by removing any `0x00` bytes from the right side.
 
-
-
-Value          | String (hexadecimal)        | Size in bytes
----------------|-----------------------------|------------------
-0              | `“”`                        | 0
-1              | `“01”`                      | 1
-–1             | `“ff ff ff ff ff ff ff ff”` | 8
-2^63 - 1 (max) | `“ff ff ff ff ff ff ff 7f”` | 8
--2^63 (min)    | `“00 00 00 00 00 00 00 80”` | 8
+Value          | String (hexadecimal)
+---------------|-----------------------------
+0              | `“00 00 00 00 00 00 00 00”`
+1              | `“01 00 00 00 00 00 00 00”`
+–1             | `“ff ff ff ff ff ff ff ff”`
+2^63 - 1 (max) | `“ff ff ff ff ff ff ff 7f”`
+-2^63 (min)    | `“00 00 00 00 00 00 00 80”`
 
 ## Failure conditions
 
@@ -887,44 +883,6 @@ Code  | Stack Diagram     | Cost
 Pops two [booleans](#vm-boolean) from the data stack. Pushes `false` to the data stack if both are `false` and pushes `true` otherwise.
 
 
-#### NUMEQUAL
-
-Code  | Stack Diagram   | Cost
-------|-----------------|----------------------------
-0x9c  | (x y → x == y)  | 2; [standard memory cost](#standard-memory-cost)
-
-Pops two [numbers](#vm-number) from the data stack. Pushes `true` to the data stack if they are equal and pushes `false` otherwise.
-
-Note that two strings representing the same number may differ due to redundant leading zeros.
-
-Fails if either of `x` or `y` is not a valid [VM number](#vm-number).
-
-
-#### NUMEQUALVERIFY
-
-Code  | Stack Diagram   | Cost
-------|-----------------|----------------------------
-0x9d  | (x y → ∅)       | 2; [standard memory cost](#standard-memory-cost)
-
-Equivalent to [NUMEQUAL](#numequal) [VERIFY](#verify).
-
-Pops two [numbers](#vm-number) from the data stack, and fails if they are not equal.
-
-Fails if either of `x` or `y` is not a valid [VM number](#vm-number), or if they are not numerically equal.
-
-
-#### NUMNOTEQUAL
-
-Code  | Stack Diagram   | Cost
-------|-----------------|----------------------------
-0x9e  | (x y → x ≠ y)   | 2; [standard memory cost](#standard-memory-cost)
-
-Pops two [numbers](#vm-number) from the data stack, results in `false` if they are equal and in `true` otherwise, and pushes the result to the data stack.
-
-Note that two strings representing the same number may differ due to redundant leading zeros.
-
-Fails if either of `x` or `y` is not a valid [VM number](#vm-number).
-
 
 #### LESSTHAN
 
@@ -1277,7 +1235,7 @@ Fails if executed in the [transaction context](#transaction-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0x9c, 0x9d, 0x9e, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion and have no effect on the state of the VM apart from reducing run limit by 1.
 
