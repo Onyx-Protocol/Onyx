@@ -9,7 +9,6 @@ import (
 	"context"
 	"sync"
 
-	"chain/log"
 	"chain/protocol/bc"
 )
 
@@ -43,14 +42,9 @@ func (m *MemPool) Submit(ctx context.Context, tx *bc.Tx) error {
 // empties the pool.
 func (m *MemPool) Dump(ctx context.Context) []*bc.Tx {
 	m.mu.Lock()
+	defer m.mu.Unlock()
 	txs := m.pool
 	m.pool = nil
 	m.hashes = make(map[bc.Hash]bool)
-	m.mu.Unlock()
-
-	if !isTopSorted(txs) {
-		log.Messagef(ctx, "set of %d txs not in topo order; sorting", len(txs))
-		txs = topSort(txs)
-	}
 	return txs
 }

@@ -1,4 +1,4 @@
-package mempool
+package protocol
 
 import "chain/protocol/bc"
 
