@@ -542,15 +542,23 @@ definitions:
       Since Swagger 2.0 does not allow for polymorphic types, the individual
       properties are not listed here. Please refer to the definitions of
       IssueAction, SpendFromAccountAction, SpendFromAccountUnspentOutputAction,
-      ControlWithAccountAction, ControlWithProgramAction, and RetireAction.
+      ControlWithAccountAction, ControlWithProgramAction, and
+      SetTransactionReferenceDataAction.
 
   IssueAction:
     description: This action adds an issuance input for the specified asset to
       the transaction.
     type: object
     required:
+      - type
       - amount
     properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `issue`)
+        enum:
+          - issue
       asset_id:
         type: string
         description: The unique ID of the asset being issued. Either `asset_id`
@@ -572,8 +580,15 @@ definitions:
       funds from the specified account. It adds change outputs where necessary.
     type: object
     required:
+      - type
       - amount
     properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `spend_account`)
+        enum:
+          - spend_account
       account_id:
         type: string
         description: The unique ID of the spending account. Either `account_id`
@@ -604,9 +619,16 @@ definitions:
       be spent, and the user is required to handle change manually.
     type: object
     required:
+      - type
       - transaction_id
       - position
     properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `spend_account_unspent_output`)
+        enum:
+          - spend_account_unspent_output
       transaction_id:
         type: string
         description: The unique ID of the transaction containing the output
@@ -625,8 +647,15 @@ definitions:
       some amount of an asset with a control program in the specified account.
     type: object
     required:
+      - type
       - amount
     properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `control_account`)
+        enum:
+          - control_account
       account_id:
         type: string
         description: The unique ID of the receiving account. Either `account_id`
@@ -658,9 +687,16 @@ definitions:
       created from accounts that are not on the local core.
     type: object
     required:
+      - type
       - control_program
       - amount
     properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `control_program`)
+        enum:
+          - control_program
       control_program:
         type: string
         description: The control program that will receive the incoming asset
@@ -681,28 +717,23 @@ definitions:
         description: Arbitrary, immutable key/value data that will accompany
           the inputs and/or outputs created by this action.
 
-  RetireAction:
-    description: This action removes a quantity of assets from circulation on
-      the blockchain.
+  SetTransactionReferenceDataAction:
+    description: This action sets the reference data field for the
+      transaction object
     type: object
     required:
-      - amount
+      - type
     properties:
-      asset_id:
+      type:
         type: string
-        description: The unique ID of the asset to be retired. Either `asset_id`
-          or `asset_alias` is required.
-      asset_alias:
-        type: string
-        description: The unique alias of the asset to be retired. Either
-          `asset_id` or `asset_alias` is required.
-      amount:
-        type: integer
-        description: The amount of the asset to be retired.
+        description: Value identifying the action type to the API
+          (required to be `set_transaction_reference_data`)
+        enum:
+          - set_transaction_reference_data
       reference_data:
         type: object
         description: Arbitrary, immutable key/value data that will accompany
-          the inputs and/or outputs created by this action.
+          the transaction.
 
   TransactionTemplate:
     type: object
