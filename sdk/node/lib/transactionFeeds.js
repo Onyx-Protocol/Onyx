@@ -103,11 +103,18 @@ class TransactionFeeds {
   /**
    * constructor - return TransactionFeeds object configured for specified Chain Core.
    *
-   * @param  {Client} client Configured Chain client object.
+   * @param {Client} client Configured Chain client object.
    */
   constructor(client) {
     /**
      * Create a new transaction feed.
+     *
+     * @param {Object} params Parameters for creating Tansaction Feeds.
+     * @param {string} params.alias A unique alias for the transaction feed.
+     * @param {string} params.filter A valid filter string for the `/list-transactions`
+     *                               endpoint. The transaction feed will be composed of future
+     *                               transactions that match the filter.
+     * @returns {TransactionFeed}
      */
     this.create = (params = {}) => {
       let body = Object.assign({ client_token: uuid.v4() }, params)
@@ -116,7 +123,14 @@ class TransactionFeeds {
     }
 
     /**
-     * Get single transaction feed specified by id/alias.
+     * Get single transaction feed given an id/alias.
+     *
+     * @param {Object} params Parameters to get single Tansaction Feed
+     * @param {string} params.id The unique ID of a transaction feed. Either `id` or
+     *                           `alias` is required.
+     * @param {string} params.alias The unique alias of a transaction feed. Either `id` or
+     *                              `alias` is required.
+     * @returns {TransactionFeed}
      */
     this.get = (params) => {
       return client.request('/get-transaction-feed', params)
@@ -125,6 +139,12 @@ class TransactionFeeds {
 
     /**
      * Delete a transaction feed given an id/alias.
+     *
+     * @param {Object} params Parameters to delete single Tansaction Feed
+     * @param {string} params.id The unique ID of a transaction feed. Either `id` or
+     *                           `alias` is required.
+     * @param {string} params.alias The unique alias of a transaction feed. Either `id` or
+     *                              `alias` is required.
      */
     this.delete = (params) => {
       client.request('/delete-transaction-feed', params)
@@ -132,10 +152,10 @@ class TransactionFeeds {
     }
 
     /**
-     *
+     * Returns a page of transaction feeds defined on the core.
      */
     this.query = (params) => {
-      return client.request('/list-transaction-feed', params)
+      return client.request('/list-transaction-feeds', params)
       .then(data => data)
     }
   }

@@ -9,7 +9,7 @@ class Config {
    * @param  {Client} client Configured Chain client object.
    */
   constructor(client) {
-
+    
     /**
      * Reset specified Chain Core.
      *
