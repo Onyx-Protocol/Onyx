@@ -382,15 +382,15 @@ The **first (least significant) bit** indicates whether the transaction includes
 
 The **second bit** indicates whether the output commitment from the spent output is present in the [input spend commitment](#asset-version-1-spend-commitment). If set to zero, the output commitment field is absent.
 
-The **third bit** indicates whether transaction reference data is present. If set to zero, the reference data is replaced by its optional hash value.
+The **third bit** indicates whether transaction reference data and asset definitions are present. If set to zero, the reference data and asset definitions are replaced by their optional hash values.
 
 All three bits can be used independently. Non-zero **higher bits** are reserved for future use.
 
 Serialization Flags Examples | Description
 -----------------------------|---------------------------------------------------------------------------
-0000 0000                    | Minimal serialization without witness and with reference data hashes instead of content.
-0000 0011                    | Minimal serialization needed for full verification. Contains witness fields and redundant [output commitment](#transaction-output-commitment), but not complete reference data.
-0000 0101                    | Non-redundant full binary serialization with witness fields and reference data.
+0000 0000                    | Minimal serialization without witness and with hashes of reference data and asset definitions instead of their actual content.
+0000 0011                    | Minimal serialization needed for full verification. Contains witness fields and redundant [output commitment](#transaction-output-commitment), but with hashes of reference data and asset definitions instead of their actual content.
+0000 0101                    | Non-redundant full binary serialization with witness fields, reference data and asset definitions.
 
 
 ### Transaction ID
