@@ -1,7 +1,14 @@
 const chain = require('../index.js')
 const uuid = require('uuid')
+const async = require("async");
 const assert = require('assert')
+const chai = require("chai")
+const chaiAsPromised = require("chai-as-promised")
+chai.use(chaiAsPromised)
 
+const expect = chai.expect
+
+// Helper function
 const balanceByAssetAlias = (balances) => {
   let res = {}
   return Promise.resolve(balances)
@@ -13,14 +20,8 @@ const balanceByAssetAlias = (balances) => {
   })
 }
 
-const chai = require("chai")
-const chaiAsPromised = require("chai-as-promised")
-chai.use(chaiAsPromised)
-
-const expect = chai.expect
-
 describe('Chain SDK integration test', function() {
-  it('integration test', function() {
+  it('works with promises', function() {
     const client = new chain.Client()
     const signer = new chain.HsmSigner()
 
@@ -373,5 +374,41 @@ describe('Chain SDK integration test', function() {
         filter: "inputs(type='spend')"
       })
     ])).to.be.fulfilled)
+  })
+
+  it('works with callbacks', function(done) {
+    const client = new chain.Client()
+    const signer = new chain.HsmSigner()
+
+    const aliceAlias = `alice-${uuid.v4()}`
+    const bobAlias = `bob-${uuid.v4()}`
+    const goldAlias = `gold-${uuid.v4()}`
+    const silverAlias = `silver-${uuid.v4()}`
+    const bronzeAlias = `bronze-${uuid.v4()}`
+    const copperAlias = `copper-${uuid.v4()}`
+    const issuancesAlias = `issuances-${uuid.v4()}`
+    const spendsAlias = `spends-${uuid.v4()}`
+    const tokenId = `token-${uuid.v4()}`
+
+    let aliceKey, bobKey, goldKey, silverKey, otherKey, aliceId
+
+    async.series([
+      // Access tokens
+
+      (cb) => client.accessTokens.create({ type: 'client', id: tokenId}, (err, resp) => {
+        expect(resp.token).to.not.be.empty
+        expect(err).to.be.null
+        cb(null)
+      }),
+
+      (cb) => client.accessTokens.create({ type: 'client', id: tokenId}, (err, resp) => {
+        expect(resp).to.be.null
+        expect(err).to.not.be.null
+        expect(err.code).to.equal('CH302')
+        cb(null)
+      })
+    ])
+
+
   })
 })

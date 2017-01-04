@@ -1,8 +1,10 @@
 const uuid = require('uuid')
 const errors = require('./errors')
 const Page = require('./page')
+const Promise = require('./promiseWithCallback')
 
 module.exports = {
+
   create: (client, path, params = {}, opts = {}) => {
     const object = Object.assign({ client_token: uuid.v4() }, params)
     let body = object
@@ -21,9 +23,10 @@ module.exports = {
         return data
       }
     })
+    .callback(opts.cb)
   },
 
-  createBatch: (client, path, params = []) => {
+  createBatch: (client, path, params = [], opts = {}) => {
     params = params.map((item) =>
       Object.assign({ client_token: uuid.v4() }, item))
 
@@ -36,7 +39,7 @@ module.exports = {
     })
   },
 
-  query: (client, owner, path, params = {}) => {
+  query: (client, owner, path, params = {}, opts = {}) => {
     return client.request(path, params)
       .then(data => new Page(data, owner))
   },
