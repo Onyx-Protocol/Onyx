@@ -4,10 +4,11 @@ const AccessTokens = require('./accessTokens')
 const Accounts = require('./accounts')
 const Assets = require('./assets')
 const Balances = require('./balances')
+const Config = require('./config')
 const MockHsmKeys = require('./mockHsmKeys')
 const Transactions = require('./transactions')
-const UnspentOutputs = require('./unspentOutputs')
 const TransactionFeeds = require('./transactionFeeds')
+const UnspentOutputs = require('./unspentOutputs')
 
 
 /**
@@ -49,6 +50,12 @@ class Client {
      * @type {Balances}
      */
     this.balances = new Balances(this)
+
+    /**
+     * API actions for config.
+     * @type {Config}
+     */
+    this.config = new Config(this)
 
     /**
      * @property {MockHsmKeys} keys API actions for Mock HSM keys
