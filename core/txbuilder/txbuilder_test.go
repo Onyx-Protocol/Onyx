@@ -119,7 +119,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 		t.Fatal(err)
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
+	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyHash)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
 		Version: 1,
@@ -187,7 +187,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		t.Fatal(err)
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
+	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyHash)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
 		Version: 1,
@@ -279,7 +279,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	var initialBlockHash bc.Hash
 
 	issuanceProg := []byte{byte(vm.OP_TRUE)}
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
+	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyHash)
 
 	// Tx with only issuance inputs is OK
 	tx := bc.NewTx(bc.TxData{

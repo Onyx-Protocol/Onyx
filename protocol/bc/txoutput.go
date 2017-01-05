@@ -106,7 +106,7 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
 }
 
 func (to *TxOutput) witnessHash() Hash {
-	return emptyHash
+	return EmptyHash
 }
 
 func (to *TxOutput) WriteCommitment(w io.Writer) {

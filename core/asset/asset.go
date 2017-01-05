@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"sync"
 
+	//"golang.org/x/crypto/sha3"
+
 	"github.com/golang/groupcache/lru"
 	"github.com/golang/groupcache/singleflight"
 	"github.com/lib/pq"
@@ -91,11 +93,15 @@ func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, def
 		return nil, err
 	}
 
+	//defHash := sha3.Sum256(serializedDef)
+	// TODO(oleg): use defHash instead of EmptyHash, and make sure to use
+	//             the definition hash in bc.IssuanceInput
+	//             (`func (ii *IssuanceInput) AssetID() AssetID`).
 	asset := &Asset{
 		Definition:       definition,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: reg.initialBlockHash,
-		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1),
+		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1, bc.EmptyHash),
 		Signer:           assetSigner,
 		Tags:             tags,
 	}
@@ -326,6 +332,7 @@ func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
 	return json.MarshalIndent(def, "", "  ")
 }
 
+// TODO(oleg): move actual asset definition into the designated issuance input field
 func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, error) {
 	issuanceProg, err := vmutil.P2SPMultiSigProgram(pubkeys, nrequired)
 	if err != nil {
@@ -337,6 +344,7 @@ func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definitio
 	return builder.Program, nil
 }
 
+// TODO(oleg): move actual asset definition into the designated issuance input field
 func definitionFromProgram(program []byte) ([]byte, error) {
 	pops, err := vm.ParseProgram(program)
 	if err != nil {

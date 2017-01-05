@@ -97,7 +97,7 @@ func TestWaitForBlockSoonWaits(t *testing.T) {
 	makeEmptyBlock(t, c) // height=2
 
 	go func() {
-		time.Sleep(10 * time.Millisecond) // sorry for the slow test 😔
+		time.Sleep(10 * time.Millisecond) // sorry for the slow test 
 		makeEmptyBlock(t, c)              // height=3
 	}()
 
@@ -131,7 +131,7 @@ func TestGenerateBlock(t *testing.T) {
 	c, b1 := newTestChain(t, now)
 
 	initialBlockHash := b1.Hash()
-	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1)
+	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1, bc.EmptyHash)
 
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
@@ -176,8 +176,8 @@ func TestGenerateBlock(t *testing.T) {
 
 	// TODO(bobg): verify these hashes are correct
 	var wantTxRoot, wantAssetsRoot bc.Hash
-	copy(wantTxRoot[:], mustDecodeHex("d0e593c846d7b189bd3e2f55e680016b14989329af1c5e388ff246caedf04bd3"))
-	copy(wantAssetsRoot[:], mustDecodeHex("903d9a10ece41f86b7c2cf23c25b09c2086b321d6d63e2ec7fc7405f84121542"))
+	copy(wantTxRoot[:], mustDecodeHex("4e39bac8545fe486772dcb41eebda4b74b2c38a9d04d027e5e7430ea24f3857a"))
+	copy(wantAssetsRoot[:], mustDecodeHex("dfb50c176548cfd5c74b8a4742983c09c6ead42932489d1894f81ef9ed0d7af7"))
 
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{

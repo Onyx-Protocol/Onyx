@@ -246,7 +246,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 				return err
 			}
 
-			computedAssetID := ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion)
+			computedAssetID := ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion, EmptyHash)
 			if computedAssetID != assetID {
 				return errBadAssetID
 			}
@@ -352,5 +352,5 @@ func (si *SpendInput) IsIssuance() bool { return false }
 func (ii *IssuanceInput) IsIssuance() bool { return true }
 
 func (ii *IssuanceInput) AssetID() AssetID {
-	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion)
+	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion, EmptyHash) // TODO(oleg): use asset definition hash from the issuance input
 }
