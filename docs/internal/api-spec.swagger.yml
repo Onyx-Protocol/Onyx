@@ -172,6 +172,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
   Account:
     type: object
@@ -253,6 +256,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
   ControlProgram:
     type: object
@@ -514,6 +520,10 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
+
 
   TransactionBuilder:
     type: object
@@ -875,6 +885,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
   TransactionFeed:
     type: object
@@ -924,6 +937,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
   AccessToken:
     type: object
@@ -968,6 +984,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
   CoreInfo:
     type: object
@@ -1084,6 +1103,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
 responses:
 
