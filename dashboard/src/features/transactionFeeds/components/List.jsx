@@ -9,7 +9,7 @@ const firstTimeContent = <EmptyContent>
   <p>
     Transaction feeds enable real-time processing of transactions as they arrive on the blockchain.
   </p>
-  <a href="/docs/core/build-applications/real-time-transaction-processing" target="_blank">
+  <a href='/docs/core/build-applications/real-time-transaction-processing' target='_blank'>
     Learn more
   </a> about how to use transaction feeds.
 </EmptyContent>

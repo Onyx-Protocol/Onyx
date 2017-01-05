@@ -70,7 +70,7 @@ class AutocompleteField extends React.Component {
       // Prevent form submission if key pressed was enter/return
       event.keyCode == 13 && event.preventDefault()
 
-      const suggestion = suggestions[0]["alias"]
+      const suggestion = suggestions[0]['alias']
       const input = this.props.fieldProps.value.toLowerCase()
       if (suggestion.toLowerCase().startsWith(input)) {
         this.props.fieldProps.onChange(suggestion)
