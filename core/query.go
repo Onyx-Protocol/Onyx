@@ -77,6 +77,11 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 		after query.TxAfter
 	)
 
+	limit := in.PageSize
+	if limit == 0 {
+		limit = defGenericPageSize
+	}
+
 	// Build the filter predicate.
 	p, err = filter.Parse(in.Filter)
 	if err != nil {
@@ -102,7 +107,6 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 		}
 	}
 
-	limit := defGenericPageSize
 	txns, nextAfter, err := h.Indexer.Transactions(ctx, p, in.FilterParams, after, limit, in.AscLongPoll)
 	if err != nil {
 		return result, errors.Wrap(err, "running tx query")
@@ -216,7 +220,10 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 //
 // POST /list-accounts
 func (h *Handler) listAccounts(ctx context.Context, in requestQuery) (page, error) {
-	limit := defGenericPageSize
+	limit := in.PageSize
+	if limit == 0 {
+		limit = defGenericPageSize
+	}
 
 	// Build the filter predicate.
 	p, err := filter.Parse(in.Filter)
@@ -332,6 +339,12 @@ type utxoResp struct {
 
 // POST /list-unspent-outputs
 func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
+	limit := in.PageSize
+	if limit == 0 {
+		limit = defGenericPageSize
+	}
+
+	// Build the filter predicate.
 	var p filter.Predicate
 	p, err = filter.Parse(in.Filter)
 	if err != nil {
@@ -352,7 +365,6 @@ func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (resu
 	} else if timestampMS > math.MaxInt64 {
 		return result, errors.WithDetail(httpjson.ErrBadRequest, "timestamp is too large")
 	}
-	limit := defGenericPageSize
 	outputs, nextAfter, err := h.Indexer.Outputs(ctx, p, in.FilterParams, timestampMS, after, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "querying outputs")
@@ -407,7 +419,10 @@ func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (resu
 //
 // POST /list-assets
 func (h *Handler) listAssets(ctx context.Context, in requestQuery) (page, error) {
-	limit := defGenericPageSize
+	limit := in.PageSize
+	if limit == 0 {
+		limit = defGenericPageSize
+	}
 
 	// Build the filter predicate.
 	p, err := filter.Parse(in.Filter)
@@ -479,7 +494,11 @@ func txAccountFromMap(m map[string]interface{}) *txAccount {
 //
 // POST /list-transaction-feeds
 func (h *Handler) listTxFeeds(ctx context.Context, in requestQuery) (page, error) {
-	limit := defGenericPageSize
+	limit := in.PageSize
+	if limit == 0 {
+		limit = defGenericPageSize
+	}
+
 	after := in.After
 
 	txfeeds, after, err := h.Indexer.TxFeeds(ctx, after, limit)
