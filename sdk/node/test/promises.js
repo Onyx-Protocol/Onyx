@@ -20,7 +20,7 @@ const balanceByAssetAlias = (balances) => {
 }
 
 describe('Promise style', function() {
-  xit('works', function() {
+  it('works', function() {
     const client = new chain.Client()
     const signer = new chain.HsmSigner()
 

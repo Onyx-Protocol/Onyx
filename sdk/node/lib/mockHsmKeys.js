@@ -29,14 +29,14 @@ class MockHsmKeys {
     /**
      * Get one page of MockHsm keys, optionally filtered to specified aliases
      *
-     * @param {Array.<string>} [aliases] List of requested aliases, max 200
+     * @param {Filter} [params={}] Filter and pagination information
+     * @param {Array.<string>} [params.aliases] List of requested aliases, max 200
      * @param {queryCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
-    this.query = (aliases = [], cb) => {
-      let params = {aliases}
-      if (aliases.length > 0) {
-        params.page_size = aliases.length
+    this.query = (params, cb) => {
+      if (Array.isArray(params.aliases) && params.aliases.length > 0) {
+        params.page_size = params.aliases.length
       }
 
       return shared.query(client, this, '/mockhsm/list-keys', params)
