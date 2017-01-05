@@ -1,4 +1,4 @@
-const chain = require('../index.js')
+const chain = require('../source/index.js')
 const uuid = require('uuid')
 const assert = require('assert')
 const chai = require("chai")
