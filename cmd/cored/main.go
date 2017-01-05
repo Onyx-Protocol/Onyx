@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"encoding/hex"
 	"expvar"
 	"fmt"
 	"io"
@@ -215,11 +214,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	var generatorSigners []generator.BlockSigner
 	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
 	if conf.IsSigner {
-		blockPub, err := hex.DecodeString(conf.BlockPub)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-		s := blocksigner.New(blockPub, hsm, db, c)
+		s := blocksigner.New(conf.BlockPub, hsm, db, c)
 		generatorSigners = append(generatorSigners, s) // "local" signer
 		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
 			sig, err := s.ValidateAndSignBlock(ctx, b)

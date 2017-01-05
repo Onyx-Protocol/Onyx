@@ -197,7 +197,12 @@ func configNongenerator(db *sql.DB, args []string) {
 	conf.GeneratorURL = args[1]
 	conf.GeneratorAccessToken = *flagT
 	conf.IsSigner = *flagK != ""
-	conf.BlockPub = *flagK
+
+	pubkey, err := hex.DecodeString(*flagK)
+	if err != nil {
+		fatalln("error: invalid pubkey: ", *flagK)
+	}
+	conf.BlockPub = pubkey
 
 	ctx := context.Background()
 	err = config.Configure(ctx, db, &conf)

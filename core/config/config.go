@@ -16,7 +16,6 @@ import (
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/database/sql"
-	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
 	"chain/protocol"
@@ -44,23 +43,23 @@ type Config struct {
 	GeneratorURL         string  `json:"generator_url"`
 	GeneratorAccessToken string  `json:"generator_access_token"`
 	ConfiguredAt         time.Time
-	BlockPub             string        `json:"block_pub"`
+	BlockPub             []byte        `json:"block_pub"`
 	Signers              []BlockSigner `json:"block_signer_urls"`
 	Quorum               int
 	MaxIssuanceWindow    time.Duration
 }
 
 type BlockSigner struct {
-	AccessToken string             `json:"access_token"`
-	Pubkey      chainjson.HexBytes `json:"pubkey"`
-	URL         string             `json:"url"`
+	AccessToken string `json:"access_token"`
+	Pubkey      []byte `json:"pubkey"`
+	URL         string `json:"url"`
 }
 
 // Load loads the stored configuration, if any, from the database.
 func Load(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT id, is_signer, is_generator,
-			blockchain_id, generator_url, generator_access_token, block_xpub,
+			blockchain_id, generator_url, generator_access_token, block_pub,
 			remote_block_signers, max_issuance_window_ms, configured_at
 			FROM config
 		`
@@ -128,25 +127,21 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	var signingKeys []ed25519.PublicKey
 	if c.IsSigner {
 		var blockPub ed25519.PublicKey
-		if c.BlockPub == "" {
+		if len(c.BlockPub) == 0 {
 			hsm := mockhsm.New(db)
 			corePub, created, err := hsm.GetOrCreate(ctx, autoBlockKeyAlias)
 			if err != nil {
 				return err
 			}
 			blockPub = corePub.Pub
-			blockPubStr := hex.EncodeToString(blockPub)
 			if created {
-				log.Messagef(ctx, "Generated new block-signing key %s\n", blockPubStr)
+				log.Messagef(ctx, "Generated new block-signing key %s\n", blockPub)
 			} else {
-				log.Messagef(ctx, "Using block-signing key %s\n", blockPubStr)
+				log.Messagef(ctx, "Using block-signing key %s\n", blockPub)
 			}
-			c.BlockPub = blockPubStr
+			c.BlockPub = blockPub
 		} else {
-			blockPub, err = hex.DecodeString(c.BlockPub)
-			if err != nil {
-				return err
-			}
+			blockPub = c.BlockPub
 		}
 		signingKeys = append(signingKeys, blockPub)
 	}
@@ -204,9 +199,8 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	}
 	c.ID = hex.EncodeToString(b)
 
-	// TODO(tessr): rename block_xpub column
 	const q = `
-		INSERT INTO config (id, is_signer, block_xpub, is_generator,
+		INSERT INTO config (id, is_signer, block_pub, is_generator,
 			blockchain_id, generator_url, generator_access_token,
 			remote_block_signers, max_issuance_window_ms, configured_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())

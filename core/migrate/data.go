@@ -72,4 +72,10 @@ var migrations = []migration{
 			ALTER COLUMN tx_id SET DATA TYPE bytea USING decode(tx_id,'hex');
 		ALTER TABLE submitted_txs RENAME COLUMN tx_id TO tx_hash;
 	`},
+	{Name: "2017-01-05.0.core.config-key.sql", SQL: `
+		ALTER TABLE config ALTER COLUMN block_xpub DROP DEFAULT;
+		ALTER TABLE config ALTER COLUMN block_xpub SET DATA TYPE bytea USING decode(block_xpub,'hex');
+		ALTER TABLE config ALTER COLUMN block_xpub SET DEFAULT '\x';
+		ALTER TABLE config RENAME COLUMN block_xpub TO block_pub;
+	`},
 }
