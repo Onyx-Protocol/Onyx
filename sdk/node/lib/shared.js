@@ -3,6 +3,18 @@ const errors = require('./errors')
 const Page = require('./page')
 const Promise = require('./promiseWithCallback')
 
+/**
+ * @callback createCallback
+ * @param {error} error
+ * @param {Object} object - Newly created object
+ */
+
+ /**
+  * @callback batchCreateCallback
+  * @param {error} error
+  * @param {BatchResponse} batchResponse - Newly created objects (and errors)
+  */
+
 module.exports = {
 
   create: (client, path, params = {}, opts = {}) => {
@@ -17,7 +29,7 @@ module.exports = {
         throw errors.newBatchError(data[0])
       }
 
-      if (typeof data === 'Array') {
+      if (Array.isArray(data)) {
         return data[0]
       } else {
         return data
@@ -37,11 +49,13 @@ module.exports = {
         response: resp,
       }
     })
+    .callback(opts.cb)
   },
 
   query: (client, owner, path, params = {}, opts = {}) => {
     return client.request(path, params)
       .then(data => new Page(data, owner))
+      .callback(opts.cb)
   },
 
   /*

@@ -79,30 +79,32 @@ class Transactions {
      */
     this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
 
-    this.build = (builderBlock) => {
+    this.build = (builderBlock, cb) => {
       const builder = new TransactionBuilder()
       builderBlock(builder)
 
       return client.request('/build-transaction', [builder])
         .then(resp => checkForError(resp[0]))
+        .callback(cb)
     }
 
-    this.buildBatch = (builderBlocks) => {
+    this.buildBatch = (builderBlocks, cb) => {
       const builders = builderBlocks.map((builderBlock) => {
         const builder = new TransactionBuilder()
         builderBlock(builder)
         return builder
       })
 
-      return shared.createBatch(client, '/build-transaction', builders)
+      return shared.createBatch(client, '/build-transaction', builders, {cb})
     }
 
-    this.submit = (signed) => {
+    this.submit = (signed, cb) => {
       return client.request('/submit-transaction', {transactions: [signed]})
         .then(resp => checkForError(resp[0]))
+        .callback(cb)
     }
 
-    this.submitBatch = (signed) => {
+    this.submitBatch = (signed, cb) => {
       return client.request('/submit-transaction', {transactions: signed})
         .then(resp => {
           return {
@@ -111,6 +113,7 @@ class Transactions {
             response: resp,
           }
         })
+        .callback(cb)
     }
   }
 }

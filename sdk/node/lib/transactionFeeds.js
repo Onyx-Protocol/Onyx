@@ -116,10 +116,11 @@ class TransactionFeeds {
      *                               transactions that match the filter.
      * @returns {TransactionFeed}
      */
-    this.create = (params = {}) => {
+    this.create = (params, cb) => {
       let body = Object.assign({ client_token: uuid.v4() }, params)
       return client.request('/create-transaction-feed', body)
         .then(data => new TransactionFeed(data, client))
+        .callback(cb)
     }
 
     /**
@@ -132,10 +133,9 @@ class TransactionFeeds {
      *                              `alias` is required.
      * @returns {TransactionFeed}
      */
-    this.get = (params) => {
-      return client.request('/get-transaction-feed', params)
+    this.get = (params) => client.request('/get-transaction-feed', params)
       .then(data => new TransactionFeed(data, client))
-    }
+      .callback(cb)
 
     /**
      * Delete a transaction feed given an id/alias.
@@ -146,18 +146,16 @@ class TransactionFeeds {
      * @param {string} params.alias The unique alias of a transaction feed. Either `id` or
      *                              `alias` is required.
      */
-    this.delete = (params) => {
-      client.request('/delete-transaction-feed', params)
+    this.delete = (params, cb) => client.request('/delete-transaction-feed', params)
       .then(data => data)
-    }
+      .callback(cb)
 
     /**
      * Returns a page of transaction feeds defined on the core.
      */
-    this.query = (params) => {
-      return client.request('/list-transaction-feeds', params)
+    this.query = (params, cb) => client.request('/list-transaction-feeds', params)
       .then(data => data)
-    }
+      .callback(cb)
   }
 }
 

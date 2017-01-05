@@ -1,6 +1,5 @@
 const chain = require('../index.js')
 const uuid = require('uuid')
-const async = require("async");
 const assert = require('assert')
 const chai = require("chai")
 const chaiAsPromised = require("chai-as-promised")
@@ -20,8 +19,8 @@ const balanceByAssetAlias = (balances) => {
   })
 }
 
-describe('Chain SDK integration test', function() {
-  it('works with promises', function() {
+describe('Promise style', function() {
+  xit('works', function() {
     const client = new chain.Client()
     const signer = new chain.HsmSigner()
 
@@ -88,7 +87,7 @@ describe('Chain SDK integration test', function() {
       bobKey = keys[1]
       goldKey = keys[2]
       silverKey = keys[3]
-      otherKey = keys[4]
+      otherKey = keys[6]
 
       signer.addKey(aliceKey, client.mockHsm.signerConnection)
       signer.addKey(bobKey, client.mockHsm.signerConnection)
@@ -104,7 +103,7 @@ describe('Chain SDK integration test', function() {
     ])).to.be.fulfilled)
 
     .then(accounts => {
-      aliceId = accounts[0][0].id
+      aliceId = accounts[0].id
     })
 
     .then(() =>
@@ -320,18 +319,30 @@ describe('Chain SDK integration test', function() {
           })
         }])).to.be.fulfilled
     )
-    .then((buildBatch) => expect(signer.signBatch(buildBatch.successes)).to.be.fulfilled)
-    .then((signedBatch) => expect(client.transactions.submitBatch(signedBatch.successes)).to.be.fulfilled)
+    .then(buildBatch => {
+      assert.equal(buildBatch.successes[1], null)
+      assert.deepEqual([buildBatch.errors[0], buildBatch.errors[2], buildBatch.errors[3]], [null, null, null])
+      return expect(signer.signBatch(buildBatch.successes)).to.be.fulfilled
+    })
+    .then(signedBatch => {
+      assert(!signedBatch.successes.includes(null))
+      assert.deepEqual([signedBatch.errors[0], signedBatch.errors[1], signedBatch.errors[2]], [null, null, null])
+      return expect(client.transactions.submitBatch(signedBatch.successes)).to.be.fulfilled
+    })
+    .then(submitBatch => {
+      assert.equal(submitBatch.successes[1], null)
+      assert.deepEqual([submitBatch.errors[0], submitBatch.errors[2]], [null, null])
+    })
 
     // Control program creation
 
     .then(() =>
       expect(client.accounts.createControlProgram({alias: aliceAlias})).to.be.fulfilled)
-    .then((cp) => assert(cp[0].control_program))
+    .then((cp) => assert(cp.control_program))
 
     .then(() =>
       expect(client.accounts.createControlProgram({id: aliceId})).to.be.fulfilled)
-    .then((cp) => assert(cp[0].control_program))
+    .then((cp) => assert(cp.control_program))
 
     .then(() =>
       // Empty alias/id
@@ -356,7 +367,7 @@ describe('Chain SDK integration test', function() {
         builder.controlWithProgram({
           asset_alias: goldAlias,
           amount: 1,
-          control_program: cp[0].control_program
+          control_program: cp.control_program
         })
       })).to.be.fulfilled)
     .then((issuance) => expect(signer.sign(issuance)).to.be.fulfilled)
@@ -374,41 +385,5 @@ describe('Chain SDK integration test', function() {
         filter: "inputs(type='spend')"
       })
     ])).to.be.fulfilled)
-  })
-
-  it('works with callbacks', function(done) {
-    const client = new chain.Client()
-    const signer = new chain.HsmSigner()
-
-    const aliceAlias = `alice-${uuid.v4()}`
-    const bobAlias = `bob-${uuid.v4()}`
-    const goldAlias = `gold-${uuid.v4()}`
-    const silverAlias = `silver-${uuid.v4()}`
-    const bronzeAlias = `bronze-${uuid.v4()}`
-    const copperAlias = `copper-${uuid.v4()}`
-    const issuancesAlias = `issuances-${uuid.v4()}`
-    const spendsAlias = `spends-${uuid.v4()}`
-    const tokenId = `token-${uuid.v4()}`
-
-    let aliceKey, bobKey, goldKey, silverKey, otherKey, aliceId
-
-    async.series([
-      // Access tokens
-
-      (cb) => client.accessTokens.create({ type: 'client', id: tokenId}, (err, resp) => {
-        expect(resp.token).to.not.be.empty
-        expect(err).to.be.null
-        cb(null)
-      }),
-
-      (cb) => client.accessTokens.create({ type: 'client', id: tokenId}, (err, resp) => {
-        expect(resp).to.be.null
-        expect(err).to.not.be.null
-        expect(err.code).to.equal('CH302')
-        cb(null)
-      })
-    ])
-
-
   })
 })

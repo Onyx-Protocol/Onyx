@@ -31,23 +31,28 @@ class Accounts {
      * Create a new account.
      *
      * @param {Accounts~createRequest} params - Parameters for account creation.
+     * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @return { Promise<Object> } - Newly created account
      */
-    this.create = (params) => shared.create(client, '/create-account', params)
+    this.create = (params, cb) => shared.create(client, '/create-account', params, {cb})
 
     /**
      * Create multiple new accounts.
      *
      * @param {Accounts~createRequest[]} params - Parameters for creation of multiple accounts.
+     * @param {batchCreateCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @return {BatchResponse}
      */
-    this.createBatch = (params) => shared.createBatch(client, '/create-account', params)
+    this.createBatch = (params, cb) => shared.createBatch(client, '/create-account', params, {cb})
 
     /**
      * Get one page of accounts matching the specified filter.
      *
      * @param {Filter} [params={}] Filter and pagination information.
+     * @param {queryCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
-    this.query = (params = {}) => shared.query(client, this, '/list-accounts', params)
+    this.query = (params, cb) => shared.query(client, this, '/list-accounts', params, {cb})
 
     /**
      * Request all accounts matching the specified filter, calling the
@@ -63,18 +68,20 @@ class Accounts {
     /**
      * Create a new control program.
      *
-     * @param {Object} opts Object containing either alias or ID identifying
+     * @param {Object} params Object containing either alias or ID identifying
      *                      account to create control program for.
-     * @param {string} [opts.alias]
-     * @param {string} [opts.id]
+     * @param {string} [params.alias]
+     * @param {string} [params.id]
+     * @param {function} [callback] - Optional callback. Use instead of Promise return value as desired.
      */
-    this.createControlProgram = (opts) => {
+    this.createControlProgram = (params, cb) => {
       const body = {type: 'account'}
 
-      if (opts.alias) body.params = { account_alias: opts.alias }
-      if (opts.id)    body.params = { account_id: opts.id }
+      if (params.alias) body.params = { account_alias: params.alias }
+      if (params.id)    body.params = { account_id: params.id }
 
       return shared.create(client, '/create-control-program', body)
+        .callback(cb)
     }
   }
 }

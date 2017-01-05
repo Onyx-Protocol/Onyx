@@ -16,7 +16,7 @@ class Balances {
      * @param {Filter} [params={}] Filter and pagination information
      * @returns {Promise<Page>} Requested page of results
      */
-    this.query = (params) => shared.query(client, this, '/list-balances', params)
+    this.query = (params, cb) => shared.query(client, this, '/list-balances', params, {cb})
 
     /**
      * Request all balances matching the specified filter, calling the

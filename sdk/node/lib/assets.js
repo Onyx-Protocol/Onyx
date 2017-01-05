@@ -34,15 +34,17 @@ class Assets {
      * Create a new asset.
      *
      * @param {Assets~createRequest} params - Parameters for asset creation
+     * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      */
-    this.create = (params) => shared.create(client, '/create-asset', params)
+    this.create = (params, cb) => shared.create(client, '/create-asset', params, {cb})
 
     /**
      * Create multiple new assets.
      *
      * @param {Assets~createRequest[]} params - Parameters for creation of multiple assets
+     * @param {batchCreateCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      */
-    this.createBatch = (params) => shared.createBatch(client, '/create-asset', params)
+    this.createBatch = (params, cb) => shared.createBatch(client, '/create-asset', params, {cb})
 
     /**
      * Get one page of assets matching the specified filter

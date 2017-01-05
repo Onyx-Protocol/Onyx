@@ -1,4 +1,10 @@
 /**
+ * @callback pageCallback
+ * @param {error} error
+ * @param {Page} page - Requested page of results
+ */
+
+/**
  * @class
  */
 class Page {

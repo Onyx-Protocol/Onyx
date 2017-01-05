@@ -1,3 +1,5 @@
+const Promise = require('./promiseWithCallback')
+
 /**
  * @class
  */
@@ -19,13 +21,11 @@ class HsmSigner {
     signer.xpubs.push(typeof key == 'string' ? key : key.xpub)
   }
 
-  sign(template) {
-    templates = templates.filter((template) => template != null)
-    
+  sign(template, cb) {
     let promise = Promise.resolve(template)
 
     if (Object.keys(this.signers).length == 0) {
-      return promise.then(() => template)
+      return promise
     }
 
     for (let signerId in this.signers) {
@@ -38,10 +38,12 @@ class HsmSigner {
       })).then(resp => resp[0])
     }
 
-    return promise
+    return promise.callback(cb)
   }
 
-  signBatch(templates) {
+  signBatch(templates, cb) {
+    templates = templates.filter((template) => template != null)
+
     let promise = Promise.resolve(templates)
 
     if (Object.keys(this.signers).length == 0) {
@@ -64,7 +66,7 @@ class HsmSigner {
       })
     }
 
-    return promise
+    return promise.callback(cb)
   }
 }
 

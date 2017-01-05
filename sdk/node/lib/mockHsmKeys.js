@@ -16,21 +16,24 @@ class MockHsmKeys {
      * Create a new MockHsm key.
      *
      * @param {Object} [params={}] - Parameters for access token creation.
+     * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @param {string} params.alias - User specified, unique identifier.
      */
-    this.create = (params = {}) => {
+    this.create = (params, cb) => {
       let body = Object.assign({ client_token: uuid.v4() }, params)
       return client.request('/mockhsm/create-key', body)
         .then(data => data)
+        .callback(cb)
     }
 
     /**
      * Get one page of MockHsm keys, optionally filtered to specified aliases
      *
      * @param {Array.<string>} [aliases] List of requested aliases, max 200
+     * @param {queryCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
-    this.query = (aliases = []) => {
+    this.query = (aliases = [], cb) => {
       let params = {aliases}
       if (aliases.length > 0) {
         params.page_size = aliases.length

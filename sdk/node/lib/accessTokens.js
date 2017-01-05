@@ -17,11 +17,11 @@ class AccessTokens {
      * @param {Object} params - Parameters for access token creation.
      * @param {string} params.id - User specified, unique identifier.
      * @param {string} params.type - Either 'client' or 'network'.
-     * @param {function} [callback]
+     * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @return { Promise<Object> } - Newly created access token
      */
-    this.create = (params, cb) => {
+    this.create = (params, cb) =>
       shared.create(client, '/create-access-token', params, {skipArray: true, cb})
-    }
 
     /**
      * Get a list of access tokens sorted by descending creation time,
@@ -31,10 +31,11 @@ class AccessTokens {
      *
      * @param {Filter} params - Pagination information.
      * @param {string} [params.type] - Type of access tokens to retrun
-     * @param {function} [callback]
+     * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
     this.query = (params, cb) => {
+      params = params || {}
       params.page_size = 1000
       return shared.query(client, this, '/list-access-tokens', params, {cb})
     }
@@ -45,7 +46,8 @@ class AccessTokens {
      * @param {string} id - Access token ID.
      * @param {function} [callback]
      */
-    this.delete = (id, cb) => client.request('/delete-access-token', {id: id}, {cb})
+    this.delete = (id, cb) => client.request('/delete-access-token', {id: id})
+      .callback(cb)
   }
 }
 
