@@ -1,5 +1,4 @@
-const Promise = require('../source/promiseWithCallback')
-const chain = require('../source/index.js')
+const chain = require('../dist/index.js')
 const uuid = require('uuid')
 const async = require("async")
 const assert = require('assert')
