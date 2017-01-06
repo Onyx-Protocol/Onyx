@@ -60,7 +60,7 @@ type BlockSigner struct {
 func Load(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT id, is_signer, is_generator,
-			blockchain_id, generator_url, generator_access_token, block_xpub,
+			blockchain_id, generator_url, generator_access_token, block_pub,
 			remote_block_signers, max_issuance_window_ms, configured_at
 			FROM config
 		`
@@ -204,9 +204,8 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	}
 	c.ID = hex.EncodeToString(b)
 
-	// TODO(tessr): rename block_xpub column
 	const q = `
-		INSERT INTO config (id, is_signer, block_xpub, is_generator,
+		INSERT INTO config (id, is_signer, block_pub, is_generator,
 			blockchain_id, generator_url, generator_access_token,
 			remote_block_signers, max_issuance_window_ms, configured_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())

@@ -72,4 +72,7 @@ var migrations = []migration{
 			ALTER COLUMN tx_id SET DATA TYPE bytea USING decode(tx_id,'hex');
 		ALTER TABLE submitted_txs RENAME COLUMN tx_id TO tx_hash;
 	`},
+	{Name: "2017-01-05.0.core.rename_block_key.sql", SQL: `
+		ALTER TABLE config RENAME COLUMN block_xpub TO block_pub;
+	`},
 }
