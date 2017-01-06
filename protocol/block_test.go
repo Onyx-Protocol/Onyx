@@ -97,7 +97,7 @@ func TestWaitForBlockSoonWaits(t *testing.T) {
 	makeEmptyBlock(t, c) // height=2
 
 	go func() {
-		time.Sleep(10 * time.Millisecond) // sorry for the slow test 
+		time.Sleep(10 * time.Millisecond) // sorry for the slow test 😔
 		makeEmptyBlock(t, c)              // height=3
 	}()
 
