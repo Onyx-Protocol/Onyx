@@ -342,7 +342,7 @@ CREATE TABLE config (
     blockchain_id text NOT NULL,
     configured_at timestamp with time zone NOT NULL,
     generator_url text DEFAULT ''::text NOT NULL,
-    block_pub bytea DEFAULT '\x'::bytea NOT NULL,
+    block_pub text DEFAULT ''::text NOT NULL,
     remote_block_signers bytea DEFAULT '\x'::bytea NOT NULL,
     generator_access_token text DEFAULT ''::text NOT NULL,
     max_issuance_window_ms bigint,
@@ -876,4 +876,4 @@ insert into migrations (filename, hash) values ('2016-11-18.0.account.confirmed-
 insert into migrations (filename, hash) values ('2016-11-22.0.account.utxos-indexes.sql', 'f3ea43f592cb06a36b040f0b0b9626ee9174d26d36abef44e68114d0c0aace98');
 insert into migrations (filename, hash) values ('2016-11-23.0.query.jsonb-path-ops.sql', 'adb15b9a6b7b223a17dbfd5f669e44c500b343568a563f87e1ae67ba0f938d55');
 insert into migrations (filename, hash) values ('2016-11-28.0.core.submitted-txs-hash.sql', 'cabbd7fd79a2b672b2d3c854783bde3b8245fe666c50261c3335a0c0501ff2ea');
-insert into migrations (filename, hash) values ('2017-01-05.0.core.config-key.sql', '1a45a66192dfad6bfdc10885126d37088de4f0b39d7cb899069ac395b5a1b6d5');
+insert into migrations (filename, hash) values ('2017-01-05.0.core.rename_block_key.sql', 'ba6a62e498236ec9d2f13238a945829a5cab83f897068fef57a2c152a2e36037');
