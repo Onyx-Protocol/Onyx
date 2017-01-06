@@ -1,6 +1,6 @@
 {
   "source": {
-    "include": ["./lib"]
+    "include": ["./src"]
   },
   "opts": {
     "readme": "./README.md",
