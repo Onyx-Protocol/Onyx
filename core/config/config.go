@@ -16,6 +16,7 @@ import (
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/database/sql"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
 	"chain/protocol"
@@ -43,16 +44,16 @@ type Config struct {
 	GeneratorURL         string  `json:"generator_url"`
 	GeneratorAccessToken string  `json:"generator_access_token"`
 	ConfiguredAt         time.Time
-	BlockPub             []byte        `json:"block_pub"`
+	BlockPub             string        `json:"block_pub"`
 	Signers              []BlockSigner `json:"block_signer_urls"`
 	Quorum               int
 	MaxIssuanceWindow    time.Duration
 }
 
 type BlockSigner struct {
-	AccessToken string `json:"access_token"`
-	Pubkey      []byte `json:"pubkey"`
-	URL         string `json:"url"`
+	AccessToken string             `json:"access_token"`
+	Pubkey      chainjson.HexBytes `json:"pubkey"`
+	URL         string             `json:"url"`
 }
 
 // Load loads the stored configuration, if any, from the database.
@@ -127,21 +128,25 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	var signingKeys []ed25519.PublicKey
 	if c.IsSigner {
 		var blockPub ed25519.PublicKey
-		if len(c.BlockPub) == 0 {
+		if c.BlockPub == "" {
 			hsm := mockhsm.New(db)
 			corePub, created, err := hsm.GetOrCreate(ctx, autoBlockKeyAlias)
 			if err != nil {
 				return err
 			}
 			blockPub = corePub.Pub
+			blockPubStr := hex.EncodeToString(blockPub)
 			if created {
-				log.Messagef(ctx, "Generated new block-signing key %s\n", blockPub)
+				log.Messagef(ctx, "Generated new block-signing key %s\n", blockPubStr)
 			} else {
-				log.Messagef(ctx, "Using block-signing key %s\n", blockPub)
+				log.Messagef(ctx, "Using block-signing key %s\n", blockPubStr)
 			}
-			c.BlockPub = blockPub
+			c.BlockPub = blockPubStr
 		} else {
-			blockPub = c.BlockPub
+			blockPub, err = hex.DecodeString(c.BlockPub)
+			if err != nil {
+				return err
+			}
 		}
 		signingKeys = append(signingKeys, blockPub)
 	}
