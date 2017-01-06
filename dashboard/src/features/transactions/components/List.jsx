@@ -6,7 +6,7 @@ import actions from 'actions'
 
 const type = 'transaction'
 
-const firstTimeContent = <EmptyContent title="Welcome to Chain Core!">
+const firstTimeContent = <EmptyContent title='Welcome to Chain Core!'>
   To build your first transaction, you will need to:
   <ol>
     <li>
@@ -20,7 +20,7 @@ const firstTimeContent = <EmptyContent title="Welcome to Chain Core!">
       </Link>
     </li>
   </ol>
-  <a href="/docs/core/build-applications/transaction-basics" target="_blank">
+  <a href='/docs/core/build-applications/transaction-basics' target='_blank'>
     Learn more
   </a> about how to build, sign, and submit transactions.
 </EmptyContent>

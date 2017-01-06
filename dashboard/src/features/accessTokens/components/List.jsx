@@ -49,5 +49,5 @@ export const ClientTokenList = BaseList.connect(
 
 export const NetworkTokenList = BaseList.connect(
   stateToProps(networkType, emptyContentNetwork),
-  dispatchToProps(networkType),
+  dispatchToProps(networkType)
 )
