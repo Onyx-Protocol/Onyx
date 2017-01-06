@@ -24,7 +24,7 @@ type TxFeed struct {
 	After  string  `json:"after,omitempty"`
 }
 
-func (t *Tracker) Create(ctx context.Context, alias, fil, after string, clientToken *string) (*TxFeed, error) {
+func (t *Tracker) Create(ctx context.Context, alias, fil, after string, clientToken string) (*TxFeed, error) {
 	// Validate the filter.
 	_, err := filter.Parse(fil)
 	if err != nil {
@@ -47,7 +47,7 @@ func (t *Tracker) Create(ctx context.Context, alias, fil, after string, clientTo
 // insertTxFeed adds the txfeed to the database. If the txfeed has a client token,
 // and there already exists a txfeed with that client token, insertTxFeed will
 // lookup and return the existing txfeed instead.
-func insertTxFeed(ctx context.Context, db pg.DB, feed *TxFeed, clientToken *string) (*TxFeed, error) {
+func insertTxFeed(ctx context.Context, db pg.DB, feed *TxFeed, clientToken string) (*TxFeed, error) {
 	const q = `
 		INSERT INTO txfeeds (alias, filter, after, client_token)
 		VALUES ($1, $2, $3, $4)
@@ -60,16 +60,21 @@ func insertTxFeed(ctx context.Context, db pg.DB, feed *TxFeed, clientToken *stri
 		alias = sql.NullString{Valid: true, String: *feed.Alias}
 	}
 
+	nullToken := sql.NullString{
+		String: clientToken,
+		Valid:  clientToken != "",
+	}
+
 	err := db.QueryRow(
 		ctx, q, alias, feed.Filter, feed.After,
-		clientToken).Scan(&feed.ID)
+		nullToken).Scan(&feed.ID)
 
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(ErrDuplicateAlias, "a transaction feed with the provided alias already exists")
-	} else if err == sql.ErrNoRows && clientToken != nil {
+	} else if err == sql.ErrNoRows && clientToken != "" {
 		// There is already a txfeed with the provided client
 		// token. We should return the existing txfeed
-		feed, err = txfeedByClientToken(ctx, db, *clientToken)
+		feed, err = txfeedByClientToken(ctx, db, clientToken)
 		if err != nil {
 			return nil, errors.Wrap(err, "retrieving existing txfeed")
 		}

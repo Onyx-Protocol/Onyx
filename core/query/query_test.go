@@ -32,23 +32,23 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	go assets.ProcessBlocks(ctx)
 	go indexer.ProcessBlocks(ctx)
 
-	acct1, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
+	acct1, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	acct2, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
+	acct2, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	asset1Tags := map[string]interface{}{"currency": "USD"}
 
-	asset1, err := assets.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", asset1Tags, nil)
+	asset1, err := assets.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", asset1Tags, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	asset2, err := assets.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", nil, nil)
+	asset2, err := assets.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}

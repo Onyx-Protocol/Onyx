@@ -362,11 +362,11 @@ func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
 		return nil, err
 	}
 
-	acctA, err := accounts.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
+	acctA, err := accounts.Create(ctx, []string{accPub.String()}, 1, "", nil, "")
 	if err != nil {
 		return nil, err
 	}
-	acctB, err := accounts.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
+	acctB, err := accounts.Create(ctx, []string{accPub.String()}, 1, "", nil, "")
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	asset, err := assets.Define(ctx, []string{assetPub.String()}, 1, nil, "", nil, nil)
+	asset, err := assets.Define(ctx, []string{assetPub.String()}, 1, nil, "", nil, "")
 	if err != nil {
 		return nil, err
 	}

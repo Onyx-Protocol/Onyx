@@ -75,7 +75,7 @@ func Path(s *Signer, ks keySpace, itemIndexes ...uint64) [][]byte {
 }
 
 // Create creates and stores a Signer in the database
-func Create(ctx context.Context, db pg.DB, typ string, xpubs []string, quorum int, clientToken *string) (*Signer, error) {
+func Create(ctx context.Context, db pg.DB, typ string, xpubs []string, quorum int, clientToken string) (*Signer, error) {
 	if len(xpubs) == 0 {
 		return nil, errors.Wrap(ErrNoXPubs)
 	}
@@ -96,6 +96,11 @@ func Create(ctx context.Context, db pg.DB, typ string, xpubs []string, quorum in
 		return nil, errors.Wrap(ErrBadQuorum)
 	}
 
+	nullToken := sql.NullString{
+		String: clientToken,
+		Valid:  clientToken != "",
+	}
+
 	const q = `
 		INSERT INTO signers (id, type, xpubs, quorum, client_token)
 		VALUES (next_chain_id($1::text), $2, $3, $4, $5)
@@ -106,9 +111,9 @@ func Create(ctx context.Context, db pg.DB, typ string, xpubs []string, quorum in
 		id       string
 		keyIndex uint64
 	)
-	err = db.QueryRow(ctx, q, typeIDMap[typ], typ, pq.StringArray(xpubs), quorum, clientToken).
+	err = db.QueryRow(ctx, q, typeIDMap[typ], typ, pq.StringArray(xpubs), quorum, nullToken).
 		Scan(&id, &keyIndex)
-	if err == sql.ErrNoRows && clientToken != nil {
+	if err == sql.ErrNoRows && clientToken != "" {
 		return findByClientToken(ctx, db, clientToken)
 	}
 	if err != nil && err != sql.ErrNoRows {
@@ -138,7 +143,7 @@ func New(id, typ string, xpubs []string, quorum int, keyIndex uint64) (*Signer, 
 	}, nil
 }
 
-func findByClientToken(ctx context.Context, db pg.DB, clientToken *string) (*Signer, error) {
+func findByClientToken(ctx context.Context, db pg.DB, clientToken string) (*Signer, error) {
 	const q = `
 		SELECT id, type, xpubs, quorum, key_index
 		FROM signers WHERE client_token=$1

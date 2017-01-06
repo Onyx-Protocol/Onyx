@@ -39,7 +39,7 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 	// should have a unique client token. The client token is used to ensure
 	// idempotency of create asset requests. Duplicate create asset requests
 	// with the same client_token will only create one asset.
-	ClientToken *string `json:"client_token"`
+	ClientToken string `json:"client_token"`
 }) ([]interface{}, error) {
 	responses := make([]interface{}, len(ins))
 	var wg sync.WaitGroup

@@ -29,7 +29,7 @@ func CreatePins(ctx context.Context, t testing.TB, s *pin.Store) {
 
 func CreateAccount(ctx context.Context, t testing.TB, accounts *account.Manager, alias string, tags map[string]interface{}) string {
 	keys := []string{testutil.TestXPub.String()}
-	acc, err := accounts.Create(ctx, keys, 1, alias, tags, nil)
+	acc, err := accounts.Create(ctx, keys, 1, alias, tags, "")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -38,7 +38,7 @@ func CreateAccount(ctx context.Context, t testing.TB, accounts *account.Manager,
 
 func CreateAsset(ctx context.Context, t testing.TB, assets *asset.Registry, def map[string]interface{}, alias string, tags map[string]interface{}) bc.AssetID {
 	keys := []string{testutil.TestXPub.String()}
-	asset, err := assets.Define(ctx, keys, 1, def, alias, tags, nil)
+	asset, err := assets.Define(ctx, keys, 1, def, alias, tags, "")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

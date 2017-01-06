@@ -72,7 +72,7 @@ type Asset struct {
 }
 
 // Define defines a new Asset.
-func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
+func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, alias string, tags map[string]interface{}, clientToken string) (*Asset, error) {
 	assetSigner, err := signers.Create(ctx, reg.db, "asset", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (reg *Registry) FindByAlias(ctx context.Context, alias string) (*Asset, err
 // insertAsset adds the asset to the database. If the asset has a client token,
 // and there already exists an asset with that client token, insertAsset will
 // lookup and return the existing asset instead.
-func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset, error) {
+func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken string) (*Asset, error) {
 	const q = `
 		INSERT INTO assets
 			(id, alias, signer_id, initial_block_hash, issuance_program, definition, client_token)
@@ -192,19 +192,24 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 		signerID = sql.NullString{Valid: true, String: asset.Signer.ID}
 	}
 
+	nullToken := sql.NullString{
+		String: clientToken,
+		Valid:  clientToken != "",
+	}
+
 	err = reg.db.QueryRow(
 		ctx, q,
 		asset.AssetID, asset.Alias, signerID,
 		asset.InitialBlockHash, asset.IssuanceProgram,
-		defParams, clientToken,
+		defParams, nullToken,
 	).Scan(&asset.sortID)
 
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(ErrDuplicateAlias, "an asset with the provided alias already exists")
-	} else if err == sql.ErrNoRows && clientToken != nil {
+	} else if err == sql.ErrNoRows && clientToken != "" {
 		// There is already an asset with the provided client
 		// token. We should return the existing asset.
-		asset, err = assetByClientToken(ctx, reg.db, *clientToken)
+		asset, err = assetByClientToken(ctx, reg.db, clientToken)
 		if err != nil {
 			return nil, errors.Wrap(err, "retrieving existing asset")
 		}

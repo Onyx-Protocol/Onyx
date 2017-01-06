@@ -15,7 +15,7 @@ func TestDefineAsset(t *testing.T) {
 	ctx := context.Background()
 
 	keys := []string{testutil.TestXPub.String()}
-	asset, err := r.Define(ctx, keys, 1, nil, "", nil, nil)
+	asset, err := r.Define(ctx, keys, 1, nil, "", nil, "")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -40,11 +40,11 @@ func TestDefineAssetIdempotency(t *testing.T) {
 	ctx := context.Background()
 	token := "test_token"
 	keys := []string{testutil.TestXPub.String()}
-	asset0, err := r.Define(ctx, keys, 1, nil, "", nil, &token)
+	asset0, err := r.Define(ctx, keys, 1, nil, "", nil, token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	asset1, err := r.Define(ctx, keys, 1, nil, "", nil, &token)
+	asset1, err := r.Define(ctx, keys, 1, nil, "", nil, token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -59,7 +59,7 @@ func TestFindAssetByID(t *testing.T) {
 	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
 	ctx := context.Background()
 	keys := []string{testutil.TestXPub.String()}
-	asset, err := r.Define(ctx, keys, 1, nil, "", nil, nil)
+	asset, err := r.Define(ctx, keys, 1, nil, "", nil, "")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -79,7 +79,7 @@ func TestAssetByClientToken(t *testing.T) {
 	keys := []string{testutil.TestXPub.String()}
 	token := "test_token"
 
-	asset, err := r.Define(ctx, keys, 1, nil, "", nil, &token)
+	asset, err := r.Define(ctx, keys, 1, nil, "", nil, token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

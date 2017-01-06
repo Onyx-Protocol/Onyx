@@ -34,7 +34,7 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 	// should have a unique client token. The client token is used to ensure
 	// idempotency of create account requests. Duplicate create account requests
 	// with the same client_token will only create one account.
-	ClientToken *string `json:"client_token"`
+	ClientToken string `json:"client_token"`
 }) interface{} {
 	responses := make([]interface{}, len(ins))
 	var wg sync.WaitGroup

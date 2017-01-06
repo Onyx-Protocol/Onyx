@@ -19,7 +19,7 @@ func TestInsertTxFeed(t *testing.T) {
 		Alias: &alias,
 	}
 
-	result, err := insertTxFeed(ctx, db, feed, &token)
+	result, err := insertTxFeed(ctx, db, feed, token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -49,12 +49,12 @@ func TestInsertTxFeedRepeatToken(t *testing.T) {
 		Alias: &alias,
 	}
 
-	result0, err := insertTxFeed(ctx, db, feed, &token)
+	result0, err := insertTxFeed(ctx, db, feed, token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	result1, err := insertTxFeed(ctx, db, feed, &token)
+	result1, err := insertTxFeed(ctx, db, feed, token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -75,12 +75,12 @@ func TestInsertTxFeedDuplicateAlias(t *testing.T) {
 		Alias: &alias,
 	}
 
-	_, err := insertTxFeed(ctx, db, feed, &token0)
+	_, err := insertTxFeed(ctx, db, feed, token0)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	_, err = insertTxFeed(ctx, db, feed, &token1)
+	_, err = insertTxFeed(ctx, db, feed, token1)
 	if errors.Root(err) != ErrDuplicateAlias {
 		t.Errorf("expected ErrDuplicateAlias, got %v", err)
 	}
@@ -92,7 +92,7 @@ func TestCreateTxFeedBadFilter(t *testing.T) {
 	token := "test_token_0"
 	alias := "test_txfeed"
 	fil := "lol i'm not a ~real~ filter"
-	_, err := tracker.Create(ctx, alias, fil, "", &token)
+	_, err := tracker.Create(ctx, alias, fil, "", token)
 	if errors.Root(err) != filter.ErrBadFilter {
 		t.Errorf("expected ErrBadFilter, got %s", errors.Root(err))
 	}
