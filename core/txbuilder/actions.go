@@ -17,7 +17,7 @@ func DecodeControlProgramAction(data []byte) (Action, error) {
 type controlProgramAction struct {
 	bc.AssetAmount
 	Program       json.HexBytes `json:"control_program"`
-	ReferenceData json.Map      `json:"reference_data"`
+	ReferenceData []byte        `json:"reference_data"`
 }
 
 func (a *controlProgramAction) Build(ctx context.Context, b *TemplateBuilder) error {

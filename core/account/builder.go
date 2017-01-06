@@ -31,9 +31,9 @@ func (m *Manager) DecodeSpendAction(data []byte) (txbuilder.Action, error) {
 type spendAction struct {
 	accounts *Manager
 	bc.AssetAmount
-	AccountID     string        `json:"account_id"`
-	ReferenceData chainjson.Map `json:"reference_data"`
-	ClientToken   *string       `json:"client_token"`
+	AccountID     string  `json:"account_id"`
+	ReferenceData []byte  `json:"reference_data"`
+	ClientToken   *string `json:"client_token"`
 }
 
 func (a *spendAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
