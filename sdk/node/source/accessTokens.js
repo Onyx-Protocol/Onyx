@@ -46,8 +46,10 @@ class AccessTokens {
      * @param {string} id - Access token ID.
      * @param {function} [callback]
      */
-    this.delete = (id, cb) => client.request('/delete-access-token', {id: id})
-      .callback(cb)
+    this.delete = (id, cb) => shared.tryCallback(
+      client.request('/delete-access-token', {id: id}),
+      cb
+    )
   }
 }
 

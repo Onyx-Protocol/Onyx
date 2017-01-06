@@ -80,8 +80,10 @@ class Accounts {
       if (params.alias) body.params = { account_alias: params.alias }
       if (params.id)    body.params = { account_id: params.id }
 
-      return shared.create(client, '/create-control-program', body)
-        .callback(cb)
+      return shared.tryCallback(
+        shared.create(client, '/create-control-program', body),
+        cb
+      )
     }
   }
 }

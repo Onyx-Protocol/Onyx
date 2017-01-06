@@ -21,9 +21,10 @@ class MockHsmKeys {
      */
     this.create = (params, cb) => {
       let body = Object.assign({ client_token: uuid.v4() }, params)
-      return client.request('/mockhsm/create-key', body)
-        .then(data => data)
-        .callback(cb)
+      return shared.tryCallback(
+        client.request('/mockhsm/create-key', body).then(data => data),
+        cb
+      )
     }
 
     /**

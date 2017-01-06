@@ -13,9 +13,9 @@
   "scripts": {
     "develop": "npm run build -- --watch",
     "docs": "jsdoc -c jsdoc.conf.json",
-    "pretest": "npm run build && babel testSource --presets babel-preset-es2015 --out-dir test",
+    "pretest": "npm run build && babel testSource --out-dir test",
     "test": "mocha -t 60000",
-    "build": "babel source --presets babel-preset-es2015 --out-dir dist",
+    "build": "babel source --out-dir dist",
     "prepublish": "npm run build"
   },
   "dependencies": {

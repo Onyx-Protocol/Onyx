@@ -18,8 +18,8 @@ const balanceByAssetAlias = (cb) => {
   }
 }
 
-describe('Callback style', function() {
-  it('works', function(done) {
+describe('Callback style', () => {
+  it('works', (done) => {
     const client = new chain.Client()
     const signer = new chain.HsmSigner()
 
@@ -38,13 +38,13 @@ describe('Callback style', function() {
     async.series([
       // Access tokens
 
-      (next) => client.accessTokens.create({ type: 'client', id: tokenId}, (err, resp) => {
+      (next) => client.accessTokens.create({type: 'client', id: tokenId}, (err, resp) => {
         expect(resp.token).to.not.be.empty
         expect(err).to.be.null
         next()
       }),
 
-      (next) => client.accessTokens.create({ type: 'client', id: tokenId}, (err, resp) => {
+      (next) => client.accessTokens.create({type: 'client', id: tokenId}, (err, resp) => {
         expect(resp).to.be.null
         expect(err).to.not.be.null
         expect(err.code).to.equal('CH302')
@@ -165,7 +165,7 @@ describe('Callback style', function() {
       // Basic issuance
 
       (next) => async.waterfall([
-        cb => client.transactions.build(function(builder){
+        cb => client.transactions.build(builder => {
           builder.issue({
             asset_alias: goldAlias,
             amount: 100
@@ -206,7 +206,7 @@ describe('Callback style', function() {
 
       // Bad singleton build call
 
-      (next) => client.transactions.build(function(builder) {
+      (next) => client.transactions.build(builder => {
         builder.issue({
           asset_alias: "unobtanium",
           amount: 100
@@ -220,7 +220,7 @@ describe('Callback style', function() {
       // Bad singleton submit call
 
       (next) => async.waterfall([
-        cb => client.transactions.build(function(builder) {
+        cb => client.transactions.build(builder => {
           builder.issue({
             asset_alias: goldAlias,
             amount: 1
@@ -242,7 +242,7 @@ describe('Callback style', function() {
       // Atomic swap
 
       (next) => async.waterfall([
-        cb => client.transactions.build(function(builder) {
+        cb => client.transactions.build(builder => {
           builder.spendFromAccount({
             account_alias: aliceAlias,
             asset_alias: goldAlias,
@@ -260,7 +260,7 @@ describe('Callback style', function() {
           signer.sign(swapProposal, cb)
         },
 
-        (swapProposal, cb) => client.transactions.build(function(builder) {
+        (swapProposal, cb) => client.transactions.build(builder => {
           builder.baseTransaction(swapProposal.raw_transaction)
           builder.spendFromAccount({
             account_alias: bobAlias,
@@ -311,7 +311,7 @@ describe('Callback style', function() {
 
           // Should fail at the build step
           (builder) => {
-            builder.issue({ asset_alias: 'foobar' })
+            builder.issue({asset_alias: 'foobar' })
           },
 
           // Should fail at the submit step
@@ -346,7 +346,7 @@ describe('Callback style', function() {
           assert.deepEqual([buildBatch.errors[0], buildBatch.errors[2], buildBatch.errors[3]], [null, null, null])
         },
         (signedBatch, cb) => {
-          assert(!signedBatch.successes.includes(null))
+          assert(signedBatch.successes.indexOf(null) == -1)
           assert.deepEqual([signedBatch.errors[0], signedBatch.errors[1], signedBatch.errors[2]], [null, null, null])
           client.transactions.submitBatch(signedBatch.successes, cb)
         }
@@ -379,7 +379,7 @@ describe('Callback style', function() {
 
       (next) => async.waterfall([
         cb => client.accounts.createControlProgram({alias: aliceAlias}, cb),
-        (cp, cb) => client.transactions.build(function(builder) {
+        (cp, cb) => client.transactions.build(builder => {
           builder.issue({
             asset_alias: goldAlias,
             amount: 1

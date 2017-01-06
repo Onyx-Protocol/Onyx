@@ -1,3 +1,5 @@
+const shared = require('./shared')
+
 const uuid = require('uuid')
 const MAX_BLOCK_HEIGHT = (2 * 63) - 1
 
@@ -118,9 +120,10 @@ class TransactionFeeds {
      */
     this.create = (params, cb) => {
       let body = Object.assign({ client_token: uuid.v4() }, params)
-      return client.request('/create-transaction-feed', body)
-        .then(data => new TransactionFeed(data, client))
-        .callback(cb)
+      return shared.tryCallback(
+        client.request('/create-transaction-feed', body).then(data => new TransactionFeed(data, client)),
+        cb
+      )
     }
 
     /**
@@ -133,9 +136,10 @@ class TransactionFeeds {
      *                              `alias` is required.
      * @returns {TransactionFeed}
      */
-    this.get = (params) => client.request('/get-transaction-feed', params)
-      .then(data => new TransactionFeed(data, client))
-      .callback(cb)
+    this.get = (params) => shared.tryCallback(
+      client.request('/get-transaction-feed', params).then(data => new TransactionFeed(data, client)),
+      cb
+    )
 
     /**
      * Delete a transaction feed given an id/alias.
@@ -146,16 +150,16 @@ class TransactionFeeds {
      * @param {string} params.alias The unique alias of a transaction feed. Either `id` or
      *                              `alias` is required.
      */
-    this.delete = (params, cb) => client.request('/delete-transaction-feed', params)
-      .then(data => data)
-      .callback(cb)
+    this.delete = (params, cb) => shared.tryCallback(
+      client.request('/delete-transaction-feed', params).then(data => data),
+      cb
+    )
+
 
     /**
      * Returns a page of transaction feeds defined on the core.
      */
-    this.query = (params, cb) => client.request('/list-transaction-feeds', params)
-      .then(data => data)
-      .callback(cb)
+    this.query = (params, cb) => shared.query(client, this, '/list-transaction-feeds', params, {cb})
   }
 }
 

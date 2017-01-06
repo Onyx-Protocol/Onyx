@@ -1,4 +1,4 @@
-const Promise = require('./promiseWithCallback')
+const shared = require('./shared')
 
 /**
  * @class
@@ -25,7 +25,7 @@ class HsmSigner {
     let promise = Promise.resolve(template)
 
     if (Object.keys(this.signers).length == 0) {
-      return promise
+      return shared.tryCallback(promise, cb)
     }
 
     for (let signerId in this.signers) {
@@ -38,7 +38,7 @@ class HsmSigner {
       })).then(resp => resp[0])
     }
 
-    return promise.callback(cb)
+    return shared.tryCallback(promise, cb)
   }
 
   signBatch(templates, cb) {
@@ -47,7 +47,7 @@ class HsmSigner {
     let promise = Promise.resolve(templates)
 
     if (Object.keys(this.signers).length == 0) {
-      return promise.then(() => templates)
+      return shared.tryCallback(promise.then(() => templates), cb)
     }
 
     for (let signerId in this.signers) {
@@ -66,8 +66,7 @@ class HsmSigner {
       })
     }
 
-    return promise.callback(cb)
-  }
+return shared.tryCallback(promise, cb)  }
 }
 
 module.exports = HsmSigner

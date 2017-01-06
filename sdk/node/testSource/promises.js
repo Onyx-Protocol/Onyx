@@ -19,8 +19,8 @@ const balanceByAssetAlias = (balances) => {
   })
 }
 
-describe('Promise style', function() {
-  it('works', function() {
+describe('Promise style', () => {
+  it('works', () => {
     const client = new chain.Client()
     const signer = new chain.HsmSigner()
 
@@ -154,7 +154,7 @@ describe('Promise style', function() {
     // Basic issuance
 
     .then(() =>
-      expect(client.transactions.build( function(builder){
+      expect(client.transactions.build(builder => {
         builder.issue({
           asset_alias: goldAlias,
           amount: 100
@@ -190,7 +190,7 @@ describe('Promise style', function() {
     // Bad singleton build call
 
     .then(() =>
-      expect(client.transactions.build( function(builder) {
+      expect(client.transactions.build(builder => {
         builder.issue({
           asset_alias: "unobtanium",
           amount: 100
@@ -203,7 +203,7 @@ describe('Promise style', function() {
     // Bad singleton submit call
 
     .then(() =>
-      expect(client.transactions.build( function(builder) {
+      expect(client.transactions.build(builder => {
         builder.issue({
           asset_alias: goldAlias,
           amount: 1
@@ -225,7 +225,7 @@ describe('Promise style', function() {
     // Atomic swap
 
     .then(() =>
-      expect(client.transactions.build( function(builder) {
+      expect(client.transactions.build(builder => {
         builder.spendFromAccount({
           account_alias: aliceAlias,
           asset_alias: goldAlias,
@@ -243,7 +243,7 @@ describe('Promise style', function() {
         return expect(signer.sign(swapProposal)).to.be.fulfilled
       })
       .then((swapProposal) =>
-        expect(client.transactions.build( function(builder) {
+        expect(client.transactions.build(builder => {
           builder.baseTransaction(swapProposal.raw_transaction)
           builder.spendFromAccount({
             account_alias: bobAlias,
@@ -325,7 +325,7 @@ describe('Promise style', function() {
       return expect(signer.signBatch(buildBatch.successes)).to.be.fulfilled
     })
     .then(signedBatch => {
-      assert(!signedBatch.successes.includes(null))
+      assert(signedBatch.successes.indexOf(null) == -1)
       assert.deepEqual([signedBatch.errors[0], signedBatch.errors[1], signedBatch.errors[2]], [null, null, null])
       return expect(client.transactions.submitBatch(signedBatch.successes)).to.be.fulfilled
     })
@@ -359,7 +359,7 @@ describe('Promise style', function() {
     .then(() =>
       expect(client.accounts.createControlProgram({alias: aliceAlias})).to.be.fulfilled)
     .then((cp) =>
-      expect(client.transactions.build( function(builder) {
+      expect(client.transactions.build(builder => {
         builder.issue({
           asset_alias: goldAlias,
           amount: 1

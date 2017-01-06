@@ -83,9 +83,10 @@ class Transactions {
       const builder = new TransactionBuilder()
       builderBlock(builder)
 
-      return client.request('/build-transaction', [builder])
-        .then(resp => checkForError(resp[0]))
-        .callback(cb)
+      return shared.tryCallback(
+        client.request('/build-transaction', [builder]).then(resp => checkForError(resp[0])),
+        cb
+      )
     }
 
     this.buildBatch = (builderBlocks, cb) => {
@@ -99,21 +100,24 @@ class Transactions {
     }
 
     this.submit = (signed, cb) => {
-      return client.request('/submit-transaction', {transactions: [signed]})
-        .then(resp => checkForError(resp[0]))
-        .callback(cb)
+      return shared.tryCallback(
+        client.request('/submit-transaction', {transactions: [signed]}).then(resp => checkForError(resp[0])),
+        cb
+      )
     }
 
     this.submitBatch = (signed, cb) => {
-      return client.request('/submit-transaction', {transactions: signed})
+      return shared.tryCallback(
+        client.request('/submit-transaction', {transactions: signed})
         .then(resp => {
           return {
             successes: resp.map((item) => item.code ? null : item),
             errors: resp.map((item) => item.code ? item : null),
             response: resp,
           }
-        })
-        .callback(cb)
+        }),
+        cb
+      )
     }
   }
 }

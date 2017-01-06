@@ -1,8 +1,7 @@
 // FIXME: Microsoft Edge has issues returning errors for responses
 // with a 401 status. We should add browser detection to only
 // use the ponyfill for unsupported browsers.
-const Promise = require('./promiseWithCallback')
-const { fetch } = require('fetch-ponyfill')({Promise: Promise})
+const { fetch } = require('fetch-ponyfill')()
 const errors = require('./errors')
 
 /**
