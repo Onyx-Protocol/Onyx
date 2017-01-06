@@ -1,24 +1,14 @@
 package vm
 
 import (
-	"crypto/sha1"
 	"crypto/sha256"
 	"hash"
 
-	"golang.org/x/crypto/ripemd160"
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
 	"chain/math/checked"
 )
-
-func opRipemd160(vm *virtualMachine) error {
-	return doHash(vm, ripemd160.New)
-}
-
-func opSha1(vm *virtualMachine) error {
-	return doHash(vm, sha1.New)
-}
 
 func opSha256(vm *virtualMachine) error {
 	return doHash(vm, sha256.New)
