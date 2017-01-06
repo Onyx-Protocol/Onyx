@@ -3,4 +3,4 @@
 set -ve
 
 cd $CHAIN/dashboard
-npm run lint
+./node_modules/bin/eslint src/**
