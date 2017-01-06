@@ -127,7 +127,7 @@ var (
 		txbuilder.ErrBadTxInputIdx:         errorInfo{400, "CH732", "Invalid transaction input index"},
 		txbuilder.ErrBadWitnessComponent:   errorInfo{400, "CH733", "Invalid witness component"},
 		txbuilder.ErrRejected:              errorInfo{400, "CH735", "Transaction rejected"},
-		txbuilder.ErrNoTxSighashCommitment: errorInfo{400, "CH736", "Transaction is not final, additional actions still allowed"},
+		txbuilder.ErrNoTxSighashCommitment: errorInfo{400, "CH736", "Transaction has not been signed, client-side signing object may be missing keys"},
 
 		// account action error namespace (76x)
 		account.ErrInsufficient: errorInfo{400, "CH760", "Insufficient funds for tx"},
