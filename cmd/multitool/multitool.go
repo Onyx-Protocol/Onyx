@@ -178,7 +178,7 @@ func assetid(args []string) {
 	issuance := mustDecodeHex(issuanceInp)
 	initialBlock := mustDecodeHash(initialBlockInp)
 	assetdefHash := bc.EmptyHash
-	// TODO(oleg): this case is not supported by multitool yet, move this func to its own command
+	// This case is not supported by multitool yet. Keep this in mind when moving this func to its own command.
 	if len(assetdefInp) > 0 {
 		assetdefHash = mustDecodeHash(assetdefInp)
 	}

@@ -23,7 +23,6 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 )
 
@@ -92,7 +91,7 @@ func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, def
 	path := signers.Path(assetSigner, signers.AssetKeySpace)
 	derivedXPubs := chainkd.DeriveXPubs(assetSigner.XPubs, path)
 	derivedPKs := chainkd.XPubKeys(derivedXPubs)
-	issuanceProgram, err := programWithDefinition(derivedPKs, assetSigner.Quorum, serializedDef)
+	issuanceProgram, err := multisigIssuanceProgram(derivedPKs, assetSigner.Quorum)
 	if err != nil {
 		return nil, err
 	}
@@ -333,31 +332,14 @@ func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
 	return json.MarshalIndent(def, "", "  ")
 }
 
-// TODO(oleg): move actual asset definition into the designated issuance input field
-func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, error) {
+func multisigIssuanceProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
 	issuanceProg, err := vmutil.P2SPMultiSigProgram(pubkeys, nrequired)
 	if err != nil {
 		return nil, err
 	}
 	builder := vmutil.NewBuilder()
-	builder.AddData(definition).AddOp(vm.OP_DROP)
 	builder.AddRawBytes(issuanceProg)
 	return builder.Program, nil
-}
-
-// TODO(oleg): move actual asset definition into the designated issuance input field
-func definitionFromProgram(program []byte) ([]byte, error) {
-	pops, err := vm.ParseProgram(program)
-	if err != nil {
-		return nil, err
-	}
-	if len(pops) < 2 {
-		return nil, errors.New("bad issuance program")
-	}
-	if pops[1].Op != vm.OP_DROP {
-		return nil, errors.New("bad issuance program")
-	}
-	return pops[0].Data, nil
 }
 
 func mapToNullString(in map[string]interface{}) (*sql.NullString, error) {
