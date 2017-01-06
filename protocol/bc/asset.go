@@ -28,7 +28,7 @@ func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint
 	h.Write(initialHash[:])
 	blockchain.WriteVarint63(h, vmVersion)
 	blockchain.WriteVarstr31(h, issuanceProgram) // TODO(bobg): check and return error
-	if assetDefinitionHash == EmptyHash {
+	if assetDefinitionHash == EmptyStringHash {
 		blockchain.WriteVarstr31(h, nil)
 	} else {
 		blockchain.WriteVarstr31(h, assetDefinitionHash[:])
