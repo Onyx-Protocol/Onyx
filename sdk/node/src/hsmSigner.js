@@ -35,7 +35,8 @@ class HsmSigner {
         signer.connection.request('/sign-transaction', {
           transactions: [nextTemplate],
           xpubs: signer.xpubs
-      })).then(resp => resp[0])
+        })
+      ).then(resp => resp[0])
     }
 
     return shared.tryCallback(promise, cb)
@@ -57,7 +58,8 @@ class HsmSigner {
         signer.connection.request('/sign-transaction', {
           transactions: nextTemplates,
           xpubs: signer.xpubs
-      })).then(resp => {
+        })
+      ).then(resp => {
         return {
           successes: resp.filter((item) => !item.code),
           errors: resp.filter((item) => item.code),
@@ -66,7 +68,8 @@ class HsmSigner {
       })
     }
 
-return shared.tryCallback(promise, cb)  }
+    return shared.tryCallback(promise, cb)
+  }
 }
 
 module.exports = HsmSigner

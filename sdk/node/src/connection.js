@@ -3,6 +3,7 @@
 // use the ponyfill for unsupported browsers.
 const { fetch } = require('fetch-ponyfill')()
 const errors = require('./errors')
+const btoa = require('btoa')
 
 /**
  * Chain API Connection

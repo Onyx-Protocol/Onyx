@@ -10,7 +10,6 @@ class TransactionFeed {
     let after = feed['after']
     const filter = feed['filter']
     const id = feed['id']
-    const alias = feed['alias']
 
     const ack = () => client.request('/update-transaction-feed', {
       id,
@@ -24,8 +23,6 @@ class TransactionFeed {
      *
      */
     this.consume = (consumer, timeout = 24*60*60) => {
-      var self = this
-
       return new Promise((resolve, reject) => {
         let queryArgs = {
           filter,
@@ -136,7 +133,7 @@ class TransactionFeeds {
      *                              `alias` is required.
      * @returns {TransactionFeed}
      */
-    this.get = (params) => shared.tryCallback(
+    this.get = (params, cb) => shared.tryCallback(
       client.request('/get-transaction-feed', params).then(data => new TransactionFeed(data, client)),
       cb
     )

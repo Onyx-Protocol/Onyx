@@ -40,7 +40,7 @@ class MockHsmKeys {
         params.page_size = params.aliases.length
       }
 
-      return shared.query(client, this, '/mockhsm/list-keys', params)
+      return shared.query(client, this, '/mockhsm/list-keys', params, {cb})
     }
 
     /**
