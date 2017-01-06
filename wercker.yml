@@ -28,7 +28,7 @@ cored:
         name: check for tk and xxx
         code: |
           check-tk-xxx
-    - inz/npm-install@1.1.5:
+    - npm-install:
       cwd: $CHAIN/dashboard/
     - script:
         name: dashboard tests
