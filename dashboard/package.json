@@ -4,7 +4,6 @@
   "description": "",
   "scripts": {
     "build:dll": "node ./bin/dependencies.js",
-    "postinstall": "npm run build:dll",
     "build": "NODE_ENV=production webpack --config src/config/webpack.app.js",
     "lint": "eslint \"src/**\"",
     "start": "hjs-dev-server src/config/webpack.app.js",
