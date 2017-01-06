@@ -33,6 +33,8 @@ var (
 	ErrBadSignerURL    = errors.New("block signer URL is invalid")
 	ErrBadSignerPubkey = errors.New("block signer pubkey is invalid")
 	ErrBadQuorum       = errors.New("quorum must be greater than 0 if there are signers")
+
+	Version, BuildCommit, BuildDate string
 )
 
 // Config encapsulates Core-level, persistent configuration options.

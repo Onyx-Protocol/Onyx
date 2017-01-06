@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"expvar"
 	"net/http"
 	"strings"
@@ -97,10 +96,6 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		}
 	}
 
-	version := json.RawMessage(expvar.Get("version").String())
-	buildCommit := json.RawMessage(expvar.Get("buildcommit").String())
-	buildDate := json.RawMessage(expvar.Get("builddate").String())
-
 	m := map[string]interface{}{
 		"is_configured":                     true,
 		"configured_at":                     h.Config.ConfiguredAt,
@@ -115,9 +110,9 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		"is_production":                     isProduction(),
 		"network_rpc_version":               networkRPCVersion,
 		"core_id":                           h.Config.ID,
-		"version":                           &version,
-		"build_commit":                      &buildCommit,
-		"build_date":                        &buildDate,
+		"version":                           config.Version,
+		"build_commit":                      config.BuildCommit,
+		"build_date":                        config.BuildDate,
 		"health":                            h.health(),
 	}
 
