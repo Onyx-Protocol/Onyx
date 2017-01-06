@@ -94,8 +94,8 @@ func TestTransaction(t *testing.T) {
 				"066f7574707574" + // output 0, reference data
 				"00" + // output 0, output witness
 				"0869737375616e6365"), // reference data
-			hash:        mustDecodeHash("f7118e7b6889f00b433a4195e3428ebc06779ed077845f216da0f7c904c39fdb"),
-			witnessHash: mustDecodeHash("38a531b8e92e3613353d1475792ad2ac1d172be0949ffd135f4fafc741c59e28"),
+			hash:        mustDecodeHash("946b6c226d88723020ab50665fbb76191639b5f1fd851b35edb729d4b17373cc"),
+			witnessHash: mustDecodeHash("274412cdf972ac27b68e57faf1b8eaeeb148ac45eb4bb6c1ff024d7a846e079c"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -134,7 +134,7 @@ func TestTransaction(t *testing.T) {
 				"02" + // outputs count
 				"01" + // output 0, asset version
 				"29" + // output 0, output commitment length
-				"4a0414e98145e85f85a29b2f881d5111adaabaa86d0593481a9834dcbf6eb5b5" + // output 0, output commitment, asset id
+				"a9b2b6c5394888ab5396f583ae484b8459486b14268e2bef1b637440335eb6c1" + // output 0, output commitment, asset id
 				"80e0a596bb11" + // output 0, output commitment, amount
 				"01" + // output 0, output commitment, vm version
 				"0101" + // output 0, output commitment, control program
@@ -142,15 +142,15 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 0, output witness
 				"01" + // output 1, asset version
 				"29" + // output 1, output commitment length
-				"4a0414e98145e85f85a29b2f881d5111adaabaa86d0593481a9834dcbf6eb5b5" + // output 1, output commitment, asset id
+				"a9b2b6c5394888ab5396f583ae484b8459486b14268e2bef1b637440335eb6c1" + // output 1, output commitment, asset id
 				"80c0ee8ed20b" + // output 1, output commitment, amount
 				"01" + // output 1, vm version
 				"0102" + // output 1, output commitment, control program
 				"00" + // output 1, reference data
 				"00" + // output 1, output witness
 				"0c646973747269627574696f6e"), // reference data
-			hash:        mustDecodeHash("b85e0f31a9641eec303940b6bc6c1367f2ad697e258700aa7fdfa91d83adb398"),
-			witnessHash: mustDecodeHash("5bdc619596d5ecb3eea7f28fdfdd9e8205302d8217a48b836379afc1c7085371"),
+			hash:        mustDecodeHash("7af758d0d27a7885cb65243164e2f8084b06aa1a647792cae028926b19324604"),
+			witnessHash: mustDecodeHash("335498668b169b5faea9a87410bc35626654941599815be655d532acf9925286"),
 		},
 	}
 
@@ -315,8 +315,8 @@ func TestTxHashForSig(t *testing.T) {
 		idx      int
 		wantHash string
 	}{
-		{0, "1f5ad8058b508b1c2a39bf77fbcae1eea535741c8315f4dddbdd8aaa5a22d635"},
-		{1, "d4ff86927710937dd27bbf90658c0816e4ca0e8a61ec9395268b9748b3895f29"},
+		{0, "94b72d62d47a8ba581246c0c721b18b36282cf81f2cdb92a3b1ab4fef4640654"},
+		{1, "6bcbf29804ebb70ae9887c4fc343bc06ee69f04befa1dc77ddf2f4a43eff0862"},
 	}
 
 	sigHasher := NewSigHasher(tx)

@@ -475,7 +475,7 @@ Field                 | Type          | Description
 Initial Block ID      | sha3-256      | Hash of the first block in this blockchain.
 VM Version            | varint63      | [Version of the VM](#vm-version) for the issuance program.
 Issuance Program      | varstring31   | Program used in the issuance input.
-Asset Definition Hash | varstring31   | [Optional hash](#optional-hash) of the asset definition data.
+Asset Definition Hash | sha3-256      | [SHA3-256](#sha3) hash of the asset definition data.
 
 
 ### Asset Definition

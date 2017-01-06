@@ -15,7 +15,7 @@ func TestComputeAssetID(t *testing.T) {
 	unhashed = append(unhashed, 0x01) // vmVersion
 	unhashed = append(unhashed, 0x01) // length of issuanceScript
 	unhashed = append(unhashed, issuanceScript...)
-	unhashed = append(unhashed, 0x00) // length of the optional asset definition hash
+	unhashed = append(unhashed, EmptyStringHash[:]...)
 	want := sha3.Sum256(unhashed)
 
 	if assetID != want {
