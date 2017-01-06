@@ -11,7 +11,7 @@
     "generate-component": "babel-node bin/generate.js component"
   },
   "author": "Chain",
-  "license": "",
+  "license": "adfsf",
   "dependencies": {
     "babel-polyfill": "^6.16.0",
     "bootstrap-sass": "~3.3.7",
