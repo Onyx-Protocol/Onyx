@@ -88,7 +88,7 @@ func TestCreate(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		_, got := Create(ctx, db, c.typ, c.xpubs, c.quorum, nil)
+		_, got := Create(ctx, db, c.typ, c.xpubs, c.quorum, "")
 
 		if errors.Root(got) != c.want {
 			t.Errorf("Create(%s, %v, %d) = %q want %q", c.typ, c.xpubs, c.quorum, errors.Root(got), c.want)
@@ -107,7 +107,7 @@ func TestCreateIdempotency(t *testing.T) {
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
-		&clientToken,
+		clientToken,
 	)
 
 	if err != nil {
@@ -120,7 +120,7 @@ func TestCreateIdempotency(t *testing.T) {
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
-		&clientToken,
+		clientToken,
 	)
 
 	if err != nil {
@@ -226,7 +226,7 @@ func createFixture(ctx context.Context, db pg.DB, t testing.TB) *Signer {
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
-		&clientToken,
+		clientToken,
 	)
 
 	if err != nil {

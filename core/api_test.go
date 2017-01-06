@@ -37,7 +37,7 @@ func TestBuildFinal(t *testing.T) {
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
 	go accounts.ProcessBlocks(ctx)
 
-	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
+	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestAccountTransfer(t *testing.T) {
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
 	go accounts.ProcessBlocks(ctx)
 
-	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
+	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}

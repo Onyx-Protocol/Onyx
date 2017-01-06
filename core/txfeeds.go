@@ -20,7 +20,7 @@ func (h *Handler) createTxFeed(ctx context.Context, in struct {
 	// should have a unique client token. The client token is used to ensure
 	// idempotency of create txfeed requests. Duplicate create txfeed requests
 	// with the same client_token will only create one txfeed.
-	ClientToken *string `json:"client_token"`
+	ClientToken string `json:"client_token"`
 }) (*txfeed.TxFeed, error) {
 	after := fmt.Sprintf("%d:%d-%d", h.Chain.Height(), math.MaxInt32, uint64(math.MaxInt64))
 	return h.TxFeeds.Create(ctx, in.Alias, in.Filter, after, in.ClientToken)

@@ -25,7 +25,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a local asset which should be unaffected by a block landing.
-	local, err := r.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", nil, nil)
+	local, err := r.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}

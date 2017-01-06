@@ -20,7 +20,7 @@ func TestCreateAccount(t *testing.T) {
 	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 
-	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
+	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, "")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -43,11 +43,11 @@ func TestCreateAccountIdempotency(t *testing.T) {
 	ctx := context.Background()
 	var clientToken = "a-unique-client-token"
 
-	account1, err := m.Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, &clientToken)
+	account1, err := m.Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, clientToken)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	account2, err := m.Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, &clientToken)
+	account2, err := m.Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, clientToken)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -62,7 +62,7 @@ func TestCreateAccountReusedAlias(t *testing.T) {
 	ctx := context.Background()
 	m.createTestAccount(ctx, t, "some-account", nil)
 
-	_, err := m.Create(ctx, []string{dummyXPub}, 1, "some-account", nil, nil)
+	_, err := m.Create(ctx, []string{dummyXPub}, 1, "some-account", nil, "")
 	if errors.Root(err) != ErrDuplicateAlias {
 		t.Errorf("Expected %s when reusing an alias, got %v", ErrDuplicateAlias, err)
 	}
@@ -74,7 +74,7 @@ func TestCreateControlProgram(t *testing.T) {
 	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 
-	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
+	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, "")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -95,7 +95,7 @@ func TestCreateControlProgram(t *testing.T) {
 }
 
 func (m *Manager) createTestAccount(ctx context.Context, t testing.TB, alias string, tags map[string]interface{}) *Account {
-	account, err := m.Create(ctx, []string{dummyXPub}, 1, alias, tags, nil)
+	account, err := m.Create(ctx, []string{dummyXPub}, 1, alias, tags, "")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
