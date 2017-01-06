@@ -16,7 +16,7 @@ func TestUniqueIssuance(t *testing.T) {
 	trueProg := []byte{byte(vm.OP_TRUE)}
 	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyHash)
 	now := time.Now()
-	issuanceInp := bc.NewIssuanceInput(nil, 1, nil, initialBlockHash, trueProg, nil)
+	issuanceInp := bc.NewIssuanceInput(nil, 1, nil, initialBlockHash, trueProg, nil, nil)
 
 	// Transaction with empty nonce (and no other inputs) is invalid
 	tx := bc.NewTx(bc.TxData{
@@ -88,7 +88,7 @@ func TestUniqueIssuance(t *testing.T) {
 
 	true2Prog := []byte{byte(vm.OP_TRUE), byte(vm.OP_TRUE)}
 	asset2ID := bc.ComputeAssetID(true2Prog, initialBlockHash, 1, bc.EmptyHash)
-	issuance2Inp := bc.NewIssuanceInput(nil, 1, nil, initialBlockHash, true2Prog, nil)
+	issuance2Inp := bc.NewIssuanceInput(nil, 1, nil, initialBlockHash, true2Prog, nil, nil)
 
 	// Transaction with empty nonce does not get added to issuance memory
 	tx = bc.NewTx(bc.TxData{
@@ -215,7 +215,7 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewIssuanceInput(nil, 0, nil, initialBlockHash, issuanceProg, nil),
+					bc.NewIssuanceInput(nil, 0, nil, initialBlockHash, issuanceProg, nil, nil),
 					bc.NewSpendInput(txhash1, 0, nil, aid2, 0, nil, nil),
 				},
 				Outputs: []*bc.TxOutput{
@@ -825,7 +825,7 @@ func TestValidateInvalidIssuances(t *testing.T) {
 					MinTime: bc.Millis(now),
 					MaxTime: bc.Millis(now.Add(time.Hour)),
 					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(nil, 1000, nil, initialBlockHash, issuanceProg, nil),
+						bc.NewIssuanceInput(nil, 1000, nil, initialBlockHash, issuanceProg, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),
@@ -842,7 +842,7 @@ func TestValidateInvalidIssuances(t *testing.T) {
 					MinTime: bc.Millis(now),
 					MaxTime: bc.Millis(now.Add(time.Minute)),
 					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(nil, 1000, nil, initialBlockHash, issuanceProg, nil),
+						bc.NewIssuanceInput(nil, 1000, nil, initialBlockHash, issuanceProg, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),
@@ -859,7 +859,7 @@ func TestValidateInvalidIssuances(t *testing.T) {
 					MinTime: bc.Millis(now),
 					MaxTime: bc.Millis(now.Add(time.Minute)),
 					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(nil, 1000, nil, initialBlockHash, issuanceProg, nil),
+						bc.NewIssuanceInput(nil, 1000, nil, initialBlockHash, issuanceProg, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),
@@ -876,7 +876,7 @@ func TestValidateInvalidIssuances(t *testing.T) {
 					MinTime: bc.Millis(now),
 					MaxTime: bc.Millis(now.Add(time.Hour)),
 					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(nil, 1000, nil, wrongInitialBlockHash, issuanceProg, nil),
+						bc.NewIssuanceInput(nil, 1000, nil, wrongInitialBlockHash, issuanceProg, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),

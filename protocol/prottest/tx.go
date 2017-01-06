@@ -44,7 +44,8 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 	builder := vmutil.NewBuilder()
 
 	// TODO(oleg): move this asset definition to a proper field in the issuance input
-	builder.AddData([]byte(`{"type": "prottest issuance"}`)).AddOp(vm.OP_DROP)
+	assetdef := []byte(`{"type": "prottest issuance"}`)
+	builder.AddData(assetdef).AddOp(vm.OP_DROP)
 	builder.AddRawBytes(sigProg)
 	issuanceProgram := builder.Program
 
@@ -54,7 +55,7 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	txin := bc.NewIssuanceInput(nonce[:], 100, nil, b1.Hash(), issuanceProgram, nil)
+	txin := bc.NewIssuanceInput(nonce[:], 100, nil, b1.Hash(), issuanceProgram, nil, assetdef)
 
 	tx := bc.TxData{
 		Version: bc.CurrentTransactionVersion,

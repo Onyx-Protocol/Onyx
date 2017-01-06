@@ -43,6 +43,7 @@ type (
 
 		// Witness
 		InitialBlock    Hash
+		AssetDefinition []byte
 		VMVersion       uint64
 		IssuanceProgram []byte
 		Arguments       [][]byte
@@ -73,7 +74,15 @@ func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetI
 	}
 }
 
-func NewIssuanceInput(nonce []byte, amount uint64, referenceData []byte, initialBlock Hash, issuanceProgram []byte, arguments [][]byte) *TxInput {
+func NewIssuanceInput(
+	nonce []byte,
+	amount uint64,
+	referenceData []byte,
+	initialBlock Hash,
+	issuanceProgram []byte,
+	arguments [][]byte,
+	assetDefinition []byte,
+) *TxInput {
 	return &TxInput{
 		AssetVersion:  1,
 		ReferenceData: referenceData,
@@ -81,6 +90,7 @@ func NewIssuanceInput(nonce []byte, amount uint64, referenceData []byte, initial
 			Nonce:           nonce,
 			Amount:          amount,
 			InitialBlock:    initialBlock,
+			AssetDefinition: assetDefinition,
 			VMVersion:       1,
 			IssuanceProgram: issuanceProgram,
 			Arguments:       arguments,
@@ -236,6 +246,11 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 				return err
 			}
 
+			ii.AssetDefinition, _, err = blockchain.ReadVarstr31(iwBuf)
+			if err != nil {
+				return err
+			}
+
 			ii.VMVersion, _, err = blockchain.ReadVarint63(iwBuf)
 			if err != nil {
 				return err
@@ -246,7 +261,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 				return err
 			}
 
-			computedAssetID := ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion, EmptyHash)
+			computedAssetID := ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion, ii.AssetDefinitionHash())
 			if computedAssetID != assetID {
 				return errBadAssetID
 			}
@@ -318,6 +333,7 @@ func (t *TxInput) writeInputWitness(w io.Writer) {
 		switch inp := t.TypedInput.(type) {
 		case *IssuanceInput:
 			w.Write(inp.InitialBlock[:])
+			blockchain.WriteVarstr31(w, inp.AssetDefinition) // TODO(bobg): check and return error
 			blockchain.WriteVarint63(w, inp.VMVersion)       // TODO(bobg): check and return error
 			blockchain.WriteVarstr31(w, inp.IssuanceProgram) // TODO(bobg): check and return error
 			arguments = inp.Arguments
@@ -352,5 +368,13 @@ func (si *SpendInput) IsIssuance() bool { return false }
 func (ii *IssuanceInput) IsIssuance() bool { return true }
 
 func (ii *IssuanceInput) AssetID() AssetID {
-	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion, EmptyHash) // TODO(oleg): use asset definition hash from the issuance input
+	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion, ii.AssetDefinitionHash())
+}
+
+func (ii *IssuanceInput) AssetDefinitionHash() (defhash Hash) {
+	sha := sha3pool.Get256()
+	defer sha3pool.Put256(sha)
+	sha.Write(ii.AssetDefinition)
+	sha.Read(defhash[:])
+	return
 }

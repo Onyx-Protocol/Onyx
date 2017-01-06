@@ -124,7 +124,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(nil, 5, nil, initialBlockHash, issuanceProg, nil),
+			bc.NewIssuanceInput(nil, 5, nil, initialBlockHash, issuanceProg, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 5, outscript, nil),
@@ -192,7 +192,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(nil, 100, nil, initialBlockHash, issuanceProg, nil),
+			bc.NewIssuanceInput(nil, 100, nil, initialBlockHash, issuanceProg, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 100, outscript, nil),

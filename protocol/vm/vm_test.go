@@ -198,6 +198,7 @@ func TestVerifyTxInput(t *testing.T) {
 			bc.Hash{},
 			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			[][]byte{{2}, {3}},
+			nil,
 		),
 		want: true,
 	}, {
@@ -224,6 +225,7 @@ func TestVerifyTxInput(t *testing.T) {
 			bc.Hash{},
 			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			[][]byte{make([]byte, 50001)},
+			nil,
 		),
 		wantErr: ErrRunLimitExceeded,
 	}, {

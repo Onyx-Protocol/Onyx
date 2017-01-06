@@ -164,3 +164,26 @@ func TestVarstring31(t *testing.T) {
 		t.Errorf("got %x, expected %x", s, want)
 	}
 }
+
+func TestEmptyVarstring31(t *testing.T) {
+	s := []byte{}
+	b := new(bytes.Buffer)
+	_, err := WriteVarstr31(b, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []byte{0x00}
+	if !bytes.Equal(b.Bytes(), want) {
+		t.Errorf("got %x, want %x", b.Bytes(), want)
+	}
+
+	b = bytes.NewBuffer(want)
+	s, _, err = ReadVarstr31(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want = nil // we deliberately return nil for empty strings to avoid unnecessary byteslice allocation
+	if !bytes.Equal(s, want) {
+		t.Errorf("got %x, expected %x", s, want)
+	}
+}

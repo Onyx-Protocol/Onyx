@@ -51,7 +51,7 @@ func TestTransaction(t *testing.T) {
 			tx: NewTx(TxData{
 				Version: 1,
 				Inputs: []*TxInput{
-					NewIssuanceInput([]byte{10, 9, 8}, 1000000000000, []byte("input"), initialBlockHash, issuanceScript, [][]byte{[]byte{1, 2, 3}}),
+					NewIssuanceInput([]byte{10, 9, 8}, 1000000000000, []byte("input"), initialBlockHash, issuanceScript, [][]byte{[]byte{1, 2, 3}}, nil),
 				},
 				Outputs: []*TxOutput{
 					NewTxOutput(AssetID{}, 1000000000000, []byte{1}, []byte("output")),
@@ -75,8 +75,9 @@ func TestTransaction(t *testing.T) {
 				assetID.String() + // input 0, input commitment, asset id
 				"80a094a58d1d" + // input 0, input commitment, amount
 				"05696e707574" + // input 0, reference data
-				"28" + // input 0, issuance input witness length prefix
+				"29" + // input 0, issuance input witness length prefix
 				initialBlockHashHex + // input 0, issuance input witness, initial block
+				"00" + // input 0, issuance input witness, asset definition
 				"01" + // input 0, issuance input witness, vm version
 				"01" + // input 0, issuance input witness, issuance program length prefix
 				"01" + // input 0, issuance input witness, issuance program
@@ -94,7 +95,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 0, output witness
 				"0869737375616e6365"), // reference data
 			hash:        mustDecodeHash("f7118e7b6889f00b433a4195e3428ebc06779ed077845f216da0f7c904c39fdb"),
-			witnessHash: mustDecodeHash("0834b4cf5bdeaa180e42b02102af180501809451a777a0a4771bf16e3a8aec82"),
+			witnessHash: mustDecodeHash("38a531b8e92e3613353d1475792ad2ac1d172be0949ffd135f4fafc741c59e28"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -194,14 +195,14 @@ func TestHasIssuance(t *testing.T) {
 		want bool
 	}{{
 		tx: &TxData{
-			Inputs: []*TxInput{NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil)},
+			Inputs: []*TxInput{NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil, nil)},
 		},
 		want: true,
 	}, {
 		tx: &TxData{
 			Inputs: []*TxInput{
 				NewSpendInput(Hash{}, 0, nil, AssetID{}, 0, nil, nil),
-				NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil),
+				NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil, nil),
 			},
 		},
 		want: true,
@@ -241,8 +242,9 @@ func TestInvalidIssuance(t *testing.T) {
 		"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, input commitment, WRONG asset id
 		"80a094a58d1d" + // input 0, input commitment, amount
 		"05696e707574" + // input 0, reference data
-		"28" + // input 0, issuance input witness length prefix
+		"29" + // input 0, issuance input witness length prefix
 		"03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d" + // input 0, issuance input witness, initial block
+		"00" + // input 0, issuance input witness, asset definition
 		"01" + // input 0, issuance input witness, vm version
 		"01" + // input 0, issuance input witness, issuance program length prefix
 		"01" + // input 0, issuance input witness, issuance program

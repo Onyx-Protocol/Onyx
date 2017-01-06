@@ -52,7 +52,13 @@ func (a *issueAction) Build(ctx context.Context, builder *txbuilder.TemplateBuil
 	if err != nil {
 		return err
 	}
-	txin := bc.NewIssuanceInput(nonce[:], a.Amount, a.ReferenceData, asset.InitialBlockHash, asset.IssuanceProgram, nil)
+
+	assetdef, err := asset.SerializedDefinition()
+	if err != nil {
+		return err
+	}
+
+	txin := bc.NewIssuanceInput(nonce[:], a.Amount, a.ReferenceData, asset.InitialBlockHash, asset.IssuanceProgram, nil, assetdef)
 
 	tplIn := &txbuilder.SigningInstruction{AssetAmount: a.AssetAmount}
 	path := signers.Path(asset.Signer, signers.AssetKeySpace)

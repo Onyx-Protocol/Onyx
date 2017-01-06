@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"sync"
 
-	//"golang.org/x/crypto/sha3"
+	"golang.org/x/crypto/sha3"
 
 	"github.com/golang/groupcache/lru"
 	"github.com/golang/groupcache/singleflight"
@@ -73,6 +73,10 @@ type Asset struct {
 	sortID           string
 }
 
+func (asset *Asset) SerializedDefinition() ([]byte, error) {
+	return serializeAssetDef(asset.Definition)
+}
+
 // Define defines a new Asset.
 func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, alias string, tags map[string]interface{}, clientToken string) (*Asset, error) {
 	assetSigner, err := signers.Create(ctx, reg.db, "asset", xpubs, quorum, clientToken)
@@ -93,15 +97,12 @@ func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, def
 		return nil, err
 	}
 
-	//defHash := sha3.Sum256(serializedDef)
-	// TODO(oleg): use defHash instead of EmptyHash, and make sure to use
-	//             the definition hash in bc.IssuanceInput
-	//             (`func (ii *IssuanceInput) AssetID() AssetID`).
+	defHash := sha3.Sum256(serializedDef)
 	asset := &Asset{
 		Definition:       definition,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: reg.initialBlockHash,
-		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1, bc.EmptyHash),
+		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1, defHash),
 		Signer:           assetSigner,
 		Tags:             tags,
 	}

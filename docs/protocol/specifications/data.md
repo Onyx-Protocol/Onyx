@@ -305,11 +305,11 @@ Asset version 1 defines two witness structures: one for issuances and another on
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
 Initial Block ID        | sha3-256                | Hash of the first block in this blockchain.
+Asset Definition        | varstring31             | Arbitrary string or its [optional hash](#optional-hash), depending on [serialization flags](#transaction-serialization-flags).
 VM Version              | varint63                | [Version of the VM](#vm-version) that executes the issuance program.
 Issuance Program        | varstring31             | Predicate defining the conditions of issue.
 Program Arguments Count | varint31                | Number of [program arguments](#program-arguments) that follow.
 Program Arguments       | [varstring31]           | [Signatures](#signature) and other data satisfying the spent output’s predicate. Used to initialize the [data stack](vm1.md#vm-state) of the VM that executes an issuance or an control program.
-Asset Definition        | varstring31             | Arbitrary string or its [optional hash](#optional-hash), depending on [serialization flags](#transaction-serialization-flags).
 —                       | —                       | Additional fields may be added by future extensions.
 
 Note: nodes must verify that the initial block ID and issuance program are valid and match the declared asset ID in the [issuance commitment](#asset-version-1-issuance-commitment).

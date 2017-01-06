@@ -79,7 +79,7 @@ func TestDuplicateLeaves(t *testing.T) {
 		now := []byte(time.Now().String())
 		txs[i] = bc.NewTx(bc.TxData{
 			Version: 1,
-			Inputs:  []*bc.TxInput{bc.NewIssuanceInput(now, i, nil, initialBlockHash, trueProg, nil)},
+			Inputs:  []*bc.TxInput{bc.NewIssuanceInput(now, i, nil, initialBlockHash, trueProg, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, i, trueProg, nil)},
 		})
 	}
@@ -102,7 +102,7 @@ func TestAllDuplicateLeaves(t *testing.T) {
 	trueProg := []byte{byte(vm.OP_TRUE)}
 	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyHash)
 	now := []byte(time.Now().String())
-	issuanceInp := bc.NewIssuanceInput(now, 1, nil, initialBlockHash, trueProg, nil)
+	issuanceInp := bc.NewIssuanceInput(now, 1, nil, initialBlockHash, trueProg, nil, nil)
 
 	tx := bc.NewTx(bc.TxData{
 		Version: 1,
