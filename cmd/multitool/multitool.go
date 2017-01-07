@@ -69,7 +69,7 @@ type command struct {
 }
 
 var subcommands = map[string]command{
-	"assetid":     command{assetid, "compute asset id", "ISSUANCEPROG GENESISHASH"},
+	"assetid":     command{assetid, "compute asset id", "ISSUANCEPROG GENESISHASH ASSETDEFINITIONHASH"},
 	"block":       command{block, "decode and pretty-print a block", "BLOCK"},
 	"blockheader": command{blockheader, "decode and pretty-print a block header", "BLOCKHEADER"},
 	"derive":      command{derive, "derive child from given xpub or xprv and given path", "[-xpub|-xprv] XPUB/XPRV PATH PATH..."},
@@ -167,14 +167,22 @@ func mustDecodeHash(s string) bc.Hash {
 
 func assetid(args []string) {
 	var (
-		issuanceInp, initialBlockInp string
-		usedStdin                    bool
+		issuanceInp     string
+		initialBlockInp string
+		assetdefInp     string
+		usedStdin       bool
 	)
 	issuanceInp, usedStdin = input(args, 0, false)
 	initialBlockInp, _ = input(args, 1, usedStdin)
+	assetdefInp, _ = input(args, 2, usedStdin)
 	issuance := mustDecodeHex(issuanceInp)
 	initialBlock := mustDecodeHash(initialBlockInp)
-	assetID := bc.ComputeAssetID(issuance, initialBlock, 1)
+	assetdefHash := bc.EmptyStringHash
+	// This case is not supported by multitool yet. Keep this in mind when moving this func to its own command.
+	if len(assetdefInp) > 0 {
+		assetdefHash = mustDecodeHash(assetdefInp)
+	}
+	assetID := bc.ComputeAssetID(issuance, initialBlock, 1, assetdefHash)
 	fmt.Println(assetID.String())
 }
 

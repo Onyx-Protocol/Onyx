@@ -18,7 +18,7 @@ func TestTransaction(t *testing.T) {
 	initialBlockHashHex := "03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"
 	initialBlockHash := mustDecodeHash(initialBlockHashHex)
 
-	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1)
+	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
 
 	cases := []struct {
 		tx          *Tx
@@ -51,7 +51,7 @@ func TestTransaction(t *testing.T) {
 			tx: NewTx(TxData{
 				Version: 1,
 				Inputs: []*TxInput{
-					NewIssuanceInput([]byte{10, 9, 8}, 1000000000000, []byte("input"), initialBlockHash, issuanceScript, [][]byte{[]byte{1, 2, 3}}),
+					NewIssuanceInput([]byte{10, 9, 8}, 1000000000000, []byte("input"), initialBlockHash, issuanceScript, [][]byte{[]byte{1, 2, 3}}, nil),
 				},
 				Outputs: []*TxOutput{
 					NewTxOutput(AssetID{}, 1000000000000, []byte{1}, []byte("output")),
@@ -75,8 +75,9 @@ func TestTransaction(t *testing.T) {
 				assetID.String() + // input 0, input commitment, asset id
 				"80a094a58d1d" + // input 0, input commitment, amount
 				"05696e707574" + // input 0, reference data
-				"28" + // input 0, issuance input witness length prefix
+				"29" + // input 0, issuance input witness length prefix
 				initialBlockHashHex + // input 0, issuance input witness, initial block
+				"00" + // input 0, issuance input witness, asset definition
 				"01" + // input 0, issuance input witness, vm version
 				"01" + // input 0, issuance input witness, issuance program length prefix
 				"01" + // input 0, issuance input witness, issuance program
@@ -93,8 +94,8 @@ func TestTransaction(t *testing.T) {
 				"066f7574707574" + // output 0, reference data
 				"00" + // output 0, output witness
 				"0869737375616e6365"), // reference data
-			hash:        mustDecodeHash("d5d90a4b6b179ec4c49badcec24f3c8890b3c03ed7f397a2de89b3f873de74a7"),
-			witnessHash: mustDecodeHash("34a7b5eb0a40dbab132b4a4c0ca90044efc9d086d84503e1fb9175d12230ed1f"),
+			hash:        mustDecodeHash("946b6c226d88723020ab50665fbb76191639b5f1fd851b35edb729d4b17373cc"),
+			witnessHash: mustDecodeHash("274412cdf972ac27b68e57faf1b8eaeeb148ac45eb4bb6c1ff024d7a846e079c"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -103,8 +104,8 @@ func TestTransaction(t *testing.T) {
 					NewSpendInput(mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), 0, nil, AssetID{}, 1000000000000, []byte{1}, []byte("input")),
 				},
 				Outputs: []*TxOutput{
-					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1), 600000000000, []byte{1}, nil),
-					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1), 400000000000, []byte{2}, nil),
+					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash), 600000000000, []byte{1}, nil),
+					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash), 400000000000, []byte{2}, nil),
 				},
 				MinTime:       1492590000,
 				MaxTime:       1492590591,
@@ -133,7 +134,7 @@ func TestTransaction(t *testing.T) {
 				"02" + // outputs count
 				"01" + // output 0, asset version
 				"29" + // output 0, output commitment length
-				"9ed3e85a8c2d3717b5c94bd2db2ab9cab56955b2c4fb4696f345ca97aaab82d6" + // output 0, output commitment, asset id
+				"a9b2b6c5394888ab5396f583ae484b8459486b14268e2bef1b637440335eb6c1" + // output 0, output commitment, asset id
 				"80e0a596bb11" + // output 0, output commitment, amount
 				"01" + // output 0, output commitment, vm version
 				"0101" + // output 0, output commitment, control program
@@ -141,15 +142,15 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 0, output witness
 				"01" + // output 1, asset version
 				"29" + // output 1, output commitment length
-				"9ed3e85a8c2d3717b5c94bd2db2ab9cab56955b2c4fb4696f345ca97aaab82d6" + // output 1, output commitment, asset id
+				"a9b2b6c5394888ab5396f583ae484b8459486b14268e2bef1b637440335eb6c1" + // output 1, output commitment, asset id
 				"80c0ee8ed20b" + // output 1, output commitment, amount
 				"01" + // output 1, vm version
 				"0102" + // output 1, output commitment, control program
 				"00" + // output 1, reference data
 				"00" + // output 1, output witness
 				"0c646973747269627574696f6e"), // reference data
-			hash:        mustDecodeHash("d2587bdb93c65cd89d2d648f2adba54f9997d8e2d649bd222288519cb7224f49"),
-			witnessHash: mustDecodeHash("a87eac712f74deb95bda148cc37375a0d8e16003a992b8d70531f7089dca4333"),
+			hash:        mustDecodeHash("7af758d0d27a7885cb65243164e2f8084b06aa1a647792cae028926b19324604"),
+			witnessHash: mustDecodeHash("335498668b169b5faea9a87410bc35626654941599815be655d532acf9925286"),
 		},
 	}
 
@@ -194,14 +195,14 @@ func TestHasIssuance(t *testing.T) {
 		want bool
 	}{{
 		tx: &TxData{
-			Inputs: []*TxInput{NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil)},
+			Inputs: []*TxInput{NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil, nil)},
 		},
 		want: true,
 	}, {
 		tx: &TxData{
 			Inputs: []*TxInput{
 				NewSpendInput(Hash{}, 0, nil, AssetID{}, 0, nil, nil),
-				NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil),
+				NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil, nil),
 			},
 		},
 		want: true,
@@ -241,8 +242,9 @@ func TestInvalidIssuance(t *testing.T) {
 		"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, input commitment, WRONG asset id
 		"80a094a58d1d" + // input 0, input commitment, amount
 		"05696e707574" + // input 0, reference data
-		"28" + // input 0, issuance input witness length prefix
+		"29" + // input 0, issuance input witness length prefix
 		"03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d" + // input 0, issuance input witness, initial block
+		"00" + // input 0, issuance input witness, asset definition
 		"01" + // input 0, issuance input witness, vm version
 		"01" + // input 0, issuance input witness, issuance program length prefix
 		"01" + // input 0, issuance input witness, issuance program
@@ -297,7 +299,7 @@ func TestOutpointWriteErr(t *testing.T) {
 }
 
 func TestTxHashForSig(t *testing.T) {
-	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1)
+	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1, EmptyStringHash)
 	tx := &TxData{
 		Version: 1,
 		Inputs: []*TxInput{
@@ -313,8 +315,8 @@ func TestTxHashForSig(t *testing.T) {
 		idx      int
 		wantHash string
 	}{
-		{0, "698a33855c638fc17c49fa0a2e297a47df4d89498bf7294f8b187cf77e05aa5a"},
-		{1, "d5ec94cb0ca0ab1f8ccaae3f0310aa254f18f8877b0225a65965aab544302e69"},
+		{0, "94b72d62d47a8ba581246c0c721b18b36282cf81f2cdb92a3b1ab4fef4640654"},
+		{1, "6bcbf29804ebb70ae9887c4fc343bc06ee69f04befa1dc77ddf2f4a43eff0862"},
 	}
 
 	sigHasher := NewSigHasher(tx)

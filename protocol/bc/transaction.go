@@ -295,7 +295,7 @@ func (s *SigHasher) Hash(idx int) Hash {
 		sha3pool.Sum256(outHash[:], ocBuf.Bytes())
 	} else {
 		// inp is an issuance
-		outHash = emptyHash
+		outHash = EmptyStringHash
 	}
 
 	h.Write(outHash[:])

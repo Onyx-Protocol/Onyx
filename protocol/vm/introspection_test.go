@@ -91,7 +91,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
 			bc.NewSpendInput(zeroHash, 0, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
-			bc.NewIssuanceInput(nonce, 6, nil, zeroHash, []byte("issueprog"), nil),
+			bc.NewIssuanceInput(nonce, 6, nil, zeroHash, []byte("issueprog"), nil, nil),
 		},
 	})
 	vm := &virtualMachine{
@@ -151,7 +151,7 @@ func TestIntrospectionOps(t *testing.T) {
 		ReferenceData: []byte("txref"),
 		Inputs: []*bc.TxInput{
 			bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
-			bc.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil),
+			bc.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(bc.AssetID{3}, 8, []byte("wrongprog"), nil),

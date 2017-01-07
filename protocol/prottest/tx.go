@@ -42,7 +42,6 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 		testutil.FatalErr(tb, err)
 	}
 	builder := vmutil.NewBuilder()
-	builder.AddData([]byte(`{"type": "prottest issuance"}`)).AddOp(vm.OP_DROP)
 	builder.AddRawBytes(sigProg)
 	issuanceProgram := builder.Program
 
@@ -52,7 +51,8 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	txin := bc.NewIssuanceInput(nonce[:], 100, nil, b1.Hash(), issuanceProgram, nil)
+	assetdef := []byte(`{"type": "prottest issuance"}`)
+	txin := bc.NewIssuanceInput(nonce[:], 100, nil, b1.Hash(), issuanceProgram, nil, assetdef)
 
 	tx := bc.TxData{
 		Version: bc.CurrentTransactionVersion,

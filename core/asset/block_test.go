@@ -29,9 +29,13 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	localdef, err := local.SerializedDefinition()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Create the issuance program of a remote asset.
-	issuanceProgram, err := programWithDefinition([]ed25519.PublicKey{testutil.TestPub}, 1, []byte(def))
+	issuanceProgram, err := multisigIssuanceProgram([]ed25519.PublicKey{testutil.TestPub, testutil.TestPub}, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,6 +52,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 							TypedInput: &bc.IssuanceInput{
 								InitialBlock:    r.initialBlockHash,
 								Amount:          10000,
+								AssetDefinition: []byte(def),
 								IssuanceProgram: issuanceProgram,
 								VMVersion:       1,
 							},
@@ -57,6 +62,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 							TypedInput: &bc.IssuanceInput{
 								InitialBlock:    r.initialBlockHash,
 								Amount:          10000,
+								AssetDefinition: localdef,
 								IssuanceProgram: local.IssuanceProgram,
 								VMVersion:       1,
 							},

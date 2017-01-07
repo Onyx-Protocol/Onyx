@@ -22,13 +22,13 @@ func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 
 // ComputeAssetID computes the asset ID of the asset defined by
 // the given issuance program and initial block hash.
-func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint64) (assetID AssetID) {
+func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint64, assetDefinitionHash Hash) (assetID AssetID) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 	h.Write(initialHash[:])
-	blockchain.WriteVarint63(h, assetVersion)
 	blockchain.WriteVarint63(h, vmVersion)
 	blockchain.WriteVarstr31(h, issuanceProgram) // TODO(bobg): check and return error
+	h.Write(assetDefinitionHash[:])
 	h.Read(assetID[:])
 	return assetID
 }

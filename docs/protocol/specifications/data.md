@@ -305,6 +305,7 @@ Asset version 1 defines two witness structures: one for issuances and another on
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
 Initial Block ID        | sha3-256                | Hash of the first block in this blockchain.
+Asset Definition        | varstring31             | Arbitrary string or its [optional hash](#optional-hash), depending on [serialization flags](#transaction-serialization-flags).
 VM Version              | varint63                | [Version of the VM](#vm-version) that executes the issuance program.
 Issuance Program        | varstring31             | Predicate defining the conditions of issue.
 Program Arguments Count | varint31                | Number of [program arguments](#program-arguments) that follow.
@@ -381,15 +382,15 @@ The **first (least significant) bit** indicates whether the transaction includes
 
 The **second bit** indicates whether the output commitment from the spent output is present in the [input spend commitment](#asset-version-1-spend-commitment). If set to zero, the output commitment field is absent.
 
-The **third bit** indicates whether transaction reference data is present. If set to zero, the reference data is replaced by its optional hash value.
+The **third bit** indicates whether transaction reference data and asset definitions are present. If set to zero, the reference data and asset definitions are replaced by their optional hash values.
 
 All three bits can be used independently. Non-zero **higher bits** are reserved for future use.
 
 Serialization Flags Examples | Description
 -----------------------------|---------------------------------------------------------------------------
-0000 0000                    | Minimal serialization without witness and with reference data hashes instead of content.
-0000 0011                    | Minimal serialization needed for full verification. Contains witness fields and redundant [output commitment](#transaction-output-commitment), but not complete reference data.
-0000 0101                    | Non-redundant full binary serialization with witness fields and reference data.
+0000 0000                    | Minimal serialization without witness and with hashes of reference data and asset definitions instead of their actual content.
+0000 0011                    | Minimal serialization needed for full verification. Contains witness fields and redundant [output commitment](#transaction-output-commitment), but with hashes of reference data and asset definitions instead of their actual content.
+0000 0101                    | Non-redundant full binary serialization with witness fields, reference data and asset definitions.
 
 
 ### Transaction ID
@@ -454,7 +455,6 @@ The control program is a program specifying a predicate for transferring an asse
 
 The issuance program is a [program](#program) specifying a predicate for issuing an asset within an [input issuance commitment](#asset-version-1-issuance-commitment). The asset ID is derived from the issuance program, guaranteeing the authenticity of the issuer.
 
-Issuance programs must start with a [PUSHDATA](vm1.md#pushdata) opcode, followed by the [asset definition](#asset-definition), followed by a [DROP](vm1.md#drop) opcode.
 
 ### Program Arguments
 
@@ -468,20 +468,20 @@ An *asset version* is a variable-length integer encoded as [varint63](#varint63)
 
 Globally unique identifier of a given asset. Each [asset version](#asset-version) defines its own method to compute the asset ID, but an asset ID is always guaranteed to be unique across all asset versions and across all blockchains.
 
-**Asset version 1** defines asset ID as the [SHA3-256](#sha3) of the following structure:
+Asset ID is defined as the [SHA3-256](#sha3) of the following structure:
 
-Field            | Type          | Description
------------------|---------------|-------------------------------------------------
-Initial Block ID | sha3-256      | Hash of the first block in this blockchain.
-Asset Version    | varint63      | [Version](#asset-version) of this asset.
-VM Version       | varint63      | [Version of the VM](#vm-version) for the issuance program.
-Issuance Program | varstring31   | Program used in the issuance input.
+Field                 | Type          | Description
+----------------------|---------------|-------------------------------------------------
+Initial Block ID      | sha3-256      | Hash of the first block in this blockchain.
+VM Version            | varint63      | [Version of the VM](#vm-version) for the issuance program.
+Issuance Program      | varstring31   | Program used in the issuance input.
+Asset Definition Hash | sha3-256      | [SHA3-256](#sha3) hash of the asset definition data.
+
 
 ### Asset Definition
 
 An asset definition is an arbitrary binary string that corresponds to a particular [asset ID](#asset-id). Each asset version may define its own method to declare and commit to asset definitions.
 
-For version 1 assets, asset definitions are included in the issuance program. Issuance programs must start with a [PUSHDATA](vm1.md#pushdata) opcode, followed by the asset definition, followed by a [DROP](vm1.md#drop) opcode. Since the issuance program is part of the string hashed to determine an asset ID, the asset definition for a particular asset ID is immutable.
 
 ### Retired Asset
 
