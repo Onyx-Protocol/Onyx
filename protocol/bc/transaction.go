@@ -67,13 +67,6 @@ type TxData struct {
 	ReferenceData []byte
 }
 
-// Outpoint defines a bitcoin data type that is used to track previous
-// transaction outputs.
-type Outpoint struct {
-	Hash  Hash   `json:"hash"`
-	Index uint32 `json:"index"`
-}
-
 // HasIssuance returns true if this transaction has an issuance input.
 func (tx *TxData) HasIssuance() bool {
 	for _, in := range tx.Inputs {
