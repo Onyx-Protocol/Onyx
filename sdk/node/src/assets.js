@@ -25,15 +25,15 @@ class Assets {
    */
 
   /**
-   * constructor - return Assets object configured for specified Chain Core
+   * constructor - return Assets object configured for specified Chain Core.
    *
-   * @param  {Client} client Configured Chain client object
+   * @param {Client} client Configured Chain client object.
    */
   constructor(client) {
     /**
      * Create a new asset.
      *
-     * @param {Assets~createRequest} params - Parameters for asset creation
+     * @param {Assets~createRequest} params - Parameters for asset creation.
      * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      */
     this.create = (params, cb) => shared.create(client, '/create-asset', params, {cb})
@@ -41,15 +41,15 @@ class Assets {
     /**
      * Create multiple new assets.
      *
-     * @param {Assets~createRequest[]} params - Parameters for creation of multiple assets
+     * @param {Assets~createRequest[]} params - Parameters for creation of multiple assets.
      * @param {batchCreateCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      */
     this.createBatch = (params, cb) => shared.createBatch(client, '/create-asset', params, {cb})
 
     /**
-     * Get one page of assets matching the specified filter
+     * Get one page of assets matching the specified filter.
      *
-     * @param {Filter} [params={}] Filter and pagination information
+     * @param {Filter} [params={}] Filter and pagination information.
      * @returns {Promise<Page>} Requested page of results
      */
     this.query = (params) => shared.query(client, this, '/list-assets', params)
@@ -60,7 +60,7 @@ class Assets {
      *
      * @param {Filter} params Filter and pagination information.
      * @param {QueryProcessor} processor Processing callback.
-     * @return {Promise} A promise resolved upon processing of all items, or
+     * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error
      */
     this.queryAll = (params, processor) => shared.queryAll(this, params, processor)

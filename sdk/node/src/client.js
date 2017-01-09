@@ -18,11 +18,11 @@ const UnspentOutputs = require('./unspentOutputs')
 class Client {
   /**
    * constructor - create a new Chain client object capable of interacting with
-   * the specified Chain Core
+   * the specified Chain Core.
    *
-   * @param  {string} baseUrl Chain Core URL
-   * @param  {string} token   Chain Core client token for API access
-   * @return {Client}
+   * @param {string} baseUrl Chain Core URL.
+   * @param {string} token   Chain Core client token for API access.
+   * @returns {Client}
    */
   constructor(baseUrl, token) {
     this.connection = new Connection(baseUrl, token)
@@ -58,7 +58,7 @@ class Client {
     this.config = new Config(this)
 
     /**
-     * @property {MockHsmKeys} keys API actions for Mock HSM keys
+     * @property {MockHsmKeys} keys API actions for Mock HSM keys.
      * @property {Connection} signerConnection Mock HSM signer connection.
      */
     this.mockHsm = {
@@ -87,11 +87,11 @@ class Client {
 
 
   /**
-   * Submit a request to the stored Chain Core connection
+   * Submit a request to the stored Chain Core connection.
    *
-   * @param  {string} path
-   * @param  {object} [body={}]
-   * @return {Promise}
+   * @param {string} path
+   * @param {object} [body={}]
+   * @returns {Promise}
    */
   request(path, body = {}) {
     return this.connection.request(path, body)

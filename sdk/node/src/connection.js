@@ -11,11 +11,11 @@ const btoa = require('btoa')
 class Connection {
   /**
    * constructor - create a new Chain client object capable of interacting with
-   * the specified Chain Core
+   * the specified Chain Core.
    *
-   * @param  {string} baseUrl Chain Core URL
-   * @param  {string} token   Chain Core client token for API access
-   * @return {Client}
+   * @param {string} baseUrl Chain Core URL.
+   * @param {string} token   Chain Core client token for API access.
+   * @returns {Client}
    */
   constructor(baseUrl, token) {
     this.baseUrl = baseUrl || 'http://localhost:1999'
@@ -24,7 +24,7 @@ class Connection {
 
 
   /**
-   * Submit a request to the specified Chain Core
+   * Submit a request to the specified Chain Core.
    *
    * @param  {string} path
    * @param  {object} [body={}]

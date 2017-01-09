@@ -7,7 +7,7 @@ class AccessTokens {
   /**
    * constructor - return AccessTokens object configured for specified Chain Core.
    *
-   * @param  {Client} client Configured Chain client object.
+   * @param {Client} client Configured Chain client object.
    */
   constructor(client) {
 
@@ -18,7 +18,7 @@ class AccessTokens {
      * @param {string} params.id - User specified, unique identifier.
      * @param {string} params.type - Either 'client' or 'network'.
      * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @return { Promise<Object> } - Newly created access token
+     * @returns {Promise<Object>} - Newly created access token
      */
     this.create = (params, cb) =>
       shared.create(client, '/create-access-token', params, {skipArray: true, cb})
@@ -30,7 +30,7 @@ class AccessTokens {
      * Note: maximum list size is 1000 items
      *
      * @param {Filter} params - Pagination information.
-     * @param {string} [params.type] - Type of access tokens to retrun
+     * @param {string} [params.type] - Type of access tokens to return.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */

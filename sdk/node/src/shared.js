@@ -5,13 +5,13 @@ const Page = require('./page')
 /**
  * @callback createCallback
  * @param {error} error
- * @param {Object} object - Newly created object
+ * @param {Object} object - Newly created object.
  */
 
 /**
  * @callback batchCreateCallback
  * @param {error} error
- * @param {BatchResponse} batchResponse - Newly created objects (and errors)
+ * @param {BatchResponse} batchResponse - Newly created objects (and errors).
  */
 
 const tryCallback = (promise, cb) => {

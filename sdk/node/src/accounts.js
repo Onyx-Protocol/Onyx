@@ -24,7 +24,7 @@ class Accounts {
   /**
    * constructor - return Accounts object configured for specified Chain Core.
    *
-   * @param  {Client} client Configured Chain client object.
+   * @param {Client} client Configured Chain client object.
    */
   constructor(client) {
     /**
@@ -32,7 +32,7 @@ class Accounts {
      *
      * @param {Accounts~createRequest} params - Parameters for account creation.
      * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @return { Promise<Object> } - Newly created account
+     * @returns {Promise<Object>} - Newly created account
      */
     this.create = (params, cb) => shared.create(client, '/create-account', params, {cb})
 
@@ -41,7 +41,7 @@ class Accounts {
      *
      * @param {Accounts~createRequest[]} params - Parameters for creation of multiple accounts.
      * @param {batchCreateCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @return {BatchResponse}
+     * @returns {BatchResponse}
      */
     this.createBatch = (params, cb) => shared.createBatch(client, '/create-account', params, {cb})
 
@@ -60,7 +60,7 @@ class Accounts {
      *
      * @param {Filter} params Filter and pagination information.
      * @param {QueryProcessor} processor Processing callback.
-     * @return {Promise} A promise resolved upon processing of all items, or
+     * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error
      */
     this.queryAll = (params, processor) => shared.queryAll(this, params, processor)

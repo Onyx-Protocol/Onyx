@@ -126,7 +126,7 @@ class TransactionFeeds {
     /**
      * Get single transaction feed given an id/alias.
      *
-     * @param {Object} params Parameters to get single Tansaction Feed
+     * @param {Object} params Parameters to get single Tansaction Feed.
      * @param {string} params.id The unique ID of a transaction feed. Either `id` or
      *                           `alias` is required.
      * @param {string} params.alias The unique alias of a transaction feed. Either `id` or
@@ -141,7 +141,7 @@ class TransactionFeeds {
     /**
      * Delete a transaction feed given an id/alias.
      *
-     * @param {Object} params Parameters to delete single Tansaction Feed
+     * @param {Object} params Parameters to delete single Tansaction Feed.
      * @param {string} params.id The unique ID of a transaction feed. Either `id` or
      *                           `alias` is required.
      * @param {string} params.alias The unique alias of a transaction feed. Either `id` or

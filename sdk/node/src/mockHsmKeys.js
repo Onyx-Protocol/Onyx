@@ -6,9 +6,9 @@ const shared = require('./shared')
  */
 class MockHsmKeys {
   /**
-   * constructor - return MockHsmKeys object configured for specified Chain Core
+   * constructor - return MockHsmKeys object configured for specified Chain Core.
    *
-   * @param  {Client} client Configured Chain client object
+   * @param {Client} client Configured Chain client object.
    */
   constructor(client) {
 
@@ -28,10 +28,10 @@ class MockHsmKeys {
     }
 
     /**
-     * Get one page of MockHsm keys, optionally filtered to specified aliases
+     * Get one page of MockHsm keys, optionally filtered to specified aliases.
      *
-     * @param {Filter} [params={}] Filter and pagination information
-     * @param {Array.<string>} [params.aliases] List of requested aliases, max 200
+     * @param {Filter} [params={}] Filter and pagination information.
+     * @param {Array.<string>} [params.aliases] List of requested aliases, max 200.
      * @param {queryCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
@@ -48,7 +48,7 @@ class MockHsmKeys {
      * supplied processor callback with each item individually.
      *
      * @param {QueryProcessor} processor Processing callback.
-     * @return {Promise} A promise resolved upon processing of all items, or
+     * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error
      */
     this.queryAll = (processor) => shared.queryAll(this, {}, processor)

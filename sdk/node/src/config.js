@@ -6,10 +6,10 @@ class Config {
   /**
    * constructor - return Config object configured for specified Chain Core.
    *
-   * @param  {Client} client Configured Chain client object.
+   * @param {Client} client Configured Chain client object.
    */
   constructor(client) {
-    
+
     /**
      * Reset specified Chain Core.
      *
