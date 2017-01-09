@@ -97,58 +97,6 @@ func TestCryptoOps(t *testing.T) {
 		wantVM  *virtualMachine
 	}
 	cases := []testStruct{{
-		op: OP_RIPEMD160,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{1}},
-		},
-		wantVM: &virtualMachine{
-			runLimit: 49917,
-			dataStack: [][]byte{{
-				242, 145, 186, 80, 21, 223, 52, 140, 128, 133,
-				63, 165, 187, 15, 121, 70, 245, 201, 225, 179,
-			}},
-		},
-	}, {
-		op: OP_RIPEMD160,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{make([]byte, 65)},
-		},
-		wantVM: &virtualMachine{
-			runLimit: 49980,
-			dataStack: [][]byte{{
-				171, 60, 102, 205, 10, 63, 18, 180, 244, 250,
-				235, 84, 138, 85, 22, 7, 148, 250, 215, 6,
-			}},
-		},
-	}, {
-		op: OP_SHA1,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{1}},
-		},
-		wantVM: &virtualMachine{
-			runLimit: 49917,
-			dataStack: [][]byte{{
-				191, 139, 69, 48, 216, 210, 70, 221, 116, 172,
-				83, 161, 52, 113, 187, 161, 121, 65, 223, 247,
-			}},
-		},
-	}, {
-		op: OP_SHA1,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{make([]byte, 65)},
-		},
-		wantVM: &virtualMachine{
-			runLimit: 49980,
-			dataStack: [][]byte{{
-				240, 250, 69, 144, 107, 208, 244, 195, 102, 143,
-				205, 13, 143, 104, 212, 178, 152, 179, 14, 91,
-			}},
-		},
-	}, {
 		op: OP_SHA256,
 		startVM: &virtualMachine{
 			runLimit:  50000,
@@ -508,7 +456,7 @@ func TestCryptoOps(t *testing.T) {
 		wantErr: ErrContext,
 	}}
 
-	hashOps := []Op{OP_RIPEMD160, OP_SHA1, OP_SHA256, OP_SHA3}
+	hashOps := []Op{OP_SHA256, OP_SHA3}
 	for _, op := range hashOps {
 		cases = append(cases, testStruct{
 			op: op,
