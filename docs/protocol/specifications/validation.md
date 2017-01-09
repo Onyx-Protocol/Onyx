@@ -244,7 +244,7 @@ A transaction is said to be *valid* with respect to a particular blockchain stat
     2. Compute [asset ID](data.md#asset-id) from the initial block ID, asset version 1, and the *VM version* and *issuance program* declared in the witness. If the resulting asset ID is not equal to the declared asset ID in the issuance commitment, halt and return false.
     3. [Evaluate](#evaluate-predicate) its [issuance program](data.md#issuance-program), for the VM version specified in the issuance commitment and with the [input witness](data.md#transaction-input-witness) [program arguments](data.md#program-arguments); if execution fails, halt and return false.
 2. If the input is a *spend*:
-    1. Load an output from the state as identified by the input’s [spent output reference](data.md#outpoint), yielding a *previous output*.
+    1. Load an output from the state as identified by the input’s [spent output ID](data.md#output-id), yielding a *previous output*.
     2. If the previous output does not exist, halt and return false.
     3. [Evaluate](#evaluate-predicate) the previous output’s control program, for the VM version specified in the previous output and with the [input witness](data.md#transaction-input-witness) program arguments.
     4. If the evaluation returns false, halt and return false.
@@ -316,7 +316,7 @@ Note: requirement for the input and output sums to be below 2<sup>63</sup> impli
 **Algorithm:**
 
 1. For each spend input with asset version 1 in the transaction:
-    1. Delete the previous output (referenced by the input’s [outpoint](data.md#outpoint)) from S, yielding a new state S′.
+    1. Delete the previous output (referenced by the input’s [output ID](data.md#output-id)) from S, yielding a new state S′.
     2. Replace S with S′.
 2. For each output with asset version 1 in the transaction:
     1. Add that output to the unspent output set in S, yielding a new state S′.

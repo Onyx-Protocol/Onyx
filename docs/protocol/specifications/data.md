@@ -25,7 +25,7 @@
   * [Transaction Input Commitment](#transaction-input-commitment)
   * [Issuance Hash](#issuance-hash)
   * [Transaction Input Witness](#transaction-input-witness)
-  * [Outpoint](#outpoint)
+  * [Output ID](#output-id)
   * [Transaction Output](#transaction-output)
   * [Transaction Output Commitment](#transaction-output-commitment)
   * [Transaction Output Witness](#transaction-output-witness)
@@ -252,7 +252,7 @@ An asset version other than 1 is reserved for future expansion. Input commitment
 
 #### Asset Version 1 Issuance Commitment
 
-Unlike spending commitments, each of which is unique because it references a distinct outpoint, issuance commitments are not intrinsically unique and must be made so to protect against replay attacks. The field *nonce* contains an arbitrary string that must be distinct from the nonces in other issuances of the same asset ID during the interval between the transaction's minimum and maximum time. Nodes ensure uniqueness of the issuance by remembering the [issuance hash](#issuance-hash) that includes the nonce, asset ID and minimum and maximum timestamps. To make sure that *issuance memory* does not take an unbounded amount of RAM, network enforces the *maximum issuance window* for these timestamps.
+Unlike spending commitments, each of which is unique because it references a distinct [output ID](#output-id), issuance commitments are not intrinsically unique and must be made so to protect against replay attacks. The field *nonce* contains an arbitrary string that must be distinct from the nonces in other issuances of the same asset ID during the interval between the transaction's minimum and maximum time. Nodes ensure uniqueness of the issuance by remembering the [issuance hash](#issuance-hash) that includes the nonce, asset ID and minimum and maximum timestamps. To make sure that *issuance memory* does not take an unbounded amount of RAM, network enforces the *maximum issuance window* for these timestamps.
 
 If the transaction has another input that guarantees uniqueness of the entire transaction (e.g. a [spend input](#asset-version-1-spend-commitment)), then the issuance input must be able to opt out of the bounded minimum and maximum timestamps and therefore the uniqueness test for the [issuance hash](#issuance-hash). The empty nonce signals if the input opts out of the uniqueness checks.
 
@@ -272,7 +272,7 @@ Amount                | varint63            | Amount being issued.
 Field                 | Type                  | Description
 ----------------------|-----------------------|----------------------------------------------------------
 Type                  | byte                  | Equals 0x01 indicating the “spend” type.
-Outpoint Reference    | sha3-256              | [Outpoint](#outpoint) hash containing [transaction ID](#transaction-id) and index of the output being spent.
+Output ID             | sha3-256              | [Output ID](#output-id) that references an output being spent.
 Output Commitment     | [Output Commitment](#transaction-output-commitment) | Optional output commitment used as the source for this input. Presence of this field is controlled by [serialization flags](#transaction-serialization-flags): if switched off, this field is excluded from the spend entirely.
 —                     | —                     | Additional fields may be added by future extensions.
 
@@ -324,14 +324,14 @@ Program Arguments       | [varstring31]           | [Signatures](#signature) and
 —                       | —                       | Additional fields may be added by future extensions.
 
 
-### Outpoint
+### Output ID
 
-An *outpoint* uniquely specifies a single transaction output. It is defined as SHA3-256 hash of the following structure:
+An *output ID* uniquely specifies a single transaction output. It is defined as SHA3-256 hash of the following structure:
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
 Transaction ID          | sha3-256                | [Transaction ID](#transaction-id) of the referenced transaction.
-Output Index            | uint64le                | Index (zero-based) of the [output](#transaction-output) within the transaction, serialized as a 64-bit integer using little-endian convention.
+Output Index            | varint31                | Index (zero-based) of the [output](#transaction-output) within the transaction.
 Output Commitment Hash  | sha3-256                | SHA3-256 hash of the [output commitment](#transaction-output-commitment) at the specified output.
 
 
@@ -429,7 +429,7 @@ Transaction ID          | sha3-256                                  | Current [t
 Input Index             | varint31                                  | Index of the current input encoded as [varint31](#varint31).
 Output Commitment Hash  | sha3-256                                  | [SHA3-256](#sha3) of the output commitment from the output being spent by the current input. Issuance input uses a hash of an empty string.
 
-Note 1. Including the spent output commitment makes it easier to verify the asset ID and amount at signing time, although those values are already committed to via the input's [outpoint](#outpoint).
+Note 1. Including the spent output commitment makes it easier to verify the asset ID and amount at signing time, although those values are already committed to via the input's [output ID](#output-id).
 
 Note 2. Using the hash of the output commitment instead of the output commitment as-is does not incur additional overhead since this hash is readily available from the [assets merkle tree](#assets-merkle-root). As a result, total amount of data to be hashed by all nodes during transaction validation is reduced.
 
@@ -502,7 +502,7 @@ The tree contains [non-retired](#retired-asset) unspent outputs (one or more per
 
 Key                       | Value
 --------------------------|------------------------------
-[Outpoint](#outpoint)     | [SHA3-256](#sha3) of the [output commitment](#transaction-output-commitment)
+[Output ID](#output-id)   | [SHA3-256](#sha3) of the [output commitment](#transaction-output-commitment)
 
 
 ### Merkle Root

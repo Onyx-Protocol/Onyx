@@ -78,7 +78,7 @@ Execution of any of the following instructions results in immediate failure:
 * [TXREFDATAHASH](#txrefdatahash)
 * [REFDATAHASH](#refdatahash)
 * [INDEX](#index)
-* [OUTPOINT](#outpoint)
+* [OUTPUTID](#outputid)
 * [NONCE](#nonce)
 
 
@@ -1207,13 +1207,13 @@ Pushes the index of the current input on the data stack.
 Fails if executed in the [block context](#block-context).
 
 
-#### OUTPOINT
+#### OUTPUTID
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0xcb  | (∅ → outpointtx outpointindex)  | 1; [standard memory cost](#standard-memory-cost)
+0xcb  | (∅ → outputid)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the transaction ID and output index fields of the current input's [outpoint](#outpoint) on the data stack as separate items. The index is encoded as a [VM number](#vm-number).
+Pushes the [output ID](#output-id) on the data stack.
 
 Fails if the current input is an [issuance input](data.md#transaction-input-commitment).
 
