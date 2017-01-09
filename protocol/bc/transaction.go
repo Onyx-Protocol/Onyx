@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"strconv"
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
@@ -168,16 +167,6 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	return errors.Wrap(err, "reading transaction reference data")
 }
 
-func (p *Outpoint) readFrom(r io.Reader) (int, error) {
-	n1, err := io.ReadFull(r, p.Hash[:])
-	if err != nil {
-		return n1, err
-	}
-	var n2 int
-	p.Index, n2, err = blockchain.ReadVarint31(r)
-	return n1 + n2, err
-}
-
 // Hash computes the hash of the transaction with reference data fields
 // replaced by their hashes,
 // and stores the result in Hash.
@@ -299,20 +288,29 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) {
 	writeRefData(w, tx.ReferenceData, serflags)
 }
 
-// String returns the Outpoint in the human-readable form "hash:index".
-func (p Outpoint) String() string {
-	return p.Hash.String() + ":" + strconv.FormatUint(uint64(p.Index), 10)
+type AssetAmount struct {
+	AssetID AssetID `json:"asset_id"`
+	Amount  uint64  `json:"amount"`
 }
 
-// WriteTo writes p to w.
-// It assumes w has sticky errors.
-func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
-	n, err := w.Write(p.Hash[:])
+// assumes r has sticky errors
+func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
+	n1, err := io.ReadFull(r, a.AssetID[:])
 	if err != nil {
-		return int64(n), err
+		return n1, err
 	}
-	n2, err := blockchain.WriteVarint31(w, uint64(p.Index))
-	return int64(n + n2), err
+	var n2 int
+	a.Amount, n2, err = blockchain.ReadVarint63(r)
+	return n1 + n2, err
+}
+
+func (a *AssetAmount) writeTo(w io.Writer) error {
+	_, err := w.Write(a.AssetID[:])
+	if err != nil {
+		return err
+	}
+	_, err = blockchain.WriteVarint63(w, a.Amount)
+	return err
 }
 
 // assumes w has sticky errors
