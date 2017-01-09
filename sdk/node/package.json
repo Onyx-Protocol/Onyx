@@ -14,7 +14,7 @@
     "develop": "npm run build -- --watch",
     "docs": "jsdoc -c jsdoc.conf.json",
     "lint": "eslint \"src/**\"",
-    "pretest": "npm run build && babel testSource --out-dir test",
+    "pretest": "npm run build && babel testSrc --out-dir test",
     "test": "mocha -t 60000",
     "build": "babel src --out-dir dist",
     "prepublish": "npm run lint && npm run build"
