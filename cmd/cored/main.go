@@ -237,7 +237,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainID.String(), conf) {
 			generatorSigners = append(generatorSigners, signer)
 		}
-		c.MaxIssuanceWindow = conf.MaxIssuanceWindow
+		c.MaxIssuanceWindow = conf.MaxIssuanceWindow.Duration
 	}
 
 	var submitter txbuilder.Submitter
