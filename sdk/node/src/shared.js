@@ -14,6 +14,16 @@ const Page = require('./page')
  * @param {BatchResponse} batchResponse - Newly created objects (and errors).
  */
 
+ /**
+  * Object specifying how to request records from a given endpoint
+  * @typedef {Object} Query
+  * @property {string} [filter] - String used to filter results. See the
+  *                            {@link https://chain.com/docs/core/build-applications/queries#filters|documentation on filter strings}
+  *                            for more details
+  * @property {string} [after] - Cursor pointing to the start of the result set
+  * @property {integer} [page_size] - Number of items to return in result set
+  */
+
 const tryCallback = (promise, cb) => {
   if (typeof cb !== 'function') return promise
 

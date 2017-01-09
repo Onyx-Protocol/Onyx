@@ -22,7 +22,6 @@ class Connection {
     this.token = token || ''
   }
 
-
   /**
    * Submit a request to the specified Chain Core.
    *

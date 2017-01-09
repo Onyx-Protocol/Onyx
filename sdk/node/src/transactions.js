@@ -66,7 +66,7 @@ class Transactions {
      * @param {Filter} [params={}] Filter and pagination information.
      * @returns {Page} Requested page of results
      */
-    this.query = (params) => shared.query(client, this, '/list-transactions', params)
+    this.query = (params, cb) => shared.query(client, this, '/list-transactions', params, {cb})
 
     /**
      * Request all transactions matching the specified filter, calling the

@@ -1,8 +1,8 @@
 const chain = require('../dist/index.js')
 const uuid = require('uuid')
-const async = require("async")
+const async = require('async')
 const assert = require('assert')
-const chai = require("chai")
+const chai = require('chai')
 const expect = chai.expect
 
 // Helper function
@@ -115,7 +115,7 @@ describe('Callback style', () => {
         next()
       }),
 
-      (next) => client.accounts.create({alias: 'david'}, (err, resp) => {
+      (next) => client.accounts.create({alias: 'david'}, (err) => {
         // Request is missing key fields
         expect(err.code).to.equal('CH202')
         next()
@@ -138,12 +138,12 @@ describe('Callback style', () => {
       (next) => async.parallel([
         cb => client.assets.create({alias: goldAlias, root_xpubs: [goldKey.xpub], quorum: 1}, cb),
         cb => client.assets.create({alias: silverAlias, root_xpubs: [silverKey.xpub], quorum: 1}, cb)
-      ], (err, assets) => {
+      ], (err) => {
         expect(err).to.be.null
         next()
       }),
 
-      (next) => client.assets.create({alias: 'unobtanium'}, (err, resp) => {
+      (next) => client.assets.create({alias: 'unobtanium'}, (err) => {
         // Request is missing key fields
         expect(err.code).to.equal('CH202')
         next()
@@ -208,10 +208,10 @@ describe('Callback style', () => {
 
       (next) => client.transactions.build(builder => {
         builder.issue({
-          asset_alias: "unobtanium",
+          asset_alias: 'unobtanium',
           amount: 100
         })
-      }, (err, resp) => {
+      }, (err) => {
         // Non-existent asset
         expect(err.code).to.equal('CH002')
         next()
@@ -234,7 +234,7 @@ describe('Callback style', () => {
 
         (issuance, cb) => signer.sign(issuance, cb),
         (signed, cb) => client.transactions.submit(signed, cb)
-      ], (err, result) => {
+      ], (err) => {
         expect(err.code).to.equal('CH735')
         next()
       }),
@@ -370,7 +370,7 @@ describe('Callback style', () => {
         expect(err.code).to.equal('CH003')
         next()
       }),
-      (next) => client.accounts.createControlProgram({alias: "unobtalias"}, (err, cp) => {
+      (next) => client.accounts.createControlProgram({alias: 'unobtalias'}, (err, cp) => {
         expect(err.code).to.equal('CH002')
         next()
       }),
@@ -408,7 +408,7 @@ describe('Callback style', () => {
           alias: spendsAlias,
           filter: "inputs(type='spend')"
         }, cb)
-      ], (err, result) => {
+      ], (err) => {
         expect(err).to.be.null
         next()
       }),

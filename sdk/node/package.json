@@ -10,6 +10,9 @@
   },
   "author": "Chain Engineering",
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">=4.7"
+  },
   "scripts": {
     "develop": "npm run build -- --watch",
     "docs": "jsdoc -c jsdoc.conf.json",
