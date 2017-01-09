@@ -85,7 +85,7 @@ func TestBlockTime(t *testing.T) {
 	}
 }
 
-func TestOutpointAndNonceOp(t *testing.T) {
+func TestOutputIDAndNonceOp(t *testing.T) {
 	var zeroHash bc.Hash
 	nonce := []byte{36, 37, 38}
 	tx := bc.NewTx(bc.TxData{
@@ -98,13 +98,13 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		runLimit:   50000,
 		tx:         tx,
 		inputIndex: 0,
-		program:    []byte{uint8(OP_OUTPOINT)},
+		program:    []byte{uint8(OP_OUTPUTID)},
 	}
 	err := vm.step()
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedStack := [][]byte{zeroHash[:], []byte{}}
+	expectedStack := [][]byte{mustDecodeHex("642fb8c99dd23bfa0f6edcaaa72c7000f4b2339aa18f3830c1b48923b9f0ea21")}
 	if !reflect.DeepEqual(vm.dataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
 	}
@@ -113,7 +113,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		runLimit:   50000,
 		tx:         tx,
 		inputIndex: 1,
-		program:    []byte{uint8(OP_OUTPOINT)},
+		program:    []byte{uint8(OP_OUTPUTID)},
 	}
 	err = vm.step()
 	if err != ErrContext {
@@ -477,7 +477,7 @@ func TestIntrospectionOps(t *testing.T) {
 	txops := []Op{
 		OP_CHECKOUTPUT, OP_ASSET, OP_AMOUNT, OP_PROGRAM,
 		OP_MINTIME, OP_MAXTIME, OP_TXREFDATAHASH, OP_REFDATAHASH,
-		OP_INDEX, OP_OUTPOINT,
+		OP_INDEX, OP_OUTPUTID,
 	}
 
 	for _, op := range txops {

@@ -210,7 +210,7 @@ const (
 	OP_TXREFDATAHASH Op = 0xc7
 	OP_REFDATAHASH   Op = 0xc8
 	OP_INDEX         Op = 0xc9
-	OP_OUTPOINT      Op = 0xcb
+	OP_OUTPUTID      Op = 0xcb
 	OP_NONCE         Op = 0xcc
 	OP_NEXTPROGRAM   Op = 0xcd
 	OP_BLOCKTIME     Op = 0xce
@@ -321,7 +321,7 @@ var (
 		OP_TXREFDATAHASH: {OP_TXREFDATAHASH, "TXREFDATAHASH", opTxRefDataHash},
 		OP_REFDATAHASH:   {OP_REFDATAHASH, "REFDATAHASH", opRefDataHash},
 		OP_INDEX:         {OP_INDEX, "INDEX", opIndex},
-		OP_OUTPOINT:      {OP_OUTPOINT, "OUTPOINT", opOutpoint},
+		OP_OUTPUTID:      {OP_OUTPUTID, "OUTPUTID", opOutputid},
 		OP_NONCE:         {OP_NONCE, "NONCE", opNonce},
 		OP_NEXTPROGRAM:   {OP_NEXTPROGRAM, "NEXTPROGRAM", opNextProgram},
 		OP_BLOCKTIME:     {OP_BLOCKTIME, "BLOCKTIME", opBlockTime},
