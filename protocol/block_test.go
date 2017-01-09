@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
@@ -161,15 +160,7 @@ func TestGenerateBlock(t *testing.T) {
 		}),
 	}
 
-	p := mempool.New()
-	for _, tx := range txs {
-		err := p.Submit(ctx, tx)
-		if err != nil {
-			testutil.FatalErr(t, err)
-		}
-	}
-
-	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now, p.Dump(ctx))
+	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now, txs)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -215,7 +206,7 @@ func TestValidateBlockForSig(t *testing.T) {
 	}
 }
 
-// newTestChain returns a new Chain using memstore and mempool for storage,
+// newTestChain returns a new Chain using memstore for storage,
 // along with an initial block b1 (with a 0/0 multisig program).
 // It commits b1 before returning.
 func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {

@@ -12,6 +12,7 @@ import (
 	"chain/core/asset"
 	"chain/core/config"
 	"chain/core/coretest"
+	"chain/core/generator"
 	"chain/core/leader"
 	"chain/core/pin"
 	"chain/core/query"
@@ -19,7 +20,6 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/prottest"
 	"chain/protocol/vm"
 	"chain/testutil"
@@ -29,7 +29,7 @@ func TestBuildFinal(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
-	p := mempool.New()
+	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	accounts := account.NewManager(db, c, pinStore)
 	assets := asset.NewRegistry(db, c, pinStore)
@@ -54,13 +54,13 @@ func TestBuildFinal(t *testing.T) {
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, p, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	prottest.MakeBlock(t, c, p.Dump(ctx))
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	sources = accounts.NewSpendAction(assetAmt, acc, nil, nil)
@@ -137,7 +137,7 @@ func TestAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
-	p := mempool.New()
+	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	assets := asset.NewRegistry(db, c, pinStore)
 	accounts := account.NewManager(db, c, pinStore)
@@ -161,13 +161,13 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, p, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	prottest.MakeBlock(t, c, p.Dump(ctx))
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// new source
@@ -178,7 +178,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, p, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,19 +194,19 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	(&Handler{Config: &config.Config{}, Submitter: mempool.New()}).init()
+	(&Handler{Config: &config.Config{}}).init()
 }
 
 func TestTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
-	p := mempool.New()
+	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	handler := &Handler{
 		Chain:     c,
-		Submitter: p,
+		Submitter: g,
 		Assets:    asset.NewRegistry(db, c, pinStore),
 		Accounts:  account.NewManager(db, c, pinStore),
 		Indexer:   query.NewIndexer(db, c, pinStore),
@@ -252,13 +252,13 @@ func TestTransfer(t *testing.T) {
 
 	coretest.SignTxTemplate(t, ctx, txTemplate, nil)
 
-	err = txbuilder.FinalizeTx(ctx, c, p, bc.NewTx(*txTemplate.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*txTemplate.Transaction))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	prottest.MakeBlock(t, c, p.Dump(ctx))
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// Now transfer
