@@ -262,7 +262,7 @@ func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 
 // HashForSig generates the hash required for the specified input's
 // signature.
-func (tx *TxData) HashForSig(idx int) Hash {
+func (tx *TxData) HashForSig(idx uint32) Hash {
 	return NewSigHasher(tx).Hash(idx)
 }
 
@@ -276,7 +276,7 @@ func NewSigHasher(txData *TxData) *SigHasher {
 	return &SigHasher{txData: txData}
 }
 
-func (s *SigHasher) Hash(idx int) Hash {
+func (s *SigHasher) Hash(idx uint32) Hash {
 	if s.txHash == nil {
 		h := s.txData.Hash()
 		s.txHash = &h

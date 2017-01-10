@@ -33,7 +33,7 @@ func (t *Template) Hash(idx uint32) bc.Hash {
 	if t.sigHasher == nil {
 		t.sigHasher = bc.NewSigHasher(t.Transaction)
 	}
-	return t.sigHasher.Hash(int(idx))
+	return t.sigHasher.Hash(idx)
 }
 
 // SigningInstruction gives directions for signing inputs in a TxTemplate.

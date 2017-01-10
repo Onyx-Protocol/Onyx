@@ -34,7 +34,7 @@ type virtualMachine struct {
 	altStack  [][]byte
 
 	tx         *bc.Tx
-	inputIndex int
+	inputIndex uint32
 	sigHasher  *bc.SigHasher
 
 	block *bc.Block
@@ -54,7 +54,7 @@ func VerifyTxInput(tx *bc.Tx, inputIndex int) (ok bool, err error) {
 	return verifyTxInput(tx, inputIndex)
 }
 
-func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
+func verifyTxInput(tx *bc.Tx, inputIndex uint32) (bool, error) {
 	if inputIndex < 0 || inputIndex >= len(tx.Inputs) {
 		return false, ErrBadValue
 	}
