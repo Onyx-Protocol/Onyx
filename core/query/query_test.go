@@ -10,12 +10,12 @@ import (
 	"chain/core/coretest"
 	"chain/core/pin"
 	"chain/database/pg/pgtest"
+	"chain/protocol/bc"
 	"chain/protocol/mempool"
 	"chain/protocol/prottest"
-	"chain/testutil"
 )
 
-func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Time, *account.Account, *account.Account, *asset.Asset, *asset.Asset) {
+func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Time, string, string, bc.AssetID, bc.AssetID) {
 	time1 := time.Now()
 
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
@@ -32,30 +32,19 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	go assets.ProcessBlocks(ctx)
 	go indexer.ProcessBlocks(ctx)
 
-	acct1, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	acct2, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	acct1 := coretest.CreateAccount(ctx, t, accounts, "", nil)
+	acct2 := coretest.CreateAccount(ctx, t, accounts, "", nil)
 
 	asset1Tags := map[string]interface{}{"currency": "USD"}
 
-	asset1, err := assets.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", asset1Tags, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	asset2, err := assets.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	coretest.CreateAsset(ctx, t, assets, nil, "", asset1Tags)
+
+	asset1 := coretest.CreateAsset(ctx, t, assets, nil, "", asset1Tags)
+	asset2 := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 
 	p := mempool.New()
-	coretest.IssueAssets(ctx, t, c, p, assets, accounts, asset1.AssetID, 867, acct1.ID)
-	coretest.IssueAssets(ctx, t, c, p, assets, accounts, asset2.AssetID, 100, acct1.ID)
+	coretest.IssueAssets(ctx, t, c, p, assets, accounts, asset1, 867, acct1)
+	coretest.IssueAssets(ctx, t, c, p, assets, accounts, asset2, 100, acct1)
 
 	prottest.MakeBlock(t, c, p.Dump(ctx))
 	<-pinStore.PinWaiter(TxPinName, c.Height())

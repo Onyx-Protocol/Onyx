@@ -11,7 +11,6 @@ import (
 	"chain/core/pin"
 	"chain/core/query"
 	. "chain/core/txbuilder"
-	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
@@ -34,11 +33,11 @@ func TestSighashCheck(t *testing.T) {
 	}
 
 	p := mempool.New()
-	_, err = issue(ctx, t, info, p, info.acctA.ID, 10)
+	_, err = issue(ctx, t, info, p, info.acctA, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = issue(ctx, t, info, p, info.acctB.ID, 10)
+	_, err = issue(ctx, t, info, p, info.acctB, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,31 +46,31 @@ func TestSighashCheck(t *testing.T) {
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset.AssetID,
+		AssetID: info.asset,
 		Amount:  1,
 	}
-	spendAction1 := info.NewSpendAction(assetAmount, info.acctA.ID, nil, nil)
-	controlAction1 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
+	spendAction1 := info.NewSpendAction(assetAmount, info.acctA, nil, nil)
+	controlAction1 := info.NewControlAction(assetAmount, info.acctB, nil)
 
 	tpl1, err := Build(ctx, nil, []Action{spendAction1, controlAction1}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 	tpl1.AllowAdditional = true
-	coretest.SignTxTemplate(t, ctx, tpl1, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, tpl1, nil)
 	err = CheckTxSighashCommitment(bc.NewTx(*tpl1.Transaction))
 	if err == nil {
 		t.Error("unexpected success from checkTxSighashCommitment")
 	}
 
-	spendAction2a := info.NewSpendAction(assetAmount, info.acctB.ID, nil, nil)
-	controlAction2 := info.NewControlAction(assetAmount, info.acctA.ID, nil)
+	spendAction2a := info.NewSpendAction(assetAmount, info.acctB, nil, nil)
+	controlAction2 := info.NewControlAction(assetAmount, info.acctA, nil)
 
 	tpl2a, err := Build(ctx, tpl1.Transaction, []Action{spendAction2a, controlAction2}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
-	coretest.SignTxTemplate(t, ctx, tpl2a, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, tpl2a, nil)
 	err = CheckTxSighashCommitment(bc.NewTx(*tpl2a.Transaction))
 	if err != nil {
 		t.Errorf("unexpected failure from checkTxSighashCommitment (case 1): %v", err)
@@ -82,7 +81,7 @@ func TestSighashCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	coretest.SignTxTemplate(t, ctx, tpl2b, &info.privKeyAsset)
+	coretest.SignTxTemplate(t, ctx, tpl2b, nil)
 	err = CheckTxSighashCommitment(bc.NewTx(*tpl2b.Transaction))
 	if err != nil {
 		t.Errorf("unexpected failure from checkTxSighashCommitment (case 2): %v", err)
@@ -105,7 +104,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	p := mempool.New()
-	_, err = issue(ctx, t, info, p, info.acctA.ID, 10)
+	_, err = issue(ctx, t, info, p, info.acctA, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,11 +115,11 @@ func TestConflictingTxsInPool(t *testing.T) {
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset.AssetID,
+		AssetID: info.asset,
 		Amount:  10,
 	}
-	spendAction := info.NewSpendAction(assetAmount, info.acctA.ID, nil, nil)
-	dest1 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
+	spendAction := info.NewSpendAction(assetAmount, info.acctA, nil, nil)
+	dest1 := info.NewControlAction(assetAmount, info.acctB, nil)
 
 	// Build the first tx
 	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1}, time.Now().Add(time.Minute))
@@ -128,7 +127,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 	unsignedTx := *firstTemplate.Transaction
-	coretest.SignTxTemplate(t, ctx, firstTemplate, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, firstTemplate, nil)
 	tx := bc.NewTx(*firstTemplate.Transaction)
 	err = FinalizeTx(ctx, info.Chain, p, tx)
 	if err != nil {
@@ -145,7 +144,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Program = nil
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Sigs = nil
-	coretest.SignTxTemplate(t, ctx, secondTemplate, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, secondTemplate, nil)
 	err = FinalizeTx(ctx, info.Chain, p, bc.NewTx(*secondTemplate.Transaction))
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -172,7 +171,7 @@ func TestTransferConfirmed(t *testing.T) {
 	}
 
 	p := mempool.New()
-	_, err = issue(ctx, t, info, p, info.acctA.ID, 10)
+	_, err = issue(ctx, t, info, p, info.acctA, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +182,7 @@ func TestTransferConfirmed(t *testing.T) {
 
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
-	_, err = transfer(ctx, t, info, p, info.acctA.ID, info.acctB.ID, 10)
+	_, err = transfer(ctx, t, info, p, info.acctA, info.acctB, 10)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -199,7 +198,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 
 	p := mempool.New()
 	for i := 0; i < b.N; i++ {
-		tx, err := issue(ctx, b, info, p, info.acctA.ID, 10)
+		tx, err := issue(ctx, b, info, p, info.acctA, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -207,7 +206,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		prottest.MakeBlock(b, info.Chain, p.Dump(ctx))
 		<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
-		tx, err = transfer(ctx, b, info, p, info.acctA.ID, info.acctB.ID, 10)
+		tx, err = transfer(ctx, b, info, p, info.acctA, info.acctB, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -336,12 +335,10 @@ type testInfo struct {
 	*asset.Registry
 	*account.Manager
 	*protocol.Chain
-	pinStore        *pin.Store
-	asset           *asset.Asset
-	acctA           *account.Account
-	acctB           *account.Account
-	privKeyAsset    chainkd.XPrv
-	privKeyAccounts chainkd.XPrv
+	pinStore *pin.Store
+	asset    bc.AssetID
+	acctA    string
+	acctB    string
 }
 
 // TODO(kr): refactor this into new package core/coreutil
@@ -357,46 +354,26 @@ func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
 	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
 
-	accPriv, accPub, err := chainkd.NewXKeys(nil)
-	if err != nil {
-		return nil, err
-	}
+	acctA := coretest.CreateAccount(ctx, t, accounts, "", nil)
+	acctB := coretest.CreateAccount(ctx, t, accounts, "", nil)
 
-	acctA, err := accounts.Create(ctx, []string{accPub.String()}, 1, "", nil, "")
-	if err != nil {
-		return nil, err
-	}
-	acctB, err := accounts.Create(ctx, []string{accPub.String()}, 1, "", nil, "")
-	if err != nil {
-		return nil, err
-	}
-
-	assetPriv, assetPub, err := chainkd.NewXKeys(nil)
-	if err != nil {
-		return nil, err
-	}
-	asset, err := assets.Define(ctx, []string{assetPub.String()}, 1, nil, "", nil, "")
-	if err != nil {
-		return nil, err
-	}
+	asset := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 
 	info := &testInfo{
-		Chain:           c,
-		Registry:        assets,
-		Manager:         accounts,
-		pinStore:        pinStore,
-		asset:           asset,
-		acctA:           acctA,
-		acctB:           acctB,
-		privKeyAsset:    assetPriv,
-		privKeyAccounts: accPriv,
+		Chain:    c,
+		Registry: assets,
+		Manager:  accounts,
+		pinStore: pinStore,
+		asset:    asset,
+		acctA:    acctA,
+		acctB:    acctB,
 	}
 	return info, nil
 }
 
 func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset.AssetID,
+		AssetID: info.asset,
 		Amount:  amount,
 	}
 	issueTx, err := Build(ctx, nil, []Action{
@@ -406,14 +383,14 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destA
 	if err != nil {
 		return nil, err
 	}
-	coretest.SignTxTemplate(t, ctx, issueTx, &info.privKeyAsset)
+	coretest.SignTxTemplate(t, ctx, issueTx, nil)
 	tx := bc.NewTx(*issueTx.Transaction)
 	return tx, FinalizeTx(ctx, info.Chain, s, tx)
 }
 
 func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset.AssetID,
+		AssetID: info.asset,
 		Amount:  amount,
 	}
 	source := info.NewSpendAction(assetAmount, srcAcctID, nil, nil)
@@ -424,7 +401,7 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, sr
 		return nil, errors.Wrap(err)
 	}
 
-	coretest.SignTxTemplate(t, ctx, xferTx, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, xferTx, nil)
 
 	tx := bc.NewTx(*xferTx.Transaction)
 	err = FinalizeTx(ctx, info.Chain, s, tx)

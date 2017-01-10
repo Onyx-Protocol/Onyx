@@ -30,10 +30,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
 	go accounts.ProcessBlocks(ctx)
 
-	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	acc := coretest.CreateAccount(ctx, t, accounts, "", nil)
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
@@ -42,7 +39,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 	}
 
 	source := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
-	dest := accounts.NewControlAction(assetAmt, acc.ID, nil)
+	dest := accounts.NewControlAction(assetAmt, acc, nil)
 
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{source, dest}, time.Now().Add(time.Minute))
 	if err != nil {
@@ -60,7 +57,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// Add a new source, spending the change output produced above.
-	source = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
+	source = accounts.NewSpendAction(assetAmt, acc, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{source, dest}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
