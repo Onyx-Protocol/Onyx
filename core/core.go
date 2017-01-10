@@ -90,7 +90,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 
 		// fetchTime might be the zero time if we're having trouble connecting
 		// to the remote generator. Only set the height & time if we have it.
-		// The dashboard will handle nulls correctly.
+		// The dashboard will handle zeros correctly.
 		if !fetchTime.IsZero() {
 			generatorHeight, generatorFetched = fetchHeight, fetchTime
 		}

@@ -36,7 +36,7 @@ export const blockHeight = (state, action) =>
   coreConfigReducer('block_height', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.generator_block_height == null) return '???'
+    if (action.param.generator_block_height == 0) return '???'
   }
 
   return coreConfigReducer('generator_block_height', state, 0, action)
@@ -65,7 +65,7 @@ export const coreType = (state = '', action) => {
 
 export const replicationLag = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.generator_block_height == null) {
+    if (action.param.generator_block_height == 0) {
       return null
     }
     return action.param.generator_block_height - action.param.block_height
@@ -128,7 +128,7 @@ export const syncEstimates = (state = {}, action) => {
 
 export const replicationLagClass = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.generator_block_height == null) {
+    if (action.param.generator_block_height == 0) {
       return 'red'
     } else {
       let lag = action.param.generator_block_height - action.param.block_height
