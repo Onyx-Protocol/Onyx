@@ -49,7 +49,7 @@ type Config struct {
 	BlockPub             string        `json:"block_pub"`
 	Signers              []BlockSigner `json:"block_signer_urls"`
 	Quorum               int
-	MaxIssuanceWindow    time.Duration
+	MaxIssuanceWindow    chainjson.Duration
 }
 
 type BlockSigner struct {
@@ -97,7 +97,7 @@ func Load(ctx context.Context, db pg.DB) (*Config, error) {
 		}
 	}
 
-	c.MaxIssuanceWindow = time.Duration(miw) * time.Millisecond
+	c.MaxIssuanceWindow = chainjson.Duration{time.Duration(miw) * time.Millisecond}
 	return c, nil
 }
 
@@ -188,7 +188,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		}
 
 		c.BlockchainID = initialBlockHash
-		chain.MaxIssuanceWindow = c.MaxIssuanceWindow
+		chain.MaxIssuanceWindow = c.MaxIssuanceWindow.Duration
 	}
 
 	var blockSignerData []byte
@@ -223,7 +223,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.GeneratorURL,
 		c.GeneratorAccessToken,
 		blockSignerData,
-		bc.DurationMillis(c.MaxIssuanceWindow),
+		bc.DurationMillis(c.MaxIssuanceWindow.Duration),
 	)
 	return err
 }

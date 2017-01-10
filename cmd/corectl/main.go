@@ -17,6 +17,7 @@ import (
 	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
 	"chain/database/sql"
+	chainjson "chain/encoding/json"
 	"chain/env"
 	"chain/log"
 )
@@ -118,11 +119,13 @@ func configGenerator(db *sql.DB, args []string) {
 	}
 
 	conf := &config.Config{
-		IsGenerator:       true,
-		IsSigner:          *isSigner,
-		Quorum:            quorum,
-		Signers:           signers,
-		MaxIssuanceWindow: *maxIssuanceWindow,
+		IsGenerator: true,
+		IsSigner:    *isSigner,
+		Quorum:      quorum,
+		Signers:     signers,
+		MaxIssuanceWindow: chainjson.Duration{
+			Duration: *maxIssuanceWindow,
+		},
 	}
 
 	ctx := context.Background()

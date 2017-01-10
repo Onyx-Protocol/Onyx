@@ -134,8 +134,8 @@ func (h *Handler) configure(ctx context.Context, x *config.Config) error {
 		return errAlreadyConfigured
 	}
 
-	if x.IsGenerator && x.MaxIssuanceWindow == 0 {
-		x.MaxIssuanceWindow = 24 * time.Hour
+	if x.IsGenerator && x.MaxIssuanceWindow.Duration == 0 {
+		x.MaxIssuanceWindow.Duration = 24 * time.Hour
 	}
 
 	err := config.Configure(ctx, h.DB, x)
