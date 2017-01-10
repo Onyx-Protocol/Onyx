@@ -18,7 +18,7 @@ var (
 	states = make(map[*protocol.Chain]*state.Snapshot)
 )
 
-// NewChain makes a new Chain using memstore and mempool for storage,
+// NewChain makes a new Chain using memstore for storage,
 // along with an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
 func NewChain(tb testing.TB) *protocol.Chain {

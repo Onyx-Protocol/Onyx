@@ -16,7 +16,6 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 	"chain/testutil"
@@ -44,19 +43,6 @@ func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *controlPro
 
 func TestBuild(t *testing.T) {
 	ctx := context.Background()
-	pool := mempool.New()
-
-	err := pool.Submit(ctx, &bc.Tx{
-		Hash: [32]byte{255},
-		TxData: bc.TxData{
-			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput([32]byte{1}, 5, nil, nil),
-			},
-		},
-	})
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
 
 	actions := []Action{
 		newControlProgramAction(bc.AssetAmount{AssetID: [32]byte{2}, Amount: 6}, []byte("dest")),

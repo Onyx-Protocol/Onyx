@@ -59,6 +59,17 @@ func New(
 	}
 }
 
+// PendingTxs returns all of the pendings txs that will be
+// included in the generator's next block.
+func (g *Generator) PendingTxs() []*bc.Tx {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	txs := make([]*bc.Tx, len(g.pool))
+	copy(txs, g.pool)
+	return txs
+}
+
 // Submit adds a new pending tx to the pending tx pool.
 func (g *Generator) Submit(ctx context.Context, tx *bc.Tx) error {
 	g.mu.Lock()

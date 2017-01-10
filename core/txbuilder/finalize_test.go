@@ -8,6 +8,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
+	"chain/core/generator"
 	"chain/core/pin"
 	"chain/core/query"
 	. "chain/core/txbuilder"
@@ -17,7 +18,6 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/memstore"
 	"chain/protocol/prottest"
 	"chain/protocol/state"
@@ -32,17 +32,20 @@ func TestSighashCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := mempool.New()
-	_, err = issue(ctx, t, info, p, info.acctA, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = issue(ctx, t, info, p, info.acctB, 10)
+	g := generator.New(info.Chain, nil, db)
+	_, err = issue(ctx, t, info, g, info.acctA, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = issue(ctx, t, info, g, info.acctB, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	prottest.MakeBlock(t, info.Chain, p.Dump(ctx))
+	prottest.MakeBlock(t, info.Chain, g.PendingTxs())
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	assetAmount := bc.AssetAmount{
@@ -103,14 +106,14 @@ func TestConflictingTxsInPool(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := mempool.New()
-	_, err = issue(ctx, t, info, p, info.acctA, 10)
+	g := generator.New(info.Chain, nil, db)
+	_, err = issue(ctx, t, info, g, info.acctA, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	dumpBlocks(ctx, t, db)
-	prottest.MakeBlock(t, info.Chain, p.Dump(ctx))
+	prottest.MakeBlock(t, info.Chain, g.PendingTxs())
 	dumpBlocks(ctx, t, db)
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
@@ -129,7 +132,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	unsignedTx := *firstTemplate.Transaction
 	coretest.SignTxTemplate(t, ctx, firstTemplate, nil)
 	tx := bc.NewTx(*firstTemplate.Transaction)
-	err = FinalizeTx(ctx, info.Chain, p, tx)
+	err = FinalizeTx(ctx, info.Chain, g, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -145,14 +148,14 @@ func TestConflictingTxsInPool(t *testing.T) {
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Program = nil
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Sigs = nil
 	coretest.SignTxTemplate(t, ctx, secondTemplate, nil)
-	err = FinalizeTx(ctx, info.Chain, p, bc.NewTx(*secondTemplate.Transaction))
+	err = FinalizeTx(ctx, info.Chain, g, bc.NewTx(*secondTemplate.Transaction))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
 	// Make a block, which should reject one of the txs.
 	dumpBlocks(ctx, t, db)
-	b := prottest.MakeBlock(t, info.Chain, p.Dump(ctx))
+	b := prottest.MakeBlock(t, info.Chain, g.PendingTxs())
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	dumpBlocks(ctx, t, db)
@@ -170,19 +173,19 @@ func TestTransferConfirmed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := mempool.New()
-	_, err = issue(ctx, t, info, p, info.acctA, 10)
+	g := generator.New(info.Chain, nil, db)
+	_, err = issue(ctx, t, info, g, info.acctA, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	dumpBlocks(ctx, t, db)
-	prottest.MakeBlock(t, info.Chain, p.Dump(ctx))
+	prottest.MakeBlock(t, info.Chain, g.PendingTxs())
 	dumpBlocks(ctx, t, db)
 
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
-	_, err = transfer(ctx, t, info, p, info.acctA, info.acctB, 10)
+	_, err = transfer(ctx, t, info, g, info.acctA, info.acctB, 10)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -196,24 +199,24 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	p := mempool.New()
+	g := generator.New(info.Chain, nil, db)
 	for i := 0; i < b.N; i++ {
-		tx, err := issue(ctx, b, info, p, info.acctA, 10)
+		tx, err := issue(ctx, b, info, g, info.acctA, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
 		b.Logf("finalized %v", tx.Hash)
-		prottest.MakeBlock(b, info.Chain, p.Dump(ctx))
+		prottest.MakeBlock(b, info.Chain, g.PendingTxs())
 		<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
-		tx, err = transfer(ctx, b, info, p, info.acctA, info.acctB, 10)
+		tx, err = transfer(ctx, b, info, g, info.acctA, info.acctB, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
 		b.Logf("finalized %v", tx.Hash)
 
 		if i%10 == 0 {
-			prottest.MakeBlock(b, info.Chain, p.Dump(ctx))
+			prottest.MakeBlock(b, info.Chain, g.PendingTxs())
 		}
 	}
 }
@@ -297,8 +300,8 @@ func benchGenBlock(b *testing.B) {
 	b.StopTimer()
 
 	ctx := context.Background()
-	store, pool := memstore.New(), mempool.New()
-	c := prottest.NewChainWithStorage(b, store)
+	c := prottest.NewChainWithStorage(b, memstore.New())
+	g := generator.New(c, nil, pgtest.NewTx(b))
 	initialBlock, err := c.GetBlock(ctx, 1)
 	if err != nil {
 		testutil.FatalErr(b, err)
@@ -313,18 +316,18 @@ func benchGenBlock(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	err = pool.Submit(ctx, &tx1)
+	err = g.Submit(ctx, &tx1)
 	if err != nil {
 		b.Fatal(err)
 	}
-	err = pool.Submit(ctx, &tx2)
+	err = g.Submit(ctx, &tx2)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	now := time.Now()
 	b.StartTimer()
-	_, _, err = c.GenerateBlock(ctx, initialBlock, state.Empty(), now, pool.Dump(ctx))
+	_, _, err = c.GenerateBlock(ctx, initialBlock, state.Empty(), now, g.PendingTxs())
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)

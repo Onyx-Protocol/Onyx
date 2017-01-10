@@ -12,6 +12,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
+	"chain/core/generator"
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/txbuilder"
@@ -20,7 +21,6 @@ import (
 	"chain/database/sql"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/prottest"
 )
 
@@ -34,9 +34,9 @@ func TestRecovery(t *testing.T) {
 	// Setup the test environment using a clean db.
 	ctx := context.Background()
 	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	pool := mempool.New()
 	store := txdb.NewStore(db)
 	c := prottest.NewChainWithStorage(t, store)
+	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)
@@ -59,19 +59,19 @@ func TestRecovery(t *testing.T) {
 		bob     = coretest.CreateAccount(ctx, t, accounts, "bob", nil)
 	)
 	// Issue some apples to Alice and a dollar to Bob.
-	_ = coretest.IssueAssets(ctx, t, c, pool, assets, accounts, apple, 10, alice)
-	_ = coretest.IssueAssets(ctx, t, c, pool, assets, accounts, usd, 1, bob)
-	prottest.MakeBlock(t, c, pool.Dump(ctx))
+	_ = coretest.IssueAssets(ctx, t, c, g, assets, accounts, apple, 10, alice)
+	_ = coretest.IssueAssets(ctx, t, c, g, assets, accounts, usd, 1, bob)
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// Submit a transfer between Alice and Bob but don't publish it in a block.
-	coretest.Transfer(ctx, t, c, pool, []txbuilder.Action{
+	coretest.Transfer(ctx, t, c, g, []txbuilder.Action{
 		accounts.NewControlAction(bc.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
 		accounts.NewControlAction(bc.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
 		accounts.NewSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil),
 		accounts.NewSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil),
 	})
-	poolTxs := pool.Dump(ctx)
+	poolTxs := g.PendingTxs()
 
 	err := db.Close()
 	if err != nil {

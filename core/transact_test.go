@@ -8,12 +8,12 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
+	"chain/core/generator"
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -22,7 +22,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
-	p := mempool.New()
+	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	assets := asset.NewRegistry(db, c, pinStore)
 	accounts := account.NewManager(db, c, pinStore)
@@ -46,11 +46,11 @@ func TestAccountTransferSpendChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, p, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
-	b := prottest.MakeBlock(t, c, p.Dump(ctx))
+	b := prottest.MakeBlock(t, c, g.PendingTxs())
 	if len(b.Transactions) != 1 {
 		t.Errorf("len(b.Transactions) = %d, want 1", len(b.Transactions))
 	}
@@ -63,11 +63,11 @@ func TestAccountTransferSpendChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, p, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
-	b = prottest.MakeBlock(t, c, p.Dump(ctx))
+	b = prottest.MakeBlock(t, c, g.PendingTxs())
 	if len(b.Transactions) != 1 {
 		t.Errorf("len(b.Transactions) = %d, want 1", len(b.Transactions))
 	}
