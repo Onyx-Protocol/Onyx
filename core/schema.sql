@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -463,9 +463,9 @@ CREATE TABLE signers (
     id text NOT NULL,
     type text NOT NULL,
     key_index bigint NOT NULL,
-    xpubs text[] NOT NULL,
     quorum integer NOT NULL,
-    client_token text
+    client_token text,
+    xpubs bytea[] NOT NULL
 );
 
 
@@ -877,3 +877,4 @@ insert into migrations (filename, hash) values ('2016-11-22.0.account.utxos-inde
 insert into migrations (filename, hash) values ('2016-11-23.0.query.jsonb-path-ops.sql', 'adb15b9a6b7b223a17dbfd5f669e44c500b343568a563f87e1ae67ba0f938d55');
 insert into migrations (filename, hash) values ('2016-11-28.0.core.submitted-txs-hash.sql', 'cabbd7fd79a2b672b2d3c854783bde3b8245fe666c50261c3335a0c0501ff2ea');
 insert into migrations (filename, hash) values ('2017-01-05.0.core.rename_block_key.sql', 'ba6a62e498236ec9d2f13238a945829a5cab83f897068fef57a2c152a2e36037');
+insert into migrations (filename, hash) values ('2017-01-10.0.signers.xpubs-type.sql', '4a4d6c736a2bf65e69abbdc87771faa1dc17a0106b2651a6a58af067708d095a');

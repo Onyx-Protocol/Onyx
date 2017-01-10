@@ -37,7 +37,7 @@ func TestMockHSM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	acct1, err := accounts.Create(ctx, []string{xpub1.XPub.String()}, 1, "", nil, "")
+	acct1, err := accounts.Create(ctx, []chainkd.XPub{xpub1.XPub}, 1, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestMockHSM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	acct2, err := accounts.Create(ctx, []string{xpub2.String()}, 1, "", nil, "")
+	acct2, err := accounts.Create(ctx, []chainkd.XPub{xpub2}, 1, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}

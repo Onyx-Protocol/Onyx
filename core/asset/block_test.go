@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
@@ -25,7 +26,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a local asset which should be unaffected by a block landing.
-	local, err := r.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", nil, "")
+	local, err := r.Define(ctx, []chainkd.XPub{testutil.TestXPub}, 1, nil, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}

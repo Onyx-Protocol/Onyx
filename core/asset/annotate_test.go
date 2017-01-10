@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
 	"chain/protocol/prottest"
 	"chain/testutil"
@@ -17,13 +18,13 @@ func TestAnnotateTxs(t *testing.T) {
 	tags1 := map[string]interface{}{"foo": "bar"}
 	def1 := map[string]interface{}{"baz": "bar"}
 
-	asset1, err := reg.Define(ctx, []string{testutil.TestXPub.String()}, 1, def1, "", tags1, "")
+	asset1, err := reg.Define(ctx, []chainkd.XPub{testutil.TestXPub}, 1, def1, "", tags1, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	tags2 := map[string]interface{}{"foo": "baz"}
-	asset2, err := reg.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", tags2, "")
+	asset2, err := reg.Define(ctx, []chainkd.XPub{testutil.TestXPub}, 1, nil, "", tags2, "")
 	if err != nil {
 		t.Fatal(err)
 	}

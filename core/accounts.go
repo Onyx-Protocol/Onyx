@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"chain/core/signers"
+	"chain/crypto/ed25519/chainkd"
 	"chain/net/http/reqid"
 )
 
@@ -25,7 +26,7 @@ type accountKey struct {
 
 // POST /create-account
 func (h *Handler) createAccount(ctx context.Context, ins []struct {
-	RootXPubs []string `json:"root_xpubs"`
+	RootXPubs []chainkd.XPub `json:"root_xpubs"`
 	Quorum    int
 	Alias     string
 	Tags      map[string]interface{}
