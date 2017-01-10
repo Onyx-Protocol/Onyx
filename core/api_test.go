@@ -37,10 +37,7 @@ func TestBuildFinal(t *testing.T) {
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
 	go accounts.ProcessBlocks(ctx)
 
-	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	acc := coretest.CreateAccount(ctx, t, accounts, "", nil)
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
@@ -49,7 +46,7 @@ func TestBuildFinal(t *testing.T) {
 	}
 
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
-	dests := accounts.NewControlAction(assetAmt, acc.ID, nil)
+	dests := accounts.NewControlAction(assetAmt, acc, nil)
 
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
@@ -66,7 +63,7 @@ func TestBuildFinal(t *testing.T) {
 	prottest.MakeBlock(t, c, p.Dump(ctx))
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
-	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
+	sources = accounts.NewSpendAction(assetAmt, acc, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
@@ -148,10 +145,7 @@ func TestAccountTransfer(t *testing.T) {
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
 	go accounts.ProcessBlocks(ctx)
 
-	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	acc := coretest.CreateAccount(ctx, t, accounts, "", nil)
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
@@ -160,7 +154,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
-	dests := accounts.NewControlAction(assetAmt, acc.ID, nil)
+	dests := accounts.NewControlAction(assetAmt, acc, nil)
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
@@ -177,7 +171,7 @@ func TestAccountTransfer(t *testing.T) {
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// new source
-	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
+	sources = accounts.NewSpendAction(assetAmt, acc, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)

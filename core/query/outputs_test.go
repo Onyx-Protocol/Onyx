@@ -156,7 +156,7 @@ func TestQueryOutputs(t *testing.T) {
 	cases := []testcase{
 		{
 			filter: "asset_id = $1",
-			values: []interface{}{asset1.AssetID.String()},
+			values: []interface{}{asset1.String()},
 			when:   time1,
 		},
 		{
@@ -166,10 +166,10 @@ func TestQueryOutputs(t *testing.T) {
 		},
 		{
 			filter: "asset_id = $1",
-			values: []interface{}{asset1.AssetID.String()},
+			values: []interface{}{asset1.String()},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
 			},
 		},
 		{
@@ -177,60 +177,60 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{"USD"},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
 			},
 		},
 		{
 			filter: "asset_id = $1",
-			values: []interface{}{asset2.AssetID.String()},
+			values: []interface{}{asset2.String()},
 			when:   time1,
 		},
 		{
 			filter: "asset_id = $1",
-			values: []interface{}{asset2.AssetID.String()},
+			values: []interface{}{asset2.String()},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset2, Amount: 100}, acct1},
 			},
 		},
 		{
 			filter: "account_id = $1",
-			values: []interface{}{acct1.ID},
+			values: []interface{}{acct1},
 			when:   time1,
 			want:   []assetAccountAmount{},
 		},
 		{
 			filter: "account_id = $1",
-			values: []interface{}{acct1.ID},
+			values: []interface{}{acct1},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset2, Amount: 100}, acct1},
+				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
 			},
 		},
 		{
 			filter: "account_id = $1",
-			values: []interface{}{acct2.ID},
+			values: []interface{}{acct2},
 			when:   time1,
 			want:   []assetAccountAmount{},
 		},
 		{
 			filter: "account_id = $1",
-			values: []interface{}{acct2.ID},
+			values: []interface{}{acct2},
 			when:   time2,
 			want:   []assetAccountAmount{},
 		},
 		{
 			filter: "asset_id = $1 AND account_id = $2",
-			values: []interface{}{asset1.AssetID.String(), acct1.ID},
+			values: []interface{}{asset1.String(), acct1},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
 			},
 		},
 		{
 			filter: "asset_id = $1 AND account_id = $2",
-			values: []interface{}{asset2.AssetID.String(), acct2.ID},
+			values: []interface{}{asset2.String(), acct2},
 			when:   time2,
 			want:   []assetAccountAmount{},
 		},
