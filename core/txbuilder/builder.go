@@ -82,50 +82,52 @@ func (b *TemplateBuilder) rollback() {
 	}
 }
 
-func (b *TemplateBuilder) Build() (*Template, error) {
+func (b *TemplateBuilder) Build() (*Template, *bc.TxData, error) {
 	// Run any building callbacks.
 	for _, cb := range b.callbacks {
 		err := cb()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
-	tpl := &Template{Transaction: b.base}
-	if tpl.Transaction == nil {
-		tpl.Transaction = &bc.TxData{
+	tpl := &Template{}
+	tx := b.base
+	if tx == nil {
+		tx = &bc.TxData{
 			Version: bc.CurrentTransactionVersion,
 		}
 		tpl.Local = true
 	}
 
 	// Update min & max times.
-	if !b.minTime.IsZero() && bc.Millis(b.minTime) > tpl.Transaction.MinTime {
-		tpl.Transaction.MinTime = bc.Millis(b.minTime)
+	if !b.minTime.IsZero() && bc.Millis(b.minTime) > tx.MinTime {
+		tx.MinTime = bc.Millis(b.minTime)
 	}
-	if tpl.Transaction.MaxTime == 0 || tpl.Transaction.MaxTime > bc.Millis(b.maxTime) {
-		tpl.Transaction.MaxTime = bc.Millis(b.maxTime)
+	if tx.MaxTime == 0 || tx.MaxTime > bc.Millis(b.maxTime) {
+		tx.MaxTime = bc.Millis(b.maxTime)
 	}
 
 	// Set transaction reference data if applicable.
 	if len(b.referenceData) > 0 {
-		tpl.Transaction.ReferenceData = b.referenceData
+		tx.ReferenceData = b.referenceData
 	}
 
 	// Add all the built outputs.
-	tpl.Transaction.Outputs = append(tpl.Transaction.Outputs, b.outputs...)
+	tx.Outputs = append(tx.Outputs, b.outputs...)
 
 	// Add all the built inputs and their corresponding signing instructions.
 	for i, in := range b.inputs {
 		instruction := b.signingInstructions[i]
-		instruction.Position = len(tpl.Transaction.Inputs)
+		instruction.Position = len(tx.Inputs)
 
 		// Empty signature arrays should be serialized as empty arrays, not null.
 		if instruction.WitnessComponents == nil {
 			instruction.WitnessComponents = []WitnessComponent{}
 		}
 		tpl.SigningInstructions = append(tpl.SigningInstructions, instruction)
-		tpl.Transaction.Inputs = append(tpl.Transaction.Inputs, in)
+		tx.Inputs = append(tx.Inputs, in)
 	}
-	return tpl, nil
+	tpl.Transaction = tx
+	return tpl, tx, nil
 }

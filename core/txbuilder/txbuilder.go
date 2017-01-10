@@ -51,13 +51,13 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 	}
 
 	// Build the transaction template.
-	tpl, err := builder.Build()
+	tpl, tx, err := builder.Build()
 	if err != nil {
 		builder.rollback()
 		return nil, err
 	}
 
-	err = checkBlankCheck(tpl.Transaction)
+	err = checkBlankCheck(tx)
 	if err != nil {
 		builder.rollback()
 		return nil, err
