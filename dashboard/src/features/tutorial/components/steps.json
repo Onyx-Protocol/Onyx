@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Welcome to Chain Core Dashboard!",
+    "button": "Start 5-minute Tutorial",
+    "dismiss": "Skip tutorial",
+    "content": "The dashboard is a UI to be used with the SDKs, which enable your application to communicate with Chain Core.  To get started, learn about the primitives of Chain Core in this 5-minute Tutorial."
+  },
+  {
+    "title": "Tutorial - MockHSM keys - Step 1 of 7",
+    "button": "Create MockHSM key",
+    "dismiss": "End tutorial",
+    "content": "Cryptographic private keys are the primary authorization mechanism on a blockchain. They control both the issuance and transfer of asset units. An asset or account will define a single key required for issuance or transfers."
+  },
+  {
+    "title": "Tutorial - Assets - Step 2 of 7",
+    "button": "Create Asset",
+    "dismiss": "End tutorial",
+    "content": "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer."
+  },
+  {
+    "title": "Tutorial - Accounts - Step 3 of 7",
+    "button": "Create Account",
+    "dismiss": "End tutorial",
+    "content": "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs. When you create an account, you provide one or more “root” keys and a quorum."
+  },
+  {
+    "title": "Tutorial - Transactions - Step 5 of 7",
+    "button": "Issue asset units",
+    "dismiss": "End tutorial",
+    "content": "A transaction contains one or more inputs, and one or more outputs. The Chain Core API allows you to build transactions using actions, which include issue, spend and retire."
+  }
+]
