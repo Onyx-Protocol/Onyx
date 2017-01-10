@@ -83,7 +83,7 @@ func KeyIDs(xpubs []chainkd.XPub, path [][]byte) []KeyID {
 func Sign(ctx context.Context, tpl *Template, xpubs []string, signFn SignFunc) error {
 	for i, sigInst := range tpl.SigningInstructions {
 		for j, c := range sigInst.WitnessComponents {
-			err := c.Sign(ctx, tpl, i, xpubs, signFn)
+			err := c.Sign(ctx, tpl, uint32(i), xpubs, signFn)
 			if err != nil {
 				return errors.WithDetailf(err, "adding signature(s) to witness component %d of input %d", j, i)
 			}

@@ -29,16 +29,16 @@ type Template struct {
 	sigHasher *bc.SigHasher
 }
 
-func (t *Template) Hash(idx int) bc.Hash {
+func (t *Template) Hash(idx uint32) bc.Hash {
 	if t.sigHasher == nil {
 		t.sigHasher = bc.NewSigHasher(t.Transaction)
 	}
-	return t.sigHasher.Hash(idx)
+	return t.sigHasher.Hash(int(idx))
 }
 
 // SigningInstruction gives directions for signing inputs in a TxTemplate.
 type SigningInstruction struct {
-	Position int `json:"position"`
+	Position uint32 `json:"position"`
 	bc.AssetAmount
 	WitnessComponents []WitnessComponent `json:"witness_components,omitempty"`
 }
@@ -46,7 +46,7 @@ type SigningInstruction struct {
 func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 	var pre struct {
 		bc.AssetAmount
-		Position          int `json:"position"`
+		Position          uint32 `json:"position"`
 		WitnessComponents []struct {
 			Type string
 			SignatureWitness
