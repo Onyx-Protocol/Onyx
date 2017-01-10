@@ -70,15 +70,15 @@ func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
 
 func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	var (
-		generatorHeight  *uint64
-		generatorFetched *time.Time
+		generatorHeight  uint64
+		generatorFetched time.Time
 		snapshot         = fetch.SnapshotProgress()
 		localHeight      = h.Chain.Height()
 	)
 	if h.Config.IsGenerator {
 		now := time.Now()
-		generatorHeight = &localHeight
-		generatorFetched = &now
+		generatorHeight = localHeight
+		generatorFetched = now
 	} else {
 		fetchHeight, fetchTime := fetch.GeneratorHeight()
 		// Because everything is asynchronous, it's possible for the localHeight to
@@ -90,9 +90,9 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 
 		// fetchTime might be the zero time if we're having trouble connecting
 		// to the remote generator. Only set the height & time if we have it.
-		// The dashboard will handle nulls correctly.
+		// The dashboard will handle zeros correctly.
 		if !fetchTime.IsZero() {
-			generatorHeight, generatorFetched = &fetchHeight, &fetchTime
+			generatorHeight, generatorFetched = fetchHeight, fetchTime
 		}
 	}
 
