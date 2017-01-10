@@ -1,8 +1,8 @@
 const chain = require('../dist/index.js')
 const uuid = require('uuid')
 const assert = require('assert')
-const chai = require("chai")
-const chaiAsPromised = require("chai-as-promised")
+const chai = require('chai')
+const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 
 const expect = chai.expect
@@ -13,7 +13,7 @@ const balanceByAssetAlias = (balances) => {
   return Promise.resolve(balances)
   .then((balance) => {
     balance.items.forEach((item) => {
-      res[item.sum_by['asset_alias']] = item.amount
+      res[item.sumBy['assetAlias']] = item.amount
     })
     return res
   })
@@ -98,8 +98,8 @@ describe('Promise style', () => {
     // Account creation
 
     .then(() => expect(Promise.all([
-      client.accounts.create({alias: aliceAlias, root_xpubs: [aliceKey.xpub], quorum: 1}),
-      client.accounts.create({alias: bobAlias, root_xpubs: [bobKey.xpub], quorum: 1})
+      client.accounts.create({alias: aliceAlias, rootXpubs: [aliceKey.xpub], quorum: 1}),
+      client.accounts.create({alias: bobAlias, rootXpubs: [bobKey.xpub], quorum: 1})
     ])).to.be.fulfilled)
 
     .then(accounts => {
@@ -116,9 +116,9 @@ describe('Promise style', () => {
 
     .then(() =>
       expect(client.accounts.createBatch([
-        {alias: `carol-${uuid.v4()}`, root_xpubs: [otherKey.xpub], quorum: 1}, // success
+        {alias: `carol-${uuid.v4()}`, rootXpubs: [otherKey.xpub], quorum: 1}, // success
         {alias: 'david'},
-        {alias: `eve-${uuid.v4()}`, root_xpubs: [otherKey.xpub], quorum: 1}, // success
+        {alias: `eve-${uuid.v4()}`, rootXpubs: [otherKey.xpub], quorum: 1}, // success
       ])).to.be.fulfilled
     ).then(batchResponse => {
       assert.equal(batchResponse.successes[1], null)
@@ -128,8 +128,8 @@ describe('Promise style', () => {
     // Asset creation
 
     .then(() => expect(Promise.all([
-      client.assets.create({alias: goldAlias, root_xpubs: [goldKey.xpub], quorum: 1}),
-      client.assets.create({alias: silverAlias, root_xpubs: [silverKey.xpub], quorum: 1})
+      client.assets.create({alias: goldAlias, rootXpubs: [goldKey.xpub], quorum: 1}),
+      client.assets.create({alias: silverAlias, rootXpubs: [silverKey.xpub], quorum: 1})
     ])).to.be.fulfilled)
 
     .then(() =>
@@ -142,9 +142,9 @@ describe('Promise style', () => {
 
     .then(() =>
       expect(client.assets.createBatch([
-        {alias: bronzeAlias, root_xpubs: [otherKey.xpub], quorum: 1}, // success
+        {alias: bronzeAlias, rootXpubs: [otherKey.xpub], quorum: 1}, // success
         {alias: 'unobtanium'},
-        {alias: copperAlias, root_xpubs: [otherKey.xpub], quorum: 1}, // success
+        {alias: copperAlias, rootXpubs: [otherKey.xpub], quorum: 1}, // success
       ])).to.be.fulfilled
     ).then(batchResponse => {
       assert.equal(batchResponse.successes[1], null)
@@ -156,21 +156,21 @@ describe('Promise style', () => {
     .then(() =>
       expect(client.transactions.build(builder => {
         builder.issue({
-          asset_alias: goldAlias,
+          assetAlias: goldAlias,
           amount: 100
         })
         builder.issue({
-          asset_alias: silverAlias,
+          assetAlias: silverAlias,
           amount: 200
         })
         builder.controlWithAccount({
-          account_alias: aliceAlias,
-          asset_alias: goldAlias,
+          accountAlias: aliceAlias,
+          assetAlias: goldAlias,
           amount: 100
         })
         builder.controlWithAccount({
-          account_alias: bobAlias,
-          asset_alias: silverAlias,
+          accountAlias: bobAlias,
+          assetAlias: silverAlias,
           amount: 200
         })
       })).to.be.fulfilled
@@ -192,7 +192,7 @@ describe('Promise style', () => {
     .then(() =>
       expect(client.transactions.build(builder => {
         builder.issue({
-          asset_alias: "unobtanium",
+          assetAlias: 'unobtanium',
           amount: 100
         })
       }))
@@ -205,12 +205,12 @@ describe('Promise style', () => {
     .then(() =>
       expect(client.transactions.build(builder => {
         builder.issue({
-          asset_alias: goldAlias,
+          assetAlias: goldAlias,
           amount: 1
         })
         builder.controlWithAccount({
-          account_alias: aliceAlias,
-          asset_alias: goldAlias,
+          accountAlias: aliceAlias,
+          assetAlias: goldAlias,
           amount: 100
         })
       })).to.be.fulfilled
@@ -227,32 +227,32 @@ describe('Promise style', () => {
     .then(() =>
       expect(client.transactions.build(builder => {
         builder.spendFromAccount({
-          account_alias: aliceAlias,
-          asset_alias: goldAlias,
+          accountAlias: aliceAlias,
+          assetAlias: goldAlias,
           amount: 10
         })
         builder.controlWithAccount({
-          account_alias: aliceAlias,
-          asset_alias: silverAlias,
+          accountAlias: aliceAlias,
+          assetAlias: silverAlias,
           amount: 20
         })
       }))
       .to.be.fulfilled
       .then((swapProposal) => {
-        swapProposal.allow_additional_actions = true
+        swapProposal.allowAdditionalActions = true
         return expect(signer.sign(swapProposal)).to.be.fulfilled
       })
       .then((swapProposal) =>
         expect(client.transactions.build(builder => {
-          builder.baseTransaction(swapProposal.raw_transaction)
+          builder.baseTransaction(swapProposal.rawTransaction)
           builder.spendFromAccount({
-            account_alias: bobAlias,
-            asset_alias: silverAlias,
+            accountAlias: bobAlias,
+            assetAlias: silverAlias,
             amount: 20
           })
           builder.controlWithAccount({
-            account_alias: bobAlias,
-            asset_alias: goldAlias,
+            accountAlias: bobAlias,
+            assetAlias: goldAlias,
             amount: 10
           })
         }))
@@ -273,51 +273,51 @@ describe('Promise style', () => {
     // Batch transactions
 
     .then(() => expect(client.transactions.buildBatch([
-        // Should succeed
-        (builder) => {
-          builder.issue({
-            asset_alias: goldAlias,
-            amount: 100
-          })
-          builder.controlWithAccount({
-            account_alias: aliceAlias,
-            asset_alias: goldAlias,
-            amount: 100
-          })
-        },
+      // Should succeed
+      (builder) => {
+        builder.issue({
+          assetAlias: goldAlias,
+          amount: 100
+        })
+        builder.controlWithAccount({
+          accountAlias: aliceAlias,
+          assetAlias: goldAlias,
+          amount: 100
+        })
+      },
 
-        // Should fail at the build step
-        (builder) => {
-          builder.issue({
-            asset_alias: 'foobar'
-          })
-        },
+      // Should fail at the build step
+      (builder) => {
+        builder.issue({
+          assetAlias: 'foobar'
+        })
+      },
 
-        // Should fail at the submit step
-        (builder) => {
-          builder.issue({
-            asset_alias: goldAlias,
-            amount: 50
-          })
-          builder.controlWithAccount({
-            account_alias: aliceAlias,
-            asset_alias: goldAlias,
-            amount: 100
-          })
-        },
+      // Should fail at the submit step
+      (builder) => {
+        builder.issue({
+          assetAlias: goldAlias,
+          amount: 50
+        })
+        builder.controlWithAccount({
+          accountAlias: aliceAlias,
+          assetAlias: goldAlias,
+          amount: 100
+        })
+      },
 
-        // Should succeed
-        (builder) => {
-          builder.issue({
-            asset_alias: silverAlias,
-            amount: 50
-          })
-          builder.controlWithAccount({
-            account_alias: bobAlias,
-            asset_alias: silverAlias,
-            amount: 50
-          })
-        }])).to.be.fulfilled
+      // Should succeed
+      (builder) => {
+        builder.issue({
+          assetAlias: silverAlias,
+          amount: 50
+        })
+        builder.controlWithAccount({
+          accountAlias: bobAlias,
+          assetAlias: silverAlias,
+          amount: 50
+        })
+      }])).to.be.fulfilled
     )
     .then(buildBatch => {
       assert.equal(buildBatch.successes[1], null)
@@ -338,11 +338,11 @@ describe('Promise style', () => {
 
     .then(() =>
       expect(client.accounts.createControlProgram({alias: aliceAlias})).to.be.fulfilled)
-    .then((cp) => assert(cp.control_program))
+    .then((cp) => assert(cp.controlProgram))
 
     .then(() =>
       expect(client.accounts.createControlProgram({id: aliceId})).to.be.fulfilled)
-    .then((cp) => assert(cp.control_program))
+    .then((cp) => assert(cp.controlProgram))
 
     .then(() =>
       // Empty alias/id
@@ -351,7 +351,7 @@ describe('Promise style', () => {
 
     .then(() =>
       // Non-existent alias
-      expect(client.accounts.createControlProgram({alias: "unobtalias"}))
+      expect(client.accounts.createControlProgram({alias: 'unobtalias'}))
       .to.be.rejectedWith('CH002'))
 
     // Pay to control program
@@ -361,13 +361,13 @@ describe('Promise style', () => {
     .then((cp) =>
       expect(client.transactions.build(builder => {
         builder.issue({
-          asset_alias: goldAlias,
+          assetAlias: goldAlias,
           amount: 1
         })
         builder.controlWithProgram({
-          asset_alias: goldAlias,
+          assetAlias: goldAlias,
           amount: 1,
-          control_program: cp.control_program
+          controlProgram: cp.controlProgram
         })
       })).to.be.fulfilled)
     .then((issuance) => expect(signer.sign(issuance)).to.be.fulfilled)

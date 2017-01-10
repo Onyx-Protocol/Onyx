@@ -20,7 +20,7 @@ class MockHsmKeys {
      * @param {string} params.alias - User specified, unique identifier.
      */
     this.create = (params, cb) => {
-      let body = Object.assign({ client_token: uuid.v4() }, params)
+      let body = Object.assign({ clientToken: uuid.v4() }, params)
       return shared.tryCallback(
         client.request('/mockhsm/create-key', body).then(data => data),
         cb
@@ -37,7 +37,7 @@ class MockHsmKeys {
      */
     this.query = (params, cb) => {
       if (Array.isArray(params.aliases) && params.aliases.length > 0) {
-        params.page_size = params.aliases.length
+        params.pageSize = params.aliases.length
       }
 
       return shared.query(client, this, '/mockhsm/list-keys', params, {cb})

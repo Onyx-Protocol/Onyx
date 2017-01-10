@@ -14,7 +14,7 @@ class TransactionFeed {
     const ack = () => client.request('/update-transaction-feed', {
       id,
       after: nextAfter,
-      previous_after: after
+      previousAfter: after
     }).then(() => { after = nextAfter })
 
     const query = params => client.transactions.query(params)
@@ -28,7 +28,7 @@ class TransactionFeed {
           filter,
           after,
           timeout: (timeout * 1000),
-          ascending_with_long_poll: true,
+          ascendingWithLongPoll: true,
         }
 
         const nextPage = () => {
@@ -62,7 +62,7 @@ class TransactionFeed {
                 }
 
                 prevItem = page.items[index]
-                nextAfter = `${prevItem.block_height}:${prevItem.position}-${MAX_BLOCK_HEIGHT}`
+                nextAfter = `${prevItem.blockHeight}:${prevItem.position}-${MAX_BLOCK_HEIGHT}`
                 index++
 
                 // Pass the next item to the consumer, as well as three loop
@@ -116,7 +116,7 @@ class TransactionFeeds {
      * @returns {TransactionFeed}
      */
     this.create = (params, cb) => {
-      let body = Object.assign({ client_token: uuid.v4() }, params)
+      let body = Object.assign({ clientToken: uuid.v4() }, params)
       return shared.tryCallback(
         client.request('/create-transaction-feed', body).then(data => new TransactionFeed(data, client)),
         cb

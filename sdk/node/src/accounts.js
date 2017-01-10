@@ -11,7 +11,7 @@ class Accounts {
    * @property {string} [alias]
    * User specified, unique identifier.
    *
-   * @property {string[]} root_xpubs
+   * @property {string[]} rootXpubs
    * The list of keys used to create control programs under the account.
    *
    * @property {number} quorum
@@ -77,8 +77,8 @@ class Accounts {
     this.createControlProgram = (params, cb) => {
       const body = {type: 'account'}
 
-      if (params.alias) body.params = { account_alias: params.alias }
-      if (params.id)    body.params = { account_id: params.id }
+      if (params.alias) body.params = { accountAlias: params.alias }
+      if (params.id)    body.params = { accountId: params.id }
 
       return shared.tryCallback(
         shared.create(client, '/create-control-program', body),

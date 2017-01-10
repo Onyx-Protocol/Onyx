@@ -21,7 +21,7 @@ const Page = require('./page')
   *                            {@link https://chain.com/docs/core/build-applications/queries#filters|documentation on filter strings}
   *                            for more details
   * @property {string} [after] - Cursor pointing to the start of the result set
-  * @property {integer} [page_size] - Number of items to return in result set
+  * @property {integer} [pageSize] - Number of items to return in result set
   */
 
 const tryCallback = (promise, cb) => {
@@ -36,7 +36,7 @@ const tryCallback = (promise, cb) => {
 
 module.exports = {
   create: (client, path, params = {}, opts = {}) => {
-    const object = Object.assign({ client_token: uuid.v4() }, params)
+    const object = Object.assign({ clientToken: uuid.v4() }, params)
     let body = object
     if (!opts.skipArray) {
       body = [body]
@@ -55,7 +55,7 @@ module.exports = {
 
   createBatch: (client, path, params = [], opts = {}) => {
     params = params.map((item) =>
-      Object.assign({ client_token: uuid.v4() }, item))
+      Object.assign({ clientToken: uuid.v4() }, item))
 
     return tryCallback(
       client.request(path, params).then(resp => {
@@ -89,7 +89,7 @@ module.exports = {
             processor(page.items[item])
           }
 
-          if (!page.last_page) {
+          if (!page.lastPage) {
             nextParams = page.next
             nextPage()
             return

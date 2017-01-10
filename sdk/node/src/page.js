@@ -33,7 +33,7 @@ class Page {
      * Indicator that there are more results to load if true
      * @type {Boolean}
      */
-    this.last_page = false
+    this.lastPage = false
 
     Object.assign(this, data)
 

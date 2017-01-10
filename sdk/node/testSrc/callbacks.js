@@ -11,7 +11,7 @@ const balanceByAssetAlias = (cb) => {
     let res = {}
 
     balances.items.forEach((item) => {
-      res[item.sum_by['asset_alias']] = item.amount
+      res[item.sumBy['assetAlias']] = item.amount
     })
 
     cb(null, res)
@@ -107,8 +107,8 @@ describe('Callback style', () => {
       // Account creation
 
       (next) => async.parallel([
-        cb => client.accounts.create({alias: aliceAlias, root_xpubs: [aliceKey.xpub], quorum: 1}, cb),
-        cb => client.accounts.create({alias: bobAlias, root_xpubs: [bobKey.xpub], quorum: 1}, cb)
+        cb => client.accounts.create({alias: aliceAlias, rootXpubs: [aliceKey.xpub], quorum: 1}, cb),
+        cb => client.accounts.create({alias: bobAlias, rootXpubs: [bobKey.xpub], quorum: 1}, cb)
       ], (err, accounts) => {
         expect(err).to.be.null
         aliceId = accounts[0].id
@@ -124,9 +124,9 @@ describe('Callback style', () => {
       // Batch account creation
 
       (next) => client.accounts.createBatch([
-        {alias: `carol-${uuid.v4()}`, root_xpubs: [otherKey.xpub], quorum: 1}, // success
+        {alias: `carol-${uuid.v4()}`, rootXpubs: [otherKey.xpub], quorum: 1}, // success
         {alias: 'david'},
-        {alias: `eve-${uuid.v4()}`, root_xpubs: [otherKey.xpub], quorum: 1}, // success
+        {alias: `eve-${uuid.v4()}`, rootXpubs: [otherKey.xpub], quorum: 1}, // success
       ], (err, batchResponse) => {
         assert.equal(batchResponse.successes[1], null)
         assert.deepEqual([batchResponse.errors[0], batchResponse.errors[2]], [null, null])
@@ -136,8 +136,8 @@ describe('Callback style', () => {
       // Asset creation
 
       (next) => async.parallel([
-        cb => client.assets.create({alias: goldAlias, root_xpubs: [goldKey.xpub], quorum: 1}, cb),
-        cb => client.assets.create({alias: silverAlias, root_xpubs: [silverKey.xpub], quorum: 1}, cb)
+        cb => client.assets.create({alias: goldAlias, rootXpubs: [goldKey.xpub], quorum: 1}, cb),
+        cb => client.assets.create({alias: silverAlias, rootXpubs: [silverKey.xpub], quorum: 1}, cb)
       ], (err) => {
         expect(err).to.be.null
         next()
@@ -153,8 +153,8 @@ describe('Callback style', () => {
 
       (next) => client.assets.createBatch([
         {alias: 'unobtanium'},
-        {alias: bronzeAlias, root_xpubs: [otherKey.xpub], quorum: 1}, // success
-        {alias: copperAlias, root_xpubs: [otherKey.xpub], quorum: 1}, // success
+        {alias: bronzeAlias, rootXpubs: [otherKey.xpub], quorum: 1}, // success
+        {alias: copperAlias, rootXpubs: [otherKey.xpub], quorum: 1}, // success
       ], (err, batchResponse) => {
         assert.equal(batchResponse.successes[0], null)
         assert.deepEqual([batchResponse.errors[1], batchResponse.errors[2]], [null, null])
@@ -167,21 +167,21 @@ describe('Callback style', () => {
       (next) => async.waterfall([
         cb => client.transactions.build(builder => {
           builder.issue({
-            asset_alias: goldAlias,
+            assetAlias: goldAlias,
             amount: 100
           })
           builder.issue({
-            asset_alias: silverAlias,
+            assetAlias: silverAlias,
             amount: 200
           })
           builder.controlWithAccount({
-            account_alias: aliceAlias,
-            asset_alias: goldAlias,
+            accountAlias: aliceAlias,
+            assetAlias: goldAlias,
             amount: 100
           })
           builder.controlWithAccount({
-            account_alias: bobAlias,
-            asset_alias: silverAlias,
+            accountAlias: bobAlias,
+            assetAlias: silverAlias,
             amount: 200
           })
         }, cb),
@@ -208,7 +208,7 @@ describe('Callback style', () => {
 
       (next) => client.transactions.build(builder => {
         builder.issue({
-          asset_alias: 'unobtanium',
+          assetAlias: 'unobtanium',
           amount: 100
         })
       }, (err) => {
@@ -222,12 +222,12 @@ describe('Callback style', () => {
       (next) => async.waterfall([
         cb => client.transactions.build(builder => {
           builder.issue({
-            asset_alias: goldAlias,
+            assetAlias: goldAlias,
             amount: 1
           })
           builder.controlWithAccount({
-            account_alias: aliceAlias,
-            asset_alias: goldAlias,
+            accountAlias: aliceAlias,
+            assetAlias: goldAlias,
             amount: 100
           })
         }, cb),
@@ -244,32 +244,32 @@ describe('Callback style', () => {
       (next) => async.waterfall([
         cb => client.transactions.build(builder => {
           builder.spendFromAccount({
-            account_alias: aliceAlias,
-            asset_alias: goldAlias,
+            accountAlias: aliceAlias,
+            assetAlias: goldAlias,
             amount: 10
           })
           builder.controlWithAccount({
-            account_alias: aliceAlias,
-            asset_alias: silverAlias,
+            accountAlias: aliceAlias,
+            assetAlias: silverAlias,
             amount: 20
           })
         }, cb),
 
         (swapProposal, cb) => {
-          swapProposal.allow_additional_actions = true
+          swapProposal.allowAdditionalActions = true
           signer.sign(swapProposal, cb)
         },
 
         (swapProposal, cb) => client.transactions.build(builder => {
-          builder.baseTransaction(swapProposal.raw_transaction)
+          builder.baseTransaction(swapProposal.rawTransaction)
           builder.spendFromAccount({
-            account_alias: bobAlias,
-            asset_alias: silverAlias,
+            accountAlias: bobAlias,
+            assetAlias: silverAlias,
             amount: 20
           })
           builder.controlWithAccount({
-            account_alias: bobAlias,
-            asset_alias: goldAlias,
+            accountAlias: bobAlias,
+            assetAlias: goldAlias,
             amount: 10
           })
         }, cb),
@@ -299,30 +299,30 @@ describe('Callback style', () => {
           // Should succeed
           (builder) => {
             builder.issue({
-              asset_alias: goldAlias,
+              assetAlias: goldAlias,
               amount: 100
             })
             builder.controlWithAccount({
-              account_alias: aliceAlias,
-              asset_alias: goldAlias,
+              accountAlias: aliceAlias,
+              assetAlias: goldAlias,
               amount: 100
             })
           },
 
           // Should fail at the build step
           (builder) => {
-            builder.issue({asset_alias: 'foobar' })
+            builder.issue({assetAlias: 'foobar' })
           },
 
           // Should fail at the submit step
           (builder) => {
             builder.issue({
-              asset_alias: goldAlias,
+              assetAlias: goldAlias,
               amount: 50
             })
             builder.controlWithAccount({
-              account_alias: aliceAlias,
-              asset_alias: goldAlias,
+              accountAlias: aliceAlias,
+              assetAlias: goldAlias,
               amount: 100
             })
           },
@@ -330,12 +330,12 @@ describe('Callback style', () => {
           // Should succeed
           (builder) => {
             builder.issue({
-              asset_alias: silverAlias,
+              assetAlias: silverAlias,
               amount: 50
             })
             builder.controlWithAccount({
-              account_alias: bobAlias,
-              asset_alias: silverAlias,
+              accountAlias: bobAlias,
+              assetAlias: silverAlias,
               amount: 50
             })
           }
@@ -359,18 +359,18 @@ describe('Callback style', () => {
       // Control program creation
 
       (next) => client.accounts.createControlProgram({alias: aliceAlias}, (err, cp) => {
-        assert(cp.control_program)
+        assert(cp.controlProgram)
         next()
       }),
       (next) => client.accounts.createControlProgram({id: aliceId}, (err, cp) => {
-        assert(cp.control_program)
+        assert(cp.controlProgram)
         next()
       }),
-      (next) => client.accounts.createControlProgram({}, (err, cp) => {
+      (next) => client.accounts.createControlProgram({}, (err) => {
         expect(err.code).to.equal('CH003')
         next()
       }),
-      (next) => client.accounts.createControlProgram({alias: 'unobtalias'}, (err, cp) => {
+      (next) => client.accounts.createControlProgram({alias: 'unobtalias'}, (err) => {
         expect(err.code).to.equal('CH002')
         next()
       }),
@@ -381,13 +381,13 @@ describe('Callback style', () => {
         cb => client.accounts.createControlProgram({alias: aliceAlias}, cb),
         (cp, cb) => client.transactions.build(builder => {
           builder.issue({
-            asset_alias: goldAlias,
+            assetAlias: goldAlias,
             amount: 1
           })
           builder.controlWithProgram({
-            asset_alias: goldAlias,
+            assetAlias: goldAlias,
             amount: 1,
-            control_program: cp.control_program
+            controlProgram: cp.controlProgram
           })
         }, cb),
         (issuance, cb) => signer.sign(issuance, cb),
@@ -413,7 +413,7 @@ describe('Callback style', () => {
         next()
       }),
 
-      cb => done()
+      () => done()
     ])
   })
 })

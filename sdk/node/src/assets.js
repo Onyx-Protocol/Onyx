@@ -11,7 +11,7 @@ class Assets {
    * @property {string} [alias]
    * User specified, unique identifier.
    *
-   * @property {string[]} root_xpubs
+   * @property {string[]} rootXpubs
    * The list of keys used to create the issuance program for the asset.
    *
    * @property {number} quorum

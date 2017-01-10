@@ -36,7 +36,7 @@ class AccessTokens {
      */
     this.query = (params, cb) => {
       params = params || {}
-      params.page_size = 1000
+      params.pageSize = 1000
       return shared.query(client, this, '/list-access-tokens', params, {cb})
     }
 

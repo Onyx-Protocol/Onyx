@@ -5,6 +5,53 @@ const { fetch } = require('fetch-ponyfill')()
 const errors = require('./errors')
 const btoa = require('btoa')
 
+const blacklistAttributes = [
+  'asset_tags',
+  'asset_definition',
+  'account_tags',
+  'reference_data',
+]
+
+const snakeize = (object) => {
+  for(let key in object) {
+    let value = object[key]
+    let newKey = key
+
+    if (/[A-Z]/.test(key)) {
+      newKey = key.replace(/([A-Z])/g, v => `_${v.toLowerCase()}`)
+      delete object[key]
+    }
+
+    if (typeof value == 'object' && !blacklistAttributes.includes(key)) {
+      value = snakeize(value)
+    }
+
+    object[newKey] = value
+  }
+
+  return object
+}
+
+const camelize = (object) => {
+  for (let key in object) {
+    let value = object[key]
+    let newKey = key
+
+    if (/_/.test(key)) {
+      newKey = key.replace(/([_][a-z])/g, v => v[1].toUpperCase())
+      delete object[key]
+    }
+
+    if (typeof value == 'object' && !blacklistAttributes.includes(key)) {
+      value = camelize(value)
+    }
+
+    object[newKey] = value
+  }
+
+  return object
+}
+
 /**
  * Chain API Connection
  */
@@ -34,6 +81,8 @@ class Connection {
       body = {}
     }
 
+    const snakeBody = snakeize(body) // Ssssssssssss
+
     let req = {
       method: 'POST',
       headers: {
@@ -51,7 +100,7 @@ class Connection {
         // For now, let's not send the UA string.
         //'User-Agent': 'chain-sdk-js/0.0'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(snakeBody)
     }
 
     if (this.token) {
@@ -111,6 +160,8 @@ class Connection {
             requestId: requestId
           }
         )
+      }).then((body) => {
+        return camelize(body)
       })
     })
   }

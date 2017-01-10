@@ -23,16 +23,16 @@ class Config {
      * Configure specified Chain Core.
      *
      * @param {Object} opts - options for configuring Chain Core.
-     * @param {Boolean} opts.is_generator - Whether the local core will be a block generator
+     * @param {Boolean} opts.isGenerator - Whether the local core will be a block generator
      *                                      for the blockchain; i.e., you are starting a new blockchain on
      *                                      the local core. `false` if you are connecting to a
      *                                      pre-existing blockchain..
-     * @param {string} opts.generator_url - A URL for the block generator. Required if
-     *                                      `is_generator` is false.
-     * @param {string} opts.generator_access_token - A network access token provided by administrators
-     *                                               of the block generator. Required if `is_generator` is false.
-     * @param {string} opts.blockchain_id - The unique ID of the generator's blockchain.
-     *                                      Required if `is_generator` is false.
+     * @param {string} opts.generatorUrl - A URL for the block generator. Required if
+     *                                      `isGenerator` is false.
+     * @param {string} opts.generatorAccessToken - A network access token provided by administrators
+     *                                               of the block generator. Required if `isGenerator` is false.
+     * @param {string} opts.blockchainId - The unique ID of the generator's blockchain.
+     *                                      Required if `isGenerator` is false.
      */
     this.configure = (opts = {}) => client.request('/configure', opts)
 
