@@ -13,7 +13,6 @@ type SpendInput struct {
 func (si *SpendInput) IsIssuance() bool { return false }
 
 func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxInput {
-	av := uint64(1)
 	oc := OutputCommitment{
 		AssetAmount: AssetAmount{
 			AssetID: assetID,
@@ -23,10 +22,10 @@ func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetI
 		ControlProgram: controlProgram,
 	}
 	return &TxInput{
-		AssetVersion:  av,
+		AssetVersion:  assetVersion,
 		ReferenceData: referenceData,
 		TypedInput: &SpendInput{
-			OutputID: ComputeOutputID(txhash, index, oc.Hash(av)),
+			OutputID: ComputeOutputID(txhash, index, oc.Hash(assetVersion)),
 			OutputCommitment: oc,
 			Arguments: arguments,
 		},
