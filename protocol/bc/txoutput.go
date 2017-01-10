@@ -70,3 +70,6 @@ func (to *TxOutput) WriteCommitment(w io.Writer) {
 	to.OutputCommitment.writeTo(w, to.AssetVersion)
 }
 
+func (to *TxOutput) CommitmentHash() Hash {
+	return to.OutputCommitment.Hash(to.AssetVersion)
+}

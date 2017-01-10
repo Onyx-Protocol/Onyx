@@ -72,5 +72,3 @@ func (outid *OutputID) WriteTo(w io.Writer) (int64, error) {
 func (outid *OutputID) readFrom(r io.Reader) (int, error) {
 	return io.ReadFull(r, outid[:])
 }
-
-

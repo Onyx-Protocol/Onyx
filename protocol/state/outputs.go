@@ -10,15 +10,15 @@ import (
 // Output represents a spent or unspent output
 // for the validation process.
 type Output struct {
-	bc.Outpoint
+	bc.OutputID
 	bc.TxOutput
 }
 
 // NewOutput creates a new Output.
-func NewOutput(o bc.TxOutput, p bc.Outpoint) *Output {
+func NewOutput(o bc.TxOutput, outid bc.OutputID) *Output {
 	return &Output{
 		TxOutput: o,
-		Outpoint: p,
+		OutputID: outid,
 	}
 }
 
@@ -29,13 +29,13 @@ func Prevout(in *bc.TxInput) *Output {
 	assetAmount := in.AssetAmount()
 	t := bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, in.ControlProgram(), nil)
 	return &Output{
-		Outpoint: in.Outpoint(),
+		OutputID: in.OutputID(),
 		TxOutput: *t,
 	}
 }
 
 // OutputKey returns the key of an output in the state tree.
-func OutputKey(o bc.Outpoint) (bkey []byte) {
+func OutputKey(o bc.OutputID) (bkey []byte) {
 	var b bytes.Buffer
 	w := errors.NewWriter(&b) // used to satisfy interfaces
 	o.WriteTo(w)
@@ -52,5 +52,5 @@ func outputBytes(o *Output) []byte {
 // as well as the output commitment (a second []byte) for Inserts
 // into the state tree.
 func OutputTreeItem(o *Output) (bkey, commitment []byte) {
-	return OutputKey(o.Outpoint), outputBytes(o)
+	return OutputKey(o.OutputID), outputBytes(o)
 }

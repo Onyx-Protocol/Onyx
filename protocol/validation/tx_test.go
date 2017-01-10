@@ -910,8 +910,6 @@ func TestValidateInvalidIssuances(t *testing.T) {
 func TestConfirmTx(t *testing.T) {
 	txhash1 := bc.Hash{1}
 
-	outpoint1 := bc.Outpoint{Hash: txhash1}
-
 	trueProg := []byte{0x51}
 
 	assetID1 := bc.AssetID{10}
@@ -929,7 +927,8 @@ func TestConfirmTx(t *testing.T) {
 		OutputCommitment: out1,
 	}
 
-	stateout := state.NewOutput(txout, outpoint1)
+	outid1 := bc.ComputeOutputID(txhash1, 0, txout.CommitmentHash())
+	stateout := state.NewOutput(txout, outid1)
 
 	snapshot := state.Empty()
 	err := snapshot.Tree.Insert(state.OutputTreeItem(stateout))
@@ -1037,7 +1036,7 @@ func TestConfirmTx(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							Outpoint:         outpoint1,
+							OutputID:         outid1,
 							OutputCommitment: out1,
 						},
 					},

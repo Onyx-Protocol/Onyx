@@ -104,7 +104,7 @@ func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.ByteaArray, index pg.Uint32s) {
 			if in.IsIssuance() {
 				continue
 			}
-			o := in.Outpoint()
+			o := in.OutputID()
 			txhash = append(txhash, o.Hash[:])
 			index = append(index, o.Index)
 		}
