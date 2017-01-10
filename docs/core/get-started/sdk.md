@@ -13,7 +13,7 @@ The Java SDK is available as a self-contained JAR file, with dependencies compil
 
 ## Ruby
 
-The Ruby SDK is available [via Rubygems](https://rubygems.org/gems/chain-sdk). Make sure to use the most recent version whose major and minor components (`major.minor.x`) match your version of Chain Core. Ruby 2 is required.
+The Ruby SDK is available [via Rubygems](https://rubygems.org/gems/chain-sdk). Make sure to use the most recent version whose major and minor components (`major.minor.x`) match your version of Chain Core. Ruby 2.1 or greater is required.
 
 For most applications, you can simply add the following to your `Gemfile`:
 
