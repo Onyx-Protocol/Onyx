@@ -55,22 +55,22 @@ func TestAccountSourceReserve(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	tpl, err := builder.Build()
+	_, tx, err := builder.Build()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
-	if !reflect.DeepEqual(tpl.Transaction.Inputs, wantTxIns) {
-		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tpl.Transaction.Inputs, wantTxIns)
+	if !reflect.DeepEqual(tx.Inputs, wantTxIns) {
+		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
-	if len(tpl.Transaction.Outputs) != 1 {
+	if len(tx.Outputs) != 1 {
 		t.Errorf("expected 1 change output")
 	}
-	if tpl.Transaction.Outputs[0].Amount != 1 {
+	if tx.Outputs[0].Amount != 1 {
 		t.Errorf("expected change amount to be 1")
 	}
-	if !programInAccount(ctx, t, db, tpl.Transaction.Outputs[0].ControlProgram, accID) {
+	if !programInAccount(ctx, t, db, tx.Outputs[0].ControlProgram, accID) {
 		t.Errorf("expected change control program to belong to account")
 	}
 }
@@ -106,15 +106,15 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	tpl, err := builder.Build()
+	_, tx, err := builder.Build()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
 
-	if !reflect.DeepEqual(tpl.Transaction.Inputs, wantTxIns) {
-		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tpl.Transaction.Inputs, wantTxIns)
+	if !reflect.DeepEqual(tx.Inputs, wantTxIns) {
+		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
 }
 
@@ -161,14 +161,14 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		tpl, err := builder.Build()
+		_, tx, err := builder.Build()
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(tpl.Transaction.Inputs) != 1 {
-			t.Fatalf("got %d result utxo, expected 1 result utxo", len(tpl.Transaction.Inputs))
+		if len(tx.Inputs) != 1 {
+			t.Fatalf("got %d result utxo, expected 1 result utxo", len(tx.Inputs))
 		}
-		return tpl.Transaction.Inputs
+		return tx.Inputs
 	}
 
 	var (
