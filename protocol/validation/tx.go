@@ -251,7 +251,7 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 	}
 
 	for i := range tx.Inputs {
-		ok, err := vm.VerifyTxInput(tx, i)
+		ok, err := vm.VerifyTxInput(tx, uint32(i))
 		if err == nil && !ok {
 			err = ErrFalseVMResult
 		}

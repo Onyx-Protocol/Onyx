@@ -44,7 +44,7 @@ type virtualMachine struct {
 // execution.
 var TraceOut io.Writer
 
-func VerifyTxInput(tx *bc.Tx, inputIndex int) (ok bool, err error) {
+func VerifyTxInput(tx *bc.Tx, inputIndex uint32) (ok bool, err error) {
 	defer func() {
 		if panErr := recover(); panErr != nil {
 			ok = false
@@ -55,7 +55,7 @@ func VerifyTxInput(tx *bc.Tx, inputIndex int) (ok bool, err error) {
 }
 
 func verifyTxInput(tx *bc.Tx, inputIndex uint32) (bool, error) {
-	if inputIndex < 0 || inputIndex >= len(tx.Inputs) {
+	if inputIndex < 0 || inputIndex >= uint32(len(tx.Inputs)) {
 		return false, ErrBadValue
 	}
 

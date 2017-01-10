@@ -46,7 +46,7 @@ func newDest(t testing.TB) *testDest {
 	}
 }
 
-func (d *testDest) sign(t testing.TB, tx *bc.TxData, index int) {
+func (d *testDest) sign(t testing.TB, tx *bc.TxData, index uint32) {
 	txsighash := tx.HashForSig(index)
 	prog, _ := vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", txsighash[:]))
 	h := sha3.Sum256(prog)
