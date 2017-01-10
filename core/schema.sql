@@ -7,6 +7,7 @@
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -194,7 +195,8 @@ CREATE TABLE account_utxos (
     account_id text NOT NULL,
     control_program_index bigint NOT NULL,
     control_program bytea NOT NULL,
-    confirmed_in bigint NOT NULL
+    confirmed_in bigint NOT NULL,
+    output_id text NOT NULL
 );
 
 
@@ -240,7 +242,8 @@ CREATE TABLE annotated_outputs (
     output_index integer NOT NULL,
     tx_hash bytea NOT NULL,
     data jsonb NOT NULL,
-    timespan int8range NOT NULL
+    timespan int8range NOT NULL,
+    output_id text NOT NULL
 );
 
 
@@ -563,6 +566,17 @@ ALTER TABLE ONLY account_utxos
 
 
 --
+<<<<<<< 7b9ada881fad0878282656f6677a8e23341e2801
+=======
+-- Name: account_utxos account_utxos_unique_output_id; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY account_utxos
+    ADD CONSTRAINT account_utxos_unique_output_id UNIQUE (output_id);
+
+
+--
+>>>>>>> updated schema
 -- Name: accounts accounts_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -595,6 +609,17 @@ ALTER TABLE ONLY annotated_outputs
 
 
 --
+<<<<<<< 7b9ada881fad0878282656f6677a8e23341e2801
+=======
+-- Name: annotated_outputs annotated_outputs_unique_output_id; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY annotated_outputs
+    ADD CONSTRAINT annotated_outputs_unique_output_id UNIQUE (output_id);
+
+
+--
+>>>>>>> updated schema
 -- Name: annotated_txs annotated_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -881,3 +906,5 @@ insert into migrations (filename, hash) values ('2017-01-05.0.core.rename_block_
 insert into migrations (filename, hash) values ('2017-01-10.0.signers.xpubs-type.sql', '4a4d6c736a2bf65e69abbdc87771faa1dc17a0106b2651a6a58af067708d095a');
 insert into migrations (filename, hash) values ('2017-01-11.0.core.hash-bytea.sql', '9f7f15df3479c38f193884a2d3cb7ae8001ed08607f9cc661fd5c420e248688d');
 insert into migrations (filename, hash) values ('2017-01-13.0.core.asset-definition-bytea.sql', 'f49458c5c8873d919ec35be4683074be0b04913c95f5ab1bf1402aa2b4847cf5');
+insert into migrations (filename, hash) values ('2017-01-10.0.core.add-outputid-to-outputs.sql', 'e2374d8e2bf71cf71a24a49b0715968daf392b4f8bbd09eb3c2b47d006cfe8f1');
+insert into migrations (filename, hash) values ('2017-01-10.1.core.add-outputid-to-utxos.sql', 'd7ca93573435b7802de343ae55d14c071e7021d5634a2f58def2558a30ad67af');
