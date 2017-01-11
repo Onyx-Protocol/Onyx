@@ -14,6 +14,8 @@ import (
 	"chain/protocol/state"
 )
 
+const snapshotHistoryBlocks = 24 * 60 * 60
+
 // DecodeSnapshot decodes a snapshot from the Chain Core's binary,
 // protobuf representation of the snapshot.
 func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
@@ -77,9 +79,21 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 		INSERT INTO snapshots (height, data) VALUES($1, $2)
 		ON CONFLICT (height) DO UPDATE SET data = $2
 	`
-
 	_, err = db.Exec(ctx, insertQ, blockHeight, b)
-	return errors.Wrap(err, "writing state snapshot to database")
+	if err != nil {
+		return errors.Wrap(err, "writing state snapshot to database")
+	}
+
+	if blockHeight > snapshotHistoryBlocks {
+		const deleteQ = `
+			DELETE FROM snapshots WHERE height < $1
+		`
+		_, err = db.Exec(ctx, deleteQ, blockHeight-snapshotHistoryBlocks)
+		if err != nil {
+			return errors.Wrap(err, "deleting old snapshots")
+		}
+	}
+	return nil
 }
 
 func getStateSnapshot(ctx context.Context, db pg.DB) (*state.Snapshot, uint64, error) {
