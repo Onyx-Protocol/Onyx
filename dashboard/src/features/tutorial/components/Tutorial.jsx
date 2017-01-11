@@ -1,6 +1,12 @@
 import React from 'react'
-import styles from './Tutorial.scss'
 import steps from './steps.json'
+import Description from './Description/Description'
+import Success from './Success/Success'
+
+const components = {
+  Description,
+  Success
+}
 
 class Tutorial extends React.Component {
   constructor(props) {
@@ -18,7 +24,11 @@ class Tutorial extends React.Component {
   }
 
   showNextStep() {
-    this.setState({step: this.state.step + 1})
+    if(this.state.step == steps.length - 1){
+      this.setState({open: false})
+    } else {
+      this.setState({step: this.state.step + 1})
+    }
   }
 
   dismissTutorial() {
@@ -26,29 +36,19 @@ class Tutorial extends React.Component {
   }
 
   render() {
-    const nextButton = <div className={styles.next}>
-      <button key='showNext' className='btn btn-primary' onClick={this.showNextStep}>
-        {steps[this.state.step]['button']}
-      </button>
-    </div>
-    let open = this.state.open
-
+    const TutorialComponent = components[steps[this.state.step]['component']]
     return (
       <div>
-      {open &&
-          <div className={styles.container}>
-            <div className={styles.header}>
-              {steps[this.state.step]['title']}
-              <div className={styles.skip}>
-                <a onClick={this.dismissTutorial}>{steps[this.state.step]['dismiss']}</a>
-              </div>
-            </div>
-            <div className={styles.content}>
-              {steps[this.state.step]['content']}
-
-              {nextButton && nextButton}
-            </div>
-          </div>
+      {this.state.open &&
+          <TutorialComponent
+            step={this.state.step}
+            button={steps[this.state.step]['button']}
+            title={steps[this.state.step]['title']}
+            content={steps[this.state.step]['content']}
+            dismiss={steps[this.state.step]['dismiss']}
+            handleNext={this.showNextStep}
+            handleDismiss={this.dismissTutorial}
+          />
         }
     </div>
     )

@@ -32,6 +32,15 @@
   .content {
     margin: 0 25px;
     padding: 25px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    span {
+      color: #69A7E4;
+      font-size: 50px;
+      margin-right: 25px
+    }
 
     .text {
       display: inline-block;
@@ -41,14 +50,19 @@
       color: #747C89;
     }
 
+    li {
+      list-style: none;
+    }
+
     .next {
       display: inline-block;
       float: right;
 
       button {
-        background-color: #69A7E4;
+        background-color: #FFFFFF;
         border: 1px solid #69A7E4;
         border-radius: 2px;
+        color: #69A7E4;
       }
     }
   }

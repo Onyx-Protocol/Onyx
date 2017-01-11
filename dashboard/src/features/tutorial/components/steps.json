@@ -1,32 +1,107 @@
 [
   {
+    "component": "Description",
     "title": "Welcome to Chain Core Dashboard!",
     "button": "Start 5-minute Tutorial",
     "dismiss": "Skip tutorial",
     "content": "The dashboard is a UI to be used with the SDKs, which enable your application to communicate with Chain Core.  To get started, learn about the primitives of Chain Core in this 5-minute Tutorial."
   },
   {
+    "component": "Description",
     "title": "Tutorial - MockHSM keys - Step 1 of 7",
     "button": "Create MockHSM key",
     "dismiss": "End tutorial",
     "content": "Cryptographic private keys are the primary authorization mechanism on a blockchain. They control both the issuance and transfer of asset units. An asset or account will define a single key required for issuance or transfers."
   },
   {
+    "component": "Success",
+    "title": "Tutorial - MockHSM keys - Step 1 of 7",
+    "button": "Learn about assets",
+    "dismiss": "End tutorial",
+    "content": [
+              "Great work!",
+              "Next up, you will learn about assets and how to create one."
+            ]
+  },
+  {
+    "component": "Description",
     "title": "Tutorial - Assets - Step 2 of 7",
     "button": "Create Asset",
     "dismiss": "End tutorial",
     "content": "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer."
   },
   {
+    "component": "Success",
+    "title": "Tutorial - Assets - Step 2 of 7",
+    "button": "Learn about accounts",
+    "dismiss": "End tutorial",
+    "content": [
+              "Great! You created the gold asset.",
+              "Next up, you will learn about accounts and how to create one."
+            ]
+  },
+  {
+    "component": "Description",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": "Create Account",
     "dismiss": "End tutorial",
     "content": "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs. When you create an account, you provide one or more “root” keys and a quorum."
   },
   {
+    "component": "Success",
+    "title": "Tutorial - Accounts - Step 3 of 7",
+    "button": "Create 2nd account",
+    "dismiss": "End tutorial",
+    "content": [
+              "Great! You created Alice's account.",
+              "Next, you will create Bob's account to interact with Alice's."
+            ]
+  },
+  {
+    "component": "Success",
+    "title": "Tutorial - Accounts - Step 4 of 7",
+    "button": "Learn about transactions",
+    "dismiss": "End tutorial",
+    "content": [
+              "Great! You created an account for Bob.",
+              "Next, you will learn about transactions and how to issue assets."
+            ]
+  },
+  {
+    "component": "Description",
     "title": "Tutorial - Transactions - Step 5 of 7",
     "button": "Issue asset units",
     "dismiss": "End tutorial",
     "content": "A transaction contains one or more inputs, and one or more outputs. The Chain Core API allows you to build transactions using actions, which include issue, spend and retire."
+  },
+  {
+    "component": "Success",
+    "title": "Tutorial - Transactions - Step 5 of 7",
+    "button": "Spend asset units",
+    "dismiss": "End tutorial",
+    "content": [
+              "Great! You issued 100 units of gold.",
+              "Next, you will spend the gold assets you just issued."
+            ]
+  },
+  {
+    "component": "Success",
+    "title": "Tutorial - Transactions - Step 6 of 7",
+    "button": "Retire asset units",
+    "dismiss": "End tutorial",
+    "content": [
+              "Great! You spent 100 units of gold.",
+              "Next, you will retire the gold assets you just spent."
+            ]
+  },
+  {
+    "component": "Success",
+    "title": "Tutorial - Transactions - Step 7 of 7",
+    "button": "Finish tutorial",
+    "dismiss": null,
+    "content": [
+              "Great! You retired 5 units of gold from Bob's account.",
+              "You are ready to finish the tutorial and recap what you learned."
+              ]
   }
 ]
