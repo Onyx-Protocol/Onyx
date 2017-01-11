@@ -65,13 +65,13 @@ func (ind *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {
 
 func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[string]interface{}, error) {
 	var (
-		hashes              = pq.StringArray(make([]string, 0, len(b.Transactions)))
+		hashes              = pq.ByteaArray(make([][]byte, 0, len(b.Transactions)))
 		positions           = pg.Uint32s(make([]uint32, 0, len(b.Transactions)))
 		annotatedTxs        = pq.StringArray(make([]string, 0, len(b.Transactions)))
 		annotatedTxsDecoded = make([]map[string]interface{}, 0, len(b.Transactions))
 	)
 	for pos, tx := range b.Transactions {
-		hashes = append(hashes, tx.Hash.String())
+		hashes = append(hashes, tx.Hash[:])
 		positions = append(positions, uint32(pos))
 		annotatedTxsDecoded = append(annotatedTxsDecoded, transactionObject(tx, b, uint32(pos)))
 	}
@@ -95,7 +95,7 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[
 	// Save the annotated txs to the database.
 	const insertQ = `
 		INSERT INTO annotated_txs(block_height, tx_pos, tx_hash, data)
-		SELECT $1, unnest($2::integer[]), unnest($3::text[]), unnest($4::jsonb[])
+		SELECT $1, unnest($2::integer[]), unnest($3::bytea[]), unnest($4::jsonb[])
 		ON CONFLICT (block_height, tx_pos) DO NOTHING;
 	`
 	_, err := ind.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
@@ -109,17 +109,18 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 	var (
 		outputTxPositions pg.Uint32s
 		outputIndexes     pg.Uint32s
-		outputTxHashes    pq.StringArray
+		outputTxHashes    pq.ByteaArray
 		outputData        pq.StringArray
-		prevoutHashes     pq.StringArray
+		prevoutHashes     pq.ByteaArray
 		prevoutIndexes    pg.Uint32s
 	)
 
 	for pos, tx := range b.Transactions {
 		for _, in := range tx.Inputs {
 			if !in.IsIssuance() {
-				prevoutHashes = append(prevoutHashes, in.Outpoint().Hash.String())
-				prevoutIndexes = append(prevoutIndexes, in.Outpoint().Index)
+				outpoint := in.Outpoint()
+				prevoutHashes = append(prevoutHashes, outpoint.Hash[:])
+				prevoutIndexes = append(prevoutIndexes, outpoint.Index)
 			}
 		}
 
@@ -152,7 +153,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 
 			outputTxPositions = append(outputTxPositions, uint32(pos))
 			outputIndexes = append(outputIndexes, uint32(outIndex))
-			outputTxHashes = append(outputTxHashes, tx.Hash.String())
+			outputTxHashes = append(outputTxHashes, tx.Hash[:])
 			outputData = append(outputData, string(serializedData))
 		}
 	}
@@ -160,7 +161,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 	// Insert all of the block's outputs at once.
 	const insertQ = `
 		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, data, timespan)
-		SELECT $1, unnest($2::integer[]), unnest($3::integer[]), unnest($4::text[]),
+		SELECT $1, unnest($2::integer[]), unnest($3::integer[]), unnest($4::bytea[]),
 		           unnest($5::jsonb[]),   int8range($6, NULL)
 		ON CONFLICT (block_height, tx_pos, output_index) DO NOTHING;
 	`
@@ -172,7 +173,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 
 	const updateQ = `
 		UPDATE annotated_outputs SET timespan = INT8RANGE(LOWER(timespan), $1)
-		WHERE (tx_hash, output_index) IN (SELECT unnest($2::text[]), unnest($3::integer[]))
+		WHERE (tx_hash, output_index) IN (SELECT unnest($2::bytea[]), unnest($3::integer[]))
 	`
 	_, err = ind.db.Exec(ctx, updateQ, b.TimestampMS, prevoutHashes, prevoutIndexes)
 	return errors.Wrap(err, "updating spent annotated outputs")

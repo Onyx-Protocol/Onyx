@@ -72,16 +72,15 @@ func (h *Hash) UnmarshalJSON(b []byte) error {
 
 // Value satisfies the driver.Valuer interface
 func (h Hash) Value() (driver.Value, error) {
-	return h.MarshalText()
+	return h[:], nil
 }
 
 // Scan satisfies the driver.Scanner interface
 func (h *Hash) Scan(val interface{}) error {
 	switch v := val.(type) {
 	case []byte:
-		return h.UnmarshalText(v)
-	case string:
-		return h.UnmarshalText([]byte(v))
+		copy(h[:], v)
+		return nil
 	default:
 		return fmt.Errorf("Hash.Scan received unsupported type %T", val)
 	}

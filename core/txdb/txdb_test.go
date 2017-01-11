@@ -19,9 +19,9 @@ func TestGetBlock(t *testing.T) {
 	pgtest.Exec(ctx, dbtx, t, `
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES
-		('0000000000000000000000000000000000000000000000000000000000000000', 0, '', ''),
+		(decode('0000000000000000000000000000000000000000000000000000000000000000', 'hex'), 0, '', ''),
 		(
-			'1f20d89dd393f452b4396589ed5d6f90465cb032aa3f9fe42a99d47c7089b0a3',
+			decode('1f20d89dd393f452b4396589ed5d6f90465cb032aa3f9fe42a99d47c7089b0a3', 'hex'),
 			1,
 			decode('03010131323300000000000000000000000000000000000000000000000000000000006453414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000012746573742d6f75747075742d73637269707411010f746573742d7369672d73637269707401070102000000000007746573742d7478', 'hex'),
 			''
@@ -59,7 +59,7 @@ func TestGetBlock(t *testing.T) {
 	}
 }
 
-func getBlockByHash(ctx context.Context, db pg.DB, hash string) (*bc.Block, error) {
+func getBlockByHash(ctx context.Context, db pg.DB, hash bc.Hash) (*bc.Block, error) {
 	const q = `SELECT data FROM blocks WHERE block_hash=$1`
 	block := new(bc.Block)
 	err := db.QueryRow(ctx, q, hash).Scan(block)
@@ -92,7 +92,7 @@ func TestInsertBlock(t *testing.T) {
 	}
 
 	// block in database
-	_, err = getBlockByHash(ctx, dbtx, blk.Hash().String())
+	_, err = getBlockByHash(ctx, dbtx, blk.Hash())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

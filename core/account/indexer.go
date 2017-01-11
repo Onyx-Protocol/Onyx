@@ -92,20 +92,20 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	deltxhash, delindex := prevoutDBKeys(b.Transactions...)
 	const delQ = `
 		DELETE FROM account_utxos
-		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+		WHERE (tx_hash, index) IN (SELECT unnest($1::bytea[]), unnest($2::integer[]))
 	`
 	_, err = m.db.Exec(ctx, delQ, deltxhash, delindex)
 	return errors.Wrap(err, "deleting spent account utxos")
 }
 
-func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.StringArray, index pg.Uint32s) {
+func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.ByteaArray, index pg.Uint32s) {
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
 			if in.IsIssuance() {
 				continue
 			}
 			o := in.Outpoint()
-			txhash = append(txhash, o.Hash.String())
+			txhash = append(txhash, o.Hash[:])
 			index = append(index, o.Index)
 		}
 	}
@@ -156,18 +156,18 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]
 // block confirmation data will in the row will be updated.
 func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[bc.Hash]uint32, block *bc.Block) error {
 	var (
-		txHash    pq.StringArray
+		txHash    pq.ByteaArray
 		index     pg.Uint32s
-		assetID   pq.StringArray
+		assetID   pq.ByteaArray
 		amount    pq.Int64Array
 		accountID pq.StringArray
 		cpIndex   pq.Int64Array
 		program   pq.ByteaArray
 	)
 	for _, out := range outs {
-		txHash = append(txHash, out.Outpoint.Hash.String())
+		txHash = append(txHash, out.Outpoint.Hash[:])
 		index = append(index, out.Outpoint.Index)
-		assetID = append(assetID, out.AssetID.String())
+		assetID = append(assetID, out.AssetID[:])
 		amount = append(amount, int64(out.Amount))
 		accountID = append(accountID, out.AccountID)
 		cpIndex = append(cpIndex, int64(out.keyIndex))
@@ -177,7 +177,7 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 	const q = `
 		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, account_id, control_program_index,
 			control_program, confirmed_in)
-		SELECT unnest($1::text[]), unnest($2::bigint[]), unnest($3::text[]),  unnest($4::bigint[]),
+		SELECT unnest($1::bytea[]), unnest($2::bigint[]), unnest($3::bytea[]),  unnest($4::bigint[]),
 			   unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), $8
 		ON CONFLICT (tx_hash, index) DO NOTHING
 	`

@@ -83,4 +83,17 @@ var migrations = []migration{
 		ALTER TABLE signers RENAME COLUMN xpub_byteas TO xpubs;
 		ALTER TABLE signers ALTER COLUMN xpubs DROP DEFAULT;
 	`},
+	{Name: "2017-01-11.0.core.hash-bytea.sql", SQL: `
+		ALTER TABLE account_utxos ALTER COLUMN tx_hash SET DATA TYPE bytea USING decode(tx_hash, 'hex');
+		ALTER TABLE annotated_outputs ALTER COLUMN tx_hash SET DATA TYPE bytea USING decode(tx_hash, 'hex');
+		ALTER TABLE annotated_txs ALTER COLUMN tx_hash SET DATA TYPE bytea USING decode(tx_hash, 'hex');
+		ALTER TABLE account_utxos ALTER COLUMN asset_id SET DATA TYPE bytea USING decode(asset_id, 'hex');
+		ALTER TABLE asset_tags ALTER COLUMN asset_id SET DATA TYPE bytea USING decode(asset_id, 'hex');
+		ALTER TABLE assets ALTER COLUMN id SET DATA TYPE bytea USING decode(id, 'hex');
+		ALTER TABLE annotated_assets ALTER COLUMN id SET DATA TYPE bytea USING decode(id, 'hex');
+		ALTER TABLE blocks ALTER COLUMN block_hash SET DATA TYPE bytea USING decode(block_hash, 'hex');
+		ALTER TABLE signed_blocks ALTER COLUMN block_hash SET DATA TYPE bytea USING decode(block_hash, 'hex');
+		ALTER TABLE assets ALTER COLUMN initial_block_hash SET DATA TYPE bytea USING decode(initial_block_hash, 'hex');
+		ALTER TABLE config ALTER COLUMN blockchain_id SET DATA TYPE bytea USING decode(blockchain_id, 'hex');
+	`},
 }

@@ -1,12 +1,14 @@
 package asset
 
 import (
+	"bytes"
 	"context"
 	"reflect"
 	"testing"
 
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
+	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -25,14 +27,14 @@ func TestDefineAsset(t *testing.T) {
 	}
 
 	// Verify that the asset was defined.
-	var id string
+	var id bc.AssetID
 	var checkQ = `SELECT id FROM assets`
 	err = r.db.QueryRow(ctx, checkQ).Scan(&id)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
-	if id != asset.AssetID.String() {
-		t.Errorf("expected new asset %s to be recorded as %s", asset.AssetID.String(), id)
+	if !bytes.Equal(id[:], asset.AssetID[:]) {
+		t.Errorf("expected new asset %s to be recorded as %s", asset.AssetID, id)
 	}
 }
 
