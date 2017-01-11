@@ -20,14 +20,6 @@ public class ControlProgram {
   public String controlProgram;
 
   /**
-   * Generates hex representation of a "retire" control program.
-   * @return hex-encoded "retire" program
-   */
-  public static String retireProgram() {
-    return "6a";
-  }
-
-  /**
    * Creates a batch of control programs.
    * @param client client object which makes requests to core
    * @param programs list of control program builder objects

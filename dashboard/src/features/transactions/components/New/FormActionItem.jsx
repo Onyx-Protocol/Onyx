@@ -13,7 +13,7 @@ const SPEND_ACCOUNT_KEY = 'spend_account'
 const SPEND_UNSPENT_KEY = 'spend_account_unspent_output'
 const CONTROL_ACCOUNT_KEY = 'control_account'
 const CONTROL_PROGRAM_KEY = 'control_program'
-const RETIRE_ASSET_KEY = 'retire_asset'
+const RETIRE_ASSET_KEY = 'retire'
 const TRANSACTION_REFERENCE_DATA = 'set_transaction_reference_data'
 
 const actionLabels = {
