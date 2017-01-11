@@ -119,7 +119,7 @@ func (b *TemplateBuilder) Build() (*Template, *bc.TxData, error) {
 	// Add all the built inputs and their corresponding signing instructions.
 	for i, in := range b.inputs {
 		instruction := b.signingInstructions[i]
-		instruction.Position = len(tx.Inputs)
+		instruction.Position = uint32(len(tx.Inputs))
 
 		// Empty signature arrays should be serialized as empty arrays, not null.
 		if instruction.WitnessComponents == nil {

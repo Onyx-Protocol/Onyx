@@ -312,7 +312,7 @@ func TestTxHashForSig(t *testing.T) {
 		ReferenceData: []byte("transfer"),
 	}
 	cases := []struct {
-		idx      int
+		idx      uint32
 		wantHash string
 	}{
 		{0, "94b72d62d47a8ba581246c0c721b18b36282cf81f2cdb92a3b1ab4fef4640654"},

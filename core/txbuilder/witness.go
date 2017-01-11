@@ -23,11 +23,11 @@ type SignFunc func(context.Context, string, [][]byte, [32]byte) ([]byte, error)
 type WitnessComponent interface {
 	// Sign is called to add signatures. Actual signing is delegated to
 	// a callback function.
-	Sign(context.Context, *Template, int, []string, SignFunc) error
+	Sign(context.Context, *Template, uint32, []string, SignFunc) error
 
 	// Materialize is called to turn the component into a vector of
 	// arguments for the input witness.
-	Materialize(*Template, int, *[][]byte) error
+	Materialize(*Template, uint32, *[][]byte) error
 }
 
 // materializeWitnesses takes a filled in Template and "materializes"
@@ -99,7 +99,7 @@ var ErrEmptyProgram = errors.New("empty signature program")
 //  - the mintime and maxtime of the transaction (if non-zero)
 //  - the outpoint and (if non-empty) reference data of the current input
 //  - the assetID, amount, control program, and (if non-empty) reference data of each output.
-func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, xpubs []string, signFn SignFunc) error {
+func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index uint32, xpubs []string, signFn SignFunc) error {
 	// Compute the predicate to sign. This is either a
 	// txsighash program if tpl.AllowAdditional is false (i.e., the tx is complete
 	// and no further changes are allowed) or a program enforcing
@@ -150,7 +150,7 @@ func contains(list []string, key string) bool {
 	return false
 }
 
-func buildSigProgram(tpl *Template, index int) []byte {
+func buildSigProgram(tpl *Template, index uint32) []byte {
 	if !tpl.AllowAdditional {
 		h := tpl.Hash(index)
 		builder := vmutil.NewBuilder()
@@ -201,7 +201,7 @@ func buildSigProgram(tpl *Template, index int) []byte {
 	return program
 }
 
-func (sw SignatureWitness) Materialize(tpl *Template, index int, args *[][]byte) error {
+func (sw SignatureWitness) Materialize(tpl *Template, index uint32, args *[][]byte) error {
 	// This is the value of N for the CHECKPREDICATE call. The code
 	// assumes that everything already in the arg list before this call
 	// to Materialize is input to the signature program, so N is
