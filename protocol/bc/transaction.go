@@ -125,27 +125,18 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		return err
 	}
 
-	commonFields, _, err := blockchain.ReadVarstr31(r)
+	// Common fields
+	all := tx.Version == 1
+	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+		tx.MinTime, _, err = blockchain.ReadVarint63(r)
+		if err != nil {
+			return errors.Wrap(err, "reading transaction mintime")
+		}
+		tx.MaxTime, _, err = blockchain.ReadVarint63(r)
+		return errors.Wrap(err, "reading transaction maxtime")
+	})
 	if err != nil {
-		return err
-	}
-
-	buf := bytes.NewReader(commonFields)
-
-	var n1, n2 int
-
-	tx.MinTime, n1, err = blockchain.ReadVarint63(buf)
-	if err != nil {
-		return err
-	}
-
-	tx.MaxTime, n2, err = blockchain.ReadVarint63(buf)
-	if err != nil {
-		return err
-	}
-
-	if tx.Version == 1 && n1+n2 < len(commonFields) {
-		return fmt.Errorf("unrecognized extra data in common fields for transaction version 1")
+		return errors.Wrap(err, "reading transaction common fields")
 	}
 
 	// Common witness, empty in v1
@@ -326,12 +317,16 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) {
 	blockchain.WriteVarint63(w, tx.Version) // TODO(bobg): check and return error
 
 	// common fields
-	var buf bytes.Buffer
-	blockchain.WriteVarint63(&buf, tx.MinTime) // TODO(bobg): check and return error
-	blockchain.WriteVarint63(&buf, tx.MaxTime) // TODO(bobg): check and return error
-	blockchain.WriteVarstr31(w, buf.Bytes())
+	blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+		_, err := blockchain.WriteVarint63(w, tx.MinTime)
+		if err != nil {
+			return err
+		}
+		_, err = blockchain.WriteVarint63(w, tx.MaxTime)
+		return err
+	})
 
-	// common witness
+	// common witness, empty in v1
 	blockchain.WriteVarstr31(w, []byte{})
 
 	blockchain.WriteVarint31(w, uint64(len(tx.Inputs))) // TODO(bobg): check and return error

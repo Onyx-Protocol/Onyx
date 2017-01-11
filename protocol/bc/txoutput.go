@@ -1,12 +1,12 @@
 package bc
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 
 	"chain/encoding/blockchain"
 	"chain/encoding/bufpool"
+	"chain/errors"
 )
 
 // TODO(bobg): Review serialization/deserialization logic for
@@ -65,36 +65,28 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 }
 
 func (oc *OutputCommitment) readFrom(r io.Reader, txVersion, assetVersion uint64) (n int, err error) {
-	b, n, err := blockchain.ReadVarstr31(r)
-	if err != nil {
-		return n, err
-	}
-
 	if assetVersion != 1 {
-		return n, nil
+		return n, fmt.Errorf("unrecognized asset version %d", assetVersion)
 	}
+	all := txVersion == 1
+	return blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+		_, err := oc.AssetAmount.readFrom(r)
+		if err != nil {
+			return errors.Wrap(err, "reading asset+amount")
+		}
 
-	rb := bytes.NewBuffer(b)
-	n1, err := oc.AssetAmount.readFrom(rb)
-	if err != nil {
-		return n, err
-	}
-	var n2 int
-	oc.VMVersion, n2, err = blockchain.ReadVarint63(rb)
-	if err != nil {
-		return n, err
-	}
-	var n3 int
-	oc.ControlProgram, n3, err = blockchain.ReadVarstr31(rb)
-	if err != nil {
-		return n, err
-	}
+		oc.VMVersion, _, err = blockchain.ReadVarint63(r)
+		if err != nil {
+			return errors.Wrap(err, "reading VM version")
+		}
 
-	if txVersion == 1 && n1+n2+n3 < len(b) {
-		return n, fmt.Errorf("unrecognized extra data in output commitment for transaction version 1")
-	}
+		if oc.VMVersion != 1 {
+			return fmt.Errorf("unrecognized VM version %d for asset version 1", oc.VMVersion)
+		}
 
-	return n, nil
+		oc.ControlProgram, _, err = blockchain.ReadVarstr31(r)
+		return errors.Wrap(err, "reading control program")
+	})
 }
 
 // assumes r has sticky errors
@@ -102,7 +94,9 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
 	blockchain.WriteVarint63(w, to.AssetVersion) // TODO(bobg): check and return error
 	to.OutputCommitment.writeTo(w, to.AssetVersion)
 	writeRefData(w, to.ReferenceData, serflags)
-	blockchain.WriteVarstr31(w, nil)
+	if serflags&SerWitness != 0 {
+		blockchain.WriteVarstr31(w, nil)
+	}
 }
 
 func (to *TxOutput) witnessHash() Hash {
