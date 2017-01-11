@@ -5,10 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
-	"chain/errors"
 	"chain/protocol/bc"
 	"chain/testutil"
 )
@@ -59,16 +56,6 @@ func TestGetBlock(t *testing.T) {
 	}
 }
 
-func getBlockByHash(ctx context.Context, db pg.DB, hash bc.Hash) (*bc.Block, error) {
-	const q = `SELECT data FROM blocks WHERE block_hash=$1`
-	block := new(bc.Block)
-	err := db.QueryRow(ctx, q, hash).Scan(block)
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
-	}
-	return block, errors.WithDetailf(err, "block hash=%v", hash)
-}
-
 func TestInsertBlock(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
@@ -86,14 +73,17 @@ func TestInsertBlock(t *testing.T) {
 			}),
 		},
 	}
-	err := NewStore(dbtx).SaveBlock(ctx, blk)
+	s := NewStore(dbtx)
+	err := s.SaveBlock(ctx, blk)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	// block in database
-	_, err = getBlockByHash(ctx, dbtx, blk.Hash())
+	got, err := s.GetBlock(ctx, 1)
 	if err != nil {
 		testutil.FatalErr(t, err)
+	}
+	if !reflect.DeepEqual(got, blk) {
+		t.Errorf("got %#v, wanted %#v", got, blk)
 	}
 }
