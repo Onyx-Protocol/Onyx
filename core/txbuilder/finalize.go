@@ -57,6 +57,8 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *bc.Tx) 
 // least one input to commit to the complete transaction (what you get
 // when you build a transaction with allow_additional_actions=false).
 var ErrNoTxSighashCommitment = errors.New("no commitment to tx sighash")
+var ErrNoTxSighashAttempt = errors.New("no tx sighash attempted")
+var ErrTxSignatureFailure = errors.New("tx signature was attempted but failed")
 
 func checkTxSighashCommitment(tx *bc.Tx) error {
 	allIssuances := true
@@ -70,7 +72,13 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 		case *bc.IssuanceInput:
 			args = t.Arguments
 		}
-		if len(args) < 3 {
+		// Note: These numbers will need to change if more arguments are added to the program
+		switch {
+		case len(args) == 0:
+			return ErrNoTxSighashAttempt
+		case len(args) < 2:
+			return ErrTxSignatureFailure
+		case len(args) < 3:
 			// A conforming arguments list contains
 			// [... arg1 arg2 ... argN N sig1 sig2 ... sigM prog]
 			// The args are the opaque arguments to prog. In the case where
