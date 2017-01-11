@@ -29,7 +29,7 @@ descriptors and range proofs, but its asset-range-proof is different:
 it’s an `IssuanceAssetRangeProof`. It also contains a list of “asset
 choices,” each of which is an `IssuanceWitness`.
 - [`issuance_asset_range_proof.go`](https://github.com/chain/chain-stealth/blob/confidential-assets/crypto/ca/issuance_asset_range_proof.go)
-- [`issuance_witness.go` (part of the `protocol/bc` package)](https://github.com/chain/chain-stealth/blob/confidential-assets/protocol/bc/issuance_witness.go)
+- [`issuance_witness.go`](https://github.com/chain/chain-stealth/blob/confidential-assets/protocol/bc/issuance_witness.go) (part of the `protocol/bc` package)
 
 Asset-version-2 validation happens in
 [`CheckTxWellFormed`](https://github.com/chain/chain-stealth/blob/3ba5d81af52ada530a4143fc048de8ab121e67ee/protocol/validation/tx.go#L89)
