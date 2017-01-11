@@ -11,6 +11,7 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
+	"chain/testutil"
 )
 
 func TestInferConstraints(t *testing.T) {
@@ -48,7 +49,7 @@ func TestWitnessJSON(t *testing.T) {
 			&SignatureWitness{
 				Quorum: 4,
 				Keys: []KeyID{{
-					XPub:           "fd",
+					XPub:           testutil.TestXPub,
 					DerivationPath: []chainjson.HexBytes{{5, 6, 7}},
 				}},
 				Sigs: []chainjson.HexBytes{{8, 9, 10}},

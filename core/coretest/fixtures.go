@@ -90,7 +90,7 @@ func SignTxTemplate(t testing.TB, ctx context.Context, template *txbuilder.Templ
 	if priv == nil {
 		priv = &testutil.TestXPrv
 	}
-	err := txbuilder.Sign(ctx, template, []string{priv.XPub().String()}, func(_ context.Context, _ string, path [][]byte, data [32]byte) ([]byte, error) {
+	err := txbuilder.Sign(ctx, template, []chainkd.XPub{priv.XPub()}, func(_ context.Context, _ chainkd.XPub, path [][]byte, data [32]byte) ([]byte, error) {
 		derived := priv.Derive(path)
 		return derived.Sign(data[:]), nil
 	})
