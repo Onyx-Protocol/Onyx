@@ -17,7 +17,7 @@ type IssuanceInput2 struct {
 	valueDescriptor ca.ValueDescriptor
 
 	// Witness
-	AssetChoices            []AssetWitness
+	AssetChoices            []IssuanceWitness
 	issuanceAssetRangeProof *ca.IssuanceAssetRangeProof
 	valueRangeProof         *ca.ValueRangeProof
 }
@@ -44,7 +44,7 @@ func (ii2 *IssuanceInput2) readWitness(r io.Reader, assetVersion uint64) error {
 	}
 	ii2.AssetChoices = nil
 	for i := uint32(0); i < nchoices; i++ {
-		var c AssetWitness
+		var c IssuanceWitness
 		err = c.readFrom(r, assetVersion)
 		if err != nil {
 			return errors.Wrapf(err, "reading asset witness %d", i)

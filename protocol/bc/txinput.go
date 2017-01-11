@@ -73,7 +73,7 @@ func NewIssuanceInput(nonce []byte, amount uint64, referenceData []byte, initial
 		TypedInput: &IssuanceInput1{
 			Nonce:  nonce,
 			Amount: amount,
-			AssetWitness: AssetWitness{
+			IssuanceWitness: IssuanceWitness{
 				InitialBlock:    initialBlock,
 				VMVersion:       1,
 				IssuanceProgram: issuanceProgram,
@@ -113,7 +113,7 @@ func NewConfidentialIssuanceInput(nonce []byte, amount uint64, referenceData []b
 				Nonce:           nonce,
 				assetDescriptor: ad,
 				valueDescriptor: vd,
-				AssetChoices: []AssetWitness{
+				AssetChoices: []IssuanceWitness{
 					{
 						InitialBlock:    initialBlock,
 						VMVersion:       1,
@@ -221,7 +221,7 @@ func (t *TxInput) writeInputWitness(w io.Writer) (err error) {
 	if t.AssetVersion == 1 || t.AssetVersion == 2 {
 		switch inp := t.TypedInput.(type) {
 		case *IssuanceInput1:
-			return inp.AssetWitness.writeTo(w)
+			return inp.IssuanceWitness.writeTo(w)
 
 		case *IssuanceInput2:
 			_, err = blockchain.WriteVarint31(w, uint64(len(inp.AssetChoices)))

@@ -56,7 +56,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 							AssetVersion: 1,
 							TypedInput: &bc.IssuanceInput1{
 								Amount: 10000,
-								AssetWitness: bc.AssetWitness{
+								IssuanceWitness: bc.IssuanceWitness{
 									InitialBlock:    r.initialBlockHash,
 									IssuanceProgram: issuanceProgram,
 									VMVersion:       1,

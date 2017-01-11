@@ -93,7 +93,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 
 			switch is := in.TypedInput.(type) {
 			case *bc.IssuanceInput1:
-				assetID := is.AssetWitness.AssetID(in.AssetVersion)
+				assetID := is.IssuanceWitness.AssetID(in.AssetVersion)
 				if seen[assetID] {
 					continue
 				}

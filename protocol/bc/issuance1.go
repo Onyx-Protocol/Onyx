@@ -18,7 +18,7 @@ type IssuanceInput1 struct {
 	// might not be present).
 
 	// Witness
-	AssetWitness
+	IssuanceWitness
 }
 
 func (ii *IssuanceInput1) IsIssuance() bool { return true }
@@ -43,5 +43,5 @@ func (ii1 *IssuanceInput1) readCommitment(r io.Reader) (assetID AssetID, err err
 }
 
 func (ii1 *IssuanceInput1) readWitness(r io.Reader, assetVersion uint64) error {
-	return ii1.AssetWitness.readFrom(r, assetVersion)
+	return ii1.IssuanceWitness.readFrom(r, assetVersion)
 }

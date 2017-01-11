@@ -8,18 +8,18 @@ import (
 	"chain-stealth/errors"
 )
 
-type AssetWitness struct {
+type IssuanceWitness struct {
 	InitialBlock    Hash
 	VMVersion       uint64
 	IssuanceProgram []byte
 	Arguments       [][]byte
 }
 
-func (aw *AssetWitness) AssetID(assetVersion uint64) AssetID {
+func (aw *IssuanceWitness) AssetID(assetVersion uint64) AssetID {
 	return ComputeAssetID(aw.IssuanceProgram, aw.InitialBlock, assetVersion, aw.VMVersion)
 }
 
-func (aw *AssetWitness) writeTo(w io.Writer) error {
+func (aw *IssuanceWitness) writeTo(w io.Writer) error {
 	_, err := w.Write(aw.InitialBlock[:])
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func (aw *AssetWitness) writeTo(w io.Writer) error {
 	return err
 }
 
-func (aw *AssetWitness) readFrom(r io.Reader, assetVersion uint64) error {
+func (aw *IssuanceWitness) readFrom(r io.Reader, assetVersion uint64) error {
 	_, err := io.ReadFull(r, aw.InitialBlock[:])
 	if err != nil {
 		return errors.Wrap(err, "reading initial block hash")
