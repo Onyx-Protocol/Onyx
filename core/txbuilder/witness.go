@@ -1,9 +1,11 @@
 package txbuilder
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 
+	"chain/crypto/ed25519/chainkd"
 	"chain/crypto/sha3pool"
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -14,7 +16,7 @@ import (
 
 // SignFunc is the function passed into Sign that produces
 // a signature for a given xpub, derivation path, and hash.
-type SignFunc func(context.Context, string, [][]byte, [32]byte) ([]byte, error)
+type SignFunc func(context.Context, chainkd.XPub, [][]byte, [32]byte) ([]byte, error)
 
 // WitnessComponent encodes instructions for finalizing a transaction
 // by populating its InputWitness fields. Each WitnessComponent object
@@ -23,7 +25,7 @@ type SignFunc func(context.Context, string, [][]byte, [32]byte) ([]byte, error)
 type WitnessComponent interface {
 	// Sign is called to add signatures. Actual signing is delegated to
 	// a callback function.
-	Sign(context.Context, *Template, uint32, []string, SignFunc) error
+	Sign(context.Context, *Template, uint32, []chainkd.XPub, SignFunc) error
 
 	// Materialize is called to turn the component into a vector of
 	// arguments for the input witness.
@@ -82,7 +84,7 @@ type (
 	}
 
 	KeyID struct {
-		XPub           string               `json:"xpub"`
+		XPub           chainkd.XPub         `json:"xpub"`
 		DerivationPath []chainjson.HexBytes `json:"derivation_path"`
 	}
 )
@@ -99,7 +101,7 @@ var ErrEmptyProgram = errors.New("empty signature program")
 //  - the mintime and maxtime of the transaction (if non-zero)
 //  - the outpoint and (if non-empty) reference data of the current input
 //  - the assetID, amount, control program, and (if non-empty) reference data of each output.
-func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index uint32, xpubs []string, signFn SignFunc) error {
+func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index uint32, xpubs []chainkd.XPub, signFn SignFunc) error {
 	// Compute the predicate to sign. This is either a
 	// txsighash program if tpl.AllowAdditional is false (i.e., the tx is complete
 	// and no further changes are allowed) or a program enforcing
@@ -141,9 +143,9 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index uint3
 	return nil
 }
 
-func contains(list []string, key string) bool {
+func contains(list []chainkd.XPub, key chainkd.XPub) bool {
 	for _, k := range list {
-		if k == key {
+		if bytes.Equal(k[:], key[:]) {
 			return true
 		}
 	}

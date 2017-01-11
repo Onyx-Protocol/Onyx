@@ -87,8 +87,8 @@ func TestMockHSM(t *testing.T) {
 	h := &Handler{HSM: mockhsm}
 	outTmpls := h.mockhsmSignTemplates(ctx, struct {
 		Txs   []*txbuilder.Template `json:"transactions"`
-		XPubs []string              `json:"xpubs"`
-	}{[]*txbuilder.Template{tmpl}, []string{xpub1.XPub.String()}})
+		XPubs []chainkd.XPub        `json:"xpubs"`
+	}{[]*txbuilder.Template{tmpl}, []chainkd.XPub{xpub1.XPub}})
 	if len(outTmpls) != 1 {
 		t.Fatalf("expected 1 output template, got %d", len(outTmpls))
 	}

@@ -75,12 +75,12 @@ func KeyIDs(xpubs []chainkd.XPub, path [][]byte) []KeyID {
 		hexPath = append(hexPath, p)
 	}
 	for _, xpub := range xpubs {
-		result = append(result, KeyID{xpub.String(), hexPath})
+		result = append(result, KeyID{xpub, hexPath})
 	}
 	return result
 }
 
-func Sign(ctx context.Context, tpl *Template, xpubs []string, signFn SignFunc) error {
+func Sign(ctx context.Context, tpl *Template, xpubs []chainkd.XPub, signFn SignFunc) error {
 	for i, sigInst := range tpl.SigningInstructions {
 		for j, c := range sigInst.WitnessComponents {
 			err := c.Sign(ctx, tpl, uint32(i), xpubs, signFn)
