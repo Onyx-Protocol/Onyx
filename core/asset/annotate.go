@@ -53,10 +53,10 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []map[string]interface
 		localByAssetIDStr   = make(map[string]bool, len(assetIDStrs))
 	)
 	const q = `
-		SELECT id, COALESCE(alias, ''), signer_id IS NOT NULL, tags, definition
+		SELECT encode(id, 'hex'), COALESCE(alias, ''), signer_id IS NOT NULL, tags, definition
 		FROM assets
 		LEFT JOIN asset_tags ON asset_id=id
-		WHERE id IN (SELECT unnest($1::text[]))
+		WHERE id IN (SELECT decode(unnest($1::text[]), 'hex'))
 	`
 	err := pg.ForQueryRows(ctx, reg.db, q, pq.StringArray(assetIDStrs),
 		func(assetIDStr, alias string, local bool, tagsBlob []byte, defBlob []byte) error {

@@ -184,7 +184,7 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 	const q = `
 		INSERT INTO assets
 			(id, alias, signer_id, initial_block_hash, issuance_program, definition, client_token)
-		VALUES($1, $2, $3, $4, $5, $6, $7)
+		VALUES($1::bytea, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT (client_token) DO NOTHING
 		RETURNING sort_id
   `
@@ -220,7 +220,7 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 			return nil, errors.Wrap(err, "retrieving existing asset")
 		}
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	return asset, nil
 }
@@ -237,7 +237,7 @@ func insertAssetTags(ctx context.Context, db pg.DB, assetID bc.AssetID, tags map
 		INSERT INTO asset_tags (asset_id, tags) VALUES ($1, $2)
 		ON CONFLICT (asset_id) DO UPDATE SET tags = $2
 	`
-	_, err = db.Exec(ctx, q, assetID.String(), tagsParam)
+	_, err = db.Exec(ctx, q, assetID, tagsParam)
 	if err != nil {
 		return errors.Wrap(err)
 	}

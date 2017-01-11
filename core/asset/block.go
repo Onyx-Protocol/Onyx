@@ -81,9 +81,10 @@ func (reg *Registry) ProcessBlocks(ctx context.Context) {
 // indexAssets is run on every block and indexes all non-local assets.
 func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 	var (
-		assetIDs, definitions pq.StringArray
-		issuancePrograms      pq.ByteaArray
-		seen                  = make(map[bc.AssetID]bool)
+		assetIDs         pq.ByteaArray
+		definitions      pq.StringArray
+		issuancePrograms pq.ByteaArray
+		seen             = make(map[bc.AssetID]bool)
 	)
 	for _, tx := range b.Transactions {
 		for _, in := range tx.Inputs {
@@ -94,9 +95,10 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 				continue
 			}
 			if ii, ok := in.TypedInput.(*bc.IssuanceInput); ok {
+				id := in.AssetID()
 				definition := ii.AssetDefinition
-				seen[in.AssetID()] = true
-				assetIDs = append(assetIDs, in.AssetID().String())
+				seen[id] = true
+				assetIDs = append(assetIDs, id[:])
 				definitions = append(definitions, string(definition))
 				issuancePrograms = append(issuancePrograms, in.IssuanceProgram())
 			}
@@ -117,7 +119,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 	const q = `
 		WITH new_assets AS (
 			INSERT INTO assets (id, issuance_program, definition, created_at, initial_block_hash, first_block_height)
-			VALUES(unnest($1::text[]), unnest($2::bytea[]), unnest($3::text[])::jsonb, $4, $5, $6)
+			VALUES(unnest($1::bytea[]), unnest($2::bytea[]), unnest($3::text[])::jsonb, $4, $5, $6)
 			ON CONFLICT (id) DO NOTHING
 			RETURNING id
 		)

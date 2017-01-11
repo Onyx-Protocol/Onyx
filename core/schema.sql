@@ -187,9 +187,9 @@ CREATE TABLE account_control_programs (
 --
 
 CREATE TABLE account_utxos (
-    tx_hash text NOT NULL,
+    tx_hash bytea NOT NULL,
     index integer NOT NULL,
-    asset_id text NOT NULL,
+    asset_id bytea NOT NULL,
     amount bigint NOT NULL,
     account_id text NOT NULL,
     control_program_index bigint NOT NULL,
@@ -224,7 +224,7 @@ CREATE TABLE annotated_accounts (
 --
 
 CREATE TABLE annotated_assets (
-    id text NOT NULL,
+    id bytea NOT NULL,
     data jsonb NOT NULL,
     sort_id text NOT NULL
 );
@@ -238,7 +238,7 @@ CREATE TABLE annotated_outputs (
     block_height bigint NOT NULL,
     tx_pos integer NOT NULL,
     output_index integer NOT NULL,
-    tx_hash text NOT NULL,
+    tx_hash bytea NOT NULL,
     data jsonb NOT NULL,
     timespan int8range NOT NULL
 );
@@ -251,7 +251,7 @@ CREATE TABLE annotated_outputs (
 CREATE TABLE annotated_txs (
     block_height bigint NOT NULL,
     tx_pos integer NOT NULL,
-    tx_hash text NOT NULL,
+    tx_hash bytea NOT NULL,
     data jsonb NOT NULL
 );
 
@@ -261,7 +261,7 @@ CREATE TABLE annotated_txs (
 --
 
 CREATE TABLE asset_tags (
-    asset_id text NOT NULL,
+    asset_id bytea NOT NULL,
     tags jsonb
 );
 
@@ -271,13 +271,13 @@ CREATE TABLE asset_tags (
 --
 
 CREATE TABLE assets (
-    id text NOT NULL,
+    id bytea NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     definition_mutable boolean DEFAULT false NOT NULL,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
     issuance_program bytea NOT NULL,
     client_token text,
-    initial_block_hash text NOT NULL,
+    initial_block_hash bytea NOT NULL,
     signer_id text,
     definition jsonb,
     alias text,
@@ -312,7 +312,7 @@ CREATE TABLE block_processors (
 --
 
 CREATE TABLE blocks (
-    block_hash text NOT NULL,
+    block_hash bytea NOT NULL,
     height bigint NOT NULL,
     data bytea NOT NULL,
     header bytea NOT NULL
@@ -339,7 +339,7 @@ CREATE TABLE config (
     singleton boolean DEFAULT true NOT NULL,
     is_signer boolean,
     is_generator boolean,
-    blockchain_id text NOT NULL,
+    blockchain_id bytea NOT NULL,
     configured_at timestamp with time zone NOT NULL,
     generator_url text DEFAULT ''::text NOT NULL,
     block_pub text DEFAULT ''::text NOT NULL,
@@ -451,7 +451,7 @@ CREATE SEQUENCE reservation_seq
 
 CREATE TABLE signed_blocks (
     block_height bigint NOT NULL,
-    block_hash text NOT NULL
+    block_hash bytea NOT NULL
 );
 
 
@@ -878,3 +878,4 @@ insert into migrations (filename, hash) values ('2016-11-23.0.query.jsonb-path-o
 insert into migrations (filename, hash) values ('2016-11-28.0.core.submitted-txs-hash.sql', 'cabbd7fd79a2b672b2d3c854783bde3b8245fe666c50261c3335a0c0501ff2ea');
 insert into migrations (filename, hash) values ('2017-01-05.0.core.rename_block_key.sql', 'ba6a62e498236ec9d2f13238a945829a5cab83f897068fef57a2c152a2e36037');
 insert into migrations (filename, hash) values ('2017-01-10.0.signers.xpubs-type.sql', '4a4d6c736a2bf65e69abbdc87771faa1dc17a0106b2651a6a58af067708d095a');
+insert into migrations (filename, hash) values ('2017-01-11.0.core.hash-bytea.sql', '9f7f15df3479c38f193884a2d3cb7ae8001ed08607f9cc661fd5c420e248688d');

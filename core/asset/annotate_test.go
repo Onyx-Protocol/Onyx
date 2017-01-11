@@ -39,7 +39,7 @@ func TestAnnotateTxs(t *testing.T) {
 					"asset_id": asset2.AssetID.String(),
 				},
 				map[string]interface{}{
-					"asset_id": "unknown",
+					"asset_id": "bad0",
 				},
 			},
 			"outputs": []interface{}{
@@ -50,7 +50,7 @@ func TestAnnotateTxs(t *testing.T) {
 					"asset_id": asset2.AssetID.String(),
 				},
 				map[string]interface{}{
-					"asset_id": "unknown",
+					"asset_id": "bad0",
 				},
 			},
 		},
@@ -71,7 +71,7 @@ func TestAnnotateTxs(t *testing.T) {
 					"asset_definition": map[string]interface{}{},
 				},
 				map[string]interface{}{
-					"asset_id":         "unknown",
+					"asset_id":         "bad0",
 					"asset_tags":       map[string]interface{}{},
 					"asset_is_local":   "no",
 					"asset_definition": map[string]interface{}{},
@@ -91,7 +91,7 @@ func TestAnnotateTxs(t *testing.T) {
 					"asset_definition": map[string]interface{}{},
 				},
 				map[string]interface{}{
-					"asset_id":         "unknown",
+					"asset_id":         "bad0",
 					"asset_tags":       map[string]interface{}{},
 					"asset_is_local":   "no",
 					"asset_definition": map[string]interface{}{},
