@@ -4,12 +4,13 @@ package blockchain
 
 import (
 	"bytes"
-	"chain/encoding/bufpool"
 	"encoding/binary"
 	"errors"
 	"io"
 	"math"
 	"sync"
+
+	"chain/encoding/bufpool"
 )
 
 var bufPool = sync.Pool{New: func() interface{} { return new([9]byte) }}

@@ -94,9 +94,7 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
 	blockchain.WriteVarint63(w, to.AssetVersion) // TODO(bobg): check and return error
 	to.OutputCommitment.writeTo(w, to.AssetVersion)
 	writeRefData(w, to.ReferenceData, serflags)
-	if serflags&SerWitness != 0 {
-		blockchain.WriteVarstr31(w, nil)
-	}
+	blockchain.WriteVarstr31(w, nil)
 }
 
 func (to *TxOutput) witnessHash() Hash {
