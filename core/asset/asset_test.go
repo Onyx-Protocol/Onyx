@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
 	"chain/protocol/prottest"
 	"chain/testutil"
@@ -14,7 +15,7 @@ func TestDefineAsset(t *testing.T) {
 	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
 	ctx := context.Background()
 
-	keys := []string{testutil.TestXPub.String()}
+	keys := []chainkd.XPub{testutil.TestXPub}
 	asset, err := r.Define(ctx, keys, 1, nil, "", nil, "")
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -39,7 +40,7 @@ func TestDefineAssetIdempotency(t *testing.T) {
 	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
 	ctx := context.Background()
 	token := "test_token"
-	keys := []string{testutil.TestXPub.String()}
+	keys := []chainkd.XPub{testutil.TestXPub}
 	asset0, err := r.Define(ctx, keys, 1, nil, "", nil, token)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -58,7 +59,7 @@ func TestDefineAssetIdempotency(t *testing.T) {
 func TestFindAssetByID(t *testing.T) {
 	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
 	ctx := context.Background()
-	keys := []string{testutil.TestXPub.String()}
+	keys := []chainkd.XPub{testutil.TestXPub}
 	asset, err := r.Define(ctx, keys, 1, nil, "", nil, "")
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -76,7 +77,7 @@ func TestFindAssetByID(t *testing.T) {
 func TestAssetByClientToken(t *testing.T) {
 	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), nil)
 	ctx := context.Background()
-	keys := []string{testutil.TestXPub.String()}
+	keys := []chainkd.XPub{testutil.TestXPub}
 	token := "test_token"
 
 	asset, err := r.Define(ctx, keys, 1, nil, "", nil, token)

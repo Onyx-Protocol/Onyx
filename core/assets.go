@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"chain/core/signers"
+	"chain/crypto/ed25519/chainkd"
 	"chain/encoding/json"
 	"chain/net/http/reqid"
 )
@@ -30,7 +31,7 @@ type assetKey struct {
 // POST /create-asset
 func (h *Handler) createAsset(ctx context.Context, ins []struct {
 	Alias      string
-	RootXPubs  []string `json:"root_xpubs"`
+	RootXPubs  []chainkd.XPub `json:"root_xpubs"`
 	Quorum     int
 	Definition map[string]interface{}
 	Tags       map[string]interface{}

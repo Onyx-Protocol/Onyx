@@ -75,4 +75,12 @@ var migrations = []migration{
 	{Name: "2017-01-05.0.core.rename_block_key.sql", SQL: `
 		ALTER TABLE config RENAME COLUMN block_xpub TO block_pub;
 	`},
+	{Name: "2017-01-10.0.signers.xpubs-type.sql", SQL: `
+		ALTER TABLE signers ADD COLUMN xpub_byteas bytea[] NOT NULL DEFAULT '{}';
+		UPDATE signers s1
+			SET xpub_byteas=(SELECT array_agg(decode(unnest(xpubs), 'hex')) FROM signers s2 WHERE s1.id=s2.id);
+		ALTER TABLE signers DROP COLUMN xpubs;
+		ALTER TABLE signers RENAME COLUMN xpub_byteas TO xpubs;
+		ALTER TABLE signers ALTER COLUMN xpubs DROP DEFAULT;
+	`},
 }

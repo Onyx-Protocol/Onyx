@@ -6,13 +6,14 @@ import (
 	"reflect"
 	"testing"
 
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/testutil"
 )
 
-var dummyXPub = "48161b6ca79fe3ae248eaf1a32c66a07db901d81ec3f172b16d3ca8b0de37cd8c49975a24499c5d7a40708f4f13d5445cf87fed54ef5a4a5c47a7689a12e73f9"
+var dummyXPub = mustDecodeKey("48161b6ca79fe3ae248eaf1a32c66a07db901d81ec3f172b16d3ca8b0de37cd8c49975a24499c5d7a40708f4f13d5445cf87fed54ef5a4a5c47a7689a12e73f9")
 
 func TestCreate(t *testing.T) {
 	ctx := context.Background()
@@ -20,67 +21,54 @@ func TestCreate(t *testing.T) {
 
 	cases := []struct {
 		typ    string
-		xpubs  []string
+		xpubs  []chainkd.XPub
 		quorum int
 		want   error
 	}{{
 		typ:    "account",
-		xpubs:  []string{},
+		xpubs:  []chainkd.XPub{},
 		quorum: 1,
 		want:   ErrNoXPubs,
 	}, {
 		typ:    "account",
-		xpubs:  []string{"badxpub"},
-		quorum: 1,
-		want:   ErrBadXPub,
-	}, {
-		typ:    "account",
-		xpubs:  []string{testutil.TestXPub.String(), testutil.TestXPub.String()},
+		xpubs:  []chainkd.XPub{testutil.TestXPub, testutil.TestXPub},
 		quorum: 2,
 		want:   ErrDupeXPub,
 	}, {
 		typ:    "account",
-		xpubs:  []string{testutil.TestXPub.String()},
+		xpubs:  []chainkd.XPub{testutil.TestXPub},
 		quorum: 0,
 		want:   ErrBadQuorum,
 	}, {
 		typ:    "account",
-		xpubs:  []string{testutil.TestXPub.String()},
+		xpubs:  []chainkd.XPub{testutil.TestXPub},
 		quorum: 2,
 		want:   ErrBadQuorum,
 	}, {
 		typ:    "account",
-		xpubs:  []string{testutil.TestXPub.String()},
+		xpubs:  []chainkd.XPub{testutil.TestXPub},
 		quorum: 1,
 		want:   nil,
 	}, {
 		typ: "account",
-		xpubs: []string{
-			testutil.TestXPub.String(),
+		xpubs: []chainkd.XPub{
+			testutil.TestXPub,
 			dummyXPub,
 		},
 		quorum: 3,
 		want:   ErrBadQuorum,
 	}, {
 		typ: "account",
-		xpubs: []string{
-			testutil.TestXPub.String(),
-			"badxpub",
-		},
-		quorum: 1,
-		want:   ErrBadXPub,
-	}, {
-		typ: "account",
-		xpubs: []string{
-			testutil.TestXPub.String(),
+		xpubs: []chainkd.XPub{
+			testutil.TestXPub,
 			dummyXPub,
 		},
 		quorum: 1,
 		want:   nil,
 	}, {
 		typ: "account",
-		xpubs: []string{
-			testutil.TestXPub.String(),
+		xpubs: []chainkd.XPub{
+			testutil.TestXPub,
 			dummyXPub,
 		},
 		quorum: 2,
@@ -105,7 +93,7 @@ func TestCreateIdempotency(t *testing.T) {
 		ctx,
 		db,
 		"account",
-		[]string{testutil.TestXPub.String()},
+		[]chainkd.XPub{testutil.TestXPub},
 		1,
 		clientToken,
 	)
@@ -118,7 +106,7 @@ func TestCreateIdempotency(t *testing.T) {
 		ctx,
 		db,
 		"account",
-		[]string{testutil.TestXPub.String()},
+		[]chainkd.XPub{testutil.TestXPub},
 		1,
 		clientToken,
 	)
@@ -224,7 +212,7 @@ func createFixture(ctx context.Context, db pg.DB, t testing.TB) *Signer {
 		ctx,
 		db,
 		"account",
-		[]string{testutil.TestXPub.String()},
+		[]chainkd.XPub{testutil.TestXPub},
 		1,
 		clientToken,
 	)
@@ -247,4 +235,13 @@ func createCounter() <-chan int {
 		}
 	}()
 	return result
+}
+
+func mustDecodeKey(h string) chainkd.XPub {
+	var xpub chainkd.XPub
+	err := xpub.UnmarshalText([]byte(h))
+	if err != nil {
+		panic(err)
+	}
+	return xpub
 }

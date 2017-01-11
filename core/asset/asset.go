@@ -77,7 +77,7 @@ func (asset *Asset) SerializedDefinition() ([]byte, error) {
 }
 
 // Define defines a new Asset.
-func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, alias string, tags map[string]interface{}, clientToken string) (*Asset, error) {
+func (reg *Registry) Define(ctx context.Context, xpubs []chainkd.XPub, quorum int, definition map[string]interface{}, alias string, tags map[string]interface{}, clientToken string) (*Asset, error) {
 	assetSigner, err := signers.Create(ctx, reg.db, "asset", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, err
@@ -271,7 +271,7 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 		signerType string
 		quorum     int
 		keyIndex   uint64
-		xpubs      []string
+		xpubs      [][]byte
 		tags       []byte
 	)
 	err := db.QueryRow(ctx, fmt.Sprintf(baseQ, pred), args...).Scan(
@@ -283,7 +283,7 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 		&a.sortID,
 		&signerID,
 		&signerType,
-		(*pq.StringArray)(&xpubs),
+		(*pq.ByteaArray)(&xpubs),
 		&quorum,
 		&keyIndex,
 		&tags,

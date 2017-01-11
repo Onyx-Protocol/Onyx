@@ -88,7 +88,7 @@ type Account struct {
 }
 
 // Create creates a new Account.
-func (m *Manager) Create(ctx context.Context, xpubs []string, quorum int, alias string, tags map[string]interface{}, clientToken string) (*Account, error) {
+func (m *Manager) Create(ctx context.Context, xpubs []chainkd.XPub, quorum int, alias string, tags map[string]interface{}, clientToken string) (*Account, error) {
 	signer, err := signers.Create(ctx, m.db, "account", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, errors.Wrap(err)

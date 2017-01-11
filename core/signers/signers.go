@@ -2,6 +2,7 @@
 package signers
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/binary"
@@ -75,25 +76,25 @@ func Path(s *Signer, ks keySpace, itemIndexes ...uint64) [][]byte {
 }
 
 // Create creates and stores a Signer in the database
-func Create(ctx context.Context, db pg.DB, typ string, xpubs []string, quorum int, clientToken string) (*Signer, error) {
+func Create(ctx context.Context, db pg.DB, typ string, xpubs []chainkd.XPub, quorum int, clientToken string) (*Signer, error) {
 	if len(xpubs) == 0 {
 		return nil, errors.Wrap(ErrNoXPubs)
 	}
 
-	sort.Strings(xpubs) // this transforms the input slice
+	sort.Sort(sortKeys(xpubs)) // this transforms the input slice
 	for i := 1; i < len(xpubs); i++ {
-		if xpubs[i] == xpubs[i-1] {
-			return nil, errors.WithDetailf(ErrDupeXPub, "duplicated key=%s", xpubs[i])
+		if bytes.Equal(xpubs[i][:], xpubs[i-1][:]) {
+			return nil, errors.WithDetailf(ErrDupeXPub, "duplicated key=%x", xpubs[i])
 		}
-	}
-
-	keys, err := ConvertKeys(xpubs)
-	if err != nil {
-		return nil, err
 	}
 
 	if quorum == 0 || quorum > len(xpubs) {
 		return nil, errors.Wrap(ErrBadQuorum)
+	}
+
+	var xpubBytes [][]byte
+	for _, key := range xpubs {
+		xpubBytes = append(xpubBytes, key[:])
 	}
 
 	nullToken := sql.NullString{
@@ -111,7 +112,7 @@ func Create(ctx context.Context, db pg.DB, typ string, xpubs []string, quorum in
 		id       string
 		keyIndex uint64
 	)
-	err = db.QueryRow(ctx, q, typeIDMap[typ], typ, pq.StringArray(xpubs), quorum, nullToken).
+	err := db.QueryRow(ctx, q, typeIDMap[typ], typ, pq.ByteaArray(xpubBytes), quorum, nullToken).
 		Scan(&id, &keyIndex)
 	if err == sql.ErrNoRows && clientToken != "" {
 		return findByClientToken(ctx, db, clientToken)
@@ -123,13 +124,13 @@ func Create(ctx context.Context, db pg.DB, typ string, xpubs []string, quorum in
 	return &Signer{
 		ID:       id,
 		Type:     typ,
-		XPubs:    keys,
+		XPubs:    xpubs,
 		Quorum:   quorum,
 		KeyIndex: keyIndex,
 	}, nil
 }
 
-func New(id, typ string, xpubs []string, quorum int, keyIndex uint64) (*Signer, error) {
+func New(id, typ string, xpubs [][]byte, quorum int, keyIndex uint64) (*Signer, error) {
 	keys, err := ConvertKeys(xpubs)
 	if err != nil {
 		return nil, errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
@@ -150,16 +151,16 @@ func findByClientToken(ctx context.Context, db pg.DB, clientToken string) (*Sign
 	`
 
 	var (
-		s        Signer
-		xpubStrs []string
+		s         Signer
+		xpubBytes [][]byte
 	)
 	err := db.QueryRow(ctx, q, clientToken).
-		Scan(&s.ID, &s.Type, (*pq.StringArray)(&xpubStrs), &s.Quorum, &s.KeyIndex)
+		Scan(&s.ID, &s.Type, (*pq.ByteaArray)(&xpubBytes), &s.Quorum, &s.KeyIndex)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
-	keys, err := ConvertKeys(xpubStrs)
+	keys, err := ConvertKeys(xpubBytes)
 	if err != nil {
 		return nil, errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
 	}
@@ -178,13 +179,13 @@ func Find(ctx context.Context, db pg.DB, typ, id string) (*Signer, error) {
 	`
 
 	var (
-		s        Signer
-		xpubStrs []string
+		s         Signer
+		xpubBytes [][]byte
 	)
 	err := db.QueryRow(ctx, q, id).Scan(
 		&s.ID,
 		&s.Type,
-		(*pq.StringArray)(&xpubStrs),
+		(*pq.ByteaArray)(&xpubBytes),
 		&s.Quorum,
 		&s.KeyIndex,
 	)
@@ -199,7 +200,7 @@ func Find(ctx context.Context, db pg.DB, typ, id string) (*Signer, error) {
 		return nil, errors.Wrap(ErrBadType)
 	}
 
-	keys, err := ConvertKeys(xpubStrs)
+	keys, err := ConvertKeys(xpubBytes)
 	if err != nil {
 		return nil, errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
 	}
@@ -220,7 +221,7 @@ func List(ctx context.Context, db pg.DB, typ, prev string, limit int) ([]*Signer
 
 	var signers []*Signer
 	err := pg.ForQueryRows(ctx, db, q, typ, prev, limit,
-		func(id, typ string, xpubs pq.StringArray, quorum int, keyIndex uint64) error {
+		func(id, typ string, xpubs pq.ByteaArray, quorum int, keyIndex uint64) error {
 			keys, err := ConvertKeys(xpubs)
 			if err != nil {
 				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
@@ -249,15 +250,21 @@ func List(ctx context.Context, db pg.DB, typ, prev string, limit int) ([]*Signer
 	return signers, last, nil
 }
 
-func ConvertKeys(xpubs []string) ([]chainkd.XPub, error) {
+func ConvertKeys(xpubs [][]byte) ([]chainkd.XPub, error) {
 	var xkeys []chainkd.XPub
 	for i, xpub := range xpubs {
 		var xkey chainkd.XPub
-		err := xkey.UnmarshalText([]byte(xpub))
-		if err != nil {
+		if len(xpub) != len(xkey) {
 			return nil, errors.WithDetailf(ErrBadXPub, "key %d: xpub is not valid", i)
 		}
+		copy(xkey[:], xpub)
 		xkeys = append(xkeys, xkey)
 	}
 	return xkeys, nil
 }
+
+type sortKeys []chainkd.XPub
+
+func (s sortKeys) Len() int           { return len(s) }
+func (s sortKeys) Less(i, j int) bool { return bytes.Compare(s[i][:], s[j][:]) < 0 }
+func (s sortKeys) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
