@@ -42,7 +42,7 @@ satisfied by the v2 types in `protocol/bc` but also by some simpler
 types in `crypto/ca` for unit-testing purposes.
 
 Descriptors and range proofs are defined in terms of ring signatures
-(ordinary and borommean) and commitments:
+(ordinary and borromean) and commitments:
 - [`asset_commitment.go`](https://github.com/chain/chain-stealth/blob/confidential-assets/crypto/ca/asset_commitment.go)
 - [`value_commitment.go`](https://github.com/chain/chain-stealth/blob/confidential-assets/crypto/ca/value_commitment.go)
 - [`ring_signature.go`](https://github.com/chain/chain-stealth/blob/confidential-assets/crypto/ca/ring_signature.go)
