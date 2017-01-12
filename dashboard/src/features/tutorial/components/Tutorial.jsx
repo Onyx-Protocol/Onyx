@@ -42,7 +42,7 @@ const mapStateToProps = (state) => ({
 })
 
 const mapDispatchToProps = ( dispatch ) => ({
-  dismissTutorial: () => dispatch(actions.toggleTutorial),
+  dismissTutorial: () => dispatch(actions.dismissTutorial),
   showNextStep: () => dispatch(actions.tutorialNextStep)
 })
 

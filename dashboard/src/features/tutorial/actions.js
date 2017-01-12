@@ -1,8 +1,10 @@
-const toggleTutorial = { type: 'TOGGLE_TUTORIAL' }
-const tutorialNextStep = { type: 'TUTORIAL_NEXT_STEP' }
+const dismissTutorial = { type: 'DISMISS_TUTORIAL' }
+const openTutorial = { type: 'OPEN_TUTORIAL' }
+const tutorialNextStep =  { type: 'TUTORIAL_NEXT_STEP' }
 
 let actions = {
-  toggleTutorial,
+  dismissTutorial,
+  openTutorial,
   tutorialNextStep
 }
 

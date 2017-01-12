@@ -10,11 +10,17 @@ class SecondaryNavigation extends React.Component {
     super(props)
 
     this.logOut = this.logOut.bind(this)
+    this.openTutorial = this.openTutorial.bind(this)
   }
 
   logOut(event) {
     event.preventDefault()
     this.props.logOut()
+  }
+
+  openTutorial(event) {
+    event.preventDefault()
+    this.props.openTutorial()
   }
 
   render() {
@@ -42,7 +48,7 @@ class SecondaryNavigation extends React.Component {
             </Link>
           </li>
           <li>
-            <a href='#' onClick={this.showTutorial}>
+            <a href='#' onClick={this.openTutorial}>
             {navIcon('feed', styles)}
               5-minute Tutorial
             </a>
@@ -66,6 +72,6 @@ export default connect(
   }),
   (dispatch) => ({
     logOut: () => dispatch(actions.core.clearSession),
-    showTutorial: () => dispatch(actions.tutorial.toggleTutorial)
+    openTutorial: () => dispatch(actions.tutorial.openTutorial)
   })
 )(SecondaryNavigation)
