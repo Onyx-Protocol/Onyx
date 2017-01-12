@@ -1,6 +1,9 @@
 /**
- * Config
  * @class
+ * Chain Core can be configured as a new blockchain network, or as a node in an
+ * existing blockchain network.
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/get-started/configure}
  */
 class Config {
   /**

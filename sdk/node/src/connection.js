@@ -6,10 +6,13 @@ const errors = require('./errors')
 const btoa = require('btoa')
 
 const blacklistAttributes = [
+  'after',
   'asset_tags',
   'asset_definition',
   'account_tags',
+  'next',
   'reference_data',
+  'tags',
 ]
 
 const snakeize = (object) => {
@@ -53,7 +56,8 @@ const camelize = (object) => {
 }
 
 /**
- * Chain API Connection
+ * @class
+ * Connection information for an instance of Chain Core.
  */
 class Connection {
   /**
@@ -81,6 +85,8 @@ class Connection {
       body = {}
     }
 
+    // Convert camelcased request body field names to use snakecase for API
+    // processing.
     const snakeBody = snakeize(body) // Ssssssssssss
 
     let req = {
@@ -161,6 +167,8 @@ class Connection {
           }
         )
       }).then((body) => {
+        // After processing the response, convert snakecased field names to
+        // camelcase to match language conventions.
         return camelize(body)
       })
     })

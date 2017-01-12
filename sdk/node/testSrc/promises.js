@@ -13,7 +13,7 @@ const balanceByAssetAlias = (balances) => {
   return Promise.resolve(balances)
   .then((balance) => {
     balance.items.forEach((item) => {
-      res[item.sumBy['assetAlias']] = item.amount
+      res[item.sumBy.assetAlias] = item.amount
     })
     return res
   })

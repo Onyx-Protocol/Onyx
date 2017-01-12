@@ -1,5 +1,4 @@
 const Connection = require('./connection')
-
 const AccessTokens = require('./accessTokens')
 const Accounts = require('./accounts')
 const Assets = require('./assets')
@@ -10,9 +9,10 @@ const Transactions = require('./transactions')
 const TransactionFeeds = require('./transactionFeeds')
 const UnspentOutputs = require('./unspentOutputs')
 
-
 /**
- * Chain API Client
+ * The Chain API Client object is the root object for all API interactions.
+ * To interact with Chain Core, a Client object must always be instantiated
+ * first.
  * @class
  */
 class Client {
@@ -20,8 +20,8 @@ class Client {
    * constructor - create a new Chain client object capable of interacting with
    * the specified Chain Core.
    *
-   * @param {string} baseUrl Chain Core URL.
-   * @param {string} token   Chain Core client token for API access.
+   * @param {string} baseUrl - Chain Core URL.
+   * @param {string} token - Chain Core client token for API access.
    * @returns {Client}
    */
   constructor(baseUrl, token) {

@@ -11,7 +11,7 @@ const balanceByAssetAlias = (cb) => {
     let res = {}
 
     balances.items.forEach((item) => {
-      res[item.sumBy['assetAlias']] = item.amount
+      res[item.sumBy.assetAlias] = item.amount
     })
 
     cb(null, res)
@@ -413,7 +413,7 @@ describe('Callback style', () => {
         next()
       }),
 
-      () => done()
+      done
     ])
   })
 })
