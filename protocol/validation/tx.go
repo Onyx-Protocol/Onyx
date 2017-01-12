@@ -290,7 +290,7 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 			continue
 		}
 		// Insert new outputs into the state tree.
-		o := state.NewOutput(*out, bc.ComputeOutputID(tx.Hash, uint32(i), out.CommitmentHash()))
+		o := state.NewOutput(*out, tx.OutputID(i))
 
 		err := snapshot.Tree.Insert(state.OutputTreeItem(o))
 		if err != nil {

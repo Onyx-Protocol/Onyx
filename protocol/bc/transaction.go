@@ -242,6 +242,14 @@ func (tx *TxData) HashForSig(idx uint32) Hash {
 	return NewSigHasher(tx).Hash(idx)
 }
 
+func (tx *Tx) OutputID(outputIndex int) OutputID {
+	return ComputeOutputID(tx.Hash, uint32(outputIndex), tx.Outputs[outputIndex].CommitmentHash())
+}
+
+func (tx *TxData) OutputID(outputIndex int) OutputID {
+	return ComputeOutputID(tx.Hash(), uint32(outputIndex), tx.Outputs[outputIndex].CommitmentHash())
+}
+
 func (tx *TxData) MarshalText() ([]byte, error) {
 	var buf bytes.Buffer
 	tx.WriteTo(&buf) // error is impossible

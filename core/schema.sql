@@ -566,8 +566,6 @@ ALTER TABLE ONLY account_utxos
 
 
 --
-<<<<<<< 7b9ada881fad0878282656f6677a8e23341e2801
-=======
 -- Name: account_utxos account_utxos_unique_output_id; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -576,7 +574,6 @@ ALTER TABLE ONLY account_utxos
 
 
 --
->>>>>>> updated schema
 -- Name: accounts accounts_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -609,8 +606,6 @@ ALTER TABLE ONLY annotated_outputs
 
 
 --
-<<<<<<< 7b9ada881fad0878282656f6677a8e23341e2801
-=======
 -- Name: annotated_outputs annotated_outputs_unique_output_id; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -619,7 +614,6 @@ ALTER TABLE ONLY annotated_outputs
 
 
 --
->>>>>>> updated schema
 -- Name: annotated_txs annotated_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
