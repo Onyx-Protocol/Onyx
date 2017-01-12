@@ -24,8 +24,8 @@ class Success extends React.Component {
           <div className={styles.content}>
             <span className='glyphicon glyphicon-ok-sign'></span>
             <div className={styles.text}>
-              {this.props.content.map(function (x){
-                return <li>{x}</li>
+              {this.props.content.map(function (x, i){
+                return <li key={i}>{x}</li>
               })}
             </div>
 

@@ -9,45 +9,23 @@ const components = {
 }
 
 class Tutorial extends React.Component {
-  constructor(props) {
-    super(props)
-
-    // TODO: examine renaming and refactoring for clarity. Consider moving
-    // away from local state if possible.
-    this.state = {
-      open: true,
-      step: 0,
-    }
-
-    this.showNextStep = this.showNextStep.bind(this)
-    this.dismissTutorial = this.dismissTutorial.bind(this)
-  }
-
-  showNextStep() {
-    if(this.state.step == steps.length - 1){
-      this.setState({open: false})
-    } else {
-      this.setState({step: this.state.step + 1})
-    }
-  }
-
-  dismissTutorial() {
-    this.setState({open: false})
-  }
 
   render() {
-    const TutorialComponent = components[steps[this.state.step]['component']]
+    const tutorialStep = this.props.tutorialStep
+    const tutorialOpen = this.props.tutorialOpen
+    const TutorialComponent = components[steps[tutorialStep]['component']]
+
     return (
       <div>
-      {this.state.open &&
+      {tutorialOpen &&
           <TutorialComponent
-            step={this.state.step}
-            button={steps[this.state.step]['button']}
-            title={steps[this.state.step]['title']}
-            content={steps[this.state.step]['content']}
-            dismiss={steps[this.state.step]['dismiss']}
-            handleNext={this.showNextStep}
-            handleDismiss={this.dismissTutorial}
+            step={tutorialStep}
+            button={steps[tutorialStep]['button']}
+            title={steps[tutorialStep]['title']}
+            content={steps[tutorialStep]['content']}
+            dismiss={steps[tutorialStep]['dismiss']}
+            handleNext={this.props.showNextStep}
+            handleDismiss={this.props.dismissTutorial}
           />
         }
     </div>
@@ -55,4 +33,20 @@ class Tutorial extends React.Component {
   }
 }
 
-export default Tutorial
+import { actions } from 'features/tutorial'
+import { connect } from 'react-redux'
+
+const mapStateToProps = (state) => ({
+  tutorialStep: state.tutorial.step,
+  tutorialOpen: state.tutorial.isShowing
+})
+
+const mapDispatchToProps = ( dispatch ) => ({
+  dismissTutorial: () => dispatch(actions.toggleTutorial),
+  showNextStep: () => dispatch(actions.tutorialNextStep)
+})
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(Tutorial)

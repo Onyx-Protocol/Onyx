@@ -41,6 +41,12 @@ class SecondaryNavigation extends React.Component {
               Network tokens
             </Link>
           </li>
+          <li>
+            <a href='#' onClick={this.showTutorial}>
+            {navIcon('feed', styles)}
+              5-minute Tutorial
+            </a>
+          </li>
 
           {this.props.canLogOut && <li className={styles.logOut}>
             <a href='#' onClick={this.logOut}>
@@ -59,6 +65,7 @@ export default connect(
     canLogOut: state.core.requireClientToken,
   }),
   (dispatch) => ({
-    logOut: () => dispatch(actions.core.clearSession)
+    logOut: () => dispatch(actions.core.clearSession),
+    showTutorial: () => dispatch(actions.tutorial.toggleTutorial)
   })
 )(SecondaryNavigation)
