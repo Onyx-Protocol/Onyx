@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	"chain/core/account"
 	"chain/core/asset"
@@ -49,8 +50,8 @@ func TestAccountSourceReserve(t *testing.T) {
 	}
 	source := accounts.NewSpendAction(assetAmount1, accID, nil, nil)
 
-	var builder txbuilder.TemplateBuilder
-	err := source.Build(ctx, &builder)
+	builder := txbuilder.NewBuilder(time.Now().Add(5 * time.Minute))
+	err := source.Build(ctx, builder)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -100,8 +101,8 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 	source := accounts.NewSpendUTXOAction(out.OutputID)
 
-	var builder txbuilder.TemplateBuilder
-	err := source.Build(ctx, &builder)
+	builder := txbuilder.NewBuilder(time.Now().Add(5 * time.Minute))
+	err := source.Build(ctx, builder)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -154,9 +155,9 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
-		var builder txbuilder.TemplateBuilder
+		builder := txbuilder.NewBuilder(time.Now().Add(5 * time.Minute))
 
-		err := source.Build(ctx, &builder)
+		err := source.Build(ctx, builder)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}

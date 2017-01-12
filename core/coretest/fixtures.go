@@ -52,7 +52,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
 		assets.NewIssueAction(assetAmount, nil), // does not support reference data
 		accounts.NewControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil),
-	}, time.Now().Add(time.Minute))
+	}, time.Now().Add(time.Hour))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -71,7 +71,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 }
 
 func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, actions []txbuilder.Action) *bc.Tx {
-	template, err := txbuilder.Build(ctx, nil, actions, time.Now().Add(time.Minute))
+	template, err := txbuilder.Build(ctx, nil, actions, time.Now().Add(time.Hour))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

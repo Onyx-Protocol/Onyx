@@ -67,7 +67,19 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 	if m.pinStore == nil {
 		return
 	}
-	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, m.indexAccountUTXOs)
+	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, m.processBlock)
+}
+
+func (m *Manager) processBlock(ctx context.Context, b *bc.Block) error {
+	err := m.indexAccountUTXOs(ctx, b)
+	if err != nil {
+		return err
+	}
+
+	// Delete expired account control programs.
+	const deleteQ = `DELETE FROM account_control_programs WHERE expires_at IS NOT NULL AND expires_at < $1`
+	_, err = m.db.Exec(ctx, deleteQ, b.Time())
+	return err
 }
 
 func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {

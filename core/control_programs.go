@@ -4,6 +4,7 @@ import (
 	"context"
 	stdjson "encoding/json"
 	"sync"
+	"time"
 
 	"chain/encoding/json"
 	"chain/errors"
@@ -68,7 +69,7 @@ func (h *Handler) createAccountControlProgram(ctx context.Context, input []byte)
 		accountID = acc.ID
 	}
 
-	controlProgram, err := h.Accounts.CreateControlProgram(ctx, accountID, false)
+	controlProgram, err := h.Accounts.CreateControlProgram(ctx, accountID, false, time.Time{})
 	if err != nil {
 		return nil, err
 	}
