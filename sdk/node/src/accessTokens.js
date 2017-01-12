@@ -2,6 +2,10 @@ const shared = require('./shared')
 
 /**
  * @class
+ * There are two APIs in Chain Core: the client API and the network API. Each
+ * API is authenticated using access tokens with HTTP Basic Authentication.
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/learn-more/authentication}
  */
 class AccessTokens {
   /**
@@ -17,8 +21,8 @@ class AccessTokens {
      * @param {Object} params - Parameters for access token creation.
      * @param {string} params.id - User specified, unique identifier.
      * @param {string} params.type - Either 'client' or 'network'.
-     * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} - Newly created access token
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<Object>} Newly created access token.
      */
     this.create = (params, cb) =>
       shared.create(client, '/create-access-token', params, {skipArray: true, cb})
@@ -29,10 +33,10 @@ class AccessTokens {
      *
      * Note: maximum list size is 1000 items
      *
-     * @param {Filter} params - Pagination information.
+     * @param {Query} params - Pagination information.
      * @param {string} [params.type] - Type of access tokens to return.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Page>} Requested page of results
+     * @returns {Promise<Page>} Requested page of results.
      */
     this.query = (params, cb) => {
       params = params || {}
@@ -44,7 +48,8 @@ class AccessTokens {
      * Delete the specified access token.
      *
      * @param {string} id - Access token ID.
-     * @param {function} [callback]
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<Object>} Status of deleted object
      */
     this.delete = (id, cb) => shared.tryCallback(
       client.request('/delete-access-token', {id: id}),

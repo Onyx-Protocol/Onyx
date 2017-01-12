@@ -44,7 +44,7 @@ class MockHsmKeys {
     }
 
     /**
-     * Request all MockHsm keys matching the specified filter, calling the
+     * Request all MockHsm keys matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
      * @param {QueryProcessor} processor Processing callback.

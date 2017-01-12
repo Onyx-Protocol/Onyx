@@ -2,6 +2,11 @@ const shared = require('./shared')
 
 /**
  * @class
+ * An account is an object in Chain Core that tracks ownership of assets on a
+ * blockchain by creating and tracking control programs.
+ *
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/build-applications/accounts}
  */
 class Accounts {
   /**
@@ -31,8 +36,8 @@ class Accounts {
      * Create a new account.
      *
      * @param {Accounts~createRequest} params - Parameters for account creation.
-     * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} - Newly created account
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<Object>} Newly created account.
      */
     this.create = (params, cb) => shared.create(client, '/create-account', params, {cb})
 
@@ -40,39 +45,43 @@ class Accounts {
      * Create multiple new accounts.
      *
      * @param {Accounts~createRequest[]} params - Parameters for creation of multiple accounts.
-     * @param {batchCreateCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {BatchResponse}
+     * @param {batchCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {BatchResponse} Newly created accounts.
      */
     this.createBatch = (params, cb) => shared.createBatch(client, '/create-account', params, {cb})
 
     /**
-     * Get one page of accounts matching the specified filter.
+     * Get one page of accounts matching the specified query.
      *
-     * @param {Filter} [params={}] Filter and pagination information.
-     * @param {queryCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @param {Query} params={} Filter and pagination information.
+     * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
     this.query = (params, cb) => shared.query(client, this, '/list-accounts', params, {cb})
 
     /**
-     * Request all accounts matching the specified filter, calling the
+     * Request all accounts matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
-     * @param {Filter} params Filter and pagination information.
-     * @param {QueryProcessor} processor Processing callback.
+     * @param {Query} params={} - Filter information.
+     * @param {QueryProcessor} processor - Processing callback.
      * @returns {Promise} A promise resolved upon processing of all items, or
-     *                   rejected on error
+     *                   rejected on error.
      */
     this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
 
     /**
-     * Create a new control program.
+     * Create a new control program, specifying either an account ID or account
+     * alias to indicate the controlling party.
+     * <br/><br/>
+     * More info: {@link https://chain.com/docs/core/build-applications/control-programs#account-control-programs}
      *
      * @param {Object} params Object containing either alias or ID identifying
      *                      account to create control program for.
-     * @param {string} [params.alias]
-     * @param {string} [params.id]
-     * @param {function} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @param {string} [params.alias] - An account alias. Either this or `id` is required.
+     * @param {string} [params.id] - An account ID. Either this or `alias` is required.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<Object>} Newly created control program.
      */
     this.createControlProgram = (params, cb) => {
       const body = {type: 'account'}

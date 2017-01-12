@@ -2,6 +2,13 @@ const shared = require('./shared')
 
 /**
  * @class
+ * An asset is a type of value that can be issued on a blockchain. All units of
+ * a given asset are fungible.
+ * <br/><br/>
+ * Units of an asset can be transacted directly between parties without the
+ * involvement of the issuer.
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/build-applications/assets}
  */
 class Assets {
   /**
@@ -34,7 +41,7 @@ class Assets {
      * Create a new asset.
      *
      * @param {Assets~createRequest} params - Parameters for asset creation.
-     * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      */
     this.create = (params, cb) => shared.create(client, '/create-asset', params, {cb})
 
@@ -42,23 +49,24 @@ class Assets {
      * Create multiple new assets.
      *
      * @param {Assets~createRequest[]} params - Parameters for creation of multiple assets.
-     * @param {batchCreateCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @param {batchCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      */
     this.createBatch = (params, cb) => shared.createBatch(client, '/create-asset', params, {cb})
 
     /**
-     * Get one page of assets matching the specified filter.
+     * Get one page of assets matching the specified query.
      *
-     * @param {Filter} [params={}] Filter and pagination information.
+     * @param {Query} params={} Filter and pagination information.
+     * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
     this.query = (params) => shared.query(client, this, '/list-assets', params)
 
     /**
-     * Request all assets matching the specified filter, calling the
+     * Request all assets matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
-     * @param {Filter} params Filter and pagination information.
+     * @param {Query} params={} Filter and pagination information.
      * @param {QueryProcessor} processor Processing callback.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error

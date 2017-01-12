@@ -11,7 +11,7 @@ class UnspentOutputs {
    */
   constructor(client) {
     /**
-     * Get one page of unspent outputs matching the specified filter.
+     * Get one page of unspent outputs matching the specified query.
      *
      * @param {Filter} [params={}] Filter and pagination information.
      * @returns {Page} Requested page of results
@@ -19,7 +19,7 @@ class UnspentOutputs {
     this.query = (params, cb) => shared.query(client, this, '/list-unspent-outputs', params, {cb})
 
     /**
-     * Request all unspent outputs matching the specified filter, calling the
+     * Request all unspent outputs matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
      * @param {Filter} params Filter and pagination information.

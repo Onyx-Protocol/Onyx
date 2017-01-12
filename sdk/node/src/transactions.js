@@ -61,7 +61,7 @@ class Transactions {
    */
   constructor(client) {
     /**
-     * Get one page of transactions matching the specified filter.
+     * Get one page of transactions matching the specified query.
      *
      * @param {Filter} [params={}] Filter and pagination information.
      * @returns {Page} Requested page of results
@@ -69,7 +69,7 @@ class Transactions {
     this.query = (params, cb) => shared.query(client, this, '/list-transactions', params, {cb})
 
     /**
-     * Request all transactions matching the specified filter, calling the
+     * Request all transactions matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
      * @param {Filter} params Filter and pagination information.

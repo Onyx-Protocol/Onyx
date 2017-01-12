@@ -23,8 +23,8 @@ class Page {
     this.items = []
 
     /**
-     * Filter for requesting the immediate next page of results
-     * @type {Filter}
+     * Object representing the query for the immediate next page of results
+     * @type {Query}
      */
     this.next = {}
 

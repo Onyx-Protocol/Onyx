@@ -3,19 +3,23 @@ const errors = require('./errors')
 const Page = require('./page')
 
 /**
- * @callback createCallback
+ * @callback objectCallback
+ *
  * @param {error} error
- * @param {Object} object - Newly created object.
+ * @param {Object} object - Object response from API.
  */
 
 /**
- * @callback batchCreateCallback
+ * @callback batchCallback
  * @param {error} error
  * @param {BatchResponse} batchResponse - Newly created objects (and errors).
  */
 
  /**
-  * Object specifying how to request records from a given endpoint
+  * Object specifying how to request records from a given endpoint. Queries can
+  * be optionally extended with additional fields to provide extra options for
+  * filtering.
+  *
   * @typedef {Object} Query
   * @property {string} [filter] - String used to filter results. See the
   *                            {@link https://chain.com/docs/core/build-applications/queries#filters|documentation on filter strings}
@@ -23,6 +27,13 @@ const Page = require('./page')
   * @property {string} [after] - Cursor pointing to the start of the result set
   * @property {integer} [pageSize] - Number of items to return in result set
   */
+
+/**
+ * Called once for each item in the result set.
+ * @callback QueryProcessor
+ *
+ * @param {Object} item - Item to process
+ */
 
 const tryCallback = (promise, cb) => {
   if (typeof cb !== 'function') return promise
