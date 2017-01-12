@@ -1213,7 +1213,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xcb  | (∅ → outputid)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [output ID](#output-id) on the data stack.
+Pushes the [output ID](data.md#output-id) on the data stack.
 
 Fails if the current input is an [issuance input](data.md#transaction-input-commitment).
 
