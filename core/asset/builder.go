@@ -53,7 +53,7 @@ func (a *issueAction) Build(ctx context.Context, builder *txbuilder.TemplateBuil
 		return err
 	}
 
-	assetdef, err := asset.SerializedDefinition()
+	assetdef := asset.RawDefinition()
 	if err != nil {
 		return err
 	}

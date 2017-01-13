@@ -26,17 +26,15 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a local asset which should be unaffected by a block landing.
-	local, err := r.Define(ctx, []chainkd.XPub{testutil.TestXPub}, 1, nil, "", nil, "")
+	localvmver := 1
+	local, err := r.Define(ctx, []chainkd.XPub{testutil.TestXPub}, localvmver, nil, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	localdef, err := local.SerializedDefinition()
-	if err != nil {
-		t.Fatal(err)
-	}
+	localdef := local.RawDefinition()
 
 	// Create the issuance program of a remote asset.
-	issuanceProgram, err := multisigIssuanceProgram([]ed25519.PublicKey{testutil.TestPub, testutil.TestPub}, 2)
+	issuanceProgram, remotevmver, err := multisigIssuanceProgram([]ed25519.PublicKey{testutil.TestPub, testutil.TestPub}, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +54,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 									InitialBlock:    r.initialBlockHash,
 									AssetDefinition: []byte(def),
 									IssuanceProgram: issuanceProgram,
-									VMVersion:       1,
+									VMVersion:       remotevmver,
 								},
 							},
 						},
@@ -68,7 +66,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 									InitialBlock:    r.initialBlockHash,
 									AssetDefinition: localdef,
 									IssuanceProgram: local.IssuanceProgram,
-									VMVersion:       1,
+									VMVersion:       uint64(localvmver),
 								},
 							},
 						},
@@ -99,13 +97,16 @@ func TestIndexNonLocalAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &Asset{
-		AssetID: remoteAssetID,
-		Definition: map[string]interface{}{
-			"currency": "USD",
-		},
+		AssetID:          remoteAssetID,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: r.initialBlockHash,
 		sortID:           got.sortID,
+	}
+	err = want.SetDefinition(map[string]interface{}{
+		"currency": "USD",
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("lookupAsset() = %#v, want %#v", got, want)

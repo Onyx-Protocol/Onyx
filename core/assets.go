@@ -18,6 +18,7 @@ type assetResponse struct {
 	Keys            interface{} `json:"keys"`
 	Quorum          interface{} `json:"quorum"`
 	Definition      interface{} `json:"definition"`
+	RawDefinition   interface{} `json:"raw_definition"`
 	Tags            interface{} `json:"tags"`
 	IsLocal         interface{} `json:"is_local"`
 }
@@ -75,13 +76,15 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 					AssetDerivationPath: path,
 				})
 			}
+			parsedDef, _ := asset.Definition() // cannot fail because Assets.Define() would catch parsing issues
 			responses[i] = &assetResponse{
 				ID:              asset.AssetID,
 				Alias:           asset.Alias,
 				IssuanceProgram: json.HexBytes(asset.IssuanceProgram),
 				Keys:            keys,
 				Quorum:          asset.Signer.Quorum,
-				Definition:      asset.Definition,
+				Definition:      parsedDef,
+				RawDefinition:   json.HexBytes(asset.RawDefinition()),
 				Tags:            asset.Tags,
 				IsLocal:         "yes",
 			}

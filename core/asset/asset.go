@@ -64,16 +64,39 @@ func (reg *Registry) IndexAssets(indexer Saver) {
 type Asset struct {
 	AssetID          bc.AssetID
 	Alias            *string
-	Definition       map[string]interface{}
 	IssuanceProgram  []byte
 	InitialBlockHash bc.Hash
 	Signer           *signers.Signer
 	Tags             map[string]interface{}
+	rawDefinition    []byte
+	definition       map[string]interface{}
 	sortID           string
 }
 
-func (asset *Asset) SerializedDefinition() ([]byte, error) {
-	return serializeAssetDef(asset.Definition)
+func (asset *Asset) Definition() (map[string]interface{}, error) {
+	if asset.definition == nil {
+		if len(asset.rawDefinition) > 0 {
+			err := json.Unmarshal(asset.rawDefinition, &asset.definition)
+			if err != nil {
+				return nil, errors.Wrap(err)
+			}
+		}
+	}
+	return asset.definition, nil
+}
+
+func (asset *Asset) RawDefinition() []byte {
+	return asset.rawDefinition
+}
+
+func (asset *Asset) SetDefinition(def map[string]interface{}) error {
+	rawdef, err := serializeAssetDef(def)
+	if err != nil {
+		return err
+	}
+	asset.definition = def
+	asset.rawDefinition = rawdef
+	return nil
 }
 
 // Define defines a new Asset.
@@ -83,7 +106,7 @@ func (reg *Registry) Define(ctx context.Context, xpubs []chainkd.XPub, quorum in
 		return nil, err
 	}
 
-	serializedDef, err := serializeAssetDef(definition)
+	rawDefinition, err := serializeAssetDef(definition)
 	if err != nil {
 		return nil, errors.Wrap(err, "serializing asset definition")
 	}
@@ -91,17 +114,18 @@ func (reg *Registry) Define(ctx context.Context, xpubs []chainkd.XPub, quorum in
 	path := signers.Path(assetSigner, signers.AssetKeySpace)
 	derivedXPubs := chainkd.DeriveXPubs(assetSigner.XPubs, path)
 	derivedPKs := chainkd.XPubKeys(derivedXPubs)
-	issuanceProgram, err := multisigIssuanceProgram(derivedPKs, assetSigner.Quorum)
+	issuanceProgram, vmver, err := multisigIssuanceProgram(derivedPKs, assetSigner.Quorum)
 	if err != nil {
 		return nil, err
 	}
 
-	defHash := sha3.Sum256(serializedDef)
+	defhash := sha3.Sum256(rawDefinition)
 	asset := &Asset{
-		Definition:       definition,
+		definition:       definition,
+		rawDefinition:    rawDefinition,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: reg.initialBlockHash,
-		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1, defHash),
+		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, vmver, defhash),
 		Signer:           assetSigner,
 		Tags:             tags,
 	}
@@ -188,11 +212,6 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 		ON CONFLICT (client_token) DO NOTHING
 		RETURNING sort_id
   `
-	defParams, err := mapToNullString(asset.Definition)
-	if err != nil {
-		return nil, err
-	}
-
 	var signerID sql.NullString
 	if asset.Signer != nil {
 		signerID = sql.NullString{Valid: true, String: asset.Signer.ID}
@@ -203,11 +222,11 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 		Valid:  clientToken != "",
 	}
 
-	err = reg.db.QueryRow(
+	err := reg.db.QueryRow(
 		ctx, q,
 		asset.AssetID, asset.Alias, signerID,
 		asset.InitialBlockHash, asset.IssuanceProgram,
-		defParams, nullToken,
+		asset.rawDefinition, nullToken,
 	).Scan(&asset.sortID)
 
 	if pg.IsUniqueViolation(err) {
@@ -266,7 +285,6 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 	var (
 		a          Asset
 		alias      sql.NullString
-		definition []byte
 		signerID   sql.NullString
 		signerType string
 		quorum     int
@@ -278,7 +296,7 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 		&a.AssetID,
 		&a.Alias,
 		&a.IssuanceProgram,
-		&definition,
+		&a.rawDefinition,
 		&a.InitialBlockHash,
 		&a.sortID,
 		&signerID,
@@ -298,13 +316,6 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 		a.Signer, err = signers.New(signerID.String, signerType, xpubs, quorum, keyIndex)
 		if err != nil {
 			return nil, err
-		}
-	}
-
-	if len(definition) > 0 {
-		err := json.Unmarshal(definition, &a.Definition)
-		if err != nil {
-			return nil, errors.Wrap(err)
 		}
 	}
 
@@ -329,17 +340,20 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 // consumption, the JSON is pretty-printed for easy reading.
 // The empty asset def is an empty byte slice.
 func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
+	if def == nil {
+		return nil, nil
+	}
 	return json.MarshalIndent(def, "", "  ")
 }
 
-func multisigIssuanceProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
+func multisigIssuanceProgram(pubkeys []ed25519.PublicKey, nrequired int) (program []byte, vmversion uint64, err error) {
 	issuanceProg, err := vmutil.P2SPMultiSigProgram(pubkeys, nrequired)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	builder := vmutil.NewBuilder()
 	builder.AddRawBytes(issuanceProg)
-	return builder.Program, nil
+	return builder.Program, 1, nil
 }
 
 func mapToNullString(in map[string]interface{}) (*sql.NullString, error) {

@@ -32,10 +32,14 @@ func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 	m := map[string]interface{}{
 		"id":               a.AssetID,
 		"alias":            a.Alias,
-		"definition":       a.Definition,
+		"raw_definition":   json.HexBytes(a.RawDefinition()),
 		"issuance_program": json.HexBytes(a.IssuanceProgram),
 		"tags":             a.Tags,
 		"is_local":         "no",
+	}
+	adef, err := a.Definition()
+	if err == nil {
+		m["definition"] = adef
 	}
 	if a.Signer != nil {
 		var keys []map[string]interface{}
