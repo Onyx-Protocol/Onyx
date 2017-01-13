@@ -1254,13 +1254,24 @@ Pushes the block timestamp in milliseconds on the data stack.
 
 Fails if executed in the [transaction context](#transaction-context).
 
+#### ACCEPTANCEPROGRAM
+
+Code  | Stack Diagram   | Cost
+------|-----------------|-----------------------------------------------------
+0xcf  | (∅ → program)     | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes the [acceptance program](data.md#acceptance-program) from the output being spent.
+
+Fails if the current input is not an [issuance input](data.md#transaction-input-commitment).
+
+Fails if executed in the [block context](#block-context).
 
 
 ### Expansion opcodes
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion and have no effect on the state of the VM apart from reducing run limit by 1.
 

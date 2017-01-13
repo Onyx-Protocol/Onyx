@@ -12,6 +12,7 @@
   * [Validate block](#validate-block)
   * [Validate transaction](#validate-transaction)
   * [Validate transaction input](#validate-transaction-input)
+  * [Validate transaction output](#validate-transaction-input)
   * [Check transaction is well-formed](#check-transaction-is-well-formed)
   * [Apply block](#apply-block)
   * [Apply transaction](#apply-transaction)
@@ -198,7 +199,7 @@ A new node starts here when joining a running network (with height > 1). In that
 
 ### Validate transaction
 
-A transaction is said to be *valid* with respect to a particular blockchain state if it is well formed and if the outputs it attempts to spend exist in the state, and it satisfies the predicates in those outputs. The transaction may or may not be valid with respect to a different blockchain state.
+A transaction is said to be *valid* with respect to a particular blockchain state if it is well formed and if the outputs it attempts to spend exist in the state, it satisfies the predicates in those outputs, and it satisfies the acceptance program of each of its own outputs. The transaction may or may not be valid with respect to a different blockchain state.
 
 **Inputs:**
 
@@ -223,8 +224,9 @@ A transaction is said to be *valid* with respect to a particular blockchain stat
     2. State’s timestamp is greater or equal to the transaction minimum timestamp.
     3. State’s timestamp is less or equal to the transaction maximum timestamp.
     4. Input’s [issuance hash](data.md#issuance-hash) does not appear in the state’s issuance memory.
-7. For every input in the transaction with asset version equal 1, [validate that input](#validate-transaction-input) with respect to the blockchain state; if invalid, halt and return false.
-8. Return true.
+7. For every input in the transaction with asset version equal to 1, [validate that input](#validate-transaction-input) with respect to the blockchain state; if invalid, halt and return false.
+8. For every output in the transaction with asset version equal to 1, [validate that output](#validate-transaction-output); if invalid, halt and return false.
+9. Return true.
 
 
 
@@ -233,7 +235,8 @@ A transaction is said to be *valid* with respect to a particular blockchain stat
 **Inputs:**
 
 1. transaction input with asset version 1,
-2. blockchain state.
+2. the transaction that includes the input,
+3. blockchain state.
 
 **Output:** true or false.
 
@@ -246,9 +249,23 @@ A transaction is said to be *valid* with respect to a particular blockchain stat
 2. If the input is a *spend*:
     1. Load an output from the state as identified by the input’s [spent output reference](data.md#outpoint), yielding a *previous output*.
     2. If the previous output does not exist, halt and return false.
-    3. [Evaluate](#evaluate-predicate) the previous output’s control program, for the VM version specified in the previous output and with the [input witness](data.md#transaction-input-witness) program arguments.
+    3. [Evaluate](#evaluate-predicate) the previous output’s control program, for the VM version specified in the previous output, with the [input witness](data.md#transaction-input-witness) program arguments, and with the transaction as the context.
     4. If the evaluation returns false, halt and return false.
 3. Return true.
+
+### Validate transaction output
+
+**Inputs:**
+
+1. transaction output with asset version 1,
+2. the transaction that includes the output.
+
+**Output:** true or false.
+
+**Algorithm:**
+
+1. [Evaluate](#evaluate-predicate) the acceptance program, for the specified VM version, with the [output witness](data.md#transaction-output-witness) program arguments, and with the transaction as the context.
+2. If the evaluation returns false, halt and return false; otherwise return true.
 
 
 ### Check transaction is well-formed

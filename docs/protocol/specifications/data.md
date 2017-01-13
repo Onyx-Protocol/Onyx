@@ -38,6 +38,7 @@
   * [Consensus Program](#consensus-program)
   * [Control Program](#control-program)
   * [Issuance Program](#issuance-program)
+  * [Acceptance Program](#acceptance-program)
   * [Program Arguments](#program-arguments)
   * [Asset Version](#asset-version)
   * [Asset ID](#asset-id)
@@ -359,10 +360,11 @@ The *output commitment* encapsulates both the value and the authentication data 
 
 Field           | Type                    | Description
 ----------------|-------------------------|----------------------------------------------------------
-Asset ID        | sha3-256                | Global [asset identifier](#asset-id).
-Amount          | varint63                | Number of units of the specified asset.
-VM Version      | varint63                | [Version of the VM](#vm-version) that executes the [control program](#control-program).
-Control Program | varstring31             | Predicate [program](#control-program) to control the specified amount.
+Asset ID           | sha3-256                | Global [asset identifier](#asset-id).
+Amount             | varint63                | Number of units of the specified asset.
+VM Version         | varint63                | [Version of the VM](#vm-version) that executes the [control program](#control-program).
+Control Program    | varstring31             | Predicate [program](#control-program) to control the specified amount.
+Acceptance Program | varstring31             | Predicate [program](#control-program) that must be satisfied by the transaction in which this output is included.
 —               | —                       | Additional fields may be added by future extensions.
 
 
@@ -372,7 +374,11 @@ Like the input witness data, the *output witness* string contains data necessary
 
 The output witness string can be extended with additional commitments, proofs or validation hints that are excluded from the [transaction ID](#transaction-id), but committed to the blockchain via the [witness hash](#transaction-witness-hash).
 
-**Asset version 1** and **VM version 1** do not use the output witness data which is set to an empty string (encoded as a single byte 0x00 that represents a varstring31 encoding of an empty string). To support future upgrades, nodes must accept and ignore arbitrary data in the output witness string.
+Field           | Type                    | Description
+----------------|-------------------------|----------------------------------------------------------
+Program Arguments Count | varint31                | Number of [program arguments](#program-arguments) that follow.
+Program Arguments       | [varstring31]           | [Signatures](#signature) and other data satisfying the acceptance program. Used to initialize the [data stack](vm1.md#vm-state) of the VM that executes the acceptance program.
+—               | —                       | Additional fields may be added by future extensions.
 
 ### Transaction Serialization Flags
 
@@ -455,6 +461,9 @@ The control program is a program specifying a predicate for transferring an asse
 
 The issuance program is a [program](#program) specifying a predicate for issuing an asset within an [input issuance commitment](#asset-version-1-issuance-commitment). The asset ID is derived from the issuance program, guaranteeing the authenticity of the issuer.
 
+### Acceptance Program
+
+The acceptance program is a [program](#program) specifying a predicate for including an output in a transaction. The program is executed at the time the output is created, unlike a control program, which is executed at the time the output is spent.
 
 ### Program Arguments
 
