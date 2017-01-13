@@ -68,7 +68,7 @@
           "description": "An asset alias is a label used to distinguish between assets."
         },
         {
-          "title": "Select 'gold key' to use existing MockHSM key",
+          "title": "Select 'gold' key to use existing MockHSM key",
           "description": "This key will be used for the issuance and transfer of asset units in this account."
         },
         {
@@ -189,7 +189,7 @@
           "description": null
         },
         {
-          "title": "Select 'Gold' for the asset alias",
+          "title": "Select 'gold' for the asset alias",
           "description": null
         },
         {
@@ -201,11 +201,11 @@
           "description": null
         },
         {
-          "title": "Select 'Alice' for the account alias",
+          "title": "Select 'alice' for the account alias",
           "description": null
         },
         {
-          "title": "Select 'Gold' for the asset alias",
+          "title": "Select 'gold' for the asset alias",
           "description": null
         },
         {
@@ -244,11 +244,11 @@
           "description": null
         },
         {
-          "title": "Select 'Alice' for the account alias",
+          "title": "Select 'alice' for the account alias",
           "description": null
         },
         {
-          "title": "Select 'Gold' for the asset alias",
+          "title": "Select 'gold' for the asset alias",
           "description": null
         },
         {
@@ -260,11 +260,11 @@
           "description": null
         },
         {
-          "title": "Select 'Bob' for the account alias",
+          "title": "Select 'bob' for the account alias",
           "description": null
         },
         {
-          "title": "Select 'Gold' for the asset alias",
+          "title": "Select 'gold' for the asset alias",
           "description": null
         },
         {
@@ -285,7 +285,7 @@
     "dismiss": "End tutorial",
     "route": "transactions/create",
     "content": [
-              "Great! You spent 100 units of gold.",
+              "Great! You spent 10 units of gold.",
               "Next, you will retire the gold assets you just spent."
             ]
   },
@@ -296,18 +296,18 @@
     "dismiss": null,
     "route": null,
     "content": {
-      "header": "Reture asset units",
+      "header": "Retire asset units",
       "steps": [
         {
           "title": "Add 'Spend from account' action",
           "description": null
         },
         {
-          "title": "Select 'Bob' for the account alias",
+          "title": "Select 'bob' for the account alias",
           "description": null
         },
         {
-          "title": "Select 'Gold' for the asset alias",
+          "title": "Select 'gold' for the asset alias",
           "description": null
         },
         {
@@ -319,7 +319,7 @@
           "description": null
         },
         {
-          "title": "Select 'Gold' for the asset alias",
+          "title": "Select 'gold' for the asset alias",
           "description": null
         },
         {
@@ -343,5 +343,13 @@
               "Great! You retired 5 units of gold from Bob's account.",
               "You are ready to finish the tutorial and recap what you learned."
               ]
+  },
+  {
+    "component": "Complete",
+    "title": null,
+    "button": null,
+    "dismiss": "Done",
+    "route": null,
+    "content": null
   }
 ]

@@ -1,10 +1,5 @@
 import { combineReducers } from 'redux'
 
-export const route = (state = true, action) => {
-  if (action.type == 'TUTORIAL_PAGE_ROUTE') return state
-  return state
-}
-
 export const step = (state = 0, action) => {
   if (action.type == 'TUTORIAL_NEXT_STEP') return state + 1
   else if (action.type == 'DISMISS_TUTORIAL') return 0
@@ -18,7 +13,6 @@ export const isShowing = (state = true, action) => {
 }
 
 export default combineReducers({
-  route,
   step,
   isShowing,
 })

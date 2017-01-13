@@ -3,11 +3,13 @@ import steps from './steps.json'
 import Description from './Description/Description'
 import Success from './Success/Success'
 import Form from './Form/Form'
+import Complete from './Complete/Complete'
 
 const components = {
   Description,
   Success,
-  Form
+  Form,
+  Complete
 }
 
 class Tutorial extends React.Component {
@@ -19,7 +21,7 @@ class Tutorial extends React.Component {
     const TutorialComponent = components[steps[tutorialStep]['component']]
 
     return (
-      <span>
+      <div>
       {tutorialOpen && (tutorialTypes.includes(steps[tutorialStep]['component'])) &&
           <TutorialComponent
             step={tutorialStep}
@@ -32,7 +34,7 @@ class Tutorial extends React.Component {
             handleDismiss={this.props.dismissTutorial}
           />
         }
-    </span>
+    </div>
     )
   }
 }

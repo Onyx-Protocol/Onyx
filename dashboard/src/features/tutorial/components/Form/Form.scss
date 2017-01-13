@@ -1,12 +1,13 @@
 .container {
-  display: inline-block;
-  right: 0;
+  position: fixed;
+  right: 50px;
+  top: 150px;
   width: 300px;
   min-height: 100px;
   border-left: solid #69A7E4 3px;
   border-bottom: 1px solid rgba(0,0,0,0.09);
   background-color: #FFFFFF;
-  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.09);
+  box-shadow: 0 1px 2px 1px rgba(0,0,0,0.09);
   padding: 25px 0;
 
   .header {
@@ -30,13 +31,14 @@
     }
 
     .listItemContainer {
-      padding: 15px 0;
+      margin: 15px 0;
 
       .listItem {
         font-size: 15px;
         font-weight: 500;
         line-height: 18px;
         color: #20252D;
+        margin-bottom: 5px;
 
         .listBullet {
           display: inline-block;
@@ -45,7 +47,7 @@
           width: 18px;
           height: 18px;
           text-align: center;
-          margin-right: 5px;
+          margin-right: 10px;
           font-size: 12px;
           font-weight: bold;
           text-align: center;
@@ -57,8 +59,6 @@
 
       .listItemDescription {
         color: #A3A9B8;
-        padding-left: 25px;
-        margin-bottom: 15px;
       }
 
       li {

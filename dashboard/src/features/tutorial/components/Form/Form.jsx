@@ -13,19 +13,20 @@ class Form extends React.Component {
           <div className={styles.listHeader}>
             {this.props.content['header']}
           </div>
-          <div className={styles.listItemContainer}>
+          <table className={styles.listItemContainer}>
             {this.props.content['steps'].map(function (x, i){
-              let listItem = <div>
-                <li className={styles.listItem} key={i}>
-                  <div className={styles.listBullet}>{i+1}</div> {x['title']}
-                </li>
-                { x['description'] && <li className={styles.listItemDescription}>
-                  {x['description']}
-                </li> }
+              return <div className={styles.listItem}>
+                <tr key={i}>
+                  <td className={styles.listBullet}>{i+1}</td>
+                  <td>{x['title']}</td>
+                </tr>
+                { x['description'] && <tr className={styles.listItemDescription}>
+                  <td></td>
+                  <td>{x['description']}</td>
+                </tr> }
               </div>
-              return listItem
             })}
-          </div>
+          </table>
         </div>
       </div>
     )
