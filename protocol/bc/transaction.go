@@ -374,10 +374,13 @@ func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
 	return n1 + n2, err
 }
 
-// assumes w has sticky errors
-func (a *AssetAmount) writeTo(w io.Writer) {
-	w.Write(a.AssetID[:])
-	blockchain.WriteVarint63(w, a.Amount) // TODO(bobg): check and return error
+func (a *AssetAmount) writeTo(w io.Writer) error {
+	_, err := w.Write(a.AssetID[:])
+	if err != nil {
+		return err
+	}
+	_, err = blockchain.WriteVarint63(w, a.Amount)
+	return err
 }
 
 // assumes w has sticky errors

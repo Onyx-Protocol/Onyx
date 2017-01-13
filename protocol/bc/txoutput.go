@@ -105,13 +105,23 @@ func (to *TxOutput) WriteCommitment(w io.Writer) {
 	to.OutputCommitment.writeTo(w, to.AssetVersion)
 }
 
-func (oc *OutputCommitment) writeTo(w io.Writer, assetVersion uint64) {
+func (oc *OutputCommitment) writeTo(w io.Writer, assetVersion uint64) (err error) {
 	b := bufpool.Get()
 	defer bufpool.Put(b)
 	if assetVersion == 1 {
-		oc.AssetAmount.writeTo(b)
-		blockchain.WriteVarint63(b, oc.VMVersion) // TODO(bobg): check and return error
-		blockchain.WriteVarstr31(b, oc.ControlProgram)
+		err = oc.AssetAmount.writeTo(b)
+		if err != nil {
+			return err
+		}
+		_, err = blockchain.WriteVarint63(b, oc.VMVersion)
+		if err != nil {
+			return err
+		}
+		_, err = blockchain.WriteVarstr31(b, oc.ControlProgram)
+		if err != nil {
+			return err
+		}
 	}
-	blockchain.WriteVarstr31(w, b.Bytes()) // TODO(bobg): check and return error
+	_, err = blockchain.WriteVarstr31(w, b.Bytes())
+	return err
 }
