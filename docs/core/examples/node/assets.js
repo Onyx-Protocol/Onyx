@@ -15,14 +15,14 @@ Promise.all([
   signer.addKey(accountKey, client.mockHsm.signerUrl)
 }).then(() => Promise.all([
   client.accounts.create({
-    alias: 'acmeTreasury',
+    alias: 'acme_treasury',
     rootXpubs: [accountKey],
     quorum: 1,
   }),
 
   // snippet create-asset-acme-common
   client.assets.create({
-    alias: 'acmeCommon',
+    alias: 'acme_common',
     rootXpubs: [assetKey],
     quorum: 1,
     tags: {
@@ -39,7 +39,7 @@ Promise.all([
   ,
   // snippet create-asset-acme-preferred
   client.assets.create({
-      alias: 'acmePreferred',
+      alias: 'acme_preferred',
       rootXpubs: [assetKey],
       quorum: 1,
       tags: {
@@ -79,12 +79,12 @@ Promise.all([
   // snippet build-issue
   const issuePromise = client.transactions.build(function (builder) {
     builder.issue({
-      assetAlias: 'acmeCommon',
+      assetAlias: 'acme_common',
       amount: 1000
     })
     builder.controlWithAccount({
-      accountAlias: 'acmeTreasury',
-      assetAlias: 'acmeCommon',
+      accountAlias: 'acme_treasury',
+      assetAlias: 'acme_common',
       amount: 1000
     })
   })
@@ -103,19 +103,19 @@ Promise.all([
   )
 }).then(() => {
   const externalProgramPromise = client.accounts.createControlProgram({
-    alias: 'acmeTreasury',
+    alias: 'acme_treasury',
   })
 
   return externalProgramPromise.then(externalProgram =>
     // snippet external-issue
     client.transactions.build(function (builder) {
       builder.issue({
-        assetAlias: 'acmePreferred',
+        assetAlias: 'acme_preferred',
         amount: 2000
       })
       builder.controlWithProgram({
         controlProgram: externalProgram.controlProgram,
-        assetAlias: 'acmePreferred',
+        assetAlias: 'acme_preferred',
         amount: 2000
       })
     }).then(template => {
@@ -129,12 +129,12 @@ Promise.all([
   // snippet build-retire
   const retirePromise = client.transactions.build(function (builder) {
     builder.spendFromAccount({
-      accountAlias: 'acmeTreasury',
-      assetAlias: 'acmeCommon',
+      accountAlias: 'acme_treasury',
+      assetAlias: 'acme_common',
       amount: 50
     })
     builder.retire({
-      assetAlias: 'acmeCommon',
+      assetAlias: 'acme_common',
       amount: 50
     })
   })
@@ -155,7 +155,7 @@ Promise.all([
   // snippet list-issuances
   client.transactions.query({
     filter: 'inputs(type=$1 AND asset_alias=$2)',
-    filterParams: ['issue', 'acmeCommon'],
+    filterParams: ['issue', 'acme_common'],
   }).then(response => {
     for (let tx of response) {
       console.log('Acme Common issued in tx ' + tx.id)
@@ -166,7 +166,7 @@ Promise.all([
   // snippet list-transfers
   client.transactions.query({
     filter: 'inputs(type=$1 AND asset_alias=$2)',
-    filterParams: ['spend', 'acmeCommon'],
+    filterParams: ['spend', 'acme_common'],
   }).then(response => {
     for (let tx of response) {
       console.log('Acme Common transferred in tx ' + tx.id)
@@ -177,7 +177,7 @@ Promise.all([
   // snippet list-retirements
   client.transactions.query({
     filter: 'outputs(type=$1 AND asset_alias=$2)',
-    filterParams: ['retire', 'acmeCommon'],
+    filterParams: ['retire', 'acme_common'],
   }).then(response => {
     for (let tx of response) {
       console.log('Acme Common retired in tx ' + tx.id)
@@ -188,7 +188,7 @@ Promise.all([
   // snippet list-acme-common-balance
   client.balances.query({
     filter: 'asset_alias=$1',
-    filterParams: ['acmeCommon'],
+    filterParams: ['acme_common'],
   }).then(response => {
     for (let balance of response) {
       console.log('Total circulation of Acme Common: ' + balance.amount)
@@ -210,7 +210,7 @@ Promise.all([
   // snippet list-acme-common-unspents
   client.unspentOutputs.query({
     filter: 'asset_alias=$1',
-    filterParams: ['acmeCommon'],
+    filterParams: ['acme_common'],
   }).then(response => {
     for (let unspent of response) {
       console.log('Acme Common held in output ' + unspent.transactionId + ':' + unspent.position)
