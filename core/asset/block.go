@@ -33,6 +33,7 @@ func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 		"id":               a.AssetID,
 		"alias":            a.Alias,
 		"raw_definition":   json.HexBytes(a.RawDefinition()),
+		"vm_version":       a.VMVersion,
 		"issuance_program": json.HexBytes(a.IssuanceProgram),
 		"tags":             a.Tags,
 		"is_local":         "no",

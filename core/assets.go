@@ -14,6 +14,7 @@ import (
 type assetResponse struct {
 	ID              interface{} `json:"id"`
 	Alias           *string     `json:"alias"`
+	VMVersion       interface{} `json:"vm_version"`
 	IssuanceProgram interface{} `json:"issuance_program"`
 	Keys            interface{} `json:"keys"`
 	Quorum          interface{} `json:"quorum"`
@@ -80,6 +81,7 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 			responses[i] = &assetResponse{
 				ID:              asset.AssetID,
 				Alias:           asset.Alias,
+				VMVersion:       asset.VMVersion,
 				IssuanceProgram: json.HexBytes(asset.IssuanceProgram),
 				Keys:            keys,
 				Quorum:          asset.Signer.Quorum,
