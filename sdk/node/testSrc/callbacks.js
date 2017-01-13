@@ -413,7 +413,7 @@ describe('Callback style', () => {
         next()
       }),
 
-      done
+      () => done()
     ])
   })
 })

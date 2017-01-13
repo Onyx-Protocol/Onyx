@@ -1,19 +1,21 @@
 /**
  * @callback pageCallback
  * @param {error} error
- * @param {Page} page - Requested page of results
+ * @param {Page} page - Requested page of results.
  */
 
 /**
  * @class
+ * One page of results returned from an API request. With any given page object,
+ * the next page of results in the query set can be requested.
  */
 class Page {
 
   /**
    * Create a page object
    *
-   * @param  {Object} data  API response for a single page of data
-   * @param  {Object} owner Chain API object implementing the `query` method
+   * @param  {Object} data  API response for a single page of data.
+   * @param  {Object} owner Chain API object implementing the `query` method.
    */
   constructor(data, owner) {
     /**
@@ -23,14 +25,14 @@ class Page {
     this.items = []
 
     /**
-     * Object representing the query for the immediate next page of results
+     * Object representing the query for the immediate next page of results.
      * @type {Query}
      */
     this.next = {}
 
 
     /**
-     * Indicator that there are more results to load if true
+     * Indicator that there are more results to load if true.
      * @type {Boolean}
      */
     this.lastPage = false
@@ -41,13 +43,14 @@ class Page {
   }
 
   /**
-   * Fetch the next page of data for the query specified in this object
+   * Fetch the next page of data for the query specified in this object.
    *
+   * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
    * @return {Promise<Page>} A promise resolving to a Page object containing
-   *                         the requested results
+   *                         the requested results.
    */
-  nextPage() {
-    return this.owner.query(this.next)
+  nextPage(cb) {
+    return this.owner.query(this.next, cb)
   }
 }
 

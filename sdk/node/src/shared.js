@@ -4,7 +4,6 @@ const Page = require('./page')
 
 /**
  * @callback objectCallback
- *
  * @param {error} error
  * @param {Object} object - Object response from API.
  */
@@ -30,8 +29,8 @@ const Page = require('./page')
 
 /**
  * Called once for each item in the result set.
+ * 
  * @callback QueryProcessor
- *
  * @param {Object} item - Item to process
  */
 

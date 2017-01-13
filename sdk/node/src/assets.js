@@ -60,7 +60,7 @@ class Assets {
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
-    this.query = (params) => shared.query(client, this, '/list-assets', params)
+    this.query = (params, cb) => shared.query(client, this, '/list-assets', params, {cb})
 
     /**
      * Request all assets matching the specified query, calling the

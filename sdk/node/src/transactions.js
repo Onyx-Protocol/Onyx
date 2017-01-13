@@ -17,6 +17,9 @@ function checkForError(resp) {
  * @class
  */
 class TransactionBuilder {
+  /**
+   * constructor - return a new object for construction a transaction.
+   */
   constructor() {
     this.actions = []
   }
@@ -51,7 +54,20 @@ class TransactionBuilder {
 }
 
 /**
+ * Processing callback for building a transaction. The instance of
+ * {@link TransactionBuilder} modified in the function is used to build a transaction
+ * in Chain Core.
+ *
+ * @callback Transactions~builderCallback
+ * @param {TransactionBuilder} builder
+ */
+
+/**
  * @class
+ * A blockchain consists of an immutable set of cryptographically linked
+ * transactions. Each transaction contains one or more actions.
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/build-applications/transaction-basics}
  */
 class Transactions {
   /**
@@ -63,8 +79,9 @@ class Transactions {
     /**
      * Get one page of transactions matching the specified query.
      *
-     * @param {Filter} [params={}] Filter and pagination information.
-     * @returns {Page} Requested page of results
+     * @param {Query} params={} Filter and pagination information.
+     * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<Page>} Requested page of results
      */
     this.query = (params, cb) => shared.query(client, this, '/list-transactions', params, {cb})
 
@@ -72,13 +89,19 @@ class Transactions {
      * Request all transactions matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
-     * @param {Filter} params Filter and pagination information.
+     * @param {Query} params Filter and pagination information.
      * @param {QueryProcessor} processor Processing callback.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error
      */
     this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
 
+    /**
+     * Submit a set of actions to the blockchain to build an unsigned transaction
+     * @param {builderCallback} builderBlock -
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @return {Promise<Object>} - Unsigned transaction template
+     */
     this.build = (builderBlock, cb) => {
       const builder = new TransactionBuilder()
       builderBlock(builder)
