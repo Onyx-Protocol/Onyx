@@ -3,11 +3,14 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
 	"math"
 	"sync"
+
+	"chain/encoding/bufpool"
 )
 
 var bufPool = sync.Pool{New: func() interface{} { return new([9]byte) }}
@@ -89,6 +92,78 @@ func WriteVarstr31(w io.Writer, str []byte) (int, error) {
 	}
 	n2, err := w.Write(str)
 	return n + n2, err
+}
+
+// WriteVarstrList writes a varint31 length prefix followed by the
+// elements of l as varstrs.
+func WriteVarstrList(w io.Writer, l [][]byte) (int, error) {
+	n, err := WriteVarint31(w, uint64(len(l)))
+	if err != nil {
+		return n, err
+	}
+	for _, s := range l {
+		n2, err := WriteVarstr31(w, s)
+		n += n2
+		if err != nil {
+			return n, err
+		}
+	}
+	return n, err
+}
+
+// ReadVarstrList reads a varint31 length prefix followed by that many
+// varstrs.
+func ReadVarstrList(r io.Reader) ([][]byte, int, error) {
+	nelts, n, err := ReadVarint31(r)
+	if err != nil {
+		return nil, n, err
+	}
+	if nelts == 0 {
+		return nil, n, nil
+	}
+	result := make([][]byte, 0, nelts)
+	for ; nelts > 0; nelts-- {
+		s, n2, err := ReadVarstr31(r)
+		n += n2
+		if err != nil {
+			return nil, n, err
+		}
+		result = append(result, s)
+	}
+	return result, n, nil
+}
+
+// WriteExtensibleString sends the output of the given function,
+// together with a varint31 length prefix, to w.
+func WriteExtensibleString(w io.Writer, f func(io.Writer) error) (int, error) {
+	buf := bufpool.Get()
+	defer bufpool.Put(buf)
+	err := f(buf)
+	if err != nil {
+		return 0, err
+	}
+	return WriteVarstr31(w, buf.Bytes())
+}
+
+var ErrLeftover = errors.New("extensible string partially unconsumed")
+
+// ReadExtensibleString reads a varint31 length prefix and then calls
+// the given function to consume that many bytes. If all is true, it
+// is an error for any bytes to be left over.
+func ReadExtensibleString(r io.Reader, all bool, f func(io.Reader) error) (int, error) {
+	s, n, err := ReadVarstr31(r)
+	if err != nil {
+		return n, err
+	}
+	sr := bytes.NewReader(s)
+	err = f(sr)
+	if err != nil {
+		return n, err
+	}
+	if all && sr.Len() > 0 {
+		return n, ErrLeftover
+	}
+	return n, nil
 }
 
 // byteReader wraps io.Reader, satisfies io.ByteReader, keeps a
