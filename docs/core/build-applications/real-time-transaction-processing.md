@@ -9,6 +9,7 @@ You can use **transaction feeds** to process transactions as they arrive on the 
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/RealTimeTransactionProcessing.java)
+- [Node](../examples/node/realTimeTransactionProcessing.js)
 - [Ruby](../examples/ruby/real_time_transaction_processing.rb)
 
 ## Example
@@ -21,11 +22,11 @@ Transaction feeds can be created either in the Chain Core Dashboard, or from you
 
 First, we'll create a new feed programmatically, setting the filter expression to `is_local='yes'`.
 
-$code create-feed ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code create-feed ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 From now on, we can retrieve this feed using its alias:
 
-$code get-feed ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code get-feed ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 The Chain Core will record how much of a feed has been processed, so your application doesn't have to keep track itself.
 
@@ -33,23 +34,23 @@ The Chain Core will record how much of a feed has been processed, so your applic
 
 To process a transaction, our example application will print out some basic information to the console:
 
-$code processor-method ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code processor-method ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 Next, we'll set up an infinite loop that reads from the transaction feed, and sends each incoming transaction to our processor function:
 
-$code processing-loop ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code processing-loop ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 Note the call to `ack` at the end of every cycle. This updates the transaction feed via an API call so that if your program terminates for any reason, it can pick back up from the point that `ack` was last called.
 
 The body of the processing loop will run once for every new transaction that arrives on the blockchain. If you've already processed all available transactions, then the call to `next` will **block the active thread** until a transaction matching the filter arrives. Because of this blocking behavior, we'll run the processing loop in its own thread:
 
-$code processing-thread ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code processing-thread ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 #### Testing the example
 
 In order to push some transactions through the transaction feed, we'll try generating a sample transaction:
 
-$code issue ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code issue ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 Almost immediately, we should see the following output in the console:
 
@@ -71,7 +72,7 @@ New transaction at Sun Oct 16 17:08:53 PDT 2016
 
 Let's try submitting another transaction:
 
-$code transfer ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code transfer ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 This should result in the following output:
 

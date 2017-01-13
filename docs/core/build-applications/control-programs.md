@@ -19,6 +19,7 @@ This guide will walk you through the basic types of control programs available i
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/ControlPrograms.java)
+- [Node](../examples/node/controlPrograms.js)
 - [Ruby](../examples/ruby/control_programs.rb)
 
 ## Account control programs

@@ -24,7 +24,7 @@ Promise.resolve().then(() => {
   // snippet create-asset
   const goldPromise = client.assets.create({
     alias: 'gold',
-    root_xpubs: [key.xpub],
+    rootXpubs: [key.xpub],
     quorum: 1,
   })
   // endsnippet
@@ -32,7 +32,7 @@ Promise.resolve().then(() => {
   // snippet create-account-alice
   const alicePromise = client.accounts.create({
     alias: 'alice',
-    root_xpubs: [key.xpub],
+    rootXpubs: [key.xpub],
     quorum: 1
   })
   // endsnippet
@@ -40,7 +40,7 @@ Promise.resolve().then(() => {
   // snippet create-account-bob
   const bobPromise = client.accounts.create({
     alias: 'bob',
-    root_xpubs: [key.xpub],
+    rootXpubs: [key.xpub],
     quorum: 1
   })
   // endsnippet
@@ -54,12 +54,12 @@ Promise.resolve().then(() => {
     // snippet issue
     client.transactions.build(function (builder) {
       builder.issue({
-        asset_alias: 'gold',
+        assetAlias: 'gold',
         amount: 100
       })
       builder.controlWithAccount({
-        account_alias: 'alice',
-        asset_alias: 'gold',
+        accountAlias: 'alice',
+        assetAlias: 'gold',
         amount: 100
       })
     }).then(issuance => {
@@ -74,13 +74,13 @@ Promise.resolve().then(() => {
     // snippet spend
     client.transactions.build(function (builder) {
       builder.spendFromAccount({
-        account_alias: 'alice',
-        asset_alias: 'gold',
+        accountAlias: 'alice',
+        assetAlias: 'gold',
         amount: 10
       })
       builder.controlWithAccount({
-        account_alias: 'bob',
-        asset_alias: 'gold',
+        accountAlias: 'bob',
+        assetAlias: 'gold',
         amount: 10
       })
     }).then(issuance => {
@@ -95,12 +95,12 @@ Promise.resolve().then(() => {
     // snippet retire
     client.transactions.build(function (builder) {
       builder.spendFromAccount({
-        account_alias: 'alice',
-        asset_alias: 'gold',
+        accountAlias: 'alice',
+        assetAlias: 'gold',
         amount: 5
       })
       builder.retire({
-        asset_alias: 'gold',
+        assetAlias: 'gold',
         amount: 5
       })
     }).then(issuance => {
@@ -109,6 +109,7 @@ Promise.resolve().then(() => {
       return client.transactions.submit(signed)
     })
     // endsnippet
-
   )
-})
+}).catch(err =>
+  process.nextTick(() => { throw err })
+)

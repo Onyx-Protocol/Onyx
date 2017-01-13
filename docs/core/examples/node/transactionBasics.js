@@ -19,59 +19,59 @@ Promise.all([
 }).then(() => Promise.all([
   client.assets.create({
     alias: 'gold',
-    root_xpubs: [aliceKey],
+    rootXpubs: [aliceKey],
     quorum: 1
   }),
 
   client.assets.create({
     alias: 'silver',
-    root_xpubs: [aliceKey],
+    rootXpubs: [aliceKey],
     quorum: 1
   }),
 
   client.accounts.create({
     alias: 'alice',
-    root_xpubs: [aliceKey],
+    rootXpubs: [aliceKey],
     quorum: 1
   }),
 
   otherClient.accounts.create({
     alias: 'bob',
-    root_xpubs: [bobKey],
+    rootXpubs: [bobKey],
     quorum: 1
   })
 ])).then(() =>
 
   // snippet issue-within-core
-  client.transactions.build( function(builder){
+  client.transactions.build(builder => {
     builder.issue({
-      asset_alias: 'silver',
+      assetAlias: 'silver',
       amount: 1000
     })
     builder.controlWithAccount({
-      account_alias: 'alice',
-      asset_alias: 'silver',
+      accountAlias: 'alice',
+      assetAlias: 'silver',
       amount: 1000
     })
   })
-  .then((issuance) => signer.sign(issuance))
-  .then((signed) => client.transactions.submit(signed))
+  .then(issuance => signer.sign(issuance))
+  .then(signed => client.transactions.submit(signed))
   // endsnippet
 
 ).then(() =>
-  client.transactions.build( function(builder){
+  client.transactions.build(builder => {
     builder.issue({
-      asset_alias: 'gold',
+      assetAlias: 'gold',
       amount: 1000
     })
     builder.controlWithAccount({
-      account_alias: 'alice',
-      asset_alias: 'gold',
+      accountAlias: 'alice',
+      assetAlias: 'gold',
       amount: 1000
     })
   })
-  .then((issuance) => signer.sign(issuance))
-  .then((signed) => client.transactions.submit(signed))
+  .then(issuance => signer.sign(issuance))
+  .then(signed => client.transactions.submit(signed))
 ).then(() =>
 
   // snippet create bobIssueProgram
@@ -80,43 +80,43 @@ Promise.all([
   })
   // endsnippet
 
-).then((program) => bobProgram = program.control_program)
+).then(program => bobProgram = program.controlProgram)
   .then(() =>
 
   // snippet issueToBobProgram
-  client.transactions.build( function(builder){
+  client.transactions.build(builder => {
     builder.issue({
-      asset_alias: 'gold',
+      assetAlias: 'gold',
       amount: 10
     })
     builder.controlWithProgram({
-      control_program: bobProgram,
-      asset_alias: 'gold',
+      controlProgram: bobProgram,
+      assetAlias: 'gold',
       amount: 10
     })
   })
-  .then((issuance) => signer.sign(issuance))
-  .then((signed) => client.transactions.submit(signed))
+  .then(issuance => signer.sign(issuance))
+  .then(signed => client.transactions.submit(signed))
   // endsnippet
 
 ).then(() => {
     if (client.baseUrl == otherClient.baseUrl){
 
       // snippet payWithinCore
-      return client.transactions.build( function(builder){
+      return client.transactions.build(builder => {
         builder.spendFromAccount({
-          account_alias: 'alice',
-          asset_alias: 'gold',
+          accountAlias: 'alice',
+          assetAlias: 'gold',
           amount: 10
         })
         builder.controlWithAccount({
-          account_alias: 'bob',
-          asset_alias: 'gold',
+          accountAlias: 'bob',
+          assetAlias: 'gold',
           amount: 10
         })
       })
-      .then((payment) => signer.sign(payment))
-      .then((signed) => client.transactions.submit(signed))
+      .then(payment => signer.sign(payment))
+      .then(signed => client.transactions.submit(signed))
       // endsnippet
 
     } else {
@@ -131,54 +131,54 @@ Promise.all([
   }))
   // endsnippet
 
-  .then((program) => bobProgram = program.control_program)
+  .then(program => bobProgram = program.controlProgram)
     .then(() =>
 
     // snippet payBetweenCores
-    client.transactions.build( function(builder){
+    client.transactions.build(builder => {
       builder.spendFromAccount({
-        account_alias: 'alice',
-        asset_alias: 'gold',
+        accountAlias: 'alice',
+        assetAlias: 'gold',
         amount: 10
       })
       builder.controlWithProgram({
-        control_program: bobProgram,
-        asset_alias: 'gold',
+        controlProgram: bobProgram,
+        assetAlias: 'gold',
         amount: 10
       })
     })
-    .then((payment) => signer.sign(payment))
-    .then((signed) => client.transactions.submit(signed))
+    .then(payment => signer.sign(payment))
+    .then(signed => client.transactions.submit(signed))
     // endsnippet
 
 ).then(() => {
     if (client.baseUrl == otherClient.baseUrl){
 
       //snippet multiAssetWithinCore
-      return client.transactions.build( function(builder){
+      return client.transactions.build(builder => {
         builder.spendFromAccount({
-          account_alias: 'alice',
-          asset_alias: 'gold',
+          accountAlias: 'alice',
+          assetAlias: 'gold',
           amount: 10
         })
         builder.spendFromAccount({
-          account_alias: 'alice',
-          asset_alias: 'silver',
+          accountAlias: 'alice',
+          assetAlias: 'silver',
           amount: 20
         })
         builder.controlWithAccount({
-          account_alias: 'bob',
-          asset_alias: 'gold',
+          accountAlias: 'bob',
+          assetAlias: 'gold',
           amount: 10
         })
         builder.controlWithAccount({
-          account_alias: 'bob',
-          asset_alias: 'silver',
+          accountAlias: 'bob',
+          assetAlias: 'silver',
           amount: 20
         })
       })
-      .then((payment) => signer.sign(payment))
-      .then((signed) => client.transactions.submit(signed))
+      .then(payment => signer.sign(payment))
+      .then(signed => client.transactions.submit(signed))
       // endsnippet
 
     } else {
@@ -193,51 +193,53 @@ Promise.all([
   }))
   // endsnippet
 
-  .then((program) => bobProgram = program.control_program)
+  .then(program => bobProgram = program.controlProgram)
   .then(() =>
 
     // snippet multiAssetBetweenCores
-    client.transactions.build( function(builder){
+    client.transactions.build(builder => {
       builder.spendFromAccount({
-        account_alias: 'alice',
-        asset_alias: 'gold',
+        accountAlias: 'alice',
+        assetAlias: 'gold',
         amount: 10
       })
       builder.spendFromAccount({
-        account_alias: 'alice',
-        asset_alias: 'silver',
+        accountAlias: 'alice',
+        assetAlias: 'silver',
         amount: 20
       })
       builder.controlWithProgram({
-        control_program: bobProgram,
-        asset_alias: 'gold',
+        controlProgram: bobProgram,
+        assetAlias: 'gold',
         amount: 10
       })
       builder.controlWithProgram({
-        control_program: bobProgram,
-        asset_alias: 'silver',
+        controlProgram: bobProgram,
+        assetAlias: 'silver',
         amount: 20
       })
     })
-    .then((payment) => signer.sign(payment))
-    .then((signed) => client.transactions.submit(signed))
+    .then(payment => signer.sign(payment))
+    .then(signed => client.transactions.submit(signed))
     // endsnippet
 
   ).then(() =>
 
   // snippet retire
-  client.transactions.build( function(builder){
+  client.transactions.build(builder => {
     builder.spendFromAccount({
-      account_alias: 'alice',
-      asset_alias: 'gold',
+      accountAlias: 'alice',
+      assetAlias: 'gold',
       amount: 50
     })
     builder.retire({
-      asset_alias: 'gold',
+      assetAlias: 'gold',
       amount: 50
     })
   })
-  .then((retirement) => signer.sign(retirement))
-  .then((signed) => client.transactions.submit(signed))
+  .then(retirement => signer.sign(retirement))
+  .then(signed => client.transactions.submit(signed))
   // endsnippet
+).catch(err =>
+  process.nextTick(() => { throw err })
 )

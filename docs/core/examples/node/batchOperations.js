@@ -5,22 +5,22 @@ const signer = new chain.HsmSigner()
 let key
 
 client.mockHsm.keys.create()
-.then(_key => {
-  key = _key
+.then(Key => {
+  key = Key
   signer.addKey(key.xpub, client.mockHsm.signerUrl)
 }).then(() => {
   // snippet asset-builders
   const assetsToBuild = [{
     alias: 'gold',
-    root_xpubs: [key.xpub],
+    rootXpubs: [key.xpub],
     quorum: 1,
   }, {
     alias: 'silver',
-    root_xpubs: [key.xpub],
+    rootXpubs: [key.xpub],
     quorum: 1,
   }, {
     alias: 'bronze',
-    root_xpubs: [key.xpub],
+    rootXpubs: [key.xpub],
     quorum: 0,
   }]
   // endsnippet
@@ -41,4 +41,6 @@ client.mockHsm.keys.create()
     console.log(`asset ${index} created, ID: ${asset.id}`)
   })
   // endsnippet
-})
+}).catch(err =>
+  process.nextTick(() => { throw err })
+)

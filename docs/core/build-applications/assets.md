@@ -29,6 +29,7 @@ This guide assumes you know the basic functions presented in the [5-Minute Guide
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/Assets.java)
+- [Node](../examples/node/assets.js)
 - [Ruby](../examples/ruby/assets.rb)
 
 ## Create asset

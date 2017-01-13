@@ -29,16 +29,16 @@ Promise.all([
 
   // snippet create-asset-aliceDollar
   aliceCore.assets.create({
-    alias: 'alice_dollar',
-    root_xpubs: [aliceDollarKey],
+    alias: 'aliceDollar',
+    rootXpubs: [aliceDollarKey],
     quorum: 1,
   }),
   // endsnippet
 
   // create-asset-bobBuck
   bobCore.assets.create({
-    alias: 'bob_buck',
-    root_xpubs: [bobBuckKey],
+    alias: 'bobBuck',
+    rootXpubs: [bobBuckKey],
     quorum: 1,
   }),
   // endsnippet
@@ -46,7 +46,7 @@ Promise.all([
   // snippet create-account-alice
   aliceCore.accounts.create({
     alias: 'alice',
-    root_xpubs: [aliceKey],
+    rootXpubs: [aliceKey],
     quorum: 1,
   }),
   // endsnippet
@@ -54,7 +54,7 @@ Promise.all([
   // snippet create-account-bob
   bobCore.accounts.create({
     alias: 'bob',
-    root_xpubs: [bobKey],
+    rootXpubs: [bobKey],
     quorum: 1,
   })
   // endsnippet
@@ -64,20 +64,20 @@ Promise.all([
   bobBuck = assets[1]
 }).then(() =>
   aliceCore.transactions.build(function (builder) {
-    builder.issue({ asset_alias: 'alice_dollar', amount: 1000 })
+    builder.issue({ assetAlias: 'aliceDollar', amount: 1000 })
     builder.controlWithAccount({
-      account_alias: 'alice',
-      asset_alias: 'alice_dollar',
+      accountAlias: 'alice',
+      assetAlias: 'aliceDollar',
       amount: 1000
     })
   }).then(issuance => aliceSigner.sign(issuance))
     .then(signed => aliceCore.transactions.submit(signed))
 ).then(() =>
   bobCore.transactions.build(function (builder) {
-    builder.issue({ asset_alias: 'bob_buck', amount: 1000 })
+    builder.issue({ assetAlias: 'bobBuck', amount: 1000 })
     builder.controlWithAccount({
-      account_alias: 'bob',
-      asset_alias: 'bob_buck',
+      accountAlias: 'bob',
+      assetAlias: 'bobBuck',
       amount: 1000
     })
   }).then(issuance => bobSigner.sign(issuance))
@@ -93,23 +93,23 @@ Promise.all([
       // snippet same-core-trade
       chain.transactions.build(function (builder) {
         builder.spendFromAccount({
-          account_alias: 'alice',
-          asset_alias: 'alice_dollar',
+          accountAlias: 'alice',
+          assetAlias: 'aliceDollar',
           amount: 50
         })
         builder.controlWithAccount({
-          account_alias: 'alice',
-          asset_alias: 'bob_buck',
+          accountAlias: 'alice',
+          assetAlias: 'bobBuck',
           amount: 100
         })
         builder.spendFromAccount({
-          account_alias: 'bob',
-          asset_alias: 'bob_buck',
+          accountAlias: 'bob',
+          assetAlias: 'bobBuck',
           amount: 100
         })
         builder.controlWithAccount({
-          account_alias: 'bob',
-          asset_alias: 'alice_dollar',
+          accountAlias: 'bob',
+          assetAlias: 'aliceDollar',
           amount: 50
         })
       }).then(trade => signer.sign(trade))
@@ -125,13 +125,13 @@ Promise.all([
       // snippet build-trade-alice
       aliceCore.transactions.build(function (builder) {
         builder.spendFromAccount({
-          account_alias: 'alice',
-          asset_alias: 'alice_dollar',
+          accountAlias: 'alice',
+          assetAlias: 'aliceDollar',
           amount: 50
         })
         builder.controlWithAccount({
-          account_alias: 'alice',
-          asset_id: bobBuckAssetId,
+          accountAlias: 'alice',
+          assetId: bobBuckAssetId,
           amount: 100
         })
       })
@@ -139,7 +139,7 @@ Promise.all([
 
         // snippet sign-trade-alice
         .then(aliceTrade => {
-          aliceTrade.allow_additional_actions = true
+          aliceTrade.allowAdditionalActions = true
           return aliceSigner.sign(aliceTrade)
         })
         // endsnippet
@@ -148,28 +148,30 @@ Promise.all([
 
           // snippet build-trade-bob
           bobCore.transactions.build(function (builder) {
-            builder.baseTransaction(aliceSigned.raw_transaction)
+            builder.baseTransaction(aliceSigned.rawTransaction)
             builder.spendFromAccount({
-              account_alias: 'bob',
-              asset_alias: 'bob_buck',
+              accountAlias: 'bob',
+              assetAlias: 'bobBuck',
               amount: 100
             })
             builder.controlWithAccount({
-              account_alias: 'bob',
-              asset_id: aliceDollarAssetId,
+              accountAlias: 'bob',
+              assetId: aliceDollarAssetId,
               amount: 50
             })
           })
           // endsnippet
 
-            // snippet sign-trade-bob
-            .then(bobTrade => bobSigner.sign(bobTrade))
-            // endsnippet
+          // snippet sign-trade-bob
+          .then(bobTrade => bobSigner.sign(bobTrade))
+          // endsnippet
 
-            // snippet submit-trade-bob
-            .then(bobSigned => bobCore.transactions.submit(bobSigned))
-            // endsnippet
+          // snippet submit-trade-bob
+          .then(bobSigned => bobCore.transactions.submit(bobSigned))
+          // endsnippet
       )
     }
   }
+).catch(err =>
+  process.nextTick(() => { throw err })
 )

@@ -10,29 +10,29 @@ client.mockHsm.keys.create().then(key => {
   Promise.all([
     client.assets.create({
       alias: 'gold',
-      root_xpubs: [xpub],
+      rootXpubs: [xpub],
       quorum: 1,
     }),
     client.accounts.create({
       alias: 'alice',
-      root_xpubs: [xpub],
+      rootXpubs: [xpub],
       quorum: 1
     }),
     client.accounts.create({
       alias: 'bob',
-      root_xpubs: [xpub],
+      rootXpubs: [xpub],
       quorum: 1
     })
   ])
 ).then(() =>
   client.transactions.build(function (builder) {
     builder.issue({
-      asset_alias: 'gold',
+      assetAlias: 'gold',
       amount: 100
     })
     builder.controlWithAccount({
-      account_alias: 'bob',
-      asset_alias: 'gold',
+      accountAlias: 'bob',
+      assetAlias: 'gold',
       amount: 100
     })
   })
@@ -52,13 +52,13 @@ client.mockHsm.keys.create().then(key => {
   // snippet build-transaction
   return client.transactions.build(function (builder) {
     builder.spendFromAccount({
-      account_alias: 'bob',
-      asset_alias: 'gold',
+      accountAlias: 'bob',
+      assetAlias: 'gold',
       amount: 10
     })
     builder.controlWithProgram({
-      control_program: aliceProgram.control_program,
-      asset_alias: 'gold',
+      controlProgram: aliceProgram.controlProgram,
+      assetAlias: 'gold',
       amount: 10
     })
   }).then(template => {
@@ -71,12 +71,12 @@ client.mockHsm.keys.create().then(key => {
   // snippet retire
   client.transactions.build(function (builder) {
     builder.spendFromAccount({
-      account_alias: 'alice',
-      asset_alias: 'gold',
+      accountAlias: 'alice',
+      assetAlias: 'gold',
       amount: 10
     })
     builder.retire({
-      asset_alias: 'gold',
+      assetAlias: 'gold',
       amount: 10
     })
   }).then(template => {
@@ -85,4 +85,6 @@ client.mockHsm.keys.create().then(key => {
     return client.transactions.submit(signed)
   })
   // endsnippet
+).catch(err =>
+  process.nextTick(() => { throw err })
 )

@@ -100,50 +100,51 @@ This guide will walk you through several examples of queries:
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/Queries.java)
+- [Node](../examples/node/Queries.js)
 - [Ruby](../examples/ruby/queries.rb)
 
 ## Transactions
 
 List all transactions involving Alice’s account:
 
-$code list-alice-transactions ../examples/java/Queries.java ../examples/ruby/queries.rb
+$code list-alice-transactions ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
 List all transactions involving the local Core:
 
-$code list-local-transactions ../examples/java/Queries.java ../examples/ruby/queries.rb
+$code list-local-transactions ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
 ## Assets
 
 List all assets created in the local Core:
 
-$code list-local-assets ../examples/java/Queries.java ../examples/ruby/queries.rb
+$code list-local-assets ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
 List all assets with `USD` as the `currency` in the asset definition:
 
-$code list-usd-assets ../examples/java/Queries.java ../examples/ruby/queries.rb
+$code list-usd-assets ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
 ## Accounts
 
 List all accounts with `checking` as the `type` in the account tags:
 
-$code list-checking-accounts ../examples/java/Queries.java ../examples/ruby/queries.rb
+$code list-checking-accounts ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
 ## Unspent Outputs
 
 List all unspent outputs controlled by Alice’s account:
 
-$code list-alice-unspents ../examples/java/Queries.java ../examples/ruby/queries.rb
+$code list-alice-unspents ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
 ## Balances
 
 List the asset IOU balances in Bank1’s account:
 
-$code account-balance ../examples/java/Queries.java ../examples/ruby/queries.rb
+$code account-balance ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
 Get the circulation of the Bank 1 USD IOU on the blockchain:
 
-$code usd-iou-circulation ../examples/java/Queries.java ../examples/ruby/queries.rb
+$code usd-iou-circulation ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
 List the asset IOU balances in Bank1’s account, summed by currency:
 
-$code account-balance-sum-by-currency ../examples/java/Queries.java ../examples/ruby/queries.rb
+$code account-balance-sum-by-currency ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js

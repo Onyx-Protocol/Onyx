@@ -22,24 +22,24 @@ Promise.resolve().then(() => {
 }).then(() =>
   client.assets.create({
     alias: 'gold',
-    root_xpubs: [xpub],
+    rootXpubs: [xpub],
     quorum: 1,
   })
 ).then(() =>
   client.accounts.create({
      alias: 'alice',
-     root_xpubs: [xpub],
+     rootXpubs: [xpub],
      quorum: 1
    })
 ).then(() =>
   client.transactions.build(function (builder) {
     builder.issue({
-      asset_alias: 'gold',
+      assetAlias: 'gold',
       amount: 100
     })
     builder.controlWithAccount({
-      account_alias: 'alice',
-      asset_alias: 'gold',
+      accountAlias: 'alice',
+      assetAlias: 'gold',
       amount: 100
     })
   })
@@ -53,4 +53,6 @@ Promise.resolve().then(() => {
   return signerPromise
 }).then(signed =>
   client.transactions.submit(signed)
+).catch(err =>
+  process.nextTick(() => { throw err })
 )

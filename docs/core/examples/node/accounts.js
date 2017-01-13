@@ -2,35 +2,35 @@ const chain = require('chain-sdk')
 
 const client = new chain.Client()
 const signer = new chain.HsmSigner()
-let asset_key, alice_key, bob_key
+let assetKey, aliceKey, bobKey
 
 Promise.all([
   client.mockHsm.keys.create(),
   client.mockHsm.keys.create(),
   client.mockHsm.keys.create(),
 ]).then(keys => {
-  asset_key = keys[0].xpub
-  alice_key = keys[1].xpub
-  bob_key   = keys[2].xpub
+  assetKey = keys[0].xpub
+  aliceKey = keys[1].xpub
+  bobKey   = keys[2].xpub
 
-  signer.addKey(asset_key, client.mockHsm.signerUrl)
-  signer.addKey(alice_key, client.mockHsm.signerUrl)
-  signer.addKey(bob_key, client.mockHsm.signerUrl)
+  signer.addKey(assetKey, client.mockHsm.signerUrl)
+  signer.addKey(aliceKey, client.mockHsm.signerUrl)
+  signer.addKey(bobKey, client.mockHsm.signerUrl)
 }).then(() => Promise.all([
   client.assets.create({
     alias: 'gold',
-    root_xpubs: [asset_key],
+    rootXpubs: [assetKey],
     quorum: 1,
   }),
   client.assets.create({
     alias: 'silver',
-    root_xpubs: [asset_key],
+    rootXpubs: [assetKey],
     quorum: 1,
   }),
   // snippet create-account-alice
   client.accounts.create({
     alias: 'alice',
-    root_xpubs: [alice_key],
+    rootXpubs: [aliceKey],
     quorum: 1,
     tags: {
       type: 'checking',
@@ -44,7 +44,7 @@ Promise.all([
   // snippet create-account-bob
   client.accounts.create({
     alias: 'bob',
-    root_xpubs: [bob_key],
+    rootXpubs: [bobKey],
     quorum: 1,
     tags: {
       type: 'savings',
@@ -58,7 +58,7 @@ Promise.all([
   // snippet list-accounts-by-tag
   client.accounts.query({
     filter: 'tags.type=$1',
-    filter_params: ['savings'],
+    filterParams: ['savings'],
   }).then(response => {
     for (let account of response) {
       console.log('Account ID ' + account.id + ' alias ' + account.alias)
@@ -67,16 +67,16 @@ Promise.all([
   // endsnippet
 ).then(() =>
   client.transactions.build(function (builder) {
-    builder.issue({ asset_alias: 'gold', amount: 100 })
-    builder.issue({ asset_alias: 'silver', amount: 100 })
+    builder.issue({ assetAlias: 'gold', amount: 100 })
+    builder.issue({ assetAlias: 'silver', amount: 100 })
     builder.controlWithAccount({
-      account_alias: 'alice',
-      asset_alias: 'gold',
+      accountAlias: 'alice',
+      assetAlias: 'gold',
       amount: 100
     })
     builder.controlWithAccount({
-      account_alias: 'bob',
-      asset_alias: 'silver',
+      accountAlias: 'bob',
+      assetAlias: 'silver',
       amount: 100
     })
   }).then(issuance => signer.sign(issuance))
@@ -85,13 +85,13 @@ Promise.all([
   // snippet build-transfer
   const spendPromise = client.transactions.build(function (builder) {
     builder.spendFromAccount({
-      account_alias: 'alice',
-      asset_alias: 'gold',
+      accountAlias: 'alice',
+      assetAlias: 'gold',
       amount: 10
     })
     builder.controlWithAccount({
-      account_alias: 'bob',
-      asset_alias: 'gold',
+      accountAlias: 'bob',
+      assetAlias: 'gold',
       amount: 10
     })
   })
@@ -108,7 +108,7 @@ Promise.all([
     client.transactions.submit(signedSpendingTx)
     // endsnippet
   )
-}).then((submitted) => {
+}).then(submitted => {
   // snippet create-control-program
   const bobProgramPromise = client.accounts.createControlProgram({
     alias: 'bob',
@@ -119,13 +119,13 @@ Promise.all([
     // snippet transfer-to-control-program
     client.transactions.build(function (builder) {
         builder.spendFromAccount({
-          account_alias: 'alice',
-          asset_alias: 'gold',
+          accountAlias: 'alice',
+          assetAlias: 'gold',
           amount: 10
         })
         builder.controlWithProgram({
-          control_program: bobProgram.control_program,
-          asset_alias: 'gold',
+          controlProgram: bobProgram.controlProgram,
+          assetAlias: 'gold',
           amount: 10
         })
       }).then(template => {
@@ -139,7 +139,7 @@ Promise.all([
   // snippet list-account-txs
   client.transactions.query({
     filter: 'inputs(account_alias=$1) AND outputs(account_alias=$1)',
-    filter_params: ['alice'],
+    filterParams: ['alice'],
   }).then(response => {
     for (let transaction of response) {
       console.log(transaction.id + ' at ' + transaction.timestamp)
@@ -150,10 +150,10 @@ Promise.all([
   // snippet list-account-balances
   client.balances.query({
     filter: 'account_alias=$1',
-    filter_params: ['alice'],
+    filterParams: ['alice'],
   }).then(response => {
     for (let balance of response) {
-      console.log("Alice's balance of " + balance.sum_by.asset_alias + ': ' + balance.amount)
+      console.log("Alice's balance of " + balance.sumBy.assetAlias + ': ' + balance.amount)
     }
   })
   // endsnippet
@@ -161,11 +161,13 @@ Promise.all([
   // snippet list-account-unspent-outputs
   client.unspentOutputs.query({
     filter: 'account_alias=$1 AND asset_alias=$2',
-    filter_params: ['alice', 'gold'],
+    filterParams: ['alice', 'gold'],
   }).then(response => {
     for (let unspent of response) {
-      console.log(unspent.transaction_id + ' position ' + unspent.position)
+      console.log(unspent.transactionId + ' position ' + unspent.position)
     }
   })
   // endsnippet
+).catch(err =>
+  process.nextTick(() => { throw err })
 )
