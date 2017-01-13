@@ -23,6 +23,7 @@ This guide will walk you through the basic key operations:
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/Keys.java)
+- [Node](../examples/node/keys.js)
 - [Ruby](../examples/ruby/keys.rb)
 
 ## Create key

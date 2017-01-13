@@ -18,6 +18,7 @@ This guide will walk you through the basic functions of Chain Core:
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/FiveMinuteGuide.java)
+- [Node](../examples/node/fiveMinuteGuide.js)
 - [Ruby](../examples/ruby/five_minute_guide.rb)
 
 ## Initialize the SDK

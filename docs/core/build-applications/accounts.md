@@ -31,6 +31,7 @@ This guide assumes you know the basic functions presented in the [5-Minute Guide
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/Accounts.java)
+- [Node](../examples/node/accounts.js)
 - [Ruby](../examples/ruby/accounts.rb)
 
 ## Create account

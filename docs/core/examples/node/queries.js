@@ -13,12 +13,12 @@ Promise.all([
 }).then(() => Promise.all([
   client.assets.create({
     alias: 'gold',
-    root_xpubs: [key],
+    rootXpubs: [key],
     quorum: 1
   }),
   client.assets.create({
     alias: 'silver',
-    root_xpubs: [key],
+    rootXpubs: [key],
     quorum: 1
   }),
   client.accounts.create({
@@ -26,27 +26,27 @@ Promise.all([
     tags: {
       type: 'checking'
     },
-    root_xpubs: [key],
+    rootXpubs: [key],
     quorum: 1
   }),
   client.accounts.create({
     alias: 'bob',
-    root_xpubs: [key],
+    rootXpubs: [key],
     quorum: 1
   })
 ])
 ).then(() =>
   client.transactions.build(function (builder) {
-    builder.issue({ asset_alias: 'gold', amount: 1000 })
-    builder.issue({ asset_alias: 'silver', amount: 1000 })
+    builder.issue({ assetAlias: 'gold', amount: 1000 })
+    builder.issue({ assetAlias: 'silver', amount: 1000 })
     builder.controlWithAccount({
-      account_alias: 'alice',
-      asset_alias: 'gold',
+      accountAlias: 'alice',
+      assetAlias: 'gold',
       amount: 1000
     })
     builder.controlWithAccount({
-      account_alias: 'bob',
-      asset_alias: 'silver',
+      accountAlias: 'bob',
+      assetAlias: 'silver',
       amount: 1000
     })
   }).then(issuance => signer.sign(issuance))
@@ -54,47 +54,47 @@ Promise.all([
 ).then(() =>
   client.transactions.build(function (builder) {
     builder.spendFromAccount({
-      account_alias: 'alice',
-      asset_alias: 'gold',
+      accountAlias: 'alice',
+      assetAlias: 'gold',
       amount: 10
     })
     builder.spendFromAccount({
-      account_alias: 'bob',
-      asset_alias: 'silver',
+      accountAlias: 'bob',
+      assetAlias: 'silver',
       amount: 10
     })
     builder.controlWithAccount({
-      account_alias: 'alice',
-      asset_alias: 'silver',
+      accountAlias: 'alice',
+      assetAlias: 'silver',
       amount: 10
     })
     builder.controlWithAccount({
-      account_alias: 'bob',
-      asset_alias: 'gold',
+      accountAlias: 'bob',
+      assetAlias: 'gold',
       amount: 10
     })
   }).then(trade => signer.sign(trade))
     .then(signed => client.transactions.submit(signed))
 ).then(() => Promise.all([
   client.assets.create({
-    alias: 'bank1_usd_iou',
-    root_xpubs: [key],
+    alias: 'bank1UsdIou',
+    rootXpubs: [key],
     quorum: 1,
     definition: {
       currency: 'USD'
     }
   }),
   client.assets.create({
-    alias: 'bank1_euro_iou',
-    root_xpubs: [key],
+    alias: 'bank1EuroIou',
+    rootXpubs: [key],
     quorum: 1,
     definition: {
       currency: 'Euro'
     }
   }),
   client.assets.create({
-    alias: 'bank2_usd_iou',
-    root_xpubs: [key],
+    alias: 'bank2UsdIou',
+    rootXpubs: [key],
     quorum: 1,
     definition: {
       currency: 'USD'
@@ -102,48 +102,48 @@ Promise.all([
   }),
   client.accounts.create({
     alias: 'bank1',
-    root_xpubs: [key],
+    rootXpubs: [key],
     quorum: 1
   }),
   client.accounts.create({
     alias: 'bank2',
-    root_xpubs: [key],
+    rootXpubs: [key],
     quorum: 1
   })
 ])
 ).then(() =>
   client.transactions.build(function (builder) {
-    builder.issue({ asset_alias: 'bank1_usd_iou', amount: 2000000 })
-    builder.issue({ asset_alias: 'bank2_usd_iou', amount: 2000000 })
-    builder.issue({ asset_alias: 'bank1_euro_iou', amount: 2000000 })
+    builder.issue({ assetAlias: 'bank1UsdIou', amount: 2000000 })
+    builder.issue({ assetAlias: 'bank2UsdIou', amount: 2000000 })
+    builder.issue({ assetAlias: 'bank1EuroIou', amount: 2000000 })
     builder.controlWithAccount({
-      account_alias: 'bank1',
-      asset_alias: 'bank1_usd_iou',
+      accountAlias: 'bank1',
+      assetAlias: 'bank1UsdIou',
       amount: 1000000
     })
     builder.controlWithAccount({
-      account_alias: 'bank1',
-      asset_alias: 'bank1_euro_iou',
+      accountAlias: 'bank1',
+      assetAlias: 'bank1EuroIou',
       amount: 1000000
     })
     builder.controlWithAccount({
-      account_alias: 'bank1',
-      asset_alias: 'bank2_usd_iou',
+      accountAlias: 'bank1',
+      assetAlias: 'bank2UsdIou',
       amount: 1000000
     })
     builder.controlWithAccount({
-      account_alias: 'bank2',
-      asset_alias: 'bank1_usd_iou',
+      accountAlias: 'bank2',
+      assetAlias: 'bank1UsdIou',
       amount: 1000000
     })
     builder.controlWithAccount({
-      account_alias: 'bank2',
-      asset_alias: 'bank1_euro_iou',
+      accountAlias: 'bank2',
+      assetAlias: 'bank1EuroIou',
       amount: 1000000
     })
     builder.controlWithAccount({
-      account_alias: 'bank2',
-      asset_alias: 'bank2_usd_iou',
+      accountAlias: 'bank2',
+      assetAlias: 'bank2UsdIou',
       amount: 1000000
     })
   }).then(issuance => signer.sign(issuance))
@@ -153,17 +153,17 @@ Promise.all([
   // snippet list-alice-transactions
   client.transactions.query({
     filter: 'inputs(account_alias=$1) OR outputs(account_alias=$1)',
-    filter_params: ['alice'],
-  }).then((results) =>
-    results.items.forEach((tx) => {
+    filterParams: ['alice'],
+  }).then(results =>
+    results.items.forEach(tx => {
       console.log("Alice's transaction: " + tx.id)
 
-      tx.inputs.forEach((input) => {
-        console.log("-" + input.amount + " " + input.asset_alias)
+      tx.inputs.forEach(input => {
+        console.log("-" + input.amount + " " + input.assetAlias)
       })
 
-      tx.outputs.forEach((output) => {
-        console.log("+" + output.amount + " " + output.asset_alias)
+      tx.outputs.forEach(output => {
+        console.log("+" + output.amount + " " + output.assetAlias)
       })
     })
   )
@@ -174,9 +174,9 @@ Promise.all([
   // snippet list-local-transactions
   client.transactions.query({
     filter: 'is_local=$1',
-    filter_params: ['yes']
-  }).then((results) =>
-    results.items.forEach((tx) => {
+    filterParams: ['yes']
+  }).then(results =>
+    results.items.forEach(tx => {
       console.log("Local transaction " + tx.id)
     })
   )
@@ -187,9 +187,9 @@ Promise.all([
   // snippet list-local-assets
   client.assets.query({
     filter: 'is_local=$1',
-    filter_params: ['yes']
-  }).then((results) =>
-    results.items.forEach((asset) => {
+    filterParams: ['yes']
+  }).then(results =>
+    results.items.forEach(asset => {
       console.log("Local asset " + asset.id + " (" + asset.alias + ")")
     })
   )
@@ -200,9 +200,9 @@ Promise.all([
   // snippet list-usd-assets
   client.assets.query({
     filter: 'definition.currency=$1',
-    filter_params: ['USD']
-  }).then((results) =>
-    results.items.forEach((asset) => {
+    filterParams: ['USD']
+  }).then(results =>
+    results.items.forEach(asset => {
       console.log("USD asset " + asset.id + " (" + asset.alias + ")")
     })
   )
@@ -213,9 +213,9 @@ Promise.all([
   // snippet list-checking-accounts
   client.accounts.query({
     filter: 'tags.type=$1',
-    filter_params: ['checking']
-  }).then((results) =>
-    results.items.forEach((account) => {
+    filterParams: ['checking']
+  }).then(results =>
+    results.items.forEach(account => {
       console.log("Checking account account " + account.id + " (" + account.alias + ")")
     })
   )
@@ -226,10 +226,10 @@ Promise.all([
   // snippet list-alice-unspents
   client.unspentOutputs.query({
     filter: 'account_alias=$1',
-    filter_params: ['alice']
-  }).then((results) =>
-    results.items.forEach((utxo) => {
-      console.log("Alice's unspent output: " + utxo.amount + " " + utxo.asset_alias)
+    filterParams: ['alice']
+  }).then(results =>
+    results.items.forEach(utxo => {
+      console.log("Alice's unspent output: " + utxo.amount + " " + utxo.assetAlias)
     })
   )
   // endsnippet
@@ -239,10 +239,10 @@ Promise.all([
   // snippet account-balance
   client.balances.query({
     filter: 'account_alias=$1',
-    filter_params: ['bank1']
-  }).then((results) =>
-    results.items.forEach((b) => {
-      console.log("Bank 1 balance of " + b.sum_by['asset_alias'] + ": " + b.amount)
+    filterParams: ['bank1']
+  }).then(results =>
+    results.items.forEach(b => {
+      console.log("Bank 1 balance of " + b.sumBy.assetAlias + ": " + b.amount)
     })
   )
   // endsnippet
@@ -252,9 +252,9 @@ Promise.all([
   // snippet usd-iou-circulation
   client.balances.query({
     filter: 'asset_alias=$1',
-    filter_params: ['bank1_usd_iou']
-  }).then((results) =>
-    results.items.forEach((b) => {
+    filterParams: ['bank1UsdIou']
+  }).then(results =>
+    results.items.forEach(b => {
       console.log("Total circulation of Bank 1 USD IOU: " + b.amount)
     })
   )
@@ -265,14 +265,16 @@ Promise.all([
   // snippet account-balance-sum-by-currency
   client.balances.query({
     filter: 'account_alias=$1',
-    filter_params: ['bank1'],
-    sum_by: ['asset_definition.currency']
-  }).then((results) =>
-    results.items.forEach((b) => {
-      var denom = b.sum_by['asset_definition.currency']
+    filterParams: ['bank1'],
+    sumBy: ['assetDefinition.currency']
+  }).then(results =>
+    results.items.forEach(b => {
+      var denom = b.sumBy['assetDefinition.currency']
       console.log("Bank 1 balance of " + denom + "-denominated currencies: " + b.amount)
     })
   )
   // endsnippet
 
+).catch(err =>
+  process.nextTick(() => { throw err })
 )
