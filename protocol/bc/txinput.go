@@ -201,14 +201,16 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 // assumes w has sticky errors
 func (t *TxInput) writeTo(w io.Writer, serflags uint8) {
 	blockchain.WriteVarint63(w, t.AssetVersion) // TODO(bobg): check and return error
-	blockchain.WriteExtensibleString(w, t.WriteInputCommitment)
+	blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+		return t.WriteInputCommitment(w, serflags)
+	})
 	blockchain.WriteVarstr31(w, t.ReferenceData)
 	if serflags&SerWitness != 0 {
 		blockchain.WriteExtensibleString(w, t.writeInputWitness)
 	}
 }
 
-func (t *TxInput) WriteInputCommitment(w io.Writer) error {
+func (t *TxInput) WriteInputCommitment(w io.Writer, serflags uint8) error {
 	if t.AssetVersion == 1 {
 		switch inp := t.TypedInput.(type) {
 		case *IssuanceInput:
@@ -237,7 +239,12 @@ func (t *TxInput) WriteInputCommitment(w io.Writer) error {
 			if err != nil {
 				return err
 			}
-			err = inp.OutputCommitment.writeTo(w, t.AssetVersion)
+			if serflags&SerPrevout != 0 {
+				err = inp.OutputCommitment.writeTo(w, t.AssetVersion)
+			} else {
+				prevouthash := inp.OutputCommitment.Hash(t.AssetVersion)
+				_, err = w.Write(prevouthash[:])
+			}
 			return err
 		}
 	}

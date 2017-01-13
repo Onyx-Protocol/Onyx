@@ -29,9 +29,10 @@ func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetI
 		AssetVersion:  assetver,
 		ReferenceData: referenceData,
 		TypedInput: &SpendInput{
-			OutputID:         ComputeOutputID(txhash, index, oc.Hash(assetver)),
+			OutputID:         ComputeOutputID(txhash, index),
 			OutputCommitment: oc,
 			Arguments:        arguments,
 		},
 	}
 }
+

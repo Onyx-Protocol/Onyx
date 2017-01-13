@@ -50,6 +50,7 @@ const (
 
 	// Bit mask for accepted serialization flags.
 	// All other flag bits must be 0.
+	SerTxHash   = 0x0 // this is used only for computing transaction hash - prevout and refdata are replaced with their hashes
 	SerValid    = 0x7
 	serRequired = 0x7 // we support only this combination of flags
 )
@@ -172,7 +173,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 // and stores the result in Hash.
 func (tx *TxData) Hash() Hash {
 	h := sha3pool.Get256()
-	tx.writeTo(h, 0) // error is impossible
+	tx.writeTo(h, SerTxHash) // error is impossible
 	var v Hash
 	h.Read(v[:])
 	sha3pool.Put256(h)
@@ -243,11 +244,11 @@ func (tx *TxData) HashForSig(idx uint32) Hash {
 }
 
 func (tx *Tx) OutputID(outputIndex int) OutputID {
-	return ComputeOutputID(tx.Hash, uint32(outputIndex), tx.Outputs[outputIndex].CommitmentHash())
+	return ComputeOutputID(tx.Hash, uint32(outputIndex))
 }
 
 func (tx *TxData) OutputID(outputIndex int) OutputID {
-	return ComputeOutputID(tx.Hash(), uint32(outputIndex), tx.Outputs[outputIndex].CommitmentHash())
+	return ComputeOutputID(tx.Hash(), uint32(outputIndex))
 }
 
 func (tx *TxData) MarshalText() ([]byte, error) {

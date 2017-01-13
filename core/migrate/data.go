@@ -104,12 +104,12 @@ var migrations = []migration{
 			ALTER COLUMN definition SET NOT NULL;
 		ALTER TABLE assets ADD COLUMN vm_version bigint NOT NULL;
 	`},
-	{Name: "2017-01-10.0.core.add-outputid-to-outputs.sql", SQL: `
-		ALTER TABLE annotated_outputs ADD COLUMN output_id text NOT NULL;
+	{Name: "2017-01-10.0.core.add-output-id-to-outputs.sql", SQL: `
+		ALTER TABLE annotated_outputs ADD COLUMN output_id bytea NOT NULL;
 		ALTER TABLE ONLY annotated_outputs ADD CONSTRAINT annotated_outputs_unique_output_id UNIQUE (output_id);
-	`},
-	{Name: "2017-01-10.1.core.add-outputid-to-utxos.sql", SQL: `
-		ALTER TABLE account_utxos ADD COLUMN output_id text NOT NULL;
+		ALTER TABLE account_utxos ADD COLUMN output_id bytea NOT NULL;
 		ALTER TABLE ONLY account_utxos ADD CONSTRAINT account_utxos_unique_output_id UNIQUE (output_id);
+		ALTER TABLE account_utxos ADD COLUMN unspent_id bytea NOT NULL;
+		ALTER TABLE ONLY account_utxos ADD CONSTRAINT account_utxos_unique_unspent_id UNIQUE (unspent_id);
 	`},
 }

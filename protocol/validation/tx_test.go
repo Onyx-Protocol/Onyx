@@ -927,7 +927,7 @@ func TestConfirmTx(t *testing.T) {
 		OutputCommitment: out1,
 	}
 
-	outid1 := bc.ComputeOutputID(txhash1, 0, txout.CommitmentHash())
+	outid1 := bc.ComputeOutputID(txhash1, 0)
 	stateout := state.NewOutput(txout, outid1)
 
 	snapshot := state.Empty()

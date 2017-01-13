@@ -51,10 +51,10 @@ func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
 	})
 }
 
-type refoutput struct {
+type outputWithOutpoint struct {
 	state.Output
-	txHash       Hash
-	outputIndex  uint32
+	txHash      bc.Hash
+	outputIndex uint32
 }
 
 type output struct {
@@ -72,16 +72,18 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 
 func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	// Upsert any UTXOs belonging to accounts managed by this Core.
-	outs := make([]*state.Output, 0, len(b.Transactions))
+	outs := make([]*outputWithOutpoint, 0, len(b.Transactions))
 	blockPositions := make(map[bc.Hash]uint32, len(b.Transactions))
 	for i, tx := range b.Transactions {
 		blockPositions[tx.Hash] = uint32(i)
 		for j, out := range tx.Outputs {
-			out := &refoutput{
-				TxOutput:    *out,
-				OutputID:    tx.OutputID(j),
+			out := &outputWithOutpoint{
+				Output: state.Output{
+					TxOutput: *out,
+					OutputID: tx.OutputID(j),
+				},
 				txHash:      tx.Hash,
-				outputIndex: j,
+				outputIndex: uint32(j),
 			}
 			outs = append(outs, out)
 		}
@@ -122,8 +124,8 @@ func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
 // loadAccountInfo turns a set of state.Outputs into a set of
 // outputs by adding account annotations.  Outputs that can't be
 // annotated are excluded from the result.
-func (m *Manager) loadAccountInfo(ctx context.Context, outs []*refoutput) ([]*output, error) {
-	outsByScript := make(map[string][]*refoutput, len(outs))
+func (m *Manager) loadAccountInfo(ctx context.Context, outs []*outputWithOutpoint) ([]*output, error) {
+	outsByScript := make(map[string][]*outputWithOutpoint, len(outs))
 	for _, out := range outs {
 		scriptStr := string(out.ControlProgram)
 		outsByScript[scriptStr] = append(outsByScript[scriptStr], out)
@@ -144,9 +146,9 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*refoutput) ([]*ou
 	err := pg.ForQueryRows(ctx, m.db, q, scripts, func(accountID string, keyIndex uint64, program []byte) {
 		for _, out := range outsByScript[string(program)] {
 			newOut := &output{
-				refoutput: *out,
-				AccountID: accountID,
-				keyIndex:  keyIndex,
+				outputWithOutpoint: *out,
+				AccountID:          accountID,
+				keyIndex:           keyIndex,
 			}
 			result = append(result, newOut)
 		}

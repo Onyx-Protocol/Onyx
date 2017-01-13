@@ -104,7 +104,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedStack := [][]byte{mustDecodeHex("642fb8c99dd23bfa0f6edcaaa72c7000f4b2339aa18f3830c1b48923b9f0ea21")}
+	expectedStack := [][]byte{mustDecodeHex("dc33296e4d20f0ef35ff9fd449e23ebbaa5a049a17779db3c2fe194b499aaf74")}
 	if !reflect.DeepEqual(vm.dataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
 	}

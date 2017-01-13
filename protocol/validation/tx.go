@@ -205,7 +205,7 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 		}
 
 		buf := new(bytes.Buffer)
-		txin.WriteInputCommitment(buf)
+		txin.WriteInputCommitment(buf, bc.SerTxHash)
 		if inp, ok := commitments[string(buf.Bytes())]; ok {
 			return badTxErrf(errDuplicateInput, "input %d is a duplicate of %d", i, inp)
 		}
@@ -277,8 +277,11 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 			continue
 		}
 
+		si := in.TypedInput.(*bc.SpendInput)
+
 		// Remove the consumed output from the state tree.
-		prevoutKey := state.OutputKey(in.OutputID())
+		uid := bc.ComputeUnspentID(si.OutputID, si.OutputCommitment.Hash(in.AssetVersion))
+		prevoutKey := state.OutputKey(uid)
 		err := snapshot.Tree.Delete(prevoutKey)
 		if err != nil {
 			return err

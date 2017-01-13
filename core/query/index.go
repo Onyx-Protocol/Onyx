@@ -111,16 +111,14 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		outputIndexes     pg.Uint32s
 		outputTxHashes    pq.ByteaArray
 		outputData        pq.StringArray
-		prevoutHashes     pq.ByteaArray
-		prevoutIndexes    pg.Uint32s
+		prevoutOIDs       pq.ByteaArray
 	)
 
 	for pos, tx := range b.Transactions {
 		for _, in := range tx.Inputs {
 			if !in.IsIssuance() {
-				outpoint := in.Outpoint()
-				prevoutHashes = append(prevoutHashes, outpoint.Hash[:])
-				prevoutIndexes = append(prevoutIndexes, outpoint.Index)
+				oid := in.OutputID()
+				prevoutOIDs = append(prevoutOIDs, oid[:])
 			}
 		}
 
@@ -173,8 +171,8 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 
 	const updateQ = `
 		UPDATE annotated_outputs SET timespan = INT8RANGE(LOWER(timespan), $1)
-		WHERE (tx_hash, output_index) IN (SELECT unnest($2::bytea[]), unnest($3::integer[]))
+		WHERE (output_id) IN (SELECT unnest($2::bytea[]))
 	`
-	_, err = ind.db.Exec(ctx, updateQ, b.TimestampMS, prevoutHashes, prevoutIndexes)
+	_, err = ind.db.Exec(ctx, updateQ, b.TimestampMS, prevoutOIDs)
 	return errors.Wrap(err, "updating spent annotated outputs")
 }
