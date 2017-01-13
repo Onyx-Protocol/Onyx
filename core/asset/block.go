@@ -131,7 +131,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 		)
 		SELECT id FROM new_assets
 			UNION
-		SELECT id FROM assets WHERE first_block_height = $6
+		SELECT id FROM assets WHERE first_block_height = $7
 	`
 	var newAssetIDs []bc.AssetID
 	err := pg.ForQueryRows(ctx, reg.db, q, assetIDs, vmVersions, issuancePrograms, definitions, b.Time(), reg.initialBlockHash, b.Height,
