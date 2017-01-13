@@ -15,7 +15,7 @@ Promise.resolve().then(() => {
 
   // snippet signer-add-key
   const signer = new chain.HsmSigner() // Holds multiple keys.
-  signer.addKey(key.xpub, client.mockHsm.signerUrl)
+  signer.addKey(key.xpub, client.mockHsm.signerConnection)
   // endsnippet
 
   _signer = signer

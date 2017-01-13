@@ -7,7 +7,7 @@ let key, issuanceTxId
 client.mockHsm.keys.create()
 .then(Key => {
   key = Key
-  signer.addKey(key.xpub, client.mockHsm.signerUrl)
+  signer.addKey(key.xpub, client.mockHsm.signerConnection)
 })
 .then(() => Promise.all([
   client.assets.create({

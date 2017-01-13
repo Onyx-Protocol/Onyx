@@ -31,7 +31,7 @@ processTransaction = tx => {
 client.mockHsm.keys.create()
 .then(Key => {
   key = Key.xpub
-  signer.addKey(key, client.mockHsm.signerUrl)
+  signer.addKey(key, client.mockHsm.signerConnection)
 }).then(() => Promise.all([
   client.assets.create({
     alias: 'gold',

@@ -4,7 +4,7 @@ const client = new chain.Client()
 const signer = new chain.HsmSigner()
 
 client.mockHsm.keys.create().then(key => {
-  signer.addKey(key.xpub, client.mockHsm.signerUrl)
+  signer.addKey(key.xpub, client.mockHsm.signerConnection)
   return key.xpub
 }).then(xpub =>
   Promise.all([

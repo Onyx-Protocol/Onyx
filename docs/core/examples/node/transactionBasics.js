@@ -15,7 +15,7 @@ Promise.all([
   aliceKey = keys[0].xpub,
   bobKey = keys[1].xpub
 
-  signer.addKey(aliceKey, client.mockHsm.signerUrl)
+  signer.addKey(aliceKey, client.mockHsm.signerConnection)
 }).then(() => Promise.all([
   client.assets.create({
     alias: 'gold',

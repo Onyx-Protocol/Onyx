@@ -7,7 +7,7 @@ let key
 client.mockHsm.keys.create()
 .then(Key => {
   key = Key
-  signer.addKey(key.xpub, client.mockHsm.signerUrl)
+  signer.addKey(key.xpub, client.mockHsm.signerConnection)
 }).then(() => {
   // snippet asset-builders
   const assetsToBuild = [{

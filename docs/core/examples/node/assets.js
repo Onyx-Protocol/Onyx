@@ -11,8 +11,8 @@ Promise.all([
   assetKey = keys[0].xpub
   accountKey = keys[1].xpub
 
-  signer.addKey(assetKey, client.mockHsm.signerUrl)
-  signer.addKey(accountKey, client.mockHsm.signerUrl)
+  signer.addKey(assetKey, client.mockHsm.signerConnection)
+  signer.addKey(accountKey, client.mockHsm.signerConnection)
 }).then(() => Promise.all([
   client.accounts.create({
     alias: 'acme_treasury',

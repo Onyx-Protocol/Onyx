@@ -9,7 +9,7 @@ Promise.all([
 ]).then(keys => {
   key  = keys[0].xpub
 
-  signer.addKey(key, client.mockHsm.signerUrl)
+  signer.addKey(key, client.mockHsm.signerConnection)
 }).then(() => Promise.all([
   client.assets.create({
     alias: 'gold',

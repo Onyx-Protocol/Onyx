@@ -21,10 +21,10 @@ Promise.all([
   aliceKey        = keys[2].xpub
   bobKey          = keys[3].xpub
 
-  aliceSigner.addKey(aliceDollarKey, aliceCore.mockHsm.signerUrl)
-  bobSigner.addKey(bobBuckKey, bobCore.mockHsm.signerUrl)
-  aliceSigner.addKey(aliceKey, aliceCore.mockHsm.signerUrl)
-  bobSigner.addKey(bobKey, bobCore.mockHsm.signerUrl)
+  aliceSigner.addKey(aliceDollarKey, aliceCore.mockHsm.signerConnection)
+  bobSigner.addKey(bobBuckKey, bobCore.mockHsm.signerConnection)
+  aliceSigner.addKey(aliceKey, aliceCore.mockHsm.signerConnection)
+  bobSigner.addKey(bobKey, bobCore.mockHsm.signerConnection)
 }).then(() => Promise.all([
 
   // snippet create-asset-aliceDollar
@@ -86,7 +86,7 @@ Promise.all([
     if (aliceCore.baseUrl == bobCore.baseUrl){
       const chain = aliceCore
       const signer = aliceSigner
-      signer.addKey(bobKey, chain.mockHsm.signerUrl)
+      signer.addKey(bobKey, chain.mockHsm.signerConnection)
 
       // SAME-CORE TRADE
 

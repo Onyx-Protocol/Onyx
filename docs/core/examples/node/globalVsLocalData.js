@@ -14,9 +14,9 @@ Promise.all([
   aliceKey = keys[1].xpub
   bobKey   = keys[2].xpub
 
-  signer.addKey(assetKey, client.mockHsm.signerUrl)
-  signer.addKey(aliceKey, client.mockHsm.signerUrl)
-  signer.addKey(bobKey, client.mockHsm.signerUrl)
+  signer.addKey(assetKey, client.mockHsm.signerConnection)
+  signer.addKey(aliceKey, client.mockHsm.signerConnection)
+  signer.addKey(bobKey, client.mockHsm.signerConnection)
 }).then(() => {
   return (
     // snippet create-accounts-with-tags
