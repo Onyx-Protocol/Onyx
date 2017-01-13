@@ -280,9 +280,9 @@ CREATE TABLE assets (
     client_token text,
     initial_block_hash bytea NOT NULL,
     signer_id text,
+    definition bytea NOT NULL,
     alias text,
     first_block_height bigint,
-    definition bytea NOT NULL,
     vm_version bigint NOT NULL
 );
 
@@ -881,4 +881,4 @@ insert into migrations (filename, hash) values ('2016-11-28.0.core.submitted-txs
 insert into migrations (filename, hash) values ('2017-01-05.0.core.rename_block_key.sql', 'ba6a62e498236ec9d2f13238a945829a5cab83f897068fef57a2c152a2e36037');
 insert into migrations (filename, hash) values ('2017-01-10.0.signers.xpubs-type.sql', '4a4d6c736a2bf65e69abbdc87771faa1dc17a0106b2651a6a58af067708d095a');
 insert into migrations (filename, hash) values ('2017-01-11.0.core.hash-bytea.sql', '9f7f15df3479c38f193884a2d3cb7ae8001ed08607f9cc661fd5c420e248688d');
-insert into migrations (filename, hash) values ('2017-01-13.0.core.asset-definition-bytea.sql', 'f21838b2aea6f68c75f4b464fe01d10902e2a0f7465a1466e3738df614386c48');
+insert into migrations (filename, hash) values ('2017-01-13.0.core.asset-definition-bytea.sql', 'f49458c5c8873d919ec35be4683074be0b04913c95f5ab1bf1402aa2b4847cf5');
