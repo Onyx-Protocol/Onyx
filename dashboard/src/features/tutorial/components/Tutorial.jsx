@@ -2,10 +2,12 @@ import React from 'react'
 import steps from './steps.json'
 import Description from './Description/Description'
 import Success from './Success/Success'
+import Form from './Form/Form'
 
 const components = {
   Description,
-  Success
+  Success,
+  Form
 }
 
 class Tutorial extends React.Component {
@@ -13,22 +15,24 @@ class Tutorial extends React.Component {
   render() {
     const tutorialStep = this.props.tutorialStep
     const tutorialOpen = this.props.tutorialOpen
+    const tutorialTypes = this.props.types
     const TutorialComponent = components[steps[tutorialStep]['component']]
 
     return (
-      <div>
-      {tutorialOpen &&
+      <span>
+      {tutorialOpen && (tutorialTypes.includes(steps[tutorialStep]['component'])) &&
           <TutorialComponent
             step={tutorialStep}
             button={steps[tutorialStep]['button']}
             title={steps[tutorialStep]['title']}
             content={steps[tutorialStep]['content']}
             dismiss={steps[tutorialStep]['dismiss']}
+            route={steps[tutorialStep]['route']}
             handleNext={this.props.showNextStep}
             handleDismiss={this.props.dismissTutorial}
           />
         }
-    </div>
+    </span>
     )
   }
 }

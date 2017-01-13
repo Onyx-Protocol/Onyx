@@ -1,13 +1,16 @@
 import React from 'react'
 import styles from './Description.scss'
+import { Link } from 'react-router'
 
 class Description extends React.Component {
 
   render() {
     const nextButton = <div className={styles.next}>
-      <button key='showNext' className='btn btn-primary' onClick={this.props.handleNext}>
-        {this.props.button}
-      </button>
+      <Link to={this.props.route}>
+        <button key='showNext' className='btn btn-primary' onClick={this.props.handleNext}>
+          {this.props.button}
+        </button>
+      </Link>
     </div>
 
     return (
