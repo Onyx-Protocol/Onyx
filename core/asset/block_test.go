@@ -28,7 +28,6 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a local asset which should be unaffected by a block landing.
-	localvmver := 1
 	local, err := r.Define(ctx, []chainkd.XPub{testutil.TestXPub}, 1, nil, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
@@ -68,7 +67,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 									InitialBlock:    r.initialBlockHash,
 									AssetDefinition: localdef,
 									IssuanceProgram: local.IssuanceProgram,
-									VMVersion:       uint64(localvmver),
+									VMVersion:       local.VMVersion,
 								},
 							},
 						},
@@ -103,6 +102,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	}
 	want := &Asset{
 		AssetID:          remoteAssetID,
+		VMVersion:        remotevmver,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: r.initialBlockHash,
 		sortID:           got.sortID,

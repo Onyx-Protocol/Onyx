@@ -87,6 +87,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 	var (
 		assetIDs         pq.ByteaArray
 		definitions      pq.StringArray
+		vmVersions       pq.Int64Array
 		issuancePrograms pq.ByteaArray
 		seen             = make(map[bc.AssetID]bool)
 	)
@@ -104,6 +105,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 				seen[id] = true
 				assetIDs = append(assetIDs, id[:])
 				definitions = append(definitions, string(definition))
+				vmVersions = append(vmVersions, int64(ii.VMVersion))
 				issuancePrograms = append(issuancePrograms, in.IssuanceProgram())
 			}
 		}
@@ -122,8 +124,8 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 	// the annotated asset to the query indexer.
 	const q = `
 		WITH new_assets AS (
-			INSERT INTO assets (id, issuance_program, definition, created_at, initial_block_hash, first_block_height)
-			VALUES(unnest($1::bytea[]), unnest($2::bytea[]), unnest($3::bytea[]), $4, $5, $6)
+			INSERT INTO assets (id, vm_version, issuance_program, definition, created_at, initial_block_hash, first_block_height)
+			VALUES(unnest($1::bytea[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::bytea[]), $5, $6, $7)
 			ON CONFLICT (id) DO NOTHING
 			RETURNING id
 		)
@@ -132,7 +134,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 		SELECT id FROM assets WHERE first_block_height = $6
 	`
 	var newAssetIDs []bc.AssetID
-	err := pg.ForQueryRows(ctx, reg.db, q, assetIDs, issuancePrograms, definitions, b.Time(), reg.initialBlockHash, b.Height,
+	err := pg.ForQueryRows(ctx, reg.db, q, assetIDs, vmVersions, issuancePrograms, definitions, b.Time(), reg.initialBlockHash, b.Height,
 		func(assetID bc.AssetID) { newAssetIDs = append(newAssetIDs, assetID) })
 	if err != nil {
 		return errors.Wrap(err, "error indexing non-local assets")

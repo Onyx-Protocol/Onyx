@@ -64,6 +64,7 @@ func (reg *Registry) IndexAssets(indexer Saver) {
 type Asset struct {
 	AssetID          bc.AssetID
 	Alias            *string
+	VMVersion        uint64
 	IssuanceProgram  []byte
 	InitialBlockHash bc.Hash
 	Signer           *signers.Signer
@@ -123,6 +124,7 @@ func (reg *Registry) Define(ctx context.Context, xpubs []chainkd.XPub, quorum in
 	asset := &Asset{
 		definition:       definition,
 		rawDefinition:    rawDefinition,
+		VMVersion:        vmver,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: reg.initialBlockHash,
 		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, vmver, defhash),
@@ -207,8 +209,8 @@ func (reg *Registry) FindByAlias(ctx context.Context, alias string) (*Asset, err
 func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken string) (*Asset, error) {
 	const q = `
 		INSERT INTO assets
-			(id, alias, signer_id, initial_block_hash, issuance_program, definition, client_token)
-		VALUES($1::bytea, $2, $3, $4, $5, $6, $7)
+			(id, alias, signer_id, initial_block_hash, vm_version, issuance_program, definition, client_token)
+		VALUES($1::bytea, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (client_token) DO NOTHING
 		RETURNING sort_id
   `
@@ -225,7 +227,7 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 	err := reg.db.QueryRow(
 		ctx, q,
 		asset.AssetID, asset.Alias, signerID,
-		asset.InitialBlockHash, asset.IssuanceProgram,
+		asset.InitialBlockHash, asset.VMVersion, asset.IssuanceProgram,
 		asset.rawDefinition, nullToken,
 	).Scan(&asset.sortID)
 
@@ -271,7 +273,7 @@ func assetByClientToken(ctx context.Context, db pg.DB, clientToken string) (*Ass
 
 func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{}) (*Asset, error) {
 	const baseQ = `
-		SELECT assets.id, assets.alias, assets.issuance_program, assets.definition,
+		SELECT assets.id, assets.alias, assets.vm_version, assets.issuance_program, assets.definition,
 			assets.initial_block_hash, assets.sort_id,
 			signers.id, COALESCE(signers.type, ''), COALESCE(signers.xpubs, '{}'),
 			COALESCE(signers.quorum, 0), COALESCE(signers.key_index, 0),
@@ -295,6 +297,7 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 	err := db.QueryRow(ctx, fmt.Sprintf(baseQ, pred), args...).Scan(
 		&a.AssetID,
 		&a.Alias,
+		&a.VMVersion,
 		&a.IssuanceProgram,
 		&a.rawDefinition,
 		&a.InitialBlockHash,

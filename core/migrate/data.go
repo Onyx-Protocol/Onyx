@@ -99,5 +99,6 @@ var migrations = []migration{
 	{Name: "2017-01-13.0.core.asset-definition-bytea.sql", SQL: `
 		ALTER TABLE assets DROP COLUMN definition;
 		ALTER TABLE assets ADD COLUMN definition bytea NOT NULL;
+		ALTER TABLE assets ADD COLUMN vm_version bigint NOT NULL;
 	`},
 }
