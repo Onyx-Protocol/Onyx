@@ -7,6 +7,7 @@ RUN apk --no-cache add bash clang git g++ make nodejs openjdk8 python perl \
     && go get -u github.com/golang/protobuf/proto \
     && go get -u github.com/golang/protobuf/protoc-gen-go \
     && go get -u google.golang.org/grpc \
+# TODO: remove third party glibc (as well as openssl and ca-certificates) package when protobuf works with musl (next release)
     && wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub \
     && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.23-r3/glibc-2.23-r3.apk \
     && apk add glibc-2.23-r3.apk \
