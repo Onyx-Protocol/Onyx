@@ -81,7 +81,7 @@ class Transactions {
      *
      * @param {Query} params={} Filter and pagination information.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Page>} Requested page of results
+     * @returns {Promise<Page>} Requested page of results.
      */
     this.query = (params, cb) => shared.query(client, this, '/list-transactions', params, {cb})
 
@@ -92,15 +92,16 @@ class Transactions {
      * @param {Query} params Filter and pagination information.
      * @param {QueryProcessor} processor Processing callback.
      * @returns {Promise} A promise resolved upon processing of all items, or
-     *                   rejected on error
+     *                   rejected on error.
      */
     this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
 
     /**
      * Submit a set of actions to the blockchain to build an unsigned transaction
-     * @param {builderCallback} builderBlock -
+     * @param {builderCallback} builderBlock - Function that adds desired actions
+     *                                         to a given builder object .
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @return {Promise<Object>} - Unsigned transaction template
+     * @return {Promise<Object>} - Unsigned transaction template.
      */
     this.build = (builderBlock, cb) => {
       const builder = new TransactionBuilder()
