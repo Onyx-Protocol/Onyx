@@ -341,7 +341,7 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 // The empty asset def is an empty byte slice.
 func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
 	if def == nil {
-		return nil, nil
+		return []byte{}, nil
 	}
 	return json.MarshalIndent(def, "", "  ")
 }

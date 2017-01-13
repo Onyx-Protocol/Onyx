@@ -13,7 +13,9 @@ import (
 	"chain/testutil"
 )
 
-const def = `{"currency":"USD"}`
+const rawdef = `{
+  "currency": "USD"
+}`
 
 type fakeSaver func(context.Context, bc.AssetID, map[string]interface{}, string) error
 
@@ -27,7 +29,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 
 	// Create a local asset which should be unaffected by a block landing.
 	localvmver := 1
-	local, err := r.Define(ctx, []chainkd.XPub{testutil.TestXPub}, localvmver, nil, "", nil, "")
+	local, err := r.Define(ctx, []chainkd.XPub{testutil.TestXPub}, 1, nil, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +54,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 								Amount: 10000,
 								IssuanceWitness: bc.IssuanceWitness{
 									InitialBlock:    r.initialBlockHash,
-									AssetDefinition: []byte(def),
+									AssetDefinition: []byte(rawdef),
 									IssuanceProgram: issuanceProgram,
 									VMVersion:       remotevmver,
 								},
@@ -84,7 +86,10 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	})
 
 	// Call the block callback and index the remote asset.
-	r.indexAssets(ctx, b)
+	err = r.indexAssets(ctx, b)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Ensure that the annotated asset got saved to the query indexer.
 	if !reflect.DeepEqual(assetsSaved, []bc.AssetID{remoteAssetID}) {

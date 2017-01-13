@@ -123,7 +123,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 	const q = `
 		WITH new_assets AS (
 			INSERT INTO assets (id, issuance_program, definition, created_at, initial_block_hash, first_block_height)
-			VALUES(unnest($1::bytea[]), unnest($2::bytea[]), unnest($3::text[])::jsonb, $4, $5, $6)
+			VALUES(unnest($1::bytea[]), unnest($2::bytea[]), unnest($3::bytea[]), $4, $5, $6)
 			ON CONFLICT (id) DO NOTHING
 			RETURNING id
 		)
