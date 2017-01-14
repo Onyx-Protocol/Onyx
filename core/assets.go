@@ -78,7 +78,7 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 			responses[i] = &assetResponse{
 				ID:              asset.AssetID,
 				Alias:           asset.Alias,
-				IssuanceProgram: asset.IssuanceProgram,
+				IssuanceProgram: json.HexBytes(asset.IssuanceProgram),
 				Keys:            keys,
 				Quorum:          asset.Signer.Quorum,
 				Definition:      asset.Definition,
