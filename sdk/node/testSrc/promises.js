@@ -1,3 +1,5 @@
+/* eslint-env mocha */
+
 const chain = require('../dist/index.js')
 const uuid = require('uuid')
 const assert = require('assert')
@@ -244,7 +246,7 @@ describe('Promise style', () => {
       })
       .then((swapProposal) =>
         expect(client.transactions.build(builder => {
-          builder.baseTransaction(swapProposal.rawTransaction)
+          builder.baseTransaction = swapProposal.rawTransaction
           builder.spendFromAccount({
             accountAlias: bobAlias,
             assetAlias: silverAlias,

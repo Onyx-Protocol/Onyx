@@ -37,11 +37,11 @@ class Config {
      *                                      for the blockchain; i.e., you are starting a new blockchain on
      *                                      the local core. `false` if you are connecting to a
      *                                      pre-existing blockchain.
-     * @param {string} opts.generatorUrl - A URL for the block generator. Required if
+     * @param {String} opts.generatorUrl - A URL for the block generator. Required if
      *                                      `isGenerator` is false.
-     * @param {string} opts.generatorAccessToken - A network access token provided by administrators
+     * @param {String} opts.generatorAccessToken - A network access token provided by administrators
      *                                               of the block generator. Required if `isGenerator` is false.
-     * @param {string} opts.blockchainId - The unique ID of the generator's blockchain.
+     * @param {String} opts.blockchainId - The unique ID of the generator's blockchain.
      *                                      Required if `isGenerator` is false.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Status of configuration request.

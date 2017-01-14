@@ -22,7 +22,7 @@ class MockHsmKeys {
      *
      * @param {Object} [params={}] - Parameters for access token creation.
      * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @param {string} params.alias - User specified, unique identifier.
+     * @param {String} params.alias - User specified, unique identifier.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Newly created Mock HSM key
      */

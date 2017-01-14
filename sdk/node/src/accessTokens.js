@@ -19,8 +19,8 @@ class AccessTokens {
      * Create a new access token.
      *
      * @param {Object} params - Parameters for access token creation.
-     * @param {string} params.id - User specified, unique identifier.
-     * @param {string} params.type - Either 'client' or 'network'.
+     * @param {String} params.id - User specified, unique identifier.
+     * @param {String} params.type - Either 'client' or 'network'.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Newly created access token.
      */
@@ -34,7 +34,7 @@ class AccessTokens {
      * Note: maximum list size is 1000 items
      *
      * @param {Query} params - Pagination information.
-     * @param {string} [params.type] - Type of access tokens to return.
+     * @param {String} [params.type] - Type of access tokens to return.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results.
      */
@@ -47,7 +47,7 @@ class AccessTokens {
     /**
      * Delete the specified access token.
      *
-     * @param {string} id - Access token ID.
+     * @param {String} id - Access token ID.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Status of deleted object
      */

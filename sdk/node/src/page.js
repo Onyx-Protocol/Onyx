@@ -46,7 +46,7 @@ class Page {
    * Fetch the next page of data for the query specified in this object.
    *
    * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-   * @return {Promise<Page>} A promise resolving to a Page object containing
+   * @returns {Promise<Page>} A promise resolving to a Page object containing
    *                         the requested results.
    */
   nextPage(cb) {

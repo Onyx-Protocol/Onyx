@@ -15,13 +15,13 @@ class Assets {
    * @typedef Assets~createRequest
    * @type {Object}
    *
-   * @property {string} [alias]
+   * @property {String} [alias]
    * User specified, unique identifier.
    *
    * @property {string[]} rootXpubs
    * The list of keys used to create the issuance program for the asset.
    *
-   * @property {number} quorum
+   * @property {Number} quorum
    * The number of keys required to issue units of the asset.
    *
    * @property {Object} [tags]

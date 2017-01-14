@@ -13,13 +13,13 @@ class Accounts {
    * @typedef Accounts~createRequest
    * @type {Object}
    *
-   * @property {string} [alias]
+   * @property {String} [alias]
    * User specified, unique identifier.
    *
    * @property {string[]} rootXpubs
    * The list of keys used to create control programs under the account.
    *
-   * @property {number} quorum
+   * @property {Number} quorum
    * The number of keys required to sign transactions for the account.
    *
    * @property {Object} [tags]
@@ -78,8 +78,8 @@ class Accounts {
      *
      * @param {Object} params Object containing either alias or ID identifying
      *                      account to create control program for.
-     * @param {string} [params.alias] - An account alias. Either this or `id` is required.
-     * @param {string} [params.id] - An account ID. Either this or `alias` is required.
+     * @param {String} [params.alias] - An account alias. Either this or `id` is required.
+     * @param {String} [params.id] - An account ID. Either this or `alias` is required.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Newly created control program.
      */

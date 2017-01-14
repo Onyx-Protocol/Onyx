@@ -1,3 +1,5 @@
+/* eslint-env mocha */
+
 const chain = require('../dist/index.js')
 const uuid = require('uuid')
 const async = require('async')
@@ -261,7 +263,7 @@ describe('Callback style', () => {
         },
 
         (swapProposal, cb) => client.transactions.build(builder => {
-          builder.baseTransaction(swapProposal.rawTransaction)
+          builder.baseTransaction = swapProposal.rawTransaction
           builder.spendFromAccount({
             accountAlias: bobAlias,
             assetAlias: silverAlias,
@@ -341,9 +343,9 @@ describe('Callback style', () => {
           }
         ], cb),
         (buildBatch, cb) => {
-          signer.signBatch(buildBatch.successes, cb)
           assert.equal(buildBatch.successes[1], null)
           assert.deepEqual([buildBatch.errors[0], buildBatch.errors[2], buildBatch.errors[3]], [null, null, null])
+          signer.signBatch(buildBatch.successes, cb)
         },
         (signedBatch, cb) => {
           assert(signedBatch.successes.indexOf(null) == -1)

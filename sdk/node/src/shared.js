@@ -14,25 +14,55 @@ const Page = require('./page')
  * @param {BatchResponse} batchResponse - Newly created objects (and errors).
  */
 
- /**
-  * Object specifying how to request records from a given endpoint. Queries can
-  * be optionally extended with additional fields to provide extra options for
-  * filtering.
-  *
-  * @typedef {Object} Query
-  * @property {string} [filter] - String used to filter results. See the
-  *                            {@link https://chain.com/docs/core/build-applications/queries#filters|documentation on filter strings}
-  *                            for more details
-  * @property {string} [after] - Cursor pointing to the start of the result set
-  * @property {integer} [pageSize] - Number of items to return in result set
-  */
+/**
+ * Object specifying how to request records from a given endpoint. Queries can
+ * be optionally extended with additional fields to provide extra options for
+ * filtering.
+ *
+ * @typedef {Object} Query
+ * @property {String} [filter] - String used to filter results. See the
+ *                            {@link https://chain.com/docs/core/build-applications/queries#filters|documentation on filter strings}
+ *                            for more details
+ * @property {String} [after] - Cursor pointing to the start of the result set
+ * @property {Number} [pageSize] - Number of items to return in result set
+ */
 
 /**
  * Called once for each item in the result set.
- * 
+ *
  * @callback QueryProcessor
  * @param {Object} item - Item to process
  */
+
+/**
+ * @class
+ */
+class BatchResponse {
+  /**
+   * constructor
+   *
+   * @param  {Array<Object>} resp - List of items which are objects or errors
+   */
+  constructor(resp) {
+    /**
+     * Items from the input array which were successfully processed
+     * @type {Array<Object>}
+     */
+    this.successes = resp.map((item) => item.code ? null : item)
+
+    /**
+     * Items from the input array which reuslted in an error
+     * @type {Array<Object>}
+     */
+    this.errors = resp.map((item) => item.code ? item : null)
+
+    /**
+     * Original input array
+     * @type {Array<Object>}
+     */
+    this.response = resp
+  }
+}
 
 const tryCallback = (promise, cb) => {
   if (typeof cb !== 'function') return promise
@@ -68,13 +98,7 @@ module.exports = {
       Object.assign({ clientToken: uuid.v4() }, item))
 
     return tryCallback(
-      client.request(path, params).then(resp => {
-        return {
-          successes: resp.map((item) => item.code ? null : item),
-          errors: resp.map((item) => item.code ? item : null),
-          response: resp,
-        }
-      }),
+      client.request(path, params).then(resp => new BatchResponse(resp)),
       opts.cb
     )
   },
@@ -114,4 +138,5 @@ module.exports = {
   },
 
   tryCallback,
+  BatchResponse,
 }

@@ -64,8 +64,8 @@ class Connection {
    * constructor - create a new Chain client object capable of interacting with
    * the specified Chain Core.
    *
-   * @param {string} baseUrl Chain Core URL.
-   * @param {string} token   Chain Core client token for API access.
+   * @param {String} baseUrl Chain Core URL.
+   * @param {String} token   Chain Core client token for API access.
    * @returns {Client}
    */
   constructor(baseUrl, token) {
@@ -76,9 +76,9 @@ class Connection {
   /**
    * Submit a request to the specified Chain Core.
    *
-   * @param  {string} path
+   * @param  {String} path
    * @param  {object} [body={}]
-   * @return {Promise}
+   * @returns {Promise}
    */
   request(path, body = {}) {
     if (!body) {
@@ -174,5 +174,8 @@ class Connection {
     })
   }
 }
+
+Connection.snakeize = snakeize
+Connection.camelize = camelize
 
 module.exports = Connection

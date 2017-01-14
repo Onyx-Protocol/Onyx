@@ -3,7 +3,14 @@ const shared = require('./shared')
 const uuid = require('uuid')
 const MAX_BLOCK_HEIGHT = (2 * 63) - 1
 
-class TransactionFeed {
+/**
+ * @class
+ * A single transaction feed that can be consumed. See {@link TransactionFeeds}
+ * for actions to create TransactionFeedReader.
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/build-applications/real-time-transaction-processing}
+ */
+class TransactionFeedReader {
 
   constructor(feed, client) {
     let nextAfter
@@ -96,6 +103,11 @@ class TransactionFeed {
 
 /**
  * @class
+ * You can use transaction feeds to process transactions as they arrive on the
+ * blockchain. This is helpful for real-time applications such as notifications
+ * or live-updating interfaces.
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/build-applications/real-time-transaction-processing}
  */
 class TransactionFeeds {
 
@@ -109,16 +121,16 @@ class TransactionFeeds {
      * Create a new transaction feed.
      *
      * @param {Object} params Parameters for creating Tansaction Feeds.
-     * @param {string} params.alias A unique alias for the transaction feed.
-     * @param {string} params.filter A valid filter string for the `/list-transactions`
+     * @param {String} params.alias A unique alias for the transaction feed.
+     * @param {String} params.filter A valid filter string for the `/list-transactions`
      *                               endpoint. The transaction feed will be composed of future
      *                               transactions that match the filter.
-     * @returns {TransactionFeed}
+     * @returns {TransactionFeedReader}
      */
     this.create = (params, cb) => {
       let body = Object.assign({ clientToken: uuid.v4() }, params)
       return shared.tryCallback(
-        client.request('/create-transaction-feed', body).then(data => new TransactionFeed(data, client)),
+        client.request('/create-transaction-feed', body).then(data => new TransactionFeedReader(data, client)),
         cb
       )
     }
@@ -127,14 +139,14 @@ class TransactionFeeds {
      * Get single transaction feed given an id/alias.
      *
      * @param {Object} params Parameters to get single Tansaction Feed.
-     * @param {string} params.id The unique ID of a transaction feed. Either `id` or
+     * @param {String} params.id The unique ID of a transaction feed. Either `id` or
      *                           `alias` is required.
-     * @param {string} params.alias The unique alias of a transaction feed. Either `id` or
+     * @param {String} params.alias The unique alias of a transaction feed. Either `id` or
      *                              `alias` is required.
-     * @returns {TransactionFeed}
+     * @returns {TransactionFeedReader}
      */
     this.get = (params, cb) => shared.tryCallback(
-      client.request('/get-transaction-feed', params).then(data => new TransactionFeed(data, client)),
+      client.request('/get-transaction-feed', params).then(data => new TransactionFeedReader(data, client)),
       cb
     )
 
@@ -142,9 +154,9 @@ class TransactionFeeds {
      * Delete a transaction feed given an id/alias.
      *
      * @param {Object} params Parameters to delete single Tansaction Feed.
-     * @param {string} params.id The unique ID of a transaction feed. Either `id` or
+     * @param {String} params.id The unique ID of a transaction feed. Either `id` or
      *                           `alias` is required.
-     * @param {string} params.alias The unique alias of a transaction feed. Either `id` or
+     * @param {String} params.alias The unique alias of a transaction feed. Either `id` or
      *                              `alias` is required.
      */
     this.delete = (params, cb) => shared.tryCallback(
