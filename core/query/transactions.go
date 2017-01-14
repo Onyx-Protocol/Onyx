@@ -75,12 +75,12 @@ func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals [
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}
-	expr, err := filter.AsSQL(p, "data", vals)
+	expr, err := filter.AsSQL(p, transactionsTable, vals)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "converting to SQL")
 	}
 
-	queryStr, queryArgs := constructTransactionsQuery(expr, after, asc, limit)
+	queryStr, queryArgs := constructTransactionsQuery(expr, vals, after, asc, limit)
 
 	if asc {
 		return ind.waitForAndFetchTransactions(ctx, queryStr, queryArgs, after, limit)
@@ -91,34 +91,32 @@ func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals [
 // If asc is true, the transactions will be returned from "in front" of the `after`
 // param (e.g., the oldest transaction immediately after the `after` param,
 // followed by the second oldest, etc) in ascending order.
-func constructTransactionsQuery(expr filter.SQLExpr, after TxAfter, asc bool, limit int) (string, []interface{}) {
+func constructTransactionsQuery(expr string, vals []interface{}, after TxAfter, asc bool, limit int) (string, []interface{}) {
 	var buf bytes.Buffer
-	var vals []interface{}
 
-	buf.WriteString("SELECT block_height, tx_pos, data FROM annotated_txs")
+	buf.WriteString("SELECT block_height, tx_pos, data FROM annotated_txs AS txs")
 	buf.WriteString(" WHERE ")
 
 	// add filter conditions
-	if len(expr.SQL) > 0 {
-		vals = append(vals, expr.Values...)
-		buf.WriteString(expr.SQL)
+	if len(expr) > 0 {
+		buf.WriteString(expr)
 		buf.WriteString(" AND ")
 	}
 
 	if asc {
 		// add time range & after conditions
-		buf.WriteString(fmt.Sprintf("(block_height, tx_pos) > ($%d, $%d) AND ", len(vals)+1, len(vals)+2))
-		buf.WriteString(fmt.Sprintf("block_height <= $%d ", len(vals)+3))
+		buf.WriteString(fmt.Sprintf("(txs.block_height, txs.tx_pos) > ($%d, $%d) AND ", len(vals)+1, len(vals)+2))
+		buf.WriteString(fmt.Sprintf("txs.block_height <= $%d ", len(vals)+3))
 		vals = append(vals, after.FromBlockHeight, after.FromPosition, after.StopBlockHeight)
 
-		buf.WriteString("ORDER BY block_height ASC, tx_pos ASC ")
+		buf.WriteString("ORDER BY txs.block_height ASC, txs.tx_pos ASC ")
 	} else {
 		// add time range & after conditions
-		buf.WriteString(fmt.Sprintf("(block_height, tx_pos) < ($%d, $%d) AND ", len(vals)+1, len(vals)+2))
-		buf.WriteString(fmt.Sprintf("block_height >= $%d ", len(vals)+3))
+		buf.WriteString(fmt.Sprintf("(txs.block_height, txs.tx_pos) < ($%d, $%d) AND ", len(vals)+1, len(vals)+2))
+		buf.WriteString(fmt.Sprintf("txs.block_height >= $%d ", len(vals)+3))
 		vals = append(vals, after.FromBlockHeight, after.FromPosition, after.StopBlockHeight)
 
-		buf.WriteString("ORDER BY block_height DESC, tx_pos DESC ")
+		buf.WriteString("ORDER BY txs.block_height DESC, txs.tx_pos DESC ")
 	}
 
 	buf.WriteString("LIMIT " + strconv.Itoa(limit))

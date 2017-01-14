@@ -1,71 +1,157 @@
 package filter
 
 import (
+	"errors"
 	"testing"
 
 	"chain/testutil"
 )
 
-func TestAsSQL(t *testing.T) {
-	placeholderValues := []interface{}{"foo", "bar", "baz"}
+var (
+	inputsSQLTable = &SQLTable{
+		Name:  "annotated_inputs",
+		Alias: "inp",
+		Columns: map[string]*SQLColumn{
+			"a":        {Name: "a", Type: String, SQLType: SQLText},
+			"b":        {Name: "b", Type: String, SQLType: SQLText},
+			"type":     {Name: "type", Type: String, SQLType: SQLText},
+			"asset_id": {Name: "asset_id", Type: String, SQLType: SQLBytea},
+		},
+		ForeignKeys: map[string]*SQLForeignKey{},
+	}
+	outputsSQLTable = &SQLTable{
+		Name:  "annotated_outputs",
+		Alias: "out",
+		Columns: map[string]*SQLColumn{
+			"b": {Name: "b", Type: String, SQLType: SQLText},
+		},
+		ForeignKeys: map[string]*SQLForeignKey{},
+	}
+	transactionsSQLTable = &SQLTable{
+		Name:  "annotated_txs",
+		Alias: "txs",
+		Columns: map[string]*SQLColumn{
+			"id":       {Name: "tx_hash", Type: String, SQLType: SQLBytea},
+			"ref":      {Name: "ref", Type: String, SQLType: SQLJSONB},
+			"position": {Name: "position", Type: Integer, SQLType: SQLInteger},
+			"is_local": {Name: "local", Type: Bool, SQLType: SQLBool},
+		},
+		ForeignKeys: map[string]*SQLForeignKey{
+			"inputs":  {Table: inputsSQLTable, LocalColumn: "tx_hash", ForeignColumn: "tx_hash"},
+			"outputs": {Table: outputsSQLTable, LocalColumn: "tx_hash", ForeignColumn: "tx_hash"},
+		},
+	}
+)
+
+func TestFieldAsSQL(t *testing.T) {
 	testCases := []struct {
-		q     string
-		conds []interface{}
+		tbl   *SQLTable
+		field string
+		sql   string
 	}{
-		{
-		// empty predicate
+		{tbl: inputsSQLTable, field: `a`, sql: `inp."a"`},
+		{tbl: inputsSQLTable, field: `asset_id`, sql: `encode(inp."asset_id", 'hex')`},
+		{tbl: transactionsSQLTable, field: `ref.buyer.address.state`, sql: `txs."ref"->'buyer'->'address'->>'state'`},
+	}
+
+	for _, tc := range testCases {
+		f, err := ParseField(tc.field)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := FieldAsSQL(tc.tbl, f)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		if got != tc.sql {
+			t.Errorf("FieldAsSQL(%s) = %s, want %s", tc.field, got, tc.sql)
+		}
+	}
+}
+
+func TestAsSQL(t *testing.T) {
+	testCases := []struct {
+		q   string
+		sql string
+		tbl *SQLTable
+		err error
+	}{
+		{ // empty predicate
 		},
-		{
-			q:     `inputs(a = 'a' AND b = 'b')`,
-			conds: []interface{}{`{"inputs":[{"a":"a","b":"b"}]}`},
+		{ // boolean attribute
+			q:   `is_local`,
+			tbl: transactionsSQLTable,
+			sql: `txs."local"`,
 		},
-		{
-			q:     `inputs(a = 'a') OR outputs(b = 'b')`,
-			conds: []interface{}{`{"inputs":[{"a":"a"}]}`, `{"outputs":[{"b":"b"}]}`},
+		{ // error - invalid attribute
+			q:   `garbage`,
+			tbl: transactionsSQLTable,
+			err: errors.New("invalid attribute: garbage"),
 		},
-		{
-			q:     `inputs(a = 'a') AND outputs(b = 'b')`,
-			conds: []interface{}{`{"inputs":[{"a":"a"}],"outputs":[{"b":"b"}]}`},
+		{ // bytea columns
+			q:   `asset_id = $1`,
+			tbl: inputsSQLTable,
+			sql: `encode(inp."asset_id", 'hex') = $1`,
 		},
-		{
-			q:     `inputs(a = 'a') AND inputs(b = 'b')`,
-			conds: []interface{}{`{"inputs":[{"a":"a"},{"b":"b"}]}`},
+		{ // paren expressions
+			q:   `(asset_id = $1)`,
+			tbl: inputsSQLTable,
+			sql: `(encode(inp."asset_id", 'hex') = $1)`,
 		},
-		{
-			q:     `inputs(a = 'a') OR inputs(b = 'b')`,
-			conds: []interface{}{`{"inputs":[{"a":"a"}]}`, `{"inputs":[{"b":"b"}]}`},
+		{ // indexing into arbitrary json
+			q:   `ref.buyer.address.state = 'CA' AND ref.buyer.address.city = 'San Francisco'`,
+			tbl: transactionsSQLTable,
+			sql: `txs."ref"->'buyer'->'address'->>'state' = 'CA' AND txs."ref"->'buyer'->'address'->>'city' = 'San Francisco'`,
 		},
-		{
-			q:     `inputs(a = 'a') AND ref.txbankref = '1ab'`,
-			conds: []interface{}{`{"inputs":[{"a":"a"}],"ref":{"txbankref":"1ab"}}`},
+		{ // error - indexing into non-json attribute
+			q:   `is_local.but_really`,
+			tbl: transactionsSQLTable,
+			err: errors.New("cannot index on non-object attribute: is_local"),
 		},
-		{
-			q:     `inputs(a = 'a') OR ref.txbankref = '1ab'`,
-			conds: []interface{}{`{"inputs":[{"a":"a"}]}`, `{"ref":{"txbankref":"1ab"}}`},
+		{ // error - unbound parameter
+			q:   `asset_id = $2`, // $2 too big; only 1 param given
+			tbl: inputsSQLTable,
+			err: errors.New("unbound placeholder: $2"),
 		},
-		{
-			q:     `inputs(type = 'issue')`,
-			conds: []interface{}{`{"inputs":[{"type":"issue"}]}`},
+		{ // integer to biginteger conversion
+			q:   `position = 2`,
+			tbl: transactionsSQLTable,
+			sql: `txs."position"::bigint = 2::bigint`,
 		},
-		{
-			q:     `asset_id = $3`,
-			conds: []interface{}{`{"asset_id":"baz"}`},
+		{ // simple environment
+			q:   `inputs(a = 'a' AND b = 'b')`,
+			tbl: transactionsSQLTable,
+			sql: `
+EXISTS(SELECT 1 FROM annotated_inputs AS inp WHERE inp."tx_hash" = txs."tx_hash" AND (inp."a" = 'a' AND inp."b" = 'b'))
+`,
 		},
-		{
-			q: `inputs((a = $1 OR b = $2) AND (c = $3 OR d = 'fuzz'))`,
-			conds: []interface{}{
-				`{"inputs":[{"a":"foo","c":"baz"}]}`,
-				`{"inputs":[{"a":"foo","d":"fuzz"}]}`,
-				`{"inputs":[{"b":"bar","c":"baz"}]}`,
-				`{"inputs":[{"b":"bar","d":"fuzz"}]}`,
-			},
+		{ // error - invalid environment
+			q:   `inputs(asset_id = 'c001cafe')`,
+			tbl: inputsSQLTable,
+			err: errors.New("invalid environment `inputs`"),
 		},
-		{
-			q: `inputs((asset_id = 'abc' OR account_id = 'xyz') AND ref.bank_id = 'baz')`,
-			conds: []interface{}{
-				`{"inputs":[{"asset_id":"abc","ref":{"bank_id":"baz"}}]}`,
-				`{"inputs":[{"account_id":"xyz","ref":{"bank_id":"baz"}}]}`,
-			},
+		{ // error - invalid attribute (in selectorExpr)
+			q:   `data.asset_id = 'c001cafe'`,
+			tbl: inputsSQLTable,
+			err: errors.New("invalid attribute: data"),
+		},
+		{ // multiple environment expresisons
+			q:   `inputs(a = 'a') OR outputs(b = 'b')`,
+			tbl: transactionsSQLTable,
+			sql: `
+EXISTS(SELECT 1 FROM annotated_inputs AS inp WHERE inp."tx_hash" = txs."tx_hash" AND (inp."a" = 'a'))
+ OR 
+EXISTS(SELECT 1 FROM annotated_outputs AS out WHERE out."tx_hash" = txs."tx_hash" AND (out."b" = 'b'))
+`,
+		},
+		{ // environment expression and top-level expressions
+			q:   `inputs(a = 'a') AND ref.txbankref = '1ab'`,
+			tbl: transactionsSQLTable,
+			sql: `
+EXISTS(SELECT 1 FROM annotated_inputs AS inp WHERE inp."tx_hash" = txs."tx_hash" AND (inp."a" = 'a'))
+ AND txs."ref"->>'txbankref' = '1ab'`,
 		},
 	}
 
@@ -75,12 +161,15 @@ func TestAsSQL(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sqlExpr, err := asSQL(e, "data", placeholderValues)
-		if err != nil {
-			t.Fatal(err)
+		b := &sqlBuilder{baseTbl: tc.tbl, values: []interface{}{"hey"}}
+		c := &sqlContext{sqlBuilder: b, tbl: tc.tbl}
+
+		err = asSQL(c, e)
+		if !testutil.DeepEqual(err, tc.err) {
+			t.Errorf("got error %s want error %s", err, tc.err)
 		}
-		if !testutil.DeepEqual(sqlExpr.Values, tc.conds) {
-			t.Errorf("AsSQL(%q) = %#v, want %#v", tc.q, sqlExpr.Values, tc.conds)
+		if err == nil && c.buf.String() != tc.sql {
+			t.Errorf("asSQL(%q) = %s, want %s", tc.q, c.buf.String(), tc.sql)
 		}
 	}
 }
