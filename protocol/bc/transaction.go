@@ -114,7 +114,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	var serflags [1]byte
 	_, err := io.ReadFull(r, serflags[:])
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading serialization flags")
 	}
 	if err == nil && serflags[0] != serRequired {
 		return fmt.Errorf("unsupported serflags %#x", serflags[0])
@@ -122,7 +122,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 
 	tx.Version, _, err = blockchain.ReadVarint63(r)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading transaction version")
 	}
 
 	// Common fields
@@ -142,37 +142,37 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	// Common witness, empty in v1
 	_, _, err = blockchain.ReadVarstr31(r)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading transaction common witness")
 	}
 
 	n, _, err := blockchain.ReadVarint31(r)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading number of transaction inputs")
 	}
 	for ; n > 0; n-- {
 		ti := new(TxInput)
 		err = ti.readFrom(r, tx.Version)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "reading input %d", len(tx.Inputs))
 		}
 		tx.Inputs = append(tx.Inputs, ti)
 	}
 
 	n, _, err = blockchain.ReadVarint31(r)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading number of transaction outputs")
 	}
 	for ; n > 0; n-- {
 		to := new(TxOutput)
 		err = to.readFrom(r, tx.Version)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "reading output %d", len(tx.Outputs))
 		}
 		tx.Outputs = append(tx.Outputs, to)
 	}
 
 	tx.ReferenceData, _, err = blockchain.ReadVarstr31(r)
-	return err
+	return errors.Wrap(err, "reading transaction reference data")
 }
 
 func (p *Outpoint) readFrom(r io.Reader) (int, error) {

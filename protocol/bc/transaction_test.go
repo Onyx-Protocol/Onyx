@@ -263,7 +263,7 @@ func TestInvalidIssuance(t *testing.T) {
 		"0869737375616e6365")
 	tx := new(TxData)
 	err := tx.UnmarshalText([]byte(hex))
-	if err != errBadAssetID {
+	if errors.Root(err) != errBadAssetID {
 		t.Errorf("want errBadAssetID, got %v", err)
 	}
 }

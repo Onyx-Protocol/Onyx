@@ -83,13 +83,13 @@ func (b *Block) readFrom(r io.Reader) error {
 	if serflags&SerBlockTransactions == SerBlockTransactions {
 		n, _, err := blockchain.ReadVarint31(r)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "reading number of transactions")
 		}
 		for ; n > 0; n-- {
 			var data TxData
 			err = data.readFrom(r)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "reading transaction %d", len(b.Transactions))
 			}
 			// TODO(kr): store/reload hashes;
 			// don't compute here if not necessary.
