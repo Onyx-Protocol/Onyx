@@ -16,19 +16,19 @@ type OutputCommitment struct {
 	ControlProgram []byte
 }
 
-func (oc *OutputCommitment) WriteTo(w io.Writer) (int64, error) {
-	n, err := oc.AssetAmount.writeTo(w)
+func (oc *OutputCommitment) WriteTo(w io.Writer) error {
+	err := oc.AssetAmount.writeTo(w)
 	if err != nil {
-		return n, err
+		return errors.Wrap(err, "writing asset amount")
 	}
-	n2, err := blockchain.WriteVarint63(w, oc.VMVersion)
-	n += int64(n2)
+
+	_, err = blockchain.WriteVarint63(w, oc.VMVersion)
 	if err != nil {
-		return n, err
+		return errors.Wrap(err, "writing vm version")
 	}
-	n2, err = blockchain.WriteVarstr31(w, oc.ControlProgram)
-	n += int64(n2)
-	return n, err
+
+	_, err = blockchain.WriteVarstr31(w, oc.ControlProgram)
+	return errors.Wrap(err, "writing control program")
 }
 
 func (oc *OutputCommitment) ReadFrom(r io.Reader) (int64, error) {
