@@ -28,7 +28,7 @@ func (ind *Indexer) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, 
 }
 
 // Assets queries the blockchain for annotated assets matching the query.
-func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interface{}, after string, limit int) ([]map[string]interface{}, string, error) {
+func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interface{}, after string, limit int) ([][]byte, string, error) {
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
@@ -44,7 +44,7 @@ func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []inter
 	}
 	defer rows.Close()
 
-	assets := make([]map[string]interface{}, 0, limit)
+	assets := make([][]byte, 0, limit)
 	for rows.Next() {
 		var (
 			sortID   string
@@ -55,16 +55,8 @@ func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []inter
 			return nil, "", errors.Wrap(err, "scanning annotated asset row")
 		}
 
-		var asset map[string]interface{}
-		if len(rawAsset) > 0 {
-			err = json.Unmarshal(rawAsset, &asset)
-			if err != nil {
-				return nil, "", err
-			}
-		}
-
 		after = sortID
-		assets = append(assets, asset)
+		assets = append(assets, rawAsset)
 	}
 	err = rows.Err()
 	if err != nil {
