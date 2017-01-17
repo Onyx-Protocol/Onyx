@@ -335,8 +335,8 @@ func TestTxSighashCommitment(t *testing.T) {
 	tx.Outputs[0].Amount = 4
 	tx = bc.NewTx(tx.TxData) // recompute the tx hash
 	err = checkTxSighashCommitment(tx)
-	if err != ErrNoTxSighashCommitment {
-		t.Errorf("no spend inputs committing to txsighash: got error %s, want ErrNoTxSighashCommitment", err)
+	if err != ErrNoTxSighashAttempt {
+		t.Errorf("no spend inputs committing to txsighash: got error %s, want ErrNoTxSighashAttempt", err)
 	}
 
 	// Tx with a spend input committing to the wrong txsighash is not OK
