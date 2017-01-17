@@ -56,14 +56,14 @@ class TransactionBuilder {
    * controlWithAccount - description
    *
    * @param  {type} params description
-   * @option params [String] :asset_id Asset ID specifiying the asset to be controlled.
-   #                                   You must specify either an ID or an alias.
-   * @param {String} params.asset_alias - Asset alias specifying the asset to be controlled.
-   #                                   You must specify either an ID or an alias.
-   * @param {String} params.account_id - Account ID specifiying the account controlling the asset.
-   #                                   You must specify either an ID or an alias.
-   * @param {String} params.account_alias - Account alias specifying the account controlling the asset.
-   #                                   You must specify either an ID or an alias.
+   * @option params [String] :assetId Asset ID specifiying the asset to be controlled.
+   *                                   You must specify either an ID or an alias.
+   * @param {String} params.assetAlias - Asset alias specifying the asset to be controlled.
+   *                                   You must specify either an ID or an alias.
+   * @param {String} params.accountId - Account ID specifiying the account controlling the asset.
+   *                                   You must specify either an ID or an alias.
+   * @param {String} params.accountAlias - Account alias specifying the account controlling the asset.
+   *                                   You must specify either an ID or an alias.
    * @param {Number} params.amount - Amount of the asset to be controlled.
    */
   controlWithAccount(params) {
@@ -74,11 +74,11 @@ class TransactionBuilder {
    * controlWithProgram - description
    *
    * @param  {type} params description
-   * @param {String} params.asset_id - Asset ID specifiying the asset to be controlled.
-   #                                   You must specify either an ID or an alias.
-   * @param {String} params.asset_alias - Asset alias specifying the asset to be controlled.
-   #                                   You must specify either an ID or an alias.
-   * @param {String} params.control_program - The control program to be used
+   * @param {String} params.assetId - Asset ID specifiying the asset to be controlled.
+   *                                   You must specify either an ID or an alias.
+   * @param {String} params.assetAlias - Asset alias specifying the asset to be controlled.
+   *                                   You must specify either an ID or an alias.
+   * @param {String} params.controlProgram - The control program to be used
    * @param {Number} params.amount - Amount of the asset to be controlled.
    */
   controlWithProgram(params) {
@@ -89,14 +89,14 @@ class TransactionBuilder {
    * spendFromAccount - description
    *
    * @param  {type} params description
-   * @param {String} params.asset_id - Asset ID specifiying the asset to be spent.
-   #                                   You must specify either an ID or an alias.
-   * @param {String} params.asset_alias - Asset alias specifying the asset to be spent.
-   #                                   You must specify either an ID or an alias.
-   * @param {String} params.account_id - Account ID specifiying the account spending the asset.
-   #                                   You must specify either an ID or an alias.
-   * @param {String} params.account_alias - Account alias specifying the account spending the asset.
-   #                                   You must specify either an ID or an alias.
+   * @param {String} params.assetId - Asset ID specifiying the asset to be spent.
+   *                                   You must specify either an ID or an alias.
+   * @param {String} params.assetAlias - Asset alias specifying the asset to be spent.
+   *                                   You must specify either an ID or an alias.
+   * @param {String} params.accountId - Account ID specifiying the account spending the asset.
+   *                                   You must specify either an ID or an alias.
+   * @param {String} params.accountAlias - Account alias specifying the account spending the asset.
+   *                                   You must specify either an ID or an alias.
    * @param {Number} params.amount - Amount of the asset to be spent.
    */
   spendFromAccount(params) {
@@ -107,7 +107,7 @@ class TransactionBuilder {
    * spendUnspentOutput - description
    *
    * @param  {type} params description
-   * @param {String} params.transaction_id - Transaction ID specifying the tranasction to select an output from.
+   * @param {String} params.transactionId - Transaction ID specifying the tranasction to select an output from.
    * @param {Number} params.position - Position of the output within the transaction to be spent.
    */
   spendUnspentOutput(params) {
@@ -118,14 +118,14 @@ class TransactionBuilder {
    * retire - description
    *
    * @param  {type} params description
-   * @param {String} params.asset_id - Asset ID specifiying the asset to be retired.
-   #                                   You must specify either an ID or an alias.
-   * @param {String} params.asset_alias - Asset alias specifying the asset to be retired.
-   #                                   You must specify either an ID or an alias.
+   * @param {String} params.assetId - Asset ID specifiying the asset to be retired.
+   *                                   You must specify either an ID or an alias.
+   * @param {String} params.assetAlias - Asset alias specifying the asset to be retired.
+   *                                   You must specify either an ID or an alias.
    * @param {Number} params.amount - Amount of the asset to be retired.
    */
   retire(params) {
-    this.actions.push(Object.assign({}, params, {type: 'control_program', control_program: '6a'}))
+    this.actions.push(Object.assign({}, params, {type: 'control_program', controlProgram: '6a'}))
   }
 }
 
