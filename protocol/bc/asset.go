@@ -39,7 +39,6 @@ type AssetAmount struct {
 	Amount  uint64  `json:"amount"`
 }
 
-// assumes r has sticky errors
 func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
 	n1, err := io.ReadFull(r, a.AssetID[:])
 	if err != nil {
