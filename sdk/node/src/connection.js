@@ -25,7 +25,7 @@ const snakeize = (object) => {
       delete object[key]
     }
 
-    if (typeof value == 'object' && !blacklistAttributes.includes(key)) {
+    if (typeof value == 'object' && !blacklistAttributes.includes(newKey)) {
       value = snakeize(value)
     }
 
