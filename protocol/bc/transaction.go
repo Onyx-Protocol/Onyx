@@ -319,31 +319,6 @@ func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
 	return int64(n + n2), err
 }
 
-type AssetAmount struct {
-	AssetID AssetID `json:"asset_id"`
-	Amount  uint64  `json:"amount"`
-}
-
-// assumes r has sticky errors
-func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
-	n1, err := io.ReadFull(r, a.AssetID[:])
-	if err != nil {
-		return n1, err
-	}
-	var n2 int
-	a.Amount, n2, err = blockchain.ReadVarint63(r)
-	return n1 + n2, err
-}
-
-func (a *AssetAmount) writeTo(w io.Writer) error {
-	_, err := w.Write(a.AssetID[:])
-	if err != nil {
-		return err
-	}
-	_, err = blockchain.WriteVarint63(w, a.Amount)
-	return err
-}
-
 // assumes w has sticky errors
 func writeRefData(w io.Writer, data []byte, serflags byte) {
 	if serflags&SerMetadata != 0 {

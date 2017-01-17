@@ -2,6 +2,7 @@ package bc
 
 import (
 	"database/sql/driver"
+	"io"
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
@@ -31,4 +32,29 @@ func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint
 	h.Write(assetDefinitionHash[:])
 	h.Read(assetID[:])
 	return assetID
+}
+
+type AssetAmount struct {
+	AssetID AssetID `json:"asset_id"`
+	Amount  uint64  `json:"amount"`
+}
+
+// assumes r has sticky errors
+func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
+	n1, err := io.ReadFull(r, a.AssetID[:])
+	if err != nil {
+		return n1, err
+	}
+	var n2 int
+	a.Amount, n2, err = blockchain.ReadVarint63(r)
+	return n1 + n2, err
+}
+
+func (a *AssetAmount) writeTo(w io.Writer) error {
+	_, err := w.Write(a.AssetID[:])
+	if err != nil {
+		return err
+	}
+	_, err = blockchain.WriteVarint63(w, a.Amount)
+	return err
 }
