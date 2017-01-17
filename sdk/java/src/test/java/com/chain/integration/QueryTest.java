@@ -286,7 +286,7 @@ public class QueryTest {
     UnspentOutput.Items items =
         new UnspentOutput.QueryBuilder()
             .setFilter("reference_data.test=$1")
-            .setFilterParameters(Arrays.asList((Object)test))
+            .setFilterParameters(Arrays.asList((Object) test))
             .setTimestamp(System.currentTimeMillis() - 100000000000L)
             .execute(client);
     assertEquals(0, items.list.size());
@@ -294,7 +294,7 @@ public class QueryTest {
     items =
         new UnspentOutput.QueryBuilder()
             .setFilter("reference_data.test=$1")
-            .setFilterParameters(Arrays.asList((Object)test))
+            .setFilterParameters(Arrays.asList((Object) test))
             .execute(client);
     UnspentOutput unspent = items.next();
     assertNotNull(unspent.type);
