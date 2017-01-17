@@ -74,17 +74,16 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 		}
 		// Note: These numbers will need to change if more arguments are added to the program
 		switch {
+		// A conforming arguments list contains
+		// [... arg1 arg2 ... argN N sig1 sig2 ... sigM prog]
+		// The args are the opaque arguments to prog. In the case where
+		// N is 0 (prog takes no args), and assuming there must be at
+		// least one signature, args has a minimum length of 3.
 		case len(args) == 0:
-			return ErrNoTxSighashAttempt
-		case len(args) < 2:
-			return ErrTxSignatureFailure
-		case len(args) < 3:
-			// A conforming arguments list contains
-			// [... arg1 arg2 ... argN N sig1 sig2 ... sigM prog]
-			// The args are the opaque arguments to prog. In the case where
-			// N is 0 (prog takes no args), and assuming there must be at
-			// least one signature, args has a minimum length of 3.
+			// no program to check
 			continue
+		case len(args) < 3:
+			return ErrTxSignatureFailure
 		}
 		prog := args[len(args)-1]
 		if len(prog) != 35 {
