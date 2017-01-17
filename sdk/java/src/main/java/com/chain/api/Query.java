@@ -18,7 +18,7 @@ public class Query {
    * Parameters used in the query's filter.
    */
   @SerializedName("filter_params")
-  public List<String> filterParams;
+  public List<Object> filterParams;
 
   /**
    * Specifies if this query is being used within a transaction feed.<br>
