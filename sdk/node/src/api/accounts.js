@@ -1,4 +1,4 @@
-const shared = require('./shared')
+const shared = require('../shared')
 
 /**
  * An account is an object in Chain Core that tracks ownership of assets on a

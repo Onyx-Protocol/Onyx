@@ -1,11 +1,11 @@
-const shared = require('./shared')
+const shared = require('../shared')
 
 /**
  * There are two APIs in Chain Core: the client API and the network API. Each
  * API is authenticated using access tokens with HTTP Basic Authentication.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
- * @module accessTokensAPI 
+ * @module accessTokensAPI
  */
 const accessTokens = (client) => {
   return {

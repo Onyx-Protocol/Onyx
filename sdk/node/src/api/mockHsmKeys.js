@@ -1,5 +1,5 @@
 const uuid = require('uuid')
-const shared = require('./shared')
+const shared = require('../shared')
 
 /**
  * Cryptographic private keys are the primary authorization mechanism on a

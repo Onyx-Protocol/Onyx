@@ -1,4 +1,4 @@
-const shared = require('./shared')
+const shared = require('../shared')
 
 /**
  * Chain Core can be configured as a new blockchain network, or as a node in an

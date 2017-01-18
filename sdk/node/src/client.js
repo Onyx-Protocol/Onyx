@@ -1,13 +1,13 @@
 const Connection = require('./connection')
-const accessTokensAPI = require('./accessTokens')
-const accountsAPI = require('./accounts')
-const assetsAPI = require('./assets')
-const balancesAPI = require('./balances')
-const configAPI = require('./config')
-const mockHsmKeysAPI = require('./mockHsmKeys')
-const transactionsAPI = require('./transactions')
-const transactionFeedsAPI = require('./transactionFeeds')
-const unspentOutputsAPI = require('./unspentOutputs')
+const accessTokensAPI = require('./api/accessTokens')
+const accountsAPI = require('./api/accounts')
+const assetsAPI = require('./api/assets')
+const balancesAPI = require('./api/balances')
+const configAPI = require('./api/config')
+const mockHsmKeysAPI = require('./api/mockHsmKeys')
+const transactionsAPI = require('./api/transactions')
+const transactionFeedsAPI = require('./api/transactionFeeds')
+const unspentOutputsAPI = require('./api/unspentOutputs')
 
 /**
  * The Chain API Client object is the root object for all API interactions.

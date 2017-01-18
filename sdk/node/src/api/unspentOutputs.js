@@ -1,4 +1,4 @@
-const shared = require('./shared')
+const shared = require('../shared')
 
 /**
  * Each new transaction in the blockchain consumes some unspent outputs and

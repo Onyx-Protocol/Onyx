@@ -1,4 +1,4 @@
-const shared = require('./shared')
+const shared = require('../shared')
 
 /**
  * An asset is a type of value that can be issued on a blockchain. All units of

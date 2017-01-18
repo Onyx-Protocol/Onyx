@@ -1,4 +1,4 @@
-const shared = require('./shared')
+const shared = require('../shared')
 
 const uuid = require('uuid')
 const MAX_BLOCK_HEIGHT = (2 * 63) - 1

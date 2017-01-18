@@ -1,4 +1,4 @@
-const shared = require('./shared')
+const shared = require('../shared')
 
 /**
  * Any balance on the blockchain is simply a summation of unspent outputs.

@@ -1,5 +1,5 @@
-const shared = require('./shared')
-const errors = require('./errors')
+const shared = require('../shared')
+const errors = require('../errors')
 
 // TODO: replace with default handler in requestSingle/requestBatch variants
 function checkForError(resp) {
