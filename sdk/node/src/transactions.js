@@ -39,9 +39,9 @@ class TransactionBuilder {
   }
 
   /**
-   * Add an issuance action.
+   * Add an action that issues assets.
    *
-   * @param {Object} params - Issuance parameters.
+   * @param {Object} params - Action parameters.
    * @param {String} params.asset_id - Asset ID specifiying the asset to be issued.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.asset_alias - Asset alias specifying the asset to be issued.
@@ -53,9 +53,9 @@ class TransactionBuilder {
   }
 
   /**
-   * controlWithAccount - description
+   * Add an action that controls assets with an account specified by identifier.
    *
-   * @param  {type} params description
+   * @param {Object} params - Action parameters.
    * @option params [String] :assetId Asset ID specifiying the asset to be controlled.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.assetAlias - Asset alias specifying the asset to be controlled.
@@ -71,9 +71,9 @@ class TransactionBuilder {
   }
 
   /**
-   * controlWithProgram - description
+   * Add an action that controls assets with a control program.
    *
-   * @param  {type} params description
+   * @param {Object} params - Action parameters.
    * @param {String} params.assetId - Asset ID specifiying the asset to be controlled.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.assetAlias - Asset alias specifying the asset to be controlled.
@@ -86,9 +86,9 @@ class TransactionBuilder {
   }
 
   /**
-   * spendFromAccount - description
+   * Add an action that spends assets from an account specified by identifier.
    *
-   * @param  {type} params description
+   * @param {Object} params - Action parameters.
    * @param {String} params.assetId - Asset ID specifiying the asset to be spent.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.assetAlias - Asset alias specifying the asset to be spent.
@@ -104,20 +104,22 @@ class TransactionBuilder {
   }
 
   /**
-   * spendUnspentOutput - description
+   * Add an action that spends an unspent output.
    *
-   * @param  {type} params description
-   * @param {String} params.transactionId - Transaction ID specifying the tranasction to select an output from.
-   * @param {Number} params.position - Position of the output within the transaction to be spent.
+   * @param {Object} params - Action parameters.
+   * @param {String} params.transactionId - Transaction ID specifying the
+   *                                        tranasction to select an output from.
+   * @param {Number} params.position - Position of the output within the
+   *                                   transaction to be spent.
    */
   spendUnspentOutput(params) {
     this.actions.push(Object.assign({}, params, {type: 'spend_account_unspent_output'}))
   }
 
   /**
-   * retire - description
+   * Add an action that retires units of an assets.
    *
-   * @param  {type} params description
+   * @param {Object} params - Action parameters.
    * @param {String} params.assetId - Asset ID specifiying the asset to be retired.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.assetAlias - Asset alias specifying the asset to be retired.
@@ -126,6 +128,20 @@ class TransactionBuilder {
    */
   retire(params) {
     this.actions.push(Object.assign({}, params, {type: 'control_program', controlProgram: '6a'}))
+  }
+
+  /**
+   * transactionReferenceData - Sets the transaction-level reference data. May
+   *                            only be used once per transaction.
+   *
+   * @param {Object} referenceData - User specified, unstructured data to
+   *                                  be embedded in a transaction
+   */
+  transactionReferenceData(referenceData) {
+    this.actions.push({
+      type: 'set_transaction_reference_data',
+      referenceData
+    })
   }
 }
 
