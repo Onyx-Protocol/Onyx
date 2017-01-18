@@ -75,12 +75,10 @@ type Asset struct {
 }
 
 func (asset *Asset) Definition() (map[string]interface{}, error) {
-	if asset.definition == nil {
-		if len(asset.rawDefinition) > 0 {
-			err := json.Unmarshal(asset.rawDefinition, &asset.definition)
-			if err != nil {
-				return nil, errors.Wrap(err)
-			}
+	if asset.definition == nil && len(asset.rawDefinition) > 0 {
+		err := json.Unmarshal(asset.rawDefinition, &asset.definition)
+		if err != nil {
+			return nil, errors.Wrap(err)
 		}
 	}
 	return asset.definition, nil
