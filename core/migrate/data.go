@@ -104,7 +104,7 @@ var migrations = []migration{
 			ALTER COLUMN definition SET NOT NULL;
 		ALTER TABLE assets ADD COLUMN vm_version bigint NOT NULL;
 	`},
-	{Name: "2017-01-10.0.core.add-output-id-to-outputs.sql", SQL: `
+	{Name: "2017-01-18.0.core.add-output-id-to-outputs.sql", SQL: `
 		ALTER TABLE annotated_outputs ADD COLUMN output_id bytea NOT NULL;
 		ALTER TABLE ONLY annotated_outputs ADD CONSTRAINT annotated_outputs_unique_output_id UNIQUE (output_id);
 		ALTER TABLE account_utxos ADD COLUMN output_id bytea NOT NULL;

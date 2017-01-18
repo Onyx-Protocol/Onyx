@@ -196,7 +196,8 @@ CREATE TABLE account_utxos (
     control_program_index bigint NOT NULL,
     control_program bytea NOT NULL,
     confirmed_in bigint NOT NULL,
-    unspent_id text NOT NULL
+    output_id bytea NOT NULL,
+    unspent_id bytea NOT NULL
 );
 
 
@@ -243,7 +244,7 @@ CREATE TABLE annotated_outputs (
     tx_hash bytea NOT NULL,
     data jsonb NOT NULL,
     timespan int8range NOT NULL,
-    output_id text NOT NULL
+    output_id bytea NOT NULL
 );
 
 
@@ -563,6 +564,14 @@ ALTER TABLE ONLY accounts
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_pkey PRIMARY KEY (tx_hash, index);
+
+
+--
+-- Name: account_utxos account_utxos_unique_output_id; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY account_utxos
+    ADD CONSTRAINT account_utxos_unique_output_id UNIQUE (output_id);
 
 
 --
@@ -900,4 +909,4 @@ insert into migrations (filename, hash) values ('2017-01-05.0.core.rename_block_
 insert into migrations (filename, hash) values ('2017-01-10.0.signers.xpubs-type.sql', '4a4d6c736a2bf65e69abbdc87771faa1dc17a0106b2651a6a58af067708d095a');
 insert into migrations (filename, hash) values ('2017-01-11.0.core.hash-bytea.sql', '9f7f15df3479c38f193884a2d3cb7ae8001ed08607f9cc661fd5c420e248688d');
 insert into migrations (filename, hash) values ('2017-01-13.0.core.asset-definition-bytea.sql', 'f49458c5c8873d919ec35be4683074be0b04913c95f5ab1bf1402aa2b4847cf5');
-insert into migrations (filename, hash) values ('2017-01-10.0.core.add-output-id-to-outputs.sql', 'e2374d8e2bf71cf71a24a49b0715968daf392b4f8bbd09eb3c2b47d006cfe8f1');
+insert into migrations (filename, hash) values ('2017-01-18.0.core.add-output-id-to-outputs.sql', '6cb5349e69c2bf2a4fff5f60d01ebe7a855a5363fa25edd7e3e0bfb7cdeb0890');
