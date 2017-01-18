@@ -31,7 +31,7 @@ func (reg *Registry) DecodeIssueAction(data []byte) (txbuilder.Action, error) {
 type issueAction struct {
 	assets *Registry
 	bc.AssetAmount
-	ReferenceData chainjson.Map `json:"reference_data"`
+	ReferenceData []byte `json:"reference_data"`
 }
 
 func (a *issueAction) Build(ctx context.Context, builder *txbuilder.TemplateBuilder) error {
