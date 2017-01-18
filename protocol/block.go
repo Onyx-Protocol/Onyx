@@ -86,7 +86,10 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}
-	b.TransactionsMerkleRoot = validation.CalcMerkleRoot(b.Transactions)
+	b.TransactionsMerkleRoot, err = validation.CalcMerkleRoot(b.Transactions)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "calculating tx merkle root")
+	}
 	b.AssetsMerkleRoot = result.Tree.RootHash()
 	return b, result, nil
 }
@@ -210,13 +213,19 @@ func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 	if err != nil {
 		return nil, err
 	}
+
+	root, err := validation.CalcMerkleRoot([]*bc.Tx{}) // calculate the zero value of the tx merkle root
+	if err != nil {
+		return nil, errors.Wrap(err, "calculating zero value of tx merkle root")
+	}
+
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version:                bc.NewBlockVersion,
 			Height:                 1,
 			TimestampMS:            bc.Millis(timestamp),
 			ConsensusProgram:       script,
-			TransactionsMerkleRoot: validation.CalcMerkleRoot([]*bc.Tx{}), // calculate the zero value of the tx merkle root
+			TransactionsMerkleRoot: root,
 		},
 	}
 	return b, nil

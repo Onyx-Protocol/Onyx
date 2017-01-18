@@ -14,26 +14,36 @@ var (
 
 // CalcMerkleRoot creates a merkle tree from a slice of transactions
 // and returns the root hash of the tree.
-func CalcMerkleRoot(transactions []*bc.Tx) (root bc.Hash) {
+func CalcMerkleRoot(transactions []*bc.Tx) (root bc.Hash, err error) {
 	switch {
 	case len(transactions) == 0:
 		sha3pool.Sum256(root[:], nil)
-		return root
+		return root, nil
 
 	case len(transactions) == 1:
 		h := sha3pool.Get256()
 		defer sha3pool.Put256(h)
 
-		witHash := transactions[0].WitnessHash()
+		witHash, err := transactions[0].WitnessHash()
+		if err != nil {
+			return root, err
+		}
 		h.Write(leafPrefix)
 		h.Write(witHash[:])
 		h.Read(root[:])
-		return root
+		return root, nil
 
 	default:
 		k := prevPowerOfTwo(len(transactions))
-		left := CalcMerkleRoot(transactions[:k])
-		right := CalcMerkleRoot(transactions[k:])
+		left, err := CalcMerkleRoot(transactions[:k])
+		if err != nil {
+			return root, err
+		}
+
+		right, err := CalcMerkleRoot(transactions[k:])
+		if err != nil {
+			return root, err
+		}
 
 		h := sha3pool.Get256()
 		defer sha3pool.Put256(h)
@@ -41,7 +51,7 @@ func CalcMerkleRoot(transactions []*bc.Tx) (root bc.Hash) {
 		h.Write(left[:])
 		h.Write(right[:])
 		h.Read(root[:])
-		return root
+		return root, nil
 	}
 }
 
