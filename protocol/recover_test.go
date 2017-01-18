@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"context"
+	"log"
 	"testing"
 	"time"
 
@@ -55,6 +56,11 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 }
 
 func createEmptyBlock(block *bc.Block, snapshot *state.Snapshot) *bc.Block {
+	root, err := validation.CalcMerkleRoot(nil)
+	if err != nil {
+		log.Fatalf("calculating empty merkle root: %s", err)
+	}
+
 	return &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version:                bc.NewBlockVersion,
@@ -62,7 +68,7 @@ func createEmptyBlock(block *bc.Block, snapshot *state.Snapshot) *bc.Block {
 			PreviousBlockHash:      block.Hash(),
 			TimestampMS:            bc.Millis(time.Now()),
 			ConsensusProgram:       block.ConsensusProgram,
-			TransactionsMerkleRoot: validation.CalcMerkleRoot(nil),
+			TransactionsMerkleRoot: root,
 			AssetsMerkleRoot:       snapshot.Tree.RootHash(),
 		},
 	}

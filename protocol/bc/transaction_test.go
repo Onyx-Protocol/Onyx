@@ -163,7 +163,12 @@ func TestTransaction(t *testing.T) {
 		if test.tx.Hash != test.hash {
 			t.Errorf("test %d: hash = %s want %x", i, test.tx.Hash, test.hash)
 		}
-		if g := test.tx.WitnessHash(); g != test.witnessHash {
+
+		g, err := test.tx.WitnessHash()
+		if err != nil {
+			t.Fatalf("unexpected error %s", err)
+		}
+		if g != test.witnessHash {
 			t.Errorf("test %d: witness hash = %s want %x", i, g, test.witnessHash)
 		}
 

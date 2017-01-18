@@ -62,7 +62,10 @@ func TestCalcMerkleRoot(t *testing.T) {
 				},
 			}))
 		}
-		got := CalcMerkleRoot(txs)
+		got, err := CalcMerkleRoot(txs)
+		if err != nil {
+			t.Fatalf("unexpected error %s", err)
+		}
 		if !bytes.Equal(got[:], c.want[:]) {
 			t.Log("witnesses", c.witnesses)
 			t.Errorf("got merkle root = %s want %s", got, c.want)
@@ -86,11 +89,17 @@ func TestDuplicateLeaves(t *testing.T) {
 
 	// first, get the root of an unbalanced tree
 	txns := []*bc.Tx{txs[5], txs[4], txs[3], txs[2], txs[1], txs[0]}
-	root1 := CalcMerkleRoot(txns)
+	root1, err := CalcMerkleRoot(txns)
+	if err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
 
 	// now, get the root of a balanced tree that repeats leaves 0 and 1
 	txns = []*bc.Tx{txs[5], txs[4], txs[3], txs[2], txs[1], txs[0], txs[1], txs[0]}
-	root2 := CalcMerkleRoot(txns)
+	root2, err := CalcMerkleRoot(txns)
+	if err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
 
 	if root1 == root2 {
 		t.Error("forged merkle tree by duplicating some leaves")
@@ -113,11 +122,17 @@ func TestAllDuplicateLeaves(t *testing.T) {
 
 	// first, get the root of an unbalanced tree
 	txs := []*bc.Tx{tx6, tx5, tx4, tx3, tx2, tx1}
-	root1 := CalcMerkleRoot(txs)
+	root1, err := CalcMerkleRoot(txs)
+	if err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
 
 	// now, get the root of a balanced tree that repeats leaves 5 and 6
 	txs = []*bc.Tx{tx6, tx5, tx6, tx5, tx4, tx3, tx2, tx1}
-	root2 := CalcMerkleRoot(txs)
+	root2, err := CalcMerkleRoot(txs)
+	if err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
 
 	if root1 == root2 {
 		t.Error("forged merkle tree with all duplicate leaves")

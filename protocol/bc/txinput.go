@@ -348,13 +348,15 @@ func (t *TxInput) writeInputWitness(w io.Writer) error {
 	return nil
 }
 
-func (t *TxInput) witnessHash() Hash {
-	var h Hash
+func (t *TxInput) witnessHash() (h Hash, err error) {
 	sha := sha3pool.Get256()
 	defer sha3pool.Put256(sha)
-	t.writeInputWitness(sha)
+	err = t.writeInputWitness(sha)
+	if err != nil {
+		return h, err
+	}
 	sha.Read(h[:])
-	return h
+	return h, nil
 }
 
 func (t *TxInput) Outpoint() (o Outpoint) {
