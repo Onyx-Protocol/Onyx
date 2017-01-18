@@ -123,7 +123,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 			case 1:
 				si = new(SpendInput)
 
-				_, err = si.Outpoint.readFrom(r)
+				_, err = si.OutputID.readFrom(r)
 				if err != nil {
 					return err
 				}
@@ -233,7 +233,7 @@ func (t *TxInput) WriteInputCommitment(w io.Writer) error {
 			if err != nil {
 				return err
 			}
-			_, err = inp.Outpoint.WriteTo(w)
+			_, err = inp.OutputID.WriteTo(w)
 			if err != nil {
 				return err
 			}
@@ -286,9 +286,9 @@ func (t *TxInput) witnessHash() (h Hash, err error) {
 	return h, nil
 }
 
-func (t *TxInput) Outpoint() (o Outpoint) {
+func (t *TxInput) OutputID() (o OutputID) {
 	if si, ok := t.TypedInput.(*SpendInput); ok {
-		o = si.Outpoint
+		o = si.OutputID
 	}
 	return o
 }

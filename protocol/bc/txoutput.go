@@ -69,3 +69,4 @@ func (to *TxOutput) witnessHash() Hash {
 func (to *TxOutput) WriteCommitment(w io.Writer) {
 	to.OutputCommitment.writeTo(w, to.AssetVersion)
 }
+

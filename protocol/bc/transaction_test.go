@@ -119,10 +119,9 @@ func TestTransaction(t *testing.T) {
 				"00" + // common witness extensible string length
 				"01" + // inputs count
 				"01" + // input 0, asset version
-				"4c" + // input 0, input commitment length prefix
+				"4b" + // input 0, input commitment length prefix
 				"01" + // input 0, input commitment, "spend" type
-				"dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292" + // input 0, spend input commitment, outpoint tx hash
-				"00" + // input 0, spend input commitment, outpoint index
+				"dc2436bfb86c3f4dfed2034f4b31e16590867a4fb4a05d69da0c45590c305bf8" + // input 0, spend input commitment, output ID
 				"29" + // input 0, spend input commitment, output commitment length prefix
 				"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, spend input commitment, output commitment, asset id
 				"80a094a58d1d" + // input 0, spend input commitment, output commitment, amount
@@ -149,8 +148,8 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 1, reference data
 				"00" + // output 1, output witness
 				"0c646973747269627574696f6e"), // reference data
-			hash:        mustDecodeHash("7af758d0d27a7885cb65243164e2f8084b06aa1a647792cae028926b19324604"),
-			witnessHash: mustDecodeHash("335498668b169b5faea9a87410bc35626654941599815be655d532acf9925286"),
+			hash:        mustDecodeHash("aef4dfeb91ac7d2056a7eddcc7e790c907ff6849e489f65481b7e8f6f19c1858"),
+			witnessHash: mustDecodeHash("b1c4f8d83573c3f5d90da1893f889681676a5f42cf4a2341880880e1cc77dfab"),
 		},
 	}
 
@@ -320,8 +319,8 @@ func TestTxHashForSig(t *testing.T) {
 		idx      uint32
 		wantHash string
 	}{
-		{0, "94b72d62d47a8ba581246c0c721b18b36282cf81f2cdb92a3b1ab4fef4640654"},
-		{1, "6bcbf29804ebb70ae9887c4fc343bc06ee69f04befa1dc77ddf2f4a43eff0862"},
+		{0, "ef7d72fb512f8e0554c19e7747b983b149d84a774ae5c766aad4333e208c3064"},
+		{1, "3e7908da7a10136e7e080fc418819730702cca4124963d9e91d75972d69da7da"},
 	}
 
 	sigHasher := NewSigHasher(tx)
