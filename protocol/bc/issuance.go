@@ -13,11 +13,7 @@ type IssuanceInput struct {
 	// might not be present).
 
 	// Witness
-	InitialBlock    Hash
-	AssetDefinition []byte
-	VMVersion       uint64
-	IssuanceProgram []byte
-	Arguments       [][]byte
+	IssuanceWitness
 }
 
 func (ii *IssuanceInput) IsIssuance() bool { return true }
@@ -47,13 +43,15 @@ func NewIssuanceInput(
 		AssetVersion:  1,
 		ReferenceData: referenceData,
 		TypedInput: &IssuanceInput{
-			Nonce:           nonce,
-			Amount:          amount,
-			InitialBlock:    initialBlock,
-			AssetDefinition: assetDefinition,
-			VMVersion:       1,
-			IssuanceProgram: issuanceProgram,
-			Arguments:       arguments,
+			Nonce:  nonce,
+			Amount: amount,
+			IssuanceWitness: IssuanceWitness{
+				InitialBlock:    initialBlock,
+				AssetDefinition: assetDefinition,
+				VMVersion:       1,
+				IssuanceProgram: issuanceProgram,
+				Arguments:       arguments,
+			},
 		},
 	}
 }

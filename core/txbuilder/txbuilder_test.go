@@ -274,21 +274,25 @@ func TestTxSighashCommitment(t *testing.T) {
 			{
 				AssetVersion: 1,
 				TypedInput: &bc.IssuanceInput{
-					Nonce:           []byte{1},
-					Amount:          1,
-					InitialBlock:    initialBlockHash,
-					VMVersion:       1,
-					IssuanceProgram: issuanceProg,
+					Nonce:  []byte{1},
+					Amount: 1,
+					IssuanceWitness: bc.IssuanceWitness{
+						InitialBlock:    initialBlockHash,
+						VMVersion:       1,
+						IssuanceProgram: issuanceProg,
+					},
 				},
 			},
 			{
 				AssetVersion: 1,
 				TypedInput: &bc.IssuanceInput{
-					Nonce:           []byte{2},
-					Amount:          1,
-					InitialBlock:    initialBlockHash,
-					VMVersion:       1,
-					IssuanceProgram: issuanceProg,
+					Nonce:  []byte{2},
+					Amount: 1,
+					IssuanceWitness: bc.IssuanceWitness{
+						InitialBlock:    initialBlockHash,
+						VMVersion:       1,
+						IssuanceProgram: issuanceProg,
+					},
 				},
 			},
 		},
