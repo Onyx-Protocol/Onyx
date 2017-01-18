@@ -15,4 +15,4 @@ cd $CHAIN/sdk/java && mvn package && rm -rf $CHAIN/sdk/java/target
     chain/cmd/testbot\
     chain/cmd/benchcore\
 
-exec $GOPATH/bin/testbot
+exec $(go env GOPATH)/bin/testbot
