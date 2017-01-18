@@ -96,4 +96,12 @@ var migrations = []migration{
 		ALTER TABLE assets ALTER COLUMN initial_block_hash SET DATA TYPE bytea USING decode(initial_block_hash, 'hex');
 		ALTER TABLE config ALTER COLUMN blockchain_id SET DATA TYPE bytea USING decode(blockchain_id, 'hex');
 	`},
+	{Name: "2017-01-13.0.core.asset-definition-bytea.sql", SQL: `
+		ALTER TABLE assets 
+			ALTER COLUMN definition SET DATA TYPE text;
+		ALTER TABLE assets 
+			ALTER COLUMN definition SET DATA TYPE bytea USING COALESCE(definition::text::bytea, ''),
+			ALTER COLUMN definition SET NOT NULL;
+		ALTER TABLE assets ADD COLUMN vm_version bigint NOT NULL;
+	`},
 }

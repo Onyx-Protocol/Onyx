@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
@@ -43,18 +45,18 @@ func TestDefineAssetIdempotency(t *testing.T) {
 	ctx := context.Background()
 	token := "test_token"
 	keys := []chainkd.XPub{testutil.TestXPub}
-	asset0, err := r.Define(ctx, keys, 1, nil, "", nil, token)
+	asset0, err := r.Define(ctx, keys, 1, nil, "alias", nil, token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	asset1, err := r.Define(ctx, keys, 1, nil, "", nil, token)
+	asset1, err := r.Define(ctx, keys, 1, nil, "alias", nil, token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
 	// asset0 and asset1 should be exactly the same because they use the same client token
 	if !reflect.DeepEqual(asset0, asset1) {
-		t.Errorf("expected %v and %v to match", asset0, asset1)
+		t.Errorf("expected assets to match:\n\n%+v\n\n-----------\n\n%+v", spew.Sdump(asset0), spew.Sdump(asset1))
 	}
 }
 

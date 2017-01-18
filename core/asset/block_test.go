@@ -13,7 +13,9 @@ import (
 	"chain/testutil"
 )
 
-const def = `{"currency":"USD"}`
+const rawdef = `{
+  "currency": "USD"
+}`
 
 type fakeSaver func(context.Context, bc.AssetID, map[string]interface{}, string) error
 
@@ -30,13 +32,10 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	localdef, err := local.SerializedDefinition()
-	if err != nil {
-		t.Fatal(err)
-	}
+	localdef := local.RawDefinition()
 
 	// Create the issuance program of a remote asset.
-	issuanceProgram, err := multisigIssuanceProgram([]ed25519.PublicKey{testutil.TestPub, testutil.TestPub}, 2)
+	issuanceProgram, remotevmver, err := multisigIssuanceProgram([]ed25519.PublicKey{testutil.TestPub, testutil.TestPub}, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,9 +53,9 @@ func TestIndexNonLocalAssets(t *testing.T) {
 								Amount: 10000,
 								IssuanceWitness: bc.IssuanceWitness{
 									InitialBlock:    r.initialBlockHash,
-									AssetDefinition: []byte(def),
+									AssetDefinition: []byte(rawdef),
 									IssuanceProgram: issuanceProgram,
-									VMVersion:       1,
+									VMVersion:       remotevmver,
 								},
 							},
 						},
@@ -68,7 +67,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 									InitialBlock:    r.initialBlockHash,
 									AssetDefinition: localdef,
 									IssuanceProgram: local.IssuanceProgram,
-									VMVersion:       1,
+									VMVersion:       local.VMVersion,
 								},
 							},
 						},
@@ -86,7 +85,10 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	})
 
 	// Call the block callback and index the remote asset.
-	r.indexAssets(ctx, b)
+	err = r.indexAssets(ctx, b)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Ensure that the annotated asset got saved to the query indexer.
 	if !reflect.DeepEqual(assetsSaved, []bc.AssetID{remoteAssetID}) {
@@ -99,13 +101,17 @@ func TestIndexNonLocalAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &Asset{
-		AssetID: remoteAssetID,
-		Definition: map[string]interface{}{
-			"currency": "USD",
-		},
+		AssetID:          remoteAssetID,
+		VMVersion:        remotevmver,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: r.initialBlockHash,
 		sortID:           got.sortID,
+	}
+	err = want.SetDefinition(map[string]interface{}{
+		"currency": "USD",
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("lookupAsset() = %#v, want %#v", got, want)
