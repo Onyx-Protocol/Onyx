@@ -1,8 +1,6 @@
 package bc
 
 import (
-	"bytes"
-
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 )

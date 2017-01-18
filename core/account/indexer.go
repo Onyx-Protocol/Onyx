@@ -175,8 +175,8 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 		program   pq.ByteaArray
 	)
 	for _, out := range outs {
-		txHash = append(txHash, out.Outpoint.Hash[:])
-		index = append(index, out.Outpoint.Index)
+		txHash = append(txHash, out.txHash[:])
+		index = append(index, out.outputIndex)
 		outputID = append(outputID, out.OutputID[:])
 		assetID = append(assetID, out.AssetID[:])
 		amount = append(amount, int64(out.Amount))
