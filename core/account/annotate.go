@@ -3,59 +3,44 @@ package account
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
 
 	"github.com/lib/pq"
 
+	"chain/core/query"
 	"chain/database/pg"
-	"chain/errors"
-	"chain/log"
 )
 
 // AnnotateTxs adds account data to transactions
-func (m *Manager) AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
-	controlMaps := make(map[string][]map[string]interface{})
-	outputMaps := make(map[string][]map[string]interface{})
+func (m *Manager) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) error {
+	inputs := make(map[string][]*query.AnnotatedInput)
+	outputs := make(map[string][]*query.AnnotatedOutput)
+	controlProgramSet := make(map[string]bool)
 	var controlPrograms [][]byte
 
-	update := func(s interface{}, maps ...map[string][]map[string]interface{}) {
-		asSlice, ok := s.([]interface{})
-		if !ok {
-			log.Error(ctx, errors.Wrap(fmt.Errorf("expected slice, got %T", s)))
-			return
-		}
-		for _, m := range asSlice {
-			asMap, ok := m.(map[string]interface{})
-			if !ok {
-				log.Error(ctx, errors.Wrap(fmt.Errorf("expected map, got %T", m)))
-				continue
-			}
-			if asMap["control_program"] == nil {
-				// Issuance inputs don't have control_programs
-				continue
-			}
-			controlString, ok := asMap["control_program"].(string)
-			if !ok {
-				log.Error(ctx, errors.Wrap(fmt.Errorf("expected string, got %T", asMap["control_program"])))
-				continue
-			}
-			controlProgram, err := hex.DecodeString(controlString)
-			if err != nil {
-				log.Error(ctx, errors.Wrap(err, "could not decode control program"))
-				continue
-			}
-			controlPrograms = append(controlPrograms, controlProgram)
-			for _, m := range maps {
-				m[string(controlProgram)] = append(m[string(controlProgram)], asMap)
-			}
-		}
-	}
-
 	for _, tx := range txs {
-		update(tx["outputs"], controlMaps, outputMaps)
-		update(tx["inputs"], controlMaps)
+		for _, in := range tx.Inputs {
+			if len(in.ControlProgram) == 0 {
+				continue
+			}
+			if controlProgramSet[string(in.ControlProgram)] {
+				continue
+			}
+			controlPrograms = append(controlPrograms, in.ControlProgram)
+			controlProgramSet[string(in.ControlProgram)] = true
+			inputs[string(in.ControlProgram)] = append(inputs[string(in.ControlProgram)], in)
+		}
+		for _, out := range tx.Outputs {
+			if out.Type == "retire" {
+				continue
+			}
+			if controlProgramSet[string(out.ControlProgram)] {
+				continue
+			}
+			controlPrograms = append(controlPrograms, out.ControlProgram)
+			controlProgramSet[string(out.ControlProgram)] = true
+			outputs[string(out.ControlProgram)] = append(outputs[string(out.ControlProgram)], out)
+		}
 	}
 
 	const q = `
@@ -86,25 +71,38 @@ func (m *Manager) AnnotateTxs(ctx context.Context, txs []map[string]interface{})
 	if err != nil {
 		return err
 	}
+
+	empty := []byte(`{}`)
 	for i := range ids {
-		maps := controlMaps[string(programs[i])]
-		for _, m := range maps {
-			m["account_id"] = ids[i]
-			if tags[i] != nil {
-				m["account_tags"] = tags[i]
-			}
+		inps := inputs[string(programs[i])]
+		for _, inp := range inps {
+			inp.AccountID = ids[i]
 			if aliases[i].Valid {
-				m["account_alias"] = aliases[i].String
+				inp.AccountAlias = aliases[i].String
+			}
+			if tags[i] != nil {
+				inp.AccountTags = *tags[i]
+			} else {
+				inp.AccountTags = empty
 			}
 		}
 
-		// Add output-only annotations.
-		outs := outputMaps[string(programs[i])]
+		outs := outputs[string(programs[i])]
 		for _, out := range outs {
-			if changeFlags[i] {
-				out["purpose"] = "change"
+			out.AccountID = ids[i]
+			if aliases[i].Valid {
+				out.AccountAlias = aliases[i].String
+			}
+			if tags[i] != nil {
+				out.AccountTags = *tags[i]
 			} else {
-				out["purpose"] = "receive"
+				out.AccountTags = empty
+			}
+
+			if changeFlags[i] {
+				out.Purpose = "change"
+			} else {
+				out.Purpose = "receive"
 			}
 		}
 	}

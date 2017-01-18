@@ -44,7 +44,7 @@ func TestQueryWithClockSkew(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	count := len(p.Items.([]*txResp))
+	count := len(p.Items.([]*query.AnnotatedTx))
 	if count != 1 {
 		t.Errorf("got=%d txs, want %d", count, 1)
 	}

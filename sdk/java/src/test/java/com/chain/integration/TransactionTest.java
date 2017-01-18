@@ -92,7 +92,7 @@ public class TransactionTest {
     assertEquals(1, tx.inputs.size());
 
     Transaction.Input input = tx.inputs.get(0);
-    assertNotNull("issue", input.type);
+    assertEquals("issue", input.type);
     assertNotNull(input.assetId);
     assertNotNull(input.assetAlias);
     assertNotNull(input.assetDefinition);
@@ -117,7 +117,7 @@ public class TransactionTest {
     assertEquals("yes", output.assetIsLocal);
     assertNotNull(output.accountId);
     assertNotNull(output.accountAlias);
-    assertNull(output.accountTags);
+    assertNotNull(output.accountTags);
     assertNotNull(output.controlProgram);
     assertEquals("yes", output.isLocal);
     assertNotNull(output.referenceData);

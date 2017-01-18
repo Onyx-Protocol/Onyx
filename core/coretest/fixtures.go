@@ -9,6 +9,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/pin"
+	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
 	"chain/protocol"
@@ -18,7 +19,7 @@ import (
 )
 
 func CreatePins(ctx context.Context, t testing.TB, s *pin.Store) {
-	pins := []string{account.PinName, asset.PinName, "tx"} // "tx" avoids circular dependency on query
+	pins := []string{account.PinName, asset.PinName, query.TxPinName}
 	for _, p := range pins {
 		err := s.CreatePin(ctx, p, 0)
 		if err != nil {

@@ -11,58 +11,6 @@ import (
 	"chain/net/http/httpjson"
 )
 
-// These types enforce the ordering of JSON fields in API output.
-type (
-	txinResp struct {
-		Type            string           `json:"type"`
-		AssetID         string           `json:"asset_id"`
-		AssetAlias      string           `json:"asset_alias,omitempty"`
-		AssetDefinition *json.RawMessage `json:"asset_definition"`
-		AssetTags       *json.RawMessage `json:"asset_tags,omitempty"`
-		AssetIsLocal    string           `json:"asset_is_local"`
-		Amount          uint64           `json:"amount"`
-		IssuanceProgram string           `json:"issuance_program,omitempty"`
-		SpentOutput     *struct {
-			TransactionID string `json:"transaction_id"`
-			Position      uint32 `json:"position"`
-		} `json:"spent_output,omitempty"`
-		*txAccount
-		ReferenceData *json.RawMessage `json:"reference_data"`
-		IsLocal       string           `json:"is_local"`
-	}
-	txoutResp struct {
-		Type            string           `json:"type"`
-		Purpose         string           `json:"purpose,omitempty"`
-		Position        uint32           `json:"position"`
-		AssetID         string           `json:"asset_id"`
-		AssetAlias      string           `json:"asset_alias,omitempty"`
-		AssetDefinition *json.RawMessage `json:"asset_definition"`
-		AssetTags       *json.RawMessage `json:"asset_tags"`
-		AssetIsLocal    string           `json:"asset_is_local"`
-		Amount          uint64           `json:"amount"`
-		*txAccount
-		ControlProgram string           `json:"control_program"`
-		ReferenceData  *json.RawMessage `json:"reference_data"`
-		IsLocal        string           `json:"is_local"`
-	}
-	txResp struct {
-		ID            string           `json:"id"`
-		Timestamp     string           `json:"timestamp"`
-		BlockID       string           `json:"block_id"`
-		BlockHeight   uint64           `json:"block_height"`
-		Position      uint32           `json:"position"`
-		ReferenceData *json.RawMessage `json:"reference_data"`
-		IsLocal       string           `json:"is_local"`
-		Inputs        []*txinResp      `json:"inputs"`
-		Outputs       []*txoutResp     `json:"outputs"`
-	}
-	txAccount struct {
-		AccountID    string           `json:"account_id"`
-		AccountAlias string           `json:"account_alias,omitempty"`
-		AccountTags  *json.RawMessage `json:"account_tags"`
-	}
-)
-
 // listTransactions is an http handler for listing transactions matching
 // an index or an ad-hoc filter.
 //
@@ -114,21 +62,11 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 		return result, errors.Wrap(err, "running tx query")
 	}
 
-	resp := make([]*txResp, 0, len(txns))
-	for _, t := range txns {
-		var r txResp
-		err := json.Unmarshal(t, &r)
-		if err != nil {
-			return result, errors.Wrap(err, "unmarshaling stored transaction")
-		}
-		resp = append(resp, &r)
-	}
-
 	out := in
 	out.After = nextAfter.String()
 	return page{
-		Items:    httpjson.Array(resp),
-		LastPage: len(resp) < limit,
+		Items:    httpjson.Array(txns),
+		LastPage: len(txns) < limit,
 		Next:     out,
 	}, nil
 }
@@ -218,26 +156,6 @@ func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result pag
 	return result, nil
 }
 
-// This type enforces the ordering of JSON fields in API output.
-type utxoResp struct {
-	Type            string           `json:"type"`
-	Purpose         string           `json:"purpose"`
-	TransactionID   string           `json:"transaction_id"`
-	Position        uint32           `json:"position"`
-	AssetID         string           `json:"asset_id"`
-	AssetAlias      string           `json:"asset_alias"`
-	AssetDefinition *json.RawMessage `json:"asset_definition"`
-	AssetTags       *json.RawMessage `json:"asset_tags"`
-	AssetIsLocal    string           `json:"asset_is_local"`
-	Amount          uint64           `json:"amount"`
-	AccountID       string           `json:"account_id"`
-	AccountAlias    string           `json:"account_alias"`
-	AccountTags     *json.RawMessage `json:"account_tags"`
-	ControlProgram  string           `json:"control_program"`
-	ReferenceData   *json.RawMessage `json:"reference_data"`
-	IsLocal         string           `json:"is_local"`
-}
-
 // POST /list-unspent-outputs
 func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
 	limit := in.PageSize
@@ -271,21 +189,11 @@ func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (resu
 		return result, errors.Wrap(err, "querying outputs")
 	}
 
-	resp := make([]*utxoResp, 0, len(outputs))
-	for _, o := range outputs {
-		var r utxoResp
-		err := json.Unmarshal(o, &r)
-		if err != nil {
-			return result, errors.Wrap(err, "unmarshaling stored utxo")
-		}
-		resp = append(resp, &r)
-	}
-
 	outQuery := in
 	outQuery.After = nextAfter.String()
 	return page{
-		Items:    resp,
-		LastPage: len(resp) < limit,
+		Items:    httpjson.Array(outputs),
+		LastPage: len(outputs) < limit,
 		Next:     outQuery,
 	}, nil
 }
