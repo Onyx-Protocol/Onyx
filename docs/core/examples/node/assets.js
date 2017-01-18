@@ -39,17 +39,17 @@ Promise.all([
   ,
   // snippet create-asset-acme-preferred
   client.assets.create({
-      alias: 'acme_preferred',
-      rootXpubs: [assetKey],
-      quorum: 1,
-      tags: {
-        internalRating: '2',
-      },
-      definition: {
-        issuer: 'Acme Inc.',
-        type: 'security',
-        subtype: 'private',
-        class: 'preferred',
+    alias: 'acme_preferred',
+    rootXpubs: [assetKey],
+    quorum: 1,
+    tags: {
+      internalRating: '2',
+    },
+    definition: {
+      issuer: 'Acme Inc.',
+      type: 'security',
+      subtype: 'private',
+      class: 'preferred',
     },
   })
   // endsnippet
@@ -59,9 +59,9 @@ Promise.all([
     filter: 'is_local=$1',
     filterParams: ['yes'],
   }).then(response => {
-    for (let asset of response) {
+    response.items.forEach((asset) => {
       console.log('Local asset: ' + asset.alias)
-    }
+    })
   })
   // endsnippet
 
@@ -70,9 +70,9 @@ Promise.all([
     filter: 'definition.type=$1 AND definition.subtype=$2 AND definition.class=$3',
     filterParams: ['security', 'private', 'preferred'],
   }).then(response => {
-    for (let asset of response) {
+    response.items.forEach((asset) => {
       console.log('Private preferred security: ' + asset.alias)
-    }
+    })
   })
   // endsnippet
 }).then(() => {
@@ -157,9 +157,9 @@ Promise.all([
     filter: 'inputs(type=$1 AND asset_alias=$2)',
     filterParams: ['issue', 'acme_common'],
   }).then(response => {
-    for (let tx of response) {
+    response.items.forEach((tx) => {
       console.log('Acme Common issued in tx ' + tx.id)
-    }
+    })
   })
   // endsnippet
 
@@ -168,9 +168,9 @@ Promise.all([
     filter: 'inputs(type=$1 AND asset_alias=$2)',
     filterParams: ['spend', 'acme_common'],
   }).then(response => {
-    for (let tx of response) {
+    response.items.forEach((tx) => {
       console.log('Acme Common transferred in tx ' + tx.id)
-    }
+    })
   })
   // endsnippet
 
@@ -179,9 +179,9 @@ Promise.all([
     filter: 'outputs(type=$1 AND asset_alias=$2)',
     filterParams: ['retire', 'acme_common'],
   }).then(response => {
-    for (let tx of response) {
+    response.items.forEach((tx) => {
       console.log('Acme Common retired in tx ' + tx.id)
-    }
+    })
   })
   // endsnippet
 
@@ -190,9 +190,9 @@ Promise.all([
     filter: 'asset_alias=$1',
     filterParams: ['acme_common'],
   }).then(response => {
-    for (let balance of response) {
+    response.items.forEach((balance) => {
       console.log('Total circulation of Acme Common: ' + balance.amount)
-    }
+    })
   })
   // endsnippet
 
@@ -201,9 +201,9 @@ Promise.all([
     filter: 'asset_definition.issuer=$1',
     filterParams: ['Acme Inc.'],
   }).then(response => {
-    for (let balance of response) {
-      console.log('Total circulation of Acme stock ' + balance.sumBy.assetAlias + ':' + balance.amount)
-    }
+    response.items.forEach((balance) => {
+      console.log('Total circulation of Acme stock ' + balance.sumBy.assetAlias + ': ' + balance.amount)
+    })
   })
   // endsnippet
 
@@ -212,9 +212,9 @@ Promise.all([
     filter: 'asset_alias=$1',
     filterParams: ['acme_common'],
   }).then(response => {
-    for (let unspent of response) {
-      console.log('Acme Common held in output ' + unspent.transactionId + ':' + unspent.position)
-    }
+    response.items.forEach((unspent) => {
+      console.log('Acme Common held in output ' + unspent.transactionId + ': ' + unspent.position)
+    })
   })
   // endsnippet
 }).catch(err =>

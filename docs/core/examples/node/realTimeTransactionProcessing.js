@@ -2,10 +2,10 @@ const chain = require('chain-sdk')
 
 const client = new chain.Client()
 const signer = new chain.HsmSigner()
-let key, feed
+let key
 
 // snippet processor-method
-processTransaction = tx => {
+const processTransaction = tx => {
   console.log(`New transaction at ${tx.timestamp}`)
   console.log(`\tID: ${tx.id}`)
 

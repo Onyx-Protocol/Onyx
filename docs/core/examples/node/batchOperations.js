@@ -32,13 +32,11 @@ client.mockHsm.keys.create().then(_key => {
 }).then(assetBatch => {
   // snippet asset-create-handle-errors
   assetBatch.errors.forEach((err, index) => {
-    if (err == null) return
     console.log(`asset ${index} error: `)
     console.log(err)
   })
 
   assetBatch.successes.forEach((asset, index) => {
-    if (asset == null) return
     console.log(`asset ${index} created, ID: ${asset.id}`)
   })
   // endsnippet
@@ -62,13 +60,11 @@ client.mockHsm.keys.create().then(_key => {
   return client.assets.createBatch(assetsToBuild)
 }).then(assetBatch => {
   assetBatch.errors.forEach((err, index) => {
-    if (err == null) return
     console.log(`asset ${index} error: `)
     console.log(err)
   })
 
   assetBatch.successes.forEach((asset, index) => {
-    if (asset == null) return
     console.log(`asset ${index} created, ID: ${asset.id}`)
   })
 }).then(() => client.accounts.createBatch([
@@ -96,7 +92,6 @@ client.mockHsm.keys.create().then(_key => {
   const buildBatchPromise = client.transactions.buildBatch(transactionsToBuild)
     .then((buildBatch) => {
       buildBatch.errors.forEach((err, index) => {
-        if (err == null) return
         console.log(`Error building transaction ${index} error: `)
         console.log(err)
       })
@@ -112,7 +107,6 @@ client.mockHsm.keys.create().then(_key => {
   const signBatchPromise = signer.signBatch(transactionsToSign)
     .then((signBatch) => {
       signBatch.errors.forEach((err, index) => {
-        if (err == null) return
         console.log(`Error signing transaction ${index} error: `)
         console.log(err)
       })
@@ -128,13 +122,11 @@ client.mockHsm.keys.create().then(_key => {
   const submitBatchPromise = client.transactions.submitBatch(transactionsToSubmit)
     .then((submitBatch) => {
       submitBatch.errors.forEach((err, index) => {
-        if (err == null) return
         console.log(`Error submitting transaction ${index} error: `)
         console.log(err)
       })
 
       submitBatch.successes.forEach((tx, index) => {
-        if (tx == null) return
         console.log(`Transaction ${index} submitted, ID: ${tx.id}`)
       })
 

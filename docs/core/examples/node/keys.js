@@ -27,10 +27,10 @@ Promise.resolve().then(() => {
   })
 ).then(() =>
   client.accounts.create({
-     alias: 'alice',
-     rootXpubs: [xpub],
-     quorum: 1
-   })
+    alias: 'alice',
+    rootXpubs: [xpub],
+    quorum: 1
+  })
 ).then(() =>
   client.transactions.build(function (builder) {
     builder.issue({

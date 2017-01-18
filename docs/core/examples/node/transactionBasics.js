@@ -100,30 +100,29 @@ Promise.all([
   // endsnippet
 
 ).then(() => {
-    if (client.baseUrl == otherClient.baseUrl){
+  if (client.baseUrl == otherClient.baseUrl){
 
-      // snippet payWithinCore
-      return client.transactions.build(builder => {
-        builder.spendFromAccount({
-          accountAlias: 'alice',
-          assetAlias: 'gold',
-          amount: 10
-        })
-        builder.controlWithAccount({
-          accountAlias: 'bob',
-          assetAlias: 'gold',
-          amount: 10
-        })
+    // snippet payWithinCore
+    return client.transactions.build(builder => {
+      builder.spendFromAccount({
+        accountAlias: 'alice',
+        assetAlias: 'gold',
+        amount: 10
       })
-      .then(payment => signer.sign(payment))
-      .then(signed => client.transactions.submit(signed))
-      // endsnippet
+      builder.controlWithAccount({
+        accountAlias: 'bob',
+        assetAlias: 'gold',
+        amount: 10
+      })
+    })
+    .then(payment => signer.sign(payment))
+    .then(signed => client.transactions.submit(signed))
+    // endsnippet
 
-    } else {
-      return
-    }
+  } else {
+    return
   }
-).then(() =>
+}).then(() =>
 
   // snippet createBobPaymentProgram
   otherClient.accounts.createControlProgram({
@@ -152,40 +151,39 @@ Promise.all([
     // endsnippet
 
 ).then(() => {
-    if (client.baseUrl == otherClient.baseUrl){
+  if (client.baseUrl == otherClient.baseUrl){
 
-      //snippet multiAssetWithinCore
-      return client.transactions.build(builder => {
-        builder.spendFromAccount({
-          accountAlias: 'alice',
-          assetAlias: 'gold',
-          amount: 10
-        })
-        builder.spendFromAccount({
-          accountAlias: 'alice',
-          assetAlias: 'silver',
-          amount: 20
-        })
-        builder.controlWithAccount({
-          accountAlias: 'bob',
-          assetAlias: 'gold',
-          amount: 10
-        })
-        builder.controlWithAccount({
-          accountAlias: 'bob',
-          assetAlias: 'silver',
-          amount: 20
-        })
+    //snippet multiAssetWithinCore
+    return client.transactions.build(builder => {
+      builder.spendFromAccount({
+        accountAlias: 'alice',
+        assetAlias: 'gold',
+        amount: 10
       })
-      .then(payment => signer.sign(payment))
-      .then(signed => client.transactions.submit(signed))
-      // endsnippet
+      builder.spendFromAccount({
+        accountAlias: 'alice',
+        assetAlias: 'silver',
+        amount: 20
+      })
+      builder.controlWithAccount({
+        accountAlias: 'bob',
+        assetAlias: 'gold',
+        amount: 10
+      })
+      builder.controlWithAccount({
+        accountAlias: 'bob',
+        assetAlias: 'silver',
+        amount: 20
+      })
+    })
+    .then(payment => signer.sign(payment))
+    .then(signed => client.transactions.submit(signed))
+    // endsnippet
 
-    } else {
-      return
-    }
+  } else {
+    return
   }
-).then(() =>
+}).then(() =>
 
   // snippet createBobMultiAssetProgram
   otherClient.accounts.createControlProgram({

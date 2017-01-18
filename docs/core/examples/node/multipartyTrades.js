@@ -83,95 +83,94 @@ Promise.all([
   }).then(issuance => bobSigner.sign(issuance))
     .then(signed => bobCore.transactions.submit(signed))
 ).then(() => {
-    if (aliceCore.baseUrl == bobCore.baseUrl){
-      const chain = aliceCore
-      const signer = aliceSigner
-      signer.addKey(bobKey, chain.mockHsm.signerConnection)
+  if (aliceCore.baseUrl == bobCore.baseUrl){
+    const chain = aliceCore
+    const signer = aliceSigner
+    signer.addKey(bobKey, chain.mockHsm.signerConnection)
 
-      // SAME-CORE TRADE
+    // SAME-CORE TRADE
 
-      // snippet same-core-trade
-      chain.transactions.build(function (builder) {
-        builder.spendFromAccount({
-          accountAlias: 'alice',
-          assetAlias: 'aliceDollar',
-          amount: 50
-        })
-        builder.controlWithAccount({
-          accountAlias: 'alice',
-          assetAlias: 'bobBuck',
-          amount: 100
-        })
-        builder.spendFromAccount({
-          accountAlias: 'bob',
-          assetAlias: 'bobBuck',
-          amount: 100
-        })
-        builder.controlWithAccount({
-          accountAlias: 'bob',
-          assetAlias: 'aliceDollar',
-          amount: 50
-        })
-      }).then(trade => signer.sign(trade))
-        .then(signed => chain.transactions.submit(signed))
-      // endsnippet
+    // snippet same-core-trade
+    chain.transactions.build(function (builder) {
+      builder.spendFromAccount({
+        accountAlias: 'alice',
+        assetAlias: 'aliceDollar',
+        amount: 50
+      })
+      builder.controlWithAccount({
+        accountAlias: 'alice',
+        assetAlias: 'bobBuck',
+        amount: 100
+      })
+      builder.spendFromAccount({
+        accountAlias: 'bob',
+        assetAlias: 'bobBuck',
+        amount: 100
+      })
+      builder.controlWithAccount({
+        accountAlias: 'bob',
+        assetAlias: 'aliceDollar',
+        amount: 50
+      })
+    }).then(trade => signer.sign(trade))
+      .then(signed => chain.transactions.submit(signed))
+    // endsnippet
 
-    } else {
-      // CROSS-CORE TRADE
+  } else {
+    // CROSS-CORE TRADE
 
-      const aliceDollarAssetId = aliceDollar.id
-      const bobBuckAssetId = bobBuck.id
+    const aliceDollarAssetId = aliceDollar.id
+    const bobBuckAssetId = bobBuck.id
 
-      // snippet build-trade-alice
-      aliceCore.transactions.build(function (builder) {
-        builder.spendFromAccount({
-          accountAlias: 'alice',
-          assetAlias: 'aliceDollar',
-          amount: 50
-        })
-        builder.controlWithAccount({
-          accountAlias: 'alice',
-          assetId: bobBuckAssetId,
-          amount: 100
-        })
+    // snippet build-trade-alice
+    aliceCore.transactions.build(function (builder) {
+      builder.spendFromAccount({
+        accountAlias: 'alice',
+        assetAlias: 'aliceDollar',
+        amount: 50
+      })
+      builder.controlWithAccount({
+        accountAlias: 'alice',
+        assetId: bobBuckAssetId,
+        amount: 100
+      })
+    })
+    // endsnippet
+
+      // snippet sign-trade-alice
+      .then(aliceTrade => {
+        aliceTrade.allowAdditionalActions = true
+        return aliceSigner.sign(aliceTrade)
       })
       // endsnippet
 
-        // snippet sign-trade-alice
-        .then(aliceTrade => {
-          aliceTrade.allowAdditionalActions = true
-          return aliceSigner.sign(aliceTrade)
+      .then(aliceSigned =>
+
+        // snippet build-trade-bob
+        bobCore.transactions.build(function (builder) {
+          builder.baseTransaction(aliceSigned.rawTransaction)
+          builder.spendFromAccount({
+            accountAlias: 'bob',
+            assetAlias: 'bobBuck',
+            amount: 100
+          })
+          builder.controlWithAccount({
+            accountAlias: 'bob',
+            assetId: aliceDollarAssetId,
+            amount: 50
+          })
         })
         // endsnippet
 
-        .then(aliceSigned =>
+        // snippet sign-trade-bob
+        .then(bobTrade => bobSigner.sign(bobTrade))
+        // endsnippet
 
-          // snippet build-trade-bob
-          bobCore.transactions.build(function (builder) {
-            builder.baseTransaction(aliceSigned.rawTransaction)
-            builder.spendFromAccount({
-              accountAlias: 'bob',
-              assetAlias: 'bobBuck',
-              amount: 100
-            })
-            builder.controlWithAccount({
-              accountAlias: 'bob',
-              assetId: aliceDollarAssetId,
-              amount: 50
-            })
-          })
-          // endsnippet
-
-          // snippet sign-trade-bob
-          .then(bobTrade => bobSigner.sign(bobTrade))
-          // endsnippet
-
-          // snippet submit-trade-bob
-          .then(bobSigned => bobCore.transactions.submit(bobSigned))
-          // endsnippet
-      )
-    }
+        // snippet submit-trade-bob
+        .then(bobSigned => bobCore.transactions.submit(bobSigned))
+        // endsnippet
+    )
   }
-).catch(err =>
+}).catch(err =>
   process.nextTick(() => { throw err })
 )

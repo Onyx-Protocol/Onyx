@@ -1,5 +1,6 @@
 const chain = require('chain-sdk')
 
+
 const client = new chain.Client()
 const signer = new chain.HsmSigner()
 let key
@@ -159,11 +160,11 @@ Promise.all([
       console.log("Alice's transaction: " + tx.id)
 
       tx.inputs.forEach(input => {
-        console.log("-" + input.amount + " " + input.assetAlias)
+        console.log('-' + input.amount + ' ' + input.assetAlias)
       })
 
       tx.outputs.forEach(output => {
-        console.log("+" + output.amount + " " + output.assetAlias)
+        console.log('+' + output.amount + ' ' + output.assetAlias)
       })
     })
   )
@@ -177,7 +178,7 @@ Promise.all([
     filterParams: ['yes']
   }).then(results =>
     results.items.forEach(tx => {
-      console.log("Local transaction " + tx.id)
+      console.log('Local transaction ' + tx.id)
     })
   )
   // endsnippet
@@ -190,7 +191,7 @@ Promise.all([
     filterParams: ['yes']
   }).then(results =>
     results.items.forEach(asset => {
-      console.log("Local asset " + asset.id + " (" + asset.alias + ")")
+      console.log('Local asset ' + asset.id + ' (' + asset.alias + ')')
     })
   )
   // endsnippet
@@ -203,7 +204,7 @@ Promise.all([
     filterParams: ['USD']
   }).then(results =>
     results.items.forEach(asset => {
-      console.log("USD asset " + asset.id + " (" + asset.alias + ")")
+      console.log('USD asset ' + asset.id + ' (' + asset.alias + ')')
     })
   )
   // endsnippet
@@ -216,7 +217,7 @@ Promise.all([
     filterParams: ['checking']
   }).then(results =>
     results.items.forEach(account => {
-      console.log("Checking account account " + account.id + " (" + account.alias + ")")
+      console.log('Checking account account ' + account.id + ' (' + account.alias + ')')
     })
   )
   // endsnippet
@@ -229,7 +230,7 @@ Promise.all([
     filterParams: ['alice']
   }).then(results =>
     results.items.forEach(utxo => {
-      console.log("Alice's unspent output: " + utxo.amount + " " + utxo.assetAlias)
+      console.log("Alice's unspent output: " + utxo.amount + ' ' + utxo.assetAlias)
     })
   )
   // endsnippet
@@ -242,7 +243,7 @@ Promise.all([
     filterParams: ['bank1']
   }).then(results =>
     results.items.forEach(b => {
-      console.log("Bank 1 balance of " + b.sumBy.assetAlias + ": " + b.amount)
+      console.log('Bank 1 balance of ' + b.sumBy.assetAlias + ': ' + b.amount)
     })
   )
   // endsnippet
@@ -255,7 +256,7 @@ Promise.all([
     filterParams: ['bank1UsdIou']
   }).then(results =>
     results.items.forEach(b => {
-      console.log("Total circulation of Bank 1 USD IOU: " + b.amount)
+      console.log('Total circulation of Bank 1 USD IOU: ' + b.amount)
     })
   )
   // endsnippet
@@ -270,7 +271,7 @@ Promise.all([
   }).then(results =>
     results.items.forEach(b => {
       var denom = b.sumBy['assetDefinition.currency']
-      console.log("Bank 1 balance of " + denom + "-denominated currencies: " + b.amount)
+      console.log('Bank 1 balance of ' + denom + '-denominated currencies: ' + b.amount)
     })
   )
   // endsnippet

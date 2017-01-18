@@ -10,9 +10,9 @@ Promise.all([
   client.mockHsm.keys.create(),
   client.mockHsm.keys.create(),
 ]).then(keys => {
-  assetKey = keys[0].xpub
-  aliceKey = keys[1].xpub
-  bobKey   = keys[2].xpub
+  assetKey = keys[0]
+  aliceKey = keys[1]
+  bobKey   = keys[2]
 
   signer.addKey(assetKey, client.mockHsm.signerConnection)
   signer.addKey(aliceKey, client.mockHsm.signerConnection)
@@ -20,7 +20,7 @@ Promise.all([
 }).then(() => {
   return (
     // snippet create-accounts-with-tags
-    chain.accounts.create({
+    client.accounts.create({
       alias: 'alice',
       rootXpubs: [aliceKey.xpub],
       quorum: 1,
@@ -32,7 +32,7 @@ Promise.all([
         status: 'enabled'
       }
     }).then(() =>
-      chain.accounts.create({
+      client.accounts.create({
         alias: 'bob',
         rootXpubs: [bobKey.xpub],
         quorum: 1,
@@ -49,7 +49,7 @@ Promise.all([
   )
 }).then(() =>
   // snippet create-asset-with-tags-and-definition
-  chain.assets.create({
+  client.assets.create({
     alias: 'acme_bond',
     rootXpubs: [assetKey.xpub],
     quorum: 1,
@@ -64,23 +64,23 @@ Promise.all([
     }
   })
   // endsnippet
-).then(() =>
+).then(() => {
   // snippet build-tx-with-tx-ref-data
-  const buildPromise = chain.transactions.build(builder => {
-    builder.issue(assetAlias: 'acme_bond', amount: 100)
-    builder.controlWithAccount(accountAlias: 'alice', assetAlias: 'acme_bond', amount: 100)
-    builder.transactionReferenceData(externalReference: '12345')
+  const buildPromise = client.transactions.build(builder => {
+    builder.issue({assetAlias: 'acme_bond', amount: 100})
+    builder.controlWithAccount({accountAlias: 'alice', assetAlias: 'acme_bond', amount: 100})
+    builder.transactionReferenceData({externalReference: '12345'})
   })
   // endsnippet
 
   return buildPromise
-).then(
+}).then(
   txTemplate => signer.sign(txTemplate)
 ).then(
-  txTemplate => chain.transactions.submit(txTemplate)
-).then(() =>
+  txTemplate => client.transactions.submit(txTemplate)
+).then(() => {
   // snippet build-tx-with-action-ref-data
-  const buildPromise = chain.transactions.build(builder => {
+  const buildPromise = client.transactions.build(builder => {
     builder.issue({assetAlias: 'acme_bond', amount: 100})
     builder.retire({
       assetAlias: 'acme_bond',
@@ -91,10 +91,10 @@ Promise.all([
   // endsnippet
 
   return buildPromise
-).then(
+}).then(
   txTemplate => signer.sign(txTemplate)
 ).then(
-  txTemplate => chain.transactions.submit(txTemplate)
+  txTemplate => client.transactions.submit(txTemplate)
 ).catch(err =>
   process.nextTick(() => { throw err })
 )

@@ -60,9 +60,9 @@ Promise.all([
     filter: 'tags.type=$1',
     filterParams: ['savings'],
   }).then(response => {
-    for (let account of response) {
+    response.items.forEach((account) => {
       console.log('Account ID ' + account.id + ' alias ' + account.alias)
-    }
+    })
   })
   // endsnippet
 ).then(() =>
@@ -108,7 +108,7 @@ Promise.all([
     client.transactions.submit(signedSpendingTx)
     // endsnippet
   )
-}).then(submitted => {
+}).then(() => {
   // snippet create-control-program
   const bobProgramPromise = client.accounts.createControlProgram({
     alias: 'bob',
@@ -118,21 +118,21 @@ Promise.all([
   return bobProgramPromise.then(bobProgram =>
     // snippet transfer-to-control-program
     client.transactions.build(function (builder) {
-        builder.spendFromAccount({
-          accountAlias: 'alice',
-          assetAlias: 'gold',
-          amount: 10
-        })
-        builder.controlWithProgram({
-          controlProgram: bobProgram.controlProgram,
-          assetAlias: 'gold',
-          amount: 10
-        })
-      }).then(template => {
-        return signer.sign(template)
-      }).then(signed => {
-        return client.transactions.submit(signed)
+      builder.spendFromAccount({
+        accountAlias: 'alice',
+        assetAlias: 'gold',
+        amount: 10
       })
+      builder.controlWithProgram({
+        controlProgram: bobProgram.controlProgram,
+        assetAlias: 'gold',
+        amount: 10
+      })
+    }).then(template => {
+      return signer.sign(template)
+    }).then(signed => {
+      return client.transactions.submit(signed)
+    })
     // endsnippet
   )
 }).then(() =>
@@ -141,9 +141,9 @@ Promise.all([
     filter: 'inputs(account_alias=$1) AND outputs(account_alias=$1)',
     filterParams: ['alice'],
   }).then(response => {
-    for (let transaction of response) {
+    response.items.forEach((transaction) => {
       console.log(transaction.id + ' at ' + transaction.timestamp)
-    }
+    })
   })
   // endsnippet
 ).then(() =>
@@ -152,9 +152,9 @@ Promise.all([
     filter: 'account_alias=$1',
     filterParams: ['alice'],
   }).then(response => {
-    for (let balance of response) {
+    response.items.forEach((balance) => {
       console.log("Alice's balance of " + balance.sumBy.assetAlias + ': ' + balance.amount)
-    }
+    })
   })
   // endsnippet
 ).then(() =>
@@ -163,9 +163,9 @@ Promise.all([
     filter: 'account_alias=$1 AND asset_alias=$2',
     filterParams: ['alice', 'gold'],
   }).then(response => {
-    for (let unspent of response) {
+    response.items.forEach((unspent) => {
       console.log(unspent.transactionId + ' position ' + unspent.position)
-    }
+    })
   })
   // endsnippet
 ).catch(err =>
