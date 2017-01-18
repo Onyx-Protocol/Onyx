@@ -4,15 +4,15 @@
 
 ### Get the package
 
-The Chain Node SDK is available [via NPM](). Make sure to use the most recent
+The Chain Node SDK is available [via NPM](https://www.npmjs.com/package/chain-sdk). Make sure to use the most recent
 version whose major and minor components (`major.minor.x`) match your version
-of Chain Core. Node 6 or later is required.
+of Chain Core. Node 4 or greater is required.
 
 For most applications, you can simply add Chain to your `package.json` with
 the following command:
 
 ```
-npm install --save chain-sdk
+npm install --save chain-sdk@1.0.0
 ```
 
 ### In your code
@@ -27,7 +27,7 @@ const signer = new chain.HsmSigner()
 ## Asynchronous Operation
 
 There are two options for interacting with the SDK asynchronously: promises and
-callbacks
+callbacks.
 
 With promises:
 

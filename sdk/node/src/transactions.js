@@ -155,19 +155,14 @@ class TransactionBuilder {
  */
 
 /**
- * @class
  * A blockchain consists of an immutable set of cryptographically linked
  * transactions. Each transaction contains one or more actions.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/transaction-basics}
+ * @module transactionsAPI
  */
-class Transactions {
-  /**
-   * constructor - return Transactions object configured for specified Chain Core.
-   *
-   * @param {Client} client Configured Chain client object.
-   */
-  constructor(client) {
+const transactionsAPI = (client) => {
+  return {
     /**
      * Get one page of transactions matching the specified query.
      *
@@ -175,7 +170,7 @@ class Transactions {
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results.
      */
-    this.query = (params, cb) => shared.query(client, this, '/list-transactions', params, {cb})
+    query: (params, cb) => shared.query(client, this, '/list-transactions', params, {cb}),
 
     /**
      * Request all transactions matching the specified query, calling the
@@ -186,7 +181,7 @@ class Transactions {
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.
      */
-    this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
+    queryAll: (params, processor) => shared.queryAll(this, params, processor),
 
     /**
      * Build an unsigned transaction from a set of actions.
@@ -196,7 +191,7 @@ class Transactions {
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} - Unsigned transaction template, or error.
      */
-    this.build = (builderBlock, cb) => {
+    build: (builderBlock, cb) => {
       const builder = new TransactionBuilder()
       builderBlock(builder)
 
@@ -204,7 +199,7 @@ class Transactions {
         client.request('/build-transaction', [builder]).then(resp => checkForError(resp[0])),
         cb
       )
-    }
+    },
 
     /**
      * Build multiple unsigned transactions from multiple sets of actions.
@@ -215,7 +210,7 @@ class Transactions {
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<BatchResponse>} - Batch of unsigned transaction templates, or errors.
      */
-    this.buildBatch = (builderBlocks, cb) => {
+    buildBatch: (builderBlocks, cb) => {
       const builders = builderBlocks.map((builderBlock) => {
         const builder = new TransactionBuilder()
         builderBlock(builder)
@@ -223,7 +218,7 @@ class Transactions {
       })
 
       return shared.createBatch(client, '/build-transaction', builders, {cb})
-    }
+    },
 
     /**
      * Submit a signed transaction to the blockchain.
@@ -231,10 +226,10 @@ class Transactions {
      * @param {Object} signed - A fully signed transaction template.
      * @returns {Promise<Object>} Transaction ID of the successful transaction, or error.
      */
-    this.submit = (signed, cb) => shared.tryCallback(
+    submit: (signed, cb) => shared.tryCallback(
       client.request('/submit-transaction', {transactions: [signed]}).then(resp => checkForError(resp[0])),
       cb
-    )
+    ),
 
     /**
      * Submit multiple signed transactions to the blockchain.
@@ -242,12 +237,12 @@ class Transactions {
      * @param {Array<Object>} signed - An array of fully signed transaction templates.
      * @returns {Promise<BatchResponse>} - Batch response of transaction IDs, or errors.
      */
-    this.submitBatch = (signed, cb) => shared.tryCallback(
+    submitBatch: (signed, cb) => shared.tryCallback(
       client.request('/submit-transaction', {transactions: signed})
             .then(resp => new shared.BatchResponse(resp)),
       cb
-    )
+    ),
   }
 }
 
-module.exports = Transactions
+module.exports = transactionsAPI

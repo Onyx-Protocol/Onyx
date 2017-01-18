@@ -1,20 +1,14 @@
 const shared = require('./shared')
 
 /**
- * @class
  * Chain Core can be configured as a new blockchain network, or as a node in an
  * existing blockchain network.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/get-started/configure}
+ * @module configAPI
  */
-class Config {
-  /**
-   * constructor - return Config object configured for specified Chain Core.
-   *
-   * @param {Client} client Configured Chain client object.
-   */
-  constructor(client) {
-
+const configAPI = (client) => {
+  return {
     /**
      * Reset specified Chain Core.
      *
@@ -24,10 +18,10 @@ class Config {
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Status of reset request.
      */
-    this.reset = (everything = false, cb) => shared.tryCallback(
+    reset: (everything = false, cb) => shared.tryCallback(
       client.request('/reset', {everything: everything}),
       cb
-    )
+    ),
 
     /**
      * Configure specified Chain Core.
@@ -46,10 +40,10 @@ class Config {
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Status of configuration request.
      */
-    this.configure = (opts = {}, cb) => shared.tryCallback(
+    configure: (opts = {}, cb) => shared.tryCallback(
       client.request('/configure', opts),
       cb
-    )
+    ),
 
     /**
      * Get info on specified Chain Core.
@@ -57,11 +51,11 @@ class Config {
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Requested info of specified Chain Core.
      */
-    this.info = (cb) => shared.tryCallback(
+    info: (cb) => shared.tryCallback(
       client.request('/info'),
       cb
-    )
+    ),
   }
 }
 
-module.exports = Config
+module.exports = configAPI

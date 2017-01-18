@@ -1,7 +1,6 @@
 const shared = require('./shared')
 
 /**
- * @class
  * An asset is a type of value that can be issued on a blockchain. All units of
  * a given asset are fungible.
  * <br/><br/>
@@ -9,8 +8,9 @@ const shared = require('./shared')
  * involvement of the issuer.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/assets}
+ * @module assetsAPI
  */
-class Assets {
+const assetsAPI = (client) => {
   /**
    * @typedef Assets~createRequest
    * @type {Object}
@@ -31,19 +31,14 @@ class Assets {
    * User-specified, arbitrary/unstructured data visible across blockchain networks.
    */
 
-  /**
-   * constructor - return Assets object configured for specified Chain Core.
-   *
-   * @param {Client} client Configured Chain client object.
-   */
-  constructor(client) {
+  return {
     /**
      * Create a new asset.
      *
      * @param {Assets~createRequest} params - Parameters for asset creation.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      */
-    this.create = (params, cb) => shared.create(client, '/create-asset', params, {cb})
+    create: (params, cb) => shared.create(client, '/create-asset', params, {cb}),
 
     /**
      * Create multiple new assets.
@@ -51,7 +46,7 @@ class Assets {
      * @param {Assets~createRequest[]} params - Parameters for creation of multiple assets.
      * @param {batchCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      */
-    this.createBatch = (params, cb) => shared.createBatch(client, '/create-asset', params, {cb})
+    createBatch: (params, cb) => shared.createBatch(client, '/create-asset', params, {cb}),
 
     /**
      * Get one page of assets matching the specified query.
@@ -60,7 +55,7 @@ class Assets {
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
-    this.query = (params, cb) => shared.query(client, this, '/list-assets', params, {cb})
+    query: (params, cb) => shared.query(client, this, '/list-assets', params, {cb}),
 
     /**
      * Request all assets matching the specified query, calling the
@@ -71,8 +66,8 @@ class Assets {
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error
      */
-    this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
+    queryAll: (params, processor) => shared.queryAll(this, params, processor),
   }
 }
 
-module.exports = Assets
+module.exports = assetsAPI

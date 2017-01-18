@@ -1,13 +1,13 @@
 const Connection = require('./connection')
-const AccessTokens = require('./accessTokens')
-const Accounts = require('./accounts')
-const Assets = require('./assets')
-const Balances = require('./balances')
-const Config = require('./config')
-const MockHsmKeys = require('./mockHsmKeys')
-const Transactions = require('./transactions')
-const TransactionFeeds = require('./transactionFeeds')
-const UnspentOutputs = require('./unspentOutputs')
+const accessTokensAPI = require('./accessTokens')
+const accountsAPI = require('./accounts')
+const assetsAPI = require('./assets')
+const balancesAPI = require('./balances')
+const configAPI = require('./config')
+const mockHsmKeysAPI = require('./mockHsmKeys')
+const transactionsAPI = require('./transactions')
+const transactionFeedsAPI = require('./transactionFeeds')
+const unspentOutputsAPI = require('./unspentOutputs')
 
 /**
  * The Chain API Client object is the root object for all API interactions.
@@ -29,60 +29,60 @@ class Client {
 
     /**
      * API actions for access tokens
-     * @type {AccessTokens}
+     * @type {module:accessTokensAPI}
      */
-    this.accessTokens = new AccessTokens(this)
+    this.accessTokens = accessTokensAPI(this)
 
     /**
      * API actions for accounts
-     * @type {Accounts}
+     * @type {module:accountsAPI}
      */
-    this.accounts = new Accounts(this)
+    this.accounts = accountsAPI(this)
 
     /**
      * API actions for assets.
-     * @type {Assets}
+     * @type {module:assetsAPI}
      */
-    this.assets = new Assets(this)
+    this.assets = assetsAPI(this)
 
     /**
      * API actions for balances.
-     * @type {Balances}
+     * @type {module:balancesAPI}
      */
-    this.balances = new Balances(this)
+    this.balances = balancesAPI(this)
 
     /**
      * API actions for config.
-     * @type {Config}
+     * @type {module:configAPI}
      */
-    this.config = new Config(this)
+    this.config = configAPI(this)
 
     /**
-     * @property {MockHsmKeys} keys API actions for Mock HSM keys.
+     * @property {module:mockHsmKeysAPI} keys API actions for Mock HSM keys.
      * @property {Connection} signerConnection Mock HSM signer connection.
      */
     this.mockHsm = {
-      keys: new MockHsmKeys(this),
+      keys: mockHsmKeysAPI(this),
       signerConnection: new Connection('http://localhost:1999/mockhsm')
     }
 
     /**
      * API actions for transactions.
-     * @type {Transactions}
+     * @type {module:transactionsAPI}
      */
-    this.transactions = new Transactions(this)
+    this.transactions = transactionsAPI(this)
 
     /**
      * API actions for transaction feeds.
-     * @type {TransactionFeeds}
+     * @type {module:transactionFeedsAPI}
      */
-    this.transactionFeeds = new TransactionFeeds(this)
+    this.transactionFeeds = transactionFeedsAPI(this)
 
     /**
      * API actions for unspent outputs.
-     * @type {UnspentOutputs}
+     * @type {module:unspentOutputsAPI}
      */
-    this.unspentOutputs = new UnspentOutputs(this)
+    this.unspentOutputs = unspentOutputsAPI(this)
   }
 
 

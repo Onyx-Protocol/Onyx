@@ -1,16 +1,16 @@
 const shared = require('./shared')
 
 /**
- * @class
  * An account is an object in Chain Core that tracks ownership of assets on a
  * blockchain by creating and tracking control programs.
  *
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/accounts}
+ * @module accountsAPI
  */
-class Accounts {
+const accountsAPI = (client) => {
   /**
-   * @typedef Accounts~createRequest
+   * @typedef accountsAPI~createRequest
    * @type {Object}
    *
    * @property {String} [alias]
@@ -26,12 +26,7 @@ class Accounts {
    * User-specified tag structure for the account.
    */
 
-  /**
-   * constructor - return Accounts object configured for specified Chain Core.
-   *
-   * @param {Client} client Configured Chain client object.
-   */
-  constructor(client) {
+  return {
     /**
      * Create a new account.
      *
@@ -39,7 +34,7 @@ class Accounts {
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Newly created account.
      */
-    this.create = (params, cb) => shared.create(client, '/create-account', params, {cb})
+    create: (params, cb) => shared.create(client, '/create-account', params, {cb}),
 
     /**
      * Create multiple new accounts.
@@ -48,7 +43,7 @@ class Accounts {
      * @param {batchCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {BatchResponse} Newly created accounts.
      */
-    this.createBatch = (params, cb) => shared.createBatch(client, '/create-account', params, {cb})
+    createBatch: (params, cb) => shared.createBatch(client, '/create-account', params, {cb}),
 
     /**
      * Get one page of accounts matching the specified query.
@@ -57,7 +52,7 @@ class Accounts {
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
-    this.query = (params, cb) => shared.query(client, this, '/list-accounts', params, {cb})
+    query: (params, cb) => shared.query(client, this, '/list-accounts', params, {cb}),
 
     /**
      * Request all accounts matching the specified query, calling the
@@ -68,7 +63,7 @@ class Accounts {
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.
      */
-    this.queryAll = (params, processor) => shared.queryAll(this, params, processor)
+    queryAll: (params, processor) => shared.queryAll(this, params, processor),
 
     /**
      * Create a new control program, specifying either an account ID or account
@@ -83,7 +78,7 @@ class Accounts {
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Newly created control program.
      */
-    this.createControlProgram = (params, cb) => {
+    createControlProgram: (params, cb) => {
       const body = {type: 'account'}
 
       if (params.alias) body.params = { accountAlias: params.alias }
@@ -97,4 +92,4 @@ class Accounts {
   }
 }
 
-module.exports = Accounts
+module.exports = accountsAPI
