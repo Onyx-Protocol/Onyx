@@ -10,6 +10,12 @@ const shared = require('./shared')
  * More info: {@link https://chain.com/docs/core/build-applications/keys}
  */
 class HsmSigner {
+
+  /**
+   * Create a new HSM signer object.
+   *
+   * @returns {HsmSigner}
+   */
   constructor() {
     this.signers = {}
   }
