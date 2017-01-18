@@ -55,11 +55,28 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 }
 
 // assumes r has sticky errors
-func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
-	blockchain.WriteVarint63(w, to.AssetVersion) // TODO(bobg): check and return error
-	to.OutputCommitment.writeTo(w, to.AssetVersion)
-	writeRefData(w, to.ReferenceData, serflags)
-	blockchain.WriteVarstr31(w, nil)
+func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
+	_, err := blockchain.WriteVarint63(w, to.AssetVersion)
+	if err != nil {
+		return errors.Wrap(err, "writing asset version")
+	}
+
+	err = to.OutputCommitment.writeTo(w, to.AssetVersion)
+	if err != nil {
+		return errors.Wrap(err, "writing output commitment")
+	}
+
+	err = writeRefData(w, to.ReferenceData, serflags)
+	if err != nil {
+		return errors.Wrap(err, "writing reference data")
+	}
+
+	// write witness (empty in v1)
+	_, err = blockchain.WriteVarstr31(w, nil)
+	if err != nil {
+		return errors.Wrap(err, "writing witness")
+	}
+	return nil
 }
 
 func (to *TxOutput) witnessHash() Hash {
