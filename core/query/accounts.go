@@ -27,7 +27,7 @@ func (ind *Indexer) SaveAnnotatedAccount(ctx context.Context, accountID string, 
 }
 
 // Accounts queries the blockchain for accounts matching the query `q`.
-func (ind *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []interface{}, after string, limit int) ([]map[string]interface{}, string, error) {
+func (ind *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []interface{}, after string, limit int) ([][]byte, string, error) {
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
@@ -43,7 +43,7 @@ func (ind *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []int
 	}
 	defer rows.Close()
 
-	accounts := make([]map[string]interface{}, 0, limit)
+	accounts := make([][]byte, 0, limit)
 	for rows.Next() {
 		var accID string
 		var rawAccount []byte
@@ -52,16 +52,8 @@ func (ind *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []int
 			return nil, "", errors.Wrap(err, "scanning account row")
 		}
 
-		var account map[string]interface{}
-		if len(rawAccount) > 0 {
-			err = json.Unmarshal(rawAccount, &account)
-			if err != nil {
-				return nil, "", err
-			}
-		}
-
 		after = accID
-		accounts = append(accounts, account)
+		accounts = append(accounts, rawAccount)
 	}
 	return accounts, after, errors.Wrap(rows.Err())
 }

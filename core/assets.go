@@ -8,26 +8,27 @@ import (
 	"chain/crypto/ed25519/chainkd"
 	"chain/encoding/json"
 	"chain/net/http/reqid"
+	"chain/protocol/bc"
 )
 
 // This type enforces JSON field ordering in API output.
 type assetResponse struct {
-	ID              interface{} `json:"id"`
-	Alias           *string     `json:"alias"`
-	VMVersion       interface{} `json:"vm_version"`
-	IssuanceProgram interface{} `json:"issuance_program"`
-	Keys            interface{} `json:"keys"`
-	Quorum          interface{} `json:"quorum"`
-	Definition      interface{} `json:"definition"`
-	RawDefinition   interface{} `json:"raw_definition"`
-	Tags            interface{} `json:"tags"`
-	IsLocal         interface{} `json:"is_local"`
+	ID              bc.AssetID             `json:"id"`
+	Alias           *string                `json:"alias"`
+	VMVersion       uint64                 `json:"vm_version"`
+	IssuanceProgram json.HexBytes          `json:"issuance_program"`
+	Keys            []*assetKey            `json:"keys"`
+	Quorum          int                    `json:"quorum"`
+	Definition      map[string]interface{} `json:"definition"`
+	RawDefinition   json.HexBytes          `json:"raw_definition"`
+	Tags            map[string]interface{} `json:"tags"`
+	IsLocal         string                 `json:"is_local"`
 }
 
 type assetKey struct {
-	RootXPub            interface{} `json:"root_xpub"`
-	AssetPubkey         interface{} `json:"asset_pubkey"`
-	AssetDerivationPath interface{} `json:"asset_derivation_path"`
+	RootXPub            chainkd.XPub    `json:"root_xpub"`
+	AssetPubkey         json.HexBytes   `json:"asset_pubkey"`
+	AssetDerivationPath []json.HexBytes `json:"asset_derivation_path"`
 }
 
 // POST /create-asset
@@ -67,14 +68,18 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 				responses[i] = err
 				return
 			}
-			var keys []assetKey
+			var keys []*assetKey
 			for _, xpub := range asset.Signer.XPubs {
 				path := signers.Path(asset.Signer, signers.AssetKeySpace)
+				var hexPath []json.HexBytes
+				for _, p := range path {
+					hexPath = append(hexPath, p)
+				}
 				derived := xpub.Derive(path)
-				keys = append(keys, assetKey{
-					AssetPubkey:         json.HexBytes(derived[:]),
+				keys = append(keys, &assetKey{
+					AssetPubkey:         derived[:],
 					RootXPub:            xpub,
-					AssetDerivationPath: path,
+					AssetDerivationPath: hexPath,
 				})
 			}
 			parsedDef, _ := asset.Definition() // cannot fail because Assets.Define() would catch parsing issues
@@ -82,7 +87,7 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 				ID:              asset.AssetID,
 				Alias:           asset.Alias,
 				VMVersion:       asset.VMVersion,
-				IssuanceProgram: json.HexBytes(asset.IssuanceProgram),
+				IssuanceProgram: asset.IssuanceProgram,
 				Keys:            keys,
 				Quorum:          asset.Signer.Quorum,
 				Definition:      parsedDef,

@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math"
 
 	"chain/core/query"
@@ -15,49 +14,52 @@ import (
 // These types enforce the ordering of JSON fields in API output.
 type (
 	txinResp struct {
-		Type            interface{} `json:"type"`
-		AssetID         interface{} `json:"asset_id"`
-		AssetAlias      interface{} `json:"asset_alias,omitempty"`
-		AssetDefinition interface{} `json:"asset_definition"`
-		AssetTags       interface{} `json:"asset_tags,omitempty"`
-		AssetIsLocal    interface{} `json:"asset_is_local"`
-		Amount          interface{} `json:"amount"`
-		IssuanceProgram interface{} `json:"issuance_program,omitempty"`
-		SpentOutput     interface{} `json:"spent_output,omitempty"`
+		Type            string           `json:"type"`
+		AssetID         string           `json:"asset_id"`
+		AssetAlias      string           `json:"asset_alias,omitempty"`
+		AssetDefinition *json.RawMessage `json:"asset_definition"`
+		AssetTags       *json.RawMessage `json:"asset_tags,omitempty"`
+		AssetIsLocal    string           `json:"asset_is_local"`
+		Amount          uint64           `json:"amount"`
+		IssuanceProgram string           `json:"issuance_program,omitempty"`
+		SpentOutput     *struct {
+			TransactionID string `json:"transaction_id"`
+			Position      uint32 `json:"position"`
+		} `json:"spent_output,omitempty"`
 		*txAccount
-		ReferenceData interface{} `json:"reference_data"`
-		IsLocal       interface{} `json:"is_local"`
+		ReferenceData *json.RawMessage `json:"reference_data"`
+		IsLocal       string           `json:"is_local"`
 	}
 	txoutResp struct {
-		Type            interface{} `json:"type"`
-		Purpose         interface{} `json:"purpose,omitempty"`
-		Position        interface{} `json:"position"`
-		AssetID         interface{} `json:"asset_id"`
-		AssetAlias      interface{} `json:"asset_alias,omitempty"`
-		AssetDefinition interface{} `json:"asset_definition"`
-		AssetTags       interface{} `json:"asset_tags"`
-		AssetIsLocal    interface{} `json:"asset_is_local"`
-		Amount          interface{} `json:"amount"`
+		Type            string           `json:"type"`
+		Purpose         string           `json:"purpose,omitempty"`
+		Position        uint32           `json:"position"`
+		AssetID         string           `json:"asset_id"`
+		AssetAlias      string           `json:"asset_alias,omitempty"`
+		AssetDefinition *json.RawMessage `json:"asset_definition"`
+		AssetTags       *json.RawMessage `json:"asset_tags"`
+		AssetIsLocal    string           `json:"asset_is_local"`
+		Amount          uint64           `json:"amount"`
 		*txAccount
-		ControlProgram interface{} `json:"control_program"`
-		ReferenceData  interface{} `json:"reference_data"`
-		IsLocal        interface{} `json:"is_local"`
+		ControlProgram string           `json:"control_program"`
+		ReferenceData  *json.RawMessage `json:"reference_data"`
+		IsLocal        string           `json:"is_local"`
 	}
 	txResp struct {
-		ID            interface{} `json:"id"`
-		Timestamp     interface{} `json:"timestamp"`
-		BlockID       interface{} `json:"block_id"`
-		BlockHeight   interface{} `json:"block_height"`
-		Position      interface{} `json:"position"`
-		ReferenceData interface{} `json:"reference_data"`
-		IsLocal       interface{} `json:"is_local"`
-		Inputs        interface{} `json:"inputs"`
-		Outputs       interface{} `json:"outputs"`
+		ID            string           `json:"id"`
+		Timestamp     string           `json:"timestamp"`
+		BlockID       string           `json:"block_id"`
+		BlockHeight   uint64           `json:"block_height"`
+		Position      uint32           `json:"position"`
+		ReferenceData *json.RawMessage `json:"reference_data"`
+		IsLocal       string           `json:"is_local"`
+		Inputs        []*txinResp      `json:"inputs"`
+		Outputs       []*txoutResp     `json:"outputs"`
 	}
 	txAccount struct {
-		AccountID    interface{} `json:"account_id"`
-		AccountAlias interface{} `json:"account_alias,omitempty"`
-		AccountTags  interface{} `json:"account_tags"`
+		AccountID    string           `json:"account_id"`
+		AccountAlias string           `json:"account_alias,omitempty"`
+		AccountTags  *json.RawMessage `json:"account_tags"`
 	}
 )
 
@@ -114,96 +116,12 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 
 	resp := make([]*txResp, 0, len(txns))
 	for _, t := range txns {
-		tjson, ok := t.(*json.RawMessage)
-		if !ok {
-			return result, fmt.Errorf("unexpected type %T in Indexer.Transactions output", t)
-		}
-		if tjson == nil {
-			return result, fmt.Errorf("unexpected nil in Indexer.Transactions output")
-		}
-		var tx map[string]interface{}
-		err = json.Unmarshal(*tjson, &tx)
+		var r txResp
+		err := json.Unmarshal(t, &r)
 		if err != nil {
-			return result, errors.Wrap(err, "decoding Indexer.Transactions output")
+			return result, errors.Wrap(err, "unmarshaling stored transaction")
 		}
-
-		inp, ok := tx["inputs"].([]interface{})
-		if !ok {
-			return result, fmt.Errorf("unexpected type %T for inputs in Indexer.Transactions output", tx["inputs"])
-		}
-
-		var inputs []map[string]interface{}
-		for i, in := range inp {
-			input, ok := in.(map[string]interface{})
-			if !ok {
-				return result, fmt.Errorf("unexpected type %T for input %d in Indexer.Transactions output", in, i)
-			}
-			inputs = append(inputs, input)
-		}
-
-		outp, ok := tx["outputs"].([]interface{})
-		if !ok {
-			return result, fmt.Errorf("unexpected type %T for outputs in Indexer.Transactions output", tx["outputs"])
-		}
-
-		var outputs []map[string]interface{}
-		for i, out := range outp {
-			output, ok := out.(map[string]interface{})
-			if !ok {
-				return result, fmt.Errorf("unexpected type %T for output %d in Indexer.Transactions output", out, i)
-			}
-			outputs = append(outputs, output)
-		}
-
-		inResps := make([]*txinResp, 0, len(inputs))
-		for _, in := range inputs {
-			r := &txinResp{
-				Type:            in["type"],
-				AssetID:         in["asset_id"],
-				AssetAlias:      in["asset_alias"],
-				AssetDefinition: in["asset_definition"],
-				AssetTags:       in["asset_tags"],
-				AssetIsLocal:    in["asset_is_local"],
-				Amount:          in["amount"],
-				IssuanceProgram: in["issuance_program"],
-				SpentOutput:     in["spent_output"],
-				txAccount:       txAccountFromMap(in),
-				ReferenceData:   in["reference_data"],
-				IsLocal:         in["is_local"],
-			}
-			inResps = append(inResps, r)
-		}
-		outResps := make([]*txoutResp, 0, len(outputs))
-		for _, out := range outputs {
-			r := &txoutResp{
-				Type:            out["type"],
-				Purpose:         out["purpose"],
-				Position:        out["position"],
-				AssetID:         out["asset_id"],
-				AssetAlias:      out["asset_alias"],
-				AssetDefinition: out["asset_definition"],
-				AssetTags:       out["asset_tags"],
-				AssetIsLocal:    out["asset_is_local"],
-				Amount:          out["amount"],
-				txAccount:       txAccountFromMap(out),
-				ControlProgram:  out["control_program"],
-				ReferenceData:   out["reference_data"],
-				IsLocal:         out["is_local"],
-			}
-			outResps = append(outResps, r)
-		}
-		r := &txResp{
-			ID:            tx["id"],
-			Timestamp:     tx["timestamp"],
-			BlockID:       tx["block_id"],
-			BlockHeight:   tx["block_height"],
-			Position:      tx["position"],
-			ReferenceData: tx["reference_data"],
-			IsLocal:       tx["is_local"],
-			Inputs:        inResps,
-			Outputs:       outResps,
-		}
-		resp = append(resp, r)
+		resp = append(resp, &r)
 	}
 
 	out := in
@@ -240,29 +158,12 @@ func (h *Handler) listAccounts(ctx context.Context, in requestQuery) (page, erro
 
 	result := make([]*accountResponse, 0, len(accounts))
 	for _, a := range accounts {
-		var orderedKeys []accountKey
-		keys, ok := a["keys"].([]interface{})
-		if ok {
-			for _, key := range keys {
-				mapKey, ok := key.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				orderedKeys = append(orderedKeys, accountKey{
-					RootXPub:              mapKey["root_xpub"],
-					AccountXPub:           mapKey["account_xpub"],
-					AccountDerivationPath: mapKey["account_derivation_path"],
-				})
-			}
+		var r accountResponse
+		err := json.Unmarshal(a, &r)
+		if err != nil {
+			return page{}, errors.Wrap(err, "unmarshaling stored account")
 		}
-		r := &accountResponse{
-			ID:     a["id"],
-			Alias:  a["alias"],
-			Keys:   orderedKeys,
-			Quorum: a["quorum"],
-			Tags:   a["tags"],
-		}
-		result = append(result, r)
+		result = append(result, &r)
 	}
 
 	// Pull in the accounts by the IDs
@@ -319,22 +220,22 @@ func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result pag
 
 // This type enforces the ordering of JSON fields in API output.
 type utxoResp struct {
-	Type            interface{} `json:"type"`
-	Purpose         interface{} `json:"purpose"`
-	TransactionID   interface{} `json:"transaction_id"`
-	Position        interface{} `json:"position"`
-	AssetID         interface{} `json:"asset_id"`
-	AssetAlias      interface{} `json:"asset_alias"`
-	AssetDefinition interface{} `json:"asset_definition"`
-	AssetTags       interface{} `json:"asset_tags"`
-	AssetIsLocal    interface{} `json:"asset_is_local"`
-	Amount          interface{} `json:"amount"`
-	AccountID       interface{} `json:"account_id"`
-	AccountAlias    interface{} `json:"account_alias"`
-	AccountTags     interface{} `json:"account_tags"`
-	ControlProgram  interface{} `json:"control_program"`
-	ReferenceData   interface{} `json:"reference_data"`
-	IsLocal         interface{} `json:"is_local"`
+	Type            string           `json:"type"`
+	Purpose         string           `json:"purpose"`
+	TransactionID   string           `json:"transaction_id"`
+	Position        uint32           `json:"position"`
+	AssetID         string           `json:"asset_id"`
+	AssetAlias      string           `json:"asset_alias"`
+	AssetDefinition *json.RawMessage `json:"asset_definition"`
+	AssetTags       *json.RawMessage `json:"asset_tags"`
+	AssetIsLocal    string           `json:"asset_is_local"`
+	Amount          uint64           `json:"amount"`
+	AccountID       string           `json:"account_id"`
+	AccountAlias    string           `json:"account_alias"`
+	AccountTags     *json.RawMessage `json:"account_tags"`
+	ControlProgram  string           `json:"control_program"`
+	ReferenceData   *json.RawMessage `json:"reference_data"`
+	IsLocal         string           `json:"is_local"`
 }
 
 // POST /list-unspent-outputs
@@ -372,37 +273,12 @@ func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (resu
 
 	resp := make([]*utxoResp, 0, len(outputs))
 	for _, o := range outputs {
-		ojson, ok := o.(*json.RawMessage)
-		if !ok {
-			return result, fmt.Errorf("unexpected type %T in Indexer.Outputs output", o)
-		}
-		if ojson == nil {
-			return result, fmt.Errorf("unexpected nil in Indexer.Outputs output")
-		}
-		var out map[string]interface{}
-		err = json.Unmarshal(*ojson, &out)
+		var r utxoResp
+		err := json.Unmarshal(o, &r)
 		if err != nil {
-			return result, errors.Wrap(err, "decoding Indexer.Outputs output")
+			return result, errors.Wrap(err, "unmarshaling stored utxo")
 		}
-		r := &utxoResp{
-			Type:            out["type"],
-			Purpose:         out["purpose"],
-			TransactionID:   out["transaction_id"],
-			Position:        out["position"],
-			AssetID:         out["asset_id"],
-			AssetAlias:      out["asset_alias"],
-			AssetDefinition: out["asset_definition"],
-			AssetTags:       out["asset_tags"],
-			AssetIsLocal:    out["asset_is_local"],
-			Amount:          out["amount"],
-			AccountID:       out["account_id"],
-			AccountAlias:    out["account_alias"],
-			AccountTags:     out["account_tags"],
-			ControlProgram:  out["control_program"],
-			ReferenceData:   out["reference_data"],
-			IsLocal:         out["is_local"],
-		}
-		resp = append(resp, r)
+		resp = append(resp, &r)
 	}
 
 	outQuery := in
@@ -432,42 +308,19 @@ func (h *Handler) listAssets(ctx context.Context, in requestQuery) (page, error)
 	after := in.After
 
 	// Use the query engine for querying asset tags.
-	var assets []map[string]interface{}
-	assets, after, err = h.Indexer.Assets(ctx, p, in.FilterParams, after, limit)
+	assets, after, err := h.Indexer.Assets(ctx, p, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running asset query")
 	}
 
 	result := make([]*assetResponse, 0, len(assets))
 	for _, a := range assets {
-		var orderedKeys []assetKey
-		keys, ok := a["keys"].([]interface{})
-		if ok {
-			for _, key := range keys {
-				mapKey, ok := key.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				orderedKeys = append(orderedKeys, assetKey{
-					AssetPubkey:         mapKey["asset_pubkey"],
-					RootXPub:            mapKey["root_xpub"],
-					AssetDerivationPath: mapKey["asset_derivation_path"],
-				})
-			}
+		var r assetResponse
+		err := json.Unmarshal(a, &r)
+		if err != nil {
+			return page{}, errors.Wrap(err, "unmarshaling stored asset")
 		}
-		r := &assetResponse{
-			ID:              a["id"],
-			IssuanceProgram: a["issuance_program"],
-			Keys:            orderedKeys,
-			Quorum:          a["quorum"],
-			Definition:      a["definition"],
-			Tags:            a["tags"],
-			IsLocal:         a["is_local"],
-		}
-		if alias, ok := a["alias"].(string); ok && alias != "" {
-			r.Alias = &alias
-		}
-		result = append(result, r)
+		result = append(result, &r)
 	}
 
 	out := in
@@ -477,17 +330,6 @@ func (h *Handler) listAssets(ctx context.Context, in requestQuery) (page, error)
 		LastPage: len(result) < limit,
 		Next:     out,
 	}, nil
-}
-
-func txAccountFromMap(m map[string]interface{}) *txAccount {
-	if _, ok := m["account_id"]; !ok {
-		return nil
-	}
-	return &txAccount{
-		AccountID:    m["account_id"],
-		AccountAlias: m["account_alias"],
-		AccountTags:  m["account_tags"],
-	}
 }
 
 // listTxFeeds is an http handler for listing txfeeds. It does not take a filter.

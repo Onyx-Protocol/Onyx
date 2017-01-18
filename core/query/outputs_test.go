@@ -258,8 +258,7 @@ func TestQueryOutputs(t *testing.T) {
 					AccountID *string `json:"account_id"`
 				}
 
-				bytes := output.(*json.RawMessage)
-				err := json.Unmarshal(*bytes, &got)
+				err := json.Unmarshal(output, &got)
 				if err != nil {
 					t.Fatalf("case %d: output is not a JSON object", i)
 				}

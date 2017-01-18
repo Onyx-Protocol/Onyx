@@ -3,7 +3,6 @@ package query
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -71,7 +70,7 @@ func (ind *Indexer) LookupTxAfter(ctx context.Context, begin, end uint64) (TxAft
 
 // Transactions queries the blockchain for transactions matching the
 // filter predicate `p`.
-func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals []interface{}, after TxAfter, limit int, asc bool) ([]interface{}, *TxAfter, error) {
+func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals []interface{}, after TxAfter, limit int, asc bool) ([][]byte, *TxAfter, error) {
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}
@@ -125,21 +124,21 @@ func constructTransactionsQuery(expr filter.SQLExpr, after TxAfter, asc bool, li
 	return buf.String(), vals
 }
 
-func (ind *Indexer) fetchTransactions(ctx context.Context, queryStr string, queryArgs []interface{}, after TxAfter, limit int) ([]interface{}, *TxAfter, error) {
+func (ind *Indexer) fetchTransactions(ctx context.Context, queryStr string, queryArgs []interface{}, after TxAfter, limit int) ([][]byte, *TxAfter, error) {
 	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "executing txn query")
 	}
 	defer rows.Close()
 
-	txns := make([]interface{}, 0, limit)
+	txns := make([][]byte, 0, limit)
 	for rows.Next() {
 		var data []byte
 		err := rows.Scan(&after.FromBlockHeight, &after.FromPosition, &data)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "scanning transaction row")
 		}
-		txns = append(txns, (*json.RawMessage)(&data))
+		txns = append(txns, data)
 	}
 	err = rows.Err()
 	if err != nil {
@@ -149,16 +148,16 @@ func (ind *Indexer) fetchTransactions(ctx context.Context, queryStr string, quer
 }
 
 type fetchResp struct {
-	txns  []interface{}
+	txns  [][]byte
 	after *TxAfter
 	err   error
 }
 
-func (ind *Indexer) waitForAndFetchTransactions(ctx context.Context, queryStr string, queryArgs []interface{}, after TxAfter, limit int) ([]interface{}, *TxAfter, error) {
+func (ind *Indexer) waitForAndFetchTransactions(ctx context.Context, queryStr string, queryArgs []interface{}, after TxAfter, limit int) ([][]byte, *TxAfter, error) {
 	resp := make(chan fetchResp, 1)
 	go func() {
 		var (
-			txs []interface{}
+			txs [][]byte
 			aft *TxAfter
 			err error
 		)
