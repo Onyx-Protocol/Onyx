@@ -11,7 +11,29 @@ const MAX_BLOCK_HEIGHT = (2 * 63) - 1
  * More info: {@link https://chain.com/docs/core/build-applications/real-time-transaction-processing}
  */
 class TransactionFeed {
+  /**
+   * Called once for every item received via the transaction feed.
+   *
+   * @callback FeedProcessor
+   * @param {Object} item - Item to process.
+   * @param {function(Boolean)} next - Acknowledge read of item if passed true,
+   *                                   then continue/long-poll to next item.
+   * @param {function(Boolean)} done - Acknowledge read of item if passed true,
+   *                                   then terminate the loop by fulfilling the
+   *                                   outer promise.
+   * @param {function(Error)} fail - Terminate the loop by rejecting the outer
+   *                                 promise. Use this if you want to bubble an
+   *                                 async error up to the outer promise catch function.
+   */
 
+  /**
+   * Create a new transaction feed consumer.
+   *
+   * @param {Object} feed - API response from {@link module:transactionFeedsAPI}
+   *                        `create` or `get` call.
+   * @param {Client} client - Configured Chain client object
+   * @returns {TransactionFeed}
+   */
   constructor(feed, client) {
     let nextAfter
     let after = feed['after']
@@ -27,7 +49,13 @@ class TransactionFeed {
     const query = params => client.transactions.query(params)
 
     /**
+     * Process items returned from a transaction feed in real time.
      *
+     * @param {FeedProcessor} consumer - Called once with each item to do any
+     *                                   desired processing. The callback can
+     *                                   optionally choose to terminate the loop.
+     * @parma {Number} [timeout=86400) - Number of seconds to wait before
+     *                                   closing connection.
      */
     this.consume = (consumer, timeout = 24*60*60) => {
       return new Promise((resolve, reject) => {
