@@ -54,9 +54,6 @@ func (a *issueAction) Build(ctx context.Context, builder *txbuilder.TemplateBuil
 	}
 
 	assetdef := asset.RawDefinition()
-	if err != nil {
-		return err
-	}
 
 	txin := bc.NewIssuanceInput(nonce[:], a.Amount, a.ReferenceData, asset.InitialBlockHash, asset.IssuanceProgram, nil, assetdef)
 
