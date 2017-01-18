@@ -5,6 +5,7 @@ import { Link } from 'react-router'
 class Success extends React.Component {
 
   render() {
+    const userInput = this.props.userInput
     const nextButton = <div className={styles.next}>
       <Link to={this.props.route}>
         <button key='showNext' className='btn btn-primary' onClick={this.props.handleNext}>
@@ -28,7 +29,8 @@ class Success extends React.Component {
             <span className='glyphicon glyphicon-ok-sign'></span>
             <div className={styles.text}>
               {this.props.content.map(function (x, i){
-                return <li key={i}>{x}</li>
+                var str = x.replace('STRING', userInput)
+                return <li key={i}>{str}</li>
               })}
             </div>
 

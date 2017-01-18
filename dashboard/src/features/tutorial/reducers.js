@@ -12,7 +12,15 @@ export const isShowing = (state = true, action) => {
   return state
 }
 
+export const userInputs = (state = {}, action) => {
+  if (action.type == 'UPDATE_TUTORIAL'){
+    return {...state, ...action.info}
+  }
+  return state
+}
+
 export default combineReducers({
   step,
   isShowing,
+  userInputs
 })

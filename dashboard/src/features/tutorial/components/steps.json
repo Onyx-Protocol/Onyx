@@ -25,7 +25,7 @@
       "header": "Create MockHSM key",
       "steps": [
         {
-          "title": "Type 'gold' for key alias",
+          "title": "Type a name for key alias (ex. 'gold', 'silver', 'bronze')",
           "description": "A key alias is a label used to distinguish between keys. We will use this gold key in the next step."
         },
         {
@@ -36,13 +36,14 @@
     }
   },
   {
+    "type": "mockhsm",
     "component": "Success",
     "title": "Tutorial - MockHSM keys - Step 1 of 7",
     "button": "Learn about assets",
     "dismiss": "End tutorial",
     "route": "assets",
     "content": [
-              "Great work!",
+              "Great work! You created the 'STRING' key.",
               "Next up, you will learn about assets and how to create one."
             ]
   },
@@ -64,11 +65,11 @@
       "header": "Create Asset",
       "steps": [
         {
-          "title": "Type 'gold' for asset alias",
+          "title": "Type name for asset alias (ex. 'gold', 'silver', 'bronze')",
           "description": "An asset alias is a label used to distinguish between assets."
         },
         {
-          "title": "Select 'gold' key to use existing MockHSM key",
+          "title": "Select 'STRING' key to use existing MockHSM key",
           "description": "This key will be used for the issuance and transfer of asset units in this account."
         },
         {
@@ -79,13 +80,14 @@
     }
   },
   {
+    "type": "asset",
     "component": "Success",
     "title": "Tutorial - Assets - Step 2 of 7",
     "button": "Learn about accounts",
     "dismiss": "End tutorial",
     "route": "accounts",
     "content": [
-              "Great! You created the gold asset.",
+              "Great! You created the 'STRING' asset.",
               "Next up, you will learn about accounts and how to create one."
             ]
   },
@@ -107,11 +109,11 @@
       "header": "Create Account",
       "steps": [
         {
-          "title": "Type 'alice' for account alias",
+          "title": "Type name for account alias (ex. 'alice', 'bob')",
           "description": "An account alias is a label used to distinguish between accounts."
         },
         {
-          "title": "Select 'alice key' to generate new MockHSM key",
+          "title": "Type name for key to generate new MockHSM key (ex. 'alice key', 'bob key')",
           "description": "This key will be used for the issuance and transfer of asset units in this account."
         },
         {
@@ -122,14 +124,15 @@
     }
   },
   {
+    "type": "account",
     "component": "Success",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": "Create 2nd account",
     "dismiss": "End tutorial",
     "route": "accounts/create",
     "content": [
-              "Great! You created Alice's account.",
-              "Next, you will create Bob's account to interact with Alice's."
+              "Great! You created an account for 'STRING'.",
+              "Next, you will create a second account to interact with the newly created STRING account."
             ]
   },
   {
@@ -142,11 +145,11 @@
       "header": "Create Account",
       "steps": [
         {
-          "title": "Type 'bob' for account alias",
+          "title": "Type name for account alias (ex. 'alice', 'bob')",
           "description": "An account alias is a label used to distinguish between accounts."
         },
         {
-          "title": "Select 'bob key' to generate new MockHSM key",
+          "title": "Type name for key to generate new MockHSM key (ex. 'alice key', 'bob key')",
           "description": "This key will be used for the issuance and transfer of asset units in this account."
         },
         {
@@ -157,13 +160,14 @@
     }
   },
   {
+    "type": "account",
     "component": "Success",
     "title": "Tutorial - Accounts - Step 4 of 7",
     "button": "Learn about transactions",
     "dismiss": "End tutorial",
     "route": "transactions",
     "content": [
-              "Great! You created an account for Bob.",
+              "Great! You created an account for 'STRING'.",
               "Next, you will learn about transactions and how to issue assets."
             ]
   },

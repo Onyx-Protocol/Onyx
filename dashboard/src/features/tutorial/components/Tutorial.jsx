@@ -16,6 +16,7 @@ class Tutorial extends React.Component {
 
   render() {
     const tutorialStep = this.props.tutorialStep
+    const userInput = this.props.tutorialInputs[steps[tutorialStep]['type']] || { alias: "" }
     const tutorialOpen = this.props.tutorialOpen
     const tutorialTypes = this.props.types
     const TutorialComponent = components[steps[tutorialStep]['component']]
@@ -24,6 +25,7 @@ class Tutorial extends React.Component {
       <div>
       {tutorialOpen && (tutorialTypes.includes(steps[tutorialStep]['component'])) &&
           <TutorialComponent
+            userInput={userInput.alias}
             step={tutorialStep}
             button={steps[tutorialStep]['button']}
             title={steps[tutorialStep]['title']}
@@ -44,7 +46,8 @@ import { connect } from 'react-redux'
 
 const mapStateToProps = (state) => ({
   tutorialStep: state.tutorial.step,
-  tutorialOpen: state.tutorial.isShowing
+  tutorialOpen: state.tutorial.isShowing,
+  tutorialInputs: state.tutorial.userInputs
 })
 
 const mapDispatchToProps = ( dispatch ) => ({
