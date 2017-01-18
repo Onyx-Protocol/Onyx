@@ -13,6 +13,6 @@ RUN apk --no-cache add bash clang git g++ make nodejs openjdk8 python perl \
     && go install github.com/GoASTScanner/gas
 
 ADD bin /usr/bin
-ENV CHAIN $(go env GOPATH)/src/chain
+ENV CHAIN ${GOPATH:-$HOME/go}/src/chain
 ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
 ENV MAVEN_HOME /usr/share/maven
