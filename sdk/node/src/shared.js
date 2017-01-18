@@ -45,16 +45,28 @@ class BatchResponse {
    */
   constructor(resp) {
     /**
-     * Items from the input array which were successfully processed
+     * Items from the input array which were successfully processed. This value
+     * is a sparsely populated array, maintaining the indexes of the items as
+     * they were originall submitted.
      * @type {Array<Object>}
      */
-    this.successes = resp.map((item) => item.code ? null : item)
+    this.successes = []
 
     /**
-     * Items from the input array which reuslted in an error
+     * Items from the input array which reuslted in an error. This value
+     * is a sparsely populated array, maintaining the indexes of the items as
+     * they were originall submitted.
      * @type {Array<Object>}
      */
-    this.errors = resp.map((item) => item.code ? item : null)
+    this.errors = []
+
+    resp.forEach((item, index) => {
+      if (item.code) {
+        this.errors[index] = item
+      } else {
+        this.successes[index] = item
+      }
+    })
 
     /**
      * Original input array
