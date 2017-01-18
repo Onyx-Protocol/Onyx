@@ -33,14 +33,14 @@ Set the `CHAIN` environment variable, in `.profile` in your home
 directory, to point to the root of the Chain source code repo:
 
 ```
-export CHAIN=$GOPATH/src/chain
+export CHAIN=$(go env GOPATH)/src/chain
 ```
 
 You should also add `$CHAIN/bin` to your path (as well as
-`$GOPATH/bin`, if it isn’t already):
+`$(go env GOPATH)/bin`, if it isn’t already):
 
 ```
-PATH=$GOPATH/bin:$CHAIN/bin:$PATH
+PATH=$(go env GOPATH)/bin:$CHAIN/bin:$PATH
 ```
 
 You might want to open a new terminal window to pick up the change.
@@ -91,14 +91,14 @@ $ dumpschema
 
 To add or update a Go dependency, do the following:
 
-Copy the code from `$GOPATH/src/x`
+Copy the code from `$(go env GOPATH)/src/x`
 to `$CHAIN/vendor/x`. For example, to vendor the package
 `github.com/kr/pretty`, run
 
 ```
 $ mkdir -p $CHAIN/vendor/github.com/kr
 $ rm -r $CHAIN/vendor/github.com/kr/pretty
-$ cp -r $GOPATH/src/github.com/kr/pretty $CHAIN/vendor/github.com/kr/pretty
+$ cp -r $(go env GOPATH)/src/github.com/kr/pretty $CHAIN/vendor/github.com/kr/pretty
 $ rm -rf $CHAIN/vendor/github.com/kr/pretty/.git
 ```
 

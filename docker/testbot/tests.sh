@@ -2,6 +2,7 @@
 
 set -eou pipefail
 
+GOPATH=$(go env GOPATH)
 mkdir -p $GOPATH/log/testbot
 initlog=$GOPATH/log/testbot/init.log
 

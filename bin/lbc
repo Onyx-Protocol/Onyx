@@ -9,8 +9,8 @@ cleanup() {(
 		kill -9 $pid
 	done
 	wait
-	rm -rf $GOPATH/bin/cored
-	rm -rf $GOPATH/bin/corectl
+	rm -rf $(go env GOPATH)/bin/cored
+	rm -rf $(go env GOPATH)/bin/corectl
 	dropdb lbc-gen-core
 	dropdb lbc-s1-core
 	dropdb lbc-s2-core
