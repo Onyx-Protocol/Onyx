@@ -72,8 +72,6 @@ func TestAnnotateTxs(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(txs, want) {
-		spew.Dump(txs)
-		spew.Dump(want)
-		t.Errorf("got:\n%+v\nwant:\n%+v", txs, want)
+		t.Errorf("got:\n%s\nwant:\n%s", spew.Sdump(txs), spew.Sdump(want))
 	}
 }

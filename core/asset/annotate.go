@@ -2,7 +2,6 @@ package asset
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 
 	"github.com/lib/pq"
@@ -19,7 +18,7 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 	// check the outputs because every transaction should balance.
 	for _, tx := range txs {
 		for _, out := range tx.Outputs {
-			assetIDStrMap[hex.EncodeToString(out.AssetID)] = out.AssetID
+			assetIDStrMap[string(out.AssetID)] = out.AssetID
 		}
 	}
 	if len(assetIDStrMap) == 0 {
@@ -38,13 +37,14 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 		localByAssetIDStr   = make(map[string]bool, len(assetIDs))
 	)
 	const q = `
-		SELECT encode(id, 'hex'), COALESCE(alias, ''), signer_id IS NOT NULL, tags, definition
+		SELECT id, COALESCE(alias, ''), signer_id IS NOT NULL, tags, definition
 		FROM assets
 		LEFT JOIN asset_tags ON asset_id=id
 		WHERE id IN (SELECT unnest($1::bytea[]))
 	`
 	err := pg.ForQueryRows(ctx, reg.db, q, pq.ByteaArray(assetIDs),
-		func(assetIDStr, alias string, local bool, tagsBlob, defBlob []byte) error {
+		func(assetID []byte, alias string, local bool, tagsBlob, defBlob []byte) error {
+			assetIDStr := string(assetID)
 			if alias != "" {
 				aliasesByAssetIDStr[assetIDStr] = alias
 			}
@@ -76,7 +76,7 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 	empty := json.RawMessage(`{}`)
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
-			assetIDStr := hex.EncodeToString(in.AssetID)
+			assetIDStr := string(in.AssetID)
 
 			if alias, ok := aliasesByAssetIDStr[assetIDStr]; ok {
 				in.AssetAlias = alias
@@ -97,7 +97,7 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 		}
 
 		for _, out := range tx.Outputs {
-			assetIDStr := hex.EncodeToString(out.AssetID)
+			assetIDStr := string(out.AssetID)
 
 			if alias, ok := aliasesByAssetIDStr[assetIDStr]; ok {
 				out.AssetAlias = alias
