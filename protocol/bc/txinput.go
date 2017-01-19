@@ -199,7 +199,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 }
 
 func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
-	_, err := blockchain.WriteVarint63(w, t.AssetVersion) // TODO(bobg): check and return error
+	_, err := blockchain.WriteVarint63(w, t.AssetVersion)
 	if err != nil {
 		return errors.Wrap(err, "writing asset version")
 	}
