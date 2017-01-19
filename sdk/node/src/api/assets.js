@@ -55,7 +55,7 @@ const assetsAPI = (client) => {
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
-    query: (params, cb) => shared.query(client, this, '/list-assets', params, {cb}),
+    query: (params, cb) => shared.query(client, 'assets', '/list-assets', params, {cb}),
 
     /**
      * Request all assets matching the specified query, calling the
@@ -66,7 +66,7 @@ const assetsAPI = (client) => {
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error
      */
-    queryAll: (params, processor) => shared.queryAll(this, params, processor),
+    queryAll: (params, processor) => shared.queryAll(client, 'assets', params, processor),
   }
 }
 

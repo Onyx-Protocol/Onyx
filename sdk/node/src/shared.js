@@ -31,7 +31,8 @@ const Page = require('./page')
  * Called once for each item in the result set.
  *
  * @callback QueryProcessor
- * @param {Object} item - Item to process
+ * @param {Object} item - Item to process.
+ * @param {function} done - Call to terminate iteration through the result set.
  */
 
 /**
@@ -115,24 +116,37 @@ module.exports = {
     )
   },
 
-  query: (client, owner, path, params = {}, opts = {}) => {
+  query: (client, memberPath, path, params = {}, opts = {}) => {
     return tryCallback(
-      client.request(path, params).then(data => new Page(data, owner)),
+      client.request(path, params).then(data => new Page(data, client, memberPath)),
       opts.cb
     )
   },
 
   /*
-   * NOTE: Requires query to be implemented on `owner` object
+   * NOTE: Requires query to be implemented on client for the specified member.
    */
-  queryAll: (owner, params, processor = () => {}) => {
+  queryAll: (client, memberPath, params, processor = () => {}) => {
     let nextParams = params
 
+    let queryOwner = client
+    memberPath.split('.').forEach((member) => {
+      queryOwner = queryOwner[member]
+    })
+
     return new Promise((resolve, reject) => {
+      let continueIteration = true
+
+      const done = () => {
+        continueIteration = false
+        Promise.resolve().then(resolve).catch(reject)
+      }
+
       const nextPage = () => {
-        owner.query(nextParams).then(page => {
+        queryOwner.query(nextParams).then(page => {
           for (let item in page.items) {
-            processor(page.items[item])
+            processor(page.items[item], done)
+            if (!continueIteration) return
           }
 
           if (!page.lastPage) {

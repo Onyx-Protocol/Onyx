@@ -42,7 +42,7 @@ const mockHsmKeysAPI = (client) => {
         params.pageSize = params.aliases.length
       }
 
-      return shared.query(client, this, '/mockhsm/list-keys', params, {cb})
+      return shared.query(client, 'mockHsm.keys', '/mockhsm/list-keys', params, {cb})
     },
 
     /**
@@ -53,7 +53,7 @@ const mockHsmKeysAPI = (client) => {
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error
      */
-    queryAll: (processor) => shared.queryAll(this, {}, processor),
+    queryAll: (processor) => shared.queryAll(client, 'mockHsm.keys', {}, processor),
   }
 }
 

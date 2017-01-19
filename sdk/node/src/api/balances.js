@@ -18,7 +18,7 @@ const balancesAPI = (client) => {
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results.
      */
-    query: (params, cb) => shared.query(client, this, '/list-balances', params, {cb}),
+    query: (params, cb) => shared.query(client, 'balances', '/list-balances', params, {cb}),
 
     /**
      * Request all balances matching the specified query, calling the
@@ -29,7 +29,7 @@ const balancesAPI = (client) => {
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.
      */
-    queryAll: (params, processor) => shared.queryAll(this, params, processor),
+    queryAll: (params, processor) => shared.queryAll(client, 'balances', params, processor),
   }
 }
 

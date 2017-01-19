@@ -52,7 +52,7 @@ const accountsAPI = (client) => {
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
-    query: (params, cb) => shared.query(client, this, '/list-accounts', params, {cb}),
+    query: (params, cb) => shared.query(client, 'accounts', '/list-accounts', params, {cb}),
 
     /**
      * Request all accounts matching the specified query, calling the
@@ -63,7 +63,7 @@ const accountsAPI = (client) => {
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.
      */
-    queryAll: (params, processor) => shared.queryAll(this, params, processor),
+    queryAll: (params, processor) => shared.queryAll(client, 'accounts', params, processor),
 
     /**
      * Create a new control program, specifying either an account ID or account

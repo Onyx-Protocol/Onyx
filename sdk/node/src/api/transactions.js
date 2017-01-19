@@ -170,7 +170,7 @@ const transactionsAPI = (client) => {
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results.
      */
-    query: (params, cb) => shared.query(client, this, '/list-transactions', params, {cb}),
+    query: (params, cb) => shared.query(client, 'transactions', '/list-transactions', params, {cb}),
 
     /**
      * Request all transactions matching the specified query, calling the
@@ -181,7 +181,7 @@ const transactionsAPI = (client) => {
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.
      */
-    queryAll: (params, processor) => shared.queryAll(this, params, processor),
+    queryAll: (params, processor) => shared.queryAll(client, 'transactions', params, processor),
 
     /**
      * Build an unsigned transaction from a set of actions.

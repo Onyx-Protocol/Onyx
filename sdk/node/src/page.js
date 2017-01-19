@@ -15,9 +15,11 @@ class Page {
    * Create a page object
    *
    * @param  {Object} data  API response for a single page of data.
-   * @param  {Object} owner Chain API object implementing the `query` method.
+   * @param  {Client} client Chain Client.
+   * @param  {String} memberPath key-path pointing to module implementing the
+   *                  desired `query` method.
    */
-  constructor(data, owner) {
+  constructor(data, client, memberPath) {
     /**
      * Array of Chain Core objects
      * @type {Array}
@@ -39,7 +41,8 @@ class Page {
 
     Object.assign(this, data)
 
-    this.owner = owner
+    this.client = client
+    this.memberPath = memberPath
   }
 
   /**
@@ -50,7 +53,12 @@ class Page {
    *                         the requested results.
    */
   nextPage(cb) {
-    return this.owner.query(this.next, cb)
+    let queryOwner = this.client
+    this.memberPath.split('.').forEach((member) => {
+      queryOwner = queryOwner[member]
+    })
+
+    return queryOwner.query(this.next, cb)
   }
 }
 

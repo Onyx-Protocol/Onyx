@@ -35,7 +35,7 @@ const accessTokens = (client) => {
     query: (params, cb) => {
       params = params || {}
       params.pageSize = 1000
-      return shared.query(client, this, '/list-access-tokens', params, {cb})
+      return shared.query(client, 'accessTokens', '/list-access-tokens', params, {cb})
     },
 
     /**

@@ -190,7 +190,7 @@ const transactionFeedsAPI = (client) => {
     /**
      * Returns a page of transaction feeds defined on the core.
      */
-    query: (params, cb) => shared.query(client, this, '/list-transaction-feeds', params, {cb}),
+    query: (params, cb) => shared.query(client, 'transactionFeeds', '/list-transaction-feeds', params, {cb}),
   }
 }
 

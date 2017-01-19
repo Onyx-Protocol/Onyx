@@ -18,7 +18,7 @@ const unspentOutputsAPI = (client) => {
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results
      */
-    query: (params, cb) => shared.query(client, this, '/list-unspent-outputs', params, {cb}),
+    query: (params, cb) => shared.query(client, 'unspentOutputs', '/list-unspent-outputs', params, {cb}),
 
     /**
      * Request all unspent outputs matching the specified query, calling the
@@ -29,7 +29,7 @@ const unspentOutputsAPI = (client) => {
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error
      */
-    queryAll: (params, processor) => shared.queryAll(this, params, processor),
+    queryAll: (params, processor) => shared.queryAll(client, 'unspentOutputs', params, processor),
   }
 }
 
