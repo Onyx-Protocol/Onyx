@@ -32,8 +32,8 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 		assetIDs = append(assetIDs, assetID)
 	}
 	var (
-		tagsByAssetIDStr    = make(map[string]json.RawMessage, len(assetIDs))
-		defsByAssetIDStr    = make(map[string]json.RawMessage, len(assetIDs))
+		tagsByAssetIDStr    = make(map[string]*json.RawMessage, len(assetIDs))
+		defsByAssetIDStr    = make(map[string]*json.RawMessage, len(assetIDs))
 		aliasesByAssetIDStr = make(map[string]string, len(assetIDs))
 		localByAssetIDStr   = make(map[string]bool, len(assetIDs))
 	)
@@ -44,23 +44,26 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 		WHERE id IN (SELECT unnest($1::bytea[]))
 	`
 	err := pg.ForQueryRows(ctx, reg.db, q, pq.ByteaArray(assetIDs),
-		func(assetIDStr, alias string, local bool, tagsBlob []byte, defBlob []byte) error {
+		func(assetIDStr, alias string, local bool, tagsBlob, defBlob []byte) error {
 			if alias != "" {
 				aliasesByAssetIDStr[assetIDStr] = alias
 			}
 			localByAssetIDStr[assetIDStr] = local
+
+			jsonTags := json.RawMessage(tagsBlob)
+			jsonDef := json.RawMessage(defBlob)
 			if len(tagsBlob) > 0 {
 				var v interface{}
 				err := json.Unmarshal(tagsBlob, &v)
 				if err == nil {
-					tagsByAssetIDStr[assetIDStr] = tagsBlob
+					tagsByAssetIDStr[assetIDStr] = &jsonTags
 				}
 			}
 			if len(defBlob) > 0 {
 				var v interface{}
 				err := json.Unmarshal(defBlob, &v)
 				if err == nil {
-					defsByAssetIDStr[assetIDStr] = defBlob
+					defsByAssetIDStr[assetIDStr] = &jsonDef
 				}
 			}
 			return nil
@@ -70,7 +73,7 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 		return errors.Wrap(err, "querying assets")
 	}
 
-	empty := []byte(`{}`)
+	empty := json.RawMessage(`{}`)
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
 			assetIDStr := hex.EncodeToString(in.AssetID)
@@ -83,8 +86,8 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 			}
 			tags := tagsByAssetIDStr[assetIDStr]
 			def := defsByAssetIDStr[assetIDStr]
-			in.AssetTags = empty
-			in.AssetDefinition = empty
+			in.AssetTags = &empty
+			in.AssetDefinition = &empty
 			if tags != nil {
 				in.AssetTags = tags
 			}
@@ -104,8 +107,8 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 			}
 			tags := tagsByAssetIDStr[assetIDStr]
 			def := defsByAssetIDStr[assetIDStr]
-			out.AssetTags = empty
-			out.AssetDefinition = empty
+			out.AssetTags = &empty
+			out.AssetDefinition = &empty
 			if tags != nil {
 				out.AssetTags = tags
 			}

@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -28,12 +29,13 @@ func TestAnnotateTxs(t *testing.T) {
 			},
 		},
 	}
-	wantTags := []byte(`{"one": "foo", "two": "bar"}`)
+	empty := json.RawMessage(`{}`)
+	wantTags := json.RawMessage(`{"one": "foo", "two": "bar"}`)
 	want := []*query.AnnotatedTx{
 		{
 			Outputs: []*query.AnnotatedOutput{
-				{Purpose: "receive", ControlProgram: acp1, AccountID: acc1.ID, AccountTags: []byte(`{}`)},
-				{Purpose: "receive", ControlProgram: acp2, AccountID: acc2.ID, AccountTags: wantTags},
+				{Purpose: "receive", ControlProgram: acp1, AccountID: acc1.ID, AccountTags: &empty},
+				{Purpose: "receive", ControlProgram: acp2, AccountID: acc2.ID, AccountTags: &wantTags},
 			},
 		},
 	}

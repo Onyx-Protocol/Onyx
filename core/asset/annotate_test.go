@@ -2,6 +2,7 @@ package asset
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -19,9 +20,9 @@ func TestAnnotateTxs(t *testing.T) {
 	ctx := context.Background()
 
 	tags1 := map[string]interface{}{"foo": "bar"}
-	rawtags1 := []byte(`{"foo": "bar"}`)
+	rawtags1 := json.RawMessage(`{"foo": "bar"}`)
 	def1 := map[string]interface{}{"baz": "bar"}
-	rawdef1 := []byte(`{
+	rawdef1 := json.RawMessage(`{
   "baz": "bar"
 }`)
 	asset1, err := reg.Define(ctx, []chainkd.XPub{testutil.TestXPub}, 1, def1, "", tags1, "")
@@ -30,7 +31,7 @@ func TestAnnotateTxs(t *testing.T) {
 	}
 
 	tags2 := map[string]interface{}{"foo": "baz"}
-	rawtags2 := []byte(`{"foo": "baz"}`)
+	rawtags2 := json.RawMessage(`{"foo": "baz"}`)
 	asset2, err := reg.Define(ctx, []chainkd.XPub{testutil.TestXPub}, 1, nil, "", tags2, "")
 	if err != nil {
 		t.Fatal(err)
@@ -50,17 +51,19 @@ func TestAnnotateTxs(t *testing.T) {
 			},
 		},
 	}
+
+	empty := json.RawMessage(`{}`)
 	want := []*query.AnnotatedTx{
 		{
 			Inputs: []*query.AnnotatedInput{
-				{AssetID: asset1.AssetID[:], AssetTags: rawtags1, AssetIsLocal: true, AssetDefinition: rawdef1},
-				{AssetID: asset2.AssetID[:], AssetTags: rawtags2, AssetIsLocal: true, AssetDefinition: []byte(`{}`)},
-				{AssetID: []byte{0xba, 0xd0}, AssetTags: []byte(`{}`), AssetDefinition: []byte(`{}`)},
+				{AssetID: asset1.AssetID[:], AssetTags: &rawtags1, AssetIsLocal: true, AssetDefinition: &rawdef1},
+				{AssetID: asset2.AssetID[:], AssetTags: &rawtags2, AssetIsLocal: true, AssetDefinition: &empty},
+				{AssetID: []byte{0xba, 0xd0}, AssetTags: &empty, AssetDefinition: &empty},
 			},
 			Outputs: []*query.AnnotatedOutput{
-				{AssetID: asset1.AssetID[:], AssetTags: rawtags1, AssetIsLocal: true, AssetDefinition: rawdef1},
-				{AssetID: asset2.AssetID[:], AssetTags: rawtags2, AssetIsLocal: true, AssetDefinition: []byte(`{}`)},
-				{AssetID: []byte{0xba, 0xd0}, AssetTags: []byte(`{}`), AssetDefinition: []byte(`{}`)},
+				{AssetID: asset1.AssetID[:], AssetTags: &rawtags1, AssetIsLocal: true, AssetDefinition: &rawdef1},
+				{AssetID: asset2.AssetID[:], AssetTags: &rawtags2, AssetIsLocal: true, AssetDefinition: &empty},
+				{AssetID: []byte{0xba, 0xd0}, AssetTags: &empty, AssetDefinition: &empty},
 			},
 		},
 	}

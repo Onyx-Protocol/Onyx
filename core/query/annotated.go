@@ -18,7 +18,7 @@ type AnnotatedTx struct {
 	BlockID       chainjson.HexBytes `json:"block_id"`
 	BlockHeight   uint64             `json:"block_height"`
 	Position      uint32             `json:"position"`
-	ReferenceData json.RawMessage    `json:"reference_data"`
+	ReferenceData *json.RawMessage   `json:"reference_data"`
 	IsLocal       Bool               `json:"is_local"`
 	Inputs        []*AnnotatedInput  `json:"inputs"`
 	Outputs       []*AnnotatedOutput `json:"outputs"`
@@ -28,8 +28,8 @@ type AnnotatedInput struct {
 	Type            string             `json:"type"`
 	AssetID         chainjson.HexBytes `json:"asset_id"`
 	AssetAlias      string             `json:"asset_alias,omitempty"`
-	AssetDefinition json.RawMessage    `json:"asset_definition"`
-	AssetTags       json.RawMessage    `json:"asset_tags,omitempty"`
+	AssetDefinition *json.RawMessage   `json:"asset_definition"`
+	AssetTags       *json.RawMessage   `json:"asset_tags,omitempty"`
 	AssetIsLocal    Bool               `json:"asset_is_local"`
 	Amount          uint64             `json:"amount"`
 	IssuanceProgram chainjson.HexBytes `json:"issuance_program,omitempty"`
@@ -37,8 +37,8 @@ type AnnotatedInput struct {
 	SpentOutput     *SpentOutput       `json:"spent_output,omitempty"`
 	AccountID       string             `json:"account_id,omitempty"`
 	AccountAlias    string             `json:"account_alias,omitempty"`
-	AccountTags     json.RawMessage    `json:"account_tags,omitempty"`
-	ReferenceData   json.RawMessage    `json:"reference_data"`
+	AccountTags     *json.RawMessage   `json:"account_tags,omitempty"`
+	ReferenceData   *json.RawMessage   `json:"reference_data"`
 	IsLocal         Bool               `json:"is_local"`
 }
 
@@ -49,15 +49,15 @@ type AnnotatedOutput struct {
 	Position        uint32             `json:"position"`
 	AssetID         chainjson.HexBytes `json:"asset_id"`
 	AssetAlias      string             `json:"asset_alias,omitempty"`
-	AssetDefinition json.RawMessage    `json:"asset_definition"`
-	AssetTags       json.RawMessage    `json:"asset_tags"`
+	AssetDefinition *json.RawMessage   `json:"asset_definition"`
+	AssetTags       *json.RawMessage   `json:"asset_tags"`
 	AssetIsLocal    Bool               `json:"asset_is_local"`
 	Amount          uint64             `json:"amount"`
 	AccountID       string             `json:"account_id,omitempty"`
 	AccountAlias    string             `json:"account_alias,omitempty"`
-	AccountTags     json.RawMessage    `json:"account_tags,omitempty"`
+	AccountTags     *json.RawMessage   `json:"account_tags,omitempty"`
 	ControlProgram  chainjson.HexBytes `json:"control_program"`
-	ReferenceData   json.RawMessage    `json:"reference_data"`
+	ReferenceData   *json.RawMessage   `json:"reference_data"`
 	IsLocal         Bool               `json:"is_local"`
 }
 
@@ -85,7 +85,7 @@ func (b *Bool) UnmarshalJSON(raw []byte) error {
 
 func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *AnnotatedTx {
 	blockHash := b.Hash()
-	referenceData := orig.ReferenceData
+	referenceData := json.RawMessage(orig.ReferenceData)
 	if len(referenceData) == 0 {
 		referenceData = []byte(`{}`)
 	}
@@ -96,7 +96,7 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *A
 		BlockID:       blockHash[:],
 		BlockHeight:   b.Height,
 		Position:      indexInBlock,
-		ReferenceData: referenceData,
+		ReferenceData: &referenceData,
 		Inputs:        make([]*AnnotatedInput, 0, len(orig.Inputs)),
 		Outputs:       make([]*AnnotatedOutput, 0, len(orig.Outputs)),
 	}
@@ -112,10 +112,14 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *A
 func buildAnnotatedInput(orig *bc.TxInput) *AnnotatedInput {
 	aid := orig.AssetID()
 
+	referenceData := json.RawMessage(orig.ReferenceData)
+	if len(referenceData) == 0 {
+		referenceData = []byte(`{}`)
+	}
 	in := &AnnotatedInput{
 		AssetID:       aid[:],
 		Amount:        orig.Amount(),
-		ReferenceData: orig.ReferenceData,
+		ReferenceData: &referenceData,
 	}
 
 	if orig.IsIssuance() {
@@ -136,12 +140,16 @@ func buildAnnotatedInput(orig *bc.TxInput) *AnnotatedInput {
 }
 
 func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32) *AnnotatedOutput {
+	referenceData := json.RawMessage(orig.ReferenceData)
+	if len(referenceData) == 0 {
+		referenceData = []byte(`{}`)
+	}
 	out := &AnnotatedOutput{
 		Position:       idx,
 		AssetID:        orig.AssetID[:],
 		Amount:         orig.Amount,
 		ControlProgram: orig.ControlProgram,
-		ReferenceData:  orig.ReferenceData,
+		ReferenceData:  &referenceData,
 	}
 	if vmutil.IsUnspendable(out.ControlProgram) {
 		out.Type = "retire"

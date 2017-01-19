@@ -72,7 +72,7 @@ func (m *Manager) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) err
 		return err
 	}
 
-	empty := []byte(`{}`)
+	empty := json.RawMessage(`{}`)
 	for i := range ids {
 		inps := inputs[string(programs[i])]
 		for _, inp := range inps {
@@ -81,9 +81,9 @@ func (m *Manager) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) err
 				inp.AccountAlias = aliases[i].String
 			}
 			if tags[i] != nil {
-				inp.AccountTags = *tags[i]
+				inp.AccountTags = tags[i]
 			} else {
-				inp.AccountTags = empty
+				inp.AccountTags = &empty
 			}
 		}
 
@@ -94,9 +94,9 @@ func (m *Manager) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) err
 				out.AccountAlias = aliases[i].String
 			}
 			if tags[i] != nil {
-				out.AccountTags = *tags[i]
+				out.AccountTags = tags[i]
 			} else {
-				out.AccountTags = empty
+				out.AccountTags = &empty
 			}
 
 			if changeFlags[i] {
