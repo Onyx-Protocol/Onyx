@@ -106,7 +106,6 @@ func (b *Block) WriteTo(w io.Writer) (int64, error) {
 	return ew.Written(), ew.Err()
 }
 
-// assumes w has sticky errors
 func (b *Block) writeTo(w io.Writer, serflags uint8) {
 	b.BlockHeader.writeTo(w, serflags)
 	if serflags&SerBlockTransactions == SerBlockTransactions {

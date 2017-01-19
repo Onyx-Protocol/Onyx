@@ -339,7 +339,6 @@ func (p Outpoint) String() string {
 }
 
 // WriteTo writes p to w.
-// It assumes w has sticky errors.
 func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
 	n, err := w.Write(p.Hash[:])
 	if err != nil {
@@ -349,7 +348,6 @@ func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
 	return int64(n + n2), err
 }
 
-// assumes w has sticky errors
 func writeRefData(w io.Writer, data []byte, serflags byte) error {
 	if serflags&SerMetadata != 0 {
 		_, err := blockchain.WriteVarstr31(w, data) // TODO(bobg): check and return error

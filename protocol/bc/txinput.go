@@ -198,7 +198,6 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	return nil
 }
 
-// assumes w has sticky errors
 func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
 	_, err := blockchain.WriteVarint63(w, t.AssetVersion) // TODO(bobg): check and return error
 	if err != nil {

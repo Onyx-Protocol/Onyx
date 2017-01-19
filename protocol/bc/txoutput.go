@@ -31,7 +31,6 @@ func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData [
 	}
 }
 
-// assumes r has sticky errors
 func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	to.AssetVersion, _, err = blockchain.ReadVarint63(r)
 	if err != nil {
@@ -54,7 +53,6 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	return errors.Wrap(err, "reading output witness")
 }
 
-// assumes r has sticky errors
 func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 	_, err := blockchain.WriteVarint63(w, to.AssetVersion)
 	if err != nil {
