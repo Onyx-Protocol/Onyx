@@ -278,7 +278,6 @@ func (tx *TxData) WriteTo(w io.Writer) (int64, error) {
 	return ew.Written(), ew.Err()
 }
 
-// assumes w has sticky errors
 func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 	_, err := w.Write([]byte{serflags})
 	if err != nil {
@@ -320,7 +319,7 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 		}
 	}
 
-	blockchain.WriteVarint31(w, uint64(len(tx.Outputs)))
+	_, err = blockchain.WriteVarint31(w, uint64(len(tx.Outputs)))
 	if err != nil {
 		return errors.Wrap(err, "writing tx output count")
 	}
@@ -356,5 +355,5 @@ func writeRefData(w io.Writer, data []byte, serflags byte) error {
 		_, err := blockchain.WriteVarstr31(w, data) // TODO(bobg): check and return error
 		return err
 	}
-	return WriteFastHash(w, data)
+	return writeFastHash(w, data)
 }
