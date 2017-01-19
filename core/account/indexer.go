@@ -51,8 +51,14 @@ func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
 	})
 }
 
-type output struct {
+type outputWithOutpoint struct {
 	state.Output
+	txHash      bc.Hash
+	outputIndex uint32
+}
+
+type output struct {
+	outputWithOutpoint
 	AccountID string
 	keyIndex  uint64
 }
@@ -66,16 +72,20 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 
 func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	// Upsert any UTXOs belonging to accounts managed by this Core.
-	outs := make([]*state.Output, 0, len(b.Transactions))
+	outs := make([]*outputWithOutpoint, 0, len(b.Transactions))
 	blockPositions := make(map[bc.Hash]uint32, len(b.Transactions))
 	for i, tx := range b.Transactions {
 		blockPositions[tx.Hash] = uint32(i)
 		for j, out := range tx.Outputs {
-			stateOutput := &state.Output{
-				TxOutput: *out,
-				Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(j)},
+			out := &outputWithOutpoint{
+				Output: state.Output{
+					TxOutput: *out,
+					OutputID: tx.OutputID(j),
+				},
+				txHash:      tx.Hash,
+				outputIndex: uint32(j),
 			}
-			outs = append(outs, stateOutput)
+			outs = append(outs, out)
 		}
 	}
 	accOuts, err := m.loadAccountInfo(ctx, outs)
@@ -89,24 +99,23 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	}
 
 	// Delete consumed account UTXOs.
-	deltxhash, delindex := prevoutDBKeys(b.Transactions...)
+	deloutputids := prevoutDBKeys(b.Transactions...)
 	const delQ = `
 		DELETE FROM account_utxos
-		WHERE (tx_hash, index) IN (SELECT unnest($1::bytea[]), unnest($2::integer[]))
+		WHERE output_id IN (SELECT unnest($1::bytea[]))
 	`
-	_, err = m.db.Exec(ctx, delQ, deltxhash, delindex)
+	_, err = m.db.Exec(ctx, delQ, deloutputids)
 	return errors.Wrap(err, "deleting spent account utxos")
 }
 
-func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.ByteaArray, index pg.Uint32s) {
+func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
 			if in.IsIssuance() {
 				continue
 			}
-			o := in.Outpoint()
-			txhash = append(txhash, o.Hash[:])
-			index = append(index, o.Index)
+			o := in.OutputID()
+			outputIDs = append(outputIDs, o[:])
 		}
 	}
 	return
@@ -115,8 +124,8 @@ func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.ByteaArray, index pg.Uint32s) {
 // loadAccountInfo turns a set of state.Outputs into a set of
 // outputs by adding account annotations.  Outputs that can't be
 // annotated are excluded from the result.
-func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, error) {
-	outsByScript := make(map[string][]*state.Output, len(outs))
+func (m *Manager) loadAccountInfo(ctx context.Context, outs []*outputWithOutpoint) ([]*output, error) {
+	outsByScript := make(map[string][]*outputWithOutpoint, len(outs))
 	for _, out := range outs {
 		scriptStr := string(out.ControlProgram)
 		outsByScript[scriptStr] = append(outsByScript[scriptStr], out)
@@ -137,9 +146,9 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]
 	err := pg.ForQueryRows(ctx, m.db, q, scripts, func(accountID string, keyIndex uint64, program []byte) {
 		for _, out := range outsByScript[string(program)] {
 			newOut := &output{
-				Output:    *out,
-				AccountID: accountID,
-				keyIndex:  keyIndex,
+				outputWithOutpoint: *out,
+				AccountID:          accountID,
+				keyIndex:           keyIndex,
 			}
 			result = append(result, newOut)
 		}
@@ -158,6 +167,8 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 	var (
 		txHash    pq.ByteaArray
 		index     pg.Uint32s
+		outputID  pq.ByteaArray
+		unspentID pq.ByteaArray
 		assetID   pq.ByteaArray
 		amount    pq.Int64Array
 		accountID pq.StringArray
@@ -165,8 +176,11 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 		program   pq.ByteaArray
 	)
 	for _, out := range outs {
-		txHash = append(txHash, out.Outpoint.Hash[:])
-		index = append(index, out.Outpoint.Index)
+		txHash = append(txHash, out.txHash[:])
+		index = append(index, out.outputIndex)
+		outputID = append(outputID, out.OutputID[:])
+		uid := out.UnspentID()
+		unspentID = append(unspentID, uid[:])
 		assetID = append(assetID, out.AssetID[:])
 		amount = append(amount, int64(out.Amount))
 		accountID = append(accountID, out.AccountID)
@@ -175,15 +189,17 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*out
 	}
 
 	const q = `
-		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, account_id, control_program_index,
+		INSERT INTO account_utxos (tx_hash, index, output_id, unspent_id, asset_id, amount, account_id, control_program_index,
 			control_program, confirmed_in)
-		SELECT unnest($1::bytea[]), unnest($2::bigint[]), unnest($3::bytea[]),  unnest($4::bigint[]),
-			   unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), $8
+		SELECT unnest($1::bytea[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::bytea[]), unnest($5::bytea[]),  unnest($6::bigint[]),
+			   unnest($7::text[]), unnest($8::bigint[]), unnest($9::bytea[]), $10
 		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
 	_, err := m.db.Exec(ctx, q,
 		txHash,
 		index,
+		outputID,
+		unspentID,
 		assetID,
 		amount,
 		accountID,

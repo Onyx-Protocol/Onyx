@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/encoding/bufpool"
 	"chain/errors"
@@ -17,6 +18,7 @@ type OutputCommitment struct {
 	ControlProgram []byte
 }
 
+// TODO(oleg): fix this implementation to respect all raw bytes in the OutputCommitment, irrespective of asset version.
 func (oc *OutputCommitment) writeTo(w io.Writer, assetVersion uint64) (err error) {
 	b := bufpool.Get()
 	defer bufpool.Put(b)
@@ -63,4 +65,12 @@ func (oc *OutputCommitment) readFrom(r io.Reader, txVersion, assetVersion uint64
 		oc.ControlProgram, _, err = blockchain.ReadVarstr31(r)
 		return errors.Wrap(err, "reading control program")
 	})
+}
+
+func (oc *OutputCommitment) Hash(assetVersion uint64) (outputhash Hash) {
+	h := sha3pool.Get256()
+	defer sha3pool.Put256(h)
+	oc.writeTo(h, assetVersion) // TODO(oleg): get rid of this assetVersion parameter to actually write all the bytes 
+	h.Read(outputhash[:])
+	return outputhash
 }

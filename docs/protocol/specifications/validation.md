@@ -46,7 +46,7 @@ A *blockchain state* comprises:
 
 * A [block header](data.md#block-header).
 * A *timestamp* equal to the timestamp in the [block header](data.md#block-header).
-* The set of [non-retired](data.md#retired-asset) unspent outputs in the block’s [assets merkle tree](data.md#assets-merkle-root).
+* The set of [unspent IDs](data.md#unspent-id) representing [non-retired](data.md#retired-asset) unspent outputs in the block’s [assets merkle tree](data.md#assets-merkle-root).
 * An *issuance memory*: a set of (issuance hash, expiration timestamp) pairs. It records recent issuance inputs in the state in order to detect duplicates.
 
 
@@ -244,8 +244,8 @@ A transaction is said to be *valid* with respect to a particular blockchain stat
     2. Compute [asset ID](data.md#asset-id) from the initial block ID, asset version 1, and the *VM version* and *issuance program* declared in the witness. If the resulting asset ID is not equal to the declared asset ID in the issuance commitment, halt and return false.
     3. [Evaluate](#evaluate-predicate) its [issuance program](data.md#issuance-program), for the VM version specified in the issuance commitment and with the [input witness](data.md#transaction-input-witness) [program arguments](data.md#program-arguments); if execution fails, halt and return false.
 2. If the input is a *spend*:
-    1. Load an output from the state as identified by the input’s [spent output reference](data.md#outpoint), yielding a *previous output*.
-    2. If the previous output does not exist, halt and return false.
+    1. Compute the [unspent ID](data.md#unspent-id) using the input’s [output ID](data.md#output-id) and the previous output commitment.
+    2. Check if the state contains the resulting unspent ID. If the unspent ID does not exist, halt and return false.
     3. [Evaluate](#evaluate-predicate) the previous output’s control program, for the VM version specified in the previous output and with the [input witness](data.md#transaction-input-witness) program arguments.
     4. If the evaluation returns false, halt and return false.
 3. Return true.
@@ -316,10 +316,10 @@ Note: requirement for the input and output sums to be below 2<sup>63</sup> impli
 **Algorithm:**
 
 1. For each spend input with asset version 1 in the transaction:
-    1. Delete the previous output (referenced by the input’s [outpoint](data.md#outpoint)) from S, yielding a new state S′.
+    1. Delete the previous [unspent ID](data.md#unspent-id) from S, yielding a new state S′.
     2. Replace S with S′.
 2. For each output with asset version 1 in the transaction:
-    1. Add that output to the unspent output set in S, yielding a new state S′.
+    1. Add that output’s [unspent ID](data.md#unspent-id) to S, yielding a new state S′.
     2. Replace S with S′.
 3. For all [asset version 1 issuance inputs](data.md#asset-version-1-issuance-commitment) with non-empty *nonce* string:
     1. Compute the [issuance hash](data.md#issuance-hash) H.

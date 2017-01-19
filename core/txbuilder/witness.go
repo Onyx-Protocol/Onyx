@@ -99,7 +99,7 @@ var ErrEmptyProgram = errors.New("empty signature program")
 // a program committing to aspects of the current
 // transaction. Specifically, the program commits to:
 //  - the mintime and maxtime of the transaction (if non-zero)
-//  - the outpoint and (if non-empty) reference data of the current input
+//  - the outputID and (if non-empty) reference data of the current input
 //  - the assetID, amount, control program, and (if non-empty) reference data of each output.
 func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index uint32, xpubs []chainkd.XPub, signFn SignFunc) error {
 	// Compute the predicate to sign. This is either a
@@ -167,7 +167,7 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 	})
 	inp := tpl.Transaction.Inputs[index]
 	if !inp.IsIssuance() {
-		constraints = append(constraints, outpointConstraint(inp.Outpoint()))
+		constraints = append(constraints, outpointConstraint(inp.OutputID()))
 	}
 
 	// Commitment to the tx-level refdata is conditional on it being

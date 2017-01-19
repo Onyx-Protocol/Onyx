@@ -123,7 +123,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 			case 1:
 				si = new(SpendInput)
 
-				_, err = si.Outpoint.readFrom(r)
+				_, err = si.OutputID.readFrom(r)
 				if err != nil {
 					return err
 				}
@@ -201,14 +201,16 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 // assumes w has sticky errors
 func (t *TxInput) writeTo(w io.Writer, serflags uint8) {
 	blockchain.WriteVarint63(w, t.AssetVersion) // TODO(bobg): check and return error
-	blockchain.WriteExtensibleString(w, t.WriteInputCommitment)
+	blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+		return t.WriteInputCommitment(w, serflags)
+	})
 	blockchain.WriteVarstr31(w, t.ReferenceData)
 	if serflags&SerWitness != 0 {
 		blockchain.WriteExtensibleString(w, t.writeInputWitness)
 	}
 }
 
-func (t *TxInput) WriteInputCommitment(w io.Writer) error {
+func (t *TxInput) WriteInputCommitment(w io.Writer, serflags uint8) error {
 	if t.AssetVersion == 1 {
 		switch inp := t.TypedInput.(type) {
 		case *IssuanceInput:
@@ -233,11 +235,16 @@ func (t *TxInput) WriteInputCommitment(w io.Writer) error {
 			if err != nil {
 				return err
 			}
-			_, err = inp.Outpoint.WriteTo(w)
+			_, err = inp.OutputID.WriteTo(w)
 			if err != nil {
 				return err
 			}
-			err = inp.OutputCommitment.writeTo(w, t.AssetVersion)
+			if serflags&SerPrevout != 0 {
+				err = inp.OutputCommitment.writeTo(w, t.AssetVersion)
+			} else {
+				prevouthash := inp.OutputCommitment.Hash(t.AssetVersion)
+				_, err = w.Write(prevouthash[:])
+			}
 			return err
 		}
 	}
@@ -286,9 +293,16 @@ func (t *TxInput) witnessHash() (h Hash, err error) {
 	return h, nil
 }
 
-func (t *TxInput) Outpoint() (o Outpoint) {
+func (t *TxInput) OutputID() (o OutputID) {
 	if si, ok := t.TypedInput.(*SpendInput); ok {
-		o = si.Outpoint
+		o = si.OutputID
 	}
 	return o
+}
+
+func (t *TxInput) UnspentID() (u UnspentID) {
+	if si, ok := t.TypedInput.(*SpendInput); ok {
+		u = ComputeUnspentID(si.OutputID, si.OutputCommitment.Hash(t.AssetVersion))
+	}
+	return u
 }
