@@ -7,7 +7,9 @@ import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
 import com.chain.http.*;
+import com.chain.proto.*;
 import com.google.gson.annotations.SerializedName;
+import com.google.protobuf.ByteString;
 
 import java.util.*;
 
@@ -49,19 +51,47 @@ public class Account {
      * Hex-encoded representation of the root extended public key
      */
     @SerializedName("root_xpub")
-    public String rootXpub;
+    public byte[] rootXpub;
 
     /**
      * The extended public key used to create control programs for the account.
      */
     @SerializedName("account_xpub")
-    public String accountXpub;
+    public byte[] accountXpub;
 
     /**
      * The derivation path of the extended key.
      */
     @SerializedName("account_derivation_path")
-    public String[] accountDerivationPath;
+    public byte[][] accountDerivationPath;
+
+    private Key(com.chain.proto.Account.Key proto) {
+      this.rootXpub = proto.getRootXpub().toByteArray();
+      this.accountXpub = proto.getAccountXpub().toByteArray();
+      this.accountDerivationPath = new byte[proto.getAccountDerivationPathCount()][];
+      for (int i = 0; i < proto.getAccountDerivationPathCount(); i++) {
+        this.accountDerivationPath[i] = proto.getAccountDerivationPath(i).toByteArray();
+      }
+    }
+
+    private static Key[] fromProtobuf(List<com.chain.proto.Account.Key> protos) {
+      Key[] resp = new Key[protos.size()];
+      for (int i = 0; i < protos.size(); i++) {
+        resp[i] = new Key(protos.get(i));
+      }
+      return resp;
+    }
+  }
+
+  private Account(com.chain.proto.Account proto, Client client) {
+    this.id = proto.getId();
+    this.alias = proto.getAlias();
+    this.quorum = proto.getQuorum();
+    this.keys = Key.fromProtobuf(proto.getKeysList());
+    if (proto.getTags() != null && !proto.getTags().isEmpty()) {
+      String tags = new String(proto.getTags().toByteArray());
+      this.tags = client.deserialize(tags);
+    }
   }
 
   /**
@@ -77,16 +107,48 @@ public class Account {
    */
   public static BatchResponse<Account> createBatch(Client client, List<Builder> builders)
       throws ChainException {
+    ArrayList<CreateAccountsRequest.Request> reqs = new ArrayList();
     for (Builder builder : builders) {
-      builder.clientToken = UUID.randomUUID().toString();
+      CreateAccountsRequest.Request.Builder req = CreateAccountsRequest.Request.newBuilder();
+      req.setQuorum(builder.quorum);
+      req.setClientToken(UUID.randomUUID().toString());
+      if (builder.alias != null && !builder.alias.isEmpty()) {
+        req.setAlias(builder.alias);
+      }
+      if (builder.rootXpubs != null && !builder.rootXpubs.isEmpty()) {
+        req.addAllRootXpubs(builder.rootXpubs);
+      }
+      if (builder.tags != null && !builder.tags.isEmpty()) {
+        req.setTags(ByteString.copyFrom(client.serialize(builder.tags)));
+      }
+      reqs.add(req.build());
     }
-    return client.batchRequest("create-account", builders, Account.class, APIException.class);
+    CreateAccountsRequest req = CreateAccountsRequest.newBuilder().addAllRequests(reqs).build();
+    CreateAccountsResponse resp = client.app().createAccounts(req);
+
+    if (resp.hasError()) {
+      throw new APIException(resp.getError());
+    }
+
+    Map<Integer, Account> successes = new LinkedHashMap();
+    Map<Integer, APIException> errors = new LinkedHashMap();
+
+    for (int i = 0; i < resp.getResponsesCount(); i++) {
+      CreateAccountsResponse.Response r = resp.getResponses(i);
+      if (r.hasError()) {
+        errors.put(i, new APIException(r.getError()));
+      } else {
+        successes.put(i, new Account(r.getAccount(), client));
+      }
+    }
+
+    return new BatchResponse<Account>(successes, errors);
   }
 
   /**
    * A paged collection of accounts returned from a query.
    */
-  public static class Items extends PagedItems<Account> {
+  public static class Items extends PagedItems<Account, ListAccountsQuery> {
     /**
      * Requests a page of accounts based on an underlying query.
      * @return a page of accounts objects
@@ -97,9 +159,37 @@ public class Account {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Items getPage() throws ChainException {
-      Items items = this.client.request("list-accounts", this.next, Items.class);
+      ListAccountsResponse resp = this.client.app().listAccounts(this.next);
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
+
+      Items items = new Items();
+      for (com.chain.proto.Account account : resp.getItemsList()) {
+        items.list.add(new Account(account, client));
+      }
+      items.lastPage = resp.getLastPage();
+      items.next = resp.getNext();
       items.setClient(this.client);
       return items;
+    }
+
+    public void setNext(Query query) {
+      ListAccountsQuery.Builder builder = ListAccountsQuery.newBuilder();
+      if (query.filter != null && !query.filter.isEmpty()) {
+        builder.setFilter(query.filter);
+      }
+      if (query.after != null && !query.filter.isEmpty()) {
+        builder.setAfter(query.after);
+      }
+
+      if (query.filterParams != null) {
+        for (Query.FilterParam param : query.filterParams) {
+          builder.addFilterParams(param.toProtobuf());
+        }
+      }
+
+      this.next = builder.build();
     }
   }
 
@@ -149,7 +239,7 @@ public class Account {
      * <strong>Must set with {@link #addRootXpub(String)} or {@link #setRootXpubs(List)} before calling {@link #create(Client)}.</strong>
      */
     @SerializedName("root_xpubs")
-    public List<String> rootXpubs;
+    public List<ByteString> rootXpubs;
 
     /**
      * User-specified tag structure for the account.
@@ -177,11 +267,13 @@ public class Account {
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
      * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
-     * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Account create(Client client) throws ChainException {
-      return client.singletonBatchRequest(
-          "create-account", Arrays.asList(this), Account.class, APIException.class);
+      BatchResponse<Account> resp = Account.createBatch(client, Arrays.asList(this));
+      if (resp.isError(0)) {
+        throw resp.errorsByIndex().get(0);
+      }
+      return resp.successesByIndex().get(0);
     }
 
     /**
@@ -212,7 +304,11 @@ public class Account {
      * @return updated builder object.
      */
     public Builder addRootXpub(String xpub) {
-      this.rootXpubs.add(xpub);
+      return addRootXpub(Util.hexStringToByteArray(xpub));
+    }
+
+    public Builder addRootXpub(byte[] xpub) {
+      this.rootXpubs.add(ByteString.copyFrom(xpub));
       return this;
     }
 
@@ -224,7 +320,10 @@ public class Account {
      * @return updated builder object
      */
     public Builder setRootXpubs(List<String> xpubs) {
-      this.rootXpubs = new ArrayList<>(xpubs);
+      this.rootXpubs = new ArrayList();
+      for (String xpub : xpubs) {
+        this.rootXpubs.add(ByteString.copyFrom(Util.hexStringToByteArray(xpub)));
+      }
       return this;
     }
 

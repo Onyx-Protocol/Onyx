@@ -13,16 +13,16 @@ class MultipartyTrades {
     Client bobCore = new Client();
 
     MockHsm.Key aliceDollarKey = MockHsm.Key.create(aliceCore);
-    HsmSigner.addKey(aliceDollarKey, MockHsm.getSignerClient(aliceCore));
+    HsmSigner.addKey(aliceDollarKey, aliceCore);
 
     MockHsm.Key bobBuckKey = MockHsm.Key.create(bobCore);
-    HsmSigner.addKey(bobBuckKey, MockHsm.getSignerClient(bobCore));
+    HsmSigner.addKey(bobBuckKey, bobCore);
 
     MockHsm.Key aliceKey = MockHsm.Key.create(aliceCore);
-    HsmSigner.addKey(aliceKey, MockHsm.getSignerClient(aliceCore));
+    HsmSigner.addKey(aliceKey, aliceCore);
 
     MockHsm.Key bobKey = MockHsm.Key.create(bobCore);
-    HsmSigner.addKey(bobKey, MockHsm.getSignerClient(bobCore));
+    HsmSigner.addKey(bobKey, bobCore);
 
     Asset aliceDollar = new Asset.Builder()
       .setAlias("aliceDollar")
@@ -105,7 +105,7 @@ class MultipartyTrades {
   public static void crossCore(
     Client aliceCore, Client bobCore,
     Account alice, Account bob,
-    String aliceDollarAssetId, String bobBuckAssetId
+    byte[] aliceDollarAssetId, byte[] bobBuckAssetId
   ) throws Exception {
     // snippet build-trade-alice
     Transaction.Template aliceTrade = new Transaction.Builder()
@@ -125,7 +125,7 @@ class MultipartyTrades {
     // endsnippet
 
     // snippet base-transaction-alice
-    String baseTransactionFromAlice = aliceTradeSigned.rawTransaction;
+    byte[] baseTransactionFromAlice = aliceTradeSigned.rawTransaction;
     // endsnippet
 
     // snippet build-trade-bob

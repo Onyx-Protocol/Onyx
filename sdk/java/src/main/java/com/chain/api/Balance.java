@@ -8,6 +8,10 @@ import com.chain.http.Client;
 import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
+import com.chain.proto.FilterParam;
+import com.chain.proto.ListBalancesQuery;
+import com.chain.proto.ListBalancesResponse;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
@@ -32,7 +36,7 @@ public class Balance {
   /**
    * A paged collection of asset balances returned from a query.
    */
-  public static class Items extends PagedItems<Balance> {
+  public static class Items extends PagedItems<Balance, ListBalancesQuery> {
     /**
      * Requests a page of asset balances based on an underlying query.
      * @return a collection of balance objects
@@ -42,10 +46,41 @@ public class Balance {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
+    @Override
     public Items getPage() throws ChainException {
-      Items items = this.client.request("list-balances", this.next, Items.class);
+      ListBalancesResponse resp = this.client.app().listBalances(this.next);
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
+
+      Items items = new Items();
+      items.list =
+          this.client.deserialize(
+              new String(resp.getItems().toByteArray()),
+              new TypeToken<List<Balance>>() {}.getType());
+      items.lastPage = resp.getLastPage();
+      items.next = resp.getNext();
       items.setClient(this.client);
       return items;
+    }
+
+    public void setNext(Query query) {
+      ListBalancesQuery.Builder builder = ListBalancesQuery.newBuilder();
+      if (query.filter != null && !query.filter.isEmpty()) {
+        builder.setFilter(query.filter);
+      }
+      if (query.sumBy != null && !query.sumBy.isEmpty()) {
+        builder.addAllSumBy(query.sumBy);
+      }
+      builder.setTimestamp(query.timestamp);
+
+      if (query.filterParams != null) {
+        for (Query.FilterParam param : query.filterParams) {
+          builder.addFilterParams(param.toProtobuf());
+        }
+      }
+
+      this.next = builder.build();
     }
   }
 

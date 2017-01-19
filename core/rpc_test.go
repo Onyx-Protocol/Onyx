@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"chain/core/pb"
 	"chain/core/txdb"
 	"chain/database/pg/pgtest"
 	"chain/protocol/prottest"
@@ -16,13 +17,13 @@ func TestGetBlock(t *testing.T) {
 	ctx := context.Background()
 	store := txdb.NewStore(db)
 	chain := prottest.NewChainWithStorage(t, store)
-	h := &Handler{Chain: chain, Store: store}
+	r := &Handler{Chain: chain, Store: store}
 
-	block, err := h.getBlockRPC(ctx, 1)
+	resp, err := r.GetBlock(ctx, &pb.GetBlockRequest{Height: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if block == nil {
+	if resp.Block == nil {
 		t.Error("expected 1 (initial) block, got none")
 	}
 
@@ -33,15 +34,15 @@ func TestGetBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	block, err = h.getBlockRPC(ctx, 2)
+	resp, err = r.GetBlock(ctx, &pb.GetBlockRequest{Height: 2})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	if block == nil {
+	if resp.Block == nil {
 		t.Error("expected 1 block, got none")
 	}
-	if !bytes.Equal(block, buf.Bytes()) {
-		t.Errorf("got=%x, want=%s", block, buf.Bytes())
+	if !bytes.Equal(resp.Block, buf.Bytes()) {
+		t.Errorf("got=%x, want=%x", resp.Block, buf.Bytes())
 	}
 }

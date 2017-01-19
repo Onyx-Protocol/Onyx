@@ -26,9 +26,6 @@ public class IouSettlement {
     System.out.println(coreURL);
     System.out.println(accessToken);
     Client client = new Client(new URL(coreURL), accessToken);
-    client.setConnectTimeout(10, TimeUnit.MINUTES);
-    client.setReadTimeout(10, TimeUnit.MINUTES);
-    client.setWriteTimeout(10, TimeUnit.MINUTES);
     bench(client);
     System.exit(0);
   }
@@ -170,7 +167,7 @@ public class IouSettlement {
     Key.Items keys = new MockHsm.Key.QueryBuilder().execute(client);
     while (keys.hasNext()) {
       Key k = keys.next();
-      HsmSigner.addKey(k.xpub, MockHsm.getSignerClient(client));
+      HsmSigner.addKey(k.xpub, client);
     }
   }
 }

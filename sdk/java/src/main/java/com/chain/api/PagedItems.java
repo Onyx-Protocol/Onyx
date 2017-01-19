@@ -13,7 +13,7 @@ import java.util.List;
  * Abstract base class representing api query results.
  * @param <T> type of api object
  */
-public abstract class PagedItems<T> implements Iterator<T> {
+public abstract class PagedItems<T, U> implements Iterator<T> {
   /**
    * Client object that makes the query requests.
    */
@@ -41,14 +41,14 @@ public abstract class PagedItems<T> implements Iterator<T> {
   /**
    * Specifies the details of the next query.
    */
-  public Query next;
+  public U next;
 
   /**
    * Retrieves the next page of results.
    * @return a paged collection of type T
    * @throws ChainException
    */
-  public abstract PagedItems<T> getPage() throws ChainException;
+  public abstract PagedItems<T, U> getPage() throws ChainException;
 
   public PagedItems() {
     this.pos = 0;
@@ -68,7 +68,7 @@ public abstract class PagedItems<T> implements Iterator<T> {
    * Sets the next query object.
    * @param next query object for the next request
    */
-  public void setNext(Query next) {
+  public void setNext(U next) {
     this.next = next;
   }
 
@@ -90,7 +90,7 @@ public abstract class PagedItems<T> implements Iterator<T> {
     } else {
       if (!lastPage) {
         try {
-          PagedItems<T> items = this.getPage();
+          PagedItems<T, U> items = this.getPage();
           this.pos = 0;
           this.list = items.list;
           this.lastPage = items.lastPage;

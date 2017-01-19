@@ -21,6 +21,7 @@ import (
 
 	"chain/core"
 	"chain/core/fetch"
+	"chain/core/pb"
 	"chain/core/rpc"
 	"chain/env"
 	"chain/errors"
@@ -60,9 +61,9 @@ func main() {
 		log.Fatal(context.Background(), log.KeyError, err)
 	}
 
-	peer := &rpc.Client{
-		BaseURL:     *target,
-		AccessToken: *targetAuth,
+	peer, err := rpc.NewGRPCConn(*target, *targetAuth, "", "")
+	if err != nil {
+		log.Fatal(context.Background(), log.KeyError, err)
 	}
 
 	const loadQ = `SELECT id, height FROM cache`
@@ -231,10 +232,10 @@ func (c *blockCache) getID() string {
 	return c.id
 }
 
-func cacheBlocks(cache *blockCache, peer *rpc.Client) {
+func cacheBlocks(cache *blockCache, peer *rpc.GRPCConn) {
 	height := cache.getHeight() + 1
 	ctx, cancel := context.WithCancel(context.Background())
-	blocks, errs := fetch.DownloadBlocks(ctx, peer, height)
+	blocks, errs := fetch.DownloadBlocks(ctx, pb.NewNodeClient(peer.Conn), height)
 	for {
 		select {
 		case block := <-blocks:
@@ -260,7 +261,7 @@ func cacheBlocks(cache *blockCache, peer *rpc.Client) {
 				height = 1
 
 				ctx, cancel = context.WithCancel(context.Background())
-				blocks, errs = fetch.DownloadBlocks(ctx, peer, height)
+				blocks, errs = fetch.DownloadBlocks(ctx, pb.NewNodeClient(peer.Conn), height)
 			} else {
 				log.Fatal(ctx, log.KeyError, err)
 			}
@@ -268,12 +269,17 @@ func cacheBlocks(cache *blockCache, peer *rpc.Client) {
 	}
 }
 
-func getBlockchainID(peer *rpc.Client) (string, error) {
-	var block *bc.Block
-	err := peer.Call(context.Background(), "/rpc/get-block", 1, &block)
+func getBlockchainID(peer *rpc.GRPCConn) (string, error) {
+	resp, err := pb.NewNodeClient(peer.Conn).GetBlock(context.Background(), &pb.GetBlockRequest{Height: 1})
 	if err != nil {
 		return "", err
 	}
+
+	block, err := bc.NewBlockFromBytes(resp.Block)
+	if err != nil {
+		return "", err
+	}
+
 	return block.Hash().String(), nil
 }
 

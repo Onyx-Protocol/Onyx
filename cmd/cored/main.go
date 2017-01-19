@@ -2,21 +2,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/hex"
 	"expvar"
 	"fmt"
 	"io"
 	"log"
-	"net/http"
-	"net/url"
+	"net"
 	"os"
 	"runtime"
 	"strings"
 	"time"
-
-	"github.com/kr/secureheader"
 
 	"chain/core"
 	"chain/core/accesstoken"
@@ -29,6 +26,7 @@ import (
 	"chain/core/leader"
 	"chain/core/migrate"
 	"chain/core/mockhsm"
+	"chain/core/pb"
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/rpc"
@@ -42,7 +40,6 @@ import (
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
-	"chain/net/http/limit"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
@@ -148,7 +145,7 @@ func main() {
 	chainlog.SetPrefix(append([]interface{}{"app", "cored", "buildtag", buildTag, "processID", processID}, race...)...)
 	chainlog.SetOutput(logWriter())
 
-	var h http.Handler
+	var h *core.Handler
 	if conf != nil {
 		h = launchConfiguredCore(ctx, db, conf, processID)
 	} else {
@@ -160,10 +157,6 @@ func main() {
 		}
 	}
 
-	secureheader.DefaultConfig.PermitClearLoopback = true
-	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
-	secureheader.DefaultConfig.Next = h
-
 	// Give the remainder of this function a second to reach the
 	// ListenAndServe call, then log a welcome message.
 	go func() {
@@ -171,38 +164,25 @@ func main() {
 		chainlog.Messagef(ctx, "Chain Core online and listening at %s", *listenAddr)
 	}()
 
-	server := &http.Server{
-		Addr:         *listenAddr,
-		Handler:      secureheader.DefaultConfig,
-		ReadTimeout:  httpReadTimeout,
-		WriteTimeout: httpWriteTimeout,
-		// Disable HTTP/2 for now until the Go implementation is more stable.
-		// https://github.com/golang/go/issues/16450
-		// https://github.com/golang/go/issues/17071
-		TLSNextProto: map[string]func(*http.Server, *tls.Conn, http.Handler){},
-	}
+	var cert *tls.Certificate
 	if *tlsCrt != "" {
-		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
+		tlsCert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
 		}
-
-		server.TLSConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		}
-		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
-		}
-	} else {
-		err = server.ListenAndServe()
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
-		}
+		cert = &tlsCert
 	}
+
+	listener, err := net.Listen("tcp", *listenAddr)
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "listening on LISTEN"))
+	}
+	server := h.Server(cert)
+	err = server.Serve(listener)
+	chainlog.Fatal(ctx, chainlog.KeyError, err)
 }
 
-func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, processID string) http.Handler {
+func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, processID string) *core.Handler {
 	// Initialize the protocol.Chain.
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
@@ -219,11 +199,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	var generatorSigners []generator.BlockSigner
 	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
 	if conf.IsSigner {
-		blockPub, err := hex.DecodeString(conf.BlockPub)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-		s := blocksigner.New(blockPub, hsm, db, c)
+		s := blocksigner.New(conf.BlockPub, hsm, db, c)
 		generatorSigners = append(generatorSigners, s) // "local" signer
 		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
 			sig, err := s.ValidateAndSignBlock(ctx, b)
@@ -237,21 +213,18 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainID.String(), conf) {
 			generatorSigners = append(generatorSigners, signer)
 		}
-		c.MaxIssuanceWindow = conf.MaxIssuanceWindow.Duration
+		c.MaxIssuanceWindow = conf.MaxIssuanceWindow
 	}
 
 	var submitter txbuilder.Submitter
 	var gen *generator.Generator
-	var remoteGenerator *rpc.Client
+	var remoteGenerator pb.NodeClient
 	if !conf.IsGenerator {
-		remoteGenerator = &rpc.Client{
-			BaseURL:      conf.GeneratorURL,
-			AccessToken:  conf.GeneratorAccessToken,
-			Username:     processID,
-			CoreID:       conf.ID,
-			BuildTag:     buildTag,
-			BlockchainID: conf.BlockchainID.String(),
+		conn, err := rpc.NewGRPCConn(conf.GeneratorURL, conf.GeneratorAccessToken, conf.ID, conf.BlockchainID.String())
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
+		remoteGenerator = pb.NewNodeClient(conn.Conn)
 		submitter = &txbuilder.RemoteGenerator{Peer: remoteGenerator}
 	} else {
 		gen = generator.New(c, generatorSigners, db)
@@ -303,14 +276,14 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	}
 	if *rpsToken > 0 {
 		h.RequestLimits = append(h.RequestLimits, core.RequestLimit{
-			Key:       limit.AuthUserID,
+			Key:       core.AuthID,
 			Burst:     2 * (*rpsToken),
 			PerSecond: *rpsToken,
 		})
 	}
 	if *rpsRemoteAddr > 0 {
 		h.RequestLimits = append(h.RequestLimits, core.RequestLimit{
-			Key:       limit.RemoteAddrID,
+			Key:       core.PeerID,
 			Burst:     2 * (*rpsRemoteAddr),
 			PerSecond: *rpsRemoteAddr,
 		})
@@ -358,37 +331,29 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		}
 	})
 
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set(rpc.HeaderBlockchainID, conf.BlockchainID.String())
-		h.ServeHTTP(w, req)
-	})
+	return h
 }
 
 // remoteSigner defines the address and public key of another Core
 // that may sign blocks produced by this generator.
 type remoteSigner struct {
-	Client *rpc.Client
-	Key    ed25519.PublicKey
+	client pb.SignerClient
+	key    ed25519.PublicKey
+	addr   string
 }
 
-func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, conf *config.Config) (a []*remoteSigner) {
-	for _, signer := range conf.Signers {
-		u, err := url.Parse(signer.URL)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
+func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, config *config.Config) (a []*remoteSigner) {
+	for _, signer := range config.Signers {
 		if len(signer.Pubkey) != ed25519.PublicKeySize {
-			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err), "at", "decoding signer public key")
+			chainlog.Fatal(ctx, chainlog.KeyError, "bad public key size", "at", "decoding signer public key")
 		}
-		client := &rpc.Client{
-			BaseURL:      u.String(),
-			AccessToken:  signer.AccessToken,
-			Username:     processID,
-			CoreID:       conf.ID,
-			BuildTag:     buildTag,
-			BlockchainID: blockchainID,
+		k := ed25519.PublicKey(signer.Pubkey)
+		conn, err := rpc.NewGRPCConn(signer.URL, signer.AccessToken, config.ID, config.BlockchainID.String())
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err), "at", "connecting to signer rpc")
 		}
-		a = append(a, &remoteSigner{Client: client, Key: ed25519.PublicKey(signer.Pubkey)})
+		client := pb.NewSignerClient(conn.Conn)
+		a = append(a, &remoteSigner{client: client, key: k, addr: signer.URL})
 	}
 	return a
 }
@@ -397,12 +362,20 @@ func (s *remoteSigner) SignBlock(ctx context.Context, b *bc.Block) (signature []
 	// TODO(kr): We might end up serializing b multiple
 	// times in multiple calls to different remoteSigners.
 	// Maybe optimize that if it makes a difference.
-	err = s.Client.Call(ctx, "/rpc/signer/sign-block", b, &signature)
-	return
+	var buf bytes.Buffer
+	_, err = b.WriteTo(&buf)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := s.client.SignBlock(ctx, &pb.SignBlockRequest{Block: buf.Bytes()})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Signature, nil
 }
 
 func (s *remoteSigner) String() string {
-	return s.Client.BaseURL
+	return s.addr
 }
 
 func logWriter() io.Writer {

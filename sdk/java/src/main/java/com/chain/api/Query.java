@@ -1,6 +1,8 @@
 package com.chain.api;
 
+import com.chain.proto.FilterParam;
 import com.google.gson.annotations.SerializedName;
+import com.google.protobuf.ByteString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +20,7 @@ public class Query {
    * Parameters used in the query's filter.
    */
   @SerializedName("filter_params")
-  public List<Object> filterParams;
+  public List<FilterParam> filterParams;
 
   /**
    * Specifies if this query is being used within a transaction feed.<br>
@@ -73,5 +75,59 @@ public class Query {
     this.filterParams = new ArrayList<>();
     this.sumBy = new ArrayList<>();
     this.aliases = new ArrayList<>();
+  }
+
+  public static abstract class FilterParam {
+    public abstract com.chain.proto.FilterParam toProtobuf();
+
+    public static class StringParam extends FilterParam {
+      private String value;
+
+      public StringParam(String param) {
+        value = param;
+      }
+
+      public com.chain.proto.FilterParam toProtobuf() {
+        return com.chain.proto.FilterParam.newBuilder().setString(value).build();
+      }
+    }
+
+    public static class BoolParam extends FilterParam {
+      private boolean value;
+
+      public BoolParam(boolean param) {
+        value = param;
+      }
+
+      public com.chain.proto.FilterParam toProtobuf() {
+        return com.chain.proto.FilterParam.newBuilder().setBool(value).build();
+      }
+    }
+
+    public static class LongParam extends FilterParam {
+      private long value;
+
+      public LongParam(long param) {
+        value = param;
+      }
+
+      public com.chain.proto.FilterParam toProtobuf() {
+        return com.chain.proto.FilterParam.newBuilder().setInt64(value).build();
+      }
+    }
+
+    public static class BytesParam extends FilterParam {
+      private byte[] value;
+
+      public BytesParam(byte[] param) {
+        value = param;
+      }
+
+      public com.chain.proto.FilterParam toProtobuf() {
+        return com.chain.proto.FilterParam.newBuilder()
+            .setBytes(ByteString.copyFrom(value))
+            .build();
+      }
+    }
   }
 }

@@ -2,10 +2,12 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"chain/core/asset"
+	"chain/core/pb"
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/database/pg/pgtest"
@@ -40,12 +42,18 @@ func TestQueryWithClockSkew(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p, err := h.listTransactions(ctx, requestQuery{})
+	p, err := h.ListTxs(ctx, &pb.ListTxsQuery{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	count := len(p.Items.([]*query.AnnotatedTx))
-	if count != 1 {
-		t.Errorf("got=%d txs, want %d", count, 1)
+
+	var items []*query.AnnotatedTx
+	err = json.Unmarshal(p.Items, &items)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(items) != 1 {
+		t.Errorf("got=%d txs, want %d", len(items), 1)
 	}
 }

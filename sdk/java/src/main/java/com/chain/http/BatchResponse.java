@@ -22,33 +22,6 @@ public class BatchResponse<T> {
   private Map<Integer, APIException> errorsByIndex = new LinkedHashMap<>();
 
   /**
-   * This constructor is used when deserializing a response from an API call.
-   */
-  public BatchResponse(Response response, Gson serializer, Type tClass, Type eClass)
-      throws ChainException, IOException {
-    this.response = response;
-
-    try {
-      JsonArray root = new JsonParser().parse(response.body().charStream()).getAsJsonArray();
-      for (int i = 0; i < root.size(); i++) {
-        JsonElement elem = root.get(i);
-
-        // Test for interleaved errors
-        APIException err = serializer.fromJson(elem, eClass);
-        if (err.code != null) {
-          errorsByIndex.put(i, err);
-          continue;
-        }
-
-        successesByIndex.put(i, (T) serializer.fromJson(elem, tClass));
-      }
-    } catch (IllegalStateException e) {
-      throw new JSONException(
-          "Unable to read body: " + e.getMessage(), response.headers().get("Chain-Request-ID"));
-    }
-  }
-
-  /**
    * This constructor is used for synthetically generating a batch response
    * object from a map of successes and a map of errors. It ensures that
    * the successes and errors are stored in an order-preserving fashion.

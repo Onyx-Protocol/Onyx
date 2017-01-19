@@ -75,6 +75,16 @@ func (b *Block) Value() (driver.Value, error) {
 	return buf.Bytes(), nil
 }
 
+// NewBlockFromBytes reads a block from the given byte slice.
+func NewBlockFromBytes(data []byte) (*Block, error) {
+	b := &Block{}
+	err := b.readFrom(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
 func (b *Block) readFrom(r io.Reader) error {
 	serflags, err := b.BlockHeader.readFrom(r)
 	if err != nil {

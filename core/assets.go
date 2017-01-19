@@ -1,51 +1,43 @@
 package core
 
 import (
-	"context"
+	"encoding/json"
 	"sync"
 
+	"golang.org/x/net/context"
+
+	"chain/core/pb"
+	"chain/core/query"
 	"chain/core/signers"
 	"chain/crypto/ed25519/chainkd"
-	"chain/encoding/json"
+	cjson "chain/encoding/json"
+	"chain/net/http/httpjson"
 	"chain/net/http/reqid"
 	"chain/protocol/bc"
 )
 
 // This type enforces JSON field ordering in API output.
 type assetResponse struct {
-	ID              bc.AssetID             `json:"id"`
-	Alias           *string                `json:"alias"`
-	VMVersion       uint64                 `json:"vm_version"`
-	IssuanceProgram json.HexBytes          `json:"issuance_program"`
-	Keys            []*assetKey            `json:"keys"`
-	Quorum          int                    `json:"quorum"`
-	Definition      map[string]interface{} `json:"definition"`
-	RawDefinition   json.HexBytes          `json:"raw_definition"`
-	Tags            map[string]interface{} `json:"tags"`
-	IsLocal         string                 `json:"is_local"`
+	ID              bc.AssetID      `json:"id"`
+	Alias           string          `json:"alias"`
+	VMVersion       uint64          `json:"vm_version"`
+	IssuanceProgram cjson.HexBytes  `json:"issuance_program"`
+	Keys            []*assetKey     `json:"keys"`
+	Quorum          int             `json:"quorum"`
+	Definition      json.RawMessage `json:"definition"`
+	RawDefinition   cjson.HexBytes  `json:"raw_definition"`
+	Tags            json.RawMessage `json:"tags"`
+	IsLocal         query.Bool      `json:"is_local"`
 }
 
 type assetKey struct {
-	RootXPub            chainkd.XPub    `json:"root_xpub"`
-	AssetPubkey         json.HexBytes   `json:"asset_pubkey"`
-	AssetDerivationPath []json.HexBytes `json:"asset_derivation_path"`
+	RootXPub            chainkd.XPub     `json:"root_xpub"`
+	AssetPubkey         cjson.HexBytes   `json:"asset_pubkey"`
+	AssetDerivationPath []cjson.HexBytes `json:"asset_derivation_path"`
 }
 
-// POST /create-asset
-func (h *Handler) createAsset(ctx context.Context, ins []struct {
-	Alias      string
-	RootXPubs  []chainkd.XPub `json:"root_xpubs"`
-	Quorum     int
-	Definition map[string]interface{}
-	Tags       map[string]interface{}
-
-	// ClientToken is the application's unique token for the asset. Every asset
-	// should have a unique client token. The client token is used to ensure
-	// idempotency of create asset requests. Duplicate create asset requests
-	// with the same client_token will only create one asset.
-	ClientToken string `json:"client_token"`
-}) ([]interface{}, error) {
-	responses := make([]interface{}, len(ins))
+func (h *Handler) CreateAssets(ctx context.Context, in *pb.CreateAssetsRequest) (*pb.CreateAssetsResponse, error) {
+	responses := make([]*pb.CreateAssetsResponse_Response, len(in.Requests))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
 
@@ -53,51 +45,87 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 		go func(i int) {
 			subctx := reqid.NewSubContext(ctx, reqid.New())
 			defer wg.Done()
-			defer batchRecover(subctx, &responses[i])
+			defer batchRecover(func(err error) {
+				responses[i] = &pb.CreateAssetsResponse_Response{
+					Error: protobufErr(err),
+				}
+			})
+
+			var tags, def map[string]interface{}
+			if len(in.Requests[i].Tags) > 0 {
+				err := json.Unmarshal(in.Requests[i].Tags, &tags)
+				if err != nil {
+					responses[i] = &pb.CreateAssetsResponse_Response{
+						Error: protobufErr(httpjson.ErrBadRequest),
+					}
+					return
+				}
+			}
+			if len(in.Requests[i].Definition) > 0 {
+				err := json.Unmarshal(in.Requests[i].Definition, &def)
+				if err != nil {
+					responses[i] = &pb.CreateAssetsResponse_Response{
+						Error: protobufErr(httpjson.ErrBadRequest),
+					}
+					return
+				}
+			}
+
+			xpubs, err := bytesToKeys(in.Requests[i].RootXpubs)
+			if err != nil {
+				responses[i] = &pb.CreateAssetsResponse_Response{
+					Error: protobufErr(err),
+				}
+				return
+			}
 
 			asset, err := h.Assets.Define(
 				subctx,
-				ins[i].RootXPubs,
-				ins[i].Quorum,
-				ins[i].Definition,
-				ins[i].Alias,
-				ins[i].Tags,
-				ins[i].ClientToken,
+				xpubs,
+				int(in.Requests[i].Quorum),
+				def,
+				in.Requests[i].Alias,
+				tags,
+				in.Requests[i].ClientToken,
 			)
 			if err != nil {
-				responses[i] = err
+				responses[i] = &pb.CreateAssetsResponse_Response{
+					Error: protobufErr(err),
+				}
 				return
 			}
-			var keys []*assetKey
+			var keys []*pb.Asset_Key
 			for _, xpub := range asset.Signer.XPubs {
 				path := signers.Path(asset.Signer, signers.AssetKeySpace)
-				var hexPath []json.HexBytes
-				for _, p := range path {
-					hexPath = append(hexPath, p)
-				}
 				derived := xpub.Derive(path)
-				keys = append(keys, &assetKey{
+				keys = append(keys, &pb.Asset_Key{
 					AssetPubkey:         derived[:],
-					RootXPub:            xpub,
-					AssetDerivationPath: hexPath,
+					RootXpub:            xpub[:],
+					AssetDerivationPath: path,
 				})
 			}
-			parsedDef, _ := asset.Definition() // cannot fail because Assets.Define() would catch parsing issues
-			responses[i] = &assetResponse{
-				ID:              asset.AssetID,
-				Alias:           asset.Alias,
-				VMVersion:       asset.VMVersion,
-				IssuanceProgram: asset.IssuanceProgram,
-				Keys:            keys,
-				Quorum:          asset.Signer.Quorum,
-				Definition:      parsedDef,
-				RawDefinition:   json.HexBytes(asset.RawDefinition()),
-				Tags:            asset.Tags,
-				IsLocal:         "yes",
+
+			var aliasStr string
+			if asset.Alias != nil {
+				aliasStr = *asset.Alias
+			}
+
+			responses[i] = &pb.CreateAssetsResponse_Response{
+				Asset: &pb.Asset{
+					Id:              asset.AssetID[:],
+					Alias:           aliasStr,
+					VmVersion:       asset.VMVersion,
+					IssuanceProgram: asset.IssuanceProgram,
+					Keys:            keys,
+					Quorum:          int32(asset.Signer.Quorum),
+					Definition:      in.Requests[i].Definition,
+					Tags:            in.Requests[i].Tags,
+					IsLocal:         true,
+				},
 			}
 		}(i)
 	}
 
 	wg.Wait()
-	return responses, nil
+	return &pb.CreateAssetsResponse{Responses: responses}, nil
 }

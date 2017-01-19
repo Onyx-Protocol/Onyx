@@ -1,0 +1,591 @@
+syntax = "proto3";
+
+package chaincore;
+
+option go_package = "pb";
+option java_multiple_files = true;
+option java_package = "com.chain.proto";
+option java_outer_classname = "ChainProto";
+
+service App {
+	rpc CreateAssets(CreateAssetsRequest) returns (CreateAssetsResponse) {}
+
+	rpc CreateAccounts(CreateAccountsRequest) returns (CreateAccountsResponse) {}
+	rpc createControlPrograms(CreateControlProgramsRequest) returns (CreateControlProgramsResponse) {}
+
+	rpc BuildTxs(BuildTxsRequest) returns (TxsResponse) {}
+	rpc SubmitTxs(SubmitTxsRequest) returns (SubmitTxsResponse) {}
+
+	rpc CreateTxFeed(CreateTxFeedRequest) returns (TxFeedResponse) {}
+	rpc GetTxFeed(GetTxFeedRequest) returns (TxFeedResponse) {}
+	rpc UpdateTxFeed(UpdateTxFeedRequest) returns (TxFeedResponse) {}
+	rpc DeleteTxFeed(DeleteTxFeedRequest) returns (ErrorResponse) {}
+
+	rpc CreateAccessToken(CreateAccessTokenRequest) returns (CreateAccessTokenResponse) {}
+	rpc ListAccessTokens(ListAccessTokensQuery) returns (ListAccessTokensResponse) {}
+	rpc DeleteAccessToken(DeleteAccessTokenRequest) returns (ErrorResponse) {}
+
+	rpc ListAssets(ListAssetsQuery) returns (ListAssetsResponse) {}
+	rpc ListAccounts(ListAccountsQuery) returns (ListAccountsResponse) {}
+	rpc ListBalances(ListBalancesQuery) returns (ListBalancesResponse) {}
+	rpc ListTxFeeds(ListTxFeedsQuery) returns (ListTxFeedsResponse) {}
+	rpc ListTxs(ListTxsQuery) returns (ListTxsResponse) {}
+	rpc ListUnspentOutputs(ListUnspentOutputsQuery) returns (ListUnspentOutputsResponse) {}
+
+	rpc Reset(ResetRequest) returns (ErrorResponse) {}
+	rpc Info(Empty) returns (InfoResponse) {}
+	rpc Configure(ConfigureRequest) returns (ErrorResponse) {}
+}
+
+service HSM {
+	rpc CreateKey(CreateKeyRequest) returns (CreateKeyResponse) {}
+	rpc ListKeys(ListKeysQuery) returns (ListKeysResponse) {}
+	rpc DeleteKey(DeleteKeyRequest) returns (ErrorResponse) {}
+	rpc SignTxs(SignTxsRequest) returns (TxsResponse) {}
+}
+
+service Node {
+  rpc SubmitTx(SubmitTxRequest) returns (SubmitTxResponse) {}
+  rpc GetBlock(GetBlockRequest) returns (GetBlockResponse) {}
+  rpc GetSnapshot(GetSnapshotRequest) returns (GetSnapshotResponse) {}
+	rpc GetSnapshotInfo(Empty) returns (GetSnapshotInfoResponse) {}
+  rpc GetBlockHeight(Empty) returns (GetBlockHeightResponse) {}
+}
+
+service Signer {
+  rpc SignBlock(SignBlockRequest) returns (SignBlockResponse) {}
+}
+
+message Empty {
+
+}
+
+message ErrorResponse{
+  Error error = 9;
+}
+
+message Error {
+  string code = 1;
+  string message = 2;
+  string detail = 3;
+  bool temporary = 4;
+  bytes data = 5;
+}
+
+message Asset {
+	message Key {
+		bytes root_xpub = 1;
+		bytes asset_pubkey = 2;
+		repeated bytes asset_derivation_path = 3;
+	}
+	bytes id = 1;
+	string alias = 2;
+	uint64 vm_version = 9;
+	bytes issuance_program = 3;
+	repeated Key keys = 4;
+	int32 quorum = 5;
+	bytes definition = 6;
+	bytes tags = 7;
+	bool is_local = 8;
+}
+
+message CreateAssetsRequest {
+	message Request {
+		string alias = 1;
+		repeated bytes root_xpubs = 2;
+		int32 quorum = 3;
+		bytes definition = 4;
+		bytes tags = 5;
+		string client_token = 6;
+	}
+	repeated Request requests = 1;
+}
+
+message CreateAssetsResponse {
+	message Response {
+		Asset asset = 1;
+		Error error = 9;
+	}
+	repeated Response responses = 1;
+	Error error = 9;
+}
+
+message Account {
+	message Key {
+		bytes root_xpub = 1;
+		bytes account_xpub = 2;
+		repeated bytes account_derivation_path = 3;
+	}
+	string id = 1;
+	string alias = 2;
+	repeated Key keys = 3;
+	int32 quorum = 4;
+	bytes tags = 5;
+}
+
+message CreateAccountsRequest {
+	message Request {
+		repeated bytes root_xpubs = 1;
+		int32 quorum = 2;
+		string alias = 3;
+		bytes tags = 4;
+		string client_token = 5;
+	}
+	repeated Request requests = 1;
+}
+
+message CreateAccountsResponse {
+	message Response {
+		Account account = 1;
+		Error error = 9;
+	}
+	repeated Response responses = 1;
+	Error error = 9;
+}
+
+message CreateControlProgramsRequest {
+	message Account {
+		oneof identifier {
+			string account_id = 1;
+			string account_alias = 2;
+		}
+	}
+	message Request {
+		oneof type {
+			Account account = 1;
+		}
+	}
+	repeated Request requests = 1;
+}
+
+message CreateControlProgramsResponse {
+	message Response {
+		bytes control_program = 1;
+		Error error = 9;
+	}
+	repeated Response responses = 1;
+	Error error = 9;
+}
+
+message TxFeed {
+	string id = 1;
+	string alias = 2;
+	string filter = 3;
+	string after = 4;
+}
+
+message TxFeedResponse {
+	TxFeed response = 1;
+	Error error = 9;
+}
+
+message CreateTxFeedRequest {
+	string alias = 1;
+	string filter = 2;
+	string client_token = 3;
+}
+
+message GetTxFeedRequest {
+	oneof identifier {
+		string id = 1;
+		string alias = 2;
+	}
+}
+
+message UpdateTxFeedRequest {
+	oneof identifier {
+		string id = 1;
+		string alias = 2;
+	}
+	string previous_after = 3;
+	string after = 4;
+}
+
+message DeleteTxFeedRequest {
+	oneof identifier {
+		string id = 1;
+		string alias = 2;
+	}
+}
+
+message CreateAccessTokenRequest {
+	string id = 1;
+	string type = 2;
+}
+
+message CreateAccessTokenResponse {
+	AccessToken token = 1;
+	Error error = 9;
+}
+
+message ListAccessTokensQuery {
+	string type = 1;
+	int32 page_size = 2;
+	string after = 3;
+}
+
+message ListAccessTokensResponse {
+	repeated AccessToken items = 1;
+	bool last_page = 2;
+	ListAccessTokensQuery next = 3;
+	Error error = 9;
+}
+
+message DeleteAccessTokenRequest {
+	string id = 1;
+}
+
+message AccessToken {
+	string id = 1;
+	string token = 2;
+	string type = 3;
+	string created_at = 4;
+}
+
+message FilterParam {
+	oneof value {
+		string string = 1;
+		int64 int64 = 2;
+		bytes bytes = 3;
+		bool bool = 4;
+	}
+}
+
+message ListAccountsQuery {
+	string filter = 1;
+	repeated FilterParam filter_params = 2;
+	string after = 3;
+	int32 page_size = 4;
+}
+
+message ListAccountsResponse {
+	repeated Account items = 1;
+	bool last_page = 2;
+	ListAccountsQuery next = 3;
+	Error error = 9;
+}
+
+message ListAssetsQuery {
+	string filter = 1;
+	repeated FilterParam filter_params = 2;
+	string after = 3;
+	int32 page_size = 4;
+}
+
+message ListAssetsResponse {
+	repeated Asset items = 1;
+	bool last_page = 2;
+	ListAssetsQuery next = 3;
+	Error error = 9;
+}
+
+message ListBalancesQuery {
+	string filter = 1;
+	repeated FilterParam filter_params = 2;
+	repeated string sum_by = 3;
+	uint64 timestamp = 4;
+}
+
+message ListBalancesResponse {
+	bytes items = 1;
+	bool last_page = 2;
+	ListBalancesQuery next = 3;
+	Error error = 9;
+}
+
+message ListTxFeedsQuery {
+	string after = 1;
+	int32 page_size = 2;
+}
+
+message ListTxFeedsResponse {
+	repeated TxFeed items = 1;
+	bool last_page = 2;
+	ListTxFeedsQuery next = 3;
+	Error error = 9;
+}
+
+message ListTxsQuery {
+	string filter = 1;
+	repeated FilterParam filter_params = 2;
+	bool ascending_with_long_poll = 3;
+	string timeout = 4;
+	uint64 start_time = 5;
+	uint64 end_time = 6;
+	string after = 7;
+	int32 page_size = 8;
+}
+
+message ListTxsResponse {
+	bytes items = 1;
+	bool last_page = 2;
+	ListTxsQuery next = 3;
+	Error error = 9;
+}
+
+message ListUnspentOutputsQuery {
+	string filter = 1;
+	repeated FilterParam filter_params = 2;
+	string after = 3;
+	uint64 timestamp = 4;
+	int32 page_size = 5;
+}
+
+message ListUnspentOutputsResponse {
+	bytes items = 1;
+	bool last_page = 2;
+	ListUnspentOutputsQuery next = 3;
+	Error error = 9;
+}
+
+message ResetRequest {
+	bool everything = 1;
+}
+
+message InfoResponse {
+	message Snapshot {
+		int32 attempt = 1;
+		uint64 height = 2;
+		uint64 size = 3;
+		uint64 downloaded = 4;
+		bool in_progress = 5;
+	}
+	bool is_configured = 1;
+	string configured_at = 2;
+	bool is_signer = 3;
+	bool is_generator = 4;
+	string generator_url = 5;
+	string generator_access_token = 6;
+	bytes blockchain_id = 7;
+	uint64 block_height = 8;
+	uint64 generator_block_height = 10;
+	string generator_block_height_fetched_at = 11;
+	bool is_production = 12;
+	int32 network_rpc_version = 13;
+	string core_id = 14;
+	string version = 15;
+	string build_commit = 16;
+	string build_date = 17;
+	map<string, string> health = 18;
+	Snapshot snapshot = 19;
+	Error error = 9;
+}
+
+message ConfigureRequest {
+	message BlockSigner {
+		string url = 1;
+		string access_token = 2;
+		bytes pubkey = 3;
+	}
+	bool is_signer = 1;
+	bool is_generator = 2;
+	bytes blockchain_id = 3;
+	string generator_url = 4;
+	string generator_access_token = 5;
+	bytes block_pub = 6;
+	repeated BlockSigner block_signer_urls = 7;
+	int32 quorum = 8;
+	string max_issuance_window = 9;
+}
+
+message AssetIdentifier {
+	oneof identifier {
+		bytes asset_id = 1;
+		string asset_alias = 2;
+	}
+}
+
+message AccountIdentifier {
+	oneof identifier {
+		string account_id = 1;
+		string account_alias = 2;
+	}
+}
+
+message Action {
+	message ControlAccount {
+		AssetIdentifier asset = 1;
+		uint64 amount = 2;
+		AccountIdentifier account = 3;
+		bytes reference_data = 4;
+	}
+	message ControlProgram {
+		AssetIdentifier asset = 1;
+		uint64 amount = 2;
+		bytes control_program = 3;
+		bytes reference_data = 4;
+	}
+	message Issue {
+		AssetIdentifier asset = 1;
+		uint64 amount = 2;
+		bytes reference_data = 3;
+	}
+	message SpendAccount {
+		AssetIdentifier asset = 1;
+		uint64 amount = 2;
+		AccountIdentifier account = 3;
+		bytes reference_data = 4;
+		string client_token = 5;
+	}
+	message SpendAccountUnspentOutput {
+		bytes tx_id = 1;
+		uint32 position = 2;
+		bytes reference_data = 3;
+		string client_token = 4;
+	}
+	message SetTxReferenceData {
+		bytes data = 1;
+	}
+	oneof action {
+		ControlAccount control_account = 1;
+		ControlProgram control_program = 2;
+		Issue issue = 3;
+		SpendAccount spend_account = 4;
+		SpendAccountUnspentOutput spend_account_unspent_output = 5;
+		SetTxReferenceData set_tx_reference_data = 6;
+	}
+}
+
+message BuildTxsRequest {
+	message Request {
+		bytes transaction = 1;
+		repeated Action actions = 2;
+		string ttl = 3;
+	}
+	repeated Request requests = 1;
+}
+
+message TxTemplate {
+	message KeyID {
+		bytes xpub = 1;
+		repeated bytes derivation_path = 2;
+	}
+	message SignatureComponent {
+		int32 quorum = 1;
+		repeated KeyID key_ids = 2;
+		bytes program = 3;
+		repeated bytes signatures = 4;
+	}
+	message WitnessComponent {
+		oneof component {
+			SignatureComponent signature = 1;
+		}
+	}
+	message SigningInstruction {
+		uint32 position = 1;
+		bytes asset_id = 2;
+		uint64 amount = 3;
+		repeated WitnessComponent witness_components = 4;
+	}
+	bytes raw_transaction = 1;
+	repeated SigningInstruction signing_instructions = 2;
+	bool local = 3;
+	bool allow_additional_actions = 4;
+}
+
+message TxsResponse {
+	message Response {
+		TxTemplate template = 1;
+		Error error = 9;
+	}
+	repeated Response responses = 1;
+	Error error = 9;
+}
+
+message SubmitTxsRequest {
+	repeated TxTemplate transactions = 1;
+	string wait_until = 2;
+}
+
+message SubmitTxsResponse {
+	message Response {
+		string id = 1;
+		Error error = 9;
+	}
+	repeated Response responses = 1;
+	Error error = 9;
+}
+
+message XPub {
+	string alias = 1;
+	bytes xpub = 2;
+}
+
+message CreateKeyRequest {
+	string alias = 1;
+}
+
+message CreateKeyResponse {
+	XPub xpub = 1;
+	Error error = 9;
+}
+
+message ListKeysQuery {
+	repeated string aliases = 1;
+	string after = 2;
+	int32 page_size = 3;
+}
+
+message ListKeysResponse {
+	repeated XPub items = 1;
+	bool last_page = 2;
+	ListKeysQuery next = 3;
+	Error error = 9;
+}
+
+message DeleteKeyRequest {
+	bytes xpub = 1;
+}
+
+message SignTxsRequest{
+	repeated TxTemplate transactions = 1;
+	repeated bytes xpubs = 2;
+}
+
+message SubmitTxRequest {
+  bytes transaction = 1;
+}
+
+message SubmitTxResponse {
+  bool ok = 1;
+  Error error = 9;
+}
+
+message GetBlockRequest {
+  uint64 height = 1;
+}
+
+message GetBlockResponse {
+  bytes block = 1;
+  Error error = 9;
+}
+
+message GetSnapshotRequest {
+  uint64 height = 1;
+}
+
+message GetSnapshotResponse {
+  bytes data = 1;
+  Error error = 9;
+}
+
+message GetSnapshotInfoResponse {
+	uint64 height = 1;
+	uint64 size = 2;
+	bytes blockchain_id = 3;
+	Error error = 9;
+}
+
+message GetBlockHeightResponse {
+  uint64 height = 1;
+  Error error = 9;
+}
+
+message SignBlockRequest {
+  bytes block = 1;
+}
+
+message SignBlockResponse {
+  bytes signature = 1;
+  Error error = 9;
+}

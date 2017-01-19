@@ -13,7 +13,7 @@ public class Quickstart {
   public static void main(String[] args) throws Exception {
     Client client = new Client(new URL(System.getenv("CHAIN_API_URL")));
     MockHsm.Key mainKey = MockHsm.Key.create(client);
-    HsmSigner.addKey(mainKey, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(mainKey, client);
 
     new Account.Builder().setAlias("alice").addRootXpub(mainKey.xpub).setQuorum(1).create(client);
 

@@ -1,44 +1,65 @@
 package core
 
 import (
-	"context"
 	"errors"
 
-	"chain/core/accesstoken"
+	"golang.org/x/net/context"
+
+	"chain/core/pb"
 	"chain/net/http/httpjson"
 )
 
 var errCurrentToken = errors.New("token cannot delete itself")
 
-func (h *Handler) createAccessToken(ctx context.Context, x struct{ ID, Type string }) (*accesstoken.Token, error) {
-	return h.AccessTokens.Create(ctx, x.ID, x.Type)
+func (h *Handler) CreateAccessToken(ctx context.Context, in *pb.CreateAccessTokenRequest) (*pb.CreateAccessTokenResponse, error) {
+	resp, err := h.AccessTokens.Create(ctx, in.Id, in.Type)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CreateAccessTokenResponse{
+		Token: &pb.AccessToken{
+			Id:        resp.ID,
+			Token:     resp.Token,
+			Type:      resp.Type,
+			CreatedAt: resp.Created.String(),
+		},
+	}, nil
 }
 
-func (h *Handler) listAccessTokens(ctx context.Context, x requestQuery) (*page, error) {
-	limit := x.PageSize
+func (h *Handler) ListAccessTokens(ctx context.Context, in *pb.ListAccessTokensQuery) (*pb.ListAccessTokensResponse, error) {
+	limit := int(in.PageSize)
 	if limit == 0 {
 		limit = defGenericPageSize
 	}
 
-	tokens, next, err := h.AccessTokens.List(ctx, x.Type, x.After, limit)
+	tokens, next, err := h.AccessTokens.List(ctx, in.Type, in.After, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	outQuery := x
+	pbTokens := make([]*pb.AccessToken, len(tokens))
+	for i, t := range tokens {
+		pbTokens[i] = &pb.AccessToken{
+			Id:        t.ID,
+			Type:      t.Type,
+			CreatedAt: t.Created.String(),
+		}
+	}
+
+	outQuery := in
 	outQuery.After = next
 
-	return &page{
-		Items:    httpjson.Array(tokens),
+	return &pb.ListAccessTokensResponse{
+		Items:    pbTokens,
 		LastPage: len(tokens) < limit,
 		Next:     outQuery,
 	}, nil
 }
 
-func (h *Handler) deleteAccessToken(ctx context.Context, x struct{ ID string }) error {
+func (h *Handler) DeleteAccessToken(ctx context.Context, in *pb.DeleteAccessTokenRequest) (*pb.ErrorResponse, error) {
 	currentID, _, _ := httpjson.Request(ctx).BasicAuth()
-	if currentID == x.ID {
-		return errCurrentToken
+	if currentID == in.Id {
+		return nil, errCurrentToken
 	}
-	return h.AccessTokens.Delete(ctx, x.ID)
+	return nil, h.AccessTokens.Delete(ctx, in.Id)
 }

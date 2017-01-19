@@ -29,7 +29,7 @@ public class NotificationTest {
   public void testTransactionNotification() throws Exception {
     client = TestUtils.generateClient();
     key = MockHsm.Key.create(client);
-    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(key, client);
     long amount = 1000;
     String alice = "TransactionTest.testTransactionNotification.alice";
     String asset = "TransactionTest.testTransactionNotification.test";

@@ -15,14 +15,6 @@ import (
 // possibly including a datatype that doesn't match what we expected.
 var errBadReqHeader = errors.New("bad request header")
 
-func jsonHandler(f interface{}) http.Handler {
-	h, err := httpjson.Handler(f, WriteHTTPError)
-	if err != nil {
-		panic(err)
-	}
-	return h
-}
-
 // WriteHTTPError writes a json encoded detailedError
 // to the ResponseWriter. It uses the status code
 // associated with the error.
@@ -52,25 +44,22 @@ func logHTTPError(ctx context.Context, err error) {
 	log.Write(ctx, keyvals...)
 }
 
-func alwaysError(err error) http.Handler {
-	return jsonHandler(func() error { return err })
-}
-
-func batchRecover(ctx context.Context, v *interface{}) {
+func batchRecover(f func(error)) {
+	var err error
 	if r := recover(); r != nil {
 		if recoveredErr, ok := r.(error); ok {
-			*v = recoveredErr
+			err = recoveredErr
 		} else {
-			*v = fmt.Errorf("panic with %T", r)
+			err = fmt.Errorf("panic with %T", r)
 		}
 	}
-
-	if *v == nil {
-		return
+	if err != nil {
+		f(err)
 	}
-	// Convert errors into errorInfo responses (including errors
-	// from recovered panics above).
-	if err, ok := (*v).(error); ok {
+}
+
+func batchAssigner(ctx context.Context, v *interface{}) func(error) {
+	return func(err error) {
 		logHTTPError(ctx, err)
 		*v, _ = errInfo(err)
 	}

@@ -7,7 +7,9 @@ import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
 import com.chain.http.*;
+import com.chain.proto.*;
 import com.google.gson.annotations.SerializedName;
+import com.google.protobuf.ByteString;
 
 import java.util.*;
 
@@ -23,7 +25,7 @@ public class Asset {
    * - the core's VM version<br>
    * - the hash of the network's initial block
    */
-  public String id;
+  public byte[] id;
 
   /**
    * User specified, unique identifier.
@@ -34,7 +36,7 @@ public class Asset {
    * A program specifying a predicate to be satisfied when issuing the asset.
    */
   @SerializedName("issuance_program")
-  public String issuanceProgram;
+  public byte[] issuanceProgram;
 
   /**
    * The list of keys used to create the issuance program for the asset.<br>
@@ -62,7 +64,24 @@ public class Asset {
    * Specifies whether the asset was defined on the local core, or externally.
    */
   @SerializedName("is_local")
-  public String isLocal;
+  public boolean isLocal;
+
+  private Asset(com.chain.proto.Asset proto, Client client) {
+    this.id = proto.getId().toByteArray();
+    this.alias = proto.getAlias();
+    this.issuanceProgram = proto.getIssuanceProgram().toByteArray();
+    this.keys = Key.fromProtobuf(proto.getKeysList());
+    this.quorum = proto.getQuorum();
+    if (proto.getDefinition() != null && !proto.getDefinition().isEmpty()) {
+      String definition = new String(proto.getDefinition().toByteArray());
+      this.definition = client.deserialize(definition);
+    }
+    if (proto.getTags() != null && !proto.getTags().isEmpty()) {
+      String tags = new String(proto.getTags().toByteArray());
+      this.tags = client.deserialize(tags);
+    }
+    this.isLocal = proto.getIsLocal();
+  }
 
   /**
    * Creates a batch of asset objects.<br>
@@ -77,10 +96,48 @@ public class Asset {
    */
   public static BatchResponse<Asset> createBatch(Client client, List<Builder> builders)
       throws ChainException {
-    for (Builder asset : builders) {
-      asset.clientToken = UUID.randomUUID().toString();
+    ArrayList<CreateAssetsRequest.Request> reqs = new ArrayList();
+    for (Builder builder : builders) {
+      CreateAssetsRequest.Request.Builder req = CreateAssetsRequest.Request.newBuilder();
+      req.setQuorum(builder.quorum);
+      req.setClientToken(UUID.randomUUID().toString());
+      if (builder.alias != null && !builder.alias.isEmpty()) {
+        req.setAlias(builder.alias);
+      }
+      if (builder.rootXpubs != null && !builder.rootXpubs.isEmpty()) {
+        req.addAllRootXpubs(builder.rootXpubs);
+      }
+
+      if (builder.definition != null && !builder.definition.isEmpty()) {
+        req.setDefinition(ByteString.copyFrom(client.serialize(builder.definition)));
+      }
+
+      if (builder.tags != null && !builder.tags.isEmpty()) {
+        req.setTags(ByteString.copyFrom(client.serialize(builder.tags)));
+      }
+
+      reqs.add(req.build());
     }
-    return client.batchRequest("create-asset", builders, Asset.class, APIException.class);
+    CreateAssetsRequest req = CreateAssetsRequest.newBuilder().addAllRequests(reqs).build();
+    CreateAssetsResponse resp = client.app().createAssets(req);
+
+    if (resp.hasError()) {
+      throw new APIException(resp.getError());
+    }
+
+    Map<Integer, Asset> successes = new LinkedHashMap();
+    Map<Integer, APIException> errors = new LinkedHashMap();
+
+    for (int i = 0; i < resp.getResponsesCount(); i++) {
+      CreateAssetsResponse.Response r = resp.getResponses(i);
+      if (r.hasError()) {
+        errors.put(i, new APIException(r.getError()));
+      } else {
+        successes.put(i, new Asset(r.getAsset(), client));
+      }
+    }
+
+    return new BatchResponse<Asset>(successes, errors);
   }
 
   /**
@@ -91,25 +148,42 @@ public class Asset {
      * Hex-encoded representation of the root extended public key
      */
     @SerializedName("root_xpub")
-    public String rootXpub;
+    public byte[] rootXpub;
 
     /**
      * The derived public key, used in the asset's issuance program.
      */
     @SerializedName("asset_pubkey")
-    public String assetPubkey;
+    public byte[] assetPubkey;
 
     /**
      * The derivation path of the derived key.
      */
     @SerializedName("asset_derivation_path")
-    public String[] assetDerivationPath;
+    public byte[][] assetDerivationPath;
+
+    private Key(com.chain.proto.Asset.Key proto) {
+      this.rootXpub = proto.getRootXpub().toByteArray();
+      this.assetPubkey = proto.getAssetPubkey().toByteArray();
+      this.assetDerivationPath = new byte[proto.getAssetDerivationPathCount()][];
+      for (int i = 0; i < proto.getAssetDerivationPathCount(); i++) {
+        this.assetDerivationPath[i] = proto.getAssetDerivationPath(i).toByteArray();
+      }
+    }
+
+    private static Key[] fromProtobuf(List<com.chain.proto.Asset.Key> protos) {
+      Key[] resp = new Key[protos.size()];
+      for (int i = 0; i < protos.size(); i++) {
+        resp[i] = new Key(protos.get(i));
+      }
+      return resp;
+    }
   }
 
   /**
    * A paged collection of assets returned from a query.
    */
-  public static class Items extends PagedItems<Asset> {
+  public static class Items extends PagedItems<Asset, ListAssetsQuery> {
     /**
      * Requests a page of assets based on an underlying query.
      * @return a page of asset objects
@@ -121,9 +195,38 @@ public class Asset {
      */
     @Override
     public Items getPage() throws ChainException {
-      Items items = this.client.request("list-assets", this.next, Items.class);
+      ListAssetsResponse resp = this.client.app().listAssets(this.next);
+      if (resp.hasError()) {
+        throw new APIException(resp.getError());
+      }
+
+      Items items = new Items();
+      for (com.chain.proto.Asset asset : resp.getItemsList()) {
+        items.list.add(new Asset(asset, client));
+      }
+      items.lastPage = resp.getLastPage();
+      items.next = resp.getNext();
       items.setClient(this.client);
       return items;
+    }
+
+    public void setNext(Query query) {
+      ListAssetsQuery.Builder builder = ListAssetsQuery.newBuilder();
+
+      if (query.filter != null && !query.filter.isEmpty()) {
+        builder.setFilter(query.filter);
+      }
+      if (query.after != null && !query.filter.isEmpty()) {
+        builder.setAfter(query.after);
+      }
+
+      if (query.filterParams != null) {
+        for (Query.FilterParam param : query.filterParams) {
+          builder.addFilterParams(param.toProtobuf());
+        }
+      }
+
+      this.next = builder.build();
     }
   }
 
@@ -178,7 +281,7 @@ public class Asset {
      * <strong>Must set with {@link #addRootXpub(String)} or {@link #setRootXpubs(List)} before calling {@link #create(Client)}.</strong>
      */
     @SerializedName("root_xpubs")
-    public List<String> rootXpubs;
+    public List<ByteString> rootXpubs;
 
     /**
      * The number of keys required to sign an issuance of the asset.<br>
@@ -210,8 +313,11 @@ public class Asset {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Asset create(Client client) throws ChainException {
-      return client.singletonBatchRequest(
-          "create-asset", Arrays.asList(this), Asset.class, APIException.class);
+      BatchResponse<Asset> resp = Asset.createBatch(client, Arrays.asList(this));
+      if (resp.isError(0)) {
+        throw resp.errorsByIndex().get(0);
+      }
+      return resp.successesByIndex().get(0);
     }
 
     /**
@@ -292,7 +398,11 @@ public class Asset {
      * @return updated builder object.
      */
     public Builder addRootXpub(String xpub) {
-      this.rootXpubs.add(xpub);
+      return addRootXpub(Util.hexStringToByteArray(xpub));
+    }
+
+    public Builder addRootXpub(byte[] xpub) {
+      this.rootXpubs.add(ByteString.copyFrom(xpub));
       return this;
     }
 
@@ -304,7 +414,10 @@ public class Asset {
      * @return updated builder object
      */
     public Builder setRootXpubs(List<String> xpubs) {
-      this.rootXpubs = new ArrayList<>(xpubs);
+      this.rootXpubs = new ArrayList();
+      for (String xpub : xpubs) {
+        this.rootXpubs.add(ByteString.copyFrom(Util.hexStringToByteArray(xpub)));
+      }
       return this;
     }
   }

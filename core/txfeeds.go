@@ -1,58 +1,45 @@
 package core
 
 import (
-	"context"
 	"fmt"
 	"math"
 
+	"golang.org/x/net/context"
+
+	"chain/core/pb"
 	"chain/core/query"
 	"chain/core/txfeed"
 	"chain/errors"
 	"chain/net/http/httpjson"
 )
 
-// POST /create-txfeed
-func (h *Handler) createTxFeed(ctx context.Context, in struct {
-	Alias  string
-	Filter string
-
-	// ClientToken is the application's unique token for the txfeed. Every txfeed
-	// should have a unique client token. The client token is used to ensure
-	// idempotency of create txfeed requests. Duplicate create txfeed requests
-	// with the same client_token will only create one txfeed.
-	ClientToken string `json:"client_token"`
-}) (*txfeed.TxFeed, error) {
+func (h *Handler) CreateTxFeed(ctx context.Context, in *pb.CreateTxFeedRequest) (*pb.TxFeedResponse, error) {
 	after := fmt.Sprintf("%d:%d-%d", h.Chain.Height(), math.MaxInt32, uint64(math.MaxInt64))
-	return h.TxFeeds.Create(ctx, in.Alias, in.Filter, after, in.ClientToken)
+	feed, err := h.TxFeeds.Create(ctx, in.Alias, in.Filter, after, in.ClientToken)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.TxFeedResponse{Response: txFeedProto(feed)}, nil
 }
 
-// POST /get-transaction-feed
-func (h *Handler) getTxFeed(ctx context.Context, in struct {
-	ID    string `json:"id,omitempty"`
-	Alias string `json:"alias,omitempty"`
-}) (*txfeed.TxFeed, error) {
-	return h.TxFeeds.Find(ctx, in.ID, in.Alias)
+func (h *Handler) GetTxFeed(ctx context.Context, in *pb.GetTxFeedRequest) (*pb.TxFeedResponse, error) {
+	feed, err := h.TxFeeds.Find(ctx, in.GetId(), in.GetAlias())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.TxFeedResponse{Response: txFeedProto(feed)}, nil
 }
 
-// POST /delete-transaction-feed
-func (h *Handler) deleteTxFeed(ctx context.Context, in struct {
-	ID    string `json:"id,omitempty"`
-	Alias string `json:"alias,omitempty"`
-}) error {
-	return h.TxFeeds.Delete(ctx, in.ID, in.Alias)
+func (h *Handler) DeleteTxFeed(ctx context.Context, in *pb.DeleteTxFeedRequest) (*pb.ErrorResponse, error) {
+	err := h.TxFeeds.Delete(ctx, in.GetId(), in.GetAlias())
+	return nil, err
 }
 
-// POST /update-transaction-feed
-func (h *Handler) updateTxFeed(ctx context.Context, in struct {
-	ID    string `json:"id,omitempty"`
-	Alias string `json:"alias,omitempty"`
-	Prev  string `json:"previous_after"`
-	After string `json:"after"`
-}) (*txfeed.TxFeed, error) {
+func (h *Handler) UpdateTxFeed(ctx context.Context, in *pb.UpdateTxFeedRequest) (*pb.TxFeedResponse, error) {
 	// TODO(tessr): Consider moving this function into the txfeed package.
 	// (It's currently outside the txfeed package to avoid a dependecy cycle
 	// between txfeed and query.)
-	bad, err := txAfterIsBefore(in.After, in.Prev)
+	bad, err := txAfterIsBefore(in.After, in.PreviousAfter)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +48,11 @@ func (h *Handler) updateTxFeed(ctx context.Context, in struct {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "new After cannot be before Prev")
 	}
 
-	return h.TxFeeds.Update(ctx, in.ID, in.Alias, in.After, in.Prev)
+	feed, err := h.TxFeeds.Update(ctx, in.GetId(), in.GetAlias(), in.After, in.PreviousAfter)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.TxFeedResponse{Response: txFeedProto(feed)}, nil
 }
 
 // txAfterIsBefore returns true if a is before b. It returns an error if either
@@ -80,4 +71,16 @@ func txAfterIsBefore(a, b string) (bool, error) {
 	return aAfter.FromBlockHeight < bAfter.FromBlockHeight ||
 		(aAfter.FromBlockHeight == bAfter.FromBlockHeight &&
 			aAfter.FromPosition < bAfter.FromPosition), nil
+}
+
+func txFeedProto(f *txfeed.TxFeed) *pb.TxFeed {
+	proto := &pb.TxFeed{
+		Id:     f.ID,
+		Filter: f.Filter,
+		After:  f.After,
+	}
+	if f.Alias != nil {
+		proto.Alias = *f.Alias
+	}
+	return proto
 }

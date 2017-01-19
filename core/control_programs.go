@@ -1,80 +1,58 @@
 package core
 
 import (
-	"context"
-	stdjson "encoding/json"
 	"sync"
 
-	"chain/encoding/json"
-	"chain/errors"
-	"chain/net/http/httpjson"
+	"golang.org/x/net/context"
+
+	"chain/core/pb"
 	"chain/net/http/reqid"
 )
 
-// POST /create-control-program
-func (h *Handler) createControlProgram(ctx context.Context, ins []struct {
-	Type   string
-	Params stdjson.RawMessage
-}) interface{} {
-
-	responses := make([]interface{}, len(ins))
+func (h *Handler) CreateControlPrograms(ctx context.Context, in *pb.CreateControlProgramsRequest) (*pb.CreateControlProgramsResponse, error) {
+	responses := make([]*pb.CreateControlProgramsResponse_Response, len(in.Requests))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
 
 	for i := 0; i < len(responses); i++ {
 		go func(i int) {
-			subctx := reqid.NewSubContext(ctx, reqid.New())
+			ctx = reqid.NewSubContext(ctx, reqid.New())
 			defer wg.Done()
-			defer batchRecover(subctx, &responses[i])
-
-			var (
-				prog interface{}
-				err  error
-			)
-			switch ins[i].Type {
-			case "account":
-				prog, err = h.createAccountControlProgram(subctx, ins[i].Params)
+			defer batchRecover(func(err error) {
+				responses[i] = &pb.CreateControlProgramsResponse_Response{Error: protobufErr(err)}
+			})
+			switch in.Requests[i].GetType().(type) {
+			case (*pb.CreateControlProgramsRequest_Request_Account):
+				responses[i] = h.createAccountControlProgram(ctx, in.Requests[i].GetAccount())
 			default:
-				err = errors.WithDetailf(httpjson.ErrBadRequest, "unknown control program type %q", ins[i].Type)
-			}
-			if err != nil {
-				responses[i] = err
-			} else {
-				responses[i] = prog
+				responses[i] = &pb.CreateControlProgramsResponse_Response{Error: protobufErr(errBadAction)}
 			}
 		}(i)
 	}
 
 	wg.Wait()
-	return responses
+	return &pb.CreateControlProgramsResponse{Responses: responses}, nil
 }
 
-func (h *Handler) createAccountControlProgram(ctx context.Context, input []byte) (interface{}, error) {
-	var parsed struct {
-		AccountAlias string `json:"account_alias"`
-		AccountID    string `json:"account_id"`
-	}
-	err := stdjson.Unmarshal(input, &parsed)
-	if err != nil {
-		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "bad parameters for account control program")
-	}
+func (h *Handler) createAccountControlProgram(ctx context.Context, in *pb.CreateControlProgramsRequest_Account) *pb.CreateControlProgramsResponse_Response {
+	resp := new(pb.CreateControlProgramsResponse_Response)
 
-	accountID := parsed.AccountID
+	accountID := in.GetAccountId()
 	if accountID == "" {
-		acc, err := h.Accounts.FindByAlias(ctx, parsed.AccountAlias)
+		acc, err := h.Accounts.FindByAlias(ctx, in.GetAccountAlias())
 		if err != nil {
-			return nil, err
+			resp.Error = protobufErr(err)
+			return resp
 		}
 		accountID = acc.ID
 	}
 
 	controlProgram, err := h.Accounts.CreateControlProgram(ctx, accountID, false)
 	if err != nil {
-		return nil, err
+		resp.Error = protobufErr(err)
+		return resp
 	}
 
-	ret := map[string]interface{}{
-		"control_program": json.HexBytes(controlProgram),
-	}
-	return ret, nil
+	resp.ControlProgram = controlProgram
+	return resp
 }

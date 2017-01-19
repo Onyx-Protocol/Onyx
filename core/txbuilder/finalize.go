@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 
-	"chain/core/rpc"
+	"chain/core/pb"
 	"chain/errors"
+	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/validation"
@@ -107,11 +108,24 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 // transaction to a remote generator.
 // TODO(jackson): This implementation maybe belongs elsewhere.
 type RemoteGenerator struct {
-	Peer *rpc.Client
+	Peer pb.NodeClient
 }
 
 func (rg *RemoteGenerator) Submit(ctx context.Context, tx *bc.Tx) error {
-	err := rg.Peer.Call(ctx, "/rpc/submit", tx, nil)
-	err = errors.Wrap(err, "generator transaction notice")
-	return err
+	var buf bytes.Buffer
+	_, err := tx.WriteTo(&buf)
+	if err != nil {
+		return errors.Wrap(err, "couldn't write tx")
+	}
+
+	_, err = rg.Peer.SubmitTx(ctx, &pb.SubmitTxRequest{Transaction: buf.Bytes()})
+	if err != nil {
+		err = errors.Wrap(err, "generator transaction notice")
+		log.Error(ctx, err)
+
+		// Return an error so that the client knows that it needs to
+		// retry the request.
+		return err
+	}
+	return nil
 }

@@ -1,81 +1,82 @@
 package core
 
 import (
-	"context"
-	"encoding/json"
-	"net/http"
+	libcontext "golang.org/x/net/context"
 
-	chainjson "chain/encoding/json"
+	"chain/core/leader"
+	"chain/core/pb"
 	"chain/errors"
-	"chain/net/http/httpjson"
 	"chain/protocol/bc"
 )
 
-// getBlockRPC returns the block at the requested height.
-// If successful, it always returns at least one block,
-// waiting if necessary until one is created.
-// It is an error to request blocks very far in the future.
-func (h *Handler) getBlockRPC(ctx context.Context, height uint64) (chainjson.HexBytes, error) {
-	err := <-h.Chain.BlockSoonWaiter(ctx, height)
+func (h *Handler) GetBlock(ctx libcontext.Context, in *pb.GetBlockRequest) (*pb.GetBlockResponse, error) {
+	err := <-h.Chain.BlockSoonWaiter(ctx, in.Height)
 	if err != nil {
-		return nil, errors.Wrapf(err, "waiting for block at height %d", height)
+		return nil, errors.Wrapf(err, "waiting for block at height %d", in.Height)
 	}
 
-	rawBlock, err := h.Store.GetRawBlock(ctx, height)
+	rawBlock, err := h.Store.GetRawBlock(ctx, in.Height)
 	if err != nil {
 		return nil, err
 	}
 
-	return rawBlock, nil
+	return &pb.GetBlockResponse{Block: rawBlock}, nil
 }
 
-// getBlocksRPC -- DEPRECATED: use getBlock instead
-func (h *Handler) getBlocksRPC(ctx context.Context, afterHeight uint64) ([]chainjson.HexBytes, error) {
-	block, err := h.getBlockRPC(ctx, afterHeight+1)
+func (h *Handler) GetSnapshotInfo(ctx libcontext.Context, in *pb.Empty) (*pb.GetSnapshotInfoResponse, error) {
+	height, size, err := h.Store.LatestSnapshotInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GetSnapshotInfoResponse{
+		Height:       height,
+		Size:         size,
+		BlockchainId: h.Config.BlockchainID[:],
+	}, nil
+}
+
+func (h *Handler) GetSnapshot(ctx libcontext.Context, in *pb.GetSnapshotRequest) (*pb.GetSnapshotResponse, error) {
+	data, err := h.Store.GetSnapshot(ctx, in.Height)
 	if err != nil {
 		return nil, err
 	}
 
-	return []chainjson.HexBytes{block}, nil
+	return &pb.GetSnapshotResponse{Data: data}, nil
 }
 
-type snapshotInfoResp struct {
-	Height       uint64  `json:"height"`
-	Size         uint64  `json:"size"`
-	BlockchainID bc.Hash `json:"blockchain_id"`
+func (h *Handler) GetBlockHeight(ctx libcontext.Context, in *pb.Empty) (*pb.GetBlockHeightResponse, error) {
+	return &pb.GetBlockHeightResponse{Height: h.Chain.Height()}, nil
 }
 
-func (h *Handler) getSnapshotInfoRPC(ctx context.Context) (resp snapshotInfoResp, err error) {
-	// TODO(jackson): cache latest snapshot and its height & size in-memory.
-	resp.Height, resp.Size, err = h.Store.LatestSnapshotInfo(ctx)
-	resp.BlockchainID = h.Config.BlockchainID
-	return resp, err
-}
-
-// getSnapshotRPC returns the raw protobuf snapshot at the provided height.
-// Non-generators can call this endpoint to get raw data
-// that they can use to populate their own snapshot table.
-//
-// This handler doesn't use the httpjson.Handler format so that it can return
-// raw protobuf bytes on the wire.
-func (h *Handler) getSnapshotRPC(rw http.ResponseWriter, req *http.Request) {
-	if h.Config == nil {
-		alwaysError(errUnconfigured).ServeHTTP(rw, req)
-		return
-	}
-
-	var height uint64
-	err := json.NewDecoder(req.Body).Decode(&height)
+func (h *Handler) SubmitTx(ctx libcontext.Context, in *pb.SubmitTxRequest) (*pb.SubmitTxResponse, error) {
+	txdata, err := bc.NewTxDataFromBytes(in.Transaction)
 	if err != nil {
-		WriteHTTPError(req.Context(), rw, httpjson.ErrBadRequest)
-		return
+		return nil, err
 	}
-
-	data, err := h.Store.GetSnapshot(req.Context(), height)
+	err = h.Submitter.Submit(ctx, bc.NewTx(*txdata))
 	if err != nil {
-		WriteHTTPError(req.Context(), rw, err)
-		return
+		return nil, err
 	}
-	rw.Header().Set("Content-Type", "application/x-protobuf")
-	rw.Write(data)
+	return &pb.SubmitTxResponse{Ok: true}, nil
+}
+
+func (h *Handler) SignBlock(ctx libcontext.Context, in *pb.SignBlockRequest) (*pb.SignBlockResponse, error) {
+	if !leader.IsLeading() {
+		conn, err := leaderConn(ctx, h.DB, h.Addr)
+		if err != nil {
+			return nil, err
+		}
+		defer conn.Conn.Close()
+
+		return pb.NewSignerClient(conn.Conn).SignBlock(ctx, in)
+	}
+	block, err := bc.NewBlockFromBytes(in.Block)
+	if err != nil {
+		return nil, err
+	}
+	sig, err := h.Signer(ctx, block)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.SignBlockResponse{Signature: sig}, nil
 }

@@ -123,7 +123,7 @@ public class CreateTest {
             .setDefinition(def)
             .addDefinitionField("test", test)
             .create(client);
-    assertNotNull(testAsset.id, testAsset.issuanceProgram);
+    assertNotNull(testAsset.id);
     assertNotNull(testAsset.issuanceProgram);
     assertNotNull(testAsset.keys);
     assertEquals(1, testAsset.keys.length);
@@ -136,7 +136,7 @@ public class CreateTest {
     assertEquals(test, testAsset.tags.get("test"));
     assertEquals(asset, testAsset.definition.get("name"));
     assertEquals(test, testAsset.definition.get("test"));
-    assertEquals("yes", testAsset.isLocal);
+    assertEquals(true, testAsset.isLocal);
 
     try {
       new Asset.Builder()

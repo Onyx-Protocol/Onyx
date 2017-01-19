@@ -1,59 +1,72 @@
 package core
 
 import (
-	"context"
-	"encoding/json"
 	"sync"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"chain/core/fetch"
 	"chain/core/leader"
+	"chain/core/pb"
 	"chain/core/txbuilder"
 	"chain/database/pg"
-	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
+	"chain/net/http/httpjson"
 	"chain/net/http/reqid"
 	"chain/protocol/bc"
 )
 
 var defaultTxTTL = 5 * time.Minute
 
-func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
+func (h *Handler) buildSingle(ctx context.Context, req *pb.BuildTxsRequest_Request) (*pb.TxsResponse_Response, error) {
 	err := h.filterAliases(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	actions := make([]txbuilder.Action, 0, len(req.Actions))
 	for i, act := range req.Actions {
-		typ, ok := act["type"].(string)
-		if !ok {
-			return nil, errors.WithDetailf(errBadActionType, "no action type provided on action %d", i)
+		var a txbuilder.Action
+		switch act.Action.(type) {
+		case *pb.Action_ControlAccount_:
+			a, err = h.Accounts.DecodeControlAction(act.GetControlAccount())
+		case *pb.Action_SpendAccount_:
+			a, err = h.Accounts.DecodeSpendAction(act.GetSpendAccount())
+		case *pb.Action_ControlProgram_:
+			a, err = txbuilder.DecodeControlProgramAction(act.GetControlProgram())
+		case *pb.Action_Issue_:
+			a, err = h.Assets.DecodeIssueAction(act.GetIssue())
+		case *pb.Action_SpendAccountUnspentOutput_:
+			a, err = h.Accounts.DecodeSpendUTXOAction(act.GetSpendAccountUnspentOutput())
+		case *pb.Action_SetTxReferenceData_:
+			a, err = txbuilder.DecodeSetTxRefDataAction(act.GetSetTxReferenceData())
 		}
-		decoder, ok := h.actionDecoders[typ]
-		if !ok {
-			return nil, errors.WithDetailf(errBadActionType, "unknown action type %q on action %d", typ, i)
-		}
-
-		// Remarshal to JSON, the action may have been modified when we
-		// filtered aliases.
-		b, err := json.Marshal(act)
 		if err != nil {
-			return nil, err
-		}
-		a, err := decoder(b)
-		if err != nil {
-			return nil, errors.WithDetailf(errBadAction, "%s on action %d", err.Error(), i)
+			return nil, errors.WithDetailf(err, "on action %d", i)
 		}
 		actions = append(actions, a)
 	}
 
-	ttl := req.TTL.Duration
-	if ttl == 0 {
-		ttl = defaultTxTTL
+	ttl := defaultTxTTL
+	if req.Ttl != "" {
+		ttl, err = time.ParseDuration(req.Ttl)
+		if err != nil {
+			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "bad timeout %s", req.Ttl)
+		}
 	}
 	maxTime := time.Now().Add(ttl)
-	tpl, err := txbuilder.Build(ctx, req.Tx, actions, maxTime)
+
+	var txdata *bc.TxData
+
+	if len(req.Transaction) > 0 {
+		txdata, err = bc.NewTxDataFromBytes(req.Transaction)
+		if err != nil {
+			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "bad tx data")
+		}
+	}
+
+	tpl, err := txbuilder.Build(ctx, txdata, actions, maxTime)
 	if errors.Root(err) == txbuilder.ErrAction {
 		err = errors.WithData(err, "actions", errInfoBodyList(errors.Data(err)["actions"].([]error)))
 	}
@@ -61,25 +74,23 @@ func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilde
 		return nil, err
 	}
 
-	// ensure null is never returned for signing instructions
-	if tpl.SigningInstructions == nil {
-		tpl.SigningInstructions = []*txbuilder.SigningInstruction{}
-	}
-	return tpl, nil
+	return &pb.TxsResponse_Response{Template: tpl}, nil
 }
 
-// POST /build-transaction
-func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) {
+func (h *Handler) BuildTxs(ctx context.Context, in *pb.BuildTxsRequest) (*pb.TxsResponse, error) {
 	// If we're not the leader, we don't have access to the current
 	// reservations. Forward the build call to the leader process.
 	// TODO(jackson): Distribute reservations across cored processes.
 	if !leader.IsLeading() {
-		var resp map[string]interface{}
-		err := h.forwardToLeader(ctx, "/build-transaction", buildReqs, &resp)
-		return resp, err
+		conn, err := leaderConn(ctx, h.DB, h.Addr)
+		if err != nil {
+			return nil, err
+		}
+		defer conn.Conn.Close()
+		return pb.NewAppClient(conn.Conn).BuildTxs(ctx, in)
 	}
 
-	responses := make([]interface{}, len(buildReqs))
+	responses := make([]*pb.TxsResponse_Response, len(in.Requests))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
 
@@ -87,11 +98,13 @@ func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interfa
 		go func(i int) {
 			subctx := reqid.NewSubContext(ctx, reqid.New())
 			defer wg.Done()
-			defer batchRecover(subctx, &responses[i])
+			defer batchRecover(func(err error) {
+				responses[i] = &pb.TxsResponse_Response{Error: protobufErr(err)}
+			})
 
-			tmpl, err := h.buildSingle(subctx, buildReqs[i])
+			tmpl, err := h.buildSingle(subctx, in.Requests[i])
 			if err != nil {
-				responses[i] = err
+				responses[i] = &pb.TxsResponse_Response{Error: protobufErr(err)}
 			} else {
 				responses[i] = tmpl
 			}
@@ -99,20 +112,25 @@ func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interfa
 	}
 
 	wg.Wait()
-	return responses, nil
+	return &pb.TxsResponse{Responses: responses}, nil
 }
 
-func (h *Handler) submitSingle(ctx context.Context, tpl *txbuilder.Template, waitUntil string) (interface{}, error) {
-	if tpl.Transaction == nil {
+func (h *Handler) submitSingle(ctx context.Context, tpl *pb.TxTemplate, waitUntil string) (*pb.SubmitTxsResponse_Response, error) {
+	if len(tpl.RawTransaction) == 0 {
 		return nil, errors.Wrap(txbuilder.ErrMissingRawTx)
 	}
 
-	err := h.finalizeTxWait(ctx, tpl, waitUntil)
+	tx, err := bc.NewTxDataFromBytes(tpl.RawTransaction)
 	if err != nil {
-		return nil, errors.Wrapf(err, "tx %s", tpl.Transaction.Hash())
+		return nil, errors.WithDetail(httpjson.ErrBadRequest, "bad transaction template")
 	}
 
-	return map[string]string{"id": tpl.Transaction.Hash().String()}, nil
+	err = h.finalizeTxWait(ctx, tpl, tx, waitUntil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "tx %s", tx.Hash())
+	}
+
+	return &pb.SubmitTxsResponse_Response{Id: tx.Hash().String()}, nil
 }
 
 // recordSubmittedTx records a lower bound height at which the tx
@@ -181,7 +199,7 @@ func CleanupSubmittedTxs(ctx context.Context, db pg.DB) {
 // confirmed on the blockchain.  ErrRejected means a conflicting tx is
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
-func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template, waitUntil string) error {
+func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *pb.TxTemplate, txdata *bc.TxData, waitUntil string) error {
 	// Use the current generator height as the lower bound of the block height
 	// that the transaction may appear in.
 	generatorHeight, _ := fetch.GeneratorHeight()
@@ -191,7 +209,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 	}
 
 	// Remember this height in case we retry this submit call.
-	tx := bc.NewTx(*txTemplate.Transaction)
+	tx := bc.NewTx(*txdata)
 	height, err := recordSubmittedTx(ctx, h.DB, tx.Hash, generatorHeight)
 	if err != nil {
 		return errors.Wrap(err, "saving tx submitted height")
@@ -260,40 +278,35 @@ func (h *Handler) waitForTxInBlock(ctx context.Context, tx *bc.Tx, height uint64
 	}
 }
 
-type submitArg struct {
-	Transactions []txbuilder.Template
-	wait         chainjson.Duration
-	WaitUntil    string `json:"wait_until"` // values none, confirmed, processed. default: processed
-}
-
-// POST /submit-transaction
-func (h *Handler) submit(ctx context.Context, x submitArg) (interface{}, error) {
+func (h *Handler) SubmitTxs(ctx context.Context, in *pb.SubmitTxsRequest) (*pb.SubmitTxsResponse, error) {
 	if !leader.IsLeading() {
-		var resp json.RawMessage
-		err := h.forwardToLeader(ctx, "/submit-transaction", x, &resp)
-		return resp, err
+		conn, err := leaderConn(ctx, h.DB, h.Addr)
+		if err != nil {
+			return nil, err
+		}
+		defer conn.Conn.Close()
+		return pb.NewAppClient(conn.Conn).SubmitTxs(ctx, in)
 	}
 
 	// Setup a timeout for the provided wait duration.
-	timeout := x.wait.Duration
-	if timeout <= 0 {
-		timeout = 30 * time.Second
-	}
+	timeout := 30 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	responses := make([]interface{}, len(x.Transactions))
+	responses := make([]*pb.SubmitTxsResponse_Response, len(in.Transactions))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
 	for i := range responses {
 		go func(i int) {
 			subctx := reqid.NewSubContext(ctx, reqid.New())
 			defer wg.Done()
-			defer batchRecover(subctx, &responses[i])
+			defer batchRecover(func(err error) {
+				responses[i] = &pb.SubmitTxsResponse_Response{Error: protobufErr(err)}
+			})
 
-			tx, err := h.submitSingle(subctx, &x.Transactions[i], x.WaitUntil)
+			tx, err := h.submitSingle(subctx, in.Transactions[i], in.WaitUntil)
 			if err != nil {
-				responses[i] = err
+				responses[i] = &pb.SubmitTxsResponse_Response{Error: protobufErr(err)}
 			} else {
 				responses[i] = tx
 			}
@@ -301,5 +314,5 @@ func (h *Handler) submit(ctx context.Context, x submitArg) (interface{}, error) 
 	}
 
 	wg.Wait()
-	return responses, nil
+	return &pb.SubmitTxsResponse{Responses: responses}, nil
 }

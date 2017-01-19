@@ -9,7 +9,7 @@ class UnspentOutputs {
     Client client = new Client();
 
     MockHsm.Key key = MockHsm.Key.create(client);
-    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
+    HsmSigner.addKey(key, client);
 
     new Asset.Builder()
       .setAlias("gold")

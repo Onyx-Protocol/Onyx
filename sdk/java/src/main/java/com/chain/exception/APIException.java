@@ -1,5 +1,6 @@
 package com.chain.exception;
 
+import com.chain.proto.Error;
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -115,6 +116,14 @@ public class APIException extends ChainException {
     this.code = code;
     this.detail = detail;
     this.requestId = requestId;
+  }
+
+  public APIException(Error error) {
+    super(error.getMessage());
+    this.chainMessage = error.getMessage();
+    this.code = error.getCode();
+    this.detail = error.getDetail();
+    this.temporary = error.getTemporary();
   }
 
   /**

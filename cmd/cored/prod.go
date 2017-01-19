@@ -3,7 +3,7 @@
 package main
 
 import (
-	"net/http"
+	"context"
 
 	"chain/database/pg"
 )
@@ -12,6 +12,6 @@ var prod = "yes"
 
 func resetInDevIfRequested(db pg.DB) {}
 
-func authLoopbackInDev(req *http.Request) bool {
+func authLoopbackInDev(ctx context.Context) bool {
 	return false
 }

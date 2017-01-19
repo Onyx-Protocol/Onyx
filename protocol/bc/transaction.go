@@ -42,6 +42,16 @@ func NewTx(data TxData) *Tx {
 	}
 }
 
+// NewTxDataFromBytes returns a new TxData read from the passed byte slice.
+func NewTxDataFromBytes(data []byte) (*TxData, error) {
+	txdata := TxData{}
+	err := txdata.readFrom(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	return &txdata, nil
+}
+
 // These flags are part of the wire protocol;
 // they must not change.
 const (

@@ -2,18 +2,18 @@ package core
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+
 	"chain/core/account"
 	"chain/core/asset"
-	"chain/core/config"
 	"chain/core/coretest"
 	"chain/core/generator"
 	"chain/core/leader"
+	"chain/core/pb"
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/txbuilder"
@@ -54,7 +54,13 @@ func TestBuildFinal(t *testing.T) {
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
+
+	txdata, err := bc.NewTxDataFromBytes(tmpl.RawTransaction)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*txdata))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,24 +75,24 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// deep-copy tmpl via json
-	tmplJSON, err := json.Marshal(tmpl)
+	// deep-copy tmpl via protobuf
+	tmplProto, err := proto.Marshal(tmpl)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var tmpl2 txbuilder.Template
-	err = json.Unmarshal(tmplJSON, &tmpl2)
+	tmpl2 := new(pb.TxTemplate)
+	err = proto.Unmarshal(tmplProto, tmpl2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tmpl.AllowAdditional = true
-	tmpl2.AllowAdditional = false
+	tmpl.AllowAdditionalActions = true
+	tmpl2.AllowAdditionalActions = false
 
 	coretest.SignTxTemplate(t, ctx, tmpl, nil)
-	coretest.SignTxTemplate(t, ctx, &tmpl2, nil)
+	coretest.SignTxTemplate(t, ctx, tmpl2, nil)
 
-	prog1 := tmpl.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
+	prog1 := tmpl.SigningInstructions[0].WitnessComponents[0].GetSignature().Program
 	insts1, err := vm.ParseProgram(prog1)
 	if err != nil {
 		t.Fatal(err)
@@ -117,7 +123,7 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatalf("sigwitness program1 opcode 18 is %02x, expected %02x", insts1[18].Op, vm.OP_CHECKOUTPUT)
 	}
 
-	prog2 := tmpl2.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
+	prog2 := tmpl2.SigningInstructions[0].WitnessComponents[0].GetSignature().Program
 	insts2, err := vm.ParseProgram(prog2)
 	if err != nil {
 		t.Fatal(err)
@@ -161,7 +167,13 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
+
+	txdata, err := bc.NewTxDataFromBytes(tmpl.RawTransaction)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*txdata))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,23 +190,15 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
+	txdata, err = bc.NewTxDataFromBytes(tmpl.RawTransaction)
 	if err != nil {
 		t.Fatal(err)
 	}
-}
 
-func TestMux(t *testing.T) {
-	// Handler calls handleJSON, which panics
-	// if the function signature is not of the right form.
-	// So call Handler here and rescue any panic
-	// to check for this case.
-	defer func() {
-		if err := recover(); err != nil {
-			t.Fatal("unexpected panic:", err)
-		}
-	}()
-	(&Handler{Config: &config.Config{}}).init()
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*txdata))
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestTransfer(t *testing.T) {
@@ -217,7 +221,6 @@ func TestTransfer(t *testing.T) {
 	go handler.Accounts.ProcessBlocks(ctx)
 	handler.Indexer.RegisterAnnotator(handler.Accounts.AnnotateTxs)
 	handler.Indexer.RegisterAnnotator(handler.Assets.AnnotateTxs)
-	handler.init()
 
 	// TODO(jackson): Replace this with a mock leader.
 	var wg sync.WaitGroup
@@ -235,8 +238,6 @@ func TestTransfer(t *testing.T) {
 	account1ID := coretest.CreateAccount(ctx, t, handler.Accounts, account1Alias, nil)
 	account2ID := coretest.CreateAccount(ctx, t, handler.Accounts, account2Alias, nil)
 
-	assetIDStr := assetID.String()
-
 	// Preface: issue some asset for account1ID to transfer to account2ID
 	issueAssetAmount := bc.AssetAmount{
 		AssetID: assetID,
@@ -252,7 +253,12 @@ func TestTransfer(t *testing.T) {
 
 	coretest.SignTxTemplate(t, ctx, txTemplate, nil)
 
-	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*txTemplate.Transaction))
+	txdata, err := bc.NewTxDataFromBytes(txTemplate.RawTransaction)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*txdata))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -262,78 +268,81 @@ func TestTransfer(t *testing.T) {
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// Now transfer
-	buildReqFmt := `
-		{"actions": [
-			{"type": "spend_account", "asset_id": "%s", "amount": 100, "account_id": "%s"},
-			{"type": "control_account", "asset_id": "%s", "amount": 100, "account_id": "%s"}
-		]}
-	`
-	buildReqStr := fmt.Sprintf(buildReqFmt, assetIDStr, account1ID, assetIDStr, account2ID)
-	var buildReq buildRequest
-	err = json.Unmarshal([]byte(buildReqStr), &buildReq)
+	buildResult, err := handler.BuildTxs(ctx, &pb.BuildTxsRequest{
+		Requests: []*pb.BuildTxsRequest_Request{{
+			Actions: []*pb.Action{{
+				Action: &pb.Action_SpendAccount_{
+					SpendAccount: &pb.Action_SpendAccount{
+						Asset:   &pb.AssetIdentifier{Identifier: &pb.AssetIdentifier_AssetId{AssetId: assetID[:]}},
+						Amount:  100,
+						Account: &pb.AccountIdentifier{Identifier: &pb.AccountIdentifier_AccountId{AccountId: account1ID}},
+					},
+				},
+			}, {
+				Action: &pb.Action_ControlAccount_{
+					ControlAccount: &pb.Action_ControlAccount{
+						Asset:   &pb.AssetIdentifier{Identifier: &pb.AssetIdentifier_AssetId{AssetId: assetID[:]}},
+						Amount:  100,
+						Account: &pb.AccountIdentifier{Identifier: &pb.AccountIdentifier_AccountId{AccountId: account2ID}},
+					},
+				},
+			}},
+		}},
+	})
 	if err != nil {
 		testutil.FatalErr(t, err)
+	}
+	inspectTxResps(t, buildResult)
+
+	txTemplate = buildResult.Responses[0].Template
+
+	if len(txTemplate.SigningInstructions) != 1 {
+		t.Errorf("expected template.signing_instructions in result to have length 1, got %d", len(txTemplate.SigningInstructions))
 	}
 
-	buildResult, err := handler.build(ctx, []*buildRequest{&buildReq})
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	jsonResult, err := json.MarshalIndent(buildResult, "", "  ")
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	var parsedResult []map[string]interface{}
-	err = json.Unmarshal(jsonResult, &parsedResult)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	if len(parsedResult) != 1 {
-		t.Errorf("expected build result to have length 1, got %d", len(parsedResult))
-	}
-	toSign := inspectTemplate(t, parsedResult[0], account2ID)
-	txTemplate, err = toTxTemplate(ctx, toSign)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
 	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
 	_, err = handler.submitSingle(ctx, txTemplate, "none")
 	if err != nil && errors.Root(err) != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
 	}
+
+	// Make a block so that UTXOs from the above tx are available to spend.
+	prottest.MakeBlock(t, c, g.PendingTxs())
+	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// Now transfer back using aliases.
-	buildReqFmt = `
-		{"actions": [
-			{"type": "spend_account", "params": {"asset_alias": "%s", "amount": 100, "account_alias": "%s"}},
-			{"type": "control_account", "params": {"asset_alias": "%s", "amount": 100, "account_alias": "%s"}}
-		]}
-	`
-	buildReqStr = fmt.Sprintf(buildReqFmt, assetAlias, account2Alias, assetAlias, account1Alias)
-	err = json.Unmarshal([]byte(buildReqStr), &buildReq)
+	buildResult, err = handler.BuildTxs(ctx, &pb.BuildTxsRequest{
+		Requests: []*pb.BuildTxsRequest_Request{{
+			Actions: []*pb.Action{{
+				Action: &pb.Action_SpendAccount_{
+					SpendAccount: &pb.Action_SpendAccount{
+						Asset:   &pb.AssetIdentifier{Identifier: &pb.AssetIdentifier_AssetAlias{AssetAlias: assetAlias}},
+						Amount:  100,
+						Account: &pb.AccountIdentifier{Identifier: &pb.AccountIdentifier_AccountAlias{AccountAlias: account2Alias}},
+					},
+				},
+			}, {
+				Action: &pb.Action_ControlAccount_{
+					ControlAccount: &pb.Action_ControlAccount{
+						Asset:   &pb.AssetIdentifier{Identifier: &pb.AssetIdentifier_AssetAlias{AssetAlias: assetAlias}},
+						Amount:  100,
+						Account: &pb.AccountIdentifier{Identifier: &pb.AccountIdentifier_AccountAlias{AccountAlias: account1Alias}},
+					},
+				},
+			}},
+		}},
+	})
 	if err != nil {
 		testutil.FatalErr(t, err)
+	}
+	inspectTxResps(t, buildResult)
+
+	txTemplate = buildResult.Responses[0].Template
+
+	if len(txTemplate.SigningInstructions) != 1 {
+		t.Errorf("expected template.signing_instructions in result to have length 1, got %d", len(txTemplate.SigningInstructions))
 	}
 
-	buildResult, err = handler.build(ctx, []*buildRequest{&buildReq})
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	jsonResult, err = json.MarshalIndent(buildResult, "", "  ")
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	err = json.Unmarshal(jsonResult, &parsedResult)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	if len(parsedResult) != 1 {
-		t.Errorf("expected build result to have length 1, got %d", len(parsedResult))
-	}
-	toSign = inspectTemplate(t, parsedResult[0], account2ID)
-	txTemplate, err = toTxTemplate(ctx, toSign)
 	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -344,29 +353,15 @@ func TestTransfer(t *testing.T) {
 	}
 }
 
-// expects inp to be a map, with one input member
-func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverAccountID string) map[string]interface{} {
-	member, ok := inp["signing_instructions"]
-	if !ok {
-		t.Errorf("expected template.signing_instructions in result")
+func inspectTxResps(t testing.TB, resp *pb.TxsResponse) {
+	var erred bool
+	for _, r := range resp.Responses {
+		if r.Error != nil {
+			t.Errorf("%+v\n", r.Error)
+			erred = true
+		}
 	}
-	parsedInputs, ok := member.([]interface{})
-	if !ok {
-		t.Errorf("expected template.signing_instructions in result to be a list")
+	if erred {
+		t.Fatal()
 	}
-	if len(parsedInputs) != 1 {
-		t.Errorf("expected template.signing_instructions in result to have length 1, got %d", len(parsedInputs))
-	}
-
-	return inp
-}
-
-func toTxTemplate(ctx context.Context, inp map[string]interface{}) (*txbuilder.Template, error) {
-	jsonInp, err := json.Marshal(inp)
-	if err != nil {
-		return nil, err
-	}
-	tpl := new(txbuilder.Template)
-	err = json.Unmarshal(jsonInp, tpl)
-	return tpl, err
 }

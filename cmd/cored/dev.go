@@ -6,8 +6,9 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
+
+	"google.golang.org/grpc/peer"
 
 	"chain/core/coreunsafe"
 	"chain/database/pg"
@@ -40,8 +41,12 @@ func resetInDevIfRequested(db pg.DB) {
 	}
 }
 
-func authLoopbackInDev(req *http.Request) bool {
+func authLoopbackInDev(ctx context.Context) bool {
 	// Allow connections from the local host.
-	a, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)
+	p, ok := peer.FromContext(ctx)
+	if !ok {
+		return false
+	}
+	a, err := net.ResolveTCPAddr("tcp", p.Addr.String())
 	return err == nil && a.IP.IsLoopback()
 }

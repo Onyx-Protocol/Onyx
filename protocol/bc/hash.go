@@ -19,7 +19,10 @@ import (
 // typically passed as values, not as pointers.
 type Hash [32]byte
 
-var EmptyStringHash = sha3.Sum256(nil)
+var (
+	EmptyStringHash  = sha3.Sum256(nil)
+	ErrBadHashLength = errors.New("wrong byte-length for hash")
+)
 
 // String returns the bytes of h encoded in hex.
 func (h Hash) String() string {
@@ -94,6 +97,14 @@ func ParseHash(s string) (h Hash, err error) {
 	}
 	_, err = hex.Decode(h[:], []byte(s))
 	return h, errors.Wrap(err, "decode hex")
+}
+
+func HashFromBytes(b []byte) (h Hash, err error) {
+	if len(b) != len(h) {
+		return h, ErrBadHashLength
+	}
+	copy(h[:], b)
+	return h, nil
 }
 
 func writeFastHash(w io.Writer, d []byte) error {
