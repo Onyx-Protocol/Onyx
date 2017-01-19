@@ -367,5 +367,5 @@ func writeRefData(w io.Writer, data []byte, serflags byte) error {
 		_, err := blockchain.WriteVarstr31(w, data)
 		return err
 	}
-	return WriteFastHash(w, data)
+	return writeFastHash(w, data)
 }
