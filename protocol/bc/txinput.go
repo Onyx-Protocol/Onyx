@@ -198,14 +198,30 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	return nil
 }
 
-// assumes w has sticky errors
-func (t *TxInput) writeTo(w io.Writer, serflags uint8) {
-	blockchain.WriteVarint63(w, t.AssetVersion) // TODO(bobg): check and return error
-	blockchain.WriteExtensibleString(w, t.WriteInputCommitment)
-	blockchain.WriteVarstr31(w, t.ReferenceData)
-	if serflags&SerWitness != 0 {
-		blockchain.WriteExtensibleString(w, t.writeInputWitness)
+func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
+	_, err := blockchain.WriteVarint63(w, t.AssetVersion)
+	if err != nil {
+		return errors.Wrap(err, "writing asset version")
 	}
+
+	_, err = blockchain.WriteExtensibleString(w, t.WriteInputCommitment)
+	if err != nil {
+		return errors.Wrap(err, "writing input commitment")
+	}
+
+	_, err = blockchain.WriteVarstr31(w, t.ReferenceData)
+	if err != nil {
+		return errors.Wrap(err, "writing reference data")
+	}
+
+	if serflags&SerWitness != 0 {
+		_, err = blockchain.WriteExtensibleString(w, t.writeInputWitness)
+		if err != nil {
+			return errors.Wrap(err, "writing input witness")
+		}
+	}
+
+	return nil
 }
 
 func (t *TxInput) WriteInputCommitment(w io.Writer) error {

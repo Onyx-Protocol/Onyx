@@ -271,39 +271,66 @@ func (tx *TxData) MarshalText() ([]byte, error) {
 // WriteTo writes tx to w.
 func (tx *TxData) WriteTo(w io.Writer) (int64, error) {
 	ew := errors.NewWriter(w)
-	tx.writeTo(ew, serRequired)
+	err := tx.writeTo(ew, serRequired)
+	if err != nil {
+		return ew.Written(), ew.Err()
+	}
 	return ew.Written(), ew.Err()
 }
 
-// assumes w has sticky errors
-func (tx *TxData) writeTo(w io.Writer, serflags byte) {
-	w.Write([]byte{serflags})
-	blockchain.WriteVarint63(w, tx.Version) // TODO(bobg): check and return error
+func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
+	_, err := w.Write([]byte{serflags})
+	if err != nil {
+		return errors.Wrap(err, "writing serialization flags")
+	}
+
+	_, err = blockchain.WriteVarint63(w, tx.Version)
+	if err != nil {
+		return errors.Wrap(err, "writing transaction version")
+	}
 
 	// common fields
-	blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
 		_, err := blockchain.WriteVarint63(w, tx.MinTime)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "writing transaction min time")
 		}
 		_, err = blockchain.WriteVarint63(w, tx.MaxTime)
-		return err
+		return errors.Wrap(err, "writing transaction max time")
 	})
+	if err != nil {
+		return errors.Wrap(err, "writing common fields")
+	}
 
 	// common witness, empty in v1
-	blockchain.WriteVarstr31(w, []byte{})
-
-	blockchain.WriteVarint31(w, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
-	for _, ti := range tx.Inputs {
-		ti.writeTo(w, serflags)
+	_, err = blockchain.WriteVarstr31(w, []byte{})
+	if err != nil {
+		return errors.Wrap(err, "writing common witness")
 	}
 
-	blockchain.WriteVarint31(w, uint64(len(tx.Outputs))) // TODO(bobg): check and return error
-	for _, to := range tx.Outputs {
-		to.writeTo(w, serflags)
+	_, err = blockchain.WriteVarint31(w, uint64(len(tx.Inputs)))
+	if err != nil {
+		return errors.Wrap(err, "writing tx input count")
+	}
+	for i, ti := range tx.Inputs {
+		err = ti.writeTo(w, serflags)
+		if err != nil {
+			return errors.Wrapf(err, "writing tx input %d", i)
+		}
 	}
 
-	writeRefData(w, tx.ReferenceData, serflags)
+	_, err = blockchain.WriteVarint31(w, uint64(len(tx.Outputs)))
+	if err != nil {
+		return errors.Wrap(err, "writing tx output count")
+	}
+	for i, to := range tx.Outputs {
+		err = to.writeTo(w, serflags)
+		if err != nil {
+			return errors.Wrapf(err, "writing tx output %d", i)
+		}
+	}
+
+	return writeRefData(w, tx.ReferenceData, serflags)
 }
 
 // String returns the Outpoint in the human-readable form "hash:index".
@@ -312,7 +339,6 @@ func (p Outpoint) String() string {
 }
 
 // WriteTo writes p to w.
-// It assumes w has sticky errors.
 func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
 	n, err := w.Write(p.Hash[:])
 	if err != nil {
@@ -322,11 +348,10 @@ func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
 	return int64(n + n2), err
 }
 
-// assumes w has sticky errors
-func writeRefData(w io.Writer, data []byte, serflags byte) {
+func writeRefData(w io.Writer, data []byte, serflags byte) error {
 	if serflags&SerMetadata != 0 {
-		blockchain.WriteVarstr31(w, data) // TODO(bobg): check and return error
-	} else {
-		writeFastHash(w, data)
+		_, err := blockchain.WriteVarstr31(w, data) // TODO(bobg): check and return error
+		return err
 	}
+	return writeFastHash(w, data)
 }
