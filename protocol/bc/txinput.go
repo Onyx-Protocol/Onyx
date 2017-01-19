@@ -299,3 +299,10 @@ func (t *TxInput) OutputID() (o OutputID) {
 	}
 	return o
 }
+
+func (t *TxInput) UnspentID() (u UnspentID) {
+	if si, ok := t.TypedInput.(*SpendInput); ok {
+		u = ComputeUnspentID(si.OutputID, si.OutputCommitment.Hash(t.AssetVersion))
+	}
+	return u
+}

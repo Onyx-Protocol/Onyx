@@ -110,6 +110,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		outputTxPositions pg.Uint32s
 		outputIndexes     pg.Uint32s
 		outputTxHashes    pq.ByteaArray
+		outputIDs         pq.ByteaArray
 		outputData        pq.StringArray
 		prevoutOIDs       pq.ByteaArray
 	)
@@ -152,19 +153,21 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 			outputTxPositions = append(outputTxPositions, uint32(pos))
 			outputIndexes = append(outputIndexes, uint32(outIndex))
 			outputTxHashes = append(outputTxHashes, tx.Hash[:])
+			outid := bc.ComputeOutputID(tx.Hash, uint32(outIndex))
+			outputIDs = append(outputIDs, outid[:])
 			outputData = append(outputData, string(serializedData))
 		}
 	}
 
 	// Insert all of the block's outputs at once.
 	const insertQ = `
-		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, data, timespan)
-		SELECT $1, unnest($2::integer[]), unnest($3::integer[]), unnest($4::bytea[]),
-		           unnest($5::jsonb[]),   int8range($6, NULL)
+		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, output_id, data, timespan)
+		SELECT $1, unnest($2::integer[]), unnest($3::integer[]), unnest($4::bytea[]), unnest($5::bytea[]),
+		           unnest($6::jsonb[]),   int8range($7, NULL)
 		ON CONFLICT (block_height, tx_pos, output_index) DO NOTHING;
 	`
 	_, err := ind.db.Exec(ctx, insertQ, b.Height, outputTxPositions,
-		outputIndexes, outputTxHashes, outputData, b.TimestampMS)
+		outputIndexes, outputTxHashes, outputIDs, outputData, b.TimestampMS)
 	if err != nil {
 		return errors.Wrap(err, "batch inserting annotated outputs")
 	}

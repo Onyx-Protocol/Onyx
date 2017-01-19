@@ -13,6 +13,10 @@ type Output struct {
 	bc.TxOutput
 }
 
+func (o *Output) UnspentID() bc.UnspentID {
+	return bc.ComputeUnspentID(o.OutputID, o.TxOutput.CommitmentHash())
+}
+
 // NewOutput creates a new Output.
 func NewOutput(o bc.TxOutput, outid bc.OutputID) *Output {
 	return &Output{
@@ -26,6 +30,8 @@ func NewOutput(o bc.TxOutput, outid bc.OutputID) *Output {
 // excludes reference data).
 func Prevout(in *bc.TxInput) *Output {
 	assetAmount := in.AssetAmount()
+	// TODO(oleg): for new outputid we need to have correct output commitment, not reconstruct this here
+	// Also we do not care about all these, but only about UnspentID
 	t := bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, in.ControlProgram(), nil)
 	return &Output{
 		OutputID: in.OutputID(),
@@ -54,6 +60,6 @@ func outputBytes(o *Output) []byte {
 // into the state tree.
 func OutputTreeItem(o *Output) (bkey, commitment []byte) {
 	// TODO(oleg): replace value with the key, so we can later optimize the tree to become a set.
-	key := OutputKey(bc.ComputeUnspentID(o.OutputID, o.TxOutput.CommitmentHash()))
+	key := OutputKey(o.UnspentID())
 	return key, outputBytes(o)
 }

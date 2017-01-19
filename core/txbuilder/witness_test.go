@@ -18,7 +18,7 @@ func TestInferConstraints(t *testing.T) {
 	tpl := &Template{
 		Transaction: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.Hash{}, 1, nil, bc.AssetID{}, 123, nil, []byte{1}),
+				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 1), nil, bc.AssetID{}, 123, nil, []byte{1}),
 			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(bc.AssetID{}, 123, []byte{10, 11, 12}, nil),
