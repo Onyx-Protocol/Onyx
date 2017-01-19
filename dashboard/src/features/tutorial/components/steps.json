@@ -36,16 +36,20 @@
     }
   },
   {
-    "type": "mockhsm",
     "component": "Success",
     "title": "Tutorial - MockHSM keys - Step 1 of 7",
     "button": "Learn about assets",
     "dismiss": "End tutorial",
     "route": "assets",
     "content": [
-              "Great work! You created the 'STRING' key.",
-              "Next up, you will learn about assets and how to create one."
-            ]
+      {
+        "type": "mockhsm",
+        "line": "Great work! You created the 'STRING' key."
+      },
+      {
+        "line": "Next up, you will learn about assets and how to create one."
+      }
+    ]
   },
   {
     "component": "Description",
@@ -69,6 +73,7 @@
           "description": "An asset alias is a label used to distinguish between assets."
         },
         {
+          "type": "mockhsm",
           "title": "Select 'STRING' key to use existing MockHSM key",
           "description": "This key will be used for the issuance and transfer of asset units in this account."
         },
@@ -80,16 +85,20 @@
     }
   },
   {
-    "type": "asset",
     "component": "Success",
     "title": "Tutorial - Assets - Step 2 of 7",
     "button": "Learn about accounts",
     "dismiss": "End tutorial",
     "route": "accounts",
     "content": [
-              "Great! You created the 'STRING' asset.",
-              "Next up, you will learn about accounts and how to create one."
-            ]
+      {
+        "type": "asset",
+        "line": "Great! You created the 'STRING' asset."
+      },
+      {
+        "line": "Next up, you will learn about accounts and how to create one."
+      }
+    ]
   },
   {
     "component": "Description",
@@ -124,16 +133,23 @@
     }
   },
   {
-    "type": "account",
     "component": "Success",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": "Create 2nd account",
     "dismiss": "End tutorial",
     "route": "accounts/create",
     "content": [
-              "Great! You created an account for 'STRING'.",
-              "Next, you will create a second account to interact with the newly created STRING account."
-            ]
+      {
+        "type": "account",
+        "index": 0,
+        "line": "Great! You created an account for 'STRING'."
+      },
+      {
+        "type": "account",
+        "index": 0,
+        "line": "Next, you will create a second account to interact with the newly created STRING account."
+      }
+    ]
   },
   {
     "component": "Form",
@@ -160,16 +176,21 @@
     }
   },
   {
-    "type": "account",
     "component": "Success",
     "title": "Tutorial - Accounts - Step 4 of 7",
     "button": "Learn about transactions",
     "dismiss": "End tutorial",
     "route": "transactions",
     "content": [
-              "Great! You created an account for 'STRING'.",
-              "Next, you will learn about transactions and how to issue assets."
-            ]
+      {
+        "type": "account",
+        "index": 1,
+        "line": "Great! You created an account for 'STRING'."
+      },
+      {
+        "line": "Next, you will learn about transactions and how to issue assets."
+      }
+    ]
   },
   {
     "component": "Description",
@@ -193,7 +214,8 @@
           "description": null
         },
         {
-          "title": "Select 'gold' for the asset alias",
+          "type": "asset",
+          "title": "Select 'STRING' for the asset alias",
           "description": null
         },
         {
@@ -205,11 +227,14 @@
           "description": null
         },
         {
-          "title": "Select 'alice' for the account alias",
+          "type": "account",
+          "index": 0,
+          "title": "Select 'STRING' for the account alias",
           "description": null
         },
         {
-          "title": "Select 'gold' for the asset alias",
+          "type": "asset",
+          "title": "Select 'STRING' for the asset alias",
           "description": null
         },
         {
@@ -230,9 +255,15 @@
     "dismiss": "End tutorial",
     "route": "transactions/create",
     "content": [
-              "Great! You issued 100 units of gold.",
-              "Next, you will spend the gold assets you just issued."
-            ]
+      {
+        "type": "asset",
+        "line": "Great! You issued 100 units of 'STRING'."
+      },
+      {
+        "type": "asset",
+        "line": "Next, you will spend the STRING assets you just issued."
+      }
+    ]
   },
   {
     "component": "Form",
@@ -248,11 +279,14 @@
           "description": null
         },
         {
-          "title": "Select 'alice' for the account alias",
+          "type": "account",
+          "index": 0,
+          "title": "Select 'STRING' for the account alias",
           "description": null
         },
         {
-          "title": "Select 'gold' for the asset alias",
+          "type": "asset",
+          "title": "Select 'STRING' for the asset alias",
           "description": null
         },
         {
@@ -264,11 +298,14 @@
           "description": null
         },
         {
-          "title": "Select 'bob' for the account alias",
+          "type": "account",
+          "index": 1,
+          "title": "Select 'STRING' for the account alias",
           "description": null
         },
         {
-          "title": "Select 'gold' for the asset alias",
+          "type": "asset",
+          "title": "Select 'STRING' for the asset alias",
           "description": null
         },
         {
@@ -289,9 +326,15 @@
     "dismiss": "End tutorial",
     "route": "transactions/create",
     "content": [
-              "Great! You spent 10 units of gold.",
-              "Next, you will retire the gold assets you just spent."
-            ]
+      {
+        "type": "asset",
+        "line": "Great! You spent 10 units of 'STRING'."
+      },
+      {
+        "type": "asset",
+        "line": "Next, you will retire the STRING assets you just issued."
+      }
+    ]
   },
   {
     "component": "Form",
@@ -307,11 +350,14 @@
           "description": null
         },
         {
-          "title": "Select 'bob' for the account alias",
+          "type": "account",
+          "index": 1,
+          "title": "Select 'STRING' for the account alias",
           "description": null
         },
         {
-          "title": "Select 'gold' for the asset alias",
+          "type": "asset",
+          "title": "Select 'STRING' for the asset alias",
           "description": null
         },
         {
@@ -323,7 +369,8 @@
           "description": null
         },
         {
-          "title": "Select 'gold' for the asset alias",
+          "type": "asset",
+          "title": "Select 'STRING' for the asset alias",
           "description": null
         },
         {
@@ -344,9 +391,14 @@
     "dismiss": null,
     "route": "transactions",
     "content": [
-              "Great! You retired 5 units of gold from Bob's account.",
-              "You are ready to finish the tutorial and recap what you learned."
-              ]
+      {
+        "type": "asset",
+        "line": "Great! You retired 5 units of STRING."
+      },
+      {
+        "line": "You are ready to finish the tutorial and recap what you learned."
+      }
+    ]
   },
   {
     "component": "Complete",

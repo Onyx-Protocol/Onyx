@@ -16,7 +16,7 @@ class Tutorial extends React.Component {
 
   render() {
     const tutorialStep = this.props.tutorialStep
-    const userInput = this.props.tutorialInputs[steps[tutorialStep]['type']] || { alias: "" }
+    const userInput = this.props.tutorialInputs
     const tutorialOpen = this.props.tutorialOpen
     const tutorialTypes = this.props.types
     const TutorialComponent = components[steps[tutorialStep]['component']]
@@ -25,7 +25,7 @@ class Tutorial extends React.Component {
       <div>
       {tutorialOpen && (tutorialTypes.includes(steps[tutorialStep]['component'])) &&
           <TutorialComponent
-            userInput={userInput.alias}
+            userInput={userInput}
             step={tutorialStep}
             button={steps[tutorialStep]['button']}
             title={steps[tutorialStep]['title']}

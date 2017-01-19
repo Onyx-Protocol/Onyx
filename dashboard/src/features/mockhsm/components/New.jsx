@@ -11,7 +11,6 @@ class New extends React.Component {
   }
 
   submitWithErrors(data) {
-    this.props.updateTutorial(data)
     return new Promise((resolve, reject) => {
       this.props.submitForm(data)
         .catch((err) => reject({_error: err}))

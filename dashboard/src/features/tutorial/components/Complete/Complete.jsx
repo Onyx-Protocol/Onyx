@@ -5,6 +5,8 @@ import styles from './Complete.scss'
 class Complete extends React.Component {
 
   render() {
+    const userInput = this.props.userInput
+
     return (
       <div className={styles.main}>
         <div className={styles.backdrop}></div>
@@ -17,9 +19,9 @@ class Complete extends React.Component {
                 In this tutorial, you learned how to:<br />
               </p>
               <p>
-                1. create and issue assets<br />
-                2. create accounts<br />
-                3. Build, sign and submit transactions<br />
+                1. create and issue {userInput['asset']['alias']} assets<br />
+                2. create accounts for {userInput['accounts'][0]['alias']} and {userInput['accounts'][1]['alias']}<br />
+                3. build, sign and submit transactions<br />
               </p>
               <p>
                   If you need to revisit this tutorial, you can click Tutorial in

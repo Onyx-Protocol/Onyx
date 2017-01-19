@@ -12,9 +12,21 @@ export const isShowing = (state = true, action) => {
   return state
 }
 
-export const userInputs = (state = {}, action) => {
+export const userInputs = (state = { accounts: [] }, action) => {
   if (action.type == 'UPDATE_TUTORIAL'){
-    return {...state, ...action.info}
+    if (action.object == 'mockhsm') {
+      return {...state, mockhsm: action.data}
+    }
+    else if (action.object == 'asset') {
+      return {...state, asset: action.data}
+    }
+    else if (action.object == 'account') {
+      return {...state, accounts: [...state.accounts, action.data] }
+    }
+    return state
+  }
+  else if (action.type == 'DISMISS_TUTORIAL'){
+    return { accounts: [] }
   }
   return state
 }

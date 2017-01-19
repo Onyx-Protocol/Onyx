@@ -29,7 +29,14 @@ class Success extends React.Component {
             <span className='glyphicon glyphicon-ok-sign'></span>
             <div className={styles.text}>
               {this.props.content.map(function (x, i){
-                var str = x.replace('STRING', userInput)
+                let str = x['line']
+                if (x['type']) {
+                  if (x['type'] == 'account'){
+                    str = x['line'].replace('STRING', userInput['accounts'][x['index']]['alias'])
+                  } else {
+                    str = x['line'].replace('STRING', userInput[x['type']]['alias'])
+                  }
+                }
                 return <li key={i}>{str}</li>
               })}
             </div>
