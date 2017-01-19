@@ -77,7 +77,7 @@ Promise.all([
   // endsnippet
 }).then(() => {
   // snippet build-issue
-  const issuePromise = client.transactions.build(function (builder) {
+  const issuePromise = client.transactions.build(builder => {
     builder.issue({
       assetAlias: 'acme_common',
       amount: 1000
@@ -108,7 +108,7 @@ Promise.all([
 
   return externalProgramPromise.then(externalProgram =>
     // snippet external-issue
-    client.transactions.build(function (builder) {
+    client.transactions.build(builder => {
       builder.issue({
         assetAlias: 'acme_preferred',
         amount: 2000
@@ -127,7 +127,7 @@ Promise.all([
   )
 }).then(() => {
   // snippet build-retire
-  const retirePromise = client.transactions.build(function (builder) {
+  const retirePromise = client.transactions.build(builder => {
     builder.spendFromAccount({
       accountAlias: 'acme_treasury',
       assetAlias: 'acme_common',

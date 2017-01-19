@@ -63,7 +63,7 @@ Promise.all([
   aliceDollar = assets[0]
   bobBuck = assets[1]
 }).then(() =>
-  aliceCore.transactions.build(function (builder) {
+  aliceCore.transactions.build(builder => {
     builder.issue({ assetAlias: 'aliceDollar', amount: 1000 })
     builder.controlWithAccount({
       accountAlias: 'alice',
@@ -73,7 +73,7 @@ Promise.all([
   }).then(issuance => aliceSigner.sign(issuance))
     .then(signed => aliceCore.transactions.submit(signed))
 ).then(() =>
-  bobCore.transactions.build(function (builder) {
+  bobCore.transactions.build(builder => {
     builder.issue({ assetAlias: 'bobBuck', amount: 1000 })
     builder.controlWithAccount({
       accountAlias: 'bob',
@@ -91,7 +91,7 @@ Promise.all([
     // SAME-CORE TRADE
 
     // snippet same-core-trade
-    chain.transactions.build(function (builder) {
+    chain.transactions.build(builder => {
       builder.spendFromAccount({
         accountAlias: 'alice',
         assetAlias: 'aliceDollar',
@@ -123,7 +123,7 @@ Promise.all([
     const bobBuckAssetId = bobBuck.id
 
     // snippet build-trade-alice
-    aliceCore.transactions.build(function (builder) {
+    aliceCore.transactions.build(builder => {
       builder.spendFromAccount({
         accountAlias: 'alice',
         assetAlias: 'aliceDollar',
@@ -147,7 +147,7 @@ Promise.all([
       .then(aliceSigned =>
 
         // snippet build-trade-bob
-        bobCore.transactions.build(function (builder) {
+        bobCore.transactions.build(builder => {
           builder.baseTransaction(aliceSigned.rawTransaction)
           builder.spendFromAccount({
             accountAlias: 'bob',

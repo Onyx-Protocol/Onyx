@@ -37,7 +37,7 @@ Promise.all([
   })
 ])
 ).then(() =>
-  client.transactions.build(function (builder) {
+  client.transactions.build(builder => {
     builder.issue({ assetAlias: 'gold', amount: 1000 })
     builder.issue({ assetAlias: 'silver', amount: 1000 })
     builder.controlWithAccount({
@@ -53,7 +53,7 @@ Promise.all([
   }).then(issuance => signer.sign(issuance))
     .then(signed => client.transactions.submit(signed))
 ).then(() =>
-  client.transactions.build(function (builder) {
+  client.transactions.build(builder => {
     builder.spendFromAccount({
       accountAlias: 'alice',
       assetAlias: 'gold',
@@ -113,7 +113,7 @@ Promise.all([
   })
 ])
 ).then(() =>
-  client.transactions.build(function (builder) {
+  client.transactions.build(builder => {
     builder.issue({ assetAlias: 'bank1UsdIou', amount: 2000000 })
     builder.issue({ assetAlias: 'bank2UsdIou', amount: 2000000 })
     builder.issue({ assetAlias: 'bank1EuroIou', amount: 2000000 })

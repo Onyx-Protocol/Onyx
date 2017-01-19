@@ -66,7 +66,7 @@ Promise.all([
   })
   // endsnippet
 ).then(() =>
-  client.transactions.build(function (builder) {
+  client.transactions.build(builder => {
     builder.issue({ assetAlias: 'gold', amount: 100 })
     builder.issue({ assetAlias: 'silver', amount: 100 })
     builder.controlWithAccount({
@@ -83,7 +83,7 @@ Promise.all([
     .then(signed => client.transactions.submit(signed))
 ).then(() => {
   // snippet build-transfer
-  const spendPromise = client.transactions.build(function (builder) {
+  const spendPromise = client.transactions.build(builder => {
     builder.spendFromAccount({
       accountAlias: 'alice',
       assetAlias: 'gold',
@@ -117,7 +117,7 @@ Promise.all([
 
   return bobProgramPromise.then(bobProgram =>
     // snippet transfer-to-control-program
-    client.transactions.build(function (builder) {
+    client.transactions.build(builder => {
       builder.spendFromAccount({
         accountAlias: 'alice',
         assetAlias: 'gold',

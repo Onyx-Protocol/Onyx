@@ -25,7 +25,7 @@ client.mockHsm.keys.create().then(key => {
     })
   ])
 ).then(() =>
-  client.transactions.build(function (builder) {
+  client.transactions.build(builder => {
     builder.issue({
       assetAlias: 'gold',
       amount: 100
@@ -50,7 +50,7 @@ client.mockHsm.keys.create().then(key => {
   return aliceProgramPromise
 }).then(aliceProgram => {
   // snippet build-transaction
-  return client.transactions.build(function (builder) {
+  return client.transactions.build(builder => {
     builder.spendFromAccount({
       accountAlias: 'bob',
       assetAlias: 'gold',
@@ -69,7 +69,7 @@ client.mockHsm.keys.create().then(key => {
   // endsnippet
 }).then(() =>
   // snippet retire
-  client.transactions.build(function (builder) {
+  client.transactions.build(builder => {
     builder.spendFromAccount({
       accountAlias: 'alice',
       assetAlias: 'gold',

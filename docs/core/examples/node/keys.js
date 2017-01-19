@@ -32,7 +32,7 @@ Promise.resolve().then(() => {
     quorum: 1
   })
 ).then(() =>
-  client.transactions.build(function (builder) {
+  client.transactions.build(builder => {
     builder.issue({
       assetAlias: 'gold',
       amount: 100

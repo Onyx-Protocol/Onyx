@@ -52,7 +52,7 @@ Promise.resolve().then(() => {
   Promise.resolve().then(() =>
 
     // snippet issue
-    client.transactions.build(function (builder) {
+    client.transactions.build(builder => {
       builder.issue({
         assetAlias: 'gold',
         amount: 100
@@ -72,7 +72,7 @@ Promise.resolve().then(() => {
   ).then(() =>
 
     // snippet spend
-    client.transactions.build(function (builder) {
+    client.transactions.build(builder => {
       builder.spendFromAccount({
         accountAlias: 'alice',
         assetAlias: 'gold',
@@ -93,7 +93,7 @@ Promise.resolve().then(() => {
   ).then(() =>
 
     // snippet retire
-    client.transactions.build(function (builder) {
+    client.transactions.build(builder => {
       builder.spendFromAccount({
         accountAlias: 'alice',
         assetAlias: 'gold',
