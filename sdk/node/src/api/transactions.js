@@ -178,10 +178,11 @@ const transactionsAPI = (client) => {
      *
      * @param {Query} params Filter and pagination information.
      * @param {QueryProcessor} processor Processing callback.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.
      */
-    queryAll: (params, processor) => shared.queryAll(client, 'transactions', params, processor),
+    queryAll: (params, processor, cb) => shared.queryAll(client, 'transactions', params, processor, cb),
 
     /**
      * Build an unsigned transaction from a set of actions.

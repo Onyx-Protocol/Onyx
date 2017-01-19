@@ -49,11 +49,13 @@ const mockHsmKeysAPI = (client) => {
      * Request all MockHsm keys matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
+     * @param {Query} params={} Pagination information.
      * @param {QueryProcessor} processor Processing callback.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error
      */
-    queryAll: (processor) => shared.queryAll(client, 'mockHsm.keys', {}, processor),
+    queryAll: (params, processor, cb) => shared.queryAll(client, 'mockHsm.keys', params, processor, cb),
   }
 }
 

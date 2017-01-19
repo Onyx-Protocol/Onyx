@@ -63,10 +63,11 @@ const assetsAPI = (client) => {
      *
      * @param {Query} params={} Filter and pagination information.
      * @param {QueryProcessor} processor Processing callback.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error
      */
-    queryAll: (params, processor) => shared.queryAll(client, 'assets', params, processor),
+    queryAll: (params, processor, cb) => shared.queryAll(client, 'assets', params, processor, cb),
   }
 }
 

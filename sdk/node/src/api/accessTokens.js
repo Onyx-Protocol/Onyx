@@ -22,21 +22,28 @@ const accessTokens = (client) => {
       shared.create(client, '/create-access-token', params, {skipArray: true, cb}),
 
     /**
-     * Get a list of access tokens sorted by descending creation time,
+     * Get one page of of access tokens sorted by descending creation time,
      * optionally filtered by type.
-     *
-     * Note: maximum list size is 1000 items
      *
      * @param {Query} params - Pagination information.
      * @param {String} [params.type] - Type of access tokens to return.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page>} Requested page of results.
      */
-    query: (params, cb) => {
-      params = params || {}
-      params.pageSize = 1000
-      return shared.query(client, 'accessTokens', '/list-access-tokens', params, {cb})
-    },
+    query: (params, cb) => shared.query(client, 'accessTokens', '/list-access-tokens', params, {cb}),
+
+    /**
+     * Request all access tokens matching the specified query, calling the
+     * supplied processor callback with each item individually.
+     *
+     * @param {Query} params={} Pagination information.
+     * @param {String} [params.type] - Type of access tokens to return.
+     * @param {QueryProcessor} processor Processing callback.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise} A promise resolved upon processing of all items, or
+     *                    rejected on error.
+     */
+    queryAll: (params, processor, cb) => shared.queryAll(client, 'accessTokens', params, processor, cb),
 
     /**
      * Delete the specified access token.

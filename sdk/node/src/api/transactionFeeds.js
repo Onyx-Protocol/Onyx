@@ -16,14 +16,19 @@ class TransactionFeed {
    *
    * @callback FeedProcessor
    * @param {Object} item - Item to process.
-   * @param {function(Boolean)} next - Acknowledge read of item if passed true,
-   *                                   then continue/long-poll to next item.
-   * @param {function(Boolean)} done - Acknowledge read of item if passed true,
-   *                                   then terminate the loop by fulfilling the
-   *                                   outer promise.
-   * @param {function(Error)} fail - Terminate the loop by rejecting the outer
-   *                                 promise. Use this if you want to bubble an
-   *                                 async error up to the outer promise catch function.
+   * @param {function(Boolean)} next - Continue to the next item when it becomes
+   *                                   available. Passing true to this callback
+   *                                   will update the feed to acknowledge that
+   *                                   the current item was consumed.
+   * @param {function(Boolean)} done - Terminate the processing loop. Passing
+   *                                   true to this callback will update the
+   *                                   feed to acknowledge that the current item
+   *                                   was consumed.
+   * @param {function(Error)} fail - Terminate the processing loop due to an
+   *                                 application-level error. This callback
+   *                                 accepts an optional error argument. The
+   *                                 feed will not be updated, and the current
+   *                                 item will not be acknowledged.
    */
 
   /**
@@ -56,9 +61,10 @@ class TransactionFeed {
      *                                   optionally choose to terminate the loop.
      * @parma {Number} [timeout=86400) - Number of seconds to wait before
      *                                   closing connection.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      */
-    this.consume = (consumer, timeout = 24*60*60) => {
-      return new Promise((resolve, reject) => {
+    this.consume = (consumer, timeout = 24*60*60, cb) => {
+      const promise = Promise((resolve, reject) => {
         let queryArgs = {
           filter,
           after,
@@ -125,6 +131,8 @@ class TransactionFeed {
 
         nextPage()
       })
+
+      return shared.tryCallback(promise, cb)
     }
   }
 }
@@ -188,9 +196,25 @@ const transactionFeedsAPI = (client) => {
 
 
     /**
-     * Returns a page of transaction feeds defined on the core.
+     * Get one page of transaction feeds.
+     *
+     * @param {Query} params={} Pagination information.
+     * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<Page>} Requested page of results
      */
     query: (params, cb) => shared.query(client, 'transactionFeeds', '/list-transaction-feeds', params, {cb}),
+
+    /**
+     * Request all transaction feeds matching the specified query, calling the
+     * supplied processor callback with each item individually.
+     *
+     * @param {Query} params={} Pagination information.
+     * @param {QueryProcessor} processor Processing callback.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise} A promise resolved upon processing of all items, or
+     *                   rejected on error
+     */
+    queryAll: (params, processor, cb) => shared.queryAll(client, 'transactionFeeds', params, processor, cb),
   }
 }
 

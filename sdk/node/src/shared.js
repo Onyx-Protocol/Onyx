@@ -126,7 +126,7 @@ module.exports = {
   /*
    * NOTE: Requires query to be implemented on client for the specified member.
    */
-  queryAll: (client, memberPath, params, processor = () => {}) => {
+  queryAll: (client, memberPath, params, processor = () => {}, cb) => {
     let nextParams = params
 
     let queryOwner = client
@@ -134,7 +134,7 @@ module.exports = {
       queryOwner = queryOwner[member]
     })
 
-    return new Promise((resolve, reject) => {
+    const promise = new Promise((resolve, reject) => {
       let continueIteration = true
 
       const done = () => {
@@ -161,6 +161,8 @@ module.exports = {
 
       nextPage()
     })
+
+    return tryCallback(promise, cb)
   },
 
   tryCallback,

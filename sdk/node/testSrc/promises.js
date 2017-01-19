@@ -21,23 +21,79 @@ const balanceByAssetAlias = (balances) => {
   })
 }
 
+const client = new chain.Client()
+const signer = new chain.HsmSigner()
+
+const aliceAlias = `alice-${uuid.v4()}`
+const bobAlias = `bob-${uuid.v4()}`
+const goldAlias = `gold-${uuid.v4()}`
+const silverAlias = `silver-${uuid.v4()}`
+const bronzeAlias = `bronze-${uuid.v4()}`
+const copperAlias = `copper-${uuid.v4()}`
+const issuancesAlias = `issuances-${uuid.v4()}`
+const spendsAlias = `spends-${uuid.v4()}`
+const tokenId = `token-${uuid.v4()}`
+
+let aliceKey, bobKey, goldKey, silverKey, otherKey, aliceId
+
 describe('Promise style', () => {
-  it('works', () => {
-    const client = new chain.Client()
-    const signer = new chain.HsmSigner()
+  before('set up keys, and signer', () => {
+    // Key creation and signer setup
+    return expect(Promise.all([
+      client.mockHsm.keys.create({alias: aliceAlias}),
+      client.mockHsm.keys.create({alias: bobAlias}),
+      client.mockHsm.keys.create({alias: goldAlias}),
+      client.mockHsm.keys.create({alias: silverAlias}),
+      client.mockHsm.keys.create({alias: bronzeAlias}),
+      client.mockHsm.keys.create({alias: copperAlias}),
+      client.mockHsm.keys.create(),
+    ])).to.be.fulfilled
 
-    const aliceAlias = `alice-${uuid.v4()}`
-    const bobAlias = `bob-${uuid.v4()}`
-    const goldAlias = `gold-${uuid.v4()}`
-    const silverAlias = `silver-${uuid.v4()}`
-    const bronzeAlias = `bronze-${uuid.v4()}`
-    const copperAlias = `copper-${uuid.v4()}`
-    const issuancesAlias = `issuances-${uuid.v4()}`
-    const spendsAlias = `spends-${uuid.v4()}`
-    const tokenId = `token-${uuid.v4()}`
+    .then(keys => {
+      aliceKey = keys[0]
+      bobKey = keys[1]
+      goldKey = keys[2]
+      silverKey = keys[3]
+      otherKey = keys[6]
 
-    let aliceKey, bobKey, goldKey, silverKey, otherKey, aliceId
+      signer.addKey(aliceKey, client.mockHsm.signerConnection)
+      signer.addKey(bobKey, client.mockHsm.signerConnection)
+      signer.addKey(goldKey, client.mockHsm.signerConnection)
+      signer.addKey(silverKey, client.mockHsm.signerConnection)
+    })
 
+    // Account creation
+
+    .then(() => expect(Promise.all([
+      client.accounts.create({alias: aliceAlias, rootXpubs: [aliceKey.xpub], quorum: 1}),
+      client.accounts.create({alias: bobAlias, rootXpubs: [bobKey.xpub], quorum: 1})
+    ])).to.be.fulfilled)
+
+    .then(accounts => {
+      aliceId = accounts[0].id
+    })
+
+    .then(() =>
+      expect(client.accounts.create({alias: 'david'}))
+      // Request is missing key fields
+      .to.be.rejectedWith('CH202')
+    )
+
+    // Asset creation
+
+    .then(() => expect(Promise.all([
+      client.assets.create({alias: goldAlias, rootXpubs: [goldKey.xpub], quorum: 1}),
+      client.assets.create({alias: silverAlias, rootXpubs: [silverKey.xpub], quorum: 1})
+    ])).to.be.fulfilled)
+
+    .then(() =>
+      expect(client.assets.create({alias: 'unobtanium'}))
+      // Request is missing key fields
+      .to.be.rejectedWith('CH202')
+    )
+  })
+
+  xit('works', () => {
     return Promise.resolve()
 
     // Access tokens
@@ -72,48 +128,6 @@ describe('Promise style', () => {
     .then(() => expect(client.accessTokens.query()).to.be.fulfilled )
     .then(resp => expect(resp.items.map(item => item.id)).to.not.contain(tokenId))
 
-    // Key creation and signer setup
-
-    .then(() => expect(Promise.all([
-      client.mockHsm.keys.create({alias: aliceAlias}),
-      client.mockHsm.keys.create({alias: bobAlias}),
-      client.mockHsm.keys.create({alias: goldAlias}),
-      client.mockHsm.keys.create({alias: silverAlias}),
-      client.mockHsm.keys.create({alias: bronzeAlias}),
-      client.mockHsm.keys.create({alias: copperAlias}),
-      client.mockHsm.keys.create(),
-    ])).to.be.fulfilled)
-
-    .then(keys => {
-      aliceKey = keys[0]
-      bobKey = keys[1]
-      goldKey = keys[2]
-      silverKey = keys[3]
-      otherKey = keys[6]
-
-      signer.addKey(aliceKey, client.mockHsm.signerConnection)
-      signer.addKey(bobKey, client.mockHsm.signerConnection)
-      signer.addKey(goldKey, client.mockHsm.signerConnection)
-      signer.addKey(silverKey, client.mockHsm.signerConnection)
-    })
-
-    // Account creation
-
-    .then(() => expect(Promise.all([
-      client.accounts.create({alias: aliceAlias, rootXpubs: [aliceKey.xpub], quorum: 1}),
-      client.accounts.create({alias: bobAlias, rootXpubs: [bobKey.xpub], quorum: 1})
-    ])).to.be.fulfilled)
-
-    .then(accounts => {
-      aliceId = accounts[0].id
-    })
-
-    .then(() =>
-      expect(client.accounts.create({alias: 'david'}))
-      // Request is missing key fields
-      .to.be.rejectedWith('CH202')
-    )
-
     // Batch account creation
 
     .then(() =>
@@ -126,19 +140,6 @@ describe('Promise style', () => {
       assert.equal(batchResponse.successes[1], null)
       assert.deepEqual([batchResponse.errors[0], batchResponse.errors[2]], [null, null])
     })
-
-    // Asset creation
-
-    .then(() => expect(Promise.all([
-      client.assets.create({alias: goldAlias, rootXpubs: [goldKey.xpub], quorum: 1}),
-      client.assets.create({alias: silverAlias, rootXpubs: [silverKey.xpub], quorum: 1})
-    ])).to.be.fulfilled)
-
-    .then(() =>
-      expect(client.assets.create({alias: 'unobtanium'}))
-      // Request is missing key fields
-      .to.be.rejectedWith('CH202')
-    )
 
     // Batch asset creation
 
@@ -387,5 +388,91 @@ describe('Promise style', () => {
         filter: "inputs(type='spend')"
       })
     ])).to.be.fulfilled)
+  })
+
+  it('loads all results in `queryAll` requests', () => {
+    let counter = 0
+    return Promise.resolve()
+
+    // Access tokens
+
+    .then(() => expect(Promise.all([
+      client.accessTokens.create({type: 'client', id: uuid.v4()}),
+      client.accessTokens.create({type: 'client', id: uuid.v4()}),
+    ])).to.be.fulfilled)
+    .then(() => {
+      counter = 0
+      return expect(client.accessTokens.queryAll({pageSize: 1}, (item, done) => {
+        counter += 1
+        expect(item).to.not.be.null
+        if (counter >= 2) done()
+      })).to.be.fulfilled
+    }).then(() => expect(counter).to.equal(2))
+
+    // Accounts
+
+    .then(() => {
+      counter = 0
+      return expect(client.accounts.queryAll({pageSize: 1}, (item, done) => {
+        counter += 1
+        console.log(item);
+        expect(item).to.not.be.null
+        if (counter >= 2) done()
+      })).to.be.fulfilled
+    }).then(() => expect(counter).to.equal(2))
+
+    // Assets
+
+    .then(() => expect(Promise.all([
+      client.assets.create({rootXpubs: [otherKey.xpub], quorum: 1}),
+      client.assets.create({rootXpubs: [otherKey.xpub], quorum: 1}),
+    ])).to.be.fulfilled)
+    .then(() => {
+      counter = 0
+      return expect(client.assets.queryAll({pageSize: 1}, (item, done) => {
+        counter += 1
+        expect(item).to.not.be.null
+        if (counter >= 2) done()
+      })).to.be.fulfilled
+    }).then(() => expect(counter).to.equal(2))
+
+    // MockHsm keys
+
+    .then(() => {
+      counter = 0
+      return expect(client.mockHsm.keys.queryAll({pageSize: 1}, (item, done) => {
+        counter += 1
+        expect(item).to.not.be.null
+        if (counter >= 6) done()
+      })).to.be.fulfilled
+    }).then(() => expect(counter).to.equal(6))
+
+    // Transaction feeds
+    .then(() => expect(Promise.all([
+      client.transactionFeeds.create(),
+      client.transactionFeeds.create(),
+    ])).to.be.fulfilled)
+    .then(() => {
+      counter = 0
+      return expect(client.transactionFeeds.queryAll({pageSize: 1}, (item, done) => {
+        counter += 1
+        expect(item).to.not.be.null
+        if (counter >= 2) done()
+      })).to.be.fulfilled
+    }).then(() => expect(counter).to.equal(2))
+
+    // Transactions
+
+
+
+    // Unspent Outputs
+
+
+
+    // Balances
+
+    .then(() => expect(client.balances.queryAll({pageSize: 1}, (item, done) => {
+      expect(item).to.not.be.null
+    })).to.be.fulfilled)
   })
 })
