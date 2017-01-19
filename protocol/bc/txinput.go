@@ -24,45 +24,6 @@ type (
 
 var errBadAssetID = errors.New("asset ID does not match other issuance parameters")
 
-func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxInput {
-	return &TxInput{
-		AssetVersion:  1,
-		ReferenceData: referenceData,
-		TypedInput: &SpendInput{
-			Outpoint: Outpoint{
-				Hash:  txhash,
-				Index: index,
-			},
-			OutputCommitment: OutputCommitment{
-				AssetAmount: AssetAmount{
-					AssetID: assetID,
-					Amount:  amount,
-				},
-				VMVersion:      1,
-				ControlProgram: controlProgram,
-			},
-			Arguments: arguments,
-		},
-	}
-}
-
-func NewIssuanceInput(nonce []byte, amount uint64, referenceData []byte, initialBlock Hash, issuanceProgram []byte, arguments [][]byte) *TxInput {
-	return &TxInput{
-		AssetVersion:  1,
-		ReferenceData: referenceData,
-		TypedInput: &IssuanceInput{
-			Nonce:  nonce,
-			Amount: amount,
-			AssetWitness: AssetWitness{
-				InitialBlock:    initialBlock,
-				VMVersion:       1,
-				IssuanceProgram: issuanceProgram,
-				Arguments:       arguments,
-			},
-		},
-	}
-}
-
 func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
 	_, err := blockchain.WriteVarint63(w, t.AssetVersion)
 	if err != nil {
@@ -137,7 +98,7 @@ func (t *TxInput) writeInputWitness(w io.Writer) (err error) {
 	if t.AssetVersion == 1 {
 		switch inp := t.TypedInput.(type) {
 		case *IssuanceInput:
-			return inp.AssetWitness.writeTo(w)
+			return inp.IssuanceWitness.writeTo(w)
 
 		case *SpendInput:
 			_, err = blockchain.WriteVarstrList(w, inp.Arguments)
@@ -283,7 +244,6 @@ func (t *TxInput) SetArguments(args [][]byte) {
 	case *SpendInput:
 		inp.Arguments = args
 	}
-	return nil
 }
 
 func (t *TxInput) witnessHash() (h Hash, err error) {

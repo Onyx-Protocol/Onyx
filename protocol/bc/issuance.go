@@ -1,6 +1,11 @@
 package bc
 
-import "chain/crypto/sha3pool"
+import (
+	"io"
+
+	"chain/encoding/blockchain"
+	"chain/errors"
+)
 
 type IssuanceInput struct {
 	// Commitment
@@ -22,21 +27,6 @@ func (ii *IssuanceInput) AssetID() AssetID {
 	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion, ii.AssetDefinitionHash())
 }
 
-func (ii *IssuanceInput) AssetDefinitionHash() (defhash Hash) {
-	sha := sha3pool.Get256()
-	defer sha3pool.Put256(sha)
-	sha.Write(ii.AssetDefinition)
-	sha.Read(defhash[:])
-	return
-}
-
-
-func (ii *IssuanceInput) IsIssuance() bool { return true }
-
-func (ii *IssuanceInput) AssetID() AssetID {
-	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion)
-}
-
 func (ii *IssuanceInput) readCommitment(r io.Reader) (assetID AssetID, err error) {
 	ii.Nonce, _, err = blockchain.ReadVarstr31(r)
 	if err != nil {
@@ -54,4 +44,30 @@ func (ii *IssuanceInput) readCommitment(r io.Reader) (assetID AssetID, err error
 
 func (ii *IssuanceInput) readWitness(r io.Reader, assetVersion uint64) error {
 	return ii.IssuanceWitness.readFrom(r, assetVersion)
+}
+
+func NewIssuanceInput(
+	nonce []byte,
+	amount uint64,
+	referenceData []byte,
+	initialBlock Hash,
+	issuanceProgram []byte,
+	arguments [][]byte,
+	assetDefinition []byte,
+) *TxInput {
+	return &TxInput{
+		AssetVersion:  1,
+		ReferenceData: referenceData,
+		TypedInput: &IssuanceInput{
+			Nonce:  nonce,
+			Amount: amount,
+			IssuanceWitness: IssuanceWitness{
+				InitialBlock:    initialBlock,
+				AssetDefinition: assetDefinition,
+				VMVersion:       1,
+				IssuanceProgram: issuanceProgram,
+				Arguments:       arguments,
+			},
+		},
+	}
 }

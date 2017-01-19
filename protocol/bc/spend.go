@@ -36,3 +36,25 @@ func (si *SpendInput) readWitness(r io.Reader, _ uint64) (err error) {
 	si.Arguments, _, err = blockchain.ReadVarstrList(r)
 	return errors.Wrap(err, "reading input witness")
 }
+
+func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxInput {
+	return &TxInput{
+		AssetVersion:  1,
+		ReferenceData: referenceData,
+		TypedInput: &SpendInput{
+			Outpoint: Outpoint{
+				Hash:  txhash,
+				Index: index,
+			},
+			OutputCommitment: OutputCommitment{
+				AssetAmount: AssetAmount{
+					AssetID: assetID,
+					Amount:  amount,
+				},
+				VMVersion:      1,
+				ControlProgram: controlProgram,
+			},
+			Arguments: arguments,
+		},
+	}
+}
