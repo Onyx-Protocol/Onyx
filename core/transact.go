@@ -103,6 +103,10 @@ func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interfa
 }
 
 func (h *Handler) submitSingle(ctx context.Context, tpl *txbuilder.Template, waitUntil string) (interface{}, error) {
+	if tpl.Transaction == nil {
+		return nil, errors.Wrap(txbuilder.ErrMissingRawTx)
+	}
+
 	err := h.finalizeTxWait(ctx, tpl, waitUntil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "tx %s", tpl.Transaction.Hash())
@@ -178,10 +182,6 @@ func CleanupSubmittedTxs(ctx context.Context, db pg.DB) {
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
 func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template, waitUntil string) error {
-	if txTemplate.Transaction == nil {
-		return errors.Wrap(txbuilder.ErrMissingRawTx)
-	}
-
 	// Use the current generator height as the lower bound of the block height
 	// that the transaction may appear in.
 	generatorHeight, _ := fetch.GeneratorHeight()

@@ -94,6 +94,9 @@ public class FailureTest {
     try {
       Transaction.submit(client, new Transaction.Template());
     } catch (APIException e) {
+      if (!"CH730".equals(e.code)) {
+          throw new Exception("expecting CH730 code, got " + e.code);
+      }
       return;
     }
     throw new Exception("expecting APIException");
