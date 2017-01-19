@@ -330,6 +330,12 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 			return nil, errors.Wrap(err)
 		}
 	}
+	if len(a.rawDefinition) > 0 {
+		err := json.Unmarshal(a.rawDefinition, &a.definition)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
 
 	return &a, nil
 }

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"chain/crypto/ed25519/chainkd"
 	chainjson "chain/encoding/json"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
@@ -66,6 +67,39 @@ type AnnotatedOutput struct {
 type SpentOutput struct {
 	TransactionID chainjson.HexBytes `json:"transaction_id"`
 	Position      uint32             `json:"position"`
+}
+
+type AnnotatedAccount struct {
+	ID     string           `json:"id"`
+	Alias  string           `json:"alias,omitempty"`
+	Keys   []*AccountKey    `json:"keys"`
+	Quorum int              `json:"quorum"`
+	Tags   *json.RawMessage `json:"tags"`
+}
+
+type AccountKey struct {
+	RootXPub              chainkd.XPub         `json:"root_xpub"`
+	AccountXPub           chainkd.XPub         `json:"account_xpub"`
+	AccountDerivationPath []chainjson.HexBytes `json:"account_derivation_path"`
+}
+
+type AnnotatedAsset struct {
+	ID              chainjson.HexBytes `json:"id"`
+	Alias           string             `json:"alias,omitempty"`
+	VMVersion       uint64             `json:"vm_version"`
+	IssuanceProgram chainjson.HexBytes `json:"issuance_program"`
+	Keys            []*AssetKey        `json:"keys"`
+	Quorum          int                `json:"quorum"`
+	Definition      *json.RawMessage   `json:"definition"`
+	RawDefinition   chainjson.HexBytes `json:"raw_definition"`
+	Tags            *json.RawMessage   `json:"tags"`
+	IsLocal         Bool               `json:"is_local"`
+}
+
+type AssetKey struct {
+	RootXPub            chainkd.XPub         `json:"root_xpub"`
+	AssetPubkey         chainjson.HexBytes   `json:"asset_pubkey"`
+	AssetDerivationPath []chainjson.HexBytes `json:"asset_derivation_path"`
 }
 
 type Bool bool

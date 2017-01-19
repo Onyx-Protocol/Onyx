@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"math"
 
 	"chain/core/query"
@@ -34,22 +33,12 @@ func (h *Handler) listAccounts(ctx context.Context, in requestQuery) (page, erro
 		return page{}, errors.Wrap(err, "running acc query")
 	}
 
-	result := make([]*accountResponse, 0, len(accounts))
-	for _, a := range accounts {
-		var r accountResponse
-		err := json.Unmarshal(a, &r)
-		if err != nil {
-			return page{}, errors.Wrap(err, "unmarshaling stored account")
-		}
-		result = append(result, &r)
-	}
-
 	// Pull in the accounts by the IDs
 	out := in
 	out.After = after
 	return page{
-		Items:    httpjson.Array(result),
-		LastPage: len(result) < limit,
+		Items:    httpjson.Array(accounts),
+		LastPage: len(accounts) < limit,
 		Next:     out,
 	}, nil
 }
@@ -77,21 +66,11 @@ func (h *Handler) listAssets(ctx context.Context, in requestQuery) (page, error)
 		return page{}, errors.Wrap(err, "running asset query")
 	}
 
-	result := make([]*assetResponse, 0, len(assets))
-	for _, a := range assets {
-		var r assetResponse
-		err := json.Unmarshal(a, &r)
-		if err != nil {
-			return page{}, errors.Wrap(err, "unmarshaling stored asset")
-		}
-		result = append(result, &r)
-	}
-
 	out := in
 	out.After = after
 	return page{
-		Items:    httpjson.Array(result),
-		LastPage: len(result) < limit,
+		Items:    httpjson.Array(assets),
+		LastPage: len(assets) < limit,
 		Next:     out,
 	}, nil
 }

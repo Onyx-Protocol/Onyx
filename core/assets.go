@@ -2,34 +2,15 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 
+	"chain/core/query"
 	"chain/core/signers"
 	"chain/crypto/ed25519/chainkd"
-	"chain/encoding/json"
+	chainjson "chain/encoding/json"
 	"chain/net/http/reqid"
-	"chain/protocol/bc"
 )
-
-// This type enforces JSON field ordering in API output.
-type assetResponse struct {
-	ID              bc.AssetID             `json:"id"`
-	Alias           *string                `json:"alias"`
-	VMVersion       uint64                 `json:"vm_version"`
-	IssuanceProgram json.HexBytes          `json:"issuance_program"`
-	Keys            []*assetKey            `json:"keys"`
-	Quorum          int                    `json:"quorum"`
-	Definition      map[string]interface{} `json:"definition"`
-	RawDefinition   json.HexBytes          `json:"raw_definition"`
-	Tags            map[string]interface{} `json:"tags"`
-	IsLocal         string                 `json:"is_local"`
-}
-
-type assetKey struct {
-	RootXPub            chainkd.XPub    `json:"root_xpub"`
-	AssetPubkey         json.HexBytes   `json:"asset_pubkey"`
-	AssetDerivationPath []json.HexBytes `json:"asset_derivation_path"`
-}
 
 // POST /create-asset
 func (h *Handler) createAsset(ctx context.Context, ins []struct {
@@ -68,33 +49,46 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 				responses[i] = err
 				return
 			}
-			var keys []*assetKey
+			var keys []*query.AssetKey
 			for _, xpub := range asset.Signer.XPubs {
 				path := signers.Path(asset.Signer, signers.AssetKeySpace)
-				var hexPath []json.HexBytes
+				var hexPath []chainjson.HexBytes
 				for _, p := range path {
 					hexPath = append(hexPath, p)
 				}
 				derived := xpub.Derive(path)
-				keys = append(keys, &assetKey{
+				keys = append(keys, &query.AssetKey{
 					AssetPubkey:         derived[:],
 					RootXPub:            xpub,
 					AssetDerivationPath: hexPath,
 				})
 			}
-			parsedDef, _ := asset.Definition() // cannot fail because Assets.Define() would catch parsing issues
-			responses[i] = &assetResponse{
-				ID:              asset.AssetID,
-				Alias:           asset.Alias,
+			defRawMessage := json.RawMessage(asset.RawDefinition())
+			if len(defRawMessage) == 0 {
+				defRawMessage = json.RawMessage(`{}`)
+			}
+			tags, err := json.Marshal(asset.Tags)
+			if err != nil {
+				responses[i] = err
+				return
+			}
+			tagsRawMessage := json.RawMessage(tags)
+
+			aa := &query.AnnotatedAsset{
+				ID:              asset.AssetID[:],
 				VMVersion:       asset.VMVersion,
 				IssuanceProgram: asset.IssuanceProgram,
 				Keys:            keys,
 				Quorum:          asset.Signer.Quorum,
-				Definition:      parsedDef,
-				RawDefinition:   json.HexBytes(asset.RawDefinition()),
-				Tags:            asset.Tags,
-				IsLocal:         "yes",
+				Definition:      &defRawMessage,
+				RawDefinition:   chainjson.HexBytes(asset.RawDefinition()),
+				Tags:            &tagsRawMessage,
+				IsLocal:         true,
 			}
+			if asset.Alias != nil {
+				aa.Alias = *asset.Alias
+			}
+			responses[i] = aa
 		}(i)
 	}
 
