@@ -7,7 +7,7 @@ const shared = require('../shared')
  * Mock HSM
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/keys}
- * @module mockHsmKeysAPI
+ * @module MockHsmKeysApi
  */
 
 const mockHsmKeysAPI = (client) => {

@@ -5,7 +5,7 @@ const shared = require('../shared')
  * API is authenticated using access tokens with HTTP Basic Authentication.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
- * @module accessTokensAPI
+ * @module AccessTokensApi
  */
 const accessTokens = (client) => {
   return {

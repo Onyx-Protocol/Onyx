@@ -29,36 +29,36 @@ class Client {
 
     /**
      * API actions for access tokens
-     * @type {module:accessTokensAPI}
+     * @type {module:AccessTokensApi}
      */
     this.accessTokens = accessTokensAPI(this)
 
     /**
      * API actions for accounts
-     * @type {module:accountsAPI}
+     * @type {module:AccountsApi}
      */
     this.accounts = accountsAPI(this)
 
     /**
      * API actions for assets.
-     * @type {module:assetsAPI}
+     * @type {module:AssetsApi}
      */
     this.assets = assetsAPI(this)
 
     /**
      * API actions for balances.
-     * @type {module:balancesAPI}
+     * @type {module:BalancesApi}
      */
     this.balances = balancesAPI(this)
 
     /**
      * API actions for config.
-     * @type {module:configAPI}
+     * @type {module:ConfigApi}
      */
     this.config = configAPI(this)
 
     /**
-     * @property {module:mockHsmKeysAPI} keys API actions for Mock HSM keys.
+     * @property {module:MockHsmKeysApi} keys API actions for Mock HSM keys.
      * @property {Connection} signerConnection Mock HSM signer connection.
      */
     this.mockHsm = {
@@ -68,19 +68,19 @@ class Client {
 
     /**
      * API actions for transactions.
-     * @type {module:transactionsAPI}
+     * @type {module:TransactionsApi}
      */
     this.transactions = transactionsAPI(this)
 
     /**
      * API actions for transaction feeds.
-     * @type {module:transactionFeedsAPI}
+     * @type {module:TransactionFeedsApi}
      */
     this.transactionFeeds = transactionFeedsAPI(this)
 
     /**
      * API actions for unspent outputs.
-     * @type {module:unspentOutputsAPI}
+     * @type {module:UnspentOutputsApi}
      */
     this.unspentOutputs = unspentOutputsAPI(this)
   }

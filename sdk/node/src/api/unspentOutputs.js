@@ -7,7 +7,7 @@ const shared = require('../shared')
  * the unspent output set.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/unspent-outputs}
- * @module unspentOutputsAPI
+ * @module UnspentOutputsApi
  */
 const unspentOutputsAPI = (client) => {
   return {

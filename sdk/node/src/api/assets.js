@@ -8,7 +8,7 @@ const shared = require('../shared')
  * involvement of the issuer.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/assets}
- * @module assetsAPI
+ * @module AssetsApi
  */
 const assetsAPI = (client) => {
   /**

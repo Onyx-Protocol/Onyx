@@ -7,7 +7,7 @@ const shared = require('../shared')
  * unspent output objects
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/queries}
- * @module balancesAPI
+ * @module BalancesApi
  */
 const balancesAPI = (client) => {
   return {

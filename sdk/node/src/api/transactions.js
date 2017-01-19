@@ -159,7 +159,7 @@ class TransactionBuilder {
  * transactions. Each transaction contains one or more actions.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/transaction-basics}
- * @module transactionsAPI
+ * @module TransactionsApi
  */
 const transactionsAPI = (client) => {
   return {

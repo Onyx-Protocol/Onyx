@@ -6,7 +6,7 @@ const shared = require('../shared')
  *
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/accounts}
- * @module accountsAPI
+ * @module AccountsApi
  */
 const accountsAPI = (client) => {
   /**

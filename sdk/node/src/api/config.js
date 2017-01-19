@@ -5,7 +5,7 @@ const shared = require('../shared')
  * existing blockchain network.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/get-started/configure}
- * @module configAPI
+ * @module ConfigApi
  */
 const configAPI = (client) => {
   return {

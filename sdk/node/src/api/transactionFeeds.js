@@ -29,7 +29,7 @@ class TransactionFeed {
   /**
    * Create a new transaction feed consumer.
    *
-   * @param {Object} feed - API response from {@link module:transactionFeedsAPI}
+   * @param {Object} feed - API response from {@link module:TransactionFeedsApi}
    *                        `create` or `get` call.
    * @param {Client} client - Configured Chain client object
    * @returns {TransactionFeed}
@@ -135,7 +135,7 @@ class TransactionFeed {
  * or live-updating interfaces.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/real-time-transaction-processing}
- * @module transactionFeedsAPI
+ * @module TransactionFeedsApi
  */
 const transactionFeedsAPI = (client) => {
   return {
