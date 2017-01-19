@@ -100,7 +100,7 @@ This guide will walk you through several examples of queries:
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/Queries.java)
-- [Node](../examples/node/Queries.js)
+- [Node](../examples/node/queries.js)
 - [Ruby](../examples/ruby/queries.rb)
 
 ## Transactions
