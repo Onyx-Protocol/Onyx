@@ -31,11 +31,6 @@ func (oc *OutputCommitment) WriteTo(w io.Writer) (int64, error) {
 	return n, err
 }
 
-// does not write the enclosing extensible string
-func (oc *OutputCommitment) writeWitness(w io.Writer) error {
-	return nil
-}
-
 func (oc *OutputCommitment) ReadFrom(r io.Reader) (int64, error) {
 	n, err := oc.AssetAmount.readFrom(r)
 	if err != nil {
@@ -56,9 +51,4 @@ func (oc *OutputCommitment) ReadFrom(r io.Reader) (int64, error) {
 	oc.ControlProgram, n2, err = blockchain.ReadVarstr31(r)
 	n += n2
 	return int64(n), errors.Wrap(err, "reading control program")
-}
-
-// does not read the enclosing extensible string
-func (oc *OutputCommitment) readWitness(r io.Reader) error {
-	return nil
 }

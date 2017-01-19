@@ -57,9 +57,7 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	}
 
 	// TODO(bobg): test that serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
-	_, err = blockchain.ReadExtensibleString(r, false, func(r io.Reader) error {
-		return to.OutputCommitment.readWitness(r)
-	})
+	_, err = blockchain.ReadExtensibleString(r, false, to.readWitness)
 	return err
 }
 
@@ -86,9 +84,7 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 	}
 
 	if serflags&SerWitness != 0 {
-		_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-			return to.OutputCommitment.writeWitness(w)
-		})
+		_, err = blockchain.WriteExtensibleString(w, to.writeWitness)
 		if err != nil {
 			return err
 		}
@@ -100,11 +96,21 @@ func (to *TxOutput) witnessHash() (hash Hash, err error) {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 
-	err = to.OutputCommitment.writeWitness(hasher)
+	err = to.writeWitness(hasher)
 	if err != nil {
 		return hash, err
 	}
 
 	hasher.Read(hash[:])
 	return hash, err
+}
+
+// does not write the enclosing extensible string
+func (to *TxOutput) writeWitness(w io.Writer) error {
+	return nil
+}
+
+// does not read the enclosing extensible string
+func (to *TxOutput) readWitness(r io.Reader) error {
+	return nil
 }
