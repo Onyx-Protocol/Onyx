@@ -26,6 +26,7 @@ func TestAnnotateTxs(t *testing.T) {
 			Outputs: []*query.AnnotatedOutput{
 				{ControlProgram: acp1},
 				{ControlProgram: acp2},
+				{ControlProgram: acp2},
 			},
 		},
 	}
@@ -35,6 +36,7 @@ func TestAnnotateTxs(t *testing.T) {
 		{
 			Outputs: []*query.AnnotatedOutput{
 				{Purpose: "receive", ControlProgram: acp1, AccountID: acc1.ID, AccountTags: &empty},
+				{Purpose: "receive", ControlProgram: acp2, AccountID: acc2.ID, AccountTags: &wantTags},
 				{Purpose: "receive", ControlProgram: acp2, AccountID: acc2.ID, AccountTags: &wantTags},
 			},
 		},

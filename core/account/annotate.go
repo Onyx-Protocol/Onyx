@@ -23,23 +23,23 @@ func (m *Manager) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) err
 			if len(in.ControlProgram) == 0 {
 				continue
 			}
+			inputs[string(in.ControlProgram)] = append(inputs[string(in.ControlProgram)], in)
 			if controlProgramSet[string(in.ControlProgram)] {
 				continue
 			}
 			controlPrograms = append(controlPrograms, in.ControlProgram)
 			controlProgramSet[string(in.ControlProgram)] = true
-			inputs[string(in.ControlProgram)] = append(inputs[string(in.ControlProgram)], in)
 		}
 		for _, out := range tx.Outputs {
 			if out.Type == "retire" {
 				continue
 			}
+			outputs[string(out.ControlProgram)] = append(outputs[string(out.ControlProgram)], out)
 			if controlProgramSet[string(out.ControlProgram)] {
 				continue
 			}
 			controlPrograms = append(controlPrograms, out.ControlProgram)
 			controlProgramSet[string(out.ControlProgram)] = true
-			outputs[string(out.ControlProgram)] = append(outputs[string(out.ControlProgram)], out)
 		}
 	}
 
