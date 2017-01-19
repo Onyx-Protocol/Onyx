@@ -139,8 +139,10 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		return errors.Wrap(err, "reading transaction common fields")
 	}
 
-	// Common witness, empty in v1
-	_, _, err = blockchain.ReadVarstr31(r)
+	// Common witness
+	_, err = blockchain.ReadExtensibleString(r, false, func(r io.Reader) error {
+		return tx.readCommonWitness(r)
+	})
 	if err != nil {
 		return errors.Wrap(err, "reading transaction common witness")
 	}
@@ -173,6 +175,11 @@ func (tx *TxData) readFrom(r io.Reader) error {
 
 	tx.ReferenceData, _, err = blockchain.ReadVarstr31(r)
 	return errors.Wrap(err, "reading transaction reference data")
+}
+
+// does not read the enclosing extensible string
+func (tx *TxData) readCommonWitness(r io.Reader) error {
+	return nil
 }
 
 func (p *Outpoint) readFrom(r io.Reader) (int, error) {
@@ -302,8 +309,10 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 		return errors.Wrap(err, "writing common fields")
 	}
 
-	// common witness, empty in v1
-	_, err = blockchain.WriteVarstr31(w, []byte{})
+	// common witness
+	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+		return tx.writeCommonWitness(w)
+	})
 	if err != nil {
 		return errors.Wrap(err, "writing common witness")
 	}
@@ -331,6 +340,11 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 	}
 
 	return writeRefData(w, tx.ReferenceData, serflags)
+}
+
+// does not write the enclosing extensible string
+func (tx *TxData) writeCommonWitness(w io.Writer) error {
+	return nil
 }
 
 // String returns the Outpoint in the human-readable form "hash:index".
