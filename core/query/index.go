@@ -3,11 +3,9 @@ package query
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/lib/pq"
 
-	"chain/core/asset"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -21,7 +19,7 @@ const (
 
 // Annotator describes a function capable of adding annotations
 // to transactions, inputs and outputs.
-type Annotator func(ctx context.Context, txs []map[string]interface{}) error
+type Annotator func(ctx context.Context, txs []*AnnotatedTx) error
 
 // RegisterAnnotator adds an additional annotator capable of mutating
 // the annotated transaction object.
@@ -39,7 +37,7 @@ func (ind *Indexer) ProcessBlocks(ctx context.Context) {
 // IndexTransactions is registered as a block callback on the Chain. It
 // saves all annotated transactions to the database.
 func (ind *Indexer) IndexTransactions(ctx context.Context, b *bc.Block) error {
-	<-ind.pinStore.PinWaiter(asset.PinName, b.Height)
+	<-ind.pinStore.PinWaiter("asset", b.Height)
 
 	err := ind.insertBlock(ctx, b)
 	if err != nil {
@@ -63,17 +61,17 @@ func (ind *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {
 	return errors.Wrap(err, "inserting block timestamp")
 }
 
-func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[string]interface{}, error) {
+func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*AnnotatedTx, error) {
 	var (
 		hashes              = pq.ByteaArray(make([][]byte, 0, len(b.Transactions)))
 		positions           = pg.Uint32s(make([]uint32, 0, len(b.Transactions)))
 		annotatedTxs        = pq.StringArray(make([]string, 0, len(b.Transactions)))
-		annotatedTxsDecoded = make([]map[string]interface{}, 0, len(b.Transactions))
+		annotatedTxsDecoded = make([]*AnnotatedTx, 0, len(b.Transactions))
 	)
 	for pos, tx := range b.Transactions {
 		hashes = append(hashes, tx.Hash[:])
 		positions = append(positions, uint32(pos))
-		annotatedTxsDecoded = append(annotatedTxsDecoded, transactionObject(tx, b, uint32(pos)))
+		annotatedTxsDecoded = append(annotatedTxsDecoded, buildAnnotatedTransaction(tx, b, uint32(pos)))
 	}
 
 	for _, annotator := range ind.annotators {
@@ -105,7 +103,7 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[
 	return annotatedTxsDecoded, nil
 }
 
-func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annotatedTxs []map[string]interface{}) error {
+func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annotatedTxs []*AnnotatedTx) error {
 	var (
 		outputTxPositions pg.Uint32s
 		outputIndexes     pg.Uint32s
@@ -124,29 +122,14 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 			}
 		}
 
-		outs, ok := annotatedTxs[pos]["outputs"].([]interface{})
-		if !ok {
-			return errors.Wrap(fmt.Errorf("bad outputs type %T", annotatedTxs[pos]["outputs"]))
-		}
-		for outIndex, out := range outs {
-			txOut, ok := out.(map[string]interface{})
-			if !ok {
-				return errors.Wrap(fmt.Errorf("bad output type %T", out))
-			}
-
-			// Don't index retired outputs.
-			typ, ok := txOut["type"].(string)
-			if ok && typ == "retire" {
+		for outIndex, out := range annotatedTxs[pos].Outputs {
+			if out.Type == "retire" {
 				continue
 			}
 
-			txOutCopy := make(map[string]interface{}, len(txOut))
-			for k, v := range txOut {
-				txOutCopy[k] = v // be extra paranoid; don't modify txOut
-			}
-
-			txOutCopy["transaction_id"] = tx.Hash
-			serializedData, err := json.Marshal(txOutCopy)
+			outCopy := *out
+			outCopy.TransactionID = tx.Hash[:]
+			serializedData, err := json.Marshal(outCopy)
 			if err != nil {
 				return errors.Wrap(err, "serializing annotated output")
 			}

@@ -2,9 +2,13 @@ package asset
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
+
+	"chain/core/query"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
 	"chain/protocol/prottest"
@@ -16,95 +20,58 @@ func TestAnnotateTxs(t *testing.T) {
 	ctx := context.Background()
 
 	tags1 := map[string]interface{}{"foo": "bar"}
+	rawtags1 := json.RawMessage(`{"foo": "bar"}`)
 	def1 := map[string]interface{}{"baz": "bar"}
-
+	rawdef1 := json.RawMessage(`{
+  "baz": "bar"
+}`)
 	asset1, err := reg.Define(ctx, []chainkd.XPub{testutil.TestXPub}, 1, def1, "", tags1, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	tags2 := map[string]interface{}{"foo": "baz"}
+	rawtags2 := json.RawMessage(`{"foo": "baz"}`)
 	asset2, err := reg.Define(ctx, []chainkd.XPub{testutil.TestXPub}, 1, nil, "", tags2, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	txs := []map[string]interface{}{
+	txs := []*query.AnnotatedTx{
 		{
-			"inputs": []interface{}{
-				map[string]interface{}{
-					"asset_id": asset1.AssetID.String(),
-				},
-				map[string]interface{}{
-					"asset_id": asset2.AssetID.String(),
-				},
-				map[string]interface{}{
-					"asset_id": "bad0",
-				},
+			Inputs: []*query.AnnotatedInput{
+				{AssetID: asset1.AssetID[:]},
+				{AssetID: asset2.AssetID[:]},
+				{AssetID: []byte{0xba, 0xd0}},
 			},
-			"outputs": []interface{}{
-				map[string]interface{}{
-					"asset_id": asset1.AssetID.String(),
-				},
-				map[string]interface{}{
-					"asset_id": asset2.AssetID.String(),
-				},
-				map[string]interface{}{
-					"asset_id": "bad0",
-				},
-			},
-		},
-	}
-	want := []map[string]interface{}{
-		{
-			"inputs": []interface{}{
-				map[string]interface{}{
-					"asset_id":         asset1.AssetID.String(),
-					"asset_tags":       interface{}(tags1),
-					"asset_is_local":   "yes",
-					"asset_definition": interface{}(def1),
-				},
-				map[string]interface{}{
-					"asset_id":         asset2.AssetID.String(),
-					"asset_tags":       interface{}(tags2),
-					"asset_is_local":   "yes",
-					"asset_definition": map[string]interface{}{},
-				},
-				map[string]interface{}{
-					"asset_id":         "bad0",
-					"asset_tags":       map[string]interface{}{},
-					"asset_is_local":   "no",
-					"asset_definition": map[string]interface{}{},
-				},
-			},
-			"outputs": []interface{}{
-				map[string]interface{}{
-					"asset_id":         asset1.AssetID.String(),
-					"asset_tags":       interface{}(tags1),
-					"asset_is_local":   "yes",
-					"asset_definition": interface{}(def1),
-				},
-				map[string]interface{}{
-					"asset_id":         asset2.AssetID.String(),
-					"asset_tags":       interface{}(tags2),
-					"asset_is_local":   "yes",
-					"asset_definition": map[string]interface{}{},
-				},
-				map[string]interface{}{
-					"asset_id":         "bad0",
-					"asset_tags":       map[string]interface{}{},
-					"asset_is_local":   "no",
-					"asset_definition": map[string]interface{}{},
-				},
+			Outputs: []*query.AnnotatedOutput{
+				{AssetID: asset1.AssetID[:]},
+				{AssetID: asset2.AssetID[:]},
+				{AssetID: []byte{0xba, 0xd0}},
 			},
 		},
 	}
 
+	empty := json.RawMessage(`{}`)
+	want := []*query.AnnotatedTx{
+		{
+			Inputs: []*query.AnnotatedInput{
+				{AssetID: asset1.AssetID[:], AssetTags: &rawtags1, AssetIsLocal: true, AssetDefinition: &rawdef1},
+				{AssetID: asset2.AssetID[:], AssetTags: &rawtags2, AssetIsLocal: true, AssetDefinition: &empty},
+				{AssetID: []byte{0xba, 0xd0}, AssetTags: &empty, AssetDefinition: &empty},
+			},
+			Outputs: []*query.AnnotatedOutput{
+				{AssetID: asset1.AssetID[:], AssetTags: &rawtags1, AssetIsLocal: true, AssetDefinition: &rawdef1},
+				{AssetID: asset2.AssetID[:], AssetTags: &rawtags2, AssetIsLocal: true, AssetDefinition: &empty},
+				{AssetID: []byte{0xba, 0xd0}, AssetTags: &empty, AssetDefinition: &empty},
+			},
+		},
+	}
 	err = reg.AnnotateTxs(ctx, txs)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(txs, want) {
-		t.Errorf("got:\n%+v\nwant:\n%+v", txs, want)
+		t.Errorf("got:\n%s\nwant:\n%s", spew.Sdump(txs), spew.Sdump(want))
 	}
 }
