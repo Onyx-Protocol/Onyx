@@ -96,7 +96,7 @@ func ParseHash(s string) (h Hash, err error) {
 	return h, errors.Wrap(err, "decode hex")
 }
 
-func WriteFastHash(w io.Writer, d []byte) error {
+func writeFastHash(w io.Writer, d []byte) error {
 	if len(d) == 0 {
 		_, err := blockchain.WriteVarstr31(w, nil)
 		return err
