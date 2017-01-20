@@ -523,8 +523,7 @@ public class TransactionTest {
         new Transaction.Builder()
             .addAction(
                 new Transaction.Action.SpendAccountUnspentOutput()
-                    .setPosition(output.position)
-                    .setTransactionId(resp.id))
+                    .setOutputId(output.outputId))
             .addAction(
                 new Transaction.Action.ControlWithAccount()
                     .setAccountAlias(bob)

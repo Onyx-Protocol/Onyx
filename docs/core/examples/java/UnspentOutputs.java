@@ -72,13 +72,10 @@ class UnspentOutputs {
     }
     // endsnippet
 
-    String prevTransactionId = issuanceTx.id;
-
     // snippet build-transaction-all
     Transaction.Template spendOutput = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendAccountUnspentOutput()
-        .setTransactionId(prevTransactionId)
-        .setPosition(0)
+        .setOutputId(issuanceTx.outputs.get(0).outputId)
       ).addAction(new Transaction.Action.ControlWithAccount()
         .setAccountAlias("bob")
         .setAssetAlias("gold")
@@ -91,8 +88,7 @@ class UnspentOutputs {
     // snippet build-transaction-partial
     Transaction.Template spendOutputWithChange = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendAccountUnspentOutput()
-        .setTransactionId(prevTransactionId)
-        .setPosition(1)
+        .setOutputId(issuanceTx.outputs.get(1).outputId)
       ).addAction(new Transaction.Action.ControlWithAccount()
         .setAccountAlias("bob")
         .setAssetAlias("gold")
