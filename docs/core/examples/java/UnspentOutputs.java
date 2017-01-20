@@ -72,10 +72,12 @@ class UnspentOutputs {
     }
     // endsnippet
 
+    String prevOutputId = issuanceTx.outputs.get(0).outputId
+
     // snippet build-transaction-all
     Transaction.Template spendOutput = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendAccountUnspentOutput()
-        .setOutputId(issuanceTx.outputs.get(0).outputId)
+        .setOutputId(prevOutputId)
       ).addAction(new Transaction.Action.ControlWithAccount()
         .setAccountAlias("bob")
         .setAssetAlias("gold")
@@ -85,10 +87,12 @@ class UnspentOutputs {
 
     Transaction.submit(client, HsmSigner.sign(spendOutput));
 
+    prevOutputId = issuanceTx.outputs.get(1).outputId
+
     // snippet build-transaction-partial
     Transaction.Template spendOutputWithChange = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendAccountUnspentOutput()
-        .setOutputId(issuanceTx.outputs.get(1).outputId)
+        .setOutputId(prevOutputId)
       ).addAction(new Transaction.Action.ControlWithAccount()
         .setAccountAlias("bob")
         .setAssetAlias("gold")
