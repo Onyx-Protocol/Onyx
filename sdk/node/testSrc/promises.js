@@ -37,7 +37,7 @@ const tokenId = `token-${uuid.v4()}`
 let aliceKey, bobKey, goldKey, silverKey, otherKey, aliceId
 
 describe('Promise style', () => {
-  before('set up keys, and signer', () => {
+  before('set up API objects', () => {
     // Key creation and signer setup
     return expect(Promise.all([
       client.mockHsm.keys.create({alias: aliceAlias}),
@@ -402,10 +402,10 @@ describe('Promise style', () => {
     ])).to.be.fulfilled)
     .then(() => {
       counter = 0
-      return expect(client.accessTokens.queryAll({pageSize: 1}, (item, done) => {
+      return expect(client.accessTokens.queryAll({pageSize: 1}, (item, next, done) => {
         counter += 1
         expect(item).to.not.be.null
-        if (counter >= 2) done()
+        counter >= 2 ? done() : next()
       })).to.be.fulfilled
     }).then(() => expect(counter).to.equal(2))
 
@@ -413,11 +413,10 @@ describe('Promise style', () => {
 
     .then(() => {
       counter = 0
-      return expect(client.accounts.queryAll({pageSize: 1}, (item, done) => {
+      return expect(client.accounts.queryAll({pageSize: 1}, (item, next, done) => {
         counter += 1
-        console.log(item);
         expect(item).to.not.be.null
-        if (counter >= 2) done()
+        counter >= 2 ? done() : next()
       })).to.be.fulfilled
     }).then(() => expect(counter).to.equal(2))
 
@@ -429,10 +428,10 @@ describe('Promise style', () => {
     ])).to.be.fulfilled)
     .then(() => {
       counter = 0
-      return expect(client.assets.queryAll({pageSize: 1}, (item, done) => {
+      return expect(client.assets.queryAll({pageSize: 1}, (item, next, done) => {
         counter += 1
         expect(item).to.not.be.null
-        if (counter >= 2) done()
+        counter >= 2 ? done() : next()
       })).to.be.fulfilled
     }).then(() => expect(counter).to.equal(2))
 
@@ -440,10 +439,10 @@ describe('Promise style', () => {
 
     .then(() => {
       counter = 0
-      return expect(client.mockHsm.keys.queryAll({pageSize: 1}, (item, done) => {
+      return expect(client.mockHsm.keys.queryAll({pageSize: 1}, (item, next, done) => {
         counter += 1
         expect(item).to.not.be.null
-        if (counter >= 6) done()
+        counter >= 6 ? done() : next()
       })).to.be.fulfilled
     }).then(() => expect(counter).to.equal(6))
 
@@ -454,10 +453,10 @@ describe('Promise style', () => {
     ])).to.be.fulfilled)
     .then(() => {
       counter = 0
-      return expect(client.transactionFeeds.queryAll({pageSize: 1}, (item, done) => {
+      return expect(client.transactionFeeds.queryAll({pageSize: 1}, (item, next, done) => {
         counter += 1
         expect(item).to.not.be.null
-        if (counter >= 2) done()
+        counter >= 2 ? done() : next()
       })).to.be.fulfilled
     }).then(() => expect(counter).to.equal(2))
 
@@ -471,8 +470,10 @@ describe('Promise style', () => {
 
     // Balances
 
-    .then(() => expect(client.balances.queryAll({pageSize: 1}, (item, done) => {
+    .then(() => expect(client.balances.queryAll({pageSize: 1}, (item, next, done) => {
+      counter += 1
       expect(item).to.not.be.null
+      counter >= 2 ? done() : next()
     })).to.be.fulfilled)
   })
 })

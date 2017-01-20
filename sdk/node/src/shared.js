@@ -32,7 +32,11 @@ const Page = require('./page')
  *
  * @callback QueryProcessor
  * @param {Object} item - Item to process.
- * @param {function} done - Call to terminate iteration through the result set.
+ * @param {function} next - Call to proceed to the next item for processing.
+ * @param {function(err)} done - Call to terminate iteration through the result
+ *                               set. Accepts an optional error argument which
+ *                               will be passed to the promise rejection or
+ *                               callback depending on async calling style.
  */
 
 /**
@@ -135,28 +139,52 @@ module.exports = {
     })
 
     const promise = new Promise((resolve, reject) => {
-      let continueIteration = true
+      const done = (err) => {
+        if (cb) {
+          cb(err)
+        } else if (err) {
+          reject(err)
+        }
 
-      const done = () => {
-        continueIteration = false
-        Promise.resolve().then(resolve).catch(reject)
+        resolve()
       }
 
       const nextPage = () => {
         queryOwner.query(nextParams).then(page => {
-          for (let item in page.items) {
-            processor(page.items[item], done)
-            if (!continueIteration) return
+          let index = 0
+          let item
+
+          const next = () => {
+            if (index >= page.items.length) {
+              if (page.lastPage) {
+                done()
+              } else {
+                nextParams = page.next
+                nextPage()
+              }
+              return
+            }
+
+            item = page.items[index]
+            index++
+
+            // Pass the next item to the processor, as well as two loop
+            // operations:
+            //
+            // - next(): Continue to next item
+            // - done(err): Then terminate the loop by fulfilling the outer promise
+            //
+            // The process can also terminate the loop by returning a promise
+            // that will reject.
+
+            let res = processor(item, next, done)
+            if (res && typeof res.catch === 'function') {
+              res.catch(reject)
+            }
           }
 
-          if (!page.lastPage) {
-            nextParams = page.next
-            nextPage()
-            return
-          } else {
-            resolve()
-          }
-        }).catch(reject)
+          next()
+        }).catch(reject) // fail processor loop on query failure
       }
 
       nextPage()
