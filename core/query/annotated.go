@@ -29,7 +29,7 @@ func transactionObject(orig *bc.Tx, b *bc.Block, indexInBlock uint32) map[string
 	}
 	outputs := make([]interface{}, 0, len(orig.Outputs))
 	for i, out := range orig.Outputs {
-		outputs = append(outputs, transactionOutput(out, uint32(i)))
+		outputs = append(outputs, transactionOutput(out, uint32(i), orig.Hash))
 	}
 	m["inputs"] = inputs
 	m["outputs"] = outputs
@@ -55,9 +55,10 @@ func transactionInput(in *bc.TxInput) map[string]interface{} {
 	return obj
 }
 
-func transactionOutput(out *bc.TxOutput, idx uint32) map[string]interface{} {
+func transactionOutput(out *bc.TxOutput, idx uint32, txhash bc.Hash) map[string]interface{} {
 	obj := map[string]interface{}{
 		"position":        idx,
+		"output_id":       bc.ComputeOutputID(txhash, idx),
 		"asset_id":        out.AssetID.String(),
 		"amount":          out.Amount,
 		"control_program": hex.EncodeToString(out.ControlProgram),

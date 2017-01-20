@@ -23,6 +23,7 @@ type (
 		Amount          uint64           `json:"amount"`
 		IssuanceProgram string           `json:"issuance_program,omitempty"`
 		SpentOutput     *struct {
+			OutputID      string `json:"output_id"`
 			TransactionID string `json:"transaction_id"`
 			Position      uint32 `json:"position"`
 		} `json:"spent_output,omitempty"`
@@ -34,6 +35,7 @@ type (
 		Type            string           `json:"type"`
 		Purpose         string           `json:"purpose,omitempty"`
 		Position        uint32           `json:"position"`
+		OutputID        string           `json:"output_id"`
 		AssetID         string           `json:"asset_id"`
 		AssetAlias      string           `json:"asset_alias,omitempty"`
 		AssetDefinition *json.RawMessage `json:"asset_definition"`
@@ -222,6 +224,7 @@ func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result pag
 type utxoResp struct {
 	Type            string           `json:"type"`
 	Purpose         string           `json:"purpose"`
+	OutputID        string           `json:"output_id"`
 	TransactionID   string           `json:"transaction_id"`
 	Position        uint32           `json:"position"`
 	AssetID         string           `json:"asset_id"`

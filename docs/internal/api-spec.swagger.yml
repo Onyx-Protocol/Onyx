@@ -389,6 +389,7 @@ definitions:
     required:
       - transaction_id
       - position
+      - output_id
     properties:
       transaction_id:
         type: string
@@ -397,6 +398,9 @@ definitions:
         type: integer
         description: The position of the output within the containing
           tranasction's outputs.
+      output_id:
+        type: string
+        description: The unique output ID of the transaction output.
 
   TransactionOutput:
     type: object
@@ -630,8 +634,7 @@ definitions:
     type: object
     required:
       - type
-      - transaction_id
-      - position
+      - output_id
     properties:
       type:
         type: string
@@ -639,14 +642,9 @@ definitions:
           (required to be `spend_account_unspent_output`)
         enum:
           - spend_account_unspent_output
-      transaction_id:
+      output_id:
         type: string
-        description: The unique ID of the transaction containing the output
-          being spent.
-      position:
-        type: string
-        description: The output's index relative to other outputs in the
-          containing transaction.
+        description: The unique ID of the transaction output being spent.
       reference_data:
         type: object
         description: Arbitrary, immutable key/value data that will accompany
