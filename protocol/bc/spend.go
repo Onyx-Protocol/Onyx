@@ -19,6 +19,12 @@ type SpendInput struct {
 
 func (si *SpendInput) IsIssuance() bool { return false }
 
+func (si *SpendInput) writePrevoutCommitment(w io.Writer, assetVersion uint64) error {
+	return si.OutputCommitment.writeTo(w, assetVersion)
+}
+
+// readCommitment reads a spend input commitment AFTER the leading
+// type byte has been consumed.
 func (si *SpendInput) readCommitment(r io.Reader, txVersion, assetVersion uint64) (err error) {
 	_, err = si.Outpoint.readFrom(r)
 	if err != nil {
@@ -26,8 +32,7 @@ func (si *SpendInput) readCommitment(r io.Reader, txVersion, assetVersion uint64
 	}
 	all := txVersion == 1
 	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
-		_, err := si.OutputCommitment.ReadFrom(r)
-		return err
+		return si.OutputCommitment.readFrom(r, assetVersion)
 	})
 	return errors.Wrap(err, "reading output commitment")
 }

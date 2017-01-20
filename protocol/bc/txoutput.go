@@ -44,8 +44,7 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 
 	all := txVersion == 1
 	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
-		_, err := to.OutputCommitment.ReadFrom(r)
-		return err
+		return to.readOutputCommitment(r)
 	})
 	if err != nil {
 		return errors.Wrap(err, "reading output commitment")
@@ -68,11 +67,7 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 	}
 
 	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-		if to.AssetVersion == 1 {
-			_, err := to.OutputCommitment.WriteTo(w)
-			return err
-		}
-		return nil
+		return to.WriteOutputCommitment(w)
 	})
 	if err != nil {
 		return errors.Wrap(err, "writing output commitment")
@@ -90,6 +85,18 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 		}
 	}
 	return nil
+}
+
+// WriteOutputCommitment writes the output commitment without the
+// enclosing extensible string.
+func (to *TxOutput) WriteOutputCommitment(w io.Writer) error {
+	return to.OutputCommitment.writeTo(w, to.AssetVersion)
+}
+
+// ReadOutputCommitment reads the output commitment without the
+// enclosing extensible string.
+func (to *TxOutput) readOutputCommitment(r io.Reader) error {
+	return to.OutputCommitment.readFrom(r, to.AssetVersion)
 }
 
 func (to *TxOutput) witnessHash() (hash Hash, err error) {

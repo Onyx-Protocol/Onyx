@@ -28,11 +28,10 @@ func (s *SigHasher) Hash(idx uint32) Hash {
 
 	var outHash Hash
 	inp := s.txData.Inputs[idx]
-	si, ok := inp.TypedInput.(*SpendInput)
-	if ok {
+	if si, ok := inp.TypedInput.(*SpendInput); ok {
 		// inp is a spend
 		var ocBuf bytes.Buffer
-		si.OutputCommitment.WriteTo(&ocBuf)
+		si.writePrevoutCommitment(&ocBuf, inp.AssetVersion) // TODO(bobg): check and return error
 		sha3pool.Sum256(outHash[:], ocBuf.Bytes())
 	} else {
 		// inp is an issuance

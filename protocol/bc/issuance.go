@@ -27,6 +27,8 @@ func (ii *IssuanceInput) AssetID() AssetID {
 	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion, ii.AssetDefinitionHash())
 }
 
+// readCommitment reads an issuance input commitment AFTER the leading
+// type byte has been consumed.
 func (ii *IssuanceInput) readCommitment(r io.Reader) (assetID AssetID, err error) {
 	ii.Nonce, _, err = blockchain.ReadVarstr31(r)
 	if err != nil {

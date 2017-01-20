@@ -16,39 +16,41 @@ type OutputCommitment struct {
 	ControlProgram []byte
 }
 
-func (oc *OutputCommitment) WriteTo(w io.Writer) (int64, error) {
-	n, err := oc.AssetAmount.writeTo(w)
-	if err != nil {
-		return n, err
+func (oc *OutputCommitment) writeTo(w io.Writer, assetVersion uint64) error {
+	if assetVersion == 1 {
+		err := oc.AssetAmount.writeTo(w)
+		if err != nil {
+			return err
+		}
+		_, err = blockchain.WriteVarint63(w, oc.VMVersion)
+		if err != nil {
+			return err
+		}
+		_, err = blockchain.WriteVarstr31(w, oc.ControlProgram)
+		if err != nil {
+			return err
+		}
 	}
-	n2, err := blockchain.WriteVarint63(w, oc.VMVersion)
-	n += int64(n2)
-	if err != nil {
-		return n, err
-	}
-	n2, err = blockchain.WriteVarstr31(w, oc.ControlProgram)
-	n += int64(n2)
-	return n, err
+	return nil
 }
 
-func (oc *OutputCommitment) ReadFrom(r io.Reader) (int64, error) {
-	n, err := oc.AssetAmount.readFrom(r)
-	if err != nil {
-		return int64(n), errors.Wrap(err, "reading asset+amount")
+func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint64) error {
+	if assetVersion == 1 {
+		_, err := oc.AssetAmount.readFrom(r)
+		if err != nil {
+			return errors.Wrap(err, "reading asset+amount")
+		}
+		oc.VMVersion, _, err = blockchain.ReadVarint63(r)
+		if err != nil {
+			return errors.Wrap(err, "reading VM version")
+		}
+		if oc.VMVersion != 1 {
+			return fmt.Errorf("unrecognized VM version %d for asset version 1", oc.VMVersion)
+		}
+		oc.ControlProgram, _, err = blockchain.ReadVarstr31(r)
+		if err != nil {
+			return errors.Wrap(err, "reading control program")
+		}
 	}
-
-	var n2 int
-	oc.VMVersion, n2, err = blockchain.ReadVarint63(r)
-	n += n2
-	if err != nil {
-		return int64(n), errors.Wrap(err, "reading VM version")
-	}
-
-	if oc.VMVersion != 1 {
-		return int64(n), fmt.Errorf("unrecognized VM version %d for asset version 1", oc.VMVersion)
-	}
-
-	oc.ControlProgram, n2, err = blockchain.ReadVarstr31(r)
-	n += n2
-	return int64(n), errors.Wrap(err, "reading control program")
+	return nil
 }
