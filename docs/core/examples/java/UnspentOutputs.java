@@ -72,12 +72,15 @@ class UnspentOutputs {
     }
     // endsnippet
 
-    String prevOutputId = issuanceTx.outputs.get(0).outputId;
+    // TODO: update API to include output IDs into Transaction.SubmitResponse, not just txid.
+    //       Or have a client-side helper to compute OutputID from (txid,position) pair.
+    String prevTransactionId = issuanceTx.id;
 
     // snippet build-transaction-all
     Transaction.Template spendOutput = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendAccountUnspentOutput()
-        .setOutputId(prevOutputId)
+        .setTransactionId(prevTransactionId)
+        .setPosition(0)
       ).addAction(new Transaction.Action.ControlWithAccount()
         .setAccountAlias("bob")
         .setAssetAlias("gold")
@@ -87,12 +90,11 @@ class UnspentOutputs {
 
     Transaction.submit(client, HsmSigner.sign(spendOutput));
 
-    prevOutputId = issuanceTx.outputs.get(1).outputId;
-
     // snippet build-transaction-partial
     Transaction.Template spendOutputWithChange = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendAccountUnspentOutput()
-        .setOutputId(prevOutputId)
+        .setTransactionId(prevTransactionId)
+        .setPosition(1)
       ).addAction(new Transaction.Action.ControlWithAccount()
         .setAccountAlias("bob")
         .setAssetAlias("gold")
