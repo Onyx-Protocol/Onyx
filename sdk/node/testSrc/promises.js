@@ -93,7 +93,7 @@ describe('Promise style', () => {
     )
   })
 
-  xit('works', () => {
+  it('works', () => {
     return Promise.resolve()
 
     // Access tokens
@@ -422,10 +422,6 @@ describe('Promise style', () => {
 
     // Assets
 
-    .then(() => expect(Promise.all([
-      client.assets.create({rootXpubs: [otherKey.xpub], quorum: 1}),
-      client.assets.create({rootXpubs: [otherKey.xpub], quorum: 1}),
-    ])).to.be.fulfilled)
     .then(() => {
       counter = 0
       return expect(client.assets.queryAll({pageSize: 1}, (item, next, done) => {
@@ -462,18 +458,53 @@ describe('Promise style', () => {
 
     // Transactions
 
+    .then(() =>
+      expect(client.transactions.buildBatch([builder => {
+        builder.issue({ assetAlias: goldAlias, amount: 1 })
+        builder.controlWithAccount({ accountAlias: aliceAlias, assetAlias: goldAlias, amount: 1 })
+      }, builder => {
+        builder.issue({ assetAlias: silverAlias, amount: 1 })
+        builder.controlWithAccount({ accountAlias: bobAlias, assetAlias: silverAlias, amount: 1 })
+      }])).to.be.fulfilled
+      .then(issuanceBatch => expect(signer.signBatch(issuanceBatch.successes)).to.be.fulfilled)
+      .then(signedBatch => expect(client.transactions.submitBatch(signedBatch.successes)).to.be.fulfilled)
+    )
 
+    .then(() => {
+      counter = 0
+      return expect(client.transactions.queryAll({pageSize: 1}, (item, next, done) => {
+        counter += 1
+        expect(item).to.not.be.null
+        counter >= 2 ? done() : next()
+      })).to.be.fulfilled
+    }).then(() => expect(counter).to.equal(2))
 
     // Unspent Outputs
 
-
+    .then(() => {
+      counter = 0
+      return expect(client.unspentOutputs.queryAll({pageSize: 1}, (item, next, done) => {
+        counter += 1
+        expect(item).to.not.be.null
+        counter >= 2 ? done() : next()
+      })).to.be.fulfilled
+    }).then(() => expect(counter).to.equal(2))
 
     // Balances
 
-    .then(() => expect(client.balances.queryAll({pageSize: 1}, (item, next, done) => {
-      counter += 1
-      expect(item).to.not.be.null
-      counter >= 2 ? done() : next()
-    })).to.be.fulfilled)
+    .then(() => {
+      counter = 0
+      return expect(client.balances.queryAll({sumBy: ['asset_alias']}, (item, next, done) => {
+        counter += 1
+        expect(item).to.not.be.null
+        counter >= 2 ? done() : next()
+      })).to.be.fulfilled
+    }).then(() => expect(counter).to.equal(2))
+
+    // Rejection
+
+    .then(() => expect(client.assets.queryAll({pageSize: 1}, (item, next, done) => {
+      done(new Error('failure'))
+    })).to.be.rejectedWith('failure'))
   })
 })

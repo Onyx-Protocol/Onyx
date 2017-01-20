@@ -142,6 +142,7 @@ module.exports = {
       const done = (err) => {
         if (cb) {
           cb(err)
+          return
         } else if (err) {
           reject(err)
         }

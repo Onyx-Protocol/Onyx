@@ -21,7 +21,7 @@ const balanceByAssetAlias = (cb) => {
 }
 
 describe('Callback style', () => {
-  xit('works', (done) => {
+  it('works', (done) => {
     const client = new chain.Client()
     const signer = new chain.HsmSigner()
 
