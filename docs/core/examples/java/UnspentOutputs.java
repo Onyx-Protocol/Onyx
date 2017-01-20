@@ -72,7 +72,7 @@ class UnspentOutputs {
     }
     // endsnippet
 
-    String prevOutputId = issuanceTx.outputs.get(0).outputId
+    String prevOutputId = issuanceTx.outputs.get(0).outputId;
 
     // snippet build-transaction-all
     Transaction.Template spendOutput = new Transaction.Builder()
@@ -87,7 +87,7 @@ class UnspentOutputs {
 
     Transaction.submit(client, HsmSigner.sign(spendOutput));
 
-    prevOutputId = issuanceTx.outputs.get(1).outputId
+    prevOutputId = issuanceTx.outputs.get(1).outputId;
 
     // snippet build-transaction-partial
     Transaction.Template spendOutputWithChange = new Transaction.Builder()
