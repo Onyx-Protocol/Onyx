@@ -27,6 +27,12 @@ public class UnspentOutput {
   public String purpose;
 
   /**
+   * The ID of the output.
+   */
+  @SerializedName("output_id")
+  public String outputId;
+
+  /**
    * The ID of the transaction in which the unspent output appears.
    */
   @SerializedName("transaction_id")

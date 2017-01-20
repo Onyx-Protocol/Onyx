@@ -151,7 +151,7 @@ module Chain
       attrib :amount
 
       # @!attribute [r] spent_output_id
-      # The id of the output consumed by this input.
+      # The id of the output consumed by this input. ID is nil if this is an issuance input.
       # @return [String]
       attrib :spent_output_id
 
