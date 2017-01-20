@@ -60,7 +60,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
+	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.OutputID, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
 	if !reflect.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
@@ -99,7 +99,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
-	source := accounts.NewSpendUTXOAction(out.Outpoint)
+	source := accounts.NewSpendUTXOAction(out.OutputID)
 
 	var builder txbuilder.TemplateBuilder
 	err := source.Build(ctx, &builder)
@@ -111,7 +111,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
+	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.OutputID, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
 
 	if !reflect.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)

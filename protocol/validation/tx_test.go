@@ -94,7 +94,7 @@ func TestUniqueIssuance(t *testing.T) {
 	tx = bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(tx.Hash, 0, nil, assetID, 1, trueProg, nil),
+			bc.NewSpendInput(bc.ComputeOutputID(tx.Hash, 0), nil, assetID, 1, trueProg, nil),
 			issuance2Inp,
 		},
 		Outputs: []*bc.TxOutput{
@@ -189,7 +189,7 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(txhash1, 0, nil, aid1, 1000, nil, nil),
+					bc.NewSpendInput(bc.ComputeOutputID(txhash1, 0), nil, aid1, 1000, nil, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 999, nil, nil),
@@ -201,8 +201,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
-					bc.NewSpendInput(txhash2, 0, nil, aid2, 500, nil, nil),
+					bc.NewSpendInput(bc.ComputeOutputID(txhash1, 0), nil, aid1, 500, nil, nil),
+					bc.NewSpendInput(bc.ComputeOutputID(txhash2, 0), nil, aid2, 500, nil, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 500, nil, nil),
@@ -216,7 +216,7 @@ func TestTxWellFormed(t *testing.T) {
 				Version: 1,
 				Inputs: []*bc.TxInput{
 					bc.NewIssuanceInput(nil, 0, nil, initialBlockHash, issuanceProg, nil, nil),
-					bc.NewSpendInput(txhash1, 0, nil, aid2, 0, nil, nil),
+					bc.NewSpendInput(bc.ComputeOutputID(txhash1, 0), nil, aid2, 0, nil, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 0, nil, nil),
@@ -228,7 +228,7 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(bc.Hash{}, 0, nil, aid1, 1000, trueProg, nil),
+					bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, aid1, 1000, trueProg, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -239,8 +239,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(txhash1, 0, nil, aid1, 500, trueProg, nil),
-					bc.NewSpendInput(txhash2, 0, nil, aid2, 500, trueProg, nil),
+					bc.NewSpendInput(bc.ComputeOutputID(txhash1, 0), nil, aid1, 500, trueProg, nil),
+					bc.NewSpendInput(bc.ComputeOutputID(txhash2, 0), nil, aid2, 500, trueProg, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 500, nil, nil),
@@ -254,8 +254,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(txhash1, 0, nil, aid1, 500, trueProg, nil),
-					bc.NewSpendInput(txhash2, 0, nil, aid1, 500, trueProg, nil),
+					bc.NewSpendInput(bc.ComputeOutputID(txhash1, 0), nil, aid1, 500, trueProg, nil),
+					bc.NewSpendInput(bc.ComputeOutputID(txhash2, 0), nil, aid1, 500, trueProg, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -269,7 +269,7 @@ func TestTxWellFormed(t *testing.T) {
 				MinTime: 2,
 				MaxTime: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(bc.Hash{}, 0, nil, aid1, 1000, nil, nil),
+					bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, aid1, 1000, nil, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -910,8 +910,6 @@ func TestValidateInvalidIssuances(t *testing.T) {
 func TestConfirmTx(t *testing.T) {
 	txhash1 := bc.Hash{1}
 
-	outpoint1 := bc.Outpoint{Hash: txhash1}
-
 	trueProg := []byte{0x51}
 
 	assetID1 := bc.AssetID{10}
@@ -929,7 +927,8 @@ func TestConfirmTx(t *testing.T) {
 		OutputCommitment: out1,
 	}
 
-	stateout := state.NewOutput(txout, outpoint1)
+	outid1 := bc.ComputeOutputID(txhash1, 0)
+	stateout := state.NewOutput(txout, outid1)
 
 	snapshot := state.Empty()
 	err := snapshot.Tree.Insert(state.OutputTreeItem(stateout))
@@ -1037,7 +1036,7 @@ func TestConfirmTx(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							Outpoint:         outpoint1,
+							OutputID:         outid1,
 							OutputCommitment: out1,
 						},
 					},

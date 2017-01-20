@@ -25,7 +25,8 @@
   * [Transaction Input Commitment](#transaction-input-commitment)
   * [Issuance Hash](#issuance-hash)
   * [Transaction Input Witness](#transaction-input-witness)
-  * [Outpoint](#outpoint)
+  * [Output ID](#output-id)
+  * [Unspent ID](#unspent-id)
   * [Transaction Output](#transaction-output)
   * [Transaction Output Commitment](#transaction-output-commitment)
   * [Transaction Output Witness](#transaction-output-witness)
@@ -252,7 +253,7 @@ An asset version other than 1 is reserved for future expansion. Input commitment
 
 #### Asset Version 1 Issuance Commitment
 
-Unlike spending commitments, each of which is unique because it references a distinct outpoint, issuance commitments are not intrinsically unique and must be made so to protect against replay attacks. The field *nonce* contains an arbitrary string that must be distinct from the nonces in other issuances of the same asset ID during the interval between the transaction's minimum and maximum time. Nodes ensure uniqueness of the issuance by remembering the [issuance hash](#issuance-hash) that includes the nonce, asset ID and minimum and maximum timestamps. To make sure that *issuance memory* does not take an unbounded amount of RAM, network enforces the *maximum issuance window* for these timestamps.
+Unlike spending commitments, each of which is unique because it references a distinct [output ID](#output-id), issuance commitments are not intrinsically unique and must be made so to protect against replay attacks. The field *nonce* contains an arbitrary string that must be distinct from the nonces in other issuances of the same asset ID during the interval between the transaction's minimum and maximum time. Nodes ensure uniqueness of the issuance by remembering the [issuance hash](#issuance-hash) that includes the nonce, asset ID and minimum and maximum timestamps. To make sure that *issuance memory* does not take an unbounded amount of RAM, network enforces the *maximum issuance window* for these timestamps.
 
 If the transaction has another input that guarantees uniqueness of the entire transaction (e.g. a [spend input](#asset-version-1-spend-commitment)), then the issuance input must be able to opt out of the bounded minimum and maximum timestamps and therefore the uniqueness test for the [issuance hash](#issuance-hash). The empty nonce signals if the input opts out of the uniqueness checks.
 
@@ -272,8 +273,8 @@ Amount                | varint63            | Amount being issued.
 Field                 | Type                  | Description
 ----------------------|-----------------------|----------------------------------------------------------
 Type                  | byte                  | Equals 0x01 indicating the “spend” type.
-Outpoint Reference    | [Outpoint](#outpoint) | [Transaction ID](#transaction-id) and index of the output being spent.
-Output Commitment     | [Output Commitment](#transaction-output-commitment) | Optional output commitment used as the source for this input. Presence of this field is controlled by [serialization flags](#transaction-serialization-flags): if switched off, this field is excluded from the spend entirely.
+Output ID             | sha3-256              | [Output ID](#output-id) that references an output being spent.
+Output Commitment     | [Output Commitment](#transaction-output-commitment) | Output commitment used as the source for this input or its [SHA3-256](#sha3) hash, depending on [serialization flags](#transaction-serialization-flags).
 —                     | —                     | Additional fields may be added by future extensions.
 
 
@@ -324,17 +325,26 @@ Program Arguments       | [varstring31]           | [Signatures](#signature) and
 —                       | —                       | Additional fields may be added by future extensions.
 
 
-### Outpoint
+### Output ID
 
-An *outpoint* uniquely specifies a single transaction output.
+An *output ID* uniquely identifies a single transaction output. It is defined as SHA3-256 hash of the following structure:
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
 Transaction ID          | sha3-256                | [Transaction ID](#transaction-id) of the referenced transaction.
 Output Index            | varint31                | Index (zero-based) of the [output](#transaction-output) within the transaction.
 
-Note: In the transaction wire format, outpoint uses the [varint encoding](#varint31) for the output index, but in the [assets merkle tree](#assets-merkle-root) a fixed-length big-endian encoding is used for lexicographic ordering of unspent outputs.
 
+### Unspent ID
+
+An *unspent ID* identifies a transaction output and commits to its contents.
+It is only used to track the set of unspent outputs.
+It is defined as SHA3-256 hash of the following structure:
+
+Field                   | Type                    | Description
+------------------------|-------------------------|----------------------------------------------------------
+Output ID               | sha3-256                | [Output ID](#output-id) of the output.
+Output Commitment Hash  | sha3-256                | SHA3-256 hash of the [output commitment](#transaction-output-commitment) in the specified output.
 
 
 ### Transaction Output
@@ -380,7 +390,7 @@ Serialization flags control what and how data is encoded in a given *Transaction
 
 The **first (least significant) bit** indicates whether the transaction includes witness data. If set to zero, the input and output witness fields are absent.
 
-The **second bit** indicates whether the output commitment from the spent output is present in the [input spend commitment](#asset-version-1-spend-commitment). If set to zero, the output commitment field is absent.
+The **second bit** indicates whether the output commitment from the spent output is present in the [input spend commitment](#asset-version-1-spend-commitment). If set to zero, the output commitment field is replaced by the [SHA3-256](#sha3) hash of the commitment.
 
 The **third bit** indicates whether transaction reference data and asset definitions are present. If set to zero, the reference data and asset definitions are replaced by their optional hash values.
 
@@ -388,9 +398,9 @@ All three bits can be used independently. Non-zero **higher bits** are reserved 
 
 Serialization Flags Examples | Description
 -----------------------------|---------------------------------------------------------------------------
-0000 0000                    | Minimal serialization without witness and with hashes of reference data and asset definitions instead of their actual content.
-0000 0011                    | Minimal serialization needed for full verification. Contains witness fields and redundant [output commitment](#transaction-output-commitment), but with hashes of reference data and asset definitions instead of their actual content.
-0000 0101                    | Non-redundant full binary serialization with witness fields, reference data and asset definitions.
+0000 0000                    | Minimal serialization without witness and with hashes of previous output commitment, reference data and asset definitions instead of their actual content.
+0000 0011                    | Minimal serialization needed for full verification. Contains witness fields and [output commitment](#transaction-output-commitment), but with hashes of reference data and asset definitions instead of their actual content.
+0000 0101                    | Non-redundant binary serialization with witness fields, reference data and asset definitions, but with the hash of the output commitment instead of its actual content.
 
 
 ### Transaction ID
@@ -427,12 +437,8 @@ The transaction signature hash is the [SHA3-256](#sha3) of the following structu
 Field                   | Type                                      | Description
 ------------------------|-------------------------------------------|----------------------------------------------------------
 Transaction ID          | sha3-256                                  | Current [transaction ID](#transaction-id).
-Input Index             | varint31                                  | Index of the current input encoded as [varint31](#varint31).
-Output Commitment Hash  | sha3-256                                  | [SHA3-256](#sha3) of the output commitment from the output being spent by the current input. Issuance input uses a hash of an empty string.
+Input Index             | varint31                                  | Index of a given input encoded as [varint31](#varint31).
 
-Note 1. Including the spent output commitment makes it easier to verify the asset ID and amount at signing time, although those values are already committed to via the input's [outpoint](#outpoint).
-
-Note 2. Using the hash of the output commitment instead of the output commitment as-is does not incur additional overhead since this hash is readily available from the [assets merkle tree](#assets-merkle-root). As a result, total amount of data to be hashed by all nodes during transaction validation is reduced.
 
 ### Program
 
@@ -499,14 +505,12 @@ Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the *t
 
 Root hash of the [merkle patricia tree](#merkle-patricia-tree) formed by unspent outputs with an **asset version 1** after applying the block. Allows bootstrapping nodes from recent blocks and an archived copy of the corresponding merkle patricia tree without processing all historical transactions.
 
-The tree contains [non-retired](#retired-asset) unspent outputs (one or more per [asset ID](#asset-id)):
+The tree contains [non-retired](#retired-asset) unspent outputs (one or more per [asset ID](#asset-id)) where both key and value are the same value — the [Unspent ID](#unspent-id) of the unspent output.
 
 Key                       | Value
 --------------------------|------------------------------
-`<txhash><index int32be>` | [SHA3-256](#sha3) of the [output commitment](#transaction-output-commitment) 
+[Unspent ID](#unspent-id) | [Unspent ID](#unspent-id)
 
-
-Note: unspent output indices are encoded with a fixed-length big-endian format to support lexicographic ordering.
 
 ### Merkle Root
 

@@ -29,7 +29,7 @@ const actionLabels = {
 const visibleFields = {
   [ISSUE_KEY]: {asset: true, amount: true},
   [SPEND_ACCOUNT_KEY]: {asset: true, account: true, amount: true},
-  [SPEND_UNSPENT_KEY]: {transaction_id: true, position: true},
+  [SPEND_UNSPENT_KEY]: {output_id: true},
   [CONTROL_ACCOUNT_KEY]: {asset: true, account: true, amount: true},
   [CONTROL_PROGRAM_KEY]: {asset: true, control_program: true, amount: true},
   [RETIRE_ASSET_KEY]: {asset: true, amount: true},
@@ -64,6 +64,7 @@ export default class ActionItem extends React.Component {
       control_program,
       transaction_id,
       position,
+      output_id,
       asset_id,
       asset_alias,
       amount,
@@ -101,6 +102,9 @@ export default class ActionItem extends React.Component {
 
         {visible.control_program &&
           <TextField title='Control Program' fieldProps={control_program} />}
+
+        {visible.output_id &&
+          <TextField title='Output ID' fieldProps={output_id} />}
 
         {visible.transaction_id &&
           <TextField title='Transaction ID' fieldProps={transaction_id} />}
