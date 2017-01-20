@@ -223,7 +223,7 @@ Promise.all([
     filter: 'tags.type=$1',
     filterParams: ['checking']
   }, (account, next, done) => {
-    console.log('Checking account account ' + account.id + ' (' + account.alias + ')')
+    console.log('Checking account ' + account.id + ' (' + account.alias + ')')
 
     // next() moves to the next item.
     // done(err) finishes the loop early, and resolves the promise.
