@@ -109,16 +109,32 @@ func (m *Manager) DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
 type spendUTXOAction struct {
 	accounts *Manager
 	OutputID *bc.OutputID `json:"output_id"`
+	TxHash   *bc.Hash     `json:"transaction_id"`
+	TxOut    *uint32      `json:"position"`
 
 	ReferenceData chainjson.Map `json:"reference_data"`
 	ClientToken   *string       `json:"client_token"`
 }
 
 func (a *spendUTXOAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
-	if a.OutputID == nil {
-		return txbuilder.MissingFieldsError("output_id")
+	var outid bc.OutputID
+
+	// This is compatibility layer - legacy apps can spend outputs via the raw <txid:index> pair.
+	// If none of the parameters are provided we need to report that output_id is missing.
+	if a.TxHash != nil || a.TxOut != nil {
+		if a.TxHash == nil {
+			return txbuilder.MissingFieldsError("transaction_id")
+		}
+		if a.TxOut == nil {
+			return txbuilder.MissingFieldsError("position")
+		}
+		outid = bc.ComputeOutputID(*a.TxHash, *a.TxOut)
+	} else {
+		if a.OutputID == nil {
+			return txbuilder.MissingFieldsError("output_id")
+		}
+		outid = *a.OutputID
 	}
-	out := *a.OutputID
 	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, out, a.ClientToken, b.MaxTime())
 	if err != nil {
 		return err
