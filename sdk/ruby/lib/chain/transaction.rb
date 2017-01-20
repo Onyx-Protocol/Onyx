@@ -150,10 +150,10 @@ module Chain
       # @return [Integer]
       attrib :amount
 
-      # @!attribute [r] spent_output
-      # The output consumed by this input.
-      # @return [SpentOutput]
-      attrib(:spent_output) { |raw| SpentOutput.new(raw) }
+      # @!attribute [r] spent_output_id
+      # The id of the output consumed by this input.
+      # @return [String]
+      attrib :spent_output_id
 
       # @!attribute [r] account_id
       # The id of the account transferring the asset (possibly null if the
@@ -196,18 +196,6 @@ module Chain
       # A flag indicating if the input is local.
       # @return [Boolean]
       attrib :is_local
-
-      class SpentOutput < ResponseObject
-        # @!attribute [r] transaction_id
-        # Unique transaction identifier.
-        # @return [String]
-        attrib :transaction_id
-
-        # @!attribute [r] position
-        # Position of an output within the transaction.
-        # @return [Integer]
-        attrib :position
-      end
     end
 
     class Output < ResponseObject
@@ -224,6 +212,11 @@ module Chain
       # Possible values are "receive" and "change".
       # @return [String]
       attrib :purpose
+
+      # @!attribute [r] output_id
+      # The id of the output.
+      # @return [String]
+      attrib :output_id
 
       # @!attribute [r] position
       # The output's position in a transaction's list of outputs.
@@ -340,7 +333,7 @@ module Chain
         to_h.to_json(opts)
       end
 
-      # Add an action to the tranasction builder
+      # Add an action to the transaction builder
       # @param [Hash] params Action parameters containing a type field and the
       #               required parameters for that type
       # @return [Builder]
@@ -394,10 +387,18 @@ module Chain
 
       # Add a spend action taken on a particular unspent output.
       # @param [Hash] params Action parameters
-      # @option params [String] :transaction_id Transaction ID specifying the tranasction to select an output from.
-      # @option params [Integer] :position Position of the output within the transaction to be spent.
+      # @option params [String] :output_id Output ID specifying the transaction output to spend.
       # @return [Builder]
       def spend_account_unspent_output(params)
+        add_action(params.merge(type: :spend_account_unspent_output))
+      end
+
+      # Add a spend action taken on a particular unspent output.
+      # @param [Hash] params Action parameters
+      # @option params [String] :transaction_id Transaction ID specifying the transaction to select an output from.
+      # @option params [Integer] :position Position of the output within the transaction to be spent.
+      # @return [Builder]
+      def spend_account_unspent_output_deprecated(params)
         add_action(params.merge(type: :spend_account_unspent_output))
       end
 
