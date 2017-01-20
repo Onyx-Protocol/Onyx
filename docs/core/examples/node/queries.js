@@ -166,7 +166,9 @@ Promise.all([
     })
 
     // next() moves to the next item.
-    // done(err) finishes the loop early, and resolves the promise.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
     next()
   })
   // endsnippet
@@ -181,7 +183,9 @@ Promise.all([
     console.log('Local transaction ' + tx.id)
 
     // next() moves to the next item.
-    // done(err) finishes the loop early, and resolves the promise.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
     next()
   })
   // endsnippet
@@ -196,7 +200,9 @@ Promise.all([
     console.log('Local asset ' + asset.id + ' (' + asset.alias + ')')
 
     // next() moves to the next item.
-    // done(err) finishes the loop early, and resolves the promise.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
     next()
   })
   // endsnippet
@@ -211,7 +217,9 @@ Promise.all([
     console.log('USD asset ' + asset.id + ' (' + asset.alias + ')')
 
     // next() moves to the next item.
-    // done(err) finishes the loop early, and resolves the promise.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
     next()
   })
   // endsnippet
@@ -226,7 +234,9 @@ Promise.all([
     console.log('Checking account ' + account.id + ' (' + account.alias + ')')
 
     // next() moves to the next item.
-    // done(err) finishes the loop early, and resolves the promise.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
     next()
   })
   // endsnippet
@@ -241,7 +251,12 @@ Promise.all([
     console.log("Alice's unspent output: " + utxo.amount + ' ' + utxo.assetAlias)
 
     // next() moves to the next item.
-    // done(err) finishes the loop early, and resolves the promise.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
     next()
   })
   // endsnippet
@@ -256,7 +271,9 @@ Promise.all([
     console.log('Bank 1 balance of ' + balance.sumBy.assetAlias + ': ' + balance.amount)
 
     // next() moves to the next item.
-    // done(err) finishes the loop early, and resolves the promise.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
     next()
   })
   // endsnippet
@@ -271,7 +288,9 @@ Promise.all([
     console.log('Total circulation of Bank 1 USD IOU: ' + balance.amount)
 
     // next() moves to the next item.
-    // done(err) finishes the loop early, and resolves the promise.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
     next()
   })
   // endsnippet
@@ -288,7 +307,9 @@ Promise.all([
     console.log('Bank 1 balance of ' + denom + '-denominated currencies: ' + balance.amount)
 
     // next() moves to the next item.
-    // done(err) finishes the loop early, and resolves the promise.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
     next()
   })
   // endsnippet
