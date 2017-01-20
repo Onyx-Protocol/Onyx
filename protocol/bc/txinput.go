@@ -84,7 +84,7 @@ func (t *TxInput) WriteInputCommitment(w io.Writer) (err error) {
 			}
 			// Nested extensible string
 			_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-				return inp.OutputCommitment.writeTo(w, t.AssetVersion)
+				return inp.writePrevoutCommitment(w, t.AssetVersion)
 			})
 			return err
 		}
