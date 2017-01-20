@@ -135,7 +135,7 @@ func (a *spendUTXOAction) Build(ctx context.Context, b *txbuilder.TemplateBuilde
 		}
 		outid = *a.OutputID
 	}
-	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, out, a.ClientToken, b.MaxTime())
+	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, outid, a.ClientToken, b.MaxTime())
 	if err != nil {
 		return err
 	}
