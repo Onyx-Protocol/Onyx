@@ -136,8 +136,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 			outputTxPositions = append(outputTxPositions, uint32(pos))
 			outputIndexes = append(outputIndexes, uint32(outIndex))
 			outputTxHashes = append(outputTxHashes, tx.Hash[:])
-			outid := bc.ComputeOutputID(tx.Hash, uint32(outIndex))
-			outputIDs = append(outputIDs, outid[:])
+			outputIDs = append(outputIDs, outCopy.OutputID)
 			outputData = append(outputData, string(serializedData))
 		}
 	}
