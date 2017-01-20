@@ -254,9 +254,6 @@ Promise.all([
     // done() terminates the loop early, and causes the
     //   query promise to resolve. Passing an error will reject
     //   the promise.
-    // done() terminates the loop early, and causes the
-    //   query promise to resolve. Passing an error will reject
-    //   the promise.
     next()
   })
   // endsnippet
