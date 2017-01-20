@@ -104,4 +104,7 @@ var migrations = []migration{
 			ALTER COLUMN definition SET NOT NULL;
 		ALTER TABLE assets ADD COLUMN vm_version bigint NOT NULL;
 	`},
+	{Name: "2017-01-19.0.asset.drop-mutable-flag.sql", SQL: `
+		ALTER TABLE assets DROP COLUMN definition_mutable;
+	`},
 }
