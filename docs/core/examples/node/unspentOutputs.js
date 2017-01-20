@@ -51,25 +51,23 @@ client.mockHsm.keys.create()
 })
 .then(() =>
   // snippet alice-unspent-outputs
-  client.unspentOutputs.query({
+  client.unspentOutputs.queryAll({
     filter: 'account_alias=$1',
     filterParams: ['alice'],
-  }).then(aliceUnspentOutputs => {
-    aliceUnspentOutputs.items.forEach(utxo => {
-      console.log(`Unspent output in alice account: ${utxo.transactionId}:${utxo.position}`)
-    })
+  }, (utxo, next) => {
+    console.log(`Unspent output in alice account: ${utxo.transactionId}:${utxo.position}`)
+    next()
   })
   // endsnippet
 )
 .then(() =>
   // snippet gold-unspent-outputs
-  client.unspentOutputs.query({
+  client.unspentOutputs.queryAll({
     filter: 'asset_alias=$1',
     filterParams: ['gold'],
-  }).then(goldUnspentOutputs => {
-    goldUnspentOutputs.items.forEach(utxo => {
-      console.log(`Unspent output containing gold: ${utxo.transactionId}:${utxo.position}`)
-    })
+  }, (utxo, next) => {
+    console.log(`Unspent output containing gold: ${utxo.transactionId}:${utxo.position}`)
+    next()
   })
   // endsnippet
 )

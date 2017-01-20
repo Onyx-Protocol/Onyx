@@ -53,29 +53,27 @@ Promise.all([
     },
   })
   // endsnippet
-])).then(() => {
+])).then(() =>
   // snippet list-local-assets
-  client.assets.query({
+  client.assets.queryAll({
     filter: 'is_local=$1',
     filterParams: ['yes'],
-  }).then(response => {
-    response.items.forEach((asset) => {
-      console.log('Local asset: ' + asset.alias)
-    })
+  }, (asset, next) => {
+    console.log('Local asset: ' + asset.alias)
+    next()
   })
   // endsnippet
-
+).then(() =>
   // snippet list-private-preferred-securities
-  client.assets.query({
+  client.assets.queryAll({
     filter: 'definition.type=$1 AND definition.subtype=$2 AND definition.class=$3',
     filterParams: ['security', 'private', 'preferred'],
-  }).then(response => {
-    response.items.forEach((asset) => {
-      console.log('Private preferred security: ' + asset.alias)
-    })
+  }, (asset, next) => {
+    console.log('Private preferred security: ' + asset.alias)
+    next()
   })
   // endsnippet
-}).then(() => {
+).then(() => {
   // snippet build-issue
   const issuePromise = client.transactions.build(builder => {
     builder.issue({
@@ -151,72 +149,66 @@ Promise.all([
     client.transactions.submit(signedRetireTx)
     // endsnippet
   )
-}).then(() => {
+}).then(() =>
   // snippet list-issuances
-  client.transactions.query({
+  client.transactions.queryAll({
     filter: 'inputs(type=$1 AND asset_alias=$2)',
     filterParams: ['issue', 'acme_common'],
-  }).then(response => {
-    response.items.forEach((tx) => {
-      console.log('Acme Common issued in tx ' + tx.id)
-    })
+  }, (tx, next) => {
+    console.log('Acme Common issued in tx ' + tx.id)
+    next()
   })
   // endsnippet
-
+).then(() =>
   // snippet list-transfers
-  client.transactions.query({
+  client.transactions.queryAll({
     filter: 'inputs(type=$1 AND asset_alias=$2)',
     filterParams: ['spend', 'acme_common'],
-  }).then(response => {
-    response.items.forEach((tx) => {
-      console.log('Acme Common transferred in tx ' + tx.id)
-    })
+  }, (tx, next) => {
+    console.log('Acme Common transferred in tx ' + tx.id)
+    next()
   })
   // endsnippet
-
+).then(() =>
   // snippet list-retirements
-  client.transactions.query({
+  client.transactions.queryAll({
     filter: 'outputs(type=$1 AND asset_alias=$2)',
     filterParams: ['retire', 'acme_common'],
-  }).then(response => {
-    response.items.forEach((tx) => {
-      console.log('Acme Common retired in tx ' + tx.id)
-    })
+  }, (tx, next) => {
+    console.log('Acme Common retired in tx ' + tx.id)
+    next()
   })
   // endsnippet
-
+).then(() =>
   // snippet list-acme-common-balance
-  client.balances.query({
+  client.balances.queryAll({
     filter: 'asset_alias=$1',
     filterParams: ['acme_common'],
-  }).then(response => {
-    response.items.forEach((balance) => {
-      console.log('Total circulation of Acme Common: ' + balance.amount)
-    })
+  }, (balance, next) => {
+    console.log('Total circulation of Acme Common: ' + balance.amount)
+    next()
   })
   // endsnippet
-
+).then(() =>
   // snippet list-acme-balance
-  client.balances.query({
+  client.balances.queryAll({
     filter: 'asset_definition.issuer=$1',
     filterParams: ['Acme Inc.'],
-  }).then(response => {
-    response.items.forEach((balance) => {
-      console.log('Total circulation of Acme stock ' + balance.sumBy.assetAlias + ': ' + balance.amount)
-    })
+  }, (balance, next) => {
+    console.log('Total circulation of Acme stock ' + balance.sumBy.assetAlias + ': ' + balance.amount)
+    next()
   })
   // endsnippet
-
+).then(() =>
   // snippet list-acme-common-unspents
-  client.unspentOutputs.query({
+  client.unspentOutputs.queryAll({
     filter: 'asset_alias=$1',
     filterParams: ['acme_common'],
-  }).then(response => {
-    response.items.forEach((unspent) => {
-      console.log('Acme Common held in output ' + unspent.transactionId + ': ' + unspent.position)
-    })
+  }, (unspent, next) => {
+    console.log('Acme Common held in output ' + unspent.transactionId + ': ' + unspent.position)
+    next()
   })
   // endsnippet
-}).catch(err =>
+).catch(err =>
   process.nextTick(() => { throw err })
 )

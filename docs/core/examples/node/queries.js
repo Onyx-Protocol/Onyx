@@ -152,128 +152,146 @@ Promise.all([
 ).then(() =>
 
   // snippet list-alice-transactions
-  client.transactions.query({
+  client.transactions.queryAll({
     filter: 'inputs(account_alias=$1) OR outputs(account_alias=$1)',
     filterParams: ['alice'],
-  }).then(results =>
-    results.items.forEach(tx => {
-      console.log("Alice's transaction: " + tx.id)
+  }, (tx, next, done) => {
+    console.log("Alice's transaction: " + tx.id)
 
-      tx.inputs.forEach(input => {
-        console.log('-' + input.amount + ' ' + input.assetAlias)
-      })
-
-      tx.outputs.forEach(output => {
-        console.log('+' + output.amount + ' ' + output.assetAlias)
-      })
+    tx.inputs.forEach(input => {
+      console.log('-' + input.amount + ' ' + input.assetAlias)
     })
-  )
+
+    tx.outputs.forEach(output => {
+      console.log('+' + output.amount + ' ' + output.assetAlias)
+    })
+
+    // next() moves to the next item.
+    // done(err) finishes the loop early, and resolves the promise.
+    next()
+  })
   // endsnippet
 
 ).then(() =>
 
   // snippet list-local-transactions
-  client.transactions.query({
+  client.transactions.queryAll({
     filter: 'is_local=$1',
     filterParams: ['yes']
-  }).then(results =>
-    results.items.forEach(tx => {
-      console.log('Local transaction ' + tx.id)
-    })
-  )
+  }, (tx, next, done) => {
+    console.log('Local transaction ' + tx.id)
+
+    // next() moves to the next item.
+    // done(err) finishes the loop early, and resolves the promise.
+    next()
+  })
   // endsnippet
 
 ).then(() =>
 
   // snippet list-local-assets
-  client.assets.query({
+  client.assets.queryAll({
     filter: 'is_local=$1',
     filterParams: ['yes']
-  }).then(results =>
-    results.items.forEach(asset => {
-      console.log('Local asset ' + asset.id + ' (' + asset.alias + ')')
-    })
-  )
+  }, (asset, next, done) => {
+    console.log('Local asset ' + asset.id + ' (' + asset.alias + ')')
+
+    // next() moves to the next item.
+    // done(err) finishes the loop early, and resolves the promise.
+    next()
+  })
   // endsnippet
 
 ).then(() =>
 
   // snippet list-usd-assets
-  client.assets.query({
+  client.assets.queryAll({
     filter: 'definition.currency=$1',
     filterParams: ['USD']
-  }).then(results =>
-    results.items.forEach(asset => {
-      console.log('USD asset ' + asset.id + ' (' + asset.alias + ')')
-    })
-  )
+  }, (asset, next, done) => {
+    console.log('USD asset ' + asset.id + ' (' + asset.alias + ')')
+
+    // next() moves to the next item.
+    // done(err) finishes the loop early, and resolves the promise.
+    next()
+  })
   // endsnippet
 
 ).then(() =>
 
   // snippet list-checking-accounts
-  client.accounts.query({
+  client.accounts.queryAll({
     filter: 'tags.type=$1',
     filterParams: ['checking']
-  }).then(results =>
-    results.items.forEach(account => {
-      console.log('Checking account account ' + account.id + ' (' + account.alias + ')')
-    })
-  )
+  }, (account, next, done) => {
+    console.log('Checking account account ' + account.id + ' (' + account.alias + ')')
+
+    // next() moves to the next item.
+    // done(err) finishes the loop early, and resolves the promise.
+    next()
+  })
   // endsnippet
 
 ).then(() =>
 
   // snippet list-alice-unspents
-  client.unspentOutputs.query({
+  client.unspentOutputs.queryAll({
     filter: 'account_alias=$1',
     filterParams: ['alice']
-  }).then(results =>
-    results.items.forEach(utxo => {
-      console.log("Alice's unspent output: " + utxo.amount + ' ' + utxo.assetAlias)
-    })
-  )
+  }, (utxo, next, done) => {
+    console.log("Alice's unspent output: " + utxo.amount + ' ' + utxo.assetAlias)
+
+    // next() moves to the next item.
+    // done(err) finishes the loop early, and resolves the promise.
+    next()
+  })
   // endsnippet
 
 ).then(() =>
 
   // snippet account-balance
-  client.balances.query({
+  client.balances.queryAll({
     filter: 'account_alias=$1',
     filterParams: ['bank1']
-  }).then(results =>
-    results.items.forEach(b => {
-      console.log('Bank 1 balance of ' + b.sumBy.assetAlias + ': ' + b.amount)
-    })
-  )
+  }, (balance, next, done) => {
+    console.log('Bank 1 balance of ' + balance.sumBy.assetAlias + ': ' + balance.amount)
+
+    // next() moves to the next item.
+    // done(err) finishes the loop early, and resolves the promise.
+    next()
+  })
   // endsnippet
 
 ).then(() =>
 
   // snippet usd-iou-circulation
-  client.balances.query({
+  client.balances.queryAll({
     filter: 'asset_alias=$1',
     filterParams: ['bank1UsdIou']
-  }).then(results =>
-    results.items.forEach(b => {
-      console.log('Total circulation of Bank 1 USD IOU: ' + b.amount)
-    })
-  )
+  }, (balance, next, done) => {
+    console.log('Total circulation of Bank 1 USD IOU: ' + balance.amount)
+
+    // next() moves to the next item.
+    // done(err) finishes the loop early, and resolves the promise.
+    next()
+  })
   // endsnippet
 
 ).then(() =>
 
   // snippet account-balance-sum-by-currency
-  client.balances.query({
+  client.balances.queryAll({
     filter: 'account_alias=$1',
     filterParams: ['bank1'],
     sumBy: ['assetDefinition.currency']
-  }).then(results =>
-    results.items.forEach(b => {
-      var denom = b.sumBy['assetDefinition.currency']
-      console.log('Bank 1 balance of ' + denom + '-denominated currencies: ' + b.amount)
-    })
-  )
+  }, (balance, next, done) => {
+    var denom = balance.sumBy['assetDefinition.currency']
+    console.log('Bank 1 balance of ' + denom + '-denominated currencies: ' + balance.amount)
+
+    // next() moves to the next item.
+    // done(err) finishes the loop early, and resolves the promise.
+    next()
+  })
   // endsnippet
 
 ).catch(err =>

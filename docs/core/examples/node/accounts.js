@@ -56,13 +56,12 @@ Promise.all([
   // endsnippet
 ])).then(() =>
   // snippet list-accounts-by-tag
-  client.accounts.query({
+  client.accounts.queryAll({
     filter: 'tags.type=$1',
     filterParams: ['savings'],
-  }).then(response => {
-    response.items.forEach((account) => {
-      console.log('Account ID ' + account.id + ' alias ' + account.alias)
-    })
+  }, (account, next) => {
+    console.log('Account ID ' + account.id + ' alias ' + account.alias)
+    next()
   })
   // endsnippet
 ).then(() =>
@@ -137,35 +136,32 @@ Promise.all([
   )
 }).then(() =>
   // snippet list-account-txs
-  client.transactions.query({
+  client.transactions.queryAll({
     filter: 'inputs(account_alias=$1) AND outputs(account_alias=$1)',
     filterParams: ['alice'],
-  }).then(response => {
-    response.items.forEach((transaction) => {
-      console.log(transaction.id + ' at ' + transaction.timestamp)
-    })
+  }, (transaction, next) => {
+    console.log(transaction.id + ' at ' + transaction.timestamp)
+    next()
   })
   // endsnippet
 ).then(() =>
   // snippet list-account-balances
-  client.balances.query({
+  client.balances.queryAll({
     filter: 'account_alias=$1',
     filterParams: ['alice'],
-  }).then(response => {
-    response.items.forEach((balance) => {
-      console.log("Alice's balance of " + balance.sumBy.assetAlias + ': ' + balance.amount)
-    })
+  }, (balance, next) => {
+    console.log("Alice's balance of " + balance.sumBy.assetAlias + ': ' + balance.amount)
+    next()
   })
   // endsnippet
 ).then(() =>
   // snippet list-account-unspent-outputs
-  client.unspentOutputs.query({
+  client.unspentOutputs.queryAll({
     filter: 'account_alias=$1 AND asset_alias=$2',
     filterParams: ['alice', 'gold'],
-  }).then(response => {
-    response.items.forEach((unspent) => {
-      console.log(unspent.transactionId + ' position ' + unspent.position)
-    })
+  }, (unspent, next) => {
+    console.log(unspent.transactionId + ' position ' + unspent.position)
+    next()
   })
   // endsnippet
 ).catch(err =>
