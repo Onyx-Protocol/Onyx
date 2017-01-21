@@ -2,10 +2,10 @@ package testutil
 
 import "reflect"
 
-// Similar to reflect.DeepEqual, but treats nil and []T{} as equal.
+// DeepEqual is similar to reflect.DeepEqual, but treats
+// nil and []T{} as equal.
 // (Note, it's also a more naive implementation that doesn't detect
 // cycles).
-
 func DeepEqual(x, y interface{}) bool {
 	vx := reflect.ValueOf(x)
 	vy := reflect.ValueOf(y)
