@@ -1,9 +1,10 @@
 package bc
 
 import (
-	"chain/encoding/blockchain"
 	"io"
 	"strconv"
+
+	"chain/encoding/blockchain"
 )
 
 // Outpoint is a raw txhash+index pointer to an output.

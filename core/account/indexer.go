@@ -99,12 +99,12 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	}
 
 	// Delete consumed account UTXOs.
-	deloutputids := prevoutDBKeys(b.Transactions...)
+	delOutputIDs := prevoutDBKeys(b.Transactions...)
 	const delQ = `
 		DELETE FROM account_utxos
 		WHERE output_id IN (SELECT unnest($1::bytea[]))
 	`
-	_, err = m.db.Exec(ctx, delQ, deloutputids)
+	_, err = m.db.Exec(ctx, delQ, delOutputIDs)
 	return errors.Wrap(err, "deleting spent account utxos")
 }
 

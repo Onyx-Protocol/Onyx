@@ -93,10 +93,10 @@ func (a *spendAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) e
 	return nil
 }
 
-func (m *Manager) NewSpendUTXOAction(outputid bc.OutputID) txbuilder.Action {
+func (m *Manager) NewSpendUTXOAction(outputID bc.OutputID) txbuilder.Action {
 	return &spendUTXOAction{
 		accounts: m,
-		OutputID: &outputid,
+		OutputID: &outputID,
 	}
 }
 
