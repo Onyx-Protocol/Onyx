@@ -3,7 +3,6 @@ package account
 import (
 	"bytes"
 	"context"
-	"reflect"
 	"testing"
 
 	"chain/crypto/ed25519/chainkd"
@@ -50,7 +49,7 @@ func TestCreateAccountIdempotency(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	if !reflect.DeepEqual(account1, account2) {
+	if !testutil.DeepEqual(account1, account2) {
 		t.Errorf("got=%#v, want=%#v", account2, account1)
 	}
 }
@@ -126,7 +125,7 @@ func TestFindByID(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	if !reflect.DeepEqual(account.Signer, found) {
+	if !testutil.DeepEqual(account.Signer, found) {
 		t.Errorf("expected found account to be %v, instead found %v", account, found)
 	}
 }
@@ -142,7 +141,7 @@ func TestFindByAlias(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	if !reflect.DeepEqual(account.Signer, found) {
+	if !testutil.DeepEqual(account.Signer, found) {
 		t.Errorf("expected found account to be %v, instead found %v", account, found)
 	}
 }

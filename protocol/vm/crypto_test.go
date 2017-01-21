@@ -2,10 +2,10 @@ package vm
 
 import (
 	"encoding/hex"
-	"reflect"
 	"testing"
 
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 func TestCheckSig(t *testing.T) {
@@ -487,7 +487,7 @@ func TestCryptoOps(t *testing.T) {
 		}
 
 		c.wantVM.sigHasher = c.startVM.sigHasher
-		if !reflect.DeepEqual(c.startVM, c.wantVM) {
+		if !testutil.DeepEqual(c.startVM, c.wantVM) {
 			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, ops[c.op].name, c.startVM, c.wantVM)
 		}
 	}

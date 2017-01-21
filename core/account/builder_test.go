@@ -3,7 +3,6 @@ package account_test
 import (
 	"context"
 	"database/sql"
-	"reflect"
 	"testing"
 
 	"chain/core/account"
@@ -61,7 +60,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	}
 
 	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
-	if !reflect.DeepEqual(tx.Inputs, wantTxIns) {
+	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
 	if len(tx.Outputs) != 1 {
@@ -113,7 +112,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
 
-	if !reflect.DeepEqual(tx.Inputs, wantTxIns) {
+	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
 }
@@ -176,12 +175,12 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		want     = reserveFunc(wantSrc)
 		separate = reserveFunc(separateSrc)
 	)
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("reserve result\ngot:\n\t%+v\nwant:\n\t%+v", got, want)
 	}
 
 	// The third reservation attempt should be distinct and not the same as the first two.
-	if reflect.DeepEqual(separate, want) {
+	if testutil.DeepEqual(separate, want) {
 		t.Errorf("reserve result\ngot:\n\t%+v\ndo not want:\n\t%+v", separate, want)
 	}
 }

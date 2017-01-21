@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+
+	"chain/testutil"
 )
 
 func TestMarshalBlock(t *testing.T) {
@@ -74,7 +75,7 @@ func TestMarshalBlock(t *testing.T) {
 		t.Errorf("unexpected error %s", err)
 	}
 
-	if !reflect.DeepEqual(*b, c) {
+	if !testutil.DeepEqual(*b, c) {
 		t.Errorf("expected marshaled/unmarshaled block to be:\n%sgot:\n%s", spew.Sdump(*b), spew.Sdump(c))
 	}
 

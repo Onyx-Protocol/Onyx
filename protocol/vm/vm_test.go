@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 	"testing/quick"
 
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 type tracebuf struct {
@@ -434,7 +434,7 @@ func TestStep(t *testing.T) {
 			continue
 		}
 
-		if !reflect.DeepEqual(c.startVM, c.wantVM) {
+		if !testutil.DeepEqual(c.startVM, c.wantVM) {
 			t.Errorf("step test %d:\n\tgot vm:  %+v\n\twant vm: %+v", i, c.startVM, c.wantVM)
 		}
 	}

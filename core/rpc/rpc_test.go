@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"reflect"
 	"strings"
 	"testing"
+
+	"chain/testutil"
 )
 
 func TestRPCCallJSON(t *testing.T) {
@@ -41,7 +42,7 @@ func TestRPCCallJSON(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer req.Body.Close()
-		if !reflect.DeepEqual(decodedRequestBody, requestBody) {
+		if !testutil.DeepEqual(decodedRequestBody, requestBody) {
 			t.Errorf("got=%#v; want=%#v", decodedRequestBody, requestBody)
 		}
 
@@ -64,7 +65,7 @@ func TestRPCCallJSON(t *testing.T) {
 	}
 
 	// Ensure that the response is as we expect.
-	if !reflect.DeepEqual(response, map[string]string{"response": "example"}) {
+	if !testutil.DeepEqual(response, map[string]string{"response": "example"}) {
 		t.Errorf(`expected map[string]string{"response": "example"}, got %#v`, response)
 	}
 
@@ -84,7 +85,7 @@ func TestRPCCallError(t *testing.T) {
 	client := &Client{BaseURL: server.URL}
 	wantErr := errStatusCode{URL: server.URL + "/error", StatusCode: 500}
 	err := client.Call(context.Background(), "/error", nil, nil)
-	if !reflect.DeepEqual(wantErr, err) {
+	if !testutil.DeepEqual(wantErr, err) {
 		t.Errorf("got=%#v; want=%#v", err, wantErr)
 	}
 }
