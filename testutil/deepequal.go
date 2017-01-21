@@ -2,10 +2,9 @@ package testutil
 
 import "reflect"
 
-// DeepEqual is similar to reflect.DeepEqual, but treats
-// nil and []T{} as equal.
-// (Note, it's also a more naive implementation that doesn't detect
-// cycles).
+// DeepEqual is similar to reflect.DeepEqual, but treats nil as equal
+// to empty maps and slices.
+// (It's also a more naive implementation that doesn't detect cycles).
 func DeepEqual(x, y interface{}) bool {
 	vx := reflect.ValueOf(x)
 	vy := reflect.ValueOf(y)
@@ -13,7 +12,7 @@ func DeepEqual(x, y interface{}) bool {
 }
 
 func deepValueEqual(x, y reflect.Value) bool {
-	if isNilish(x) && isNilish(y) {
+	if isEmpty(x) && isEmpty(y) {
 		return true
 	}
 	if !x.IsValid() {
@@ -114,7 +113,7 @@ func deepValueEqual(x, y reflect.Value) bool {
 	return false
 }
 
-func isNilish(v reflect.Value) bool {
+func isEmpty(v reflect.Value) bool {
 	if !v.IsValid() {
 		return true
 	}
