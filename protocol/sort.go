@@ -19,7 +19,7 @@ func topSort(txs []*bc.Tx) []*bc.Tx {
 			if in.IsIssuance() {
 				continue
 			}
-			if prev := bc.Hash(in.OutputID()); nodes[prev] != nil {
+			if prev := bc.Hash(in.SpentOutputID()); nodes[prev] != nil {
 				if children[prev] == nil {
 					children[prev] = make([]bc.Hash, 0, 1)
 				}
@@ -70,7 +70,7 @@ func isTopSorted(txs []*bc.Tx) bool {
 			if in.IsIssuance() {
 				continue
 			}
-			h := bc.Hash(in.OutputID())
+			h := bc.Hash(in.SpentOutputID())
 			if exists[h] && !seen[h] {
 				return false
 			}

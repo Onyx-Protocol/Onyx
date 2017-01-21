@@ -208,7 +208,7 @@ func opOutputid(vm *virtualMachine) error {
 		return err
 	}
 
-	outid := txin.OutputID()
+	outid := txin.SpentOutputID()
 
 	return vm.push(outid[:], true)
 }

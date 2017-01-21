@@ -1036,7 +1036,7 @@ func TestConfirmTx(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputID:         outid1,
+							SpentOutputID:    outid1,
 							OutputCommitment: out1,
 						},
 					},

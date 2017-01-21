@@ -3,7 +3,7 @@ package bc
 // SpendInput satisfies the TypedInput interface and represents a spend transaction.
 type SpendInput struct {
 	// Commitment
-	OutputID
+	SpentOutputID OutputID
 	OutputCommitment
 
 	// Witness
@@ -12,7 +12,7 @@ type SpendInput struct {
 
 func (si *SpendInput) IsIssuance() bool { return false }
 
-func NewSpendInput(outid OutputID, arguments [][]byte, assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxInput {
+func NewSpendInput(prevoutID OutputID, arguments [][]byte, assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxInput {
 	const (
 		vmver    = 1
 		assetver = 1
@@ -29,7 +29,7 @@ func NewSpendInput(outid OutputID, arguments [][]byte, assetID AssetID, amount u
 		AssetVersion:  assetver,
 		ReferenceData: referenceData,
 		TypedInput: &SpendInput{
-			OutputID:         outid,
+			SpentOutputID:    prevoutID,
 			OutputCommitment: oc,
 			Arguments:        arguments,
 		},

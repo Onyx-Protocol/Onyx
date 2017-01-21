@@ -123,7 +123,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 			case 1:
 				si = new(SpendInput)
 
-				_, err = si.OutputID.readFrom(r)
+				_, err = si.SpentOutputID.readFrom(r)
 				if err != nil {
 					return err
 				}
@@ -252,7 +252,7 @@ func (t *TxInput) WriteInputCommitment(w io.Writer, serflags uint8) error {
 			if err != nil {
 				return err
 			}
-			_, err = inp.OutputID.WriteTo(w)
+			_, err = inp.SpentOutputID.WriteTo(w)
 			if err != nil {
 				return err
 			}
@@ -310,16 +310,16 @@ func (t *TxInput) witnessHash() (h Hash, err error) {
 	return h, nil
 }
 
-func (t *TxInput) OutputID() (o OutputID) {
+func (t *TxInput) SpentOutputID() (o OutputID) {
 	if si, ok := t.TypedInput.(*SpendInput); ok {
-		o = si.OutputID
+		o = si.SpentOutputID
 	}
 	return o
 }
 
 func (t *TxInput) UnspentID() (u UnspentID) {
 	if si, ok := t.TypedInput.(*SpendInput); ok {
-		u = ComputeUnspentID(si.OutputID, si.OutputCommitment.Hash(t.AssetVersion))
+		u = ComputeUnspentID(si.SpentOutputID, si.OutputCommitment.Hash(t.AssetVersion))
 	}
 	return u
 }

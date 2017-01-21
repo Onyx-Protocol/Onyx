@@ -34,7 +34,7 @@ func Prevout(in *bc.TxInput) *Output {
 	// Also we do not care about all these, but only about UnspentID
 	t := bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, in.ControlProgram(), nil)
 	return &Output{
-		OutputID: in.OutputID(),
+		OutputID: in.SpentOutputID(),
 		TxOutput: *t,
 	}
 }

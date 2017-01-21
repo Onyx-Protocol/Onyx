@@ -124,10 +124,10 @@ func buildAnnotatedInput(orig *bc.TxInput) *AnnotatedInput {
 		in.IssuanceProgram = prog
 	} else {
 		prog := orig.ControlProgram()
-		outid := orig.OutputID()
+		prevoutID := orig.SpentOutputID()
 		in.Type = "spend"
 		in.ControlProgram = prog
-		in.SpentOutputID = outid[:]
+		in.SpentOutputID = prevoutID[:]
 	}
 	return in
 }

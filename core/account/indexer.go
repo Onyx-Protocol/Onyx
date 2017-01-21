@@ -114,7 +114,7 @@ func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
 			if in.IsIssuance() {
 				continue
 			}
-			o := in.OutputID()
+			o := in.SpentOutputID()
 			outputIDs = append(outputIDs, o[:])
 		}
 	}
