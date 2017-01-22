@@ -51,14 +51,14 @@ func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
 	})
 }
 
-type outputWithOutpoint struct {
+type rawOutput struct {
 	state.Output
 	txHash      bc.Hash
 	outputIndex uint32
 }
 
-type output struct {
-	outputWithOutpoint
+type accountOutput struct {
+	rawOutput
 	AccountID string
 	keyIndex  uint64
 }
@@ -72,12 +72,12 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 
 func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	// Upsert any UTXOs belonging to accounts managed by this Core.
-	outs := make([]*outputWithOutpoint, 0, len(b.Transactions))
+	outs := make([]*rawOutput, 0, len(b.Transactions))
 	blockPositions := make(map[bc.Hash]uint32, len(b.Transactions))
 	for i, tx := range b.Transactions {
 		blockPositions[tx.Hash] = uint32(i)
 		for j, out := range tx.Outputs {
-			out := &outputWithOutpoint{
+			out := &rawOutput{
 				Output: state.Output{
 					TxOutput: *out,
 					OutputID: tx.OutputID(j),
@@ -124,8 +124,8 @@ func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
 // loadAccountInfo turns a set of state.Outputs into a set of
 // outputs by adding account annotations.  Outputs that can't be
 // annotated are excluded from the result.
-func (m *Manager) loadAccountInfo(ctx context.Context, outs []*outputWithOutpoint) ([]*output, error) {
-	outsByScript := make(map[string][]*outputWithOutpoint, len(outs))
+func (m *Manager) loadAccountInfo(ctx context.Context, outs []*rawOutput) ([]*accountOutput, error) {
+	outsByScript := make(map[string][]*rawOutput, len(outs))
 	for _, out := range outs {
 		scriptStr := string(out.ControlProgram)
 		outsByScript[scriptStr] = append(outsByScript[scriptStr], out)
@@ -136,7 +136,7 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*outputWithOutpoin
 		scripts = append(scripts, []byte(s))
 	}
 
-	result := make([]*output, 0, len(outs))
+	result := make([]*accountOutput, 0, len(outs))
 
 	const q = `
 		SELECT signer_id, key_index, control_program
@@ -145,10 +145,10 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*outputWithOutpoin
 	`
 	err := pg.ForQueryRows(ctx, m.db, q, scripts, func(accountID string, keyIndex uint64, program []byte) {
 		for _, out := range outsByScript[string(program)] {
-			newOut := &output{
-				outputWithOutpoint: *out,
-				AccountID:          accountID,
-				keyIndex:           keyIndex,
+			newOut := &accountOutput{
+				rawOutput: *out,
+				AccountID: accountID,
+				keyIndex:  keyIndex,
 			}
 			result = append(result, newOut)
 		}
@@ -163,7 +163,7 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*outputWithOutpoin
 // upsertConfirmedAccountOutputs records the account data for confirmed utxos.
 // If the account utxo already exists (because it's from a local tx), the
 // block confirmation data will in the row will be updated.
-func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[bc.Hash]uint32, block *bc.Block) error {
+func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*accountOutput, pos map[bc.Hash]uint32, block *bc.Block) error {
 	var (
 		txHash    pq.ByteaArray
 		index     pg.Uint32s

@@ -23,7 +23,7 @@ func TestLoadAccountInfo(t *testing.T) {
 	to1 := bc.NewTxOutput(bc.AssetID{}, 0, acp, nil)
 	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
 
-	outs := []*outputWithOutpoint{{
+	outs := []*rawOutput{{
 		Output: state.Output{
 			TxOutput: *to1,
 		},
