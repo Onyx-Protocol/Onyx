@@ -193,7 +193,7 @@ func opIndex(vm *virtualMachine) error {
 	return vm.pushInt64(int64(vm.inputIndex), true)
 }
 
-func opOutputid(vm *virtualMachine) error {
+func opOutputID(vm *virtualMachine) error {
 	if vm.tx == nil {
 		return ErrContext
 	}
