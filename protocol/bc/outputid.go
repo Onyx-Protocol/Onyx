@@ -49,7 +49,6 @@ func ComputeUnspentID(oid OutputID, outputHash Hash) (uid UnspentID) {
 }
 
 // WriteTo writes p to w.
-// It assumes w has sticky errors.
 func (outid *OutputID) WriteTo(w io.Writer) (int64, error) {
 	n, err := w.Write(outid[:])
 	return int64(n), err
