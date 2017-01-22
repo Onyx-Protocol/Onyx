@@ -39,16 +39,6 @@ func Prevout(in *bc.TxInput) *Output {
 	}
 }
 
-// OutputKey returns the key of an output in the state tree.
-func OutputKey(o bc.UnspentID) (bkey []byte) {
-	// TODO(oleg): check if we no longer need this buffer writing.
-	return o[:]
-	// var b bytes.Buffer
-	// w := errors.NewWriter(&b) // used to satisfy interfaces
-	// o.WriteTo(w)
-	// return b.Bytes()
-}
-
 func outputBytes(o *Output) []byte {
 	var b bytes.Buffer
 	o.WriteCommitment(&b)
@@ -60,6 +50,6 @@ func outputBytes(o *Output) []byte {
 // into the state tree.
 func OutputTreeItem(o *Output) (bkey, commitment []byte) {
 	// TODO(oleg): replace value with the key, so we can later optimize the tree to become a set.
-	key := OutputKey(o.UnspentID())
+	key := o.UnspentID().Bytes()
 	return key, outputBytes(o)
 }

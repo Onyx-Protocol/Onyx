@@ -13,7 +13,6 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/state"
 	"chain/sync/idempotency"
 )
 
@@ -233,7 +232,7 @@ func (re *reserver) ExpireReservations(ctx context.Context) error {
 
 func (re *reserver) checkUTXO(u *utxo) bool {
 	_, s := re.c.State()
-	return s.Tree.ContainsKey(state.OutputKey(u.UnspentID))
+	return s.Tree.ContainsKey(u.UnspentID.Bytes())
 }
 
 func (re *reserver) source(src source) *sourceReserver {

@@ -14,6 +14,7 @@ type OutputID Hash
 // UnspentID identifies and commits to unspent output.
 type UnspentID Hash
 
+func (o OutputID) Bytes() []byte                 { return Hash(o).Bytes() }
 func (o OutputID) String() string                { return Hash(o).String() }
 func (o OutputID) MarshalText() ([]byte, error)  { return Hash(o).MarshalText() }
 func (o *OutputID) UnmarshalText(b []byte) error { return (*Hash)(o).UnmarshalText(b) }
@@ -31,6 +32,7 @@ func ComputeOutputID(txHash Hash, outputIndex uint32) (oid OutputID) {
 	return oid
 }
 
+func (u UnspentID) Bytes() []byte                 { return Hash(u).Bytes() }
 func (u UnspentID) String() string                { return Hash(u).String() }
 func (u UnspentID) MarshalText() ([]byte, error)  { return Hash(u).MarshalText() }
 func (u *UnspentID) UnmarshalText(b []byte) error { return (*Hash)(u).UnmarshalText(b) }
