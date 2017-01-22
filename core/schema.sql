@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.1
--- Dumped by pg_dump version 9.6.1
+-- Dumped from database version 9.6.0
+-- Dumped by pg_dump version 9.6.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -557,6 +557,14 @@ ALTER TABLE ONLY accounts
 
 
 --
+-- Name: account_utxos account_utxos_output_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY account_utxos
+    ADD CONSTRAINT account_utxos_output_id_key UNIQUE (output_id);
+
+
+--
 -- Name: account_utxos account_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -565,19 +573,11 @@ ALTER TABLE ONLY account_utxos
 
 
 --
--- Name: account_utxos account_utxos_unique_output_id; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: account_utxos account_utxos_unspent_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY account_utxos
-    ADD CONSTRAINT account_utxos_unique_output_id UNIQUE (output_id);
-
-
---
--- Name: account_utxos account_utxos_unique_unspent_id; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY account_utxos
-    ADD CONSTRAINT account_utxos_unique_unspent_id UNIQUE (unspent_id);
+    ADD CONSTRAINT account_utxos_unspent_id_key UNIQUE (unspent_id);
 
 
 --
@@ -605,19 +605,19 @@ ALTER TABLE ONLY annotated_assets
 
 
 --
+-- Name: annotated_outputs annotated_outputs_output_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY annotated_outputs
+    ADD CONSTRAINT annotated_outputs_output_id_key UNIQUE (output_id);
+
+
+--
 -- Name: annotated_outputs annotated_outputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY annotated_outputs
     ADD CONSTRAINT annotated_outputs_pkey PRIMARY KEY (block_height, tx_pos, output_index);
-
-
---
--- Name: annotated_outputs annotated_outputs_unique_output_id; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY annotated_outputs
-    ADD CONSTRAINT annotated_outputs_unique_output_id UNIQUE (output_id);
 
 
 --
@@ -908,4 +908,4 @@ insert into migrations (filename, hash) values ('2017-01-10.0.signers.xpubs-type
 insert into migrations (filename, hash) values ('2017-01-11.0.core.hash-bytea.sql', '9f7f15df3479c38f193884a2d3cb7ae8001ed08607f9cc661fd5c420e248688d');
 insert into migrations (filename, hash) values ('2017-01-13.0.core.asset-definition-bytea.sql', 'f49458c5c8873d919ec35be4683074be0b04913c95f5ab1bf1402aa2b4847cf5');
 insert into migrations (filename, hash) values ('2017-01-19.0.asset.drop-mutable-flag.sql', '7850023d44c545c155c0ee372e7cdfef1859b40221bd94307b836503c26dd3de');
-insert into migrations (filename, hash) values ('2017-01-20.0.core.add-output-id-to-outputs.sql', '6cb5349e69c2bf2a4fff5f60d01ebe7a855a5363fa25edd7e3e0bfb7cdeb0890');
+insert into migrations (filename, hash) values ('2017-01-20.0.core.add-output-id-to-outputs.sql', '4c8531c06e62405d2989e0651a7ef6c2ebd0b2b269b57c179e9e36f7fdbb715b');
