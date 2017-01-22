@@ -127,7 +127,7 @@ func buildAnnotatedInput(orig *bc.TxInput) *AnnotatedInput {
 		prevoutID := orig.SpentOutputID()
 		in.Type = "spend"
 		in.ControlProgram = prog
-		in.SpentOutputID = prevoutID[:]
+		in.SpentOutputID = prevoutID.Bytes()
 	}
 	return in
 }
@@ -139,7 +139,7 @@ func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *Annota
 	}
 	outid := bc.ComputeOutputID(txhash, idx)
 	out := &AnnotatedOutput{
-		OutputID:       outid[:],
+		OutputID:       outid.Bytes(),
 		Position:       idx,
 		AssetID:        orig.AssetID[:],
 		Amount:         orig.Amount,

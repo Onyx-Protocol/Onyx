@@ -210,7 +210,7 @@ func opOutputID(vm *virtualMachine) error {
 
 	outid := txin.SpentOutputID()
 
-	return vm.push(outid[:], true)
+	return vm.push(outid.Bytes(), true)
 }
 
 func opNonce(vm *virtualMachine) error {

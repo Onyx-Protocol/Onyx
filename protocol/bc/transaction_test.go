@@ -152,7 +152,6 @@ func TestTransaction(t *testing.T) {
 			witnessHash: mustDecodeHash("e67dcb04999440a36372ddb7d17f2034967002f465714836c65750ab791c8631"),
 		},
 	}
-
 	for i, test := range cases {
 		got := serialize(t, test.tx)
 		want, _ := hex.DecodeString(test.hex)

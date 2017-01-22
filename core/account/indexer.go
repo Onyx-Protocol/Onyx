@@ -115,7 +115,7 @@ func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
 				continue
 			}
 			o := in.SpentOutputID()
-			outputIDs = append(outputIDs, o[:])
+			outputIDs = append(outputIDs, o.Bytes())
 		}
 	}
 	return
@@ -178,9 +178,8 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 	for _, out := range outs {
 		txHash = append(txHash, out.txHash[:])
 		index = append(index, out.outputIndex)
-		outputID = append(outputID, out.OutputID[:])
-		uid := out.UnspentID()
-		unspentID = append(unspentID, uid[:])
+		outputID = append(outputID, out.OutputID.Bytes())
+		unspentID = append(unspentID, out.UnspentID().Bytes())
 		assetID = append(assetID, out.AssetID[:])
 		amount = append(amount, int64(out.Amount))
 		accountID = append(accountID, out.AccountID)

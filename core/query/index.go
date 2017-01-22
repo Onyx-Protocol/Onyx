@@ -117,7 +117,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		for _, in := range tx.Inputs {
 			if !in.IsIssuance() {
 				prevoutID := in.SpentOutputID()
-				prevoutIDs = append(prevoutIDs, prevoutID[:])
+				prevoutIDs = append(prevoutIDs, prevoutID.Bytes())
 			}
 		}
 
