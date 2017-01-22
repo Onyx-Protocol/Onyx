@@ -119,22 +119,17 @@ type spendUTXOAction struct {
 func (a *spendUTXOAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
 	var outid bc.OutputID
 
-	// This is compatibility layer - legacy apps can spend outputs via the raw <txid:index> pair.
-	// If none of the parameters are provided we need to report that output_id is missing.
-	if a.TxHash != nil || a.TxOut != nil {
-		if a.TxHash == nil {
-			return txbuilder.MissingFieldsError("transaction_id")
-		}
-		if a.TxOut == nil {
-			return txbuilder.MissingFieldsError("position")
-		}
+	if a.OutputID != nil {
+		outid = *a.OutputID
+	} else if a.TxHash != nil && a.TxOut != nil {
+		// This is compatibility layer - legacy apps can spend outputs via the raw <txid:index> pair.
 		outid = bc.ComputeOutputID(*a.TxHash, *a.TxOut)
 	} else {
-		if a.OutputID == nil {
-			return txbuilder.MissingFieldsError("output_id")
-		}
-		outid = *a.OutputID
+		// Note: here we do not attempt to check if txid is present, but position is missing, or vice versa.
+		// Instead, the user has to update their code to use the new API anyway.
+		return txbuilder.MissingFieldsError("output_id")
 	}
+
 	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, outid, a.ClientToken, b.MaxTime())
 	if err != nil {
 		return err
