@@ -3,17 +3,12 @@
   "description": "Enterprise Blockchain",
   "repository": "https://github.com/chain/chain",
   "logo": "http://chain.com/images/chain-logo.04205b59.png",
-  "keywords": [
-    "blockchain",
-    "chain"
-  ],
+  "keywords": ["blockchain", "chain"],
   "success_url": "/dashboard",
   "addons": [
     {
       "plan": "heroku-postgresql",
-      "options": {
-        "version": "9.5"
-      }
+      "options": {"version": "9.5"}
     }
   ],
   "env": {
