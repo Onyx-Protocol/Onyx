@@ -111,7 +111,7 @@ func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, block *bc.Blo
 		// Lookup the prevout in the blockchain state tree.
 		k, val := state.OutputTreeItem(state.Prevout(txin))
 		if !snapshot.Tree.Contains(k, val) {
-			return badTxErrf(errInvalidOutput, "output %s for input %d is invalid", txin.Outpoint().String(), i)
+			return badTxErrf(errInvalidOutput, "output %s for input %d is invalid", txin.SpentOutputID().String(), i)
 		}
 	}
 	return nil
@@ -205,7 +205,7 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 		}
 
 		buf := new(bytes.Buffer)
-		txin.WriteInputCommitment(buf)
+		txin.WriteInputCommitment(buf, bc.SerTxHash)
 		if inp, ok := commitments[string(buf.Bytes())]; ok {
 			return badTxErrf(errDuplicateInput, "input %d is a duplicate of %d", i, inp)
 		}
@@ -277,9 +277,11 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 			continue
 		}
 
+		si := in.TypedInput.(*bc.SpendInput)
+
 		// Remove the consumed output from the state tree.
-		prevoutKey := state.OutputKey(in.Outpoint())
-		err := snapshot.Tree.Delete(prevoutKey)
+		uid := bc.ComputeUnspentID(si.SpentOutputID, si.OutputCommitment.Hash(in.AssetVersion))
+		err := snapshot.Tree.Delete(uid.Bytes())
 		if err != nil {
 			return err
 		}
@@ -290,7 +292,8 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 			continue
 		}
 		// Insert new outputs into the state tree.
-		o := state.NewOutput(*out, bc.Outpoint{Hash: tx.Hash, Index: uint32(i)})
+		o := state.NewOutput(*out, tx.OutputID(i))
+
 		err := snapshot.Tree.Insert(state.OutputTreeItem(o))
 		if err != nil {
 			return err
