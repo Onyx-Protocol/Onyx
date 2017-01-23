@@ -1,5 +1,12 @@
 package bc
 
+import (
+	"io"
+
+	"chain/encoding/blockchain"
+	"chain/errors"
+)
+
 // SpendInput satisfies the TypedInput interface and represents a spend transaction.
 type SpendInput struct {
 	// Commitment
@@ -11,6 +18,29 @@ type SpendInput struct {
 }
 
 func (si *SpendInput) IsIssuance() bool { return false }
+
+func (si *SpendInput) writePrevoutCommitment(w io.Writer, assetVersion uint64) error {
+	return si.OutputCommitment.writeTo(w, assetVersion)
+}
+
+// readCommitment reads a spend input commitment AFTER the leading
+// type byte has been consumed.
+func (si *SpendInput) readCommitment(r io.Reader, txVersion, assetVersion uint64) (err error) {
+	_, err = si.Outpoint.readFrom(r)
+	if err != nil {
+		return errors.Wrap(err, "reading outpoint")
+	}
+	all := txVersion == 1
+	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+		return si.OutputCommitment.readFrom(r, assetVersion)
+	})
+	return errors.Wrap(err, "reading output commitment")
+}
+
+func (si *SpendInput) readWitness(r io.Reader, _ uint64) (err error) {
+	si.Arguments, _, err = blockchain.ReadVarstrList(r)
+	return errors.Wrap(err, "reading input witness")
+}
 
 func NewSpendInput(txhash Hash, index uint32, arguments [][]byte, assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxInput {
 	return &TxInput{

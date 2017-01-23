@@ -45,7 +45,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // outputs count
 				"00"), // reference data
 			hash:        mustDecodeHash("74e60d94a75848b48fc79eac11a1d39f41e1b32046cf948929b729a57b75d5be"),
-			witnessHash: mustDecodeHash("536cef3158d7ea51194b370e02f27265e8584ff4df1cd2829de0074c11f1f1b2"),
+			witnessHash: mustDecodeHash("87f80a62c95421ab5c42b7e2787b472a84856461dd01397f2c37f096f0ef1ab4"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -94,8 +94,8 @@ func TestTransaction(t *testing.T) {
 				"066f7574707574" + // output 0, reference data
 				"00" + // output 0, output witness
 				"0869737375616e6365"), // reference data
-			hash:        mustDecodeHash("946b6c226d88723020ab50665fbb76191639b5f1fd851b35edb729d4b17373cc"),
-			witnessHash: mustDecodeHash("274412cdf972ac27b68e57faf1b8eaeeb148ac45eb4bb6c1ff024d7a846e079c"),
+			hash:        mustDecodeHash("850e3594616012d986280d945f6984011028751cce9ee5837407ccadd8828900"),
+			witnessHash: mustDecodeHash("7e486c88ebf088caa7273bbec6200aa9ff5f2eb8f72f888ef6c6041507fd0d60"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -149,8 +149,8 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 1, reference data
 				"00" + // output 1, output witness
 				"0c646973747269627574696f6e"), // reference data
-			hash:        mustDecodeHash("7af758d0d27a7885cb65243164e2f8084b06aa1a647792cae028926b19324604"),
-			witnessHash: mustDecodeHash("335498668b169b5faea9a87410bc35626654941599815be655d532acf9925286"),
+			hash:        mustDecodeHash("3a83525d8cd2ca46d8fded94d5361d1b7db780d2961384cd9f6629704e55fd4c"),
+			witnessHash: mustDecodeHash("1f4cebf204e5f65bbf522368db7c50c27d8dc286317d2b32171db49787f39546"),
 		},
 	}
 
@@ -163,10 +163,9 @@ func TestTransaction(t *testing.T) {
 		if test.tx.Hash != test.hash {
 			t.Errorf("test %d: hash = %s want %x", i, test.tx.Hash, test.hash)
 		}
-
 		g, err := test.tx.WitnessHash()
 		if err != nil {
-			t.Fatalf("unexpected error %s", err)
+			t.Fatal(err)
 		}
 		if g != test.witnessHash {
 			t.Errorf("test %d: witness hash = %s want %x", i, g, test.witnessHash)
@@ -181,7 +180,7 @@ func TestTransaction(t *testing.T) {
 			t.Errorf("test %d: error unmarshaling tx from json: %s", i, err)
 		}
 		if !reflect.DeepEqual(test.tx, &txFromJSON) {
-			t.Errorf("test %d: bc.Tx -> json -> bc.Tx: got:\n%s\nwant:\n%s", i, spew.Sdump(&txFromJSON), spew.Sdump(test.tx))
+			t.Errorf("test %d: Tx -> json -> Tx: got:\n%s\nwant:\n%s", i, spew.Sdump(&txFromJSON), spew.Sdump(test.tx))
 		}
 
 		tx1 := new(TxData)
@@ -320,8 +319,8 @@ func TestTxHashForSig(t *testing.T) {
 		idx      uint32
 		wantHash string
 	}{
-		{0, "94b72d62d47a8ba581246c0c721b18b36282cf81f2cdb92a3b1ab4fef4640654"},
-		{1, "6bcbf29804ebb70ae9887c4fc343bc06ee69f04befa1dc77ddf2f4a43eff0862"},
+		{0, "ae4a3fc79e690b92b0045abbf6da23d19280a5ad973078260ceaab92cec82e96"},
+		{1, "6471dc8b213b1169c1f9631c514bf55f35815a33e0e718e41b57ce6e2ff7a7f0"},
 	}
 
 	sigHasher := NewSigHasher(tx)
@@ -434,4 +433,9 @@ func BenchmarkOutpointWriteTo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		o.WriteTo(ioutil.Discard)
 	}
+}
+
+func init() {
+	spew.Config.DisableMethods = true
+	spew.Config.DisablePointerMethods = true
 }

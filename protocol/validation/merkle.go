@@ -39,7 +39,6 @@ func CalcMerkleRoot(transactions []*bc.Tx) (root bc.Hash, err error) {
 		if err != nil {
 			return root, err
 		}
-
 		right, err := CalcMerkleRoot(transactions[k:])
 		if err != nil {
 			return root, err

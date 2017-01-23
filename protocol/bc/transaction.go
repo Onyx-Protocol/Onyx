@@ -6,10 +6,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"strconv"
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
+	"chain/encoding/bufpool"
 	"chain/errors"
 )
 
@@ -55,6 +55,43 @@ const (
 	serRequired = 0x7 // we support only this combination of flags
 )
 
+// WitnessHash is the combined hash of the
+// transactions hash and signature data hash.
+// It is used to compute the TxRoot of a block.
+func (tx *Tx) WitnessHash() (hash Hash, err error) {
+	hasher := sha3pool.Get256()
+	defer sha3pool.Put256(hasher)
+
+	hasher.Write(tx.Hash[:])
+
+	cwhash, err := tx.commonWitnessHash()
+	if err != nil {
+		return hash, err
+	}
+	hasher.Write(cwhash[:])
+
+	blockchain.WriteVarint31(hasher, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
+	for _, txin := range tx.Inputs {
+		h, err := txin.witnessHash()
+		if err != nil {
+			return hash, err
+		}
+		hasher.Write(h[:])
+	}
+
+	blockchain.WriteVarint31(hasher, uint64(len(tx.Outputs))) // TODO(bobg): check and return error
+	for _, txout := range tx.Outputs {
+		h, err := txout.witnessHash()
+		if err != nil {
+			return hash, err
+		}
+		hasher.Write(h[:])
+	}
+
+	hasher.Read(hash[:])
+	return hash, nil
+}
+
 // TxData encodes a transaction in the blockchain.
 // Most users will want to use Tx instead;
 // it includes the hash.
@@ -65,13 +102,6 @@ type TxData struct {
 	MinTime       uint64
 	MaxTime       uint64
 	ReferenceData []byte
-}
-
-// Outpoint defines a bitcoin data type that is used to track previous
-// transaction outputs.
-type Outpoint struct {
-	Hash  Hash   `json:"hash"`
-	Index uint32 `json:"index"`
 }
 
 // HasIssuance returns true if this transaction has an issuance input.
@@ -108,6 +138,73 @@ func (tx *TxData) Value() (driver.Value, error) {
 		return nil, err
 	}
 	return b.Bytes(), nil
+}
+
+// WriteTo writes tx to w.
+func (tx *TxData) WriteTo(w io.Writer) (int64, error) {
+	ew := errors.NewWriter(w)
+	tx.writeTo(ew, serRequired)
+	return ew.Written(), ew.Err()
+}
+
+func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
+	_, err := w.Write([]byte{serflags})
+	if err != nil {
+		return errors.Wrap(err, "writing serialization flags")
+	}
+	_, err = blockchain.WriteVarint63(w, tx.Version)
+	if err != nil {
+		return errors.Wrap(err, "writing transaction version")
+	}
+
+	// common fields
+	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+		_, err := blockchain.WriteVarint63(w, tx.MinTime)
+		if err != nil {
+			return errors.Wrap(err, "writing transaction min time")
+		}
+		_, err = blockchain.WriteVarint63(w, tx.MaxTime)
+		return errors.Wrap(err, "writing transaction max time")
+	})
+	if err != nil {
+		return errors.Wrap(err, "writing common fields")
+	}
+
+	// common witness
+	_, err = blockchain.WriteExtensibleString(w, tx.writeCommonWitness)
+	if err != nil {
+		return errors.Wrap(err, "writing common witness")
+	}
+
+	_, err = blockchain.WriteVarint31(w, uint64(len(tx.Inputs)))
+	if err != nil {
+		return errors.Wrap(err, "writing tx input count")
+	}
+	for i, ti := range tx.Inputs {
+		err = ti.writeTo(w, serflags)
+		if err != nil {
+			return errors.Wrapf(err, "writing tx input %d", i)
+		}
+	}
+
+	_, err = blockchain.WriteVarint31(w, uint64(len(tx.Outputs)))
+	if err != nil {
+		return errors.Wrap(err, "writing tx output count")
+	}
+	for i, to := range tx.Outputs {
+		err = to.writeTo(w, serflags)
+		if err != nil {
+			return errors.Wrapf(err, "writing tx output %d", i)
+		}
+	}
+
+	return writeRefData(w, tx.ReferenceData, serflags)
+}
+
+// does not write the enclosing extensible string
+func (tx *TxData) writeCommonWitness(w io.Writer) error {
+	// Future versions of the protocol may add fields here.
+	return nil
 }
 
 func (tx *TxData) readFrom(r io.Reader) error {
@@ -182,14 +279,21 @@ func (tx *TxData) readCommonWitness(r io.Reader) error {
 	return nil
 }
 
-func (p *Outpoint) readFrom(r io.Reader) (int, error) {
-	n1, err := io.ReadFull(r, p.Hash[:])
+func (tx *TxData) commonWitnessHash() (h Hash, err error) {
+	hasher := sha3pool.Get256()
+	defer sha3pool.Put256(hasher)
+
+	buf := bufpool.Get()
+	defer bufpool.Put(buf)
+
+	err = tx.writeCommonWitness(buf)
 	if err != nil {
-		return n1, err
+		return h, err
 	}
-	var n2 int
-	p.Index, n2, err = blockchain.ReadVarint31(r)
-	return n1 + n2, err
+
+	hasher.Write(buf.Bytes())
+	hasher.Read(h[:])
+	return h, nil
 }
 
 // Hash computes the hash of the transaction with reference data fields
@@ -204,59 +308,42 @@ func (tx *TxData) Hash() Hash {
 	return v
 }
 
-// WitnessHash is the combined hash of the
-// transactions hash and signature data hash.
-// It is used to compute the TxRoot of a block.
-func (tx *Tx) WitnessHash() (hash Hash, err error) {
-	hasher := sha3pool.Get256()
-	defer sha3pool.Put256(hasher)
-
-	hasher.Write(tx.Hash[:])
-
-	blockchain.WriteVarint31(hasher, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
-	for _, txin := range tx.Inputs {
-		h, err := txin.witnessHash()
-		if err != nil {
-			return hash, err
-		}
-		hasher.Write(h[:])
-	}
-
-	blockchain.WriteVarint31(hasher, uint64(len(tx.Outputs))) // TODO(bobg): check and return error
-	for _, txout := range tx.Outputs {
-		h := txout.witnessHash()
-		hasher.Write(h[:])
-	}
-
-	hasher.Read(hash[:])
-	return hash, nil
-}
-
 func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 	if n < 0 || n >= len(tx.Inputs) {
 		return h, fmt.Errorf("no input %d", n)
 	}
-	ii, ok := tx.Inputs[n].TypedInput.(*IssuanceInput)
+
+	t := tx.Inputs[n]
+
+	nonce, ok := t.Nonce()
 	if !ok {
 		return h, fmt.Errorf("not an issuance input")
 	}
+
 	buf := sha3pool.Get256()
 	defer sha3pool.Put256(buf)
 
-	_, err = blockchain.WriteVarstr31(buf, ii.Nonce)
+	_, err = blockchain.WriteVarstr31(buf, nonce)
 	if err != nil {
 		return h, err
 	}
-	assetID := ii.AssetID()
-	buf.Write(assetID[:])
+
+	switch inp := t.TypedInput.(type) {
+	case *IssuanceInput:
+		assetID := inp.AssetID()
+		buf.Write(assetID[:])
+	}
+
 	_, err = blockchain.WriteVarint63(buf, tx.MinTime)
 	if err != nil {
 		return h, err
 	}
+
 	_, err = blockchain.WriteVarint63(buf, tx.MaxTime)
 	if err != nil {
 		return h, err
 	}
+
 	buf.Read(h[:])
 	return h, nil
 }
@@ -275,96 +362,9 @@ func (tx *TxData) MarshalText() ([]byte, error) {
 	return b, nil
 }
 
-// WriteTo writes tx to w.
-func (tx *TxData) WriteTo(w io.Writer) (int64, error) {
-	ew := errors.NewWriter(w)
-	err := tx.writeTo(ew, serRequired)
-	if err != nil {
-		return ew.Written(), ew.Err()
-	}
-	return ew.Written(), ew.Err()
-}
-
-func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
-	_, err := w.Write([]byte{serflags})
-	if err != nil {
-		return errors.Wrap(err, "writing serialization flags")
-	}
-
-	_, err = blockchain.WriteVarint63(w, tx.Version)
-	if err != nil {
-		return errors.Wrap(err, "writing transaction version")
-	}
-
-	// common fields
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-		_, err := blockchain.WriteVarint63(w, tx.MinTime)
-		if err != nil {
-			return errors.Wrap(err, "writing transaction min time")
-		}
-		_, err = blockchain.WriteVarint63(w, tx.MaxTime)
-		return errors.Wrap(err, "writing transaction max time")
-	})
-	if err != nil {
-		return errors.Wrap(err, "writing common fields")
-	}
-
-	// common witness
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-		return tx.writeCommonWitness(w)
-	})
-	if err != nil {
-		return errors.Wrap(err, "writing common witness")
-	}
-
-	_, err = blockchain.WriteVarint31(w, uint64(len(tx.Inputs)))
-	if err != nil {
-		return errors.Wrap(err, "writing tx input count")
-	}
-	for i, ti := range tx.Inputs {
-		err = ti.writeTo(w, serflags)
-		if err != nil {
-			return errors.Wrapf(err, "writing tx input %d", i)
-		}
-	}
-
-	_, err = blockchain.WriteVarint31(w, uint64(len(tx.Outputs)))
-	if err != nil {
-		return errors.Wrap(err, "writing tx output count")
-	}
-	for i, to := range tx.Outputs {
-		err = to.writeTo(w, serflags)
-		if err != nil {
-			return errors.Wrapf(err, "writing tx output %d", i)
-		}
-	}
-
-	return writeRefData(w, tx.ReferenceData, serflags)
-}
-
-// does not write the enclosing extensible string
-func (tx *TxData) writeCommonWitness(w io.Writer) error {
-	return nil
-}
-
-// String returns the Outpoint in the human-readable form "hash:index".
-func (p Outpoint) String() string {
-	return p.Hash.String() + ":" + strconv.FormatUint(uint64(p.Index), 10)
-}
-
-// WriteTo writes p to w.
-func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
-	n, err := w.Write(p.Hash[:])
-	if err != nil {
-		return int64(n), err
-	}
-	n2, err := blockchain.WriteVarint31(w, uint64(p.Index))
-	return int64(n + n2), err
-}
-
 func writeRefData(w io.Writer, data []byte, serflags byte) error {
 	if serflags&SerMetadata != 0 {
-		_, err := blockchain.WriteVarstr31(w, data) // TODO(bobg): check and return error
+		_, err := blockchain.WriteVarstr31(w, data)
 		return err
 	}
 	return writeFastHash(w, data)
