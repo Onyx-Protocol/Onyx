@@ -150,52 +150,51 @@ func (tx *TxData) WriteTo(w io.Writer) (int64, error) {
 func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 	_, err := w.Write([]byte{serflags})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "writing serialization flags")
 	}
 	_, err = blockchain.WriteVarint63(w, tx.Version)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "writing transaction version")
 	}
 
+	// common fields
 	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
 		_, err := blockchain.WriteVarint63(w, tx.MinTime)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "writing transaction min time")
 		}
 		_, err = blockchain.WriteVarint63(w, tx.MaxTime)
-		return err
+		return errors.Wrap(err, "writing transaction max time")
 	})
 	if err != nil {
-		return errors.Wrap(err, "reading serialization flags")
+		return errors.Wrap(err, "writing common fields")
 	}
 
 	// common witness
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-		return tx.writeCommonWitness(w)
-	})
+	_, err = blockchain.WriteExtensibleString(w, tx.writeCommonWitness)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "writing common witness")
 	}
 
 	_, err = blockchain.WriteVarint31(w, uint64(len(tx.Inputs)))
 	if err != nil {
-		return errors.Wrap(err, "reading transaction version")
+		return errors.Wrap(err, "writing tx input count")
 	}
-	for _, ti := range tx.Inputs {
+	for i, ti := range tx.Inputs {
 		err = ti.writeTo(w, serflags)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "writing tx input %d", i)
 		}
 	}
 
 	_, err = blockchain.WriteVarint31(w, uint64(len(tx.Outputs)))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "writing tx output count")
 	}
-	for _, to := range tx.Outputs {
+	for i, to := range tx.Outputs {
 		err = to.writeTo(w, serflags)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "writing tx output %d", i)
 		}
 	}
 
@@ -204,6 +203,7 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 
 // does not write the enclosing extensible string
 func (tx *TxData) writeCommonWitness(w io.Writer) error {
+	// Future versions of the protocol may add fields here.
 	return nil
 }
 

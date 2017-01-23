@@ -29,9 +29,7 @@ func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
 	if err != nil {
 		return err
 	}
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-		return t.WriteInputCommitment(w)
-	})
+	_, err = blockchain.WriteExtensibleString(w, t.WriteInputCommitment)
 	if err != nil {
 		return err
 	}
@@ -40,9 +38,7 @@ func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
 		return err
 	}
 	if serflags&SerWitness != 0 {
-		_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-			return t.writeInputWitness(w)
-		})
+		_, err = blockchain.WriteExtensibleString(w, t.writeInputWitness)
 		if err != nil {
 			return err
 		}
@@ -263,28 +259,10 @@ func (t *TxInput) Outpoint() (o Outpoint) {
 	return o
 }
 
-func (t *TxInput) InitialBlock() (blockID Hash, ok bool) {
-	switch inp := t.TypedInput.(type) {
-	case *IssuanceInput:
-		return inp.InitialBlock, true
-	}
-	return blockID, false
-}
-
 func (t *TxInput) Nonce() ([]byte, bool) {
 	switch inp := t.TypedInput.(type) {
 	case *IssuanceInput:
 		return inp.Nonce, true
 	}
 	return nil, false
-}
-
-func (t *TxInput) VMVer() uint64 {
-	switch inp := t.TypedInput.(type) {
-	case *IssuanceInput:
-		return inp.VMVersion
-	case *SpendInput:
-		return inp.VMVersion
-	}
-	return 0
 }

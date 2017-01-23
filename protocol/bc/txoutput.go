@@ -114,6 +114,7 @@ func (to *TxOutput) witnessHash() (hash Hash, err error) {
 
 // does not write the enclosing extensible string
 func (to *TxOutput) writeWitness(w io.Writer) error {
+	// Future versions of the protocol may add fields here.
 	return nil
 }
 
