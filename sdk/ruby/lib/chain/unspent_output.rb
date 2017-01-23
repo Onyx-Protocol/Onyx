@@ -13,6 +13,10 @@ module Chain
     # @return [String]
     attrib :purpose
 
+    # @!attribute [r] output_id
+    # @return [String]
+    attrib :output_id
+
     # @!attribute [r] transaction_id
     # @return [String]
     attrib :transaction_id
