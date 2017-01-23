@@ -3,22 +3,25 @@ package state
 import (
 	"bytes"
 
-	"chain/errors"
 	"chain/protocol/bc"
 )
 
 // Output represents a spent or unspent output
 // for the validation process.
 type Output struct {
-	bc.Outpoint
+	bc.OutputID
 	bc.TxOutput
 }
 
+func (o *Output) UnspentID() bc.UnspentID {
+	return bc.ComputeUnspentID(o.OutputID, o.TxOutput.CommitmentHash())
+}
+
 // NewOutput creates a new Output.
-func NewOutput(o bc.TxOutput, p bc.Outpoint) *Output {
+func NewOutput(o bc.TxOutput, outid bc.OutputID) *Output {
 	return &Output{
 		TxOutput: o,
-		Outpoint: p,
+		OutputID: outid,
 	}
 }
 
@@ -27,19 +30,13 @@ func NewOutput(o bc.TxOutput, p bc.Outpoint) *Output {
 // excludes reference data).
 func Prevout(in *bc.TxInput) *Output {
 	assetAmount := in.AssetAmount()
+	// TODO(oleg): for new outputid we need to have correct output commitment, not reconstruct this here
+	// Also we do not care about all these, but only about UnspentID
 	t := bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, in.ControlProgram(), nil)
 	return &Output{
-		Outpoint: in.Outpoint(),
+		OutputID: in.SpentOutputID(),
 		TxOutput: *t,
 	}
-}
-
-// OutputKey returns the key of an output in the state tree.
-func OutputKey(o bc.Outpoint) (bkey []byte) {
-	var b bytes.Buffer
-	w := errors.NewWriter(&b) // used to satisfy interfaces
-	o.WriteTo(w)
-	return b.Bytes()
 }
 
 func outputBytes(o *Output) []byte {
@@ -52,5 +49,7 @@ func outputBytes(o *Output) []byte {
 // as well as the output commitment (a second []byte) for Inserts
 // into the state tree.
 func OutputTreeItem(o *Output) (bkey, commitment []byte) {
-	return OutputKey(o.Outpoint), outputBytes(o)
+	// TODO(oleg): replace value with the key, so we can later optimize the tree to become a set.
+	key := o.UnspentID().Bytes()
+	return key, outputBytes(o)
 }

@@ -102,7 +102,7 @@ public class TransactionTest {
     assertNull(input.accountAlias);
     assertNull(input.accountTags);
     assertEquals("yes", input.isLocal);
-    assertNull(input.spentOutput);
+    assertNull(input.spentOutputId);
     assertNotNull(input.issuanceProgram);
     assertNotNull(input.referenceData);
 
@@ -152,9 +152,7 @@ public class TransactionTest {
     assertTrue(tx.inputs.size() > 0);
 
     input = tx.inputs.get(0);
-    assertNotNull(input.spentOutput);
-    assertNotNull(input.spentOutput.position);
-    assertNotNull(input.spentOutput.transactionId);
+    assertNotNull(input.spentOutputId);
 
     Transaction.Template retirement =
         new Transaction.Builder()
@@ -522,9 +520,7 @@ public class TransactionTest {
     Transaction.Template spending =
         new Transaction.Builder()
             .addAction(
-                new Transaction.Action.SpendAccountUnspentOutput()
-                    .setPosition(output.position)
-                    .setTransactionId(resp.id))
+                new Transaction.Action.SpendAccountUnspentOutput().setOutputId(output.outputId))
             .addAction(
                 new Transaction.Action.ControlWithAccount()
                     .setAccountAlias(bob)

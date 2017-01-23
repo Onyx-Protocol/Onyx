@@ -65,7 +65,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 	}
 
 	return state.Output{
-		Outpoint: bc.Outpoint{Hash: tpl.Transaction.Hash(), Index: 0},
+		OutputID: tpl.Transaction.OutputID(0),
 		TxOutput: *tpl.Transaction.Outputs[0],
 	}
 }

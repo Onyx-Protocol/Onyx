@@ -70,6 +70,10 @@ func (h *Hash) UnmarshalJSON(b []byte) error {
 	return h.UnmarshalText([]byte(*s))
 }
 
+func (h Hash) Bytes() []byte {
+	return h[:]
+}
+
 // Value satisfies the driver.Valuer interface
 func (h Hash) Value() (driver.Value, error) {
 	return h[:], nil

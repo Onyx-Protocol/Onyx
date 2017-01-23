@@ -43,12 +43,12 @@ func TestOutputsAfter(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	_, err := db.Exec(ctx, `
-		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, data, timespan)
+		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, output_id, data, timespan)
 		VALUES
-			(1, 0, 0, 'ab', '{"account_id": "abc"}', int8range(1, 100)),
-			(1, 1, 0, 'cd', '{"account_id": "abc"}', int8range(1, 100)),
-			(1, 1, 1, 'cd', '{"account_id": "abc"}', int8range(1, 100)),
-			(2, 0, 0, 'ef', '{"account_id": "abc"}', int8range(10, 50));
+			(1, 0, 0, 'ab', 'o1', '{"account_id": "abc"}', int8range(1, 100)),
+			(1, 1, 0, 'cd', 'o2', '{"account_id": "abc"}', int8range(1, 100)),
+			(1, 1, 1, 'cd', 'o3', '{"account_id": "abc"}', int8range(1, 100)),
+			(2, 0, 0, 'ef', 'o4', '{"account_id": "abc"}', int8range(10, 50));
 	`)
 	if err != nil {
 		t.Fatal(err)

@@ -41,6 +41,7 @@ Given the following unspent output in Alice's account:
 
 ```
 {
+  "output_id": "997de5f311df2828d64a62cda16425c2a957fd386ca2e332467c9a1ef98202cd",
   "transaction_id": "ad8e8aa37b0969ec60151674c821f819371152156782f107ed49724b8edd7b24",
   "position": 1,
   "asset_id": "d02e4a4c3b260ae47ba67278ef841bbad6903bda3bd307bee2843246dae07a2d",
@@ -62,6 +63,7 @@ Given the following unspent output in Alice's account:
 
 ```
 {
+  "output_id": "997de5f311df2828d64a62cda16425c2a957fd386ca2e332467c9a1ef98202cd",
   "transaction_id": "ad8e8aa37b0969ec60151674c821f819371152156782f107ed49724b8edd7b24",
   "position": 1,
   "asset_id": "d02e4a4c3b260ae47ba67278ef841bbad6903bda3bd307bee2843246dae07a2d",

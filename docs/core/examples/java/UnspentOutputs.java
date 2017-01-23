@@ -72,6 +72,8 @@ class UnspentOutputs {
     }
     // endsnippet
 
+    // TODO: update API to include output IDs into Transaction.SubmitResponse, not just txid.
+    //       Or have a client-side helper to compute OutputID from (txid,position) pair.
     String prevTransactionId = issuanceTx.id;
 
     // snippet build-transaction-all
