@@ -253,7 +253,7 @@ func (t *TxInput) WriteInputCommitment(w io.Writer) error {
 			if err != nil {
 				return err
 			}
-			err = inp.OutputCommitment.writeTo(w, t.AssetVersion)
+			err = inp.OutputCommitment.writeExtensibleString(w, t.AssetVersion)
 			return err
 		}
 	}

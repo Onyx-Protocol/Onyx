@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"chain/encoding/blockchain"
-	"chain/encoding/bufpool"
 	"chain/errors"
 )
 
@@ -17,27 +16,29 @@ type OutputCommitment struct {
 	ControlProgram []byte
 }
 
-func (oc *OutputCommitment) writeTo(w io.Writer, assetVersion uint64) (err error) {
-	b := bufpool.Get()
-	defer bufpool.Put(b)
+func (oc *OutputCommitment) writeExtensibleString(w io.Writer, assetVersion uint64) error {
+	_, err := blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+		return oc.writeContents(w, assetVersion)
+	})
+	return err
+}
+
+func (oc *OutputCommitment) writeContents(w io.Writer, assetVersion uint64) error {
 	if assetVersion == 1 {
-		err = oc.AssetAmount.writeTo(b)
+		err := oc.AssetAmount.writeTo(w)
 		if err != nil {
 			return errors.Wrap(err, "writing asset amount")
 		}
-
-		_, err = blockchain.WriteVarint63(b, oc.VMVersion)
+		_, err = blockchain.WriteVarint63(w, oc.VMVersion)
 		if err != nil {
 			return errors.Wrap(err, "writing vm version")
 		}
-		_, err = blockchain.WriteVarstr31(b, oc.ControlProgram)
+		_, err = blockchain.WriteVarstr31(w, oc.ControlProgram)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "writing control program")
 		}
 	}
-
-	_, err = blockchain.WriteVarstr31(w, b.Bytes())
-	return errors.Wrap(err, "writing control program")
+	return nil
 }
 
 func (oc *OutputCommitment) readFrom(r io.Reader, txVersion, assetVersion uint64) (n int, err error) {
