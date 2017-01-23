@@ -21,11 +21,11 @@ For most applications, you can simply add the following to your `Gemfile`:
 gem 'chain-sdk', '~> 1.0.0', require: 'chain'
 ```
 
-## JavaScript
+## Node.js
 
-The Chain Node SDK is available [via NPM](https://www.npmjs.com/package/chain-sdk). Make sure to use the most recent version whose major and minor components (major.minor.x) match your version of Chain Core. Node 4 or greater is required.
+The Chain Node.js SDK is available [via npm](https://www.npmjs.com/package/chain-sdk). Make sure to use the most recent version whose major and minor components (major.minor.x) match your version of Chain Core. Node 4 or greater is required.
 
-For most applications, you can simply add Chain to your package.json with the following command:
+For most applications, you can simply add Chain to your `package.json` with the following command:
 
 ```
 npm install --save chain-sdk@1.0.0
