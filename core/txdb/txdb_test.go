@@ -2,7 +2,6 @@ package txdb
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"chain/database/pg/pgtest"
@@ -51,7 +50,7 @@ func TestGetBlock(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("latest block:\ngot:  %+v\nwant: %+v", got, want)
 	}
 }
@@ -83,7 +82,7 @@ func TestInsertBlock(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	if !reflect.DeepEqual(got, blk) {
+	if !testutil.DeepEqual(got, blk) {
 		t.Errorf("got %#v, wanted %#v", got, blk)
 	}
 }

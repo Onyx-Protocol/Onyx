@@ -2,7 +2,6 @@ package mockhsm
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -10,6 +9,7 @@ import (
 	"chain/crypto/ed25519"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/testutil"
 )
 
 func TestMockHSMChainKDKeys(t *testing.T) {
@@ -103,7 +103,7 @@ func TestKeyWithAlias(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(xpubs[0], xpub) {
+	if !testutil.DeepEqual(xpubs[0], xpub) {
 		t.Fatalf("expected to get %v instead got %v", spew.Sdump(xpub), spew.Sdump(xpubs[0]))
 	}
 
@@ -117,7 +117,7 @@ func TestKeyWithAlias(t *testing.T) {
 		t.Fatalf("list keys with matching filter expected to get 1 instead got %v", len(xpubs))
 	}
 
-	if !reflect.DeepEqual(xpubs[0], xpub) {
+	if !testutil.DeepEqual(xpubs[0], xpub) {
 		t.Fatalf("expected to get %v instead got %v", spew.Sdump(xpub), spew.Sdump(xpubs[0]))
 	}
 

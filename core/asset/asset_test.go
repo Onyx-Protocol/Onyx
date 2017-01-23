@@ -3,7 +3,6 @@ package asset
 import (
 	"bytes"
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -55,7 +54,7 @@ func TestDefineAssetIdempotency(t *testing.T) {
 	}
 
 	// asset0 and asset1 should be exactly the same because they use the same client token
-	if !reflect.DeepEqual(asset0, asset1) {
+	if !testutil.DeepEqual(asset0, asset1) {
 		t.Errorf("expected assets to match:\n\n%+v\n\n-----------\n\n%+v", spew.Sdump(asset0), spew.Sdump(asset1))
 	}
 }
@@ -73,7 +72,7 @@ func TestFindAssetByID(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	if !reflect.DeepEqual(asset, found) {
+	if !testutil.DeepEqual(asset, found) {
 		t.Errorf("expected %v and %v to match", asset, found)
 	}
 }

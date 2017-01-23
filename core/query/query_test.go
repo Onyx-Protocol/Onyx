@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
-	"reflect"
 	"testing"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
+	"chain/testutil"
 )
 
 func setupQueryTest(t *testing.T) (context.Context, *query.Indexer, time.Time, time.Time, string, string, bc.AssetID, bc.AssetID) {
@@ -318,7 +318,7 @@ func TestQueryBalances(t *testing.T) {
 		}
 
 		got := jsonRT(t, balances)
-		if !reflect.DeepEqual(got, want) {
+		if !testutil.DeepEqual(got, want) {
 			t.Errorf("case %d: got:\n%s\nwant:\n%s", i, spew.Sdump(balances), spew.Sdump(tc.want))
 		}
 	}
@@ -327,7 +327,7 @@ func TestQueryBalances(t *testing.T) {
 // jsonRT does a JSON round trip -- it marshals v
 // then unmarshals the resutling JSON into an interface{}.
 // This normalizes the types so it can be more easily compared
-// with reflect.DeepEqual.
+// with testutil.DeepEqual.
 func jsonRT(tb testing.TB, v interface{}) interface{} {
 	b, err := json.Marshal(v)
 	if err != nil {

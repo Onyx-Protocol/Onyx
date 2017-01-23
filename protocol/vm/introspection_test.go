@@ -1,10 +1,10 @@
 package vm
 
 import (
-	"reflect"
 	"testing"
 
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 func TestNextProgram(t *testing.T) {
@@ -105,7 +105,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedStack := [][]byte{zeroHash[:], []byte{}}
-	if !reflect.DeepEqual(vm.dataStack, expectedStack) {
+	if !testutil.DeepEqual(vm.dataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
 	}
 
@@ -141,7 +141,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedStack = [][]byte{nonce}
-	if !reflect.DeepEqual(vm.dataStack, expectedStack) {
+	if !testutil.DeepEqual(vm.dataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
 	}
 }
@@ -520,7 +520,7 @@ func TestIntrospectionOps(t *testing.T) {
 		c.wantVM.pc = 1
 		c.wantVM.nextPC = 1
 		c.wantVM.sigHasher = c.startVM.sigHasher
-		if !reflect.DeepEqual(vm, c.wantVM) {
+		if !testutil.DeepEqual(vm, c.wantVM) {
 			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, ops[c.op].name, c.startVM, c.wantVM)
 		}
 	}

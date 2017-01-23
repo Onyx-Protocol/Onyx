@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"chain/database/pg/pgtest"
@@ -34,7 +33,7 @@ func TestLoadAccountInfo(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	if !reflect.DeepEqual(got[0].AccountID, acc.ID) {
+	if !testutil.DeepEqual(got[0].AccountID, acc.ID) {
 		t.Errorf("got account = %+v want %+v", got[0].AccountID, acc.ID)
 	}
 }

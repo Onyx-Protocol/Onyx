@@ -1,10 +1,10 @@
 package query
 
 import (
-	"reflect"
 	"testing"
 
 	"chain/core/query/filter"
+	"chain/testutil"
 )
 
 func TestConstructBalancesQuery(t *testing.T) {
@@ -66,7 +66,7 @@ func TestConstructBalancesQuery(t *testing.T) {
 		if query != tc.wantQuery {
 			t.Errorf("case %d: got\n%s\nwant\n%s", i, query, tc.wantQuery)
 		}
-		if !reflect.DeepEqual(values, tc.wantValues) {
+		if !testutil.DeepEqual(values, tc.wantValues) {
 			t.Errorf("case %d: got %#v, want %#v", i, values, tc.wantValues)
 		}
 	}

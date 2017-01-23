@@ -3,7 +3,6 @@ package asset
 import (
 	"context"
 	"encoding/json"
-	"reflect"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -71,7 +70,7 @@ func TestAnnotateTxs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(txs, want) {
+	if !testutil.DeepEqual(txs, want) {
 		t.Errorf("got:\n%s\nwant:\n%s", spew.Sdump(txs), spew.Sdump(want))
 	}
 }

@@ -2,12 +2,12 @@ package txfeed
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"chain/core/query/filter"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/testutil"
 )
 
 func TestInsertTxFeed(t *testing.T) {
@@ -59,7 +59,7 @@ func TestInsertTxFeedRepeatToken(t *testing.T) {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	if !reflect.DeepEqual(result0, result1) {
+	if !testutil.DeepEqual(result0, result1) {
 		t.Errorf("expected requests with matching tokens to yield matching results, instead got result0=%+v and result1=%+v",
 			result0, result1)
 	}

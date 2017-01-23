@@ -2,7 +2,6 @@ package query
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 func TestDecodeOutputsAfter(t *testing.T) {
@@ -30,7 +30,7 @@ func TestDecodeOutputsAfter(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if !reflect.DeepEqual(decoded, &tc.cur) {
+		if !testutil.DeepEqual(decoded, &tc.cur) {
 			t.Errorf("got %#v, want %#v", decoded, &tc.cur)
 		}
 		if decoded.String() != tc.str {
@@ -130,7 +130,7 @@ func TestConstructOutputsQuery(t *testing.T) {
 		if query != tc.wantQuery {
 			t.Errorf("case %d: got %s want %s", i, query, tc.wantQuery)
 		}
-		if !reflect.DeepEqual(values, tc.wantValues) {
+		if !testutil.DeepEqual(values, tc.wantValues) {
 			t.Errorf("case %d: got %#v, want %#v", i, values, tc.wantValues)
 		}
 	}

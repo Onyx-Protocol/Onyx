@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 func BenchmarkInserts(b *testing.B) {
@@ -138,7 +138,7 @@ func TestLookup(t *testing.T) {
 		root: &node{key: bools("11111111"), hash: &hashes[0], isLeaf: true},
 	}
 	got := tr.lookup(tr.root, bitKey(bits("11111111")))
-	if !reflect.DeepEqual(got, tr.root) {
+	if !testutil.DeepEqual(got, tr.root) {
 		t.Log("lookup on 1-node tree")
 		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root, 0))
 	}
@@ -163,7 +163,7 @@ func TestLookup(t *testing.T) {
 		},
 	}
 	got = tr.lookup(tr.root, bitKey(bits("11110000")))
-	if !reflect.DeepEqual(got, tr.root.children[0]) {
+	if !testutil.DeepEqual(got, tr.root.children[0]) {
 		t.Log("lookup root's first child")
 		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root.children[0], 0))
 	}
@@ -186,7 +186,7 @@ func TestLookup(t *testing.T) {
 		},
 	}
 	got = tr.lookup(tr.root, bitKey(bits("11111100")))
-	if !reflect.DeepEqual(got, tr.root.children[1].children[0]) {
+	if !testutil.DeepEqual(got, tr.root.children[1].children[0]) {
 		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root.children[1].children[0], 0))
 	}
 }
@@ -230,7 +230,7 @@ func TestInsert(t *testing.T) {
 	want := &Tree{
 		root: &node{key: bools("11111111"), hash: &hashes[0], isLeaf: true},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		log.Printf("want hash? %s", hashes[0])
 		t.Log("insert into empty tree")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
@@ -241,7 +241,7 @@ func TestInsert(t *testing.T) {
 	want = &Tree{
 		root: &node{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Log("inserting the same key updates the value, does not add a new node")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
@@ -258,7 +258,7 @@ func TestInsert(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Log("different key creates a fork")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
@@ -282,7 +282,7 @@ func TestInsert(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
@@ -312,7 +312,7 @@ func TestInsert(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Log("a fork is created for each level of similar key")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
@@ -350,7 +350,7 @@ func TestInsert(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Log("compressed branch node is split")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
@@ -401,7 +401,7 @@ func TestDelete(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
@@ -417,13 +417,13 @@ func TestDelete(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Delete(bits("11110011"))
 	tr.RootHash()
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
@@ -432,14 +432,14 @@ func TestDelete(t *testing.T) {
 	want = &Tree{
 		root: &node{key: bools("11111111"), hash: &hashes[3], isLeaf: true},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Delete(bits("11111111"))
 	tr.RootHash()
 	want = &Tree{}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 }
@@ -462,7 +462,7 @@ func TestBoolKey(t *testing.T) {
 	for _, c := range cases {
 		g := bitKey(c.b)
 
-		if !reflect.DeepEqual(g, c.w) {
+		if !testutil.DeepEqual(g, c.w) {
 			t.Errorf("Key(0x%x) = %v want %v", c.b, g, c.w)
 		}
 	}
@@ -489,7 +489,7 @@ func TestByteKey(t *testing.T) {
 	for _, c := range cases {
 		g := byteKey(c.b)
 
-		if !reflect.DeepEqual(g, c.w) {
+		if !testutil.DeepEqual(g, c.w) {
 			t.Errorf("byteKey(%#v) = %x want %x", c.b, g, c.w)
 		}
 	}
