@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"strconv"
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
@@ -52,6 +51,7 @@ const (
 
 	// Bit mask for accepted serialization flags.
 	// All other flag bits must be 0.
+	SerTxHash   = 0x0 // this is used only for computing transaction hash - prevout and refdata are replaced with their hashes
 	SerValid    = 0x7
 	serRequired = 0x7 // we support only this combination of flags
 )
@@ -75,13 +75,6 @@ type TxData struct {
 	CommonWitnessSuffix []byte
 
 	ReferenceData []byte
-}
-
-// Outpoint defines a bitcoin data type that is used to track previous
-// transaction outputs.
-type Outpoint struct {
-	Hash  Hash   `json:"hash"`
-	Index uint32 `json:"index"`
 }
 
 // HasIssuance returns true if this transaction has an issuance input.
@@ -189,22 +182,12 @@ func (tx *TxData) readCommonWitness(r io.Reader) error {
 	return nil
 }
 
-func (p *Outpoint) readFrom(r io.Reader) (int, error) {
-	n1, err := io.ReadFull(r, p.Hash[:])
-	if err != nil {
-		return n1, err
-	}
-	var n2 int
-	p.Index, n2, err = blockchain.ReadVarint31(r)
-	return n1 + n2, err
-}
-
 // Hash computes the hash of the transaction with reference data fields
 // replaced by their hashes,
 // and stores the result in Hash.
 func (tx *TxData) Hash() Hash {
 	h := sha3pool.Get256()
-	tx.writeTo(h, 0) // error is impossible
+	tx.writeTo(h, SerTxHash) // error is impossible
 	var v Hash
 	h.Read(v[:])
 	sha3pool.Put256(h)
@@ -297,6 +280,14 @@ func (tx *TxData) HashForSig(idx uint32) Hash {
 	return NewSigHasher(tx).Hash(idx)
 }
 
+func (tx *Tx) OutputID(outputIndex int) OutputID {
+	return ComputeOutputID(tx.Hash, uint32(outputIndex))
+}
+
+func (tx *TxData) OutputID(outputIndex int) OutputID {
+	return ComputeOutputID(tx.Hash(), uint32(outputIndex))
+}
+
 func (tx *TxData) MarshalText() ([]byte, error) {
 	var buf bytes.Buffer
 	tx.WriteTo(&buf) // error is impossible
@@ -376,21 +367,7 @@ func (tx *TxData) writeCommonWitness(w io.Writer) error {
 	return nil
 }
 
-// String returns the Outpoint in the human-readable form "hash:index".
-func (p Outpoint) String() string {
-	return p.Hash.String() + ":" + strconv.FormatUint(uint64(p.Index), 10)
-}
-
-// WriteTo writes p to w.
-func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
-	n, err := w.Write(p.Hash[:])
-	if err != nil {
-		return int64(n), err
-	}
-	n2, err := blockchain.WriteVarint31(w, uint64(p.Index))
-	return int64(n + n2), err
-}
-
+// assumes w has sticky errors
 func writeRefData(w io.Writer, data []byte, serflags byte) error {
 	if serflags&SerMetadata != 0 {
 		_, err := blockchain.WriteVarstr31(w, data) // TODO(bobg): check and return error
