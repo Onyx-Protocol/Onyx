@@ -2,7 +2,6 @@ package txdb
 
 import (
 	"context"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 
@@ -14,8 +13,6 @@ import (
 	"chain/protocol/patricia"
 	"chain/protocol/state"
 )
-
-const maxSnapshotAge = 24 * time.Hour
 
 // DecodeSnapshot decodes a snapshot from the Chain Core's binary,
 // protobuf representation of the snapshot.
@@ -85,8 +82,8 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 		return errors.Wrap(err, "writing state snapshot to database")
 	}
 
-	const deleteQ = `DELETE FROM snapshots WHERE timestamp < $1`
-	_, err = db.Exec(ctx, deleteQ, time.Now().Add(-maxSnapshotAge))
+	const deleteQ = `DELETE FROM snapshots WHERE timestamp < NOW() - INTERVAL '24 hours'`
+	_, err = db.Exec(ctx, deleteQ)
 	return errors.Wrap(err, "deleting old snapshots")
 }
 
