@@ -356,24 +356,23 @@ Fails execution unconditionally.
 
 Code  | Stack Diagram            | Cost
 ------|--------------------------|----------------------------
-0xc0  | (n predicate limit → q)  | 256 + limit; [standard memory cost](#standard-memory-cost) – 256 + 64 – leftover
+0xc0  | (n predicate → q)        | remaining run limit; [standard memory cost](#standard-memory-cost) – 256 + 64 – leftover
 
 If the remaining run limit is less than 256, execution fails immediately.
 
-1. Pops 3 items from the data stack: `limit`, `predicate` and `n`.
-2. Coerces `limit` to an [integer](#vm-number).
-3. Coerces `n` to an [integer](#vm-number).
-4. If `limit` equals zero, sets it to the VM's remaining run limit minus 256.
-5. Reduces VM’s run limit by `256 + limit`.
-6. Instantiates a new VM instance (“child VM”) with its run limit set to `limit`.
-7. Moves the top `n` items from the parent VM’s data stack to the child VM’s data stack without incurring run limit refund or charge of their [standard memory cost](#standard-memory-cost) in either VM. The order of the moved items is unchanged. The memory cost of these items will be refunded when the child VM pops them, or when the child VM is destroyed and its parent VM is refunded.
-8. Child VM evaluates the predicate and pushes `true` to the parent VM data stack if the evaluation did not fail and the child VM’s data stack is non-empty with a `true` value on top (this implements the same semantics as for the top-level [verify predicate](#verify-predicate) operation). It pushes `false` otherwise. Note that the parent VM does not fail when the child VM exhausts its run limit or otherwise fails.
-9. After the child VM finishes execution (normally or due to a failure), the parent VM’s run limit is refunded with a `leftover` value computed as a sum of the following values:
+1. Pops 2 items from the data stack: `predicate` and `n`.
+2. Coerces `n` to an [integer](#vm-number).
+3. Sets `limit` to the VM's remaining run limit minus 256.
+4. Sets VM’s run limit to zero.
+5. Instantiates a new VM instance (“child VM”) with its run limit set to `limit`.
+6. Moves the top `n` items from the parent VM’s data stack to the child VM’s data stack without incurring run limit refund or charge of their [standard memory cost](#standard-memory-cost) in either VM. The order of the moved items is unchanged. The memory cost of these items will be refunded when the child VM pops them, or when the child VM is destroyed and its parent VM is refunded.
+7. Child VM evaluates the predicate and pushes `true` to the parent VM data stack if the evaluation did not fail and the child VM’s data stack is non-empty with a `true` value on top (this implements the same semantics as for the top-level [verify predicate](#verify-predicate) operation). It pushes `false` otherwise. Note that the parent VM does not fail when the child VM exhausts its run limit or otherwise fails.
+8. After the child VM finishes execution (normally or due to a failure), the parent VM’s run limit is refunded with a `leftover` value computed as a sum of the following values:
     1. Remaining run limit of the child VM.
     2. [Standard memory cost](#standard-memory-cost) of all items left on the child VM’s data stack.
     3. [Standard memory cost](#standard-memory-cost) of all items left on the child VM’s alt stack.
-10. The total post-execution cost is then calculated as a sum of the following values:
-    1. Refund of the [standard memory cost](#standard-memory-cost) of the top three items on the parent’s data stack (`limit`, `predicate`, `n`).
+9. The total post-execution cost is then calculated as a sum of the following values:
+    1. Refund of the [standard memory cost](#standard-memory-cost) of the top two items on the parent’s data stack (`predicate`, `n`).
     2. –256 (refunds cost of allocating memory for the child VM).
     3. +64 (cost of creating the child VM).
     4. `–leftover` (refund for the unused run limit and released memory within the child VM).
@@ -381,10 +380,8 @@ If the remaining run limit is less than 256, execution fails immediately.
 Failure conditions:
 
 * `n` is not a non-negative [number](#vm-number), or
-* there are less than `n+3` items on the data stack (including `n`, `predicate`, `limit`), or
-* `limit` is not a non-negative [number](#vm-number), or
-* the run limit is less than 256, or
-* the run limit is less than `256+limit`.
+* there are less than `n+2` items on the data stack (including `n` and `predicate`), or
+* the run limit is less than 256.
 
 
 ### Stack control operators
