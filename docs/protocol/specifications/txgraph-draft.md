@@ -104,7 +104,7 @@ See [ExtensibleStruct](#extensiblestruct) description below.
         reference_data: ReferenceData
         asset_id
         amount
-        control_predicate: Predicate
+        control_program: Program
         ext_hash: Hash256
     - witness:
         ext_hash: Hash256
@@ -116,9 +116,6 @@ See [ExtensibleStruct](#extensiblestruct) description below.
 3. `source.destinations[position]` must equal self.id.
 4. if tx version is known, all `ext_hash`es must be hashes of empty strings.
 5. Insert `self.id` in utxo set. 
-
-NB: `control_predicate` may or may not be present in tx. If it is, it may be used to index the program.
-
 
 ## Retirement
 
@@ -148,18 +145,17 @@ NB: `control_predicate` may or may not be present in tx. If it is, it may be use
         spent_output: Output
         ext_hash: Hash256
     - witness:
-        predicate: Predicate
         destination: Hash256
+        arguments: String
         ext_hash: Hash256
 
 **Rules:**
 
-1. Validate that `spent_output.predicate` is present in tx and valid.
-2. `spent_output` must be present in the tx and also in the UTXO set.
+1. Validate that `spent_output` is present in tx.
+2. The `spent_output.program` must evaluate to `true` with given `arguments`.
 3. Remove `spent_output` from UTXO set.
 
 NB: `spent_output` is not validated, as it was already validated in the transaction that added it to the UTXO.
-
 
 
 ## Issuance
@@ -171,49 +167,36 @@ NB: `spent_output` is not validated, as it was already validated in the transact
         amount
         ext_hash: Hash256
     - witness:
+        destination: Hash256
         initial_block_id
         asset_definition
-        issuance_predicate: Predicate
-        destination: Hash256
+        issuance_program: Program
+        arguments: String
         ext_hash: Hash256
 
 **Rules:**
 
-1. Check that `asset_id == HASH(initial_block_id, asset_definition, issuance_predicate.program)`.
-2. `issuance_predicate` must be present in tx and valid.
+1. Check that `asset_id == HASH(initial_block_id, asset_definition, issuance_program)`.
+2. The `issuance_program` must evaluate to `true` with given `arguments`.
 
 
 ## Anchor
 
     - type=anchor1
     - content:
-        predicate: Predicate
+        program: Program
         timerange: TimeRange
         ext_hash: Hash256
     - witness:
-        destinations: List<Hash256>
+        arguments: String
         ext_hash: Hash256
 
 **Rules:**
 
 1. If tx version is known, the ext fields must be empty.
 2. The ID of the anchor must be globally unique on the blockchain.
-3. The `predicate` must be valid and included in the tx, 
+3. The `program` must evaluate to `true` with given `arguments`.
 
-## Predicate
-
-    - type=predicate
-    - content:
-        program: Program
-        ext_hash: Hash256
-    - witness:
-        arguments
-        ext_hash: Hash256
-
-**Rules:**
-
-1. If the tx version is known, the `program.vm_version` must be known.
-2. If `program.vm_version` is known, instantiate VM with that version, evaluate `program.code` with given arguments. VM must return `true`.
 
 ## Mux
 
@@ -253,10 +236,12 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 2. `maxtime` must be equal to or less than the `header.maxtime` specified in the transaction header.
     
 
-## Program: not a separate entry, but an inlined struct
+## Program
 
-    - vm_version: int
-    - code:       string
+This is not a separate entry, but an inlined struct that carries VM version and the program code in VM-specific encoding.
+
+    - vm_version: integer
+    - code:       String
 
 
 ## ExtensibleStruct
