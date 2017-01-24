@@ -60,7 +60,6 @@ var ErrNoTxSighashCommitment = errors.New("no commitment to tx sighash")
 
 func checkTxSighashCommitment(tx *bc.Tx) error {
 	allIssuances := true
-	sigHasher := bc.NewSigHasher(&tx.TxData)
 
 	for i, inp := range tx.Inputs {
 		var args [][]byte
@@ -89,7 +88,7 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 		if !bytes.Equal(prog[33:], []byte{byte(vm.OP_TXSIGHASH), byte(vm.OP_EQUAL)}) {
 			continue
 		}
-		h := sigHasher.Hash(uint32(i))
+		h := tx.SigHash(uint32(i))
 		if !bytes.Equal(h[:], prog[1:33]) {
 			continue
 		}

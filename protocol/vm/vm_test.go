@@ -186,7 +186,7 @@ func TestVerifyTxInput(t *testing.T) {
 		),
 	}, {
 		input: bc.NewIssuanceInput(
-			nil,
+			[]byte{12},
 			1,
 			nil,
 			bc.Hash{},
@@ -197,6 +197,7 @@ func TestVerifyTxInput(t *testing.T) {
 	}, {
 		input: &bc.TxInput{
 			TypedInput: &bc.IssuanceInput{
+				Nonce: []byte{34},
 				IssuanceWitness: bc.IssuanceWitness{
 					VMVersion: 2,
 				},
@@ -214,7 +215,7 @@ func TestVerifyTxInput(t *testing.T) {
 		wantErr: ErrUnsupportedVM,
 	}, {
 		input: bc.NewIssuanceInput(
-			nil,
+			[]byte{56},
 			1,
 			nil,
 			bc.Hash{},
@@ -229,9 +230,9 @@ func TestVerifyTxInput(t *testing.T) {
 	}}
 
 	for i, c := range cases {
-		tx := &bc.Tx{TxData: bc.TxData{
+		tx := bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{c.input},
-		}}
+		})
 
 		gotErr := VerifyTxInput(tx, 0)
 
@@ -465,7 +466,7 @@ func TestVerifyTxInputQuickCheck(t *testing.T) {
 			}
 		}()
 		tx := bc.NewTx(bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), witnesses, bc.AssetID{}, 10, program, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.OutputID{}, witnesses, bc.AssetID{}, 10, program, nil)},
 		})
 		verifyTxInput(tx, 0)
 		return true

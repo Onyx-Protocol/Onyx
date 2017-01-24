@@ -19,7 +19,11 @@ import (
 // it is fine to keep it confidential.
 //
 // Note that the body of this entry is a hash (of the underlying data);
+<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
 // when a Data entry is hashed, its body_hash is a hash of that hash.
+=======
+// the body_hash is a hash of that hash.
+>>>>>>> wip: begin txgraph outline
 type data struct {
 	body bc.Hash
 }
@@ -36,8 +40,12 @@ func newData(hash bc.Hash) entry {
 }
 
 func hashData(data []byte) (h bc.Hash) {
+<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
 	// TODO: Do we want domain separation here?  (E.g., a "data:"
 	// prefix.) If so, both the code and the spec need updating.
+=======
+	// xxx need domain separation here. spec might need updating
+>>>>>>> wip: begin txgraph outline
 	sha3pool.Sum256(h[:], data)
 	return
 }

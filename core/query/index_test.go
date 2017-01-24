@@ -16,8 +16,8 @@ func TestAnnotatedTxs(t *testing.T) {
 	indexer := NewIndexer(db, &protocol.Chain{}, nil)
 	b := &bc.Block{
 		Transactions: []*bc.Tx{
-			{Hash: bc.Hash{0: 0x01}},
-			{Hash: bc.Hash{0: 0x02}},
+			{TxHashes: bc.TxHashes{ID: bc.Hash{0: 0x01}}},
+			{TxHashes: bc.TxHashes{ID: bc.Hash{0: 0x02}}},
 		},
 	}
 	txs, err := indexer.insertAnnotatedTxs(ctx, b)

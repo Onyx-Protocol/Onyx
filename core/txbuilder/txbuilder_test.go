@@ -23,7 +23,7 @@ import (
 type testAction bc.AssetAmount
 
 func (t testAction) Build(ctx context.Context, b *TemplateBuilder) error {
-	in := bc.NewSpendInput(bc.ComputeOutputID([32]byte{255}, 0), nil, t.AssetID, t.Amount, nil, nil)
+	in := bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, t.AssetID, t.Amount, nil, nil)
 	tplIn := &SigningInstruction{}
 
 	err := b.AddInput(in, tplIn)
@@ -55,18 +55,18 @@ func TestBuild(t *testing.T) {
 	}
 
 	want := &Template{
-		Transaction: &bc.TxData{
+		Transaction: bc.NewTx(bc.TxData{
 			Version: 1,
 			MaxTime: bc.Millis(expiryTime),
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.ComputeOutputID([32]byte{255}, 0), nil, [32]byte{1}, 5, nil, nil),
+				bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, [32]byte{1}, 5, nil, nil),
 			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput([32]byte{2}, 6, []byte("dest"), nil),
 				bc.NewTxOutput([32]byte{1}, 5, []byte("change"), nil),
 			},
 			ReferenceData: []byte("xyz"),
-		},
+		}),
 		SigningInstructions: []*SigningInstruction{{
 			WitnessComponents: []WitnessComponent{},
 		}},
@@ -105,16 +105,17 @@ func TestMaterializeWitnesses(t *testing.T) {
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	nonce := []byte{1}
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
-	unsigned := &bc.TxData{
+	unsigned := bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(nil, 5, nil, initialBlockHash, issuanceProg, nil, nil),
+			bc.NewIssuanceInput(nonce, 5, nil, initialBlockHash, issuanceProg, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 5, outscript, nil),
 		},
-	}
+	})
 
 	prog, err := vm.Assemble(fmt.Sprintf("MAXTIME 0x804cf05736 LESSTHAN VERIFY 0 0 5 0x%x 1 0x76a914c5d128911c28776f56baaac550963f7b88501dc388c0 CHECKOUTPUT", assetID[:]))
 	h := sha3.Sum256(prog)
@@ -174,15 +175,15 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
-	unsigned := &bc.TxData{
+	unsigned := bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(nil, 100, nil, initialBlockHash, issuanceProg, nil, nil),
+			bc.NewIssuanceInput([]byte{1}, 100, nil, initialBlockHash, issuanceProg, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 100, outscript, nil),
 		},
-	}
+	})
 
 	tpl := &Template{
 		Transaction: unsigned,
@@ -316,10 +317,11 @@ func TestTxSighashCommitment(t *testing.T) {
 		t.Errorf("issuances-only: got error %s, want no error", err)
 	}
 
-	// Tx with at any spend inputs, none committing to the txsighash, is not OK
+	// Tx with any spend inputs, none committing to the txsighash, is not OK
 	tx.Inputs = append(tx.Inputs, &bc.TxInput{
 		AssetVersion: 1,
 		TypedInput: &bc.SpendInput{
+			SpentOutputID: bc.OutputID{bc.Hash{1}},
 			OutputCommitment: bc.OutputCommitment{
 				AssetAmount: bc.AssetAmount{
 					AssetID: assetID,
@@ -339,6 +341,7 @@ func TestTxSighashCommitment(t *testing.T) {
 
 	// Tx with a spend input committing to the wrong txsighash is not OK
 	spendInput := &bc.SpendInput{
+		SpentOutputID: bc.OutputID{bc.Hash{2}},
 		OutputCommitment: bc.OutputCommitment{
 			AssetAmount: bc.AssetAmount{
 				AssetID: assetID,
@@ -367,6 +370,7 @@ func TestTxSighashCommitment(t *testing.T) {
 
 	// Tx with a spend input committing to the right txsighash is OK
 	spendInput = &bc.SpendInput{
+		SpentOutputID: bc.OutputID{bc.Hash{3}},
 		OutputCommitment: bc.OutputCommitment{
 			AssetAmount: bc.AssetAmount{
 				AssetID: assetID,
@@ -383,7 +387,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	tx.Outputs[0].Amount = 11
 	tx = bc.NewTx(tx.TxData) // recompute the tx hash
 	spendInput.Arguments = make([][]byte, 3)
-	h := tx.HashForSig(4)
+	h := tx.SigHash(4)
 	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h[:]))
 	if err != nil {
 		t.Fatal(err)
@@ -401,27 +405,27 @@ func TestCheckBlankCheck(t *testing.T) {
 		want error
 	}{{
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 3, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil),
-				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{1}, 5, nil, nil),
+				bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{0}, 5, nil, nil),
+				bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{1}, 5, nil, nil),
 			},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(bc.AssetID{0}, math.MaxInt64, nil, nil),
 				bc.NewTxOutput(bc.AssetID{0}, 7, nil, nil),
@@ -431,14 +435,14 @@ func TestCheckBlankCheck(t *testing.T) {
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil),
-				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, math.MaxInt64, nil, nil),
+				bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{0}, 5, nil, nil),
+				bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{0}, math.MaxInt64, nil, nil),
 			},
 		},
 		want: ErrBadAmount,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: nil,
@@ -449,7 +453,7 @@ func TestCheckBlankCheck(t *testing.T) {
 		want: nil,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{1}, 5, nil, nil)},
 		},
 		want: nil,

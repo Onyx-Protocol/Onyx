@@ -11,10 +11,6 @@ type Output struct {
 	bc.TxOutput
 }
 
-func (o *Output) UnspentID() bc.UnspentID {
-	return bc.ComputeUnspentID(o.OutputID, o.TxOutput.CommitmentHash())
-}
-
 // NewOutput creates a new Output.
 func NewOutput(o bc.TxOutput, outid bc.OutputID) *Output {
 	return &Output{
@@ -43,6 +39,6 @@ func Prevout(in *bc.TxInput) *Output {
 func OutputTreeItem(o *Output) (bkey, commitment []byte) {
 	// We implement the set of unspent IDs via Patricia Trie
 	// by having the leaf data being equal to keys.
-	key := o.UnspentID().Bytes()
+	key := o.OutputID.Bytes()
 	return key, key
 }

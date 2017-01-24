@@ -57,7 +57,11 @@ func sampleTx() *bc.TxData {
 	return &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
+<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
 			bc.NewSpendInput(bc.ComputeOutputID(mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), 0), nil, assetID, 1000000000000, []byte{1}, []byte("input")),
+=======
+			bc.NewSpendInput(bc.OutputID{mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292")}, nil, assetID, 1000000000000, []byte{1}, []byte("input")),
+>>>>>>> wip: begin txgraph outline
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 600000000000, []byte{1}, nil),

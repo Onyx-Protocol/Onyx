@@ -14,13 +14,13 @@ import (
 // before attempting to perform a context-free validation of the tx.
 func (c *Chain) ValidateTxCached(tx *bc.Tx) error {
 	// Consult a cache of prevalidated transactions.
-	err, ok := c.prevalidated.lookup(tx.Hash)
+	err, ok := c.prevalidated.lookup(tx.ID)
 	if ok {
 		return err
 	}
 
 	err = validation.CheckTxWellFormed(tx)
-	c.prevalidated.cache(tx.Hash, err)
+	c.prevalidated.cache(tx.ID, err)
 	return err
 }
 

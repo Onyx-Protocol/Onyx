@@ -9,7 +9,7 @@ func topSort(txs []*bc.Tx) []*bc.Tx {
 
 	nodes := make(map[bc.Hash]*bc.Tx)
 	for _, tx := range txs {
-		nodes[tx.Hash] = tx
+		nodes[tx.ID] = tx
 	}
 
 	incomingEdges := make(map[bc.Hash]int)
@@ -63,7 +63,7 @@ func isTopSorted(txs []*bc.Tx) bool {
 	exists := make(map[bc.Hash]bool)
 	seen := make(map[bc.Hash]bool)
 	for _, tx := range txs {
-		exists[tx.Hash] = true
+		exists[tx.ID] = true
 	}
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
@@ -75,7 +75,7 @@ func isTopSorted(txs []*bc.Tx) bool {
 				return false
 			}
 		}
-		seen[tx.Hash] = true
+		seen[tx.ID] = true
 	}
 	return true
 }

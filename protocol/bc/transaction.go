@@ -19,7 +19,7 @@ const CurrentTransactionVersion = 1
 // Tx holds a transaction along with its hash.
 type Tx struct {
 	TxData
-	Hash Hash
+	TxHashes `json:"-"`
 }
 
 // TxHashes holds data needed for validation and state updates.
@@ -47,7 +47,12 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 		return err
 	}
 
-	tx.Hash = tx.TxData.Hash()
+	hashes, err := TxHashesFunc(&tx.TxData)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	tx.TxHashes = *hashes
 	return nil
 }
 
@@ -55,9 +60,14 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 // If you have already computed the hash, use struct literal
 // notation to make a Tx object directly.
 func NewTx(data TxData) *Tx {
+	hashes, err := TxHashesFunc(&data)
+	if err != nil {
+		panic(err)
+	}
+
 	return &Tx{
-		TxData: data,
-		Hash:   data.Hash(),
+		TxData:   data,
+		TxHashes: *hashes,
 	}
 }
 
@@ -201,18 +211,6 @@ func (tx *TxData) readCommonWitness(r io.Reader) error {
 	return nil
 }
 
-// Hash computes the hash of the transaction with reference data fields
-// replaced by their hashes,
-// and stores the result in Hash.
-func (tx *TxData) Hash() Hash {
-	h := sha3pool.Get256()
-	tx.writeTo(h, SerTxHash) // error is impossible
-	var v Hash
-	h.Read(v[:])
-	sha3pool.Put256(h)
-	return v
-}
-
 func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 	if n < 0 || n >= len(tx.Inputs) {
 		return h, fmt.Errorf("no input %d", n)
@@ -242,18 +240,8 @@ func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 	return h, nil
 }
 
-// HashForSig generates the hash required for the specified input's
-// signature.
-func (tx *TxData) HashForSig(idx uint32) Hash {
-	return NewSigHasher(tx).Hash(idx)
-}
-
 func (tx *Tx) OutputID(outputIndex uint32) OutputID {
-	return ComputeOutputID(tx.Hash, outputIndex)
-}
-
-func (tx *TxData) OutputID(outputIndex uint32) OutputID {
-	return ComputeOutputID(tx.Hash(), outputIndex)
+	return OutputID{tx.OutputIDs[outputIndex]}
 }
 
 func (tx *TxData) MarshalText() ([]byte, error) {

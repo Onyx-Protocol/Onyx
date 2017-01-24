@@ -61,7 +61,7 @@ func TestSighashCheck(t *testing.T) {
 	}
 	tpl1.AllowAdditional = true
 	coretest.SignTxTemplate(t, ctx, tpl1, nil)
-	err = CheckTxSighashCommitment(bc.NewTx(*tpl1.Transaction))
+	err = CheckTxSighashCommitment(tpl1.Transaction)
 	if err == nil {
 		t.Error("unexpected success from checkTxSighashCommitment")
 	}
@@ -69,23 +69,23 @@ func TestSighashCheck(t *testing.T) {
 	spendAction2a := info.NewSpendAction(assetAmount, info.acctB, nil, nil)
 	controlAction2 := info.NewControlAction(assetAmount, info.acctA, nil)
 
-	tpl2a, err := Build(ctx, tpl1.Transaction, []Action{spendAction2a, controlAction2}, time.Now().Add(time.Minute))
+	tpl2a, err := Build(ctx, &tpl1.Transaction.TxData, []Action{spendAction2a, controlAction2}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, tpl2a, nil)
-	err = CheckTxSighashCommitment(bc.NewTx(*tpl2a.Transaction))
+	err = CheckTxSighashCommitment(tpl2a.Transaction)
 	if err != nil {
 		t.Errorf("unexpected failure from checkTxSighashCommitment (case 1): %v", err)
 	}
 
 	issueAction2b := info.NewIssueAction(assetAmount, nil)
-	tpl2b, err := Build(ctx, tpl1.Transaction, []Action{issueAction2b, controlAction2}, time.Now().Add(time.Minute))
+	tpl2b, err := Build(ctx, &tpl1.Transaction.TxData, []Action{issueAction2b, controlAction2}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, tpl2b, nil)
-	err = CheckTxSighashCommitment(bc.NewTx(*tpl2b.Transaction))
+	err = CheckTxSighashCommitment(tpl2b.Transaction)
 	if err != nil {
 		t.Errorf("unexpected failure from checkTxSighashCommitment (case 2): %v", err)
 	}
@@ -131,8 +131,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 	unsignedTx := *firstTemplate.Transaction
 	coretest.SignTxTemplate(t, ctx, firstTemplate, nil)
-	tx := bc.NewTx(*firstTemplate.Transaction)
-	err = FinalizeTx(ctx, info.Chain, g, tx)
+	err = FinalizeTx(ctx, info.Chain, g, firstTemplate.Transaction)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -148,7 +147,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Program = nil
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Sigs = nil
 	coretest.SignTxTemplate(t, ctx, secondTemplate, nil)
-	err = FinalizeTx(ctx, info.Chain, g, bc.NewTx(*secondTemplate.Transaction))
+	err = FinalizeTx(ctx, info.Chain, g, secondTemplate.Transaction)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -205,7 +204,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		b.Logf("finalized %v", tx.Hash)
+		b.Logf("finalized %v", tx.ID)
 		prottest.MakeBlock(b, info.Chain, g.PendingTxs())
 		<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
@@ -213,7 +212,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		b.Logf("finalized %v", tx.Hash)
+		b.Logf("finalized %v", tx.ID)
 
 		if i%10 == 0 {
 			prottest.MakeBlock(b, info.Chain, g.PendingTxs())
@@ -386,8 +385,7 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destA
 		return nil, err
 	}
 	coretest.SignTxTemplate(t, ctx, issueTx, nil)
-	tx := bc.NewTx(*issueTx.Transaction)
-	return tx, FinalizeTx(ctx, info.Chain, s, tx)
+	return issueTx.Transaction, FinalizeTx(ctx, info.Chain, s, issueTx.Transaction)
 }
 
 func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
@@ -405,7 +403,6 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, sr
 
 	coretest.SignTxTemplate(t, ctx, xferTx, nil)
 
-	tx := bc.NewTx(*xferTx.Transaction)
-	err = FinalizeTx(ctx, info.Chain, s, tx)
-	return tx, errors.Wrap(err)
+	err = FinalizeTx(ctx, info.Chain, s, xferTx.Transaction)
+	return xferTx.Transaction, errors.Wrap(err)
 }
