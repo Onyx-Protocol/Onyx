@@ -181,7 +181,6 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 1. Check that `asset_id == HASH(initial_block_id, asset_definition, issuance_predicate.program)`.
 2. `issuance_predicate` must be present in tx and valid.
-3. `issuance_predicate.caller` must equal `self.id`.
 
 
 ## Anchor
@@ -192,6 +191,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
         timerange: TimeRange
         ext_hash: Hash256
     - witness:
+        destinations: List<Hash256>
         ext_hash: Hash256
 
 **Rules:**
@@ -199,7 +199,6 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 1. If tx version is known, the ext fields must be empty.
 2. The ID of the anchor must be globally unique on the blockchain.
 3. The `predicate` must be valid and included in the tx, 
-4. The `predicate.caller` must equal `self.id`.
 
 ## Predicate
 
@@ -208,7 +207,6 @@ NB: `spent_output` is not validated, as it was already validated in the transact
         program: Program
         ext_hash: Hash256
     - witness:
-        caller: AbstractEntry
         arguments
         ext_hash: Hash256
 
@@ -229,7 +227,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 **Rules:**
 
-1. For each source: `sources[i].destination` must equal self.id - prevents double-spending.
+1. For each source: `sources[i].destination` must equal `self.id` - prevents double-spending.
 2. Each source must be unique in the `sources` list, no repetitions allowed.
 3. Each identifier in `destinations` must be unique (no repetitions) and included in the transaction.
 4. For each asset on the sources and destinations:
@@ -264,9 +262,19 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 ## ExtensibleStruct
 
-
-
 TBD: describe exthashes and how they interop with hashing and protobufs 
+
+    {
+        a
+        b
+        exthash1
+        c
+        d
+        exthash2
+        
+    }
+    
+
 
 
 ## Serialization for hashing
