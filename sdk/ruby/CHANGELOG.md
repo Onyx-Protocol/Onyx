@@ -4,7 +4,7 @@
 
 * Set minimum Ruby version requirement to 2.1
 * Enhanced transaction feed API support
-* Fixed issue reading attributers with array getter syntax (@donce in #422)
+* Fixed issue reading attributers with array getter syntax (@donce in [#422](https://github.com/chain/chain/pull/422))
 
 ## 1.0.0 (November 17, 2016)
 
