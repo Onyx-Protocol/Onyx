@@ -59,6 +59,6 @@ export default connect(
     canLogOut: state.core.requireClientToken,
   }),
   (dispatch) => ({
-    logOut: () => dispatch(actions.core.clearSession())
+    logOut: () => dispatch(actions.core.clearSession)
   })
 )(SecondaryNavigation)
