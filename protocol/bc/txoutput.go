@@ -59,7 +59,7 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 		return errors.Wrap(err, "writing asset version")
 	}
 
-	err = to.OutputCommitment.writeTo(w, to.AssetVersion)
+	err = to.OutputCommitment.writeExtensibleString(w, to.AssetVersion)
 	if err != nil {
 		return errors.Wrap(err, "writing output commitment")
 	}
@@ -82,5 +82,5 @@ func (to *TxOutput) witnessHash() Hash {
 }
 
 func (to *TxOutput) WriteCommitment(w io.Writer) {
-	to.OutputCommitment.writeTo(w, to.AssetVersion)
+	to.OutputCommitment.writeExtensibleString(w, to.AssetVersion)
 }

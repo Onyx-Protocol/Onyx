@@ -10,6 +10,7 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
+	"chain/encoding/bufpool"
 	"chain/errors"
 )
 
@@ -213,6 +214,12 @@ func (tx *Tx) WitnessHash() (hash Hash, err error) {
 
 	hasher.Write(tx.Hash[:])
 
+	cwhash, err := tx.commonWitnessHash()
+	if err != nil {
+		return hash, err
+	}
+	hasher.Write(cwhash[:])
+
 	blockchain.WriteVarint31(hasher, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
 	for _, txin := range tx.Inputs {
 		h, err := txin.witnessHash()
@@ -230,6 +237,23 @@ func (tx *Tx) WitnessHash() (hash Hash, err error) {
 
 	hasher.Read(hash[:])
 	return hash, nil
+}
+
+func (tx *TxData) commonWitnessHash() (h Hash, err error) {
+	hasher := sha3pool.Get256()
+	defer sha3pool.Put256(hasher)
+
+	buf := bufpool.Get()
+	defer bufpool.Put(buf)
+
+	err = tx.writeCommonWitness(buf)
+	if err != nil {
+		return h, err
+	}
+
+	hasher.Write(buf.Bytes())
+	hasher.Read(h[:])
+	return h, nil
 }
 
 func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
@@ -344,6 +368,7 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 
 // does not write the enclosing extensible string
 func (tx *TxData) writeCommonWitness(w io.Writer) error {
+	// Future protocol versions may add fields here.
 	return nil
 }
 
