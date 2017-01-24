@@ -1,6 +1,5 @@
 # Transaction graph structure
 
-
 Entry types:
     
     Header
@@ -19,12 +18,12 @@ Abstract Entry:
     - content
     - witness
         
-    ID(entry)  = Hash(entry.type || entry.content)
-    WID(entry) = Hash(ID(entry)  || entry.witness)
+    ID(entry)  = Hash("txnode" || entry.type || entry.content)
+    WID(entry) = TODO: specify how to collect all WIDs from content references - every node must specify how to walk prev witnesses
 
 Header:
     
-    - type=0
+    - type=header
     - content:
         version
         results: List<Output,
@@ -44,7 +43,7 @@ Header:
 
 ReferenceData:
     
-    - type=1
+    - type=refdata1
     - content: blob
     - witness: ext
     
@@ -53,7 +52,7 @@ ReferenceData:
 
 Output:
     
-    - type=2
+    - type=output1
     - content:
         source: Mux
         position: Integer
@@ -71,10 +70,11 @@ Output:
     2. `source` must be present and valid.
     3. `source.destinations[position]` must equal self.id.
     4. if tx version is known, all ext fields must be empty.
+    5. TODO: put in utxo set `self.id`.
 
 Retirement:
 
-    - type=3
+    - type=retirement1
     - content:
         source: Mux
         position: Integer
@@ -93,7 +93,7 @@ Retirement:
 
 Input:
     
-    - type=4
+    - type=input1
     - content:
         spent_output: Output
         ext
@@ -106,10 +106,11 @@ Input:
     1. If tx version is known, disallow unknown `spent_output.vm_version`.
     2. If `spent_output.vm_version` is known, verify `spent_output.control_program` with `arguments`.
     3. `spent_output` must be present in tx and UTXO set (NB: it is not validated as it's already validated).
+    4. Remove `spent_output` from UTXO set.
 
 Issuance:
     
-    - type=5
+    - type=issuance1
     - content:
         anchor: Anchor|Input
         asset_id
@@ -131,21 +132,24 @@ Issuance:
 
 Anchor:
     
-    - type=6
+    - type=anchor1
     - content:
-        nonce
+        vm_version
+        predicate
         ext
     - witness:
+        arguments
         ext
     
     Rules: 
     1. If tx version is known, the ext fields must be empty.
-    2. Hash(Nonce||tx.mintime||tx.maxtime) must be globally unique.
+    2. Hash(vm_version || predicate || tx.mintime || tx.maxtime) must be globally unique.
+    3. Predicate must evaluate to true (TODO: checks for extensibility...)
 
 
 Mux:
 
-    - type=7
+    - type=mux1
     - content:
         sources: List<Issuance|Input>
         ext
@@ -163,9 +167,6 @@ Mux:
         3. Test that the source sum equals the destination sum.
         4. Check that there is at least one source with that asset ID.
 
-TODO: how to update UTXO:
-1. throw out visited input.output_ids from UTXO set.
-2. insert visited output.ids (mentioned in tx) to UTXO set.
 
 TODO: factor out min/maxtime to avoid breaking hashes.
 
@@ -176,13 +177,13 @@ TODO: factor out min/maxtime to avoid breaking hashes.
 
 This is a first intermediate step that allows keeping old SDK and old tx indexer, but refactoring how txs and outputs are hashed.
 
-
+TODO: ...
 
 ### 2. NewTx -> OldTx
 
 This is a second intermediate step that allows keeping old SDK, but refactoring how txs are stored internally in Core.
 
-
+TODO: ...
 
 
 
