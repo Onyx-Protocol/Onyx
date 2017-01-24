@@ -28,5 +28,5 @@ The Chain Node.js SDK is available [via npm](https://www.npmjs.com/package/chain
 For most applications, you can simply add Chain to your `package.json` with the following command:
 
 ```
-npm install --save chain-sdk@1.0.0
+npm install --save chain-sdk@1.0.1
 ```
