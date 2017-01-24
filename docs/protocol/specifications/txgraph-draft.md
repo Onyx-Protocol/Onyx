@@ -11,7 +11,7 @@ Entry types:
     ReferenceData
     Anchor
     Predicate
-    TimeConstraint
+    TimeRange
     AbstractEntry = all other types
 
 Abstract Entry:
@@ -136,7 +136,7 @@ Anchor:
     - type=anchor1
     - content:
         predicate: Predicate
-        timeconstraint: TimeConstraint
+        timerange: TimeRange
         ext
     - witness:
         ext
@@ -182,9 +182,9 @@ Mux:
         4. Check that there is at least one source with that asset ID.
 
 
-TimeConstraint:
+TimeRange:
 
-    - type=timeconstraint
+    - type=timerange
     - content:
         mintime: integer
         maxtime: integer
