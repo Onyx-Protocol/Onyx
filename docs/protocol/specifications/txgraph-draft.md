@@ -21,8 +21,8 @@ All entries inherit from a common type `AbstractEntry`.
 Identifier of the entry is based on its type and content. Content is length-prefixed, type is varint-encoded
 
     entry.id  = HASH(
-        "entryid"          || 
-        varint(entry.type) || 
+        "entryid:"  || 
+        entry.type  || ":" ||
         entry.content_hash || 
         concat(pointers.map{ entry.id })
     )
@@ -32,7 +32,7 @@ Identifier of the entry is based on its type and content. Content is length-pref
 Witness ID of the transaction is based on WIDs of intermediate entries.
 
     entry.wid = HASH(
-        "entrywid"         || 
+        "entrywid:"        || 
         entry.id           || 
         entry.witness_hash ||
         concat(pointers.map{ entry.wid })
@@ -259,10 +259,37 @@ NB: `spent_output` is not validated, as it was already validated in the transact
     - code:       string
 
 
-
 ## ExtensibleStruct
 
-TBD: describe exthashes and how they interop with hashing and protobufs 
+Extensible struct contains flat list of fields and the last field is the extension hash.
+
+The remaining fields are committed to that extension hash. They are defined in flat namespace in a protobuf definition, but for the hashing purposes we group them recursively under another ExtensibleStruct instance:
+    
+    ExtensibleStruct {
+        fields...
+        exthash: Hash256
+        ext: ExtensibleStruct
+    }
+    
+    exthash == Hash(ext)
+    Hash(ExtensibleStruct) == Hash(serialized-fields || exthash)
+
+Old clients ignore the extended fields (`ext`) and only see the first fields they understand plus the `exthash`.
+
+If the extensibility is not allowed (e.g. when tx version is known), the last `exthash` must be a hash of an empty string.
+
+### Examples:
+
+V1 schema:
+
+    entry {
+        a
+        b
+        exthash
+    }
+    ID = H(a || b || exthash1)
+
+V2 schema:
 
     {
         a
@@ -271,10 +298,30 @@ TBD: describe exthashes and how they interop with hashing and protobufs
         c
         d
         exthash2
-        
     }
-    
+    exthash1 = H(c || d || exthash2)
+    ID = H(a || b || exthash1)
 
+Note: when V2 data is encoded and sent to V1, V1 client drops `(c,d,exthash2)` fields and only uses `a,b,exthash1` fields to compute the ID. Which turns out the same as for V2 client.
+
+V3 schema:
+
+    {
+        a
+        b
+        exthash1
+        c
+        d
+        exthash2
+        e
+        f
+        exthash3
+    }  
+    exthash2 = H(e || f || exthash3)
+    exthash1 = H(c || d || exthash2)
+    ID = H(a || b || exthash1)
+
+The scheme is applied recursively for the subsequent updates.
 
 
 ## Serialization for hashing
