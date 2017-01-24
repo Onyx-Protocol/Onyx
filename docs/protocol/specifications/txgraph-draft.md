@@ -72,7 +72,7 @@ Output:
         reference_data: ReferenceData
         asset_id
         amount
-        control_program: Program
+        control_predicate: Predicate
         ext
     - witness:
         ext
@@ -83,6 +83,7 @@ Output:
     3. `source.destinations[position]` must equal self.id.
     4. if tx version is known, all ext fields must be empty.
     5. Insert `self.id` in utxo set.
+       NB: `control_predicate` may or may not be present in tx. If it is, it may be used to index the program.
 
 Retirement:
 
@@ -115,11 +116,10 @@ Input:
         ext
         
     Rules:
-    1. Verify that `predicate.program` equals `spent_output.control_program`.
-    2. Validate that `predicate` is present in tx and valid.
-    3. `spent_output` must be present in tx and UTXO set 
+    1. Validate that `spent_output.predicate` is present in tx and valid.
+    2. `spent_output` must be present in tx and UTXO set. 
         NB: it is not validated, as it was already validated in the transaction that added it to the UTXO.
-    4. Remove `spent_output` from UTXO set.
+    3. Remove `spent_output` from UTXO set.
 
 Issuance:
 
