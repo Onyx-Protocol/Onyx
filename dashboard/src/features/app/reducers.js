@@ -52,9 +52,9 @@ export const flashMessages = (state = new Map(), action) => {
       </p>))
     }
 
-    case 'DELETED_CLIENT_ACCESS_TOKEN':
-    case 'DELETED_NETWORK_ACCESS_TOKEN':
-    case 'DELETED_TRANSACTIONFEED': {
+    case 'DELETE_CLIENT_ACCESS_TOKEN':
+    case 'DELETE_NETWORK_ACCESS_TOKEN':
+    case 'DELETE_TRANSACTIONFEED': {
       return new Map(state).set(uuid.v4(), flash(action.message, null, 'info'))
     }
 

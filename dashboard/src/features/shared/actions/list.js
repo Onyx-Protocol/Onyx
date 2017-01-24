@@ -124,8 +124,6 @@ export default function(type, options = {}) {
         .then(() => dispatch({
           type: `DELETE_${type.toUpperCase()}`,
           id: id,
-        })).then(() => dispatch({
-          type: `DELETED_${type.toUpperCase()}`,
           message: deleteMessage,
         })).catch(err => dispatch({
           type: 'ERROR', payload: err
