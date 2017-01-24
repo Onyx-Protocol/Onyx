@@ -17,7 +17,7 @@ class Modal extends React.Component {
 
     const accept = () => {
       dispatch(acceptAction)
-      dispatch(actions.app.hideModal())
+      dispatch(actions.app.hideModal)
     }
     const cancel = cancelAction ? () => dispatch(cancelAction) : null
     const backdropAction = cancel || accept

@@ -1,10 +1,9 @@
 import chain from '_chain'
 import { context } from 'utility/environment'
-import { actionCreator } from 'features/shared/actions'
 
-const updateInfo = actionCreator('UPDATE_CORE_INFO', param => ({ param }))
-const setClientToken = actionCreator('SET_CLIENT_TOKEN', token => ({ token }))
-const clearSession = actionCreator('USER_LOG_OUT')
+const updateInfo = (param) => ({type: 'UPDATE_CORE_INFO', param})
+const setClientToken = (param) => ({type: 'SET_CLIENT_TOKEN', param})
+const clearSession = ({ type: 'USER_LOG_OUT' })
 
 const fetchCoreInfo = (options = {}) => {
   return (dispatch) => {
