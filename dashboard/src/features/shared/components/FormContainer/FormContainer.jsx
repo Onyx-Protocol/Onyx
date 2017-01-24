@@ -4,18 +4,6 @@ import styles from './FormContainer.scss'
 import Tutorial from 'features/tutorial/components/Tutorial'
 
 class FormContainer extends React.Component {
-  constructor(props) {
-    super(props)
-
-    this.showNextStep = this.showNextStep.bind(this)
-  }
-
-  showNextStep() {
-    if(this.props.tutorialOpen){
-      this.props.showNextStep()
-    }
-  }
-
   render() {
     return(
       <div className='flex-container'>
@@ -33,7 +21,7 @@ class FormContainer extends React.Component {
                     error={this.props.error} />}
 
                 <div className={styles.submit}>
-                  <button type='submit' className='btn btn-primary' onClick={this.showNextStep} disabled={this.props.submitting || this.props.disabled}>
+                  <button type='submit' className='btn btn-primary' disabled={this.props.submitting || this.props.disabled}>
                     {this.props.submitLabel || 'Submit'}
                   </button>
 
@@ -51,18 +39,4 @@ class FormContainer extends React.Component {
   }
 }
 
-import { actions } from 'features/tutorial'
-import { connect } from 'react-redux'
-
-const mapStateToProps = (state) => ({
-  tutorialOpen: state.tutorial.isShowing
-})
-
-const mapDispatchToProps = ( dispatch ) => ({
-  showNextStep: () => dispatch(actions.tutorialNextStep)
-})
-
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(FormContainer)
+export default FormContainer

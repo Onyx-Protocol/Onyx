@@ -13,7 +13,6 @@ const components = {
 }
 
 class Tutorial extends React.Component {
-
   render() {
     const tutorialStep = this.props.tutorialStep
     const userInput = this.props.tutorialInputs
