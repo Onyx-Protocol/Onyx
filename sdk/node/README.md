@@ -4,7 +4,7 @@
 
 ### Get the package
 
-The Chain Node SDK is available [via NPM](https://www.npmjs.com/package/chain-sdk). Make sure to use the most recent
+The Chain Node SDK is available [via npm](https://www.npmjs.com/package/chain-sdk). Make sure to use the most recent
 version whose major and minor components (`major.minor.x`) match your version
 of Chain Core. Node 4 or greater is required.
 
@@ -32,7 +32,7 @@ callbacks.
 With promises:
 
 ```
-chain.transactions.query({}).then(data => {
+client.transactions.query({}).then(data => {
   // operate on data
   console.log(data)
 })
@@ -46,7 +46,7 @@ let callback = (err, data) => {
   console.log(data)
 }
 
-chain.transactions.query({}, callback)
+client.transactions.query({}, callback)
 ```
 
 ## Testing
