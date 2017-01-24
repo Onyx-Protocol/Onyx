@@ -1,6 +1,6 @@
 # Transaction graph structure
 
-Transaction entry types:
+## Transaction entry types:
 
     Header
     Issuance
@@ -14,14 +14,22 @@ Transaction entry types:
     TimeRange
     AbstractEntry = all other types
 
-Abstract Entry:
+## Abstract Entry:
 
-    - type
-    - content
-    - witness
-    
-    ID(entry)  = Hash("txnode" || entry.type || entry.content)
+    - type:    int
+    - content: string
+    - witness: string
+
+## Entry ID and WitnessID
+
+Identifier of the entry is based on its type and content. Content is length-prefixed, type is varint-encoded
+
+    ID(entry)  = sha3-256("txnode" || varint(entry.type) || varstring(entry.content))
+
+
+
     WID(entry) = TODO: specify how to collect all WIDs from content references - every node must specify how to walk prev witnesses
+
 
 Header:
 
