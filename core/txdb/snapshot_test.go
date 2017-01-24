@@ -80,13 +80,13 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		t.Logf("Applying changeset %d\n", i)
 
 		for _, insert := range changeset.inserts {
-			err := snapshot.Tree1.Insert([]byte(insert.key), insert.hash)
+			err := snapshot.Tree2.Insert([]byte(insert.key), insert.hash)
 			if err != nil {
 				t.Fatal(err)
 			}
 		}
 		for _, key := range changeset.deletes {
-			err := snapshot.Tree1.Delete([]byte(key))
+			err := snapshot.Tree2.Delete([]byte(key))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -103,7 +103,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		}
 
 		for _, lookup := range changeset.lookups {
-			if !snapshot.Tree1.Contains([]byte(lookup.key), lookup.hash) {
+			if !snapshot.Tree2.Contains([]byte(lookup.key), lookup.hash) {
 				t.Errorf("Lookup(%s, %s) = false, want true", lookup.key, lookup.hash)
 			}
 		}
@@ -111,8 +111,8 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		if height != uint64(i) {
 			t.Fatalf("%d: state snapshot height got=%d want=%d", i, height, uint64(i))
 		}
-		if loadedSnapshot.Tree1.RootHash() != snapshot.Tree1.RootHash() {
-			t.Fatalf("%d: Wrote %s to db, read %s from db\n", i, snapshot.Tree1.RootHash(), loadedSnapshot.Tree1.RootHash())
+		if loadedSnapshot.Tree2.RootHash() != snapshot.Tree2.RootHash() {
+			t.Fatalf("%d: Wrote %s to db, read %s from db\n", i, snapshot.Tree2.RootHash(), loadedSnapshot.Tree2.RootHash())
 		}
 		if !reflect.DeepEqual(loadedSnapshot.Issuances, snapshot.Issuances) {
 			t.Fatalf("%d: Wrote %#v issuances to db, read %#v from db\n", i, snapshot.Issuances, loadedSnapshot.Issuances)
