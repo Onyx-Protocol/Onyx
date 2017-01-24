@@ -17,8 +17,12 @@
   "dependencies": {
     "babel-polyfill": "^6.16.0",
     "bootstrap-sass": "~3.3.7",
+<<<<<<< HEAD
     "chain-sdk": "^1.0.2",
     "classnames": "^2.2.5",
+=======
+    "chain-sdk": "^1.0.0",
+>>>>>>> include chain-sdk package
     "fetch-ponyfill": "^3.0.2",
     "lodash": "^4.17.4",
     "moment": "~2.14.1",
