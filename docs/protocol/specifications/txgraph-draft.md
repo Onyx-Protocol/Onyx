@@ -50,7 +50,7 @@ ReferenceData:
     - type=refdata1
     - content: blob
     - witness: ext
-
+    
     Rules:
     1. ext must be empty
 
@@ -63,17 +63,17 @@ Output:
         reference_data: ReferenceData
         asset_id
         amount
-        control_program
+        control_program: Program
         ext
     - witness:
         ext
-
+        
     Rules:
     1. `amount` is in range.
     2. `source` must be present and valid.
     3. `source.destinations[position]` must equal self.id.
     4. if tx version is known, all ext fields must be empty.
-    5. TODO: put in utxo set `self.id`.
+    5. Insert `self.id` in utxo set.
 
 Retirement:
 
@@ -104,11 +104,12 @@ Input:
         predicate: Predicate
         destination: AbstractEntry
         ext
-
+        
     Rules:
-    1. Verify that `predicate` is the same as `spent_output.control_predicate`.
+    1. Verify that `predicate.program` equals `spent_output.control_program`.
     2. Validate that `predicate` is present in tx and valid.
-    3. `spent_output` must be present in tx and UTXO set (NB: it is not validated, as it was already validated in the transaction that added it to the UTXO).
+    3. `spent_output` must be present in tx and UTXO set 
+        NB: it is not validated, as it was already validated in the transaction that added it to the UTXO.
     4. Remove `spent_output` from UTXO set.
 
 Issuance:
@@ -122,12 +123,12 @@ Issuance:
     - witness:
         initial_block_id
         asset_definition
-        issuance_program: Predicate
+        issuance_predicate: Predicate
         destination: Any
         ext
-
+        
     Rules:
-    1. Check that asset_id == Hash(initial_block_id, asset_definition, issuance_program).
+    1. Check that asset_id == Hash(initial_block_id, asset_definition, issuance_predicate.program).
     2. `issuance_program` must be present in tx and valid, and its `caller` must be a reference to this entry.
 
 Anchor:
@@ -149,16 +150,16 @@ Predicate:
 
     - type=predicate
     - content:
-        vm_version
-        program
+        program: Program
     - witness:
         caller: AbstractEntry
         arguments
         ext
-
+        
     Rules:
-    1. If the tx version is known, the VM version must be known.
-    2. If VM version is known, program must evaluate to true when given arguments.
+    1. If the tx version is known, the program.vm_version must be known.
+    2. If program.vm_version is known, instantiate VM with that version, evaluate `program.code` with given arguments. 
+       VM must return `true`.
 
 Mux:
 
@@ -169,7 +170,7 @@ Mux:
     - witness:
         destinations: List<Output|Retirement>
         ext
-
+        
     Rules:
     1. For each source: `sources[i].destination` must equal self.id - prevents double-spending.
     2. Each source must be unique in the `sources` list, no repetitions allowed.
@@ -183,17 +184,23 @@ Mux:
 
 TimeConstraint:
 
-  - type=timeconstraint
-  - content:
-      mintime: integer
-      maxtime: integer
-      ext
-  - witness:
-      ext
+    - type=timeconstraint
+    - content:
+        mintime: integer
+        maxtime: integer
+        ext
+    - witness:
+        ext
+    
+    Rules:
+    1. mintime must be equal to or greater than the mintime specified in the transaction header.
+    2. maxtime must be equal to or less than the maxtime specified in the transaction header.
 
-  Rules:
-  1. mintime must be equal to or greater than the mintime specified in the transaction header.
-  2. maxtime must be equal to or less than the maxtime specified in the transaction header.
+Program: not a separate entry, but an inlined struct
+    
+    - vm_version: int
+    - code:       string
+
 
 ## Translation Layer
 
