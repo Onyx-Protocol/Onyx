@@ -326,7 +326,20 @@ The scheme is applied recursively for the subsequent updates.
 
 ## Serialization for hashing
 
-TBD. 
+Primitives:
+    
+    byte
+    hash
+    integer
+    string
+    list
+
+* `byte` is encoded as 1 byte.
+* `hash` is encoded as 32 bytes.
+* `integer` is encoded as LEB128, with 63-bit limit.
+* `string` is encoded as LEB128 length prefix with 31-bit limit followed by raw bytes.
+* `list` is encoded as LEB128 length prefix with 31-bit limit followed by serialized items, one by one (`byte|hash|integer|string|list`) as defined by the schema.
+
 
 ## Translation Layer
 
