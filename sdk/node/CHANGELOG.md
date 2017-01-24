@@ -2,7 +2,7 @@
 
 ## 1.0.1 (January 24, 2017)
 
-* README updates
+* README and documentation updates
 
 ## 1.0.0 (January 20, 2017)
 
