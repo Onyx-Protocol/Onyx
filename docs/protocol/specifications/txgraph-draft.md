@@ -167,6 +167,8 @@ TODO: how to update UTXO:
 1. throw out visited input.output_ids from UTXO set.
 2. insert visited output.ids (mentioned in tx) to UTXO set.
 
+TODO: factor out min/maxtime to avoid breaking hashes.
+
 
 ## Translation Layer
 
