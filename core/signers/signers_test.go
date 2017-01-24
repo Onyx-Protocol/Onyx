@@ -3,7 +3,6 @@ package signers
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 
 	"chain/crypto/ed25519/chainkd"
@@ -194,7 +193,7 @@ func TestList(t *testing.T) {
 			testutil.FatalErr(t, err)
 		}
 
-		if !reflect.DeepEqual(got, c.want) {
+		if !testutil.DeepEqual(got, c.want) {
 			t.Errorf("List(%s, %s, %d)\n\tgot:  %+v\n\twant: %+v", c.typ, c.prev, c.limit, got, c.want)
 		}
 

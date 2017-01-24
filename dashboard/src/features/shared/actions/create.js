@@ -1,7 +1,6 @@
 import chain from '_chain'
 import { context } from 'utility/environment'
 import { parseNonblankJSON } from 'utility/string'
-import actionCreator from './actionCreator'
 import { push } from 'react-router-redux'
 import actions from 'actions'
 import uuid from 'uuid'
@@ -9,7 +8,7 @@ import uuid from 'uuid'
 export default function(type, options = {}) {
   const listPath = options.listPath || `/${type}s`
   const createPath = options.createPath || `${listPath}/create`
-  const created = actionCreator(`CREATED_${type.toUpperCase()}`, param => ({ param }) )
+  const created = (param) => ({ type: `CREATED_${type.toUpperCase()}`, param })
 
   return {
     showCreate: push(createPath),
@@ -60,7 +59,7 @@ export default function(type, options = {}) {
             if (options.createModal) {
               dispatch(actions.app.showModal(
                 options.createModal(resp),
-                actions.app.hideModal()
+                actions.app.hideModal
               ))
             }
 

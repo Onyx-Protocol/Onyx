@@ -1,10 +1,10 @@
 package vm
 
 import (
-	"reflect"
 	"testing"
 
 	"chain/errors"
+	"chain/testutil"
 )
 
 func TestParseOp(t *testing.T) {
@@ -84,7 +84,7 @@ func TestParseOp(t *testing.T) {
 			continue
 		}
 
-		if !reflect.DeepEqual(got, c.want) {
+		if !testutil.DeepEqual(got, c.want) {
 			t.Errorf("ParseOp(%x, %d) = %+v want %+v", c.prog, c.pc, got, c.want)
 		}
 	}
@@ -125,7 +125,7 @@ func TestParseProgram(t *testing.T) {
 			continue
 		}
 
-		if !reflect.DeepEqual(got, c.want) {
+		if !testutil.DeepEqual(got, c.want) {
 			t.Errorf("ParseProgram(%x) = %+v want %+v", c.prog, got, c.want)
 		}
 	}

@@ -5,12 +5,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
-	"reflect"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/errors"
+	"chain/testutil"
 )
 
 func TestTransaction(t *testing.T) {
@@ -45,7 +45,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // outputs count
 				"00"), // reference data
 			hash:        mustDecodeHash("74e60d94a75848b48fc79eac11a1d39f41e1b32046cf948929b729a57b75d5be"),
-			witnessHash: mustDecodeHash("536cef3158d7ea51194b370e02f27265e8584ff4df1cd2829de0074c11f1f1b2"),
+			witnessHash: mustDecodeHash("87f80a62c95421ab5c42b7e2787b472a84856461dd01397f2c37f096f0ef1ab4"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -95,7 +95,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 0, output witness
 				"0869737375616e6365"), // reference data
 			hash:        mustDecodeHash("946b6c226d88723020ab50665fbb76191639b5f1fd851b35edb729d4b17373cc"),
-			witnessHash: mustDecodeHash("274412cdf972ac27b68e57faf1b8eaeeb148ac45eb4bb6c1ff024d7a846e079c"),
+			witnessHash: mustDecodeHash("813b400d2d53cfa89b9cb985b618ef974b81613f1d9a33c8b4f5a6b6c69ef5fe"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -150,7 +150,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 1, output witness
 				"0c646973747269627574696f6e"), // reference data
 			hash:        mustDecodeHash("7af758d0d27a7885cb65243164e2f8084b06aa1a647792cae028926b19324604"),
-			witnessHash: mustDecodeHash("335498668b169b5faea9a87410bc35626654941599815be655d532acf9925286"),
+			witnessHash: mustDecodeHash("b87695021b85c490334fdfc47864c85c5da387d3540ae9836c65096e83b0dfca"),
 		},
 	}
 
@@ -180,7 +180,7 @@ func TestTransaction(t *testing.T) {
 		if err := json.Unmarshal(txJSON, &txFromJSON); err != nil {
 			t.Errorf("test %d: error unmarshaling tx from json: %s", i, err)
 		}
-		if !reflect.DeepEqual(test.tx, &txFromJSON) {
+		if !testutil.DeepEqual(test.tx, &txFromJSON) {
 			t.Errorf("test %d: bc.Tx -> json -> bc.Tx: got:\n%s\nwant:\n%s", i, spew.Sdump(&txFromJSON), spew.Sdump(test.tx))
 		}
 
@@ -188,7 +188,7 @@ func TestTransaction(t *testing.T) {
 		if err := tx1.UnmarshalText([]byte(test.hex)); err != nil {
 			t.Errorf("test %d: unexpected err %v", i, err)
 		}
-		if !reflect.DeepEqual(*tx1, test.tx.TxData) {
+		if !testutil.DeepEqual(*tx1, test.tx.TxData) {
 			t.Errorf("test %d: tx1 is:\n%swant:\n%s", i, spew.Sdump(*tx1), spew.Sdump(test.tx.TxData))
 		}
 	}
@@ -320,8 +320,8 @@ func TestTxHashForSig(t *testing.T) {
 		idx      uint32
 		wantHash string
 	}{
-		{0, "94b72d62d47a8ba581246c0c721b18b36282cf81f2cdb92a3b1ab4fef4640654"},
-		{1, "6bcbf29804ebb70ae9887c4fc343bc06ee69f04befa1dc77ddf2f4a43eff0862"},
+		{0, "e5dcd964d94ce4aa8bf99e73df22d81f6b28fd54f4c2cb3c409a4cc7240cab49"},
+		{1, "0359c90d5038adb93df55955782d350f43808a4dbd298f238861b7b505521c4e"},
 	}
 
 	sigHasher := NewSigHasher(tx)

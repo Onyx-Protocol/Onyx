@@ -31,6 +31,8 @@ const mockHsmKeysAPI = (client) => {
 
     /**
      * Get one page of MockHsm keys, optionally filtered to specified aliases.
+     * <br/><br/>
+     * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the Mock HSM.
      *
      * @param {Query} params={} - Filter and pagination information.
      * @param {Array.<string>} [params.aliases] - List of requested aliases, max 200.
@@ -48,6 +50,8 @@ const mockHsmKeysAPI = (client) => {
     /**
      * Request all MockHsm keys matching the specified query, calling the
      * supplied processor callback with each item individually.
+     * <br/><br/>
+     * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the Mock HSM.
      *
      * @param {Query} params={} - Pagination information.
      * @param {QueryProcessor} processor - Processing callback.

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
-	"reflect"
 	"testing"
 	"time"
 
@@ -73,13 +72,13 @@ func TestBuild(t *testing.T) {
 		}},
 	}
 
-	if !reflect.DeepEqual(got.Transaction, want.Transaction) {
+	if !testutil.DeepEqual(got.Transaction, want.Transaction) {
 		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", got.Transaction, want.Transaction)
 		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", got.Transaction.Inputs, want.Transaction.Inputs)
 		t.Errorf("got tx outputs:\n\t%#v\nwant tx outputs:\n\t%#v", got.Transaction.Outputs, want.Transaction.Outputs)
 	}
 
-	if !reflect.DeepEqual(got.SigningInstructions, want.SigningInstructions) {
+	if !testutil.DeepEqual(got.SigningInstructions, want.SigningInstructions) {
 		t.Errorf("got signing instructions:\n\t%#v\nwant signing instructions:\n\t%#v", got.SigningInstructions, want.SigningInstructions)
 	}
 
@@ -153,7 +152,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 	}
 
 	got := tpl.Transaction.Inputs[0].Arguments()
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
 }
@@ -233,7 +232,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 	got := tpl.Transaction.Inputs[0].Arguments()
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
 
@@ -248,7 +247,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 	got = tpl.Transaction.Inputs[0].Arguments()
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
 }

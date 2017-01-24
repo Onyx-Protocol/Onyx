@@ -3,12 +3,12 @@ package txdb
 import (
 	"context"
 	"math/rand"
-	"reflect"
 	"testing"
 
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/state"
+	"chain/testutil"
 )
 
 type pair struct {
@@ -114,7 +114,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		if loadedSnapshot.Tree.RootHash() != snapshot.Tree.RootHash() {
 			t.Fatalf("%d: Wrote %s to db, read %s from db\n", i, snapshot.Tree.RootHash(), loadedSnapshot.Tree.RootHash())
 		}
-		if !reflect.DeepEqual(loadedSnapshot.Issuances, snapshot.Issuances) {
+		if !testutil.DeepEqual(loadedSnapshot.Issuances, snapshot.Issuances) {
 			t.Fatalf("%d: Wrote %#v issuances to db, read %#v from db\n", i, snapshot.Issuances, loadedSnapshot.Issuances)
 		}
 		snapshot = loadedSnapshot

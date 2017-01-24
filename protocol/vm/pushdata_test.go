@@ -2,8 +2,9 @@ package vm
 
 import (
 	"bytes"
-	"reflect"
 	"testing"
+
+	"chain/testutil"
 )
 
 func TestPushdataOps(t *testing.T) {
@@ -100,7 +101,7 @@ func TestPushdataOps(t *testing.T) {
 			continue
 		}
 
-		if !reflect.DeepEqual(c.startVM, c.wantVM) {
+		if !testutil.DeepEqual(c.startVM, c.wantVM) {
 			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, ops[c.op].name, c.startVM, c.wantVM)
 		}
 	}

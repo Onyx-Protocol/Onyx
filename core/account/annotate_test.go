@@ -3,7 +3,6 @@ package account
 import (
 	"context"
 	"encoding/json"
-	"reflect"
 	"testing"
 
 	"chain/core/query"
@@ -46,7 +45,7 @@ func TestAnnotateTxs(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	if !reflect.DeepEqual(txs, want) {
+	if !testutil.DeepEqual(txs, want) {
 		t.Errorf("AnnotateTxs = %+v want %+v", txs, want)
 	}
 }

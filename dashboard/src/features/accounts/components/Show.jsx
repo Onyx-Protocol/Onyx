@@ -110,7 +110,7 @@ const mapDispatchToProps = ( dispatch ) => ({
   createControlProgram: (data) => dispatch(actions.account.createControlProgram(data)),
   showControlProgram: (body) => dispatch(actions.app.showModal(
     body,
-    actions.app.hideModal()
+    actions.app.hideModal
   )),
 })
 

@@ -2,7 +2,6 @@ package asset
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"chain/crypto/ed25519"
@@ -91,7 +90,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	}
 
 	// Ensure that the annotated asset got saved to the query indexer.
-	if !reflect.DeepEqual(assetsSaved, []bc.AssetID{remoteAssetID}) {
+	if !testutil.DeepEqual(assetsSaved, []bc.AssetID{remoteAssetID}) {
 		t.Errorf("saved annotated assets got %#v, want %#v", assetsSaved, []bc.AssetID{remoteAssetID})
 	}
 
@@ -113,7 +112,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("lookupAsset() = %#v, want %#v", got, want)
 	}
 }

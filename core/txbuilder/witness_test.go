@@ -3,7 +3,6 @@ package txbuilder
 import (
 	"bytes"
 	"encoding/json"
-	"reflect"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -68,7 +67,7 @@ func TestWitnessJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(si, &got) {
+	if !testutil.DeepEqual(si, &got) {
 		t.Errorf("got:\n%s\nwant:\n%s\nJSON was: %s", spew.Sdump(&got), spew.Sdump(si), string(b))
 	}
 }
