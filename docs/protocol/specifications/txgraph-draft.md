@@ -1,6 +1,6 @@
 # Transaction graph structure
 
-Entry types:
+Transaction entry types:
 
     Header
     Issuance
@@ -19,7 +19,7 @@ Abstract Entry:
     - type
     - content
     - witness
-
+    
     ID(entry)  = Hash("txnode" || entry.type || entry.content)
     WID(entry) = TODO: specify how to collect all WIDs from content references - every node must specify how to walk prev witnesses
 
@@ -32,6 +32,7 @@ Header:
                       Retirement,
                       AbstractEntry>
         reference: List<ReferenceData>
+        timerange: TimeRange
         ext
     - witness:
         mintime
@@ -195,11 +196,15 @@ TimeRange:
     Rules:
     1. mintime must be equal to or greater than the mintime specified in the transaction header.
     2. maxtime must be equal to or less than the maxtime specified in the transaction header.
+    
 
 Program: not a separate entry, but an inlined struct
     
     - vm_version: int
     - code:       string
+
+
+## Serialization for hashing
 
 
 ## Translation Layer
@@ -208,10 +213,23 @@ Program: not a separate entry, but an inlined struct
 
 This is a first intermediate step that allows keeping old SDK, old tx index and data structures within Core, but refactoring how txs and outputs are hashed for UTXO set and merkle root in block headers.
 
-TODO: ...
+    1. Create Header entry.
+    2. If tx has non-zero mintime or maxtime, add TimeRange
+    3. TBD
 
 ### 2. NewTx -> OldTx
 
 This is a second intermediate step that allows keeping old SDK, but refactoring how txs are represented and stored internally in Core.
 
 TODO: ...
+
+
+## Compression
+
+1. Serialization prefix indicates the format version that specifies how things are serialized and compressed.
+2. Replace hashes with varint offsets, reconstruct hashes in real time and then verify that top hash matches the source (e.g. merkle tree item)
+3. Replace some repeated elements such as initial block id with indices too.
+
+
+
+
