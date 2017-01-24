@@ -66,7 +66,7 @@ See [ExtStruct](#extstruct) description below.
         version:       Integer
         results:       List<Pointer<Output|Retirement|UnknownEntry>>
         references:    List<Pointer<Data>>
-        timerange:     TimeRange
+        optional timerange:     TimeRange
         ext_hash:      Hash
     - witness:
         mintime:       Integer
@@ -104,10 +104,10 @@ See [ExtStruct](#extstruct) description below.
     - content:
         source:          Pointer<Mux>
         position:        Integer
-        reference_data:  Pointer<ReferenceData>
         asset_id:        Hash
         amount:          Integer
         control_program: Program
+        reference:       Pointer<Data>
         ext_hash:        Hash
     - witness:
         ext_hash:        Hash
@@ -127,9 +127,9 @@ See [ExtStruct](#extstruct) description below.
     - content:
         source:         Pointer<Mux>
         position:       Integer
-        reference_data: ReferenceData
         asset_id:       Hash
         amount:         Integer
+        reference:      Pointer<Data>
         ext_hash:       Hash
     - witness:
         ext_hash:       Hash
@@ -147,6 +147,7 @@ See [ExtStruct](#extstruct) description below.
     - pointers:       List<Hash>
     - content:
         spent_output: Pointer<Output>
+        reference:    Pointer<Data>
         ext_hash:     Hash
     - witness:
         destination:  Hash
@@ -170,6 +171,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
         anchor:           Pointer<Anchor|Input>
         asset_id:         Hash
         amount:           Integer
+        reference:        Pointer<Data>
         ext_hash:         Hash
     - witness:
         destination:      Hash
@@ -240,8 +242,8 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 **Rules:**
 
-1. `mintime` must be equal to or greater than the `header.mintime` specified in the transaction header.
-2. `maxtime` must be equal to or less than the `header.maxtime` specified in the transaction header.
+1. `mintime` must be equal to or greater than the `header.mintime` specified in the transaction header witness.
+2. `maxtime` must be equal to or less than the `header.maxtime` specified in the transaction header witness.
     
 
 ## Program
