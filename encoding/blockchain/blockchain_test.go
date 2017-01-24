@@ -221,7 +221,7 @@ func TestExtensibleString(t *testing.T) {
 			str = append(str, byte(i))
 		}
 		var buf bytes.Buffer
-		_, err := WriteExtensibleString(&buf, func(w io.Writer) error {
+		_, err := WriteExtensibleString(&buf, nil, func(w io.Writer) error {
 			_, err := w.Write(str)
 			return err
 		})
@@ -230,17 +230,20 @@ func TestExtensibleString(t *testing.T) {
 		}
 		var str2 []byte
 		b := buf.Bytes()
-		_, err = ReadExtensibleString(bytes.NewReader(b), true, func(r io.Reader) error {
+		suffix, _, err := ReadExtensibleString(bytes.NewReader(b), func(r io.Reader) error {
 			str2, err = ioutil.ReadAll(r)
 			return err
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
+		if len(suffix) > 0 {
+			t.Errorf("got suffix %x, want empty suffix", suffix)
+		}
 		if !bytes.Equal(str, str2) {
 			t.Errorf("got %x, want %x", str2, str)
 		}
-		_, err = ReadExtensibleString(bytes.NewReader(b[:i]), false, func(r io.Reader) error {
+		_, _, err = ReadExtensibleString(bytes.NewReader(b[:i]), func(r io.Reader) error {
 			return nil
 		})
 		switch err {
@@ -250,21 +253,20 @@ func TestExtensibleString(t *testing.T) {
 		default:
 			t.Errorf("got error %s, want io.EOF", err)
 		}
-		_, err = ReadExtensibleString(bytes.NewReader(b), false, func(r io.Reader) error {
+		_, _, err = ReadExtensibleString(bytes.NewReader(b), func(r io.Reader) error {
 			return nil
 		})
 		if err != nil {
 			t.Error(err)
 		}
-		_, err = ReadExtensibleString(bytes.NewReader(b), true, func(r io.Reader) error {
+		suffix, _, err = ReadExtensibleString(bytes.NewReader(b), func(r io.Reader) error {
 			return nil
 		})
-		switch err {
-		case nil:
-			t.Errorf("got no error, want ErrLeftover")
-		case ErrLeftover:
-		default:
-			t.Errorf("got error %s, want ErrLeftover", err)
+		if err != nil {
+			t.Error(err)
+		}
+		if !bytes.Equal(str, suffix) {
+			t.Errorf("got suffix %x, want %x", suffix, str)
 		}
 	}
 }

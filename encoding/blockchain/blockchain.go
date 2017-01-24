@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"io/ioutil"
 	"math"
 	"sync"
 
@@ -133,37 +134,39 @@ func ReadVarstrList(r io.Reader) ([][]byte, int, error) {
 	return result, n, nil
 }
 
-// WriteExtensibleString sends the output of the given function,
-// together with a varint31 length prefix, to w.
-func WriteExtensibleString(w io.Writer, f func(io.Writer) error) (int, error) {
+// WriteExtensibleString sends the output of the given function, plus
+// the given suffix, to w, together with a varint31 length prefix.
+func WriteExtensibleString(w io.Writer, suffix []byte, f func(io.Writer) error) (int, error) {
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
 	err := f(buf)
 	if err != nil {
 		return 0, err
 	}
+	if len(suffix) > 0 {
+		_, err := buf.Write(suffix)
+		if err != nil {
+			return 0, err
+		}
+	}
 	return WriteVarstr31(w, buf.Bytes())
 }
 
-var ErrLeftover = errors.New("extensible string partially unconsumed")
-
-// ReadExtensibleString reads a varint31 length prefix and then calls
-// the given function to consume that many bytes. If all is true, it
-// is an error for any bytes to be left over.
-func ReadExtensibleString(r io.Reader, all bool, f func(io.Reader) error) (int, error) {
+// ReadExtensibleString reads a varint31 length prefix and that many
+// bytes from r. It then calls the given function to consume those
+// bytes, returning any unconsumed suffix.
+func ReadExtensibleString(r io.Reader, f func(io.Reader) error) ([]byte, int, error) {
 	s, n, err := ReadVarstr31(r)
 	if err != nil {
-		return n, err
+		return nil, n, err
 	}
 	sr := bytes.NewReader(s)
 	err = f(sr)
 	if err != nil {
-		return n, err
+		return nil, n, err
 	}
-	if all && sr.Len() > 0 {
-		return n, ErrLeftover
-	}
-	return n, nil
+	suffix, err := ioutil.ReadAll(sr)
+	return suffix, n, err
 }
 
 // byteReader wraps io.Reader, satisfies io.ByteReader, keeps a

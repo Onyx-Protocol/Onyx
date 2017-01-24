@@ -63,13 +63,15 @@ func createEmptyBlock(block *bc.Block, snapshot *state.Snapshot) *bc.Block {
 
 	return &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:                bc.NewBlockVersion,
-			Height:                 block.Height + 1,
-			PreviousBlockHash:      block.Hash(),
-			TimestampMS:            bc.Millis(time.Now()),
-			ConsensusProgram:       block.ConsensusProgram,
-			TransactionsMerkleRoot: root,
-			AssetsMerkleRoot:       snapshot.Tree.RootHash(),
+			Version:           bc.NewBlockVersion,
+			Height:            block.Height + 1,
+			PreviousBlockHash: block.Hash(),
+			TimestampMS:       bc.Millis(time.Now()),
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: root,
+				AssetsMerkleRoot:       snapshot.Tree.RootHash(),
+				ConsensusProgram:       block.ConsensusProgram,
+			},
 		},
 	}
 }

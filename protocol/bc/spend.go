@@ -6,6 +6,9 @@ type SpendInput struct {
 	Outpoint
 	OutputCommitment
 
+	// The unconsumed suffix of the output commitment
+	OutputCommitmentSuffix []byte
+
 	// Witness
 	Arguments [][]byte
 }

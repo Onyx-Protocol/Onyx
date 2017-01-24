@@ -14,6 +14,11 @@ type (
 		AssetVersion  uint64
 		ReferenceData []byte
 		TypedInput
+
+		// Unconsumed suffixes of the commitment and witness extensible
+		// strings.
+		CommitmentSuffix []byte
+		WitnessSuffix    []byte
 	}
 
 	TypedInput interface {
@@ -83,7 +88,7 @@ func (t *TxInput) SetArguments(args [][]byte) {
 	}
 }
 
-func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
+func (t *TxInput) readFrom(r io.Reader) (err error) {
 	t.AssetVersion, _, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return err
@@ -95,8 +100,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 		assetID AssetID
 	)
 
-	all := txVersion == 1
-	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+	t.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		if t.AssetVersion == 1 {
 			var icType [1]byte
 			_, err = io.ReadFull(r, icType[:])
@@ -127,7 +131,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 				if err != nil {
 					return err
 				}
-				_, err = si.OutputCommitment.readFrom(r, txVersion, 1)
+				si.OutputCommitmentSuffix, _, err = si.OutputCommitment.readFrom(r, 1)
 				if err != nil {
 					return err
 				}
@@ -147,7 +151,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 		return err
 	}
 
-	_, err = blockchain.ReadExtensibleString(r, false, func(r io.Reader) error {
+	t.WitnessSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		// TODO(bobg): test that serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
 		if ii != nil {
 			// read IssuanceInput witness
@@ -204,7 +208,7 @@ func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
 		return errors.Wrap(err, "writing asset version")
 	}
 
-	_, err = blockchain.WriteExtensibleString(w, t.WriteInputCommitment)
+	_, err = blockchain.WriteExtensibleString(w, t.CommitmentSuffix, t.WriteInputCommitment)
 	if err != nil {
 		return errors.Wrap(err, "writing input commitment")
 	}
@@ -215,7 +219,7 @@ func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
 	}
 
 	if serflags&SerWitness != 0 {
-		_, err = blockchain.WriteExtensibleString(w, t.writeInputWitness)
+		_, err = blockchain.WriteExtensibleString(w, t.WitnessSuffix, t.writeInputWitness)
 		if err != nil {
 			return errors.Wrap(err, "writing input witness")
 		}
@@ -253,7 +257,7 @@ func (t *TxInput) WriteInputCommitment(w io.Writer) error {
 			if err != nil {
 				return err
 			}
-			err = inp.OutputCommitment.writeExtensibleString(w, t.AssetVersion)
+			err = inp.OutputCommitment.writeExtensibleString(w, inp.OutputCommitmentSuffix, t.AssetVersion)
 			return err
 		}
 	}
