@@ -199,12 +199,12 @@ TimeConstraint:
 
 ### 1. OldTx -> NewTx
 
-This is a first intermediate step that allows keeping old SDK and old tx indexer, but refactoring how txs and outputs are hashed.
+This is a first intermediate step that allows keeping old SDK, old tx index and data structures within Core, but refactoring how txs and outputs are hashed for UTXO set and merkle root in block headers.
 
 TODO: ...
 
 ### 2. NewTx -> OldTx
 
-This is a second intermediate step that allows keeping old SDK, but refactoring how txs are stored internally in Core.
+This is a second intermediate step that allows keeping old SDK, but refactoring how txs are represented and stored internally in Core.
 
 TODO: ...
