@@ -2,7 +2,7 @@ import chain from '_chain'
 import { context } from 'utility/environment'
 
 const updateInfo = (param) => ({type: 'UPDATE_CORE_INFO', param})
-const setClientToken = (param) => ({type: 'SET_CLIENT_TOKEN', param})
+const setClientToken = (token) => ({type: 'SET_CLIENT_TOKEN', token})
 const clearSession = ({ type: 'USER_LOG_OUT' })
 
 const fetchCoreInfo = (options = {}) => {
