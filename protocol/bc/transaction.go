@@ -368,6 +368,7 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 
 // does not write the enclosing extensible string
 func (tx *TxData) writeCommonWitness(w io.Writer) error {
+	// Future protocol versions may add fields here.
 	return nil
 }
 
