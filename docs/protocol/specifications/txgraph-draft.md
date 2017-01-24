@@ -145,7 +145,7 @@ Anchor:
 
 Mux:
 
-    - type=8
+    - type=7
     - content:
         sources: List<Issuance|Input>
         ext
@@ -163,6 +163,22 @@ Mux:
         3. Test that the source sum equals the destination sum.
         4. Check that there is at least one source with that asset ID.
 
+TODO: how to update UTXO:
+1. throw out visited input.output_ids from UTXO set.
+2. insert visited output.ids (mentioned in tx) to UTXO set.
+
+
+## Translation Layer
+
+### 1. OldTx -> NewTx
+
+This is a first intermediate step that allows keeping old SDK and old tx indexer, but refactoring how txs and outputs are hashed.
+
+
+
+### 2. NewTx -> OldTx
+
+This is a second intermediate step that allows keeping old SDK, but refactoring how txs are stored internally in Core.
 
 
 
