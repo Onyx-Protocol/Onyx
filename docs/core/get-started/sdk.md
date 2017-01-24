@@ -18,7 +18,7 @@ The Ruby SDK is available [via Rubygems](https://rubygems.org/gems/chain-sdk). M
 For most applications, you can simply add the following to your `Gemfile`:
 
 ```
-gem 'chain-sdk', '~> 1.0.0', require: 'chain'
+gem 'chain-sdk', '~> 1.0.1', require: 'chain'
 ```
 
 ## Node.js
