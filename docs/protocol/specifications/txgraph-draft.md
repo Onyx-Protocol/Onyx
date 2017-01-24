@@ -10,7 +10,7 @@ All entries inherit from a common type `AbstractEntry`.
     Output
     Retirement
     Mux
-    ReferenceData
+    Data
     Anchor
     Predicate
     TimeRange
@@ -40,74 +40,77 @@ Witness ID of the transaction is based on WIDs of intermediate entries.
 
 ## Abstract Entry (base type for all concrete entries)
 
-    - type:      int
-    - pointers: [Hash256]
-    - content:   ExtensibleStruct
-    - witness:   ExtensibleStruct
+    - type:      Integer
+    - pointers:  List<Hash>
+    - content:   ExtStruct
+    - witness:   ExtStruct
 
 Note: `pointers` is a flat list of hashes of other entries. 
 The named fields for pointers and lists of pointers in the `content` are _indices_ to that flat list.
 
-See [ExtensibleStruct](#extensiblestruct) description below.
+See [ExtStruct](#extstruct) description below.
 
 
 ## UnknownEntry
 
-    - type:         unknown int
-    - pointers:    [Hash256]
-    - content.hash: Hash256
-    - witness.hash: Hash256
+    - type:         unknown Integer
+    - pointers:     List<Hash>
+    - content.hash: Hash
+    - witness.hash: Hash
 
 ## Header
 
-    - type=header
-    - pointers: [Hash256]
+    - type="header"
+    - pointers: List<Hash>
     - content:
-        version: int
-        results: List<Output,
-                      Retirement,
-                      AbstractEntry>
-        references: List<ReferenceData>
-        timerange:  TimeRange
-        ext_hash:   Hash256
+        version:       Integer
+        results:       List<Pointer<Output|Retirement|UnknownEntry>>
+        references:    List<Pointer<Data>>
+        timerange:     TimeRange
+        ext_hash:      Hash
     - witness:
-        mintime
-        maxtime
-        ext_hash: Hash256
+        mintime:       Integer
+        maxtime:       Integer
+        ext_hash:      Hash
 
 **Rules:**
 
 1. If version is known, all `ext_hash`es must be hashes of empty strings, AbstractEntries are not allowed in pointers.
-2. Results must contain at least one item.
-3. Every result must be present and valid.
-4. mintime must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
-5. maxtime must be either zero or a timestamp lower than the timestamp of the block that includes the transaction.
+2. Results indices must correspond to pointers.
+3. Results must contain at least one item.
+4. Results must of type `Output|Retirement|UnknownEntry`.
+5. Every result must be present and valid.
+6. Every entry in `references` must be present and be of type `Data`.
+7. mintime must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
+8. maxtime must be either zero or a timestamp lower than the timestamp of the block that includes the transaction.
 
 
-# ReferenceData
+# Data
 
-    - type=refdata1
-    - content: blob
-    - witness: empty
+    - type="data1"
+    - content_hash: Hash
+    - witness_hash: HASH(empty_string)
 
 **Rules:**
 
 1. witness must be empty
+2. Note: content itself may or may not be provided, but the content_hash must be known.
+
 
 ## Output
 
-    - type=output1
-    - pointers: [Hash256]
+    - type="output1"
+    - pointers:          List<Hash>
     - content:
-        source: Mux
-        position: Integer
-        reference_data: ReferenceData
-        asset_id
-        amount
+        source:          Pointer<Mux>
+        position:        Integer
+        reference_data:  Pointer<ReferenceData>
+        asset_id:        Hash
+        amount:          Integer
         control_program: Program
-        ext_hash: Hash256
+        ext_hash:        Hash
     - witness:
-        ext_hash: Hash256
+        ext_hash:        Hash
    
 **Rules:**
 
@@ -119,17 +122,17 @@ See [ExtensibleStruct](#extensiblestruct) description below.
 
 ## Retirement
 
-    - type=retirement1
-    - pointers: [Hash256]
+    - type="retirement1"
+    - pointers:         List<Hash>
     - content:
-        source: Mux
-        position: Integer
+        source:         Pointer<Mux>
+        position:       Integer
         reference_data: ReferenceData
-        asset_id
-        amount
-        ext_hash: Hash256
+        asset_id:       Hash
+        amount:         Integer
+        ext_hash:       Hash
     - witness:
-        ext_hash: Hash256
+        ext_hash:       Hash
 
 **Rules:**
 
@@ -140,14 +143,15 @@ See [ExtensibleStruct](#extensiblestruct) description below.
 
 ## Input
 
-    - type=input1
+    - type="input1"
+    - pointers:       List<Hash>
     - content:
-        spent_output: Output
-        ext_hash: Hash256
+        spent_output: Pointer<Output>
+        ext_hash:     Hash
     - witness:
-        destination: Hash256
-        arguments: String
-        ext_hash: Hash256
+        destination:  Hash
+        arguments:    String
+        ext_hash:     Hash
 
 **Rules:**
 
@@ -160,19 +164,20 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 ## Issuance
 
-    - type=issuance1
+    - type="issuance1"
+    - pointers:           List<Hash>
     - content:
-        anchor: Anchor|Input
-        asset_id
-        amount
-        ext_hash: Hash256
+        anchor:           Pointer<Anchor|Input>
+        asset_id:         Hash
+        amount:           Integer
+        ext_hash:         Hash
     - witness:
-        destination: Hash256
-        initial_block_id
-        asset_definition
+        destination:      Hash
+        initial_block_id: Hash
+        asset_definition: Pointer<Data>
         issuance_program: Program
-        arguments: String
-        ext_hash: Hash256
+        arguments:        String
+        ext_hash:         Hash
 
 **Rules:**
 
@@ -182,14 +187,15 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 ## Anchor
 
-    - type=anchor1
+    - type="anchor1"
+    - pointers:     List<Hash>
     - content:
-        program: Program
-        timerange: TimeRange
-        ext_hash: Hash256
+        program:    Program
+        timerange:  TimeRange
+        ext_hash:   Hash
     - witness:
-        arguments: String
-        ext_hash: Hash256
+        arguments:  String
+        ext_hash:   Hash
 
 **Rules:**
 
@@ -200,13 +206,14 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 ## Mux
 
-    - type=mux1
-    - content:
-        sources: List<Issuance|Input>
-        ext_hash: Hash256
+    - type="mux1"
+    - pointers:       List<Hash>
+    - content:        
+        sources:      List<Issuance|Input>
+        ext_hash:     Hash
     - witness:
         destinations: List<Output|Retirement>
-        ext_hash: Hash256
+        ext_hash:     Hash
 
 **Rules:**
 
@@ -222,13 +229,14 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 ## TimeRange
 
-    - type=timerange
+    - type="timerange"
+    - pointers: empty list
     - content:
-        mintime: integer
-        maxtime: integer
-        ext_hash: Hash256
+        mintime:  Integer
+        maxtime:  Integer
+        ext_hash: Hash
     - witness:
-        ext_hash: Hash256
+        ext_hash: Hash
 
 **Rules:**
 
@@ -240,30 +248,58 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 This is not a separate entry, but an inlined struct that carries VM version and the program code in VM-specific encoding.
 
-    - vm_version: integer
-    - code:       String
+    Struct {
+        vm_version: Integer
+        code:       String
+    }
 
 
-## ExtensibleStruct
+## Serialization for hashing
+
+Primitives:
+    
+    Byte
+    Hash
+    Integer
+    String
+    List
+    Struct
+
+* `Byte` is encoded as 1 byte.
+* `Hash` is encoded as 32 bytes.
+* `Integer` is encoded as LEB128, with 63-bit limit.
+* `String` is encoded as LEB128 length prefix with 31-bit limit followed by raw bytes.
+* `List` is encoded as LEB128 length prefix with 31-bit limit followed by serialized items, one by one (`Byte|Hash|Integer|String|List|Struct|ExtStruct`) as defined by the schema.
+* `Struct` is encoded as concatenation of all its serialized fields.
+* `ExtStruct` is encoded as concatenation of top fields with first `exthash` with a recursive rule for `exthash`. See below.
+
+Common types:
+
+    Pointer = Integer (an index in the entry.pointers field)
+    Program = Struct{vm_version: Integer, code: String}
+
+
+
+## ExtStruct
 
 Extensible struct contains flat list of fields and the last field is the extension hash.
 
-The remaining fields are committed to that extension hash. They are defined in flat namespace in a protobuf definition, but for the hashing purposes we group them recursively under another ExtensibleStruct instance:
-    
-    ExtensibleStruct {
+The remaining fields are committed to that extension hash. They are defined in flat namespace in a protobuf definition, but for the hashing purposes we group them recursively under another ExtStruct instance:
+
+    ExtStruct {
         fields...
-        exthash: Hash256
-        ext: ExtensibleStruct
+        exthash: Hash
+        ext: ExtStruct
     }
-    
-    exthash == Hash(ext)
-    Hash(ExtensibleStruct) == Hash(serialized-fields || exthash)
+
+    exthash == HASH(ext)
+    HASH(ExtStruct) == HASH(serialized-fields || exthash)
 
 Old clients ignore the extended fields (`ext`) and only see the first fields they understand plus the `exthash`.
 
 If the extensibility is not allowed (e.g. when tx version is known), the last `exthash` must be a hash of an empty string.
 
-### Examples:
+**Examples:**
 
 V1 schema:
 
@@ -308,22 +344,6 @@ V3 schema:
 
 The scheme is applied recursively for the subsequent updates.
 
-
-## Serialization for hashing
-
-Primitives:
-    
-    byte
-    hash
-    integer
-    string
-    list
-
-* `byte` is encoded as 1 byte.
-* `hash` is encoded as 32 bytes.
-* `integer` is encoded as LEB128, with 63-bit limit.
-* `string` is encoded as LEB128 length prefix with 31-bit limit followed by raw bytes.
-* `list` is encoded as LEB128 length prefix with 31-bit limit followed by serialized items, one by one (`byte|hash|integer|string|list`) as defined by the schema.
 
 
 ## Translation Layer
