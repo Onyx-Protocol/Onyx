@@ -10,7 +10,9 @@ import (
 func TestNextProgram(t *testing.T) {
 	block := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			ConsensusProgram: []byte{0x1, 0x2, 0x3},
+			BlockCommitment: bc.BlockCommitment{
+				ConsensusProgram: []byte{0x1, 0x2, 0x3},
+			},
 		},
 	}
 	prog, err := Assemble("NEXTPROGRAM 0x010203 EQUAL")

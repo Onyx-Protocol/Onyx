@@ -171,13 +171,15 @@ func TestGenerateBlock(t *testing.T) {
 
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:                bc.NewBlockVersion,
-			Height:                 2,
-			PreviousBlockHash:      b1.Hash(),
-			TransactionsMerkleRoot: wantTxRoot,
-			AssetsMerkleRoot:       wantAssetsRoot,
-			TimestampMS:            bc.Millis(now),
-			ConsensusProgram:       b1.ConsensusProgram,
+			Version:           bc.NewBlockVersion,
+			Height:            2,
+			PreviousBlockHash: b1.Hash(),
+			TimestampMS:       bc.Millis(now),
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: wantTxRoot,
+				AssetsMerkleRoot:       wantAssetsRoot,
+				ConsensusProgram:       b1.ConsensusProgram,
+			},
 		},
 		Transactions: txs,
 	}

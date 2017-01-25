@@ -60,11 +60,20 @@ const (
 // Most users will want to use Tx instead;
 // it includes the hash.
 type TxData struct {
-	Version       uint64
-	Inputs        []*TxInput
-	Outputs       []*TxOutput
-	MinTime       uint64
-	MaxTime       uint64
+	Version uint64
+	Inputs  []*TxInput
+	Outputs []*TxOutput
+
+	// Common fields
+	MinTime uint64
+	MaxTime uint64
+
+	// The unconsumed suffix of the common fields extensible string
+	CommonFieldsSuffix []byte
+
+	// The unconsumed suffix of the common witness extensible string
+	CommonWitnessSuffix []byte
+
 	ReferenceData []byte
 }
 
@@ -127,8 +136,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	}
 
 	// Common fields
-	all := tx.Version == 1
-	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+	tx.CommonFieldsSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		tx.MinTime, _, err = blockchain.ReadVarint63(r)
 		if err != nil {
 			return errors.Wrap(err, "reading transaction mintime")
@@ -141,9 +149,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	}
 
 	// Common witness
-	_, err = blockchain.ReadExtensibleString(r, false, func(r io.Reader) error {
-		return tx.readCommonWitness(r)
-	})
+	tx.CommonWitnessSuffix, _, err = blockchain.ReadExtensibleString(r, tx.readCommonWitness)
 	if err != nil {
 		return errors.Wrap(err, "reading transaction common witness")
 	}
@@ -154,7 +160,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	}
 	for ; n > 0; n-- {
 		ti := new(TxInput)
-		err = ti.readFrom(r, tx.Version)
+		err = ti.readFrom(r)
 		if err != nil {
 			return errors.Wrapf(err, "reading input %d", len(tx.Inputs))
 		}
@@ -321,7 +327,7 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 	}
 
 	// common fields
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+	_, err = blockchain.WriteExtensibleString(w, tx.CommonFieldsSuffix, func(w io.Writer) error {
 		_, err := blockchain.WriteVarint63(w, tx.MinTime)
 		if err != nil {
 			return errors.Wrap(err, "writing transaction min time")
@@ -334,9 +340,7 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 	}
 
 	// common witness
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-		return tx.writeCommonWitness(w)
-	})
+	_, err = blockchain.WriteExtensibleString(w, tx.CommonWitnessSuffix, tx.writeCommonWitness)
 	if err != nil {
 		return errors.Wrap(err, "writing common witness")
 	}

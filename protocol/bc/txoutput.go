@@ -13,6 +13,11 @@ import (
 type TxOutput struct {
 	AssetVersion uint64
 	OutputCommitment
+
+	// Unconsumed suffixes of the commitment and witness extensible strings.
+	CommitmentSuffix []byte
+	WitnessSuffix    []byte
+
 	ReferenceData []byte
 }
 
@@ -37,7 +42,7 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 		return errors.Wrap(err, "reading asset version")
 	}
 
-	_, err = to.OutputCommitment.readFrom(r, txVersion, to.AssetVersion)
+	to.CommitmentSuffix, _, err = to.OutputCommitment.readFrom(r, to.AssetVersion)
 	if err != nil {
 		return errors.Wrap(err, "reading output commitment")
 	}
@@ -59,7 +64,7 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 		return errors.Wrap(err, "writing asset version")
 	}
 
-	err = to.OutputCommitment.writeExtensibleString(w, to.AssetVersion)
+	err = to.WriteCommitment(w)
 	if err != nil {
 		return errors.Wrap(err, "writing output commitment")
 	}
@@ -81,6 +86,6 @@ func (to *TxOutput) witnessHash() Hash {
 	return EmptyStringHash
 }
 
-func (to *TxOutput) WriteCommitment(w io.Writer) {
-	to.OutputCommitment.writeExtensibleString(w, to.AssetVersion)
+func (to *TxOutput) WriteCommitment(w io.Writer) error {
+	return to.OutputCommitment.writeExtensibleString(w, to.CommitmentSuffix, to.AssetVersion)
 }

@@ -254,10 +254,18 @@ func TestVerifyTxInput(t *testing.T) {
 
 func TestVerifyBlockHeader(t *testing.T) {
 	block := &bc.Block{
-		BlockHeader: bc.BlockHeader{Witness: [][]byte{{2}, {3}}},
+		BlockHeader: bc.BlockHeader{
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{{2}, {3}},
+			},
+		},
 	}
 	prevBlock := &bc.Block{
-		BlockHeader: bc.BlockHeader{ConsensusProgram: []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}},
+		BlockHeader: bc.BlockHeader{
+			BlockCommitment: bc.BlockCommitment{
+				ConsensusProgram: []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
+			},
+		},
 	}
 
 	got, gotErr := VerifyBlockHeader(&prevBlock.BlockHeader, block)
@@ -270,7 +278,11 @@ func TestVerifyBlockHeader(t *testing.T) {
 	}
 
 	block = &bc.Block{
-		BlockHeader: bc.BlockHeader{Witness: [][]byte{make([]byte, 50000)}},
+		BlockHeader: bc.BlockHeader{
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{make([]byte, 50000)},
+			},
+		},
 	}
 
 	_, gotErr = VerifyBlockHeader(&prevBlock.BlockHeader, block)
@@ -496,8 +508,16 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 				ok = false
 			}
 		}()
-		prev := &bc.BlockHeader{ConsensusProgram: program}
-		block := &bc.Block{BlockHeader: bc.BlockHeader{Witness: witnesses}}
+		prev := &bc.BlockHeader{
+			BlockCommitment: bc.BlockCommitment{
+				ConsensusProgram: program,
+			},
+		}
+		block := &bc.Block{BlockHeader: bc.BlockHeader{
+			BlockWitness: bc.BlockWitness{
+				Witness: witnesses,
+			},
+		}}
 		verifyBlockHeader(prev, block)
 		return true
 	}
