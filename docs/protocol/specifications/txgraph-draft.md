@@ -45,7 +45,7 @@ See [ExtStruct](#extstruct) description below.
         content:
             version:       Integer
             results:       List<Pointer<Output|Retirement|UnknownEntry>>
-            references:    List<Pointer<Data>>
+            data:          Pointer<Data|UnknownEntry>
             mintime:       Integer
             maxtime:       Integer
             ext_hash:      Hash
@@ -59,7 +59,7 @@ See [ExtStruct](#extstruct) description below.
 2. Results must contain at least one item.
 3. Results must of type `Output|Retirement|UnknownEntry`.
 4. Every result must be present and valid.
-6. Every entry in `references` must be present and be of type `Data`.
+6. Entry `data` must be present and must be of type `Data` or `UnknownEntry`.
 7. mintime must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
 8. maxtime must be either zero or a timestamp lower than the timestamp of the block that includes the transaction.
 
@@ -85,7 +85,7 @@ See [ExtStruct](#extstruct) description below.
         content:
             source:          ValueSource
             control_program: Program
-            reference:       Pointer<Data>
+            data:            Pointer<Data>
             ext_hash:        Hash
         witness:
             ext_hash:        Hash
@@ -113,7 +113,7 @@ See [ExtStruct](#extstruct) description below.
         type="retirement1"
         content:
             source:         ValueSource
-            reference:      Pointer<Data>
+            data:           Pointer<Data>
             ext_hash:       Hash
         witness:
             ext_hash:       Hash
@@ -142,7 +142,7 @@ See [ExtStruct](#extstruct) description below.
         type="input1"
         content:
           spent_output: Pointer<Output>
-          reference:    Pointer<Data>
+          data:         Pointer<Data>
           ext_hash:     Hash
         witness:
           destination:  ValueDestination
@@ -177,7 +177,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
         content:
           anchor:           Pointer<Anchor|Input>
           value:            AssetAmount
-          reference:        Pointer<Data>
+          data:             Pointer<Data>
           ext_hash:         Hash
         witness:
           destination:      ValueDestination
@@ -444,10 +444,10 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
 2. Let `newtx` be a new instance of `Header` entry.
 3. Let `container` be the container for all entries.
 4. Set `newtx.version` to `oldtx.version`.
-5. If `oldtx.reference_data` is non-empty:
+5. If `oldtx.data` is non-empty:
     1. Let `refdata` be a new `Data` entry.
-    2. Set `refdata.content` to `tx.reference_data`.
-    3. Add `refdata.id` to `newtx.references`.
+    2. Set `refdata.content` to `tx.data`.
+    3. Set `newtx.data` to `refdata.id`.
     4. Add `refdata` to the `container`.
 6. Set `newtx.mintime` to `oldtx.mintime`.
 7. Set `newtx.maxtime` to `oldtx.maxtime`.
@@ -488,7 +488,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
 10. For each spend input `oldspend`:
     1. Let `inp` be a new `Input` entry.
     2. Set `inp.spent_output` to `oldspend.output_id`.
-    3. Set `inp.reference_data` to a nil pointer `0x00000...`.
+    3. Set `inp.data` to a nil pointer `0x00000...`.
     4. Set `inp.arguments` to `oldspend.arguments`.
     5. Create `ValueSource` struct `src`:
         1. Set `src.ref` to `inp.id`.
@@ -509,10 +509,10 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         2. Set `src.position` to `i`.
         3. Set `src.value` to `AssetAmount { oldout.asset_id, oldout.amount }`.
         4. Set `destentry.source` to `src`.
-    4. If `oldout.reference_data` is non-empty:
+    4. If `oldout.data` is non-empty:
         1. Let `data` be a new `Data` entry.
-        2. Set `data.content` to `oldout.reference_data`.
-        3. Set `destentry.reference_data` to `data.id`.
+        2. Set `data.content` to `oldout.data`.
+        3. Set `destentry.data` to `data.id`.
         4. Add `data` to `container`.
     5. Add `destentry` to `container`.
 12. For each input or issuance in `mux.sources`:
