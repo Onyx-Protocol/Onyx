@@ -551,15 +551,15 @@ When inserting old tx's outputs into UTXO merkle set:
 ### OldIssuanceHash -> NewIssuanceHash
 
 1. Map old tx to new tx.
-2. For each anchor entry:
+2. For each anchor entry in the new tx:
     1. check its time range is within network-defined limits (not unbounded).
     2. Use this entry ID as NewIssuanceHash
-    3. Insert new issuance hash in the current _issuance memory_ annotated with expiration date based on anchor.timerange.maxtime.
+    3. Insert new issuance hash in the current _issuance memory_ annotated with expiration date based on `anchor.timerange.maxtime`.
 
 ### OldSigHash -> NewSigHash
 
 1. Map old tx to new tx.
-2. For each entry where program is evaluated (Input, Issuance or Anchor):
+2. For each entry where a program is evaluated (Input, Issuance or Anchor):
     1. Compute `sighash = HASH(txid || entryid)`.
 
 
