@@ -576,3 +576,23 @@ TODO: ...
 1. Serialization prefix indicates the format version that specifies how things are serialized and compressed.
 2. Replace hashes with varint offsets, reconstruct hashes in real time and then verify that top hash matches the source (e.g. merkle tree item)
 3. Replace some repeated elements such as initial block id with indices too.
+
+### 3. VM mapping
+
+This shows how the implementation of each of the VM instructions need to be changed. Ones that say "no change" will work as already implemented on the OLD data structure. 
+
+* CHECKOUTPUT:   no change
+* ASSET:         no change
+* AMOUNT:        no change
+* PROGRAM:       no change
+* MINTIME:       no change
+* MAXTIME:       no change
+* INDEX:         no change
+* NONCE:         eliminated
+* TXREFDATAHASH: `newtx.refdatahash()`
+* REFDATAHASH:   `currentinput.refdatahash()`
+* TXSIGHASH:     `currentinput.id() || newtx.sighash()`
+* OUTPUTID:      `currentinput.spent_output.id()`
+
+
+
