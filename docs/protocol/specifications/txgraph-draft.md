@@ -20,33 +20,14 @@ All entries inherit from a common type `AbstractEntry`.
 
 Identifier of the entry is based on its type and content. Content is length-prefixed, type is varint-encoded
 
-    entry.id  = HASH(
-        "entryid:"  || 
-        entry.type  || ":" ||
-        entry.content_hash || 
-        concat(pointers.map{ entry.id })
-    )
+    entry.id  = HASH("entryid:" || entry.type  || ":" || entry.content_hash)
 
-### Witness ID
-
-Witness ID of the transaction is based on WIDs of intermediate entries.
-
-    entry.wid = HASH(
-        "entrywid:"        || 
-        entry.id           || 
-        entry.witness_hash ||
-        concat(pointers.map{ entry.wid })
-    )
 
 ## Abstract Entry (base type for all concrete entries)
 
     - type:      Integer
-    - pointers:  List<Hash>
     - content:   ExtStruct
     - witness:   ExtStruct
-
-Note: `pointers` is a flat list of hashes of other entries. 
-The named fields for pointers and lists of pointers in the `content` are _indices_ to that flat list.
 
 See [ExtStruct](#extstruct) description below.
 
@@ -54,14 +35,12 @@ See [ExtStruct](#extstruct) description below.
 ## UnknownEntry
 
     - type:         unknown Integer
-    - pointers:     List<Hash>
     - content.hash: Hash
     - witness.hash: Hash
 
 ## Header
 
     - type="header"
-    - pointers: List<Hash>
     - content:
         version:       Integer
         results:       List<Pointer<Output|Retirement|UnknownEntry>>
@@ -75,10 +54,9 @@ See [ExtStruct](#extstruct) description below.
 **Rules:**
 
 1. If version is known, all `ext_hash`es must be hashes of empty strings, AbstractEntries are not allowed in pointers.
-2. Results indices must correspond to pointers.
-3. Results must contain at least one item.
-4. Results must of type `Output|Retirement|UnknownEntry`.
-5. Every result must be present and valid.
+2. Results must contain at least one item.
+3. Results must of type `Output|Retirement|UnknownEntry`.
+4. Every result must be present and valid.
 6. Every entry in `references` must be present and be of type `Data`.
 7. mintime must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
 8. maxtime must be either zero or a timestamp lower than the timestamp of the block that includes the transaction.
@@ -99,7 +77,6 @@ See [ExtStruct](#extstruct) description below.
 ## Output
 
     - type="output1"
-    - pointers:          List<Hash>
     - content:
         source:          Pointer<Mux>
         position:        Integer
@@ -122,7 +99,6 @@ See [ExtStruct](#extstruct) description below.
 ## Retirement
 
     - type="retirement1"
-    - pointers:         List<Hash>
     - content:
         source:         Pointer<Mux>
         position:       Integer
@@ -143,7 +119,6 @@ See [ExtStruct](#extstruct) description below.
 ## Input
 
     - type="input1"
-    - pointers:       List<Hash>
     - content:
         spent_output: Pointer<Output>
         reference:    Pointer<Data>
@@ -165,7 +140,6 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 ## Issuance
 
     - type="issuance1"
-    - pointers:           List<Hash>
     - content:
         anchor:           Pointer<Anchor|Input>
         asset_id:         Hash
@@ -173,7 +147,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
         reference:        Pointer<Data>
         ext_hash:         Hash
     - witness:
-        destination:      Ref<Mux|UnknownEntry>
+        destination:      Pointer<Mux|UnknownEntry>
         initial_block_id: Hash
         asset_definition: Pointer<Data>
         issuance_program: Program
@@ -190,7 +164,6 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 ## Anchor
 
     - type="anchor1"
-    - pointers:     List<Hash>
     - content:
         program:    Program
         timerange:  Pointer<TimeRange>
@@ -209,7 +182,6 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 ## Mux
 
     - type="mux1"
-    - pointers:       List<Hash>
     - content:        
         sources:      List<Pointer<Issuance|Input>>
         ext_hash:     Hash
@@ -231,14 +203,16 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 ## TimeRange
 
-    - type="timerange"
-    - pointers: empty list
-    - content:
-        mintime:  Integer
-        maxtime:  Integer
-        ext_hash: Hash
-    - witness:
-        ext_hash: Hash
+    entry {
+        type="timerange"
+        pointers: empty list
+        content:
+            mintime:  Integer
+            maxtime:  Integer
+            ext_hash: Hash
+        witness:
+            ext_hash: Hash
+    }
 
 **Rules:**
 
@@ -257,13 +231,11 @@ This is not a separate entry, but an inlined struct that carries VM version and 
 
 ## Pointer
 
-Index in a `pointers` list
+Pointer is:
 
-
-## EntryID
-
-
-
+1. encoded as `Hash`,
+2. identifies another entry by its ID,
+3. restricts the possible acceptable types.
 
 
 ## Serialization for hashing
@@ -287,7 +259,7 @@ Primitives:
 
 Common types:
 
-    Pointer = Integer (an index in the entry.pointers field)
+    Pointer = Hash (identifies another entry)
     Program = Struct{vm_version: Integer, code: String}
 
 
