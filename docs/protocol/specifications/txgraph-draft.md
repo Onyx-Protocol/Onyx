@@ -436,7 +436,7 @@ The scheme is applied recursively for the subsequent updates.
 
 ## Translation Layer
 
-### 1. OldTx -> NewTx
+### OldTx -> NewTx
 
 This is a first intermediate step that allows keeping old SDK, old tx index and data structures within Core, but refactoring how txs and outputs are hashed for UTXO set and merkle root in block headers.
 
@@ -519,9 +519,52 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
     1. TBD: add mux.id to the inputs/issuances destinations.
 
 
+### OldTxID -> NewTxID
+
+1. Map old tx to `newtx`.
+2. Return new tx's header ID as NewTxID.
+
+### OldWitTxID -> NewWitTxID
+
+1. Map old tx to new tx.
+2. Return new tx's header ID as NewWitTxID. This is the same as NewTxID.
+
+### OldOutputID -> NewOutputID
+
+When indexing old tx's outputs:
+
+1. Map old tx to new tx.
+2. Take corresponding new output.
+3. Compute its entry ID which will be NewOutputID.
+4. Use this new output ID to identify unspent outputs in the DB.
+
+### OldUnspentID -> NewUnspentID
+
+When inserting old tx's outputs into UTXO merkle set:
+
+1. Map old tx to new tx.
+2. Take corresponding new output.
+3. Compute its entry ID which will be NewUnspentID. (This is the same as NewOutputID.)
+4. Use this new unspent ID to insert into UTXO merkle set.
 
 
-### 2. NewTx -> OldTx
+### OldIssuanceHash -> NewIssuanceHash
+
+1. Map old tx to new tx.
+2. For each anchor entry:
+    1. check its time range is within network-defined limits (not unbounded).
+    2. Use this entry ID as NewIssuanceHash
+    3. Insert new issuance hash in the current _issuance memory_ annotated with expiration date based on anchor.timerange.maxtime.
+
+### OldSigHash -> NewSigHash
+
+1. Map old tx to new tx.
+2. For each entry where program is evaluated (Input, Issuance or Anchor):
+    1. Compute `sighash = HASH(txid || entryid)`.
+
+
+
+### NewTx -> OldTx
 
 This is a second intermediate step that allows keeping old SDK, but refactoring how txs are represented and stored internally in Core.
 
