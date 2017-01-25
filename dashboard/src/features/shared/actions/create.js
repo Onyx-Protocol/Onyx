@@ -1,5 +1,4 @@
-import chain from '_chain'
-import { context } from 'utility/environment'
+import { chainClient } from 'utility/environment'
 import { parseNonblankJSON } from 'utility/string'
 import { push } from 'react-router-redux'
 import actions from 'actions'
@@ -14,7 +13,7 @@ export default function(type, options = {}) {
     showCreate: push(createPath),
     created,
     submitForm: (data) => {
-      const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
+      const clientApi = options.clientApi || chainClient()[`${type}s`]
       let promise = Promise.resolve()
 
       if (typeof data.id == 'string')     data.id = data.id.trim()
@@ -40,7 +39,7 @@ export default function(type, options = {}) {
                   ? key.value.trim()
                   : (data.alias || 'generated') + '-' + uuid.v4()
 
-                return new chain.MockHsm({alias}).create(context())
+                return chainClient().mockHsm.keys.create({alias})
               }).then(newKey => {
                 data.root_xpubs.push(newKey.xpub)
               })
@@ -52,7 +51,7 @@ export default function(type, options = {}) {
       }
 
       return function(dispatch) {
-        return promise.then(() => new chain[className](data).create(context())
+        return promise.then(() => clientApi.create(data)
           .then((resp) => {
             dispatch(created(resp))
 
