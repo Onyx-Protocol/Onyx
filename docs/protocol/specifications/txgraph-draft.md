@@ -53,7 +53,7 @@ See [ExtStruct](#extstruct) description below.
 
 **Rules:**
 
-1. If version is known, all `ext_hash`es must be hashes of empty strings, AbstractEntries are not allowed in pointers.
+1. If version is known, all `ext_hash`es must be hashes of empty strings, `UnknownEntry`s are not allowed in `results`.
 2. Results must contain at least one item.
 3. Results must of type `Output|Retirement|UnknownEntry`.
 4. Every result must be present and valid.
@@ -163,14 +163,16 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 ## Anchor
 
-    - type="anchor1"
-    - content:
-        program:    Program
-        timerange:  Pointer<TimeRange>
-        ext_hash:   Hash
-    - witness:
-        arguments:  String
-        ext_hash:   Hash
+    entry {
+        type="anchor1"
+        content:
+          program:    Program
+          timerange:  Pointer<TimeRange>
+          ext_hash:   Hash
+        witness:
+          arguments:  String
+          ext_hash:   Hash
+    }
 
 **Rules:**
 
@@ -181,13 +183,15 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 ## Mux
 
-    - type="mux1"
-    - content:        
-        sources:      List<Pointer<Issuance|Input>>
-        ext_hash:     Hash
-    - witness:
-        destinations: List<Pointer<Output|Retirement>>
-        ext_hash:     Hash
+    entry {
+        type="mux1"
+        content:        
+            sources:      List<Pointer<Issuance|Input>>
+            ext_hash:     Hash
+        witness:
+            destinations: List<Pointer<Output|Retirement>>
+            ext_hash:     Hash
+    }
 
 **Rules:**
 
@@ -205,7 +209,6 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
     entry {
         type="timerange"
-        pointers: empty list
         content:
             mintime:  Integer
             maxtime:  Integer
