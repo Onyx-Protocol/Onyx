@@ -43,7 +43,7 @@ See [ExtStruct](#extstruct) description below.
     - type="header"
     - content:
         version:       Integer
-        results:       List<Pointer<Output|Retirement|UnknownEntry>>
+        results:     List<Pointer<Output|Retirement|UnknownEntry>>
         references:    List<Pointer<Data>>
         mintime:       Integer
         maxtime:       Integer
@@ -80,21 +80,19 @@ See [ExtStruct](#extstruct) description below.
     - content:
         source:          Pointer<Mux>
         position:        Integer
-        asset_id:        Hash
-        amount:          Integer
+        value:           AssetAmount
         control_program: Program
         reference:       Pointer<Data>
         ext_hash:        Hash
     - witness:
         ext_hash:        Hash
-   
+
 **Rules:**
 
-1. `amount` is in range.
-2. `source` must be present and valid.
-3. `source.destinations[position]` must equal self.id.
-4. if tx version is known, all `ext_hash`es must be hashes of empty strings.
-5. Insert `self.id` in utxo set. 
+1. `source` must be present and valid.
+2. `source.destinations[position]` must equal self.id.
+3. if tx version is known, all `ext_hash`es must be hashes of empty strings.
+4. Insert `self.id` in utxo set.
 
 ## Retirement
 
@@ -102,8 +100,7 @@ See [ExtStruct](#extstruct) description below.
     - content:
         source:         Pointer<Mux>
         position:       Integer
-        asset_id:       Hash
-        amount:         Integer
+        value:          AssetAmount
         reference:      Pointer<Data>
         ext_hash:       Hash
     - witness:
@@ -124,15 +121,20 @@ See [ExtStruct](#extstruct) description below.
         reference:    Pointer<Data>
         ext_hash:     Hash
     - witness:
-        destination:  Ref<Mux|UnknownEntry>
-        arguments:    String
-        ext_hash:     Hash
+        destination:       Ref<Mux|UnknownEntry>
+        position:          Integer
+        arguments:         String
+        ext_hash:          Hash
 
 **Rules:**
 
 1. Validate that `spent_output` is present in tx.
-2. The `spent_output.program` must evaluate to `true` with given `arguments`.
-3. Remove `spent_output` from UTXO set.
+2. Validate that `destination` is present in tx.
+3. If `destination` is a Mux:
+  1. Validate that `destination.sources[position]` is equal to this input's ID.
+  2. Validate that `destination.values[position]` is equal to `spent_output.value`.
+4. The `spent_output.program` must evaluate to `true` with given `arguments`.
+5. Remove `spent_output` from UTXO set.
 
 NB: `spent_output` is not validated, as it was already validated in the transaction that added it to the UTXO.
 
@@ -142,12 +144,12 @@ NB: `spent_output` is not validated, as it was already validated in the transact
     - type="issuance1"
     - content:
         anchor:           Pointer<Anchor|Input>
-        asset_id:         Hash
-        amount:           Integer
+        value:            AssetAmount
         reference:        Pointer<Data>
         ext_hash:         Hash
     - witness:
         destination:      Pointer<Mux|UnknownEntry>
+        position:         Integer
         initial_block_id: Hash
         asset_definition: Pointer<Data>
         issuance_program: Program
@@ -156,10 +158,13 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 **Rules:**
 
-1. Check that `asset_id == HASH(initial_block_id, asset_definition, issuance_program)`.
+1. Check that `value.asset_id == HASH(initial_block_id, asset_definition, issuance_program)`.
 2. The `issuance_program` must evaluate to `true` with given `arguments`.
 3. `destination` must be present and valid.
-4. If `destination` is `Mux`, `self.id` must be listed in the `destination.sources`.
+3. If `destination` is a Mux:
+  1. Validate that `destination.sources[position]` is equal to this input's ID.
+  2. Validate that `destination.values[position]` is equal to `spent_output.value`.
+
 
 ## Anchor
 
@@ -187,6 +192,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
         type="mux1"
         content:        
             sources:      List<Pointer<Issuance|Input>>
+            values:       List<AssetAmount>
             ext_hash:     Hash
         witness:
             destinations: List<Pointer<Output|Retirement>>
@@ -195,14 +201,13 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 **Rules:**
 
-1. For each source: `sources[i].destination` must equal `self.id` - prevents double-spending.
-2. Each source must be unique in the `sources` list, no repetitions allowed.
-3. Each identifier in `destinations` must be unique (no repetitions) and included in the transaction.
-4. For each asset on the sources and destinations:
-    1. Sum the source amounts of that asset (`sources[i].spent_output.amount`) and sum the destination amounts of that asset.
-    2. Test that both source and destination sums are less than 2^63.
-    3. Test that the source sum equals the destination sum.
-    4. Check that there is at least one source with that asset ID.
+1. Each source in the  `sources` list must be unique, present in the transaction, and valid.
+2. Each identifier in `destinations` must be unique (no repetitions) and included in the transaction.
+3. For each asset in the `values` and `destinations`:
+    1. Sum the amounts of that asset in `values` and the amounts of that asset in `destinations`.
+    2. Test that both the `values` and `destionations` sums are less than 2^63.
+    3. Test that the `values` sum equals the `destinations` sum.
+    4. Check that there is at least one `value` with that asset ID.
 
 
 ## TimeRange
@@ -221,7 +226,16 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 1. `mintime` must be equal to or less than the `header.mintime` specified in the transaction header.
 2. `maxtime` must be equal to or greater than the `header.maxtime` specified in the transaction header.
-    
+
+
+## AssetAmount
+
+This is not a separate entry, but an inlined struct.
+
+    Struct {
+        assetID: Hash
+        amount:  Integer
+    }
 
 ## Program
 
@@ -245,7 +259,7 @@ Pointer can be `nil`, in which case it is represented by all-zero 32-byte hash `
 ## Serialization for hashing
 
 Primitives:
-    
+
     Byte
     Hash
     Integer
@@ -424,7 +438,3 @@ TODO: ...
 1. Serialization prefix indicates the format version that specifies how things are serialized and compressed.
 2. Replace hashes with varint offsets, reconstruct hashes in real time and then verify that top hash matches the source (e.g. merkle tree item)
 3. Replace some repeated elements such as initial block id with indices too.
-
-
-
-
