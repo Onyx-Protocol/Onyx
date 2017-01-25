@@ -137,7 +137,7 @@ class TransactionBuilder {
    * @param {Number} params.amount - Amount of the asset to be retired.
    */
   retire(params) {
-    this.actions.push(Object.assign({}, params, {type: 'control_program', controlProgram: '6a'}))
+    this.actions.push(Object.assign({}, params, {type: 'retire'}))
   }
 
   /**
