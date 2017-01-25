@@ -253,15 +253,27 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 **Rules:**
 
-1. Let `entry` be the entry referenced by `ref`.
-2. TBD.
+1. Let `entry, src, position` be the current entry, the value source being checked and its position in the entry's sources list.
+2. Let `preventry` be the entry referenced by `src.ref`.
+3. Let `prevdst` be the value destination located by `preventry.destinations[src.position]`.
+4. Verify that `prevdst.ref` equals `entry.id`.
+5. Verify that `prevdst.position` equals `position`.
+6. Verify that `prevdst.value` equals `src.value`.
 
 ## ValueDestination
 
     struct {
         ref:       Pointer<Output|Retirement|Mux>
+        value:     AssetAmount
         position:  Integer
     }
+
+1. Let `entry, dst, position` be the current entry, the value destination being checked and its position in the entry's destinations list.
+2. Let `nextentry` be the entry referenced by `dst.ref`.
+3. Let `nextsrc` be the value source located by `nextentry.sources[dst.position]`.
+4. Verify that `nextsrc.ref` equals `entry.id`.
+5. Verify that `nextsrc.position` equals `position`.
+6. Verify that `nextsrc.value` equals `dst.value`.
 
 
 ## Anchor
@@ -502,7 +514,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         2. Set `data.content` to `oldout.reference_data`.
         3. Set `destentry.reference_data` to `data.id`.
         4. Add `data` to `container`.
-    9. Add `destentry` to `container`.
+    5. Add `destentry` to `container`.
 12. For each input or issuance in `mux.sources`:
     1. TBD: add mux.id to the inputs/issuances destinations.
 
