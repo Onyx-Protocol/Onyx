@@ -493,7 +493,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
     5. Create `ValueSource` struct `src`:
         1. Set `src.ref` to `inp.id`.
         2. Set `src.position` to current count of `mux.sources`.
-        3. Set `src.value` to `inp.spent_output.value`.
+        3. Set `src.value` to `AssetAmount{ oldspend.spent_output.(assetid,amount) } `.
         4. Add `src` to `mux.sources`.
     6. Create `ValueDestination` struct `dst` and set to `is`:
         1. TBD: this is not needed for hashing as this goes into witness. To be done later.
