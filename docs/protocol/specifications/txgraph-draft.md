@@ -253,7 +253,8 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 **Rules:**
 
-1. TBD
+1. Let `entry` be the entry referenced by `ref`.
+2. TBD.
 
 ## ValueDestination
 
@@ -261,10 +262,6 @@ NB: `spent_output` is not validated, as it was already validated in the transact
         ref:       Pointer<Output|Retirement|Mux>
         position:  Integer
     }
-
-**Rules:**
-
-1. TBD
 
 
 ## Anchor
@@ -445,11 +442,10 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
 8. Let `mux` be a new `Mux` entry.
 9. For each issuance input `oldis`:
     1. Let `is` be a new `Issuance` entry.
-    2. Set `is.assetid` to `oldis.assetid`.
-    3. Set `is.amount` to `oldis.amount`.
-    4. If `nonce` is empty:
+    2. Set `is.value` to `AssetAmount { oldis.assetid, oldis.amount }`.
+    3. If `nonce` is empty:
         1. Set `is.anchor` to the first spend input of the `oldtx`.
-    5. If `nonce` is non-empty:
+    4. If `nonce` is non-empty:
         1. Let `a` be a new `Anchor` entry.
         2. Set `a.program` to `VM1, PUSHDATA(nonce)`.
         3. Let `tr` be a new `TimeRange` entry.
@@ -459,46 +455,56 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         7. Set `is.anchor` to `a.id`.
         8. Add `a` to `container`.
         9. Add `tr` to `container`.
-    6. Set `is.initial_block_id` to `oldis.initial_block_id`.
-    7. Set `is.issuance_program` to `oldis.issuance_program` (with its VM version).
-    8. Set `is.arguments` to `oldis.arguments`.
-    9. If `oldis.asset_definition` is non-empty:
+    5. Set `is.initial_block_id` to `oldis.initial_block_id`.
+    6. Set `is.issuance_program` to `oldis.issuance_program` (with its VM version).
+    7. Set `is.arguments` to `oldis.arguments`.
+    8. If `oldis.asset_definition` is non-empty:
         1. Let `adef` be a new `Data` entry.
         2. Set `adef.content` to `oldis.asset_definition`.
         3. Set `is.asset_definition` to `adef.id`.
         4. Add `adef` to `container`.
-    10. If `oldis.asset_definition` is empty:
+    9. If `oldis.asset_definition` is empty:
         1. Set `is.asset_definition` to a nil pointer `0x000000...`.
-    11. Add `is.id` to `mux.sources`.
+    10. Create `ValueSource` struct `src`:
+        1. Set `src.ref` to `is.id`.
+        2. Set `src.position` to current count of `mux.sources`.
+        3. Set `src.value` to `is.value`.
+        4. Add `src` to `mux.sources`.
+    11. Create `ValueDestination` struct `dst` and set to `is`:
+        1. TBD: this is not needed for hashing as this goes into witness. To be done later.
     12. Add `is` to `container`.
 10. For each spend input `oldspend`:
     1. Let `inp` be a new `Input` entry.
     2. Set `inp.spent_output` to `oldspend.output_id`.
     3. Set `inp.reference_data` to a nil pointer `0x00000...`.
     4. Set `inp.arguments` to `oldspend.arguments`.
-    5. Add `inp.id` to `mux.sources`.
-    6. Add `inp` to `container`.
-11. For each output `oldout`:
+    5. Create `ValueSource` struct `src`:
+        1. Set `src.ref` to `inp.id`.
+        2. Set `src.position` to current count of `mux.sources`.
+        3. Set `src.value` to `inp.spent_output.value`.
+        4. Add `src` to `mux.sources`.
+    6. Create `ValueDestination` struct `dst` and set to `is`:
+        1. TBD: this is not needed for hashing as this goes into witness. To be done later.
+    7. Add `inp` to `container`.
+11. For each output `oldout` at index `i`:
     1. If the `oldout` contains a retirement program:
-        1. Let `dest` be a new `Retirement` entry.
+        1. Let `destentry` be a new `Retirement` entry.
     2. If the `oldout` is not a retirement:
-        1. Let `dest` be a new `Output` entry.
-        2. Set `dest.control_program` to `oldout.control_program` (with its VM version).
-    3. Set `dest.source` to `mux.id`.
-    4. Set `dest.position` to current number of `mux.destinations` (incremented once we add it there).
-    5. Add `dest.id` to `mux.destinations`.
-    6. Set `dest.asset_id` to `oldout.asset_id`.
-    7. Set `dest.amount` to `oldout.amount`.
-    8. If `oldout.reference_data` is non-empty:
+        1. Let `destentry` be a new `Output` entry.
+        2. Set `destentry.control_program` to `oldout.control_program` (with its VM version).
+    3. Create `ValueSource` struct `src`:
+        1. Set `src.ref` to `mux.id`.
+        2. Set `src.position` to `i`.
+        3. Set `src.value` to `AssetAmount { oldout.asset_id, oldout.amount }`.
+        4. Set `destentry.source` to `src`.
+    4. If `oldout.reference_data` is non-empty:
         1. Let `data` be a new `Data` entry.
         2. Set `data.content` to `oldout.reference_data`.
-        3. Set `dest.reference_data` to `data.id`.
+        3. Set `destentry.reference_data` to `data.id`.
         4. Add `data` to `container`.
-    9. Add `dest` to `container`.
+    9. Add `destentry` to `container`.
 12. For each input or issuance in `mux.sources`:
-    1. Set `source[i].destination` to `mux.id`.
-13. For each input or issuance in `mux.sources`:
-    1. Set `source[i].destination` to `mux.id`.
+    1. TBD: add mux.id to the inputs/issuances destinations.
 
 
 
