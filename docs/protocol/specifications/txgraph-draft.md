@@ -40,16 +40,18 @@ See [ExtStruct](#extstruct) description below.
 
 ## Header
 
-    - type="header"
-    - content:
-        version:       Integer
-        results:     List<Pointer<Output|Retirement|UnknownEntry>>
-        references:    List<Pointer<Data>>
-        mintime:       Integer
-        maxtime:       Integer
-        ext_hash:      Hash
-    - witness:
-        ext_hash:      Hash
+    entry {
+        type="header"
+        content:
+            version:       Integer
+            results:       List<Pointer<Output|Retirement|UnknownEntry>>
+            references:    List<Pointer<Data>>
+            mintime:       Integer
+            maxtime:       Integer
+            ext_hash:      Hash
+        witness:
+            ext_hash:      Hash        
+    }
 
 **Rules:**
 
@@ -64,9 +66,11 @@ See [ExtStruct](#extstruct) description below.
 
 # Data
 
-    - type="data1"
-    - content_hash: Hash
-    - witness_hash: HASH(empty_string)
+    entry {
+        type="data1"
+        content_hash: Hash
+        witness_hash: HASH(empty_string)
+    }
 
 **Rules:**
 
@@ -76,94 +80,191 @@ See [ExtStruct](#extstruct) description below.
 
 ## Output
 
-    - type="output1"
-    - content:
-        source:          Pointer<Mux>
-        position:        Integer
-        value:           AssetAmount
-        control_program: Program
-        reference:       Pointer<Data>
-        ext_hash:        Hash
-    - witness:
-        ext_hash:        Hash
+    entry {
+        type="output1"
+        content:
+            source:          ValueSource
+            control_program: Program
+            reference:       Pointer<Data>
+            ext_hash:        Hash
+        witness:
+            ext_hash:        Hash
+    }
 
 **Rules:**
 
-1. `source` must be present and valid.
-2. `source.destinations[position]` must equal self.id.
-3. if tx version is known, all `ext_hash`es must be hashes of empty strings.
-4. Insert `self.id` in utxo set.
+1. Let `preventry` be the `source.ref`.
+2. `preventry` must be present and valid.
+3. Validate `source.amount` is in range.
+4. Need to ensure that this output exclusively consumes the `preventry`'s destination.
+5. If `preventry` is Input or Issuance:
+    1. Let `dest` be `preventry.destination`.
+6. If `preventry` is Mux:
+    1. Let `dest` be `preventry.destinations[source.position]`. Fail if not found.
+7. Verify previous entry's destination `dest`:
+    1. Verify `dest.ref` == `self.id`.
+    2. Verify `dest.position` == `0`. This is position of value in this output. TBD: this is double-checked by the input.
+8. If tx version is known, all `ext_hash`es must be hashes of empty strings.
+9. Insert `self.id` in utxo set.
 
 ## Retirement
 
-    - type="retirement1"
-    - content:
-        source:         Pointer<Mux>
-        position:       Integer
-        value:          AssetAmount
-        reference:      Pointer<Data>
-        ext_hash:       Hash
-    - witness:
-        ext_hash:       Hash
+    entry {
+        type="retirement1"
+        content:
+            source:         ValueSource
+            reference:      Pointer<Data>
+            ext_hash:       Hash
+        witness:
+            ext_hash:       Hash
+    }
 
 **Rules:**
 
-1. `amount` is in range
-2. `source` must be present and valid
-3. `source.destinations[position]` must equal self.id.
-4. if tx version is known, all `ext_hash`es must be hashes of empty strings.
+1. Let `preventry` be the `source.ref`.
+2. `preventry` must be present and valid.
+3. Validate `source.amount` is in range.
+4. Need to ensure that this output exclusively consumes the `preventry`'s destination.
+5. If `preventry` is Input or Issuance:
+    1. Let `dest` be `preventry.destination`.
+6. If `preventry` is Mux:
+    1. Let `dest` be `preventry.destinations[source.position]`. Fail if not found.
+7. Verify previous entry's destination `dest`:
+    1. Verify `dest.ref` == `self.id`.
+    2. Verify `dest.position` == `0`. This is position of value in this output. TBD: this is double-checked by the input.
+8. If tx version is known, all `ext_hash`es must be hashes of empty strings.
+
+
 
 ## Input
 
-    - type="input1"
-    - content:
-        spent_output: Pointer<Output>
-        reference:    Pointer<Data>
-        ext_hash:     Hash
-    - witness:
-        destination:       Ref<Mux|UnknownEntry>
-        position:          Integer
-        arguments:         String
-        ext_hash:          Hash
+    entry {
+        type="input1"
+        content:
+          spent_output: Pointer<Output>
+          reference:    Pointer<Data>
+          ext_hash:     Hash
+        witness:
+          destination:  ValueDestination
+          arguments:    String
+          ext_hash:     Hash        
+    }
 
 **Rules:**
 
 1. Validate that `spent_output` is present in tx.
-2. Validate that `destination` is present in tx.
-3. If `destination` is a Mux:
-  1. Validate that `destination.sources[position]` is equal to this input's ID.
-  2. Validate that `destination.values[position]` is equal to `spent_output.value`.
-4. The `spent_output.program` must evaluate to `true` with given `arguments`.
-5. Remove `spent_output` from UTXO set.
+2. Validate that `spent_output` is present in UTXO set.
+3. Validate that `destination.ref` has been validated (visited). TBD: !!! figure out what that actually means.
+4. If `destination.ref` is a Output or Retirement `nextentry`:
+    1. Validate that `destination.position` == `0` (this is value's position in the output). TBD: maybe move this to Output.
+    2. Let `src` be `nextentry.source`.
+5. If `destination.ref` is a Mux `nextentry`:
+    1. Let `src` be `nextentry.sources[destination.position]`. Fail if not present.
+6. Validate next entry’s source `src`:
+    1. Validate that `src.ref` == `self.id`.
+    2. Validate that `src.position` == `0` (this is value's position in the input). 
+    3. Validate that `src.value` == `self.spent_output.source.value`.
+7. The `spent_output.program` must evaluate to `true` with given `arguments`.
+8. Remove `spent_output` from UTXO set.
 
 NB: `spent_output` is not validated, as it was already validated in the transaction that added it to the UTXO.
 
 
 ## Issuance
 
-    - type="issuance1"
-    - content:
-        anchor:           Pointer<Anchor|Input>
-        value:            AssetAmount
-        reference:        Pointer<Data>
-        ext_hash:         Hash
-    - witness:
-        destination:      Pointer<Mux|UnknownEntry>
-        position:         Integer
-        initial_block_id: Hash
-        asset_definition: Pointer<Data>
-        issuance_program: Program
-        arguments:        String
-        ext_hash:         Hash
+    entry {
+        type="issuance1"
+        content:
+          anchor:           Pointer<Anchor|Input>
+          value:            AssetAmount
+          reference:        Pointer<Data>
+          ext_hash:         Hash
+        witness:
+          destination:      ValueDestination
+          initial_block_id: Hash
+          asset_definition: Pointer<Data>
+          issuance_program: Program
+          arguments:        String
+          ext_hash:         Hash
+    }
 
 **Rules:**
 
 1. Check that `value.asset_id == HASH(initial_block_id, asset_definition, issuance_program)`.
 2. The `issuance_program` must evaluate to `true` with given `arguments`.
-3. `destination` must be present and valid.
-3. If `destination` is a Mux:
-  1. Validate that `destination.sources[position]` is equal to this input's ID.
-  2. Validate that `destination.values[position]` is equal to `spent_output.value`.
+3. Validate that `destination.ref` has been validated (visited). TBD: !!! figure out what that actually means.
+4. If `destination.ref` is a Output or Retirement `nextentry`:
+    1. Validate that `destination.position` == `0` (this is value's position in the output). TBD: maybe move this to Output.
+    2. Let `src` be `nextentry.source`.
+5. If `destination.ref` is a Mux `nextentry`:
+    1. Let `src` be `nextentry.sources[destination.position]`. Fail if not present.
+6. Validate next entry’s source `src`:
+    1. Validate that `src.ref` == `self.id`.
+    2. Validate that `src.position` == `0` (this is value's position in the input). 
+    3. Validate that `src.value` == `self.value`.
+
+
+
+## Mux
+
+    entry {
+        type="mux1"
+        content:        
+            sources:      List<ValueSource>
+            ext_hash:     Hash
+        witness:          
+            destinations: List<ValueDestination>
+            ext_hash:     Hash
+    }
+
+
+**Rules:**
+
+1. Each `source` must be unique in this entry.
+2. Each item in `destinations` must be unique in this entry.
+3. For each item `dest` in `destinations` at position `i`:  
+    1. Validate that `dest.ref` has been validated (visited). TBD !!!!
+    2. If `dest.ref` is a Output or Retirement `nextentry`:
+        1. Validate that `dest.position` == `0` (this is value's position in the output). TBD: maybe move this to Output.
+        2. Let `src` be `nextentry.source`.
+    3. If `dest.ref` is a Mux `nextentry`:
+        1. Let `src` be `nextentry.sources[dest.position]`. Fail if not present.
+    4. Validate next entry’s source `src`:    
+        1. Validate that `src.ref` == `self.id`.
+        2. Validate that `src.position` == `i` (this is value's position in this mux's destinations list). 
+        3. Validate that `src.value` == `dest.value`.
+        4. Pull the AssetAmount `a` from that `src` and assign it to the `dest`.
+4. For each asset ID in the `sources` and `destinations`:
+    1. Sum the amounts of that asset ID in `sources` and the amounts of that asset ID in `destinations`.
+    2. Test that both the `sources` and `destinations` sums are less than 2^63.
+    3. Test that the `sources` sum equals the `destinations` sum.
+    4. Check that there is at least one `source` with that asset ID.
+
+
+
+
+## ValueSource
+
+    struct {
+        ref:      Pointer<Issuance|Input|Mux>
+        value:    AssetAmount
+        position: Integer
+    }
+
+**Rules:**
+
+1. TBD
+
+## ValueDestination
+
+    struct {
+        ref:       Pointer<Output|Retirement|Mux>
+        position:  Integer
+    }
+
+**Rules:**
+
+1. TBD
 
 
 ## Anchor
@@ -184,30 +285,6 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 1. If tx version is known, the ext fields must be empty.
 2. The ID of the anchor must be globally unique on the blockchain.
 3. The `program` must evaluate to `true` with given `arguments`.
-
-
-## Mux
-
-    entry {
-        type="mux1"
-        content:        
-            sources:      List<Pointer<Issuance|Input>>
-            values:       List<AssetAmount>
-            ext_hash:     Hash
-        witness:
-            destinations: List<Pointer<Output|Retirement>>
-            ext_hash:     Hash
-    }
-
-**Rules:**
-
-1. Each source in the  `sources` list must be unique, present in the transaction, and valid.
-2. Each identifier in `destinations` must be unique (no repetitions) and included in the transaction.
-3. For each asset in the `values` and `destinations`:
-    1. Sum the amounts of that asset in `values` and the amounts of that asset in `destinations`.
-    2. Test that both the `values` and `destionations` sums are less than 2^63.
-    3. Test that the `values` sum equals the `destinations` sum.
-    4. Check that there is at least one `value` with that asset ID.
 
 
 ## TimeRange
