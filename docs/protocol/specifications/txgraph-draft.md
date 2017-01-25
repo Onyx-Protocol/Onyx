@@ -149,7 +149,7 @@ See [ExtStruct](#extstruct) description below.
         reference:    Pointer<Data>
         ext_hash:     Hash
     - witness:
-        destination:  Hash
+        destination:  Ref<Mux|UnknownEntry>
         arguments:    String
         ext_hash:     Hash
 
@@ -173,7 +173,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
         reference:        Pointer<Data>
         ext_hash:         Hash
     - witness:
-        destination:      Hash
+        destination:      Ref<Mux|UnknownEntry>
         initial_block_id: Hash
         asset_definition: Pointer<Data>
         issuance_program: Program
@@ -184,7 +184,8 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 1. Check that `asset_id == HASH(initial_block_id, asset_definition, issuance_program)`.
 2. The `issuance_program` must evaluate to `true` with given `arguments`.
-
+3. `destination` must be present and valid.
+4. If `destination` is `Mux`, `self.id` must be listed in the `destination.sources`.
 
 ## Anchor
 
@@ -253,6 +254,16 @@ This is not a separate entry, but an inlined struct that carries VM version and 
         vm_version: Integer
         code:       String
     }
+
+## Pointer
+
+Index in a `pointers` list
+
+
+## EntryID
+
+
+
 
 
 ## Serialization for hashing
