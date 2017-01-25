@@ -240,6 +240,7 @@ Pointer is:
 2. identifies another entry by its ID,
 3. restricts the possible acceptable types.
 
+Pointer can be `nil`, in which case it is represented by all-zero 32-byte hash `0x000000...`.
 
 ## Serialization for hashing
 
@@ -339,9 +340,77 @@ The scheme is applied recursively for the subsequent updates.
 
 This is a first intermediate step that allows keeping old SDK, old tx index and data structures within Core, but refactoring how txs and outputs are hashed for UTXO set and merkle root in block headers.
 
-    1. Create Header entry.
-    2. If tx has non-zero mintime or maxtime, add TimeRange
-    3. TBD
+1. Let `oldtx` be the transaction in old format.
+2. Let `newtx` be a new instance of `Header` entry.
+3. Let `container` be the container for all entries.
+4. Set `newtx.version` to `oldtx.version`.
+5. If `oldtx.reference_data` is non-empty:
+    1. Let `refdata` be a new `Data` entry.
+    2. Set `refdata.content` to `tx.reference_data`.
+    3. Add `refdata.id` to `newtx.references`.
+    4. Add `refdata` to the `container`.
+6. Set `newtx.mintime` to `oldtx.mintime`.
+7. Set `newtx.maxtime` to `oldtx.maxtime`.
+8. Let `mux` be a new `Mux` entry.
+9. For each issuance input `oldis`:
+    1. Let `is` be a new `Issuance` entry.
+    2. Set `is.assetid` to `oldis.assetid`.
+    3. Set `is.amount` to `oldis.amount`.
+    4. If `nonce` is empty:
+        1. Set `is.anchor` to the first spend input of the `oldtx`.
+    5. If `nonce` is non-empty:
+        1. Let `a` be a new `Anchor` entry.
+        2. Set `a.program` to `VM1, PUSHDATA(nonce)`.
+        3. Let `tr` be a new `TimeRange` entry.
+        4. Set `tr.mintime` to `oldtx.mintime`.
+        5. Set `tr.maxtime` to `oldtx.maxtime`.
+        6. Set `a.timerange` to `tr.id`.
+        7. Set `is.anchor` to `a.id`.
+        8. Add `a` to `container`.
+        9. Add `tr` to `container`.
+    6. Set `is.initial_block_id` to `oldis.initial_block_id`.
+    7. Set `is.issuance_program` to `oldis.issuance_program` (with its VM version).
+    8. Set `is.arguments` to `oldis.arguments`.
+    9. If `oldis.asset_definition` is non-empty:
+        1. Let `adef` be a new `Data` entry.
+        2. Set `adef.content` to `oldis.asset_definition`.
+        3. Set `is.asset_definition` to `adef.id`.
+        4. Add `adef` to `container`.
+    10. If `oldis.asset_definition` is empty:
+        1. Set `is.asset_definition` to a nil pointer `0x000000...`.
+    11. Add `is.id` to `mux.sources`.
+    12. Add `is` to `container`.
+10. For each spend input `oldspend`:
+    1. Let `inp` be a new `Input` entry.
+    2. Set `inp.spent_output` to `oldspend.output_id`.
+    3. Set `inp.reference_data` to a nil pointer `0x00000...`.
+    4. Set `inp.arguments` to `oldspend.arguments`.
+    5. Add `inp.id` to `mux.sources`.
+    6. Add `inp` to `container`.
+11. For each output `oldout`:
+    1. If the `oldout` contains a retirement program:
+        1. Let `dest` be a new `Retirement` entry.
+    2. If the `oldout` is not a retirement:
+        1. Let `dest` be a new `Output` entry.
+        2. Set `dest.control_program` to `oldout.control_program` (with its VM version).
+    3. Set `dest.source` to `mux.id`.
+    4. Set `dest.position` to current number of `mux.destinations` (incremented once we add it there).
+    5. Add `dest.id` to `mux.destinations`.
+    6. Set `dest.asset_id` to `oldout.asset_id`.
+    7. Set `dest.amount` to `oldout.amount`.
+    8. If `oldout.reference_data` is non-empty:
+        1. Let `data` be a new `Data` entry.
+        2. Set `data.content` to `oldout.reference_data`.
+        3. Set `dest.reference_data` to `data.id`.
+        4. Add `data` to `container`.
+    9. Add `dest` to `container`.
+12. For each input or issuance in `mux.sources`:
+    1. Set `source[i].destination` to `mux.id`.
+13. For each input or issuance in `mux.sources`:
+    1. Set `source[i].destination` to `mux.id`.
+
+
+
 
 ### 2. NewTx -> OldTx
 
