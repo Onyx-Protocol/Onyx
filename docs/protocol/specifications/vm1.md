@@ -80,6 +80,7 @@ Execution of any of the following instructions results in immediate failure:
 * [INDEX](#index)
 * [OUTPOINT](#outpoint)
 * [NONCE](#nonce)
+* [ACCOUNTPROGRAM](#accountprogram)
 
 
 ### Transaction context
@@ -1100,15 +1101,16 @@ Note: [standard memory cost](#standard-memory-cost) is applied *after* the instr
 
 Code  | Stack Diagram                                        | Cost
 ------|------------------------------------------------------|-----------------------------------------------------
-0xc1  | (index refdatahash amount assetid version prog → q)  | 16; [standard memory cost](#standard-memory-cost)
+0xc1  | (index refdatahash amount assetid version controlprog acceptanceprog → q)  | 16; [standard memory cost](#standard-memory-cost)
 
-1. Pops 6 items from the data stack: `index`, `refdatahash`, `amount`, `assetid`, `version`, `prog`.
+1. Pops 7 items from the data stack: `index`, `refdatahash`, `amount`, `assetid`, `version`, `controlprog`, `acceptanceprog`.
 2. Fails if `index` is negative or not a valid [number](#vm-number).
 3. Fails if the number of outputs is less or equal to `index`.
 4. Fails if `amount` and `version` are not non-negative [numbers](#vm-number).
 5. Finds a transaction output at the given `index`.
 6. If the output satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
-    1. control program equals `prog`,
+    1. acceptance program equals `acceptanceprog`,
+    1. control program equals `controlprog`,
     2. VM version equals `version`,
     3. asset ID equals `assetid`,
     4. amount equals `amount`,
@@ -1254,13 +1256,24 @@ Pushes the block timestamp in milliseconds on the data stack.
 
 Fails if executed in the [transaction context](#transaction-context).
 
+#### ACCEPTANCEPROGRAM
+
+Code  | Stack Diagram   | Cost
+------|-----------------|-----------------------------------------------------
+0xcf  | (∅ → program)     | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes the [acceptance program](data.md#acceptance-program) from the output being spent.
+
+Fails if the current input is not an [issuance input](data.md#transaction-input-commitment).
+
+Fails if executed in the [block context](#block-context).
 
 
 ### Expansion opcodes
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion and have no effect on the state of the VM apart from reducing run limit by 1.
 
