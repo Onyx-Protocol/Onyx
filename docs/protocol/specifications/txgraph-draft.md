@@ -66,11 +66,10 @@ See [ExtStruct](#extstruct) description below.
         version:       Integer
         results:       List<Pointer<Output|Retirement|UnknownEntry>>
         references:    List<Pointer<Data>>
-        optional timerange:     TimeRange
-        ext_hash:      Hash
-    - witness:
         mintime:       Integer
         maxtime:       Integer
+        ext_hash:      Hash
+    - witness:
         ext_hash:      Hash
 
 **Rules:**
@@ -193,7 +192,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
     - pointers:     List<Hash>
     - content:
         program:    Program
-        timerange:  TimeRange
+        timerange:  Pointer<TimeRange>
         ext_hash:   Hash
     - witness:
         arguments:  String
@@ -211,10 +210,10 @@ NB: `spent_output` is not validated, as it was already validated in the transact
     - type="mux1"
     - pointers:       List<Hash>
     - content:        
-        sources:      List<Issuance|Input>
+        sources:      List<Pointer<Issuance|Input>>
         ext_hash:     Hash
     - witness:
-        destinations: List<Output|Retirement>
+        destinations: List<Pointer<Output|Retirement>>
         ext_hash:     Hash
 
 **Rules:**
@@ -242,8 +241,8 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 **Rules:**
 
-1. `mintime` must be equal to or greater than the `header.mintime` specified in the transaction header witness.
-2. `maxtime` must be equal to or less than the `header.maxtime` specified in the transaction header witness.
+1. `mintime` must be equal to or greater than the `header.mintime` specified in the transaction header.
+2. `maxtime` must be equal to or less than the `header.maxtime` specified in the transaction header.
     
 
 ## Program
