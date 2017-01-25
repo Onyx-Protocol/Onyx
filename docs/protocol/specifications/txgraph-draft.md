@@ -219,8 +219,8 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 **Rules:**
 
-1. `mintime` must be equal to or greater than the `header.mintime` specified in the transaction header.
-2. `maxtime` must be equal to or less than the `header.maxtime` specified in the transaction header.
+1. `mintime` must be equal to or less than the `header.mintime` specified in the transaction header.
+2. `maxtime` must be equal to or greater than the `header.maxtime` specified in the transaction header.
     
 
 ## Program
