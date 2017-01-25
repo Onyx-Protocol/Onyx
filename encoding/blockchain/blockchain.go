@@ -155,7 +155,7 @@ func WriteExtensibleString(w io.Writer, suffix []byte, f func(io.Writer) error) 
 // ReadExtensibleString reads a varint31 length prefix and that many
 // bytes from r. It then calls the given function to consume those
 // bytes, returning any unconsumed suffix.
-func ReadExtensibleString(r io.Reader, f func(io.Reader) error) ([]byte, int, error) {
+func ReadExtensibleString(r io.Reader, f func(io.Reader) error) (suffix []byte, n int, err error) {
 	s, n, err := ReadVarstr31(r)
 	if err != nil {
 		return nil, n, err
@@ -165,7 +165,7 @@ func ReadExtensibleString(r io.Reader, f func(io.Reader) error) ([]byte, int, er
 	if err != nil {
 		return nil, n, err
 	}
-	suffix, err := ioutil.ReadAll(sr)
+	suffix, err = ioutil.ReadAll(sr)
 	return suffix, n, err
 }
 
