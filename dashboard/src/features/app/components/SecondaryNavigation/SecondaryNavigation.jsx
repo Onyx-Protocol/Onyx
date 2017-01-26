@@ -10,17 +10,11 @@ class SecondaryNavigation extends React.Component {
     super(props)
 
     this.logOut = this.logOut.bind(this)
-    this.openTutorial = this.openTutorial.bind(this)
   }
 
   logOut(event) {
     event.preventDefault()
     this.props.logOut()
-  }
-
-  openTutorial(event) {
-    event.preventDefault()
-    this.props.openTutorial()
   }
 
   render() {
@@ -47,12 +41,6 @@ class SecondaryNavigation extends React.Component {
               Network tokens
             </Link>
           </li>
-          <li>
-            <a href='#' onClick={this.openTutorial}>
-            {navIcon('feed', styles)}
-              5-minute Tutorial
-            </a>
-          </li>
 
           {this.props.canLogOut && <li className={styles.logOut}>
             <a href='#' onClick={this.logOut}>
@@ -71,7 +59,6 @@ export default connect(
     canLogOut: state.core.requireClientToken,
   }),
   (dispatch) => ({
-    logOut: () => dispatch(actions.core.clearSession),
-    openTutorial: () => dispatch(actions.tutorial.openTutorial)
+    logOut: () => dispatch(actions.core.clearSession)
   })
 )(SecondaryNavigation)

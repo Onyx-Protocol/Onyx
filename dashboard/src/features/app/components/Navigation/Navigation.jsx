@@ -1,11 +1,23 @@
 import React from 'react'
 import { connect } from 'react-redux'
+import actions from 'actions'
 import { Link } from 'react-router'
 import styles from './Navigation.scss'
 import Sync from '../Sync/Sync'
 import { navIcon } from '../../utils'
 
 class Navigation extends React.Component {
+  constructor(props) {
+    super(props)
+
+    this.openTutorial = this.openTutorial.bind(this)
+  }
+
+  openTutorial(event) {
+    event.preventDefault()
+    this.props.openTutorial()
+  }
+
   render() {
     return (
       <div className={styles.main}>
@@ -72,6 +84,12 @@ class Navigation extends React.Component {
               Support
             </a>
           </li>
+          <li>
+            <a href='#' onClick={this.openTutorial}>
+            {navIcon('feed', styles)}
+              Tutorial
+            </a>
+          </li>
         </ul>
 
         {this.props.showSync && <Sync />}
@@ -84,5 +102,8 @@ export default connect(
   state => ({
     routing: state.routing, // required for <Link>s to update active state on navigation
     showSync: state.core.configured && !state.core.generator,
+  }),
+  (dispatch) => ({
+    openTutorial: () => dispatch(actions.tutorial.openTutorial)
   })
 )(Navigation)
