@@ -16,7 +16,7 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 	entryMap = make(map[entryRef]entry)
 
 	if len(tx.ReferenceData) > 0 {
-		refdata := newData(tx.ReferenceData)
+		refdata := newData(hashData(tx.ReferenceData))
 		refdataID, err := entryID(refdata)
 		if err != nil {
 			return nil, nil, err
@@ -41,7 +41,7 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 	}
 
 	if len(tx.ReferenceData) > 0 {
-		d := newData(tx.ReferenceData)
+		d := newData(hashData(tx.ReferenceData))
 		entries = append(entries, d)
 		references = append(references, d.ID())
 	}
@@ -74,7 +74,7 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 				issProg := program{oldIss.VMVersion, oldIss.IssuanceProgram}
 
 				if len(oldIss.AssetDefinition) > 0 {
-					adef := newData(oldIss.AssetDefinition)
+					adef := newData(hashData(oldIss.AssetDefinition))
 					entries = append(entries, adef)
 				}
 			}
