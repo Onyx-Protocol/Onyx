@@ -68,8 +68,10 @@ See [ExtStruct](#extstruct) description below.
 
     entry {
         type="data1"
-        content_hash: Hash
-        witness_hash: HASH(empty_string)
+        content: { 
+            data : Hash
+        }
+        witness: HASH(empty_string)
     }
 
 **Rules:**
