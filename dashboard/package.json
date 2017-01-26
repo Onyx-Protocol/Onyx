@@ -8,7 +8,8 @@
     "build": "NODE_ENV=production webpack --config src/config/webpack.app.js",
     "lint": "eslint \"src/**\"",
     "start": "hjs-dev-server src/config/webpack.app.js",
-    "test": "wdio wdio.conf.js",
+    "test": "wdio test/conf/wdio.local.js",
+    "test-browserstack": "wdio test/conf/wdio.browserstack.js",
     "generate-component": "babel-node bin/generate.js component"
   },
   "author": "Chain",
@@ -66,6 +67,7 @@
     "shelljs": "~0.7.4",
     "style-loader": "~0.13.1",
     "url-loader": "~0.5.7",
+    "wdio-browserstack-service": "^0.1.4",
     "wdio-mocha-framework": "^0.5.8",
     "wdio-selenium-standalone-service": "0.0.7",
     "wdio-spec-reporter": "0.0.5",

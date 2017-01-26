@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 exports.config = {
 
   //
@@ -34,6 +36,11 @@ exports.config = {
   //
   maxInstances: 10,
   //
+  // Browser Stack configuration
+  user: process.env.BROWSER_STACK_USER,
+  key: process.env.BROWSER_STACK_KEY,
+  browserstackLocal: true,
+  //
   // If you have trouble getting all important capabilities together, check out the
   // Sauce Labs platform configurator - a great tool to configure your capabilities:
   // https://docs.saucelabs.com/reference/platforms-configurator
@@ -42,9 +49,9 @@ exports.config = {
     // maxInstances can get overwritten per capability. So if you have an in-house Selenium
     // grid with only 5 firefox instances available you can make sure that not more than
     // 5 instances get started at a time.
-    maxInstances: 2,
     //
-    browserName: 'chrome',
+    browser: 'chrome',
+    'browserstack.local': true,
   }],
   //
   // ===================
@@ -106,7 +113,7 @@ exports.config = {
   // Services take over a specific job you don't want to take care of. They enhance
   // your test setup with almost no effort. Unlike plugins, they don't add new
   // commands. Instead, they hook themselves up into the test process.
-  services: ['selenium-standalone'],
+  services: ['browserstack'],
   //
   // Framework you want to run your specs with.
   // The following are supported: Mocha, Jasmine, and Cucumber
