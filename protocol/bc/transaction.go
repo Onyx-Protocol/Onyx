@@ -367,10 +367,9 @@ func (tx *TxData) writeCommonWitness(w io.Writer) error {
 	return nil
 }
 
-// assumes w has sticky errors
 func writeRefData(w io.Writer, data []byte, serflags byte) error {
 	if serflags&SerMetadata != 0 {
-		_, err := blockchain.WriteVarstr31(w, data) // TODO(bobg): check and return error
+		_, err := blockchain.WriteVarstr31(w, data)
 		return err
 	}
 	return writeFastHash(w, data)
