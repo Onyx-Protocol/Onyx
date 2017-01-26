@@ -24,7 +24,8 @@ class Client {
    * @param {String} token - Chain Core client token for API access.
    * @returns {Client}
    */
-  constructor(baseUrl, token) {
+  constructor(baseUrl, token = '') {
+    baseUrl = baseUrl || 'http://localhost:1999'
     this.connection = new Connection(baseUrl, token)
 
     /**
@@ -63,7 +64,7 @@ class Client {
      */
     this.mockHsm = {
       keys: mockHsmKeysAPI(this),
-      signerConnection: new Connection('http://localhost:1999/mockhsm')
+      signerConnection: new Connection(`${baseUrl}/mockhsm`, token)
     }
 
     /**

@@ -68,8 +68,8 @@ class Connection {
    * @param {String} token   Chain Core client token for API access.
    * @returns {Client}
    */
-  constructor(baseUrl, token) {
-    this.baseUrl = baseUrl || 'http://localhost:1999'
+  constructor(baseUrl, token = '') {
+    this.baseUrl = baseUrl
     this.token = token || ''
   }
 

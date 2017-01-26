@@ -12,7 +12,7 @@ For most applications, you can simply add Chain to your `package.json` with
 the following command:
 
 ```
-npm install --save chain-sdk@1.0.1
+npm install --save chain-sdk@1.0.2
 ```
 
 ### In your code
@@ -47,6 +47,16 @@ let callback = (err, data) => {
 }
 
 client.transactions.query({}, callback)
+```
+
+## Using external signers
+
+To connect to an HSM other than the built-in Mock HSM, you must create a new
+`Connection` object:
+
+```
+const myHsmConnection = new chain.Connection('https://myhost.dev/mockhsm', 'tokenname:tokenvalue')
+signer.addKey(myKey, myHsmConnection)
 ```
 
 ## Testing
