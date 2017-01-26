@@ -120,7 +120,8 @@ func (h *Handler) init() {
 	m.Handle("/create-asset", needConfig(h.createAsset))
 	m.Handle("/build-transaction", needConfig(h.build))
 	m.Handle("/submit-transaction", needConfig(h.submit))
-	m.Handle("/create-control-program", needConfig(h.createControlProgram))
+	m.Handle("/create-control-program", needConfig(h.createControlProgram)) // DEPRECATED
+	m.Handle("/create-account-receiver", needConfig(h.createAccountReceiver))
 	m.Handle("/create-transaction-feed", needConfig(h.createTxFeed))
 	m.Handle("/get-transaction-feed", needConfig(h.getTxFeed))
 	m.Handle("/update-transaction-feed", needConfig(h.updateTxFeed))
