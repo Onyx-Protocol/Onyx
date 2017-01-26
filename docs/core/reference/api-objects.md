@@ -129,10 +129,10 @@ The following fields are present in the transaction object. Fields with **global
 
 | Field           | Type        | Visibility | Description                                                                                                                                  |
 |-----------------|-------------|------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| id              | string      | global     | The unique ID of the output.                                                                                                                 |
 | type            | string      | global     | Type of output - either `control` or `retirement`.                                                                                            |
 | is_local        | string      | local      | Denotes that the input involves the Core, either by: a) issuing units an asset created in the Core, b) spending from an account in the Core. |
 | purpose         | string      | local      | Purpose of the output - either a) `receive` if used to receive asset units from another account or external party, or b) `change` if used to create change back to the account, when spending only a portion of the amount of an unspent output in a "spending" input.|
-| output_id       | string      | global     | The unique ID of the output.                                                                                                                 |
 | position        | integer     | global     | The sequential number of the output in the transaction.                                                                                      |
 | asset_id        | string      | global     | The cryptographic, globally unique identifier of the asset being controlled or retired.                                                      |
 | asset_alias     | string      | local      | User-supplied, locally unique identifier of the asset being controlled or retired.                                                           |
@@ -193,7 +193,7 @@ The following fields are present in the transaction object. Fields with **global
     {
       "action": "control",
       "purpose": <"change"|"receive">, // provided if the control program was generated locally
-      "output_id": "311df2...",
+      "id": "311df2...",
       "position": "...",
       "asset_id": "125b4e...",
       "asset_alias": "...",
@@ -209,7 +209,7 @@ The following fields are present in the transaction object. Fields with **global
     },
     {
       "action": "retire",
-      "output_id": "2eb5cf...",
+      "id": "2eb5cf...",
       "position": "...",
       "asset_id": "125b4e...",
       "asset_alias": "...",
@@ -235,6 +235,7 @@ The unspent output object is a subset of the [transaction object](#transaction).
 
 ```
 {
+  "id": "2eb5cf...",
   "action": "control",
   "purpose": <"change"|"receive">
   "transaction_id": "...",

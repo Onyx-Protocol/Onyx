@@ -1,10 +1,10 @@
 const keyNameMappings = {
+  id: 'ID',
   type: 'Type',
   purpose: 'Purpose',
   is_local: 'Local?',
   transaction_id: 'Transaction ID',
   position: 'Position',
-  output_id: 'Output ID',
   spent_output: 'Spent Output',
   asset_id: 'Asset ID',
   asset_alias: 'Asset Alias',

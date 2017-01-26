@@ -9,7 +9,7 @@ class ListItem extends React.Component {
     return(<KeyValueTable
             title={
               <span>
-                Output ID <code>{item.output_id}</code>
+                ID <code>{item.id}</code>
               </span>
              }
             actions={[

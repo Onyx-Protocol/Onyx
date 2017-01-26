@@ -406,7 +406,7 @@ definitions:
       position:
         type: integer
         description: The index of the output among the transaction's outputs.
-      output_id:
+      id:
         type: string
         description: The unique ID of the transaction output.
       asset_id:
@@ -631,14 +631,15 @@ definitions:
       output_id:
         type: string
         description: The unique ID of the transaction output being spent.
+          This field replaces fields transaction_id and position.
       transaction_id:
         type: string
         description: The unique ID of the transaction containing the output
-          being spent.
+          being spent. This field is supported, but deprecated. Use output_id instead.
       position:
         type: string
         description: The output's index relative to other outputs in the
-          containing transaction.
+          containing transaction. This field is supported, but deprecated. Use output_id instead.
       reference_data:
         type: object
         description: Arbitrary, immutable key/value data that will accompany

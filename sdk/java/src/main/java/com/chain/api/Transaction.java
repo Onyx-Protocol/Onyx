@@ -240,6 +240,12 @@ public class Transaction {
    */
   public static class Output {
     /**
+     * The id of the output.
+     */
+    @SerializedName("id")
+    public String id;
+
+    /**
      * The type the output.<br>
      * Possible values are "control" and "retire".
      */
@@ -251,12 +257,6 @@ public class Transaction {
      * output's control program was generated locally.
      */
     public String purpose;
-
-    /**
-     * The id of the output.
-     */
-    @SerializedName("output_id")
-    public String outputId;
 
     /**
      * The output's position in a transaction's list of outputs.
@@ -676,7 +676,7 @@ public class Transaction {
        * @return updated action object
        */
       public SpendAccountUnspentOutput setUnspentOutput(UnspentOutput unspentOutput) {
-        setOutputId(unspentOutput.outputId);
+        setOutputId(unspentOutput.id);
         return this;
       }
 

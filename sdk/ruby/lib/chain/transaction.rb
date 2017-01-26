@@ -199,6 +199,11 @@ module Chain
     end
 
     class Output < ResponseObject
+      # @!attribute [r] id
+      # The id of the output.
+      # @return [String]
+      attrib :id
+
       # @!attribute [r] type
       # The type of the output.
       #
@@ -212,11 +217,6 @@ module Chain
       # Possible values are "receive" and "change".
       # @return [String]
       attrib :purpose
-
-      # @!attribute [r] output_id
-      # The id of the output.
-      # @return [String]
-      attrib :output_id
 
       # @!attribute [r] position
       # The output's position in a transaction's list of outputs.

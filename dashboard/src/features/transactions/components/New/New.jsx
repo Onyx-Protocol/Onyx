@@ -219,6 +219,7 @@ export default BaseNew.connect(
     form: 'NewTransactionForm',
     fields: [
       'base_transaction',
+      'actions[].id',
       'actions[].type',
       'actions[].account_id',
       'actions[].account_alias',
@@ -226,7 +227,6 @@ export default BaseNew.connect(
       'actions[].asset_alias',
       'actions[].amount',
       'actions[].control_program',
-      'actions[].output_id',
       'actions[].transaction_id',
       'actions[].position',
       'actions[].reference_data',

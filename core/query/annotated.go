@@ -45,7 +45,7 @@ type AnnotatedInput struct {
 type AnnotatedOutput struct {
 	Type            string             `json:"type"`
 	Purpose         string             `json:"purpose,omitempty"`
-	OutputID        chainjson.HexBytes `json:"output_id"`
+	OutputID        chainjson.HexBytes `json:"id"`
 	TransactionID   chainjson.HexBytes `json:"transaction_id,omitempty"`
 	Position        uint32             `json:"position"`
 	AssetID         chainjson.HexBytes `json:"asset_id"`

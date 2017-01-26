@@ -14,6 +14,12 @@ import java.util.Map;
 
 public class UnspentOutput {
   /**
+   * The ID of the output.
+   */
+  @SerializedName("id")
+  public String id;
+
+  /**
    * The type of action being taken on the output.<br>
    * Possible actions are "control_account", "control_program", and "retire".
    */
@@ -25,12 +31,6 @@ public class UnspentOutput {
    * output's control program was generated locally.
    */
   public String purpose;
-
-  /**
-   * The ID of the output.
-   */
-  @SerializedName("output_id")
-  public String outputId;
 
   /**
    * The ID of the transaction in which the unspent output appears.
