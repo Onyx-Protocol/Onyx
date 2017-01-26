@@ -590,9 +590,15 @@ This shows how the implementation of each of the VM instructions need to be chan
 * INDEX:         no change
 * NONCE:         eliminated
 * TXREFDATAHASH: `newtx.refdatahash()`
-* REFDATAHASH:   `currentinput.refdatahash()`
-* TXSIGHASH:     `currentinput.id() || newtx.sighash()`
-* OUTPUTID:      `currentinput.spent_output.id()`
+* REFDATAHASH:   `newcurrentinput.refdatahash()`
+* TXSIGHASH:     `hash(currentinput.id() || newtx.sighash())`
+* OUTPUTID:      `newcurrentinput.spent_output.id()`
+
+
+New opcodes:
+
+* ENTRYID:       `newcurrentinput.id()`
+* ANCHORID:      `newcurrentinput.anchor.id()` (fails if current input is not an issuance)
 
 
 
