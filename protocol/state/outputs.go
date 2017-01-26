@@ -1,8 +1,6 @@
 package state
 
 import (
-	"bytes"
-
 	"chain/protocol/bc"
 )
 
@@ -39,17 +37,12 @@ func Prevout(in *bc.TxInput) *Output {
 	}
 }
 
-func outputBytes(o *Output) []byte {
-	var b bytes.Buffer
-	o.WriteCommitment(&b)
-	return b.Bytes()
-}
-
 // OutputTreeItem returns the key of an output in the state tree,
 // as well as the output commitment (a second []byte) for Inserts
 // into the state tree.
 func OutputTreeItem(o *Output) (bkey, commitment []byte) {
-	// TODO(oleg): replace value with the key, so we can later optimize the tree to become a set.
+	// We implement the set of unspent IDs via Patricia Trie
+	// by having the leaf data being equal to keys.
 	key := o.UnspentID().Bytes()
-	return key, outputBytes(o)
+	return key, key
 }
