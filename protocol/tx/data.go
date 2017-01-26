@@ -19,7 +19,7 @@ func newData(hash bc.Hash) entry {
 }
 
 func hashData(data []byte) (h bc.Hash) {
-	// TODO(kr): domain separation here? spec might need updating
+	// xxx need domain separation here. spec might need updating
 	sha3pool.Sum256(h[:], data)
 	return
 }
