@@ -591,7 +591,7 @@ This shows how the implementation of each of the VM instructions need to be chan
 * NONCE:         eliminated
 * TXREFDATAHASH: `newtx.refdatahash()`
 * REFDATAHASH:   `newcurrentinput.refdatahash()`
-* TXSIGHASH:     `hash(currentinput.id() || newtx.sighash())`
+* TXSIGHASH:     `hash(newcurrentinput.id() || newtx.id())`
 * OUTPUTID:      `newcurrentinput.spent_output.id()`
 
 
