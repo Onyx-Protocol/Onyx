@@ -1,7 +1,7 @@
 package tx
 
 type output struct {
-	content struct {
+	body struct {
 		source         valueSource
 		controlProgram program
 		reference      entryRef
@@ -9,5 +9,5 @@ type output struct {
 	}
 }
 
-func (output) Type() string            { return "output1" }
-func (o *output) Content() interface{} { return &o.content }
+func (output) Type() string         { return "output1" }
+func (o *output) Body() interface{} { return &o.body }
