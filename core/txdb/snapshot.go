@@ -75,14 +75,14 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 
 	const insertQ = `
 		INSERT INTO snapshots (height, data) VALUES($1, $2)
-		ON CONFLICT (height) DO UPDATE SET data = $2
+		ON CONFLICT (height) DO UPDATE SET data = $2, created_at = NOW()
 	`
 	_, err = db.Exec(ctx, insertQ, blockHeight, b)
 	if err != nil {
 		return errors.Wrap(err, "writing state snapshot to database")
 	}
 
-	const deleteQ = `DELETE FROM snapshots WHERE timestamp < NOW() - INTERVAL '24 hours'`
+	const deleteQ = `DELETE FROM snapshots WHERE created_at < NOW() - INTERVAL '24 hours'`
 	_, err = db.Exec(ctx, deleteQ)
 	return errors.Wrap(err, "deleting old snapshots")
 }

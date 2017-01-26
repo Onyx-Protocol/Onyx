@@ -7,7 +7,6 @@
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -913,4 +912,4 @@ insert into migrations (filename, hash) values ('2017-01-13.0.core.asset-definit
 insert into migrations (filename, hash) values ('2017-01-19.0.asset.drop-mutable-flag.sql', '7850023d44c545c155c0ee372e7cdfef1859b40221bd94307b836503c26dd3de');
 insert into migrations (filename, hash) values ('2017-01-20.0.core.add-output-id-to-outputs.sql', '4c8531c06e62405d2989e0651a7ef6c2ebd0b2b269b57c179e9e36f7fdbb715b');
 insert into migrations (filename, hash) values ('2017-01-25.0.account.cp-expiry.sql', 'a2076b7b3ac3f844d17e13eea57fea01216c868a63f9df7b9df24cac9c4b82a4');
-insert into migrations (filename, hash) values ('2017-01-26.0.txdb.snapshots-timestamp.sql', '3ab923b782e048300315fc4ea8ae8bdf42183aa423d0a12bc228411c2d8c5093');
+insert into migrations (filename, hash) values ('2017-01-30.0.txdb.snapshots-timestamp.sql', '3ab923b782e048300315fc4ea8ae8bdf42183aa423d0a12bc228411c2d8c5093');
