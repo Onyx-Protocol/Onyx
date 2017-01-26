@@ -2,6 +2,7 @@ package tx
 
 import (
 	"chain/protocol/bc"
+	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 )
 
@@ -24,8 +25,6 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 		entryMap[refdataID] = refdata
 	}
 
-	hdr.body.data = refdataID
-
 	addMuxSource := func(e entry, val bc.AssetAmount) error {
 		id, err := entryID(e)
 		if err != nil {
@@ -43,22 +42,33 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 	if len(tx.ReferenceData) > 0 {
 		d := newData(hashData(tx.ReferenceData))
 		entries = append(entries, d)
-		references = append(references, d.ID())
+		dID, err := entryID(d)
+		if err != nil {
+			return nil, nil, err
+		}
+		references = append(references, dID)
 	}
 
 	for _, inp := range tx.Inputs {
+		var dataRef entryRef
+		if len(inp.ReferenceData) > 0 {
+			d := newData(hashData(inp.ReferenceData))
+			entries = append(entries, d)
+			dataRef, err = entryID(d)	// xxx duplicate entry ids possible (maybe that's ok, deduping happens at the end)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+
 		if inp.IsIssuance() {
 			oldIss := inp.TypedInput.(*bc.IssuanceInput)
 
-			var (
-				anchorHash entryRef
-				aDefHash   entryRef
-			)
+			var anchorHash entryRef
 
 			if len(oldIss.Nonce) == 0 {
 				// xxx anchorHash = "first spend input of the oldtx" (does this mean the txhash of the prevout of the spend?)
 			} else {
-				prog := xxx // Program{VM1, PUSHDATA(oldIss.Nonce)}
+				prog := issuanceAnchorProg(oldIss.Nonce, oldIss.AssetID())
 				tr := newTimeRange(tx.MinTime, tx.MaxTime)
 				entries = append(entries, tr)
 				trID, err := entryID(tr)
@@ -71,7 +81,6 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 					return nil, nil, err
 				}
 				entries = append(entries, a)
-				issProg := program{oldIss.VMVersion, oldIss.IssuanceProgram}
 
 				if len(oldIss.AssetDefinition) > 0 {
 					adef := newData(hashData(oldIss.AssetDefinition))
@@ -81,7 +90,7 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 
 			val := inp.AssetAmount()
 
-			iss := newIssuance(inp.AssetAmount(), oldIss.InitialBlock, issProg, oldIss.Arguments, anchorHash, aDefHash)
+			iss := newIssuance(anchorHash, val, dataRef)
 			entries = append(entries, iss)
 
 			err = addMuxSource(iss, val)
@@ -90,7 +99,7 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 			}
 		} else {
 			oldSp := inp.TypedInput.(*bc.SpendInput)
-			sp := newSpend(oldSp.OutputID, oldSp.Arguments, entryRef{}) // last arg is the refdata entryref
+			sp := newSpend(oldSp.OutputID, oldSp.Arguments, dataRef)
 			entries = append(entries, sp)
 
 			err = addMuxSource(sp, oldSp.AssetAmount)
@@ -121,4 +130,10 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 	}
 
 	header = newHeader(tx.Version, results, refdataID, references, tx.MinTime, tx.MaxTime)
+}
+
+func issuanceAnchorProg(nonce []byte, assetID bc.AssetID) program {
+	b := vmutil.NewBuilder()
+	b = b.AddData(nonce).AddOp(vm.OP_DROP).AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
+	return program{1, b.Program}
 }

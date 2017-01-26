@@ -16,8 +16,8 @@ func (iss *issuance) Body() interface{} { return iss.body }
 
 func newIssuance(anchor entryRef, value bc.AssetAmount, data entryRef) *issuance {
 	iss := new(issuance)
-	iss.anchor = anchor
-	iss.value = value
-	iss.data = data
+	iss.body.anchor = anchor
+	iss.body.value = value
+	iss.body.data = data
 	return iss
 }
