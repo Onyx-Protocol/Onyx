@@ -2,7 +2,7 @@ package tx
 
 type spend struct {
 	body struct {
-		SpentOutput entryRef // must be an Output entry
+		spentOutput entryRef // must be an Output entry
 		reference   entryRef // must be a Data entry
 		extHash     extHash
 	}
@@ -11,9 +11,9 @@ type spend struct {
 func (spend) Type() string         { return "spend1" }
 func (s *spend) Body() interface{} { return s.body }
 
-func newSpend(spentOutput, reference, destination entryRef) entry {
+func newSpend(spentOutput, reference entryRef) entry {
 	s := new(spend)
-	s.body.SpentOutput = spentOutput
+	s.body.spentOutput = spentOutput
 	s.body.reference = reference
 	return s
 }

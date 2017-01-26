@@ -54,7 +54,7 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 		if len(inp.ReferenceData) > 0 {
 			d := newData(hashData(inp.ReferenceData))
 			entries = append(entries, d)
-			dataRef, err = entryID(d)	// xxx duplicate entry ids possible (maybe that's ok, deduping happens at the end)
+			dataRef, err = entryID(d) // xxx duplicate entry ids possible (maybe that's ok, deduping happens at the end)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -99,7 +99,7 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 			}
 		} else {
 			oldSp := inp.TypedInput.(*bc.SpendInput)
-			sp := newSpend(oldSp.OutputID, oldSp.Arguments, dataRef)
+			sp := newSpend(entryRef(oldSp.SpentOutputID.Hash), dataRef)
 			entries = append(entries, sp)
 
 			err = addMuxSource(sp, oldSp.AssetAmount)
@@ -110,6 +110,8 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 	}
 
 	mux := newMux(muxSources)
+	entries = append(entries, mux)
+
 	muxID, err := entryID(mux)
 	if err != nil {
 		return nil, nil, err
@@ -122,14 +124,51 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 			value:    out.AssetAmount,
 		}
 
+		var dataID entryRef
+		if len(out.ReferenceData) > 0 {
+			d := newData(out.ReferenceData)
+			entries = append(entries, d)
+			dataID, err = entryID(d)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+
+		var resultID entryRef
 		if vmutil.IsUnspendable(out.ControlProgram) {
 			// retirement
+			r := newRetirement(s, dataID)
+			entries = append(entries, r)
+			resultID, err = entryID(r)
+			if err != nil {
+				return nil, nil, err
+			}
 		} else {
 			// non-retirement
+			o := newOutput(s, prog, dataID)
+			entries = append(entries, o)
+			resultID, err = entryID(o)
+			if err != nil {
+				return nil, nil, err
+			}
 		}
+
+		results = append(results, resultID)
 	}
 
 	header = newHeader(tx.Version, results, refdataID, references, tx.MinTime, tx.MaxTime)
+
+	entries = append(entries, header)
+
+	for _, e := range entries {
+		id, err := entryID(e)
+		if err != nil {
+			return nil, nil, err
+		}
+		entryMap[id] = e
+	}
+
+	return header, entryMap, nil
 }
 
 func issuanceAnchorProg(nonce []byte, assetID bc.AssetID) program {
