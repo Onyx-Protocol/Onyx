@@ -15,7 +15,8 @@ Network versioning applies to the network API - the interface through which diff
 Signer versioning applies to the pieces of software that operate or interact with HSMs to facilitate transaction and block signing. These versions will change infrequently.
 
 ## Core Versioning
-The various packages of the Chain Core suite each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages, with a tolerance of `+/-1`. For example, if you are a running a version of the Chain Core Mac app whose first two numbers are **1.1**, you can use a version of an SDK whose first two numbers are **1.0**, **1.1**, or **1.2**.
+
+The various packages of the Chain Core suite each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages. For example, if you are a running a version of the Chain Core Mac app whose first two numbers are **1.1**, you can use a version of an SDK whose first two numbers are **1.1**.
 
 Sometimes we make bugfixes and minor feature updates to individual software packages. When this occurs, we update the third number in the version string for that package only. This number doesn't affect compatibility with other packages. For example, you can safely use version **1.1.1** of the Chain Core Mac App with version **1.1.3** of the Java SDK.
 
@@ -40,9 +41,7 @@ These numbers represent, in order:
 - **Minor version**: bugfixes, new features
 - **Build version**: package-specific bugfixes and features
 
-The major version is shared by all packages in the Chain Core suite. If there is a change in the major version, then there will be a new release of all packages in the suite.
-
-The minor version is shared by all packages with a tolerance of `+/-1`.
+The major and minor versions are shared by all mutually-compatible packages in the Chain Core suite. If there is a change in the major or minor version, then there will be a new release of all packages in the suite.
 
 The build version of a specific package may change independently of other packages.
 
@@ -51,26 +50,31 @@ The build version of a specific package may change independently of other packag
 This scheme has semantics that are unique to Chain Core, despite superficial similarities to other versioning schemes such as [Semantic Versioning](http://semver.org/).
 
 #### Compatibility between packages
-Software packages in the Chain Core suite are compatible if their major and minor versions are no more than one number apart. For example, if you are running version 1.1.x of the Chain Core server, you can use version 1.0.x, 1.1.x, or 1.2.x of the Java SDK.
+
+Software packages in the Chain Core suite are compatible if their major and minor versions are the same. For example, if you are running version 1.1.x of the Chain Core server, you can use version 1.1.x of the Java SDK.
 
 #### Breaking changes and backward compatibility
 
 The version string does **not** convey whether a particular release contains a breaking change or not. Breaking changes will be announced in advance and documented in release notes. In general, we will do our best to avoid breaking changes.
 
 ## Network versioning
+
 The network version is a single, incremented integer. All instances of Chain Core connecting to a network must have the same network version. The network version is determined by the Chain Core operating as the block generator.
 
 The network version will be incremented each time there is a breaking change in the network API interface or a breaking change in the version of the Chain protocol being implemented.
 
 ### Breaking changes
+
 An upgrade in network version constitutes a breaking change at the network level. Any upgrade to the network version will be included in a new package version of Chain Core software and documented as a breaking network change in the release notes.
 
 ## Signer Versioning
-The various packages of signing software each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages, with a tolerance of `+/-1`. For example, if you are a running a version of `signerd` whose first two numbers are **1.1**,  you can use a version of the Thales Codesafe HSM firmware whose first two numbers are **1.0**, **1.1**, or **1.2**.
+
+The various packages of signing software each use a three number versioning scheme - **x.y.z**. The first two numbers indicate compatibility between packages. For example, if you are a running a version of `signerd` whose first two numbers are **1.1**, you can use a version of the Thales Codesafe HSM firmware whose first two numbers are also **1.1**.
 
 Sometimes we make bugfixes and minor feature updates to individual software packages. When this occurs, we update the third number in the version string for that package only. This number doesn't affect compatibility with other packages. For example, you can safely use version **1.1.1** of `signerd` with version **1.1.3** of the Thales Codesafe HSM firmware.
 
 ### Scope
+
 The signer versioning scheme covers the following packages:
 
 - Chain Core MockHSM
@@ -87,9 +91,7 @@ These numbers represent, in order:
 - **Minor version**: bugfixes, new features
 - **Build version**: package-specific bugfixes and features
 
-The major version is shared by all signer packages. If there is a change in the major version, then there will be a new release of all signer software packages.
-
-The minor version is shared by all signer packages with a tolerance of `+/-1`.
+The major and minor versions are shared by all mutually-compatible signer packages. If there is a change in the major or minor version, then there will be a new release of all signer software packages.
 
 The build version of a specific package may change independently of other packages.
 
@@ -98,7 +100,8 @@ The build version of a specific package may change independently of other packag
 This scheme has semantics that are unique to Chain signer software packages, despite superficial similarities to other versioning schemes such as [Semantic Versioning](http://semver.org/).
 
 #### Compatibility between packages
-Signer software packages are compatible if their major and minor versions are no more than one number apart. For example, if you are running version 1.1.x of `signerd`, you can use version 1.0.x, 1.1.x, or 1.2.x of the Thales Codesafe HSM firmware.
+
+Signer software packages are compatible if their major and minor versions are the same. For example, if you are running version 1.1.x of `signerd`, you can use version 1.1.x of the Thales Codesafe HSM firmware.
 
 #### Breaking changes and backward compatibility
 
