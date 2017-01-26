@@ -56,7 +56,7 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case bc.Hash:
 		_, err := w.Write(v[:])
 		return err
-	case int:
+	case uint64:
 		// TODO: Revisit this type--should this be a uint64?
 		_, err := blockchain.WriteVarint63(w, uint64(v))
 		return err
@@ -108,6 +108,8 @@ func writeForHashReflect(w io.Writer, v reflect.Value) error {
 				return err
 			}
 		}
+		return nil
+
 	case reflect.Struct:
 		return extStructWriteForHash(w, 0, v)
 	}
