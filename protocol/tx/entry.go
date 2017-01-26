@@ -6,8 +6,6 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/protocol/bc"
@@ -47,8 +45,6 @@ func entryID(e entry) (entryRef, error) {
 }
 
 func writeForHash(w io.Writer, c interface{}) error {
-	fmt.Printf("* writeForHash:\n%s", spew.Sdump(c))
-
 	switch v := c.(type) {
 	case byte:
 		_, err := w.Write([]byte{v})
