@@ -5,6 +5,18 @@ import (
 	"chain/protocol/bc"
 )
 
+// A "Data" entry represents some arbitrary data
+// the transaction author wants the current transaction to commit to,
+// either for use in programs in the current or future transactions,
+// or for reference by external systems.
+// This is done with a hash commitment:
+// the entry itself stores a 32-byte hash of the underlying data,
+// which may be of any length.
+// It is the responsibility of the transport layer
+// to provide the underlying data
+// alongside the actual transaction, if necessary.
+// The data need not be made available to all parties;
+// it is fine to keep it confidential.
 type data struct {
 	body bc.Hash
 }
