@@ -148,8 +148,8 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 1, reference data
 				"00" + // output 1, output witness
 				"0c646973747269627574696f6e"), // reference data
-			hash:        mustDecodeHash("7af758d0d27a7885cb65243164e2f8084b06aa1a647792cae028926b19324604"),
-			witnessHash: mustDecodeHash("b87695021b85c490334fdfc47864c85c5da387d3540ae9836c65096e83b0dfca"),
+			hash:        mustDecodeHash("86556ca6f6181dbb71bcd3cba53fce825f39083c409b7c4afdf40c9912487113"),
+			witnessHash: mustDecodeHash("be907283e04ac6f365bc85af01b1a7945f89bfa4d77ca6429533cb11472322ab"),
 		},
 	}
 	for i, test := range cases {
