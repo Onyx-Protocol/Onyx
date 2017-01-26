@@ -49,6 +49,16 @@ let callback = (err, data) => {
 client.transactions.query({}, callback)
 ```
 
+## Using external signers
+
+To connect to an HSM other than the built-in Mock HSM, you must create a new
+`Connection` object:
+
+```
+const myHsmConnection = new chain.Connection('https://myhost.dev/mockhsm', 'tokenname:tokenvalue')
+signer.addKey(myKey, myHsmConnection)
+```
+
 ## Testing
 
 To run integration tests, run an instance of Chain Core on localhost:1999.
