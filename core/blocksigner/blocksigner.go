@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 
-	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
@@ -24,18 +23,24 @@ var ErrConsensusChange = errors.New("consensus program has changed")
 // private key.
 var ErrInvalidKey = errors.New("misconfigured signer public key")
 
-// Signer validates and signs blocks.
-type Signer struct {
+// Signer provides the interface for computing the block signature. It's
+// implemented by the MockHSM and our signerd client.
+type Signer interface {
+	Sign(context.Context, ed25519.PublicKey, []byte) ([]byte, error)
+}
+
+// BlockSigner validates and signs blocks.
+type BlockSigner struct {
 	Pub ed25519.PublicKey
-	hsm *mockhsm.HSM
+	hsm Signer
 	db  pg.DB
 	c   *protocol.Chain
 }
 
 // New returns a new Signer that validates blocks with c and signs
 // them with k.
-func New(pub ed25519.PublicKey, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
-	return &Signer{
+func New(pub ed25519.PublicKey, hsm Signer, db pg.DB, c *protocol.Chain) *BlockSigner {
+	return &BlockSigner{
 		Pub: pub,
 		hsm: hsm,
 		db:  db,
@@ -45,7 +50,7 @@ func New(pub ed25519.PublicKey, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *
 
 // SignBlock computes the signature for the block using
 // the private key in s.  It does not validate the block.
-func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (s *BlockSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	hash := b.HashForSig()
 	sig, err := s.hsm.Sign(ctx, s.Pub, hash[:])
 	if err != nil {
@@ -54,7 +59,7 @@ func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	return sig, nil
 }
 
-func (s *Signer) String() string {
+func (s *BlockSigner) String() string {
 	return fmt.Sprintf("signer for key %x", s.Pub)
 }
 
@@ -64,7 +69,7 @@ func (s *Signer) String() string {
 //
 // This function fails if this node has ever signed a different block at the
 // same height as b.
-func (s *Signer) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (s *BlockSigner) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	err := <-s.c.BlockSoonWaiter(ctx, b.Height-1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", b.Height-1)
