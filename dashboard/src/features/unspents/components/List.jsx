@@ -4,7 +4,7 @@ import ListItem from './ListItem'
 
 const type = 'unspent'
 const firstTimeContent = <EmptyContent
-  title="There are no unspent outputs on the blockchain" />
+  title='There are no unspent outputs on the blockchain' />
 
 const newStateToProps = (state, ownProps) => ({
   ...BaseList.mapStateToProps(type, ListItem)(state, ownProps),

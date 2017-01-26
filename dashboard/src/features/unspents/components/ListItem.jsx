@@ -5,11 +5,12 @@ import { buildInOutDisplay } from 'features/transactions/utility'
 class ListItem extends React.Component {
   render() {
     const item = {...this.props.item}
+    const id = item.id
     delete item.id
     return(<KeyValueTable
             title={
               <span>
-                ID <code>{item.id}</code>
+                ID <code>{id}</code>
               </span>
              }
             actions={[
