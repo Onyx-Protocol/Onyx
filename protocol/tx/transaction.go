@@ -7,10 +7,10 @@ import (
 
 // The data needed for validation and state updates.
 type TxHashes struct {
-	ID        bc.Hash
-	OutputIDs []bc.Hash // each OutputID is also the corresponding UnspentID
+	ID        entryRef
+	OutputIDs []entryRef // each OutputID is also the corresponding UnspentID
 	Issuances []struct {
-		ID           bc.Hash
+		ID           entryRef
 		ExpirationMS uint64
 	}
 	VMContexts []VMContext // one per old-style Input
@@ -27,12 +27,15 @@ type VMContext struct {
 
 // HashTx returns all hashes needed for validation and state updates.
 func HashTx(oldTx *bc.TxData) (*TxHashes, error) {
-	header, entries := mapTx(oldTx)
+	header, entries, err := mapTx(oldTx)
+	if err != nil {
+		return nil, err
+	}
+
 	hashes := new(TxHashes)
 
 	// ID
-	var err error
-	hashes.ID, err = header.ID()
+	hashes.ID, err = entryID(header)
 	if err != nil {
 		return nil, err
 	}
@@ -51,20 +54,23 @@ func HashTx(oldTx *bc.TxData) (*TxHashes, error) {
 		switch ent := ent.(type) {
 		case *anchor:
 			// TODO: check time range is within network-defined limits
+			trID := ent.body.timeRange
+			trEntry := entries[trID].(*timeRange) // xxx avoid panics here
 			iss := struct {
-				ID           bc.Hash
+				ID           entryRef
 				ExpirationMS uint64
-			}{entryID, ent.body.TimeRange.MaxTime}
-
+			}{entryID, trEntry.body.maxTimeMS}
 			hashes.Issuances = append(hashes.Issuances, iss)
+
 		case *issuance:
 			vmc := newVMContext(entryID, txRefDataHash)
-			vmc.RefDataHash = ent.body.data
-			vmc.AnchorID = &ent.body.Anchor
+			vmc.RefDataHash = bc.Hash(ent.body.data) // xxx should this be the id of the data entry? or the hash of the data that's _in_ the data entry?
+			vmc.AnchorID = (*bc.Hash)(&ent.body.anchor)
+
 		case *spend:
 			vmc := newVMContext(entryID, txRefDataHash)
-			vmc.RefDataHash = ent.body.data
-			vmc.OutputID = &ent.body.SpentOutput
+			vmc.RefDataHash = bc.Hash(ent.body.reference)
+			vmc.OutputID = (*bc.Hash)(&ent.body.spentOutput)
 		}
 	}
 
@@ -73,7 +79,7 @@ func HashTx(oldTx *bc.TxData) (*TxHashes, error) {
 
 // populates the common fields of a VMContext for an Entry, regardless of whether
 // that Entry is a Spend or an Issuance
-func newVMContext(entryID, txid, txRefDataHash bc.Hash) VMContext {
+func newVMContext(entryID, txid, txRefDataHash bc.Hash) *VMContext {
 	vmc := new(VMContext)
 
 	// TxRefDataHash
@@ -85,8 +91,8 @@ func newVMContext(entryID, txid, txRefDataHash bc.Hash) VMContext {
 	// TxSigHash
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
-	hasher.Write(entryID)
-	hasher.Write(txid)
+	hasher.Write(entryID[:])
+	hasher.Write(txid[:])
 	hasher.Read(vmc.TxSigHash[:])
 
 	return vmc

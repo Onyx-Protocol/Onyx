@@ -117,6 +117,8 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 		return nil, nil, err
 	}
 
+	var results []entryRef
+
 	for i, out := range tx.Outputs {
 		s := valueSource{
 			ref:      muxID,
@@ -126,7 +128,7 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 
 		var dataID entryRef
 		if len(out.ReferenceData) > 0 {
-			d := newData(out.ReferenceData)
+			d := newData(hashData(out.ReferenceData))
 			entries = append(entries, d)
 			dataID, err = entryID(d)
 			if err != nil {
@@ -145,6 +147,7 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 			}
 		} else {
 			// non-retirement
+			prog := program{1, out.ControlProgram}
 			o := newOutput(s, prog, dataID)
 			entries = append(entries, o)
 			resultID, err = entryID(o)

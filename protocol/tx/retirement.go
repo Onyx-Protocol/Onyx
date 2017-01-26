@@ -13,7 +13,7 @@ func (r *retirement) Body() interface{} { return r.body }
 
 func newRetirement(source valueSource, data entryRef) *retirement {
 	r := new(retirement)
-	r.source = source
-	r.data = data
+	r.body.source = source
+	r.body.data = data
 	return r
 }
