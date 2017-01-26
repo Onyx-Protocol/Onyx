@@ -68,9 +68,7 @@ See [ExtStruct](#extstruct) description below.
 
     entry {
         type="data1"
-        body: { 
-            data : Hash
-        }
+        body: Hash
         witness: HASH(empty_string)
     }
 
