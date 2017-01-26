@@ -18,15 +18,15 @@ All entries inherit from a common type `AbstractEntry`.
 
 ### Entry ID
 
-Identifier of the entry is based on its type and content. Content is length-prefixed, type is varint-encoded
+Identifier of the entry is based on its type and body. Body is length-prefixed, type is varint-encoded
 
-    entry.id  = HASH("entryid:" || entry.type  || ":" || entry.content_hash)
+    entry.id  = HASH("entryid:" || entry.type  || ":" || entry.body_hash)
 
 
 ## Abstract Entry (base type for all concrete entries)
 
     - type:      Integer
-    - content:   ExtStruct
+    - body:   ExtStruct
     - witness:   ExtStruct
 
 See [ExtStruct](#extstruct) description below.
@@ -35,14 +35,14 @@ See [ExtStruct](#extstruct) description below.
 ## UnknownEntry
 
     - type:         unknown Integer
-    - content.hash: Hash
+    - body.hash: Hash
     - witness.hash: Hash
 
 ## TxHeader
 
     entry {
         type="txheader"
-        content:
+        body:
             version:       Integer
             results:       List<Pointer<Output|Retirement|UnknownEntry>>
             data:          Pointer<Data|UnknownEntry>
@@ -68,7 +68,7 @@ See [ExtStruct](#extstruct) description below.
 
     entry {
         type="data1"
-        content: { 
+        body: { 
             data : Hash
         }
         witness: HASH(empty_string)
@@ -77,14 +77,14 @@ See [ExtStruct](#extstruct) description below.
 **Rules:**
 
 1. witness must be empty
-2. Note: content itself may or may not be provided, but the content_hash must be known.
+2. Note: body itself may or may not be provided, but the body_hash must be known.
 
 
 ## Output
 
     entry {
         type="output1"
-        content:
+        body:
             source:          ValueSource
             control_program: Program
             data:            Pointer<Data>
@@ -113,7 +113,7 @@ See [ExtStruct](#extstruct) description below.
 
     entry {
         type="retirement1"
-        content:
+        body:
             source:         ValueSource
             data:           Pointer<Data>
             ext_hash:       Hash
@@ -142,7 +142,7 @@ See [ExtStruct](#extstruct) description below.
 
     entry {
         type="spend1"
-        content:
+        body:
           spent_output: Pointer<Output>
           data:         Pointer<Data>
           ext_hash:     Hash
@@ -176,7 +176,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
     entry {
         type="issuance1"
-        content:
+        body:
           anchor:           Pointer<Anchor|Spend>
           value:            AssetAmount
           data:             Pointer<Data>
@@ -211,7 +211,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
     entry {
         type="mux1"
-        content:        
+        body:        
             sources:      List<ValueSource>
             ext_hash:     Hash
         witness:          
@@ -282,7 +282,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
     entry {
         type="anchor1"
-        content:
+        body:
           program:    Program
           timerange:  Pointer<TimeRange>
           ext_hash:   Hash
@@ -302,7 +302,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
     entry {
         type="timerange"
-        content:
+        body:
             mintime:  Integer
             maxtime:  Integer
             ext_hash: Hash
@@ -448,7 +448,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
 4. Set `newtx.version` to `oldtx.version`.
 5. If `oldtx.data` is non-empty:
     1. Let `refdata` be a new `Data` entry.
-    2. Set `refdata.content` to `tx.data`.
+    2. Set `refdata.body` to `tx.data`.
     3. Set `newtx.data` to `refdata.id`.
     4. Add `refdata` to the `container`.
 6. Set `newtx.mintime` to `oldtx.mintime`.
@@ -473,7 +473,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
     6. Set `is.issuance_program` to `oldis.issuance_program` (with its VM version).
     7. If `oldis.asset_definition` is non-empty:
         1. Let `adef` be a new `Data` entry.
-        2. Set `adef.content` to `oldis.asset_definition`.
+        2. Set `adef.body` to `oldis.asset_definition`.
         3. Set `is.asset_definition` to `adef.id`.
         4. Add `adef` to `container`.
     8. If `oldis.asset_definition` is empty:
@@ -507,7 +507,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         4. Set `destentry.source` to `src`.
     4. If `oldout.data` is non-empty:
         1. Let `data` be a new `Data` entry.
-        2. Set `data.content` to `oldout.data`.
+        2. Set `data.body` to `oldout.data`.
         3. Set `destentry.data` to `data.id`.
         4. Add `data` to `container`.
     5. Add `destentry` to `container`.
@@ -613,7 +613,7 @@ The new slightly different serialization format (i.e. the type prefix and extens
 
     entry {
         type="blockheader"
-        content:
+        body:
             version:                Integer
             height:                 Integer
             previous_block_id:      Pointer<BlockHeader>
