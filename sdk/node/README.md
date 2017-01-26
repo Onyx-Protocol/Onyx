@@ -12,7 +12,7 @@ For most applications, you can simply add Chain to your `package.json` with
 the following command:
 
 ```
-npm install --save chain-sdk@1.0.1
+npm install --save chain-sdk@1.0.2
 ```
 
 ### In your code
