@@ -482,8 +482,6 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         2. Set `src.position` to current count of `mux.sources`.
         3. Set `src.value` to `is.value`.
         4. Add `src` to `mux.sources`.
-    11. Create `ValueDestination` struct `dst` and set to `is`:
-        1. TBD: this is not needed for hashing as this goes into witness. To be done later.
     12. Add `is` to `container`.
 10. For each spend input `oldspend`:
     1. Let `inp` be a new `Input` entry.
@@ -495,8 +493,6 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         2. Set `src.position` to current count of `mux.sources`.
         3. Set `src.value` to `AssetAmount{ oldspend.spent_output.(assetid,amount) } `.
         4. Add `src` to `mux.sources`.
-    6. Create `ValueDestination` struct `dst` and set to `is`:
-        1. TBD: this is not needed for hashing as this goes into witness. To be done later.
     7. Add `inp` to `container`.
 11. For each output `oldout` at index `i`:
     1. If the `oldout` contains a retirement program:
@@ -515,8 +511,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         3. Set `destentry.data` to `data.id`.
         4. Add `data` to `container`.
     5. Add `destentry` to `container`.
-12. For each input or issuance in `mux.sources`:
-    1. TBD: add mux.id to the inputs/issuances destinations.
+    6. Add `destentry` to `newtx.results`
 
 
 ### OldTxID -> NewTxID
