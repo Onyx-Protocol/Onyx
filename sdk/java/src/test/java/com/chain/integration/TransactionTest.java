@@ -519,8 +519,7 @@ public class TransactionTest {
 
     Transaction.Template spending =
         new Transaction.Builder()
-            .addAction(
-                new Transaction.Action.SpendAccountUnspentOutput().setOutputId(output.id))
+            .addAction(new Transaction.Action.SpendAccountUnspentOutput().setOutputId(output.id))
             .addAction(
                 new Transaction.Action.ControlWithAccount()
                     .setAccountAlias(bob)
