@@ -48,12 +48,12 @@ func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
 		}
 	}
 
-	var txRefDataHash bc.Hash // TODO: calculate this for the tx
+	var txRefDataHash bc.Hash // xxx calculate this for the tx
 
 	for entryID, ent := range entries {
 		switch ent := ent.(type) {
 		case *anchor:
-			// TODO: check time range is within network-defined limits
+			// xxx check time range is within network-defined limits
 			trID := ent.body.TimeRange
 			trEntry := entries[trID].(*timeRange) // xxx avoid panics here
 			iss := struct {
