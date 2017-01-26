@@ -58,7 +58,7 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 			if len(oldIss.Nonce) == 0 {
 				// xxx anchorHash = "first spend input of the oldtx" (does this mean the txhash of the prevout of the spend?)
 			} else {
-				prog := issuanceAnchorProg(oldIss.Nonce, oldIss.AssetID())
+				prog := issuanceAnchorProg(oldIss.Nonce, oldIss.AssetID(), oldIss.VMVersion)
 
 				trID, _, err := addEntry(newTimeRange(tx.MinTime, tx.MaxTime))
 				if err != nil {
@@ -124,7 +124,7 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 			}
 		} else {
 			// non-retirement
-			prog := program{1, out.ControlProgram}
+			prog := program{out.VMVersion, out.ControlProgram}
 			resultID, _, err = addEntry(newOutput(s, prog, outRefdataID))
 			if err != nil {
 				return nil, nil, err
@@ -140,8 +140,8 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 	return h.(*header), entryMap, nil
 }
 
-func issuanceAnchorProg(nonce []byte, assetID bc.AssetID) program {
+func issuanceAnchorProg(nonce []byte, assetID bc.AssetID, vmVersion uint64) program {
 	b := vmutil.NewBuilder()
 	b = b.AddData(nonce).AddOp(vm.OP_DROP).AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
-	return program{1, b.Program}
+	return program{vmVersion, b.Program}
 }
