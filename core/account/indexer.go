@@ -80,7 +80,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 			out := &rawOutput{
 				Output: state.Output{
 					TxOutput: *out,
-					OutputID: tx.OutputID(j),
+					OutputID: tx.OutputID(uint32(j)),
 				},
 				txHash:      tx.Hash,
 				outputIndex: uint32(j),

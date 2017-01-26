@@ -280,12 +280,12 @@ func (tx *TxData) HashForSig(idx uint32) Hash {
 	return NewSigHasher(tx).Hash(idx)
 }
 
-func (tx *Tx) OutputID(outputIndex int) OutputID {
-	return ComputeOutputID(tx.Hash, uint32(outputIndex))
+func (tx *Tx) OutputID(outputIndex uint32) OutputID {
+	return ComputeOutputID(tx.Hash, outputIndex)
 }
 
-func (tx *TxData) OutputID(outputIndex int) OutputID {
-	return ComputeOutputID(tx.Hash(), uint32(outputIndex))
+func (tx *TxData) OutputID(outputIndex uint32) OutputID {
+	return ComputeOutputID(tx.Hash(), outputIndex)
 }
 
 func (tx *TxData) MarshalText() ([]byte, error) {
