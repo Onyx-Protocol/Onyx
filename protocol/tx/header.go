@@ -2,12 +2,12 @@ package tx
 
 type header struct {
 	body struct {
-		version              uint64
-		results              []entryRef
-		data                 entryRef
-		references           []entryRef
-		minTimeMS, maxTimeMS uint64
-		extHash              extHash
+		Version              uint64
+		Results              []entryRef
+		Data                 entryRef
+		References           []entryRef
+		MinTimeMS, MaxTimeMS uint64
+		ExtHash              extHash
 	}
 }
 
@@ -16,11 +16,11 @@ func (h *header) Body() interface{} { return h.body }
 
 func newHeader(version uint64, results []entryRef, data entryRef, references []entryRef, minTimeMS, maxTimeMS uint64) *header {
 	h := new(header)
-	h.body.version = version
-	h.body.results = results
-	h.body.data = data
-	h.body.references = references
-	h.body.minTimeMS = minTimeMS
-	h.body.maxTimeMS = maxTimeMS
+	h.body.Version = version
+	h.body.Results = results
+	h.body.Data = data
+	h.body.References = references
+	h.body.MinTimeMS = minTimeMS
+	h.body.MaxTimeMS = maxTimeMS
 	return h
 }

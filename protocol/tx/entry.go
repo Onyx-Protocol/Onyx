@@ -2,8 +2,11 @@ package tx
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
+
+	"github.com/davecgh/go-spew/spew"
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
@@ -44,6 +47,8 @@ func entryID(e entry) (entryRef, error) {
 }
 
 func writeForHash(w io.Writer, c interface{}) error {
+	fmt.Printf("* writeForHash:\n%s", spew.Sdump(c))
+
 	switch v := c.(type) {
 	case byte:
 		_, err := w.Write([]byte{v})
@@ -54,6 +59,9 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case int:
 		// TODO: Revisit this type--should this be a uint64?
 		_, err := blockchain.WriteVarint63(w, uint64(v))
+		return err
+	case []byte:
+		_, err := blockchain.WriteVarstr31(w, v)
 		return err
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
@@ -66,15 +74,25 @@ func writeForHash(w io.Writer, c interface{}) error {
 func writeForHashReflect(w io.Writer, v reflect.Value) error {
 	// the only cases handled by writeForHashReflect are Lists and Structs
 	switch v.Kind() {
-	case reflect.Ptr:
-		// dereference and retry
-		e := v.Elem()
-		if !e.CanInterface() {
-			return errInvalidValue
+	case reflect.Array:
+		t := v.Type()
+		elType := t.Elem()
+		if elType.Kind() == reflect.Uint8 {
+			// fixed-length array of bytes
+			// xxx cannot call v.Slice() because of an unaddressable-array error
+			// xxx there has to be a better way than making a copy
+			s := make([]byte, 0, v.Len())
+			reflect.Copy(reflect.ValueOf(s), v)
+			return writeForHash(w, s)
 		}
-		return writeForHash(w, e.Interface())
 
 	case reflect.Slice:
+		t := v.Type()
+		elType := t.Elem()
+		if elType.Kind() == reflect.Uint8 {
+			// byte slice
+			return writeForHash(w, v.Interface())
+		}
 		l := v.Len()
 		_, err := blockchain.WriteVarint31(w, uint64(l))
 		if err != nil {
@@ -93,12 +111,12 @@ func writeForHashReflect(w io.Writer, v reflect.Value) error {
 	case reflect.Struct:
 		return extStructWriteForHash(w, 0, v)
 	}
-	return errors.New("bad type")
+	return fmt.Errorf("bad kind: %s", v.Kind())
 }
 
 func extStructWriteForHash(w io.Writer, i int, v reflect.Value) error {
 	if v.Kind() != reflect.Struct {
-		return errors.New("bad type: not an ExtHash")
+		return fmt.Errorf("bad kind: %s (not an ExtHash)", v.Kind())
 	}
 
 	l := v.NumField()

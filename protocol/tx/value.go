@@ -3,12 +3,12 @@ package tx
 import "chain/protocol/bc"
 
 type valueSource struct {
-	ref      entryRef
-	value    bc.AssetAmount
-	position int // what int do we actually want?
+	Ref      entryRef
+	Value    bc.AssetAmount
+	Position int // what int do we actually want?
 }
 
 type valueDestination struct {
-	ref      entryRef
-	position int
+	Ref      entryRef
+	Position int
 }

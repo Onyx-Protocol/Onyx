@@ -31,9 +31,9 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 			return err
 		}
 		s := valueSource{
-			ref:      id,
-			position: len(muxSources),
-			value:    val,
+			Ref:      id,
+			Position: len(muxSources),
+			Value:    val,
 		}
 		muxSources = append(muxSources, s)
 		return nil
@@ -121,9 +121,9 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 
 	for i, out := range tx.Outputs {
 		s := valueSource{
-			ref:      muxID,
-			position: i,
-			value:    out.AssetAmount,
+			Ref:      muxID,
+			Position: i,
+			Value:    out.AssetAmount,
 		}
 
 		var dataID entryRef

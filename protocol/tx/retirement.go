@@ -2,9 +2,9 @@ package tx
 
 type retirement struct {
 	body struct {
-		source  valueSource
-		data    entryRef
-		extHash extHash
+		Source  valueSource
+		Data    entryRef
+		ExtHash extHash
 	}
 }
 
@@ -13,7 +13,7 @@ func (r *retirement) Body() interface{} { return r.body }
 
 func newRetirement(source valueSource, data entryRef) *retirement {
 	r := new(retirement)
-	r.body.source = source
-	r.body.data = data
+	r.body.Source = source
+	r.body.Data = data
 	return r
 }

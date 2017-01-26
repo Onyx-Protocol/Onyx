@@ -2,8 +2,8 @@ package tx
 
 type timeRange struct {
 	body struct {
-		minTimeMS, maxTimeMS uint64
-		extHash              extHash
+		MinTimeMS, MaxTimeMS uint64
+		ExtHash              extHash
 	}
 }
 
@@ -12,7 +12,7 @@ func (tr *timeRange) Body() interface{} { return tr.body }
 
 func newTimeRange(minTimeMS, maxTimeMS uint64) *timeRange {
 	tr := new(timeRange)
-	tr.body.minTimeMS = minTimeMS
-	tr.body.maxTimeMS = maxTimeMS
+	tr.body.MinTimeMS = minTimeMS
+	tr.body.MaxTimeMS = maxTimeMS
 	return tr
 }
