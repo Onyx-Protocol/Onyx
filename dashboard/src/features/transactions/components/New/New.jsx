@@ -227,8 +227,6 @@ export default BaseNew.connect(
       'actions[].asset_alias',
       'actions[].amount',
       'actions[].control_program',
-      'actions[].transaction_id',
-      'actions[].position',
       'actions[].reference_data',
       'submit_action',
     ],
