@@ -32,7 +32,7 @@ class FormContainer extends React.Component {
               </FormSection>
             </form>
           </div>
-          <Tutorial types={['Form']} />
+          <Tutorial types={['TutorialForm']} />
         </div>
       </div>
     )

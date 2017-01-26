@@ -1,8 +1,8 @@
 import React from 'react'
-import styles from './Success.scss'
+import styles from './TutorialInfo.scss'
 import { Link } from 'react-router'
 
-class Success extends React.Component {
+class TutorialInfo extends React.Component {
 
   render() {
     const userInput = this.props.userInput
@@ -26,17 +26,18 @@ class Success extends React.Component {
             }
           </div>
           <div className={styles.content}>
-            <span className='glyphicon glyphicon-ok-sign'></span>
+            {this.props.logo && <span className={`glyphicon ${this.props.logo}`}></span>}
             <div className={styles.text}>
-              {this.props.content.map(function (x, i){
-                let str = x['line']
-                if (x['type']) {
-                  if (x['type'] == 'account'){
-                    str = x['line'].replace('STRING', userInput['accounts'][x['index']]['alias'])
-                  } else {
-                    str = x['line'].replace('STRING', userInput[x['type']]['alias'])
+              {this.props.content.map(function (contentLine, i){
+                let str = contentLine['line']
+                if (contentLine['type']){
+                  let replacement = userInput[contentLine['type']]
+                  if ('index' in contentLine){
+                    replacement = replacement[contentLine['index']]
                   }
+                  str = str.replace('STRING', replacement['alias'])
                 }
+
                 return <li key={i}>{str}</li>
               })}
             </div>
@@ -49,4 +50,4 @@ class Success extends React.Component {
   }
 }
 
-export default Success
+export default TutorialInfo

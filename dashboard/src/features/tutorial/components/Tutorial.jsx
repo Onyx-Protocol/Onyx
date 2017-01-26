@@ -1,15 +1,13 @@
 import React from 'react'
 import steps from './steps.json'
-import Description from './Description/Description'
-import Success from './Success/Success'
-import Form from './Form/Form'
-import Complete from './Complete/Complete'
+import TutorialInfo from './TutorialInfo/TutorialInfo'
+import TutorialForm from './TutorialForm/TutorialForm'
+import TutorialComplete from './TutorialComplete/TutorialComplete'
 
 const components = {
-  Description,
-  Success,
-  Form,
-  Complete
+  TutorialInfo,
+  TutorialForm,
+  TutorialComplete
 }
 
 class Tutorial extends React.Component {
@@ -26,11 +24,7 @@ class Tutorial extends React.Component {
           <TutorialComponent
             userInput={userInput}
             step={tutorialStep}
-            button={steps[tutorialStep]['button']}
-            title={steps[tutorialStep]['title']}
-            content={steps[tutorialStep]['content']}
-            dismiss={steps[tutorialStep]['dismiss']}
-            route={steps[tutorialStep]['route']}
+            {...steps[tutorialStep]}
             handleNext={this.props.showNextStep}
             handleDismiss={this.props.dismissTutorial}
           />

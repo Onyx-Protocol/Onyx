@@ -49,7 +49,7 @@ class Main extends React.Component {
             There was an issue connecting to Chain Core. Please check your connection while dashboard attempts to reconnect.
           </div>}
 
-          <Tutorial types={['Description', 'Success', 'Complete']} />
+          <Tutorial types={['TutorialInfo', 'TutorialComplete']} />
 
           {this.props.children}
         </div>

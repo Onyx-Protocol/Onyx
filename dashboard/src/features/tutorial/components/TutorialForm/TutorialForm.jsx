@@ -1,7 +1,7 @@
 import React from 'react'
-import styles from './Form.scss'
+import styles from './TutorialForm.scss'
 
-class Form extends React.Component {
+class TutorialForm extends React.Component {
 
   render() {
     const userInput = this.props.userInput
@@ -21,15 +21,14 @@ class Form extends React.Component {
             </div>
             <table className={styles.listItemContainer}>
               <tbody>
-              {this.props.content['steps'].map(function (x, i){
-                let str = x['title']
-
-                if (x['type']) {
-                  if (x['type'] == 'account'){
-                    str = x['title'].replace('STRING', userInput['accounts'][x['index']]['alias'])
-                  } else {
-                    str = x['title'].replace('STRING', userInput[x['type']]['alias'])
+              {this.props.content['steps'].map(function (contentLine, i){
+                let str = contentLine['title']
+                if (contentLine['type']) {
+                  let replacement = userInput[contentLine['type']]
+                  if ('index' in contentLine){
+                    replacement = replacement[contentLine['index']]
                   }
+                  str = contentLine['title'].replace('STRING', replacement['alias'])
                 }
                 let rows = [
                   <tr className={styles.listItem} key={i}>
@@ -37,10 +36,10 @@ class Form extends React.Component {
                     <td>{str}</td>
                   </tr>
                 ]
-                if (x['description']) {
+                if (contentLine['description']) {
                   rows.push (<tr className={styles.listItemDescription}>
                     <td></td>
-                    <td key={i}>{x['description']}</td>
+                    <td key={i}>{contentLine['description']}</td>
                   </tr>)
                 }
                 return rows
@@ -54,4 +53,4 @@ class Form extends React.Component {
   }
 }
 
-export default Form
+export default TutorialForm

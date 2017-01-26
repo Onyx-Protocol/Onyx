@@ -1,22 +1,38 @@
 [
   {
-    "component": "Description",
+    "component": "TutorialInfo",
     "title": "Welcome to Chain Core Dashboard!",
     "button": "Start 5-minute Tutorial",
     "dismiss": "Skip tutorial",
     "route": "mockhsms",
-    "content": "The dashboard is a UI to be used with the SDKs, which enable your application to communicate with Chain Core.  To get started, learn about the primitives of Chain Core in this 5-minute Tutorial."
+    "logo": "glyphicon-book",
+    "content": [
+      {
+        "line": "The dashboard is a UI to be used with the SDKs, which enable your application to communicate with Chain Core."
+      },
+      {
+        "line": "To get started, learn about the primitives of Chain Core in this 5-minute Tutorial."
+      }
+    ]
   },
   {
-    "component": "Description",
+    "component": "TutorialInfo",
     "title": "Tutorial - MockHSM keys - Step 1 of 7",
     "button": "Create MockHSM key",
     "dismiss": "End tutorial",
     "route": "mockhsms/create",
-    "content": "Cryptographic private keys are the primary authorization mechanism on a blockchain. They control both the issuance and transfer of asset units. An asset or account will define a single key required for issuance or transfers."
+    "logo": "glyphicon-book",
+    "content": [
+      {
+        "line": "Cryptographic private keys are the primary authorization mechanism on a blockchain."
+      },
+      {
+        "line": "They control both the issuance and transfer of asset units. An asset or account will define a single key required for issuance or transfers."
+      }
+    ]
   },
   {
-    "component": "Form",
+    "component": "TutorialForm",
     "title": "Tutorial - MockHSM keys - Step 1 of 7",
     "button": null,
     "dismiss": null,
@@ -36,11 +52,12 @@
     }
   },
   {
-    "component": "Success",
+    "component": "TutorialInfo",
     "title": "Tutorial - MockHSM keys - Step 1 of 7",
     "button": "Learn about assets",
     "dismiss": "End tutorial",
     "route": "assets",
+    "logo": "glyphicon-ok-sign",
     "content": [
       {
         "type": "mockhsm",
@@ -52,15 +69,23 @@
     ]
   },
   {
-    "component": "Description",
+    "component": "TutorialInfo",
     "title": "Tutorial - Assets - Step 2 of 7",
     "button": "Create Asset",
     "dismiss": "End tutorial",
     "route": "assets/create",
-    "content": "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer."
+    "logo": "glyphicon-book",
+    "content": [
+      {
+        "line": "An asset is a type of value that can be issued on a blockchain."
+      },
+      {
+        "line": "All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer."
+      }
+    ]
   },
   {
-    "component": "Form",
+    "component": "TutorialForm",
     "title": "Tutorial - Assets - Step 2 of 7",
     "button": null,
     "dismiss": null,
@@ -85,11 +110,12 @@
     }
   },
   {
-    "component": "Success",
+    "component": "TutorialInfo",
     "title": "Tutorial - Assets - Step 2 of 7",
     "button": "Learn about accounts",
     "dismiss": "End tutorial",
     "route": "accounts",
+    "logo": "glyphicon-ok-sign",
     "content": [
       {
         "type": "asset",
@@ -101,15 +127,23 @@
     ]
   },
   {
-    "component": "Description",
+    "component": "TutorialInfo",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": "Create Account",
     "dismiss": "End tutorial",
     "route": "accounts/create",
-    "content": "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs. When you create an account, you provide one or more “root” keys and a quorum."
+    "logo": "glyphicon-book",
+    "content": [
+      {
+        "line": "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs."
+      },
+      {
+        "line": "When you create an account, you provide one or more “root” keys and a quorum."
+      }
+    ]
   },
   {
-    "component": "Form",
+    "component": "TutorialForm",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": null,
     "dismiss": null,
@@ -133,26 +167,27 @@
     }
   },
   {
-    "component": "Success",
+    "component": "TutorialInfo",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": "Create 2nd account",
     "dismiss": "End tutorial",
     "route": "accounts/create",
+    "logo": "glyphicon-ok-sign",
     "content": [
       {
-        "type": "account",
+        "type": "accounts",
         "index": 0,
         "line": "Great! You created an account for 'STRING'."
       },
       {
-        "type": "account",
+        "type": "accounts",
         "index": 0,
         "line": "Next, you will create a second account to interact with the newly created STRING account."
       }
     ]
   },
   {
-    "component": "Form",
+    "component": "TutorialForm",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": null,
     "dismiss": null,
@@ -176,14 +211,15 @@
     }
   },
   {
-    "component": "Success",
+    "component": "TutorialInfo",
     "title": "Tutorial - Accounts - Step 4 of 7",
     "button": "Learn about transactions",
     "dismiss": "End tutorial",
     "route": "transactions",
+    "logo": "glyphicon-ok-sign",
     "content": [
       {
-        "type": "account",
+        "type": "accounts",
         "index": 1,
         "line": "Great! You created an account for 'STRING'."
       },
@@ -193,15 +229,23 @@
     ]
   },
   {
-    "component": "Description",
+    "component": "TutorialInfo",
     "title": "Tutorial - Transactions - Step 5 of 7",
     "button": "Issue asset units",
     "dismiss": "End tutorial",
     "route": "transactions/create",
-    "content": "A transaction contains one or more inputs, and one or more outputs. The Chain Core API allows you to build transactions using actions, which include issue, spend and retire."
+    "logo": "glyphicon-book",
+    "content": [
+      {
+        "line": "A transaction contains one or more inputs, and one or more outputs."
+      },
+      {
+        "line": "The Chain Core API allows you to build transactions using actions, which include issue, spend and retire."
+      }
+    ]
   },
   {
-    "component": "Form",
+    "component": "TutorialForm",
     "title": "Tutorial - Transactions - Step 5 of 7",
     "button": null,
     "dismiss": null,
@@ -227,7 +271,7 @@
           "description": null
         },
         {
-          "type": "account",
+          "type": "accounts",
           "index": 0,
           "title": "Select 'STRING' for the account alias",
           "description": null
@@ -249,11 +293,12 @@
     }
   },
   {
-    "component": "Success",
+    "component": "TutorialInfo",
     "title": "Tutorial - Transactions - Step 5 of 7",
     "button": "Spend asset units",
     "dismiss": "End tutorial",
     "route": "transactions/create",
+    "logo": "glyphicon-ok-sign",
     "content": [
       {
         "type": "asset",
@@ -266,7 +311,7 @@
     ]
   },
   {
-    "component": "Form",
+    "component": "TutorialForm",
     "title": "Tutorial - Transactions - Step 6 of 7",
     "button": null,
     "dismiss": null,
@@ -279,7 +324,7 @@
           "description": null
         },
         {
-          "type": "account",
+          "type": "accounts",
           "index": 0,
           "title": "Select 'STRING' for the account alias",
           "description": null
@@ -298,7 +343,7 @@
           "description": null
         },
         {
-          "type": "account",
+          "type": "accounts",
           "index": 1,
           "title": "Select 'STRING' for the account alias",
           "description": null
@@ -320,11 +365,12 @@
     }
   },
   {
-    "component": "Success",
+    "component": "TutorialInfo",
     "title": "Tutorial - Transactions - Step 6 of 7",
     "button": "Retire asset units",
     "dismiss": "End tutorial",
     "route": "transactions/create",
+    "logo": "glyphicon-ok-sign",
     "content": [
       {
         "type": "asset",
@@ -337,7 +383,7 @@
     ]
   },
   {
-    "component": "Form",
+    "component": "TutorialForm",
     "title": "Tutorial - Transactions - Step 7 of 7",
     "button": null,
     "dismiss": null,
@@ -350,7 +396,7 @@
           "description": null
         },
         {
-          "type": "account",
+          "type": "accounts",
           "index": 1,
           "title": "Select 'STRING' for the account alias",
           "description": null
@@ -385,11 +431,12 @@
     }
   },
   {
-    "component": "Success",
+    "component": "TutorialInfo",
     "title": "Tutorial - Transactions - Step 7 of 7",
     "button": "Finish tutorial",
     "dismiss": null,
     "route": "transactions",
+    "logo": "glyphicon-ok-sign",
     "content": [
       {
         "type": "asset",
@@ -401,7 +448,7 @@
     ]
   },
   {
-    "component": "Complete",
+    "component": "TutorialComplete",
     "title": null,
     "button": null,
     "dismiss": "Done",

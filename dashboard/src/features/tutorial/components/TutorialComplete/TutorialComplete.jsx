@@ -1,8 +1,8 @@
 import React from 'react'
-import styles from './Complete.scss'
+import styles from './TutorialComplete.scss'
 
 
-class Complete extends React.Component {
+class TutorialComplete extends React.Component {
 
   render() {
     const userInput = this.props.userInput
@@ -38,4 +38,4 @@ class Complete extends React.Component {
   }
 }
 
-export default Complete
+export default TutorialComplete

@@ -7,8 +7,9 @@ export const mapStateToProps = ( type ) => ( /* state */ ) => ({
 
 export const mapDispatchToProps = (type) => (dispatch) => ({
   submitForm: (data) => {
-    return dispatch(actions[type].submitForm(data)).then(() => {
+    return dispatch(actions[type].submitForm(data)).then((resp) => {
       dispatch(actions.tutorial.updateTutorial(data, type))
+      return resp
     })
   }
 })
