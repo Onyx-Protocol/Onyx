@@ -459,7 +459,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         1. Set `is.anchor` to the first spend input of the `oldtx`.
     4. If `nonce` is non-empty:
         1. Let `a` be a new `Anchor` entry.
-        2. Set `a.program` to `VM1, PUSHDATA(nonce)`.
+        2. Set `a.program` to (VM1, `PUSHDATA(nonce) DROP ASSET PUSHDATA(oldis.assetid) EQUAL`. (The program pushes the nonce onto the stack then drops it, then calls the ASSET opcode, pushes the hardcoded old asset ID onto the stack, and checks that they are equal.)
         3. Let `tr` be a new `TimeRange` entry.
         4. Set `tr.mintime` to `oldtx.mintime`.
         5. Set `tr.maxtime` to `oldtx.maxtime`.
