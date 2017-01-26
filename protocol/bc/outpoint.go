@@ -19,7 +19,6 @@ func (p Outpoint) String() string {
 }
 
 // WriteTo writes p to w.
-// It assumes w has sticky errors.
 func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
 	n, err := w.Write(p.Hash[:])
 	if err != nil {
