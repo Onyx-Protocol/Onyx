@@ -1,0 +1,62 @@
+#!/bin/bash
+set -e
+
+usage() {
+  echo "Usage: $0 <releaseRef> <outputDir>"
+  echo
+  echo "Envvars:"
+  echo "GOOS:   target OS"
+  echo "GOARCH: target CPU architecture"
+  echo "DATE:   build date; defaults to now"
+  exit 1
+}
+
+trap usage ERR
+
+if [ -z "$1" -o -z "$2" ]; then
+  usage
+fi
+
+releaseRef=$1
+
+# verify output dir and expand to absolute
+cd $2 > /dev/null
+outputDir=`pwd`
+
+echo "Building ref $releaseRef to output directory $outputDir..."
+
+# Clone repository into tempdir and check out specified release ref.
+buildGoPath=`mktemp -d`
+trap "rm -rf $buildGoPath" EXIT
+
+newChain=$buildGoPath/src/chain
+mkdir -p $newChain
+git clone $CHAIN $newChain
+cd $newChain
+git checkout $releaseRef
+
+# Cross-compilation args for cored and corectl
+export CGO_ENABLED=0 # There are issues with cgo (e.g. https://github.com/lib/pq/issues/395), so disable it entirely.
+export GOPATH=$buildGoPath
+export GOOS
+export GOARCH
+
+echo "building cored..."
+
+commit=`git rev-parse HEAD`
+DATE=${DATE:-`date +%s`} # date can be set via envvar
+ldflags="-X main.buildTag=$releaseRef -X main.buildCommit=$commit -X main.buildDate=$DATE"
+
+go build\
+  -tags 'insecure_disable_https_redirect'\
+  -ldflags "$ldflags"\
+  -o $outputDir/cored\
+  chain/cmd/cored
+
+echo "building corectl..."
+
+go build\
+  -o "$outputDir/corectl"\
+  chain/cmd/corectl
+
+echo "Done, build artifacts placed in $outputDir"

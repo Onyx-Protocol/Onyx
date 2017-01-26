@@ -29,30 +29,14 @@ export const configuredAt = (state, action) => {
   }
   return value
 }
-export const buildCommit = (state, action) => {
-  let value = coreConfigReducer('build_commit', state, '', action)
-  if (value === '?') {
-    value = 'Local development'
-  } else if (value != '') {
-    value = value.substring(0,18)
-  }
-  return value
-}
-export const buildDate = (state, action) => {
-  let value = coreConfigReducer('build_date', state, '', action)
-  if (value !== '') {
-    value = moment(value, 'X').format(LONG_TIME_FORMAT)
-  }
 
-  return value
-}
 export const production = (state, action) =>
   coreConfigReducer('is_production', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('block_height', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.generator_block_height == null) return '???'
+    if (action.param.generator_block_height == 0) return '???'
   }
 
   return coreConfigReducer('generator_block_height', state, 0, action)
@@ -81,7 +65,7 @@ export const coreType = (state = '', action) => {
 
 export const replicationLag = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.generator_block_height == null) {
+    if (action.param.generator_block_height == 0) {
       return null
     }
     return action.param.generator_block_height - action.param.block_height
@@ -144,7 +128,7 @@ export const syncEstimates = (state = {}, action) => {
 
 export const replicationLagClass = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.generator_block_height == null) {
+    if (action.param.generator_block_height == 0) {
       return 'red'
     } else {
       let lag = action.param.generator_block_height - action.param.block_height
@@ -206,11 +190,11 @@ const snapshot = (state = null, action) => {
   return state
 }
 
+const version = (state, action) => coreConfigReducer('version', state, 'N/A', action)
+
 export default combineReducers({
   blockchainId,
   blockHeight,
-  buildCommit,
-  buildDate,
   connected,
   clientToken,
   configKnown,
@@ -231,4 +215,5 @@ export default combineReducers({
   snapshot,
   syncEstimates,
   validToken,
+  version,
 })

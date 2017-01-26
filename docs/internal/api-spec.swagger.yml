@@ -172,6 +172,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
   Account:
     type: object
@@ -253,6 +256,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
   ControlProgram:
     type: object
@@ -350,8 +356,9 @@ definitions:
       amount:
         type: integer
         description: The amount of the asset being spent/issued.
-      spent_output:
-        $ref: '#/definitions/SpentOutput'
+      spent_output_id:
+        type: string
+        description: The unique ID of the output being spent.
       account_id:
         type: string
         description: The unique ID of the account. Only present if `SpentOutput`
@@ -378,20 +385,6 @@ definitions:
           `asset_is_local` is "yes", OR if `type` is "spend" and
           `account_is_local` is "yes". "no" otherwise.
 
-  SpentOutput:
-    type: object
-    required:
-      - transaction_id
-      - position
-    properties:
-      transaction_id:
-        type: string
-        description: The unique ID of the transaction containing the output.
-      position:
-        type: integer
-        description: The position of the output within the containing
-          tranasction's outputs.
-
   TransactionOutput:
     type: object
     required:
@@ -413,6 +406,9 @@ definitions:
       position:
         type: integer
         description: The index of the output among the transaction's outputs.
+      id:
+        type: string
+        description: The unique ID of the transaction output.
       asset_id:
         type: string
         description: The unique ID of the asset being controlled or retired.
@@ -514,6 +510,10 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
+
 
   TransactionBuilder:
     type: object
@@ -542,15 +542,23 @@ definitions:
       Since Swagger 2.0 does not allow for polymorphic types, the individual
       properties are not listed here. Please refer to the definitions of
       IssueAction, SpendFromAccountAction, SpendFromAccountUnspentOutputAction,
-      ControlWithAccountAction, ControlWithProgramAction, and RetireAction.
+      ControlWithAccountAction, ControlWithProgramAction, and
+      SetTransactionReferenceDataAction.
 
   IssueAction:
     description: This action adds an issuance input for the specified asset to
       the transaction.
     type: object
     required:
+      - type
       - amount
     properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `issue`)
+        enum:
+          - issue
       asset_id:
         type: string
         description: The unique ID of the asset being issued. Either `asset_id`
@@ -572,8 +580,15 @@ definitions:
       funds from the specified account. It adds change outputs where necessary.
     type: object
     required:
+      - type
       - amount
     properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `spend_account`)
+        enum:
+          - spend_account
       account_id:
         type: string
         description: The unique ID of the spending account. Either `account_id`
@@ -604,17 +619,27 @@ definitions:
       be spent, and the user is required to handle change manually.
     type: object
     required:
-      - transaction_id
-      - position
+      - type
+      - output_id
     properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `spend_account_unspent_output`)
+        enum:
+          - spend_account_unspent_output
+      output_id:
+        type: string
+        description: The unique ID of the transaction output being spent.
+          This field replaces fields transaction_id and position.
       transaction_id:
         type: string
         description: The unique ID of the transaction containing the output
-          being spent.
+          being spent. This field is supported, but deprecated. Use output_id instead.
       position:
         type: string
         description: The output's index relative to other outputs in the
-          containing transaction.
+          containing transaction. This field is supported, but deprecated. Use output_id instead.
       reference_data:
         type: object
         description: Arbitrary, immutable key/value data that will accompany
@@ -625,8 +650,15 @@ definitions:
       some amount of an asset with a control program in the specified account.
     type: object
     required:
+      - type
       - amount
     properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `control_account`)
+        enum:
+          - control_account
       account_id:
         type: string
         description: The unique ID of the receiving account. Either `account_id`
@@ -658,9 +690,16 @@ definitions:
       created from accounts that are not on the local core.
     type: object
     required:
+      - type
       - control_program
       - amount
     properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `control_program`)
+        enum:
+          - control_program
       control_program:
         type: string
         description: The control program that will receive the incoming asset
@@ -681,28 +720,23 @@ definitions:
         description: Arbitrary, immutable key/value data that will accompany
           the inputs and/or outputs created by this action.
 
-  RetireAction:
-    description: This action removes a quantity of assets from circulation on
-      the blockchain.
+  SetTransactionReferenceDataAction:
+    description: This action sets the reference data field for the
+      transaction object
     type: object
     required:
-      - amount
+      - type
     properties:
-      asset_id:
+      type:
         type: string
-        description: The unique ID of the asset to be retired. Either `asset_id`
-          or `asset_alias` is required.
-      asset_alias:
-        type: string
-        description: The unique alias of the asset to be retired. Either
-          `asset_id` or `asset_alias` is required.
-      amount:
-        type: integer
-        description: The amount of the asset to be retired.
+        description: Value identifying the action type to the API
+          (required to be `set_transaction_reference_data`)
+        enum:
+          - set_transaction_reference_data
       reference_data:
         type: object
         description: Arbitrary, immutable key/value data that will accompany
-          the inputs and/or outputs created by this action.
+          the transaction.
 
   TransactionTemplate:
     type: object
@@ -844,6 +878,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
   TransactionFeed:
     type: object
@@ -893,6 +930,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
   AccessToken:
     type: object
@@ -937,6 +977,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
   CoreInfo:
     type: object
@@ -990,6 +1033,9 @@ definitions:
       core_id:
         type: string
         description: The unique ID of the core, generated at configuration.
+      version:
+        type: string
+        description: The release version of cored, the Chain Core server binary.
       build_commit:
         type: string
         description: The commit SHA of the core source code, at which the core
@@ -1050,6 +1096,9 @@ definitions:
       after:
         type: string
         description: An opaque cursor, used for pagination.
+      page_size:
+        type: integer
+        description: The number of items to be returned in each page
 
 responses:
 

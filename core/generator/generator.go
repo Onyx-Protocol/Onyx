@@ -6,6 +6,7 @@ package generator
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"chain/database/pg"
@@ -24,12 +25,17 @@ type BlockSigner interface {
 	SignBlock(context.Context, *bc.Block) (signature []byte, err error)
 }
 
-// generator produces new blocks on an interval.
-type generator struct {
+// Generator collects pending transactions and produces new blocks on
+// an interval.
+type Generator struct {
 	// config
 	db      pg.DB
 	chain   *protocol.Chain
 	signers []BlockSigner
+
+	mu         sync.Mutex
+	pool       []*bc.Tx // in topological order
+	poolHashes map[bc.Hash]bool
 
 	// latestBlock and latestSnapshot are current as long as this
 	// process remains the leader process. If the process is demoted,
@@ -39,33 +45,62 @@ type generator struct {
 	latestSnapshot *state.Snapshot
 }
 
+// New creates and initializes a new Generator.
+func New(
+	c *protocol.Chain,
+	s []BlockSigner,
+	db pg.DB,
+) *Generator {
+	return &Generator{
+		db:         db,
+		chain:      c,
+		signers:    s,
+		poolHashes: make(map[bc.Hash]bool),
+	}
+}
+
+// PendingTxs returns all of the pendings txs that will be
+// included in the generator's next block.
+func (g *Generator) PendingTxs() []*bc.Tx {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	txs := make([]*bc.Tx, len(g.pool))
+	copy(txs, g.pool)
+	return txs
+}
+
+// Submit adds a new pending tx to the pending tx pool.
+func (g *Generator) Submit(ctx context.Context, tx *bc.Tx) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	if g.poolHashes[tx.Hash] {
+		return nil
+	}
+
+	g.poolHashes[tx.Hash] = true
+	g.pool = append(g.pool, tx)
+	return nil
+}
+
 // Generate runs in a loop, making one new block
 // every block period. It returns when its context
 // is canceled.
 // After each attempt to make a block, it calls health
 // to report either an error or nil to indicate success.
-func Generate(
+func (g *Generator) Generate(
 	ctx context.Context,
-	c *protocol.Chain,
-	s []BlockSigner,
-	db pg.DB,
 	period time.Duration,
 	health func(error),
 ) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
-	recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
+	recoveredBlock, recoveredSnapshot, err := g.chain.Recover(ctx)
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}
-
-	g := &generator{
-		db:             db,
-		chain:          c,
-		signers:        s,
-		latestBlock:    recoveredBlock,
-		latestSnapshot: recoveredSnapshot,
-	}
+	g.latestBlock, g.latestSnapshot = recoveredBlock, recoveredSnapshot
 
 	// Check to see if we already have a pending, generated block.
 	// This can happen if the leader process exits between generating

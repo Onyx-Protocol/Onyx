@@ -2,8 +2,6 @@ package query
 
 import (
 	"context"
-	"encoding/json"
-	"reflect"
 	"testing"
 	"time"
 
@@ -11,6 +9,7 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 func TestDecodeOutputsAfter(t *testing.T) {
@@ -31,7 +30,7 @@ func TestDecodeOutputsAfter(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if !reflect.DeepEqual(decoded, &tc.cur) {
+		if !testutil.DeepEqual(decoded, &tc.cur) {
 			t.Errorf("got %#v, want %#v", decoded, &tc.cur)
 		}
 		if decoded.String() != tc.str {
@@ -44,12 +43,12 @@ func TestOutputsAfter(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	_, err := db.Exec(ctx, `
-		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, data, timespan)
+		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, output_id, data, timespan)
 		VALUES
-			(1, 0, 0, 'ab', '{"account_id": "abc"}', int8range(1, 100)),
-			(1, 1, 0, 'cd', '{"account_id": "abc"}', int8range(1, 100)),
-			(1, 1, 1, 'cd', '{"account_id": "abc"}', int8range(1, 100)),
-			(2, 0, 0, 'ef', '{"account_id": "abc"}', int8range(10, 50));
+			(1, 0, 0, 'ab', 'o1', '{"account_id": "abc"}', int8range(1, 100)),
+			(1, 1, 0, 'cd', 'o2', '{"account_id": "abc"}', int8range(1, 100)),
+			(1, 1, 1, 'cd', 'o3', '{"account_id": "abc"}', int8range(1, 100)),
+			(2, 0, 0, 'ef', 'o4', '{"account_id": "abc"}', int8range(10, 50));
 	`)
 	if err != nil {
 		t.Fatal(err)
@@ -131,147 +130,8 @@ func TestConstructOutputsQuery(t *testing.T) {
 		if query != tc.wantQuery {
 			t.Errorf("case %d: got %s want %s", i, query, tc.wantQuery)
 		}
-		if !reflect.DeepEqual(values, tc.wantValues) {
+		if !testutil.DeepEqual(values, tc.wantValues) {
 			t.Errorf("case %d: got %#v, want %#v", i, values, tc.wantValues)
-		}
-	}
-}
-
-func TestQueryOutputs(t *testing.T) {
-	type (
-		assetAccountAmount struct {
-			bc.AssetAmount
-			AccountID string
-		}
-		testcase struct {
-			filter string
-			values []interface{}
-			when   time.Time
-			want   []assetAccountAmount
-		}
-	)
-
-	ctx, indexer, time1, time2, acct1, acct2, asset1, asset2 := setupQueryTest(t)
-
-	cases := []testcase{
-		{
-			filter: "asset_id = $1",
-			values: []interface{}{asset1.AssetID.String()},
-			when:   time1,
-		},
-		{
-			filter: "asset_tags.currency = $1",
-			values: []interface{}{"USD"},
-			when:   time1,
-		},
-		{
-			filter: "asset_id = $1",
-			values: []interface{}{asset1.AssetID.String()},
-			when:   time2,
-			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
-			},
-		},
-		{
-			filter: "asset_tags.currency = $1",
-			values: []interface{}{"USD"},
-			when:   time2,
-			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
-			},
-		},
-		{
-			filter: "asset_id = $1",
-			values: []interface{}{asset2.AssetID.String()},
-			when:   time1,
-		},
-		{
-			filter: "asset_id = $1",
-			values: []interface{}{asset2.AssetID.String()},
-			when:   time2,
-			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
-			},
-		},
-		{
-			filter: "account_id = $1",
-			values: []interface{}{acct1.ID},
-			when:   time1,
-			want:   []assetAccountAmount{},
-		},
-		{
-			filter: "account_id = $1",
-			values: []interface{}{acct1.ID},
-			when:   time2,
-			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
-			},
-		},
-		{
-			filter: "account_id = $1",
-			values: []interface{}{acct2.ID},
-			when:   time1,
-			want:   []assetAccountAmount{},
-		},
-		{
-			filter: "account_id = $1",
-			values: []interface{}{acct2.ID},
-			when:   time2,
-			want:   []assetAccountAmount{},
-		},
-		{
-			filter: "asset_id = $1 AND account_id = $2",
-			values: []interface{}{asset1.AssetID.String(), acct1.ID},
-			when:   time2,
-			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
-			},
-		},
-		{
-			filter: "asset_id = $1 AND account_id = $2",
-			values: []interface{}{asset2.AssetID.String(), acct2.ID},
-			when:   time2,
-			want:   []assetAccountAmount{},
-		},
-	}
-
-	for i, tc := range cases {
-		f, err := filter.Parse(tc.filter)
-		if err != nil {
-			t.Fatal(err)
-		}
-		outputs, _, err := indexer.Outputs(ctx, f, tc.values, bc.Millis(tc.when), nil, 1000)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(outputs) != len(tc.want) {
-			t.Fatalf("case %d: got %d outputs, want %d", i, len(outputs), len(tc.want))
-		}
-		for j, w := range tc.want {
-			var found bool
-			wantAssetID := w.AssetID.String()
-			for _, output := range outputs {
-				var got struct {
-					AssetID   *string `json:"asset_id"`
-					Amount    *uint64
-					AccountID *string `json:"account_id"`
-				}
-
-				bytes := output.(*json.RawMessage)
-				err := json.Unmarshal(*bytes, &got)
-				if err != nil {
-					t.Fatalf("case %d: output is not a JSON object", i)
-				}
-
-				if wantAssetID == *got.AssetID && w.Amount == uint64(*got.Amount) && w.AccountID == *got.AccountID {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Errorf("case %d: did not find item %d in output", i, j)
-			}
 		}
 	}
 }

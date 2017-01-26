@@ -32,10 +32,15 @@ func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 	m := map[string]interface{}{
 		"id":               a.AssetID,
 		"alias":            a.Alias,
-		"definition":       a.Definition,
+		"raw_definition":   json.HexBytes(a.RawDefinition()),
+		"vm_version":       a.VMVersion,
 		"issuance_program": json.HexBytes(a.IssuanceProgram),
 		"tags":             a.Tags,
 		"is_local":         "no",
+	}
+	adef, err := a.Definition()
+	if err == nil {
+		m["definition"] = adef
 	}
 	if a.Signer != nil {
 		var keys []map[string]interface{}
@@ -81,9 +86,11 @@ func (reg *Registry) ProcessBlocks(ctx context.Context) {
 // indexAssets is run on every block and indexes all non-local assets.
 func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 	var (
-		assetIDs, definitions pq.StringArray
-		issuancePrograms      pq.ByteaArray
-		seen                  = make(map[bc.AssetID]bool)
+		assetIDs         pq.ByteaArray
+		definitions      pq.StringArray
+		vmVersions       pq.Int64Array
+		issuancePrograms pq.ByteaArray
+		seen             = make(map[bc.AssetID]bool)
 	)
 	for _, tx := range b.Transactions {
 		for _, in := range tx.Inputs {
@@ -93,14 +100,15 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 			if seen[in.AssetID()] {
 				continue
 			}
-			definition, err := definitionFromProgram(in.IssuanceProgram())
-			if err != nil {
-				continue
+			if ii, ok := in.TypedInput.(*bc.IssuanceInput); ok {
+				id := in.AssetID()
+				definition := ii.AssetDefinition
+				seen[id] = true
+				assetIDs = append(assetIDs, id[:])
+				definitions = append(definitions, string(definition))
+				vmVersions = append(vmVersions, int64(ii.VMVersion))
+				issuancePrograms = append(issuancePrograms, in.IssuanceProgram())
 			}
-			seen[in.AssetID()] = true
-			assetIDs = append(assetIDs, in.AssetID().String())
-			definitions = append(definitions, string(definition))
-			issuancePrograms = append(issuancePrograms, in.IssuanceProgram())
 		}
 	}
 	if len(assetIDs) == 0 {
@@ -117,17 +125,17 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 	// the annotated asset to the query indexer.
 	const q = `
 		WITH new_assets AS (
-			INSERT INTO assets (id, issuance_program, definition, created_at, initial_block_hash, first_block_height)
-			VALUES(unnest($1::text[]), unnest($2::bytea[]), unnest($3::text[])::jsonb, $4, $5, $6)
+			INSERT INTO assets (id, vm_version, issuance_program, definition, created_at, initial_block_hash, first_block_height)
+			VALUES(unnest($1::bytea[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::bytea[]), $5, $6, $7)
 			ON CONFLICT (id) DO NOTHING
 			RETURNING id
 		)
 		SELECT id FROM new_assets
 			UNION
-		SELECT id FROM assets WHERE first_block_height = $6
+		SELECT id FROM assets WHERE first_block_height = $7
 	`
 	var newAssetIDs []bc.AssetID
-	err := pg.ForQueryRows(ctx, reg.db, q, assetIDs, issuancePrograms, definitions, b.Time(), reg.initialBlockHash, b.Height,
+	err := pg.ForQueryRows(ctx, reg.db, q, assetIDs, vmVersions, issuancePrograms, definitions, b.Time(), reg.initialBlockHash, b.Height,
 		func(assetID bc.AssetID) { newAssetIDs = append(newAssetIDs, assetID) })
 	if err != nil {
 		return errors.Wrap(err, "error indexing non-local assets")

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
-	"reflect"
 	"testing"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 	"chain/testutil"
@@ -24,8 +22,8 @@ import (
 
 type testAction bc.AssetAmount
 
-func (t testAction) Build(ctx context.Context, maxTime time.Time, b *TemplateBuilder) error {
-	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
+func (t testAction) Build(ctx context.Context, b *TemplateBuilder) error {
+	in := bc.NewSpendInput(bc.ComputeOutputID([32]byte{255}, 0), nil, t.AssetID, t.Amount, nil, nil)
 	tplIn := &SigningInstruction{}
 
 	err := b.AddInput(in, tplIn)
@@ -44,19 +42,6 @@ func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *controlPro
 
 func TestBuild(t *testing.T) {
 	ctx := context.Background()
-	pool := mempool.New()
-
-	err := pool.Insert(ctx, &bc.Tx{
-		Hash: [32]byte{255},
-		TxData: bc.TxData{
-			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput([32]byte{1}, 5, nil, nil),
-			},
-		},
-	})
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
 
 	actions := []Action{
 		newControlProgramAction(bc.AssetAmount{AssetID: [32]byte{2}, Amount: 6}, []byte("dest")),
@@ -66,8 +51,7 @@ func TestBuild(t *testing.T) {
 	expiryTime := time.Now().Add(time.Minute)
 	got, err := Build(ctx, nil, actions, expiryTime)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	want := &Template{
@@ -75,7 +59,7 @@ func TestBuild(t *testing.T) {
 			Version: 1,
 			MaxTime: bc.Millis(expiryTime),
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput([32]byte{255}, 0, nil, [32]byte{1}, 5, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID([32]byte{255}, 0), nil, [32]byte{1}, 5, nil, nil),
 			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput([32]byte{2}, 6, []byte("dest"), nil),
@@ -88,13 +72,13 @@ func TestBuild(t *testing.T) {
 		}},
 	}
 
-	if !reflect.DeepEqual(got.Transaction, want.Transaction) {
+	if !testutil.DeepEqual(got.Transaction, want.Transaction) {
 		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", got.Transaction, want.Transaction)
 		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", got.Transaction.Inputs, want.Transaction.Inputs)
 		t.Errorf("got tx outputs:\n\t%#v\nwant tx outputs:\n\t%#v", got.Transaction.Outputs, want.Transaction.Outputs)
 	}
 
-	if !reflect.DeepEqual(got.SigningInstructions, want.SigningInstructions) {
+	if !testutil.DeepEqual(got.SigningInstructions, want.SigningInstructions) {
 		t.Errorf("got signing instructions:\n\t%#v\nwant signing instructions:\n\t%#v", got.SigningInstructions, want.SigningInstructions)
 	}
 
@@ -120,12 +104,12 @@ func TestMaterializeWitnesses(t *testing.T) {
 		t.Fatal(err)
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
+	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(nil, 5, nil, initialBlockHash, issuanceProg, nil),
+			bc.NewIssuanceInput(nil, 5, nil, initialBlockHash, issuanceProg, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 5, outscript, nil),
@@ -146,7 +130,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 				&SignatureWitness{
 					Quorum: 1,
 					Keys: []KeyID{{
-						XPub:           pubkey.String(),
+						XPub:           pubkey,
 						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
 					}},
 					Program: prog,
@@ -164,11 +148,11 @@ func TestMaterializeWitnesses(t *testing.T) {
 
 	err = materializeWitnesses(tpl)
 	if err != nil {
-		t.Fatal(withStack(err))
+		testutil.FatalErr(t, err)
 	}
 
 	got := tpl.Transaction.Inputs[0].Arguments()
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
 }
@@ -188,12 +172,12 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		t.Fatal(err)
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
+	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(nil, 100, nil, initialBlockHash, issuanceProg, nil),
+			bc.NewIssuanceInput(nil, 100, nil, initialBlockHash, issuanceProg, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 100, outscript, nil),
@@ -226,15 +210,15 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 				Quorum: 2,
 				Keys: []KeyID{
 					{
-						XPub:           pubkey1.String(),
+						XPub:           pubkey1,
 						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
 					},
 					{
-						XPub:           pubkey2.String(),
+						XPub:           pubkey2,
 						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
 					},
 					{
-						XPub:           pubkey3.String(),
+						XPub:           pubkey3,
 						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
 					},
 				},
@@ -245,10 +229,10 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	}}
 	err = materializeWitnesses(tpl)
 	if err != nil {
-		t.Fatal(withStack(err))
+		testutil.FatalErr(t, err)
 	}
 	got := tpl.Transaction.Inputs[0].Arguments()
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
 
@@ -260,20 +244,12 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	component.Sigs = []json.HexBytes{sig1, sig2}
 	err = materializeWitnesses(tpl)
 	if err != nil {
-		t.Fatal(withStack(err))
+		testutil.FatalErr(t, err)
 	}
 	got = tpl.Transaction.Inputs[0].Arguments()
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
-}
-
-func withStack(err error) string {
-	s := err.Error()
-	for _, frame := range errors.Stack(err) {
-		s += "\n" + frame.String()
-	}
-	return s
 }
 
 func mustDecodeHex(str string) []byte {
@@ -288,7 +264,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	var initialBlockHash bc.Hash
 
 	issuanceProg := []byte{byte(vm.OP_TRUE)}
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
+	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
 
 	// Tx with only issuance inputs is OK
 	tx := bc.NewTx(bc.TxData{
@@ -297,21 +273,25 @@ func TestTxSighashCommitment(t *testing.T) {
 			{
 				AssetVersion: 1,
 				TypedInput: &bc.IssuanceInput{
-					Nonce:           []byte{1},
-					Amount:          1,
-					InitialBlock:    initialBlockHash,
-					VMVersion:       1,
-					IssuanceProgram: issuanceProg,
+					Nonce:  []byte{1},
+					Amount: 1,
+					IssuanceWitness: bc.IssuanceWitness{
+						InitialBlock:    initialBlockHash,
+						VMVersion:       1,
+						IssuanceProgram: issuanceProg,
+					},
 				},
 			},
 			{
 				AssetVersion: 1,
 				TypedInput: &bc.IssuanceInput{
-					Nonce:           []byte{2},
-					Amount:          1,
-					InitialBlock:    initialBlockHash,
-					VMVersion:       1,
-					IssuanceProgram: issuanceProg,
+					Nonce:  []byte{2},
+					Amount: 1,
+					IssuanceWitness: bc.IssuanceWitness{
+						InitialBlock:    initialBlockHash,
+						VMVersion:       1,
+						IssuanceProgram: issuanceProg,
+					},
 				},
 			},
 		},
@@ -421,27 +401,27 @@ func TestCheckBlankCheck(t *testing.T) {
 		want error
 	}{{
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 3, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil),
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{1}, 5, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{1}, 5, nil, nil),
 			},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(bc.AssetID{0}, math.MaxInt64, nil, nil),
 				bc.NewTxOutput(bc.AssetID{0}, 7, nil, nil),
@@ -451,14 +431,14 @@ func TestCheckBlankCheck(t *testing.T) {
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil),
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, math.MaxInt64, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, math.MaxInt64, nil, nil),
 			},
 		},
 		want: ErrBadAmount,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: nil,
@@ -469,7 +449,7 @@ func TestCheckBlankCheck(t *testing.T) {
 		want: nil,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{1}, 5, nil, nil)},
 		},
 		want: nil,

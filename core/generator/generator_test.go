@@ -24,7 +24,7 @@ func TestGeneratorRecovery(t *testing.T) {
 
 	// Create a new block and save it to pending blocks to simulate
 	// a crash after generating a block but before committing it.
-	pendingBlock, _, err := c.GenerateBlock(ctx, b, s, time.Now())
+	pendingBlock, _, err := c.GenerateBlock(ctx, b, s, time.Now(), nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -36,7 +36,8 @@ func TestGeneratorRecovery(t *testing.T) {
 	// Start Generate which should notice the pending block and commit it.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	go Generate(ctx, c, nil, dbtx, time.Second, func(error) {})
+
+	go New(c, nil, dbtx).Generate(ctx, time.Second, func(error) {})
 
 	// Wait for the block to land, and then make sure it's the same block
 	// that was pending before we ran Generate.
@@ -64,20 +65,16 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	signer := testSigner{pubKey, privKey}
-	g := &generator{
-		chain:          c,
-		signers:        []BlockSigner{signer},
-		latestBlock:    b1,
-		latestSnapshot: state.Empty(),
-	}
+	g := New(c, []BlockSigner{testSigner{pubKey, privKey}}, nil)
+	g.latestBlock = b1
+	g.latestSnapshot = state.Empty()
 
 	tip, snapshot, err := c.Recover(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	block, _, err := c.GenerateBlock(ctx, tip, snapshot, time.Now())
+	block, _, err := c.GenerateBlock(ctx, tip, snapshot, time.Now(), nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -99,7 +96,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
 	ctx := context.Background()
 
-	g := new(generator)
+	g := New(nil, nil, nil)
 	block, err := protocol.NewInitialBlock(testutil.TestPubs, 1, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)

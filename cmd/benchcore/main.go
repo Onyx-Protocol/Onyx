@@ -70,30 +70,30 @@ var instanceConfigs = map[string]instanceConfig{
 	"default": instanceConfig{
 		AMI:                     "ami-40d28157", // Ubuntu LTS 16.04
 		InstanceType:            "m3.xlarge",
-		CoredMaxDBConns:         "1000",
+		CoredMaxDBConns:         "500",
 		PostgresAMI:             "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
 		PostgresInstanceType:    "i2.xlarge",
-		MaxConnections:          1030,
+		MaxConnections:          530,
 		SharedBuffers:           "15GB",
 		EffectiveCacheSize:      "45GB", // ~3/4 total mem
 		WorkMem:                 "32MB",
 		MaintenanceWorkMem:      "512MB",
-		MaxWALSize:              "2GB",
+		MaxWALSize:              "4GB",
 		WALBuffers:              "64MB",
 		LogMinDurationStatement: 2000,
 	},
 	"max": instanceConfig{
 		AMI:                     "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
 		InstanceType:            "m4.16xlarge",
-		CoredMaxDBConns:         "1000",
+		CoredMaxDBConns:         "500",
 		PostgresAMI:             "ami-2ef48339", // Ubuntu Server 16.04 LTS (HVM), SSD Volume Type
 		PostgresInstanceType:    "i2.4xlarge",
-		MaxConnections:          1030,
+		MaxConnections:          530,
 		SharedBuffers:           "30GB",
 		EffectiveCacheSize:      "85GB", // ~3/4 total mem
 		WorkMem:                 "64MB",
 		MaintenanceWorkMem:      "1GB",
-		MaxWALSize:              "4GB",
+		MaxWALSize:              "8GB",
 		WALBuffers:              "64MB",
 		LogMinDurationStatement: 2000,
 	},

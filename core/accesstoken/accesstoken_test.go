@@ -3,7 +3,6 @@ package accesstoken
 import (
 	"context"
 	"encoding/hex"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -11,6 +10,7 @@ import (
 
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/testutil"
 )
 
 func TestCreate(t *testing.T) {
@@ -92,7 +92,7 @@ func TestList(t *testing.T) {
 			continue
 		}
 
-		if !reflect.DeepEqual(got, c.want) {
+		if !testutil.DeepEqual(got, c.want) {
 			t.Errorf("List(%s, %d) = %+v want %+v", c.after, c.limit, spew.Sdump(got), spew.Sdump(c.want))
 		}
 

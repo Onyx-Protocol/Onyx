@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="12px" height="12px" viewBox="0 0 12 12" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 41.2 (35397) - http://www.bohemiancoding.com/sketch -->
+    <title>client</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="11.0769231" height="3.37236534" rx="1.68618267"></rect>
+        <mask id="mask-2" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="11.0769231" height="3.37236534" fill="white">
+            <use xlink:href="#path-1"></use>
+        </mask>
+        <rect id="path-3" x="0" y="4.21545667" width="11.0769231" height="3.37236534" rx="1.68618267"></rect>
+        <mask id="mask-4" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="11.0769231" height="3.37236534" fill="white">
+            <use xlink:href="#path-3"></use>
+        </mask>
+        <rect id="path-5" x="0" y="8.43091335" width="11.0769231" height="3.37236534" rx="1.68618267"></rect>
+        <mask id="mask-6" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="11.0769231" height="3.37236534" fill="white">
+            <use xlink:href="#path-5"></use>
+        </mask>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="icon-set" transform="translate(-92.000000, -8.000000)">
+            <g id="icons">
+                <g id="client" transform="translate(84.000000, 0.000000)">
+                    <g id="server" transform="translate(8.000000, 8.000000)">
+                        <use id="Rectangle" stroke="#A3A9B8" mask="url(#mask-2)" stroke-width="1.4" xlink:href="#path-1"></use>
+                        <use id="Rectangle" stroke="#A3A9B8" mask="url(#mask-4)" stroke-width="1.4" xlink:href="#path-3"></use>
+                        <ellipse id="Oval" fill="#A3A9B8" cx="8.72307691" cy="1.70725994" rx="0.415384604" ry="0.442622939"></ellipse>
+                        <ellipse id="Oval" fill="#A3A9B8" cx="8.72307691" cy="5.92271662" rx="0.415384604" ry="0.442622939"></ellipse>
+                        <use id="Rectangle" stroke="#A3A9B8" mask="url(#mask-6)" stroke-width="1.4" xlink:href="#path-5"></use>
+                        <ellipse id="Oval" fill="#A3A9B8" cx="8.72307691" cy="10.1381733" rx="0.415384604" ry="0.442622939"></ellipse>
+                        <ellipse id="Oval" fill="#A3A9B8" cx="6.87692307" cy="1.70725994" rx="0.415384604" ry="0.442622939"></ellipse>
+                        <ellipse id="Oval" fill="#A3A9B8" cx="6.87692307" cy="5.92271662" rx="0.415384604" ry="0.442622939"></ellipse>
+                        <ellipse id="Oval" fill="#A3A9B8" cx="6.87692307" cy="10.1381733" rx="0.415384604" ry="0.442622939"></ellipse>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

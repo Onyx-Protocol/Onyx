@@ -2,8 +2,9 @@ package filter
 
 import (
 	"encoding/json"
-	"reflect"
 	"testing"
+
+	"chain/testutil"
 )
 
 func TestMatchingObjects(t *testing.T) {
@@ -58,7 +59,7 @@ func TestMatchingObjects(t *testing.T) {
 			t.Fatal(err)
 		}
 		got := matchingObjects(e, placeholderValues)
-		if !reflect.DeepEqual(got, tc.want) {
+		if !testutil.DeepEqual(got, tc.want) {
 			gotJSON, err := json.MarshalIndent(got, "", " ")
 			if err != nil {
 				t.Fatal(err)

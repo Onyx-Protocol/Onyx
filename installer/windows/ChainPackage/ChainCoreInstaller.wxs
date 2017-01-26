@@ -2,7 +2,7 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:http="http://schemas.microsoft.com/wix/HttpExtension"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-  <Product Id="*" Name="Chain Core Package" Language="1033" Version="1.0.0.0" Manufacturer="Chain Inc." UpgradeCode="eaa938af-2d6c-4912-b33d-1a09a6b1e81c">
+  <Product Id="*" Name="Chain Core Package" Language="1033" Version="1.0.1" Manufacturer="Chain Inc." UpgradeCode="eaa938af-2d6c-4912-b33d-1a09a6b1e81c">
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />

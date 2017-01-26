@@ -39,11 +39,17 @@ func recordSince(t0 time.Time) {
 
 // makeBlock generates a new bc.Block, collects the required signatures
 // and commits the block to the blockchain.
-func (g *generator) makeBlock(ctx context.Context) error {
+func (g *Generator) makeBlock(ctx context.Context) error {
 	t0 := time.Now()
 	defer recordSince(t0)
 
-	b, s, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
+	g.mu.Lock()
+	txs := g.pool
+	g.pool = nil
+	g.poolHashes = make(map[bc.Hash]bool)
+	g.mu.Unlock()
+
+	b, s, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now(), txs)
 	if err != nil {
 		return errors.Wrap(err, "generate")
 	}
@@ -57,7 +63,7 @@ func (g *generator) makeBlock(ctx context.Context) error {
 	return g.commitBlock(ctx, b, s)
 }
 
-func (g *generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snapshot) error {
+func (g *Generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snapshot) error {
 	err := g.getAndAddBlockSignatures(ctx, b, g.latestBlock)
 	if err != nil {
 		return errors.Wrap(err, "sign")
@@ -73,7 +79,7 @@ func (g *generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snaps
 	return nil
 }
 
-func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
+func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
 	if prevBlock == nil && b.Height == 1 {
 		return nil // no signatures needed for initial block
 	}
@@ -147,7 +153,7 @@ func nonNilSigs(a [][]byte) (b [][]byte) {
 	return b
 }
 
-// getPendingBlock retrieves the generated, uncomitted block if it exists.
+// getPendingBlock retrieves the generated, uncommitted block if it exists.
 func getPendingBlock(ctx context.Context, db pg.DB) (*bc.Block, error) {
 	const q = `SELECT data FROM generator_pending_block`
 	var block bc.Block

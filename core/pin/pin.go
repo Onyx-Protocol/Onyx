@@ -213,7 +213,7 @@ func (p *pin) processBlock(ctx context.Context, c *protocol.Chain, height uint64
 		}
 		err = cb(ctx, block)
 		if err != nil {
-			log.Error(ctx, err)
+			log.Error(ctx, errors.Wrapf(err, "pin %q callback", p.name))
 			continue
 		}
 		err = p.complete(ctx, block.Height)

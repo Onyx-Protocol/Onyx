@@ -194,8 +194,6 @@ const (
 	OP_MAX                Op = 0xa4
 	OP_WITHIN             Op = 0xa5
 
-	OP_RIPEMD160     Op = 0xa6
-	OP_SHA1          Op = 0xa7
 	OP_SHA256        Op = 0xa8
 	OP_SHA3          Op = 0xaa
 	OP_CHECKSIG      Op = 0xac
@@ -212,7 +210,7 @@ const (
 	OP_TXREFDATAHASH Op = 0xc7
 	OP_REFDATAHASH   Op = 0xc8
 	OP_INDEX         Op = 0xc9
-	OP_OUTPOINT      Op = 0xcb
+	OP_OUTPUTID      Op = 0xcb
 	OP_NONCE         Op = 0xcc
 	OP_NEXTPROGRAM   Op = 0xcd
 	OP_BLOCKTIME     Op = 0xce
@@ -307,8 +305,6 @@ var (
 		OP_MAX:                {OP_MAX, "MAX", opMax},
 		OP_WITHIN:             {OP_WITHIN, "WITHIN", opWithin},
 
-		OP_RIPEMD160:     {OP_RIPEMD160, "RIPEMD160", opRipemd160},
-		OP_SHA1:          {OP_SHA1, "SHA1", opSha1},
 		OP_SHA256:        {OP_SHA256, "SHA256", opSha256},
 		OP_SHA3:          {OP_SHA3, "SHA3", opSha3},
 		OP_CHECKSIG:      {OP_CHECKSIG, "CHECKSIG", opCheckSig},
@@ -325,7 +321,7 @@ var (
 		OP_TXREFDATAHASH: {OP_TXREFDATAHASH, "TXREFDATAHASH", opTxRefDataHash},
 		OP_REFDATAHASH:   {OP_REFDATAHASH, "REFDATAHASH", opRefDataHash},
 		OP_INDEX:         {OP_INDEX, "INDEX", opIndex},
-		OP_OUTPOINT:      {OP_OUTPOINT, "OUTPOINT", opOutpoint},
+		OP_OUTPUTID:      {OP_OUTPUTID, "OUTPUTID", opOutputID},
 		OP_NONCE:         {OP_NONCE, "NONCE", opNonce},
 		OP_NEXTPROGRAM:   {OP_NEXTPROGRAM, "NEXTPROGRAM", opNextProgram},
 		OP_BLOCKTIME:     {OP_BLOCKTIME, "BLOCKTIME", opBlockTime},

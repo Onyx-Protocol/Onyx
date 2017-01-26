@@ -6,19 +6,20 @@
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
       <item>
-        <title>Chain Core Developer Edition 1.0.20161101</title>
+        <title>Chain Core Developer Edition 1.0.2</title>
         <description>
           <![CDATA[
             <ul>
-              <li>Public release.</li>
+              <li>Update to Chain Core 1.0.2</li>
+              <li>Resolve compatibility issues with OS X Yosemite</li>
             </ul>
           ]]>
         </description>
-        <pubDate>Mon, 24 Oct 2016 05:46:26 -0700</pubDate>
-        <enclosure 
-        	url="https://download.chain.com/mac/Chain_Core_1.0.1.zip"
-        	sparkle:version="1.0.1"
-        	length="78582133"
+        <pubDate>Mon, 05 Dec 2016 17:01:41 -0800</pubDate>
+        <enclosure
+        	url="https://download.chain.com/mac/Chain_Core_1.0.2.zip"
+        	sparkle:version="1.0.2"
+        	length="53609347"
         	type="application/octet-stream"
         	sparkle:dsaSignature=""
         	/>

@@ -9,7 +9,10 @@ import (
 	"fmt"
 	"sync"
 
+	"golang.org/x/crypto/sha3"
+
 	"github.com/golang/groupcache/lru"
+	"github.com/golang/groupcache/singleflight"
 	"github.com/lib/pq"
 
 	"chain/core/pin"
@@ -20,11 +23,10 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 )
 
-const maxAssetCache = 100
+const maxAssetCache = 1000
 
 var ErrDuplicateAlias = errors.New("duplicate asset alias")
 
@@ -47,6 +49,9 @@ type Registry struct {
 	initialBlockHash bc.Hash
 	pinStore         *pin.Store
 
+	idGroup    singleflight.Group
+	aliasGroup singleflight.Group
+
 	cacheMu    sync.Mutex
 	cache      *lru.Cache
 	aliasCache *lru.Cache
@@ -59,22 +64,48 @@ func (reg *Registry) IndexAssets(indexer Saver) {
 type Asset struct {
 	AssetID          bc.AssetID
 	Alias            *string
-	Definition       map[string]interface{}
+	VMVersion        uint64
 	IssuanceProgram  []byte
 	InitialBlockHash bc.Hash
 	Signer           *signers.Signer
 	Tags             map[string]interface{}
+	rawDefinition    []byte
+	definition       map[string]interface{}
 	sortID           string
 }
 
+func (asset *Asset) Definition() (map[string]interface{}, error) {
+	if asset.definition == nil && len(asset.rawDefinition) > 0 {
+		err := json.Unmarshal(asset.rawDefinition, &asset.definition)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
+	return asset.definition, nil
+}
+
+func (asset *Asset) RawDefinition() []byte {
+	return asset.rawDefinition
+}
+
+func (asset *Asset) SetDefinition(def map[string]interface{}) error {
+	rawdef, err := serializeAssetDef(def)
+	if err != nil {
+		return err
+	}
+	asset.definition = def
+	asset.rawDefinition = rawdef
+	return nil
+}
+
 // Define defines a new Asset.
-func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
+func (reg *Registry) Define(ctx context.Context, xpubs []chainkd.XPub, quorum int, definition map[string]interface{}, alias string, tags map[string]interface{}, clientToken string) (*Asset, error) {
 	assetSigner, err := signers.Create(ctx, reg.db, "asset", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, err
 	}
 
-	serializedDef, err := serializeAssetDef(definition)
+	rawDefinition, err := serializeAssetDef(definition)
 	if err != nil {
 		return nil, errors.Wrap(err, "serializing asset definition")
 	}
@@ -82,16 +113,19 @@ func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, def
 	path := signers.Path(assetSigner, signers.AssetKeySpace)
 	derivedXPubs := chainkd.DeriveXPubs(assetSigner.XPubs, path)
 	derivedPKs := chainkd.XPubKeys(derivedXPubs)
-	issuanceProgram, err := programWithDefinition(derivedPKs, assetSigner.Quorum, serializedDef)
+	issuanceProgram, vmver, err := multisigIssuanceProgram(derivedPKs, assetSigner.Quorum)
 	if err != nil {
 		return nil, err
 	}
 
+	defhash := sha3.Sum256(rawDefinition)
 	asset := &Asset{
-		Definition:       definition,
+		definition:       definition,
+		rawDefinition:    rawDefinition,
+		VMVersion:        vmver,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: reg.initialBlockHash,
-		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1),
+		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, vmver, defhash),
 		Signer:           assetSigner,
 		Tags:             tags,
 	}
@@ -125,10 +159,15 @@ func (reg *Registry) findByID(ctx context.Context, id bc.AssetID) (*Asset, error
 	if ok {
 		return cached.(*Asset), nil
 	}
-	asset, err := assetQuery(ctx, reg.db, "assets.id=$1", id)
+
+	untypedAsset, err := reg.idGroup.Do(id.String(), func() (interface{}, error) {
+		return assetQuery(ctx, reg.db, "assets.id=$1", id)
+	})
 	if err != nil {
 		return nil, err
 	}
+
+	asset := untypedAsset.(*Asset)
 	reg.cacheMu.Lock()
 	reg.cache.Add(id, asset)
 	reg.cacheMu.Unlock()
@@ -144,12 +183,19 @@ func (reg *Registry) FindByAlias(ctx context.Context, alias string) (*Asset, err
 	if ok {
 		return reg.findByID(ctx, cachedID.(bc.AssetID))
 	}
-	a, err := assetQuery(ctx, reg.db, "assets.alias=$1", alias)
+
+	untypedAsset, err := reg.aliasGroup.Do(alias, func() (interface{}, error) {
+		asset, err := assetQuery(ctx, reg.db, "assets.alias=$1", alias)
+		return asset, err
+	})
 	if err != nil {
 		return nil, err
 	}
+
+	a := untypedAsset.(*Asset)
 	reg.cacheMu.Lock()
 	reg.aliasCache.Add(alias, a.AssetID)
+	reg.cache.Add(a.AssetID, a)
 	reg.cacheMu.Unlock()
 	return a, nil
 
@@ -158,42 +204,42 @@ func (reg *Registry) FindByAlias(ctx context.Context, alias string) (*Asset, err
 // insertAsset adds the asset to the database. If the asset has a client token,
 // and there already exists an asset with that client token, insertAsset will
 // lookup and return the existing asset instead.
-func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset, error) {
+func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken string) (*Asset, error) {
 	const q = `
 		INSERT INTO assets
-			(id, alias, signer_id, initial_block_hash, issuance_program, definition, client_token)
-		VALUES($1, $2, $3, $4, $5, $6, $7)
+			(id, alias, signer_id, initial_block_hash, vm_version, issuance_program, definition, client_token)
+		VALUES($1::bytea, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (client_token) DO NOTHING
 		RETURNING sort_id
   `
-	defParams, err := mapToNullString(asset.Definition)
-	if err != nil {
-		return nil, err
-	}
-
 	var signerID sql.NullString
 	if asset.Signer != nil {
 		signerID = sql.NullString{Valid: true, String: asset.Signer.ID}
 	}
 
-	err = reg.db.QueryRow(
+	nullToken := sql.NullString{
+		String: clientToken,
+		Valid:  clientToken != "",
+	}
+
+	err := reg.db.QueryRow(
 		ctx, q,
 		asset.AssetID, asset.Alias, signerID,
-		asset.InitialBlockHash, asset.IssuanceProgram,
-		defParams, clientToken,
+		asset.InitialBlockHash, asset.VMVersion, asset.IssuanceProgram,
+		asset.rawDefinition, nullToken,
 	).Scan(&asset.sortID)
 
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(ErrDuplicateAlias, "an asset with the provided alias already exists")
-	} else if err == sql.ErrNoRows && clientToken != nil {
+	} else if err == sql.ErrNoRows && clientToken != "" {
 		// There is already an asset with the provided client
 		// token. We should return the existing asset.
-		asset, err = assetByClientToken(ctx, reg.db, *clientToken)
+		asset, err = assetByClientToken(ctx, reg.db, clientToken)
 		if err != nil {
 			return nil, errors.Wrap(err, "retrieving existing asset")
 		}
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	return asset, nil
 }
@@ -210,7 +256,7 @@ func insertAssetTags(ctx context.Context, db pg.DB, assetID bc.AssetID, tags map
 		INSERT INTO asset_tags (asset_id, tags) VALUES ($1, $2)
 		ON CONFLICT (asset_id) DO UPDATE SET tags = $2
 	`
-	_, err = db.Exec(ctx, q, assetID.String(), tagsParam)
+	_, err = db.Exec(ctx, q, assetID, tagsParam)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -225,7 +271,7 @@ func assetByClientToken(ctx context.Context, db pg.DB, clientToken string) (*Ass
 
 func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{}) (*Asset, error) {
 	const baseQ = `
-		SELECT assets.id, assets.alias, assets.issuance_program, assets.definition,
+		SELECT assets.id, assets.alias, assets.vm_version, assets.issuance_program, assets.definition,
 			assets.initial_block_hash, assets.sort_id,
 			signers.id, COALESCE(signers.type, ''), COALESCE(signers.xpubs, '{}'),
 			COALESCE(signers.quorum, 0), COALESCE(signers.key_index, 0),
@@ -239,24 +285,24 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 	var (
 		a          Asset
 		alias      sql.NullString
-		definition []byte
 		signerID   sql.NullString
 		signerType string
 		quorum     int
 		keyIndex   uint64
-		xpubs      []string
+		xpubs      [][]byte
 		tags       []byte
 	)
 	err := db.QueryRow(ctx, fmt.Sprintf(baseQ, pred), args...).Scan(
 		&a.AssetID,
 		&a.Alias,
+		&a.VMVersion,
 		&a.IssuanceProgram,
-		&definition,
+		&a.rawDefinition,
 		&a.InitialBlockHash,
 		&a.sortID,
 		&signerID,
 		&signerType,
-		(*pq.StringArray)(&xpubs),
+		(*pq.ByteaArray)(&xpubs),
 		&quorum,
 		&keyIndex,
 		&tags,
@@ -271,13 +317,6 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 		a.Signer, err = signers.New(signerID.String, signerType, xpubs, quorum, keyIndex)
 		if err != nil {
 			return nil, err
-		}
-	}
-
-	if len(definition) > 0 {
-		err := json.Unmarshal(definition, &a.Definition)
-		if err != nil {
-			return nil, errors.Wrap(err)
 		}
 	}
 
@@ -302,32 +341,20 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 // consumption, the JSON is pretty-printed for easy reading.
 // The empty asset def is an empty byte slice.
 func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
+	if def == nil {
+		return []byte{}, nil
+	}
 	return json.MarshalIndent(def, "", "  ")
 }
 
-func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, error) {
+func multisigIssuanceProgram(pubkeys []ed25519.PublicKey, nrequired int) (program []byte, vmversion uint64, err error) {
 	issuanceProg, err := vmutil.P2SPMultiSigProgram(pubkeys, nrequired)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	builder := vmutil.NewBuilder()
-	builder.AddData(definition).AddOp(vm.OP_DROP)
 	builder.AddRawBytes(issuanceProg)
-	return builder.Program, nil
-}
-
-func definitionFromProgram(program []byte) ([]byte, error) {
-	pops, err := vm.ParseProgram(program)
-	if err != nil {
-		return nil, err
-	}
-	if len(pops) < 2 {
-		return nil, errors.New("bad issuance program")
-	}
-	if pops[1].Op != vm.OP_DROP {
-		return nil, errors.New("bad issuance program")
-	}
-	return pops[0].Data, nil
+	return builder.Program, 1, nil
 }
 
 func mapToNullString(in map[string]interface{}) (*sql.NullString, error) {

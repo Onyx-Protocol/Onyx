@@ -12,6 +12,7 @@ import (
 	"chain/core/asset"
 	"chain/core/config"
 	"chain/core/coretest"
+	"chain/core/generator"
 	"chain/core/leader"
 	"chain/core/pin"
 	"chain/core/query"
@@ -28,6 +29,7 @@ func TestBuildFinal(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
+	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	accounts := account.NewManager(db, c, pinStore)
 	assets := asset.NewRegistry(db, c, pinStore)
@@ -35,10 +37,7 @@ func TestBuildFinal(t *testing.T) {
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
 	go accounts.ProcessBlocks(ctx)
 
-	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	acc := coretest.CreateAccount(ctx, t, accounts, "", nil)
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
@@ -47,7 +46,7 @@ func TestBuildFinal(t *testing.T) {
 	}
 
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
-	dests := accounts.NewControlAction(assetAmt, acc.ID, nil)
+	dests := accounts.NewControlAction(assetAmt, acc, nil)
 
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
@@ -55,16 +54,16 @@ func TestBuildFinal(t *testing.T) {
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	prottest.MakeBlock(t, c)
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
-	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
+	sources = accounts.NewSpendAction(assetAmt, acc, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
@@ -92,8 +91,8 @@ func TestBuildFinal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(insts1) != 23 {
-		t.Fatalf("expected 23 instructions in sigwitness program 1, got %d (%x)", len(insts1), prog1)
+	if len(insts1) != 19 {
+		t.Fatalf("expected 19 instructions in sigwitness program 1, got %d (%x)", len(insts1), prog1)
 	}
 	if insts1[0].Op != vm.OP_MAXTIME {
 		t.Fatalf("sigwitness program1 opcode 0 is %02x, expected %02x", insts1[0].Op, vm.OP_MAXTIME)
@@ -104,18 +103,18 @@ func TestBuildFinal(t *testing.T) {
 	if insts1[3].Op != vm.OP_VERIFY {
 		t.Fatalf("sigwitness program1 opcode 3 is %02x, expected %02x", insts1[3].Op, vm.OP_VERIFY)
 	}
-	for i, op := range []vm.Op{vm.OP_FALSE, vm.OP_OUTPOINT, vm.OP_ROT, vm.OP_NUMEQUAL, vm.OP_VERIFY, vm.OP_EQUAL, vm.OP_VERIFY} {
+	for i, op := range []vm.Op{vm.OP_OUTPUTID, vm.OP_EQUAL, vm.OP_VERIFY} {
 		if insts1[i+5].Op != op {
 			t.Fatalf("sigwitness program 1 opcode %d is %02x, expected %02x", i+5, insts1[i+5].Op, op)
 		}
 	}
 	for i, op := range []vm.Op{vm.OP_REFDATAHASH, vm.OP_EQUAL, vm.OP_VERIFY, vm.OP_FALSE, vm.OP_FALSE} {
-		if insts1[i+13].Op != op {
-			t.Fatalf("sigwitness program 1 opcode %d is %02x, expected %02x", i+13, insts1[i+13].Op, op)
+		if insts1[i+9].Op != op {
+			t.Fatalf("sigwitness program 1 opcode %d is %02x, expected %02x", i+9, insts1[i+9].Op, op)
 		}
 	}
-	if insts1[22].Op != vm.OP_CHECKOUTPUT {
-		t.Fatalf("sigwitness program1 opcode 18 is %02x, expected %02x", insts1[18].Op, vm.OP_CHECKOUTPUT)
+	if insts1[18].Op != vm.OP_CHECKOUTPUT {
+		t.Fatalf("sigwitness program1 opcode %d is %02x, expected %02x", 18, insts1[18].Op, vm.OP_CHECKOUTPUT)
 	}
 
 	prog2 := tmpl2.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
@@ -138,6 +137,7 @@ func TestAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
+	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	assets := asset.NewRegistry(db, c, pinStore)
 	accounts := account.NewManager(db, c, pinStore)
@@ -145,10 +145,7 @@ func TestAccountTransfer(t *testing.T) {
 	accounts.IndexAccounts(query.NewIndexer(db, c, pinStore))
 	go accounts.ProcessBlocks(ctx)
 
-	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	acc := coretest.CreateAccount(ctx, t, accounts, "", nil)
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
@@ -157,31 +154,31 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
-	dests := accounts.NewControlAction(assetAmt, acc.ID, nil)
+	dests := accounts.NewControlAction(assetAmt, acc, nil)
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	prottest.MakeBlock(t, c)
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// new source
-	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil)
+	sources = accounts.NewSpendAction(assetAmt, acc, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,14 +201,16 @@ func TestTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
+	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	handler := &Handler{
-		Chain:    c,
-		Assets:   asset.NewRegistry(db, c, pinStore),
-		Accounts: account.NewManager(db, c, pinStore),
-		Indexer:  query.NewIndexer(db, c, pinStore),
-		DB:       db,
+		Chain:     c,
+		Submitter: g,
+		Assets:    asset.NewRegistry(db, c, pinStore),
+		Accounts:  account.NewManager(db, c, pinStore),
+		Indexer:   query.NewIndexer(db, c, pinStore),
+		DB:        db,
 	}
 	handler.Assets.IndexAssets(handler.Indexer)
 	handler.Accounts.IndexAccounts(handler.Indexer)
@@ -248,20 +247,18 @@ func TestTransfer(t *testing.T) {
 		handler.Accounts.NewControlAction(issueAssetAmount, account1ID, nil),
 	}, time.Now().Add(time.Minute))
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	coretest.SignTxTemplate(t, ctx, txTemplate, nil)
 
-	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*txTemplate.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*txTemplate.Transaction))
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	prottest.MakeBlock(t, c)
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	// Now transfer
@@ -275,26 +272,22 @@ func TestTransfer(t *testing.T) {
 	var buildReq buildRequest
 	err = json.Unmarshal([]byte(buildReqStr), &buildReq)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	buildResult, err := handler.build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	jsonResult, err := json.MarshalIndent(buildResult, "", "  ")
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	var parsedResult []map[string]interface{}
 	err = json.Unmarshal(jsonResult, &parsedResult)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	if len(parsedResult) != 1 {
 		t.Errorf("expected build result to have length 1, got %d", len(parsedResult))
@@ -302,8 +295,7 @@ func TestTransfer(t *testing.T) {
 	toSign := inspectTemplate(t, parsedResult[0], account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
 	_, err = handler.submitSingle(ctx, txTemplate, "none")
@@ -321,25 +313,21 @@ func TestTransfer(t *testing.T) {
 	buildReqStr = fmt.Sprintf(buildReqFmt, assetAlias, account2Alias, assetAlias, account1Alias)
 	err = json.Unmarshal([]byte(buildReqStr), &buildReq)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	buildResult, err = handler.build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	jsonResult, err = json.MarshalIndent(buildResult, "", "  ")
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	err = json.Unmarshal(jsonResult, &parsedResult)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	if len(parsedResult) != 1 {
 		t.Errorf("expected build result to have length 1, got %d", len(parsedResult))
@@ -348,8 +336,7 @@ func TestTransfer(t *testing.T) {
 	txTemplate, err = toTxTemplate(ctx, toSign)
 	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 	_, err = handler.submitSingle(ctx, txTemplate, "none")
 	if err != nil && errors.Root(err) != context.DeadlineExceeded {

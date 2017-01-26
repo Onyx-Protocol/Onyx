@@ -71,8 +71,8 @@ class Index extends React.Component {
                 <td>{this.props.core.configuredAt}</td>
               </tr>
               <tr>
-                <td className={styles.row_label}>Build:</td>
-                <td><code>{this.props.core.buildCommit}</code></td>
+                <td className={styles.row_label}>Version:</td>
+                <td><code>{this.props.core.version}</code></td>
               </tr>
               <tr>
                 <td colSpan={2}><hr /></td>

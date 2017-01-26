@@ -8,5 +8,5 @@ Changelogs are maintained for each sub-package
   - [Windows](./installer/windows/CHANGELOG.md)
 - SDKs
   - [Java](./sdk/java/CHANGELOG.md)
+  - [Node.js](./sdk/node/CHANGELOG.md)
   - [Ruby](./sdk/ruby/CHANGELOG.md)
-

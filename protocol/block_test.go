@@ -3,13 +3,10 @@ package protocol
 import (
 	"context"
 	"encoding/hex"
-	"reflect"
 	"testing"
 	"time"
 
-	"chain/errors"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
@@ -19,7 +16,6 @@ func TestGetBlock(t *testing.T) {
 	ctx := context.Background()
 
 	b1 := &bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
-	emptyPool := mempool.New()
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
 	oneBlock.SaveBlock(ctx, b1)
@@ -35,12 +31,12 @@ func TestGetBlock(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		c, err := NewChain(ctx, b1.Hash(), test.store, emptyPool, nil)
+		c, err := NewChain(ctx, b1.Hash(), test.store, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
 		got, gotErr := c.GetBlock(ctx, c.Height())
-		if !reflect.DeepEqual(got, test.want) {
+		if !testutil.DeepEqual(got, test.want) {
 			t.Errorf("got latest = %+v want %+v", got, test.want)
 		}
 		if (gotErr != nil) != test.wantErr {
@@ -51,7 +47,7 @@ func TestGetBlock(t *testing.T) {
 
 func TestNoTimeTravel(t *testing.T) {
 	ctx := context.Background()
-	c, err := NewChain(ctx, bc.Hash{}, memstore.New(), mempool.New(), nil)
+	c, err := NewChain(ctx, bc.Hash{}, memstore.New(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +95,7 @@ func TestWaitForBlockSoonWaits(t *testing.T) {
 	makeEmptyBlock(t, c) // height=2
 
 	go func() {
-		time.Sleep(10 * time.Millisecond) // sorry for the slow test 😔
+		time.Sleep(10 * time.Millisecond) // sorry for the slow test 
 		makeEmptyBlock(t, c)              // height=3
 	}()
 
@@ -133,7 +129,7 @@ func TestGenerateBlock(t *testing.T) {
 	c, b1 := newTestChain(t, now)
 
 	initialBlockHash := b1.Hash()
-	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1)
+	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1, bc.EmptyStringHash)
 
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
@@ -142,7 +138,7 @@ func TestGenerateBlock(t *testing.T) {
 				bc.NewIssuanceInput(nil, 50, nil, initialBlockHash, nil, [][]byte{
 					nil,
 					mustDecodeHex("30450221009037e1d39b7d59d24eba8012baddd5f4ab886a51b46f52b7c479ddfa55eeb5c5022076008409243475b25dfba6db85e15cf3d74561a147375941e4830baa69769b5101"),
-					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae")}),
+					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae")}, nil),
 			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(assetID, 50, mustDecodeHex("a9145881cd104f8d64635751ac0f3c0decf9150c110687"), nil),
@@ -155,45 +151,40 @@ func TestGenerateBlock(t *testing.T) {
 					nil,
 					mustDecodeHex("3045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e01"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
-				}),
+				}, nil),
 			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(assetID, 50, mustDecodeHex("a914c171e443e05b953baa7b7d834028ed91e47b4d0b87"), nil),
 			},
 		}),
 	}
-	for _, tx := range txs {
-		err := c.pool.Insert(ctx, tx)
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
-	}
 
-	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now)
+	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now, txs)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
 
 	// TODO(bobg): verify these hashes are correct
 	var wantTxRoot, wantAssetsRoot bc.Hash
-	copy(wantTxRoot[:], mustDecodeHex("d0e593c846d7b189bd3e2f55e680016b14989329af1c5e388ff246caedf04bd3"))
-	copy(wantAssetsRoot[:], mustDecodeHex("903d9a10ece41f86b7c2cf23c25b09c2086b321d6d63e2ec7fc7405f84121542"))
+	copy(wantTxRoot[:], mustDecodeHex("2bf0254a214f4a675b3a7801974fe87c9db1827c2a8dbfd5778012084b3c0a8d"))
+	copy(wantAssetsRoot[:], mustDecodeHex("1593fdd753558fbcaff9ba7529579e5dd638139b6d25537e53e3310d47444946"))
 
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:                bc.NewBlockVersion,
-			Height:                 2,
-			PreviousBlockHash:      b1.Hash(),
-			TransactionsMerkleRoot: wantTxRoot,
-			AssetsMerkleRoot:       wantAssetsRoot,
-			TimestampMS:            bc.Millis(now),
-			ConsensusProgram:       b1.ConsensusProgram,
+			Version:           bc.NewBlockVersion,
+			Height:            2,
+			PreviousBlockHash: b1.Hash(),
+			TimestampMS:       bc.Millis(now),
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: wantTxRoot,
+				AssetsMerkleRoot:       wantAssetsRoot,
+				ConsensusProgram:       b1.ConsensusProgram,
+			},
 		},
 		Transactions: txs,
 	}
 
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("generated block:\ngot:  %+v\nwant: %+v", got, want)
 	}
 }
@@ -205,7 +196,7 @@ func TestValidateBlockForSig(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	c, err := NewChain(ctx, initialBlock.Hash(), memstore.New(), mempool.New(), nil)
+	c, err := NewChain(ctx, initialBlock.Hash(), memstore.New(), nil)
 	if err != nil {
 		t.Fatal("unexpected error ", err)
 	}
@@ -216,7 +207,7 @@ func TestValidateBlockForSig(t *testing.T) {
 	}
 }
 
-// newTestChain returns a new Chain using memstore and mempool for storage,
+// newTestChain returns a new Chain using memstore for storage,
 // along with an initial block b1 (with a 0/0 multisig program).
 // It commits b1 before returning.
 func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
@@ -228,7 +219,7 @@ func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	c, err = NewChain(ctx, b1.Hash(), memstore.New(), mempool.New(), nil)
+	c, err = NewChain(ctx, b1.Hash(), memstore.New(), nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -255,7 +246,7 @@ func makeEmptyBlock(tb testing.TB, c *Chain) {
 
 	curState := state.Empty()
 
-	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
+	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now(), nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

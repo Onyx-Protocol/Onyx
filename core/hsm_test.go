@@ -8,6 +8,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
+	"chain/core/generator"
 	"chain/core/mockhsm"
 	"chain/core/pin"
 	"chain/core/query"
@@ -23,6 +24,7 @@ func TestMockHSM(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
+	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	assets := asset.NewRegistry(db, c, pinStore)
 	accounts := account.NewManager(db, c, pinStore)
@@ -35,7 +37,7 @@ func TestMockHSM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	acct1, err := accounts.Create(ctx, []string{xpub1.XPub.String()}, 1, "", nil, nil)
+	acct1, err := accounts.Create(ctx, []chainkd.XPub{xpub1.XPub}, 1, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +46,7 @@ func TestMockHSM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	acct2, err := accounts.Create(ctx, []string{xpub2.String()}, 1, "", nil, nil)
+	acct2, err := accounts.Create(ctx, []chainkd.XPub{xpub2}, 1, "", nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,13 +66,13 @@ func TestMockHSM(t *testing.T) {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	prottest.MakeBlock(t, c)
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	xferSrc1 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil)
@@ -85,8 +87,8 @@ func TestMockHSM(t *testing.T) {
 	h := &Handler{HSM: mockhsm}
 	outTmpls := h.mockhsmSignTemplates(ctx, struct {
 		Txs   []*txbuilder.Template `json:"transactions"`
-		XPubs []string              `json:"xpubs"`
-	}{[]*txbuilder.Template{tmpl}, []string{xpub1.XPub.String()}})
+		XPubs []chainkd.XPub        `json:"xpubs"`
+	}{[]*txbuilder.Template{tmpl}, []chainkd.XPub{xpub1.XPub}})
 	if len(outTmpls) != 1 {
 		t.Fatalf("expected 1 output template, got %d", len(outTmpls))
 	}

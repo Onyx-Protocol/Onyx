@@ -37,7 +37,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 	// Build all of the actions, updating the builder.
 	var errs []error
 	for i, action := range actions {
-		err := action.Build(ctx, maxTime, &builder)
+		err := action.Build(ctx, &builder)
 		if err != nil {
 			err = errors.WithData(err, "index", i)
 			errs = append(errs, err)
@@ -51,13 +51,13 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 	}
 
 	// Build the transaction template.
-	tpl, err := builder.Build()
+	tpl, tx, err := builder.Build()
 	if err != nil {
 		builder.rollback()
 		return nil, err
 	}
 
-	err = checkBlankCheck(tpl.Transaction)
+	err = checkBlankCheck(tx)
 	if err != nil {
 		builder.rollback()
 		return nil, err
@@ -75,15 +75,15 @@ func KeyIDs(xpubs []chainkd.XPub, path [][]byte) []KeyID {
 		hexPath = append(hexPath, p)
 	}
 	for _, xpub := range xpubs {
-		result = append(result, KeyID{xpub.String(), hexPath})
+		result = append(result, KeyID{xpub, hexPath})
 	}
 	return result
 }
 
-func Sign(ctx context.Context, tpl *Template, xpubs []string, signFn SignFunc) error {
+func Sign(ctx context.Context, tpl *Template, xpubs []chainkd.XPub, signFn SignFunc) error {
 	for i, sigInst := range tpl.SigningInstructions {
 		for j, c := range sigInst.WitnessComponents {
-			err := c.Sign(ctx, tpl, i, xpubs, signFn)
+			err := c.Sign(ctx, tpl, uint32(i), xpubs, signFn)
 			if err != nil {
 				return errors.WithDetailf(err, "adding signature(s) to witness component %d of input %d", j, i)
 			}

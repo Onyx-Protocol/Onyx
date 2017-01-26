@@ -1,79 +1,157 @@
 package query
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"time"
 
-	"chain/errors"
-	"chain/log"
+	chainjson "chain/encoding/json"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
 )
 
-func transactionObject(orig *bc.Tx, b *bc.Block, indexInBlock uint32) map[string]interface{} {
-	m := map[string]interface{}{
-		"id":             orig.Hash.String(),
-		"timestamp":      b.Time().Format(time.RFC3339),
-		"block_id":       b.Hash().String(),
-		"block_height":   b.Height,
-		"position":       indexInBlock,
-		"reference_data": unmarshalReferenceData(orig.ReferenceData),
+type AnnotatedTx struct {
+	ID            chainjson.HexBytes `json:"id"`
+	Timestamp     time.Time          `json:"timestamp"`
+	BlockID       chainjson.HexBytes `json:"block_id"`
+	BlockHeight   uint64             `json:"block_height"`
+	Position      uint32             `json:"position"`
+	ReferenceData *json.RawMessage   `json:"reference_data"`
+	IsLocal       Bool               `json:"is_local"`
+	Inputs        []*AnnotatedInput  `json:"inputs"`
+	Outputs       []*AnnotatedOutput `json:"outputs"`
+}
+
+type AnnotatedInput struct {
+	Type            string             `json:"type"`
+	AssetID         chainjson.HexBytes `json:"asset_id"`
+	AssetAlias      string             `json:"asset_alias,omitempty"`
+	AssetDefinition *json.RawMessage   `json:"asset_definition"`
+	AssetTags       *json.RawMessage   `json:"asset_tags,omitempty"`
+	AssetIsLocal    Bool               `json:"asset_is_local"`
+	Amount          uint64             `json:"amount"`
+	IssuanceProgram chainjson.HexBytes `json:"issuance_program,omitempty"`
+	ControlProgram  chainjson.HexBytes `json:"control_program,omitempty"`
+	SpentOutputID   chainjson.HexBytes `json:"spent_output_id,omitempty"`
+	AccountID       string             `json:"account_id,omitempty"`
+	AccountAlias    string             `json:"account_alias,omitempty"`
+	AccountTags     *json.RawMessage   `json:"account_tags,omitempty"`
+	ReferenceData   *json.RawMessage   `json:"reference_data"`
+	IsLocal         Bool               `json:"is_local"`
+}
+
+type AnnotatedOutput struct {
+	Type            string             `json:"type"`
+	Purpose         string             `json:"purpose,omitempty"`
+	OutputID        chainjson.HexBytes `json:"id"`
+	TransactionID   chainjson.HexBytes `json:"transaction_id,omitempty"`
+	Position        uint32             `json:"position"`
+	AssetID         chainjson.HexBytes `json:"asset_id"`
+	AssetAlias      string             `json:"asset_alias,omitempty"`
+	AssetDefinition *json.RawMessage   `json:"asset_definition"`
+	AssetTags       *json.RawMessage   `json:"asset_tags"`
+	AssetIsLocal    Bool               `json:"asset_is_local"`
+	Amount          uint64             `json:"amount"`
+	AccountID       string             `json:"account_id,omitempty"`
+	AccountAlias    string             `json:"account_alias,omitempty"`
+	AccountTags     *json.RawMessage   `json:"account_tags,omitempty"`
+	ControlProgram  chainjson.HexBytes `json:"control_program"`
+	ReferenceData   *json.RawMessage   `json:"reference_data"`
+	IsLocal         Bool               `json:"is_local"`
+}
+
+type Bool bool
+
+func (b Bool) MarshalJSON() ([]byte, error) {
+	if b {
+		return []byte(`"yes"`), nil
+	}
+	return []byte(`"no"`), nil
+}
+
+func (b *Bool) UnmarshalJSON(raw []byte) error {
+	*b = false
+	if bytes.Equal(raw, []byte(`"yes"`)) {
+		*b = true
+	}
+	return nil
+}
+
+func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *AnnotatedTx {
+	blockHash := b.Hash()
+	referenceData := json.RawMessage(orig.ReferenceData)
+	if len(referenceData) == 0 {
+		referenceData = []byte(`{}`)
 	}
 
-	inputs := make([]interface{}, 0, len(orig.Inputs))
+	tx := &AnnotatedTx{
+		ID:            orig.Hash[:],
+		Timestamp:     b.Time(),
+		BlockID:       blockHash[:],
+		BlockHeight:   b.Height,
+		Position:      indexInBlock,
+		ReferenceData: &referenceData,
+		Inputs:        make([]*AnnotatedInput, 0, len(orig.Inputs)),
+		Outputs:       make([]*AnnotatedOutput, 0, len(orig.Outputs)),
+	}
 	for _, in := range orig.Inputs {
-		inputs = append(inputs, transactionInput(in))
+		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(in))
 	}
-	outputs := make([]interface{}, 0, len(orig.Outputs))
 	for i, out := range orig.Outputs {
-		outputs = append(outputs, transactionOutput(out, uint32(i)))
+		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(out, uint32(i), orig.Hash))
 	}
-	m["inputs"] = inputs
-	m["outputs"] = outputs
-
-	return m
+	return tx
 }
 
-func transactionInput(in *bc.TxInput) map[string]interface{} {
-	obj := map[string]interface{}{
-		"asset_id":       in.AssetID().String(),
-		"amount":         in.Amount(),
-		"reference_data": unmarshalReferenceData(in.ReferenceData),
-		"input_witness":  hexSlices(in.Arguments()),
+func buildAnnotatedInput(orig *bc.TxInput) *AnnotatedInput {
+	aid := orig.AssetID()
+
+	referenceData := json.RawMessage(orig.ReferenceData)
+	if len(referenceData) == 0 {
+		referenceData = []byte(`{}`)
 	}
-	if in.IsIssuance() {
-		obj["type"] = "issue"
-		obj["issuance_program"] = hex.EncodeToString(in.IssuanceProgram())
+	in := &AnnotatedInput{
+		AssetID:       aid[:],
+		Amount:        orig.Amount(),
+		ReferenceData: &referenceData,
+	}
+
+	if orig.IsIssuance() {
+		prog := orig.IssuanceProgram()
+		in.Type = "issue"
+		in.IssuanceProgram = prog
 	} else {
-		outpoint := in.Outpoint()
-		obj["type"] = "spend"
-		obj["control_program"] = hex.EncodeToString(in.ControlProgram())
-		obj["spent_output"] = map[string]interface{}{
-			"transaction_id": outpoint.Hash.String(),
-			"position":       outpoint.Index,
-		}
+		prog := orig.ControlProgram()
+		prevoutID := orig.SpentOutputID()
+		in.Type = "spend"
+		in.ControlProgram = prog
+		in.SpentOutputID = prevoutID.Bytes()
 	}
-	return obj
+	return in
 }
 
-func transactionOutput(out *bc.TxOutput, idx uint32) map[string]interface{} {
-	obj := map[string]interface{}{
-		"position":        idx,
-		"asset_id":        out.AssetID.String(),
-		"amount":          out.Amount,
-		"control_program": hex.EncodeToString(out.ControlProgram),
-		"reference_data":  unmarshalReferenceData(out.ReferenceData),
+func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *AnnotatedOutput {
+	referenceData := json.RawMessage(orig.ReferenceData)
+	if len(referenceData) == 0 {
+		referenceData = []byte(`{}`)
 	}
-
+	outid := bc.ComputeOutputID(txhash, idx)
+	out := &AnnotatedOutput{
+		OutputID:       outid.Bytes(),
+		Position:       idx,
+		AssetID:        orig.AssetID[:],
+		Amount:         orig.Amount,
+		ControlProgram: orig.ControlProgram,
+		ReferenceData:  &referenceData,
+	}
 	if vmutil.IsUnspendable(out.ControlProgram) {
-		obj["type"] = "retire"
+		out.Type = "retire"
 	} else {
-		obj["type"] = "control"
+		out.Type = "control"
 	}
-	return obj
+	return out
 }
 
 func unmarshalReferenceData(data []byte) map[string]interface{} {
@@ -96,62 +174,21 @@ func hexSlices(byteas [][]byte) []interface{} {
 
 // localAnnotator depends on the asset and account annotators and
 // must be run after them.
-func localAnnotator(ctx context.Context, txs []map[string]interface{}) {
+func localAnnotator(ctx context.Context, txs []*AnnotatedTx) {
 	for _, tx := range txs {
-		txIsLocal := "no"
-
-		ins, ok := tx["inputs"].([]interface{})
-		if !ok {
-			log.Error(ctx, errors.Wrap(fmt.Errorf("bad inputs type %T", tx["inputs"])))
-		} else {
-			for _, inObj := range ins {
-				in, ok := inObj.(map[string]interface{})
-				if !ok {
-					log.Error(ctx, errors.Wrap(fmt.Errorf("bad input type %T", inObj)))
-					continue
-				}
-				typ, ok := in["type"].(string)
-				if !ok {
-					log.Error(ctx, errors.Wrap(fmt.Errorf("bad input type %T", in["type"])))
-					continue
-				}
-				assetIsLocal, ok := in["asset_is_local"].(string)
-				if !ok {
-					log.Error(ctx, errors.Wrap(fmt.Errorf("bad input asset_is_local field: %T", in["asset_is_local"])))
-					continue
-				}
-
-				_, hasAccount := in["account_id"]
-				if (typ == "issue" && assetIsLocal == "yes") || hasAccount {
-					txIsLocal = "yes"
-					in["is_local"] = "yes"
-				} else {
-					in["is_local"] = "no"
-				}
+		for _, in := range tx.Inputs {
+			if in.AccountID != "" {
+				tx.IsLocal, in.IsLocal = true, true
+			}
+			if in.Type == "issue" && in.AssetIsLocal {
+				tx.IsLocal, in.IsLocal = true, true
 			}
 		}
 
-		outs, ok := tx["outputs"].([]interface{})
-		if !ok {
-			log.Error(ctx, errors.Wrap(fmt.Errorf("bad outputs type %T", tx["outputs"])))
-			continue
-		}
-		for _, outObj := range outs {
-			out, ok := outObj.(map[string]interface{})
-			if !ok {
-				log.Error(ctx, errors.Wrap(fmt.Errorf("bad output type %T", outObj)))
-				continue
-			}
-
-			_, hasAccount := out["account_id"]
-			if hasAccount {
-				txIsLocal = "yes"
-				out["is_local"] = "yes"
-			} else {
-				out["is_local"] = "no"
+		for _, out := range tx.Outputs {
+			if out.AccountID != "" {
+				tx.IsLocal, out.IsLocal = true, true
 			}
 		}
-
-		tx["is_local"] = txIsLocal
 	}
 }

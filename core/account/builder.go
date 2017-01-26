@@ -3,7 +3,6 @@ package account
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"chain/core/signers"
 	"chain/core/txbuilder"
@@ -37,7 +36,7 @@ type spendAction struct {
 	ClientToken   *string       `json:"client_token"`
 }
 
-func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder.TemplateBuilder) error {
+func (a *spendAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
 	var missing []string
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")
@@ -58,7 +57,7 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder
 		AssetID:   a.AssetID,
 		AccountID: a.AccountID,
 	}
-	res, err := a.accounts.utxoDB.Reserve(ctx, src, a.Amount, a.ClientToken, maxTime)
+	res, err := a.accounts.utxoDB.Reserve(ctx, src, a.Amount, a.ClientToken, b.MaxTime())
 	if err != nil {
 		return errors.Wrap(err, "reserving utxos")
 	}
@@ -94,11 +93,10 @@ func (a *spendAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder
 	return nil
 }
 
-func (m *Manager) NewSpendUTXOAction(outpoint bc.Outpoint) txbuilder.Action {
+func (m *Manager) NewSpendUTXOAction(outputID bc.OutputID) txbuilder.Action {
 	return &spendUTXOAction{
 		accounts: m,
-		TxHash:   outpoint.Hash,
-		TxOut:    outpoint.Index,
+		OutputID: &outputID,
 	}
 }
 
@@ -110,16 +108,29 @@ func (m *Manager) DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
 
 type spendUTXOAction struct {
 	accounts *Manager
-	TxHash   bc.Hash `json:"transaction_id"`
-	TxOut    uint32  `json:"position"`
+	OutputID *bc.OutputID `json:"output_id"`
+	TxHash   *bc.Hash     `json:"transaction_id"`
+	TxOut    *uint32      `json:"position"`
 
 	ReferenceData chainjson.Map `json:"reference_data"`
 	ClientToken   *string       `json:"client_token"`
 }
 
-func (a *spendUTXOAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder.TemplateBuilder) error {
-	out := bc.Outpoint{Hash: a.TxHash, Index: a.TxOut}
-	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, out, a.ClientToken, maxTime)
+func (a *spendUTXOAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
+	var outid bc.OutputID
+
+	if a.OutputID != nil {
+		outid = *a.OutputID
+	} else if a.TxHash != nil && a.TxOut != nil {
+		// This is compatibility layer - legacy apps can spend outputs via the raw <txid:index> pair.
+		outid = bc.ComputeOutputID(*a.TxHash, *a.TxOut)
+	} else {
+		// Note: here we do not attempt to check if txid is present, but position is missing, or vice versa.
+		// Instead, the user has to update their code to use the new API anyway.
+		return txbuilder.MissingFieldsError("output_id")
+	}
+
+	res, err := a.accounts.utxoDB.ReserveUTXO(ctx, outid, a.ClientToken, b.MaxTime())
 	if err != nil {
 		return err
 	}
@@ -151,7 +162,7 @@ func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData
 	*txbuilder.SigningInstruction,
 	error,
 ) {
-	txInput := bc.NewSpendInput(u.Hash, u.Index, nil, u.AssetID, u.Amount, u.ControlProgram, refData)
+	txInput := bc.NewSpendInput(u.OutputID, nil, u.AssetID, u.Amount, u.ControlProgram, refData)
 
 	sigInst := &txbuilder.SigningInstruction{
 		AssetAmount: u.AssetAmount,
@@ -187,7 +198,7 @@ type controlAction struct {
 	ReferenceData chainjson.Map `json:"reference_data"`
 }
 
-func (a *controlAction) Build(ctx context.Context, maxTime time.Time, b *txbuilder.TemplateBuilder) error {
+func (a *controlAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
 	var missing []string
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")

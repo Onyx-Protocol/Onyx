@@ -1,8 +1,9 @@
 package filter
 
 import (
-	"reflect"
 	"testing"
+
+	"chain/testutil"
 )
 
 func TestAsSQL(t *testing.T) {
@@ -78,7 +79,7 @@ func TestAsSQL(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(sqlExpr.Values, tc.conds) {
+		if !testutil.DeepEqual(sqlExpr.Values, tc.conds) {
 			t.Errorf("AsSQL(%q) = %#v, want %#v", tc.q, sqlExpr.Values, tc.conds)
 		}
 	}

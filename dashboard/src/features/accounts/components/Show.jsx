@@ -51,7 +51,7 @@ class Show extends BaseShow {
             actions={[
               <button key='show-txs' className='btn btn-link' onClick={this.props.showTransactions.bind(this, item)}>Transactions</button>,
               <button key='show-balances' className='btn btn-link' onClick={this.props.showBalances.bind(this, item)}>Balances</button>,
-              <RawJsonButton key='raw-json' item={item} title={`account-${item.id}.json`}/>
+              <RawJsonButton key='raw-json' item={item} />
             ]}
             items={[
               {label: 'ID', value: item.id},
@@ -110,7 +110,7 @@ const mapDispatchToProps = ( dispatch ) => ({
   createControlProgram: (data) => dispatch(actions.account.createControlProgram(data)),
   showControlProgram: (body) => dispatch(actions.app.showModal(
     body,
-    actions.app.hideModal()
+    actions.app.hideModal
   )),
 })
 

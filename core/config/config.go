@@ -21,7 +21,6 @@ import (
 	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/state"
 )
 
@@ -34,6 +33,8 @@ var (
 	ErrBadSignerURL    = errors.New("block signer URL is invalid")
 	ErrBadSignerPubkey = errors.New("block signer pubkey is invalid")
 	ErrBadQuorum       = errors.New("quorum must be greater than 0 if there are signers")
+
+	Version, BuildCommit, BuildDate string
 )
 
 // Config encapsulates Core-level, persistent configuration options.
@@ -48,7 +49,7 @@ type Config struct {
 	BlockPub             string        `json:"block_pub"`
 	Signers              []BlockSigner `json:"block_signer_urls"`
 	Quorum               int
-	MaxIssuanceWindow    time.Duration
+	MaxIssuanceWindow    chainjson.Duration
 }
 
 type BlockSigner struct {
@@ -61,7 +62,7 @@ type BlockSigner struct {
 func Load(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT id, is_signer, is_generator,
-			blockchain_id, generator_url, generator_access_token, block_xpub,
+			blockchain_id, generator_url, generator_access_token, block_pub,
 			remote_block_signers, max_issuance_window_ms, configured_at
 			FROM config
 		`
@@ -96,7 +97,7 @@ func Load(ctx context.Context, db pg.DB) (*Config, error) {
 		}
 	}
 
-	c.MaxIssuanceWindow = time.Duration(miw) * time.Millisecond
+	c.MaxIssuanceWindow = chainjson.Duration{time.Duration(miw) * time.Millisecond}
 	return c, nil
 }
 
@@ -176,7 +177,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		initialBlockHash := block.Hash()
 
 		store := txdb.NewStore(db.(*sql.DB))
-		chain, err := protocol.NewChain(ctx, initialBlockHash, store, mempool.New(), nil)
+		chain, err := protocol.NewChain(ctx, initialBlockHash, store, nil)
 		if err != nil {
 			return err
 		}
@@ -187,7 +188,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		}
 
 		c.BlockchainID = initialBlockHash
-		chain.MaxIssuanceWindow = c.MaxIssuanceWindow
+		chain.MaxIssuanceWindow = c.MaxIssuanceWindow.Duration
 	}
 
 	var blockSignerData []byte
@@ -205,9 +206,8 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	}
 	c.ID = hex.EncodeToString(b)
 
-	// TODO(tessr): rename block_xpub column
 	const q = `
-		INSERT INTO config (id, is_signer, block_xpub, is_generator,
+		INSERT INTO config (id, is_signer, block_pub, is_generator,
 			blockchain_id, generator_url, generator_access_token,
 			remote_block_signers, max_issuance_window_ms, configured_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
@@ -223,7 +223,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.GeneratorURL,
 		c.GeneratorAccessToken,
 		blockSignerData,
-		bc.DurationMillis(c.MaxIssuanceWindow),
+		bc.DurationMillis(c.MaxIssuanceWindow.Duration),
 	)
 	return err
 }

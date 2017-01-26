@@ -7,7 +7,7 @@ set -veou pipefail
 # run unit tests
 go version
 go env
-PATH=$GOPATH/bin:$PATH:$CHAIN/bin
+PATH=$(go env GOPATH)/bin:$PATH:$CHAIN/bin
 cd $CHAIN
 go vet $(go list ./...|grep -v vendor)
 go install chain/cmd/vet

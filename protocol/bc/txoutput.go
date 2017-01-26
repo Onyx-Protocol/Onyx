@@ -1,29 +1,25 @@
 package bc
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 
 	"chain/encoding/blockchain"
+	"chain/errors"
 )
 
 // TODO(bobg): Review serialization/deserialization logic for
 // assetVersions other than 1.
 
-type (
-	TxOutput struct {
-		AssetVersion uint64
-		OutputCommitment
-		ReferenceData []byte
-	}
+type TxOutput struct {
+	AssetVersion uint64
+	OutputCommitment
 
-	OutputCommitment struct {
-		AssetAmount
-		VMVersion      uint64
-		ControlProgram []byte
-	}
-)
+	// Unconsumed suffixes of the commitment and witness extensible strings.
+	CommitmentSuffix []byte
+	WitnessSuffix    []byte
+
+	ReferenceData []byte
+}
 
 func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxOutput {
 	return &TxOutput{
@@ -40,86 +36,60 @@ func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData [
 	}
 }
 
-// assumes r has sticky errors
 func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	to.AssetVersion, _, err = blockchain.ReadVarint63(r)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading asset version")
 	}
 
-	_, err = to.OutputCommitment.readFrom(r, txVersion, to.AssetVersion)
+	to.CommitmentSuffix, _, err = to.OutputCommitment.readFrom(r, to.AssetVersion)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading output commitment")
 	}
 
 	to.ReferenceData, _, err = blockchain.ReadVarstr31(r)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading reference data")
 	}
 
 	// read and ignore the (empty) output witness
 	_, _, err = blockchain.ReadVarstr31(r)
 
-	return err
+	return errors.Wrap(err, "reading output witness")
 }
 
-func (oc *OutputCommitment) readFrom(r io.Reader, txVersion, assetVersion uint64) (n int, err error) {
-	b, n, err := blockchain.ReadVarstr31(r)
+func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
+	_, err := blockchain.WriteVarint63(w, to.AssetVersion)
 	if err != nil {
-		return n, err
+		return errors.Wrap(err, "writing asset version")
 	}
 
-	if assetVersion != 1 {
-		return n, nil
-	}
-
-	rb := bytes.NewBuffer(b)
-	n1, err := oc.AssetAmount.readFrom(rb)
+	err = to.WriteCommitment(w)
 	if err != nil {
-		return n, err
+		return errors.Wrap(err, "writing output commitment")
 	}
-	var n2 int
-	oc.VMVersion, n2, err = blockchain.ReadVarint63(rb)
+
+	err = writeRefData(w, to.ReferenceData, serflags)
 	if err != nil {
-		return n, err
+		return errors.Wrap(err, "writing reference data")
 	}
-	var n3 int
-	oc.ControlProgram, n3, err = blockchain.ReadVarstr31(rb)
+
+	// write witness (empty in v1)
+	_, err = blockchain.WriteVarstr31(w, nil)
 	if err != nil {
-		return n, err
+		return errors.Wrap(err, "writing witness")
 	}
-
-	if txVersion == 1 && n1+n2+n3 < len(b) {
-		return n, fmt.Errorf("unrecognized extra data in output commitment for transaction version 1")
-	}
-
-	return n, nil
+	return nil
 }
 
-// assumes r has sticky errors
-func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
-	blockchain.WriteVarint63(w, to.AssetVersion) // TODO(bobg): check and return error
-	to.OutputCommitment.writeTo(w, to.AssetVersion)
-	writeRefData(w, to.ReferenceData, serflags)
-	blockchain.WriteVarstr31(w, nil)
+func (to *TxOutput) witnessHash() Hash {
+	return EmptyStringHash
 }
 
-func (to TxOutput) WitnessHash() Hash {
-	return emptyHash
+func (to *TxOutput) WriteCommitment(w io.Writer) error {
+	return to.OutputCommitment.writeExtensibleString(w, to.CommitmentSuffix, to.AssetVersion)
 }
 
-func (to TxOutput) Commitment() []byte {
-	var buf bytes.Buffer
-	to.OutputCommitment.writeTo(&buf, to.AssetVersion)
-	return buf.Bytes()
-}
-
-func (oc OutputCommitment) writeTo(w io.Writer, assetVersion uint64) {
-	b := new(bytes.Buffer)
-	if assetVersion == 1 {
-		oc.AssetAmount.writeTo(b)
-		blockchain.WriteVarint63(b, oc.VMVersion) // TODO(bobg): check and return error
-		blockchain.WriteVarstr31(b, oc.ControlProgram)
-	}
-	blockchain.WriteVarstr31(w, b.Bytes()) // TODO(bobg): check and return error
+func (to *TxOutput) CommitmentHash() Hash {
+	return to.OutputCommitment.Hash(to.CommitmentSuffix, to.AssetVersion)
 }

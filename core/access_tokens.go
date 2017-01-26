@@ -26,7 +26,7 @@ func (h *Handler) listAccessTokens(ctx context.Context, x requestQuery) (*page, 
 	}
 
 	outQuery := x
-	x.After = next
+	outQuery.After = next
 
 	return &page{
 		Items:    httpjson.Array(tokens),

@@ -63,4 +63,55 @@ var migrations = []migration{
 			DROP COLUMN block_pos,
 			DROP COLUMN block_timestamp;
 	`},
+	{Name: "2016-11-23.0.query.jsonb-path-ops.sql", SQL: `
+		DROP INDEX annotated_txs_data;
+		CREATE INDEX ON annotated_txs USING GIN (data jsonb_path_ops);
+	`},
+	{Name: "2016-11-28.0.core.submitted-txs-hash.sql", SQL: `
+		ALTER TABLE submitted_txs
+			ALTER COLUMN tx_id SET DATA TYPE bytea USING decode(tx_id,'hex');
+		ALTER TABLE submitted_txs RENAME COLUMN tx_id TO tx_hash;
+	`},
+	{Name: "2017-01-05.0.core.rename_block_key.sql", SQL: `
+		ALTER TABLE config RENAME COLUMN block_xpub TO block_pub;
+	`},
+	{Name: "2017-01-10.0.signers.xpubs-type.sql", SQL: `
+		ALTER TABLE signers ADD COLUMN xpub_byteas bytea[] NOT NULL DEFAULT '{}';
+		UPDATE signers s1
+			SET xpub_byteas=(SELECT array_agg(decode(unnest(xpubs), 'hex')) FROM signers s2 WHERE s1.id=s2.id);
+		ALTER TABLE signers DROP COLUMN xpubs;
+		ALTER TABLE signers RENAME COLUMN xpub_byteas TO xpubs;
+		ALTER TABLE signers ALTER COLUMN xpubs DROP DEFAULT;
+	`},
+	{Name: "2017-01-11.0.core.hash-bytea.sql", SQL: `
+		ALTER TABLE account_utxos ALTER COLUMN tx_hash SET DATA TYPE bytea USING decode(tx_hash, 'hex');
+		ALTER TABLE annotated_outputs ALTER COLUMN tx_hash SET DATA TYPE bytea USING decode(tx_hash, 'hex');
+		ALTER TABLE annotated_txs ALTER COLUMN tx_hash SET DATA TYPE bytea USING decode(tx_hash, 'hex');
+		ALTER TABLE account_utxos ALTER COLUMN asset_id SET DATA TYPE bytea USING decode(asset_id, 'hex');
+		ALTER TABLE asset_tags ALTER COLUMN asset_id SET DATA TYPE bytea USING decode(asset_id, 'hex');
+		ALTER TABLE assets ALTER COLUMN id SET DATA TYPE bytea USING decode(id, 'hex');
+		ALTER TABLE annotated_assets ALTER COLUMN id SET DATA TYPE bytea USING decode(id, 'hex');
+		ALTER TABLE blocks ALTER COLUMN block_hash SET DATA TYPE bytea USING decode(block_hash, 'hex');
+		ALTER TABLE signed_blocks ALTER COLUMN block_hash SET DATA TYPE bytea USING decode(block_hash, 'hex');
+		ALTER TABLE assets ALTER COLUMN initial_block_hash SET DATA TYPE bytea USING decode(initial_block_hash, 'hex');
+		ALTER TABLE config ALTER COLUMN blockchain_id SET DATA TYPE bytea USING decode(blockchain_id, 'hex');
+	`},
+	{Name: "2017-01-13.0.core.asset-definition-bytea.sql", SQL: `
+		ALTER TABLE assets 
+			ALTER COLUMN definition SET DATA TYPE text;
+		ALTER TABLE assets 
+			ALTER COLUMN definition SET DATA TYPE bytea USING COALESCE(definition::text::bytea, ''),
+			ALTER COLUMN definition SET NOT NULL;
+		ALTER TABLE assets ADD COLUMN vm_version bigint NOT NULL;
+	`},
+	{Name: "2017-01-19.0.asset.drop-mutable-flag.sql", SQL: `
+		ALTER TABLE assets DROP COLUMN definition_mutable;
+	`},
+	{Name: "2017-01-20.0.core.add-output-id-to-outputs.sql", SQL: `
+		ALTER TABLE annotated_outputs
+			ADD COLUMN output_id bytea UNIQUE NOT NULL;
+		ALTER TABLE account_utxos
+			ADD COLUMN output_id bytea UNIQUE NOT NULL,
+			ADD COLUMN unspent_id bytea UNIQUE NOT NULL;
+	`},
 }

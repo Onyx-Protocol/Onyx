@@ -19,6 +19,7 @@ This guide will walk you through the basic types of control programs available i
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/ControlPrograms.java)
+- [Node](../examples/node/controlPrograms.js)
 - [Ruby](../examples/ruby/control_programs.rb)
 
 ## Account control programs
@@ -31,11 +32,11 @@ Although all control programs in one account are controlled by keys derived from
 
 If Alice wishes to be paid gold by an external party (Bob), she first creates a new control program in her account:
 
-$code create-control-program ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb
+$code create-control-program ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb ../examples/node/controlPrograms.js
 
 She then delivers the control program to Bob, who provides it to the transaction builder:
 
-$code build-transaction ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb
+$code build-transaction ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb ../examples/node/controlPrograms.js
 
 ## Retirement control programs
 
@@ -45,7 +46,7 @@ A retirement control program is a very simple control program with a single pred
 
 To retire units of gold from Alice's account, we use the `SpendFromAccount` and `Retire` actions on the `Transaction.QueryBuilder`, which prompts Chain Core to create the retirement control program and spent to it from Alice's account.
 
-$code retire ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb
+$code retire ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb ../examples/node/controlPrograms.js
 
 ## Custom control programs
 

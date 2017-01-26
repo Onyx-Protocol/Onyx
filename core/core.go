@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"expvar"
 	"net/http"
 	"strings"
@@ -71,15 +70,15 @@ func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
 
 func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	var (
-		generatorHeight  *uint64
-		generatorFetched *time.Time
+		generatorHeight  uint64
+		generatorFetched time.Time
 		snapshot         = fetch.SnapshotProgress()
 		localHeight      = h.Chain.Height()
 	)
 	if h.Config.IsGenerator {
 		now := time.Now()
-		generatorHeight = &localHeight
-		generatorFetched = &now
+		generatorHeight = localHeight
+		generatorFetched = now
 	} else {
 		fetchHeight, fetchTime := fetch.GeneratorHeight()
 		// Because everything is asynchronous, it's possible for the localHeight to
@@ -91,14 +90,11 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 
 		// fetchTime might be the zero time if we're having trouble connecting
 		// to the remote generator. Only set the height & time if we have it.
-		// The dashboard will handle nulls correctly.
+		// The dashboard will handle zeros correctly.
 		if !fetchTime.IsZero() {
-			generatorHeight, generatorFetched = &fetchHeight, &fetchTime
+			generatorHeight, generatorFetched = fetchHeight, fetchTime
 		}
 	}
-
-	buildCommit := json.RawMessage(expvar.Get("buildcommit").String())
-	buildDate := json.RawMessage(expvar.Get("builddate").String())
 
 	m := map[string]interface{}{
 		"is_configured":                     true,
@@ -114,8 +110,9 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		"is_production":                     isProduction(),
 		"network_rpc_version":               networkRPCVersion,
 		"core_id":                           h.Config.ID,
-		"build_commit":                      &buildCommit,
-		"build_date":                        &buildDate,
+		"version":                           config.Version,
+		"build_commit":                      config.BuildCommit,
+		"build_date":                        config.BuildDate,
 		"health":                            h.health(),
 	}
 
@@ -137,8 +134,8 @@ func (h *Handler) configure(ctx context.Context, x *config.Config) error {
 		return errAlreadyConfigured
 	}
 
-	if x.IsGenerator && x.MaxIssuanceWindow == 0 {
-		x.MaxIssuanceWindow = 24 * time.Hour
+	if x.IsGenerator && x.MaxIssuanceWindow.Duration == 0 {
+		x.MaxIssuanceWindow.Duration = 24 * time.Hour
 	}
 
 	err := config.Configure(ctx, h.DB, x)

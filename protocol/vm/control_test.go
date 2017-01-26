@@ -1,8 +1,9 @@
 package vm
 
 import (
-	"reflect"
 	"testing"
+
+	"chain/testutil"
 )
 
 func TestControlOps(t *testing.T) {
@@ -239,7 +240,7 @@ func TestControlOps(t *testing.T) {
 			continue
 		}
 
-		if !reflect.DeepEqual(c.startVM, c.wantVM) {
+		if !testutil.DeepEqual(c.startVM, c.wantVM) {
 			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, c.op.String(), c.startVM, c.wantVM)
 		}
 	}

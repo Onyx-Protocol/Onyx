@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 	"testing/quick"
 
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 type tracebuf struct {
@@ -181,8 +181,7 @@ func TestVerifyTxInput(t *testing.T) {
 		wantErr error
 	}{{
 		input: bc.NewSpendInput(
-			bc.Hash{},
-			0,
+			bc.OutputID{},
 			[][]byte{{2}, {3}},
 			bc.AssetID{},
 			1,
@@ -198,12 +197,15 @@ func TestVerifyTxInput(t *testing.T) {
 			bc.Hash{},
 			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			[][]byte{{2}, {3}},
+			nil,
 		),
 		want: true,
 	}, {
 		input: &bc.TxInput{
 			TypedInput: &bc.IssuanceInput{
-				VMVersion: 2,
+				IssuanceWitness: bc.IssuanceWitness{
+					VMVersion: 2,
+				},
 			},
 		},
 		wantErr: ErrUnsupportedVM,
@@ -224,6 +226,7 @@ func TestVerifyTxInput(t *testing.T) {
 			bc.Hash{},
 			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			[][]byte{make([]byte, 50001)},
+			nil,
 		),
 		wantErr: ErrRunLimitExceeded,
 	}, {
@@ -238,22 +241,30 @@ func TestVerifyTxInput(t *testing.T) {
 
 		got, gotErr := VerifyTxInput(tx, 0)
 
-		if gotErr != c.wantErr {
-			t.Errorf("VerifyTxInput(%+v) err = %v want %v", i, gotErr, c.wantErr)
+		if errors.Root(gotErr) != c.wantErr {
+			t.Errorf("VerifyTxInput(%d) err = %v want %v", i, gotErr, c.wantErr)
 		}
 
 		if got != c.want {
-			t.Errorf("VerifyTxInput(%+v) = %v want %v", i, got, c.want)
+			t.Errorf("VerifyTxInput(%d) = %v want %v", i, got, c.want)
 		}
 	}
 }
 
 func TestVerifyBlockHeader(t *testing.T) {
 	block := &bc.Block{
-		BlockHeader: bc.BlockHeader{Witness: [][]byte{{2}, {3}}},
+		BlockHeader: bc.BlockHeader{
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{{2}, {3}},
+			},
+		},
 	}
 	prevBlock := &bc.Block{
-		BlockHeader: bc.BlockHeader{ConsensusProgram: []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}},
+		BlockHeader: bc.BlockHeader{
+			BlockCommitment: bc.BlockCommitment{
+				ConsensusProgram: []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
+			},
+		},
 	}
 
 	got, gotErr := VerifyBlockHeader(&prevBlock.BlockHeader, block)
@@ -266,7 +277,11 @@ func TestVerifyBlockHeader(t *testing.T) {
 	}
 
 	block = &bc.Block{
-		BlockHeader: bc.BlockHeader{Witness: [][]byte{make([]byte, 50000)}},
+		BlockHeader: bc.BlockHeader{
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{make([]byte, 50000)},
+			},
+		},
 	}
 
 	_, gotErr = VerifyBlockHeader(&prevBlock.BlockHeader, block)
@@ -398,6 +413,24 @@ func TestStep(t *testing.T) {
 			tx:       &bc.Tx{},
 		},
 		wantErr: ErrRunLimitExceeded,
+	}, {
+		startVM: &virtualMachine{
+			program:           []byte{255},
+			runLimit:          100,
+			expansionReserved: true,
+		},
+		wantErr: ErrDisallowedOpcode,
+	}, {
+		startVM: &virtualMachine{
+			program:  []byte{255},
+			runLimit: 100,
+		},
+		wantVM: &virtualMachine{
+			program:  []byte{255},
+			runLimit: 99,
+			pc:       1,
+			nextPC:   1,
+		},
 	}}
 
 	for i, c := range cases {
@@ -412,7 +445,7 @@ func TestStep(t *testing.T) {
 			continue
 		}
 
-		if !reflect.DeepEqual(c.startVM, c.wantVM) {
+		if !testutil.DeepEqual(c.startVM, c.wantVM) {
 			t.Errorf("step test %d:\n\tgot vm:  %+v\n\twant vm: %+v", i, c.startVM, c.wantVM)
 		}
 	}
@@ -452,7 +485,7 @@ func TestVerifyTxInputQuickCheck(t *testing.T) {
 			}
 		}()
 		tx := bc.NewTx(bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, witnesses, bc.AssetID{}, 10, program, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), witnesses, bc.AssetID{}, 10, program, nil)},
 		})
 		verifyTxInput(tx, 0)
 		return true
@@ -474,8 +507,16 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 				ok = false
 			}
 		}()
-		prev := &bc.BlockHeader{ConsensusProgram: program}
-		block := &bc.Block{BlockHeader: bc.BlockHeader{Witness: witnesses}}
+		prev := &bc.BlockHeader{
+			BlockCommitment: bc.BlockCommitment{
+				ConsensusProgram: program,
+			},
+		}
+		block := &bc.Block{BlockHeader: bc.BlockHeader{
+			BlockWitness: bc.BlockWitness{
+				Witness: witnesses,
+			},
+		}}
 		verifyBlockHeader(prev, block)
 		return true
 	}

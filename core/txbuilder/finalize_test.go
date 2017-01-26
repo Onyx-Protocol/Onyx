@@ -8,17 +8,16 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
+	"chain/core/generator"
 	"chain/core/pin"
 	"chain/core/query"
 	. "chain/core/txbuilder"
-	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/memstore"
 	"chain/protocol/prottest"
 	"chain/protocol/state"
@@ -33,44 +32,48 @@ func TestSighashCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = issue(ctx, t, info, info.acctA.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = issue(ctx, t, info, info.acctB.ID, 10)
+	g := generator.New(info.Chain, nil, db)
+	_, err = issue(ctx, t, info, g, info.acctA, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = issue(ctx, t, info, g, info.acctB, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	prottest.MakeBlock(t, info.Chain)
+	prottest.MakeBlock(t, info.Chain, g.PendingTxs())
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset.AssetID,
+		AssetID: info.asset,
 		Amount:  1,
 	}
-	spendAction1 := info.NewSpendAction(assetAmount, info.acctA.ID, nil, nil)
-	controlAction1 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
+	spendAction1 := info.NewSpendAction(assetAmount, info.acctA, nil, nil)
+	controlAction1 := info.NewControlAction(assetAmount, info.acctB, nil)
 
 	tpl1, err := Build(ctx, nil, []Action{spendAction1, controlAction1}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 	tpl1.AllowAdditional = true
-	coretest.SignTxTemplate(t, ctx, tpl1, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, tpl1, nil)
 	err = CheckTxSighashCommitment(bc.NewTx(*tpl1.Transaction))
 	if err == nil {
 		t.Error("unexpected success from checkTxSighashCommitment")
 	}
 
-	spendAction2a := info.NewSpendAction(assetAmount, info.acctB.ID, nil, nil)
-	controlAction2 := info.NewControlAction(assetAmount, info.acctA.ID, nil)
+	spendAction2a := info.NewSpendAction(assetAmount, info.acctB, nil, nil)
+	controlAction2 := info.NewControlAction(assetAmount, info.acctA, nil)
 
 	tpl2a, err := Build(ctx, tpl1.Transaction, []Action{spendAction2a, controlAction2}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
-	coretest.SignTxTemplate(t, ctx, tpl2a, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, tpl2a, nil)
 	err = CheckTxSighashCommitment(bc.NewTx(*tpl2a.Transaction))
 	if err != nil {
 		t.Errorf("unexpected failure from checkTxSighashCommitment (case 1): %v", err)
@@ -81,7 +84,7 @@ func TestSighashCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	coretest.SignTxTemplate(t, ctx, tpl2b, &info.privKeyAsset)
+	coretest.SignTxTemplate(t, ctx, tpl2b, nil)
 	err = CheckTxSighashCommitment(bc.NewTx(*tpl2b.Transaction))
 	if err != nil {
 		t.Errorf("unexpected failure from checkTxSighashCommitment (case 2): %v", err)
@@ -103,22 +106,23 @@ func TestConflictingTxsInPool(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = issue(ctx, t, info, info.acctA.ID, 10)
+	g := generator.New(info.Chain, nil, db)
+	_, err = issue(ctx, t, info, g, info.acctA, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	dumpBlocks(ctx, t, db)
-	prottest.MakeBlock(t, info.Chain)
+	prottest.MakeBlock(t, info.Chain, g.PendingTxs())
 	dumpBlocks(ctx, t, db)
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset.AssetID,
+		AssetID: info.asset,
 		Amount:  10,
 	}
-	spendAction := info.NewSpendAction(assetAmount, info.acctA.ID, nil, nil)
-	dest1 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
+	spendAction := info.NewSpendAction(assetAmount, info.acctA, nil, nil)
+	dest1 := info.NewControlAction(assetAmount, info.acctB, nil)
 
 	// Build the first tx
 	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1}, time.Now().Add(time.Minute))
@@ -126,14 +130,14 @@ func TestConflictingTxsInPool(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 	unsignedTx := *firstTemplate.Transaction
-	coretest.SignTxTemplate(t, ctx, firstTemplate, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, firstTemplate, nil)
 	tx := bc.NewTx(*firstTemplate.Transaction)
-	err = FinalizeTx(ctx, info.Chain, tx)
+	err = FinalizeTx(ctx, info.Chain, g, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	// Slighly tweak the first tx so it has a different hash, but
+	// Slightly tweak the first tx so it has a different hash, but
 	// still consumes the same UTXOs.
 	unsignedTx.MaxTime++
 	secondTemplate := &Template{
@@ -143,15 +147,15 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Program = nil
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Sigs = nil
-	coretest.SignTxTemplate(t, ctx, secondTemplate, &info.privKeyAccounts)
-	err = FinalizeTx(ctx, info.Chain, bc.NewTx(*secondTemplate.Transaction))
+	coretest.SignTxTemplate(t, ctx, secondTemplate, nil)
+	err = FinalizeTx(ctx, info.Chain, g, bc.NewTx(*secondTemplate.Transaction))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
 	// Make a block, which should reject one of the txs.
 	dumpBlocks(ctx, t, db)
-	b := prottest.MakeBlock(t, info.Chain)
+	b := prottest.MakeBlock(t, info.Chain, g.PendingTxs())
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	dumpBlocks(ctx, t, db)
@@ -169,18 +173,19 @@ func TestTransferConfirmed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = issue(ctx, t, info, info.acctA.ID, 10)
+	g := generator.New(info.Chain, nil, db)
+	_, err = issue(ctx, t, info, g, info.acctA, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	dumpBlocks(ctx, t, db)
-	prottest.MakeBlock(t, info.Chain)
+	prottest.MakeBlock(t, info.Chain, g.PendingTxs())
 	dumpBlocks(ctx, t, db)
 
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
-	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
+	_, err = transfer(ctx, t, info, g, info.acctA, info.acctB, 10)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -194,44 +199,25 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	g := generator.New(info.Chain, nil, db)
 	for i := 0; i < b.N; i++ {
-		tx, err := issue(ctx, b, info, info.acctA.ID, 10)
+		tx, err := issue(ctx, b, info, g, info.acctA, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
 		b.Logf("finalized %v", tx.Hash)
+		prottest.MakeBlock(b, info.Chain, g.PendingTxs())
+		<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
-		tx, err = transfer(ctx, b, info, info.acctA.ID, info.acctB.ID, 10)
+		tx, err = transfer(ctx, b, info, g, info.acctA, info.acctB, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
 		b.Logf("finalized %v", tx.Hash)
 
 		if i%10 == 0 {
-			prottest.MakeBlock(b, info.Chain)
+			prottest.MakeBlock(b, info.Chain, g.PendingTxs())
 		}
-	}
-}
-
-func dumpTab(ctx context.Context, t *testing.T, db pg.DB, q string) {
-	rows, err := db.Query(ctx, q)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var hash bc.Hash
-		var tx bc.TxData
-		err = rows.Scan(&hash, &tx)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for index, o := range tx.Outputs {
-			t.Logf("hash: %s index: %d pkscript: %x", hash, index, o.ControlProgram)
-		}
-	}
-	if rows.Err() != nil {
-		t.Fatal(rows.Err())
 	}
 }
 
@@ -262,14 +248,59 @@ func BenchmarkGenerateBlock(b *testing.B) {
 }
 
 func benchGenBlock(b *testing.B) {
-	const tx1hex = `0000000101341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5ffffffff6f00473045022100c561a9b4854742bc36c805513b872b2c0a1a367da24710eadd4f3fbc3b1ab41302207cf9eec4e5db694831fe43cf193f23d869291025ac6062199dd6b8998e93e15825512103623fb1fe38ce7e43cf407ec99b061c6d2da0278e80ce094393875c5b94f1ed9051ae0001df03f294bd08930f542a42b91199a8afe1b45c28eeb058cc5e8c8d600e0dd42f0000000000000001000000000000000000000474782d31`
-	const tx2hex = `0000000101341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5ffffffff6e0046304402206ac2db5b49c8f9059d7ecad4f08a1d29e851e321720f590f5426cfbb19840d4402206aacef503d7c3cd065a17c2553b372ca2de0613eba3debc70896c9ab6545029b25512103b050bdde9880d9e8634f12798748cb26e9435a778305f3ae1ddba759d6479b2a51ae00015abad6dfb0de611046ebda5de05bfebc6a08d9a71831b43f2acd554bf54f33180000000000000001000000000000000000000474782d32`
+	const tx1hex = ("07" + // serflags
+		"01" + // transaction version
+		"0a" + // common fields extensible string length
+		"b0bbdcc705" + // common fields, mintime
+		"ffbfdcc705" + // common fields, maxtime
+		"00" + // common witness extensible string length
+		"01" + // inputs count
+		"01" + // input 0, asset version
+		"4b" + // input 0, input commitment length prefix
+		"01" + // input 0, input commitment, "spend" type
+		"110bd1b4e5efc2994c9abc77f223a52c834d8f26b907c6c19d90b9e77a8e2fed" + // input 0, spend input commitment, output ID
+		"29" + // input 0, spend input commitment, output commitment length prefix
+		"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, spend input commitment, output commitment, asset id
+		"80a094a58d1d" + // input 0, spend input commitment, output commitment, amount
+		"01" + // input 0, spend input commitment, output commitment, vm version
+		"0101" + // input 0, spend input commitment, output commitment, control program
+		"05696e707574" + // input 0, reference data
+		"01" + // input 0, input witness length prefix
+		"00" + // input 0, input witness, number of args
+		"02" + // outputs count
+		"01" + // output 0, asset version
+		"29" + // output 0, output commitment length
+		"9ed3e85a8c2d3717b5c94bd2db2ab9cab56955b2c4fb4696f345ca97aaab82d6" + // output 0, output commitment, asset id
+		"80e0a596bb11" + // output 0, output commitment, amount
+		"01" + // output 0, output commitment, vm version
+		"0101" + // output 0, output commitment, control program
+		"00" + // output 0, reference data
+		"00" + // output 0, output witness
+		"01" + // output 1, asset version
+		"29" + // output 1, output commitment length
+		"9ed3e85a8c2d3717b5c94bd2db2ab9cab56955b2c4fb4696f345ca97aaab82d6" + // output 1, output commitment, asset id
+		"80c0ee8ed20b" + // output 1, output commitment, amount
+		"01" + // output 1, vm version
+		"0102" + // output 1, output commitment, control program
+		"00" + // output 1, reference data
+		"00" + // output 1, output witness
+		"0c646973747269627574696f6e") // reference data
+
+	const tx2hex = ("07" + // serflags
+		"01" + // transaction version
+		"02" + // common fields extensible string length
+		"00" + // common fields, mintime
+		"00" + // common fields, maxtime
+		"00" + // common witness extensible string length
+		"00" + // inputs count
+		"00" + // outputs count
+		"00") // reference data
 
 	b.StopTimer()
 
 	ctx := context.Background()
-	store, pool := memstore.New(), mempool.New()
-	c := prottest.NewChainWithStorage(b, store, pool)
+	c := prottest.NewChainWithStorage(b, memstore.New())
+	g := generator.New(c, nil, pgtest.NewTx(b))
 	initialBlock, err := c.GetBlock(ctx, 1)
 	if err != nil {
 		testutil.FatalErr(b, err)
@@ -284,18 +315,18 @@ func benchGenBlock(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	err = pool.Insert(ctx, &tx1)
+	err = g.Submit(ctx, &tx1)
 	if err != nil {
 		b.Fatal(err)
 	}
-	err = pool.Insert(ctx, &tx2)
+	err = g.Submit(ctx, &tx2)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	now := time.Now()
 	b.StartTimer()
-	_, _, err = c.GenerateBlock(ctx, initialBlock, state.Empty(), now)
+	_, _, err = c.GenerateBlock(ctx, initialBlock, state.Empty(), now, g.PendingTxs())
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)
@@ -306,12 +337,10 @@ type testInfo struct {
 	*asset.Registry
 	*account.Manager
 	*protocol.Chain
-	pinStore        *pin.Store
-	asset           *asset.Asset
-	acctA           *account.Account
-	acctB           *account.Account
-	privKeyAsset    chainkd.XPrv
-	privKeyAccounts chainkd.XPrv
+	pinStore *pin.Store
+	asset    bc.AssetID
+	acctA    string
+	acctB    string
 }
 
 // TODO(kr): refactor this into new package core/coreutil
@@ -327,46 +356,26 @@ func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
 	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
 
-	accPriv, accPub, err := chainkd.NewXKeys(nil)
-	if err != nil {
-		return nil, err
-	}
+	acctA := coretest.CreateAccount(ctx, t, accounts, "", nil)
+	acctB := coretest.CreateAccount(ctx, t, accounts, "", nil)
 
-	acctA, err := accounts.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	acctB, err := accounts.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	assetPriv, assetPub, err := chainkd.NewXKeys(nil)
-	if err != nil {
-		return nil, err
-	}
-	asset, err := assets.Define(ctx, []string{assetPub.String()}, 1, nil, "", nil, nil)
-	if err != nil {
-		return nil, err
-	}
+	asset := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 
 	info := &testInfo{
-		Chain:           c,
-		Registry:        assets,
-		Manager:         accounts,
-		pinStore:        pinStore,
-		asset:           asset,
-		acctA:           acctA,
-		acctB:           acctB,
-		privKeyAsset:    assetPriv,
-		privKeyAccounts: accPriv,
+		Chain:    c,
+		Registry: assets,
+		Manager:  accounts,
+		pinStore: pinStore,
+		asset:    asset,
+		acctA:    acctA,
+		acctB:    acctB,
 	}
 	return info, nil
 }
 
-func issue(ctx context.Context, t testing.TB, info *testInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
+func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset.AssetID,
+		AssetID: info.asset,
 		Amount:  amount,
 	}
 	issueTx, err := Build(ctx, nil, []Action{
@@ -376,14 +385,14 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, destAcctID string,
 	if err != nil {
 		return nil, err
 	}
-	coretest.SignTxTemplate(t, ctx, issueTx, &info.privKeyAsset)
+	coretest.SignTxTemplate(t, ctx, issueTx, nil)
 	tx := bc.NewTx(*issueTx.Transaction)
-	return tx, FinalizeTx(ctx, info.Chain, tx)
+	return tx, FinalizeTx(ctx, info.Chain, s, tx)
 }
 
-func transfer(ctx context.Context, t testing.TB, info *testInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
+func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset.AssetID,
+		AssetID: info.asset,
 		Amount:  amount,
 	}
 	source := info.NewSpendAction(assetAmount, srcAcctID, nil, nil)
@@ -394,9 +403,9 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, srcAcctID, dest
 		return nil, errors.Wrap(err)
 	}
 
-	coretest.SignTxTemplate(t, ctx, xferTx, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, xferTx, nil)
 
 	tx := bc.NewTx(*xferTx.Transaction)
-	err = FinalizeTx(ctx, info.Chain, tx)
+	err = FinalizeTx(ctx, info.Chain, s, tx)
 	return tx, errors.Wrap(err)
 }

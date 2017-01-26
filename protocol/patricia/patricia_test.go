@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 func BenchmarkInserts(b *testing.B) {
@@ -32,6 +32,27 @@ func BenchmarkInserts(b *testing.B) {
 				b.Fatal(err)
 			}
 		}
+	}
+}
+
+func BenchmarkInsertsRootHash(b *testing.B) {
+	const nodes = 10000
+	for i := 0; i < b.N; i++ {
+		r := rand.New(rand.NewSource(12345))
+		tr := new(Tree)
+		for j := 0; j < nodes; j++ {
+			var h [32]byte
+			_, err := r.Read(h[:])
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			err = tr.Insert(h[:], h[:])
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+		tr.RootHash()
 	}
 }
 
@@ -114,16 +135,16 @@ func TestRootHashInsertQuickCheck(t *testing.T) {
 func TestLookup(t *testing.T) {
 	_, hashes := makeVals(5)
 	tr := &Tree{
-		root: &node{key: bools("11111111"), hash: hashes[0], isLeaf: true},
+		root: &node{key: bools("11111111"), hash: &hashes[0], isLeaf: true},
 	}
 	got := tr.lookup(tr.root, bitKey(bits("11111111")))
-	if !reflect.DeepEqual(got, tr.root) {
+	if !testutil.DeepEqual(got, tr.root) {
 		t.Log("lookup on 1-node tree")
 		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root, 0))
 	}
 
 	tr = &Tree{
-		root: &node{key: bools("11111110"), hash: hashes[1], isLeaf: true},
+		root: &node{key: bools("11111110"), hash: &hashes[1], isLeaf: true},
 	}
 	got = tr.lookup(tr.root, bitKey(bits("11111111")))
 	if got != nil {
@@ -134,15 +155,15 @@ func TestLookup(t *testing.T) {
 	tr = &Tree{
 		root: &node{
 			key:  bools("1111"),
-			hash: hashForNonLeaf(hashes[2], hashes[1]),
+			hash: hashPtr(hashForNonLeaf(hashes[2], hashes[1])),
 			children: [2]*node{
-				{key: bools("11110000"), hash: hashes[2], isLeaf: true},
-				{key: bools("11111111"), hash: hashes[1], isLeaf: true},
+				{key: bools("11110000"), hash: &hashes[2], isLeaf: true},
+				{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
 			},
 		},
 	}
 	got = tr.lookup(tr.root, bitKey(bits("11110000")))
-	if !reflect.DeepEqual(got, tr.root.children[0]) {
+	if !testutil.DeepEqual(got, tr.root.children[0]) {
 		t.Log("lookup root's first child")
 		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root.children[0], 0))
 	}
@@ -150,22 +171,22 @@ func TestLookup(t *testing.T) {
 	tr = &Tree{
 		root: &node{
 			key:  bools("1111"),
-			hash: hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[3], hashes[1])),
+			hash: hashPtr(hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[3], hashes[1]))),
 			children: [2]*node{
-				{key: bools("11110000"), hash: hashes[2], isLeaf: true},
+				{key: bools("11110000"), hash: &hashes[2], isLeaf: true},
 				{
 					key:  bools("111111"),
-					hash: hashForNonLeaf(hashes[3], hashes[1]),
+					hash: hashPtr(hashForNonLeaf(hashes[3], hashes[1])),
 					children: [2]*node{
-						{key: bools("11111100"), hash: hashes[3], isLeaf: true},
-						{key: bools("11111111"), hash: hashes[1], isLeaf: true},
+						{key: bools("11111100"), hash: &hashes[3], isLeaf: true},
+						{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
 					},
 				},
 			},
 		},
 	}
 	got = tr.lookup(tr.root, bitKey(bits("11111100")))
-	if !reflect.DeepEqual(got, tr.root.children[1].children[0]) {
+	if !testutil.DeepEqual(got, tr.root.children[1].children[0]) {
 		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root.children[1].children[0], 0))
 	}
 }
@@ -175,15 +196,15 @@ func TestContains(t *testing.T) {
 	tr := &Tree{
 		root: &node{
 			key:  bools("1111"),
-			hash: hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[3], hashes[1])),
+			hash: hashPtr(hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[3], hashes[1]))),
 			children: [2]*node{
-				{key: bools("11110000"), hash: hashes[2], isLeaf: true},
+				{key: bools("11110000"), hash: &hashes[2], isLeaf: true},
 				{
 					key:  bools("111111"),
-					hash: hashForNonLeaf(hashes[3], hashes[1]),
+					hash: hashPtr(hashForNonLeaf(hashes[3], hashes[1])),
 					children: [2]*node{
-						{key: bools("11111100"), hash: hashes[3], isLeaf: true},
-						{key: bools("11111111"), hash: hashes[1], isLeaf: true},
+						{key: bools("11111100"), hash: &hashes[3], isLeaf: true},
+						{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
 					},
 				},
 			},
@@ -203,82 +224,87 @@ func TestContains(t *testing.T) {
 func TestInsert(t *testing.T) {
 	tr := new(Tree)
 	vals, hashes := makeVals(6)
-	tr.Insert(bits("11111111"), vals[0])
 
+	tr.Insert(bits("11111111"), vals[0])
+	tr.RootHash()
 	want := &Tree{
-		root: &node{key: bools("11111111"), hash: hashes[0], isLeaf: true},
+		root: &node{key: bools("11111111"), hash: &hashes[0], isLeaf: true},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		log.Printf("want hash? %s", hashes[0])
 		t.Log("insert into empty tree")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Insert(bits("11111111"), vals[1])
+	tr.RootHash()
 	want = &Tree{
-		root: &node{key: bools("11111111"), hash: hashes[1], isLeaf: true},
+		root: &node{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Log("inserting the same key updates the value, does not add a new node")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Insert(bits("11110000"), vals[2])
+	tr.RootHash()
 	want = &Tree{
 		root: &node{
 			key:  bools("1111"),
-			hash: hashForNonLeaf(hashes[2], hashes[1]),
+			hash: hashPtr(hashForNonLeaf(hashes[2], hashes[1])),
 			children: [2]*node{
-				{key: bools("11110000"), hash: hashes[2], isLeaf: true},
-				{key: bools("11111111"), hash: hashes[1], isLeaf: true},
+				{key: bools("11110000"), hash: &hashes[2], isLeaf: true},
+				{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Log("different key creates a fork")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Insert(bits("11111100"), vals[3])
+	tr.RootHash()
 	want = &Tree{
 		root: &node{
 			key:  bools("1111"),
-			hash: hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[3], hashes[1])),
+			hash: hashPtr(hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[3], hashes[1]))),
 			children: [2]*node{
-				{key: bools("11110000"), hash: hashes[2], isLeaf: true},
+				{key: bools("11110000"), hash: &hashes[2], isLeaf: true},
 				{
 					key:  bools("111111"),
-					hash: hashForNonLeaf(hashes[3], hashes[1]),
+					hash: hashPtr(hashForNonLeaf(hashes[3], hashes[1])),
 					children: [2]*node{
-						{key: bools("11111100"), hash: hashes[3], isLeaf: true},
-						{key: bools("11111111"), hash: hashes[1], isLeaf: true},
+						{key: bools("11111100"), hash: &hashes[3], isLeaf: true},
+						{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
 					},
 				},
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Insert(bits("11111110"), vals[4])
+	tr.RootHash()
 	want = &Tree{
 		root: &node{
 			key:  bools("1111"),
-			hash: hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[3], hashForNonLeaf(hashes[4], hashes[1]))),
+			hash: hashPtr(hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[3], hashForNonLeaf(hashes[4], hashes[1])))),
 			children: [2]*node{
-				{key: bools("11110000"), hash: hashes[2], isLeaf: true},
+				{key: bools("11110000"), hash: &hashes[2], isLeaf: true},
 				{
 					key:  bools("111111"),
-					hash: hashForNonLeaf(hashes[3], hashForNonLeaf(hashes[4], hashes[1])),
+					hash: hashPtr(hashForNonLeaf(hashes[3], hashForNonLeaf(hashes[4], hashes[1]))),
 					children: [2]*node{
-						{key: bools("11111100"), hash: hashes[3], isLeaf: true},
+						{key: bools("11111100"), hash: &hashes[3], isLeaf: true},
 						{
 							key:  bools("1111111"),
-							hash: hashForNonLeaf(hashes[4], hashes[1]),
+							hash: hashPtr(hashForNonLeaf(hashes[4], hashes[1])),
 							children: [2]*node{
-								{key: bools("11111110"), hash: hashes[4], isLeaf: true},
-								{key: bools("11111111"), hash: hashes[1], isLeaf: true},
+								{key: bools("11111110"), hash: &hashes[4], isLeaf: true},
+								{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
 							},
 						},
 					},
@@ -286,34 +312,35 @@ func TestInsert(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Log("a fork is created for each level of similar key")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Insert(bits("11111011"), vals[5])
+	tr.RootHash()
 	want = &Tree{
 		root: &node{
 			key:  bools("1111"),
-			hash: hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[5], hashForNonLeaf(hashes[3], hashForNonLeaf(hashes[4], hashes[1])))),
+			hash: hashPtr(hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[5], hashForNonLeaf(hashes[3], hashForNonLeaf(hashes[4], hashes[1]))))),
 			children: [2]*node{
-				{key: bools("11110000"), hash: hashes[2], isLeaf: true},
+				{key: bools("11110000"), hash: &hashes[2], isLeaf: true},
 				{
 					key:  bools("11111"),
-					hash: hashForNonLeaf(hashes[5], hashForNonLeaf(hashes[3], hashForNonLeaf(hashes[4], hashes[1]))),
+					hash: hashPtr(hashForNonLeaf(hashes[5], hashForNonLeaf(hashes[3], hashForNonLeaf(hashes[4], hashes[1])))),
 					children: [2]*node{
-						{key: bools("11111011"), hash: hashes[5], isLeaf: true},
+						{key: bools("11111011"), hash: &hashes[5], isLeaf: true},
 						{
 							key:  bools("111111"),
-							hash: hashForNonLeaf(hashes[3], hashForNonLeaf(hashes[4], hashes[1])),
+							hash: hashPtr(hashForNonLeaf(hashes[3], hashForNonLeaf(hashes[4], hashes[1]))),
 							children: [2]*node{
-								{key: bools("11111100"), hash: hashes[3], isLeaf: true},
+								{key: bools("11111100"), hash: &hashes[3], isLeaf: true},
 								{
 									key:  bools("1111111"),
-									hash: hashForNonLeaf(hashes[4], hashes[1]),
+									hash: hashPtr(hashForNonLeaf(hashes[4], hashes[1])),
 									children: [2]*node{
-										{key: bools("11111110"), hash: hashes[4], isLeaf: true},
-										{key: bools("11111111"), hash: hashes[1], isLeaf: true},
+										{key: bools("11111110"), hash: &hashes[4], isLeaf: true},
+										{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
 									},
 								},
 							},
@@ -323,7 +350,7 @@ func TestInsert(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Log("compressed branch node is split")
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
@@ -334,20 +361,20 @@ func TestDelete(t *testing.T) {
 	_, hashes := makeVals(4)
 	tr.root = &node{
 		key:  bools("1111"),
-		hash: hashForNonLeaf(hashes[0], hashForNonLeaf(hashes[1], hashForNonLeaf(hashes[2], hashes[3]))),
+		hash: hashPtr(hashForNonLeaf(hashes[0], hashForNonLeaf(hashes[1], hashForNonLeaf(hashes[2], hashes[3])))),
 		children: [2]*node{
-			{key: bools("11110000"), hash: hashes[0], isLeaf: true},
+			{key: bools("11110000"), hash: &hashes[0], isLeaf: true},
 			{
 				key:  bools("111111"),
-				hash: hashForNonLeaf(hashes[1], hashForNonLeaf(hashes[2], hashes[3])),
+				hash: hashPtr(hashForNonLeaf(hashes[1], hashForNonLeaf(hashes[2], hashes[3]))),
 				children: [2]*node{
-					{key: bools("11111100"), hash: hashes[1], isLeaf: true},
+					{key: bools("11111100"), hash: &hashes[1], isLeaf: true},
 					{
 						key:  bools("1111111"),
-						hash: hashForNonLeaf(hashes[2], hashes[3]),
+						hash: hashPtr(hashForNonLeaf(hashes[2], hashes[3])),
 						children: [2]*node{
-							{key: bools("11111110"), hash: hashes[2], isLeaf: true},
-							{key: bools("11111111"), hash: hashes[3], isLeaf: true},
+							{key: bools("11111110"), hash: &hashes[2], isLeaf: true},
+							{key: bools("11111111"), hash: &hashes[3], isLeaf: true},
 						},
 					},
 				},
@@ -356,58 +383,63 @@ func TestDelete(t *testing.T) {
 	}
 
 	tr.Delete(bits("11111110"))
+	tr.RootHash()
 	want := &Tree{
 		root: &node{
 			key:  bools("1111"),
-			hash: hashForNonLeaf(hashes[0], hashForNonLeaf(hashes[1], hashes[3])),
+			hash: hashPtr(hashForNonLeaf(hashes[0], hashForNonLeaf(hashes[1], hashes[3]))),
 			children: [2]*node{
-				{key: bools("11110000"), hash: hashes[0], isLeaf: true},
+				{key: bools("11110000"), hash: &hashes[0], isLeaf: true},
 				{
 					key:  bools("111111"),
-					hash: hashForNonLeaf(hashes[1], hashes[3]),
+					hash: hashPtr(hashForNonLeaf(hashes[1], hashes[3])),
 					children: [2]*node{
-						{key: bools("11111100"), hash: hashes[1], isLeaf: true},
-						{key: bools("11111111"), hash: hashes[3], isLeaf: true},
+						{key: bools("11111100"), hash: &hashes[1], isLeaf: true},
+						{key: bools("11111111"), hash: &hashes[3], isLeaf: true},
 					},
 				},
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Delete(bits("11111100"))
+	tr.RootHash()
 	want = &Tree{
 		root: &node{
 			key:  bools("1111"),
-			hash: hashForNonLeaf(hashes[0], hashes[3]),
+			hash: hashPtr(hashForNonLeaf(hashes[0], hashes[3])),
 			children: [2]*node{
-				{key: bools("11110000"), hash: hashes[0], isLeaf: true},
-				{key: bools("11111111"), hash: hashes[3], isLeaf: true},
+				{key: bools("11110000"), hash: &hashes[0], isLeaf: true},
+				{key: bools("11111111"), hash: &hashes[3], isLeaf: true},
 			},
 		},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Delete(bits("11110011"))
-	if !reflect.DeepEqual(tr.root, want.root) {
+	tr.RootHash()
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Delete(bits("11110000"))
+	tr.RootHash()
 	want = &Tree{
-		root: &node{key: bools("11111111"), hash: hashes[3], isLeaf: true},
+		root: &node{key: bools("11111111"), hash: &hashes[3], isLeaf: true},
 	}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
 	tr.Delete(bits("11111111"))
+	tr.RootHash()
 	want = &Tree{}
-	if !reflect.DeepEqual(tr.root, want.root) {
+	if !testutil.DeepEqual(tr.root, want.root) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 }
@@ -430,7 +462,7 @@ func TestBoolKey(t *testing.T) {
 	for _, c := range cases {
 		g := bitKey(c.b)
 
-		if !reflect.DeepEqual(g, c.w) {
+		if !testutil.DeepEqual(g, c.w) {
 			t.Errorf("Key(0x%x) = %v want %v", c.b, g, c.w)
 		}
 	}
@@ -457,7 +489,7 @@ func TestByteKey(t *testing.T) {
 	for _, c := range cases {
 		g := byteKey(c.b)
 
-		if !reflect.DeepEqual(g, c.w) {
+		if !testutil.DeepEqual(g, c.w) {
 			t.Errorf("byteKey(%#v) = %x want %x", c.b, g, c.w)
 		}
 	}
@@ -490,7 +522,7 @@ func prettyNode(n *node, depth int) string {
 		b = 31 * 8
 	}
 	prettyStr += fmt.Sprintf("key=%+v", n.key[b:])
-	if n.isLeaf {
+	if n.hash != nil {
 		prettyStr += fmt.Sprintf(" hash=%+v", n.hash)
 	}
 	prettyStr += "\n"
@@ -520,6 +552,10 @@ func hashForNonLeaf(a, b bc.Hash) bc.Hash {
 	d = append(d, a[:]...)
 	d = append(d, b[:]...)
 	return sha3.Sum256(d)
+}
+
+func hashPtr(h bc.Hash) *bc.Hash {
+	return &h
 }
 
 func mustDecodeHash(s string) []byte {

@@ -48,7 +48,7 @@ func DecodeOutputsAfter(str string) (c *OutputsAfter, err error) {
 	}, nil
 }
 
-func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []interface{}, timestampMS uint64, after *OutputsAfter, limit int) ([]interface{}, *OutputsAfter, error) {
+func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []interface{}, timestampMS uint64, after *OutputsAfter, limit int) ([]*AnnotatedOutput, *OutputsAfter, error) {
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}
@@ -68,7 +68,7 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 		newAfter = *after
 	}
 
-	outputs := make([]interface{}, 0, limit)
+	outputs := make([]*AnnotatedOutput, 0, limit)
 	for rows.Next() {
 		var (
 			blockHeight uint64
@@ -80,7 +80,13 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 		if err != nil {
 			return nil, nil, err
 		}
-		outputs = append(outputs, (*json.RawMessage)(&data))
+
+		out := new(AnnotatedOutput)
+		err = json.Unmarshal(data, out)
+		if err != nil {
+			return nil, nil, err
+		}
+		outputs = append(outputs, out)
 
 		newAfter.lastBlockHeight = blockHeight
 		newAfter.lastTxPos = txPos

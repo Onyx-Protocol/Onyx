@@ -118,16 +118,7 @@ func opProgram(vm *virtualMachine) error {
 		return err
 	}
 
-	var prog []byte
-	inp := vm.tx.Inputs[vm.inputIndex]
-	switch inp := inp.TypedInput.(type) {
-	case *bc.IssuanceInput:
-		prog = inp.IssuanceProgram
-	case *bc.SpendInput:
-		prog = inp.ControlProgram
-	}
-
-	return vm.push(prog, true)
+	return vm.push(vm.mainprog, true)
 }
 
 func opMinTime(vm *virtualMachine) error {
@@ -202,7 +193,7 @@ func opIndex(vm *virtualMachine) error {
 	return vm.pushInt64(int64(vm.inputIndex), true)
 }
 
-func opOutpoint(vm *virtualMachine) error {
+func opOutputID(vm *virtualMachine) error {
 	if vm.tx == nil {
 		return ErrContext
 	}
@@ -217,13 +208,9 @@ func opOutpoint(vm *virtualMachine) error {
 		return err
 	}
 
-	outpoint := txin.Outpoint()
+	outid := txin.SpentOutputID()
 
-	err = vm.push(outpoint.Hash[:], true)
-	if err != nil {
-		return err
-	}
-	return vm.pushInt64(int64(outpoint.Index), true)
+	return vm.push(outid.Bytes(), true)
 }
 
 func opNonce(vm *virtualMachine) error {

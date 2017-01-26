@@ -1,0 +1,15 @@
+#!/bin/sh
+set -xue
+
+cleanup() {
+  rm -f $CHAIN/docker/de/cored
+  rm -f $CHAIN/docker/de/corectl
+}
+trap cleanup EXIT
+
+imageVersion=${IMAGE_VERSION:-1.0.1}
+coredVersion=${CORED_VERSION:-cmd.cored-1.0.2}
+
+GOOS=linux GOARCH=amd64 bin/build-cored-release "$coredVersion" $CHAIN/docker/de/
+docker build --tag chaincore/developer $CHAIN/docker/de/
+docker tag chaincore/developer chaincore/developer:$imageVersion

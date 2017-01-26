@@ -41,20 +41,21 @@ func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) 
 //
 // After generating the block, the pending transaction pool will be
 // empty.
-func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, result *state.Snapshot, err error) {
+func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time, txs []*bc.Tx) (b *bc.Block, result *state.Snapshot, err error) {
 	timestampMS := bc.Millis(now)
 	if timestampMS < prev.TimestampMS {
 		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
 	}
 
+	// Topologically sort the transactions, if needed.
+	if !isTopSorted(txs) {
+		log.Messagef(ctx, "set of %d txs not in topo order; sorting", len(txs))
+		txs = topSort(txs)
+	}
+
 	// Make a copy of the state that we can apply our changes to.
 	result = state.Copy(snapshot)
 	result.PruneIssuances(timestampMS)
-
-	txs, err := c.pool.Dump(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "get pool TXs")
-	}
 
 	b = &bc.Block{
 		BlockHeader: bc.BlockHeader{
@@ -62,7 +63,9 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			Height:            prev.Height + 1,
 			PreviousBlockHash: prev.Hash(),
 			TimestampMS:       timestampMS,
-			ConsensusProgram:  prev.ConsensusProgram,
+			BlockCommitment: bc.BlockCommitment{
+				ConsensusProgram: prev.ConsensusProgram,
+			},
 		},
 	}
 
@@ -71,12 +74,24 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			break
 		}
 
+		// TODO(jackson): Should this go in ConfirmTx too?
+		err = c.checkIssuanceWindow(tx)
+		if err != nil {
+			continue
+		}
+
 		if validation.ConfirmTx(result, c.InitialBlockHash, b, tx) == nil {
-			validation.ApplyTx(result, tx)
+			err = validation.ApplyTx(result, tx)
+			if err != nil {
+				return nil, nil, err
+			}
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}
-	b.TransactionsMerkleRoot = validation.CalcMerkleRoot(b.Transactions)
+	b.TransactionsMerkleRoot, err = validation.CalcMerkleRoot(b.Transactions)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "calculating tx merkle root")
+	}
 	b.AssetsMerkleRoot = result.Tree.RootHash()
 	return b, result, nil
 }
@@ -200,13 +215,21 @@ func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 	if err != nil {
 		return nil, err
 	}
+
+	root, err := validation.CalcMerkleRoot([]*bc.Tx{}) // calculate the zero value of the tx merkle root
+	if err != nil {
+		return nil, errors.Wrap(err, "calculating zero value of tx merkle root")
+	}
+
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:                bc.NewBlockVersion,
-			Height:                 1,
-			TimestampMS:            bc.Millis(timestamp),
-			ConsensusProgram:       script,
-			TransactionsMerkleRoot: validation.CalcMerkleRoot([]*bc.Tx{}), // calculate the zero value of the tx merkle root
+			Version:     bc.NewBlockVersion,
+			Height:      1,
+			TimestampMS: bc.Millis(timestamp),
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: root,
+				ConsensusProgram:       script,
+			},
 		},
 	}
 	return b, nil

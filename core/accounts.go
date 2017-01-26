@@ -5,27 +5,29 @@ import (
 	"sync"
 
 	"chain/core/signers"
+	"chain/crypto/ed25519/chainkd"
+	"chain/encoding/json"
 	"chain/net/http/reqid"
 )
 
 // This type enforces JSON field ordering in API output.
 type accountResponse struct {
-	ID     interface{} `json:"id"`
-	Alias  interface{} `json:"alias"`
-	Keys   interface{} `json:"keys"`
-	Quorum interface{} `json:"quorum"`
-	Tags   interface{} `json:"tags"`
+	ID     string                 `json:"id"`
+	Alias  string                 `json:"alias"`
+	Keys   []*accountKey          `json:"keys"`
+	Quorum int                    `json:"quorum"`
+	Tags   map[string]interface{} `json:"tags"`
 }
 
 type accountKey struct {
-	RootXPub              interface{} `json:"root_xpub"`
-	AccountXPub           interface{} `json:"account_xpub"`
-	AccountDerivationPath interface{} `json:"account_derivation_path"`
+	RootXPub              chainkd.XPub    `json:"root_xpub"`
+	AccountXPub           chainkd.XPub    `json:"account_xpub"`
+	AccountDerivationPath []json.HexBytes `json:"account_derivation_path"`
 }
 
 // POST /create-account
 func (h *Handler) createAccount(ctx context.Context, ins []struct {
-	RootXPubs []string `json:"root_xpubs"`
+	RootXPubs []chainkd.XPub `json:"root_xpubs"`
 	Quorum    int
 	Alias     string
 	Tags      map[string]interface{}
@@ -34,7 +36,7 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 	// should have a unique client token. The client token is used to ensure
 	// idempotency of create account requests. Duplicate create account requests
 	// with the same client_token will only create one account.
-	ClientToken *string `json:"client_token"`
+	ClientToken string `json:"client_token"`
 }) interface{} {
 	responses := make([]interface{}, len(ins))
 	var wg sync.WaitGroup
@@ -52,12 +54,16 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 				return
 			}
 			path := signers.Path(acc.Signer, signers.AccountKeySpace)
-			var keys []accountKey
+			var hexPath []json.HexBytes
+			for _, p := range path {
+				hexPath = append(hexPath, p)
+			}
+			var keys []*accountKey
 			for _, xpub := range acc.XPubs {
-				keys = append(keys, accountKey{
+				keys = append(keys, &accountKey{
 					RootXPub:              xpub,
 					AccountXPub:           xpub.Derive(path),
-					AccountDerivationPath: path,
+					AccountDerivationPath: hexPath,
 				})
 			}
 			responses[i] = &accountResponse{

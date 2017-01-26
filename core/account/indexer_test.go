@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"chain/database/pg/pgtest"
@@ -23,10 +22,14 @@ func TestLoadAccountInfo(t *testing.T) {
 	to1 := bc.NewTxOutput(bc.AssetID{}, 0, acp, nil)
 	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
 
-	outs := []*state.Output{{
-		TxOutput: *to1,
+	outs := []*rawOutput{{
+		Output: state.Output{
+			TxOutput: *to1,
+		},
 	}, {
-		TxOutput: *to2,
+		Output: state.Output{
+			TxOutput: *to2,
+		},
 	}}
 
 	got, err := m.loadAccountInfo(ctx, outs)
@@ -34,7 +37,7 @@ func TestLoadAccountInfo(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	if !reflect.DeepEqual(got[0].AccountID, acc.ID) {
+	if !testutil.DeepEqual(got[0].AccountID, acc.ID) {
 		t.Errorf("got account = %+v want %+v", got[0].AccountID, acc.ID)
 	}
 }
@@ -62,7 +65,7 @@ func TestDeleteUTXOs(t *testing.T) {
 	block2 := &bc.Block{Transactions: []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(block1.Transactions[0].Hash, 0, nil, assetID, 1, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID(block1.Transactions[0].Hash, 0), nil, assetID, 1, nil, nil),
 			},
 		}),
 	}}

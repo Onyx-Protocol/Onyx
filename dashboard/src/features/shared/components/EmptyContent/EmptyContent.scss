@@ -1,0 +1,32 @@
+.emptyContainer {
+  margin: $gutter-size auto;
+  width: 350px;
+
+  .emptyContent {
+    border: 1px solid $border-color;
+    padding: $gutter-size/2;
+    text-align: left;
+    background: $background-color;
+  }
+
+  ol {
+    padding-left: $gutter-size/2;
+    margin-bottom: 0px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  li {
+    padding-left: 6px;
+  }
+}
+
+.emptyLabel {
+  color: $text-strong-color;
+  display: block;
+  font-size: $font-size-page-title;
+  padding-bottom: $gutter-size;
+  width: 250px;
+  margin: 0 auto;
+  line-height: 26px;
+}

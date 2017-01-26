@@ -4,6 +4,9 @@ require_relative './query'
 
 module Chain
   class UnspentOutput < ResponseObject
+    # @!attribute [r] id
+    # @return [String]
+    attrib :id
 
     # @!attribute [r] type
     # @return [String]

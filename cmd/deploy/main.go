@@ -16,7 +16,6 @@ import (
 )
 
 var (
-	srcdir    = os.Getenv("CHAIN")
 	sshConfig = &ssh.ClientConfig{
 		User: "ubuntu",
 		Auth: sshAuthMethods(

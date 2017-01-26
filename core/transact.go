@@ -14,7 +14,6 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/net/http/reqid"
-	"chain/protocol"
 	"chain/protocol/bc"
 )
 
@@ -104,6 +103,10 @@ func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interfa
 }
 
 func (h *Handler) submitSingle(ctx context.Context, tpl *txbuilder.Template, waitUntil string) (interface{}, error) {
+	if tpl.Transaction == nil {
+		return nil, errors.Wrap(txbuilder.ErrMissingRawTx)
+	}
+
 	err := h.finalizeTxWait(ctx, tpl, waitUntil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "tx %s", tpl.Transaction.Hash())
@@ -119,18 +122,30 @@ func (h *Handler) submitSingle(ctx context.Context, tpl *txbuilder.Template, wai
 //
 // If the tx has already been submitted, it returns the existing
 // height.
-// TODO(jackson): Prune entries older than some threshold periodically.
-func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHeight uint64) (height uint64, err error) {
-	const q = `
-		WITH inserted AS (
-			INSERT INTO submitted_txs (tx_id, height) VALUES($1, $2)
-			ON CONFLICT DO NOTHING RETURNING height
-		)
-		SELECT height FROM inserted
-		UNION
-		SELECT height FROM submitted_txs WHERE tx_id = $1
+func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHeight uint64) (uint64, error) {
+	const insertQ = `
+		INSERT INTO submitted_txs (tx_hash, height) VALUES($1, $2)
+		ON CONFLICT DO NOTHING
 	`
-	err = db.QueryRow(ctx, q, txHash, currentHeight).Scan(&height)
+	res, err := db.Exec(ctx, insertQ, txHash[:], currentHeight)
+	if err != nil {
+		return 0, err
+	}
+	inserted, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	if inserted == 1 {
+		return currentHeight, nil
+	}
+
+	// The insert didn't affect any rows, meaning there was already an entry
+	// for this transaction hash.
+	const selectQ = `
+		SELECT height FROM submitted_txs WHERE tx_hash = $1
+	`
+	var height uint64
+	err = db.QueryRow(ctx, selectQ, txHash[:]).Scan(&height)
 	return height, err
 }
 
@@ -167,10 +182,6 @@ func CleanupSubmittedTxs(ctx context.Context, db pg.DB) {
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
 func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template, waitUntil string) error {
-	if txTemplate.Transaction == nil {
-		return errors.Wrap(txbuilder.ErrMissingRawTx)
-	}
-
 	// Use the current generator height as the lower bound of the block height
 	// that the transaction may appear in.
 	generatorHeight, _ := fetch.GeneratorHeight()
@@ -186,7 +197,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 		return errors.Wrap(err, "saving tx submitted height")
 	}
 
-	err = txbuilder.FinalizeTx(ctx, h.Chain, tx)
+	err = txbuilder.FinalizeTx(ctx, h.Chain, h.Submitter, tx)
 	if err != nil {
 		return err
 	}
@@ -194,7 +205,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 		return nil
 	}
 
-	height, err = waitForTxInBlock(ctx, h.Chain, tx, height)
+	height, err = h.waitForTxInBlock(ctx, tx, height)
 	if err != nil {
 		return err
 	}
@@ -211,15 +222,15 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 	return nil
 }
 
-func waitForTxInBlock(ctx context.Context, c *protocol.Chain, tx *bc.Tx, height uint64) (uint64, error) {
+func (h *Handler) waitForTxInBlock(ctx context.Context, tx *bc.Tx, height uint64) (uint64, error) {
 	for {
 		height++
 		select {
 		case <-ctx.Done():
 			return 0, ctx.Err()
 
-		case <-c.BlockWaiter(height):
-			b, err := c.GetBlock(ctx, height)
+		case <-h.Chain.BlockWaiter(height):
+			b, err := h.Chain.GetBlock(ctx, height)
 			if err != nil {
 				return 0, errors.Wrap(err, "getting block that just landed")
 			}
@@ -238,7 +249,7 @@ func waitForTxInBlock(ctx context.Context, c *protocol.Chain, tx *bc.Tx, height 
 			// tell definitively until its max time elapses.
 
 			// Re-insert into the pool in case it was dropped.
-			err = txbuilder.FinalizeTx(ctx, c, tx)
+			err = txbuilder.FinalizeTx(ctx, h.Chain, h.Submitter, tx)
 			if err != nil {
 				return 0, err
 			}

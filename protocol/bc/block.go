@@ -10,6 +10,7 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
+	"chain/encoding/bufpool"
 	"chain/errors"
 )
 
@@ -33,7 +34,8 @@ type Block struct {
 // This guarantees that blocks will get deserialized correctly
 // when being parsed from HTTP requests.
 func (b *Block) MarshalText() ([]byte, error) {
-	buf := new(bytes.Buffer)
+	buf := bufpool.Get()
+	defer bufpool.Put(buf)
 	_, err := b.WriteTo(buf)
 	if err != nil {
 		return nil, err
@@ -81,13 +83,13 @@ func (b *Block) readFrom(r io.Reader) error {
 	if serflags&SerBlockTransactions == SerBlockTransactions {
 		n, _, err := blockchain.ReadVarint31(r)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "reading number of transactions")
 		}
 		for ; n > 0; n-- {
 			var data TxData
 			err = data.readFrom(r)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "reading transaction %d", len(b.Transactions))
 			}
 			// TODO(kr): store/reload hashes;
 			// don't compute here if not necessary.
@@ -135,24 +137,11 @@ type BlockHeader struct {
 	// to the time in the previous block.
 	TimestampMS uint64
 
-	// The next three fields constitute the block's "commitment."
+	BlockCommitment
+	CommitmentSuffix []byte
 
-	// TransactionsMerkleRoot is the root hash of the Merkle binary hash
-	// tree formed by the transaction witness hashes of all transactions
-	// included in the block.
-	TransactionsMerkleRoot Hash
-
-	// AssetsMerkleRoot is the root hash of the Merkle Patricia Tree of
-	// the set of unspent outputs with asset version 1 after applying
-	// the block.
-	AssetsMerkleRoot Hash
-
-	// ConsensusProgram is the predicate for validating the next block.
-	ConsensusProgram []byte
-
-	// Witness is a vector of arguments to the previous block's
-	// ConsensusProgram for validating this block.
-	Witness [][]byte
+	BlockWitness
+	WitnessSuffix []byte
 }
 
 // Time returns the time represented by the Timestamp in bh.
@@ -232,39 +221,18 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 		return 0, err
 	}
 
-	commitment, _, err := blockchain.ReadVarstr31(r)
-	if err != nil {
-		return 0, err
-	}
-	if len(commitment) < 64 {
-		return 0, fmt.Errorf("block commitment string too short")
-	}
-	copy(bh.TransactionsMerkleRoot[:], commitment[:32])
-	copy(bh.AssetsMerkleRoot[:], commitment[32:64])
-
-	progReader := bytes.NewReader(commitment[64:])
-	bh.ConsensusProgram, _, err = blockchain.ReadVarstr31(progReader)
+	bh.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, bh.BlockCommitment.readFrom)
 	if err != nil {
 		return 0, err
 	}
 
 	if serflags[0]&SerBlockWitness == SerBlockWitness {
-		witness, _, err := blockchain.ReadVarstr31(r)
+		bh.WitnessSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) (err error) {
+			bh.Witness, _, err = blockchain.ReadVarstrList(r)
+			return err
+		})
 		if err != nil {
 			return 0, err
-		}
-
-		witnessReader := bytes.NewReader(witness)
-		n, _, err := blockchain.ReadVarint31(witnessReader)
-		if err != nil {
-			return 0, err
-		}
-		for ; n > 0; n-- {
-			wb, _, err := blockchain.ReadVarstr31(witnessReader)
-			if err != nil {
-				return 0, errors.Wrap(err, "reading block witness")
-			}
-			bh.Witness = append(bh.Witness, wb)
 		}
 	}
 
@@ -307,35 +275,13 @@ func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
 		return err
 	}
 
-	var commitment bytes.Buffer
-	commitment.Write(bh.TransactionsMerkleRoot[:])
-	commitment.Write(bh.AssetsMerkleRoot[:])
-	_, err = blockchain.WriteVarstr31(&commitment, bh.ConsensusProgram)
-	if err != nil {
-		return err
-	}
-
-	_, err = blockchain.WriteVarstr31(w, commitment.Bytes())
+	_, err = blockchain.WriteExtensibleString(w, bh.CommitmentSuffix, bh.BlockCommitment.writeTo)
 	if err != nil {
 		return err
 	}
 
 	if serflags&SerBlockWitness == SerBlockWitness {
-		var witnessBuf bytes.Buffer
-
-		_, err = blockchain.WriteVarint31(&witnessBuf, uint64(len(bh.Witness)))
-		if err != nil {
-			return err
-		}
-
-		for _, witness := range bh.Witness {
-			_, err = blockchain.WriteVarstr31(&witnessBuf, witness)
-			if err != nil {
-				return err
-			}
-		}
-
-		_, err = blockchain.WriteVarstr31(w, witnessBuf.Bytes())
+		_, err = blockchain.WriteExtensibleString(w, bh.WitnessSuffix, bh.BlockWitness.writeTo)
 		if err != nil {
 			return err
 		}

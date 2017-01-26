@@ -3,7 +3,6 @@ package txbuilder
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"chain/errors"
 	"chain/protocol/bc"
@@ -30,7 +29,7 @@ type Template struct {
 	sigHasher *bc.SigHasher
 }
 
-func (t *Template) Hash(idx int) bc.Hash {
+func (t *Template) Hash(idx uint32) bc.Hash {
 	if t.sigHasher == nil {
 		t.sigHasher = bc.NewSigHasher(t.Transaction)
 	}
@@ -39,7 +38,7 @@ func (t *Template) Hash(idx int) bc.Hash {
 
 // SigningInstruction gives directions for signing inputs in a TxTemplate.
 type SigningInstruction struct {
-	Position int `json:"position"`
+	Position uint32 `json:"position"`
 	bc.AssetAmount
 	WitnessComponents []WitnessComponent `json:"witness_components,omitempty"`
 }
@@ -47,7 +46,7 @@ type SigningInstruction struct {
 func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 	var pre struct {
 		bc.AssetAmount
-		Position          int `json:"position"`
+		Position          uint32 `json:"position"`
 		WitnessComponents []struct {
 			Type string
 			SignatureWitness
@@ -71,10 +70,5 @@ func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 }
 
 type Action interface {
-	// TODO(bobg, jeffomatic): see if there is a way to remove the maxTime
-	// parameter from the build call. One possibility would be to treat TTL as
-	// a transaction-wide default parameter that gets folded into actions that
-	// care about it. This could happen when the build request is being
-	// deserialized.
-	Build(context.Context, time.Time, *TemplateBuilder) error
+	Build(context.Context, *TemplateBuilder) error
 }

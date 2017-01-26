@@ -7,7 +7,6 @@ import (
 
 	"chain/core/txdb"
 	"chain/database/pg/pgtest"
-	"chain/protocol/mempool"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -16,7 +15,7 @@ func TestGetBlock(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	store := txdb.NewStore(db)
-	chain := prottest.NewChainWithStorage(t, store, mempool.New())
+	chain := prottest.NewChainWithStorage(t, store)
 	h := &Handler{Chain: chain, Store: store}
 
 	block, err := h.getBlockRPC(ctx, 1)
@@ -27,7 +26,7 @@ func TestGetBlock(t *testing.T) {
 		t.Error("expected 1 (initial) block, got none")
 	}
 
-	newBlock := prottest.MakeBlock(t, chain)
+	newBlock := prottest.MakeBlock(t, chain, nil)
 	buf := new(bytes.Buffer)
 	_, err = newBlock.WriteTo(buf)
 	if err != nil {

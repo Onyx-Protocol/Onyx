@@ -3,19 +3,17 @@ package account_test
 import (
 	"context"
 	"database/sql"
-	"reflect"
 	"testing"
-	"time"
 
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
+	"chain/core/generator"
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/testutil"
@@ -26,6 +24,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
 		ctx      = context.Background()
 		c        = prottest.NewChain(t)
+		g        = generator.New(c, nil, db)
 		pinStore = pin.NewStore(db)
 		accounts = account.NewManager(db, c, pinStore)
 		assets   = asset.NewRegistry(db, c, pinStore)
@@ -33,7 +32,7 @@ func TestAccountSourceReserve(t *testing.T) {
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		out   = coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 2, accID)
+		out   = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
 	)
 
 	coretest.CreatePins(ctx, t, pinStore)
@@ -41,7 +40,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
-	prottest.MakeBlock(t, c)
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	assetAmount1 := bc.AssetAmount{
@@ -51,27 +50,26 @@ func TestAccountSourceReserve(t *testing.T) {
 	source := accounts.NewSpendAction(assetAmount1, accID, nil, nil)
 
 	var builder txbuilder.TemplateBuilder
-	err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
+	err := source.Build(ctx, &builder)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
-	tpl, err := builder.Build()
+	_, tx, err := builder.Build()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
-	if !reflect.DeepEqual(tpl.Transaction.Inputs, wantTxIns) {
-		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tpl.Transaction.Inputs, wantTxIns)
+	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.OutputID, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
+	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
+		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
-	if len(tpl.Transaction.Outputs) != 1 {
+	if len(tx.Outputs) != 1 {
 		t.Errorf("expected 1 change output")
 	}
-	if tpl.Transaction.Outputs[0].Amount != 1 {
+	if tx.Outputs[0].Amount != 1 {
 		t.Errorf("expected change amount to be 1")
 	}
-	if !programInAccount(ctx, t, db, tpl.Transaction.Outputs[0].ControlProgram, accID) {
+	if !programInAccount(ctx, t, db, tx.Outputs[0].ControlProgram, accID) {
 		t.Errorf("expected change control program to belong to account")
 	}
 }
@@ -81,6 +79,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
 		ctx      = context.Background()
 		c        = prottest.NewChain(t)
+		g        = generator.New(c, nil, db)
 		pinStore = pin.NewStore(db)
 		accounts = account.NewManager(db, c, pinStore)
 		assets   = asset.NewRegistry(db, c, pinStore)
@@ -88,7 +87,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		out   = coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 2, accID)
+		out   = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
 	)
 
 	coretest.CreatePins(ctx, t, pinStore)
@@ -96,26 +95,25 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
-	prottest.MakeBlock(t, c)
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
-	source := accounts.NewSpendUTXOAction(out.Outpoint)
+	source := accounts.NewSpendUTXOAction(out.OutputID)
 
 	var builder txbuilder.TemplateBuilder
-	err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
+	err := source.Build(ctx, &builder)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
-	tpl, err := builder.Build()
+	_, tx, err := builder.Build()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
+	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.OutputID, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
 
-	if !reflect.DeepEqual(tpl.Transaction.Inputs, wantTxIns) {
-		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tpl.Transaction.Inputs, wantTxIns)
+	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
+		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
 }
 
@@ -124,6 +122,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		_, db    = pgtest.NewDB(t, pgtest.SchemaPath)
 		ctx      = context.Background()
 		c        = prottest.NewChain(t)
+		g        = generator.New(c, nil, db)
 		pinStore = pin.NewStore(db)
 		accounts = account.NewManager(db, c, pinStore)
 		assets   = asset.NewRegistry(db, c, pinStore)
@@ -131,8 +130,8 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 
 		accID        = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset        = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		_            = coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 2, accID)
-		_            = coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 2, accID)
+		_            = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
+		_            = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
 		assetAmount1 = bc.AssetAmount{
 			AssetID: asset,
 			Amount:  1,
@@ -151,25 +150,24 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
 	go accounts.ProcessBlocks(ctx)
-	prottest.MakeBlock(t, c)
+	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
 		var builder txbuilder.TemplateBuilder
 
-		err := source.Build(ctx, time.Now().Add(time.Minute), &builder)
+		err := source.Build(ctx, &builder)
 		if err != nil {
-			t.Log(errors.Stack(err))
+			testutil.FatalErr(t, err)
+		}
+		_, tx, err := builder.Build()
+		if err != nil {
 			t.Fatal(err)
 		}
-		tpl, err := builder.Build()
-		if err != nil {
-			t.Fatal(err)
+		if len(tx.Inputs) != 1 {
+			t.Fatalf("got %d result utxo, expected 1 result utxo", len(tx.Inputs))
 		}
-		if len(tpl.Transaction.Inputs) != 1 {
-			t.Fatalf("got %d result utxo, expected 1 result utxo", len(tpl.Transaction.Inputs))
-		}
-		return tpl.Transaction.Inputs
+		return tx.Inputs
 	}
 
 	var (
@@ -177,12 +175,12 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		want     = reserveFunc(wantSrc)
 		separate = reserveFunc(separateSrc)
 	)
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("reserve result\ngot:\n\t%+v\nwant:\n\t%+v", got, want)
 	}
 
 	// The third reservation attempt should be distinct and not the same as the first two.
-	if reflect.DeepEqual(separate, want) {
+	if testutil.DeepEqual(separate, want) {
 		t.Errorf("reserve result\ngot:\n\t%+v\ndo not want:\n\t%+v", separate, want)
 	}
 }

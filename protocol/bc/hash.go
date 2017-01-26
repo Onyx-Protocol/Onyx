@@ -6,10 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/sha3pool"
+	"chain/encoding/blockchain"
 	"chain/errors"
 )
 
@@ -17,7 +19,7 @@ import (
 // typically passed as values, not as pointers.
 type Hash [32]byte
 
-var emptyHash = sha3.Sum256(nil)
+var EmptyStringHash = sha3.Sum256(nil)
 
 // String returns the bytes of h encoded in hex.
 func (h Hash) String() string {
@@ -68,18 +70,21 @@ func (h *Hash) UnmarshalJSON(b []byte) error {
 	return h.UnmarshalText([]byte(*s))
 }
 
+func (h Hash) Bytes() []byte {
+	return h[:]
+}
+
 // Value satisfies the driver.Valuer interface
 func (h Hash) Value() (driver.Value, error) {
-	return h.MarshalText()
+	return h[:], nil
 }
 
 // Scan satisfies the driver.Scanner interface
 func (h *Hash) Scan(val interface{}) error {
 	switch v := val.(type) {
 	case []byte:
-		return h.UnmarshalText(v)
-	case string:
-		return h.UnmarshalText([]byte(v))
+		copy(h[:], v)
+		return nil
 	default:
 		return fmt.Errorf("Hash.Scan received unsupported type %T", val)
 	}
@@ -95,11 +100,13 @@ func ParseHash(s string) (h Hash, err error) {
 	return h, errors.Wrap(err, "decode hex")
 }
 
-func fastHash(d []byte) []byte {
+func writeFastHash(w io.Writer, d []byte) error {
 	if len(d) == 0 {
-		return nil
+		_, err := blockchain.WriteVarstr31(w, nil)
+		return err
 	}
 	var h [32]byte
 	sha3pool.Sum256(h[:], d)
-	return h[:]
+	_, err := blockchain.WriteVarstr31(w, h[:])
+	return err
 }

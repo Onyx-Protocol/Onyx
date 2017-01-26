@@ -16,9 +16,11 @@ var emptyMerkleRoot = mustParseHash("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43
 func TestValidateBlockHeader(t *testing.T) {
 	ctx := context.Background()
 	prev := &bc.Block{BlockHeader: bc.BlockHeader{
-		Height:           1,
-		TimestampMS:      5,
-		ConsensusProgram: []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
+		Height:      1,
+		TimestampMS: 5,
+		BlockCommitment: bc.BlockCommitment{
+			ConsensusProgram: []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
+		},
 	}}
 	prevHash := prev.Hash()
 	cases := []struct {
@@ -28,73 +30,101 @@ func TestValidateBlockHeader(t *testing.T) {
 	}{{
 		desc: "bad prev block hash",
 		header: bc.BlockHeader{
-			PreviousBlockHash:      bc.Hash{},
-			TransactionsMerkleRoot: emptyMerkleRoot,
-			Height:                 2,
-			Witness:                [][]byte{{0x04}},
+			PreviousBlockHash: bc.Hash{},
+			Height:            2,
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: emptyMerkleRoot,
+			},
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{{0x04}},
+			},
 		},
 		want: ErrBadPrevHash,
 	}, {
 		desc: "bad block height",
 		header: bc.BlockHeader{
-			PreviousBlockHash:      prevHash,
-			TransactionsMerkleRoot: emptyMerkleRoot,
-			Height:                 3,
-			Witness:                [][]byte{{0x04}},
+			PreviousBlockHash: prevHash,
+			Height:            3,
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: emptyMerkleRoot,
+			},
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{{0x04}},
+			},
 		},
 		want: ErrBadHeight,
 	}, {
 		desc: "bad block timestamp",
 		header: bc.BlockHeader{
-			PreviousBlockHash:      prevHash,
-			TransactionsMerkleRoot: emptyMerkleRoot,
-			Height:                 2,
-			TimestampMS:            3,
-			Witness:                [][]byte{{0x04}},
+			PreviousBlockHash: prevHash,
+			Height:            2,
+			TimestampMS:       3,
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: emptyMerkleRoot,
+			},
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{{0x04}},
+			},
 		},
 		want: ErrBadTimestamp,
 	}, {
 		desc: "fake initial block",
 		header: bc.BlockHeader{
-			PreviousBlockHash:      prevHash,
-			TransactionsMerkleRoot: emptyMerkleRoot,
-			Height:                 1,
-			TimestampMS:            6,
-			ConsensusProgram:       []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
-			Witness:                [][]byte{{0x04}},
+			PreviousBlockHash: prevHash,
+			Height:            1,
+			TimestampMS:       6,
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: emptyMerkleRoot,
+				ConsensusProgram:       []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
+			},
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{{0x04}},
+			},
 		},
 		want: ErrBadHeight,
 	}, {
 		desc: "bad block output script",
 		header: bc.BlockHeader{
-			PreviousBlockHash:      prevHash,
-			TransactionsMerkleRoot: emptyMerkleRoot,
-			Height:                 2,
-			TimestampMS:            6,
-			ConsensusProgram:       []byte{byte(vm.OP_FAIL)},
-			Witness:                [][]byte{{0x04}},
+			PreviousBlockHash: prevHash,
+			Height:            2,
+			TimestampMS:       6,
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: emptyMerkleRoot,
+				ConsensusProgram:       []byte{byte(vm.OP_FAIL)},
+			},
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{{0x04}},
+			},
 		},
 		want: ErrBadScript,
 	}, {
 		desc: "bad block signature script",
 		header: bc.BlockHeader{
-			PreviousBlockHash:      prevHash,
-			TransactionsMerkleRoot: emptyMerkleRoot,
-			Height:                 2,
-			TimestampMS:            6,
-			ConsensusProgram:       []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
-			Witness:                [][]byte{{0x03}},
+			PreviousBlockHash: prevHash,
+			Height:            2,
+			TimestampMS:       6,
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: emptyMerkleRoot,
+				ConsensusProgram:       []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
+			},
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{{0x03}},
+			},
 		},
 		want: ErrBadSig,
 	}, {
 		desc: "valid header",
 		header: bc.BlockHeader{
-			PreviousBlockHash:      prevHash,
-			TransactionsMerkleRoot: emptyMerkleRoot,
-			Height:                 2,
-			TimestampMS:            6,
-			ConsensusProgram:       []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
-			Witness:                [][]byte{{0x04}},
+			PreviousBlockHash: prevHash,
+			Height:            2,
+			TimestampMS:       6,
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: emptyMerkleRoot,
+				ConsensusProgram:       []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
+			},
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{{0x04}},
+			},
 		},
 		want: nil,
 	}}

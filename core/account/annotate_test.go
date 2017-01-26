@@ -2,11 +2,10 @@ package account
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
-	"reflect"
 	"testing"
 
+	"chain/core/query"
 	"chain/database/pg/pgtest"
 	"chain/protocol/prottest"
 	"chain/testutil"
@@ -21,43 +20,32 @@ func TestAnnotateTxs(t *testing.T) {
 	acp1 := m.createTestControlProgram(ctx, t, acc1.ID)
 	acp2 := m.createTestControlProgram(ctx, t, acc2.ID)
 
-	txs := []map[string]interface{}{{
-		"inputs": []interface{}{},
-		"outputs": []interface{}{
-			map[string]interface{}{
-				"control_program": hex.EncodeToString(acp1),
-			},
-			map[string]interface{}{
-				"control_program": hex.EncodeToString(acp2),
+	txs := []*query.AnnotatedTx{
+		{
+			Outputs: []*query.AnnotatedOutput{
+				{ControlProgram: acp1},
+				{ControlProgram: acp2},
+				{ControlProgram: acp2},
 			},
 		},
-	}}
-
-	wantTags := []byte(`{"one": "foo", "two": "bar"}`)
-
-	want := []map[string]interface{}{{
-		"inputs": []interface{}{},
-		"outputs": []interface{}{
-			map[string]interface{}{
-				"purpose":         "receive",
-				"control_program": hex.EncodeToString(acp1),
-				"account_id":      acc1.ID,
-			},
-			map[string]interface{}{
-				"purpose":         "receive",
-				"control_program": hex.EncodeToString(acp2),
-				"account_id":      acc2.ID,
-				"account_tags":    (*json.RawMessage)(&wantTags),
+	}
+	empty := json.RawMessage(`{}`)
+	wantTags := json.RawMessage(`{"one": "foo", "two": "bar"}`)
+	want := []*query.AnnotatedTx{
+		{
+			Outputs: []*query.AnnotatedOutput{
+				{Purpose: "receive", ControlProgram: acp1, AccountID: acc1.ID, AccountTags: &empty},
+				{Purpose: "receive", ControlProgram: acp2, AccountID: acc2.ID, AccountTags: &wantTags},
+				{Purpose: "receive", ControlProgram: acp2, AccountID: acc2.ID, AccountTags: &wantTags},
 			},
 		},
-	}}
+	}
 
 	err := m.AnnotateTxs(ctx, txs)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-
-	if !reflect.DeepEqual(txs, want) {
+	if !testutil.DeepEqual(txs, want) {
 		t.Errorf("AnnotateTxs = %+v want %+v", txs, want)
 	}
 }

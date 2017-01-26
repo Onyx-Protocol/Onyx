@@ -3,13 +3,13 @@ package query
 import (
 	"context"
 	"math"
-	"reflect"
 	"testing"
 
 	"chain/core/query/filter"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/protocol"
+	"chain/testutil"
 )
 
 func TestDecodeTxAfter(t *testing.T) {
@@ -60,7 +60,7 @@ func TestLookupTxAfterNoBlocks(t *testing.T) {
 		FromPosition:    math.MaxInt32,
 		StopBlockHeight: 0,
 	}
-	if !reflect.DeepEqual(cur, want) {
+	if !testutil.DeepEqual(cur, want) {
 		t.Errorf("Got tx after %s, want %s", cur, want)
 	}
 }
@@ -125,7 +125,7 @@ func TestConstructTransactionsQuery(t *testing.T) {
 		if query != tc.wantQuery {
 			t.Errorf("got\n%s\nwant\n%s", query, tc.wantQuery)
 		}
-		if !reflect.DeepEqual(values, tc.wantValues) {
+		if !testutil.DeepEqual(values, tc.wantValues) {
 			t.Errorf("got %#v, want %#v", values, tc.wantValues)
 		}
 	}

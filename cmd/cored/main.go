@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/kr/secureheader"
@@ -44,12 +45,12 @@ import (
 	"chain/net/http/limit"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 )
 
 const (
 	httpReadTimeout  = 2 * time.Minute
 	httpWriteTimeout = time.Hour
+	latestVersion    = "1.0.2"
 )
 
 var (
@@ -81,13 +82,29 @@ var (
 )
 
 func init() {
+	var version string
+	if strings.HasPrefix(buildTag, "cmd.cored-") {
+		// build tag with cmd.cored- prefix indicates official release
+		version = latestVersion
+	} else if buildTag != "?" {
+		version = latestVersion + "-" + buildTag
+	} else {
+		// -dev suffix indicates intermediate, non-release build
+		version = latestVersion + "-dev"
+	}
+
 	expvar.NewString("prod").Set(prod)
+	expvar.NewString("version").Set(version)
 	expvar.NewString("buildtag").Set(buildTag)
 	expvar.NewString("builddate").Set(buildDate)
 	expvar.NewString("buildcommit").Set(buildCommit)
 	expvar.NewString("runtime.GOOS").Set(runtime.GOOS)
 	expvar.NewString("runtime.GOARCH").Set(runtime.GOARCH)
 	expvar.NewString("runtime.Version").Set(runtime.Version())
+
+	config.Version = version
+	config.BuildCommit = buildCommit
+	config.BuildDate = buildDate
 }
 
 func main() {
@@ -186,6 +203,45 @@ func main() {
 }
 
 func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, processID string) http.Handler {
+	// Initialize the protocol.Chain.
+	heights, err := txdb.ListenBlocks(ctx, *dbURL)
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, err)
+	}
+	store := txdb.NewStore(db)
+	c, err := protocol.NewChain(ctx, conf.BlockchainID, store, heights)
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, err)
+	}
+
+	hsm := mockhsm.New(db)
+
+	var generatorSigners []generator.BlockSigner
+	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
+	if conf.IsSigner {
+		blockPub, err := hex.DecodeString(conf.BlockPub)
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
+		}
+		s := blocksigner.New(blockPub, hsm, db, c)
+		generatorSigners = append(generatorSigners, s) // "local" signer
+		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
+			sig, err := s.ValidateAndSignBlock(ctx, b)
+			if errors.Root(err) == blocksigner.ErrInvalidKey {
+				chainlog.Fatal(ctx, chainlog.KeyError, err)
+			}
+			return sig, err
+		}
+	}
+	if conf.IsGenerator {
+		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainID.String(), conf) {
+			generatorSigners = append(generatorSigners, signer)
+		}
+		c.MaxIssuanceWindow = conf.MaxIssuanceWindow.Duration
+	}
+
+	var submitter txbuilder.Submitter
+	var gen *generator.Generator
 	var remoteGenerator *rpc.Client
 	if !conf.IsGenerator {
 		remoteGenerator = &rpc.Client{
@@ -196,18 +252,10 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 			BuildTag:     buildTag,
 			BlockchainID: conf.BlockchainID.String(),
 		}
-	}
-	txbuilder.Generator = remoteGenerator
-
-	heights, err := txdb.ListenBlocks(ctx, *dbURL)
-	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
-	}
-	pool := mempool.New()
-	store := txdb.NewStore(db)
-	c, err := protocol.NewChain(ctx, conf.BlockchainID, store, pool, heights)
-	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
+		submitter = &txbuilder.RemoteGenerator{Peer: remoteGenerator}
+	} else {
+		gen = generator.New(c, generatorSigners, db)
+		submitter = gen
 	}
 
 	// Set up the pin store for block processing
@@ -233,32 +281,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		accounts.IndexAccounts(indexer)
 	}
 
-	hsm := mockhsm.New(db)
-	var generatorSigners []generator.BlockSigner
-	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
-	if conf.IsSigner {
-		blockPub, err := hex.DecodeString(conf.BlockPub)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-		s := blocksigner.New(blockPub, hsm, db, c)
-		generatorSigners = append(generatorSigners, s) // "local" signer
-		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
-			sig, err := s.ValidateAndSignBlock(ctx, b)
-			if errors.Root(err) == blocksigner.ErrInvalidKey {
-				chainlog.Fatal(ctx, chainlog.KeyError, err)
-			}
-			return sig, err
-		}
-	}
-
-	if conf.IsGenerator {
-		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainID.String(), conf) {
-			generatorSigners = append(generatorSigners, signer)
-		}
-		c.MaxIssuanceWindow = conf.MaxIssuanceWindow
-	}
-
 	// GC old submitted txs periodically.
 	go core.CleanupSubmittedTxs(ctx, db)
 
@@ -269,6 +291,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		Assets:       assets,
 		Accounts:     accounts,
 		HSM:          hsm,
+		Submitter:    submitter,
 		TxFeeds:      &txfeed.Tracker{DB: db},
 		Indexer:      indexer,
 		AccessTokens: &accesstoken.CredentialStore{DB: db},
@@ -324,7 +347,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
 		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
 		if conf.IsGenerator {
-			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
+			go gen.Generate(ctx, blockPeriod, genhealth)
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
 		}
