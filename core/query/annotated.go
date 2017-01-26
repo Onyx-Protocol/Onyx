@@ -3,11 +3,14 @@ package query
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"time"
 
+	"chain/database/pg"
 	chainjson "chain/encoding/json"
+	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
 )
@@ -35,6 +38,7 @@ type AnnotatedInput struct {
 	IssuanceProgram chainjson.HexBytes `json:"issuance_program,omitempty"`
 	ControlProgram  chainjson.HexBytes `json:"control_program,omitempty"`
 	SpentOutputID   chainjson.HexBytes `json:"spent_output_id,omitempty"`
+	SpentOutput     *SpentOutput       `json:"spent_output,omitempty"`
 	AccountID       string             `json:"account_id,omitempty"`
 	AccountAlias    string             `json:"account_alias,omitempty"`
 	AccountTags     *json.RawMessage   `json:"account_tags,omitempty"`
@@ -62,6 +66,11 @@ type AnnotatedOutput struct {
 	IsLocal         Bool               `json:"is_local"`
 }
 
+type SpentOutput struct {
+	TransactionID chainjson.HexBytes `json:"transaction_id"`
+	Position      uint32             `json:"position"`
+}
+
 type Bool bool
 
 func (b Bool) MarshalJSON() ([]byte, error) {
@@ -79,7 +88,7 @@ func (b *Bool) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *AnnotatedTx {
+func buildAnnotatedTransaction(ind *Indexer, ctx context.Context, orig *bc.Tx, b *bc.Block, indexInBlock uint32) *AnnotatedTx {
 	blockHash := b.Hash()
 	referenceData := json.RawMessage(orig.ReferenceData)
 	if len(referenceData) == 0 {
@@ -97,7 +106,7 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *A
 		Outputs:       make([]*AnnotatedOutput, 0, len(orig.Outputs)),
 	}
 	for _, in := range orig.Inputs {
-		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(in))
+		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(ind, ctx, in))
 	}
 	for i, out := range orig.Outputs {
 		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(out, uint32(i), orig.Hash))
@@ -105,7 +114,7 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *A
 	return tx
 }
 
-func buildAnnotatedInput(orig *bc.TxInput) *AnnotatedInput {
+func buildAnnotatedInput(ind *Indexer, ctx context.Context, orig *bc.TxInput) *AnnotatedInput {
 	aid := orig.AssetID()
 
 	referenceData := json.RawMessage(orig.ReferenceData)
@@ -128,8 +137,32 @@ func buildAnnotatedInput(orig *bc.TxInput) *AnnotatedInput {
 		in.Type = "spend"
 		in.ControlProgram = prog
 		in.SpentOutputID = prevoutID.Bytes()
+
+		outpoint, err := ind.loadOutpoint(ctx, prevoutID)
+		if err != nil {
+			in.SpentOutput = &SpentOutput{
+				TransactionID: outpoint.Hash[:],
+				Position:      outpoint.Index,
+			}
+		}
+
 	}
 	return in
+}
+
+func (ind *Indexer) loadOutpoint(ctx context.Context, outid bc.OutputID) (outpoint bc.Outpoint, err error) {
+	const q = `
+		SELECT tx_hash, output_index
+		FROM annotated_outputs
+		WHERE output_id = $1
+	`
+	err = ind.db.QueryRow(ctx, q, outid).Scan(&outpoint.Hash, &outpoint.Index)
+	if err == sql.ErrNoRows {
+		return outpoint, pg.ErrUserInputNotFound
+	} else if err != nil {
+		return outpoint, errors.Wrap(err)
+	}
+	return outpoint, nil
 }
 
 func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *AnnotatedOutput {
