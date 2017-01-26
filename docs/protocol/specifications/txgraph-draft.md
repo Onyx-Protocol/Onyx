@@ -511,7 +511,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         3. Set `destentry.data` to `data.id`.
         4. Add `data` to `container`.
     5. Add `destentry` to `container`.
-    6. Add `destentry` to `newtx.results`
+    6. Add `destentry` to `newtx.results`.
 
 
 ### OldTxID -> NewTxID
