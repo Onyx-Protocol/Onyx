@@ -26,18 +26,18 @@ type VMContext struct {
 }
 
 // HashTx returns all hashes needed for validation and state updates.
-func HashTx(oldTx *bc.TxData) (*TxHashes, error) {
+func HashTx(oldTx *bc.TxData) (hashes *TxHashes, vmcs []*VMContext, err error) {
 	header, entries, err := mapTx(oldTx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	hashes := new(TxHashes)
+	hashes = new(TxHashes)
 
 	// ID
 	hashes.ID, err = entryID(header)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// OutputIDs
@@ -63,18 +63,20 @@ func HashTx(oldTx *bc.TxData) (*TxHashes, error) {
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *issuance:
-			vmc := newVMContext(entryID, txRefDataHash)
+			vmc := newVMContext(bc.Hash(entryID), bc.Hash(hashes.ID), txRefDataHash)
 			vmc.RefDataHash = bc.Hash(ent.body.data) // xxx should this be the id of the data entry? or the hash of the data that's _in_ the data entry?
 			vmc.AnchorID = (*bc.Hash)(&ent.body.anchor)
+			vmcs = append(vmcs, vmc)
 
 		case *spend:
-			vmc := newVMContext(entryID, txRefDataHash)
+			vmc := newVMContext(bc.Hash(entryID), bc.Hash(hashes.ID), txRefDataHash)
 			vmc.RefDataHash = bc.Hash(ent.body.reference)
 			vmc.OutputID = (*bc.Hash)(&ent.body.spentOutput)
+			vmcs = append(vmcs, vmc)
 		}
 	}
 
-	return hashes, nil
+	return hashes, vmcs, nil
 }
 
 // populates the common fields of a VMContext for an Entry, regardless of whether
