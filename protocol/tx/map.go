@@ -14,17 +14,6 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 		refdataID  entryRef
 	)
 
-	entryMap = make(map[entryRef]entry)
-
-	if len(tx.ReferenceData) > 0 {
-		refdata := newData(hashData(tx.ReferenceData))
-		refdataID, err := entryID(refdata)
-		if err != nil {
-			return nil, nil, err
-		}
-		entryMap[refdataID] = refdata
-	}
-
 	addMuxSource := func(e entry, val bc.AssetAmount) error {
 		id, err := entryID(e)
 		if err != nil {
@@ -162,6 +151,8 @@ func mapTx(tx *bc.TxData) (header *header, entryMap map[entryRef]entry, err erro
 	header = newHeader(tx.Version, results, refdataID, references, tx.MinTime, tx.MaxTime)
 
 	entries = append(entries, header)
+
+	entryMap = make(map[entryRef]entry)
 
 	for _, e := range entries {
 		id, err := entryID(e)
