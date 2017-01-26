@@ -6,7 +6,7 @@ All entries inherit from a common type `AbstractEntry`.
 
     Header
     Issuance
-    Input
+    Spend
     Output
     Retirement
     Mux
@@ -99,7 +99,7 @@ See [ExtStruct](#extstruct) description below.
 2. `preventry` must be present and valid.
 3. Validate `source.amount` is in range.
 4. Need to ensure that this output exclusively consumes the `preventry`'s destination.
-5. If `preventry` is Input or Issuance:
+5. If `preventry` is Spend or Issuance:
     1. Let `dest` be `preventry.destination`.
 6. If `preventry` is Mux:
     1. Let `dest` be `preventry.destinations[source.position]`. Fail if not found.
@@ -127,7 +127,7 @@ See [ExtStruct](#extstruct) description below.
 2. `preventry` must be present and valid.
 3. Validate `source.amount` is in range.
 4. Need to ensure that this output exclusively consumes the `preventry`'s destination.
-5. If `preventry` is Input or Issuance:
+5. If `preventry` is Spend or Issuance:
     1. Let `dest` be `preventry.destination`.
 6. If `preventry` is Mux:
     1. Let `dest` be `preventry.destinations[source.position]`. Fail if not found.
@@ -138,10 +138,10 @@ See [ExtStruct](#extstruct) description below.
 
 
 
-## Input
+## Spend
 
     entry {
-        type="input1"
+        type="spend1"
         content:
           spent_output: Pointer<Output>
           data:         Pointer<Data>
@@ -164,7 +164,7 @@ See [ExtStruct](#extstruct) description below.
     1. Let `src` be `nextentry.sources[destination.position]`. Fail if not present.
 6. Validate next entry’s source `src`:
     1. Validate that `src.ref` == `self.id`.
-    2. Validate that `src.position` == `0` (this is value's position in the input). 
+    2. Validate that `src.position` == `0` (this is value's position in the spend). 
     3. Validate that `src.value` == `self.spent_output.source.value`.
 7. The `spent_output.program` must evaluate to `true` with given `arguments`.
 8. Remove `spent_output` from UTXO set.
@@ -177,7 +177,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
     entry {
         type="issuance1"
         content:
-          anchor:           Pointer<Anchor|Input>
+          anchor:           Pointer<Anchor|Spend>
           value:            AssetAmount
           data:             Pointer<Data>
           ext_hash:         Hash
@@ -248,7 +248,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 ## ValueSource
 
     struct {
-        ref:      Pointer<Issuance|Input|Mux>
+        ref:      Pointer<Issuance|Spend|Mux>
         value:    AssetAmount
         position: Integer
     }
@@ -485,7 +485,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         4. Add `src` to `mux.sources`.
     10. Add `is` to `container`.
 10. For each spend input `oldspend`:
-    1. Let `inp` be a new `Input` entry.
+    1. Let `inp` be a new `Spend` entry.
     2. Set `inp.spent_output` to `oldspend.output_id`.
     3. Set `inp.data` to a nil pointer `0x00000...`.
     5. Create `ValueSource` struct `src`:
@@ -554,7 +554,7 @@ When inserting old tx's outputs into UTXO merkle set:
 ### OldSigHash -> NewSigHash
 
 1. Map old tx to new tx.
-2. For each entry where a program is evaluated (Input, Issuance or Anchor):
+2. For each entry where a program is evaluated (Spend, Issuance or Anchor):
     1. Compute `sighash = HASH(txid || entryid)`.
 
 
