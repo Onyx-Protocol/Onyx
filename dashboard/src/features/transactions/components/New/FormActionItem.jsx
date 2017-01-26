@@ -58,7 +58,7 @@ export default class ActionItem extends React.Component {
 
   render() {
     const {
-      id,
+      output_id,
       type,
       account_id,
       account_alias,
@@ -102,7 +102,7 @@ export default class ActionItem extends React.Component {
           <TextField title='Control Program' fieldProps={control_program} />}
 
         {visible.output_id &&
-          <TextField title='Output ID' fieldProps={id} />}
+          <TextField title='Output ID' fieldProps={output_id} />}
 
         {visible.asset &&
           <ObjectSelectorField
