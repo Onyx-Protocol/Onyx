@@ -38,10 +38,10 @@ See [ExtStruct](#extstruct) description below.
     - content.hash: Hash
     - witness.hash: Hash
 
-## Header
+## TxHeader
 
     entry {
-        type="header"
+        type="txheader"
         content:
             version:       Integer
             results:       List<Pointer<Output|Retirement|UnknownEntry>>
@@ -310,8 +310,8 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 
 **Rules:**
 
-1. `mintime` must be equal to or less than the `header.mintime` specified in the transaction header.
-2. `maxtime` must be equal to or greater than the `header.maxtime` specified in the transaction header.
+1. `mintime` must be equal to or less than the `txheader.mintime` specified in the transaction header.
+2. `maxtime` must be equal to or greater than the `txheader.maxtime` specified in the transaction header.
 
 
 ## AssetAmount
@@ -441,7 +441,7 @@ The scheme is applied recursively for the subsequent updates.
 This is a first intermediate step that allows keeping old SDK, old tx index and data structures within Core, but refactoring how txs and outputs are hashed for UTXO set and merkle root in block headers.
 
 1. Let `oldtx` be the transaction in old format.
-2. Let `newtx` be a new instance of `Header` entry.
+2. Let `newtx` be a new instance of `TxHeader` entry.
 3. Let `container` be the container for all entries.
 4. Set `newtx.version` to `oldtx.version`.
 5. If `oldtx.data` is non-empty:
@@ -469,25 +469,23 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         9. Add `tr` to `container`.
     5. Set `is.initial_block_id` to `oldis.initial_block_id`.
     6. Set `is.issuance_program` to `oldis.issuance_program` (with its VM version).
-    7. Set `is.arguments` to `oldis.arguments`.
-    8. If `oldis.asset_definition` is non-empty:
+    7. If `oldis.asset_definition` is non-empty:
         1. Let `adef` be a new `Data` entry.
         2. Set `adef.content` to `oldis.asset_definition`.
         3. Set `is.asset_definition` to `adef.id`.
         4. Add `adef` to `container`.
-    9. If `oldis.asset_definition` is empty:
+    8. If `oldis.asset_definition` is empty:
         1. Set `is.asset_definition` to a nil pointer `0x000000...`.
-    10. Create `ValueSource` struct `src`:
+    9. Create `ValueSource` struct `src`:
         1. Set `src.ref` to `is.id`.
         2. Set `src.position` to current count of `mux.sources`.
         3. Set `src.value` to `is.value`.
         4. Add `src` to `mux.sources`.
-    12. Add `is` to `container`.
+    10. Add `is` to `container`.
 10. For each spend input `oldspend`:
     1. Let `inp` be a new `Input` entry.
     2. Set `inp.spent_output` to `oldspend.output_id`.
     3. Set `inp.data` to a nil pointer `0x00000...`.
-    4. Set `inp.arguments` to `oldspend.arguments`.
     5. Create `ValueSource` struct `src`:
         1. Set `src.ref` to `inp.id`.
         2. Set `src.position` to current count of `mux.sources`.
@@ -596,4 +594,55 @@ New opcodes:
 * ANCHORID:      `newcurrentinput.anchor.id()` (fails if current input is not an issuance)
 
 
+### 4. Eliminating witness hash
 
+For simplicity and flexibility, we are removing the commitments to both the transaction witnesses and the block witness.
+
+1. The [transactions Merkle root](https://chain.com/docs/protocol/specifications/data#transactions-merkle-root) should be calculated based on the transaction IDs, rather than the transaction witness hashes. The code for calculating the transaction witness hashes can be eliminated.
+
+2. `Block ID` (which is the ID included in the next block, and which currently includes the hash of the block witness) should be computed instead to be identical to how the block signature hash is currently computed (i.e., it should use 0x00 serialization flags).
+
+
+### 5. Block header format
+
+The new slightly different serialization format (i.e. the type prefix and extension hash format) should be applied to the block header as well. We are also removing the block witness from the block ID, as discussed above. Finally, we should flatten the confusing "block commitment" and simply make it three separate fields in the block header.
+
+#### BlockHeader entry
+
+    entry {
+        type="blockheader"
+        content:
+            version:                Integer
+            height:                 Integer
+            previous_block_id:      Pointer<BlockHeader>
+            timestamp:              Integer
+            transactions:           MerkleTree<Pointer<TxHeader>>
+            assets:                 PatriciaTree<Pointer<Output>>
+            next_consensus_program: String
+            ext_hash:               Hash
+        witness:
+            ext_hash:               Hash        
+    }
+
+The `MerkleTree` and `PatriciaTree` types are just 32-byte hashes representing the root of those respective trees.
+
+#### OldBlockHeader -> NewBlockHeader
+
+This generates a new BlockHeader data structure, for hashing purposes, from an old block.
+
+1. Let `oldblock` be the transaction in old format.
+2. Let `newblock` be a new instance of `BlockHeader` entry.
+3. Set `newblock.version` to `oldblock.version`.
+4. Set `newblock.height` to `oldblock.height`.
+5. Set `newblock.previous_block_id` to `oldblock.previous_block_id`.
+6. Set `newblock.timestamp` to `oldblock.timestamp`.
+7. Set `newblock.transactions` to `oldblock.block_commitment.transactions` (i.e. the root of the Merkle tree). Note that this Merkle tree should have been calculated using the new transaction ID.
+7. Set `newblock.assets` to `oldblock.block_commitment.assets` (i.e. the root of the Patricia tree). Note that this Patricia tree should have been calculated using the new Output IDs.
+8. Set `newblock.next_consensus_program` to `oldblock.block_commitment.next_consensus_program`
+
+#### VM mapping
+
+PROGRAM:       same
+NEXTPROGRAM:   same
+BLOCKTIME:     same
+BLOCKSIGHASH:  newblock.id()
