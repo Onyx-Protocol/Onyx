@@ -390,7 +390,7 @@ Serialization flags control what and how data is encoded in a given *Transaction
 
 The **first (least significant) bit** indicates whether the transaction includes witness data. If set to zero, the input and output witness fields are absent.
 
-The **second bit** indicates whether the output commitment from the spent output is present in the [input spend commitment](#asset-version-1-spend-commitment). If set to zero, the output commitment field is replaced by the [SHA3-256](#sha3) hash of the commitment.
+The **second bit** indicates whether the output commitment from the spent output is present in the [input spend commitment](#asset-version-1-spend-commitment). If set to zero, the output commitment field is replaced by the [SHA3-256](#sha3) hash of the output commitment (hashing raw bytes without length prefix).
 
 The **third bit** indicates whether transaction reference data and asset definitions are present. If set to zero, the reference data and asset definitions are replaced by their optional hash values.
 
