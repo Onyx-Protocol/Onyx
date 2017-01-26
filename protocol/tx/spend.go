@@ -9,7 +9,7 @@ type spend struct {
 }
 
 func (spend) Type() string         { return "spend1" }
-func (s *spend) Body() interface{} { return &s.body }
+func (s *spend) Body() interface{} { return s.body }
 
 func newSpend(spentOutput, reference, destination entryRef) entry {
 	s := new(spend)
