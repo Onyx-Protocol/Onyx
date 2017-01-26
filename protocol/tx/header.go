@@ -14,7 +14,7 @@ type header struct {
 func (header) Type() string         { return "header" }
 func (h *header) Body() interface{} { return h.body }
 
-func newHeader(version uint64, results []entryRef, data entryRef, references []entryRef, minTimeMS, maxTimeMS uint64) entry {
+func newHeader(version uint64, results []entryRef, data entryRef, references []entryRef, minTimeMS, maxTimeMS uint64) *header {
 	h := new(header)
 	h.body.version = version
 	h.body.results = results
