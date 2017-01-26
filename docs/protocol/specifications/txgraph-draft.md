@@ -64,7 +64,7 @@ See [ExtStruct](#extstruct) description below.
 8. maxtime must be either zero or a timestamp lower than the timestamp of the block that includes the transaction.
 
 
-# Data
+## Data
 
     entry {
         type="data1"
@@ -77,7 +77,10 @@ See [ExtStruct](#extstruct) description below.
 **Rules:**
 
 1. witness must be empty
-2. Note: body itself may or may not be provided, but the body_hash must be known.
+2. Note: the body is a hash of the underlying data. The underlying data may not be known. If a transactio author wants to provide the underlying data, it must be done in the transport layer alongisde the actual transaction.
+
+### xxx specify hash function for underlying data (w/
+domain separation, prob)
 
 
 ## Output
