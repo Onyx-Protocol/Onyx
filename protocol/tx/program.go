@@ -1,6 +1,6 @@
 package tx
 
 type program struct {
-	vmVersion uint64
-	code      []byte
+	VMVersion uint64
+	Code      []byte
 }

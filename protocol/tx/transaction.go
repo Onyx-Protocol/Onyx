@@ -13,7 +13,7 @@ type TxHashes struct {
 		ID           entryRef
 		ExpirationMS uint64
 	}
-	VMContexts []VMContext // one per old-style Input
+	VMContexts []*VMContext // one per old-style Input
 }
 
 type VMContext struct {
@@ -26,10 +26,10 @@ type VMContext struct {
 }
 
 // HashTx returns all hashes needed for validation and state updates.
-func HashTx(oldTx *bc.TxData) (hashes *TxHashes, vmcs []*VMContext, err error) {
+func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
 	header, entries, err := mapTx(oldTx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	hashes = new(TxHashes)
@@ -37,11 +37,11 @@ func HashTx(oldTx *bc.TxData) (hashes *TxHashes, vmcs []*VMContext, err error) {
 	// ID
 	hashes.ID, err = entryID(header)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// OutputIDs
-	for _, resultHash := range header.body.results {
+	for _, resultHash := range header.body.Results {
 		result := entries[resultHash]
 		if _, ok := result.(*output); ok {
 			hashes.OutputIDs = append(hashes.OutputIDs, resultHash)
@@ -54,29 +54,29 @@ func HashTx(oldTx *bc.TxData) (hashes *TxHashes, vmcs []*VMContext, err error) {
 		switch ent := ent.(type) {
 		case *anchor:
 			// TODO: check time range is within network-defined limits
-			trID := ent.body.timeRange
+			trID := ent.body.TimeRange
 			trEntry := entries[trID].(*timeRange) // xxx avoid panics here
 			iss := struct {
 				ID           entryRef
 				ExpirationMS uint64
-			}{entryID, trEntry.body.maxTimeMS}
+			}{entryID, trEntry.body.MaxTimeMS}
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *issuance:
 			vmc := newVMContext(bc.Hash(entryID), bc.Hash(hashes.ID), txRefDataHash)
-			vmc.RefDataHash = bc.Hash(ent.body.data) // xxx should this be the id of the data entry? or the hash of the data that's _in_ the data entry?
-			vmc.AnchorID = (*bc.Hash)(&ent.body.anchor)
-			vmcs = append(vmcs, vmc)
+			vmc.RefDataHash = bc.Hash(ent.body.Data) // xxx should this be the id of the data entry? or the hash of the data that's _in_ the data entry?
+			vmc.AnchorID = (*bc.Hash)(&ent.body.Anchor)
+			hashes.VMContexts = append(hashes.VMContexts, vmc)
 
 		case *spend:
 			vmc := newVMContext(bc.Hash(entryID), bc.Hash(hashes.ID), txRefDataHash)
-			vmc.RefDataHash = bc.Hash(ent.body.reference)
-			vmc.OutputID = (*bc.Hash)(&ent.body.spentOutput)
-			vmcs = append(vmcs, vmc)
+			vmc.RefDataHash = bc.Hash(ent.body.Reference)
+			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
+			hashes.VMContexts = append(hashes.VMContexts, vmc)
 		}
 	}
 
-	return hashes, vmcs, nil
+	return hashes, nil
 }
 
 // populates the common fields of a VMContext for an Entry, regardless of whether

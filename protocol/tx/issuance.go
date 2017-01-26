@@ -4,10 +4,10 @@ import "chain/protocol/bc"
 
 type issuance struct {
 	body struct {
-		anchor  entryRef
-		value   bc.AssetAmount
-		data    entryRef
-		extHash extHash
+		Anchor  entryRef
+		Value   bc.AssetAmount
+		Data    entryRef
+		ExtHash extHash
 	}
 }
 
@@ -16,8 +16,8 @@ func (iss *issuance) Body() interface{} { return iss.body }
 
 func newIssuance(anchor entryRef, value bc.AssetAmount, data entryRef) *issuance {
 	iss := new(issuance)
-	iss.body.anchor = anchor
-	iss.body.value = value
-	iss.body.data = data
+	iss.body.Anchor = anchor
+	iss.body.Value = value
+	iss.body.Data = data
 	return iss
 }
