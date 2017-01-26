@@ -1,6 +1,5 @@
 package com.chain.api;
 
-import com.chain.proto.FilterParam;
 import com.google.gson.annotations.SerializedName;
 import com.google.protobuf.ByteString;
 

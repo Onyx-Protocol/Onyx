@@ -3,7 +3,6 @@ package com.chain.api;
 import com.chain.exception.APIException;
 import com.chain.exception.BadURLException;
 import com.chain.exception.ChainException;
-import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
 import com.chain.http.*;
@@ -90,7 +89,6 @@ public class Asset {
    * @param builders list of asset builders
    * @return a list of asset and/or error objects
    * @throws BadURLException This exception wraps java.net.MalformedURLException.
-   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
@@ -189,7 +187,6 @@ public class Asset {
      * @return a page of asset objects
      * @throws APIException This exception is raised if the api returns errors while retrieving the assets.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
@@ -242,7 +239,6 @@ public class Asset {
      * @return a collection of asset objects
      * @throws APIException This exception is raised if the api returns errors while retrieving the assets.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
@@ -308,7 +304,6 @@ public class Asset {
      * @return an asset object
      * @throws APIException This exception is raised if the api returns errors while creating the asset.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */

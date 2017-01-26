@@ -3,18 +3,13 @@ package com.chain.api;
 import com.chain.exception.APIException;
 import com.chain.exception.BadURLException;
 import com.chain.exception.ChainException;
-import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
 import com.chain.http.Client;
 import com.chain.proto.*;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A mock HSM provided by Chain Core to handle key material in development.
@@ -46,7 +41,6 @@ public class MockHsm {
      * @return a key object
      * @throws APIException This exception is raised if the api returns errors while creating the key.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
@@ -61,7 +55,6 @@ public class MockHsm {
      * @return a key object
      * @throws APIException This exception is raised if the api returns errors while creating the key.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
@@ -87,7 +80,6 @@ public class MockHsm {
        * @return a collection of key objects
        * @throws APIException This exception is raised if the api returns errors while retrieving the keys.
        * @throws BadURLException This exception wraps java.net.MalformedURLException.
-       * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
        * @throws HTTPException This exception is raised when errors occur making http requests.
        * @throws JSONException This exception is raised due to malformed json requests or responses.
        */
@@ -144,7 +136,6 @@ public class MockHsm {
        * @return a collection of key objects
        * @throws APIException This exception is raised if the api returns errors while retrieving the keys.
        * @throws BadURLException This exception wraps java.net.MalformedURLException.
-       * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
        * @throws HTTPException This exception is raised when errors occur making http requests.
        * @throws JSONException This exception is raised due to malformed json requests or responses.
        */

@@ -4,11 +4,8 @@ import com.chain.exception.APIException;
 import com.chain.exception.BadURLException;
 import com.chain.exception.ChainException;
 import com.chain.http.Client;
-import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
-import com.chain.exception.JSONException;
 
-import com.chain.proto.FilterParam;
 import com.chain.proto.ListUnspentOutputsQuery;
 import com.chain.proto.ListUnspentOutputsResponse;
 import com.google.common.reflect.TypeToken;
@@ -124,7 +121,6 @@ public class UnspentOutput {
      * @return a collection of unspent output objects
      * @throws APIException This exception is raised if the api returns errors while retrieving the unspent outputs.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      */
     @Override
@@ -174,7 +170,6 @@ public class UnspentOutput {
      * @return a collection of unspent output objects
      * @throws APIException This exception is raised if the api returns errors while retrieving the unspent outputs.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      */
     public Items execute(Client client) throws ChainException {

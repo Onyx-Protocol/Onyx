@@ -5,10 +5,8 @@ import com.chain.exception.BadURLException;
 import com.chain.exception.ChainException;
 import com.chain.http.Client;
 
-import com.chain.exception.ConnectivityException;
 import com.chain.exception.HTTPException;
 import com.chain.exception.JSONException;
-import com.chain.proto.FilterParam;
 import com.chain.proto.ListBalancesQuery;
 import com.chain.proto.ListBalancesResponse;
 import com.google.common.reflect.TypeToken;
@@ -42,7 +40,6 @@ public class Balance {
      * @return a collection of balance objects
      * @throws APIException This exception is raised if the api returns errors while retrieving the balances.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
@@ -93,7 +90,6 @@ public class Balance {
      * @return a collection of balance objects
      * @throws APIException This exception is raised if the api returns errors while retrieving the balances.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */

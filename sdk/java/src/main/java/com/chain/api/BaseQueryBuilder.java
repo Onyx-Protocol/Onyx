@@ -2,7 +2,6 @@ package com.chain.api;
 
 import com.chain.exception.ChainException;
 import com.chain.http.Client;
-import com.chain.proto.FilterParam;
 
 import java.util.ArrayList;
 import java.util.List;

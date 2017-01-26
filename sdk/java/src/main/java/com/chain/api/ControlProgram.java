@@ -6,8 +6,6 @@ import com.chain.proto.CreateControlProgramsRequest;
 import com.chain.proto.CreateControlProgramsResponse;
 import com.google.gson.annotations.SerializedName;
 
-import javax.naming.ldap.Control;
-import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -40,7 +38,6 @@ public class ControlProgram {
    * @return a list of control programs
    * @throws APIException This exception is raised if the api returns errors while creating the control programs.
    * @throws BadURLException This exception wraps java.net.MalformedURLException.
-   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
@@ -118,7 +115,6 @@ public class ControlProgram {
      * @return a control program
      * @throws APIException This exception is raised if the api returns errors while creating the control program.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */

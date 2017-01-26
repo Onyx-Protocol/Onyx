@@ -1,15 +1,8 @@
 package com.chain.http;
 
-import java.io.*;
-import java.lang.IllegalStateException;
-import java.lang.reflect.Type;
 import java.util.*;
 
 import com.chain.exception.*;
-
-import com.google.gson.*;
-
-import com.squareup.okhttp.Response;
 
 /**
  * BatchResponse provides a convenient interface for handling the results of
@@ -17,7 +10,6 @@ import com.squareup.okhttp.Response;
  * request item in the batch. Errors are always of type APIExcpetion.
  */
 public class BatchResponse<T> {
-  private Response response;
   private Map<Integer, T> successesByIndex = new LinkedHashMap<>();
   private Map<Integer, APIException> errorsByIndex = new LinkedHashMap<>();
 
@@ -38,13 +30,6 @@ public class BatchResponse<T> {
     while (errorIter.hasNext()) errorIndexes.add(errorIter.next());
     Collections.sort(errorIndexes);
     for (int i : errorIndexes) errorsByIndex.put(i, errors.get(i));
-  }
-
-  /**
-   * Returns the internal response object.
-   */
-  public Response response() {
-    return response;
   }
 
   /**

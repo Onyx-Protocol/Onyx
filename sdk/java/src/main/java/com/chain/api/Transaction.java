@@ -8,7 +8,6 @@ import com.google.gson.annotations.SerializedName;
 import com.google.protobuf.ByteString;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A single transaction on a Chain Core.
@@ -73,7 +72,6 @@ public class Transaction {
      * @return a page of transactions
      * @throws APIException This exception is raised if the api returns errors while processing the query.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
@@ -132,7 +130,6 @@ public class Transaction {
      * @return a page of transactions
      * @throws APIException This exception is raised if the api returns errors while processing the query.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
@@ -660,7 +657,6 @@ public class Transaction {
    * @return a list of transaction templates
    * @throws APIException This exception is raised if the api returns errors while building transaction templates.
    * @throws BadURLException This exception wraps java.net.MalformedURLException.
-   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
@@ -711,7 +707,6 @@ public class Transaction {
    * @return a list of submit responses (individual objects can hold transaction ids or error info)
    * @throws APIException This exception is raised if the api returns errors while submitting transactions.
    * @throws BadURLException This exception wraps java.net.MalformedURLException.
-   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
@@ -728,7 +723,6 @@ public class Transaction {
    * @return a list of submit responses (individual objects can hold transaction ids or error info)
    * @throws APIException This exception is raised if the api returns errors while submitting transactions.
    * @throws BadURLException This exception wraps java.net.MalformedURLException.
-   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
@@ -771,7 +765,6 @@ public class Transaction {
    * @return submit responses
    * @throws APIException This exception is raised if the api returns errors while submitting a transaction.
    * @throws BadURLException This exception wraps java.net.MalformedURLException.
-   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
@@ -787,7 +780,6 @@ public class Transaction {
    * @return submit responses
    * @throws APIException This exception is raised if the api returns errors while submitting a transaction.
    * @throws BadURLException This exception wraps java.net.MalformedURLException.
-   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
@@ -1442,7 +1434,6 @@ public class Transaction {
      * @return a transaction template
      * @throws APIException This exception is raised if the api returns errors while building the transaction.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
-     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
