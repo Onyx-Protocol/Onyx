@@ -107,4 +107,11 @@ var migrations = []migration{
 	{Name: "2017-01-19.0.asset.drop-mutable-flag.sql", SQL: `
 		ALTER TABLE assets DROP COLUMN definition_mutable;
 	`},
+	{Name: "2017-01-20.0.core.add-output-id-to-outputs.sql", SQL: `
+		ALTER TABLE annotated_outputs
+			ADD COLUMN output_id bytea UNIQUE NOT NULL;
+		ALTER TABLE account_utxos
+			ADD COLUMN output_id bytea UNIQUE NOT NULL,
+			ADD COLUMN unspent_id bytea UNIQUE NOT NULL;
+	`},
 }

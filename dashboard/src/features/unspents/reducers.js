@@ -2,7 +2,7 @@ import { reducers } from 'features/shared'
 import { combineReducers } from 'redux'
 
 const type = 'unspent'
-const idFunc = item => `${item.transaction_id}-${item.position}`
+const idFunc = item => `${item.id}`
 
 export default combineReducers({
   items: reducers.itemsReducer(type, idFunc),

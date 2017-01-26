@@ -1,4 +1,5 @@
 const keyNameMappings = {
+  id: 'ID',
   type: 'Type',
   purpose: 'Purpose',
   is_local: 'Local?',

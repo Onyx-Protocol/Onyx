@@ -123,19 +123,13 @@ The following fields are present in the transaction object. Fields with **global
 | account_id    | string      | local      | Locally unique identifier of the account spending the asset units.                   |
 | account_alias | string      | local      | User-supplied, locally unique identifier of the account spending the asset units.    |
 | account_tags  | string      | local      | Arbitrary, user-supplied, key-value data about the account spending the asset units. |
-| spent_output  | JSON&nbsp;object | global     | The previous transaction output being spent in the input.                            |
-
-##### Spent Output
-
-| Field          | Type    | Visibility | Description                                                                                  |
-|----------------|---------|------------|----------------------------------------------------------------------------------------------|
-| transaction_id | string  | global     | Globally unique identifier of the previous transaction containing the output that was spent. |
-| position       | integer | global     | The sequential number (in the previous transaction) of the output that was spent.            |
+| spent_output_id | string    | global     | The ID of the previous transaction output being spent in the input.                  |
 
 #### Output
 
 | Field           | Type        | Visibility | Description                                                                                                                                  |
 |-----------------|-------------|------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| id              | string      | global     | The unique ID of the output.                                                                                                                 |
 | type            | string      | global     | Type of output - either `control` or `retirement`.                                                                                            |
 | is_local        | string      | local      | Denotes that the input involves the Core, either by: a) issuing units an asset created in the Core, b) spending from an account in the Core. |
 | purpose         | string      | local      | Purpose of the output - either a) `receive` if used to receive asset units from another account or external party, or b) `change` if used to create change back to the account, when spending only a portion of the amount of an unspent output in a "spending" input.|
@@ -162,7 +156,7 @@ The following fields are present in the transaction object. Fields with **global
 {
   "id": "C5D3F8...",
   "timestamp": "2015-12-30T00:02:23Z",
-  "block_id": "A83585...",
+  "block_id": "3d6732d...",
   "block_height": 100,
   "position": ..., // position in block
   "reference_data": {"deal_id": "..."},
@@ -170,7 +164,7 @@ The following fields are present in the transaction object. Fields with **global
   "inputs": [
     {
       "action": "issue",
-      "asset_id": "125B4E...",
+      "asset_id": "125b4e...",
       "asset_alias": "...",
       "asset_tags": {},
       "asset_is_local": <"yes"|"no">
@@ -182,15 +176,12 @@ The following fields are present in the transaction object. Fields with **global
     },
     {
       "action": "spend",
-      "asset_id": "125B4E...",
+      "asset_id": "125b4e...",
       "asset_alias": "...",
       "asset_tags": {},
       "asset_is_local": <"yes"|"no">,
       "amount": 5000,
-      "spent_output": {
-        "transaction_id": "94C5D3...",
-        "position": 1,
-      },
+      "spent_output_id": "997de5...",
       "account_id": "",
       "account_alias": "...",
       "account_tags": {},
@@ -202,8 +193,9 @@ The following fields are present in the transaction object. Fields with **global
     {
       "action": "control",
       "purpose": <"change"|"receive">, // provided if the control program was generated locally
+      "id": "311df2...",
       "position": "...",
-      "asset_id": "125B4E...",
+      "asset_id": "125b4e...",
       "asset_alias": "...",
       "asset_tags": {},
       "asset_is_local": <"yes"|"no">,
@@ -217,8 +209,9 @@ The following fields are present in the transaction object. Fields with **global
     },
     {
       "action": "retire",
+      "id": "2eb5cf...",
       "position": "...",
-      "asset_id": "125B4E...",
+      "asset_id": "125b4e...",
       "asset_alias": "...",
       "asset_tags": {},
       "asset_is_local": <"yes"|"no">,
@@ -242,6 +235,7 @@ The unspent output object is a subset of the [transaction object](#transaction).
 
 ```
 {
+  "id": "2eb5cf...",
   "action": "control",
   "purpose": <"change"|"receive">
   "transaction_id": "...",

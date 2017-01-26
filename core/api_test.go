@@ -91,8 +91,8 @@ func TestBuildFinal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(insts1) != 23 {
-		t.Fatalf("expected 23 instructions in sigwitness program 1, got %d (%x)", len(insts1), prog1)
+	if len(insts1) != 19 {
+		t.Fatalf("expected 19 instructions in sigwitness program 1, got %d (%x)", len(insts1), prog1)
 	}
 	if insts1[0].Op != vm.OP_MAXTIME {
 		t.Fatalf("sigwitness program1 opcode 0 is %02x, expected %02x", insts1[0].Op, vm.OP_MAXTIME)
@@ -103,18 +103,18 @@ func TestBuildFinal(t *testing.T) {
 	if insts1[3].Op != vm.OP_VERIFY {
 		t.Fatalf("sigwitness program1 opcode 3 is %02x, expected %02x", insts1[3].Op, vm.OP_VERIFY)
 	}
-	for i, op := range []vm.Op{vm.OP_FALSE, vm.OP_OUTPOINT, vm.OP_ROT, vm.OP_NUMEQUAL, vm.OP_VERIFY, vm.OP_EQUAL, vm.OP_VERIFY} {
+	for i, op := range []vm.Op{vm.OP_OUTPUTID, vm.OP_EQUAL, vm.OP_VERIFY} {
 		if insts1[i+5].Op != op {
 			t.Fatalf("sigwitness program 1 opcode %d is %02x, expected %02x", i+5, insts1[i+5].Op, op)
 		}
 	}
 	for i, op := range []vm.Op{vm.OP_REFDATAHASH, vm.OP_EQUAL, vm.OP_VERIFY, vm.OP_FALSE, vm.OP_FALSE} {
-		if insts1[i+13].Op != op {
-			t.Fatalf("sigwitness program 1 opcode %d is %02x, expected %02x", i+13, insts1[i+13].Op, op)
+		if insts1[i+9].Op != op {
+			t.Fatalf("sigwitness program 1 opcode %d is %02x, expected %02x", i+9, insts1[i+9].Op, op)
 		}
 	}
-	if insts1[22].Op != vm.OP_CHECKOUTPUT {
-		t.Fatalf("sigwitness program1 opcode 18 is %02x, expected %02x", insts1[18].Op, vm.OP_CHECKOUTPUT)
+	if insts1[18].Op != vm.OP_CHECKOUTPUT {
+		t.Fatalf("sigwitness program1 opcode %d is %02x, expected %02x", 18, insts1[18].Op, vm.OP_CHECKOUTPUT)
 	}
 
 	prog2 := tmpl2.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program

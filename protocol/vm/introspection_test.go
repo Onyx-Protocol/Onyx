@@ -87,12 +87,12 @@ func TestBlockTime(t *testing.T) {
 	}
 }
 
-func TestOutpointAndNonceOp(t *testing.T) {
+func TestOutputIDAndNonceOp(t *testing.T) {
 	var zeroHash bc.Hash
 	nonce := []byte{36, 37, 38}
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(zeroHash, 0, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
+			bc.NewSpendInput(bc.ComputeOutputID(zeroHash, 0), nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
 			bc.NewIssuanceInput(nonce, 6, nil, zeroHash, []byte("issueprog"), nil, nil),
 		},
 	})
@@ -100,13 +100,14 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		runLimit:   50000,
 		tx:         tx,
 		inputIndex: 0,
-		program:    []byte{uint8(OP_OUTPOINT)},
+		program:    []byte{uint8(OP_OUTPUTID)},
 	}
 	err := vm.step()
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedStack := [][]byte{zeroHash[:], []byte{}}
+
+	expectedStack := [][]byte{mustDecodeHex("dc33296e4d20f0ef35ff9fd449e23ebbaa5a049a17779db3c2fe194b499aaf74")}
 	if !testutil.DeepEqual(vm.dataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
 	}
@@ -115,7 +116,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		runLimit:   50000,
 		tx:         tx,
 		inputIndex: 1,
-		program:    []byte{uint8(OP_OUTPOINT)},
+		program:    []byte{uint8(OP_OUTPUTID)},
 	}
 	err = vm.step()
 	if err != ErrContext {
@@ -152,7 +153,7 @@ func TestIntrospectionOps(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
 		ReferenceData: []byte("txref"),
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
+			bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
 			bc.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
@@ -479,7 +480,7 @@ func TestIntrospectionOps(t *testing.T) {
 	txops := []Op{
 		OP_CHECKOUTPUT, OP_ASSET, OP_AMOUNT, OP_PROGRAM,
 		OP_MINTIME, OP_MAXTIME, OP_TXREFDATAHASH, OP_REFDATAHASH,
-		OP_INDEX, OP_OUTPOINT,
+		OP_INDEX, OP_OUTPUTID,
 	}
 
 	for _, op := range txops {

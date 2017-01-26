@@ -256,10 +256,9 @@ func benchGenBlock(b *testing.B) {
 		"00" + // common witness extensible string length
 		"01" + // inputs count
 		"01" + // input 0, asset version
-		"4c" + // input 0, input commitment length prefix
+		"4b" + // input 0, input commitment length prefix
 		"01" + // input 0, input commitment, "spend" type
-		"dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292" + // input 0, spend input commitment, outpoint tx hash
-		"00" + // input 0, spend input commitment, outpoint index
+		"110bd1b4e5efc2994c9abc77f223a52c834d8f26b907c6c19d90b9e77a8e2fed" + // input 0, spend input commitment, output ID
 		"29" + // input 0, spend input commitment, output commitment length prefix
 		"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, spend input commitment, output commitment, asset id
 		"80a094a58d1d" + // input 0, spend input commitment, output commitment, amount

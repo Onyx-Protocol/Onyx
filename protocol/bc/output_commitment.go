@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
@@ -66,4 +67,12 @@ func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint64) (suffix [
 		}
 		return nil
 	})
+}
+
+func (oc *OutputCommitment) Hash(suffix []byte, assetVersion uint64) (outputhash Hash) {
+	h := sha3pool.Get256()
+	defer sha3pool.Put256(h)
+	oc.writeExtensibleString(h, suffix, assetVersion) // TODO(oleg): get rid of this assetVersion parameter to actually write all the bytes
+	h.Read(outputhash[:])
+	return outputhash
 }

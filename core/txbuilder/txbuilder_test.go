@@ -23,7 +23,7 @@ import (
 type testAction bc.AssetAmount
 
 func (t testAction) Build(ctx context.Context, b *TemplateBuilder) error {
-	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
+	in := bc.NewSpendInput(bc.ComputeOutputID([32]byte{255}, 0), nil, t.AssetID, t.Amount, nil, nil)
 	tplIn := &SigningInstruction{}
 
 	err := b.AddInput(in, tplIn)
@@ -59,7 +59,7 @@ func TestBuild(t *testing.T) {
 			Version: 1,
 			MaxTime: bc.Millis(expiryTime),
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput([32]byte{255}, 0, nil, [32]byte{1}, 5, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID([32]byte{255}, 0), nil, [32]byte{1}, 5, nil, nil),
 			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput([32]byte{2}, 6, []byte("dest"), nil),
@@ -401,27 +401,27 @@ func TestCheckBlankCheck(t *testing.T) {
 		want error
 	}{{
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 3, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil),
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{1}, 5, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{1}, 5, nil, nil),
 			},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(bc.AssetID{0}, math.MaxInt64, nil, nil),
 				bc.NewTxOutput(bc.AssetID{0}, 7, nil, nil),
@@ -431,14 +431,14 @@ func TestCheckBlankCheck(t *testing.T) {
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil),
-				bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, math.MaxInt64, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil),
+				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, math.MaxInt64, nil, nil),
 			},
 		},
 		want: ErrBadAmount,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: nil,
@@ -449,7 +449,7 @@ func TestCheckBlankCheck(t *testing.T) {
 		want: nil,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{0}, 5, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{1}, 5, nil, nil)},
 		},
 		want: nil,

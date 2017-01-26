@@ -192,16 +192,16 @@ public class Transaction {
     public long amount;
 
     /**
+     * The id of the output consumed by this input. Null if the input is an issuance.
+     */
+    @SerializedName("spent_output_id")
+    public String spentOutputId;
+
+    /**
      * The id of the account transferring the asset (possibly null if the input is an issuance or an unspent output is specified).
      */
     @SerializedName("account_id")
     public String accountId;
-
-    /**
-     * The output consumed by this input. Null if the input is an issuance.
-     */
-    @SerializedName("spent_output")
-    public OutputPointer spentOutput;
 
     /**
      * The alias of the account transferring the asset (possibly null if the input is an issuance or an unspent output is specified).
@@ -239,6 +239,12 @@ public class Transaction {
    * A single output included in a transaction.
    */
   public static class Output {
+    /**
+     * The id of the output.
+     */
+    @SerializedName("id")
+    public String id;
+
     /**
      * The type the output.<br>
      * Possible values are "control" and "retire".
@@ -329,17 +335,6 @@ public class Transaction {
      */
     @SerializedName("is_local")
     public String isLocal;
-  }
-
-  /**
-   * An OutputPointer consists of a transaction ID and an output position, and
-   * uniquely identifies an output on the blockchain.
-   */
-  public static class OutputPointer {
-    @SerializedName("transaction_id")
-    public String transactionId;
-
-    public int position;
   }
 
   /**
@@ -676,20 +671,29 @@ public class Transaction {
 
       /**
        * Specifies the unspent output to be spent.<br>
-       * <strong>Either this or a combination of {@link SpendAccountUnspentOutput#setTransactionId(String)}
-       * and {@link SpendAccountUnspentOutput#setPosition(int)} must be called.</strong>
+       * <strong>Either this or {@link SpendAccountUnspentOutput#setOutputId(String)} must be called.</strong>
        * @param unspentOutput unspent output to be spent
        * @return updated action object
        */
       public SpendAccountUnspentOutput setUnspentOutput(UnspentOutput unspentOutput) {
-        setTransactionId(unspentOutput.transactionId);
-        setPosition(unspentOutput.position);
+        setOutputId(unspentOutput.id);
+        return this;
+      }
+
+      /**
+       * Specifies the output id of the unspent output to be spent.<br>
+       * @param id
+       * @return
+       */
+      public SpendAccountUnspentOutput setOutputId(String id) {
+        this.put("output_id", id);
         return this;
       }
 
       /**
        * Specifies the transaction id of the unspent output to be spent.<br>
        * <strong>Must be called with {@link SpendAccountUnspentOutput#setPosition(int)}.</strong>
+       * @deprecated This method is deprecated in favor of {@link SpendAccountUnspentOutput#setOutputId(String)}.
        * @param id
        * @return
        */
@@ -701,6 +705,7 @@ public class Transaction {
       /**
        * Specifies the position in the transaction of the unspent output to be spent.<br>
        * <strong>Must be called with {@link SpendAccountUnspentOutput#setTransactionId(String)}.</strong>
+       * @deprecated This method is deprecated in favor of {@link SpendAccountUnspentOutput#setOutputId(String)}.
        * @param pos
        * @return
        */

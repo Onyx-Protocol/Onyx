@@ -356,8 +356,9 @@ definitions:
       amount:
         type: integer
         description: The amount of the asset being spent/issued.
-      spent_output:
-        $ref: '#/definitions/SpentOutput'
+      spent_output_id:
+        type: string
+        description: The unique ID of the output being spent.
       account_id:
         type: string
         description: The unique ID of the account. Only present if `SpentOutput`
@@ -384,20 +385,6 @@ definitions:
           `asset_is_local` is "yes", OR if `type` is "spend" and
           `account_is_local` is "yes". "no" otherwise.
 
-  SpentOutput:
-    type: object
-    required:
-      - transaction_id
-      - position
-    properties:
-      transaction_id:
-        type: string
-        description: The unique ID of the transaction containing the output.
-      position:
-        type: integer
-        description: The position of the output within the containing
-          tranasction's outputs.
-
   TransactionOutput:
     type: object
     required:
@@ -419,6 +406,9 @@ definitions:
       position:
         type: integer
         description: The index of the output among the transaction's outputs.
+      id:
+        type: string
+        description: The unique ID of the transaction output.
       asset_id:
         type: string
         description: The unique ID of the asset being controlled or retired.
@@ -630,8 +620,7 @@ definitions:
     type: object
     required:
       - type
-      - transaction_id
-      - position
+      - output_id
     properties:
       type:
         type: string
@@ -639,14 +628,18 @@ definitions:
           (required to be `spend_account_unspent_output`)
         enum:
           - spend_account_unspent_output
+      output_id:
+        type: string
+        description: The unique ID of the transaction output being spent.
+          This field replaces fields transaction_id and position.
       transaction_id:
         type: string
         description: The unique ID of the transaction containing the output
-          being spent.
+          being spent. This field is supported, but deprecated. Use output_id instead.
       position:
         type: string
         description: The output's index relative to other outputs in the
-          containing transaction.
+          containing transaction. This field is supported, but deprecated. Use output_id instead.
       reference_data:
         type: object
         description: Arbitrary, immutable key/value data that will accompany

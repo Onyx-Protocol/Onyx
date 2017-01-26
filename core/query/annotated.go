@@ -34,7 +34,7 @@ type AnnotatedInput struct {
 	Amount          uint64             `json:"amount"`
 	IssuanceProgram chainjson.HexBytes `json:"issuance_program,omitempty"`
 	ControlProgram  chainjson.HexBytes `json:"control_program,omitempty"`
-	SpentOutput     *SpentOutput       `json:"spent_output,omitempty"`
+	SpentOutputID   chainjson.HexBytes `json:"spent_output_id,omitempty"`
 	AccountID       string             `json:"account_id,omitempty"`
 	AccountAlias    string             `json:"account_alias,omitempty"`
 	AccountTags     *json.RawMessage   `json:"account_tags,omitempty"`
@@ -45,6 +45,7 @@ type AnnotatedInput struct {
 type AnnotatedOutput struct {
 	Type            string             `json:"type"`
 	Purpose         string             `json:"purpose,omitempty"`
+	OutputID        chainjson.HexBytes `json:"id"`
 	TransactionID   chainjson.HexBytes `json:"transaction_id,omitempty"`
 	Position        uint32             `json:"position"`
 	AssetID         chainjson.HexBytes `json:"asset_id"`
@@ -59,11 +60,6 @@ type AnnotatedOutput struct {
 	ControlProgram  chainjson.HexBytes `json:"control_program"`
 	ReferenceData   *json.RawMessage   `json:"reference_data"`
 	IsLocal         Bool               `json:"is_local"`
-}
-
-type SpentOutput struct {
-	TransactionID chainjson.HexBytes `json:"transaction_id"`
-	Position      uint32             `json:"position"`
 }
 
 type Bool bool
@@ -104,7 +100,7 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *A
 		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(in))
 	}
 	for i, out := range orig.Outputs {
-		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(out, uint32(i)))
+		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(out, uint32(i), orig.Hash))
 	}
 	return tx
 }
@@ -128,23 +124,22 @@ func buildAnnotatedInput(orig *bc.TxInput) *AnnotatedInput {
 		in.IssuanceProgram = prog
 	} else {
 		prog := orig.ControlProgram()
-		outpoint := orig.Outpoint()
+		prevoutID := orig.SpentOutputID()
 		in.Type = "spend"
 		in.ControlProgram = prog
-		in.SpentOutput = &SpentOutput{
-			TransactionID: outpoint.Hash[:],
-			Position:      outpoint.Index,
-		}
+		in.SpentOutputID = prevoutID.Bytes()
 	}
 	return in
 }
 
-func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32) *AnnotatedOutput {
+func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *AnnotatedOutput {
 	referenceData := json.RawMessage(orig.ReferenceData)
 	if len(referenceData) == 0 {
 		referenceData = []byte(`{}`)
 	}
+	outid := bc.ComputeOutputID(txhash, idx)
 	out := &AnnotatedOutput{
+		OutputID:       outid.Bytes(),
 		Position:       idx,
 		AssetID:        orig.AssetID[:],
 		Amount:         orig.Amount,

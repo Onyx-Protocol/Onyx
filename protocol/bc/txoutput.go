@@ -89,3 +89,7 @@ func (to *TxOutput) witnessHash() Hash {
 func (to *TxOutput) WriteCommitment(w io.Writer) error {
 	return to.OutputCommitment.writeExtensibleString(w, to.CommitmentSuffix, to.AssetVersion)
 }
+
+func (to *TxOutput) CommitmentHash() Hash {
+	return to.OutputCommitment.Hash(to.CommitmentSuffix, to.AssetVersion)
+}

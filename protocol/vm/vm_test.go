@@ -181,8 +181,7 @@ func TestVerifyTxInput(t *testing.T) {
 		wantErr error
 	}{{
 		input: bc.NewSpendInput(
-			bc.Hash{},
-			0,
+			bc.OutputID{},
 			[][]byte{{2}, {3}},
 			bc.AssetID{},
 			1,
@@ -486,7 +485,7 @@ func TestVerifyTxInputQuickCheck(t *testing.T) {
 			}
 		}()
 		tx := bc.NewTx(bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, witnesses, bc.AssetID{}, 10, program, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), witnesses, bc.AssetID{}, 10, program, nil)},
 		})
 		verifyTxInput(tx, 0)
 		return true

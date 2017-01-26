@@ -9,8 +9,7 @@ class ListItem extends React.Component {
     return(<KeyValueTable
             title={
               <span>
-                Transaction <code>{item.transaction_id}</code> -
-                Position <code>{item.position}</code>
+                ID <code>{item.id}</code>
               </span>
              }
             actions={[
