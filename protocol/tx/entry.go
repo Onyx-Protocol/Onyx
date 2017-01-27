@@ -95,42 +95,18 @@ func writeForHash(w io.Writer, c interface{}) error {
 		return nil
 
 	case reflect.Struct:
-		return extStructWriteForHash(w, 0, v)
-	}
-
-	return errors.Wrap(fmt.Errorf("bad type %T", c))
-}
-
-func extStructWriteForHash(w io.Writer, i int, v reflect.Value) error {
-	if v.Kind() != reflect.Struct {
-		return fmt.Errorf("bad kind: %s (not an ExtHash)", v.Kind())
-	}
-
-	l := v.NumField()
-	for ; i < l; i++ {
-		c := v.Field(i)
-
-		// if c is an exthash and if i < l-1
-		if c.Type() == reflect.TypeOf(extHash{}) && i < l-1 {
-			h := sha3pool.Get256()
-			defer sha3pool.Put256(h)
-
-			err := extStructWriteForHash(h, i+1, v) // takes the "rest" of v
+		for i := 0; i < v.NumField(); i++ {
+			c := v.Field(i)
+			if !c.CanInterface() {
+				return errInvalidValue
+			}
+			err := writeForHash(w, c.Interface())
 			if err != nil {
 				return err
 			}
-			_, err = io.CopyN(w, h, 32)
-			return err
 		}
-
-		if !c.CanInterface() {
-			return errInvalidValue
-		}
-		err := writeForHash(w, c.Interface())
-		if err != nil {
-			return err
-		}
+		return nil
 	}
 
-	return nil
+	return errors.Wrap(fmt.Errorf("bad type %T", c))
 }
