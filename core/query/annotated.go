@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/lib/pq"
+	
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -163,6 +165,31 @@ func (ind *Indexer) loadOutpoint(ctx context.Context, outid bc.OutputID) (outpoi
 		return outpoint, errors.Wrap(err)
 	}
 	return outpoint, nil
+}
+
+func (ind *Indexer) loadOutpoints(ctx context.Context, outids []bc.OutputID) (map[bc.OutputID]bc.Outpoint, error) {
+	const q = `
+		SELECT tx_hash, output_index
+		FROM annotated_outputs
+		WHERE output_id IN (SELECT unnest($1::bytea[]))
+	`
+	var pgoutids pq.ByteaArray
+	for _, outid := range outids {
+		pgoutids = append(pgoutids, outid.Bytes())
+	}
+	results := make(map[bc.OutputID]bc.Outpoint)
+	err := pg.ForQueryRows(ctx, ind.db, q, pgoutids, func(txHash bc.Hash, outputIndex uint32) {
+		// We compute outid on the fly instead of receiving it from DB to save 40% of bandwidth.
+		outid := bc.ComputeOutputID(txHash, outputIndex)
+		results[outid] = bc.Outpoint{
+			Hash:  txHash,
+			Index: outputIndex,
+		}
+	})
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	return results, nil
 }
 
 func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *AnnotatedOutput {
