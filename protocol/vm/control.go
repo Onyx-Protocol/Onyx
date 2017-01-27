@@ -68,7 +68,6 @@ func opCheckPredicate(vm *virtualMachine) error {
 		dataStack:  append([][]byte{}, vm.dataStack[l-n:]...),
 		tx:         vm.tx,
 		inputIndex: vm.inputIndex,
-		sigHasher:  vm.sigHasher,
 	}
 	vm.dataStack = vm.dataStack[:l-n]
 

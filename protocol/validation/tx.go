@@ -272,7 +272,7 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 		si := in.TypedInput.(*bc.SpendInput)
 
 		// Remove the consumed output from the state tree.
-		uid := bc.ComputeUnspentID(si.SpentOutputID, si.OutputCommitment.Hash(si.OutputCommitmentSuffix, in.AssetVersion))
+		uid := si.SpentOutputID
 		err := snapshot.Tree.Delete(uid.Bytes())
 		if err != nil {
 			return err

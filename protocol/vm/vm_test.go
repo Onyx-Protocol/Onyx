@@ -465,7 +465,7 @@ func TestVerifyTxInputQuickCheck(t *testing.T) {
 			}
 		}()
 		tx := bc.NewTx(bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), witnesses, bc.AssetID{}, 10, program, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.OutputID{}, witnesses, bc.AssetID{}, 10, program, nil)},
 		})
 		verifyTxInput(tx, 0)
 		return true

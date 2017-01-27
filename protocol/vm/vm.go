@@ -34,8 +34,8 @@ type virtualMachine struct {
 	altStack  [][]byte
 
 	tx         *bc.Tx
+	txContext  bc.VMContext
 	inputIndex uint32
-	sigHasher  *bc.SigHasher
 
 	block *bc.Block
 }
@@ -65,8 +65,6 @@ func verifyTxInput(tx *bc.Tx, inputIndex uint32) error {
 
 	expansionReserved := tx.Version == 1
 
-	sigHasher := bc.NewSigHasher(&tx.TxData)
-
 	f := func(vmversion uint64, prog []byte, args [][]byte) error {
 		if vmversion != 1 {
 			return ErrUnsupportedVM
@@ -74,8 +72,8 @@ func verifyTxInput(tx *bc.Tx, inputIndex uint32) error {
 
 		vm := virtualMachine{
 			tx:         tx,
+			txContext:  *tx.VMContexts[inputIndex],
 			inputIndex: inputIndex,
-			sigHasher:  sigHasher,
 
 			expansionReserved: expansionReserved,
 
