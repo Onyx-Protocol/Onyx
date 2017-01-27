@@ -51,8 +51,8 @@ func TestMapTx(t *testing.T) {
 				if !bytes.Equal(newOut.ControlProgram.Code, oldOut.ControlProgram) {
 					t.Errorf("header.Results[%d].ControlProgram.Code is %x, expected %x", i, newOut.ControlProgram.Code, oldOut.ControlProgram)
 				}
-				if (newOut.Reference != entryRef{}) {
-					t.Errorf("header.Results[%d].Reference is %x, expected zero", i, newOut.Reference[:])
+				if (newOut.Data != entryRef{}) {
+					t.Errorf("header.Results[%d].Reference is %x, expected zero", i, newOut.Data[:])
 				}
 				if (newOut.ExtHash != extHash{}) {
 					t.Errorf("header.Results[%d].ExtHash is %x, expected zero", i, newOut.ExtHash[:])
