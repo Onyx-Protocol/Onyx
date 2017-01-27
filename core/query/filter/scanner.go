@@ -1,6 +1,10 @@
 package filter
 
-import "fmt"
+import (
+	"fmt"
+	"unicode"
+	"unicode/utf8"
+)
 
 type token int
 
@@ -44,28 +48,39 @@ type scanner struct {
 	src []byte // source
 
 	// scanning state
-	ch     rune // current character
-	offset int  // character offset
+	ch       rune // current character
+	offset   int  // character offset
+	rdOffset int  // reading offset (position after current character)
 }
 
 func (s *scanner) init(src []byte) {
+	s.rdOffset = 0
 	s.offset = -1
 	s.src = src
 	s.next() // advance onto the first input rune
 }
 
-// next reads the next ASCII char into s.ch.
+const bom = 0xFEFF // byte order mark, always prohibited
+
+// next reads the next Unicode char into s.ch.
 // s.ch < 0 means end-of-file.
 func (s *scanner) next() {
-	if s.offset+1 < len(s.src) {
-		s.offset++
-		r := rune(s.src[s.offset])
+	if s.rdOffset < len(s.src) {
+		s.offset = s.rdOffset
+		r, w := rune(s.src[s.rdOffset]), 1
 		switch {
 		case r == 0:
-			s.error(s.offset, "illegal character NUL")
-		case r >= 0x80:
-			s.error(s.offset, "non-ASCII character")
+			s.error(s.offset+1, "illegal character NUL")
+		case r >= utf8.RuneSelf:
+			// not ASCII
+			r, w = utf8.DecodeRune(s.src[s.rdOffset:])
+			if r == utf8.RuneError && w == 1 {
+				s.error(s.offset, "illegal UTF-8 encoding")
+			} else if r == bom {
+				s.error(s.offset, "illegal byte order mark")
+			}
 		}
+		s.rdOffset += w
 		s.ch = r
 	} else {
 		s.offset = len(s.src)
@@ -78,11 +93,11 @@ func (s *scanner) error(offs int, msg string) {
 }
 
 func isLetter(ch rune) bool {
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_' || ch >= utf8.RuneSelf && unicode.IsLetter(ch)
 }
 
 func isDigit(ch rune) bool {
-	return '0' <= ch && ch <= '9'
+	return '0' <= ch && ch <= '9' || ch >= utf8.RuneSelf && unicode.IsDigit(ch)
 }
 
 func (s *scanner) scanIdentifier() string {

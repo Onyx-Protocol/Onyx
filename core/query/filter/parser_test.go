@@ -19,6 +19,10 @@ func TestParseValid(t *testing.T) {
 			expr: valueExpr{typ: tokString, value: "'hello world'"},
 		},
 		{
+			p:    "'สวัสดีชาวโลก'",
+			expr: valueExpr{typ: tokString, value: "'สวัสดีชาวโลก'"},
+		},
+		{
 			p:    "2000",
 			expr: valueExpr{typ: tokInteger, value: "2000"},
 		},

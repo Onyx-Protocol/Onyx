@@ -42,7 +42,7 @@ func setupQueryTest(t *testing.T) (context.Context, *query.Indexer, time.Time, t
 	acct1 := coretest.CreateAccount(ctx, t, accounts, "", nil)
 	acct2 := coretest.CreateAccount(ctx, t, accounts, "", nil)
 
-	asset1Tags := map[string]interface{}{"currency": "USD"}
+	asset1Tags := map[string]interface{}{"currency": "USD", "message": "สวัสดีชาวโลก"}
 
 	coretest.CreateAsset(ctx, t, assets, nil, "", asset1Tags)
 
@@ -99,6 +99,21 @@ func TestQueryOutputs(t *testing.T) {
 		{
 			filter: "asset_tags.currency = $1",
 			values: []interface{}{"USD"},
+			when:   time2,
+			want: []assetAccountAmount{
+				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
+			},
+		},
+		{
+			filter: "asset_tags.message = 'สวัสดีชาวโลก'",
+			when:   time2,
+			want: []assetAccountAmount{
+				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
+			},
+		},
+		{
+			filter: "asset_tags.message = $1",
+			values: []interface{}{"สวัสดีชาวโลก"},
 			when:   time2,
 			want: []assetAccountAmount{
 				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
