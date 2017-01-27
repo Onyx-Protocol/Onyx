@@ -5,6 +5,7 @@ import { pluralize, capitalize, humanize } from 'utility/string'
 import { PageContent, PageTitle, Pagination, SearchBar } from '../'
 import EmptyList from './EmptyList'
 import { pageSize } from 'utility/environment'
+import dashboardComponent from 'features/shared/dashboardComponent'
 
 class ItemList extends React.Component {
   render() {
@@ -36,7 +37,7 @@ class ItemList extends React.Component {
 
     if (this.props.noResults) {
       return(
-        <div className='flex-container'>
+        <div className={`flex-container ${this.props.className}`}>
           {header}
 
           <EmptyList
@@ -63,7 +64,7 @@ class ItemList extends React.Component {
       const Wrapper = this.props.wrapperComponent
 
       return(
-        <div className='flex-container'>
+        <div className={`flex-container ${this.props.className}`}>
           {header}
 
           <PageContent>
@@ -122,11 +123,11 @@ export const mapDispatchToProps = (type) => (dispatch) => {
 export const connect = (state, dispatch, component = ItemList) => reduxConnect(
   state,
   dispatch
-)(component)
+)(dashboardComponent(component))
 
 export default {
   mapStateToProps,
   mapDispatchToProps,
   connect,
-  ItemList,
+  ItemList: dashboardComponent(ItemList),
 }
