@@ -26,11 +26,10 @@ Identifier of the entry is based on its type and body. Body is length-prefixed, 
 ## Abstract Entry (base type for all concrete entries)
 
     - type:     String
-    - body:     ExtStruct
-    - witness:  ExtStruct
+    - body:     hashable
+    - witness:  hashable
 
-See [ExtStruct](#extstruct) description below.
-
+Where `hashable` is any type for which a hashing serialization is defined. See [Serialization for hashing](#serialization-for-hashing) description below.
 
 ## UnknownEntry
 
