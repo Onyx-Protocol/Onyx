@@ -396,10 +396,11 @@ definitions:
       transaction_id:
         type: string
         description: The unique ID of the transaction containing the output.
+          This field is deprecated, use `spent_output_id` instead.
       position:
         type: integer
         description: The position of the output within the containing
-          tranasction’s outputs.
+          tranasction’s outputs. This field is deprecated, use `spent_output_id` instead.
 
   TransactionOutput:
     type: object
