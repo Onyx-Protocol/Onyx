@@ -458,46 +458,47 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
 6. Set `newtx.mintime` to `oldtx.mintime`.
 7. Set `newtx.maxtime` to `oldtx.maxtime`.
 8. Let `mux` be a new `Mux` entry.
-9. For each issuance input `oldis`:
-    1. Let `is` be a new `Issuance` entry.
-    2. Set `is.value` to `AssetAmount { oldis.assetid, oldis.amount }`.
-    3. If `nonce` is empty:
-        1. Set `is.anchor` to the first spend input of the `oldtx`.
-    4. If `nonce` is non-empty:
-        1. Let `a` be a new `Anchor` entry.
-        2. Set `a.program` to (VM1, `PUSHDATA(nonce) DROP ASSET PUSHDATA(oldis.assetid) EQUAL`. (The program pushes the nonce onto the stack then drops it, then calls the ASSET opcode, pushes the hardcoded old asset ID onto the stack, and checks that they are equal.)
-        3. Let `tr` be a new `TimeRange` entry.
-        4. Set `tr.mintime` to `oldtx.mintime`.
-        5. Set `tr.maxtime` to `oldtx.maxtime`.
-        6. Set `a.timerange` to `tr.id`.
-        7. Set `is.anchor` to `a.id`.
-        8. Add `a` to `container`.
-        9. Add `tr` to `container`.
-    5. Set `is.initial_block_id` to `oldis.initial_block_id`.
-    6. Set `is.issuance_program` to `oldis.issuance_program` (with its VM version).
-    7. If `oldis.asset_definition` is non-empty:
-        1. Let `adef` be a new `Data` entry.
-        2. Set `adef.body` to `oldis.asset_definition`.
-        3. Set `is.asset_definition` to `adef.id`.
-        4. Add `adef` to `container`.
-    8. If `oldis.asset_definition` is empty:
-        1. Set `is.asset_definition` to a nil pointer `0x000000...`.
-    9. Create `ValueSource` struct `src`:
-        1. Set `src.ref` to `is.id`.
-        2. Set `src.position` to current count of `mux.sources`.
-        3. Set `src.value` to `is.value`.
-        4. Add `src` to `mux.sources`.
-    10. Add `is` to `container`.
-10. For each spend input `oldspend`:
-    1. Let `inp` be a new `Spend` entry.
-    2. Set `inp.spent_output` to `oldspend.output_id`.
-    3. Set `inp.data` to a nil pointer `0x00000...`.
-    5. Create `ValueSource` struct `src`:
-        1. Set `src.ref` to `inp.id`.
-        2. Set `src.position` to current count of `mux.sources`.
-        3. Set `src.value` to `AssetAmount{ oldspend.spent_output.(assetid,amount) } `.
-        4. Add `src` to `mux.sources`.
-    7. Add `inp` to `container`.
+9. For each old input `oldinp`:
+    1. If the old input is issuance:
+        1. Let `is` be a new `Issuance` entry.
+        2. Set `is.value` to `AssetAmount { oldinp.assetid, oldinp.amount }`.
+        3. If `nonce` is empty:
+            1. Set `is.anchor` to the ID of the first new input. (If no input was mapped yet, go back to this step when such input is added.)
+        4. If `nonce` is non-empty:
+            1. Let `a` be a new `Anchor` entry.
+            2. Set `a.program` to (VM1, `PUSHDATA(nonce) DROP ASSET PUSHDATA(oldinp.assetid) EQUAL`. (The program pushes the nonce onto the stack then drops it, then calls the ASSET opcode, pushes the hardcoded old asset ID onto the stack, and checks that they are equal.)
+            3. Let `tr` be a new `TimeRange` entry.
+            4. Set `tr.mintime` to `oldtx.mintime`.
+            5. Set `tr.maxtime` to `oldtx.maxtime`.
+            6. Set `a.timerange` to `tr.id`.
+            7. Set `is.anchor` to `a.id`.
+            8. Add `a` to `container`.
+            9. Add `tr` to `container`.
+        5. Set `is.initial_block_id` to `oldinp.initial_block_id`.
+        6. Set `is.issuance_program` to `oldinp.issuance_program` (with its VM version).
+        7. If `oldinp.asset_definition` is non-empty:
+            1. Let `adef` be a new `Data` entry.
+            2. Set `adef.body` to `oldinp.asset_definition`.
+            3. Set `is.asset_definition` to `adef.id`.
+            4. Add `adef` to `container`.
+        8. If `oldinp.asset_definition` is empty:
+            1. Set `is.asset_definition` to a nil pointer `0x000000...`.
+        9. Create `ValueSource` struct `src`:
+            1. Set `src.ref` to `is.id`.
+            2. Set `src.position` to current count of `mux.sources`.
+            3. Set `src.value` to `is.value`.
+            4. Add `src` to `mux.sources`.
+        10. Add `is` to `container`.
+    2. If the old input is a spend:
+        1. Let `inp` be a new `Spend` entry.
+        2. Set `inp.spent_output` to `oldinp.output_id`.
+        3. Set `inp.data` to a nil pointer `0x00000...`.
+        4. Create `ValueSource` struct `src`:
+            1. Set `src.ref` to `inp.id`.
+            2. Set `src.position` to current count of `mux.sources`.
+            3. Set `src.value` to `AssetAmount{ oldinp.spent_output.(assetid,amount) } `.
+            4. Add `src` to `mux.sources`.
+        5. Add `inp` to `container`.
 11. For each output `oldout` at index `i`:
     1. If the `oldout` contains a retirement program:
         1. Let `destentry` be a new `Retirement` entry.
