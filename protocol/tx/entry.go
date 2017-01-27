@@ -1,13 +1,13 @@
 package tx
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"reflect"
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
+	"chain/errors"
 	"chain/protocol/bc"
 )
 
@@ -52,6 +52,15 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case bc.Hash:
 		_, err := w.Write(v[:])
 		return err
+	case entryRef: // xxx do we need so many [32]byte types?
+		_, err := w.Write(v[:])
+		return err
+	case extHash: // xxx do we need so many [32]byte types?
+		_, err := w.Write(v[:])
+		return err
+	case bc.AssetID: // xxx do we need so many [32]byte types?
+		_, err := w.Write(v[:])
+		return err
 	case uint64:
 		_, err := blockchain.WriteVarint63(w, v)
 		return err
@@ -69,18 +78,6 @@ func writeForHash(w io.Writer, c interface{}) error {
 func writeForHashReflect(w io.Writer, v reflect.Value) error {
 	// the only cases handled by writeForHashReflect are Lists and Structs
 	switch v.Kind() {
-	case reflect.Array:
-		t := v.Type()
-		elType := t.Elem()
-		if elType.Kind() == reflect.Uint8 {
-			// fixed-length array of bytes
-			// xxx cannot call v.Slice() because of an unaddressable-array error
-			// xxx there has to be a better way than making a copy
-			s := make([]byte, 0, v.Len())
-			reflect.Copy(reflect.ValueOf(s), v)
-			return writeForHash(w, s)
-		}
-
 	case reflect.Slice:
 		t := v.Type()
 		elType := t.Elem()
@@ -108,7 +105,7 @@ func writeForHashReflect(w io.Writer, v reflect.Value) error {
 	case reflect.Struct:
 		return extStructWriteForHash(w, 0, v)
 	}
-	return fmt.Errorf("bad kind: %s", v.Kind())
+	return errors.Wrap(fmt.Errorf("bad kind: %s", v.Kind()))
 }
 
 func extStructWriteForHash(w io.Writer, i int, v reflect.Value) error {
