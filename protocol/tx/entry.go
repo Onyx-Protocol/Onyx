@@ -70,14 +70,12 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
 		return err
-	default:
-		return writeForHashReflect(w, reflect.ValueOf(c))
 	}
-}
 
-func writeForHashReflect(w io.Writer, v reflect.Value) error {
-	// the only cases handled by writeForHashReflect are Lists and Structs
-	switch v.Kind() {
+	// The two container types in the spec (List and Struct)
+	// correspond to slices and structs in Go. They can't be
+	// handled with type assertions, so we must use reflect.
+	switch v := reflect.ValueOf(c); v.Kind() {
 	case reflect.Slice:
 		l := v.Len()
 		_, err := blockchain.WriteVarint31(w, uint64(l))
@@ -99,7 +97,8 @@ func writeForHashReflect(w io.Writer, v reflect.Value) error {
 	case reflect.Struct:
 		return extStructWriteForHash(w, 0, v)
 	}
-	return errors.Wrap(fmt.Errorf("bad kind: %s", v.Kind()))
+
+	return errors.Wrap(fmt.Errorf("bad type %T", c))
 }
 
 func extStructWriteForHash(w io.Writer, i int, v reflect.Value) error {
