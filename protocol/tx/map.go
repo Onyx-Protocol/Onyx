@@ -78,14 +78,14 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 			// programs are omitted here because they do not contribute to
 			// the body hash of an issuance.
 
-			var anchorHash entryRef
+			var nonceHash entryRef
 
 			if len(oldIss.Nonce) == 0 {
 				if firstSpendID == nil {
 					err = fmt.Errorf("nonce-less issuance in transaction with no spends")
 					return
 				}
-				anchorHash = *firstSpendID
+				nonceHash = *firstSpendID
 			} else {
 				var trID entryRef
 				trID, _, err = addEntry(newTimeRange(tx.MinTime, tx.MaxTime))
@@ -97,7 +97,7 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 				b := vmutil.NewBuilder()
 				b = b.AddData(oldIss.Nonce).AddOp(vm.OP_DROP).AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
 
-				anchorHash, _, err = addEntry(newAnchor(program{1, b.Program}, trID))
+				nonceHash, _, err = addEntry(newNonce(program{1, b.Program}, trID))
 				if err != nil {
 					return
 				}
