@@ -1,19 +1,18 @@
 package tx
 
 type anchor struct {
-	body struct {
-		Program   program
-		TimeRange entryRef
-		ExtHash   extHash
-	}
+	Program   program
+	TimeRange entryRef
+	ExtHash   extHash
 }
 
-func (anchor) Type() string         { return "anchor1" }
-func (a *anchor) Body() interface{} { return a.body }
+func (anchor) Type() string { return "anchor1" }
 
-func newAnchor(p program, tr entryRef) *anchor {
-	a := new(anchor)
-	a.body.Program = p
-	a.body.TimeRange = tr
-	return a
+func newAnchor(p program, tr entryRef) *entry {
+	return &entry{
+		body: &anchor{
+			Program:   p,
+			TimeRange: tr,
+		},
+	}
 }
