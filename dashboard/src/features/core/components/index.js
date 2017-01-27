@@ -1,5 +1,5 @@
-import Index from './Index/Index'
+import CoreIndex from './CoreIndex/CoreIndex'
 
 export {
-  Index,
+  CoreIndex,
 }

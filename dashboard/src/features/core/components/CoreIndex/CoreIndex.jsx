@@ -3,10 +3,11 @@ import { context } from 'utility/environment'
 import chain from '_chain'
 import { PageContent, ErrorBanner, PageTitle } from 'features/shared/components'
 import React from 'react'
-import styles from './Index.scss'
+import styles from './CoreIndex.scss'
 import testnetUtils from 'features/testnet/utils'
+import dashboardComponent from 'features/shared/dashboardComponent'
 
-class Index extends React.Component {
+class CoreIndex extends React.Component {
   constructor(props) {
     super(props)
     this.state = {}
@@ -57,7 +58,7 @@ class Index extends React.Component {
     }
 
     let configBlock = (
-      <div className={`${styles.left} ${styles.col}`}>
+      <div className={`${styles.left} ${styles.col} ${this.props.className}`}>
         <div>
           <h4>Configuration</h4>
           <table className={styles.table}>
@@ -203,4 +204,4 @@ const mapDispatchToProps = () => ({})
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(Index)
+)(dashboardComponent(CoreIndex))

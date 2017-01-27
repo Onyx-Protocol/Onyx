@@ -1,8 +1,8 @@
 import { RoutingContainer } from 'features/shared/components'
-import { Index } from './components'
+import { CoreIndex } from './components'
 
 export default {
   path: 'core',
   component: RoutingContainer,
-  indexRoute: { component: Index }
+  indexRoute: { component: CoreIndex }
 }
