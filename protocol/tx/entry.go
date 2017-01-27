@@ -79,12 +79,6 @@ func writeForHashReflect(w io.Writer, v reflect.Value) error {
 	// the only cases handled by writeForHashReflect are Lists and Structs
 	switch v.Kind() {
 	case reflect.Slice:
-		t := v.Type()
-		elType := t.Elem()
-		if elType.Kind() == reflect.Uint8 {
-			// byte slice
-			return writeForHash(w, v.Interface())
-		}
 		l := v.Len()
 		_, err := blockchain.WriteVarint31(w, uint64(l))
 		if err != nil {
