@@ -1,6 +1,8 @@
 package tx
 
 import (
+	"fmt"
+
 	"chain/protocol/bc"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
@@ -31,7 +33,7 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 	// issuances.  Do spends first so the entry ID of the first spend is
 	// available in case an issuance needs it for its anchor.
 
-	var firstSpendID entryRef
+	var firstSpendID *entryRef
 	muxSources := make([]valueSource, len(tx.Inputs))
 
 	maybeAddInputRefdata := func(inp *bc.TxInput) (ref entryRef, err error) {
@@ -59,8 +61,8 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 				Position: uint64(i),
 				Value:    oldSp.AssetAmount,
 			}
-			if i == 0 {
-				firstSpendID = spID
+			if firstSpendID == nil {
+				firstSpendID = &spID
 			}
 		}
 	}
@@ -79,7 +81,11 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 			var anchorHash entryRef
 
 			if len(oldIss.Nonce) == 0 {
-				anchorHash = firstSpendID
+				if firstSpendID == nil {
+					err = fmt.Errorf("nonce-less issuance in transaction with no spends")
+					return
+				}
+				anchorHash = *firstSpendID
 			} else {
 				var trID entryRef
 				trID, _, err = addEntry(newTimeRange(tx.MinTime, tx.MaxTime))
