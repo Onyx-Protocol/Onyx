@@ -8,7 +8,6 @@ import (
 
 func mapTx(tx *bc.TxData) (hdr *entry, entryMap map[entryRef]*entry, err error) {
 	var (
-		references []entryRef
 		muxSources []valueSource
 		refdataID  entryRef
 	)
@@ -38,7 +37,6 @@ func mapTx(tx *bc.TxData) (hdr *entry, entryMap map[entryRef]*entry, err error) 
 		if err != nil {
 			return nil, nil, err
 		}
-		references = append(references, refdataID)
 	}
 
 	for _, inp := range tx.Inputs {
@@ -137,7 +135,7 @@ func mapTx(tx *bc.TxData) (hdr *entry, entryMap map[entryRef]*entry, err error) 
 	}
 
 	var h *entry
-	_, h, err = addEntry(newHeader(tx.Version, results, refdataID, references, tx.MinTime, tx.MaxTime))
+	_, h, err = addEntry(newHeader(tx.Version, results, refdataID, tx.MinTime, tx.MaxTime))
 
 	return h, entryMap, nil
 }

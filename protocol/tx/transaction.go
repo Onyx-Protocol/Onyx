@@ -73,7 +73,7 @@ func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
 
 		case *spend:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
-			vmc.RefDataHash = bc.Hash(body.Reference)
+			vmc.RefDataHash = bc.Hash(body.Data)
 			vmc.OutputID = (*bc.Hash)(&body.SpentOutput)
 			hashes.VMContexts = append(hashes.VMContexts, vmc)
 		}
