@@ -20,14 +20,17 @@ import (
 //
 // Note that the body of this entry is a hash (of the underlying data);
 // the body_hash is a hash of that hash.
-type data bc.Hash
+type data struct {
+	body bc.Hash
+}
 
-func (data) Type() string { return "data1" }
+func (data) Type() string         { return "data1" }
+func (d *data) Body() interface{} { return d.body }
 
-func newData(hash bc.Hash) *entry {
-	return &entry{
-		body: (*data)(&hash), // xxx data(hash) would be simpler but is it better to be consistent about entry.body always being a pointer?
-	}
+func newData(hash bc.Hash) entry {
+	d := new(data)
+	d.body = hash
+	return d
 }
 
 func hashData(data []byte) (h bc.Hash) {
