@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"expvar"
 	"net/http"
 	"strings"
 	"time"
@@ -18,11 +17,9 @@ import (
 var (
 	errAlreadyConfigured = errors.New("core is already configured; must reset first")
 	errUnconfigured      = errors.New("core is not configured")
+	errProduction        = errors.New("core is configured for production, not development")
 	errBadBlockPub       = errors.New("supplied block pub key is invalid")
 	errNoClientTokens    = errors.New("cannot enable client auth without client access tokens")
-	// errProdReset is returned when reset is called on a
-	// production system.
-	errProdReset = errors.New("reset called on production system")
 )
 
 // reserved mockhsm key alias
@@ -30,18 +27,9 @@ const (
 	networkRPCVersion = 1
 )
 
-func isProduction() bool {
-	p := expvar.Get("prod")
-	return p != nil && p.String() == `"yes"`
-}
-
 func (h *Handler) reset(ctx context.Context, req struct {
 	Everything bool `json:"everything"`
 }) error {
-	if isProduction() {
-		return errors.Wrap(errProdReset)
-	}
-
 	dataToReset := "blockchain"
 	if req.Everything {
 		dataToReset = "everything"
@@ -107,7 +95,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
-		"is_production":                     isProduction(),
+		"is_production":                     config.Production,
 		"network_rpc_version":               networkRPCVersion,
 		"core_id":                           h.Config.ID,
 		"version":                           config.Version,

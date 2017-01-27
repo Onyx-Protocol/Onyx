@@ -17,7 +17,7 @@ import (
 
 var (
 	reset = env.String("RESET", "")
-	prod  = "no"
+	prod  = false
 )
 
 func resetInDevIfRequested(db pg.DB) {

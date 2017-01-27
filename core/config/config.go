@@ -35,6 +35,7 @@ var (
 	ErrBadQuorum       = errors.New("quorum must be greater than 0 if there are signers")
 
 	Version, BuildCommit, BuildDate string
+	Production                      bool
 )
 
 // Config encapsulates Core-level, persistent configuration options.
