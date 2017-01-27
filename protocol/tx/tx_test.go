@@ -8,6 +8,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 func TestMapTx(t *testing.T) {
@@ -43,7 +44,7 @@ func TestMapTx(t *testing.T) {
 
 	header, entryMap, err := mapTx(oldTx)
 	if err != nil {
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	t.Log(spew.Sdump(entryMap))
