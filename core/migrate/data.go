@@ -114,4 +114,7 @@ var migrations = []migration{
 			ADD COLUMN output_id bytea UNIQUE NOT NULL,
 			ADD COLUMN unspent_id bytea UNIQUE NOT NULL;
 	`},
+	{Name: "2017-01-25.0.account.cp-expiry.sql", SQL: `
+		ALTER TABLE account_control_programs ADD COLUMN expires_at timestamp with time zone;
+	`},
 }

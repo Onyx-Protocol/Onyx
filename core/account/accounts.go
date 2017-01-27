@@ -177,9 +177,10 @@ type controlProgram struct {
 	keyIndex       uint64
 	controlProgram []byte
 	change         bool
+	expiresAt      time.Time
 }
 
-func (m *Manager) createControlProgram(ctx context.Context, accountID string, change bool) (*controlProgram, error) {
+func (m *Manager) createControlProgram(ctx context.Context, accountID string, change bool, expiresAt time.Time) (*controlProgram, error) {
 	account, err := m.findByID(ctx, accountID)
 	if err != nil {
 		return nil, err
@@ -202,17 +203,17 @@ func (m *Manager) createControlProgram(ctx context.Context, accountID string, ch
 		keyIndex:       idx,
 		controlProgram: control,
 		change:         change,
+		expiresAt:      expiresAt,
 	}, nil
 }
 
 // CreateControlProgram creates a control program
 // that is tied to the Account and stores it in the database.
-func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, change bool) ([]byte, error) {
-	cp, err := m.createControlProgram(ctx, accountID, change)
+func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, change bool, expiresAt time.Time) ([]byte, error) {
+	cp, err := m.createControlProgram(ctx, accountID, change, expiresAt)
 	if err != nil {
 		return nil, err
 	}
-
 	err = m.insertAccountControlProgram(ctx, cp)
 	if err != nil {
 		return nil, err
@@ -222,23 +223,29 @@ func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, ch
 
 func (m *Manager) insertAccountControlProgram(ctx context.Context, progs ...*controlProgram) error {
 	const q = `
-		INSERT INTO account_control_programs (signer_id, key_index, control_program, change)
-		SELECT unnest($1::text[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::boolean[])
+		INSERT INTO account_control_programs (signer_id, key_index, control_program, change, expires_at)
+		SELECT unnest($1::text[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::boolean[]),
+			unnest($5::timestamp with time zone[])
 	`
 	var (
 		accountIDs   pq.StringArray
 		keyIndexes   pq.Int64Array
 		controlProgs pq.ByteaArray
 		change       pq.BoolArray
+		expirations  []stdsql.NullString
 	)
 	for _, p := range progs {
 		accountIDs = append(accountIDs, p.accountID)
 		keyIndexes = append(keyIndexes, int64(p.keyIndex))
 		controlProgs = append(controlProgs, p.controlProgram)
 		change = append(change, p.change)
+		expirations = append(expirations, stdsql.NullString{
+			String: p.expiresAt.Format(time.RFC3339),
+			Valid:  !p.expiresAt.IsZero(),
+		})
 	}
 
-	_, err := m.db.Exec(ctx, q, accountIDs, keyIndexes, controlProgs, change)
+	_, err := m.db.Exec(ctx, q, accountIDs, keyIndexes, controlProgs, change, pq.Array(expirations))
 	return errors.Wrap(err)
 }
 

@@ -9,6 +9,10 @@ import (
 	"chain/protocol/bc"
 )
 
+func NewBuilder(maxTime time.Time) *TemplateBuilder {
+	return &TemplateBuilder{maxTime: maxTime}
+}
+
 type TemplateBuilder struct {
 	base                *bc.TxData
 	inputs              []*bc.TxInput

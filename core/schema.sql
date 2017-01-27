@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.0
--- Dumped by pg_dump version 9.6.0
+-- Dumped from database version 9.6.1
+-- Dumped by pg_dump version 9.6.1
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -178,7 +178,8 @@ CREATE TABLE account_control_programs (
     signer_id text NOT NULL,
     key_index bigint NOT NULL,
     control_program bytea NOT NULL,
-    change boolean NOT NULL
+    change boolean NOT NULL,
+    expires_at timestamp with time zone
 );
 
 
@@ -909,3 +910,4 @@ insert into migrations (filename, hash) values ('2017-01-11.0.core.hash-bytea.sq
 insert into migrations (filename, hash) values ('2017-01-13.0.core.asset-definition-bytea.sql', 'f49458c5c8873d919ec35be4683074be0b04913c95f5ab1bf1402aa2b4847cf5');
 insert into migrations (filename, hash) values ('2017-01-19.0.asset.drop-mutable-flag.sql', '7850023d44c545c155c0ee372e7cdfef1859b40221bd94307b836503c26dd3de');
 insert into migrations (filename, hash) values ('2017-01-20.0.core.add-output-id-to-outputs.sql', '4c8531c06e62405d2989e0651a7ef6c2ebd0b2b269b57c179e9e36f7fdbb715b');
+insert into migrations (filename, hash) values ('2017-01-25.0.account.cp-expiry.sql', 'a2076b7b3ac3f844d17e13eea57fea01216c868a63f9df7b9df24cac9c4b82a4');
