@@ -7,10 +7,7 @@ import (
 )
 
 func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef]entry, err error) {
-	var (
-		muxSources []valueSource
-		refdataID  entryRef
-	)
+	var refdataID entryRef
 
 	entryMap = make(map[entryRef]entry)
 
@@ -23,15 +20,6 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 		return id, e, nil
 	}
 
-	addMuxSource := func(id entryRef, val bc.AssetAmount) {
-		s := valueSource{
-			Ref:      id,
-			Position: uint64(len(muxSources)),
-			Value:    val,
-		}
-		muxSources = append(muxSources, s)
-	}
-
 	if len(tx.ReferenceData) > 0 {
 		refdataID, _, err = addEntry(newData(hashData(tx.ReferenceData)))
 		if err != nil {
@@ -39,38 +27,71 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 		}
 	}
 
-	for _, inp := range tx.Inputs {
-		var inpRefdataID entryRef
-		if len(inp.ReferenceData) > 0 {
-			inpRefdataID, _, err = addEntry(newData(hashData(inp.ReferenceData)))
+	// Loop twice over tx.Inputs, once for spends and once for
+	// issuances.  Do spends first so the entry ID of the first spend is
+	// available in case an issuance needs it for its anchor.
+
+	var firstSpendID entryRef
+	muxSources := make([]valueSource, len(tx.Inputs))
+
+	maybeAddInputRefdata := func(inp *bc.TxInput) (ref entryRef, err error) {
+		if len(inp.ReferenceData) == 0 {
+			return
+		}
+		ref, _, err = addEntry(newData(hashData(inp.ReferenceData)))
+		return
+	}
+
+	for i, inp := range tx.Inputs {
+		if oldSp, ok := inp.TypedInput.(*bc.SpendInput); ok {
+			var inpRefdataID entryRef
+			inpRefdataID, err = maybeAddInputRefdata(inp)
 			if err != nil {
 				return
 			}
+			var spID entryRef
+			spID, _, err = addEntry(newSpend(entryRef(oldSp.SpentOutputID.Hash), inpRefdataID))
+			if err != nil {
+				return
+			}
+			muxSources[i] = valueSource{
+				Ref:      spID,
+				Position: uint64(i),
+				Value:    oldSp.AssetAmount,
+			}
+			if i == 0 {
+				firstSpendID = spID
+			}
 		}
+	}
 
-		if inp.IsIssuance() {
+	for i, inp := range tx.Inputs {
+		if oldIss, ok := inp.TypedInput.(*bc.IssuanceInput); ok {
+			var inpRefdataID entryRef
+			inpRefdataID, err = maybeAddInputRefdata(inp)
+			if err != nil {
+				return
+			}
 			// xxx asset definitions, initial block ids, and issuance
 			// programs are omitted here because they do not contribute to
 			// the body hash of an issuance.
 
-			oldIss := inp.TypedInput.(*bc.IssuanceInput)
-
-			var nonceHash entryRef
+			var anchorHash entryRef
 
 			if len(oldIss.Nonce) == 0 {
-				// xxx nonceHash = "first spend input of the oldtx" (does this mean the txhash of the prevout of the spend?)
-				// xxx Oleg: We need to locate one of the new inputs and take the first one's ID here. 
-				//           But if none are mapped yet, we need to remember this issuance and get back to it when such input is mapped.
+				anchorHash = firstSpendID
 			} else {
-				prog := issuanceAnchorProg(oldIss.Nonce, oldIss.AssetID())
-
 				var trID entryRef
 				trID, _, err = addEntry(newTimeRange(tx.MinTime, tx.MaxTime))
 				if err != nil {
 					return
 				}
 
-				nonceHash, _, err = addEntry(newNonce(prog, trID))
+				assetID := oldIss.AssetID()
+				b := vmutil.NewBuilder()
+				b = b.AddData(oldIss.Nonce).AddOp(vm.OP_DROP).AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
+
+				anchorHash, _, err = addEntry(newAnchor(program{1, b.Program}, trID))
 				if err != nil {
 					return
 				}
@@ -84,17 +105,11 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 				return
 			}
 
-			addMuxSource(issID, val)
-		} else {
-			oldSp := inp.TypedInput.(*bc.SpendInput)
-
-			var spID entryRef
-			spID, _, err = addEntry(newSpend(entryRef(oldSp.SpentOutputID.Hash), inpRefdataID))
-			if err != nil {
-				return
+			muxSources[i] = valueSource{
+				Ref:      issID,
+				Position: uint64(i),
+				Value:    val,
 			}
-
-			addMuxSource(spID, oldSp.AssetAmount)
 		}
 	}
 
