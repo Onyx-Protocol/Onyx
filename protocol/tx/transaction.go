@@ -22,7 +22,7 @@ type VMContext struct {
 	TxSigHash     bc.Hash
 	OutputID      *bc.Hash
 	EntryID       bc.Hash
-	AnchorID      *bc.Hash
+	NonceID       *bc.Hash
 }
 
 // HashTx returns all hashes needed for validation and state updates.
@@ -47,7 +47,7 @@ func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
 
 	for entryID, ent := range entries {
 		switch ent := ent.(type) {
-		case *anchor:
+		case *nonce:
 			// xxx check time range is within network-defined limits
 			trID := ent.body.TimeRange
 			trEntry := entries[trID].(*timeRange) // xxx avoid panics here
@@ -60,7 +60,7 @@ func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
 		case *issuance:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
 			vmc.RefDataHash = bc.Hash(ent.body.Data) // xxx should this be the id of the data entry? or the hash of the data that's _in_ the data entry?
-			vmc.AnchorID = (*bc.Hash)(&ent.body.Anchor)
+			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
 			hashes.VMContexts = append(hashes.VMContexts, vmc)
 
 		case *spend:

@@ -55,10 +55,12 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 
 			oldIss := inp.TypedInput.(*bc.IssuanceInput)
 
-			var anchorHash entryRef
+			var nonceHash entryRef
 
 			if len(oldIss.Nonce) == 0 {
-				// xxx anchorHash = "first spend input of the oldtx" (does this mean the txhash of the prevout of the spend?)
+				// xxx nonceHash = "first spend input of the oldtx" (does this mean the txhash of the prevout of the spend?)
+				// xxx Oleg: We need to locate one of the new inputs and take the first one's ID here. 
+				//           But if none are mapped yet, we need to remember this issuance and get back to it when such input is mapped.
 			} else {
 				prog := issuanceAnchorProg(oldIss.Nonce, oldIss.AssetID())
 
@@ -68,7 +70,7 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 					return
 				}
 
-				anchorHash, _, err = addEntry(newAnchor(prog, trID))
+				nonceHash, _, err = addEntry(newNonce(prog, trID))
 				if err != nil {
 					return
 				}
@@ -77,7 +79,7 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 			val := inp.AssetAmount()
 
 			var issID entryRef
-			issID, _, err = addEntry(newIssuance(anchorHash, val, inpRefdataID))
+			issID, _, err = addEntry(newIssuance(nonceHash, val, inpRefdataID))
 			if err != nil {
 				return
 			}
