@@ -3,7 +3,7 @@ package tx
 type spend struct {
 	body struct {
 		SpentOutput entryRef // must be an Output entry
-		Data   entryRef // must be a Data entry
+		Data        entryRef // must be a Data entry
 		ExtHash     extHash
 	}
 }

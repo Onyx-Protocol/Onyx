@@ -27,18 +27,12 @@ type VMContext struct {
 
 // HashTx returns all hashes needed for validation and state updates.
 func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
-	header, entries, err := mapTx(oldTx)
+	txid, header, entries, err := mapTx(oldTx)
 	if err != nil {
 		return nil, err
 	}
 
 	hashes = new(TxHashes)
-
-	// ID
-	txid, err := entryID(header)
-	if err != nil {
-		return nil, err
-	}
 	hashes.ID = bc.Hash(txid)
 
 	// OutputIDs

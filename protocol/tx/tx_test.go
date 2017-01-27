@@ -17,7 +17,7 @@ func TestMapTx(t *testing.T) {
 	oldTx := sampleTx()
 	oldOuts := oldTx.Outputs
 
-	header, entryMap, err := mapTx(oldTx)
+	_, header, entryMap, err := mapTx(oldTx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

@@ -6,7 +6,7 @@ import (
 	"chain/protocol/vmutil"
 )
 
-func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) {
+func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef]entry, err error) {
 	var (
 		muxSources []valueSource
 		refdataID  entryRef
@@ -35,7 +35,7 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 	if len(tx.ReferenceData) > 0 {
 		refdataID, _, err = addEntry(newData(hashData(tx.ReferenceData)))
 		if err != nil {
-			return nil, nil, err
+			return
 		}
 	}
 
@@ -44,7 +44,7 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 		if len(inp.ReferenceData) > 0 {
 			inpRefdataID, _, err = addEntry(newData(hashData(inp.ReferenceData)))
 			if err != nil {
-				return nil, nil, err
+				return
 			}
 		}
 
@@ -62,31 +62,34 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 			} else {
 				prog := issuanceAnchorProg(oldIss.Nonce, oldIss.AssetID(), oldIss.VMVersion)
 
-				trID, _, err := addEntry(newTimeRange(tx.MinTime, tx.MaxTime))
+				var trID entryRef
+				trID, _, err = addEntry(newTimeRange(tx.MinTime, tx.MaxTime))
 				if err != nil {
-					return nil, nil, err
+					return
 				}
 
 				anchorHash, _, err = addEntry(newAnchor(prog, trID))
 				if err != nil {
-					return nil, nil, err
+					return
 				}
 			}
 
 			val := inp.AssetAmount()
 
-			issID, _, err := addEntry(newIssuance(anchorHash, val, inpRefdataID))
+			var issID entryRef
+			issID, _, err = addEntry(newIssuance(anchorHash, val, inpRefdataID))
 			if err != nil {
-				return nil, nil, err
+				return
 			}
 
 			addMuxSource(issID, val)
 		} else {
 			oldSp := inp.TypedInput.(*bc.SpendInput)
 
-			spID, _, err := addEntry(newSpend(entryRef(oldSp.SpentOutputID.Hash), inpRefdataID))
+			var spID entryRef
+			spID, _, err = addEntry(newSpend(entryRef(oldSp.SpentOutputID.Hash), inpRefdataID))
 			if err != nil {
-				return nil, nil, err
+				return
 			}
 
 			addMuxSource(spID, oldSp.AssetAmount)
@@ -95,7 +98,7 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 
 	muxID, _, err := addEntry(newMux(muxSources))
 	if err != nil {
-		return nil, nil, err
+		return
 	}
 
 	var results []entryRef
@@ -111,7 +114,7 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 		if len(out.ReferenceData) > 0 {
 			outRefdataID, _, err = addEntry(newData(hashData(out.ReferenceData)))
 			if err != nil {
-				return nil, nil, err
+				return
 			}
 		}
 
@@ -120,14 +123,14 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 			// retirement
 			resultID, _, err = addEntry(newRetirement(s, outRefdataID))
 			if err != nil {
-				return nil, nil, err
+				return
 			}
 		} else {
 			// non-retirement
 			prog := program{out.VMVersion, out.ControlProgram}
 			resultID, _, err = addEntry(newOutput(s, prog, outRefdataID))
 			if err != nil {
-				return nil, nil, err
+				return
 			}
 		}
 
@@ -135,9 +138,9 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 	}
 
 	var h entry
-	_, h, err = addEntry(newHeader(tx.Version, results, refdataID, tx.MinTime, tx.MaxTime))
+	headerID, h, err = addEntry(newHeader(tx.Version, results, refdataID, tx.MinTime, tx.MaxTime))
 
-	return h.(*header), entryMap, nil
+	return headerID, h.(*header), entryMap, nil
 }
 
 func issuanceAnchorProg(nonce []byte, assetID bc.AssetID, vmVersion uint64) program {

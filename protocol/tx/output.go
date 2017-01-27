@@ -4,7 +4,7 @@ type output struct {
 	body struct {
 		Source         valueSource
 		ControlProgram program
-		Data      entryRef
+		Data           entryRef
 		ExtHash        extHash
 	}
 }
