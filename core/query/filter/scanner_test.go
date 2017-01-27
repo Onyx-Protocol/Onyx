@@ -54,6 +54,43 @@ func TestScannerValid(t *testing.T) {
 				{pos: 25, lit: "", tok: tokEOF},
 			},
 		},
+		{
+			input: []byte(`comme ci comme ça`),
+			toks: []scannedTok{
+				{pos: 0, lit: "comme", tok: tokIdent},
+				{pos: 6, lit: "ci", tok: tokIdent},
+				{pos: 9, lit: "comme", tok: tokIdent},
+				{pos: 15, lit: "ça", tok: tokIdent},
+				{pos: 18, lit: "", tok: tokEOF},
+			},
+		},
+		{
+			input: []byte(`'comme ci comme ça'`),
+			toks: []scannedTok{
+				{pos: 0, lit: "'comme ci comme ça'", tok: tokString},
+				{pos: 20, lit: "", tok: tokEOF},
+			},
+		},
+		{
+			input: []byte(`asset_definition.fund_manager.résumé`),
+			toks: []scannedTok{
+				{pos: 0, lit: "asset_definition", tok: tokIdent},
+				{pos: 16, lit: ".", tok: tokPunct},
+				{pos: 17, lit: "fund_manager", tok: tokIdent},
+				{pos: 29, lit: ".", tok: tokPunct},
+				{pos: 30, lit: "résumé", tok: tokIdent},
+				{pos: 38, lit: "", tok: tokEOF},
+			},
+		},
+		{
+			input: []byte(`asset_alias = '区块链'`),
+			toks: []scannedTok{
+				{pos: 0, lit: "asset_alias", tok: tokIdent},
+				{pos: 12, lit: "=", tok: tokPunct},
+				{pos: 14, lit: "'区块链'", tok: tokString},
+				{pos: 25, lit: "", tok: tokEOF},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -95,23 +132,7 @@ func TestScannerInvalid(t *testing.T) {
 		},
 		{
 			input: append([]byte(`hello`), 0),
-			err:   parseError{pos: 5, msg: `illegal character NUL`},
-		},
-		{
-			input: []byte(`comme ci comme ça`),
-			err:   parseError{pos: 15, msg: `non-ASCII character`},
-		},
-		{
-			input: []byte(`'comme ci comme ça'`),
-			err:   parseError{pos: 16, msg: `non-ASCII character`},
-		},
-		{
-			input: []byte(`asset_definition.fund_manager.résumé`),
-			err:   parseError{pos: 31, msg: `non-ASCII character`},
-		},
-		{
-			input: []byte(`asset_alias = '区块链'`),
-			err:   parseError{pos: 15, msg: `non-ASCII character`},
+			err:   parseError{pos: 6, msg: `illegal character NUL`},
 		},
 		{
 			input: []byte(`0xwhat`),
@@ -120,6 +141,14 @@ func TestScannerInvalid(t *testing.T) {
 		{
 			input: []byte(`10 = 02`),
 			err:   parseError{pos: 5, msg: `illegal leading 0 in number`},
+		},
+		{
+			input: []byte{0xD8, 0xD8},
+			err:   parseError{pos: 0, msg: `illegal UTF-8 encoding`},
+		},
+		{
+			input: []byte{0xE0, 0xD8, 0xD8},
+			err:   parseError{pos: 0, msg: `illegal UTF-8 encoding`},
 		},
 	}
 
