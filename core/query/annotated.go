@@ -134,7 +134,7 @@ func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]*bc.Outpoin
 		in.Type = "spend"
 		in.ControlProgram = prog
 		in.SpentOutputID = prevoutID.Bytes()
-		
+
 		outpoint := outpoints[prevoutID]
 		if outpoint != nil {
 			in.SpentOutput = &SpentOutput{
