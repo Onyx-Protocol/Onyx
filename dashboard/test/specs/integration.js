@@ -73,10 +73,18 @@ describe('dashboard', () => {
   describe('transaction list', () => {
     before(() =>
       expect(setUpObjects()).to.be.fulfilled
-      .then(() => expect(issueTransaction()).to.be.fulfilled))
+      .then(() => expect(issueTransaction()).to.be.fulfilled)
+      .then(() => browser.url('/transactions')))
 
     it('lists all blockchain transactions', () => {
+      browser.getText('.item_list').should.contain('alice')
+      browser.getText('.item_list').should.contain('gold')
+      browser.getText('.item_list').should.contain('100')
+    })
 
+    it('displays the correct page title', () => {
+      browser.getText('.page_title').should.contain('Transactions')
+      browser.getText('.page_title').should.contain('New transaction')
     })
   })
 
@@ -88,11 +96,12 @@ describe('dashboard', () => {
           return client.config.configure({ isGenerator: true })
         })
       ).to.be.fulfilled
+      .then(() => browser.url('/transactions'))
     )
 
     it('displays a welcome message', () => {
-      browser.url('/transactions')
-      browser.getText('body').should.contain('Welcome to Chain Core')
+      browser.getText('.empty_list').should.contain('Welcome to Chain Core')
+      browser.getText('.empty_list').should.contain('New transaction')
     })
   })
 })

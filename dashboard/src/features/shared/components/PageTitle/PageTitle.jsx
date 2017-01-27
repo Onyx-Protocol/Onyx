@@ -6,13 +6,14 @@ import { humanize, capitalize } from 'utility/string'
 import makeRoutes from 'routes'
 import actions from 'actions'
 import styles from './PageTitle.scss'
+import dashboardComponent from 'features/shared/dashboardComponent'
 
 class PageTitle extends React.Component {
   render() {
     const chevron = require('assets/images/chevron.png')
 
     return(
-      <div className={styles.wrapper}>
+      <div className={`${styles.wrapper || ''} ${this.props.className}`}>
         <div className={styles.main}>
           <div className={styles.navigation}>
             <ul className={styles.crumbs}>
@@ -84,4 +85,4 @@ export default connect(
     markFlashDisplayed: (key) => dispatch(actions.app.displayedFlash(key)),
     dismissFlash: (key) => dispatch(actions.app.dismissFlash(key)),
   })
-)(PageTitle)
+)(dashboardComponent(PageTitle))
