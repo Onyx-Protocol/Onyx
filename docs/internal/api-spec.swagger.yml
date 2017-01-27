@@ -359,6 +359,8 @@ definitions:
       spent_output_id:
         type: string
         description: The unique ID of the output being spent.
+      spent_output:
+        $ref: '#/definitions/SpentOutput'
       account_id:
         type: string
         description: The unique ID of the account. Only present if `SpentOutput`
@@ -384,6 +386,21 @@ definitions:
         description: Either "yes" or "no". "yes" if `type` is "issue" and
           `asset_is_local` is "yes", OR if `type` is "spend" and
           `account_is_local` is "yes". "no" otherwise.
+
+  SpentOutput:
+    type: object
+    required:
+      - transaction_id
+      - position
+    properties:
+      transaction_id:
+        type: string
+        description: The unique ID of the transaction containing the output.
+          This field is deprecated, use `spent_output_id` instead.
+      position:
+        type: integer
+        description: The position of the output within the containing
+          tranasction’s outputs. This field is deprecated, use `spent_output_id` instead.
 
   TransactionOutput:
     type: object

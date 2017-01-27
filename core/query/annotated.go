@@ -35,6 +35,7 @@ type AnnotatedInput struct {
 	IssuanceProgram chainjson.HexBytes `json:"issuance_program,omitempty"`
 	ControlProgram  chainjson.HexBytes `json:"control_program,omitempty"`
 	SpentOutputID   chainjson.HexBytes `json:"spent_output_id,omitempty"`
+	SpentOutput     *SpentOutput       `json:"spent_output,omitempty"`
 	AccountID       string             `json:"account_id,omitempty"`
 	AccountAlias    string             `json:"account_alias,omitempty"`
 	AccountTags     *json.RawMessage   `json:"account_tags,omitempty"`
@@ -62,6 +63,11 @@ type AnnotatedOutput struct {
 	IsLocal         Bool               `json:"is_local"`
 }
 
+type SpentOutput struct {
+	TransactionID chainjson.HexBytes `json:"transaction_id"`
+	Position      uint32             `json:"position"`
+}
+
 type Bool bool
 
 func (b Bool) MarshalJSON() ([]byte, error) {
@@ -79,7 +85,7 @@ func (b *Bool) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *AnnotatedTx {
+func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedTx {
 	blockHash := b.Hash()
 	referenceData := json.RawMessage(orig.ReferenceData)
 	if len(referenceData) == 0 {
@@ -97,7 +103,7 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *A
 		Outputs:       make([]*AnnotatedOutput, 0, len(orig.Outputs)),
 	}
 	for _, in := range orig.Inputs {
-		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(in))
+		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(in, outpoints))
 	}
 	for i, out := range orig.Outputs {
 		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(out, uint32(i), orig.Hash))
@@ -105,7 +111,7 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *A
 	return tx
 }
 
-func buildAnnotatedInput(orig *bc.TxInput) *AnnotatedInput {
+func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedInput {
 	aid := orig.AssetID()
 
 	referenceData := json.RawMessage(orig.ReferenceData)
@@ -128,6 +134,15 @@ func buildAnnotatedInput(orig *bc.TxInput) *AnnotatedInput {
 		in.Type = "spend"
 		in.ControlProgram = prog
 		in.SpentOutputID = prevoutID.Bytes()
+
+		outpoint, ok := outpoints[prevoutID]
+		if ok {
+			in.SpentOutput = &SpentOutput{
+				TransactionID: outpoint.Hash[:],
+				Position:      outpoint.Index,
+			}
+		}
+
 	}
 	return in
 }

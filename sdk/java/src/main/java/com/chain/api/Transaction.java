@@ -198,6 +198,12 @@ public class Transaction {
     public String spentOutputId;
 
     /**
+     * The output consumed by this input. Null if the input is an issuance.
+     */
+    @SerializedName("spent_output")
+    public OutputPointer spentOutput;
+
+    /**
      * The id of the account transferring the asset (possibly null if the input is an issuance or an unspent output is specified).
      */
     @SerializedName("account_id")
@@ -335,6 +341,17 @@ public class Transaction {
      */
     @SerializedName("is_local")
     public String isLocal;
+  }
+
+  /**
+   * An OutputPointer consists of a transaction ID and an output position, and
+   * uniquely identifies an output on the blockchain.
+   */
+  public static class OutputPointer {
+    @SerializedName("transaction_id")
+    public String transactionId;
+
+    public int position;
   }
 
   /**
