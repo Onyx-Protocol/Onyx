@@ -51,6 +51,10 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 		}
 
 		if inp.IsIssuance() {
+			// xxx asset definitions, initial block ids, and issuance
+			// programs are omitted here because they do not contribute to
+			// the body hash of an issuance.
+
 			oldIss := inp.TypedInput.(*bc.IssuanceInput)
 
 			var anchorHash entryRef
@@ -69,8 +73,6 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 				if err != nil {
 					return nil, nil, err
 				}
-
-				// xxx asset definitions omitted from entryMap; not needed for body hashing
 			}
 
 			val := inp.AssetAmount()
