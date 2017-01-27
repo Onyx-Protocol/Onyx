@@ -25,18 +25,22 @@ Identifier of the entry is based on its type and body. Body is length-prefixed, 
 
 ## Abstract Entry (base type for all concrete entries)
 
-    - type:      Integer
-    - body:   ExtStruct
-    - witness:   ExtStruct
+    - type:     String
+    - body:     ExtStruct
+    - witness:  ExtStruct
 
 See [ExtStruct](#extstruct) description below.
 
 
 ## UnknownEntry
 
-    - type:         unknown Integer
-    - body.hash: Hash
-    - witness.hash: Hash
+    - type:         String (not statically known)
+    - body_hash:    Hash
+    - witness_hash: Hash
+
+**Rules:**
+
+1. Type string must be transmitted explicitly from newer nodes to older nodes, so that the older nodes can compute the Entry ID with the correct type string.
 
 ## TxHeader
 
