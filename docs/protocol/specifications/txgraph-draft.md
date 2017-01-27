@@ -11,7 +11,7 @@ All entries inherit from a common type `AbstractEntry`.
     Retirement
     Mux
     Data
-    Anchor
+    Nonce
     Predicate
     TimeRange
     UnknownEntry = all other types, undefined in the current protocol version
@@ -181,7 +181,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
     entry {
         type="issuance1"
         body:
-          anchor:           Pointer<Anchor|Spend>
+          anchor:           Pointer<Nonce|Spend>
           value:            AssetAmount
           data:             Pointer<Data>
           ext_hash:         Hash
@@ -282,10 +282,10 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 6. Verify that `nextsrc.value` equals `dst.value`.
 
 
-## Anchor
+## Nonce
 
     entry {
-        type="anchor1"
+        type="nonce1"
         body:
           program:    Program
           timerange:  Pointer<TimeRange>
@@ -298,7 +298,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
 **Rules:**
 
 1. If tx version is known, the ext fields must be empty.
-2. The ID of the anchor must be globally unique on the blockchain.
+2. The ID of the nonce entry must be globally unique on the blockchain.
 3. The `program` must evaluate to `true` with given `arguments`.
 
 
@@ -465,7 +465,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         3. If `nonce` is empty:
             1. Set `is.anchor` to the ID of the first new input. (If no input was mapped yet, go back to this step when such input is added.)
         4. If `nonce` is non-empty:
-            1. Let `a` be a new `Anchor` entry.
+            1. Let `a` be a new `Nonce` entry.
             2. Set `a.program` to (VM1, `PUSHDATA(nonce) DROP ASSET PUSHDATA(oldinp.assetid) EQUAL`. (The program pushes the nonce onto the stack then drops it, then calls the ASSET opcode, pushes the hardcoded old asset ID onto the stack, and checks that they are equal.)
             3. Let `tr` be a new `TimeRange` entry.
             4. Set `tr.mintime` to `oldtx.mintime`.
@@ -551,15 +551,15 @@ When inserting old tx's outputs into UTXO merkle set:
 ### OldIssuanceHash -> NewIssuanceHash
 
 1. Map old tx to new tx.
-2. For each anchor entry in the new tx:
+2. For each nonce entry in the new tx:
     1. check its time range is within network-defined limits (not unbounded).
     2. Use this entry ID as NewIssuanceHash
-    3. Insert new issuance hash in the current _issuance memory_ annotated with expiration date based on `anchor.timerange.maxtime`.
+    3. Insert new issuance hash in the current _issuance memory_ annotated with expiration date based on `nonce.timerange.maxtime`.
 
 ### OldSigHash -> NewSigHash
 
 1. Map old tx to new tx.
-2. For each entry where a program is evaluated (Spend, Issuance or Anchor):
+2. For each entry where a program is evaluated (Spend, Issuance or Nonce):
     1. Compute `sighash = HASH(txid || entryid)`.
 
 
@@ -597,8 +597,8 @@ This shows how the implementation of each of the VM instructions need to be chan
 
 New opcodes:
 
-* ENTRYID:       `newcurrentinput.id()`
-* ANCHORID:      `newcurrentinput.anchor.id()` (fails if current input is not an issuance)
+* ENTRYID:       `currententry.id()`
+* NONCE:         `currentissuance.anchor.id()` (fails if the entry is not an issuance)
 
 
 ### 4. Eliminating witness hash
