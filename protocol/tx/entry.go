@@ -11,10 +11,17 @@ import (
 	"chain/protocol/bc"
 )
 
-type entry interface {
-	Type() string
-	Body() interface{}
-}
+type (
+	body interface {
+		Type() string
+	}
+
+	entry struct {
+		// cached body hash of this entry
+		hash *bc.Hash
+		body
+	}
+)
 
 type entryRef bc.Hash
 
@@ -22,7 +29,11 @@ type extHash bc.Hash
 
 var errInvalidValue = errors.New("invalid value")
 
-func entryID(e entry) (entryRef, error) {
+func entryID(e *entry) (entryRef, error) {
+	if e.hash != nil {
+		return entryRef(*e.hash), nil
+	}
+
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 
@@ -32,7 +43,7 @@ func entryID(e entry) (entryRef, error) {
 
 	bh := sha3pool.Get256()
 	defer sha3pool.Put256(bh)
-	err := writeForHash(bh, e.Body())
+	err := writeForHash(bh, e.body)
 	if err != nil {
 		return entryRef{}, err
 	}
@@ -40,6 +51,8 @@ func entryID(e entry) (entryRef, error) {
 
 	var hash entryRef
 	h.Read(hash[:])
+
+	e.hash = (*bc.Hash)(&hash)
 
 	return hash, nil
 }
@@ -61,6 +74,9 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case bc.AssetID: // xxx do we need so many [32]byte types?
 		_, err := w.Write(v[:])
 		return err
+	case data:
+		_, err := w.Write(v[:])
+		return err
 	case uint64:
 		_, err := blockchain.WriteVarint63(w, v)
 		return err
@@ -76,6 +92,13 @@ func writeForHash(w io.Writer, c interface{}) error {
 	// correspond to slices and structs in Go. They can't be
 	// handled with type assertions, so we must use reflect.
 	switch v := reflect.ValueOf(c); v.Kind() {
+	case reflect.Ptr:
+		ref := v.Elem()
+		if !ref.CanInterface() {
+			return errInvalidValue
+		}
+		return writeForHash(w, ref.Interface())
+
 	case reflect.Slice:
 		l := v.Len()
 		_, err := blockchain.WriteVarint31(w, uint64(l))

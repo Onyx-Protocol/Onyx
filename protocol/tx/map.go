@@ -6,16 +6,16 @@ import (
 	"chain/protocol/vmutil"
 )
 
-func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) {
+func mapTx(tx *bc.TxData) (hdr *entry, entryMap map[entryRef]*entry, err error) {
 	var (
 		references []entryRef
 		muxSources []valueSource
 		refdataID  entryRef
 	)
 
-	entryMap = make(map[entryRef]entry)
+	entryMap = make(map[entryRef]*entry)
 
-	addEntry := func(e entry) (id entryRef, entry entry, err error) {
+	addEntry := func(e *entry) (id entryRef, entry *entry, err error) {
 		id, err = entryID(e)
 		if err != nil {
 			return
@@ -136,10 +136,10 @@ func mapTx(tx *bc.TxData) (hdr *header, entryMap map[entryRef]entry, err error) 
 		results = append(results, resultID)
 	}
 
-	var h entry
+	var h *entry
 	_, h, err = addEntry(newHeader(tx.Version, results, refdataID, references, tx.MinTime, tx.MaxTime))
 
-	return h.(*header), entryMap, nil
+	return h, entryMap, nil
 }
 
 func issuanceAnchorProg(nonce []byte, assetID bc.AssetID, vmVersion uint64) program {
