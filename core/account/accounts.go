@@ -239,13 +239,10 @@ func (m *Manager) insertAccountControlProgram(ctx context.Context, progs ...*con
 		keyIndexes = append(keyIndexes, int64(p.keyIndex))
 		controlProgs = append(controlProgs, p.controlProgram)
 		change = append(change, p.change)
-
-		var expiry stdsql.NullString
-		if !p.expiresAt.IsZero() {
-			expiry.String = p.expiresAt.Format(time.RFC3339)
-			expiry.Valid = true
-		}
-		expirations = append(expirations, expiry)
+		expirations = append(expirations, stdsql.NullString{
+			String: p.expiresAt.Format(time.RFC3339),
+			Valid:  !p.expiresAt.IsZero(),
+		})
 	}
 
 	_, err := m.db.Exec(ctx, q, accountIDs, keyIndexes, controlProgs, change, pq.Array(expirations))
