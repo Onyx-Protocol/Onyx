@@ -8,8 +8,8 @@ import (
 
 type BlockCommitment struct {
 	// TransactionsMerkleRoot is the root hash of the Merkle binary hash
-	// tree formed by the transaction witness hashes of all transactions
-	// included in the block.
+	// tree formed by the hashes of all transactions included in the
+	// block.
 	TransactionsMerkleRoot Hash
 
 	// AssetsMerkleRoot is the root hash of the Merkle Patricia Tree of

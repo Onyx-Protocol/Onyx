@@ -9,7 +9,6 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
-	"chain/encoding/bufpool"
 	"chain/errors"
 )
 
@@ -192,57 +191,6 @@ func (tx *TxData) Hash() Hash {
 	h.Read(v[:])
 	sha3pool.Put256(h)
 	return v
-}
-
-// WitnessHash is the combined hash of the
-// transactions hash and signature data hash.
-// It is used to compute the TxRoot of a block.
-func (tx *Tx) WitnessHash() (hash Hash, err error) {
-	hasher := sha3pool.Get256()
-	defer sha3pool.Put256(hasher)
-
-	hasher.Write(tx.Hash[:])
-
-	cwhash, err := tx.commonWitnessHash()
-	if err != nil {
-		return hash, err
-	}
-	hasher.Write(cwhash[:])
-
-	blockchain.WriteVarint31(hasher, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
-	for _, txin := range tx.Inputs {
-		h, err := txin.witnessHash()
-		if err != nil {
-			return hash, err
-		}
-		hasher.Write(h[:])
-	}
-
-	blockchain.WriteVarint31(hasher, uint64(len(tx.Outputs))) // TODO(bobg): check and return error
-	for _, txout := range tx.Outputs {
-		h := txout.witnessHash()
-		hasher.Write(h[:])
-	}
-
-	hasher.Read(hash[:])
-	return hash, nil
-}
-
-func (tx *TxData) commonWitnessHash() (h Hash, err error) {
-	hasher := sha3pool.Get256()
-	defer sha3pool.Put256(hasher)
-
-	buf := bufpool.Get()
-	defer bufpool.Put(buf)
-
-	err = tx.writeCommonWitness(buf)
-	if err != nil {
-		return h, err
-	}
-
-	hasher.Write(buf.Bytes())
-	hasher.Read(h[:])
-	return h, nil
 }
 
 func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {

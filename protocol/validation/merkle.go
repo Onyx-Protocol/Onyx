@@ -24,12 +24,8 @@ func CalcMerkleRoot(transactions []*bc.Tx) (root bc.Hash, err error) {
 		h := sha3pool.Get256()
 		defer sha3pool.Put256(h)
 
-		witHash, err := transactions[0].WitnessHash()
-		if err != nil {
-			return root, err
-		}
 		h.Write(leafPrefix)
-		h.Write(witHash[:])
+		h.Write(transactions[0].Hash[:])
 		h.Read(root[:])
 		return root, nil
 

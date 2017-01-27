@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
@@ -301,17 +300,6 @@ func (t *TxInput) writeInputWitness(w io.Writer) error {
 		}
 	}
 	return nil
-}
-
-func (t *TxInput) witnessHash() (h Hash, err error) {
-	sha := sha3pool.Get256()
-	defer sha3pool.Put256(sha)
-	err = t.writeInputWitness(sha)
-	if err != nil {
-		return h, err
-	}
-	sha.Read(h[:])
-	return h, nil
 }
 
 func (t *TxInput) SpentOutputID() (o OutputID) {
