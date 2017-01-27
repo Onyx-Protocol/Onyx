@@ -155,6 +155,11 @@ module Chain
       # @return [String]
       attrib :spent_output_id
 
+      # @!attribute [r] spent_output
+      # The output consumed by this input.
+      # @return [SpentOutput]
+      attrib(:spent_output) { |raw| SpentOutput.new(raw) }
+
       # @!attribute [r] account_id
       # The id of the account transferring the asset (possibly null if the
       # input is an issuance or an unspent output is specified).
@@ -196,6 +201,18 @@ module Chain
       # A flag indicating if the input is local.
       # @return [Boolean]
       attrib :is_local
+
+      class SpentOutput < ResponseObject
+        # @!attribute [r] transaction_id
+        # Unique transaction identifier.
+        # @return [String]
+        attrib :transaction_id
+
+        # @!attribute [r] position
+        # Position of an output within the transaction.
+        # @return [Integer]
+        attrib :position
+      end
     end
 
     class Output < ResponseObject
