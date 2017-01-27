@@ -34,9 +34,9 @@ Blockchain observers, such as auditors, regulators, and analysts, don't issue or
 
 When initializing a Chain Core, a participant can connect to an existing blockchain by providing the following information:
 
-1. block generator URL
-2. network token
-2. blockchain ID
+* Block generator URL
+* Blockchain ID
+* Network access token (not required when connecting to localhost)
 
 Chain Core will begin downloading blockchain data from the block generator. Once the Core is up to date with the network it will receive new blocks as they are created.
 

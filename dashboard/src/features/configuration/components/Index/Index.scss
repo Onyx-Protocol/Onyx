@@ -142,3 +142,10 @@ input[type=radio]:checked ~ .choice {
   width: 100%;
   margin-top: $gutter-size;
 }
+
+.infoLink {
+  position: relative;
+  left: 4px;
+  top: 1px;
+  color:$text-light-color;
+}
