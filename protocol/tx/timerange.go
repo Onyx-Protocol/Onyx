@@ -1,17 +1,18 @@
 package tx
 
 type timeRange struct {
-	MinTimeMS, MaxTimeMS uint64
-	ExtHash              extHash
+	body struct {
+		MinTimeMS, MaxTimeMS uint64
+		ExtHash              extHash
+	}
 }
 
-func (timeRange) Type() string { return "timerange" } // xxx "timerange1"?
+func (timeRange) Type() string          { return "timerange" } // xxx "timerange1"?
+func (tr *timeRange) Body() interface{} { return tr.body }
 
-func newTimeRange(minTimeMS, maxTimeMS uint64) *entry {
-	return &entry{
-		body: &timeRange{
-			MinTimeMS: minTimeMS,
-			MaxTimeMS: maxTimeMS,
-		},
-	}
+func newTimeRange(minTimeMS, maxTimeMS uint64) *timeRange {
+	tr := new(timeRange)
+	tr.body.MinTimeMS = minTimeMS
+	tr.body.MaxTimeMS = maxTimeMS
+	return tr
 }

@@ -1,20 +1,21 @@
 package tx
 
 type output struct {
-	Source         valueSource
-	ControlProgram program
-	Data           entryRef
-	ExtHash        extHash
+	body struct {
+		Source         valueSource
+		ControlProgram program
+		Data      entryRef
+		ExtHash        extHash
+	}
 }
 
-func (output) Type() string { return "output1" }
+func (output) Type() string         { return "output1" }
+func (o *output) Body() interface{} { return o.body }
 
-func newOutput(source valueSource, controlProgram program, data entryRef) *entry {
-	return &entry{
-		body: &output{
-			Source:         source,
-			ControlProgram: controlProgram,
-			Data:           data,
-		},
-	}
+func newOutput(source valueSource, controlProgram program, data entryRef) *output {
+	out := new(output)
+	out.body.Source = source
+	out.body.ControlProgram = controlProgram
+	out.body.Data = data
+	return out
 }

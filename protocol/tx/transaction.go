@@ -27,7 +27,7 @@ type VMContext struct {
 
 // HashTx returns all hashes needed for validation and state updates.
 func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
-	headerEntry, entries, err := mapTx(oldTx)
+	header, entries, err := mapTx(oldTx)
 	if err != nil {
 		return nil, err
 	}
@@ -35,18 +35,16 @@ func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
 	hashes = new(TxHashes)
 
 	// ID
-	txid, err := entryID(headerEntry)
+	txid, err := entryID(header)
 	if err != nil {
 		return nil, err
 	}
 	hashes.ID = bc.Hash(txid)
 
-	header := headerEntry.body.(*header)
-
 	// OutputIDs
-	for _, resultHash := range header.Results {
+	for _, resultHash := range header.body.Results {
 		result := entries[resultHash]
-		if _, ok := result.body.(*output); ok {
+		if _, ok := result.(*output); ok {
 			hashes.OutputIDs = append(hashes.OutputIDs, bc.Hash(resultHash))
 		}
 	}
@@ -54,27 +52,27 @@ func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
 	var txRefDataHash bc.Hash // xxx calculate this for the tx
 
 	for entryID, ent := range entries {
-		switch body := ent.body.(type) {
+		switch ent := ent.(type) {
 		case *anchor:
 			// xxx check time range is within network-defined limits
-			trID := body.TimeRange
-			trBody := entries[trID].body.(*timeRange) // xxx avoid panics here
+			trID := ent.body.TimeRange
+			trEntry := entries[trID].(*timeRange) // xxx avoid panics here
 			iss := struct {
 				ID           bc.Hash
 				ExpirationMS uint64
-			}{bc.Hash(entryID), trBody.MaxTimeMS}
+			}{bc.Hash(entryID), trEntry.body.MaxTimeMS}
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *issuance:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
-			vmc.RefDataHash = bc.Hash(body.Data) // xxx should this be the id of the data entry? or the hash of the data that's _in_ the data entry?
-			vmc.AnchorID = (*bc.Hash)(&body.Anchor)
+			vmc.RefDataHash = bc.Hash(ent.body.Data) // xxx should this be the id of the data entry? or the hash of the data that's _in_ the data entry?
+			vmc.AnchorID = (*bc.Hash)(&ent.body.Anchor)
 			hashes.VMContexts = append(hashes.VMContexts, vmc)
 
 		case *spend:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
-			vmc.RefDataHash = bc.Hash(body.Data)
-			vmc.OutputID = (*bc.Hash)(&body.SpentOutput)
+			vmc.RefDataHash = bc.Hash(ent.body.Data)
+			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
 			hashes.VMContexts = append(hashes.VMContexts, vmc)
 		}
 	}
