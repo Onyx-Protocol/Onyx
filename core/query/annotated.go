@@ -85,7 +85,7 @@ func (b *Bool) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, outpoints map[bc.OutputID]*bc.Outpoint) *AnnotatedTx {
+func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedTx {
 	blockHash := b.Hash()
 	referenceData := json.RawMessage(orig.ReferenceData)
 	if len(referenceData) == 0 {
@@ -111,7 +111,7 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, ou
 	return tx
 }
 
-func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]*bc.Outpoint) *AnnotatedInput {
+func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedInput {
 	aid := orig.AssetID()
 
 	referenceData := json.RawMessage(orig.ReferenceData)
@@ -135,8 +135,8 @@ func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]*bc.Outpoin
 		in.ControlProgram = prog
 		in.SpentOutputID = prevoutID.Bytes()
 
-		outpoint := outpoints[prevoutID]
-		if outpoint != nil {
+		outpoint, ok := outpoints[prevoutID]
+		if ok {
 			in.SpentOutput = &SpentOutput{
 				TransactionID: outpoint.Hash[:],
 				Position:      outpoint.Index,
