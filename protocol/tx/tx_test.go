@@ -3,7 +3,6 @@ package tx
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -47,7 +46,7 @@ func TestMapTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println(spew.Sdump(entryMap))
+	t.Log(spew.Sdump(entryMap))
 
 	if header.body.Version != 1 {
 		t.Errorf("header.body.Version is %d, expected 1", header.body.Version)
