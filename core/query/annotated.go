@@ -3,16 +3,11 @@ package query
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"time"
 
-	"github.com/lib/pq"
-	
-	"chain/database/pg"
 	chainjson "chain/encoding/json"
-	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
 )
@@ -90,7 +85,7 @@ func (b *Bool) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-func buildAnnotatedTransaction(ind *Indexer, ctx context.Context, orig *bc.Tx, b *bc.Block, indexInBlock uint32) *AnnotatedTx {
+func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, outpoints map[bc.OutputID]*bc.Outpoint) *AnnotatedTx {
 	blockHash := b.Hash()
 	referenceData := json.RawMessage(orig.ReferenceData)
 	if len(referenceData) == 0 {
@@ -108,7 +103,7 @@ func buildAnnotatedTransaction(ind *Indexer, ctx context.Context, orig *bc.Tx, b
 		Outputs:       make([]*AnnotatedOutput, 0, len(orig.Outputs)),
 	}
 	for _, in := range orig.Inputs {
-		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(ind, ctx, in))
+		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(in, outpoints))
 	}
 	for i, out := range orig.Outputs {
 		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(out, uint32(i), orig.Hash))
@@ -116,7 +111,7 @@ func buildAnnotatedTransaction(ind *Indexer, ctx context.Context, orig *bc.Tx, b
 	return tx
 }
 
-func buildAnnotatedInput(ind *Indexer, ctx context.Context, orig *bc.TxInput) *AnnotatedInput {
+func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]*bc.Outpoint) *AnnotatedInput {
 	aid := orig.AssetID()
 
 	referenceData := json.RawMessage(orig.ReferenceData)
@@ -139,9 +134,9 @@ func buildAnnotatedInput(ind *Indexer, ctx context.Context, orig *bc.TxInput) *A
 		in.Type = "spend"
 		in.ControlProgram = prog
 		in.SpentOutputID = prevoutID.Bytes()
-
-		outpoint, err := ind.loadOutpoint(ctx, prevoutID)
-		if err != nil {
+		
+		outpoint := outpoints[prevoutID]
+		if outpoint != nil {
 			in.SpentOutput = &SpentOutput{
 				TransactionID: outpoint.Hash[:],
 				Position:      outpoint.Index,
@@ -150,46 +145,6 @@ func buildAnnotatedInput(ind *Indexer, ctx context.Context, orig *bc.TxInput) *A
 
 	}
 	return in
-}
-
-func (ind *Indexer) loadOutpoint(ctx context.Context, outid bc.OutputID) (outpoint bc.Outpoint, err error) {
-	const q = `
-		SELECT tx_hash, output_index
-		FROM annotated_outputs
-		WHERE output_id = $1
-	`
-	err = ind.db.QueryRow(ctx, q, outid).Scan(&outpoint.Hash, &outpoint.Index)
-	if err == sql.ErrNoRows {
-		return outpoint, pg.ErrUserInputNotFound
-	} else if err != nil {
-		return outpoint, errors.Wrap(err)
-	}
-	return outpoint, nil
-}
-
-func (ind *Indexer) loadOutpoints(ctx context.Context, outids []bc.OutputID) (map[bc.OutputID]bc.Outpoint, error) {
-	const q = `
-		SELECT tx_hash, output_index
-		FROM annotated_outputs
-		WHERE output_id IN (SELECT unnest($1::bytea[]))
-	`
-	var pgoutids pq.ByteaArray
-	for _, outid := range outids {
-		pgoutids = append(pgoutids, outid.Bytes())
-	}
-	results := make(map[bc.OutputID]bc.Outpoint)
-	err := pg.ForQueryRows(ctx, ind.db, q, pgoutids, func(txHash bc.Hash, outputIndex uint32) {
-		// We compute outid on the fly instead of receiving it from DB to save 40% of bandwidth.
-		outid := bc.ComputeOutputID(txHash, outputIndex)
-		results[outid] = bc.Outpoint{
-			Hash:  txHash,
-			Index: outputIndex,
-		}
-	})
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	return results, nil
 }
 
 func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *AnnotatedOutput {

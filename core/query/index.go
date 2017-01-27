@@ -67,15 +67,27 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*Ann
 		positions           = pg.Uint32s(make([]uint32, 0, len(b.Transactions)))
 		annotatedTxs        = pq.StringArray(make([]string, 0, len(b.Transactions)))
 		annotatedTxsDecoded = make([]*AnnotatedTx, 0, len(b.Transactions))
+		outputIDs           = pq.ByteaArray(make([][]byte, 0))
 	)
+	for _, tx := range b.Transactions {
+		for _, in := range tx.Inputs {
+			if !in.IsIssuance() {
+				outputIDs = append(outputIDs, in.SpentOutputID().Bytes())
+			}
+		}
+	}
+	outpoints, err := ind.loadOutpoints(ctx, outputIDs)
+	if err != nil {
+		return nil, err
+	}
 	for pos, tx := range b.Transactions {
 		hashes = append(hashes, tx.Hash[:])
 		positions = append(positions, uint32(pos))
-		annotatedTxsDecoded = append(annotatedTxsDecoded, buildAnnotatedTransaction(ind, ctx, tx, b, uint32(pos)))
+		annotatedTxsDecoded = append(annotatedTxsDecoded, buildAnnotatedTransaction(tx, b, uint32(pos), outpoints))
 	}
 
 	for _, annotator := range ind.annotators {
-		err := annotator(ctx, annotatedTxsDecoded)
+		err = annotator(ctx, annotatedTxsDecoded)
 		if err != nil {
 			return nil, errors.Wrap(err, "adding external annotations")
 		}
@@ -96,11 +108,32 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*Ann
 		SELECT $1, unnest($2::integer[]), unnest($3::bytea[]), unnest($4::jsonb[])
 		ON CONFLICT (block_height, tx_pos) DO NOTHING;
 	`
-	_, err := ind.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
+	_, err = ind.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting annotated_txs to db")
 	}
 	return annotatedTxsDecoded, nil
+}
+
+func (ind *Indexer) loadOutpoints(ctx context.Context, outputIDs pq.ByteaArray) (map[bc.OutputID]*bc.Outpoint, error) {
+	const q = `
+		SELECT tx_hash, output_index
+		FROM annotated_outputs
+		WHERE output_id IN (SELECT unnest($1::bytea[]))
+	`
+	results := make(map[bc.OutputID]*bc.Outpoint)
+	err := pg.ForQueryRows(ctx, ind.db, q, outputIDs, func(txHash bc.Hash, outputIndex uint32) {
+		// We compute outid on the fly instead of receiving it from DB to save 40% of bandwidth.
+		outid := bc.ComputeOutputID(txHash, outputIndex)
+		results[outid] = &bc.Outpoint{
+			Hash:  txHash,
+			Index: outputIndex,
+		}
+	})
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	return results, nil
 }
 
 func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annotatedTxs []*AnnotatedTx) error {
