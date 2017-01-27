@@ -47,7 +47,7 @@ Each release of a core software package is assigned a version string composed of
 These numbers represent, in order:
 
 - **Major version**: significant product changes
-- **Minor version**: bugfixes, new features
+- **Minor version**: bugfixes, new features, deprecations, and breaking changes
 - **Build version**: package-specific bugfixes and features
 
 ### Semantics
@@ -60,7 +60,7 @@ Software packages are mutually compatible if they share the same major and minor
 
 #### Deprecations and breaking changes
 
-The version string does **not** convey whether a particular release contains a breaking change or not. If a feature is deprecated, it will remain functional for at least one minor version before being removed.
+Deprecations and breaking changes can occur when the minor version changes. If a feature is deprecated, it will remain functional for at least one minor version before being removed.
 
 ## Network versioning
 
