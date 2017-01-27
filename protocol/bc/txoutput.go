@@ -82,10 +82,6 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 	return nil
 }
 
-func (to *TxOutput) witnessHash() Hash {
-	return EmptyStringHash
-}
-
 func (to *TxOutput) WriteCommitment(w io.Writer) error {
 	return to.OutputCommitment.writeExtensibleString(w, to.CommitmentSuffix, to.AssetVersion)
 }

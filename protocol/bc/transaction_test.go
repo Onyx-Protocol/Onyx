@@ -21,10 +21,9 @@ func TestTransaction(t *testing.T) {
 	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
 
 	cases := []struct {
-		tx          *Tx
-		hex         string
-		hash        [32]byte
-		witnessHash [32]byte
+		tx   *Tx
+		hex  string
+		hash [32]byte
 	}{
 		{
 			tx: NewTx(TxData{
@@ -44,8 +43,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // inputs count
 				"00" + // outputs count
 				"00"), // reference data
-			hash:        mustDecodeHash("74e60d94a75848b48fc79eac11a1d39f41e1b32046cf948929b729a57b75d5be"),
-			witnessHash: mustDecodeHash("87f80a62c95421ab5c42b7e2787b472a84856461dd01397f2c37f096f0ef1ab4"),
+			hash: mustDecodeHash("74e60d94a75848b48fc79eac11a1d39f41e1b32046cf948929b729a57b75d5be"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -94,8 +92,7 @@ func TestTransaction(t *testing.T) {
 				"066f7574707574" + // output 0, reference data
 				"00" + // output 0, output witness
 				"0869737375616e6365"), // reference data
-			hash:        mustDecodeHash("946b6c226d88723020ab50665fbb76191639b5f1fd851b35edb729d4b17373cc"),
-			witnessHash: mustDecodeHash("813b400d2d53cfa89b9cb985b618ef974b81613f1d9a33c8b4f5a6b6c69ef5fe"),
+			hash: mustDecodeHash("946b6c226d88723020ab50665fbb76191639b5f1fd851b35edb729d4b17373cc"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -148,8 +145,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 1, reference data
 				"00" + // output 1, output witness
 				"0c646973747269627574696f6e"), // reference data
-			hash:        mustDecodeHash("86556ca6f6181dbb71bcd3cba53fce825f39083c409b7c4afdf40c9912487113"),
-			witnessHash: mustDecodeHash("be907283e04ac6f365bc85af01b1a7945f89bfa4d77ca6429533cb11472322ab"),
+			hash: mustDecodeHash("86556ca6f6181dbb71bcd3cba53fce825f39083c409b7c4afdf40c9912487113"),
 		},
 	}
 	for i, test := range cases {
@@ -160,14 +156,6 @@ func TestTransaction(t *testing.T) {
 		}
 		if test.tx.Hash != test.hash {
 			t.Errorf("test %d: hash = %s want %x", i, test.tx.Hash, test.hash)
-		}
-
-		g, err := test.tx.WitnessHash()
-		if err != nil {
-			t.Fatalf("unexpected error %s", err)
-		}
-		if g != test.witnessHash {
-			t.Errorf("test %d: witness hash = %s want %x", i, g, test.witnessHash)
 		}
 
 		txJSON, err := json.Marshal(test.tx)
