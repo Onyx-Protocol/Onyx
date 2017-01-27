@@ -152,13 +152,19 @@ class Index extends React.Component {
                 placeholder='https://<block-generator-host>'
                 fieldProps={generator_url} />
               <TextField
-                title='Network Access Token'
-                placeholder='token-id:9e5f139755366add8c76'
-                fieldProps={generator_access_token} />
-              <TextField
                 title='Blockchain ID'
                 placeholder='896a800000000000000'
                 fieldProps={blockchain_id} />
+              <TextField
+                title={[
+                  'Network Access Token',
+                  <a href='http://www.chain.com/docs/core/learn-more/authentication' target='_blank'>
+                    <small className={styles.infoLink}>
+                      <span className='glyphicon glyphicon-info-sign'></span>
+                    </small>
+                  </a>]}
+                placeholder='token-id:9e5f139755366add8c76'
+                fieldProps={generator_access_token} />
 
               {configSubmit}
             </div>}
