@@ -5,8 +5,8 @@ import (
 	"chain/protocol/bc"
 )
 
-// HashTx returns all hashes needed for validation and state updates.
-func HashTx(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
+// TxHashes returns all hashes needed for validation and state updates.
+func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 	txid, header, entries, err := mapTx(oldTx)
 	if err != nil {
 		return nil, err

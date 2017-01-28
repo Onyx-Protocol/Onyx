@@ -10,7 +10,7 @@ import (
 func BenchmarkHashEmptyTx(b *testing.B) {
 	tx := &bc.TxData{}
 	for i := 0; i < b.N; i++ {
-		_, err := HashTx(tx)
+		_, err := TxHashes(tx)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -20,7 +20,7 @@ func BenchmarkHashEmptyTx(b *testing.B) {
 func BenchmarkHashNonemptyTx(b *testing.B) {
 	tx := sampleTx()
 	for i := 0; i < b.N; i++ {
-		_, err := HashTx(tx)
+		_, err := TxHashes(tx)
 		if err != nil {
 			b.Fatal(err)
 		}
