@@ -7,6 +7,20 @@ import (
 	"chain/protocol/bc"
 )
 
+func TestTxHashes(t *testing.T) {
+	cases := []*bc.TxData{{}, sampleTx()}
+
+	for _, txData := range cases {
+		hashes, err := TxHashes(txData)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(hashes.VMContexts) != len(txData.Inputs) {
+			t.Errorf("len(hashes.VMContexts) = %d, want %d", len(hashes.VMContexts), len(txData.Inputs))
+		}
+	}
+}
+
 func BenchmarkHashEmptyTx(b *testing.B) {
 	tx := &bc.TxData{}
 	for i := 0; i < b.N; i++ {
