@@ -165,9 +165,3 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 
 	return headerID, h.(*header), entryMap, nil
 }
-
-func issuanceAnchorProg(nonce []byte, assetID bc.AssetID) program {
-	b := vmutil.NewBuilder()
-	b = b.AddData(nonce).AddOp(vm.OP_DROP).AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
-	return program{1, b.Program}
-}
