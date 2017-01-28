@@ -20,6 +20,7 @@ export const exportState = (store) => () => {
     transaction: {
       generated: (state.transaction || {}).generated,
     },
+    tutorial: state.tutorial
   }
 
   try {

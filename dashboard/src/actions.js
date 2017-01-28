@@ -9,6 +9,7 @@ import { actions as mockhsm } from 'features/mockhsm'
 import { actions as testnet } from 'features/testnet'
 import { actions as transaction } from 'features/transactions'
 import { actions as transactionFeed } from 'features/transactionFeeds'
+import { actions as tutorial } from 'features/tutorial'
 import { actions as unspent } from 'features/unspents'
 
 const actions = {
@@ -23,6 +24,7 @@ const actions = {
   testnet,
   transaction,
   transactionFeed,
+  tutorial,
   unspent,
 }
 

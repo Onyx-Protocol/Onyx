@@ -25,7 +25,7 @@ class Show extends BaseShow {
           <KeyValueTable
             title='Details'
             actions={[
-              <button className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
+              <button key='show-circulation' className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
                 Circulation
               </button>,
               <RawJsonButton key='raw-json' item={item} />

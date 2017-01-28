@@ -1,0 +1,84 @@
+.container {
+  position: relative;
+  margin: 0 50px;
+  width: 300px;
+
+  .tutorialContainer {
+    position: fixed;
+    padding: 25px 0;
+    top: 150px;
+    width: 300px;
+    min-height: 100px;
+    border-left: solid #69A7E4 3px;
+    border-bottom: 1px solid rgba(0,0,0,0.09);
+    background-color: #FFFFFF;
+    box-shadow: 0 1px 2px 1px rgba(0,0,0,0.09);
+
+    .header {
+      margin: 0 25px;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 16px;
+      color: #B6BCC5;
+
+      .skip {
+        float: right;
+
+        a {
+          font-size: 11px;
+          font-weight: 500;
+          line-height: 14px;
+          color: #B6BCC5;
+          text-decoration: underline;
+          cursor: pointer;
+        }
+      }
+    }
+
+    .list {
+      margin: 0 25px;
+
+      .listHeader {
+        padding: 15px 0;
+        font-size: 16px;
+        font-weight: bold;
+        line-height: 19px;
+        color: #20252D;
+        border-bottom: 1px solid rgba(182,188,197,0.27);
+      }
+
+      .listItemContainer {
+        margin: 15px 0;
+
+        .listItem {
+          margin-bottom: 5px;
+          list-style: none;
+          font-size: 15px;
+          font-weight: 500;
+          line-height: 18px;
+          color: #20252D;
+
+          .listBullet {
+            margin-right: 10px;
+            padding: 2px;
+            display: inline-block;
+            border-radius: 50%;
+            background: #69A7E4;
+            width: 18px;
+            height: 18px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 14px;
+            color: #FFFFFF;
+          }
+        }
+
+        .listItemDescription {
+          color: #A3A9B8;
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import React from 'react'
 import { ErrorBanner, PageTitle, FormSection, SubmitIndicator } from 'features/shared/components'
 import styles from './FormContainer.scss'
+import Tutorial from 'features/tutorial/components/Tutorial'
 
 class FormContainer extends React.Component {
   render() {
@@ -31,6 +32,7 @@ class FormContainer extends React.Component {
               </FormSection>
             </form>
           </div>
+          <Tutorial types={['TutorialForm']} />
         </div>
       </div>
     )

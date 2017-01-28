@@ -1,0 +1,67 @@
+.container {
+  width: 100%;
+  border-bottom: solid $text-light-color 1px;
+  background-color: $background-color;
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.25);
+  margin-bottom: $gutter-size/2;
+
+  .header {
+    background-color: $highlight-tutorial;
+    box-sizing: border-box;
+    color: $text-inverse-color;
+    padding: 0 $gutter-size;
+    height: $title-height;
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .skip {
+    flex: 1;
+    text-align: right;
+
+    a {
+      color: $text-inverse-color;
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 18px;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+  }
+
+  .content {
+    padding: 25px $gutter-size;
+    display: flex;
+    align-items: center;
+
+    span {
+      margin-right: $gutter-size;
+      color: $highlight-tutorial;
+      font-size: 50px;
+    }
+
+    .text {
+      flex: 1;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    li {
+      list-style: none;
+    }
+
+    .next {
+      margin-left: $gutter-size;
+      text-align: right;
+
+      button {
+        background-color: $background-color;
+        border: 1px solid $highlight-tutorial;
+        border-radius: 2px;
+        color: $highlight-tutorial;
+      }
+    }
+  }
+}
