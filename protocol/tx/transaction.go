@@ -5,34 +5,14 @@ import (
 	"chain/protocol/bc"
 )
 
-// The data needed for validation and state updates.
-type TxHashes struct {
-	ID        bc.Hash
-	OutputIDs []bc.Hash // each OutputID is also the corresponding UnspentID
-	Issuances []struct {
-		ID           bc.Hash
-		ExpirationMS uint64
-	}
-	VMContexts []*VMContext // one per old-style Input
-}
-
-type VMContext struct {
-	TxRefDataHash bc.Hash
-	RefDataHash   bc.Hash
-	TxSigHash     bc.Hash
-	OutputID      *bc.Hash
-	EntryID       bc.Hash
-	NonceID       *bc.Hash
-}
-
 // HashTx returns all hashes needed for validation and state updates.
-func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
+func HashTx(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 	txid, header, entries, err := mapTx(oldTx)
 	if err != nil {
 		return nil, err
 	}
 
-	hashes = new(TxHashes)
+	hashes = new(bc.TxHashes)
 	hashes.ID = bc.Hash(txid)
 
 	// OutputIDs
@@ -76,8 +56,8 @@ func HashTx(oldTx *bc.TxData) (hashes *TxHashes, err error) {
 
 // populates the common fields of a VMContext for an Entry, regardless of whether
 // that Entry is a Spend or an Issuance
-func newVMContext(entryID, txid, txRefDataHash bc.Hash) *VMContext {
-	vmc := new(VMContext)
+func newVMContext(entryID, txid, txRefDataHash bc.Hash) *bc.VMContext {
+	vmc := new(bc.VMContext)
 
 	// TxRefDataHash
 	vmc.TxRefDataHash = txRefDataHash
