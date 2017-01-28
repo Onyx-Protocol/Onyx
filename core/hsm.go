@@ -10,7 +10,7 @@ import (
 )
 
 func (h *Handler) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {
-	return h.HSM.XCreate(ctx, in.Alias)
+	return h.MockHSM.XCreate(ctx, in.Alias)
 }
 
 func (h *Handler) mockhsmListKeys(ctx context.Context, query requestQuery) (page, error) {
@@ -19,7 +19,7 @@ func (h *Handler) mockhsmListKeys(ctx context.Context, query requestQuery) (page
 		limit = defGenericPageSize
 	}
 
-	xpubs, after, err := h.HSM.ListKeys(ctx, query.Aliases, query.After, limit)
+	xpubs, after, err := h.MockHSM.ListKeys(ctx, query.Aliases, query.After, limit)
 	if err != nil {
 		return page{}, err
 	}
@@ -39,7 +39,7 @@ func (h *Handler) mockhsmListKeys(ctx context.Context, query requestQuery) (page
 }
 
 func (h *Handler) mockhsmDelKey(ctx context.Context, xpub chainkd.XPub) error {
-	return h.HSM.DeleteChainKDKey(ctx, xpub)
+	return h.MockHSM.DeleteChainKDKey(ctx, xpub)
 }
 
 func (h *Handler) mockhsmSignTemplates(ctx context.Context, x struct {
@@ -60,7 +60,7 @@ func (h *Handler) mockhsmSignTemplates(ctx context.Context, x struct {
 }
 
 func (h *Handler) mockhsmSignTemplate(ctx context.Context, xpub chainkd.XPub, path [][]byte, data [32]byte) ([]byte, error) {
-	sigBytes, err := h.HSM.XSign(ctx, xpub, path, data[:])
+	sigBytes, err := h.MockHSM.XSign(ctx, xpub, path, data[:])
 	if err == mockhsm.ErrNoKey {
 		return nil, nil
 	}

@@ -8,7 +8,7 @@ import (
 	"chain/database/pg"
 )
 
-var prod = "yes"
+var prod = true
 
 func resetInDevIfRequested(db pg.DB) {}
 

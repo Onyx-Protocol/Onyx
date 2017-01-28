@@ -93,7 +93,12 @@ func init() {
 		version = latestVersion + "-dev"
 	}
 
-	expvar.NewString("prod").Set(prod)
+	prodStr := "no"
+	if prod {
+		prodStr = "yes"
+	}
+
+	expvar.NewString("prod").Set(prodStr)
 	expvar.NewString("version").Set(version)
 	expvar.NewString("buildtag").Set(buildTag)
 	expvar.NewString("builddate").Set(buildDate)
@@ -105,6 +110,7 @@ func init() {
 	config.Version = version
 	config.BuildCommit = buildCommit
 	config.BuildDate = buildDate
+	config.Production = prod
 }
 
 func main() {
@@ -214,7 +220,10 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 
-	hsm := mockhsm.New(db)
+	var mockHSM *mockhsm.HSM
+	if !prod {
+		mockHSM = mockhsm.New(db)
+	}
 
 	var generatorSigners []generator.BlockSigner
 	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
@@ -223,7 +232,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
-		s := blocksigner.New(blockPub, hsm, db, c)
+		s := blocksigner.New(blockPub, mockHSM, db, c) // TODO(jackson): support real HSM
 		generatorSigners = append(generatorSigners, s) // "local" signer
 		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
 			sig, err := s.ValidateAndSignBlock(ctx, b)
@@ -290,7 +299,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		PinStore:     pinStore,
 		Assets:       assets,
 		Accounts:     accounts,
-		HSM:          hsm,
+		MockHSM:      mockHSM,
 		Submitter:    submitter,
 		TxFeeds:      &txfeed.Tracker{DB: db},
 		Indexer:      indexer,

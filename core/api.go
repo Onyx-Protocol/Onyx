@@ -56,7 +56,7 @@ type Handler struct {
 	PinStore      *pin.Store
 	Assets        *asset.Registry
 	Accounts      *account.Manager
-	HSM           *mockhsm.HSM
+	MockHSM       *mockhsm.HSM
 	Indexer       *query.Indexer
 	TxFeeds       *txfeed.Tracker
 	AccessTokens  *accesstoken.CredentialStore
@@ -113,6 +113,11 @@ func (h *Handler) init() {
 		}
 	}
 
+	devOnly := func(h http.Handler) http.Handler { return h }
+	if config.Production {
+		devOnly = func(h http.Handler) http.Handler { return alwaysError(errProduction) }
+	}
+
 	m := http.NewServeMux()
 	m.Handle("/", alwaysError(errNotFound))
 
@@ -126,17 +131,17 @@ func (h *Handler) init() {
 	m.Handle("/get-transaction-feed", needConfig(h.getTxFeed))
 	m.Handle("/update-transaction-feed", needConfig(h.updateTxFeed))
 	m.Handle("/delete-transaction-feed", needConfig(h.deleteTxFeed))
-	m.Handle("/mockhsm/create-key", needConfig(h.mockhsmCreateKey))
-	m.Handle("/mockhsm/list-keys", needConfig(h.mockhsmListKeys))
-	m.Handle("/mockhsm/delkey", needConfig(h.mockhsmDelKey))
-	m.Handle("/mockhsm/sign-transaction", needConfig(h.mockhsmSignTemplates))
+	m.Handle("/mockhsm/create-key", devOnly(needConfig(h.mockhsmCreateKey)))
+	m.Handle("/mockhsm/list-keys", devOnly(needConfig(h.mockhsmListKeys)))
+	m.Handle("/mockhsm/delkey", devOnly(needConfig(h.mockhsmDelKey)))
+	m.Handle("/mockhsm/sign-transaction", devOnly(needConfig(h.mockhsmSignTemplates)))
 	m.Handle("/list-accounts", needConfig(h.listAccounts))
 	m.Handle("/list-assets", needConfig(h.listAssets))
 	m.Handle("/list-transaction-feeds", needConfig(h.listTxFeeds))
 	m.Handle("/list-transactions", needConfig(h.listTransactions))
 	m.Handle("/list-balances", needConfig(h.listBalances))
 	m.Handle("/list-unspent-outputs", needConfig(h.listUnspentOutputs))
-	m.Handle("/reset", needConfig(h.reset))
+	m.Handle("/reset", devOnly(needConfig(h.reset)))
 
 	m.Handle(networkRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *bc.Tx) error {
 		return h.Submitter.Submit(ctx, tx)
