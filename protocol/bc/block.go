@@ -190,6 +190,33 @@ func (bh *BlockHeader) HashForSig() Hash {
 	return v
 }
 
+// MarshalText fulfills the json.Marshaler interface.
+// This guarantees that block headers will get deserialized correctly
+// when being parsed from HTTP requests.
+func (bh *BlockHeader) MarshalText() ([]byte, error) {
+	buf := bufpool.Get()
+	defer bufpool.Put(buf)
+	_, err := bh.WriteTo(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	enc := make([]byte, hex.EncodedLen(buf.Len()))
+	hex.Encode(enc, buf.Bytes())
+	return enc, nil
+}
+
+// UnmarshalText fulfills the encoding.TextUnmarshaler interface.
+func (bh *BlockHeader) UnmarshalText(text []byte) error {
+	decoded := make([]byte, hex.DecodedLen(len(text)))
+	_, err := hex.Decode(decoded, text)
+	if err != nil {
+		return err
+	}
+	_, err = bh.readFrom(bytes.NewReader(decoded))
+	return err
+}
+
 func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 	var serflags [1]byte
 	io.ReadFull(r, serflags[:])
