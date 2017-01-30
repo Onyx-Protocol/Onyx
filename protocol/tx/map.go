@@ -52,7 +52,7 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 				return
 			}
 			var spID entryRef
-			spID, _, err = addEntry(newSpend(entryRef(oldSp.SpentOutputID.Hash), inpRefdataID))
+			spID, _, err = addEntry(newSpend(entryRef(oldSp.SpentOutputID.Hash), inpRefdataID, i))
 			if err != nil {
 				return
 			}
@@ -106,7 +106,7 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 			val := inp.AssetAmount()
 
 			var issID entryRef
-			issID, _, err = addEntry(newIssuance(nonceHash, val, inpRefdataID))
+			issID, _, err = addEntry(newIssuance(nonceHash, val, inpRefdataID, i))
 			if err != nil {
 				return
 			}
@@ -144,14 +144,14 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 		var resultID entryRef
 		if vmutil.IsUnspendable(out.ControlProgram) {
 			// retirement
-			resultID, _, err = addEntry(newRetirement(s, outRefdataID))
+			resultID, _, err = addEntry(newRetirement(s, outRefdataID, i))
 			if err != nil {
 				return
 			}
 		} else {
 			// non-retirement
 			prog := program{out.VMVersion, out.ControlProgram}
-			resultID, _, err = addEntry(newOutput(s, prog, outRefdataID))
+			resultID, _, err = addEntry(newOutput(s, prog, outRefdataID, i))
 			if err != nil {
 				return
 			}

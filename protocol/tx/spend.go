@@ -6,14 +6,18 @@ type spend struct {
 		Data        entryRef // must be a Data entry
 		ExtHash     extHash
 	}
+	ordinal int
 }
 
 func (spend) Type() string         { return "spend1" }
 func (s *spend) Body() interface{} { return s.body }
 
-func newSpend(spentOutput, data entryRef) entry {
+func (s spend) Ordinal() int { return s.ordinal }
+
+func newSpend(spentOutput, data entryRef, ordinal int) entry {
 	s := new(spend)
 	s.body.SpentOutput = spentOutput
 	s.body.Data = data
+	s.ordinal = ordinal
 	return s
 }
