@@ -12,9 +12,10 @@ const components = {
 
 class Tutorial extends React.Component {
   render() {
-    const tutorialStep = this.props.tutorialStep
-    const userInput = this.props.tutorialInputs
-    const tutorialOpen = this.props.tutorialOpen
+    const tutorialStep = this.props.tutorial.step
+    const userInput = this.props.tutorial.userInputs
+    const tutorialOpen = this.props.tutorial.isShowing
+    const tutorialRoute = steps[tutorialStep]['route']
     const tutorialTypes = this.props.types
     const TutorialComponent = components[steps[tutorialStep]['component']]
 
@@ -25,7 +26,7 @@ class Tutorial extends React.Component {
             userInput={userInput}
             step={tutorialStep}
             {...steps[tutorialStep]}
-            handleNext={this.props.showNextStep}
+            handleNext={() => this.props.showNextStep(tutorialRoute)}
             handleDismiss={this.props.dismissTutorial}
           />
         }
@@ -38,14 +39,12 @@ import { actions } from 'features/tutorial'
 import { connect } from 'react-redux'
 
 const mapStateToProps = (state) => ({
-  tutorialStep: state.tutorial.step,
-  tutorialOpen: state.tutorial.isShowing,
-  tutorialInputs: state.tutorial.userInputs
+  tutorial: state.tutorial
 })
 
 const mapDispatchToProps = ( dispatch ) => ({
   dismissTutorial: () => dispatch(actions.dismissTutorial),
-  showNextStep: () => dispatch(actions.tutorialNextStep)
+  showNextStep: (route) => dispatch(actions.tutorialNextStep(route))
 })
 
 export default connect(
