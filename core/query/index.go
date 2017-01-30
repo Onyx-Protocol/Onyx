@@ -117,16 +117,14 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*Ann
 
 func (ind *Indexer) loadOutpoints(ctx context.Context, outputIDs pq.ByteaArray) (map[bc.OutputID]bc.Outpoint, error) {
 	const q = `
-		SELECT tx_hash, output_index
+		SELECT tx_hash, output_index, output_id
 		FROM annotated_outputs
 		WHERE output_id IN (SELECT unnest($1::bytea[]))
 	`
 	results := make(map[bc.OutputID]bc.Outpoint)
-	err := pg.ForQueryRows(ctx, ind.db, q, outputIDs, func(txHash bc.Hash, outputIndex uint32) {
-		// We compute outid on the fly instead of receiving it from DB to save 47% of bandwidth:
-		// DB is sending (hash256, int32) instead of (hash, int32, hash).
-		outid := bc.ComputeOutputID(txHash, outputIndex)
-		results[outid] = bc.Outpoint{
+	err := pg.ForQueryRows(ctx, ind.db, q, outputIDs, func(txHash bc.Hash, outputIndex uint32, outid bc.Hash) {
+		oid := bc.OutputID{outid}
+		results[oid] = bc.Outpoint{
 			Hash:  txHash,
 			Index: outputIndex,
 		}

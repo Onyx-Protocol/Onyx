@@ -15,16 +15,16 @@ import (
 
 func TestInferConstraints(t *testing.T) {
 	tpl := &Template{
-		Transaction: &bc.TxData{
+		Transaction: &bc.Tx{TxData: bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 1), nil, bc.AssetID{}, 123, nil, []byte{1}),
+				bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{}, 123, nil, []byte{1}),
 			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(bc.AssetID{}, 123, []byte{10, 11, 12}, nil),
 			},
 			MinTime: 1,
 			MaxTime: 2,
-		},
+		}},
 		AllowAdditional: true,
 	}
 	prog := buildSigProgram(tpl, 0)
