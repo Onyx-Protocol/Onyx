@@ -75,11 +75,11 @@ func (g *Generator) Submit(ctx context.Context, tx *bc.Tx) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	if g.poolHashes[tx.Hash] {
+	if g.poolHashes[tx.ID] {
 		return nil
 	}
 
-	g.poolHashes[tx.Hash] = true
+	g.poolHashes[tx.ID] = true
 	g.pool = append(g.pool, tx)
 	return nil
 }

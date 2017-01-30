@@ -132,6 +132,6 @@ func (b *TemplateBuilder) Build() (*Template, *bc.TxData, error) {
 		tpl.SigningInstructions = append(tpl.SigningInstructions, instruction)
 		tx.Inputs = append(tx.Inputs, in)
 	}
-	tpl.Transaction = tx
+	tpl.Transaction = bc.NewTx(*tx)
 	return tpl, tx, nil
 }

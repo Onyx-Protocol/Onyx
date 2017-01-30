@@ -94,7 +94,7 @@ func TestUniqueIssuance(t *testing.T) {
 	tx = bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(bc.ComputeOutputID(tx.Hash, 0), nil, assetID, 1, trueProg, nil),
+			bc.NewSpendInput(bc.ComputeOutputID(tx.ID, 0), nil, assetID, 1, trueProg, nil),
 			issuance2Inp,
 		},
 		Outputs: []*bc.TxOutput{

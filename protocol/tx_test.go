@@ -46,8 +46,8 @@ func newDest(t testing.TB) *testDest {
 	}
 }
 
-func (d *testDest) sign(t testing.TB, tx *bc.TxData, index uint32) {
-	txsighash := tx.HashForSig(index)
+func (d *testDest) sign(t testing.TB, tx *bc.Tx, index uint32) {
+	txsighash := tx.SigHash(index)
 	prog, _ := vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", txsighash[:]))
 	h := sha3.Sum256(prog)
 	sig := ed25519.Sign(d.privKey, h[:])
@@ -84,7 +84,7 @@ func issue(t testing.TB, asset *testAsset, dest *testDest, amount uint64) (*bc.T
 	}
 	assetCP, _ := asset.controlProgram()
 	destCP, _ := dest.controlProgram()
-	tx := &bc.TxData{
+	tx := bc.NewTx(bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{
 			bc.NewIssuanceInput([]byte{1}, amount, nil, bc.Hash{}, assetCP, nil, nil),
@@ -94,8 +94,8 @@ func issue(t testing.TB, asset *testAsset, dest *testDest, amount uint64) (*bc.T
 		},
 		MinTime: bc.Millis(time.Now()),
 		MaxTime: bc.Millis(time.Now().Add(time.Hour)),
-	}
+	})
 	asset.sign(t, tx, 0)
 
-	return bc.NewTx(*tx), asset, dest
+	return tx, asset, dest
 }

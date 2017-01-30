@@ -106,7 +106,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
-	unsigned := &bc.TxData{
+	unsigned := bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
 			bc.NewIssuanceInput(nil, 5, nil, initialBlockHash, issuanceProg, nil, nil),
@@ -114,7 +114,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 5, outscript, nil),
 		},
-	}
+	})
 
 	prog, err := vm.Assemble(fmt.Sprintf("MAXTIME 0x804cf05736 LESSTHAN VERIFY 0 0 5 0x%x 1 0x76a914c5d128911c28776f56baaac550963f7b88501dc388c0 CHECKOUTPUT", assetID[:]))
 	h := sha3.Sum256(prog)
@@ -174,7 +174,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
-	unsigned := &bc.TxData{
+	unsigned := bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
 			bc.NewIssuanceInput(nil, 100, nil, initialBlockHash, issuanceProg, nil, nil),
@@ -182,7 +182,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 100, outscript, nil),
 		},
-	}
+	})
 
 	tpl := &Template{
 		Transaction: unsigned,
@@ -383,7 +383,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	tx.Outputs[0].Amount = 11
 	tx = bc.NewTx(tx.TxData) // recompute the tx hash
 	spendInput.Arguments = make([][]byte, 3)
-	h := tx.HashForSig(4)
+	h := tx.SigHash(4)
 	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h[:]))
 	if err != nil {
 		t.Fatal(err)
