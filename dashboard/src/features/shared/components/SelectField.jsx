@@ -1,6 +1,6 @@
 import React from 'react'
 import FieldLabel from './FieldLabel/FieldLabel'
-import pick from 'lodash.pick'
+import pick from 'lodash/pick'
 
 const SELECT_FIELD_PROPS = [
   'value',

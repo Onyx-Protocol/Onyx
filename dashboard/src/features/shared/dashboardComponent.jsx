@@ -1,5 +1,5 @@
 import React from 'react'
-import snakeCase from 'lodash.snakecase'
+import snakeCase from 'lodash/snakecase'
 
 const dashboardComponent = (WrappedComponent) => {
   class Wrapped extends React.Component {

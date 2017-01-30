@@ -1,6 +1,6 @@
 import React from 'react'
 import styles from './TextField.scss'
-import pick from 'lodash.pick'
+import pick from 'lodash/pick'
 import { FieldLabel } from 'features/shared/components'
 
 const TEXT_FIELD_PROPS = [
