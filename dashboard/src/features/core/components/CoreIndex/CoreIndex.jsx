@@ -1,6 +1,6 @@
 import { connect } from 'react-redux'
 import { context } from 'utility/environment'
-import dashboardClasses from 'utility/dashboardClasses'
+import componentClassNames from 'utility/componentClassNames'
 import chain from '_chain'
 import { PageContent, ErrorBanner, PageTitle } from 'features/shared/components'
 import React from 'react'
@@ -175,7 +175,7 @@ class CoreIndex extends React.Component {
     )
 
     return (
-      <div className={dashboardClasses(this, 'flex-container', styles.mainContainer)}>
+      <div className={componentClassNames(this, 'flex-container', styles.mainContainer)}>
         <PageTitle title='Core' />
 
         <PageContent>

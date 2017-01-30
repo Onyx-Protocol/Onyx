@@ -6,14 +6,14 @@ import { humanize, capitalize } from 'utility/string'
 import makeRoutes from 'routes'
 import actions from 'actions'
 import styles from './PageTitle.scss'
-import dashboardClasses from 'utility/dashboardClasses'
+import componentClassNames from 'utility/componentClassNames'
 
 class PageTitle extends React.Component {
   render() {
     const chevron = require('assets/images/chevron.png')
 
     return(
-      <div className={dashboardClasses(this)}>
+      <div className={componentClassNames(this)}>
         <div className={styles.main}>
           <div className={styles.navigation}>
             <ul className={styles.crumbs}>

@@ -1,6 +1,6 @@
 import React from 'react'
 import styles from './EmptyList.scss'
-import dashboardClasses from 'utility/dashboardClasses'
+import componentClassNames from 'utility/componentClassNames'
 
 class EmptyList extends React.Component {
   render() {
@@ -41,7 +41,7 @@ class EmptyList extends React.Component {
     ]
 
     return (
-      <div className={dashboardClasses(this, ...classNames)}>
+      <div className={componentClassNames(this, ...classNames)}>
         {emptyImage && <img className={styles.image} src={emptyImage} />}
         {emptyBlock}
       </div>
