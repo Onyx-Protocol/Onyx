@@ -196,7 +196,6 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		txHash    pq.ByteaArray
 		index     pg.Uint32s
 		outputID  pq.ByteaArray
-		unspentID pq.ByteaArray
 		assetID   pq.ByteaArray
 		amount    pq.Int64Array
 		accountID pq.StringArray
@@ -207,7 +206,6 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		txHash = append(txHash, out.txHash[:])
 		index = append(index, out.outputIndex)
 		outputID = append(outputID, out.OutputID.Bytes())
-		unspentID = append(unspentID, out.UnspentID().Bytes())
 		assetID = append(assetID, out.AssetID[:])
 		amount = append(amount, int64(out.Amount))
 		accountID = append(accountID, out.AccountID)
@@ -216,17 +214,16 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 	}
 
 	const q = `
-		INSERT INTO account_utxos (tx_hash, index, output_id, unspent_id, asset_id, amount, account_id, control_program_index,
+		INSERT INTO account_utxos (tx_hash, index, output_id, asset_id, amount, account_id, control_program_index,
 			control_program, confirmed_in)
-		SELECT unnest($1::bytea[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::bytea[]), unnest($5::bytea[]),  unnest($6::bigint[]),
-			   unnest($7::text[]), unnest($8::bigint[]), unnest($9::bytea[]), $10
+		SELECT unnest($1::bytea[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::bytea[]),  unnest($5::bigint[]),
+			   unnest($6::text[]), unnest($7::bigint[]), unnest($8::bytea[]), $9
 		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
 	_, err := m.db.Exec(ctx, q,
 		txHash,
 		index,
 		outputID,
-		unspentID,
 		assetID,
 		amount,
 		accountID,

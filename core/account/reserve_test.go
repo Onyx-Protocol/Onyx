@@ -12,12 +12,11 @@ import (
 
 const sampleAccountUTXOs = `
 	INSERT INTO account_utxos
-	(tx_hash, index, output_id, unspent_id, asset_id, amount, account_id, control_program_index,
+	(tx_hash, index, output_id, asset_id, amount, account_id, control_program_index,
      control_program, confirmed_in) VALUES (
 		decode('270b725a94429496a178c56b390a89d03f801fe2ee992d90cf4fdf7d7855318e', 'hex'),
 		0,
 		decode('9886ae2dc24b6d868c68768038c43801e905a62f1a9b826ca0dc357f00c30117', 'hex'),
-		decode('a31a96f07fc4e24c5d1aebd08e882f00324e64c66e9d7081fbbd1019a033e6c5', 'hex'),
 		decode('df1df9d4f66437ab5be715e4d1faeb29d24c80a6dc8276d6a630f05c5f1f7693', 'hex'),
 		1000, 'accEXAMPLE', 1, '\x6a'::bytea, 1);
 `
@@ -43,11 +42,10 @@ func TestCancelReservation(t *testing.T) {
 		t.Fatal(err)
 	}
 	outputid := bc.ComputeOutputID(h, 0)
-	unspentid := bc.ComputeUnspentID(outputid, bc.Hash{}) // assuming all-zero hash of the output - this test ignores it.
 
 	// Fake the output in the state tree.
 	_, s := c.State()
-	err = s.Tree.Insert(unspentid.Bytes(), []byte{0xc0, 0x01, 0xca, 0xfe})
+	err = s.Tree.Insert(outputid.Bytes(), []byte{0xc0, 0x01, 0xca, 0xfe})
 	if err != nil {
 		t.Error(err)
 	}
