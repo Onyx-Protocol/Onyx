@@ -26,7 +26,6 @@
   * [Issuance Hash](#issuance-hash)
   * [Transaction Input Witness](#transaction-input-witness)
   * [Output ID](#output-id)
-  * [Unspent ID](#unspent-id)
   * [Transaction Output](#transaction-output)
   * [Transaction Output Commitment](#transaction-output-commitment)
   * [Transaction Output Witness](#transaction-output-witness)
@@ -335,18 +334,6 @@ Transaction ID          | sha3-256                | [Transaction ID](#transactio
 Output Index            | varint31                | Index (zero-based) of the [output](#transaction-output) within the transaction.
 
 
-### Unspent ID
-
-An *unspent ID* identifies a transaction output and commits to its contents.
-It is only used to track the set of unspent outputs.
-It is defined as SHA3-256 hash of the following structure:
-
-Field                   | Type                    | Description
-------------------------|-------------------------|----------------------------------------------------------
-Output ID               | sha3-256                | [Output ID](#output-id) of the output.
-Output Commitment Hash  | sha3-256                | SHA3-256 hash of the [output commitment](#transaction-output-commitment) in the specified output.
-
-
 ### Transaction Output
 
 A *transaction output* specifies an asset version, an output commitment, and reference data.
@@ -505,11 +492,11 @@ Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the *t
 
 Root hash of the [merkle patricia tree](#merkle-patricia-tree) formed by unspent outputs with an **asset version 1** after applying the block. Allows bootstrapping nodes from recent blocks and an archived copy of the corresponding merkle patricia tree without processing all historical transactions.
 
-The tree contains [non-retired](#retired-asset) unspent outputs (one or more per [asset ID](#asset-id)) where both key and value are the same value — the [Unspent ID](#unspent-id) of the unspent output.
+The tree contains [non-retired](#retired-asset) unspent outputs (one or more per [asset ID](#asset-id)) where both key and value are the same value — the [Output ID](#output-id) of the unspent output.
 
-Key                       | Value
---------------------------|------------------------------
-[Unspent ID](#unspent-id) | [Unspent ID](#unspent-id)
+Key                     | Value
+------------------------|------------------------------
+[Output ID](#output-id) | [Output ID](#output-id)
 
 
 ### Merkle Root
