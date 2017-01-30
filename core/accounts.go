@@ -2,13 +2,10 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 
-	"chain/core/query"
-	"chain/core/signers"
+	"chain/core/account"
 	"chain/crypto/ed25519/chainkd"
-	chainjson "chain/encoding/json"
 	"chain/net/http/reqid"
 )
 
@@ -40,34 +37,12 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 				responses[i] = err
 				return
 			}
-			path := signers.Path(acc.Signer, signers.AccountKeySpace)
-			var hexPath []chainjson.HexBytes
-			for _, p := range path {
-				hexPath = append(hexPath, p)
-			}
-			var keys []*query.AccountKey
-			for _, xpub := range acc.XPubs {
-				keys = append(keys, &query.AccountKey{
-					RootXPub:              xpub,
-					AccountXPub:           xpub.Derive(path),
-					AccountDerivationPath: hexPath,
-				})
-			}
-
-			tags, err := json.Marshal(acc.Tags)
+			aa, err := account.Annotated(acc)
 			if err != nil {
 				responses[i] = err
 				return
 			}
-			rawTags := json.RawMessage(tags)
-
-			responses[i] = &query.AnnotatedAccount{
-				ID:     acc.ID,
-				Alias:  acc.Alias,
-				Keys:   keys,
-				Quorum: acc.Quorum,
-				Tags:   &rawTags,
-			}
+			responses[i] = aa
 		}(i)
 	}
 

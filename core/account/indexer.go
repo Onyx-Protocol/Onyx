@@ -27,11 +27,7 @@ type Saver interface {
 	SaveAnnotatedAccount(context.Context, *query.AnnotatedAccount) error
 }
 
-func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
-	if m.indexer == nil {
-		return nil
-	}
-
+func Annotated(a *Account) (*query.AnnotatedAccount, error) {
 	aa := &query.AnnotatedAccount{
 		ID:     a.ID,
 		Alias:  a.Alias,
@@ -40,7 +36,7 @@ func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
 
 	tags, err := json.Marshal(a.Tags)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	rawTags := json.RawMessage(tags)
 	aa.Tags = &rawTags
@@ -57,7 +53,17 @@ func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
 			AccountDerivationPath: jsonPath,
 		})
 	}
+	return aa, nil
+}
 
+func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
+	if m.indexer == nil {
+		return nil
+	}
+	aa, err := Annotated(a)
+	if err != nil {
+		return err
+	}
 	return m.indexer.SaveAnnotatedAccount(ctx, aa)
 }
 

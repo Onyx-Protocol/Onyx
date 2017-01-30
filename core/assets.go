@@ -2,13 +2,10 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 
-	"chain/core/query"
-	"chain/core/signers"
+	"chain/core/asset"
 	"chain/crypto/ed25519/chainkd"
-	chainjson "chain/encoding/json"
 	"chain/net/http/reqid"
 )
 
@@ -36,7 +33,7 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 			defer wg.Done()
 			defer batchRecover(subctx, &responses[i])
 
-			asset, err := h.Assets.Define(
+			a, err := h.Assets.Define(
 				subctx,
 				ins[i].RootXPubs,
 				ins[i].Quorum,
@@ -49,44 +46,10 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 				responses[i] = err
 				return
 			}
-			var keys []*query.AssetKey
-			for _, xpub := range asset.Signer.XPubs {
-				path := signers.Path(asset.Signer, signers.AssetKeySpace)
-				var hexPath []chainjson.HexBytes
-				for _, p := range path {
-					hexPath = append(hexPath, p)
-				}
-				derived := xpub.Derive(path)
-				keys = append(keys, &query.AssetKey{
-					AssetPubkey:         derived[:],
-					RootXPub:            xpub,
-					AssetDerivationPath: hexPath,
-				})
-			}
-			defRawMessage := json.RawMessage(asset.RawDefinition())
-			if len(defRawMessage) == 0 {
-				defRawMessage = json.RawMessage(`{}`)
-			}
-			tags, err := json.Marshal(asset.Tags)
+			aa, err := asset.Annotated(a)
 			if err != nil {
 				responses[i] = err
 				return
-			}
-			tagsRawMessage := json.RawMessage(tags)
-
-			aa := &query.AnnotatedAsset{
-				ID:              asset.AssetID[:],
-				VMVersion:       asset.VMVersion,
-				IssuanceProgram: asset.IssuanceProgram,
-				Keys:            keys,
-				Quorum:          asset.Signer.Quorum,
-				Definition:      &defRawMessage,
-				RawDefinition:   chainjson.HexBytes(asset.RawDefinition()),
-				Tags:            &tagsRawMessage,
-				IsLocal:         true,
-			}
-			if asset.Alias != nil {
-				aa.Alias = *asset.Alias
 			}
 			responses[i] = aa
 		}(i)

@@ -27,11 +27,7 @@ type Saver interface {
 	SaveAnnotatedAsset(context.Context, *query.AnnotatedAsset, string) error
 }
 
-func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
-	if reg.indexer == nil {
-		return nil
-	}
-
+func Annotated(a *Asset) (*query.AnnotatedAsset, error) {
 	jsonTags := json.RawMessage(`{}`)
 	jsonDefinition := json.RawMessage(`{}`)
 	if len(a.RawDefinition()) > 0 {
@@ -40,7 +36,7 @@ func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 	if a.Tags != nil {
 		b, err := json.Marshal(a.Tags)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		jsonTags = b
 	}
@@ -82,6 +78,17 @@ func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 			}
 			aa.Quorum = quorum
 		}
+	}
+	return aa, nil
+}
+
+func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
+	if reg.indexer == nil {
+		return nil
+	}
+	aa, err := Annotated(a)
+	if err != nil {
+		return err
 	}
 	return reg.indexer.SaveAnnotatedAsset(ctx, aa, a.sortID)
 }
