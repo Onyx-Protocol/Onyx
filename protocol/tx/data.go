@@ -27,6 +27,8 @@ type data struct {
 func (data) Type() string         { return "data1" }
 func (d *data) Body() interface{} { return d.body }
 
+func (data) Ordinal() int { return -1 }
+
 func newData(hash bc.Hash) entry {
 	d := new(data)
 	d.body = hash
