@@ -14,9 +14,9 @@ import (
 )
 
 type AnnotatedTx struct {
-	ID            chainjson.HexBytes `json:"id"`
+	ID            bc.Hash            `json:"id"`
 	Timestamp     time.Time          `json:"timestamp"`
-	BlockID       chainjson.HexBytes `json:"block_id"`
+	BlockID       bc.Hash            `json:"block_id"`
 	BlockHeight   uint64             `json:"block_height"`
 	Position      uint32             `json:"position"`
 	ReferenceData *json.RawMessage   `json:"reference_data"`
@@ -27,7 +27,7 @@ type AnnotatedTx struct {
 
 type AnnotatedInput struct {
 	Type            string             `json:"type"`
-	AssetID         chainjson.HexBytes `json:"asset_id"`
+	AssetID         bc.AssetID         `json:"asset_id"`
 	AssetAlias      string             `json:"asset_alias,omitempty"`
 	AssetDefinition *json.RawMessage   `json:"asset_definition"`
 	AssetTags       *json.RawMessage   `json:"asset_tags,omitempty"`
@@ -35,7 +35,7 @@ type AnnotatedInput struct {
 	Amount          uint64             `json:"amount"`
 	IssuanceProgram chainjson.HexBytes `json:"issuance_program,omitempty"`
 	ControlProgram  chainjson.HexBytes `json:"control_program,omitempty"`
-	SpentOutputID   chainjson.HexBytes `json:"spent_output_id,omitempty"`
+	SpentOutputID   *bc.OutputID       `json:"spent_output_id,omitempty"`
 	SpentOutput     *SpentOutput       `json:"spent_output,omitempty"`
 	AccountID       string             `json:"account_id,omitempty"`
 	AccountAlias    string             `json:"account_alias,omitempty"`
@@ -47,10 +47,10 @@ type AnnotatedInput struct {
 type AnnotatedOutput struct {
 	Type            string             `json:"type"`
 	Purpose         string             `json:"purpose,omitempty"`
-	OutputID        chainjson.HexBytes `json:"id"`
-	TransactionID   chainjson.HexBytes `json:"transaction_id,omitempty"`
+	OutputID        bc.OutputID        `json:"id"`
+	TransactionID   bc.Hash            `json:"transaction_id,omitempty"`
 	Position        uint32             `json:"position"`
-	AssetID         chainjson.HexBytes `json:"asset_id"`
+	AssetID         bc.AssetID         `json:"asset_id"`
 	AssetAlias      string             `json:"asset_alias,omitempty"`
 	AssetDefinition *json.RawMessage   `json:"asset_definition"`
 	AssetTags       *json.RawMessage   `json:"asset_tags"`
@@ -65,8 +65,8 @@ type AnnotatedOutput struct {
 }
 
 type SpentOutput struct {
-	TransactionID chainjson.HexBytes `json:"transaction_id"`
-	Position      uint32             `json:"position"`
+	TransactionID bc.Hash `json:"transaction_id"`
+	Position      uint32  `json:"position"`
 }
 
 type AnnotatedAccount struct {
@@ -84,7 +84,7 @@ type AccountKey struct {
 }
 
 type AnnotatedAsset struct {
-	ID              chainjson.HexBytes `json:"id"`
+	ID              bc.AssetID         `json:"id"`
 	Alias           string             `json:"alias,omitempty"`
 	VMVersion       uint64             `json:"vm_version"`
 	IssuanceProgram chainjson.HexBytes `json:"issuance_program"`
@@ -120,16 +120,15 @@ func (b *Bool) UnmarshalJSON(raw []byte) error {
 }
 
 func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedTx {
-	blockHash := b.Hash()
 	referenceData := json.RawMessage(orig.ReferenceData)
 	if len(referenceData) == 0 {
 		referenceData = []byte(`{}`)
 	}
 
 	tx := &AnnotatedTx{
-		ID:            orig.Hash[:],
+		ID:            orig.Hash,
 		Timestamp:     b.Time(),
-		BlockID:       blockHash[:],
+		BlockID:       b.Hash(),
 		BlockHeight:   b.Height,
 		Position:      indexInBlock,
 		ReferenceData: &referenceData,
@@ -146,14 +145,13 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, ou
 }
 
 func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedInput {
-	aid := orig.AssetID()
-
 	referenceData := json.RawMessage(orig.ReferenceData)
 	if len(referenceData) == 0 {
 		referenceData = []byte(`{}`)
 	}
+
 	in := &AnnotatedInput{
-		AssetID:       aid[:],
+		AssetID:       orig.AssetID(),
 		Amount:        orig.Amount(),
 		ReferenceData: &referenceData,
 	}
@@ -163,16 +161,15 @@ func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint
 		in.Type = "issue"
 		in.IssuanceProgram = prog
 	} else {
-		prog := orig.ControlProgram()
 		prevoutID := orig.SpentOutputID()
 		in.Type = "spend"
-		in.ControlProgram = prog
-		in.SpentOutputID = prevoutID.Bytes()
+		in.ControlProgram = orig.ControlProgram()
+		in.SpentOutputID = &prevoutID
 
 		outpoint, ok := outpoints[prevoutID]
 		if ok {
 			in.SpentOutput = &SpentOutput{
-				TransactionID: outpoint.Hash[:],
+				TransactionID: outpoint.Hash,
 				Position:      outpoint.Index,
 			}
 		}
@@ -188,9 +185,9 @@ func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *Annota
 	}
 	outid := bc.ComputeOutputID(txhash, idx)
 	out := &AnnotatedOutput{
-		OutputID:       outid.Bytes(),
+		OutputID:       outid,
 		Position:       idx,
-		AssetID:        orig.AssetID[:],
+		AssetID:        orig.AssetID,
 		Amount:         orig.Amount,
 		ControlProgram: orig.ControlProgram,
 		ReferenceData:  &referenceData,

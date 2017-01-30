@@ -161,7 +161,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 			}
 
 			outCopy := *out
-			outCopy.TransactionID = tx.Hash[:]
+			outCopy.TransactionID = tx.Hash
 			serializedData, err := json.Marshal(outCopy)
 			if err != nil {
 				return errors.Wrap(err, "serializing annotated output")
@@ -170,7 +170,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 			outputTxPositions = append(outputTxPositions, uint32(pos))
 			outputIndexes = append(outputIndexes, uint32(outIndex))
 			outputTxHashes = append(outputTxHashes, tx.Hash[:])
-			outputIDs = append(outputIDs, outCopy.OutputID)
+			outputIDs = append(outputIDs, outCopy.OutputID.Hash[:])
 			outputData = append(outputData, string(serializedData))
 		}
 	}

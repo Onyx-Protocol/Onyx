@@ -81,7 +81,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	var assetsSaved []bc.AssetID
 	r.indexer = fakeSaver(func(ctx context.Context, aa *query.AnnotatedAsset, sortID string) error {
 		var aid bc.AssetID
-		copy(aid[:], aa.ID)
+		copy(aid[:], aa.ID[:])
 		assetsSaved = append(assetsSaved, aid)
 		return nil
 	})

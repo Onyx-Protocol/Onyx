@@ -10,6 +10,7 @@ import (
 	"chain/core/query"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
+	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -39,14 +40,14 @@ func TestAnnotateTxs(t *testing.T) {
 	txs := []*query.AnnotatedTx{
 		{
 			Inputs: []*query.AnnotatedInput{
-				{AssetID: asset1.AssetID[:]},
-				{AssetID: asset2.AssetID[:]},
-				{AssetID: []byte{0xba, 0xd0}},
+				{AssetID: asset1.AssetID},
+				{AssetID: asset2.AssetID},
+				{AssetID: bc.AssetID{0xba, 0xd0}},
 			},
 			Outputs: []*query.AnnotatedOutput{
-				{AssetID: asset1.AssetID[:]},
-				{AssetID: asset2.AssetID[:]},
-				{AssetID: []byte{0xba, 0xd0}},
+				{AssetID: asset1.AssetID},
+				{AssetID: asset2.AssetID},
+				{AssetID: bc.AssetID{0xba, 0xd0}},
 			},
 		},
 	}
@@ -55,14 +56,14 @@ func TestAnnotateTxs(t *testing.T) {
 	want := []*query.AnnotatedTx{
 		{
 			Inputs: []*query.AnnotatedInput{
-				{AssetID: asset1.AssetID[:], AssetTags: &rawtags1, AssetIsLocal: true, AssetDefinition: &rawdef1},
-				{AssetID: asset2.AssetID[:], AssetTags: &rawtags2, AssetIsLocal: true, AssetDefinition: &empty},
-				{AssetID: []byte{0xba, 0xd0}, AssetTags: &empty, AssetDefinition: &empty},
+				{AssetID: asset1.AssetID, AssetTags: &rawtags1, AssetIsLocal: true, AssetDefinition: &rawdef1},
+				{AssetID: asset2.AssetID, AssetTags: &rawtags2, AssetIsLocal: true, AssetDefinition: &empty},
+				{AssetID: bc.AssetID{0xba, 0xd0}, AssetTags: &empty, AssetDefinition: &empty},
 			},
 			Outputs: []*query.AnnotatedOutput{
-				{AssetID: asset1.AssetID[:], AssetTags: &rawtags1, AssetIsLocal: true, AssetDefinition: &rawdef1},
-				{AssetID: asset2.AssetID[:], AssetTags: &rawtags2, AssetIsLocal: true, AssetDefinition: &empty},
-				{AssetID: []byte{0xba, 0xd0}, AssetTags: &empty, AssetDefinition: &empty},
+				{AssetID: asset1.AssetID, AssetTags: &rawtags1, AssetIsLocal: true, AssetDefinition: &rawdef1},
+				{AssetID: asset2.AssetID, AssetTags: &rawtags2, AssetIsLocal: true, AssetDefinition: &empty},
+				{AssetID: bc.AssetID{0xba, 0xd0}, AssetTags: &empty, AssetDefinition: &empty},
 			},
 		},
 	}

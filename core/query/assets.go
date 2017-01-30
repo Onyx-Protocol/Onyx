@@ -3,7 +3,6 @@ package query
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -23,7 +22,7 @@ func (ind *Indexer) SaveAnnotatedAsset(ctx context.Context, asset *AnnotatedAsse
 		INSERT INTO annotated_assets (id, data, sort_id) VALUES($1, $2, $3)
 		ON CONFLICT (id) DO UPDATE SET data = $2, sort_id = $3
 	`
-	_, err = ind.db.Exec(ctx, q, hex.EncodeToString(asset.ID), b, sortID)
+	_, err = ind.db.Exec(ctx, q, asset.ID, b, sortID)
 	return errors.Wrap(err, "saving annotated asset")
 }
 

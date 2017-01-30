@@ -42,7 +42,7 @@ func Annotated(a *Asset) (*query.AnnotatedAsset, error) {
 	}
 
 	aa := &query.AnnotatedAsset{
-		ID:              a.AssetID[:],
+		ID:              a.AssetID,
 		VMVersion:       a.VMVersion,
 		Definition:      &jsonDefinition,
 		Tags:            &jsonTags,
