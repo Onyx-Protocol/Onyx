@@ -1,6 +1,6 @@
 import { combineReducers } from 'redux'
 import moment from 'moment'
-import uniq from 'lodash.uniq'
+import uniq from 'lodash/uniq'
 
 const defaultIdFunc = (item) => item.id
 

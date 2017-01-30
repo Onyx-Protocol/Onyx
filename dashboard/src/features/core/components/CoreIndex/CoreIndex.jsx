@@ -1,12 +1,13 @@
 import { connect } from 'react-redux'
 import { context } from 'utility/environment'
+import componentClassNames from 'utility/componentClassNames'
 import chain from '_chain'
 import { PageContent, ErrorBanner, PageTitle } from 'features/shared/components'
 import React from 'react'
-import styles from './Index.scss'
+import styles from './CoreIndex.scss'
 import testnetUtils from 'features/testnet/utils'
 
-class Index extends React.Component {
+class CoreIndex extends React.Component {
   constructor(props) {
     super(props)
     this.state = {}
@@ -57,7 +58,7 @@ class Index extends React.Component {
     }
 
     let configBlock = (
-      <div className={`${styles.left} ${styles.col}`}>
+      <div className={[styles.left, styles.col].join(' ')}>
         <div>
           <h4>Configuration</h4>
           <table className={styles.table}>
@@ -111,7 +112,7 @@ class Index extends React.Component {
     }
 
     let networkStatusBlock = (
-      <div className={`${styles.right} ${styles.col}`}>
+      <div className={[styles.right, styles.col].join(' ')}>
         <div>
           <h4>Network status</h4>
 
@@ -174,7 +175,7 @@ class Index extends React.Component {
     )
 
     return (
-      <div className={`flex-container ${styles.mainContainer}`}>
+      <div className={componentClassNames(this, 'flex-container', styles.mainContainer)}>
         <PageTitle title='Core' />
 
         <PageContent>
@@ -203,4 +204,4 @@ const mapDispatchToProps = () => ({})
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(Index)
+)(CoreIndex)

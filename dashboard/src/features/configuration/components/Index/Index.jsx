@@ -1,7 +1,7 @@
 import { reduxForm } from 'redux-form'
 import { TextField } from 'components/Common'
 import { ErrorBanner, SubmitIndicator } from 'features/shared/components'
-import pick from 'lodash.pick'
+import pick from 'lodash/pick'
 import actions from 'actions'
 import React from 'react'
 import styles from './Index.scss'

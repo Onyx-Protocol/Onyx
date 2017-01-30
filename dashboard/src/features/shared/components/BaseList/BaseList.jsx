@@ -2,6 +2,7 @@ import React from 'react'
 import actions from 'actions'
 import { connect as reduxConnect } from 'react-redux'
 import { pluralize, capitalize, humanize } from 'utility/string'
+import componentClassNames from 'utility/componentClassNames'
 import { PageContent, PageTitle, Pagination, SearchBar } from '../'
 import EmptyList from './EmptyList'
 import { pageSize } from 'utility/environment'
@@ -34,9 +35,11 @@ class ItemList extends React.Component {
         />}
     </div>
 
+    const rootClassNames = componentClassNames(this, 'flex-container')
+
     if (this.props.noResults) {
       return(
-        <div className='flex-container'>
+        <div className={rootClassNames}>
           {header}
 
           <EmptyList
@@ -63,7 +66,7 @@ class ItemList extends React.Component {
       const Wrapper = this.props.wrapperComponent
 
       return(
-        <div className='flex-container'>
+        <div className={rootClassNames}>
           {header}
 
           <PageContent>
