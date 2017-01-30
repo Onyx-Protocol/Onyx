@@ -48,8 +48,8 @@ class Main extends React.Component {
           {!this.props.connected && <div className={styles.connectionIssue}>
             There was an issue connecting to Chain Core. Please check your connection while dashboard attempts to reconnect.
           </div>}
-
-          <Tutorial types={['TutorialInfo', 'TutorialComplete']} />
+          {this.props.routing.locationBeforeTransitions.pathname.startsWith(this.props.tutorialRoute) &&
+            <Tutorial types={['TutorialInfo', 'TutorialComplete']}/>}
 
           {this.props.children}
         </div>
@@ -60,6 +60,8 @@ class Main extends React.Component {
 
 export default connect(
   (state) => ({
+    tutorialRoute: state.tutorial.route,
+    routing: state.routing,
     canLogOut: state.core.requireClientToken,
     connected: state.core.connected,
     showDropwdown: state.app.dropdownState == 'open',

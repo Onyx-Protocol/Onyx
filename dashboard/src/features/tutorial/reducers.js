@@ -14,6 +14,19 @@ export const isShowing = (state = true, action) => {
   return state
 }
 
+export const route = (state = 'transactions', action) => {
+  if (action.type == 'TUTORIAL_NEXT_STEP'){
+    return action.route
+  }
+  else if (action.type == 'UPDATE_TUTORIAL'){
+    return action.object + 's'
+  }
+  else if (action.type == 'DISMISS_TUTORIAL'){
+    return 'transactions'
+  }
+  return state
+}
+
 export const userInputs = (state = { accounts: [] }, action) => {
   if (action.type == 'UPDATE_TUTORIAL'){
     if (action.object == 'mockhsm') {
@@ -36,5 +49,6 @@ export const userInputs = (state = { accounts: [] }, action) => {
 export default combineReducers({
   step,
   isShowing,
+  route,
   userInputs
 })
