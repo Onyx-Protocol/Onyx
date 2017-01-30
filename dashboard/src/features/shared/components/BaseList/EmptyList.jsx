@@ -1,11 +1,11 @@
 import React from 'react'
 import styles from './EmptyList.scss'
-import dashboardComponent from 'features/shared/dashboardComponent'
+import dashboardClasses from 'utility/dashboardClasses'
 
 class EmptyList extends React.Component {
   render() {
-    let classNames = [styles.empty]
     let emptyImage
+
     try {
       emptyImage = require(`assets/images/empty/${this.props.type}.svg`)
     } catch (err) { /* do nothing */ }
@@ -21,7 +21,6 @@ class EmptyList extends React.Component {
         {this.props.newButton}
       </div>
     } else if (!this.props.showFirstTimeFlow) {
-      classNames.push(styles.noResults)
       emptyBlock = <div className={styles.emptyContainer}>
         <span className={`${styles.emptyLabel} ${styles.noResultsLabel}`}>No results for query:</span>
         <code className={styles.code}>{this.props.currentFilter.filter}</code>
@@ -35,8 +34,14 @@ class EmptyList extends React.Component {
       </div>
     }
 
+    const classNames = [
+      'flex-container',
+      styles.empty,
+      {[styles.noResults]: !this.props.showFirstTimeFlow}
+    ]
+
     return (
-      <div className={`flex-container ${classNames.join(' ')} ${this.props.className}`}>
+      <div className={dashboardClasses(this, ...classNames)}>
         {emptyImage && <img className={styles.image} src={emptyImage} />}
         {emptyBlock}
       </div>
@@ -56,4 +61,4 @@ EmptyList.propTypes = {
   firstTimeContent: React.PropTypes.object
 }
 
-export default dashboardComponent(EmptyList)
+export default EmptyList

@@ -2,10 +2,10 @@ import React from 'react'
 import actions from 'actions'
 import { connect as reduxConnect } from 'react-redux'
 import { pluralize, capitalize, humanize } from 'utility/string'
+import dashboardClasses from 'utility/dashboardClasses'
 import { PageContent, PageTitle, Pagination, SearchBar } from '../'
 import EmptyList from './EmptyList'
 import { pageSize } from 'utility/environment'
-import dashboardComponent from 'features/shared/dashboardComponent'
 
 class ItemList extends React.Component {
   render() {
@@ -35,9 +35,11 @@ class ItemList extends React.Component {
         />}
     </div>
 
+    const rootClassNames = dashboardClasses(this, 'flex-container')
+
     if (this.props.noResults) {
       return(
-        <div className={`flex-container ${this.props.className}`}>
+        <div className={rootClassNames}>
           {header}
 
           <EmptyList
@@ -64,7 +66,7 @@ class ItemList extends React.Component {
       const Wrapper = this.props.wrapperComponent
 
       return(
-        <div className={`flex-container ${this.props.className}`}>
+        <div className={rootClassNames}>
           {header}
 
           <PageContent>
@@ -123,11 +125,11 @@ export const mapDispatchToProps = (type) => (dispatch) => {
 export const connect = (state, dispatch, component = ItemList) => reduxConnect(
   state,
   dispatch
-)(dashboardComponent(component))
+)(component)
 
 export default {
   mapStateToProps,
   mapDispatchToProps,
   connect,
-  ItemList: dashboardComponent(ItemList),
+  ItemList,
 }

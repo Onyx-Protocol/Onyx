@@ -1,11 +1,11 @@
 import { connect } from 'react-redux'
 import { context } from 'utility/environment'
+import dashboardClasses from 'utility/dashboardClasses'
 import chain from '_chain'
 import { PageContent, ErrorBanner, PageTitle } from 'features/shared/components'
 import React from 'react'
 import styles from './CoreIndex.scss'
 import testnetUtils from 'features/testnet/utils'
-import dashboardComponent from 'features/shared/dashboardComponent'
 
 class CoreIndex extends React.Component {
   constructor(props) {
@@ -58,7 +58,7 @@ class CoreIndex extends React.Component {
     }
 
     let configBlock = (
-      <div className={`${styles.left} ${styles.col} ${this.props.className}`}>
+      <div className={[styles.left, styles.col].join(' ')}>
         <div>
           <h4>Configuration</h4>
           <table className={styles.table}>
@@ -112,7 +112,7 @@ class CoreIndex extends React.Component {
     }
 
     let networkStatusBlock = (
-      <div className={`${styles.right} ${styles.col}`}>
+      <div className={[styles.right, styles.col].join(' ')}>
         <div>
           <h4>Network status</h4>
 
@@ -175,7 +175,7 @@ class CoreIndex extends React.Component {
     )
 
     return (
-      <div className={`flex-container ${styles.mainContainer}`}>
+      <div className={dashboardClasses(this, 'flex-container', styles.mainContainer)}>
         <PageTitle title='Core' />
 
         <PageContent>
@@ -204,4 +204,4 @@ const mapDispatchToProps = () => ({})
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(dashboardComponent(CoreIndex))
+)(CoreIndex)
