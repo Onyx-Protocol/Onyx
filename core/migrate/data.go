@@ -117,4 +117,7 @@ var migrations = []migration{
 	{Name: "2017-01-25.0.account.cp-expiry.sql", SQL: `
 		ALTER TABLE account_control_programs ADD COLUMN expires_at timestamp with time zone;
 	`},
+	{Name: "2017-01-30.0.txdb.snapshots-timestamp.sql", SQL: `
+		ALTER TABLE snapshots ADD COLUMN created_at timestamp without time zone DEFAULT now();
+	`},
 }
