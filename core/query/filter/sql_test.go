@@ -1,9 +1,9 @@
 package filter
 
 import (
-	"errors"
 	"testing"
 
+	"chain/errors"
 	"chain/testutil"
 )
 
@@ -88,7 +88,7 @@ func TestAsSQL(t *testing.T) {
 		{ // error - invalid attribute
 			q:   `garbage`,
 			tbl: transactionsSQLTable,
-			err: errors.New("invalid attribute: garbage"),
+			err: errors.WithDetail(ErrBadFilter, "invalid attribute: garbage"),
 		},
 		{ // bytea columns
 			q:   `asset_id = $1`,
@@ -108,12 +108,12 @@ func TestAsSQL(t *testing.T) {
 		{ // error - indexing into non-json attribute
 			q:   `is_local.but_really`,
 			tbl: transactionsSQLTable,
-			err: errors.New("cannot index on non-object attribute: is_local"),
+			err: errors.WithDetail(ErrBadFilter, "cannot index on non-object attribute: is_local"),
 		},
 		{ // error - unbound parameter
 			q:   `asset_id = $2`, // $2 too big; only 1 param given
 			tbl: inputsSQLTable,
-			err: errors.New("unbound placeholder: $2"),
+			err: errors.WithDetail(ErrBadFilter, "unbound placeholder: $2"),
 		},
 		{ // integer to biginteger conversion
 			q:   `position = 2`,
@@ -130,12 +130,12 @@ EXISTS(SELECT 1 FROM annotated_inputs AS inp WHERE inp."tx_hash" = txs."tx_hash"
 		{ // error - invalid environment
 			q:   `inputs(asset_id = 'c001cafe')`,
 			tbl: inputsSQLTable,
-			err: errors.New("invalid environment `inputs`"),
+			err: errors.WithDetail(ErrBadFilter, "invalid environment `inputs`"),
 		},
 		{ // error - invalid attribute (in selectorExpr)
 			q:   `data.asset_id = 'c001cafe'`,
 			tbl: inputsSQLTable,
-			err: errors.New("invalid attribute: data"),
+			err: errors.WithDetail(ErrBadFilter, "invalid attribute: data"),
 		},
 		{ // multiple environment expresisons
 			q:   `inputs(a = 'a') OR outputs(b = 'b')`,
@@ -165,8 +165,11 @@ EXISTS(SELECT 1 FROM annotated_inputs AS inp WHERE inp."tx_hash" = txs."tx_hash"
 		c := &sqlContext{sqlBuilder: b, tbl: tc.tbl}
 
 		err = asSQL(c, e)
-		if !testutil.DeepEqual(err, tc.err) {
-			t.Errorf("got error %s want error %s", err, tc.err)
+		if !testutil.DeepEqual(errors.Root(err), errors.Root(tc.err)) {
+			t.Errorf("got error %q want error %q", err, tc.err)
+		}
+		if err != nil && err.Error() != tc.err.Error() {
+			t.Errorf("got error detail %q want error %q", errors.Detail(err), errors.Detail(tc.err))
 		}
 		if err == nil && c.buf.String() != tc.sql {
 			t.Errorf("asSQL(%q) = %s, want %s", tc.q, c.buf.String(), tc.sql)

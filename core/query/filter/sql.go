@@ -6,6 +6,8 @@ import (
 	"strconv"
 
 	"github.com/lib/pq"
+
+	"chain/errors"
 )
 
 // AsSQL translates p to SQL.
@@ -38,14 +40,13 @@ func FieldAsSQL(tbl *SQLTable, f Field) (string, error) {
 	base, rest := path[0], path[1:]
 	col, ok := tbl.Columns[base]
 	if !ok {
-		return "", fmt.Errorf("invalid attribute: %s", base)
+		return "", errors.WithDetailf(ErrBadFilter, "invalid attribute: %s", base)
 	}
 	if col.SQLType != SQLJSONB && len(rest) > 0 {
-		return "", fmt.Errorf("cannot index on non-object attribute: %s", base)
+		return "", errors.WithDetailf(ErrBadFilter, "cannot index on non-object attribute: %s", base)
 	}
 
 	var buf bytes.Buffer
-
 	if col.SQLType == SQLBytea {
 		buf.WriteString("encode(")
 	}
@@ -151,12 +152,12 @@ func asSQL(c *sqlContext, filterExpr expr) error {
 			c.buf.WriteString(e.value)
 			c.buf.WriteString(`::bigint`)
 		default:
-			return fmt.Errorf("value expr with invalid token type: %s", e.typ)
+			return errors.WithDetailf(ErrBadFilter, "value expr with invalid token type: %s", e.typ)
 		}
 	case attrExpr:
 		col, ok := c.tbl.Columns[e.attr]
 		if !ok {
-			return fmt.Errorf("invalid attribute: %s", e.attr)
+			return errors.WithDetailf(ErrBadFilter, "invalid attribute: %s", e.attr)
 		}
 
 		// How we select the column in SQL depends on the column type.
@@ -186,10 +187,10 @@ func asSQL(c *sqlContext, filterExpr expr) error {
 
 		col, ok := c.tbl.Columns[base]
 		if !ok {
-			return fmt.Errorf("invalid attribute: %s", base)
+			return errors.WithDetailf(ErrBadFilter, "invalid attribute: %s", base)
 		}
 		if col.SQLType != SQLJSONB {
-			return fmt.Errorf("cannot index on non-object attribute: %s", base)
+			return errors.WithDetailf(ErrBadFilter, "cannot index on non-object attribute: %s", base)
 		}
 
 		c.writeCol(base)
@@ -219,14 +220,14 @@ func asSQL(c *sqlContext, filterExpr expr) error {
 		}
 	case placeholderExpr:
 		if e.num < 1 || e.num > len(c.values) {
-			return fmt.Errorf("unbound placeholder: $%d", e.num)
+			return errors.WithDetailf(ErrBadFilter, "unbound placeholder: $%d", e.num)
 		}
 		c.buf.WriteRune('$')
 		c.buf.WriteString(strconv.Itoa(e.num))
 	case envExpr:
 		fk, ok := c.tbl.ForeignKeys[e.ident]
 		if !ok {
-			return fmt.Errorf("invalid environment `%s`", e.ident)
+			return errors.WithDetailf(ErrBadFilter, "invalid environment `%s`", e.ident)
 		}
 
 		// Create a new sql context for the join and convert it to sql too.
