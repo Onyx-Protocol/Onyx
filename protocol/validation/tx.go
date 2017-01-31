@@ -12,13 +12,8 @@ import (
 	"chain/protocol/vmutil"
 )
 
-var (
-	// ErrBadTx is returned for transactions failing validation
-	ErrBadTx = errors.New("invalid transaction")
-
-	// ErrFalseVMResult is one of the ways for a transaction to fail validation
-	ErrFalseVMResult = errors.New("false VM result")
-)
+// ErrBadTx is returned for transactions failing validation
+var ErrBadTx = errors.New("invalid transaction")
 
 var (
 	// "suberrors" for ErrBadTx
@@ -251,10 +246,7 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 	}
 
 	for i := range tx.Inputs {
-		ok, err := vm.VerifyTxInput(tx, uint32(i))
-		if err == nil && !ok {
-			err = ErrFalseVMResult
-		}
+		err := vm.VerifyTxInput(tx, uint32(i))
 		if err != nil {
 			return badTxErrf(err, "validation failed in script execution, input %d", i)
 		}
