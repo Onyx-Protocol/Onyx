@@ -844,13 +844,6 @@ CREATE INDEX annotated_outputs_jsondata_idx ON annotated_outputs USING gin (data
 
 
 --
--- Name: annotated_outputs_outpoint_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX annotated_outputs_outpoint_idx ON annotated_outputs USING btree (tx_hash, output_index);
-
-
---
 -- Name: annotated_outputs_timespan_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -916,3 +909,4 @@ insert into migrations (filename, hash) values ('2017-01-20.0.core.add-output-id
 insert into migrations (filename, hash) values ('2017-01-25.0.account.cp-expiry.sql', 'a2076b7b3ac3f844d17e13eea57fea01216c868a63f9df7b9df24cac9c4b82a4');
 insert into migrations (filename, hash) values ('2017-01-30.0.txdb.snapshots-timestamp.sql', '3ab923b782e048300315fc4ea8ae8bdf42183aa423d0a12bc228411c2d8c5093');
 insert into migrations (filename, hash) values ('2017-01-30.1.core.add-block-hsm-config.sql', '9d609586b2fd33c45e530c4237a24f303a3b5753e5ccf3cd740958511aea4992');
+insert into migrations (filename, hash) values ('2017-01-31.0.query.drop-outpoint-index.sql', '461ab638954f5eb53e83587da96f2d83e031d17ab3408685a4460b60edf522a1');
