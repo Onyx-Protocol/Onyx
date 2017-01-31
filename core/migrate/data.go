@@ -124,4 +124,7 @@ var migrations = []migration{
 		ALTER TABLE config ADD COLUMN block_hsm_url text DEFAULT '',
 			ADD COLUMN block_hsm_access_token text DEFAULT '';
 	`},
+	{Name: "2017-01-31.0.query.drop-outpoint-index.sql", SQL: `
+		DROP INDEX annotated_outputs_outpoint_idx;
+	`},
 }
