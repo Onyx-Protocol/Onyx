@@ -17,15 +17,7 @@ class TutorialInfo extends React.Component {
     return (
       <div>
         <div className={styles.container}>
-          <div className={styles.header}>
-            {this.props.title}
-            {this.props.dismiss &&
-              <div className={styles.skip}>
-                <a onClick={this.props.handleDismiss}>{this.props.dismiss}</a>
-              </div>
-            }
-          </div>
-          <div className={styles.content}>
+          {this.props.showTutorial && <div className={styles.content}>
             {this.props.logo && <span className={`glyphicon ${this.props.logo}`}></span>}
             <div className={styles.text}>
               {this.props.content.map(function (contentLine, i){
@@ -43,7 +35,7 @@ class TutorialInfo extends React.Component {
             </div>
 
             {nextButton && nextButton}
-          </div>
+          </div>}
         </div>
     </div>
     )

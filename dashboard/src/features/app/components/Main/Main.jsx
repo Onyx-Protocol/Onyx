@@ -48,8 +48,7 @@ class Main extends React.Component {
           {!this.props.connected && <div className={styles.connectionIssue}>
             There was an issue connecting to Chain Core. Please check your connection while dashboard attempts to reconnect.
           </div>}
-          {this.props.routing.locationBeforeTransitions.pathname.startsWith(this.props.tutorialRoute) &&
-            <Tutorial types={['TutorialInfo', 'TutorialComplete']}/>}
+            <Tutorial types={['TutorialInfo', 'TutorialComplete']}/>
 
           {this.props.children}
         </div>
