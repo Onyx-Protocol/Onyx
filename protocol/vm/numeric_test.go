@@ -580,8 +580,6 @@ func TestRangeErrs(t *testing.T) {
 			if !c.expectRangeErr {
 				t.Errorf("case %d (%s): got unexpected range error", i, c.prog)
 			}
-		case ErrFalseVMResult:
-			// ignore
 		default:
 			if c.expectRangeErr {
 				t.Errorf("case %d (%s): expected range error, got %s", i, c.prog, err)

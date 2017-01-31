@@ -39,6 +39,9 @@ func TestNextProgram(t *testing.T) {
 		program:  prog,
 	}
 	err = vm.run()
+	if err == nil && vm.falseResult() {
+		err = ErrFalseVMResult
+	}
 	switch err {
 	case nil:
 		t.Error("got ok result, expected failure")
@@ -79,6 +82,9 @@ func TestBlockTime(t *testing.T) {
 		program:  prog,
 	}
 	err = vm.run()
+	if err == nil && vm.falseResult() {
+		err = ErrFalseVMResult
+	}
 	switch err {
 	case nil:
 		t.Error("got ok result, expected failure")
@@ -518,8 +524,6 @@ func TestIntrospectionOps(t *testing.T) {
 			// ok
 		case nil:
 			t.Errorf("case %d, op %s: got no error, want %v", i, ops[c.op].name, c.wantErr)
-		case ErrFalseVMResult:
-			// ignore
 		default:
 			t.Errorf("case %d, op %s: got err = %v want %v", i, ops[c.op].name, err, c.wantErr)
 		}

@@ -158,6 +158,9 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 			dataStack: append([][]byte{}, c.args...),
 		}
 		err = vm.run()
+		if err == nil && vm.falseResult() {
+			err = ErrFalseVMResult
+		}
 		if expectOK && err != nil {
 			trace.dump()
 			t.Errorf("case %d [%s]: expected success, got error %s", i, progSrc, err)

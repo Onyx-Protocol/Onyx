@@ -90,6 +90,9 @@ func verifyTxInput(tx *bc.Tx, inputIndex uint32) error {
 			}
 		}
 		err := vm.run()
+		if err == nil && vm.falseResult() {
+			err = ErrFalseVMResult
+		}
 		return wrapErr(err, &vm, args)
 	}
 
@@ -130,7 +133,16 @@ func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
 	}
 
 	err := vm.run()
+	if err == nil && vm.falseResult() {
+		err = ErrFalseVMResult
+	}
 	return wrapErr(err, &vm, block.Witness)
+}
+
+// falseResult returns true iff the stack is empty or the top
+// item is false
+func (vm *virtualMachine) falseResult() bool {
+	return len(vm.dataStack) == 0 || !AsBool(vm.dataStack[len(vm.dataStack)-1])
 }
 
 func (vm *virtualMachine) run() error {
@@ -139,11 +151,6 @@ func (vm *virtualMachine) run() error {
 		if err != nil {
 			return err
 		}
-	}
-
-	ok := len(vm.dataStack) > 0 && AsBool(vm.dataStack[len(vm.dataStack)-1])
-	if !ok {
-		return ErrFalseVMResult
 	}
 	return nil
 }

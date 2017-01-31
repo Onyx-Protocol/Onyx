@@ -78,7 +78,7 @@ func opCheckPredicate(vm *virtualMachine) error {
 	vm.deferCost(-stackCost(childVM.dataStack))
 	vm.deferCost(-stackCost(childVM.altStack))
 
-	return vm.pushBool(childErr == nil, true)
+	return vm.pushBool(childErr == nil && !childVM.falseResult(), true)
 }
 
 func opJump(vm *virtualMachine) error {

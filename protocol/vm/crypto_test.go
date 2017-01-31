@@ -80,7 +80,7 @@ func TestCheckSig(t *testing.T) {
 			if err != nil {
 				t.Errorf("case %d: expected ok result, got error %s", i, err)
 			}
-		} else if err != ErrFalseVMResult {
+		} else if !vm.falseResult() {
 			t.Errorf("case %d: expected false VM result, got error %s", i, err)
 		}
 	}
