@@ -103,14 +103,14 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	outs := make([]*rawOutput, 0, len(b.Transactions))
 	blockPositions := make(map[bc.Hash]uint32, len(b.Transactions))
 	for i, tx := range b.Transactions {
-		blockPositions[tx.Hash] = uint32(i)
+		blockPositions[tx.ID] = uint32(i)
 		for j, out := range tx.Outputs {
 			out := &rawOutput{
 				Output: state.Output{
 					TxOutput: *out,
 					OutputID: tx.OutputID(uint32(j)),
 				},
-				txHash:      tx.Hash,
+				txHash:      tx.ID,
 				outputIndex: uint32(j),
 			}
 			outs = append(outs, out)
