@@ -31,33 +31,37 @@ func TestCancelReservation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var h bc.Hash
+	var h, outid bc.Hash
 	var assetID bc.AssetID
 	err = h.UnmarshalText([]byte("270b725a94429496a178c56b390a89d03f801fe2ee992d90cf4fdf7d7855318e"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	err = outid.UnmarshalText([]byte("9886ae2dc24b6d868c68768038c43801e905a62f1a9b826ca0dc357f00c30117"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	outputID := bc.OutputID{outid}
 	err = assetID.UnmarshalText([]byte("df1df9d4f66437ab5be715e4d1faeb29d24c80a6dc8276d6a630f05c5f1f7693"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	outputid := bc.OutputID{h}
 
 	// Fake the output in the state tree.
 	_, s := c.State()
-	err = s.Tree.Insert(outputid.Bytes(), []byte{0xc0, 0x01, 0xca, 0xfe})
+	err = s.Tree.Insert(outputID.Bytes(), []byte{0xc0, 0x01, 0xca, 0xfe})
 	if err != nil {
 		t.Error(err)
 	}
 
 	utxoDB := newReserver(db, c, nil)
-	res, err := utxoDB.ReserveUTXO(ctx, outputid, nil, time.Now())
+	res, err := utxoDB.ReserveUTXO(ctx, outputID, nil, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Verify that the UTXO is reserved.
-	_, err = utxoDB.ReserveUTXO(ctx, outputid, nil, time.Now())
+	_, err = utxoDB.ReserveUTXO(ctx, outputID, nil, time.Now())
 	if err != ErrReserved {
 		t.Fatalf("got=%s want=%s", err, ErrReserved)
 	}
@@ -69,7 +73,7 @@ func TestCancelReservation(t *testing.T) {
 	}
 
 	// Reserving again should succeed.
-	_, err = utxoDB.ReserveUTXO(ctx, outputid, nil, time.Now())
+	_, err = utxoDB.ReserveUTXO(ctx, outputID, nil, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
