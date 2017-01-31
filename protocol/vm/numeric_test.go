@@ -570,13 +570,24 @@ func TestRangeErrs(t *testing.T) {
 			program:  prog,
 			runLimit: 50000,
 		}
-		_, err := vm.run()
-		if c.expectRangeErr {
-			if err != ErrRange {
-				t.Errorf("case %d (%s): expected range error, got %s", i, c.prog, err)
+		err := vm.run()
+		switch err {
+		case nil:
+			if c.expectRangeErr {
+				t.Errorf("case %d (%s): expected range error, got none", i, c.prog)
 			}
-		} else if err != nil {
-			t.Errorf("case %d (%s): expected no error, got %s", i, c.prog, err)
+		case ErrRange:
+			if !c.expectRangeErr {
+				t.Errorf("case %d (%s): got unexpected range error", i, c.prog)
+			}
+		case ErrFalseVMResult:
+			// ignore
+		default:
+			if c.expectRangeErr {
+				t.Errorf("case %d (%s): expected range error, got %s", i, c.prog, err)
+			} else {
+				t.Errorf("case %d (%s): got unexpected error %s", i, c.prog, err)
+			}
 		}
 	}
 }

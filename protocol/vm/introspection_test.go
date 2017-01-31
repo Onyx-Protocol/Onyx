@@ -24,11 +24,9 @@ func TestNextProgram(t *testing.T) {
 		block:    block,
 		program:  prog,
 	}
-	ok, err := vm.run()
+	err = vm.run()
 	if err != nil {
 		t.Errorf("got error %s, expected none", err)
-	} else if !ok {
-		t.Error("got failure result, expected ok")
 	}
 
 	prog, err = Assemble("NEXTPROGRAM 0x0102 EQUAL")
@@ -40,11 +38,14 @@ func TestNextProgram(t *testing.T) {
 		block:    block,
 		program:  prog,
 	}
-	ok, err = vm.run()
-	if err != nil {
-		t.Errorf("got error %s, expected none", err)
-	} else if ok {
+	err = vm.run()
+	switch err {
+	case nil:
 		t.Error("got ok result, expected failure")
+	case ErrFalseVMResult:
+		// ok
+	default:
+		t.Errorf("got error %s, expected ErrFalseVMResult", err)
 	}
 }
 
@@ -63,11 +64,9 @@ func TestBlockTime(t *testing.T) {
 		block:    block,
 		program:  prog,
 	}
-	ok, err := vm.run()
+	err = vm.run()
 	if err != nil {
 		t.Errorf("got error %s, expected none", err)
-	} else if !ok {
-		t.Error("got failure result, expected ok")
 	}
 
 	prog, err = Assemble("BLOCKTIME 3263826 NUMEQUAL")
@@ -79,11 +78,14 @@ func TestBlockTime(t *testing.T) {
 		block:    block,
 		program:  prog,
 	}
-	ok, err = vm.run()
-	if err != nil {
-		t.Errorf("got error %s, expected none", err)
-	} else if ok {
+	err = vm.run()
+	switch err {
+	case nil:
 		t.Error("got ok result, expected failure")
+	case ErrFalseVMResult:
+		// ok
+	default:
+		t.Errorf("got error %s, expected ErrFalseVMResult", err)
 	}
 }
 
@@ -510,10 +512,16 @@ func TestIntrospectionOps(t *testing.T) {
 			vm.mainprog = prog
 		}
 		vm.program = prog
-		_, err := vm.run()
-		if err != c.wantErr {
+		err := vm.run()
+		switch err {
+		case c.wantErr:
+			// ok
+		case nil:
+			t.Errorf("case %d, op %s: got no error, want %v", i, ops[c.op].name, c.wantErr)
+		case ErrFalseVMResult:
+			// ignore
+		default:
 			t.Errorf("case %d, op %s: got err = %v want %v", i, ops[c.op].name, err, c.wantErr)
-			continue
 		}
 		if c.wantErr != nil {
 			continue
