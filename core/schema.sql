@@ -7,6 +7,7 @@
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -351,6 +352,8 @@ CREATE TABLE config (
     generator_access_token text DEFAULT ''::text NOT NULL,
     max_issuance_window_ms bigint,
     id text NOT NULL,
+    block_hsm_url text DEFAULT ''::text,
+    block_hsm_access_token text DEFAULT ''::text,
     CONSTRAINT config_singleton CHECK (singleton)
 );
 
@@ -913,3 +916,4 @@ insert into migrations (filename, hash) values ('2017-01-19.0.asset.drop-mutable
 insert into migrations (filename, hash) values ('2017-01-20.0.core.add-output-id-to-outputs.sql', '4c8531c06e62405d2989e0651a7ef6c2ebd0b2b269b57c179e9e36f7fdbb715b');
 insert into migrations (filename, hash) values ('2017-01-25.0.account.cp-expiry.sql', 'a2076b7b3ac3f844d17e13eea57fea01216c868a63f9df7b9df24cac9c4b82a4');
 insert into migrations (filename, hash) values ('2017-01-30.0.txdb.snapshots-timestamp.sql', '3ab923b782e048300315fc4ea8ae8bdf42183aa423d0a12bc228411c2d8c5093');
+insert into migrations (filename, hash) values ('2017-01-30.1.core.add-block-hsm-config.sql', '9d609586b2fd33c45e530c4237a24f303a3b5753e5ccf3cd740958511aea4992');

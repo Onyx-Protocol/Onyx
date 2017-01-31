@@ -120,4 +120,8 @@ var migrations = []migration{
 	{Name: "2017-01-30.0.txdb.snapshots-timestamp.sql", SQL: `
 		ALTER TABLE snapshots ADD COLUMN created_at timestamp without time zone DEFAULT now();
 	`},
+	{Name: "2017-01-30.1.core.add-block-hsm-config.sql", SQL: `
+		ALTER TABLE config ADD COLUMN block_hsm_url text DEFAULT '',
+			ADD COLUMN block_hsm_access_token text DEFAULT '';
+	`},
 }

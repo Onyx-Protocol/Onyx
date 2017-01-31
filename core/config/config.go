@@ -46,6 +46,8 @@ type Config struct {
 	BlockchainID         bc.Hash `json:"blockchain_id"`
 	GeneratorURL         string  `json:"generator_url"`
 	GeneratorAccessToken string  `json:"generator_access_token"`
+	BlockHSMURL          string  `json:"block_hsm_url"`
+	BlockHSMAccessToken  string  `json:"block_hsm_access_token"`
 	ConfiguredAt         time.Time
 	BlockPub             string        `json:"block_pub"`
 	Signers              []BlockSigner `json:"block_signer_urls"`
@@ -64,6 +66,7 @@ func Load(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT id, is_signer, is_generator,
 			blockchain_id, generator_url, generator_access_token, block_pub,
+			block_hsm_url, block_hsm_access_token,
 			remote_block_signers, max_issuance_window_ms, configured_at
 			FROM config
 		`
@@ -81,6 +84,8 @@ func Load(ctx context.Context, db pg.DB) (*Config, error) {
 		&c.GeneratorURL,
 		&c.GeneratorAccessToken,
 		&c.BlockPub,
+		&c.BlockHSMURL,
+		&c.BlockHSMAccessToken,
 		&blockSignerData,
 		&miw,
 		&c.ConfiguredAt,
@@ -210,8 +215,9 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	const q = `
 		INSERT INTO config (id, is_signer, block_pub, is_generator,
 			blockchain_id, generator_url, generator_access_token,
+			block_hsm_url, block_hsm_access_token,
 			remote_block_signers, max_issuance_window_ms, configured_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
 	`
 	_, err = db.Exec(
 		ctx,
@@ -222,6 +228,8 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.IsGenerator,
 		c.BlockchainID,
 		c.GeneratorURL,
+		c.BlockHSMURL,
+		c.BlockHSMAccessToken,
 		c.GeneratorAccessToken,
 		blockSignerData,
 		bc.DurationMillis(c.MaxIssuanceWindow.Duration),
