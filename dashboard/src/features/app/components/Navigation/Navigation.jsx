@@ -89,10 +89,6 @@ class Navigation extends React.Component {
             {navIcon('feed', styles)}
               Tutorial
             </a>
-            {this.props.tutorial.isShowing && !this.props.routing.locationBeforeTransitions.pathname.startsWith(this.props.tutorial.route) &&
-              <Link to={this.props.tutorial.route}>
-                resume
-              </Link>}
           </li>
         </ul>
 
@@ -104,7 +100,6 @@ class Navigation extends React.Component {
 
 export default connect(
   state => ({
-    tutorial: state.tutorial,
     routing: state.routing, // required for <Link>s to update active state on navigation
     showSync: state.core.configured && !state.core.generator,
   }),

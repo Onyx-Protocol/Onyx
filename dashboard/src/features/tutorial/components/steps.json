@@ -1,7 +1,7 @@
 [
   {
     "component": "TutorialInfo",
-    "title": "Welcome to Chain Core Dashboard!",
+    "title": "Tutorial - Welcome",
     "button": "Start 5-minute Tutorial",
     "dismiss": "Skip tutorial",
     "route": "mockhsms",
@@ -35,7 +35,7 @@
     "component": "TutorialForm",
     "title": "Tutorial - MockHSM keys - Step 1 of 7",
     "button": null,
-    "dismiss": null,
+    "dismiss": "End tutorial",
     "route": null,
     "content": {
       "header": "Create MockHSM key",
@@ -88,7 +88,7 @@
     "component": "TutorialForm",
     "title": "Tutorial - Assets - Step 2 of 7",
     "button": null,
-    "dismiss": null,
+    "dismiss": "End tutorial",
     "route": null,
     "content": {
       "header": "Create Asset",
@@ -146,7 +146,7 @@
     "component": "TutorialForm",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": null,
-    "dismiss": null,
+    "dismiss": "End tutorial",
     "route": null,
     "content": {
       "header": "Create Account",
@@ -190,7 +190,7 @@
     "component": "TutorialForm",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": null,
-    "dismiss": null,
+    "dismiss": "End tutorial",
     "route": null,
     "content": {
       "header": "Create Account",
@@ -248,7 +248,7 @@
     "component": "TutorialForm",
     "title": "Tutorial - Transactions - Step 5 of 7",
     "button": null,
-    "dismiss": null,
+    "dismiss": "End tutorial",
     "route": null,
     "content": {
       "header": "Issue asset units",
@@ -314,7 +314,7 @@
     "component": "TutorialForm",
     "title": "Tutorial - Transactions - Step 6 of 7",
     "button": null,
-    "dismiss": null,
+    "dismiss": "End tutorial",
     "route": null,
     "content": {
       "header": "Spend asset units",
@@ -386,7 +386,7 @@
     "component": "TutorialForm",
     "title": "Tutorial - Transactions - Step 7 of 7",
     "button": null,
-    "dismiss": null,
+    "dismiss": "End tutorial",
     "route": null,
     "content": {
       "header": "Retire asset units",

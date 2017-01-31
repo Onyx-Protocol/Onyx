@@ -11,9 +11,6 @@ class TutorialForm extends React.Component {
         <div className={styles.tutorialContainer}>
           <div className={styles.header}>
             {this.props.title}
-            <div className={styles.skip}>
-              <a onClick={this.props.handleDismiss}>End tutorial</a>
-            </div>
           </div>
           <div className={styles.list}>
             <div className={styles.listHeader}>

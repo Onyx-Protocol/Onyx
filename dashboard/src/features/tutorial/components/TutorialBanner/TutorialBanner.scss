@@ -1,0 +1,26 @@
+.header {
+  background-color: $highlight-tutorial;
+  box-sizing: border-box;
+  color: $text-inverse-color;
+  padding: 0 $gutter-size;
+  height: $title-height;
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: bold;
+  width: 100%;
+}
+
+.skip {
+  flex: 1;
+  text-align: right;
+
+  a {
+    color: $text-inverse-color;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 18px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
