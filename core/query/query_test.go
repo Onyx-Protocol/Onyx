@@ -2,7 +2,6 @@ package query_test
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"testing"
 	"time"
@@ -189,9 +188,8 @@ func TestQueryOutputs(t *testing.T) {
 		}
 		for j, w := range tc.want {
 			var found bool
-			wantAssetID := w.AssetID.String()
 			for _, output := range outputs {
-				if wantAssetID == hex.EncodeToString(output.AssetID) && w.Amount == output.Amount && w.AccountID == output.AccountID {
+				if w.AssetID == output.AssetID && w.Amount == output.Amount && w.AccountID == output.AccountID {
 					found = true
 					break
 				}

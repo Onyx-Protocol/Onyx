@@ -2,12 +2,14 @@ package asset
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/lib/pq"
 
+	"chain/core/query"
 	"chain/core/signers"
 	"chain/database/pg"
-	"chain/encoding/json"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
@@ -22,58 +24,73 @@ const PinName = "asset"
 // If the Core is configured not to provide search services,
 // SaveAnnotatedAsset can be a no-op.
 type Saver interface {
-	SaveAnnotatedAsset(context.Context, bc.AssetID, map[string]interface{}, string) error
+	SaveAnnotatedAsset(context.Context, *query.AnnotatedAsset, string) error
+}
+
+func Annotated(a *Asset) (*query.AnnotatedAsset, error) {
+	jsonTags := json.RawMessage(`{}`)
+	jsonDefinition := json.RawMessage(`{}`)
+	if len(a.RawDefinition()) > 0 {
+		jsonDefinition = json.RawMessage(a.RawDefinition())
+	}
+	if a.Tags != nil {
+		b, err := json.Marshal(a.Tags)
+		if err != nil {
+			return nil, err
+		}
+		jsonTags = b
+	}
+
+	aa := &query.AnnotatedAsset{
+		ID:              a.AssetID,
+		VMVersion:       a.VMVersion,
+		Definition:      &jsonDefinition,
+		Tags:            &jsonTags,
+		RawDefinition:   chainjson.HexBytes(a.RawDefinition()),
+		IssuanceProgram: chainjson.HexBytes(a.IssuanceProgram),
+	}
+	if a.Alias != nil {
+		aa.Alias = *a.Alias
+	}
+	if a.Signer != nil {
+		path := signers.Path(a.Signer, signers.AssetKeySpace)
+		var jsonPath []chainjson.HexBytes
+		for _, p := range path {
+			jsonPath = append(jsonPath, p)
+		}
+		for _, xpub := range a.Signer.XPubs {
+			derived := xpub.Derive(path)
+			aa.Keys = append(aa.Keys, &query.AssetKey{
+				RootXPub:            xpub,
+				AssetPubkey:         derived[:],
+				AssetDerivationPath: jsonPath,
+			})
+		}
+		aa.Quorum = a.Signer.Quorum
+		aa.IsLocal = true
+	} else {
+		pubkeys, quorum, err := vmutil.ParseP2SPMultiSigProgram(a.IssuanceProgram)
+		if err == nil {
+			for _, pubkey := range pubkeys {
+				aa.Keys = append(aa.Keys, &query.AssetKey{
+					AssetPubkey: chainjson.HexBytes(pubkey[:]),
+				})
+			}
+			aa.Quorum = quorum
+		}
+	}
+	return aa, nil
 }
 
 func (reg *Registry) indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 	if reg.indexer == nil {
 		return nil
 	}
-	m := map[string]interface{}{
-		"id":               a.AssetID,
-		"alias":            a.Alias,
-		"raw_definition":   json.HexBytes(a.RawDefinition()),
-		"vm_version":       a.VMVersion,
-		"issuance_program": json.HexBytes(a.IssuanceProgram),
-		"tags":             a.Tags,
-		"is_local":         "no",
+	aa, err := Annotated(a)
+	if err != nil {
+		return err
 	}
-	adef, err := a.Definition()
-	if err == nil {
-		m["definition"] = adef
-	}
-	if a.Signer != nil {
-		var keys []map[string]interface{}
-		path := signers.Path(a.Signer, signers.AssetKeySpace)
-		var jsonPath []json.HexBytes
-		for _, p := range path {
-			jsonPath = append(jsonPath, p)
-		}
-		for _, xpub := range a.Signer.XPubs {
-			derived := xpub.Derive(path)
-			keys = append(keys, map[string]interface{}{
-				"root_xpub":             xpub,
-				"asset_pubkey":          derived,
-				"asset_derivation_path": jsonPath,
-			})
-		}
-		m["keys"] = keys
-		m["quorum"] = a.Signer.Quorum
-		m["is_local"] = "yes"
-	} else {
-		pubkeys, quorum, err := vmutil.ParseP2SPMultiSigProgram(a.IssuanceProgram)
-		if err == nil {
-			var keys []map[string]interface{}
-			for _, pubkey := range pubkeys {
-				keys = append(keys, map[string]interface{}{
-					"asset_pubkey": json.HexBytes(pubkey),
-				})
-			}
-			m["keys"] = keys
-			m["quorum"] = quorum
-		}
-	}
-	return reg.indexer.SaveAnnotatedAsset(ctx, a.AssetID, m, a.sortID)
+	return reg.indexer.SaveAnnotatedAsset(ctx, aa, a.sortID)
 }
 
 func (reg *Registry) ProcessBlocks(ctx context.Context) {

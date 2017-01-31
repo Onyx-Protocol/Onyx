@@ -9,32 +9,34 @@ import (
 	"chain/core/query"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) error {
-	assetIDStrMap := make(map[string][]byte)
+	assetIDMap := make(map[bc.AssetID]bool)
 
 	// Collect all of the asset IDs appearing in the entire block. We only
 	// check the outputs because every transaction should balance.
 	for _, tx := range txs {
 		for _, out := range tx.Outputs {
-			assetIDStrMap[string(out.AssetID)] = out.AssetID
+			assetIDMap[out.AssetID] = true
 		}
 	}
-	if len(assetIDStrMap) == 0 {
+	if len(assetIDMap) == 0 {
 		return nil
 	}
 
 	// Look up all the asset tags for all applicable assets.
-	assetIDs := make([][]byte, 0, len(assetIDStrMap))
-	for _, assetID := range assetIDStrMap {
-		assetIDs = append(assetIDs, assetID)
+	assetIDs := make([][]byte, 0, len(assetIDMap))
+	for assetID := range assetIDMap {
+		aid := assetID
+		assetIDs = append(assetIDs, aid[:])
 	}
 	var (
-		tagsByAssetIDStr    = make(map[string]*json.RawMessage, len(assetIDs))
-		defsByAssetIDStr    = make(map[string]*json.RawMessage, len(assetIDs))
-		aliasesByAssetIDStr = make(map[string]string, len(assetIDs))
-		localByAssetIDStr   = make(map[string]bool, len(assetIDs))
+		tagsByAssetID    = make(map[bc.AssetID]*json.RawMessage, len(assetIDs))
+		defsByAssetID    = make(map[bc.AssetID]*json.RawMessage, len(assetIDs))
+		aliasesByAssetID = make(map[bc.AssetID]string, len(assetIDs))
+		localByAssetID   = make(map[bc.AssetID]bool, len(assetIDs))
 	)
 	const q = `
 		SELECT id, COALESCE(alias, ''), signer_id IS NOT NULL, tags, definition
@@ -43,12 +45,11 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 		WHERE id IN (SELECT unnest($1::bytea[]))
 	`
 	err := pg.ForQueryRows(ctx, reg.db, q, pq.ByteaArray(assetIDs),
-		func(assetID []byte, alias string, local bool, tagsBlob, defBlob []byte) error {
-			assetIDStr := string(assetID)
+		func(assetID bc.AssetID, alias string, local bool, tagsBlob, defBlob []byte) error {
 			if alias != "" {
-				aliasesByAssetIDStr[assetIDStr] = alias
+				aliasesByAssetID[assetID] = alias
 			}
-			localByAssetIDStr[assetIDStr] = local
+			localByAssetID[assetID] = local
 
 			jsonTags := json.RawMessage(tagsBlob)
 			jsonDef := json.RawMessage(defBlob)
@@ -56,14 +57,14 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 				var v interface{}
 				err := json.Unmarshal(tagsBlob, &v)
 				if err == nil {
-					tagsByAssetIDStr[assetIDStr] = &jsonTags
+					tagsByAssetID[assetID] = &jsonTags
 				}
 			}
 			if len(defBlob) > 0 {
 				var v interface{}
 				err := json.Unmarshal(defBlob, &v)
 				if err == nil {
-					defsByAssetIDStr[assetIDStr] = &jsonDef
+					defsByAssetID[assetID] = &jsonDef
 				}
 			}
 			return nil
@@ -76,16 +77,14 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 	empty := json.RawMessage(`{}`)
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
-			assetIDStr := string(in.AssetID)
-
-			if alias, ok := aliasesByAssetIDStr[assetIDStr]; ok {
+			if alias, ok := aliasesByAssetID[in.AssetID]; ok {
 				in.AssetAlias = alias
 			}
-			if localByAssetIDStr[assetIDStr] {
+			if localByAssetID[in.AssetID] {
 				in.AssetIsLocal = true
 			}
-			tags := tagsByAssetIDStr[assetIDStr]
-			def := defsByAssetIDStr[assetIDStr]
+			tags := tagsByAssetID[in.AssetID]
+			def := defsByAssetID[in.AssetID]
 			in.AssetTags = &empty
 			in.AssetDefinition = &empty
 			if tags != nil {
@@ -97,16 +96,14 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 		}
 
 		for _, out := range tx.Outputs {
-			assetIDStr := string(out.AssetID)
-
-			if alias, ok := aliasesByAssetIDStr[assetIDStr]; ok {
+			if alias, ok := aliasesByAssetID[out.AssetID]; ok {
 				out.AssetAlias = alias
 			}
-			if localByAssetIDStr[assetIDStr] {
+			if localByAssetID[out.AssetID] {
 				out.AssetIsLocal = true
 			}
-			tags := tagsByAssetIDStr[assetIDStr]
-			def := defsByAssetIDStr[assetIDStr]
+			tags := tagsByAssetID[out.AssetID]
+			def := defsByAssetID[out.AssetID]
 			out.AssetTags = &empty
 			out.AssetDefinition = &empty
 			if tags != nil {

@@ -2,12 +2,14 @@ package account
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/lib/pq"
 
+	"chain/core/query"
 	"chain/core/signers"
 	"chain/database/pg"
-	"chain/encoding/json"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -22,33 +24,47 @@ const PinName = "account"
 // If the Core is configured not to provide search services,
 // SaveAnnotatedAccount can be a no-op.
 type Saver interface {
-	SaveAnnotatedAccount(context.Context, string, map[string]interface{}) error
+	SaveAnnotatedAccount(context.Context, *query.AnnotatedAccount) error
+}
+
+func Annotated(a *Account) (*query.AnnotatedAccount, error) {
+	aa := &query.AnnotatedAccount{
+		ID:     a.ID,
+		Alias:  a.Alias,
+		Quorum: a.Quorum,
+	}
+
+	tags, err := json.Marshal(a.Tags)
+	if err != nil {
+		return nil, err
+	}
+	rawTags := json.RawMessage(tags)
+	aa.Tags = &rawTags
+
+	path := signers.Path(a.Signer, signers.AccountKeySpace)
+	var jsonPath []chainjson.HexBytes
+	for _, p := range path {
+		jsonPath = append(jsonPath, p)
+	}
+	for _, xpub := range a.XPubs {
+		aa.Keys = append(aa.Keys, &query.AccountKey{
+			RootXPub:              xpub,
+			AccountXPub:           xpub.Derive(path),
+			AccountDerivationPath: jsonPath,
+		})
+	}
+	return aa, nil
 }
 
 func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
 	if m.indexer == nil {
 		return nil
 	}
-	var keys []map[string]interface{}
-	path := signers.Path(a.Signer, signers.AccountKeySpace)
-	var jsonPath []json.HexBytes
-	for _, p := range path {
-		jsonPath = append(jsonPath, p)
+	aa, err := Annotated(a)
+	if err != nil {
+		return err
 	}
-	for _, xpub := range a.XPubs {
-		keys = append(keys, map[string]interface{}{
-			"root_xpub":               xpub,
-			"account_xpub":            xpub.Derive(path),
-			"account_derivation_path": jsonPath,
-		})
-	}
-	return m.indexer.SaveAnnotatedAccount(ctx, a.ID, map[string]interface{}{
-		"id":     a.ID,
-		"alias":  a.Alias,
-		"keys":   keys,
-		"tags":   a.Tags,
-		"quorum": a.Quorum,
-	})
+	return m.indexer.SaveAnnotatedAccount(ctx, aa)
 }
 
 type rawOutput struct {

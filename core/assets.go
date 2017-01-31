@@ -4,32 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"chain/core/signers"
+	"chain/core/asset"
 	"chain/crypto/ed25519/chainkd"
-	"chain/encoding/json"
 	"chain/net/http/reqid"
-	"chain/protocol/bc"
 )
-
-// This type enforces JSON field ordering in API output.
-type assetResponse struct {
-	ID              bc.AssetID             `json:"id"`
-	Alias           *string                `json:"alias"`
-	VMVersion       uint64                 `json:"vm_version"`
-	IssuanceProgram json.HexBytes          `json:"issuance_program"`
-	Keys            []*assetKey            `json:"keys"`
-	Quorum          int                    `json:"quorum"`
-	Definition      map[string]interface{} `json:"definition"`
-	RawDefinition   json.HexBytes          `json:"raw_definition"`
-	Tags            map[string]interface{} `json:"tags"`
-	IsLocal         string                 `json:"is_local"`
-}
-
-type assetKey struct {
-	RootXPub            chainkd.XPub    `json:"root_xpub"`
-	AssetPubkey         json.HexBytes   `json:"asset_pubkey"`
-	AssetDerivationPath []json.HexBytes `json:"asset_derivation_path"`
-}
 
 // POST /create-asset
 func (h *Handler) createAsset(ctx context.Context, ins []struct {
@@ -55,7 +33,7 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 			defer wg.Done()
 			defer batchRecover(subctx, &responses[i])
 
-			asset, err := h.Assets.Define(
+			a, err := h.Assets.Define(
 				subctx,
 				ins[i].RootXPubs,
 				ins[i].Quorum,
@@ -68,33 +46,12 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 				responses[i] = err
 				return
 			}
-			var keys []*assetKey
-			for _, xpub := range asset.Signer.XPubs {
-				path := signers.Path(asset.Signer, signers.AssetKeySpace)
-				var hexPath []json.HexBytes
-				for _, p := range path {
-					hexPath = append(hexPath, p)
-				}
-				derived := xpub.Derive(path)
-				keys = append(keys, &assetKey{
-					AssetPubkey:         derived[:],
-					RootXPub:            xpub,
-					AssetDerivationPath: hexPath,
-				})
+			aa, err := asset.Annotated(a)
+			if err != nil {
+				responses[i] = err
+				return
 			}
-			parsedDef, _ := asset.Definition() // cannot fail because Assets.Define() would catch parsing issues
-			responses[i] = &assetResponse{
-				ID:              asset.AssetID,
-				Alias:           asset.Alias,
-				VMVersion:       asset.VMVersion,
-				IssuanceProgram: asset.IssuanceProgram,
-				Keys:            keys,
-				Quorum:          asset.Signer.Quorum,
-				Definition:      parsedDef,
-				RawDefinition:   json.HexBytes(asset.RawDefinition()),
-				Tags:            asset.Tags,
-				IsLocal:         "yes",
-			}
+			responses[i] = aa
 		}(i)
 	}
 

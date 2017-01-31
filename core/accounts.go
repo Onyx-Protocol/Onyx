@@ -4,26 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"chain/core/signers"
+	"chain/core/account"
 	"chain/crypto/ed25519/chainkd"
-	"chain/encoding/json"
 	"chain/net/http/reqid"
 )
-
-// This type enforces JSON field ordering in API output.
-type accountResponse struct {
-	ID     string                 `json:"id"`
-	Alias  string                 `json:"alias"`
-	Keys   []*accountKey          `json:"keys"`
-	Quorum int                    `json:"quorum"`
-	Tags   map[string]interface{} `json:"tags"`
-}
-
-type accountKey struct {
-	RootXPub              chainkd.XPub    `json:"root_xpub"`
-	AccountXPub           chainkd.XPub    `json:"account_xpub"`
-	AccountDerivationPath []json.HexBytes `json:"account_derivation_path"`
-}
 
 // POST /create-account
 func (h *Handler) createAccount(ctx context.Context, ins []struct {
@@ -53,26 +37,12 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 				responses[i] = err
 				return
 			}
-			path := signers.Path(acc.Signer, signers.AccountKeySpace)
-			var hexPath []json.HexBytes
-			for _, p := range path {
-				hexPath = append(hexPath, p)
+			aa, err := account.Annotated(acc)
+			if err != nil {
+				responses[i] = err
+				return
 			}
-			var keys []*accountKey
-			for _, xpub := range acc.XPubs {
-				keys = append(keys, &accountKey{
-					RootXPub:              xpub,
-					AccountXPub:           xpub.Derive(path),
-					AccountDerivationPath: hexPath,
-				})
-			}
-			responses[i] = &accountResponse{
-				ID:     acc.ID,
-				Alias:  acc.Alias,
-				Keys:   keys,
-				Quorum: acc.Quorum,
-				Tags:   acc.Tags,
-			}
+			responses[i] = aa
 		}(i)
 	}
 
