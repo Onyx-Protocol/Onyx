@@ -46,7 +46,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
-	err = txbuilder.FinalizeTx(ctx, c, g, bc.NewTx(*tmpl.Transaction))
+	err = txbuilder.FinalizeTx(ctx, c, g, tmpl.Transaction)
 	if err != nil {
 		t.Fatal(err)
 	}
