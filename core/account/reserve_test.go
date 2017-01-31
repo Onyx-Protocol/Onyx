@@ -41,7 +41,7 @@ func TestCancelReservation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	outputid := bc.ComputeOutputID(h, 0)
+	outputid := bc.OutputID{h}
 
 	// Fake the output in the state tree.
 	_, s := c.State()
