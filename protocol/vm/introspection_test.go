@@ -97,10 +97,15 @@ func TestBlockTime(t *testing.T) {
 
 func TestOutputIDAndNonceOp(t *testing.T) {
 	var zeroHash bc.Hash
+	outputID := bc.OutputID{
+		Hash: bc.Hash{
+			3, 2, 1,
+		},
+	}
 	nonce := []byte{36, 37, 38}
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(bc.OutputID{zeroHash}, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
+			bc.NewSpendInput(outputID, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
 			bc.NewIssuanceInput(nonce, 6, nil, zeroHash, []byte("issueprog"), nil, nil),
 		},
 	})
@@ -116,7 +121,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedStack := [][]byte{mustDecodeHex("dc33296e4d20f0ef35ff9fd449e23ebbaa5a049a17779db3c2fe194b499aaf74")}
+	expectedStack := [][]byte{outputID.Hash[:]}
 	if !testutil.DeepEqual(vm.dataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
 	}
@@ -498,6 +503,9 @@ func TestIntrospectionOps(t *testing.T) {
 			startVM: &virtualMachine{
 				runLimit: 0,
 				tx:       tx,
+				txContext: bc.VMContext{
+					OutputID: &bc.Hash{},
+				},
 			},
 			wantErr: ErrRunLimitExceeded,
 		}, testStruct{
