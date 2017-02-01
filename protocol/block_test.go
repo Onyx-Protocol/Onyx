@@ -135,7 +135,7 @@ func TestGenerateBlock(t *testing.T) {
 		bc.NewTx(bc.TxData{
 			Version: 1,
 			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput(nil, 50, nil, initialBlockHash, nil, [][]byte{
+				bc.NewIssuanceInput([]byte{1}, 50, nil, initialBlockHash, nil, [][]byte{
 					nil,
 					mustDecodeHex("30450221009037e1d39b7d59d24eba8012baddd5f4ab886a51b46f52b7c479ddfa55eeb5c5022076008409243475b25dfba6db85e15cf3d74561a147375941e4830baa69769b5101"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae")}, nil),
@@ -147,7 +147,7 @@ func TestGenerateBlock(t *testing.T) {
 		bc.NewTx(bc.TxData{
 			Version: 1,
 			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput(nil, 50, nil, initialBlockHash, nil, [][]byte{
+				bc.NewIssuanceInput([]byte{1}, 50, nil, initialBlockHash, nil, [][]byte{
 					nil,
 					mustDecodeHex("3045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e01"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
