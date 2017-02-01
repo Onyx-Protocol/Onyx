@@ -317,10 +317,11 @@ func TestTxSighashCommitment(t *testing.T) {
 		t.Errorf("issuances-only: got error %s, want no error", err)
 	}
 
-	// Tx with at any spend inputs, none committing to the txsighash, is not OK
+	// Tx with any spend inputs, none committing to the txsighash, is not OK
 	tx.Inputs = append(tx.Inputs, &bc.TxInput{
 		AssetVersion: 1,
 		TypedInput: &bc.SpendInput{
+			SpentOutputID: bc.OutputID{bc.Hash{1}},
 			OutputCommitment: bc.OutputCommitment{
 				AssetAmount: bc.AssetAmount{
 					AssetID: assetID,
@@ -340,6 +341,7 @@ func TestTxSighashCommitment(t *testing.T) {
 
 	// Tx with a spend input committing to the wrong txsighash is not OK
 	spendInput := &bc.SpendInput{
+		SpentOutputID: bc.OutputID{bc.Hash{2}},
 		OutputCommitment: bc.OutputCommitment{
 			AssetAmount: bc.AssetAmount{
 				AssetID: assetID,
@@ -368,6 +370,7 @@ func TestTxSighashCommitment(t *testing.T) {
 
 	// Tx with a spend input committing to the right txsighash is OK
 	spendInput = &bc.SpendInput{
+		SpentOutputID: bc.OutputID{bc.Hash{3}},
 		OutputCommitment: bc.OutputCommitment{
 			AssetAmount: bc.AssetAmount{
 				AssetID: assetID,
