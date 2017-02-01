@@ -105,11 +105,12 @@ func TestMaterializeWitnesses(t *testing.T) {
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	nonce := []byte{1}
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(nil, 5, nil, initialBlockHash, issuanceProg, nil, nil),
+			bc.NewIssuanceInput(nonce, 5, nil, initialBlockHash, issuanceProg, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 5, outscript, nil),
