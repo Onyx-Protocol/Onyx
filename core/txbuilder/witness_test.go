@@ -3,6 +3,7 @@ package txbuilder
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -14,10 +15,11 @@ import (
 )
 
 func TestInferConstraints(t *testing.T) {
+	outputID := bc.OutputID{Hash: bc.Hash{255}}
 	tpl := &Template{
 		Transaction: &bc.Tx{TxData: bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.OutputID{[32]byte{255}}, nil, bc.AssetID{}, 123, nil, []byte{1}),
+				bc.NewSpendInput(outputID, nil, bc.AssetID{}, 123, nil, []byte{1}),
 			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(bc.AssetID{}, 123, []byte{10, 11, 12}, nil),
@@ -28,12 +30,14 @@ func TestInferConstraints(t *testing.T) {
 		AllowAdditional: true,
 	}
 	prog := buildSigProgram(tpl, 0)
-	want, err := vm.Assemble("MINTIME 1 GREATERTHANOREQUAL VERIFY MAXTIME 2 LESSTHANOREQUAL VERIFY 0xaa206544e4e51017b313c228a4e8b42035bba61f8a8e87abd5e1135dc919fa7c OUTPUTID EQUAL VERIFY 0x2767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7 REFDATAHASH EQUAL VERIFY 0 0 123 0x0000000000000000000000000000000000000000000000000000000000000000 1 0x0a0b0c CHECKOUTPUT")
+	wantSrc := fmt.Sprintf("MINTIME 1 GREATERTHANOREQUAL VERIFY MAXTIME 2 LESSTHANOREQUAL VERIFY 0x%x OUTPUTID EQUAL VERIFY 0x2767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7 REFDATAHASH EQUAL VERIFY 0 0 123 0x0000000000000000000000000000000000000000000000000000000000000000 1 0x0a0b0c CHECKOUTPUT", outputID.Hash[:])
+	want, err := vm.Assemble(wantSrc)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(want, prog) {
-		t.Errorf("expected sig witness program %x, got %x", want, prog)
+		progSrc, _ := vm.Disassemble(prog)
+		t.Errorf("expected sig witness program %x [%s], got %x [%s]", want, wantSrc, prog, progSrc)
 	}
 }
 
