@@ -134,6 +134,8 @@ func TestGenerateBlock(t *testing.T) {
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Version: 1,
+			MinTime: 233400000000,
+			MaxTime: 233400000001,
 			Inputs: []*bc.TxInput{
 				bc.NewIssuanceInput([]byte{1}, 50, nil, initialBlockHash, nil, [][]byte{
 					nil,
@@ -146,8 +148,10 @@ func TestGenerateBlock(t *testing.T) {
 		}),
 		bc.NewTx(bc.TxData{
 			Version: 1,
+			MinTime: 233400000000,
+			MaxTime: 233400000001,
 			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput([]byte{1}, 50, nil, initialBlockHash, nil, [][]byte{
+				bc.NewIssuanceInput([]byte{2}, 50, nil, initialBlockHash, nil, [][]byte{
 					nil,
 					mustDecodeHex("3045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e01"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
@@ -166,8 +170,8 @@ func TestGenerateBlock(t *testing.T) {
 
 	// TODO(bobg): verify these hashes are correct
 	var wantTxRoot, wantAssetsRoot bc.Hash
-	copy(wantTxRoot[:], mustDecodeHex("3eb04ed5a48a8df5f39e741ac8e4f9b1ca634f281cc91f28a93ed227598608a4"))
-	copy(wantAssetsRoot[:], mustDecodeHex("1593fdd753558fbcaff9ba7529579e5dd638139b6d25537e53e3310d47444946"))
+	copy(wantTxRoot[:], mustDecodeHex("0a664b037570b365225828bb3d0c0bbb77aee3d02d3b8ceeada0afed75363e9c"))
+	copy(wantAssetsRoot[:], mustDecodeHex("192273e4f7e7856be65d4ad54f353d30e45d1632fc7ccb63cca00c5e2b0e07cc"))
 
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{
