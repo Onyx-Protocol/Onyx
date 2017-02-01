@@ -55,7 +55,7 @@ func TestBuild(t *testing.T) {
 	}
 
 	want := &Template{
-		Transaction: &bc.Tx{TxData: bc.TxData{
+		Transaction: bc.NewTx(bc.TxData{
 			Version: 1,
 			MaxTime: bc.Millis(expiryTime),
 			Inputs: []*bc.TxInput{
@@ -66,7 +66,7 @@ func TestBuild(t *testing.T) {
 				bc.NewTxOutput([32]byte{1}, 5, []byte("change"), nil),
 			},
 			ReferenceData: []byte("xyz"),
-		}},
+		}),
 		SigningInstructions: []*SigningInstruction{{
 			WitnessComponents: []WitnessComponent{},
 		}},
@@ -178,7 +178,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	unsigned := bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(nil, 100, nil, initialBlockHash, issuanceProg, nil, nil),
+			bc.NewIssuanceInput([]byte{1}, 100, nil, initialBlockHash, issuanceProg, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 100, outscript, nil),
