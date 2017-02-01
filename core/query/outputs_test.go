@@ -44,12 +44,12 @@ func TestOutputsAfter(t *testing.T) {
 	ctx := context.Background()
 	_, err := db.Exec(ctx, `
 		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, output_id, timespan,
-			type, purpose, asset_id, asset_definition, asset_local, asset_tags, amount, control_program, reference_data, local)
+			type, purpose, asset_id, asset_alias, asset_definition, asset_local, asset_tags, amount, control_program, reference_data, local)
 		VALUES
-		(1, 0, 0, 'ab', 'o1', int8range(1, 100), 'control', 'receive', E'\\xDEADBEEF', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true),
-		(1, 1, 0, 'cd', 'o2', int8range(1, 100), 'control', 'receive', E'\\xDEADBEEF', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true),
-		(1, 1, 1, 'cd', 'o3', int8range(1, 100), 'control', 'receive', E'\\xDEADBEEF', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true),
-		(2, 0, 0, 'ef', 'o4', int8range(10, 50), 'control', 'receive', E'\\xDEADBEEF', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true);
+		(1, 0, 0, 'ab', 'o1', int8range(1, 100), 'control', 'receive', E'\\xDEADBEEF', 'a', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true),
+		(1, 1, 0, 'cd', 'o2', int8range(1, 100), 'control', 'receive', E'\\xDEADBEEF', 'a', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true),
+		(1, 1, 1, 'cd', 'o3', int8range(1, 100), 'control', 'receive', E'\\xDEADBEEF', 'a', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true),
+		(2, 0, 0, 'ef', 'o4', int8range(10, 50), 'control', 'receive', E'\\xDEADBEEF', 'a', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true);
 	`)
 	if err != nil {
 		t.Fatal(err)

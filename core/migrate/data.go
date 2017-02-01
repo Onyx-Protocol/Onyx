@@ -165,6 +165,7 @@ var migrations = []migration{
 			ALTER COLUMN type SET NOT NULL,
 			ALTER COLUMN purpose SET NOT NULL,
 			ALTER COLUMN asset_id SET NOT NULL,
+			ALTER COLUMN asset_alias SET NOT NULL,
 			ALTER COLUMN asset_definition SET NOT NULL,
 			ALTER COLUMN asset_tags SET NOT NULL,
 			ALTER COLUMN asset_local SET NOT NULL,

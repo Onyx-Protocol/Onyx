@@ -71,7 +71,6 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 		var (
 			blockHeight  uint64
 			txPos        uint32
-			assetAlias   *string
 			accountID    *string
 			accountAlias *string
 			out          = new(AnnotatedOutput)
@@ -85,7 +84,7 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 			&out.Type,
 			&out.Purpose,
 			&out.AssetID,
-			&assetAlias,
+			&out.AssetAlias,
 			&out.AssetDefinition,
 			&out.AssetTags,
 			&out.AssetIsLocal,
@@ -102,9 +101,6 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 		}
 
 		// Set nullable fields.
-		if assetAlias != nil {
-			out.AssetAlias = *assetAlias
-		}
 		if accountID != nil {
 			out.AccountID = *accountID
 		}
