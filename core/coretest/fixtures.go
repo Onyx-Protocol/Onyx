@@ -59,7 +59,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 
 	SignTxTemplate(t, ctx, tpl, &testutil.TestXPrv)
 
-	err = txbuilder.FinalizeTx(ctx, c, s, bc.NewTx(tpl.Transaction.TxData))
+	err = txbuilder.FinalizeTx(ctx, c, s, tpl.Transaction)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
