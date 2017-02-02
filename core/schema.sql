@@ -302,7 +302,7 @@ CREATE TABLE annotated_txs (
     tx_pos integer NOT NULL,
     tx_hash bytea NOT NULL,
     data jsonb NOT NULL,
-    "timestamp" timestamp without time zone NOT NULL,
+    "timestamp" timestamp with time zone NOT NULL,
     block_id bytea NOT NULL,
     local boolean NOT NULL,
     reference_data jsonb NOT NULL
@@ -946,4 +946,4 @@ insert into migrations (filename, hash) values ('2017-01-25.0.account.cp-expiry.
 insert into migrations (filename, hash) values ('2017-01-30.0.txdb.snapshots-timestamp.sql', '3ab923b782e048300315fc4ea8ae8bdf42183aa423d0a12bc228411c2d8c5093');
 insert into migrations (filename, hash) values ('2017-01-30.1.core.add-block-hsm-config.sql', '9d609586b2fd33c45e530c4237a24f303a3b5753e5ccf3cd740958511aea4992');
 insert into migrations (filename, hash) values ('2017-01-31.0.query.drop-outpoint-index.sql', '461ab638954f5eb53e83587da96f2d83e031d17ab3408685a4460b60edf522a1');
-insert into migrations (filename, hash) values ('2017-01-31.1.query.annotated-schema.sql', '3c549553420ed0eb96c80ad8303944987b5dd98e289426d8050af6f202ac20b7');
+insert into migrations (filename, hash) values ('2017-01-31.1.query.annotated-schema.sql', 'ad7981961928d8803fc8873a0f9eb48b7b40b987740387f20f8b9ea235d6fc9a');

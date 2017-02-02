@@ -179,12 +179,12 @@ var migrations = []migration{
 		-- Flatten annotated_txs into schema
 		--
 		ALTER TABLE annotated_txs
-			ADD COLUMN "timestamp" timestamp without time zone,
+			ADD COLUMN "timestamp" timestamp with time zone,
 			ADD COLUMN block_id bytea,
 			ADD COLUMN local boolean,
 			ADD COLUMN reference_data jsonb;
 		UPDATE annotated_txs SET
-		    "timestamp"    = (data->>'timestamp')::timestamp without time zone,
+			"timestamp"    = (data->>'timestamp')::timestamp with time zone,
 			block_id       = decode(data->>'block_id', 'hex'),
 			local          = (data->>'is_local' = 'yes'),
 			reference_data = COALESCE(data->'reference_data', '{}'::jsonb);
