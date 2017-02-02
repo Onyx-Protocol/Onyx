@@ -1,4 +1,5 @@
 import { combineReducers } from 'redux'
+import steps from './steps.json'
 
 export const step = (state = 0, action) => {
   if (action.type == 'TUTORIAL_NEXT_STEP' || action.type == 'UPDATE_TUTORIAL'){
@@ -46,9 +47,17 @@ export const userInputs = (state = { accounts: [] }, action) => {
   return state
 }
 
-export default combineReducers({
-  step,
-  isShowing,
-  route,
-  userInputs
-})
+export default (state = {}, action) => {
+  delete state.currentStep // combineReducers logs error because currentStep set outside of function
+  const newState = combineReducers({
+    step,
+    isShowing,
+    route,
+    userInputs
+  })(state, action)
+
+  if (state.isShowing) {
+    newState.currentStep = steps[newState.step]
+  }
+  return newState
+}

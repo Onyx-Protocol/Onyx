@@ -1,3 +1,8 @@
+.main {
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.25);
+  margin-bottom: $gutter-size/2;
+  border-bottom: solid $text-light-color 1px;
+}
 .header {
   background-color: $highlight-tutorial;
   box-sizing: border-box;

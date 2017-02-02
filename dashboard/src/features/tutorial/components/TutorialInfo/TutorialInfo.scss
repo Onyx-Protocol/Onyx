@@ -1,9 +1,6 @@
 .container {
   width: 100%;
-  border-bottom: solid $text-light-color 1px;
   background-color: $background-color;
-  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.25);
-  margin-bottom: $gutter-size/2;
 
   .content {
     padding: 25px $gutter-size;
