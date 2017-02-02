@@ -59,15 +59,7 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case bc.Hash:
 		_, err := w.Write(v[:])
 		return err
-	case entryRef: // xxx do we need so many [32]byte types?
-		_, err := w.Write(v[:])
-		return err
-	case extHash: // xxx do we need so many [32]byte types?
-		_, err := w.Write(v[:])
-		return err
-	case bc.AssetID: // xxx do we need so many [32]byte types?
-		_, err := w.Write(v[:])
-		return err
+
 	case uint64:
 		_, err := blockchain.WriteVarint63(w, v)
 		return err
@@ -76,6 +68,19 @@ func writeForHash(w io.Writer, c interface{}) error {
 		return err
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
+		return err
+
+		// TODO: The rest of these are all aliases for [32]byte. Do we
+		// really need them all?
+
+	case entryRef:
+		_, err := w.Write(v[:])
+		return err
+	case extHash:
+		_, err := w.Write(v[:])
+		return err
+	case bc.AssetID:
+		_, err := w.Write(v[:])
 		return err
 	}
 

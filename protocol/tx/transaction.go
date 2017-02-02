@@ -3,6 +3,7 @@ package tx
 import (
 	"chain/crypto/sha3pool"
 	"chain/protocol/bc"
+	"fmt"
 )
 
 // TxHashes returns all hashes needed for validation and state updates.
@@ -23,23 +24,44 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 		}
 	}
 
-	var txRefDataHash bc.Hash // xxx calculate this for the tx
+	var txRefDataHash bc.Hash
+	if header.body.Data == (entryRef{}) {
+		// no data entry
+		txRefDataHash = bc.EmptyStringHash
+	} else {
+		dEntry, ok := entries[header.body.Data]
+		if !ok {
+			return nil, fmt.Errorf("header refers to nonexistent data entry")
+		}
+		d, ok := dEntry.(*data)
+		if !ok {
+			return nil, fmt.Errorf("header refers to %s entry, should be data", dEntry.Type())
+		}
+		txRefDataHash = d.body
+	}
 
 	for entryID, ent := range entries {
 		switch ent := ent.(type) {
 		case *nonce:
-			// xxx check time range is within network-defined limits
+			// TODO: check time range is within network-defined limits
 			trID := ent.body.TimeRange
-			trEntry := entries[trID].(*timeRange) // xxx avoid panics here
+			trEntry, ok := entries[trID]
+			if !ok {
+				return nil, fmt.Errorf("nonce entry refers to nonexistent timerange entry")
+			}
+			tr, ok := trEntry.(*timeRange)
+			if !ok {
+				return nil, fmt.Errorf("nonce entry refers to %s entry, should be timerange", trEntry.Type())
+			}
 			iss := struct {
 				ID           bc.Hash
 				ExpirationMS uint64
-			}{bc.Hash(entryID), trEntry.body.MaxTimeMS}
+			}{bc.Hash(entryID), tr.body.MaxTimeMS}
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *issuance:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
-			vmc.RefDataHash = bc.Hash(ent.body.Data) // xxx should this be the id of the data entry? or the hash of the data that's _in_ the data entry?
+			vmc.RefDataHash = bc.Hash(ent.body.Data)
 			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
 			hashes.VMContexts = append(hashes.VMContexts, vmc)
 
