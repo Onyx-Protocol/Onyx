@@ -68,7 +68,6 @@ var (
 			"issuance_program": {Name: "issuance_program", Type: filter.String, SQLType: filter.SQLBytea},
 			"reference_data":   {Name: "reference_data", Type: filter.Object, SQLType: filter.SQLJSONB},
 			"is_local":         {Name: "local", Type: filter.Bool, SQLType: filter.SQLBool},
-			// TODO(jackson): moar?
 		},
 	}
 	transactionsTable = &filter.SQLTable{
