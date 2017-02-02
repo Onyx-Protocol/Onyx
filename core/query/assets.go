@@ -106,6 +106,5 @@ func constructAssetsQuery(expr string, vals []interface{}, after string, limit i
 
 	buf.WriteString("ORDER BY sort_id DESC ")
 	buf.WriteString("LIMIT " + strconv.Itoa(limit))
-
 	return buf.String(), vals
 }
