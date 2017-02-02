@@ -32,7 +32,7 @@ var (
 		Name:  "annotated_outputs",
 		Alias: "out",
 		Columns: map[string]*filter.SQLColumn{
-			"id":               {Name: "id", Type: filter.String, SQLType: filter.SQLBytea},
+			"id":               {Name: "output_id", Type: filter.String, SQLType: filter.SQLBytea},
 			"type":             {Name: "type", Type: filter.String, SQLType: filter.SQLText},
 			"purpose":          {Name: "purpose", Type: filter.String, SQLType: filter.SQLText},
 			"transaction_id":   {Name: "tx_hash", Type: filter.String, SQLType: filter.SQLBytea},
