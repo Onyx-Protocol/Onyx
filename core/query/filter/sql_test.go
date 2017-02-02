@@ -137,7 +137,7 @@ EXISTS(SELECT 1 FROM annotated_inputs AS inp WHERE inp."tx_hash" = txs."tx_hash"
 			tbl: inputsSQLTable,
 			err: errors.WithDetail(ErrBadFilter, "invalid attribute: data"),
 		},
-		{ // multiple environment expresisons
+		{ // multiple environment expressions
 			q:   `inputs(a = 'a') OR outputs(b = 'b')`,
 			tbl: transactionsSQLTable,
 			sql: `
