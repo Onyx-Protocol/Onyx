@@ -180,7 +180,9 @@ The *block ID* (also called *block hash*) is defined as [SHA3-256](#sha3) of the
 
 ### Transaction
 
-A *transaction* comprises the following fields concatenated:
+#### Wire Format Serialization
+
+When serialized for the wire, a *transaction* comprises the following fields concatenated:
 
 Field               | Type          | Description
 --------------------|---------------|----------------------------------------------------------
@@ -195,7 +197,7 @@ Outputs             | [TxOutput]    | List of [transaction outputs](#transaction
 Reference Data      | varstring31   | Arbitrary string or its [optional hash](#optional-hash), depending on [serialization flags](#transaction-serialization-flags).
 
 
-### Transaction Common Fields
+#### Transaction Common Fields
 
 This is the extensible set of fields common to all inputs and outputs.
 
@@ -206,7 +208,7 @@ Maximum Time        | varint63      | Zero or a block timestamp after which tran
 —                   | —             | Additional fields may be added by future extensions.
 
 
-### Transaction Common Witness
+#### Transaction Common Witness
 
 The *transaction common witness* string contains data necessary to verify the entire transaction, but not specific to any particular input or output. Witness string does not affect the *outcome* of the transaction and therefore is excluded from the [transaction ID](#transaction-id).
 
@@ -217,7 +219,7 @@ Field               | Type        | Description
 —                   | —           | Additional fields may be added by future extensions.
 
 
-### Transaction Input
+#### Transaction Input
 
 A *transaction input* specifies an asset being issued or an earlier output being spent by the transaction. For extensibility, the concrete mechanism for issuance and spending is specific to each asset version, which is specified in the beginning of the input.
 
@@ -231,7 +233,7 @@ Reference Data    | varstring31         | Arbitrary string or its [optional hash
 Input Witness     | Extensible string   | Optional [input witness](#transaction-input-witness) data. Absent if [serialization flags](#transaction-serialization-flags) do not have the witness bit set.
 
 
-### Transaction Input Commitment
+#### Transaction Input Commitment
 
 **Asset Version 1** defines two types of input commitments. The type is specified by a single-byte prefix.
 
@@ -242,7 +244,7 @@ Nodes must reject transactions with unknown type values for asset version 1.
 
 An asset version other than 1 is reserved for future expansion. Input commitments for undefined versions must be ignored.
 
-#### Asset Version 1 Issuance Commitment
+##### Asset Version 1 Issuance Commitment
 
 Unlike spending commitments, each of which is unique because it references a distinct [output ID](#output-id), issuance commitments are not intrinsically unique and must be made so to protect against replay attacks. The field *nonce* contains an arbitrary string that must be distinct from the nonces in other issuances of the same asset ID during the interval between the transaction's minimum and maximum time. Nodes ensure uniqueness of the issuance by remembering the [issuance hash](#issuance-hash) that includes the nonce, asset ID and minimum and maximum timestamps. To make sure that *issuance memory* does not take an unbounded amount of RAM, network enforces the *maximum issuance window* for these timestamps.
 
@@ -259,7 +261,7 @@ Amount                | varint63            | Amount being issued.
 —                     | —                   | Additional fields may be added by future extensions.
 
 
-#### Asset Version 1 Spend Commitment
+##### Asset Version 1 Spend Commitment
 
 Field                 | Type                  | Description
 ----------------------|-----------------------|----------------------------------------------------------
@@ -269,7 +271,7 @@ Output Commitment     | [Output Commitment](#transaction-output-commitment) | Ou
 —                     | —                     | Additional fields may be added by future extensions.
 
 
-### Issuance Hash
+#### Issuance Hash
 
 Issuance hash provides a globally unique identifier for an issuance input. It is defined as [SHA3-256](#sha3) of the following structure:
 
@@ -283,7 +285,7 @@ Maximum Time            | varint63                | Maximum time from the [commo
 Note: the timestamp values are used exactly as specified in the [transaction](#transaction-common-fields).
 
 
-### Transaction Input Witness
+#### Transaction Input Witness
 
 The *transaction input witness* string contains [program arguments](#program-arguments) ([cryptographic signatures](#signature) and other data necessary to verify the input). Witness string does not affect the *outcome* of the transaction and therefore is excluded from the [transaction ID](#transaction-id).
 
@@ -292,7 +294,7 @@ The input witness string can be extended with additional commitments, proofs or 
 Asset version 1 defines two witness structures: one for issuances and another one for spends.
 
 
-#### Asset Version 1 Issuance Witness
+##### Asset Version 1 Issuance Witness
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
@@ -307,7 +309,7 @@ Program Arguments       | [varstring31]           | [Signatures](#signature) and
 Note: nodes must verify that the initial block ID and issuance program are valid and match the declared asset ID in the [issuance commitment](#asset-version-1-issuance-commitment).
 
 
-#### Asset Version 1 Spend Witness
+##### Asset Version 1 Spend Witness
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
@@ -316,7 +318,7 @@ Program Arguments       | [varstring31]           | [Signatures](#signature) and
 —                       | —                       | Additional fields may be added by future extensions.
 
 
-### Output ID
+#### Output ID
 
 An *output ID* uniquely identifies a single transaction output. It is defined as SHA3-256 hash of the following structure:
 
@@ -326,7 +328,7 @@ Transaction ID          | sha3-256                | [Transaction ID](#transactio
 Output Index            | varint31                | Index (zero-based) of the [output](#transaction-output) within the transaction.
 
 
-### Transaction Output
+#### Transaction Output
 
 A *transaction output* specifies an asset version, an output commitment, and reference data.
 
@@ -340,11 +342,11 @@ Reference Data      | varstring31             | Arbitrary string or its optional
 Output Witness      | Extensible string       | Arbitrary string containing proofs related to the [output commitment](#transaction-output-commitment). Absent if [serialization flags](#transaction-serialization-flags) do not have the witness bit set.
 
 
-### Transaction Output Commitment
+#### Transaction Output Commitment
 
 The *output commitment* encapsulates both the value and the authentication data necessary to spend that value.
 
-#### Asset Version 1 Output Commitment
+##### Asset Version 1 Output Commitment
 
 Field           | Type                    | Description
 ----------------|-------------------------|----------------------------------------------------------
@@ -355,7 +357,7 @@ Control Program | varstring31             | Predicate [program](#control-program
 —               | —                       | Additional fields may be added by future extensions.
 
 
-### Transaction Output Witness
+#### Transaction Output Witness
 
 Like the input witness data, the *output witness* string contains data necessary for transaction verification, but which does not affect the *outcome* of the transaction and therefore is excluded from the [transaction ID](#transaction-id).
 
@@ -363,7 +365,7 @@ The output witness string can be extended with additional commitments, proofs or
 
 **Asset version 1** and **VM version 1** do not use the output witness data which is set to an empty string (encoded as a single byte 0x00 that represents a varstring31 encoding of an empty string). To support future upgrades, nodes must accept and ignore arbitrary data in the output witness string.
 
-### Transaction Serialization Flags
+#### Transaction Serialization Flags
 
 Serialization flags control what and how data is encoded in a given *Transaction* message. Unused values are reserved for future expansion. Implementations must reject messages using unsupported serialization values. This allows changing encoding freely and extending the serialization flags fields to a longer sequence if needed.
 
@@ -382,12 +384,11 @@ Serialization Flags Examples | Description
 0000 0101                    | Non-redundant binary serialization with witness fields, reference data and asset definitions, but with the hash of the output commitment instead of its actual content.
 
 
-### Transaction ID
+#### Transaction ID
 
 The *transaction ID* (also called *txid* or *transaction hash*) is defined as [SHA3-256](#sha3) of the transaction serialized with 0x00 [serialization flags](#transaction-serialization-flags). Thus, reference data is hashed via intermediate hashes and transaction witness data is excluded.
 
-
-### Transaction Signature Hash
+#### Transaction Signature Hash
 
 A *signature hash* (or *sighash*) corresponding to a given input is a hash of the [transaction ID](#transaction-id) and the index for that input. It is returned by [TXSIGHASH](vm1.md#txsighash), and is designed for use with [CHECKSIG](vm1.md#checksig) and [CHECKMULTISIG](vm1.md#checkmultisig) instructions.
 
