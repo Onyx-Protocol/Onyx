@@ -36,7 +36,8 @@ func newData(hash bc.Hash) entry {
 }
 
 func hashData(data []byte) (h bc.Hash) {
-	// xxx need domain separation here. spec might need updating
+	// TODO: Do we want domain separation here?  (E.g., a "data:"
+	// prefix.) If so, both the code and the spec need updating.
 	sha3pool.Sum256(h[:], data)
 	return
 }
