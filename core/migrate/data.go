@@ -225,7 +225,7 @@ var migrations = []migration{
 			idx-1 AS index,
 			inp->>'type' AS type,
 			decode(inp->>'asset_id', 'hex') AS asset_id,
-			inp->>'asset_alias' AS asset_alias,
+			COALESCE(inp->>'asset_alias', '') AS asset_alias,
 			COALESCE(inp->'asset_definition', '{}'::jsonb) AS asset_definition,
 			COALESCE(inp->'asset_tags', '{}'::jsonb) AS asset_tags,
 			(inp->>'asset_is_local' = 'yes') AS asset_local,
