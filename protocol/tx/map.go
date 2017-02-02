@@ -74,7 +74,8 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 			if err != nil {
 				return
 			}
-			// xxx asset definitions, initial block ids, and issuance
+
+			// Note: asset definitions, initial block ids, and issuance
 			// programs are omitted here because they do not contribute to
 			// the body hash of an issuance.
 
