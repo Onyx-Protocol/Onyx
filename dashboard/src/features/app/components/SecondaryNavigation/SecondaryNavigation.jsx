@@ -37,7 +37,7 @@ class SecondaryNavigation extends React.Component {
           </li>
           <li>
             <Link to='/access_tokens/network' activeClassName={styles.active}>
-            {navIcon('network', styles)}
+              {navIcon('network', styles)}
               Network tokens
             </Link>
           </li>

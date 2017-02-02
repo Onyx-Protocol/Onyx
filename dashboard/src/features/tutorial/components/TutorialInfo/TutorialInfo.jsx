@@ -17,7 +17,7 @@ class TutorialInfo extends React.Component {
     return (
       <div>
         <div className={styles.container}>
-          {this.props.showTutorial && <div className={styles.content}>
+          <div className={styles.content}>
             {this.props.logo && <span className={`glyphicon ${this.props.logo}`}></span>}
             <div className={styles.text}>
               {this.props.content.map(function (contentLine, i){
@@ -35,7 +35,7 @@ class TutorialInfo extends React.Component {
             </div>
 
             {nextButton && nextButton}
-          </div>}
+          </div>
         </div>
     </div>
     )

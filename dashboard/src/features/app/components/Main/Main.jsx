@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { connect } from 'react-redux'
 import actions from 'actions'
 import Tutorial from 'features/tutorial/components/Tutorial'
+import TutorialHeader from 'features/tutorial/components/TutorialHeader/TutorialHeader'
 import { Navigation, SecondaryNavigation } from '../'
 
 class Main extends React.Component {
@@ -48,8 +49,9 @@ class Main extends React.Component {
           {!this.props.connected && <div className={styles.connectionIssue}>
             There was an issue connecting to Chain Core. Please check your connection while dashboard attempts to reconnect.
           </div>}
-            <Tutorial types={['TutorialInfo', 'TutorialComplete']}/>
-
+            <TutorialHeader>
+              <Tutorial types={['TutorialInfo', 'TutorialComplete']}/>
+            </TutorialHeader>
           {this.props.children}
         </div>
       </div>
@@ -59,8 +61,6 @@ class Main extends React.Component {
 
 export default connect(
   (state) => ({
-    tutorialRoute: state.tutorial.route,
-    routing: state.routing,
     canLogOut: state.core.requireClientToken,
     connected: state.core.connected,
     showDropwdown: state.app.dropdownState == 'open',
