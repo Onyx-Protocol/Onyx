@@ -130,9 +130,7 @@ type sqlContext struct {
 func (c *sqlContext) writeCol(name string) {
 	c.buf.WriteString(c.tbl.Alias)
 	c.buf.WriteRune('.')
-	c.buf.WriteRune('"')
-	c.buf.WriteString(name)
-	c.buf.WriteRune('"')
+	c.buf.WriteString(pq.QuoteIdentifier(name))
 }
 
 func asSQL(c *sqlContext, filterExpr expr) error {
