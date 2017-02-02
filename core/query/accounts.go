@@ -25,7 +25,7 @@ func (ind *Indexer) SaveAnnotatedAccount(ctx context.Context, account *Annotated
 		VALUES($1, $2, $3::jsonb, $4, $5::jsonb)
 		ON CONFLICT (id) DO UPDATE SET tags = $5::jsonb
 	`
-	_, err = ind.db.Exec(ctx, q, []byte(account.ID), alias, keysJSON,
+	_, err = ind.db.Exec(ctx, q, account.ID, alias, keysJSON,
 		account.Quorum, string(*account.Tags))
 	return errors.Wrap(err, "saving annotated account")
 }
