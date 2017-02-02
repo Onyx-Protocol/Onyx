@@ -56,9 +56,6 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case byte:
 		_, err := w.Write([]byte{v})
 		return err
-	case bc.Hash:
-		_, err := w.Write(v[:])
-		return err
 
 	case uint64:
 		_, err := blockchain.WriteVarint63(w, v)
@@ -73,6 +70,9 @@ func writeForHash(w io.Writer, c interface{}) error {
 		// TODO: The rest of these are all aliases for [32]byte. Do we
 		// really need them all?
 
+	case bc.Hash:
+		_, err := w.Write(v[:])
+		return err
 	case entryRef:
 		_, err := w.Write(v[:])
 		return err
