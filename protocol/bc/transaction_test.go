@@ -92,7 +92,7 @@ func TestTransaction(t *testing.T) {
 				"066f7574707574" + // output 0, reference data
 				"00" + // output 0, output witness
 				"0869737375616e6365"), // reference data
-			hash: mustDecodeHash("1fef259f6ad074e678e7c7351c2c62493ac08d5ae40e97d7672a94f82c1a5b06"),
+			hash: mustDecodeHash("9567a15d24e906fd6ab65ae76ab6a45da41c47ea212a0e9c593a7b45c5ddfbbe"),
 		},
 		{
 			tx: NewTx(TxData{
