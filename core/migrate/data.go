@@ -97,9 +97,9 @@ var migrations = []migration{
 		ALTER TABLE config ALTER COLUMN blockchain_id SET DATA TYPE bytea USING decode(blockchain_id, 'hex');
 	`},
 	{Name: "2017-01-13.0.core.asset-definition-bytea.sql", SQL: `
-		ALTER TABLE assets
+		ALTER TABLE assets 
 			ALTER COLUMN definition SET DATA TYPE text;
-		ALTER TABLE assets
+		ALTER TABLE assets 
 			ALTER COLUMN definition SET DATA TYPE bytea USING COALESCE(definition::text::bytea, ''),
 			ALTER COLUMN definition SET NOT NULL;
 		ALTER TABLE assets ADD COLUMN vm_version bigint NOT NULL;
@@ -117,15 +117,12 @@ var migrations = []migration{
 	{Name: "2017-01-25.0.account.cp-expiry.sql", SQL: `
 		ALTER TABLE account_control_programs ADD COLUMN expires_at timestamp with time zone;
 	`},
-	{Name: "2017-01-30.1.txdb.snapshots-timestamp.sql", SQL: `
+	{Name: "2017-01-30.0.txdb.snapshots-timestamp.sql", SQL: `
 		ALTER TABLE snapshots ADD COLUMN created_at timestamp without time zone DEFAULT now();
 	`},
-	{Name: "2017-01-30.2.core.add-block-hsm-config.sql", SQL: `
+	{Name: "2017-01-30.1.core.add-block-hsm-config.sql", SQL: `
 		ALTER TABLE config ADD COLUMN block_hsm_url text DEFAULT '',
 			ADD COLUMN block_hsm_access_token text DEFAULT '';
-	`},
-	{Name: "2017-01-30.3.account.remove-unspent-ids.sql", SQL: `
-		ALTER TABLE account_utxos DROP COLUMN unspent_id;
 	`},
 	{Name: "2017-01-31.0.query.drop-outpoint-index.sql", SQL: `
 		DROP INDEX annotated_outputs_outpoint_idx;

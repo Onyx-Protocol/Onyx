@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.6.1
+-- Dumped by pg_dump version 9.6.1
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -196,7 +196,8 @@ CREATE TABLE account_utxos (
     control_program_index bigint NOT NULL,
     control_program bytea NOT NULL,
     confirmed_in bigint NOT NULL,
-    output_id bytea NOT NULL
+    output_id bytea NOT NULL,
+    unspent_id bytea NOT NULL
 );
 
 
@@ -578,14 +579,14 @@ CREATE TABLE txfeeds (
 
 
 --
--- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
+-- Name: signers key_index; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY signers ALTER COLUMN key_index SET DEFAULT nextval('signers_key_index_seq'::regclass);
 
 
 --
--- Name: access_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: access_tokens access_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY access_tokens
@@ -593,7 +594,7 @@ ALTER TABLE ONLY access_tokens
 
 
 --
--- Name: account_control_programs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: account_control_programs account_control_programs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY account_control_programs
@@ -601,7 +602,7 @@ ALTER TABLE ONLY account_control_programs
 
 
 --
--- Name: account_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: accounts account_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY accounts
@@ -609,7 +610,7 @@ ALTER TABLE ONLY accounts
 
 
 --
--- Name: account_utxos_output_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: account_utxos account_utxos_output_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY account_utxos
@@ -617,7 +618,7 @@ ALTER TABLE ONLY account_utxos
 
 
 --
--- Name: account_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: account_utxos account_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY account_utxos
@@ -625,7 +626,15 @@ ALTER TABLE ONLY account_utxos
 
 
 --
--- Name: accounts_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: account_utxos account_utxos_unspent_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY account_utxos
+    ADD CONSTRAINT account_utxos_unspent_id_key UNIQUE (unspent_id);
+
+
+--
+-- Name: accounts accounts_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY accounts
@@ -633,7 +642,7 @@ ALTER TABLE ONLY accounts
 
 
 --
--- Name: annotated_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: annotated_accounts annotated_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY annotated_accounts
@@ -641,7 +650,7 @@ ALTER TABLE ONLY annotated_accounts
 
 
 --
--- Name: annotated_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: annotated_assets annotated_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY annotated_assets
@@ -665,7 +674,7 @@ ALTER TABLE ONLY annotated_outputs
 
 
 --
--- Name: annotated_outputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: annotated_outputs annotated_outputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY annotated_outputs
@@ -673,7 +682,7 @@ ALTER TABLE ONLY annotated_outputs
 
 
 --
--- Name: annotated_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: annotated_txs annotated_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY annotated_txs
@@ -681,7 +690,7 @@ ALTER TABLE ONLY annotated_txs
 
 
 --
--- Name: asset_tags_asset_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: asset_tags asset_tags_asset_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY asset_tags
@@ -689,7 +698,7 @@ ALTER TABLE ONLY asset_tags
 
 
 --
--- Name: assets_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: assets assets_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY assets
@@ -697,7 +706,7 @@ ALTER TABLE ONLY assets
 
 
 --
--- Name: assets_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: assets assets_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY assets
@@ -705,7 +714,7 @@ ALTER TABLE ONLY assets
 
 
 --
--- Name: assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: assets assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY assets
@@ -713,7 +722,7 @@ ALTER TABLE ONLY assets
 
 
 --
--- Name: block_processors_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: block_processors block_processors_name_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY block_processors
@@ -721,7 +730,7 @@ ALTER TABLE ONLY block_processors
 
 
 --
--- Name: blocks_height_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blocks blocks_height_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY blocks
@@ -729,7 +738,7 @@ ALTER TABLE ONLY blocks
 
 
 --
--- Name: blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blocks blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY blocks
@@ -737,7 +746,7 @@ ALTER TABLE ONLY blocks
 
 
 --
--- Name: config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: config config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY config
@@ -745,7 +754,7 @@ ALTER TABLE ONLY config
 
 
 --
--- Name: generator_pending_block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: generator_pending_block generator_pending_block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY generator_pending_block
@@ -753,7 +762,7 @@ ALTER TABLE ONLY generator_pending_block
 
 
 --
--- Name: leader_singleton_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: leader leader_singleton_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY leader
@@ -761,7 +770,7 @@ ALTER TABLE ONLY leader
 
 
 --
--- Name: migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY migrations
@@ -769,7 +778,7 @@ ALTER TABLE ONLY migrations
 
 
 --
--- Name: mockhsm_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: mockhsm mockhsm_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY mockhsm
@@ -777,7 +786,7 @@ ALTER TABLE ONLY mockhsm
 
 
 --
--- Name: mockhsm_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: mockhsm mockhsm_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY mockhsm
@@ -785,7 +794,7 @@ ALTER TABLE ONLY mockhsm
 
 
 --
--- Name: query_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: query_blocks query_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY query_blocks
@@ -793,7 +802,7 @@ ALTER TABLE ONLY query_blocks
 
 
 --
--- Name: signers_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: signers signers_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY signers
@@ -801,7 +810,7 @@ ALTER TABLE ONLY signers
 
 
 --
--- Name: signers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: signers signers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY signers
@@ -809,7 +818,7 @@ ALTER TABLE ONLY signers
 
 
 --
--- Name: sort_id_index; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: mockhsm sort_id_index; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY mockhsm
@@ -817,7 +826,7 @@ ALTER TABLE ONLY mockhsm
 
 
 --
--- Name: state_trees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: snapshots state_trees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY snapshots
@@ -825,7 +834,7 @@ ALTER TABLE ONLY snapshots
 
 
 --
--- Name: submitted_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: submitted_txs submitted_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY submitted_txs
@@ -833,7 +842,7 @@ ALTER TABLE ONLY submitted_txs
 
 
 --
--- Name: txfeeds_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: txfeeds txfeeds_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY txfeeds
@@ -841,7 +850,7 @@ ALTER TABLE ONLY txfeeds
 
 
 --
--- Name: txfeeds_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: txfeeds txfeeds_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY txfeeds
@@ -849,7 +858,7 @@ ALTER TABLE ONLY txfeeds
 
 
 --
--- Name: txfeeds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: txfeeds txfeeds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY txfeeds
@@ -930,12 +939,11 @@ insert into migrations (filename, hash) values ('2016-11-28.0.core.submitted-txs
 insert into migrations (filename, hash) values ('2017-01-05.0.core.rename_block_key.sql', 'ba6a62e498236ec9d2f13238a945829a5cab83f897068fef57a2c152a2e36037');
 insert into migrations (filename, hash) values ('2017-01-10.0.signers.xpubs-type.sql', '4a4d6c736a2bf65e69abbdc87771faa1dc17a0106b2651a6a58af067708d095a');
 insert into migrations (filename, hash) values ('2017-01-11.0.core.hash-bytea.sql', '9f7f15df3479c38f193884a2d3cb7ae8001ed08607f9cc661fd5c420e248688d');
-insert into migrations (filename, hash) values ('2017-01-13.0.core.asset-definition-bytea.sql', '996baf781c0b67f5ffa0bf0fa388f1f8fdbdec8b5cbf5f8b8ad292abf90d6e92');
+insert into migrations (filename, hash) values ('2017-01-13.0.core.asset-definition-bytea.sql', 'f49458c5c8873d919ec35be4683074be0b04913c95f5ab1bf1402aa2b4847cf5');
 insert into migrations (filename, hash) values ('2017-01-19.0.asset.drop-mutable-flag.sql', '7850023d44c545c155c0ee372e7cdfef1859b40221bd94307b836503c26dd3de');
 insert into migrations (filename, hash) values ('2017-01-20.0.core.add-output-id-to-outputs.sql', '4c8531c06e62405d2989e0651a7ef6c2ebd0b2b269b57c179e9e36f7fdbb715b');
 insert into migrations (filename, hash) values ('2017-01-25.0.account.cp-expiry.sql', 'a2076b7b3ac3f844d17e13eea57fea01216c868a63f9df7b9df24cac9c4b82a4');
 insert into migrations (filename, hash) values ('2017-01-30.0.txdb.snapshots-timestamp.sql', '3ab923b782e048300315fc4ea8ae8bdf42183aa423d0a12bc228411c2d8c5093');
 insert into migrations (filename, hash) values ('2017-01-30.1.core.add-block-hsm-config.sql', '9d609586b2fd33c45e530c4237a24f303a3b5753e5ccf3cd740958511aea4992');
-insert into migrations (filename, hash) values ('2017-01-30.2.account.remove-unspent-ids.sql', '984a97d1279a281e2ba3cd890d663fe120a6fb09ae43487b5feacb818f398e81');
 insert into migrations (filename, hash) values ('2017-01-31.0.query.drop-outpoint-index.sql', '461ab638954f5eb53e83587da96f2d83e031d17ab3408685a4460b60edf522a1');
 insert into migrations (filename, hash) values ('2017-01-31.1.query.annotated-schema.sql', 'e0421d1bbbbbb14188be0b06f0056e2121d3b364c30fb633c47c3055416bf806');
