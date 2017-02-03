@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"chain/crypto/sha3pool"
+	"chain/errors"
 	"chain/protocol/bc"
 )
 

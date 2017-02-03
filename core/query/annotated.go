@@ -182,7 +182,7 @@ func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint
 	return in
 }
 
-func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *AnnotatedOutput {
+func buildAnnotatedOutput(tx *bc.Tx, idx uint32) *AnnotatedOutput {
 	orig := tx.Outputs[idx]
 	referenceData := json.RawMessage(orig.ReferenceData)
 	if len(referenceData) == 0 {
@@ -190,7 +190,7 @@ func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *Annota
 	}
 	outid := tx.OutputID(idx)
 	out := &AnnotatedOutput{
-		OutputID:        bc.ComputeOutputID(txhash, idx),
+		OutputID:        outid,
 		Position:        idx,
 		AssetID:         orig.AssetID,
 		AssetDefinition: &emptyJSONObject,

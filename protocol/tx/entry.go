@@ -55,18 +55,6 @@ func writeForHash(w io.Writer, c interface{}) error {
 	switch v := c.(type) {
 	case byte:
 		_, err := w.Write([]byte{v})
-<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
-		return err
-	case uint64:
-		_, err := blockchain.WriteVarint63(w, v)
-		return err
-	case []byte:
-		_, err := blockchain.WriteVarstr31(w, v)
-		return err
-	case string:
-		_, err := blockchain.WriteVarstr31(w, []byte(v))
-		return err
-=======
 		return errors.Wrap(err, "writing byte for hash")
 	case uint64:
 		_, err := blockchain.WriteVarint63(w, v)
@@ -77,25 +65,12 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
 		return errors.Wrapf(err, "writing string (len %d) for hash", len(v))
->>>>>>> wip: begin txgraph outline
 
 		// TODO: The rest of these are all aliases for [32]byte. Do we
 		// really need them all?
 
 	case bc.Hash:
 		_, err := w.Write(v[:])
-<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
-		return err
-	case entryRef:
-		_, err := w.Write(v[:])
-		return err
-	case extHash:
-		_, err := w.Write(v[:])
-		return err
-	case bc.AssetID:
-		_, err := w.Write(v[:])
-		return err
-=======
 		return errors.Wrap(err, "writing bc.Hash for hash")
 	case entryRef:
 		_, err := w.Write(v[:])
@@ -106,7 +81,6 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case bc.AssetID:
 		_, err := w.Write(v[:])
 		return errors.Wrap(err, "writing bc.AssetID for hash")
->>>>>>> wip: begin txgraph outline
 	}
 
 	// The two container types in the spec (List and Struct)
@@ -117,11 +91,7 @@ func writeForHash(w io.Writer, c interface{}) error {
 		l := v.Len()
 		_, err := blockchain.WriteVarint31(w, uint64(l))
 		if err != nil {
-<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
-			return err
-=======
 			return errors.Wrapf(err, "writing slice (len %d) for hash", l)
->>>>>>> wip: begin txgraph outline
 		}
 		for i := 0; i < l; i++ {
 			c := v.Index(i)
@@ -130,11 +100,7 @@ func writeForHash(w io.Writer, c interface{}) error {
 			}
 			err := writeForHash(w, c.Interface())
 			if err != nil {
-<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
-				return err
-=======
 				return errors.Wrapf(err, "writing slice element %d for hash", i)
->>>>>>> wip: begin txgraph outline
 			}
 		}
 		return nil
@@ -147,13 +113,9 @@ func writeForHash(w io.Writer, c interface{}) error {
 			}
 			err := writeForHash(w, c.Interface())
 			if err != nil {
-<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
-				return err
-=======
 				t := v.Type()
 				f := t.Field(i)
 				return errors.Wrapf(err, "writing struct field %d (%s.%s) for hash", i, t.Name(), f.Name)
->>>>>>> wip: begin txgraph outline
 			}
 		}
 		return nil
