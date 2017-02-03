@@ -26,7 +26,7 @@ type (
 // in chain/protocol/tx.
 // It is a variable here to avoid a circular dependency
 // between package bc and package tx.
-// xxx find a better name for this
+// TODO: find a better name for this
 // (obvious name is TxHashes, same as the type)
 var TxHashesFunc func(*TxData) (*TxHashes, error)
 
