@@ -485,7 +485,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
             1. Set `is.asset_definition` to a nil pointer `0x000000...`.
         9. Create `ValueSource` struct `src`:
             1. Set `src.ref` to `is.id`.
-            2. Set `src.position` to current count of `mux.sources`.
+            2. Set `src.position` to 0.
             3. Set `src.value` to `is.value`.
             4. Add `src` to `mux.sources`.
         10. Add `is` to `container`.
@@ -495,7 +495,7 @@ This is a first intermediate step that allows keeping old SDK, old tx index and 
         3. Set `inp.data` to a nil pointer `0x00000...`.
         4. Create `ValueSource` struct `src`:
             1. Set `src.ref` to `inp.id`.
-            2. Set `src.position` to current count of `mux.sources`.
+            2. Set `src.position` to 0.
             3. Set `src.value` to `AssetAmount{ oldinp.spent_output.(assetid,amount) } `.
             4. Add `src` to `mux.sources`.
         5. Add `inp` to `container`.
