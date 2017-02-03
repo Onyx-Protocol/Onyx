@@ -55,9 +55,6 @@ export default (state = {}, action) => {
     route,
     userInputs
   })(state, action)
-
-  if (state.isShowing) {
-    newState.currentStep = steps[newState.step]
-  }
+  newState.currentStep = steps[newState.step]
   return newState
 }
