@@ -36,18 +36,13 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 	var firstSpendID *entryRef
 	muxSources := make([]valueSource, len(tx.Inputs))
 
-	maybeAddInputRefdata := func(inp *bc.TxInput) (ref entryRef, err error) {
-		if len(inp.ReferenceData) == 0 {
-			return
-		}
-		ref, _, err = addEntry(newData(hashData(inp.ReferenceData)))
-		return
-	}
-
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*bc.SpendInput); ok {
 			var inpRefdataID entryRef
-			inpRefdataID, err = maybeAddInputRefdata(inp)
+			if len(inp.ReferenceData) == 0 {
+				return
+			}
+			inpRefdataID, _, err = addEntry(newData(hashData(inp.ReferenceData)))
 			if err != nil {
 				return
 			}
@@ -70,7 +65,13 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 	for i, inp := range tx.Inputs {
 		if oldIss, ok := inp.TypedInput.(*bc.IssuanceInput); ok {
 			var inpRefdataID entryRef
-			inpRefdataID, err = maybeAddInputRefdata(inp)
+			if len(inp.ReferenceData) == 0 {
+				return
+			}
+			inpRefdataID, _, err = addEntry(newData(hashData(inp.ReferenceData)))
+			if err != nil {
+				return
+			}
 			if err != nil {
 				return
 			}
