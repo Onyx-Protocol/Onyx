@@ -2,6 +2,7 @@ package tx
 
 import (
 	"fmt"
+	"log"
 
 	"chain/errors"
 	"chain/protocol/bc"
@@ -10,11 +11,13 @@ import (
 )
 
 func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef]entry, err error) {
+	log.Println("About to map")
 	var refdataID entryRef
 
 	entryMap = make(map[entryRef]entry)
 
 	addEntry := func(e entry) (id entryRef, entry entry, err error) {
+		log.Println("adding entry", id)
 		id, err = entryID(e)
 		if err != nil {
 			err = errors.Wrapf(err, "computing entryID for %s entry", e.Type())
@@ -42,12 +45,11 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*bc.SpendInput); ok {
 			var inpRefdataID entryRef
-			if len(inp.ReferenceData) == 0 {
-				return
-			}
-			inpRefdataID, _, err = addEntry(newData(hashData(inp.ReferenceData)))
-			if err != nil {
-				return
+			if len(inp.ReferenceData) != 0 {
+				inpRefdataID, _, err = addEntry(newData(hashData(inp.ReferenceData)))
+				if err != nil {
+					return
+				}
 			}
 			var spID entryRef
 			spID, _, err = addEntry(newSpend(entryRef(oldSp.SpentOutputID.Hash), inpRefdataID, i))
@@ -69,16 +71,12 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 	for i, inp := range tx.Inputs {
 		if oldIss, ok := inp.TypedInput.(*bc.IssuanceInput); ok {
 			var inpRefdataID entryRef
-			if len(inp.ReferenceData) == 0 {
-				return
-			}
-			inpRefdataID, _, err = addEntry(newData(hashData(inp.ReferenceData)))
-			if err != nil {
-				return
-			}
-			if err != nil {
-				err = errors.Wrapf(err, "adding input refdata entry for input %d", i)
-				return
+			if len(inp.ReferenceData) != 0 {
+				inpRefdataID, _, err = addEntry(newData(hashData(inp.ReferenceData)))
+				if err != nil {
+					err = errors.Wrapf(err, "adding input refdata entry for input %d", i)
+					return
+				}
 			}
 
 			// Note: asset definitions, initial block ids, and issuance
@@ -129,11 +127,15 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 		}
 	}
 
+	log.Println("4")
+
 	muxID, _, err := addEntry(newMux(muxSources))
 	if err != nil {
 		err = errors.Wrap(err, "adding mux entry")
 		return
 	}
+
+	log.Println("5")
 
 	var results []entryRef
 
@@ -152,6 +154,8 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 				return
 			}
 		}
+
+		log.Println("6")
 
 		var resultID entryRef
 		if vmutil.IsUnspendable(out.ControlProgram) {
@@ -174,6 +178,8 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 		results = append(results, resultID)
 	}
 
+	log.Println("HELLO")
+
 	var h entry
 	headerID, h, err = addEntry(newHeader(tx.Version, results, refdataID, tx.MinTime, tx.MaxTime))
 	if err != nil {
@@ -181,5 +187,6 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 		return
 	}
 
+	log.Println("header stuff", headerID, h)
 	return headerID, h.(*header), entryMap, nil
 }

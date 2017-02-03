@@ -2,10 +2,13 @@ package tx
 
 import (
 	"fmt"
+	"log"
 
 	"chain/crypto/sha3pool"
 	"chain/errors"
 	"chain/protocol/bc"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 func init() {
@@ -23,6 +26,7 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 	hashes.ID = bc.Hash(txid)
 
 	// OutputIDs
+	log.Println(spew.Sdump(header))
 	for _, resultHash := range header.body.Results {
 		result := entries[resultHash]
 		if _, ok := result.(*output); ok {
