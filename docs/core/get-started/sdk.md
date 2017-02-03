@@ -4,12 +4,19 @@ Chain Core SDKs enable your appplication to communicate with Chain Core.
 
 ## Java
 
-The Java SDK is available as a self-contained JAR file, with dependencies compiled in. Java 7 or greater is required.
+The Java SDK is available via Maven, on Sonatype's [Central Repository](http://central.sonatype.org/). Simply add the following to your `pom.xml`:
 
-<a href="../../java/chain-sdk-latest.jar" class="downloadBtn btn success" target="_blank">
-  Download Java SDK
-  <img src="/docs/images/download-icon.png" class="btn-icon icon-download">
-</a>
+```
+<dependencies>
+  <dependency>
+    <groupId>com.chain</groupId>
+    <artifactId>chain-sdk-java</artifactId>
+    <version>1.0.1</version>
+  </dependency>
+</dependencies>
+```
+
+You can also [download the JAR](../../java/chain-sdk-latest.jar) as a binary.
 
 ## Ruby
 
