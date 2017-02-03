@@ -56,7 +56,6 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case byte:
 		_, err := w.Write([]byte{v})
 		return err
-
 	case uint64:
 		_, err := blockchain.WriteVarint63(w, v)
 		return err

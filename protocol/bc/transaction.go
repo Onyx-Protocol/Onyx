@@ -22,7 +22,7 @@ type Tx struct {
 	Hash Hash
 }
 
-// The data needed for validation and state updates.
+// TxHashes holds data needed for validation and state updates.
 type TxHashes struct {
 	ID        Hash
 	OutputIDs []Hash // each OutputID is also the corresponding UnspentID

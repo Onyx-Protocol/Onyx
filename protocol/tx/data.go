@@ -19,7 +19,7 @@ import (
 // it is fine to keep it confidential.
 //
 // Note that the body of this entry is a hash (of the underlying data);
-// the body_hash is a hash of that hash.
+// when a Data entry is hashed, its body_hash is a hash of that hash.
 type data struct {
 	body bc.Hash
 }

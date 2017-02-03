@@ -1,9 +1,10 @@
 package tx
 
 import (
+	"fmt"
+
 	"chain/crypto/sha3pool"
 	"chain/protocol/bc"
-	"fmt"
 )
 
 // TxHashes returns all hashes needed for validation and state updates.
