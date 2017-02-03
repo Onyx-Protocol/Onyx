@@ -2,10 +2,12 @@ package account
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 
 	"chain/core/signers"
 	"chain/core/txbuilder"
+	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
@@ -125,7 +127,9 @@ func (a *spendUTXOAction) Build(ctx context.Context, b *txbuilder.TemplateBuilde
 		// This is compatibility layer - legacy apps can spend outputs via the raw <txid:index> pair.
 		q := `SELECT output_id FROM account_utxos WHERE tx_hash=$1 AND index=$2`
 		err := a.accounts.utxoDB.db.QueryRow(ctx, q, *a.TxHash, *a.TxOut).Scan(&outid)
-		if err != nil {
+		if err == sql.ErrNoRows {
+			return pg.ErrUserInputNotFound
+		} else if err != nil {
 			return err
 		}
 	} else {
