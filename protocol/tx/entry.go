@@ -43,7 +43,9 @@ func entryID(e entry) (entryRef, error) {
 	if err != nil {
 		return entryRef{}, err
 	}
-	io.CopyN(h, bh, 32)
+	var innerHash bc.Hash
+	bh.Read(innerHash[:])
+	h.Write(innerHash[:])
 
 	var hash entryRef
 	h.Read(hash[:])
