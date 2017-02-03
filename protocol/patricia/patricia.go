@@ -33,33 +33,6 @@ type Tree struct {
 	root *node
 }
 
-// Leaf describes a key and its corresponding hash of a
-// value inserted into the patricia tree.
-type Leaf struct {
-	Key  []byte
-	Hash bc.Hash
-}
-
-// Reconstruct builds a tree with the provided leaf nodes.
-func Reconstruct(vals []Leaf) (*Tree, error) {
-	t := new(Tree)
-	for _, kv := range vals {
-		key := bitKey(kv.Key)
-		hash := kv.Hash
-		if t.root == nil {
-			t.root = &node{key: key, hash: &hash, isLeaf: true}
-			continue
-		}
-
-		var err error
-		t.root, err = t.insert(t.root, key, &hash)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return t, nil
-}
-
 // Copy returns a new tree with the same root as this tree. It
 // is an O(1) operation.
 func Copy(t *Tree) *Tree {
@@ -70,7 +43,7 @@ func Copy(t *Tree) *Tree {
 
 // WalkFunc is the type of the function called for each leaf
 // visited by Walk. If an error is returned, processing stops.
-type WalkFunc func(l Leaf) error
+type WalkFunc func(k []byte) error
 
 // Walk walks the patricia tree calling walkFn for each leaf in
 // the tree. If an error is returned by walkFn at any point,
@@ -84,7 +57,7 @@ func Walk(t *Tree, walkFn WalkFunc) error {
 
 func walk(n *node, walkFn WalkFunc) error {
 	if n.isLeaf {
-		return walkFn(Leaf{Key: n.Key(), Hash: *n.hash})
+		return walkFn(n.Key())
 	}
 
 	err := walk(n.children[0], walkFn)
