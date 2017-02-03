@@ -22,26 +22,6 @@ type Tx struct {
 	TxHashes `json:"-"`
 }
 
-// TxHashes holds data needed for validation and state updates.
-type TxHashes struct {
-	ID        Hash
-	OutputIDs []Hash // each OutputID is also the corresponding UnspentID
-	Issuances []struct {
-		ID           Hash
-		ExpirationMS uint64
-	}
-	VMContexts []*VMContext // one per old-style Input
-}
-
-type VMContext struct {
-	TxRefDataHash Hash
-	RefDataHash   Hash
-	TxSigHash     Hash
-	OutputID      *Hash
-	EntryID       Hash
-	NonceID       *Hash
-}
-
 func (tx *Tx) UnmarshalText(p []byte) error {
 	if err := tx.TxData.UnmarshalText(p); err != nil {
 		return err

@@ -1,34 +1,21 @@
 package tx
 
 import (
-<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
 	"fmt"
 
 	"chain/crypto/sha3pool"
 	"chain/protocol/bc"
-)
-
-=======
-	"chain/crypto/sha3pool"
-	"chain/errors"
-	"chain/protocol/bc"
-	"fmt"
 )
 
 func init() {
 	bc.TxHashesFunc = TxHashes
 }
 
->>>>>>> wip: begin txgraph outline
 // TxHashes returns all hashes needed for validation and state updates.
 func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 	txid, header, entries, err := mapTx(oldTx)
 	if err != nil {
-<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
-		return nil, err
-=======
 		return nil, errors.Wrap(err, "mapping old transaction to new")
->>>>>>> wip: begin txgraph outline
 	}
 
 	hashes = new(bc.TxHashes)
@@ -58,11 +45,8 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 		txRefDataHash = d.body
 	}
 
-<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
-=======
 	hashes.VMContexts = make([]*bc.VMContext, len(oldTx.Inputs))
 
->>>>>>> wip: begin txgraph outline
 	for entryID, ent := range entries {
 		switch ent := ent.(type) {
 		case *nonce:
@@ -86,21 +70,13 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
 			vmc.RefDataHash = bc.Hash(ent.body.Data)
 			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
-<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
-			hashes.VMContexts = append(hashes.VMContexts, vmc)
-=======
 			hashes.VMContexts[ent.Ordinal()] = vmc
->>>>>>> wip: begin txgraph outline
 
 		case *spend:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
 			vmc.RefDataHash = bc.Hash(ent.body.Data)
 			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
-<<<<<<< e69df8246b33bf70f67c8e8586e5e5d62ec94666
-			hashes.VMContexts = append(hashes.VMContexts, vmc)
-=======
 			hashes.VMContexts[ent.Ordinal()] = vmc
->>>>>>> wip: begin txgraph outline
 		}
 	}
 
