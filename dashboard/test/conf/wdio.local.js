@@ -125,6 +125,8 @@ exports.config = {
   // See the full list at http://mochajs.org/
   mochaOpts: {
     ui: 'bdd',
+    compilers: ['js:babel-register'],
+    require: ['./test/helpers/helpers.js'],
     timeout: 30000
   },
   //
