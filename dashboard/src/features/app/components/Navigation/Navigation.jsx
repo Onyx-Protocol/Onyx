@@ -86,7 +86,7 @@ class Navigation extends React.Component {
           </li>
           <li>
             <a href='#' onClick={this.openTutorial}>
-            {navIcon('feed', styles)}
+            {navIcon('tutorial', styles)}
               Tutorial
             </a>
           </li>
