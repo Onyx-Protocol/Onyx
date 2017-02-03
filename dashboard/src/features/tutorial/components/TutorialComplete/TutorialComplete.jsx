@@ -25,17 +25,33 @@ class TutorialComplete extends React.Component {
               </p>
               <p>
                   If you need to revisit this tutorial, you can click Tutorial in
-                  the sidenav dropdown menu. For detailed information on how Chain
+                  the sidenav. For detailed information on how Chain
                   Core works, please take a look at the <a href='/docs' target='_blank'>
                     Developer Documentation
                   </a>.
               </p>
             </div>
-            <button onClick={this.props.handleDismiss} className={`btn btn-primary ${styles.tutorialButton}`}>{this.props.dismiss}</button>
+            <button onClick={this.props.dismissTutorial} className={`btn btn-primary ${styles.tutorialButton}`}>{this.props.dismiss}</button>
           </div>
       </div>
     )
   }
 }
 
-export default TutorialComplete
+import { actions } from 'features/tutorial'
+import { connect } from 'react-redux'
+
+const mapStateToProps = (state) => ({
+  tutorialRoute: state.tutorial.route,
+  currentStep: state.tutorial.currentStep,
+  showTutorial: state.routing.locationBeforeTransitions.pathname.startsWith(state.tutorial.route)
+})
+
+const mapDispatchToProps = ( dispatch ) => ({
+  dismissTutorial: () => dispatch(actions.dismissTutorial)
+})
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(TutorialComplete)
