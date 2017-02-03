@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"chain/encoding/blockchain"
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -19,21 +20,21 @@ func TestUniqueIssuance(t *testing.T) {
 	issuanceInp := bc.NewIssuanceInput(nil, 1, nil, initialBlockHash, trueProg, nil, nil)
 
 	// Transaction with empty nonce (and no other inputs) is invalid
-	tx := bc.NewTx(bc.TxData{
+	_, err := bc.TxHashesFunc(&bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{issuanceInp},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
 		MinTime: bc.Millis(now),
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
-	if CheckTxWellFormed(tx) == nil {
-		t.Errorf("expected tx with only issuance inputs with empty nonces to fail validation")
+	if err == nil {
+		t.Errorf("expected tx with only issuance inputs with empty nonces to fail in computing hashes")
 	}
 
 	issuanceInp.TypedInput.(*bc.IssuanceInput).Nonce = []byte{1}
 
 	// Transaction with non-empty nonce and unbounded time window is invalid
-	tx = bc.NewTx(bc.TxData{
+	tx := bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{issuanceInp},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
@@ -73,7 +74,7 @@ func TestUniqueIssuance(t *testing.T) {
 		MinTime: bc.Millis(now),
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
-	err := CheckTxWellFormed(tx)
+	err = CheckTxWellFormed(tx)
 	if err != nil {
 		t.Errorf("expected tx with unique issuance to pass validation, got: %s", err)
 	}
@@ -94,7 +95,7 @@ func TestUniqueIssuance(t *testing.T) {
 	tx = bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(bc.ComputeOutputID(tx.Hash, 0), nil, assetID, 1, trueProg, nil),
+			bc.NewSpendInput(tx.OutputID(0), nil, assetID, 1, trueProg, nil),
 			issuance2Inp,
 		},
 		Outputs: []*bc.TxOutput{
@@ -171,8 +172,31 @@ func TestTxWellFormed(t *testing.T) {
 	issuanceProg := trueProg
 	aid1 := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
 	aid2 := bc.AssetID([32]byte{2})
-	txhash1 := bc.Hash{10}
-	txhash2 := bc.Hash{11}
+
+	tx1 := bc.NewTx(bc.TxData{
+		Outputs: []*bc.TxOutput{
+			{
+				OutputCommitment: bc.OutputCommitment{
+					AssetAmount: bc.AssetAmount{
+						AssetID: aid1,
+						Amount:  10,
+					},
+				},
+			},
+		},
+	})
+	tx2 := bc.NewTx(bc.TxData{
+		Outputs: []*bc.TxOutput{
+			{
+				OutputCommitment: bc.OutputCommitment{
+					AssetAmount: bc.AssetAmount{
+						AssetID: aid2,
+						Amount:  10,
+					},
+				},
+			},
+		},
+	})
 
 	testCases := []struct {
 		suberr error
@@ -189,7 +213,7 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(bc.ComputeOutputID(txhash1, 0), nil, aid1, 1000, nil, nil),
+					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 1000, nil, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 999, nil, nil),
@@ -201,8 +225,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(bc.ComputeOutputID(txhash1, 0), nil, aid1, 500, nil, nil),
-					bc.NewSpendInput(bc.ComputeOutputID(txhash2, 0), nil, aid2, 500, nil, nil),
+					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 500, nil, nil),
+					bc.NewSpendInput(tx2.OutputID(0), nil, aid2, 500, nil, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 500, nil, nil),
@@ -216,7 +240,7 @@ func TestTxWellFormed(t *testing.T) {
 				Version: 1,
 				Inputs: []*bc.TxInput{
 					bc.NewIssuanceInput(nil, 0, nil, initialBlockHash, issuanceProg, nil, nil),
-					bc.NewSpendInput(bc.ComputeOutputID(txhash1, 0), nil, aid2, 0, nil, nil),
+					bc.NewSpendInput(tx1.OutputID(0), nil, aid2, 0, nil, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 0, nil, nil),
@@ -228,7 +252,7 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, aid1, 1000, trueProg, nil),
+					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 1000, trueProg, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -239,8 +263,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(bc.ComputeOutputID(txhash1, 0), nil, aid1, 500, trueProg, nil),
-					bc.NewSpendInput(bc.ComputeOutputID(txhash2, 0), nil, aid2, 500, trueProg, nil),
+					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 500, trueProg, nil),
+					bc.NewSpendInput(tx2.OutputID(0), nil, aid2, 500, trueProg, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 500, nil, nil),
@@ -254,8 +278,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(bc.ComputeOutputID(txhash1, 0), nil, aid1, 500, trueProg, nil),
-					bc.NewSpendInput(bc.ComputeOutputID(txhash2, 0), nil, aid1, 500, trueProg, nil),
+					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 500, trueProg, nil),
+					bc.NewSpendInput(tx2.OutputID(0), nil, aid1, 500, trueProg, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -269,7 +293,7 @@ func TestTxWellFormed(t *testing.T) {
 				MinTime: 2,
 				MaxTime: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, aid1, 1000, nil, nil),
+					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 1000, nil, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -665,24 +689,6 @@ func TestTxWellFormed(t *testing.T) {
 			},
 		},
 		{
-			suberr: errInputTooBig,
-			tx: bc.TxData{
-				Version: 1,
-				Inputs: []*bc.TxInput{
-					{
-						AssetVersion: 1,
-						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
-								AssetAmount: bc.AssetAmount{
-									Amount: math.MaxInt64 + 1,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			suberr: errInputSumTooBig,
 			tx: bc.TxData{
 				Version: 1,
@@ -746,38 +752,6 @@ func TestTxWellFormed(t *testing.T) {
 				},
 			},
 		},
-		{
-			suberr: errOutputTooBig,
-			tx: bc.TxData{
-				Version: 1,
-				Inputs: []*bc.TxInput{
-					{
-						AssetVersion: 1,
-						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
-								AssetAmount: bc.AssetAmount{
-									Amount: 10,
-								},
-								VMVersion:      1,
-								ControlProgram: trueProg,
-							},
-						},
-					},
-				},
-				Outputs: []*bc.TxOutput{
-					{
-						AssetVersion: 1,
-						OutputCommitment: bc.OutputCommitment{
-							AssetAmount: bc.AssetAmount{
-								Amount: math.MaxInt64 + 1,
-							},
-							VMVersion:      1,
-							ControlProgram: trueProg,
-						},
-					},
-				},
-			},
-		},
 	}
 
 	for i, tc := range testCases {
@@ -799,6 +773,69 @@ func TestTxWellFormed(t *testing.T) {
 		}
 		if suberr != tc.suberr {
 			t.Errorf("case %d: got %s, want ErrBadTx with suberr %s", i, err, tc.suberr)
+		}
+	}
+}
+
+func TestTxRangeErrs(t *testing.T) {
+	trueProg := []byte{byte(vm.OP_TRUE)}
+	cases := []*bc.TxData{
+		{
+			Version: 1,
+			Inputs: []*bc.TxInput{
+				{
+					AssetVersion: 1,
+					TypedInput: &bc.SpendInput{
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: math.MaxInt64 + 1,
+							},
+						},
+					},
+				},
+			},
+		},
+
+		{
+			Version: 1,
+			Inputs: []*bc.TxInput{
+				{
+					AssetVersion: 1,
+					TypedInput: &bc.SpendInput{
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 10,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+			Outputs: []*bc.TxOutput{
+				{
+					AssetVersion: 1,
+					OutputCommitment: bc.OutputCommitment{
+						AssetAmount: bc.AssetAmount{
+							Amount: math.MaxInt64 + 1,
+						},
+						VMVersion:      1,
+						ControlProgram: trueProg,
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		_, err := bc.TxHashesFunc(c)
+		switch errors.Root(err) {
+		case nil:
+			t.Errorf("got no error, want blockchain.ErrRange")
+		case blockchain.ErrRange:
+			// ok
+		default:
+			t.Errorf("got error %s, want blockchain.ErrRange", err)
 		}
 	}
 }
@@ -908,12 +945,8 @@ func TestValidateInvalidIssuances(t *testing.T) {
 }
 
 func TestConfirmTx(t *testing.T) {
-	txhash1 := bc.Hash{1}
-
 	trueProg := []byte{0x51}
-
 	assetID1 := bc.AssetID{10}
-
 	out1 := bc.OutputCommitment{
 		AssetAmount: bc.AssetAmount{
 			AssetID: assetID1,
@@ -926,8 +959,11 @@ func TestConfirmTx(t *testing.T) {
 		AssetVersion:     1,
 		OutputCommitment: out1,
 	}
+	tx := bc.NewTx(bc.TxData{
+		Outputs: []*bc.TxOutput{&txout},
+	})
 
-	outid1 := bc.ComputeOutputID(txhash1, 0)
+	outid1 := tx.OutputID(0)
 	stateout := state.NewOutput(txout, outid1)
 
 	snapshot := state.Empty()
@@ -983,6 +1019,7 @@ func TestConfirmTx(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.IssuanceInput{
+							Nonce: []byte{1},
 							IssuanceWitness: bc.IssuanceWitness{
 								InitialBlock: bc.Hash{1},
 							},

@@ -396,12 +396,12 @@ func tx(args []string) {
 
 func txhash(args []string) {
 	inp, _ := input(args, 0, false)
-	var tx bc.TxData
+	var tx bc.Tx
 	err := tx.UnmarshalText([]byte(strings.TrimSpace(inp)))
 	if err != nil {
 		errorf("error unmarshaling tx: %s", err)
 	}
-	h := tx.Hash()
+	h := tx.ID
 	fmt.Printf("%x\n", h[:])
 }
 

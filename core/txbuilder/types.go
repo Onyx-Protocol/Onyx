@@ -10,7 +10,7 @@ import (
 
 // Template represents a partially- or fully-signed transaction.
 type Template struct {
-	Transaction         *bc.TxData            `json:"raw_transaction"`
+	Transaction         *bc.Tx                `json:"raw_transaction"`
 	SigningInstructions []*SigningInstruction `json:"signing_instructions"`
 
 	// Local indicates that all inputs to the transaction are signed
@@ -25,15 +25,10 @@ type Template struct {
 	// ones cannot be changed. When false, signatures commit to the tx
 	// as a whole, and any change to the tx invalidates the signature.
 	AllowAdditional bool `json:"allow_additional_actions"`
-
-	sigHasher *bc.SigHasher
 }
 
 func (t *Template) Hash(idx uint32) bc.Hash {
-	if t.sigHasher == nil {
-		t.sigHasher = bc.NewSigHasher(t.Transaction)
-	}
-	return t.sigHasher.Hash(idx)
+	return t.Transaction.SigHash(idx)
 }
 
 // SigningInstruction gives directions for signing inputs in a TxTemplate.

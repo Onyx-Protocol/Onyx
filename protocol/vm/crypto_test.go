@@ -88,7 +88,7 @@ func TestCheckSig(t *testing.T) {
 
 func TestCryptoOps(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
-		Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{}, 5, nil, nil)},
+		Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.OutputID{}, nil, bc.AssetID{}, 5, nil, nil)},
 		Outputs: []*bc.TxOutput{},
 	})
 
@@ -402,14 +402,15 @@ func TestCryptoOps(t *testing.T) {
 		startVM: &virtualMachine{
 			runLimit:  50000,
 			tx:        tx,
-			sigHasher: bc.NewSigHasher(&tx.TxData),
+			txContext: txContext(&tx.TxData, 0),
 		},
 		wantVM: &virtualMachine{
-			runLimit: 49704,
-			tx:       tx,
+			runLimit:  49704,
+			tx:        tx,
+			txContext: txContext(&tx.TxData, 0),
 			dataStack: [][]byte{{
-				208, 138, 179, 134, 79, 112, 134, 131, 128, 32, 188, 242, 102, 10, 17, 125,
-				72, 88, 141, 164, 179, 39, 217, 24, 181, 96, 134, 174, 50, 132, 86, 192,
+				47, 201, 17, 80, 95, 101, 224, 20, 24, 110, 97, 124, 238, 214, 211, 88,
+				239, 76, 177, 134, 99, 156, 83, 224, 229, 16, 248, 40, 100, 203, 130, 79,
 			}},
 		},
 	}, {
@@ -417,15 +418,14 @@ func TestCryptoOps(t *testing.T) {
 		startVM: &virtualMachine{
 			runLimit:  0,
 			tx:        tx,
-			sigHasher: bc.NewSigHasher(&tx.TxData),
+			txContext: txContext(&tx.TxData, 0),
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
 		op: OP_TXSIGHASH,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			tx:        nil,
-			sigHasher: bc.NewSigHasher(&tx.TxData),
+			runLimit: 50000,
+			tx:       nil,
 		},
 		wantErr: ErrContext,
 	}, {
@@ -488,7 +488,6 @@ func TestCryptoOps(t *testing.T) {
 			continue
 		}
 
-		c.wantVM.sigHasher = c.startVM.sigHasher
 		if !testutil.DeepEqual(c.startVM, c.wantVM) {
 			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, ops[c.op].name, c.startVM, c.wantVM)
 		}
@@ -501,4 +500,16 @@ func mustDecodeHex(h string) []byte {
 		panic(err)
 	}
 	return bits
+}
+
+func txContext(txData *bc.TxData, inputIndex int) (c bc.VMContext) {
+	// special case: no inputs, just use zero value for vm context
+	if len(txData.Inputs) == 0 {
+		return
+	}
+	hashes, err := bc.TxHashesFunc(txData)
+	if err != nil {
+		panic(err)
+	}
+	return *hashes.VMContexts[inputIndex]
 }

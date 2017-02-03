@@ -2,10 +2,12 @@ package account
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 
 	"chain/core/signers"
 	"chain/core/txbuilder"
+	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
@@ -123,7 +125,13 @@ func (a *spendUTXOAction) Build(ctx context.Context, b *txbuilder.TemplateBuilde
 		outid = *a.OutputID
 	} else if a.TxHash != nil && a.TxOut != nil {
 		// This is compatibility layer - legacy apps can spend outputs via the raw <txid:index> pair.
-		outid = bc.ComputeOutputID(*a.TxHash, *a.TxOut)
+		q := `SELECT output_id FROM account_utxos WHERE tx_hash=$1 AND index=$2`
+		err := a.accounts.utxoDB.db.QueryRow(ctx, q, *a.TxHash, *a.TxOut).Scan(&outid)
+		if err == sql.ErrNoRows {
+			return pg.ErrUserInputNotFound
+		} else if err != nil {
+			return err
+		}
 	} else {
 		// Note: here we do not attempt to check if txid is present, but position is missing, or vice versa.
 		// Instead, the user has to update their code to use the new API anyway.

@@ -109,10 +109,10 @@ func (h *Handler) submitSingle(ctx context.Context, tpl *txbuilder.Template, wai
 
 	err := h.finalizeTxWait(ctx, tpl, waitUntil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "tx %s", tpl.Transaction.Hash())
+		return nil, errors.Wrapf(err, "tx %s", tpl.Transaction.ID)
 	}
 
-	return map[string]string{"id": tpl.Transaction.Hash().String()}, nil
+	return map[string]string{"id": tpl.Transaction.ID.String()}, nil
 }
 
 // recordSubmittedTx records a lower bound height at which the tx
@@ -191,13 +191,12 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 	}
 
 	// Remember this height in case we retry this submit call.
-	tx := bc.NewTx(*txTemplate.Transaction)
-	height, err := recordSubmittedTx(ctx, h.DB, tx.Hash, generatorHeight)
+	height, err := recordSubmittedTx(ctx, h.DB, txTemplate.Transaction.ID, generatorHeight)
 	if err != nil {
 		return errors.Wrap(err, "saving tx submitted height")
 	}
 
-	err = txbuilder.FinalizeTx(ctx, h.Chain, h.Submitter, tx)
+	err = txbuilder.FinalizeTx(ctx, h.Chain, h.Submitter, txTemplate.Transaction)
 	if err != nil {
 		return err
 	}
@@ -205,7 +204,7 @@ func (h *Handler) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Temp
 		return nil
 	}
 
-	height, err = h.waitForTxInBlock(ctx, tx, height)
+	height, err = h.waitForTxInBlock(ctx, txTemplate.Transaction, height)
 	if err != nil {
 		return err
 	}
@@ -235,7 +234,7 @@ func (h *Handler) waitForTxInBlock(ctx context.Context, tx *bc.Tx, height uint64
 				return 0, errors.Wrap(err, "getting block that just landed")
 			}
 			for _, confirmed := range b.Transactions {
-				if confirmed.Hash == tx.Hash {
+				if confirmed.ID == tx.ID {
 					// confirmed
 					return height, nil
 				}

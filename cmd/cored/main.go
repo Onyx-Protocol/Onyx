@@ -45,6 +45,7 @@ import (
 	"chain/net/http/limit"
 	"chain/protocol"
 	"chain/protocol/bc"
+	_ "chain/protocol/tx" // for TxHash init
 )
 
 const (

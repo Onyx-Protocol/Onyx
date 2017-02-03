@@ -49,14 +49,13 @@ func TestDeleteUTXOs(t *testing.T) {
 
 	assetID := bc.AssetID{}
 	acp := m.createTestControlProgram(ctx, t, "")
+	tx := bc.NewTx(bc.TxData{
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput(assetID, 1, acp, nil),
+		},
+	})
 
-	block1 := &bc.Block{Transactions: []*bc.Tx{
-		bc.NewTx(bc.TxData{
-			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(assetID, 1, acp, nil),
-			},
-		}),
-	}}
+	block1 := &bc.Block{Transactions: []*bc.Tx{tx}}
 	err := m.indexAccountUTXOs(ctx, block1)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -65,7 +64,7 @@ func TestDeleteUTXOs(t *testing.T) {
 	block2 := &bc.Block{Transactions: []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(bc.ComputeOutputID(block1.Transactions[0].Hash, 0), nil, assetID, 1, nil, nil),
+				bc.NewSpendInput(tx.OutputID(0), nil, assetID, 1, nil, nil),
 			},
 		}),
 	}}

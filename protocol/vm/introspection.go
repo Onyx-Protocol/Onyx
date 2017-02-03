@@ -198,8 +198,8 @@ func opOutputID(vm *virtualMachine) error {
 		return ErrContext
 	}
 
-	txin := vm.tx.Inputs[vm.inputIndex]
-	if txin.IsIssuance() {
+	outid := vm.txContext.OutputID
+	if outid == nil {
 		return ErrContext
 	}
 
@@ -208,9 +208,7 @@ func opOutputID(vm *virtualMachine) error {
 		return err
 	}
 
-	outid := txin.SpentOutputID()
-
-	return vm.push(outid.Bytes(), true)
+	return vm.push(outid[:], true)
 }
 
 func opNonce(vm *virtualMachine) error {

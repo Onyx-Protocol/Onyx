@@ -54,7 +54,7 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 	assetdef := []byte(`{"type": "prottest issuance"}`)
 	txin := bc.NewIssuanceInput(nonce[:], 100, nil, b1.Hash(), issuanceProgram, nil, assetdef)
 
-	tx := bc.TxData{
+	tx := bc.NewTx(bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		MinTime: bc.Millis(time.Now().Add(-5 * time.Minute)),
 		MaxTime: bc.Millis(time.Now().Add(5 * time.Minute)),
@@ -62,12 +62,12 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(txin.AssetID(), 100, []byte{0xbe, 0xef}, nil),
 		},
-	}
+	})
 
 	// Sign with a simple TXSIGHASH signature.
-	txhash := tx.HashForSig(0)
 	builder = vmutil.NewBuilder()
-	builder.AddData(txhash[:])
+	h := tx.SigHash(0)
+	builder.AddData(h[:])
 	builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
 	sigprog := builder.Program
 	sigproghash := sha3.Sum256(sigprog)
@@ -79,5 +79,5 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 	witness = append(witness, sigprog)
 	tx.Inputs[0].SetArguments(witness)
 
-	return &bc.Tx{TxData: tx}
+	return tx
 }

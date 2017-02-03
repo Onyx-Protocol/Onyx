@@ -97,16 +97,22 @@ func TestBlockTime(t *testing.T) {
 
 func TestOutputIDAndNonceOp(t *testing.T) {
 	var zeroHash bc.Hash
+	outputID := bc.OutputID{
+		Hash: bc.Hash{
+			3, 2, 1,
+		},
+	}
 	nonce := []byte{36, 37, 38}
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(bc.ComputeOutputID(zeroHash, 0), nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
+			bc.NewSpendInput(outputID, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
 			bc.NewIssuanceInput(nonce, 6, nil, zeroHash, []byte("issueprog"), nil, nil),
 		},
 	})
 	vm := &virtualMachine{
 		runLimit:   50000,
 		tx:         tx,
+		txContext:  txContext(&tx.TxData, 0),
 		inputIndex: 0,
 		program:    []byte{uint8(OP_OUTPUTID)},
 	}
@@ -115,7 +121,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedStack := [][]byte{mustDecodeHex("dc33296e4d20f0ef35ff9fd449e23ebbaa5a049a17779db3c2fe194b499aaf74")}
+	expectedStack := [][]byte{outputID.Hash[:]}
 	if !testutil.DeepEqual(vm.dataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
 	}
@@ -161,7 +167,7 @@ func TestIntrospectionOps(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
 		ReferenceData: []byte("txref"),
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(bc.ComputeOutputID(bc.Hash{}, 0), nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
+			bc.NewSpendInput(bc.OutputID{}, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
 			bc.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
@@ -497,6 +503,9 @@ func TestIntrospectionOps(t *testing.T) {
 			startVM: &virtualMachine{
 				runLimit: 0,
 				tx:       tx,
+				txContext: bc.VMContext{
+					OutputID: &bc.Hash{},
+				},
 			},
 			wantErr: ErrRunLimitExceeded,
 		}, testStruct{
@@ -534,7 +543,6 @@ func TestIntrospectionOps(t *testing.T) {
 		c.wantVM.program = prog
 		c.wantVM.pc = 1
 		c.wantVM.nextPC = 1
-		c.wantVM.sigHasher = c.startVM.sigHasher
 		if !testutil.DeepEqual(vm, c.wantVM) {
 			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, ops[c.op].name, c.startVM, c.wantVM)
 		}

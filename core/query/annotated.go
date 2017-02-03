@@ -123,7 +123,7 @@ var emptyJSONObject = json.RawMessage(`{}`)
 
 func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedTx {
 	tx := &AnnotatedTx{
-		ID:            orig.Hash,
+		ID:            orig.ID,
 		Timestamp:     b.Time(),
 		BlockID:       b.Hash(),
 		BlockHeight:   b.Height,
@@ -140,8 +140,8 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, ou
 	for _, in := range orig.Inputs {
 		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(in, outpoints))
 	}
-	for i, out := range orig.Outputs {
-		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(out, uint32(i), orig.Hash))
+	for i := range orig.Outputs {
+		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(orig, uint32(i)))
 	}
 	return tx
 }
@@ -182,9 +182,11 @@ func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint
 	return in
 }
 
-func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *AnnotatedOutput {
+func buildAnnotatedOutput(tx *bc.Tx, idx uint32) *AnnotatedOutput {
+	orig := tx.Outputs[idx]
+	outid := tx.OutputID(idx)
 	out := &AnnotatedOutput{
-		OutputID:        bc.ComputeOutputID(txhash, idx),
+		OutputID:        outid,
 		Position:        idx,
 		AssetID:         orig.AssetID,
 		AssetDefinition: &emptyJSONObject,
