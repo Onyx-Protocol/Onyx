@@ -6,12 +6,23 @@
     <groupId>com.chain</groupId>
     <artifactId>chain-sdk-java</artifactId>
     <version>1.0.1</version>
+    <packaging>jar</packaging>
+
     <name>${project.groupId}:${project.artifactId}</name>
     <description>The Official Java SDK for Chain Core Developer Edition</description>
     <url>https://github.com/chain/chain</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
     <properties>
         <encoding>UTF-8</encoding>
     </properties>
+
     <developers>
         <developer>
             <name>Dominic Dagradi</name>
@@ -24,6 +35,13 @@
             <organizationUrl>https://chain.com</organizationUrl>
         </developer>
     </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/chain/chain.git</connection>
+        <developerConnection>scm:git:ssh://github.com:chain/chain.git</developerConnection>
+        <url>http://github.com/chain/chain/tree/master</url>
+    </scm>
+
     <dependencies>
         <dependency>
             <groupId>com.squareup.okhttp</groupId>
@@ -42,6 +60,18 @@
             <version>2.6.2</version>
         </dependency>
     </dependencies>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
     <build>
         <plugins>
             <plugin>
@@ -131,6 +161,7 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -187,6 +218,34 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                  <execution>
+                    <id>sign-artifacts</id>
+                    <phase>verify</phase>
+                    <goals>
+                        <goal>sign</goal>
+                    </goals>
+                  </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+
         </plugins>
         <resources>
             <resource>
