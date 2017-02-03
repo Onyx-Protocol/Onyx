@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.5
+-- Dumped by pg_dump version 9.5.5
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -916,26 +916,4 @@ CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
 -- PostgreSQL database dump complete
 --
 
-insert into migrations (filename, hash) values ('2016-10-17.0.core.schema-snapshot.sql', 'cff5210e2d6af410719c223a76443f73c5c12fe875f0efecb9a0a5937cf029cd');
-insert into migrations (filename, hash) values ('2016-10-19.0.core.add-core-id.sql', '9353da072a571d7a633140f2a44b6ac73ffe9e27223f7c653ccdef8df3e8139e');
-insert into migrations (filename, hash) values ('2016-10-31.0.core.add-block-processors.sql', '9e9488e0039337967ef810b09a8f7822e23b3918a49a6308f02db24ddf3e490f');
-insert into migrations (filename, hash) values ('2016-11-07.0.core.remove-client-token-not-null.sql', 'fbae17999936bfc88a537f27fe72ae2de501894f3ea5d9488f3298fd05c59700');
-insert into migrations (filename, hash) values ('2016-11-09.0.utxodb.drop-reservations.sql', '99bbf49814a12d2fee7430710d493958dc634e3395ac8c4839f084116a3e58be');
-insert into migrations (filename, hash) values ('2016-11-10.0.txdb.drop-pool-txs.sql', 'c52f610d5bd471cde5fbc083681e201f026b0cab89e7beeaa6a071ebbb99ff69');
-insert into migrations (filename, hash) values ('2016-11-16.0.account.drop-cp-id.sql', '149dd9ff2107e12452180bb73716a0985547bae843e5f99e5441717d6ec64a00');
-insert into migrations (filename, hash) values ('2016-11-18.0.account.confirmed-utxos.sql', 'b01e126edfcfe97f94eeda46f5a0eab6752e907104cecf247e90886f92795e94');
-insert into migrations (filename, hash) values ('2016-11-22.0.account.utxos-indexes.sql', 'f3ea43f592cb06a36b040f0b0b9626ee9174d26d36abef44e68114d0c0aace98');
-insert into migrations (filename, hash) values ('2016-11-23.0.query.jsonb-path-ops.sql', 'adb15b9a6b7b223a17dbfd5f669e44c500b343568a563f87e1ae67ba0f938d55');
-insert into migrations (filename, hash) values ('2016-11-28.0.core.submitted-txs-hash.sql', 'cabbd7fd79a2b672b2d3c854783bde3b8245fe666c50261c3335a0c0501ff2ea');
-insert into migrations (filename, hash) values ('2017-01-05.0.core.rename_block_key.sql', 'ba6a62e498236ec9d2f13238a945829a5cab83f897068fef57a2c152a2e36037');
-insert into migrations (filename, hash) values ('2017-01-10.0.signers.xpubs-type.sql', '4a4d6c736a2bf65e69abbdc87771faa1dc17a0106b2651a6a58af067708d095a');
-insert into migrations (filename, hash) values ('2017-01-11.0.core.hash-bytea.sql', '9f7f15df3479c38f193884a2d3cb7ae8001ed08607f9cc661fd5c420e248688d');
-insert into migrations (filename, hash) values ('2017-01-13.0.core.asset-definition-bytea.sql', '996baf781c0b67f5ffa0bf0fa388f1f8fdbdec8b5cbf5f8b8ad292abf90d6e92');
-insert into migrations (filename, hash) values ('2017-01-19.0.asset.drop-mutable-flag.sql', '7850023d44c545c155c0ee372e7cdfef1859b40221bd94307b836503c26dd3de');
-insert into migrations (filename, hash) values ('2017-01-20.0.core.add-output-id-to-outputs.sql', '4c8531c06e62405d2989e0651a7ef6c2ebd0b2b269b57c179e9e36f7fdbb715b');
-insert into migrations (filename, hash) values ('2017-01-25.0.account.cp-expiry.sql', 'a2076b7b3ac3f844d17e13eea57fea01216c868a63f9df7b9df24cac9c4b82a4');
-insert into migrations (filename, hash) values ('2017-01-30.0.txdb.snapshots-timestamp.sql', '3ab923b782e048300315fc4ea8ae8bdf42183aa423d0a12bc228411c2d8c5093');
-insert into migrations (filename, hash) values ('2017-01-30.1.core.add-block-hsm-config.sql', '9d609586b2fd33c45e530c4237a24f303a3b5753e5ccf3cd740958511aea4992');
-insert into migrations (filename, hash) values ('2017-01-31.0.query.drop-outpoint-index.sql', '461ab638954f5eb53e83587da96f2d83e031d17ab3408685a4460b60edf522a1');
-insert into migrations (filename, hash) values ('2017-01-31.1.query.annotated-schema.sql', 'e0421d1bbbbbb14188be0b06f0056e2121d3b364c30fb633c47c3055416bf806');
-insert into migrations (filename, hash) values ('2017-02-30.0.account.remove-unspent-ids.sql', 'd0686de697e821b313ccd38865f76032b7f541d8f5747c42ae445a40e9642a50');
+insert into migrations (filename, hash) values ('2017-02-03.0.core.schema-snapshot.sql', '0642798199924f71f46908f508681cb33f1097879f1a4eda4e8f91f909e89c8c');
