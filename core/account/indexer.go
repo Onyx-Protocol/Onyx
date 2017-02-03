@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"encoding/json"
+	"log"
 
 	"github.com/lib/pq"
 
@@ -110,6 +111,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	for i, tx := range b.Transactions {
 		blockPositions[tx.ID] = uint32(i)
 		for j, out := range tx.Outputs {
+			log.Println("This transaction has %d outputs and %d output ids", len(tx.Outputs), len(tx.OutputIDs))
 			out := &rawOutput{
 				Output: state.Output{
 					TxOutput: *out,
