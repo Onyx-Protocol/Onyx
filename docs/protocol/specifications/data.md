@@ -194,6 +194,13 @@ The *block ID* (also called *block hash*) is defined as [SHA3-256](#sha3) of the
 
 ### Transaction
 
+In Chain Protocol 1, transactions can be represented and serialized in two different ways.
+
+When transactions are going to be transmitted over the wire, they are serialized using [Wire Format Serialization](#wire-format-serialization), which creates a serialized transaction composed of types described above. 
+
+Conversely, when transactions are hashed, they are serialized using [Serialization for Hashing](#serialization-for-hashing), which generates a deterministic hash value that is independent of the wire format serialization. 
+
+
 #### Wire Format Serialization
 
 When serialized for the wire, a *transaction* comprises the following fields concatenated:
@@ -412,6 +419,101 @@ Field                   | Type                                      | Descriptio
 ------------------------|-------------------------------------------|----------------------------------------------------------
 Transaction ID          | sha3-256                                  | Current [transaction ID](#transaction-id).
 Input Index             | varint31                                  | Index of a given input encoded as [varint31](#varint31).
+
+#### Transaction Serialization for Hashing
+
+Serialization is defined using the serialization primitives [Byte](#byte), [Hash](#hash), [Integer](#integer), [String](#string), [List](#list) and [Struct](#struct). 
+
+When hashing, a transaction is composed of a set of Transaction Entries, all of which inherit from the common type [Abstract Entry](#abstract-entry). 
+
+Entries are used to define transactions. For example, they are used to specify inputs or outputs and add reference data. Each Transaction must include a [Header Entry](#header-entry). Entries can be identified by their [Entry ID](#entry-id). 
+
+Older nodes may come across Entries with a type that they don't recognize. All unrecognized Entries should be treated as [Unknown Entries](#unknown-entry).
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------------------------------------------------
+Header              | Header               | A Header entry.
+Entries             | List<AbstractEntry>  | A list of TransactionEntries. 
+
+
+#### Byte
+
+A `Byte` is encoded as 1 byte.
+
+#### Hash
+
+A `Hash` is encoded as 32 bytes. 
+
+#### Integer
+
+An `Integer` is encoded a [Varint63](#varint63).
+
+#### String
+
+A `String` is encoded as a [Varstring31](#varstring31).
+
+#### List
+
+A `List` is encoded as a [Varstring31](#varstring31) containing the serialized items, one by one, as defined by the schema. 
+
+#### Struct
+
+A `Struct` is encoded as a concatenation of all its serialized fields. 
+
+#### Extstruct
+
+An `ExtStruct` is encoded as a concatentation of TKTK DO I NEED TO INCLUDE THIS?
+
+#### Hashable 
+
+A Hashable is any type for which a hashing serialization is defined. 
+
+#### Entry ID 
+
+An entry's ID is based on its type and body. The body is length-prefixed, and its type is varint-encoded. 
+
+```
+entryID = HASH("entryid:" || entry.type || ":" || entry.body_hash)
+```
+
+#### Abstract Entry
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------------------------------------------------
+Type                | String               | The type of this Entry. e.g. Issuance, Retirement
+Body                | Hashable             | Varies by type. 
+Witness             | Hashable             | Varies by type. 
+
+#### Unknown Entry
+
+When older nodes come across an Entry with a type that they don't recognize, that Entry must be treated as an Unknown Entry. 
+
+The type string must be transmitted explicitly from newer nodes to older news, so that older nodes can compute the Entry ID correctly.
+
+Field                    | Type                 | Description
+-------------------------|----------------------|----------------
+Type                     | String               | Not statically known.
+Body_Hash                | Hash                 | - 
+Witness_Hash             | Hash                 | - 
+
+#### TxHeader
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "txheader"
+Body                | Hashable             | See below.  
+Witness             | Hashable             | See below. 
+
+##### TxHeader Body
+ 
+Field      | Type                                          | Description
+-----------|-----------------------------------------------|-------------------------
+Version    | Integer                                       | Transaction version, equals 1.
+Results    | List<Pointer<Output|Retirement|UnknownEntry>> | A list of pointers to "results," which, if known, are Outputs or Retirements.  
+Data       | Pointer<Data|UnknownEntry>                    |  
+Mintime    | Intger
+Maxtime    |
+ExtHash    |
 
 
 ### Program
