@@ -8,15 +8,30 @@ import (
 )
 
 func TestTxHashes(t *testing.T) {
-	cases := []*bc.TxData{{}, sampleTx()}
+	cases := []struct {
+		txdata *bc.TxData
+		hash   bc.Hash
+	}{
+		{
+			txdata: &bc.TxData{},
+			hash:   mustDecodeHash("827b87bafb63c999922d0190010351435bb73a4d96612beea007b4d811607fb0"),
+		},
+		{
+			txdata: sampleTx(),
+			hash:   mustDecodeHash("fbca3b1e447c46f7926931950960b60fc86237a9402ce68c78e6144da02a5d82"),
+		},
+	}
 
-	for _, txData := range cases {
-		hashes, err := TxHashes(txData)
+	for i, c := range cases {
+		hashes, err := TxHashes(c.txdata)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(hashes.VMContexts) != len(txData.Inputs) {
-			t.Errorf("len(hashes.VMContexts) = %d, want %d", len(hashes.VMContexts), len(txData.Inputs))
+		if len(hashes.VMContexts) != len(c.txdata.Inputs) {
+			t.Errorf("case %d: len(hashes.VMContexts) = %d, want %d", i, len(hashes.VMContexts), len(c.txdata.Inputs))
+		}
+		if c.hash != hashes.ID {
+			t.Errorf("case %d: got txid %x, want %x", i, hashes.ID[:], c.hash[:])
 		}
 	}
 }
@@ -58,6 +73,7 @@ func sampleTx() *bc.TxData {
 		Version: 1,
 		Inputs: []*bc.TxInput{
 			bc.NewSpendInput(bc.OutputID{mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292")}, nil, assetID, 1000000000000, []byte{1}, []byte("input")),
+			bc.NewSpendInput(bc.OutputID{bc.Hash{17}}, nil, assetID, 1, []byte{2}, []byte("input2")),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 600000000000, []byte{1}, nil),
