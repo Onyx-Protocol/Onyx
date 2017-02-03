@@ -17,6 +17,10 @@ func (ind *Indexer) Balances(ctx context.Context, p filter.Predicate, vals []int
 	if len(vals) != p.Parameters {
 		return nil, ErrParameterCountMismatch
 	}
+	err := filter.TypeCheck(p, outputsTable)
+	if err != nil {
+		return nil, errors.Wrap(err, "typechecking")
+	}
 	expr, err := filter.AsSQL(p, outputsTable, vals)
 	if err != nil {
 		return nil, err

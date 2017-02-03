@@ -12,10 +12,12 @@ var (
 		Name:  "annotated_inputs",
 		Alias: "inp",
 		Columns: map[string]*SQLColumn{
-			"a":        {Name: "a", Type: String, SQLType: SQLText},
-			"b":        {Name: "b", Type: String, SQLType: SQLText},
-			"type":     {Name: "type", Type: String, SQLType: SQLText},
-			"asset_id": {Name: "asset_id", Type: String, SQLType: SQLBytea},
+			"a":            {Name: "a", Type: String, SQLType: SQLText},
+			"b":            {Name: "b", Type: String, SQLType: SQLText},
+			"type":         {Name: "type", Type: String, SQLType: SQLText},
+			"amount":       {Name: "amount", Type: Integer, SQLType: SQLBigint},
+			"asset_id":     {Name: "asset_id", Type: String, SQLType: SQLBytea},
+			"account_tags": {Name: "account_tags", Type: Object, SQLType: SQLJSONB},
 		},
 		ForeignKeys: map[string]*SQLForeignKey{},
 	}
@@ -32,7 +34,7 @@ var (
 		Alias: "txs",
 		Columns: map[string]*SQLColumn{
 			"id":       {Name: "tx_hash", Type: String, SQLType: SQLBytea},
-			"ref":      {Name: "ref", Type: String, SQLType: SQLJSONB},
+			"ref":      {Name: "ref", Type: Object, SQLType: SQLJSONB},
 			"position": {Name: "position", Type: Integer, SQLType: SQLInteger},
 			"is_local": {Name: "local", Type: Bool, SQLType: SQLBool},
 		},

@@ -34,6 +34,10 @@ func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []inter
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
+	err := filter.TypeCheck(p, assetsTable)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "typechecking")
+	}
 	expr, err := filter.AsSQL(p, assetsTable, vals)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "converting to SQL")

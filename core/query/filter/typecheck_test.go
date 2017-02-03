@@ -7,9 +7,15 @@ func TestTypeCheckInvalid(t *testing.T) {
 		p string
 	}{
 		{p: `1 = 'hello world'`},
-		{p: `INPUTS('hello')`},
-		{p: `foo(1=1).bar`},
+		{p: `inputs('hello')`},
+		{p: `inputs(1=1).bar`},
 		{p: `'hello'.foo`},
+		{p: `inputs(amount = asset_id)`},
+		{p: `inputs(100 = asset_id)`},
+		{p: `inputs(wat)`},
+		{p: `wat(asset_id = 'a')`},
+		{p: `position(asset_id = 'a')`},
+		{p: `position.huh`},
 	}
 
 	for _, tc := range testCases {
@@ -18,7 +24,7 @@ func TestTypeCheckInvalid(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		typ, err := typeCheckExpr(expr)
+		typ, err := typeCheckExpr(expr, transactionsSQLTable)
 		if err == nil {
 			t.Errorf("typeCheckExpr(%s) = %s, want error", expr, typ)
 		}
@@ -32,12 +38,15 @@ func TestTypeCheckValid(t *testing.T) {
 	}{
 		{p: `1`, typ: Integer},
 		{p: `'hello world'`, typ: String},
+		{p: `is_local`, typ: Bool},
 		{p: `1 = 1`, typ: Bool},
 		{p: `$1 = '292 Ivy St'`, typ: Bool},
 		{p: `'hello' = 'world'`, typ: Bool},
-		{p: `$1 = 'hello' OR account_tags.something = $1`, typ: Bool},
-		{p: `($1 = 'hello') OR (account_tags.something = $1)`, typ: Bool},
+		{p: `id = id`, typ: Bool},
+		{p: `$1 = 'hello' OR ref.something = $1`, typ: Bool},
+		{p: `($1 = 'hello') OR (ref.something = $1)`, typ: Bool},
 		{p: `inputs(account_tags.domestic AND account_tags.type = 'revolving')`, typ: Bool},
+		{p: `inputs(account_tags.state = account_tags.shipping_address.state)`, typ: Bool},
 	}
 
 	for _, tc := range testCases {
@@ -46,7 +55,7 @@ func TestTypeCheckValid(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		typ, err := typeCheckExpr(expr)
+		typ, err := typeCheckExpr(expr, transactionsSQLTable)
 		if err != nil {
 			t.Fatal(err)
 		}

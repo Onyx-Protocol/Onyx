@@ -3,7 +3,17 @@ package filter
 import (
 	"errors"
 	"fmt"
+
+	chainerrors "chain/errors"
 )
+
+func TypeCheck(p Predicate, tbl *SQLTable) error {
+	err := typeCheck(p.expr, tbl)
+	if err != nil {
+		return chainerrors.WithDetail(ErrBadFilter, err.Error())
+	}
+	return nil
+}
 
 func isType(got Type, want Type) bool {
 	return got == want || got == Any
@@ -13,8 +23,8 @@ func knownType(t Type) bool {
 	return t == Bool || t == String || t == Integer || t == Object
 }
 
-func typeCheck(expr expr) error {
-	typ, err := typeCheckExpr(expr)
+func typeCheck(expr expr, tbl *SQLTable) error {
+	typ, err := typeCheckExpr(expr, tbl)
 	if err != nil {
 		return err
 	}
@@ -24,20 +34,20 @@ func typeCheck(expr expr) error {
 	return nil
 }
 
-func typeCheckExpr(expr expr) (typ Type, err error) {
+func typeCheckExpr(expr expr, tbl *SQLTable) (typ Type, err error) {
 	if expr == nil { // no expr is a valid, bool type
 		return Bool, nil
 	}
 
 	switch e := expr.(type) {
 	case parenExpr:
-		return typeCheckExpr(e.inner)
+		return typeCheckExpr(e.inner, tbl)
 	case binaryExpr:
-		leftTyp, err := typeCheckExpr(e.l)
+		leftTyp, err := typeCheckExpr(e.l, tbl)
 		if err != nil {
 			return leftTyp, err
 		}
-		rightTyp, err := typeCheckExpr(e.r)
+		rightTyp, err := typeCheckExpr(e.r, tbl)
 		if err != nil {
 			return rightTyp, err
 		}
@@ -65,7 +75,11 @@ func typeCheckExpr(expr expr) (typ Type, err error) {
 	case placeholderExpr:
 		return Any, nil
 	case attrExpr:
-		return Any, nil
+		col, ok := tbl.Columns[e.attr]
+		if !ok {
+			return typ, fmt.Errorf("invalid attribute: %s", e.attr)
+		}
+		return col.Type, nil
 	case valueExpr:
 		switch e.typ {
 		case tokString:
@@ -76,7 +90,7 @@ func typeCheckExpr(expr expr) (typ Type, err error) {
 			panic(fmt.Errorf("value expr with invalid token type: %s", e.typ))
 		}
 	case selectorExpr:
-		typ, err = typeCheckExpr(e.objExpr)
+		typ, err = typeCheckExpr(e.objExpr, tbl)
 		if err != nil {
 			return typ, err
 		}
@@ -85,7 +99,11 @@ func typeCheckExpr(expr expr) (typ Type, err error) {
 		}
 		return Any, nil
 	case envExpr:
-		typ, err = typeCheckExpr(e.expr)
+		fk, ok := tbl.ForeignKeys[e.ident]
+		if !ok {
+			return typ, fmt.Errorf("invalid environment `%s`", e.ident)
+		}
+		typ, err = typeCheckExpr(e.expr, fk.Table)
 		if err != nil {
 			return typ, err
 		}

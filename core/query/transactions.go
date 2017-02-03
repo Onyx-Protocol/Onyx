@@ -75,6 +75,10 @@ func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals [
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}
+	err := filter.TypeCheck(p, transactionsTable)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "typechecking")
+	}
 	expr, err := filter.AsSQL(p, transactionsTable, vals)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "converting to SQL")

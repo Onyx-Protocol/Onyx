@@ -39,10 +39,6 @@ func Parse(predicate string) (p Predicate, err error) {
 	if err != nil {
 		return p, errors.WithDetail(ErrBadFilter, err.Error())
 	}
-	err = typeCheck(expr)
-	if err != nil {
-		return p, errors.WithDetail(ErrBadFilter, err.Error())
-	}
 
 	return Predicate{
 		Parameters: parser.maxPlaceholder,
@@ -64,7 +60,7 @@ func (f Field) String() string {
 func ParseField(s string) (f Field, err error) {
 	expr, _, err := parse(s)
 	if err != nil {
-		return f, err
+		return f, errors.WithDetail(ErrBadFilter, err.Error())
 	}
 	if expr == nil {
 		return f, errors.WithDetail(ErrBadFilter, "empty field expression")
