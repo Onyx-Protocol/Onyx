@@ -466,18 +466,6 @@ CREATE TABLE mockhsm (
 
 
 --
--- Name: pool_tx_sort_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE pool_tx_sort_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
 -- Name: query_blocks; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -485,18 +473,6 @@ CREATE TABLE query_blocks (
     height bigint NOT NULL,
     "timestamp" bigint NOT NULL
 );
-
-
---
--- Name: reservation_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE reservation_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
 
 
 --
@@ -916,4 +892,4 @@ CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
 -- PostgreSQL database dump complete
 --
 
-insert into migrations (filename, hash) values ('2017-02-03.0.core.schema-snapshot.sql', '0642798199924f71f46908f508681cb33f1097879f1a4eda4e8f91f909e89c8c');
+insert into migrations (filename, hash) values ('2017-02-03.0.core.schema-snapshot.sql', '1d55668affe0be9f3c19ead9d67bc75cfd37ec430651434d0f2af2706d9f08cd');
