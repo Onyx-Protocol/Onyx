@@ -285,4 +285,7 @@ var migrations = []migration{
 			ALTER COLUMN tags SET NOT NULL,
 			DROP COLUMN data;
 	`},
+	{Name: "2017-02-30.0.account.remove-unspent-ids.sql", SQL: `
+		ALTER TABLE account_utxos DROP COLUMN unspent_id;
+	`},
 }
