@@ -43,17 +43,18 @@ func TestOutputsAfter(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	_, err := db.Exec(ctx, `
-		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, output_id, data, timespan)
+		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, output_id, timespan,
+			type, purpose, asset_id, asset_alias, asset_definition, asset_local, asset_tags, amount, control_program, reference_data, local)
 		VALUES
-			(1, 0, 0, 'ab', 'o1', '{"account_id": "abc"}', int8range(1, 100)),
-			(1, 1, 0, 'cd', 'o2', '{"account_id": "abc"}', int8range(1, 100)),
-			(1, 1, 1, 'cd', 'o3', '{"account_id": "abc"}', int8range(1, 100)),
-			(2, 0, 0, 'ef', 'o4', '{"account_id": "abc"}', int8range(10, 50));
+		(1, 0, 0, 'ab', 'o1', int8range(1, 100), 'control', 'receive', E'\\xDEADBEEF', 'a', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true),
+		(1, 1, 0, 'cd', 'o2', int8range(1, 100), 'control', 'receive', E'\\xDEADBEEF', 'a', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true),
+		(1, 1, 1, 'cd', 'o3', int8range(1, 100), 'control', 'receive', E'\\xDEADBEEF', 'a', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true),
+		(2, 0, 0, 'ef', 'o4', int8range(10, 50), 'control', 'receive', E'\\xDEADBEEF', 'a', '{}'::jsonb, true, '{}'::jsonb, 10, E'\\xDEADBEEF', '{}'::jsonb, true);
 	`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	q, err := filter.Parse(`account_id = 'abc'`)
+	q, err := filter.Parse(`asset_id = 'deadbeef'`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,14 +96,14 @@ func TestConstructOutputsQuery(t *testing.T) {
 	}{
 		{
 			// empty filter
-			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE timespan @> $1::int8 ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT 10`,
+			wantQuery:  `SELECT block_height, tx_pos, output_index, tx_hash, output_id, type, purpose, asset_id, asset_alias, asset_definition, asset_tags, asset_local, amount, account_id, account_alias, account_tags, control_program, reference_data, local FROM "annotated_outputs" AS out WHERE timespan @> $1::int8 ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT 10`,
 			wantValues: []interface{}{nowMillis},
 		},
 		{
 			filter:     "asset_id = $1 AND account_id = 'abc'",
 			values:     []interface{}{"foo"},
-			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT 10`,
-			wantValues: []interface{}{`{"account_id":"abc","asset_id":"foo"}`, nowMillis},
+			wantQuery:  `SELECT block_height, tx_pos, output_index, tx_hash, output_id, type, purpose, asset_id, asset_alias, asset_definition, asset_tags, asset_local, amount, account_id, account_alias, account_tags, control_program, reference_data, local FROM "annotated_outputs" AS out WHERE (encode(out."asset_id", 'hex') = $1 AND out."account_id" = 'abc') AND timespan @> $2::int8 ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT 10`,
+			wantValues: []interface{}{`foo`, nowMillis},
 		},
 		{
 			filter: "asset_id = $1 AND account_id = 'abc'",
@@ -112,8 +113,8 @@ func TestConstructOutputsQuery(t *testing.T) {
 				lastTxPos:       17,
 				lastIndex:       19,
 			},
-			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 AND (block_height, tx_pos, output_index) < ($3, $4, $5) ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT 10`,
-			wantValues: []interface{}{`{"account_id":"abc","asset_id":"foo"}`, nowMillis, uint64(15), uint32(17), uint32(19)},
+			wantQuery:  `SELECT block_height, tx_pos, output_index, tx_hash, output_id, type, purpose, asset_id, asset_alias, asset_definition, asset_tags, asset_local, amount, account_id, account_alias, account_tags, control_program, reference_data, local FROM "annotated_outputs" AS out WHERE (encode(out."asset_id", 'hex') = $1 AND out."account_id" = 'abc') AND timespan @> $2::int8 AND (block_height, tx_pos, output_index) < ($3, $4, $5) ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT 10`,
+			wantValues: []interface{}{`foo`, nowMillis, uint64(15), uint32(17), uint32(19)},
 		},
 	}
 
@@ -122,11 +123,11 @@ func TestConstructOutputsQuery(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		expr, err := filter.AsSQL(f, "data", tc.values)
+		expr, err := filter.AsSQL(f, outputsTable, tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}
-		query, values := constructOutputsQuery(expr, nowMillis, tc.after, 10)
+		query, values := constructOutputsQuery(expr, tc.values, nowMillis, tc.after, 10)
 		if query != tc.wantQuery {
 			t.Errorf("case %d: got %s want %s", i, query, tc.wantQuery)
 		}

@@ -127,4 +127,162 @@ var migrations = []migration{
 	{Name: "2017-01-31.0.query.drop-outpoint-index.sql", SQL: `
 		DROP INDEX annotated_outputs_outpoint_idx;
 	`},
+	{Name: "2017-01-31.1.query.annotated-schema.sql", SQL: `
+		--
+		-- Flatten annotated_outputs into schema
+		--
+		ALTER TABLE annotated_outputs
+			ADD COLUMN type text,
+			ADD COLUMN purpose text,
+			ADD COLUMN asset_id bytea,
+			ADD COLUMN asset_alias text,
+			ADD COLUMN asset_definition jsonb,
+			ADD COLUMN asset_tags jsonb,
+			ADD COLUMN asset_local boolean,
+			ADD COLUMN amount bigint,
+			ADD COLUMN account_id text,
+			ADD COLUMN account_alias text,
+			ADD COLUMN account_tags jsonb,
+			ADD COLUMN control_program bytea,
+			ADD COLUMN reference_data jsonb,
+			ADD COLUMN local boolean;
+		UPDATE annotated_outputs SET
+			type             = data->>'type',
+			purpose          = COALESCE(data->>'purpose', ''),
+			asset_id         = decode(data->>'asset_id', 'hex'),
+			asset_alias      = COALESCE(data->>'asset_alias', ''),
+			asset_definition = COALESCE(data->'asset_definition', '{}'::jsonb),
+			asset_tags       = COALESCE(data->'asset_tags', '{}'::jsonb),
+			asset_local      = (data->>'asset_is_local'='yes'),
+			amount           = (data->>'amount')::bigint,
+			account_id       = data->>'account_id',
+			account_alias    = data->>'account_alias',
+			account_tags     = data->'account_tags',
+			control_program  = decode(data->>'control_program', 'hex'),
+			reference_data   = COALESCE(data->'reference_data', '{}'::jsonb),
+			local            = (data->>'is_local' = 'yes');
+		ALTER TABLE annotated_outputs
+			ALTER COLUMN type SET NOT NULL,
+			ALTER COLUMN purpose SET NOT NULL,
+			ALTER COLUMN asset_id SET NOT NULL,
+			ALTER COLUMN asset_alias SET NOT NULL,
+			ALTER COLUMN asset_definition SET NOT NULL,
+			ALTER COLUMN asset_tags SET NOT NULL,
+			ALTER COLUMN asset_local SET NOT NULL,
+			ALTER COLUMN amount SET NOT NULL,
+			ALTER COLUMN control_program SET NOT NULL,
+			ALTER COLUMN reference_data SET NOT NULL,
+			ALTER COLUMN local SET NOT NULL,
+			DROP COLUMN data;
+
+		--
+		-- Flatten annotated_txs into schema
+		--
+		ALTER TABLE annotated_txs
+			ADD COLUMN "timestamp" timestamp with time zone,
+			ADD COLUMN block_id bytea,
+			ADD COLUMN local boolean,
+			ADD COLUMN reference_data jsonb;
+		UPDATE annotated_txs SET
+			"timestamp"    = (data->>'timestamp')::timestamp with time zone,
+			block_id       = decode(data->>'block_id', 'hex'),
+			local          = (data->>'is_local' = 'yes'),
+			reference_data = COALESCE(data->'reference_data', '{}'::jsonb);
+		ALTER TABLE annotated_txs
+			ALTER COLUMN timestamp SET NOT NULL,
+			ALTER COLUMN block_id SET NOT NULL,
+			ALTER COLUMN local SET NOT NULL,
+			ALTER COLUMN reference_data SET NOT NULL;
+
+		--
+		-- Introduce annotated_inputs
+		--
+		CREATE TABLE annotated_inputs (
+			tx_hash          bytea NOT NULL,
+			index            int NOT NULL,
+			type             text NOT NULL,
+			asset_id         bytea NOT NULL,
+			asset_alias      text NOT NULL,
+			asset_definition jsonb NOT NULL,
+			asset_tags       jsonb NOT NULL,
+			asset_local      boolean NOT NULL,
+			amount           bigint NOT NULL,
+			account_id       text,
+			account_alias    text,
+			account_tags     jsonb,
+			issuance_program bytea NOT NULL,
+			reference_data   jsonb NOT NULL,
+			local            boolean NOT NULL,
+			PRIMARY KEY(tx_hash, index)
+		);
+
+		--
+		-- Backfill all of the annotated inputs O_O
+		--
+		INSERT INTO annotated_inputs
+		SELECT
+			tx_hash,
+			idx-1 AS index,
+			inp->>'type' AS type,
+			decode(inp->>'asset_id', 'hex') AS asset_id,
+			COALESCE(inp->>'asset_alias', '') AS asset_alias,
+			COALESCE(inp->'asset_definition', '{}'::jsonb) AS asset_definition,
+			COALESCE(inp->'asset_tags', '{}'::jsonb) AS asset_tags,
+			(inp->>'asset_is_local' = 'yes') AS asset_local,
+			(inp->>'amount')::bigint AS amount,
+			inp->>'account_id' AS account_id,
+			inp->>'account_alias' AS account_alias,
+			inp->'account_tags' AS account_tags,
+			decode(COALESCE(inp->>'issuance_program', ''), 'hex') AS issuance_program,
+			COALESCE(inp->'reference_data', '{}'::jsonb) AS reference_data,
+			(inp->>'is_local' = 'yes') AS local
+		FROM annotated_txs, jsonb_array_elements(annotated_txs.data->'inputs') WITH ORDINALITY AS inputs (inp, idx);
+
+		--
+		-- Flatten annotated_assets into schema.
+		--
+		ALTER TABLE annotated_assets
+			ADD COLUMN alias text,
+			ADD COLUMN issuance_program bytea,
+			ADD COLUMN keys jsonb,
+			ADD COLUMN quorum integer,
+			ADD COLUMN definition jsonb,
+			ADD COLUMN tags jsonb,
+			ADD COLUMN local boolean;
+		UPDATE annotated_assets SET
+			alias            = COALESCE(data->>'alias', ''),
+			issuance_program = decode(COALESCE(data->>'issuance_program', ''), 'hex'),
+			keys             = COALESCE(data->'keys', '[]'::jsonb),
+			quorum           = (data->>'quorum')::integer,
+			definition       = COALESCE(data->'definition', '{}'::jsonb),
+			tags             = COALESCE(data->'tags', '{}'::jsonb),
+			local            = (data->>'is_local' = 'yes');
+		ALTER TABLE annotated_assets
+			ALTER COLUMN issuance_program SET NOT NULL,
+			ALTER COLUMN keys SET NOT NULL,
+			ALTER COLUMN quorum SET NOT NULL,
+			ALTER COLUMN definition SET NOT NULL,
+			ALTER COLUMN tags SET NOT NULL,
+			ALTER COLUMN local SET NOT NULL,
+			DROP COLUMN data;
+
+		--
+		-- Flatten annotated_accounts into schema.
+		--
+		ALTER TABLE annotated_accounts
+			ADD COLUMN alias text,
+			ADD COLUMN keys jsonb,
+			ADD COLUMN quorum integer,
+			ADD COLUMN tags jsonb;
+		UPDATE annotated_accounts SET
+			alias  = COALESCE(data->>'alias', ''),
+			keys   = COALESCE(data->'keys', '[]'::jsonb),
+			quorum = (data->>'quorum')::integer,
+			tags   = COALESCE(data->'tags', '{}'::jsonb);
+		ALTER TABLE annotated_accounts
+			ALTER COLUMN keys SET NOT NULL,
+			ALTER COLUMN quorum SET NOT NULL,
+			ALTER COLUMN tags SET NOT NULL,
+			DROP COLUMN data;
+	`},
 }

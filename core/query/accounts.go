@@ -3,6 +3,7 @@ package query
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -13,16 +14,19 @@ import (
 
 // SaveAnnotatedAccount saves an annotated account to the query indexes.
 func (ind *Indexer) SaveAnnotatedAccount(ctx context.Context, account *AnnotatedAccount) error {
-	b, err := json.Marshal(account)
+	keysJSON, err := json.Marshal(account.Keys)
 	if err != nil {
 		return errors.Wrap(err)
 	}
+	alias := sql.NullString{String: account.Alias, Valid: account.Alias != ""}
 
 	const q = `
-		INSERT INTO annotated_accounts (id, data) VALUES($1, $2)
-		ON CONFLICT (id) DO UPDATE SET data = $2
+		INSERT INTO annotated_accounts (id, alias, keys, quorum, tags)
+		VALUES($1, $2, $3::jsonb, $4, $5::jsonb)
+		ON CONFLICT (id) DO UPDATE SET tags = $5::jsonb
 	`
-	_, err = ind.db.Exec(ctx, q, account.ID, b)
+	_, err = ind.db.Exec(ctx, q, account.ID, alias, keysJSON,
+		account.Quorum, string(*account.Tags))
 	return errors.Wrap(err, "saving annotated account")
 }
 
@@ -31,12 +35,12 @@ func (ind *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []int
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
-	expr, err := filter.AsSQL(p, "data", vals)
+	expr, err := filter.AsSQL(p, accountsTable, vals)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "converting to SQL")
 	}
 
-	queryStr, queryArgs := constructAccountsQuery(expr, after, limit)
+	queryStr, queryArgs := constructAccountsQuery(expr, vals, after, limit)
 	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "executing acc query")
@@ -45,37 +49,42 @@ func (ind *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []int
 
 	accounts := make([]*AnnotatedAccount, 0, limit)
 	for rows.Next() {
-		var accID string
-		var rawAccount []byte
-		err := rows.Scan(&accID, &rawAccount)
+		var keysJSON []byte
+		aa := new(AnnotatedAccount)
+
+		err := rows.Scan(
+			&aa.ID,
+			&aa.Alias,
+			&keysJSON,
+			&aa.Quorum,
+			&aa.Tags,
+		)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning account row")
 		}
-
-		aa := new(AnnotatedAccount)
-		err = json.Unmarshal(rawAccount, &aa)
+		err = json.Unmarshal(keysJSON, &aa.Keys)
 		if err != nil {
-			return nil, "", errors.Wrap(err, "unmarshaling annotated account")
+			return nil, "", errors.Wrap(err, "unmarshaling account keys json")
 		}
 
-		after = accID
+		after = aa.ID
 		accounts = append(accounts, aa)
 	}
 	return accounts, after, errors.Wrap(rows.Err())
 }
 
-func constructAccountsQuery(expr filter.SQLExpr, after string, limit int) (string, []interface{}) {
+func constructAccountsQuery(expr string, vals []interface{}, after string, limit int) (string, []interface{}) {
 	var buf bytes.Buffer
-	var vals []interface{}
 
-	buf.WriteString("SELECT id, data FROM annotated_accounts")
+	buf.WriteString("SELECT ")
+	buf.WriteString("id, alias, keys, quorum, tags")
+	buf.WriteString(" FROM annotated_accounts AS acc")
 	buf.WriteString(" WHERE ")
 
 	// add filter conditions
-	if len(expr.SQL) > 0 {
-		vals = append(vals, expr.Values...)
+	if len(expr) > 0 {
 		buf.WriteString("(")
-		buf.WriteString(expr.SQL)
+		buf.WriteString(expr)
 		buf.WriteString(") AND ")
 	}
 

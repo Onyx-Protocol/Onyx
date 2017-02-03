@@ -75,38 +75,39 @@ func TestConstructTransactionsQuery(t *testing.T) {
 		wantValues []interface{}
 	}{
 		{
-			filter:    `inputs(type='issue' AND asset_id=$1)`,
-			values:    []interface{}{"abc"},
-			after:     TxAfter{FromBlockHeight: 205, FromPosition: 35, StopBlockHeight: 100},
-			asc:       false,
-			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs WHERE (data @> $1::jsonb) AND (block_height, tx_pos) < ($2, $3) AND block_height >= $4 ORDER BY block_height DESC, tx_pos DESC LIMIT 100`,
+			filter: `inputs(type='issue' AND asset_id=$1)`,
+			values: []interface{}{"abc"},
+			after:  TxAfter{FromBlockHeight: 205, FromPosition: 35, StopBlockHeight: 100},
+			asc:    false,
+			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs AS txs WHERE 
+EXISTS(SELECT 1 FROM annotated_inputs AS inp WHERE inp."tx_hash" = txs."tx_hash" AND (inp."type" = 'issue' AND encode(inp."asset_id", 'hex') = $1))
+ AND (txs.block_height, txs.tx_pos) < ($2, $3) AND txs.block_height >= $4 ORDER BY txs.block_height DESC, txs.tx_pos DESC LIMIT 100`,
 			wantValues: []interface{}{
-				`{"inputs":[{"asset_id":"abc","type":"issue"}]}`,
-				uint64(205), uint32(35), uint64(100),
+				`abc`, uint64(205), uint32(35), uint64(100),
 			},
 		},
 		{
-			filter:    `outputs(account_id = $1 OR reference_data.corporate=$2)`,
-			values:    []interface{}{"acc123", "corp"},
-			after:     TxAfter{FromBlockHeight: 2, FromPosition: 20, StopBlockHeight: 1},
-			asc:       false,
-			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs WHERE ((data @> $1::jsonb) OR (data @> $2::jsonb)) AND (block_height, tx_pos) < ($3, $4) AND block_height >= $5 ORDER BY block_height DESC, tx_pos DESC LIMIT 100`,
+			filter: `outputs(account_id = $1 OR reference_data.corporate=$2)`,
+			values: []interface{}{"acc123", "corp"},
+			after:  TxAfter{FromBlockHeight: 2, FromPosition: 20, StopBlockHeight: 1},
+			asc:    false,
+			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs AS txs WHERE 
+EXISTS(SELECT 1 FROM annotated_outputs AS out WHERE out."tx_hash" = txs."tx_hash" AND (out."account_id" = $1 OR out."reference_data"->>'corporate' = $2))
+ AND (txs.block_height, txs.tx_pos) < ($3, $4) AND txs.block_height >= $5 ORDER BY txs.block_height DESC, txs.tx_pos DESC LIMIT 100`,
 			wantValues: []interface{}{
-				`{"outputs":[{"account_id":"acc123"}]}`,
-				`{"outputs":[{"reference_data":{"corporate":"corp"}}]}`,
-				uint64(2), uint32(20), uint64(1),
+				`acc123`, `corp`, uint64(2), uint32(20), uint64(1),
 			},
 		},
 		{
-			filter:    `outputs(account_id = $1 OR reference_data.corporate=$2)`,
-			values:    []interface{}{"acc123", "corp"},
-			after:     TxAfter{FromBlockHeight: 2, FromPosition: 20, StopBlockHeight: 1},
-			asc:       true,
-			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs WHERE ((data @> $1::jsonb) OR (data @> $2::jsonb)) AND (block_height, tx_pos) > ($3, $4) AND block_height <= $5 ORDER BY block_height ASC, tx_pos ASC LIMIT 100`,
+			filter: `outputs(account_id = $1 OR reference_data.corporate=$2)`,
+			values: []interface{}{"acc123", "corp"},
+			after:  TxAfter{FromBlockHeight: 2, FromPosition: 20, StopBlockHeight: 1},
+			asc:    true,
+			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs AS txs WHERE 
+EXISTS(SELECT 1 FROM annotated_outputs AS out WHERE out."tx_hash" = txs."tx_hash" AND (out."account_id" = $1 OR out."reference_data"->>'corporate' = $2))
+ AND (txs.block_height, txs.tx_pos) > ($3, $4) AND txs.block_height <= $5 ORDER BY txs.block_height ASC, txs.tx_pos ASC LIMIT 100`,
 			wantValues: []interface{}{
-				`{"outputs":[{"account_id":"acc123"}]}`,
-				`{"outputs":[{"reference_data":{"corporate":"corp"}}]}`,
-				uint64(2), uint32(20), uint64(1),
+				`acc123`, `corp`, uint64(2), uint32(20), uint64(1),
 			},
 		},
 	}
@@ -116,12 +117,12 @@ func TestConstructTransactionsQuery(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		expr, err := filter.AsSQL(f, "data", tc.values)
+		expr, err := filter.AsSQL(f, transactionsTable, tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		query, values := constructTransactionsQuery(expr, tc.after, tc.asc, 100)
+		query, values := constructTransactionsQuery(expr, tc.values, tc.after, tc.asc, 100)
 		if query != tc.wantQuery {
 			t.Errorf("got\n%s\nwant\n%s", query, tc.wantQuery)
 		}

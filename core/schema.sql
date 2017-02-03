@@ -218,7 +218,10 @@ CREATE TABLE accounts (
 
 CREATE TABLE annotated_accounts (
     id text NOT NULL,
-    data jsonb NOT NULL
+    alias text,
+    keys jsonb NOT NULL,
+    quorum integer NOT NULL,
+    tags jsonb NOT NULL
 );
 
 
@@ -228,8 +231,37 @@ CREATE TABLE annotated_accounts (
 
 CREATE TABLE annotated_assets (
     id bytea NOT NULL,
-    data jsonb NOT NULL,
-    sort_id text NOT NULL
+    sort_id text NOT NULL,
+    alias text,
+    issuance_program bytea NOT NULL,
+    keys jsonb NOT NULL,
+    quorum integer NOT NULL,
+    definition jsonb NOT NULL,
+    tags jsonb NOT NULL,
+    local boolean NOT NULL
+);
+
+
+--
+-- Name: annotated_inputs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE annotated_inputs (
+    tx_hash bytea NOT NULL,
+    index integer NOT NULL,
+    type text NOT NULL,
+    asset_id bytea NOT NULL,
+    asset_alias text NOT NULL,
+    asset_definition jsonb NOT NULL,
+    asset_tags jsonb NOT NULL,
+    asset_local boolean NOT NULL,
+    amount bigint NOT NULL,
+    account_id text,
+    account_alias text,
+    account_tags jsonb,
+    issuance_program bytea NOT NULL,
+    reference_data jsonb NOT NULL,
+    local boolean NOT NULL
 );
 
 
@@ -242,9 +274,22 @@ CREATE TABLE annotated_outputs (
     tx_pos integer NOT NULL,
     output_index integer NOT NULL,
     tx_hash bytea NOT NULL,
-    data jsonb NOT NULL,
     timespan int8range NOT NULL,
-    output_id bytea NOT NULL
+    output_id bytea NOT NULL,
+    type text NOT NULL,
+    purpose text NOT NULL,
+    asset_id bytea NOT NULL,
+    asset_alias text NOT NULL,
+    asset_definition jsonb NOT NULL,
+    asset_tags jsonb NOT NULL,
+    asset_local boolean NOT NULL,
+    amount bigint NOT NULL,
+    account_id text,
+    account_alias text,
+    account_tags jsonb,
+    control_program bytea NOT NULL,
+    reference_data jsonb NOT NULL,
+    local boolean NOT NULL
 );
 
 
@@ -256,7 +301,11 @@ CREATE TABLE annotated_txs (
     block_height bigint NOT NULL,
     tx_pos integer NOT NULL,
     tx_hash bytea NOT NULL,
-    data jsonb NOT NULL
+    data jsonb NOT NULL,
+    "timestamp" timestamp with time zone NOT NULL,
+    block_id bytea NOT NULL,
+    local boolean NOT NULL,
+    reference_data jsonb NOT NULL
 );
 
 
@@ -609,6 +658,14 @@ ALTER TABLE ONLY annotated_assets
 
 
 --
+-- Name: annotated_inputs annotated_inputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY annotated_inputs
+    ADD CONSTRAINT annotated_inputs_pkey PRIMARY KEY (tx_hash, index);
+
+
+--
 -- Name: annotated_outputs annotated_outputs_output_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -816,31 +873,10 @@ CREATE INDEX account_utxos_asset_id_account_id_confirmed_in_idx ON account_utxos
 
 
 --
--- Name: annotated_accounts_jsondata_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX annotated_accounts_jsondata_idx ON annotated_accounts USING gin (data jsonb_path_ops);
-
-
---
--- Name: annotated_assets_jsondata_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX annotated_assets_jsondata_idx ON annotated_assets USING gin (data jsonb_path_ops);
-
-
---
 -- Name: annotated_assets_sort_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX annotated_assets_sort_id ON annotated_assets USING btree (sort_id);
-
-
---
--- Name: annotated_outputs_jsondata_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX annotated_outputs_jsondata_idx ON annotated_outputs USING gin (data jsonb_path_ops);
 
 
 --
@@ -910,3 +946,4 @@ insert into migrations (filename, hash) values ('2017-01-25.0.account.cp-expiry.
 insert into migrations (filename, hash) values ('2017-01-30.0.txdb.snapshots-timestamp.sql', '3ab923b782e048300315fc4ea8ae8bdf42183aa423d0a12bc228411c2d8c5093');
 insert into migrations (filename, hash) values ('2017-01-30.1.core.add-block-hsm-config.sql', '9d609586b2fd33c45e530c4237a24f303a3b5753e5ccf3cd740958511aea4992');
 insert into migrations (filename, hash) values ('2017-01-31.0.query.drop-outpoint-index.sql', '461ab638954f5eb53e83587da96f2d83e031d17ab3408685a4460b60edf522a1');
+insert into migrations (filename, hash) values ('2017-01-31.1.query.annotated-schema.sql', 'e0421d1bbbbbb14188be0b06f0056e2121d3b364c30fb633c47c3055416bf806');

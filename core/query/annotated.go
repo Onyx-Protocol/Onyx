@@ -119,22 +119,24 @@ func (b *Bool) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedTx {
-	referenceData := json.RawMessage(orig.ReferenceData)
-	if len(referenceData) == 0 {
-		referenceData = []byte(`{}`)
-	}
+var emptyJSONObject = json.RawMessage(`{}`)
 
+func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedTx {
 	tx := &AnnotatedTx{
 		ID:            orig.Hash,
 		Timestamp:     b.Time(),
 		BlockID:       b.Hash(),
 		BlockHeight:   b.Height,
 		Position:      indexInBlock,
-		ReferenceData: &referenceData,
+		ReferenceData: &emptyJSONObject,
 		Inputs:        make([]*AnnotatedInput, 0, len(orig.Inputs)),
 		Outputs:       make([]*AnnotatedOutput, 0, len(orig.Outputs)),
 	}
+	if len(orig.ReferenceData) > 0 {
+		referenceData := json.RawMessage(orig.ReferenceData)
+		tx.ReferenceData = &referenceData
+	}
+
 	for _, in := range orig.Inputs {
 		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(in, outpoints))
 	}
@@ -145,15 +147,17 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, ou
 }
 
 func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedInput {
-	referenceData := json.RawMessage(orig.ReferenceData)
-	if len(referenceData) == 0 {
-		referenceData = []byte(`{}`)
+	in := &AnnotatedInput{
+		AssetID:         orig.AssetID(),
+		Amount:          orig.Amount(),
+		AssetDefinition: &emptyJSONObject,
+		AssetTags:       &emptyJSONObject,
+		ReferenceData:   &emptyJSONObject,
 	}
 
-	in := &AnnotatedInput{
-		AssetID:       orig.AssetID(),
-		Amount:        orig.Amount(),
-		ReferenceData: &referenceData,
+	if len(orig.ReferenceData) > 0 {
+		referenceData := json.RawMessage(orig.ReferenceData)
+		in.ReferenceData = &referenceData
 	}
 
 	if orig.IsIssuance() {
@@ -179,18 +183,19 @@ func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint
 }
 
 func buildAnnotatedOutput(orig *bc.TxOutput, idx uint32, txhash bc.Hash) *AnnotatedOutput {
-	referenceData := json.RawMessage(orig.ReferenceData)
-	if len(referenceData) == 0 {
-		referenceData = []byte(`{}`)
-	}
-	outid := bc.ComputeOutputID(txhash, idx)
 	out := &AnnotatedOutput{
-		OutputID:       outid,
-		Position:       idx,
-		AssetID:        orig.AssetID,
-		Amount:         orig.Amount,
-		ControlProgram: orig.ControlProgram,
-		ReferenceData:  &referenceData,
+		OutputID:        bc.ComputeOutputID(txhash, idx),
+		Position:        idx,
+		AssetID:         orig.AssetID,
+		AssetDefinition: &emptyJSONObject,
+		AssetTags:       &emptyJSONObject,
+		Amount:          orig.Amount,
+		ControlProgram:  orig.ControlProgram,
+		ReferenceData:   &emptyJSONObject,
+	}
+	if len(orig.ReferenceData) > 0 {
+		referenceData := json.RawMessage(orig.ReferenceData)
+		out.ReferenceData = &referenceData
 	}
 	if vmutil.IsUnspendable(out.ControlProgram) {
 		out.Type = "retire"
