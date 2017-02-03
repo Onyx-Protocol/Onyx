@@ -184,10 +184,6 @@ func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint
 
 func buildAnnotatedOutput(tx *bc.Tx, idx uint32) *AnnotatedOutput {
 	orig := tx.Outputs[idx]
-	referenceData := json.RawMessage(orig.ReferenceData)
-	if len(referenceData) == 0 {
-		referenceData = []byte(`{}`)
-	}
 	outid := tx.OutputID(idx)
 	out := &AnnotatedOutput{
 		OutputID:        outid,

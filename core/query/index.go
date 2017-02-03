@@ -89,8 +89,6 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*Ann
 
 	// Build the fully annotated transactions.
 	for pos, tx := range b.Transactions {
-		hashes = append(hashes, tx.ID[:])
-		positions = append(positions, uint32(pos))
 		annotatedTxs = append(annotatedTxs, buildAnnotatedTransaction(tx, b, uint32(pos), outpoints))
 	}
 	for _, annotator := range ind.annotators {
