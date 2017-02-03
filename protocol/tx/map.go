@@ -55,9 +55,8 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 				return
 			}
 			muxSources[i] = valueSource{
-				Ref:      spID,
-				Position: uint64(i),
-				Value:    oldSp.AssetAmount,
+				Ref:   spID,
+				Value: oldSp.AssetAmount,
 			}
 			if firstSpendID == nil {
 				firstSpendID = &spID
@@ -117,9 +116,8 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 			}
 
 			muxSources[i] = valueSource{
-				Ref:      issID,
-				Position: uint64(i),
-				Value:    val,
+				Ref:   issID,
+				Value: val,
 			}
 		}
 	}
