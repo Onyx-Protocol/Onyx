@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
@@ -222,7 +221,6 @@ func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 }
 
 func (tx *Tx) OutputID(outputIndex uint32) OutputID {
-	log.Printf("about to get index %d from a Tx with %d ouputs", outputIndex, len(tx.OutputIDs))
 	return OutputID{tx.OutputIDs[outputIndex]}
 }
 

@@ -23,10 +23,11 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 	hashes.ID = bc.Hash(txid)
 
 	// OutputIDs
-	for _, resultHash := range header.body.Results {
+	hashes.OutputIDs = make([]bc.Hash, len(header.body.Results))
+	for i, resultHash := range header.body.Results {
 		result := entries[resultHash]
 		if _, ok := result.(*output); ok {
-			hashes.OutputIDs = append(hashes.OutputIDs, bc.Hash(resultHash))
+			hashes.OutputIDs[i] = bc.Hash(resultHash)
 		}
 	}
 
