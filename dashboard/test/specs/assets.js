@@ -3,7 +3,7 @@ const chain = require('chain-sdk')
 const client = new chain.Client()
 let signer
 
-describe('accounts', () => {
+describe('assets', () => {
   describe('list view', () => {
     before(() => {
       signer = new chain.HsmSigner()

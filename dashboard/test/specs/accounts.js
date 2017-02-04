@@ -1,4 +1,5 @@
 const chain = require('chain-sdk')
+const uuid = require('uuid')
 
 const client = new chain.Client()
 let signer
@@ -39,6 +40,22 @@ describe('accounts', () => {
     it('displays a welcome message', () => {
       browser.getText('.component-EmptyList').should.contain('Learn more about how to use accounts.')
       browser.getText('.component-EmptyList').should.contain('New account')
+    })
+  })
+
+  describe('creating accounts', () => {
+    before(() => expect(ensureConfigured()).to.be.fulfilled
+      .then(() => browser.url('/accounts'))
+    )
+
+    it('can create a new account', () => {
+      const alias = 'test-' + uuid.v4()
+      browser.click('.component-ItemList button')
+      browser.setValue('input[name=alias]', alias)
+      browser.click('.component-FormContainer button')
+      browser.waitForVisible('.component-AccountShow')
+      browser.getText('.component-AccountShow').should.contain('Created account. Create another?')
+      browser.getText('.component-AccountShow').should.contain(alias)
     })
   })
 })
