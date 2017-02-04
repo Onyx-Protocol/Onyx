@@ -34,7 +34,7 @@ func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []inter
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
-	err := filter.TypeCheck(p, assetsTable)
+	err := filter.TypeCheck(p, assetsTable, vals)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "typechecking")
 	}

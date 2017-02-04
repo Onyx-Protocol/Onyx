@@ -50,7 +50,7 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}
-	err := filter.TypeCheck(p, outputsTable)
+	err := filter.TypeCheck(p, outputsTable, vals)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "typechecking")
 	}

@@ -33,7 +33,7 @@ func (ind *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []int
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
-	err := filter.TypeCheck(p, accountsTable)
+	err := filter.TypeCheck(p, accountsTable, vals)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "typechecking")
 	}

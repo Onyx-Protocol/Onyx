@@ -24,7 +24,7 @@ func TestTypeCheckInvalid(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		typ, err := typeCheckExpr(expr, transactionsSQLTable)
+		typ, err := typeCheckExpr(expr, transactionsSQLTable, nil)
 		if err == nil {
 			t.Errorf("typeCheckExpr(%s) = %s, want error", expr, typ)
 		}
@@ -33,8 +33,9 @@ func TestTypeCheckInvalid(t *testing.T) {
 
 func TestTypeCheckValid(t *testing.T) {
 	testCases := []struct {
-		p   string
-		typ Type
+		p        string
+		typ      Type
+		valTypes []Type
 	}{
 		{p: `1`, typ: Integer},
 		{p: `'hello world'`, typ: String},
@@ -47,6 +48,8 @@ func TestTypeCheckValid(t *testing.T) {
 		{p: `($1 = 'hello') OR (ref.something = $1)`, typ: Bool},
 		{p: `inputs(account_tags.domestic AND account_tags.type = 'revolving')`, typ: Bool},
 		{p: `inputs(account_tags.state = account_tags.shipping_address.state)`, typ: Bool},
+		{p: `$1`, valTypes: []Type{String}, typ: String},
+		{p: `$1 = $2`, valTypes: []Type{String, String}, typ: Bool},
 	}
 
 	for _, tc := range testCases {
@@ -55,7 +58,7 @@ func TestTypeCheckValid(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		typ, err := typeCheckExpr(expr, transactionsSQLTable)
+		typ, err := typeCheckExpr(expr, transactionsSQLTable, tc.valTypes)
 		if err != nil {
 			t.Fatal(err)
 		}
