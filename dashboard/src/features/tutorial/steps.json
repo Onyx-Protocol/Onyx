@@ -33,6 +33,7 @@
   },
   {
     "component": "TutorialForm",
+    "objectType": "mockhsm",
     "title": "Tutorial - MockHSM keys - Step 1 of 7",
     "button": null,
     "dismiss": "End tutorial",
@@ -86,6 +87,7 @@
   },
   {
     "component": "TutorialForm",
+    "objectType": "asset",
     "title": "Tutorial - Assets - Step 2 of 7",
     "button": null,
     "dismiss": "End tutorial",
@@ -144,6 +146,7 @@
   },
   {
     "component": "TutorialForm",
+    "objectType": "account",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": null,
     "dismiss": "End tutorial",
@@ -188,6 +191,7 @@
   },
   {
     "component": "TutorialForm",
+    "objectType": "account",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": null,
     "dismiss": "End tutorial",
@@ -246,6 +250,7 @@
   },
   {
     "component": "TutorialForm",
+    "objectType": "transaction",
     "title": "Tutorial - Transactions - Step 5 of 7",
     "button": null,
     "dismiss": "End tutorial",
@@ -312,6 +317,7 @@
   },
   {
     "component": "TutorialForm",
+    "objectType": "transaction",
     "title": "Tutorial - Transactions - Step 6 of 7",
     "button": null,
     "dismiss": "End tutorial",
@@ -384,6 +390,7 @@
   },
   {
     "component": "TutorialForm",
+    "objectType": "transaction",
     "title": "Tutorial - Transactions - Step 7 of 7",
     "button": null,
     "dismiss": "End tutorial",
