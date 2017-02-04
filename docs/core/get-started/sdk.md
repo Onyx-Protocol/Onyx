@@ -10,7 +10,7 @@ To ensure compatibility between your application and Chain Core, choose an SDK v
 
 ## Java
 
-The Java SDK is available via Maven, on Sonatype's [Central Repository](https://search.maven.org/#search%7Cga%7C1%7Cchain-sdk-java). Java 7 or greater is required.
+The Java SDK is available via [Maven](https://search.maven.org/#search%7Cga%7C1%7Cchain-sdk-java). Java 7 or greater is required.
 
 **Maven** users should add the following to `pom.xml`:
 
