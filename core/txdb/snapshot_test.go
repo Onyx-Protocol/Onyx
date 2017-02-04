@@ -11,68 +11,47 @@ import (
 	"chain/testutil"
 )
 
-type pair struct {
-	key  string
-	hash []byte
-}
-
 func TestReadWriteStateSnapshot(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 
 	snapshot := state.Empty()
 	changes := []struct {
-		inserts          []pair
-		deletes          []string
-		lookups          []pair
+		inserts          []bc.Hash
+		deletes          []bc.Hash
+		lookups          []bc.Hash
 		newIssuances     map[bc.Hash]uint64
 		deletedIssuances []bc.Hash
 	}{
-		{ // add a single k/v pair
-			inserts: []pair{
-				{
-					key:  "sup",
-					hash: []byte{0x01},
-				},
-			},
+		{ // add a single hash
+			inserts: []bc.Hash{{0x01}},
 			newIssuances: map[bc.Hash]uint64{
 				bc.Hash{0x01}: 1000,
 			},
 		},
 		{ // empty changeset
-			lookups: []pair{{key: "sup", hash: []byte{0x01}}},
+			lookups: []bc.Hash{{0x01}},
 		},
-		{ // add two pairs
-			inserts: []pair{
-				{
-					key:  "sup",
-					hash: []byte{0x02},
-				},
-				{
-					key:  "dup2",
-					hash: []byte{0x03},
-				},
+		{ // add two new hashes
+			inserts: []bc.Hash{
+				{0x02},
+				{0x03},
 			},
-			lookups: []pair{
-				{key: "sup", hash: []byte{0x02}},
-				{key: "dup2", hash: []byte{0x03}},
+			lookups: []bc.Hash{
+				{0x02},
+				{0x03},
 			},
 			newIssuances: map[bc.Hash]uint64{
 				bc.Hash{0x02}: 2000,
 			},
 		},
-		{ // delete one pair
-			deletes:          []string{"sup"},
-			deletedIssuances: []bc.Hash{bc.Hash{0x02}},
+		{ // delete one hash
+			deletes:          []bc.Hash{{0x01}},
+			deletedIssuances: []bc.Hash{{0x02}},
 		},
 		{ // insert and delete at the same time
-			inserts: []pair{
-				{
-					key:  "hello",
-					hash: []byte{0x04},
-				},
-			},
-			deletes: []string{"hello"},
+			inserts: []bc.Hash{{0x04}},
+			deletes: []bc.Hash{{0x04}},
 		},
 	}
 
@@ -80,13 +59,13 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		t.Logf("Applying changeset %d\n", i)
 
 		for _, insert := range changeset.inserts {
-			err := snapshot.Tree.Insert([]byte(insert.key), insert.hash)
+			err := snapshot.Tree.Insert(insert[:], insert[:])
 			if err != nil {
 				t.Fatal(err)
 			}
 		}
 		for _, key := range changeset.deletes {
-			err := snapshot.Tree.Delete([]byte(key))
+			err := snapshot.Tree.Delete(key[:])
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -103,8 +82,8 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		}
 
 		for _, lookup := range changeset.lookups {
-			if !snapshot.Tree.Contains([]byte(lookup.key), lookup.hash) {
-				t.Errorf("Lookup(%s, %s) = false, want true", lookup.key, lookup.hash)
+			if !snapshot.Tree.Contains(lookup[:], lookup[:]) {
+				t.Errorf("Lookup(%s, %s) = false, want true", lookup, lookup)
 			}
 		}
 

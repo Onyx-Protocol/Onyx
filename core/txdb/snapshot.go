@@ -25,7 +25,7 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 
 	leaves := make([]patricia.Leaf, len(storedSnapshot.Nodes))
 	for i, node := range storedSnapshot.Nodes {
-		leaves[i].Key = node.Key
+		leaves[i].Key = node.Hash
 		copy(leaves[i].Hash[:], node.Hash)
 	}
 	tree, err := patricia.Reconstruct(leaves)
@@ -50,7 +50,6 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 	var storedSnapshot storage.Snapshot
 	err := patricia.Walk(snapshot.Tree, func(l patricia.Leaf) error {
 		storedSnapshot.Nodes = append(storedSnapshot.Nodes, &storage.Snapshot_StateTreeNode{
-			Key:  l.Key,
 			Hash: l.Hash[:],
 		})
 		return nil
