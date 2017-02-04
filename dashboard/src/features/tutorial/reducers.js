@@ -2,7 +2,10 @@ import { combineReducers } from 'redux'
 import steps from './steps.json'
 
 export const step = (state = 0, action) => {
-  if (action.type == 'TUTORIAL_NEXT_STEP' || action.type == 'UPDATE_TUTORIAL'){
+  if (action.type == 'TUTORIAL_NEXT_STEP'){
+    return state + 1
+  }
+  else if (action.type == 'UPDATE_TUTORIAL' && steps[state].objectType == action.object) {
     return state + 1
   }
   else if (action.type == 'DISMISS_TUTORIAL') return 0
@@ -15,11 +18,11 @@ export const isShowing = (state = true, action) => {
   return state
 }
 
-export const route = (state = 'transactions', action) => {
+export const route = (currentStep) => (state = 'transactions', action) => {
   if (action.type == 'TUTORIAL_NEXT_STEP'){
     return action.route
   }
-  else if (action.type == 'UPDATE_TUTORIAL'){
+  else if (action.type == 'UPDATE_TUTORIAL' && currentStep.objectType == action.object){
     return action.object + 's'
   }
   else if (action.type == 'DISMISS_TUTORIAL'){
@@ -49,12 +52,14 @@ export const userInputs = (state = { accounts: [] }, action) => {
 
 export default (state = {}, action) => {
   delete state.currentStep // combineReducers logs error because currentStep set outside of function
+  const tutorialRoute = state.route
+  delete state.route
   const newState = combineReducers({
     step,
     isShowing,
-    route,
     userInputs
   })(state, action)
   newState.currentStep = steps[newState.step]
+  newState.route = route(steps[newState.step - 1])(tutorialRoute, action)
   return newState
 }
