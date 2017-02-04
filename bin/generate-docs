@@ -10,18 +10,15 @@ go install chain/cmd/md2html
 cd $CHAIN/docs
 md2html $compile_dest_path
 
-java_dest_path=$compile_dest_path/java
-javadoc_dest_path=$java_dest_path/javadoc
+javadoc_dest_path=$compile_dest_path/java/javadoc
 
 echo
-echo "Building Java SDK..."
+echo "Building Java SDK documentation..."
 
 cd $CHAIN/sdk/java
-mvn package
-mkdir -p $java_dest_path
-cp target/chain-sdk-java*[[:digit:]].jar $java_dest_path/chain-sdk-latest.jar
+mvn javadoc:javadoc
 mkdir -p $javadoc_dest_path
-cp -R target/apidocs/* $javadoc_dest_path
+cp -R target/site/apidocs/* $javadoc_dest_path
 
 ruby_dest_path=$compile_dest_path/ruby
 ruby_yardoc_dest_path=$ruby_dest_path/doc
