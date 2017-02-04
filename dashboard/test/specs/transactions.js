@@ -8,9 +8,14 @@ describe('tranasctions', () => {
     before(() => {
       signer = new chain.HsmSigner()
 
-      expect(setUpObjects(client, signer)).to.be.fulfilled
-        .then(() => expect(issueTransaction(client, signer)).to.be.fulfilled)
+      return expect(ensureConfigured()).to.be.fulfilled
+        .then(() => expect(setUpObjects(signer)).to.be.fulfilled)
+        .then(() => expect(issueTransaction(signer)).to.be.fulfilled)
         .then(() => browser.url('/transactions'))
+    })
+
+    it('does not display a welcome message', () => {
+      browser.isExisting('.component-EmptyList').should.equal(false)
     })
 
     it('lists all blockchain transactions', () => {
@@ -27,12 +32,7 @@ describe('tranasctions', () => {
 
   describe('empty state', () => {
     before(() =>
-      expect(client.config.reset()
-        .then(() => {
-          sleep(1000)
-          return client.config.configure({ isGenerator: true })
-        })
-      ).to.be.fulfilled
+      expect(resetCore()).to.be.fulfilled
       .then(() => browser.url('/transactions'))
     )
 

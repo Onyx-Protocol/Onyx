@@ -1,15 +1,41 @@
-const sleep = (ms) => {
+const chain = require('chain-sdk')
+const client = new chain.Client()
+
+global.sleep = (ms) => {
   let current
   const start = new Date()
 
-  console.log("sleep called!");
+  // console.log('sleep for ' + ms);
 
   do {
     current = new Date()
   } while((current - start) < ms)
 }
 
-const setUpObjects = (client, signer) => {
+global.resetCore = () => expect(
+  client.config.reset()
+    .then(() => ensureConfigured())
+).to.be.fulfilled
+
+global.ensureConfigured = () => {
+  const doConfig = () => client.config.info()
+    .then((info) => {
+      if (info.isConfigured) {
+        return
+      } else {
+        return client.config.configure({ isGenerator: true })
+      }
+    })
+    .then(() => sleep(1000))
+    .catch((err) => {
+      sleep(100)
+      doConfig()
+    })
+
+  return expect(doConfig()).to.be.fulfilled
+}
+
+global.setUpObjects = (signer) => {
   let keyResults, assetResults, accountResults
   let key
 
@@ -33,8 +59,9 @@ const setUpObjects = (client, signer) => {
       })).to.be.fulfilled)
     }
 
-    return keyPromise.then(() => signer.addKey(key, client.mockHsm.signerConnection))
-  }).then(() => {
+    return keyPromise
+  }).then(() => signer.addKey(key, client.mockHsm.signerConnection))
+  .then(() => {
     const createPromises = []
 
     if (!assetResults.items[0]) createPromises.push(client.assets.create({alias: 'gold', rootXpubs: [key.xpub], quorum: 1}))
@@ -44,7 +71,7 @@ const setUpObjects = (client, signer) => {
   })
 }
 
-const issueTransaction = (client, signer) => expect(
+global.issueTransaction = (signer) => expect(
   client.transactions.build((builder) => {
     builder.issue({ asset_alias: 'gold', amount: 100 })
     builder.controlWithAccount({ account_alias: 'alice', asset_alias: 'gold', amount: 100 })
@@ -52,9 +79,3 @@ const issueTransaction = (client, signer) => expect(
   .then(tpl => signer.sign(tpl))
   .then(tpl => client.transactions.submit(tpl))
 ).to.be.fulfilled
-
-module.exports = {
-  sleep,
-  setUpObjects,
-  issueTransaction,
-}
