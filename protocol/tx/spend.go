@@ -14,7 +14,7 @@ func (s *spend) Body() interface{} { return s.body }
 
 func (s spend) Ordinal() int { return s.ordinal }
 
-func newSpend(spentOutput, data entryRef, ordinal int) entry {
+func newSpend(spentOutput, data entryRef, ordinal int) *spend {
 	s := new(spend)
 	s.body.SpentOutput = spentOutput
 	s.body.Data = data
