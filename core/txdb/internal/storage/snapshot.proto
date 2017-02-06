@@ -19,8 +19,7 @@ message Snapshot {
   }
 
   message StateTreeNode {
-    bytes key  = 1;
-    bytes hash = 2;
+    bytes key = 1;
   }
 }
 

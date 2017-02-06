@@ -23,14 +23,12 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 		return nil, errors.Wrap(err, "unmarshaling state snapshot proto")
 	}
 
-	leaves := make([]patricia.Leaf, len(storedSnapshot.Nodes))
-	for i, node := range storedSnapshot.Nodes {
-		leaves[i].Key = node.Key
-		copy(leaves[i].Hash[:], node.Hash)
-	}
-	tree, err := patricia.Reconstruct(leaves)
-	if err != nil {
-		return nil, errors.Wrap(err, "reconstructing state tree")
+	tree := new(patricia.Tree)
+	for _, node := range storedSnapshot.Nodes {
+		err = tree.Insert(node.Key, node.Key)
+		if err != nil {
+			return nil, errors.Wrap(err, "reconstructing state tree")
+		}
 	}
 
 	issuances := make(state.PriorIssuances, len(storedSnapshot.Issuances))
@@ -48,11 +46,9 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 
 func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot, blockHeight uint64) error {
 	var storedSnapshot storage.Snapshot
-	err := patricia.Walk(snapshot.Tree, func(l patricia.Leaf) error {
-		storedSnapshot.Nodes = append(storedSnapshot.Nodes, &storage.Snapshot_StateTreeNode{
-			Key:  l.Key,
-			Hash: l.Hash[:],
-		})
+	err := patricia.Walk(snapshot.Tree, func(key []byte) error {
+		n := &storage.Snapshot_StateTreeNode{Key: key}
+		storedSnapshot.Nodes = append(storedSnapshot.Nodes, n)
 		return nil
 	})
 	if err != nil {
