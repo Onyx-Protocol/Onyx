@@ -43,7 +43,7 @@
       "steps": [
         {
           "title": "Type a name for key alias (ex. 'gold', 'silver', 'bronze')",
-          "description": "A key alias is a label used to distinguish between keys. We will use this gold key in the next step."
+          "description": "A key alias is a label used to distinguish between keys. We will use this key in the next step."
         },
         {
           "title": "Click 'Submit' button",
@@ -102,7 +102,7 @@
         {
           "type": "mockhsm",
           "title": "Select 'STRING' key to use existing MockHSM key",
-          "description": "This key will be used for the issuance and transfer of asset units in this account."
+          "description": "This key will be used for the issuance and transfer of asset units."
         },
         {
           "title": "Click 'Submit' button",

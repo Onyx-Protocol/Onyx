@@ -20,19 +20,6 @@
       font-weight: 500;
       line-height: 16px;
       color: #B6BCC5;
-
-      .skip {
-        float: right;
-
-        a {
-          font-size: 11px;
-          font-weight: 500;
-          line-height: 14px;
-          color: #B6BCC5;
-          text-decoration: underline;
-          cursor: pointer;
-        }
-      }
     }
 
     .list {
@@ -50,29 +37,28 @@
       .listItemContainer {
         margin: 15px 0;
 
-        .listItem {
-          margin-bottom: 5px;
-          list-style: none;
+        .listBullet {
+          margin-right: 10px;
+          padding: 2px;
+          display: inline-block;
+          border-radius: 50%;
+          background: #69A7E4;
+          width: 18px;
+          height: 18px;
+          font-size: 12px;
+          font-weight: bold;
+          text-align: center;
+          line-height: 14px;
+          color: #FFFFFF;
+        }
+
+        .listItemGroup {
+          display: inline-block;
+          margin-bottom: 10px;
           font-size: 15px;
           font-weight: 500;
           line-height: 18px;
           color: #20252D;
-
-          .listBullet {
-            margin-right: 10px;
-            padding: 2px;
-            display: inline-block;
-            border-radius: 50%;
-            background: #69A7E4;
-            width: 18px;
-            height: 18px;
-            text-align: center;
-            font-size: 12px;
-            font-weight: bold;
-            text-align: center;
-            line-height: 14px;
-            color: #FFFFFF;
-          }
         }
 
         .listItemDescription {
