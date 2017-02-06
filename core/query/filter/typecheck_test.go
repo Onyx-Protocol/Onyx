@@ -1,6 +1,9 @@
 package filter
 
-import "testing"
+import (
+	"chain/testutil"
+	"testing"
+)
 
 func TestTypeCheckInvalid(t *testing.T) {
 	testCases := []struct {
@@ -16,6 +19,8 @@ func TestTypeCheckInvalid(t *testing.T) {
 		{p: `wat(asset_id = 'a')`},
 		{p: `position(asset_id = 'a')`},
 		{p: `position.huh`},
+		{p: `ref.something = 'abc' OR ref.something = 123`},
+		{p: `ref.buyer.id = 'abc' OR ref.buyer = 'hello'`},
 	}
 
 	for _, tc := range testCases {
@@ -24,7 +29,8 @@ func TestTypeCheckInvalid(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		typ, err := typeCheckExpr(expr, transactionsSQLTable, nil)
+		m := make(map[string]Type)
+		typ, err := typeCheckExpr(expr, transactionsSQLTable, nil, m)
 		if err == nil {
 			t.Errorf("typeCheckExpr(%s) = %s, want error", expr, typ)
 		}
@@ -41,11 +47,11 @@ func TestTypeCheckValid(t *testing.T) {
 		{p: `'hello world'`, typ: String},
 		{p: `is_local`, typ: Bool},
 		{p: `1 = 1`, typ: Bool},
-		{p: `$1 = '292 Ivy St'`, typ: Bool},
+		{p: `$1 = '292 Ivy St'`, typ: Bool, valTypes: []Type{String}},
 		{p: `'hello' = 'world'`, typ: Bool},
 		{p: `id = id`, typ: Bool},
-		{p: `$1 = 'hello' OR ref.something = $1`, typ: Bool},
-		{p: `($1 = 'hello') OR (ref.something = $1)`, typ: Bool},
+		{p: `$1 = 'hello' OR ref.something = $1`, typ: Bool, valTypes: []Type{String}},
+		{p: `($1 = 'hello') OR (ref.something = $1)`, typ: Bool, valTypes: []Type{String}},
 		{p: `inputs(account_tags.domestic AND account_tags.type = 'revolving')`, typ: Bool},
 		{p: `inputs(account_tags.state = account_tags.shipping_address.state)`, typ: Bool},
 		{p: `$1`, valTypes: []Type{String}, typ: String},
@@ -58,12 +64,42 @@ func TestTypeCheckValid(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		typ, err := typeCheckExpr(expr, transactionsSQLTable, tc.valTypes)
+		m := make(map[string]Type)
+		typ, err := typeCheckExpr(expr, transactionsSQLTable, tc.valTypes, m)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if typ != tc.typ {
 			t.Errorf("typeCheckExpr(%s) = %s, want %s", expr, typ, tc.typ)
 		}
+	}
+}
+
+func TestTypeCheckSelector(t *testing.T) {
+	const predicate = `ref.buyer.address.state = 'OH' AND inputs(account_tags.user_profile.id = 123)`
+
+	expr, _, err := parse(predicate)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m := make(map[string]Type)
+	typ, err := typeCheckExpr(expr, transactionsSQLTable, nil, m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if typ != Bool {
+		t.Errorf("typeCheckExpr(%s) = %s, want %s", expr, typ, Bool)
+	}
+
+	want := map[string]Type{
+		"ref.buyer":                    Object,
+		"ref.buyer.address":            Object,
+		"ref.buyer.address.state":      String,
+		"account_tags.user_profile":    Object,
+		"account_tags.user_profile.id": Integer,
+	}
+	if !testutil.DeepEqual(m, want) {
+		t.Errorf("Type checking %q, selector types got:\n%#v\nwant:\n%#v\n", predicate, m, want)
 	}
 }
