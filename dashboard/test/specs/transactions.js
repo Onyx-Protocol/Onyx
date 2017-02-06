@@ -29,16 +29,4 @@ describe('tranasctions', () => {
       browser.getText('.component-PageTitle').should.contain('New transaction')
     })
   })
-
-  describe('empty state', () => {
-    before(() =>
-      expect(resetCore()).to.be.fulfilled
-      .then(() => browser.url('/transactions'))
-    )
-
-    it('displays a welcome message', () => {
-      browser.getText('.component-EmptyList').should.contain('Welcome to Chain Core')
-      browser.getText('.component-EmptyList').should.contain('New transaction')
-    })
-  })
 })

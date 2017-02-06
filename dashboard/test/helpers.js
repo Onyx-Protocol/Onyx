@@ -24,9 +24,9 @@ global.ensureConfigured = () => {
         return
       } else {
         return client.config.configure({ isGenerator: true })
+          .then(() => sleep(1000))
       }
     })
-    .then(() => sleep(1000))
     .catch((err) => {
       sleep(100)
       doConfig()

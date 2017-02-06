@@ -1,5 +1,6 @@
-exports.config = {
+var extended = process.env.EXTENDED
 
+exports.config = {
   //
   // ==================
   // Specify Test Files
@@ -18,6 +19,21 @@ exports.config = {
   ],
   //
   // ============
+  // Suites
+  // ============
+  // Define specific test suites
+  suites: {
+    base: [
+      './test/specs/*.js'
+    ],
+    extended: [
+      // NOTE: extended specs must be run sequentially, as they
+      // involve Chain Core resets or other blocking operations.
+      './test/specs/extended/*.js'
+    ],
+  },
+  //
+  // ============
   // Capabilities
   // ============
   // Define your capabilities here. WebdriverIO can run multiple capabilities at the same
@@ -32,7 +48,7 @@ exports.config = {
   // and 30 processes will get spawned. The property handles how many capabilities
   // from the same test should run tests.
   //
-  maxInstances: 1,
+  maxInstances: extended ? 1 : 10,
   //
   // If you have trouble getting all important capabilities together, check out the
   // Sauce Labs platform configurator - a great tool to configure your capabilities:
@@ -64,7 +80,7 @@ exports.config = {
   //
   // If you only want to run your tests until a specific amount of tests have failed use
   // bail (default is 0 - don't bail, run all tests).
-  bail: 0,
+  bail: 5,
   //
   // Saves a screenshot to a given path if a command fails.
   screenshotPath: './errorShots/',
@@ -127,7 +143,7 @@ exports.config = {
     ui: 'bdd',
     compilers: ['js:babel-register'],
     require: ['./test/helpers.js'],
-    timeout: 30000
+    timeout: 30000,
   },
   //
   // =====

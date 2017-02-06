@@ -11,7 +11,6 @@ describe('accounts', () => {
 
       return expect(ensureConfigured()).to.be.fulfilled
         .then(() => expect(setUpObjects(signer)).to.be.fulfilled)
-        .then(() => expect(issueTransaction(signer)).to.be.fulfilled)
         .then(() => browser.url('/accounts'))
     })
 
@@ -31,25 +30,13 @@ describe('accounts', () => {
     })
   })
 
-  describe('empty state', () => {
-    before(() =>
-      expect(resetCore()).to.be.fulfilled
-      .then(() => browser.url('/accounts'))
-    )
-
-    it('displays a welcome message', () => {
-      browser.getText('.component-EmptyList').should.contain('Learn more about how to use accounts.')
-      browser.getText('.component-EmptyList').should.contain('New account')
-    })
-  })
-
   describe('creating accounts', () => {
     before(() => expect(ensureConfigured()).to.be.fulfilled
       .then(() => browser.url('/accounts'))
     )
 
     it('can create a new account', () => {
-      const alias = 'test-' + uuid.v4()
+      const alias = 'test-account-' + uuid.v4()
       browser.click('.component-ItemList button')
       browser.setValue('input[name=alias]', alias)
       browser.click('.component-FormContainer button')

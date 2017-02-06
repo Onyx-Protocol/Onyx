@@ -8,8 +8,8 @@
     "build": "NODE_ENV=production webpack --config src/config/webpack.app.js",
     "lint": "eslint \"src/**\"",
     "start": "hjs-dev-server src/config/webpack.app.js",
-    "test": "wdio test/conf/wdio.local.js",
-    "test-browserstack": "wdio test/conf/wdio.browserstack.js",
+    "test": "wdio test/conf/wdio.local.js --suite base",
+    "testExtended": "EXTENDED=1 wdio test/conf/wdio.local.js",
     "generate-component": "babel-node bin/generate.js component"
   },
   "author": "Chain",
