@@ -6,7 +6,7 @@ import (
 	"context"
 	"database/sql"
 
-	"chain/core/query/filter"
+	"chain/core/query"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -26,7 +26,7 @@ type TxFeed struct {
 
 func (t *Tracker) Create(ctx context.Context, alias, fil, after string, clientToken string) (*TxFeed, error) {
 	// Validate the filter.
-	_, err := filter.Parse(fil)
+	err := query.ValidateTransactionFilter(fil)
 	if err != nil {
 		return nil, err
 	}

@@ -34,8 +34,12 @@ func (p Predicate) MarshalText() ([]byte, error) {
 
 // Parse parses a predicate and returns an internal representation of the
 // predicate or an error if it fails to parse.
-func Parse(predicate string) (p Predicate, err error) {
+func Parse(predicate string, tbl *SQLTable, vals []interface{}) (p Predicate, err error) {
 	expr, parser, err := parse(predicate)
+	if err != nil {
+		return p, errors.WithDetail(ErrBadFilter, err.Error())
+	}
+	err = typeCheck(expr, tbl, vals)
 	if err != nil {
 		return p, errors.WithDetail(ErrBadFilter, err.Error())
 	}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/lib/pq"
 
@@ -84,10 +83,6 @@ func jsonbPath(f expr) []string {
 	default:
 		panic(fmt.Errorf("unexpected field of type %T", e))
 	}
-}
-
-func selectorPath(f expr) string {
-	return strings.Join(jsonbPath(f), ".")
 }
 
 type SQLType int

@@ -3,17 +3,8 @@ package filter
 import (
 	"errors"
 	"fmt"
-
-	chainerrors "chain/errors"
+	"strings"
 )
-
-func TypeCheck(p Predicate, tbl *SQLTable, vals []interface{}) error {
-	err := typeCheck(p.expr, tbl, vals)
-	if err != nil {
-		return chainerrors.WithDetail(ErrBadFilter, err.Error())
-	}
-	return nil
-}
 
 func isType(got Type, want Type) bool {
 	return got == want || got == Any
@@ -113,6 +104,9 @@ func typeCheckExpr(expr expr, tbl *SQLTable, valTypes []Type, selectorTypes map[
 			panic(fmt.Errorf("unsupported operator: %s", e.op.name))
 		}
 	case placeholderExpr:
+		if len(valTypes) == 0 {
+			return Any, nil
+		}
 		if e.num <= 0 || e.num > len(valTypes) {
 			return typ, fmt.Errorf("unbound placeholder: $%d", e.num)
 		}
@@ -140,11 +134,13 @@ func typeCheckExpr(expr expr, tbl *SQLTable, valTypes []Type, selectorTypes map[
 		if !isType(typ, Object) {
 			return typ, errors.New("selector `.` can only be used on objects")
 		}
-		// We know e.objExpr is being used as an object, so record that
-		// e.objExpr's json path must be an object.
-		err = assertType(e.objExpr, Object, selectorTypes)
-		if err != nil {
-			return typ, err
+		if !knownType(typ) {
+			// We know e.objExpr is being used as an object, so record that
+			// e.objExpr's json path must be an object.
+			err = assertType(e.objExpr, Object, selectorTypes)
+			if err != nil {
+				return typ, err
+			}
 		}
 
 		// Unfortunately, we can't know the type of the field within the
@@ -171,12 +167,15 @@ func typeCheckExpr(expr expr, tbl *SQLTable, valTypes []Type, selectorTypes map[
 
 func assertType(expr expr, typ Type, selectorTypes map[string]Type) error {
 	switch e := expr.(type) {
-	case attrExpr:
-		return nil
 	case parenExpr:
 		return assertType(e.inner, typ, selectorTypes)
+	case placeholderExpr:
+		// This is a special case for when we parse a txfeed filter at
+		// txfeed creation time. We don't have access to concrete values
+		// yet, so the parameters are untyped.
+		return nil
 	case selectorExpr:
-		path := selectorPath(expr)
+		path := strings.Join(jsonbPath(expr), ".")
 		boundTyp, ok := selectorTypes[path]
 		if ok && boundTyp != typ {
 			return fmt.Errorf("%q used as both %s and %s", path, boundTyp, typ)

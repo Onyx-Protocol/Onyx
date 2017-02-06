@@ -116,7 +116,7 @@ func TestConstructOutputsQuery(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		f, err := filter.Parse(tc.filter)
+		f, err := filter.Parse(tc.filter, outputsTable, tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}

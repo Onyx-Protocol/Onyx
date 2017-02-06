@@ -113,7 +113,7 @@ EXISTS(SELECT 1 FROM annotated_outputs AS out WHERE out."tx_hash" = txs."tx_hash
 	}
 
 	for _, tc := range testCases {
-		f, err := filter.Parse(tc.filter)
+		f, err := filter.Parse(tc.filter, transactionsTable, tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}

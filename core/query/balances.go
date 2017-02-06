@@ -14,16 +14,12 @@ import (
 
 // Balances performs a balances query against the annotated_outputs.
 func (ind *Indexer) Balances(ctx context.Context, filt string, vals []interface{}, sumBy []filter.Field, timestampMS uint64) ([]interface{}, error) {
-	p, err := filter.Parse(filt)
+	p, err := filter.Parse(filt, outputsTable, vals)
 	if err != nil {
 		return nil, err
 	}
 	if len(vals) != p.Parameters {
 		return nil, ErrParameterCountMismatch
-	}
-	err = filter.TypeCheck(p, outputsTable, vals)
-	if err != nil {
-		return nil, errors.Wrap(err, "typechecking")
 	}
 	expr, err := filter.AsSQL(p, outputsTable, vals)
 	if err != nil {

@@ -47,16 +47,12 @@ func DecodeOutputsAfter(str string) (c *OutputsAfter, err error) {
 }
 
 func (ind *Indexer) Outputs(ctx context.Context, filt string, vals []interface{}, timestampMS uint64, after *OutputsAfter, limit int) ([]*AnnotatedOutput, *OutputsAfter, error) {
-	p, err := filter.Parse(filt)
+	p, err := filter.Parse(filt, outputsTable, vals)
 	if err != nil {
 		return nil, nil, err
 	}
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
-	}
-	err = filter.TypeCheck(p, outputsTable, vals)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "typechecking")
 	}
 	expr, err := filter.AsSQL(p, outputsTable, vals)
 	if err != nil {

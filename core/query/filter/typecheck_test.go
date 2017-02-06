@@ -1,8 +1,9 @@
 package filter
 
 import (
-	"chain/testutil"
 	"testing"
+
+	"chain/testutil"
 )
 
 func TestTypeCheckInvalid(t *testing.T) {
@@ -47,11 +48,11 @@ func TestTypeCheckValid(t *testing.T) {
 		{p: `'hello world'`, typ: String},
 		{p: `is_local`, typ: Bool},
 		{p: `1 = 1`, typ: Bool},
-		{p: `$1 = '292 Ivy St'`, typ: Bool, valTypes: []Type{String}},
+		{p: `$1 = '292 Ivy St'`, valTypes: []Type{String}, typ: Bool},
 		{p: `'hello' = 'world'`, typ: Bool},
 		{p: `id = id`, typ: Bool},
-		{p: `$1 = 'hello' OR ref.something = $1`, typ: Bool, valTypes: []Type{String}},
-		{p: `($1 = 'hello') OR (ref.something = $1)`, typ: Bool, valTypes: []Type{String}},
+		{p: `$1 = 'hello' OR ref.something = $1`, valTypes: []Type{String}, typ: Bool},
+		{p: `($1 = 'hello') OR (ref.something = $1)`, valTypes: []Type{String}, typ: Bool},
 		{p: `inputs(account_tags.domestic AND account_tags.type = 'revolving')`, typ: Bool},
 		{p: `inputs(account_tags.state = account_tags.shipping_address.state)`, typ: Bool},
 		{p: `$1`, valTypes: []Type{String}, typ: String},
