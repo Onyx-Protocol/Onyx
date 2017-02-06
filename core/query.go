@@ -19,16 +19,10 @@ func (h *Handler) listAccounts(ctx context.Context, in requestQuery) (page, erro
 	if limit == 0 {
 		limit = defGenericPageSize
 	}
-
-	// Build the filter predicate.
-	p, err := filter.Parse(in.Filter)
-	if err != nil {
-		return page{}, errors.Wrap(err, "parsing acc query")
-	}
 	after := in.After
 
 	// Use the filter engine for querying account tags.
-	accounts, after, err := h.Indexer.Accounts(ctx, p, in.FilterParams, after, limit)
+	accounts, after, err := h.Indexer.Accounts(ctx, in.Filter, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running acc query")
 	}
@@ -52,16 +46,10 @@ func (h *Handler) listAssets(ctx context.Context, in requestQuery) (page, error)
 	if limit == 0 {
 		limit = defGenericPageSize
 	}
-
-	// Build the filter predicate.
-	p, err := filter.Parse(in.Filter)
-	if err != nil {
-		return page{}, err
-	}
 	after := in.After
 
 	// Use the query engine for querying asset tags.
-	assets, after, err := h.Indexer.Assets(ctx, p, in.FilterParams, after, limit)
+	assets, after, err := h.Indexer.Assets(ctx, in.Filter, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running asset query")
 	}
@@ -77,12 +65,7 @@ func (h *Handler) listAssets(ctx context.Context, in requestQuery) (page, error)
 
 // POST /list-balances
 func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
-	var p filter.Predicate
 	var sumBy []filter.Field
-	p, err = filter.Parse(in.Filter)
-	if err != nil {
-		return result, err
-	}
 
 	// Since an empty SumBy yields a meaningless result, we'll provide a
 	// sensible default here.
@@ -106,7 +89,7 @@ func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result pag
 	}
 
 	// TODO(jackson): paginate this endpoint.
-	balances, err := h.Indexer.Balances(ctx, p, in.FilterParams, sumBy, timestampMS)
+	balances, err := h.Indexer.Balances(ctx, in.Filter, in.FilterParams, sumBy, timestampMS)
 	if err != nil {
 		return result, err
 	}
@@ -128,20 +111,10 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 		ctx, c = context.WithTimeout(ctx, timeout)
 		defer c()
 	}
-	var (
-		p     filter.Predicate
-		after query.TxAfter
-	)
 
 	limit := in.PageSize
 	if limit == 0 {
 		limit = defGenericPageSize
-	}
-
-	// Build the filter predicate.
-	p, err = filter.Parse(in.Filter)
-	if err != nil {
-		return result, err
 	}
 
 	endTimeMS := in.EndTimeMS
@@ -150,7 +123,9 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 	} else if endTimeMS > math.MaxInt64 {
 		return result, errors.WithDetail(httpjson.ErrBadRequest, "end timestamp is too large")
 	}
+
 	// Either parse the provided `after` or look one up for the time range.
+	var after query.TxAfter
 	if in.After != "" {
 		after, err = query.DecodeTxAfter(in.After)
 		if err != nil {
@@ -163,7 +138,7 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 		}
 	}
 
-	txns, nextAfter, err := h.Indexer.Transactions(ctx, p, in.FilterParams, after, limit, in.AscLongPoll)
+	txns, nextAfter, err := h.Indexer.Transactions(ctx, in.Filter, in.FilterParams, after, limit, in.AscLongPoll)
 	if err != nil {
 		return result, errors.Wrap(err, "running tx query")
 	}
@@ -209,13 +184,6 @@ func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (resu
 		limit = defGenericPageSize
 	}
 
-	// Build the filter predicate.
-	var p filter.Predicate
-	p, err = filter.Parse(in.Filter)
-	if err != nil {
-		return result, err
-	}
-
 	var after *query.OutputsAfter
 	if in.After != "" {
 		after, err = query.DecodeOutputsAfter(in.After)
@@ -230,7 +198,7 @@ func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (resu
 	} else if timestampMS > math.MaxInt64 {
 		return result, errors.WithDetail(httpjson.ErrBadRequest, "timestamp is too large")
 	}
-	outputs, nextAfter, err := h.Indexer.Outputs(ctx, p, in.FilterParams, timestampMS, after, limit)
+	outputs, nextAfter, err := h.Indexer.Outputs(ctx, in.Filter, in.FilterParams, timestampMS, after, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "querying outputs")
 	}

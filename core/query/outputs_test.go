@@ -54,11 +54,8 @@ func TestOutputsAfter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	q, err := filter.Parse(`asset_id = 'deadbeef'`)
-	if err != nil {
-		t.Fatal(err)
-	}
 
+	const q = `asset_id = 'deadbeef'`
 	indexer := NewIndexer(db, &protocol.Chain{}, nil)
 	results, after, err := indexer.Outputs(ctx, q, nil, 25, nil, 2)
 	if err != nil {

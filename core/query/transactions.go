@@ -70,12 +70,16 @@ func (ind *Indexer) LookupTxAfter(ctx context.Context, begin, end uint64) (TxAft
 }
 
 // Transactions queries the blockchain for transactions matching the
-// filter predicate `p`.
-func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals []interface{}, after TxAfter, limit int, asc bool) ([]*AnnotatedTx, *TxAfter, error) {
+// filter predicate `filt`.
+func (ind *Indexer) Transactions(ctx context.Context, filt string, vals []interface{}, after TxAfter, limit int, asc bool) ([]*AnnotatedTx, *TxAfter, error) {
+	p, err := filter.Parse(filt)
+	if err != nil {
+		return nil, nil, err
+	}
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}
-	err := filter.TypeCheck(p, transactionsTable, vals)
+	err = filter.TypeCheck(p, transactionsTable, vals)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "typechecking")
 	}

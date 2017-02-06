@@ -175,11 +175,7 @@ func TestQueryOutputs(t *testing.T) {
 	}
 
 	for i, tc := range cases {
-		f, err := filter.Parse(tc.filter)
-		if err != nil {
-			t.Fatal(err)
-		}
-		outputs, _, err := indexer.Outputs(ctx, f, tc.values, bc.Millis(tc.when), nil, 1000)
+		outputs, _, err := indexer.Outputs(ctx, tc.filter, tc.values, bc.Millis(tc.when), nil, 1000)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -308,10 +304,6 @@ func TestQueryBalances(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		p, err := filter.Parse(tc.predicate)
-		if err != nil {
-			t.Fatal(err)
-		}
 		var fields []filter.Field
 		for _, s := range tc.sumBy {
 			f, err := filter.ParseField(s)
@@ -321,7 +313,7 @@ func TestQueryBalances(t *testing.T) {
 			fields = append(fields, f)
 		}
 
-		balances, err := indexer.Balances(ctx, p, tc.values, fields, bc.Millis(tc.when))
+		balances, err := indexer.Balances(ctx, tc.predicate, tc.values, fields, bc.Millis(tc.when))
 		if err != nil {
 			t.Fatal(err)
 		}
