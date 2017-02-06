@@ -188,7 +188,7 @@ func (h *Handler) listTxFeeds(ctx context.Context, in requestQuery) (page, error
 
 	after := in.After
 
-	txfeeds, after, err := h.Indexer.TxFeeds(ctx, after, limit)
+	txfeeds, after, err := h.TxFeeds.Query(ctx, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running txfeed query")
 	}
