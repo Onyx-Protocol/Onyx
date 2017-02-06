@@ -31,7 +31,7 @@ class TutorialComplete extends React.Component {
                   </a>.
               </p>
             </div>
-            <button onClick={this.props.dismissTutorial} className={`btn btn-primary ${styles.tutorialButton}`}>{this.props.dismiss}</button>
+            <button onClick={this.props.dismissTutorial} className={`btn btn-primary ${styles.tutorialButton}`}>Done</button>
           </div>
       </div>
     )
