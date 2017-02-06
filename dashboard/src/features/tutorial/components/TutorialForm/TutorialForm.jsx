@@ -28,7 +28,7 @@ class TutorialForm extends React.Component {
                   str = contentLine['title'].replace('STRING', replacement['alias'])
                 }
                 let rows = [
-                  <tr className={styles.listItem} key={i}>
+                  <tr key={i}>
                     <td className={styles.listBullet}>{i+1}</td>
                     <td>{str}</td>
                   </tr>
@@ -39,7 +39,8 @@ class TutorialForm extends React.Component {
                     <td key={i}>{contentLine['description']}</td>
                   </tr>)
                 }
-                return rows
+
+                return <tbody className={styles.listItemGroup}>{rows}</tbody>
               })}
               </tbody>
             </table>
