@@ -441,7 +441,7 @@
     "component": "TutorialInfo",
     "title": "Tutorial - Transactions - Step 7 of 7",
     "button": "Finish tutorial",
-    "dismiss": null,
+    "dismiss": " ",
     "route": "transactions",
     "logo": "glyphicon-ok-sign",
     "content": [
@@ -458,7 +458,7 @@
     "component": "TutorialComplete",
     "title": null,
     "button": null,
-    "dismiss": "Done",
+    "dismiss": null,
     "route": null,
     "content": null
   }
