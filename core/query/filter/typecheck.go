@@ -31,20 +31,34 @@ func valueTypes(vals []interface{}) ([]Type, error) {
 	return valTypes, nil
 }
 
-func typeCheck(expr expr, tbl *SQLTable, vals []interface{}) error {
+// typeCheck will statically type check expr with vals as the parameters
+// and using tbl to determine available attributes and environments. It
+// returns the inferred types of arbitrary json keys as a map.
+func typeCheck(expr expr, tbl *SQLTable, vals []interface{}) (map[string]Type, error) {
 	valTypes, err := valueTypes(vals)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	selectorTypes := make(map[string]Type)
 	typ, err := typeCheckExpr(expr, tbl, valTypes, selectorTypes)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	// The resulting type can be Any if the expression indexes into arbitrary
+	// json without using that value in a larger expression.
+	// (ex, `reference_data.is_high_priority`)
+	if typ == Any {
+		err = assertType(expr, Bool, selectorTypes)
+		if err != nil {
+			return nil, err
+		}
+		typ = Bool
 	}
 	if typ != Bool {
-		return fmt.Errorf("filter predicate must evaluate to bool, got %s", typ)
+		return nil, fmt.Errorf("filter predicate must evaluate to bool, got %s", typ)
 	}
-	return nil
+	return selectorTypes, nil
 }
 
 func typeCheckExpr(expr expr, tbl *SQLTable, valTypes []Type, selectorTypes map[string]Type) (typ Type, err error) {

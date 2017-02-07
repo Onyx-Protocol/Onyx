@@ -13,8 +13,9 @@ var ErrBadFilter = errors.New("invalid query filter")
 
 // Predicate represents a parsed filter predicate.
 type Predicate struct {
-	expr       expr
-	Parameters int
+	expr          expr
+	selectorTypes map[string]Type
+	Parameters    int
 }
 
 // String returns a cleaned, canonical representation of the
@@ -39,14 +40,15 @@ func Parse(predicate string, tbl *SQLTable, vals []interface{}) (p Predicate, er
 	if err != nil {
 		return p, errors.WithDetail(ErrBadFilter, err.Error())
 	}
-	err = typeCheck(expr, tbl, vals)
+	selectorTypes, err := typeCheck(expr, tbl, vals)
 	if err != nil {
 		return p, errors.WithDetail(ErrBadFilter, err.Error())
 	}
 
 	return Predicate{
-		Parameters: parser.maxPlaceholder,
-		expr:       expr,
+		expr:          expr,
+		selectorTypes: selectorTypes,
+		Parameters:    parser.maxPlaceholder,
 	}, nil
 }
 

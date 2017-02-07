@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/lib/pq"
 
@@ -22,8 +23,9 @@ func AsSQL(p Predicate, tbl *SQLTable, values []interface{}) (q string, err erro
 	}()
 
 	b := &sqlBuilder{
-		values:  values,
-		baseTbl: tbl,
+		values:        values,
+		baseTbl:       tbl,
+		selectorTypes: p.selectorTypes,
 	}
 	c := &sqlContext{sqlBuilder: b, tbl: tbl}
 	err = asSQL(c, p.expr)
@@ -117,9 +119,10 @@ type SQLForeignKey struct {
 }
 
 type sqlBuilder struct {
-	baseTbl *SQLTable
-	values  []interface{}
-	buf     bytes.Buffer
+	baseTbl       *SQLTable
+	values        []interface{}
+	selectorTypes map[string]Type
+	buf           bytes.Buffer
 }
 
 type sqlContext struct {
@@ -181,6 +184,7 @@ func asSQL(c *sqlContext, filterExpr expr) error {
 	case selectorExpr:
 		// unwind the jsonb path
 		path := jsonbPath(e)
+		selectorPath := strings.Join(path, ".")
 		base, path := path[0], path[1:]
 
 		col, ok := c.tbl.Columns[base]
@@ -191,6 +195,7 @@ func asSQL(c *sqlContext, filterExpr expr) error {
 			return errors.WithDetailf(ErrBadFilter, "cannot index on non-object attribute: %s", base)
 		}
 
+		c.buf.WriteRune('(')
 		c.writeCol(base)
 		for i, p := range path {
 			if i == len(path)-1 {
@@ -201,6 +206,26 @@ func asSQL(c *sqlContext, filterExpr expr) error {
 			c.buf.WriteRune('\'')
 			c.buf.WriteString(p)
 			c.buf.WriteRune('\'')
+		}
+		c.buf.WriteRune(')')
+
+		// Use the type inferred by the typechecker to cast the expression
+		// o the right type. If uncasted, the ->> operator will result in a
+		// text PostgreSQL value.
+		typ, ok := c.selectorTypes[selectorPath]
+		if ok {
+			switch typ {
+			case Integer:
+				c.buf.WriteString("::bigint")
+			case Bool:
+				c.buf.WriteString("::boolean")
+			case Object:
+				c.buf.WriteString("::jsonb")
+			case Any, String:
+				// don't do anything (defaulting to text)
+			default:
+				panic(fmt.Errorf("unknown type %s", typ))
+			}
 		}
 	case binaryExpr:
 		err := asSQL(c, e.l)
