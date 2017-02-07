@@ -457,12 +457,12 @@ public class Client {
 
   private void nextURL(int failedIndex) {
     if (this.urls.size() == 1) {
-        return; // No point contending on the CAS if there's only one URL.
+      return; // No point contending on the CAS if there's only one URL.
     }
 
     // A request to the url at failedIndex just failed. Move to the next
     // URL in the list.
-    int nextIndex = (failedIndex+1) % this.urls.size();
+    int nextIndex = (failedIndex + 1) % this.urls.size();
     this.urlIndex.compareAndSet(failedIndex, nextIndex);
   }
 
@@ -489,7 +489,7 @@ public class Client {
   public int hashCode() {
     int code = this.urls.hashCode();
     if (this.hasAccessToken()) {
-        code = code * 31 + this.accessToken.hashCode();
+      code = code * 31 + this.accessToken.hashCode();
     }
     return code;
   }
@@ -506,7 +506,7 @@ public class Client {
 
     Client other = (Client) o;
     if (!this.urls.equals(other.urls)) {
-        return false;
+      return false;
     }
     return Objects.equals(this.accessToken, other.accessToken);
   }
