@@ -74,7 +74,7 @@ Promise.all([
   .then(signed => client.transactions.submit(signed))
 ).then(() =>
 
-  // snippet create bobIssueProgram
+  // snippet create-bob-issue-program
   otherClient.accounts.createControlProgram({
     alias: 'bob'
   })
@@ -83,7 +83,7 @@ Promise.all([
 ).then(program => bobProgram = program.controlProgram)
   .then(() =>
 
-  // snippet issueToBobProgram
+  // snippet issue-to-bob-program
   client.transactions.build(builder => {
     builder.issue({
       assetAlias: 'gold',
@@ -102,7 +102,7 @@ Promise.all([
 ).then(() => {
   if (client.baseUrl == otherClient.baseUrl){
 
-    // snippet payWithinCore
+    // snippet pay-within-core
     return client.transactions.build(builder => {
       builder.spendFromAccount({
         accountAlias: 'alice',
@@ -124,7 +124,7 @@ Promise.all([
   }
 }).then(() =>
 
-  // snippet createBobPaymentProgram
+  // snippet create-bob-payment-program
   otherClient.accounts.createControlProgram({
     alias: 'bob'
   }))
@@ -133,7 +133,7 @@ Promise.all([
   .then(program => bobProgram = program.controlProgram)
     .then(() =>
 
-    // snippet payBetweenCores
+    // snippet pay-between-cores
     client.transactions.build(builder => {
       builder.spendFromAccount({
         accountAlias: 'alice',
@@ -153,7 +153,7 @@ Promise.all([
 ).then(() => {
   if (client.baseUrl == otherClient.baseUrl){
 
-    //snippet multiAssetWithinCore
+    //snippet multiasset-within-core
     return client.transactions.build(builder => {
       builder.spendFromAccount({
         accountAlias: 'alice',
@@ -185,7 +185,7 @@ Promise.all([
   }
 }).then(() =>
 
-  // snippet createBobMultiAssetProgram
+  // snippet create-bob-multiasset-program
   otherClient.accounts.createControlProgram({
     alias: 'bob'
   }))
@@ -194,7 +194,7 @@ Promise.all([
   .then(program => bobProgram = program.controlProgram)
   .then(() =>
 
-    // snippet multiAssetBetweenCores
+    // snippet multiasset-between-cores
     client.transactions.build(builder => {
       builder.spendFromAccount({
         accountAlias: 'alice',
