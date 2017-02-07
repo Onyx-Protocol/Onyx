@@ -15,6 +15,7 @@ import (
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 // listKeyMaxAliases limits the alias filter to a sane maximum size.
@@ -259,7 +260,7 @@ func (h *HSM) loadEd25519Key(ctx context.Context, pub ed25519.PublicKey) (prv ed
 }
 
 // Sign looks up the prv given the pub and signs the given msg.
-func (h *HSM) Sign(ctx context.Context, pub ed25519.PublicKey, msg []byte) ([]byte, error) {
+func (h *HSM) Sign(ctx context.Context, pub ed25519.PublicKey, bh *bc.BlockHeader) ([]byte, error) {
 	prv, err := h.loadEd25519Key(ctx, pub)
 	if err != nil {
 		return nil, err
@@ -269,5 +270,6 @@ func (h *HSM) Sign(ctx context.Context, pub ed25519.PublicKey, msg []byte) ([]by
 	if len(prv) != ed25519.PrivateKeySize {
 		return nil, ErrInvalidKeySize
 	}
-	return ed25519.Sign(prv, msg), nil
+	msg := bh.HashForSig()
+	return ed25519.Sign(prv, msg[:]), nil
 }

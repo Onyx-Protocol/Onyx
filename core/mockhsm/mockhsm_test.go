@@ -9,6 +9,7 @@ import (
 	"chain/crypto/ed25519"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/protocol/bc"
 	"chain/testutil"
 )
 
@@ -67,15 +68,16 @@ func TestMockHSMEd25519Keys(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msg := []byte("In the face of ignorance and resistance I wrote financial systems into existence")
-	sig, err := hsm.Sign(ctx, pub.Pub, msg)
+	bh := bc.BlockHeader{}
+	msg := bh.HashForSig()
+	sig, err := hsm.Sign(ctx, pub.Pub, &bh)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !ed25519.Verify(pub.Pub, msg, sig) {
+	if !ed25519.Verify(pub.Pub, msg[:], sig) {
 		t.Error("expected verify to succeed")
 	}
-	if ed25519.Verify(pub2.Pub, msg, sig) {
+	if ed25519.Verify(pub2.Pub, msg[:], sig) {
 		t.Error("expected verify with wrong pubkey to fail")
 	}
 
