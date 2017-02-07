@@ -1,7 +1,6 @@
 const chain = require('chain-sdk')
 const uuid = require('uuid')
 
-const client = new chain.Client()
 let signer
 
 describe('assets', () => {

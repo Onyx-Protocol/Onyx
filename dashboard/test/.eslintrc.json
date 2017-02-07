@@ -4,6 +4,7 @@
   },
   "globals": {
     "browser": true,
-    "expect": true
+    "expect": true,
+    "testHelpers": true
   }
 }

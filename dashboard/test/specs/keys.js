@@ -1,7 +1,6 @@
 const chain = require('chain-sdk')
 const uuid = require('uuid')
 
-const client = new chain.Client()
 let signer
 
 describe('mock hsm keys', () => {
@@ -18,7 +17,7 @@ describe('mock hsm keys', () => {
       browser.isExisting('.component-EmptyList').should.equal(false)
     })
 
-    it('lists all assets on the core', () => {
+    it('lists all keys on the core', () => {
       browser.getText('.component-ItemList').should.contain('ALIAS')
       browser.getText('.component-ItemList').should.contain('XPUB')
       browser.getText('.component-ItemList').should.contain('testkey')
@@ -30,12 +29,12 @@ describe('mock hsm keys', () => {
     })
   })
 
-  describe('creating assets', () => {
+  describe('creating keys', () => {
     before(() => expect(testHelpers.ensureConfigured()).to.be.fulfilled
       .then(() => browser.url('/mockhsms'))
     )
 
-    it('can create a new asset', () => {
+    it('can create a new key', () => {
       const alias = 'test-key-' + uuid.v4()
       browser.click('.component-ItemList button')
       browser.setValue('input[name=alias]', alias)

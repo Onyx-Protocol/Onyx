@@ -1,6 +1,5 @@
 const chain = require('chain-sdk')
 
-const client = new chain.Client()
 let signer
 
 describe('tranasctions', () => {

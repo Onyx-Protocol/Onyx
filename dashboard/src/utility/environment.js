@@ -1,7 +1,7 @@
 /* global process */
 
 import chain from '_chain'
-import chainSDK from 'chain-sdk'
+import chainSdk from 'chain-sdk'
 import { store } from 'app'
 
 import { useRouterHistory } from 'react-router'
@@ -22,7 +22,7 @@ export const context = () => new chain.Context({
   clientToken: store.getState().core.clientToken
 })
 
-export const chainClient = () => new chainSDK.Client(
+export const chainClient = () => new chainSdk.Client(
   apiHost,
   store.getState().core.clientToken
 )

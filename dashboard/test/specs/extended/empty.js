@@ -1,8 +1,3 @@
-const chain = require('chain-sdk')
-
-const client = new chain.Client()
-let signer
-
 describe('empty states', () => {
   before(() => expect(testHelpers.resetCore()).to.be.fulfilled)
 
