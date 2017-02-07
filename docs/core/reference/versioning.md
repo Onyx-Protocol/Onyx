@@ -2,14 +2,14 @@
 
 ## Summary
 
-There are three distinct Chain versioning schemes:
+There are two distinct Chain versioning schemes:
 
 * **core** versioning
 * **network** versioning
 
-Core versioning applies to the main pieces of software that compose, package, or directly interact with Chain Core. This includes, for example, the Chain Core server, the Java SDK, and the Chain Core Mac app.
+Core versioning applies to the main pieces of software that compose, package, or directly interact with Chain Core. This includes, for example, the Chain Core server, the client SDK libraries, and the platform-specific installers.
 
-Network versioning applies to the network API--the interface through which different Chain Cores on a network communicate to exchange transactions and blocks. Any breaking changes to the network API interface or the data structures as defined by the Chain protocol are reflected by a change to the network version.
+Network versioning applies to the network API--the interface through which different Chain Cores communicate to exchange transactions and blocks. Any breaking changes to the network API interface or the data structures as defined by the Chain protocol are reflected by a change to the network version.
 
 ## Core Versioning
 
