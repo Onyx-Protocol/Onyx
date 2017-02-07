@@ -34,8 +34,7 @@ func TestTypeCheckInvalid(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		m := make(map[string]Type)
-		_, err = typeCheckExpr(expr, transactionsSQLTable, nil, m)
+		_, err = typeCheck(expr, transactionsSQLTable, nil)
 		if !testutil.DeepEqual(err, tc.err) {
 			t.Errorf("typeCheckExpr(%s) = %s, want error %s", expr, err, tc.err)
 		}
@@ -59,6 +58,8 @@ func TestTypeCheckValid(t *testing.T) {
 		{p: `($1 = 'hello') OR (ref.something = $1)`, valTypes: []Type{String}, typ: Bool},
 		{p: `inputs(account_tags.domestic AND account_tags.type = 'revolving')`, typ: Bool},
 		{p: `inputs(account_tags.state = account_tags.shipping_address.state)`, typ: Bool},
+		{p: `inputs(account_tags.a_boolean_field)`, typ: Bool},
+		{p: `ref.a_boolean_field AND ref.another_boolean_field`, typ: Bool},
 		{p: `$1`, valTypes: []Type{String}, typ: String},
 		{p: `$1 = $2`, valTypes: []Type{String, String}, typ: Bool},
 	}

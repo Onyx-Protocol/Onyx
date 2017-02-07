@@ -44,18 +44,11 @@ func typeCheck(expr expr, tbl *SQLTable, vals []interface{}) (map[string]Type, e
 	if err != nil {
 		return nil, err
 	}
-
-	// The resulting type can be Any if the expression indexes into arbitrary
-	// json without using that value in a larger expression.
-	// (ex, `reference_data.is_high_priority`)
-	if typ == Any {
-		err = assertType(expr, Bool, selectorTypes)
-		if err != nil {
-			return nil, err
-		}
-		typ = Bool
+	ok, err := assertType(expr, typ, Bool, selectorTypes)
+	if err != nil {
+		return nil, err
 	}
-	if typ != Bool {
+	if !ok {
 		return nil, fmt.Errorf("filter predicate must evaluate to bool, got %s", typ)
 	}
 	return selectorTypes, nil
@@ -79,31 +72,42 @@ func typeCheckExpr(expr expr, tbl *SQLTable, valTypes []Type, selectorTypes map[
 			return rightTyp, err
 		}
 
-		// All our operands require left and right types to be equal. If
-		// one of our types is known but the other is not, we need to
-		// remember the type.
-		if !knownType(leftTyp) && knownType(rightTyp) {
-			err := assertType(e.l, rightTyp, selectorTypes)
-			if err != nil {
-				return leftTyp, err
-			}
-			leftTyp = rightTyp
-		}
-		if !knownType(rightTyp) && knownType(leftTyp) {
-			err := assertType(e.r, leftTyp, selectorTypes)
-			if err != nil {
-				return leftTyp, err
-			}
-			rightTyp = leftTyp
-		}
-
 		switch e.op.name {
 		case "OR", "AND":
-			if !isType(leftTyp, Bool) || !isType(rightTyp, Bool) {
+			ok, err := assertType(e.l, leftTyp, Bool, selectorTypes)
+			if err != nil {
+				return typ, err
+			}
+			if !ok {
+				return typ, fmt.Errorf("%s expects bool operands", e.op.name)
+			}
+
+			ok, err = assertType(e.r, rightTyp, Bool, selectorTypes)
+			if err != nil {
+				return typ, err
+			}
+			if !ok {
 				return typ, fmt.Errorf("%s expects bool operands", e.op.name)
 			}
 			return Bool, nil
 		case "=":
+			// The = operand requires left and right types to be equal. If
+			// one of our types is known but the other is not, we need to
+			// coerce the untyped one to a matching type.
+			if !knownType(leftTyp) && knownType(rightTyp) {
+				err := setType(e.l, rightTyp, selectorTypes)
+				if err != nil {
+					return leftTyp, err
+				}
+				leftTyp = rightTyp
+			}
+			if !knownType(rightTyp) && knownType(leftTyp) {
+				err := setType(e.r, leftTyp, selectorTypes)
+				if err != nil {
+					return leftTyp, err
+				}
+				rightTyp = leftTyp
+			}
 			if !isType(leftTyp, String) && !isType(leftTyp, Integer) {
 				return typ, fmt.Errorf("%s expects integer or string operands", e.op.name)
 			}
@@ -145,21 +149,17 @@ func typeCheckExpr(expr expr, tbl *SQLTable, valTypes []Type, selectorTypes map[
 		if err != nil {
 			return typ, err
 		}
-		if !isType(typ, Object) {
-			return typ, errors.New("selector `.` can only be used on objects")
+		ok, err := assertType(e.objExpr, typ, Object, selectorTypes)
+		if err != nil {
+			return typ, err
 		}
-		if !knownType(typ) {
-			// We know e.objExpr is being used as an object, so record that
-			// e.objExpr's json path must be an object.
-			err = assertType(e.objExpr, Object, selectorTypes)
-			if err != nil {
-				return typ, err
-			}
+		if !ok {
+			return typ, errors.New("selector `.` can only be used on objects")
 		}
 
 		// Unfortunately, we can't know the type of the field within the
 		// object yet. Depending on the context, we might be able to assign it
-		// a type later in assertType.
+		// a type later in setType.
 		return Any, nil
 	case envExpr:
 		fk, ok := tbl.ForeignKeys[e.ident]
@@ -170,7 +170,11 @@ func typeCheckExpr(expr expr, tbl *SQLTable, valTypes []Type, selectorTypes map[
 		if err != nil {
 			return typ, err
 		}
-		if typ != Bool {
+		ok, err = assertType(e.expr, typ, Bool, selectorTypes)
+		if err != nil {
+			return typ, err
+		}
+		if !ok {
 			return typ, errors.New(e.ident + "(...) body must have type bool")
 		}
 		return Bool, nil
@@ -179,10 +183,22 @@ func typeCheckExpr(expr expr, tbl *SQLTable, valTypes []Type, selectorTypes map[
 	}
 }
 
-func assertType(expr expr, typ Type, selectorTypes map[string]Type) error {
+func assertType(expr expr, got, want Type, selectorTypes map[string]Type) (bool, error) {
+	if !isType(got, want) { // type does not match
+		return false, nil
+	}
+	if got != Any { // matching type *and* it's a concrete type
+		return true, nil
+	}
+	// got is `Any`. we should restrict expr to be `want`.
+	err := setType(expr, want, selectorTypes)
+	return true, err
+}
+
+func setType(expr expr, typ Type, selectorTypes map[string]Type) error {
 	switch e := expr.(type) {
 	case parenExpr:
-		return assertType(e.inner, typ, selectorTypes)
+		return setType(e.inner, typ, selectorTypes)
 	case placeholderExpr:
 		// This is a special case for when we parse a txfeed filter at
 		// txfeed creation time. We don't have access to concrete values
@@ -199,6 +215,6 @@ func assertType(expr expr, typ Type, selectorTypes map[string]Type) error {
 	default:
 		// This should be impossible because all other expressions are
 		// strongly typed.
-		panic(fmt.Errorf("unexpected assertType on %T", expr))
+		panic(fmt.Errorf("unexpected setType on %T", expr))
 	}
 }
