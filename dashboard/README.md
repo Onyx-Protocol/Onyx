@@ -36,14 +36,27 @@ We use `eslint` to maintain a consistent code style. To check the source
 directory with `eslint`, run:
 
 ```
-npm run lint src 
+npm run lint src
 ```
 
 #### Tests
 
+The Chain Core Dashboard has a series of integration tests that can be run
+against a running core. First, start Chain Core and Dashboard on their default
+ports of 1999 and 3000 respective. Then, start tests with the command:
+
 ```
 npm test
 ```
+
+There an extended test suite that can be run with:
+
+```
+npm run testExtended
+```
+
+(Note: The extended test suite can take significantly longer to run, as test
+  files cannot be run in parallel).
 
 ### React + Redux
 

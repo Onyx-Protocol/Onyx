@@ -6,8 +6,9 @@ import {
   KeyValueTable,
   RawJsonButton,
 } from 'features/shared/components'
+import componentClassNames from 'utility/componentClassNames'
 
-class Show extends BaseShow {
+class AssetShow extends BaseShow {
   render() {
     const item = this.props.item
 
@@ -18,7 +19,7 @@ class Show extends BaseShow {
         <code>{item.alias ? item.alias :item.id}</code>
       </span>
 
-      view = <div>
+      view = <div className={componentClassNames(this)}>
         <PageTitle title={title} />
 
         <PageContent>
@@ -84,4 +85,4 @@ const mapDispatchToProps = ( dispatch ) => ({
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(Show)
+)(AssetShow)

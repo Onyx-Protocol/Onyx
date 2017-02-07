@@ -8,6 +8,7 @@ const TEXT_FIELD_PROPS = [
   'onBlur',
   'onChange',
   'onFocus',
+  'name'
 ]
 
 class TextField extends React.Component {

@@ -1,9 +1,9 @@
 import List from './List'
 import New from './New'
-import Show from './Show'
+import AssetShow from './AssetShow'
 
 export {
   List,
   New,
-  Show,
+  AssetShow,
 }

@@ -1,5 +1,6 @@
-exports.config = {
+const extended = process.env.EXTENDED
 
+exports.config = {
   //
   // ==================
   // Specify Test Files
@@ -10,12 +11,22 @@ exports.config = {
   // directory is where your package.json resides, so `wdio` will be called from there.
   //
   specs: [
-    './test/specs/**/*.js'
+    './test/specs/**/*.js',
   ],
   // Patterns to exclude.
   exclude: [
       // 'path/to/excluded/files'
   ],
+  //
+  // ============
+  // Suites
+  // ============
+  // Define specific test suites
+  suites: {
+    base: [
+      './test/specs/*.js',
+    ],
+  },
   //
   // ============
   // Capabilities
@@ -32,7 +43,7 @@ exports.config = {
   // and 30 processes will get spawned. The property handles how many capabilities
   // from the same test should run tests.
   //
-  maxInstances: 10,
+  maxInstances: extended ? 1 : 10,
   //
   // If you have trouble getting all important capabilities together, check out the
   // Sauce Labs platform configurator - a great tool to configure your capabilities:
@@ -64,7 +75,7 @@ exports.config = {
   //
   // If you only want to run your tests until a specific amount of tests have failed use
   // bail (default is 0 - don't bail, run all tests).
-  bail: 0,
+  bail: 5,
   //
   // Saves a screenshot to a given path if a command fails.
   screenshotPath: './errorShots/',
@@ -125,7 +136,9 @@ exports.config = {
   // See the full list at http://mochajs.org/
   mochaOpts: {
     ui: 'bdd',
-    timeout: 30000
+    compilers: ['js:babel-register'],
+    require: ['./test/helpers.js'],
+    timeout: 30000,
   },
   //
   // =====

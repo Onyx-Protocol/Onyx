@@ -7,8 +7,9 @@ import {
   PageTitle,
   RawJsonButton,
 } from 'features/shared/components'
+import componentClassNames from 'utility/componentClassNames'
 
-class Show extends BaseShow {
+class AccountShow extends BaseShow {
   constructor(props) {
     super(props)
 
@@ -35,7 +36,7 @@ class Show extends BaseShow {
         <code>{item.alias ? item.alias : item.id}</code>
       </span>
 
-      view = <div>
+      view = <div className={componentClassNames(this)}>
         <PageTitle
           title={title}
           actions={[
@@ -117,4 +118,4 @@ const mapDispatchToProps = ( dispatch ) => ({
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(Show)
+)(AccountShow)
