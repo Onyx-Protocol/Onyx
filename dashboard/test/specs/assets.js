@@ -14,18 +14,18 @@ describe('assets', () => {
     })
 
     it('does not display a welcome message', () => {
-      browser.isExisting('.component-EmptyList').should.equal(false)
+      browser.isExisting('.EmptyList').should.equal(false)
     })
 
     it('lists all assets on the core', () => {
-      browser.getText('.component-ItemList').should.contain('ASSET ALIAS')
-      browser.getText('.component-ItemList').should.contain('gold')
-      browser.getText('.component-ItemList').should.contain('View details')
+      browser.getText('.ItemList').should.contain('ASSET ALIAS')
+      browser.getText('.ItemList').should.contain('gold')
+      browser.getText('.ItemList').should.contain('View details')
     })
 
     it('displays the correct page title', () => {
-      browser.getText('.component-PageTitle').should.contain('Assets')
-      browser.getText('.component-PageTitle').should.contain('New asset')
+      browser.getText('.PageTitle').should.contain('Assets')
+      browser.getText('.PageTitle').should.contain('New asset')
     })
   })
 
@@ -36,12 +36,12 @@ describe('assets', () => {
 
     it('can create a new asset', () => {
       const alias = 'test-asset-' + uuid.v4()
-      browser.click('.component-ItemList button')
+      browser.click('.ItemList button')
       browser.setValue('input[name=alias]', alias)
-      browser.click('.component-FormContainer button')
-      browser.waitForVisible('.component-AssetShow')
-      browser.getText('.component-AssetShow').should.contain('Created asset. Create another?')
-      browser.getText('.component-AssetShow').should.contain(alias)
+      browser.click('.FormContainer button')
+      browser.waitForVisible('.AssetShow')
+      browser.getText('.AssetShow').should.contain('Created asset. Create another?')
+      browser.getText('.AssetShow').should.contain(alias)
     })
   })
 

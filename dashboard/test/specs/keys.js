@@ -14,18 +14,18 @@ describe('mock hsm keys', () => {
     })
 
     it('does not display a welcome message', () => {
-      browser.isExisting('.component-EmptyList').should.equal(false)
+      browser.isExisting('.EmptyList').should.equal(false)
     })
 
     it('lists all keys on the core', () => {
-      browser.getText('.component-ItemList').should.contain('ALIAS')
-      browser.getText('.component-ItemList').should.contain('XPUB')
-      browser.getText('.component-ItemList').should.contain('testkey')
+      browser.getText('.ItemList').should.contain('ALIAS')
+      browser.getText('.ItemList').should.contain('XPUB')
+      browser.getText('.ItemList').should.contain('testkey')
     })
 
     it('displays the correct page title', () => {
-      browser.getText('.component-PageTitle').should.contain('MockHSM keys')
-      browser.getText('.component-PageTitle').should.contain('New MockHSM key')
+      browser.getText('.PageTitle').should.contain('MockHSM keys')
+      browser.getText('.PageTitle').should.contain('New MockHSM key')
     })
   })
 
@@ -36,12 +36,12 @@ describe('mock hsm keys', () => {
 
     it('can create a new key', () => {
       const alias = 'test-key-' + uuid.v4()
-      browser.click('.component-ItemList button')
+      browser.click('.ItemList button')
       browser.setValue('input[name=alias]', alias)
-      browser.click('.component-FormContainer button')
-      browser.waitForVisible('.component-ItemList')
-      browser.getText('.component-ItemList').should.contain('Created key. Create another?')
-      browser.getText('.component-ItemList').should.contain(alias)
+      browser.click('.FormContainer button')
+      browser.waitForVisible('.ItemList')
+      browser.getText('.ItemList').should.contain('Created key. Create another?')
+      browser.getText('.ItemList').should.contain(alias)
     })
   })
 
