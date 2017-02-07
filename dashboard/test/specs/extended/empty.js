@@ -4,7 +4,7 @@ const client = new chain.Client()
 let signer
 
 describe('empty states', () => {
-  before(() => expect(resetCore()).to.be.fulfilled)
+  before(() => expect(testHelpers.resetCore()).to.be.fulfilled)
 
   describe('transactions', () => {
     it('displays a welcome message', () => {

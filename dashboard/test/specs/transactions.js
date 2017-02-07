@@ -8,9 +8,9 @@ describe('tranasctions', () => {
     before(() => {
       signer = new chain.HsmSigner()
 
-      return expect(ensureConfigured()).to.be.fulfilled
-        .then(() => expect(setUpObjects(signer)).to.be.fulfilled)
-        .then(() => expect(issueTransaction(signer)).to.be.fulfilled)
+      return expect(testHelpers.ensureConfigured()).to.be.fulfilled
+        .then(() => expect(testHelpers.setUpObjects(signer)).to.be.fulfilled)
+        .then(() => expect(testHelpers.issueTransaction(signer)).to.be.fulfilled)
         .then(() => browser.url('/transactions'))
     })
 

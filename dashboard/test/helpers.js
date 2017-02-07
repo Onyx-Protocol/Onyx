@@ -1,23 +1,16 @@
 const chain = require('chain-sdk')
 const client = new chain.Client()
 
-global.sleep = (ms) => {
-  let current
-  const start = new Date()
+const sleep = (ms) => new Promise(resolve => {
+  setTimeout(() => resolve(), ms)
+})
 
-  // console.log('sleep for ' + ms);
-
-  do {
-    current = new Date()
-  } while((current - start) < ms)
-}
-
-global.resetCore = () => expect(
+const resetCore = () => expect(
   client.config.reset()
     .then(() => ensureConfigured())
 ).to.be.fulfilled
 
-global.ensureConfigured = () => {
+const ensureConfigured = () => {
   const doConfig = () => client.config.info()
     .then((info) => {
       if (info.isConfigured) {
@@ -27,15 +20,12 @@ global.ensureConfigured = () => {
           .then(() => sleep(1000))
       }
     })
-    .catch((err) => {
-      sleep(100)
-      doConfig()
-    })
+    .catch(() => sleep(100).then(() => doConfig()))
 
   return expect(doConfig()).to.be.fulfilled
 }
 
-global.setUpObjects = (signer) => {
+const setUpObjects = (signer) => {
   let keyResults, assetResults, accountResults
   let key
 
@@ -76,7 +66,7 @@ global.setUpObjects = (signer) => {
   })
 }
 
-global.issueTransaction = (signer) => expect(
+const issueTransaction = (signer) => expect(
   client.transactions.build((builder) => {
     builder.issue({ asset_alias: 'gold', amount: 100 })
     builder.controlWithAccount({ account_alias: 'alice', asset_alias: 'gold', amount: 100 })
@@ -84,3 +74,11 @@ global.issueTransaction = (signer) => expect(
   .then(tpl => signer.sign(tpl))
   .then(tpl => client.transactions.submit(tpl))
 ).to.be.fulfilled
+
+global.testHelpers = {
+  sleep,
+  resetCore,
+  ensureConfigured,
+  setUpObjects,
+  issueTransaction,
+}

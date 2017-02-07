@@ -1,7 +1,7 @@
 describe('dashboard', () => {
   describe('homepage', () => {
     before(() =>
-      expect(ensureConfigured()).to.be.fulfilled
+      expect(testHelpers.ensureConfigured()).to.be.fulfilled
         .then(() => browser.url('/'))
     )
 

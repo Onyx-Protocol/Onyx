@@ -9,8 +9,8 @@ describe('assets', () => {
     before(() => {
       signer = new chain.HsmSigner()
 
-      return expect(ensureConfigured()).to.be.fulfilled
-        .then(() => expect(setUpObjects(signer)).to.be.fulfilled)
+      return expect(testHelpers.ensureConfigured()).to.be.fulfilled
+        .then(() => expect(testHelpers.setUpObjects(signer)).to.be.fulfilled)
         .then(() => browser.url('/assets'))
     })
 
@@ -31,7 +31,7 @@ describe('assets', () => {
   })
 
   describe('creating assets', () => {
-    before(() => expect(ensureConfigured()).to.be.fulfilled
+    before(() => expect(testHelpers.ensureConfigured()).to.be.fulfilled
       .then(() => browser.url('/assets'))
     )
 
