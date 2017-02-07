@@ -70,13 +70,21 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 
 		case *issuance:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
-			vmc.RefDataHash = bc.Hash(ent.body.Data)
+			if dEntry, ok := entries[ent.body.Data]; ok {
+				if d, ok := dEntry.(*data); ok {
+					vmc.RefDataHash = d.body
+				}
+			}
 			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 
 		case *spend:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
-			vmc.RefDataHash = bc.Hash(ent.body.Data)
+			if dEntry, ok := entries[ent.body.Data]; ok {
+				if d, ok := dEntry.(*data); ok {
+					vmc.RefDataHash = d.body
+				}
+			}
 			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 		}
