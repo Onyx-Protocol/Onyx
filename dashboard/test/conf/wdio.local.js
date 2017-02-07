@@ -1,4 +1,4 @@
-var extended = process.env.EXTENDED
+const extended = process.env.EXTENDED
 
 exports.config = {
   //
