@@ -121,7 +121,7 @@ public class Client {
    *
    * @param action The requested API action
    * @param body Body payload sent to the API as JSON
-   * @param tClass Type of object to be deserialized from the repsonse JSON
+   * @param tClass Type of object to be deserialized from the response JSON
    * @return the result of the post request
    * @throws ChainException
    */
@@ -172,7 +172,7 @@ public class Client {
    *
    * @param action The requested API action
    * @param body Body payload sent to the API as JSON
-   * @param tClass Type of object to be deserialized from the repsonse JSON
+   * @param tClass Type of object to be deserialized from the response JSON
    * @return the result of the post request
    * @throws ChainException
    */
@@ -198,7 +198,7 @@ public class Client {
             // We should never get here, unless there is a bug in either the SDK or
             // API code, causing a non-singleton response.
             throw new ChainException(
-                "Invalid singleton repsonse, request ID "
+                "Invalid singleton response, request ID "
                     + batch.response().headers().get("Chain-Request-ID"));
           }
         };

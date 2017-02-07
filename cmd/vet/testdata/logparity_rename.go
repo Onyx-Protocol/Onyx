@@ -4,8 +4,8 @@ package testdata
 
 import chainlog "chain/log"
 
-// This function never executes, but it serves as a simple test for the program.
-// Test with (cd ..; go test).
+// WriteTestsWithRename never executes, but it serves as a simple test for
+// the program. Test with (cd ..; go test).
 func WriteTestsWithRename() {
 	chainlog.Write(nil, "k", "v")       // ok
 	chainlog.Write(nil)                 // zero is ok too

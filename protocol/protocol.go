@@ -191,7 +191,7 @@ func (c *Chain) setState(b *bc.Block, s *state.Snapshot) {
 	}
 }
 
-// WaitForBlockSoon returns a channel that
+// BlockSoonWaiter returns a channel that
 // waits for the block at the given height,
 // but it is an error to wait for a block far in the future.
 // WaitForBlockSoon will timeout if the context times out.
@@ -217,7 +217,7 @@ func (c *Chain) BlockSoonWaiter(ctx context.Context, height uint64) <-chan error
 	return ch
 }
 
-// WaitForBlock returns a channel that
+// BlockWaiter returns a channel that
 // waits for the block at the given height.
 func (c *Chain) BlockWaiter(height uint64) <-chan struct{} {
 	ch := make(chan struct{}, 1)

@@ -53,6 +53,8 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *bc.Tx) 
 	return errors.Wrap(err)
 }
 
+// ErrNoTxSighashCommitment is returned when no input commits to the
+// complete transaction.
 // To permit idempotence of transaction submission, we require at
 // least one input to commit to the complete transaction (what you get
 // when you build a transaction with allow_additional_actions=false).

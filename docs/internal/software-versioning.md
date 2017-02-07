@@ -46,13 +46,13 @@ Examples:
 
 ## Package version
 
-The reason to use dates for **package** versions is to avoid frequent collisions across different software packages that may convey non-existant correlation. E.g. if at some point Java SDK and Mac app both have version `1.3.2`, some may be confused by the identical version. 
+The reason to use dates for **package** versions is to avoid frequent collisions across different software packages that may convey non-existent correlation. E.g. if at some point Java SDK and Mac app both have version `1.3.2`, some may be confused by the identical version. 
 
 On the other hand, dependent releases usually happen on the same day and therefore most likely will have the identical versions, indicating the correlation truthfully. E.g. if Chain Core adds a minor fix in the API, all SDKs may be updated with the same new build number: `1.0.161205`.
 
 ## Version format rationale
 
-We have considered non-numerical values to separate package version further from the product versions, but these may cause undesireable issues with the ecosystem. For instance, rubygems does not want to have non-integers in the X.Y.Z format. And Sparkle updater on macOS sorts versions lexicographically when determining if the available update should be downloaded at all. 
+We have considered non-numerical values to separate package version further from the product versions, but these may cause undesirable issues with the ecosystem. For instance, rubygems does not want to have non-integers in the X.Y.Z format. And Sparkle updater on macOS sorts versions lexicographically when determining if the available update should be downloaded at all. 
 
 ## Compatibility
 
