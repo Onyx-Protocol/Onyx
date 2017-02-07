@@ -12,6 +12,7 @@ git clone https://github.com/chain/chain.git $CHAIN
 cd $CHAIN/sdk/java && mvn package && rm -rf $CHAIN/sdk/java/target
 
 /usr/local/go/bin/go install\
+    -race\
     chain/cmd/testbot\
     chain/cmd/benchcore\
 

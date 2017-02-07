@@ -40,7 +40,7 @@ SDKTARGET=chain-test
 (
 	export DATABASE_URL="postgres:///it-core?sslmode=disable"
 	createdb it-core
-	go install chain/cmd/migratedb chain/cmd/cored chain/cmd/corectl
+	go install -race chain/cmd/migratedb chain/cmd/cored chain/cmd/corectl
 	migratedb -d $DATABASE_URL
 	corectl config-generator
 	cored | tee $initlog &
