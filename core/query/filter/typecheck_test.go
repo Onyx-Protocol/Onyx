@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"errors"
 	"testing"
 
 	"chain/testutil"
@@ -8,20 +9,23 @@ import (
 
 func TestTypeCheckInvalid(t *testing.T) {
 	testCases := []struct {
-		p string
+		p   string
+		err error
 	}{
-		{p: `1 = 'hello world'`},
-		{p: `inputs('hello')`},
-		{p: `inputs(1=1).bar`},
-		{p: `'hello'.foo`},
-		{p: `inputs(amount = asset_id)`},
-		{p: `inputs(100 = asset_id)`},
-		{p: `inputs(wat)`},
-		{p: `wat(asset_id = 'a')`},
-		{p: `position(asset_id = 'a')`},
-		{p: `position.huh`},
-		{p: `ref.something = 'abc' OR ref.something = 123`},
-		{p: `ref.buyer.id = 'abc' OR ref.buyer = 'hello'`},
+		{p: `1 = 'hello world'`, err: errors.New("= expects operands of matching types")},
+		{p: `inputs('hello')`, err: errors.New("inputs(...) body must have type bool")},
+		{p: `inputs(1=1).bar`, err: errors.New("selector `.` can only be used on objects")},
+		{p: `'hello'.foo`, err: errors.New("selector `.` can only be used on objects")},
+		{p: `inputs(amount = asset_id)`, err: errors.New("= expects operands of matching types")},
+		{p: `inputs(100 = asset_id)`, err: errors.New("= expects operands of matching types")},
+		{p: `inputs(wat)`, err: errors.New("invalid attribute: wat")},
+		{p: `wat(asset_id = 'a')`, err: errors.New("invalid environment `wat`")},
+		{p: `position(asset_id = 'a')`, err: errors.New("invalid environment `position`")},
+		{p: `('a' = 'a') = (1 = 1)`, err: errors.New("= expects integer or string operands")},
+		{p: `1 OR 2`, err: errors.New("OR expects bool operands")},
+		{p: `position.huh`, err: errors.New("selector `.` can only be used on objects")},
+		{p: `ref.something = 'abc' OR ref.something = 123`, err: errors.New("\"ref.something\" used as both string and integer")},
+		{p: `ref.buyer.id = 'abc' OR ref.buyer = 'hello'`, err: errors.New("\"ref.buyer\" used as both object and string")},
 	}
 
 	for _, tc := range testCases {
@@ -31,9 +35,9 @@ func TestTypeCheckInvalid(t *testing.T) {
 		}
 
 		m := make(map[string]Type)
-		typ, err := typeCheckExpr(expr, transactionsSQLTable, nil, m)
-		if err == nil {
-			t.Errorf("typeCheckExpr(%s) = %s, want error", expr, typ)
+		_, err = typeCheckExpr(expr, transactionsSQLTable, nil, m)
+		if !testutil.DeepEqual(err, tc.err) {
+			t.Errorf("typeCheckExpr(%s) = %s, want error %s", expr, err, tc.err)
 		}
 	}
 }
