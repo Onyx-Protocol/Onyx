@@ -1,12 +1,12 @@
 import React from 'react'
 import TutorialInfo from './TutorialInfo/TutorialInfo'
 import TutorialForm from './TutorialForm/TutorialForm'
-import TutorialComplete from './TutorialComplete/TutorialComplete'
+import TutorialModal from './TutorialModal/TutorialModal'
 
 const components = {
   TutorialInfo,
   TutorialForm,
-  TutorialComplete
+  TutorialModal
 }
 
 class Tutorial extends React.Component {

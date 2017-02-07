@@ -16,7 +16,7 @@ class ItemList extends React.Component {
     const newButton = <button key='showCreate' className='btn btn-primary' onClick={this.props.showCreate}>
       + {newLabel}
     </button>
-    if (!this.props.skipCreate && !this.props.showFirstTimeFlow) {
+    if (!this.props.skipCreate) {
       actions.push(newButton)
     }
 

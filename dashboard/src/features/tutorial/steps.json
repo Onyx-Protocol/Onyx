@@ -1,11 +1,11 @@
 [
   {
-    "component": "TutorialInfo",
-    "title": "Tutorial - Welcome",
-    "button": "Start 5-minute Tutorial",
-    "dismiss": "Skip tutorial",
+    "component": "TutorialModal",
+    "modalTitle": "Tutorial - Welcome to Chain Core!",
+    "modalNext": "Start 5-minute Tutorial",
+    "modalDismiss": "Skip tutorial",
     "route": "mockhsms",
-    "logo": "glyphicon-book",
+    "image": null,
     "content": [
       {
         "line": "The dashboard is a UI to be used with the SDKs, which enable your application to communicate with Chain Core."
@@ -21,7 +21,7 @@
     "button": "Create MockHSM key",
     "dismiss": "End tutorial",
     "route": "mockhsms/create",
-    "logo": "glyphicon-book",
+    "image": "mockhsm",
     "content": [
       {
         "line": "Cryptographic private keys are the primary authorization mechanism on a blockchain."
@@ -58,7 +58,7 @@
     "button": "Learn about assets",
     "dismiss": "End tutorial",
     "route": "assets",
-    "logo": "glyphicon-ok-sign",
+    "image": "mockhsm",
     "content": [
       {
         "type": "mockhsm",
@@ -75,13 +75,10 @@
     "button": "Create Asset",
     "dismiss": "End tutorial",
     "route": "assets/create",
-    "logo": "glyphicon-book",
+    "image": "asset",
     "content": [
       {
-        "line": "An asset is a type of value that can be issued on a blockchain."
-      },
-      {
-        "line": "All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer."
+        "line": "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer."
       }
     ]
   },
@@ -117,7 +114,7 @@
     "button": "Learn about accounts",
     "dismiss": "End tutorial",
     "route": "accounts",
-    "logo": "glyphicon-ok-sign",
+    "image": "asset",
     "content": [
       {
         "type": "asset",
@@ -134,7 +131,7 @@
     "button": "Create Account",
     "dismiss": "End tutorial",
     "route": "accounts/create",
-    "logo": "glyphicon-book",
+    "image": "account",
     "content": [
       {
         "line": "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs."
@@ -175,7 +172,7 @@
     "button": "Create 2nd account",
     "dismiss": "End tutorial",
     "route": "accounts/create",
-    "logo": "glyphicon-ok-sign",
+    "image": "account",
     "content": [
       {
         "type": "accounts",
@@ -220,7 +217,7 @@
     "button": "Learn about transactions",
     "dismiss": "End tutorial",
     "route": "transactions",
-    "logo": "glyphicon-ok-sign",
+    "image": "account",
     "content": [
       {
         "type": "accounts",
@@ -238,7 +235,7 @@
     "button": "Issue asset units",
     "dismiss": "End tutorial",
     "route": "transactions/create",
-    "logo": "glyphicon-book",
+    "image": "transaction",
     "content": [
       {
         "line": "A transaction contains one or more inputs, and one or more outputs."
@@ -303,7 +300,7 @@
     "button": "Spend asset units",
     "dismiss": "End tutorial",
     "route": "transactions/create",
-    "logo": "glyphicon-ok-sign",
+    "image": "transaction",
     "content": [
       {
         "type": "asset",
@@ -376,7 +373,7 @@
     "button": "Retire asset units",
     "dismiss": "End tutorial",
     "route": "transactions/create",
-    "logo": "glyphicon-ok-sign",
+    "image": "transaction",
     "content": [
       {
         "type": "asset",
@@ -443,7 +440,7 @@
     "button": "Finish tutorial",
     "dismiss": " ",
     "route": "transactions",
-    "logo": "glyphicon-ok-sign",
+    "image": "transaction",
     "content": [
       {
         "type": "asset",
@@ -455,11 +452,19 @@
     ]
   },
   {
-    "component": "TutorialComplete",
-    "title": null,
-    "button": null,
-    "dismiss": null,
+    "component": "TutorialModal",
+    "modalTitle": "5-minute tutorial completed!",
+    "modalNext": null,
+    "modalDismiss": "Done",
     "route": null,
-    "content": null
+    "image": null,
+    "content": [
+      {
+        "line": "In this tutorial, you learned how to:"
+      },
+      {
+        "line": "If you need to revisit this tutorial, you can click Tutorial in the sidenav. For detailed information on how Chain Core works, please take a look at the Developer Documentation."
+      }
+    ]
   }
 ]
