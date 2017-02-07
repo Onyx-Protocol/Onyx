@@ -173,7 +173,7 @@ func (h *HSM) ListKeys(ctx context.Context, aliases []string, after string, limi
 		q += fmt.Sprintf(" AND sort_id > $%d", len(params))
 	}
 
-	q += fmt.Sprintf(" ORDER BY sort_id LIMIT %d", limit)
+	q += fmt.Sprintf(" ORDER BY sort_id DESC LIMIT %d", limit)
 
 	consumeRow := func(b []byte, alias sql.NullString, sortID int64) {
 		var hdxpub chainkd.XPub
