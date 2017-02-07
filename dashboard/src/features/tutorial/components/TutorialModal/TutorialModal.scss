@@ -1,0 +1,66 @@
+.main {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+}
+.backdrop {
+  background: transparentize(black, 0.2);
+  width: 100%;
+  height: 100%;
+}
+
+.content {
+  background: $background-color;
+  padding-bottom: $gutter-size;
+  position: absolute;
+  top: 10%;
+  left: calc(50% - 250px);
+  width: 500px;
+  max-height: 80%;
+  overflow: scroll;
+
+  .header {
+    background-color: $highlight-tutorial;
+    box-sizing: border-box;
+    color: $text-inverse-color;
+    padding: 0 $gutter-size;
+    height: $title-height;
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    font-weight: bold;
+    width: 100%;
+  }
+
+  .text {
+    padding: $gutter-size;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 8px;
+    color: #747C89;
+    border-bottom: 1px solid rgba(182,188,197,0.27);
+  }
+
+  .footer {
+    margin: $gutter-size;
+
+    .dismiss {
+      text-align: right;
+      margin-right: $gutter-size;
+      float: right;
+      background-color: $background-color;
+      border: 1px solid $highlight-tutorial;
+      border-radius: 2px;
+      color: $highlight-tutorial;
+    }
+
+    .next {
+      background: #69A7E4;
+      border-color: #69A7E4;
+      float: right;
+    }
+  }
+}

@@ -5,26 +5,30 @@ import styles from './TutorialHeader.scss'
 class TutorialHeader extends React.Component {
 
   render() {
-
-    return (
-      <div>
-        {this.props.tutorial.isShowing &&
-          <div className={styles.main}>
-            <div className={styles.header}>
-              {this.props.currentStep.title}
-              {this.props.currentStep.dismiss &&
-                <div className={styles.skip}>
-                  {!this.props.showTutorial && <Link to={this.props.tutorial.route}>
-                    Resume tutorial
-                  </Link>}
-                  {this.props.showTutorial &&
-                  <a onClick={this.props.dismissTutorial}>{this.props.currentStep.dismiss}</a>}
-                </div>}
-            </div>
-            {this.props.showTutorial && this.props.children}
-          </div>}
-    </div>
-    )
+    if(!this.props.tutorial.isShowing || this.props.currentStep.modalTitle){
+      return (
+        <div>
+          {this.props.children}
+        </div>
+      )
+    } else {
+      return (
+        <div className={styles.main}>
+          <div className={styles.header}>
+            {this.props.currentStep.title}
+            {this.props.currentStep.dismiss &&
+              <div className={styles.skip}>
+                {!this.props.showTutorial && <Link to={this.props.tutorial.route}>
+                  Resume tutorial
+                </Link>}
+                {this.props.showTutorial &&
+                <a onClick={this.props.dismissTutorial}>{this.props.currentStep.dismiss}</a>}
+              </div>}
+          </div>
+          {this.props.showTutorial && this.props.children}
+        </div>
+      )
+    }
   }
 }
 

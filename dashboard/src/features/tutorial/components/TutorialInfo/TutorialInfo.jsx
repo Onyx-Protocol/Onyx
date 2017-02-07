@@ -5,6 +5,11 @@ import { Link } from 'react-router'
 class TutorialInfo extends React.Component {
 
   render() {
+    let objectImage
+    try {
+      objectImage = require(`assets/images/empty/${this.props.image}.svg`)
+    } catch (err) { /* do nothing */ }
+
     const userInput = this.props.userInput
     const nextButton = <div className={styles.next}>
       <Link to={this.props.route}>
@@ -17,25 +22,23 @@ class TutorialInfo extends React.Component {
     return (
       <div>
         <div className={styles.container}>
-          <div className={styles.content}>
-            {this.props.logo && <span className={`glyphicon ${this.props.logo}`}></span>}
-            <div className={styles.text}>
-              {this.props.content.map(function (contentLine, i){
-                let str = contentLine['line']
-                if (contentLine['type']){
-                  let replacement = userInput[contentLine['type']]
-                  if ('index' in contentLine){
-                    replacement = replacement[contentLine['index']]
-                  }
-                  str = str.replace('STRING', replacement['alias'])
+          {this.props.image && <img className={styles.image} src={objectImage} />}
+          <div className={styles.text}>
+            {this.props.content.map(function (contentLine, i){
+              let str = contentLine['line']
+              if (contentLine['type']){
+                let replacement = userInput[contentLine['type']]
+                if ('index' in contentLine){
+                  replacement = replacement[contentLine['index']]
                 }
+                str = str.replace('STRING', replacement['alias'])
+              }
 
-                return <li key={i}>{str}</li>
-              })}
-            </div>
-
-            {nextButton && nextButton}
+              return <p key={i}>{str}</p>
+            })}
           </div>
+
+          {nextButton && nextButton}
         </div>
     </div>
     )

@@ -1,29 +1,9 @@
 import React from 'react'
-import { BaseList, EmptyContent } from 'features/shared/components'
-import { Link } from 'react-router'
+import { BaseList } from 'features/shared/components'
 import ListItem from './ListItem/ListItem'
 import actions from 'actions'
 
 const type = 'transaction'
-
-const firstTimeContent = <EmptyContent title='Welcome to Chain Core!'>
-  To build your first transaction, you will need to:
-  <ol>
-    <li>
-      <Link to='/accounts/create'>
-      create an account
-      </Link>
-    </li>
-    <li>
-      <Link to='/assets/create'>
-      create an asset
-      </Link>
-    </li>
-  </ol>
-  <a href='/docs/core/build-applications/transaction-basics' target='_blank'>
-    Learn more
-  </a> about how to build, sign, and submit transactions.
-</EmptyContent>
 
 class List extends React.Component {
   componentWillReceiveProps(nextProps) {
@@ -43,8 +23,7 @@ class List extends React.Component {
 export default BaseList.connect(
   (state, ownProps) => ({
     ...BaseList.mapStateToProps(type, ListItem)(state, ownProps),
-    blockHeight: state.core.blockHeight,
-    firstTimeContent
+    blockHeight: state.core.blockHeight
   }),
   (dispatch) => ({
     ...BaseList.mapDispatchToProps(type)(dispatch),
