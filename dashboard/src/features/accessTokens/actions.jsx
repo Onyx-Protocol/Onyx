@@ -2,6 +2,7 @@ import {
   baseCreateActions,
   baseListActions
 } from 'features/shared/actions'
+import { chainClient } from 'utility/environment'
 
 import React from 'react'
 import CreateModal from './components/CreateModal'
@@ -21,6 +22,7 @@ let actions = {
       listPath: '/access_tokens/client',
       className: 'AccessToken',
       createModal: makeCreateModal,
+      clientApi: () => chainClient().accessTokens,
     }),
   },
   network_access_token: {
@@ -33,6 +35,7 @@ let actions = {
       listPath: '/access_tokens/network',
       className: 'AccessToken',
       createModal: makeCreateModal,
+      clientApi: () => chainClient().accessTokens,
     }),
   }
 }

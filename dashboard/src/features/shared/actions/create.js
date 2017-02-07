@@ -13,7 +13,7 @@ export default function(type, options = {}) {
     showCreate: push(createPath),
     created,
     submitForm: (data) => {
-      const clientApi = options.clientApi || chainClient()[`${type}s`]
+      const clientApi = options.clientApi ? options.clientApi() : chainClient()[`${type}s`]
       let promise = Promise.resolve()
 
       if (typeof data.id == 'string')     data.id = data.id.trim()
