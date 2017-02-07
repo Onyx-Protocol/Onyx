@@ -49,6 +49,18 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 
 	hashes.VMContexts = make([]*bc.VMContext, len(oldTx.Inputs))
 
+	getRefDataHash := func(id entryRef) bc.Hash {
+		dEntry, ok := entries[id]
+		if !ok {
+			return bc.EmptyStringHash
+		}
+		d, ok := dEntry.(*data)
+		if !ok {
+			return bc.EmptyStringHash
+		}
+		return d.body
+	}
+
 	for entryID, ent := range entries {
 		switch ent := ent.(type) {
 		case *nonce:
@@ -70,21 +82,13 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 
 		case *issuance:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
-			if dEntry, ok := entries[ent.body.Data]; ok {
-				if d, ok := dEntry.(*data); ok {
-					vmc.RefDataHash = d.body
-				}
-			}
+			vmc.RefDataHash = getRefDataHash(ent.body.Data)
 			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 
 		case *spend:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
-			if dEntry, ok := entries[ent.body.Data]; ok {
-				if d, ok := dEntry.(*data); ok {
-					vmc.RefDataHash = d.body
-				}
-			}
+			vmc.RefDataHash = getRefDataHash(ent.body.Data)
 			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 		}
