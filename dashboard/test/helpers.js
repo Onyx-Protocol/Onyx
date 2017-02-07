@@ -56,6 +56,11 @@ global.setUpObjects = (signer) => {
       keyPromise = keyPromise.then(() => expect(client.mockHsm.keys.create({alias: 'testkey'})
       .then((keyResp) => {
         key = keyResp
+      }, (err) => {
+        if (err.code == 'CH050') {
+          return client.mockHsm.keys.query({aliases: ['testkey']}).then(resp => resp.items[0])
+        }
+        throw err
       })).to.be.fulfilled)
     }
 
