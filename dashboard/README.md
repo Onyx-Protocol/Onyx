@@ -41,7 +41,7 @@ npm run lint src
 
 #### Tests
 
-The Chain Core dashboard has a series of integration tests that can be run
+The Chain Core Dashboard has a series of integration tests that can be run
 against a running core. First, start Chain Core and Dashboard on their default
 ports of 1999 and 3000 respective. Then, start tests with the command:
 

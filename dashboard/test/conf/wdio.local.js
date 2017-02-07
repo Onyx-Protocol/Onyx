@@ -11,7 +11,7 @@ exports.config = {
   // directory is where your package.json resides, so `wdio` will be called from there.
   //
   specs: [
-    './test/specs/**/*.js'
+    './test/specs/**/*.js',
   ],
   // Patterns to exclude.
   exclude: [
@@ -24,12 +24,7 @@ exports.config = {
   // Define specific test suites
   suites: {
     base: [
-      './test/specs/*.js'
-    ],
-    extended: [
-      // NOTE: extended specs must be run sequentially, as they
-      // involve Chain Core resets or other blocking operations.
-      './test/specs/extended/*.js'
+      './test/specs/*.js',
     ],
   },
   //
