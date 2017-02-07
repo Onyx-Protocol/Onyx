@@ -26,7 +26,7 @@ var ErrInvalidKey = errors.New("misconfigured signer public key")
 // Signer provides the interface for computing the block signature. It's
 // implemented by the MockHSM and our signerd client.
 type Signer interface {
-	Sign(context.Context, ed25519.PublicKey, []byte) ([]byte, error)
+	Sign(context.Context, ed25519.PublicKey, *bc.BlockHeader) ([]byte, error)
 }
 
 // BlockSigner validates and signs blocks.
@@ -51,8 +51,7 @@ func New(pub ed25519.PublicKey, hsm Signer, db pg.DB, c *protocol.Chain) *BlockS
 // SignBlock computes the signature for the block using
 // the private key in s.  It does not validate the block.
 func (s *BlockSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
-	hash := b.HashForSig()
-	sig, err := s.hsm.Sign(ctx, s.Pub, hash[:])
+	sig, err := s.hsm.Sign(ctx, s.Pub, &b.BlockHeader)
 	if err != nil {
 		return nil, errors.Wrapf(ErrInvalidKey, "err=%s", err.Error())
 	}
