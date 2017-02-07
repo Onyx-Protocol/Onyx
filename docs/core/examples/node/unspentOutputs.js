@@ -72,7 +72,7 @@ client.mockHsm.keys.create()
   // endsnippet
 )
 .then(() =>
-  // snipped build-transaction-all
+  // snippet build-transaction-all
   client.transactions.build(builder => {
     builder.spendUnspentOutput({
       transactionId: issuanceTxId,

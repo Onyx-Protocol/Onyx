@@ -144,11 +144,15 @@ Promise.all([
       })
       // endsnippet
 
-      .then(aliceSigned =>
+      .then(aliceSigned => {
+
+        // snippet base-transaction-alice
+        const baseTxFromAlice = aliceSigned.rawTransaction
+        // endsnippet
 
         // snippet build-trade-bob
         bobCore.transactions.build(builder => {
-          builder.baseTransaction(aliceSigned.rawTransaction)
+          builder.baseTransaction(baseTxFromAlice)
           builder.spendFromAccount({
             accountAlias: 'bob',
             assetAlias: 'bobBuck',
@@ -169,7 +173,7 @@ Promise.all([
         // snippet submit-trade-bob
         .then(bobSigned => bobCore.transactions.submit(bobSigned))
         // endsnippet
-    )
+      })
   }
 }).catch(err =>
   process.nextTick(() => { throw err })
