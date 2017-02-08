@@ -97,7 +97,7 @@ func configGenerator(db *sql.DB, args []string) {
 	}
 
 	//hsm url and access token are
-	//ToDo (ameets): update when switching to x.509 authorization
+	//TODO(ameets): update when switching to x.509 authorization
 	if (*flagHSMURL == "") != (*flagHSMToken == "") {
 		fatalln("error: flags -hsm-url and -hsm-token must be given together")
 	}
@@ -218,7 +218,7 @@ func configNongenerator(db *sql.DB, args []string) {
 	}
 
 	//hsm url and access token are
-	//ToDo (ameets): update when switching to x.509 authorization
+	//TODO(ameets): update when switching to x.509 authorization
 	if (*flagHSMURL == "") != (*flagHSMToken == "") {
 		fatalln("error: flags -hsm-url and -hsm-token must be given together")
 	}
