@@ -99,6 +99,7 @@ func (h *Handler) init() {
 	h.actionDecoders = map[string]func(data []byte) (txbuilder.Action, error){
 		"control_account":                h.Accounts.DecodeControlAction,
 		"control_program":                txbuilder.DecodeControlProgramAction,
+		"control_with_receiver":          txbuilder.DecodeControlWithReceiverAction,
 		"issue":                          h.Assets.DecodeIssueAction,
 		"retire":                         txbuilder.DecodeRetireAction,
 		"spend_account":                  h.Accounts.DecodeSpendAction,

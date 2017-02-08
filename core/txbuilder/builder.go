@@ -48,6 +48,12 @@ func (b *TemplateBuilder) RestrictMinTime(t time.Time) {
 	}
 }
 
+func (b *TemplateBuilder) RestrictMaxTime(t time.Time) {
+	if t.Before(b.maxTime) {
+		b.maxTime = t
+	}
+}
+
 func (b *TemplateBuilder) MaxTime() time.Time {
 	return b.maxTime
 }
