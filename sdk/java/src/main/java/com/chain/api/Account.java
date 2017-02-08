@@ -253,4 +253,95 @@ public class Account {
       return this;
     }
   }
+
+  /**
+   * Use this class to create a {@link Receiver} under an account.
+   */
+  public static class ReceiverBuilder {
+    @SerializedName("account_alias")
+    public String accountAlias;
+
+    @SerializedName("account_id")
+    public String accountId;
+
+    @SerializedName("expires_at")
+    public Date expiresAt;
+
+    /**
+     * Specifies the account under which the receiver is created. You must use
+     * this method or @{link ReceiverBuilder#setAccountId}, but not both.
+     *
+     * @param alias the unique alias of the account
+     * @return the updated ReceiverBuilder object
+     */
+    public ReceiverBuilder setAccountAlias(String alias) {
+      this.accountAlias = alias;
+      return this;
+    }
+
+    /**
+     * Specifies the account under which the receiver is created. You must use
+     * this method or @{link ReceiverBuilder#setAccountAlias}, but not both.
+     *
+     * @param id the unique ID of the account
+     * @return the updated ReceiverBuilder object
+     */
+    public ReceiverBuilder setAccountId(String id) {
+      this.accountId = id;
+      return this;
+    }
+
+    /**
+     * Specifies when the receiver will expire. This defaults to 30 days in the
+     * future.
+     *
+     * Payments to expired receivers should not be considered valid, and may or
+     * may not be indexed by your Chain Core instance. In general, as long as
+     * the contents of receiver objects are not tampered with, the transaction
+     * builder will ensure that transactions that pay to expired receivers will
+     * be rejected by the blockchain.
+     *
+     * @param date the date when the receiver expires
+     * @return the updated ReceiverBuilder object
+     */
+    public ReceiverBuilder setExpiresAt(Date date) {
+      this.expiresAt = date;
+      return this;
+    }
+
+    /**
+     * Creates a single Receiver object under an account.
+     *
+     * @param client the client object providing access to an instance of Chain Core
+     * @return a new Receiver object
+     * @throws APIException This exception is raised if the api returns errors while creating the control programs.
+     * @throws BadURLException This exception wraps java.net.MalformedURLException.
+     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+     * @throws HTTPException This exception is raised when errors occur making http requests.
+     * @throws JSONException This exception is raised due to malformed json requests or responses.
+     */
+    public Receiver create(Client client)
+        throws ChainException {
+      return client.singletonBatchRequest(
+          "create-account-receiver", Arrays.asList(this), Receiver.class, APIException.class);
+    }
+  }
+
+  /**
+   * Creates multiple Receiver objects under one or more accounts, as a batch.
+   *
+   * @param client the client object providing access to an instance of Chain Core
+   * @param builders a list of builder objects, one for each new Receiver to be created
+   * @return a list of new Receiver objects or error messages, as a {@link BatchResponse}
+   * @throws APIException This exception is raised if the api returns errors while creating the control programs.
+   * @throws BadURLException This exception wraps java.net.MalformedURLException.
+   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+   * @throws HTTPException This exception is raised when errors occur making http requests.
+   * @throws JSONException This exception is raised due to malformed json requests or responses.
+   */
+  public static BatchResponse<Receiver> createReceiverBatch(Client client, List<ReceiverBuilder> builders)
+      throws ChainException {
+    return client.batchRequest(
+        "create-account-receiver", builders, Receiver.class, APIException.class);
+  }
 }

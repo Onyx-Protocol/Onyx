@@ -2,6 +2,8 @@ package com.chain.api;
 
 import com.chain.exception.*;
 import com.chain.http.*;
+import com.chain.common.*;
+
 import com.google.gson.annotations.SerializedName;
 
 import java.util.*;
@@ -875,8 +877,50 @@ public class Transaction {
     }
 
     /**
-     * Represents a control action taken on a control program.
+     * Use this action to pay assets into a {@link Receiver}.
      */
+    public static class ControlWithReceiver extends Action {
+      /**
+       * Default constructor.
+       */
+      public ControlWithReceiver() {
+        this.put("type", "control_with_receiver");
+      }
+
+      /**
+       * Specifies the receiver that is being paid to.
+       *
+       * @param receiver the receiver being paid to
+       * @return the updated action object
+       */
+      public ControlWithReceiver setReceiver(Receiver receiver) {
+        this.put("receiver", receiver);
+        return this;
+      }
+
+      /**
+       * Specifies the receiver (as a JSON string) that is being paid to.
+       *
+       * @param serialized the JSON-serialized receiver being paid to
+       * @return the updated action object
+       */
+      public ControlWithReceiver setReceiver(String serialized) throws JSONException {
+        Receiver r;
+        try {
+          r = Utils.serializer.fromJson(serialized, Receiver.class);
+        } catch (IllegalStateException e) {
+          throw new JSONException("Unable to parse serialized receiver: " + e.getMessage());
+        }
+        return this.setReceiver(r);
+      }
+    }
+
+    /**
+     * Represents a control action taken on a control program.
+     *
+     * @deprecated Please use {@link ControlWithReceiver} instead.
+     */
+    @Deprecated
     public static class ControlWithProgram extends Action {
       /**
        * Default constructor defines the action type as "control_program"

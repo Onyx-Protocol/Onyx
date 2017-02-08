@@ -3,18 +3,18 @@ package com.chain.integration;
 import com.chain.TestUtils;
 import com.chain.api.Account;
 import com.chain.api.Asset;
-import com.chain.api.ControlProgram;
+import com.chain.api.Receiver;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
 import com.chain.exception.APIException;
 import com.chain.http.BatchResponse;
 import com.chain.http.Client;
+import com.chain.common.Utils;
 
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.text.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -30,8 +30,8 @@ public class CreateTest {
     testAccountCreateBatch();
     testAssetCreate();
     testAssetCreateBatch();
-    testControlProgramCreate();
-    testControlProgramCreateBatch();
+    testReceiverCreate();
+    testReceiverCreateBatch();
     testTransactionFeedCreate();
   }
 
@@ -166,52 +166,59 @@ public class CreateTest {
     assertEquals(1, resp.errors().size());
   }
 
-  public void testControlProgramCreate() throws Exception {
+  public void testReceiverCreate() throws Exception {
     client = TestUtils.generateClient();
     key = MockHsm.Key.create(client);
-    String alice = "CreateTest.testControlProgramCreate.alice";
-    Account account =
-        new Account.Builder()
-            .setAlias(alice)
-            .addRootXpub(key.xpub)
-            .setQuorum(1)
-            .addTag("name", alice)
-            .create(client);
+    String alice = "CreateTest.testReceiverCreate.alice";
+    Account account = new Account.Builder()
+      .setAlias(alice)
+      .addRootXpub(key.xpub)
+      .setQuorum(1)
+      .addTag("name", alice)
+      .create(client);
 
-    ControlProgram ctrlp =
-        new ControlProgram.Builder().controlWithAccountById(account.id).create(client);
-    assertNotNull(ctrlp.controlProgram);
+    Receiver r = new Account.ReceiverBuilder()
+      .setAccountId(account.id)
+      .create(client);
 
-    ctrlp = new ControlProgram.Builder().controlWithAccountByAlias(account.alias).create(client);
-    assertNotNull(ctrlp.controlProgram);
+    assertNotNull(r.controlProgram);
+    assert(r.expiresAt.after(new Date()));
+
+    Date expiresAt = new SimpleDateFormat(Utils.rfc3339DateFormat)
+      .parse("2020-01-01T00:00:00.000Z");
+    r = new Account.ReceiverBuilder()
+      .setAccountAlias(alice)
+      .setExpiresAt(expiresAt)
+      .create(client);
+
+    assertNotNull(r.controlProgram);
+    assert(r.expiresAt.equals(expiresAt));
 
     try {
-      new ControlProgram.Builder().controlWithAccountById("bad-id").create(client);
+      new Account.ReceiverBuilder()
+        .setAccountId("bad-id")
+        .create(client);
     } catch (APIException e) {
       return;
     }
     throw new Exception("expecting APIException");
   }
 
-  public void testControlProgramCreateBatch() throws Exception {
+  public void testReceiverCreateBatch() throws Exception {
     client = TestUtils.generateClient();
     key = MockHsm.Key.create(client);
-    String alice = "CreateTest.testControlProgramCreateBatch.alice";
-    Account account =
-        new Account.Builder()
-            .setAlias(alice)
-            .addRootXpub(key.xpub)
-            .setQuorum(1)
-            .addTag("name", alice)
-            .create(client);
+    String alice = "CreateTest.testReceiverCreateBatch.alice";
+    Account account = new Account.Builder()
+      .setAlias(alice)
+      .addRootXpub(key.xpub)
+      .setQuorum(1)
+      .addTag("name", alice)
+      .create(client);
 
-    ControlProgram.Builder builder =
-        new ControlProgram.Builder().controlWithAccountById(account.id);
+    Account.ReceiverBuilder builder = new Account.ReceiverBuilder().setAccountId(account.id);
+    Account.ReceiverBuilder failure = new Account.ReceiverBuilder().setAccountId("bad-id");
 
-    ControlProgram.Builder failure = new ControlProgram.Builder().controlWithAccountById("bad-id");
-
-    BatchResponse<ControlProgram> resp =
-        ControlProgram.createBatch(client, Arrays.asList(builder, failure));
+    BatchResponse<Receiver> resp = Account.createReceiverBatch(client, Arrays.asList(builder, failure));
     assertEquals(1, resp.successes().size());
     assertEquals(1, resp.errors().size());
   }
