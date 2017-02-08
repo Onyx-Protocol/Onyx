@@ -94,6 +94,12 @@ func TestKeyWithAlias(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	hsm := New(db)
+
+	_, err := hsm.XCreate(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	xpub, err := hsm.XCreate(ctx, "some-alias")
 	if err != nil {
 		t.Fatal(err)
