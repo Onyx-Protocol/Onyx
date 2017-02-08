@@ -11,6 +11,7 @@ import FormContainer from './FormContainer/FormContainer'
 import FormSection from './FormSection/FormSection'
 import HiddenField from './HiddenField'
 import JsonField from './JsonField/JsonField'
+import KeyConfiguration from './KeyConfiguration'
 import KeyValueTable from './KeyValueTable/KeyValueTable'
 import NotFound from './NotFound'
 import PageContent from './PageContent/PageContent'
@@ -40,6 +41,7 @@ export {
   FormSection,
   HiddenField,
   JsonField,
+  KeyConfiguration,
   KeyValueTable,
   NotFound,
   PageContent,

@@ -1,8 +1,7 @@
 import React from 'react'
-import { BaseNew, FormContainer, FormSection, JsonField } from 'features/shared/components'
+import { BaseNew, FormContainer, FormSection, JsonField, KeyConfiguration } from 'features/shared/components'
 import {
-  TextField,
-  KeyConfiguration,
+  TextField
 } from 'components/Common'
 import { reduxForm } from 'redux-form'
 
