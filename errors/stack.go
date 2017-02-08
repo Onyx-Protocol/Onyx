@@ -5,7 +5,7 @@ import (
 	"runtime"
 )
 
-const stackTraceSize = 5
+const stackTraceSize = 10
 
 // StackFrame represents a single entry in a stack trace.
 type StackFrame struct {
