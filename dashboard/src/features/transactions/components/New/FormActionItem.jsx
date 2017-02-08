@@ -3,9 +3,8 @@ import {
   TextField,
   JsonField,
   ObjectSelectorField,
-  Autocomplete,
 } from 'components/Common'
-import { ErrorBanner, HiddenField } from 'features/shared/components'
+import { ErrorBanner, HiddenField, Autocomplete } from 'features/shared/components'
 import styles from './FormActionItem.scss'
 
 const ISSUE_KEY = 'issue'
