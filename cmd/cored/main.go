@@ -236,7 +236,10 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		}
 
 		var hsm blocksigner.Signer = mockHSM
+		log.Printf("blockhsmURL %q", conf.BlockHSMURL)
 		if conf.BlockHSMURL != "" {
+			log.Printf("hsm base url %q", conf.BlockHSMURL)
+			log.Printf("hsm access token %q", conf.BlockHSMAccessToken)
 			hsm = &remoteHSM{Client: &rpc.Client{
 				BaseURL:      conf.BlockHSMURL,
 				AccessToken:  conf.BlockHSMAccessToken,

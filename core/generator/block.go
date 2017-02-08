@@ -115,6 +115,7 @@ func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 			goodSigs[k] = sig
 			nready++
 		} else if k < 0 {
+			log.Messagef(ctx, "has4sig: %x ", hashForSig[:])
 			log.Write(ctx, "error", "invalid signature", "block", b.Hash(), "signature", sig)
 		}
 	}

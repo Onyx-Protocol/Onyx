@@ -228,9 +228,9 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.IsGenerator,
 		c.BlockchainID,
 		c.GeneratorURL,
+		c.GeneratorAccessToken,
 		c.BlockHSMURL,
 		c.BlockHSMAccessToken,
-		c.GeneratorAccessToken,
 		blockSignerData,
 		bc.DurationMillis(c.MaxIssuanceWindow.Duration),
 	)
