@@ -58,11 +58,14 @@ func alwaysError(err error) http.Handler {
 
 func batchRecover(ctx context.Context, v *interface{}) {
 	if r := recover(); r != nil {
+		var err error
 		if recoveredErr, ok := r.(error); ok {
-			*v = recoveredErr
+			err = recoveredErr
 		} else {
-			*v = fmt.Errorf("panic with %T", r)
+			err = fmt.Errorf("panic with %T", r)
 		}
+		err = errors.Wrap(err)
+		*v = err
 	}
 
 	if *v == nil {
