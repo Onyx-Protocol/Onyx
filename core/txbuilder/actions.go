@@ -12,6 +12,42 @@ import (
 
 var retirementProgram = vmutil.NewBuilder().AddOp(vm.OP_FAIL).Program
 
+func DecodeControlReceiverAction(data []byte) (Action, error) {
+	a := new(controlReceiverAction)
+	err := stdjson.Unmarshal(data, a)
+	return a, err
+}
+
+type controlReceiverAction struct {
+	bc.AssetAmount
+	Receiver      *Receiver `json:"receiver"`
+	ReferenceData json.Map  `json:"reference_data"`
+}
+
+func (a *controlReceiverAction) Build(ctx context.Context, b *TemplateBuilder) error {
+	var missing []string
+	if a.Receiver == nil {
+		missing = append(missing, "receiver")
+	} else {
+		if len(a.Receiver.ControlProgram) == 0 {
+			missing = append(missing, "receiver.control_program")
+		}
+		if a.Receiver.ExpiresAt.IsZero() {
+			missing = append(missing, "receiver.expires_at")
+		}
+	}
+	if a.AssetID == (bc.AssetID{}) {
+		missing = append(missing, "asset_id")
+	}
+	if len(missing) > 0 {
+		return MissingFieldsError(missing...)
+	}
+
+	b.RestrictMaxTime(a.Receiver.ExpiresAt)
+	out := bc.NewTxOutput(a.AssetID, a.Amount, a.Receiver.ControlProgram, a.ReferenceData)
+	return b.AddOutput(out)
+}
+
 func DecodeControlProgramAction(data []byte) (Action, error) {
 	a := new(controlProgramAction)
 	err := stdjson.Unmarshal(data, a)

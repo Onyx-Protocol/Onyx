@@ -3,7 +3,9 @@ package txbuilder
 import (
 	"context"
 	"encoding/json"
+	"time"
 
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
 )
@@ -66,4 +68,10 @@ func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 
 type Action interface {
 	Build(context.Context, *TemplateBuilder) error
+}
+
+// Reciever encapsulates information about where to send assets.
+type Receiver struct {
+	ControlProgram chainjson.HexBytes `json:"control_program"`
+	ExpiresAt      time.Time          `json:"expires_at"`
 }
