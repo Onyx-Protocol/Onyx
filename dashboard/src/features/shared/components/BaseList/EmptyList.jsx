@@ -7,7 +7,7 @@ class EmptyList extends React.Component {
     let emptyImage
 
     try {
-      emptyImage = require(`assets/images/empty/${this.props.type}.svg`)
+      emptyImage = require(`images/empty/${this.props.type}.svg`)
     } catch (err) { /* do nothing */ }
 
     let emptyBlock

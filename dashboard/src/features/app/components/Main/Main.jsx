@@ -21,7 +21,7 @@ class Main extends React.Component {
   }
 
   render() {
-    let logo = require('assets/images/logo-white.png')
+    let logo = require('images/logo-white.png')
 
     return (
       <div className={styles.main}
@@ -35,7 +35,7 @@ class Main extends React.Component {
 
               <span>
                 <span className={styles.settings} onClick={this.toggleDropdown}>
-                  <img src={require('assets/images/navigation/settings.png')}/>
+                  <img src={require('images/navigation/settings.png')}/>
                 </span>
                 {this.props.showDropwdown && <SecondaryNavigation />}
               </span>
