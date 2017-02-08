@@ -95,6 +95,7 @@ func TestKeyWithAlias(t *testing.T) {
 	ctx := context.Background()
 	hsm := New(db)
 
+	// Make sure latest key is returned as the first index, not this key
 	_, err := hsm.XCreate(ctx, "")
 	if err != nil {
 		t.Fatal(err)
