@@ -49,11 +49,10 @@ func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
 	}
 	if leader.IsLeading() {
 		return h.leaderInfo(ctx)
-	} else {
-		var resp map[string]interface{}
-		err := h.forwardToLeader(ctx, "/info", nil, &resp)
-		return resp, err
 	}
+	var resp map[string]interface{}
+	err := h.forwardToLeader(ctx, "/info", nil, &resp)
+	return resp, err
 }
 
 func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error) {

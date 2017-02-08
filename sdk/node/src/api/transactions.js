@@ -42,7 +42,7 @@ class TransactionBuilder {
    * Add an action that issues assets.
    *
    * @param {Object} params - Action parameters.
-   * @param {String} params.asset_id - Asset ID specifiying the asset to be issued.
+   * @param {String} params.asset_id - Asset ID specifying the asset to be issued.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.asset_alias - Asset alias specifying the asset to be issued.
    *                                      You must specify either an ID or an alias.
@@ -56,11 +56,11 @@ class TransactionBuilder {
    * Add an action that controls assets with an account specified by identifier.
    *
    * @param {Object} params - Action parameters.
-   * @option params [String] :assetId Asset ID specifiying the asset to be controlled.
+   * @option params [String] :assetId Asset ID specifying the asset to be controlled.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.assetAlias - Asset alias specifying the asset to be controlled.
    *                                   You must specify either an ID or an alias.
-   * @param {String} params.accountId - Account ID specifiying the account controlling the asset.
+   * @param {String} params.accountId - Account ID specifying the account controlling the asset.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.accountAlias - Account alias specifying the account controlling the asset.
    *                                   You must specify either an ID or an alias.
@@ -74,7 +74,7 @@ class TransactionBuilder {
    * Add an action that controls assets with a control program.
    *
    * @param {Object} params - Action parameters.
-   * @param {String} params.assetId - Asset ID specifiying the asset to be controlled.
+   * @param {String} params.assetId - Asset ID specifying the asset to be controlled.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.assetAlias - Asset alias specifying the asset to be controlled.
    *                                   You must specify either an ID or an alias.
@@ -89,11 +89,11 @@ class TransactionBuilder {
    * Add an action that spends assets from an account specified by identifier.
    *
    * @param {Object} params - Action parameters.
-   * @param {String} params.assetId - Asset ID specifiying the asset to be spent.
+   * @param {String} params.assetId - Asset ID specifying the asset to be spent.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.assetAlias - Asset alias specifying the asset to be spent.
    *                                   You must specify either an ID or an alias.
-   * @param {String} params.accountId - Account ID specifiying the account spending the asset.
+   * @param {String} params.accountId - Account ID specifying the account spending the asset.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.accountAlias - Account alias specifying the account spending the asset.
    *                                   You must specify either an ID or an alias.
@@ -130,7 +130,7 @@ class TransactionBuilder {
    * Add an action that retires units of an asset.
    *
    * @param {Object} params - Action parameters.
-   * @param {String} params.assetId - Asset ID specifiying the asset to be retired.
+   * @param {String} params.assetId - Asset ID specifying the asset to be retired.
    *                                   You must specify either an ID or an alias.
    * @param {String} params.assetAlias - Asset alias specifying the asset to be retired.
    *                                   You must specify either an ID or an alias.

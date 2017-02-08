@@ -10,7 +10,7 @@ import (
 
 const defaultReceiverExpiry = 30 * 24 * time.Hour // 30 days
 
-// Reciever encapsulates information about where to send assets to
+// Receiver encapsulates information about where to send assets to
 // be received by an account.
 type Receiver struct {
 	ControlProgram chainjson.HexBytes `json:"control_program"`

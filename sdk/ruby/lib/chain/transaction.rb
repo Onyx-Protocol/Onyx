@@ -376,7 +376,7 @@ module Chain
 
       # Add an issuance action.
       # @param [Hash] params Action parameters
-      # @option params [String] :asset_id Asset ID specifiying the asset to be issued.
+      # @option params [String] :asset_id Asset ID specifying the asset to be issued.
       #                                   You must specify either an ID or an alias.
       # @option params [String] :asset_alias Asset alias specifying the asset to be issued.
       #                                   You must specify either an ID or an alias.
@@ -388,11 +388,11 @@ module Chain
 
       # Add a spend action taken on a particular account.
       # @param [Hash] params Action parameters
-      # @option params [String] :asset_id Asset ID specifiying the asset to be spent.
+      # @option params [String] :asset_id Asset ID specifying the asset to be spent.
       #                                   You must specify either an ID or an alias.
       # @option params [String] :asset_alias Asset alias specifying the asset to be spent.
       #                                   You must specify either an ID or an alias.
-      # @option params [String] :account_id Account ID specifiying the account spending the asset.
+      # @option params [String] :account_id Account ID specifying the account spending the asset.
       #                                   You must specify either an ID or an alias.
       # @option params [String] :account_alias Account alias specifying the account spending the asset.
       #                                   You must specify either an ID or an alias.
@@ -421,11 +421,11 @@ module Chain
 
       # Add a control action taken on a particular account.
       # @param [Hash] params Action parameters
-      # @option params [String] :asset_id Asset ID specifiying the asset to be controlled.
+      # @option params [String] :asset_id Asset ID specifying the asset to be controlled.
       #                                   You must specify either an ID or an alias.
       # @option params [String] :asset_alias Asset alias specifying the asset to be controlled.
       #                                   You must specify either an ID or an alias.
-      # @option params [String] :account_id Account ID specifiying the account controlling the asset.
+      # @option params [String] :account_id Account ID specifying the account controlling the asset.
       #                                   You must specify either an ID or an alias.
       # @option params [String] :account_alias Account alias specifying the account controlling the asset.
       #                                   You must specify either an ID or an alias.
@@ -437,7 +437,7 @@ module Chain
 
       # Add a control action taken on a control program.
       # @param [Hash] params Action parameters
-      # @option params [String] :asset_id Asset ID specifiying the asset to be controlled.
+      # @option params [String] :asset_id Asset ID specifying the asset to be controlled.
       #                                   You must specify either an ID or an alias.
       # @option params [String] :asset_alias Asset alias specifying the asset to be controlled.
       #                                   You must specify either an ID or an alias.
@@ -450,7 +450,7 @@ module Chain
 
       # Add a retire action.
       # @param [Hash] params Action parameters
-      # @option params [String] :asset_id Asset ID specifiying the asset to be retired.
+      # @option params [String] :asset_id Asset ID specifying the asset to be retired.
       #                                   You must specify either an ID or an alias.
       # @option params [String] :asset_alias Asset alias specifying the asset to be retired.
       #                                   You must specify either an ID or an alias.

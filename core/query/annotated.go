@@ -3,7 +3,6 @@ package query
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"time"
 
@@ -205,24 +204,6 @@ func buildAnnotatedOutput(tx *bc.Tx, idx uint32) *AnnotatedOutput {
 		out.Type = "control"
 	}
 	return out
-}
-
-func unmarshalReferenceData(data []byte) map[string]interface{} {
-	var obj map[string]interface{}
-	err := json.Unmarshal(data, &obj)
-	if err != nil {
-		// Fall back to empty object
-		return map[string]interface{}{}
-	}
-	return obj
-}
-
-func hexSlices(byteas [][]byte) []interface{} {
-	res := make([]interface{}, 0, len(byteas))
-	for _, s := range byteas {
-		res = append(res, hex.EncodeToString(s))
-	}
-	return res
 }
 
 // localAnnotator depends on the asset and account annotators and
