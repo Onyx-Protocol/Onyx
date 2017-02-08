@@ -6,8 +6,8 @@ import { connect } from 'react-redux'
 import actions from 'features/mockhsm/actions'
 
 const methodOptions = {
-  generate: 'Generate new MockHSM key',
   mockhsm: 'Use existing MockHSM key',
+  generate: 'Generate new MockHSM key',
   provide: 'Provide existing xpub',
 }
 
