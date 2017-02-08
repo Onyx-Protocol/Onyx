@@ -11,9 +11,7 @@ public class JSONException extends ChainException {
   public String requestId;
 
   /**
-   * Initializes exception with its message and requestId attributes.
-   *
-   * @param message error message
+   * Default constructor.
    */
   public JSONException(String message) {
     super(message);

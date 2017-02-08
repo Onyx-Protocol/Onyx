@@ -8,9 +8,9 @@ import com.google.gson.annotations.SerializedName;
 
 /**
  * Receivers are used to facilitate payments between accounts on different
- * cores. They contain a control program, expiration date, and in the future,
- * other payment-related metadata.
- *
+ * cores. They contain a control program and an expiration date. In the future,
+ * more payment-related metadata may be placed here.
+ * <br><br>
  * This class supersedes the {@link ControlProgram} class. Receivers are
  * typically created under accounts via the {@link Account.ReceiverBuilder} class.
  */
