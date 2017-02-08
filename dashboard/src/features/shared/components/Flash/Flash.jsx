@@ -38,13 +38,4 @@ class Flash extends React.Component {
   }
 }
 
-import { connect } from 'react-redux'
-
-const mapStateToProps = (state) => ({
-  tutorialOpen: state.tutorial.isShowing,
-  hideFlash: state.routing.locationBeforeTransitions.pathname.startsWith(state.tutorial.route)
-})
-
-export default connect(
-  mapStateToProps
-)(Flash)
+export default Flash

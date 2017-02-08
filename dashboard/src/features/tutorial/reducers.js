@@ -31,8 +31,8 @@ export const route = (currentStep) => (state = 'transactions', action) => {
   return state
 }
 
-export const userInputs = (state = { accounts: [] }, action) => {
-  if (action.type == 'UPDATE_TUTORIAL'){
+export const userInputs = (currentStep) => (state = { accounts: [] }, action) => {
+  if (action.type == 'UPDATE_TUTORIAL' && currentStep.objectType == action.object){
     if (action.object == 'mockhsm') {
       return {...state, mockhsm: action.data}
     }
@@ -52,14 +52,16 @@ export const userInputs = (state = { accounts: [] }, action) => {
 
 export default (state = {}, action) => {
   const tutorialRoute = state.route
+  const tutorialUserInputs = state.userInputs
   delete state.currentStep // combineReducers logs error because currentStep set outside of function
   delete state.route
+  delete state.userInputs
   const newState = combineReducers({
     step,
-    isShowing,
-    userInputs
+    isShowing
   })(state, action)
   newState.currentStep = steps[newState.step]
-  newState.route = route(steps[newState.step - 1])(tutorialRoute, action)
+  newState.userInputs = userInputs(newState.currentStep)(tutorialUserInputs, action)
+  newState.route = route(newState.currentStep)(tutorialRoute, action)
   return newState
 }

@@ -14,7 +14,6 @@ class TutorialForm extends React.Component {
           </div>
           <div className={styles.list}>
             <table className={styles.listItemContainer}>
-              <tbody>
               {this.props.content['steps'].map(function (contentLine, i){
                 let title = contentLine['title']
                 if (contentLine['type']) {
@@ -52,7 +51,6 @@ class TutorialForm extends React.Component {
 
                 return <tbody className={styles.listItemGroup}>{rows}</tbody>
               })}
-              </tbody>
             </table>
           </div>
         </div>

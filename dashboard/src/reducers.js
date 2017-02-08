@@ -43,10 +43,10 @@ const makeRootReducer = () => (state, action) => {
     window.location.href = '/'
   }
 
-  return combineReducers({
+  const finalState = combineReducers({
     ...access_token,
     account,
-    app,
+    app: () => ({}),
     asset,
     balance,
     core,
@@ -59,5 +59,8 @@ const makeRootReducer = () => (state, action) => {
     tutorial,
     unspent,
   })(state, action)
+  finalState.app = app(state.app, action, finalState.tutorial)
+  return finalState
+
 }
 export default makeRootReducer
