@@ -96,7 +96,6 @@ func configGenerator(db *sql.DB, args []string) {
 		fatalln("error: flag -hsm-url has no effect without -k")
 	}
 
-	//hsm url and access token are
 	//TODO(ameets): update when switching to x.509 authorization
 	if (*flagHSMURL == "") != (*flagHSMToken == "") {
 		fatalln("error: flags -hsm-url and -hsm-token must be given together")
