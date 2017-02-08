@@ -3,9 +3,6 @@ package errors
 import (
 	"errors"
 	"fmt"
-	"log"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -61,27 +58,17 @@ func wrap(err error, msg string, stackSkip int) error {
 	return werr
 }
 
-func dumpStack(a []interface{}) {
-	for _, x := range a {
-		if err, ok := x.(wrapperError); ok {
-			dumpStack1(err)
-		}
-	}
-}
-
 // Wrap adds a context message and stack trace to err and returns a new error
 // with the new context. Arguments are handled as in fmt.Print.
 // Use Root to recover the original error wrapped by one or more calls to Wrap.
 // Use Stack to recover the stack trace.
 // Wrap returns nil if err is nil.
 func Wrap(err error, a ...interface{}) error {
-	dumpStack(a)
 	return wrap(err, fmt.Sprint(a...), 1)
 }
 
 // Wrapf is like Wrap, but arguments are handled as in fmt.Printf.
 func Wrapf(err error, format string, a ...interface{}) error {
-	dumpStack(a)
 	return wrap(err, fmt.Sprintf(format, a...), 1)
 }
 
@@ -166,18 +153,4 @@ func WithData(err error, keyval ...interface{}) error {
 func Data(err error) map[string]interface{} {
 	wrapper, _ := err.(wrapperError)
 	return wrapper.data
-}
-
-var wd, _ = os.Getwd()
-
-func dumpStack1(we wrapperError) {
-
-	for _, frame := range Stack(we) {
-		file := frame.File
-		if rel, err := filepath.Rel(wd, file); err == nil && !strings.HasPrefix(rel, "../") {
-			file = rel
-		}
-		funcname := frame.Func[strings.IndexByte(frame.Func, '.')+1:]
-		log.Printf("\n%s:%d: %s", file, frame.Line, funcname)
-	}
 }
