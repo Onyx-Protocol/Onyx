@@ -95,12 +95,6 @@ func TestKeyWithAlias(t *testing.T) {
 	ctx := context.Background()
 	hsm := New(db)
 
-	// Make sure latest key is returned as the first index, not this key
-	_, err := hsm.XCreate(ctx, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	xpub, err := hsm.XCreate(ctx, "some-alias")
 	if err != nil {
 		t.Fatal(err)
@@ -159,6 +153,47 @@ func TestKeyWithEmptyAlias(t *testing.T) {
 		if errors.Root(err) != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func TestKeyOrdering(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := context.Background()
+	hsm := New(db)
+
+	xpub1, err := hsm.XCreate(ctx, "first-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	xpub2, err := hsm.XCreate(ctx, "second-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	xpubs, _, err := hsm.ListKeys(ctx, nil, "", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Latest key is returned first
+	if !testutil.DeepEqual(xpubs[0], xpub2) {
+		t.Fatalf("expected to get %v instead got %v", spew.Sdump(xpub2), spew.Sdump(xpubs[0]))
+	}
+
+	_, after, err := hsm.ListKeys(ctx, nil, "", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	xpubs, _, err = hsm.ListKeys(ctx, nil, after, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Older key is returned in second page
+	if !testutil.DeepEqual(xpubs[0], xpub1) {
+		t.Fatalf("expected to get %v instead got %v", spew.Sdump(xpub1), spew.Sdump(xpubs[0]))
 	}
 }
 
