@@ -884,7 +884,7 @@ public class Transaction {
        * Default constructor.
        */
       public ControlWithReceiver() {
-        this.put("type", "control_with_receiver");
+        this.put("type", "control_receiver");
       }
 
       /**
@@ -912,6 +912,39 @@ public class Transaction {
           throw new JSONException("Unable to parse serialized receiver: " + e.getMessage());
         }
         return this.setReceiver(r);
+      }
+
+      /**
+       * Specifies the asset to be controlled using its alias.<br>
+       * <strong>Either this or {@link ControlWithReceiver#setAssetId(String)} must be called.</strong>
+       * @param alias alias of the asset to be controlled
+       * @return updated action object
+       */
+      public ControlWithReceiver setAssetAlias(String alias) {
+        this.put("asset_alias", alias);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be controlled using its id.<br>
+       * <strong>Either this or {@link ControlWithReceiver#setAssetAlias(String)} must be called.</strong>
+       * @param id id of the asset to be controlled
+       * @return updated action object
+       */
+      public ControlWithReceiver setAssetId(String id) {
+        this.put("asset_id", id);
+        return this;
+      }
+
+      /**
+       * Specifies the amount of the asset to be controlled.<br>
+       * <strong>Must be called.</strong>
+       * @param amount number of units of the asset to be controlled
+       * @return updated action object
+       */
+      public ControlWithReceiver setAmount(long amount) {
+        this.put("amount", amount);
+        return this;
       }
     }
 
