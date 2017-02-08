@@ -10,6 +10,7 @@ import Flash from './Flash/Flash'
 import FormContainer from './FormContainer/FormContainer'
 import FormSection from './FormSection/FormSection'
 import HiddenField from './HiddenField'
+import JsonField from './JsonField/JsonField'
 import KeyValueTable from './KeyValueTable/KeyValueTable'
 import NotFound from './NotFound'
 import PageContent from './PageContent/PageContent'
@@ -38,6 +39,7 @@ export {
   FormContainer,
   FormSection,
   HiddenField,
+  JsonField,
   KeyValueTable,
   NotFound,
   PageContent,
