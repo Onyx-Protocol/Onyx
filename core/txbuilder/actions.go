@@ -12,19 +12,19 @@ import (
 
 var retirementProgram = vmutil.NewBuilder().AddOp(vm.OP_FAIL).Program
 
-func DecodeControlWithReceiverAction(data []byte) (Action, error) {
-	a := new(controlWithReceiverAction)
+func DecodeControlReceiverAction(data []byte) (Action, error) {
+	a := new(controlReceiverAction)
 	err := stdjson.Unmarshal(data, a)
 	return a, err
 }
 
-type controlWithReceiverAction struct {
+type controlReceiverAction struct {
 	bc.AssetAmount
 	Receiver      *Receiver `json:"receiver"`
 	ReferenceData json.Map  `json:"reference_data"`
 }
 
-func (a *controlWithReceiverAction) Build(ctx context.Context, b *TemplateBuilder) error {
+func (a *controlReceiverAction) Build(ctx context.Context, b *TemplateBuilder) error {
 	var missing []string
 	if a.Receiver == nil {
 		missing = append(missing, "receiver")
