@@ -528,6 +528,7 @@ public class Client {
     private ConnectionPool pool;
 
     public Builder() {
+      this.urls = new ArrayList<URL>();
       this.setDefaults();
     }
 
