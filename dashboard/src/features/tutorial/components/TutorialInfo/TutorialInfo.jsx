@@ -11,13 +11,11 @@ class TutorialInfo extends React.Component {
     } catch (err) { /* do nothing */ }
 
     const userInput = this.props.userInput
-    const nextButton = <div className={styles.next}>
-      <Link to={this.props.route}>
-        <button key='showNext' className='btn btn-primary' onClick={this.props.handleNext}>
-          {this.props.button}
+    const nextButton = <Link to={this.props.route}>
+        <button key='showNext' className={`btn ${styles.next}`} onClick={this.props.handleNext}>
+          Next: {this.props.button} <span className='glyphicon glyphicon-chevron-right'></span>
         </button>
       </Link>
-    </div>
 
     return (
       <div>

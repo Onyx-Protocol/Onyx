@@ -10,33 +10,43 @@ class TutorialForm extends React.Component {
       <div className={styles.container}>
         <div className={styles.tutorialContainer}>
           <div className={styles.header}>
-            {this.props.title}
+            Tutorial: {this.props.content['header']}
           </div>
           <div className={styles.list}>
-            <div className={styles.listHeader}>
-              {this.props.content['header']}
-            </div>
             <table className={styles.listItemContainer}>
               <tbody>
               {this.props.content['steps'].map(function (contentLine, i){
-                let str = contentLine['title']
+                let title = contentLine['title']
                 if (contentLine['type']) {
                   let replacement = userInput[contentLine['type']]
                   if ('index' in contentLine){
                     replacement = replacement[contentLine['index']]
                   }
-                  str = contentLine['title'].replace('STRING', replacement['alias'])
+                  title = contentLine['title'].replace('STRING', replacement['alias'])
                 }
                 let rows = [
                   <tr key={i}>
                     <td className={styles.listBullet}>{i+1}</td>
-                    <td>{str}</td>
+                    <td>{title}</td>
                   </tr>
                 ]
                 if (contentLine['description']) {
+                  let descriptionResult = ''
+                  contentLine['description'].forEach(function (descriptionLine, j){
+                    let description = descriptionLine['line']
+                    if (descriptionLine['type']) {
+                      let replacement = userInput[descriptionLine['type']]
+                      if ('index' in descriptionLine){
+                        replacement = replacement[descriptionLine['index']]
+                      }
+                      description = descriptionLine['line'].replace('STRING', replacement['alias'])
+                    }
+                    descriptionResult += description
+                  })
+
                   rows.push (<tr className={styles.listItemDescription}>
                     <td></td>
-                    <td key={i}>{contentLine['description']}</td>
+                    <td key={i}>{descriptionResult}</td>
                   </tr>)
                 }
 

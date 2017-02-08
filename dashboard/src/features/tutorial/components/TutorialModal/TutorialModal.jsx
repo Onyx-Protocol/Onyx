@@ -14,8 +14,15 @@ class TutorialModal extends React.Component {
             </div>
             <div className={styles.text}>
               {this.props.content.map(function (contentLine, i){
-                let str = contentLine['line']
-                return <p key={i}>{str}</p>
+                if(contentLine['list']){
+                  let list = []
+                  contentLine['list'].forEach(function(listItem, j){
+                    list.push(<li key={j}>{listItem}</li>)
+                  })
+                  return <ul className={styles.list}>{list}</ul>
+                } else {
+                  return <span className={styles.line} key={i}>{contentLine['line']}</span>
+                }
               })}
             </div>
             <div className={styles.footer}>
@@ -24,7 +31,7 @@ class TutorialModal extends React.Component {
                     {this.props.modalNext}
                   </button>
                 </Link>}
-              <button onClick={this.props.dismissTutorial} className={`btn btn-primary ${styles.dismiss}`}>{this.props.modalDismiss}</button>  
+              <button onClick={this.props.dismissTutorial} className={`btn btn-primary ${styles.dismiss}`}>{this.props.modalDismiss}</button>
             </div>
           </div>
       </div>

@@ -15,20 +15,20 @@
     line-height: 1.3;
   }
 
-  li {
-    list-style: none;
+  .next {
+    display: flex;
+    align-items: center;
+    margin-left: $gutter-size * 2;
+    float: right;
+    background-color: $background-color;
+    border: 1px solid $highlight-tutorial;
+    border-radius: 2px;
+    color: $highlight-tutorial;
   }
 
-  .next {
-    margin-left: $gutter-size;
-    text-align: right;
-
-    button {
-      float: right;
-      background-color: $background-color;
-      border: 1px solid $highlight-tutorial;
-      border-radius: 2px;
-      color: $highlight-tutorial;
-    }
+  button:active:focus {
+    background-color: $highlight-tutorial;
+    border-color: $highlight-tutorial;
+    color: $background-color;
   }
 }

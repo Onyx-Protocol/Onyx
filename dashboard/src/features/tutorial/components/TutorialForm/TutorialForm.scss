@@ -5,34 +5,28 @@
 
   .tutorialContainer {
     position: fixed;
-    padding: 25px 0;
-    top: 150px;
     width: 300px;
     min-height: 100px;
     border-left: solid #69A7E4 3px;
     border-bottom: 1px solid rgba(0,0,0,0.09);
-    background-color: #FFFFFF;
+    background-color: $background-emphasis-color;
     box-shadow: 0 1px 2px 1px rgba(0,0,0,0.09);
 
     .header {
-      margin: 0 25px;
-      font-size: 13px;
-      font-weight: 500;
-      line-height: 16px;
-      color: #B6BCC5;
+      background-color: $highlight-tutorial;
+      box-sizing: border-box;
+      color: $text-inverse-color;
+      padding: 0 $gutter-size;
+      height: $title-height;
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: bold;
+      width: 100%;
     }
 
     .list {
       margin: 0 25px;
-
-      .listHeader {
-        padding: 15px 0;
-        font-size: 16px;
-        font-weight: bold;
-        line-height: 19px;
-        color: #20252D;
-        border-bottom: 1px solid rgba(182,188,197,0.27);
-      }
 
       .listItemContainer {
         margin: 15px 0;
