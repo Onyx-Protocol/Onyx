@@ -1,5 +1,4 @@
-import { BaseNew, FormContainer, FormSection, FieldLabel } from 'features/shared/components'
-import { TextField, JsonField } from 'components/Common'
+import { BaseNew, FormContainer, FormSection, FieldLabel, JsonField, TextField } from 'features/shared/components'
 import { DropdownButton, MenuItem } from 'react-bootstrap'
 import { reduxForm } from 'redux-form'
 import ActionItem from './FormActionItem'
