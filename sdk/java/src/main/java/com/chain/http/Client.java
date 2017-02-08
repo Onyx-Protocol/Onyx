@@ -7,9 +7,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.net.*;
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.gson.Gson;
 
@@ -31,7 +35,8 @@ import com.squareup.okhttp.Response;
  */
 public class Client {
 
-  private URL url;
+  private AtomicInteger urlIndex;
+  private List<URL> urls;
   private String accessToken;
   private OkHttpClient httpClient;
   private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
@@ -51,7 +56,17 @@ public class Client {
   }
 
   public Client(Builder builder) {
-    this.url = builder.url;
+    List<URL> urls = new ArrayList<URL>(builder.urls);
+    if (urls.isEmpty()) {
+      try {
+        urls.add(new URL("http://localhost:1999"));
+      } catch (MalformedURLException e) {
+        throw new RuntimeException("invalid default development URL", e);
+      }
+    }
+
+    this.urlIndex = new AtomicInteger(0);
+    this.urls = urls;
     this.accessToken = builder.accessToken;
     this.httpClient = buildHttpClient(builder);
   }
@@ -191,11 +206,19 @@ public class Client {
   }
 
   /**
-   * Returns the base url stored in the client.
-   * @return the client's base url
+   * Returns the preferred base URL stored in the client.
+   * @return the client's base URL
    */
   public URL url() {
-    return this.url;
+    return this.urls.get(0);
+  }
+
+  /**
+   * Returns the list of base URLs used by the client.
+   * @return the client's base URLs
+   */
+  public List<URL> urls() {
+    return new ArrayList<>(this.urls);
   }
 
   /**
@@ -289,22 +312,31 @@ public class Client {
     RequestBody requestBody = RequestBody.create(this.JSON, serializer.toJson(body));
     Request req;
 
-    try {
+    ChainException exception = null;
+    for (int attempt = 1; attempt - 1 <= MAX_RETRIES; attempt++) {
+
+      int idx = this.urlIndex.get();
+      URL endpointURL;
+      try {
+        URI u = new URI(this.urls.get(idx).toString() + "/" + path);
+        u = u.normalize();
+        endpointURL = new URL(u.toString());
+      } catch (MalformedURLException ex) {
+        throw new BadURLException(ex.getMessage());
+      } catch (URISyntaxException ex) {
+        throw new BadURLException(ex.getMessage());
+      }
+
       Request.Builder builder =
           new Request.Builder()
               .header("User-Agent", "chain-sdk-java/" + version)
-              .url(this.createEndpoint(path))
+              .url(endpointURL)
               .method("POST", requestBody);
       if (hasAccessToken()) {
         builder = builder.header("Authorization", buildCredentials());
       }
       req = builder.build();
-    } catch (MalformedURLException ex) {
-      throw new BadURLException(ex.getMessage());
-    }
 
-    ChainException exception = null;
-    for (int attempt = 1; attempt - 1 <= MAX_RETRIES; attempt++) {
       // Wait between retrys. The first attempt will not wait at all.
       if (attempt > 1) {
         int delayMillis = retryDelayMillis(attempt - 1);
@@ -318,14 +350,23 @@ public class Client {
         Response resp = this.checkError(this.httpClient.newCall(req).execute());
         return respCreator.create(resp, serializer);
       } catch (IOException ex) {
+        // This URL's process might be unhealthy; move to the next.
+        this.nextURL(idx);
+
         // The OkHttp library already performs retries for most
         // I/O-related errors. We can add retries here too if this
         // becomes a problem.
         throw new HTTPException(ex.getMessage());
       } catch (ConnectivityException ex) {
+        // This URL's process might be unhealthy; move to the next.
+        this.nextURL(idx);
+
         // ConnectivityExceptions are always retriable.
         exception = ex;
       } catch (APIException ex) {
+        // This URL's process might be unhealthy; move to the next.
+        this.nextURL(idx);
+
         // Check if this error is retriable (either it's a status code that's
         // always retriable or the error is explicitly marked as temporary.
         if (!isRetriableStatusCode(ex.statusCode) && !ex.temporary) {
@@ -414,14 +455,15 @@ public class Client {
     return response;
   }
 
-  private URL createEndpoint(String path) throws MalformedURLException {
-    try {
-      URI u = new URI(this.url.toString() + "/" + path);
-      u = u.normalize();
-      return new URL(u.toString());
-    } catch (URISyntaxException e) {
-      throw new MalformedURLException();
+  private void nextURL(int failedIndex) {
+    if (this.urls.size() == 1) {
+      return; // No point contending on the CAS if there's only one URL.
     }
+
+    // A request to the url at failedIndex just failed. Move to the next
+    // URL in the list.
+    int nextIndex = (failedIndex + 1) % this.urls.size();
+    this.urlIndex.compareAndSet(failedIndex, nextIndex);
   }
 
   private String buildCredentials() {
@@ -439,21 +481,17 @@ public class Client {
     return Credentials.basic(user, pass);
   }
 
-  private String identifier() {
-    if (this.hasAccessToken()) {
-      return String.format(
-          "%s://%s@%s", this.url.getProtocol(), this.accessToken, this.url.getAuthority());
-    }
-    return String.format("%s://%s", this.url.getProtocol(), this.url.getAuthority());
-  }
-
   /**
    * Overrides {@link Object#hashCode()}
    * @return the hash code
    */
   @Override
   public int hashCode() {
-    return identifier().hashCode();
+    int code = this.urls.hashCode();
+    if (this.hasAccessToken()) {
+      code = code * 31 + this.accessToken.hashCode();
+    }
+    return code;
   }
 
   /**
@@ -467,14 +505,17 @@ public class Client {
     if (!(o instanceof Client)) return false;
 
     Client other = (Client) o;
-    return this.identifier().equals(other.identifier());
+    if (!this.urls.equals(other.urls)) {
+      return false;
+    }
+    return Objects.equals(this.accessToken, other.accessToken);
   }
 
   /**
    * A builder class for creating client objects
    */
   public static class Builder {
-    private URL url;
+    private List<URL> urls;
     private String accessToken;
     private CertificatePinner cp;
     private long connectTimeout;
@@ -487,15 +528,11 @@ public class Client {
     private ConnectionPool pool;
 
     public Builder() {
+      this.urls = new ArrayList<URL>();
       this.setDefaults();
     }
 
     private void setDefaults() {
-      try {
-        this.url = new URL("http://localhost:1999");
-      } catch (MalformedURLException e) {
-        throw new RuntimeException("invalid default development URL", e);
-      }
       this.setReadTimeout(30, TimeUnit.SECONDS);
       this.setWriteTimeout(30, TimeUnit.SECONDS);
       this.setConnectTimeout(30, TimeUnit.SECONDS);
@@ -503,12 +540,12 @@ public class Client {
     }
 
     /**
-     * Sets the URL for the client
-     * @param url the URL of the Chain Core or HSM
+     * Adds a base URL for the client to use.
+     * @param url the URL of the Chain Core or HSM.
      */
-    public Builder setURL(String url) throws BadURLException {
+    public Builder addURL(String url) throws BadURLException {
       try {
-        this.url = new URL(url);
+        this.urls.add(new URL(url));
       } catch (MalformedURLException e) {
         throw new BadURLException(e.getMessage());
       }
@@ -516,11 +553,35 @@ public class Client {
     }
 
     /**
-     * Sets the URL for the client
+     * Adds a base URL for the client to use.
+     * @param url the URL of the Chain Core or HSM.
+     */
+    public Builder addURL(URL url) {
+      this.urls.add(url);
+      return this;
+    }
+
+    /**
+     * Sets the URL for the client. It replaces all existing Chain Core
+     * URLs with the provided URL.
+     * @param url the URL of the Chain Core or HSM
+     */
+    public Builder setURL(String url) throws BadURLException {
+      try {
+        this.urls = new ArrayList<URL>(Arrays.asList(new URL(url)));
+      } catch (MalformedURLException e) {
+        throw new BadURLException(e.getMessage());
+      }
+      return this;
+    }
+
+    /**
+     * Sets the URL for the client.  It replaces all existing Chain Core
+     * URLs with the provided URL.
      * @param url the URL of the Chain Core or HSM
      */
     public Builder setURL(URL url) {
-      this.url = url;
+      this.urls = new ArrayList<URL>(Arrays.asList(url));
       return this;
     }
 
