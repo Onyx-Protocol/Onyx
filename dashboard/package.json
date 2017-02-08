@@ -5,9 +5,9 @@
   "scripts": {
     "build:dll": "node ./bin/dependencies.js",
     "postinstall": "npm run build:dll",
-    "build": "NODE_ENV=production webpack --config src/config/webpack.app.js",
+    "build": "NODE_ENV=production webpack --config webpack/webpack.app.js",
     "lint": "eslint \"src/**\"",
-    "start": "hjs-dev-server src/config/webpack.app.js",
+    "start": "hjs-dev-server webpack/webpack.app.js",
     "test": "wdio test/conf/wdio.local.js --suite base",
     "testExtended": "EXTENDED=1 wdio test/conf/wdio.local.js",
     "generate-component": "babel-node bin/generate.js component"
