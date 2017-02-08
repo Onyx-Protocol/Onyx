@@ -1,9 +1,5 @@
 import React from 'react'
-import {
-  TextField,
-  ObjectSelectorField,
-} from 'components/Common'
-import { ErrorBanner, HiddenField, Autocomplete, JsonField } from 'features/shared/components'
+import { ErrorBanner, HiddenField, Autocomplete, JsonField, TextField, ObjectSelectorField } from 'features/shared/components'
 import styles from './FormActionItem.scss'
 
 const ISSUE_KEY = 'issue'

@@ -14,6 +14,7 @@ import JsonField from './JsonField/JsonField'
 import KeyConfiguration from './KeyConfiguration'
 import KeyValueTable from './KeyValueTable/KeyValueTable'
 import NotFound from './NotFound'
+import ObjectSelectorField from './ObjectSelectorField/ObjectSelectorField'
 import PageContent from './PageContent/PageContent'
 import PageTitle from './PageTitle/PageTitle'
 import Pagination from './Pagination/Pagination'
@@ -25,6 +26,7 @@ import Section from './Section/Section'
 import SelectField from './SelectField'
 import SubmitIndicator from './SubmitIndicator/SubmitIndicator'
 import TableList from './TableList/TableList'
+import TextField from './TextField/TextField'
 import XpubField from './XpubField/XpubField'
 
 export {
@@ -44,6 +46,7 @@ export {
   KeyConfiguration,
   KeyValueTable,
   NotFound,
+  ObjectSelectorField,
   PageContent,
   PageTitle,
   Pagination,
@@ -55,5 +58,6 @@ export {
   SelectField,
   SubmitIndicator,
   TableList,
+  TextField,
   XpubField,
 }

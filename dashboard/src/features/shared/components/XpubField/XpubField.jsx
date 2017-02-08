@@ -1,7 +1,6 @@
 import React from 'react'
 import styles from './XpubField.scss'
-import { SelectField, FieldLabel } from '../'
-import { TextField } from 'components/Common'
+import { SelectField, FieldLabel, TextField } from '../'
 import { connect } from 'react-redux'
 import actions from 'features/mockhsm/actions'
 

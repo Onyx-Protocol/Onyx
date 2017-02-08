@@ -1,7 +1,6 @@
 import React from 'react'
 import { connect } from 'react-redux'
-import { TextField } from 'components/Common'
-import { ErrorBanner } from 'features/shared/components'
+import { ErrorBanner, TextField } from 'features/shared/components'
 import actions from 'actions'
 import styles from './Login.scss'
 import { reduxForm } from 'redux-form'
