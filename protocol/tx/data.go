@@ -29,15 +29,13 @@ func (d *data) Body() interface{} { return d.body }
 
 func (data) Ordinal() int { return -1 }
 
-func newData(hash bc.Hash) entry {
+func newData(hash bc.Hash) *data {
 	d := new(data)
 	d.body = hash
 	return d
 }
 
 func hashData(data []byte) (h bc.Hash) {
-	// TODO: Do we want domain separation here?  (E.g., a "data:"
-	// prefix.) If so, both the code and the spec need updating.
 	sha3pool.Sum256(h[:], data)
 	return
 }
