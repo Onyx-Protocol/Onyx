@@ -51,8 +51,8 @@ export const userInputs = (state = { accounts: [] }, action) => {
 }
 
 export default (state = {}, action) => {
-  delete state.currentStep // combineReducers logs error because currentStep set outside of function
   const tutorialRoute = state.route
+  delete state.currentStep // combineReducers logs error because currentStep set outside of function
   delete state.route
   const newState = combineReducers({
     step,

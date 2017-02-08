@@ -39,9 +39,19 @@
     padding: $gutter-size;
     font-size: 15px;
     font-weight: 500;
-    line-height: 8px;
+    line-height: 18px;
     color: #747C89;
     border-bottom: 1px solid rgba(182,188,197,0.27);
+
+    .list {
+      list-style-type: decimal;
+    }
+
+    .line {
+      margin: $gutter-size/2 0;
+      display: block;
+      padding: 0;
+    }
   }
 
   .footer {
