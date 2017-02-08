@@ -328,7 +328,7 @@ func (h *Handler) forwardToLeader(ctx context.Context, path string, body interfa
 		l.AccessToken = fmt.Sprintf("%s:%s", user, pass)
 	}
 
-	return l.Call(ctx, path, body, &resp)
+	return l.Call(ctx, path, body, resp)
 }
 
 // expvarHandler is copied from the expvar package.

@@ -74,7 +74,7 @@ func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interfa
 	// reservations. Forward the build call to the leader process.
 	// TODO(jackson): Distribute reservations across cored processes.
 	if !leader.IsLeading() {
-		var resp map[string]interface{}
+		var resp interface{}
 		err := h.forwardToLeader(ctx, "/build-transaction", buildReqs, &resp)
 		return resp, err
 	}
