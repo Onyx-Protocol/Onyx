@@ -154,3 +154,19 @@ func Data(err error) map[string]interface{} {
 	wrapper, _ := err.(wrapperError)
 	return wrapper.data
 }
+
+// Sub returns an error with all the associated data from old,
+// including stack trace, detail, message, and data, but using
+// new as the root error. It also wraps the newly-created error
+// with the formatted error string from old.
+//
+// Use this when you need to substitute a new root error in place
+// of an existing error that may already have an associated stack trace
+// or other metadata.
+func Sub(new, old error) error {
+	if wrapper, ok := old.(wrapperError); ok && new != nil {
+		wrapper.root = Root(new)
+		new = wrapper
+	}
+	return Wrap(new, old.Error())
+}
