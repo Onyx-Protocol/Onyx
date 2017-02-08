@@ -91,7 +91,7 @@ func configGenerator(db *sql.DB, args []string) {
 	flags.Parse(args)
 	args = flags.Args()
 
-	//not a blocksigner
+	// not a blocksigner
 	if *flagK == "" && *flagHSMURL != "" {
 		fatalln("error: flag -hsm-url has no effect without -k")
 	}
