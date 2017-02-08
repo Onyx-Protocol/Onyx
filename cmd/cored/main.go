@@ -396,7 +396,7 @@ type remoteSigner struct {
 	Key    ed25519.PublicKey
 }
 
-// remoteHSM is a client wrapper for an hsm that is used as a blocksigner.signer
+// remoteHSM is a client wrapper for an hsm that is used as a blocksigner.Signer
 type remoteHSM struct {
 	Client *rpc.Client
 }
