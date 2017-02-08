@@ -170,7 +170,7 @@ func (h *HSM) ListKeys(ctx context.Context, aliases []string, after string, limi
 
 	if zafter != 0 {
 		params = append(params, zafter)
-		q += fmt.Sprintf(" AND sort_id > $%d", len(params))
+		q += fmt.Sprintf(" AND sort_id < $%d", len(params))
 	}
 
 	q += fmt.Sprintf(" ORDER BY sort_id DESC LIMIT %d", limit)
