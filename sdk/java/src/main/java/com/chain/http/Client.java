@@ -555,7 +555,7 @@ public class Client {
      * Adds a base URL for the client to use.
      * @param url the URL of the Chain Core or HSM.
      */
-    public Builder addURL(URL url) throws BadURLException {
+    public Builder addURL(URL url) {
       this.urls.add(url);
       return this;
     }
