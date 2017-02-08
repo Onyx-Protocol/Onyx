@@ -70,7 +70,7 @@ func main() {
 }
 
 func configGenerator(db *sql.DB, args []string) {
-	const usage = "usage: corectl config-generator [-s] [-w duration] [quorum] [pubkey url]..."
+	const usage = "usage: corectl config-generator [flags] [quorum] [pubkey url]..."
 	var (
 		quorum  int
 		signers []config.BlockSigner
@@ -79,7 +79,10 @@ func configGenerator(db *sql.DB, args []string) {
 
 	var flags flag.FlagSet
 	maxIssuanceWindow := flags.Duration("w", 24*time.Hour, "the maximum issuance window `duration` for this generator")
-	isSigner := flags.Bool("s", false, "whether this core is a signer")
+	flagK := flags.String("k", "", "local `pubkey` for signing blocks")
+	flagHSMURL := flags.String("hsm-url", "", "hsm `url` for signing blocks (mockhsm if empty)")
+	flagHSMToken := flags.String("hsm-token", "", "hsm `access-token` for connecting to hsm")
+
 	flags.Usage = func() {
 		fmt.Println(usage)
 		flags.PrintDefaults()
@@ -88,8 +91,18 @@ func configGenerator(db *sql.DB, args []string) {
 	flags.Parse(args)
 	args = flags.Args()
 
+	// not a blocksigner
+	if *flagK == "" && *flagHSMURL != "" {
+		fatalln("error: flag -hsm-url has no effect without -k")
+	}
+
+	// TODO(ameets): update when switching to x.509 authorization
+	if (*flagHSMURL == "") != (*flagHSMToken == "") {
+		fatalln("error: flags -hsm-url and -hsm-token must be given together")
+	}
+
 	if len(args) == 0 {
-		if *isSigner {
+		if *flagK != "" {
 			quorum = 1
 		}
 	} else if len(args)%2 != 1 {
@@ -120,12 +133,15 @@ func configGenerator(db *sql.DB, args []string) {
 
 	conf := &config.Config{
 		IsGenerator: true,
-		IsSigner:    *isSigner,
 		Quorum:      quorum,
 		Signers:     signers,
 		MaxIssuanceWindow: chainjson.Duration{
 			Duration: *maxIssuanceWindow,
 		},
+		IsSigner:            *flagK != "",
+		BlockPub:            *flagK,
+		BlockHSMURL:         *flagHSMURL,
+		BlockHSMAccessToken: *flagHSMToken,
 	}
 
 	ctx := context.Background()
@@ -177,10 +193,13 @@ func createToken(db *sql.DB, args []string) {
 }
 
 func configNongenerator(db *sql.DB, args []string) {
-	const usage = "usage: corectl config [-t token] [-k pubkey] [blockchain-id] [url]"
+	const usage = "usage: corectl config [flags] [blockchain-id] [generator-url]"
 	var flags flag.FlagSet
 	flagT := flags.String("t", "", "generator access `token`")
 	flagK := flags.String("k", "", "local `pubkey` for signing blocks")
+	flagHSMURL := flags.String("hsm-url", "", "hsm `url` for signing blocks (mockhsm if empty)")
+	flagHSMToken := flags.String("hsm-token", "", "hsm `access-token` for connecting to hsm")
+
 	flags.Usage = func() {
 		fmt.Println(usage)
 		flags.PrintDefaults()
@@ -192,6 +211,16 @@ func configNongenerator(db *sql.DB, args []string) {
 		fatalln(usage)
 	}
 
+	// not a blocksigner
+	if *flagK == "" && *flagHSMURL != "" {
+		fatalln("error: flag -hsm-url has no effect without -k")
+	}
+
+	// TODO(ameets): update when switching to x.509 authorization
+	if (*flagHSMURL == "") != (*flagHSMToken == "") {
+		fatalln("error: flags -hsm-url and -hsm-token must be given together")
+	}
+
 	var conf config.Config
 	err := conf.BlockchainID.UnmarshalText([]byte(args[0]))
 	if err != nil {
@@ -201,6 +230,8 @@ func configNongenerator(db *sql.DB, args []string) {
 	conf.GeneratorAccessToken = *flagT
 	conf.IsSigner = *flagK != ""
 	conf.BlockPub = *flagK
+	conf.BlockHSMURL = *flagHSMURL
+	conf.BlockHSMAccessToken = *flagHSMToken
 
 	ctx := context.Background()
 	err = config.Configure(ctx, db, &conf)

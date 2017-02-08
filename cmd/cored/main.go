@@ -37,6 +37,7 @@ import (
 	"chain/core/txfeed"
 	"chain/crypto/ed25519"
 	"chain/database/sql"
+	"chain/encoding/json"
 	"chain/env"
 	"chain/errors"
 	chainlog "chain/log"
@@ -233,7 +234,22 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
-		s := blocksigner.New(blockPub, mockHSM, db, c) // TODO(jackson): support real HSM
+
+		var hsm blocksigner.Signer = mockHSM
+		if conf.BlockHSMURL != "" {
+			// TODO(ameets): potential option to take only a password when configuring
+			//  and convert to an access token string here for BlockHSMAccessToken
+			hsm = &remoteHSM{Client: &rpc.Client{
+				BaseURL:      conf.BlockHSMURL,
+				AccessToken:  conf.BlockHSMAccessToken,
+				Username:     processID,
+				CoreID:       conf.ID,
+				BuildTag:     buildTag,
+				BlockchainID: conf.BlockchainID.String(),
+			}}
+		}
+		s := blocksigner.New(blockPub, hsm, db, c)
+
 		generatorSigners = append(generatorSigners, s) // "local" signer
 		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
 			sig, err := s.ValidateAndSignBlock(ctx, b)
@@ -379,6 +395,20 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 type remoteSigner struct {
 	Client *rpc.Client
 	Key    ed25519.PublicKey
+}
+
+// remoteHSM is a client wrapper for an hsm that is used as a blocksigner.Signer
+type remoteHSM struct {
+	Client *rpc.Client
+}
+
+func (h *remoteHSM) Sign(ctx context.Context, pk ed25519.PublicKey, bh *bc.BlockHeader) (signature []byte, err error) {
+	body := struct {
+		Block *bc.BlockHeader `json:"block"`
+		Pub   json.HexBytes   `json:"pubkey"`
+	}{bh, json.HexBytes(pk[:])}
+	err = h.Client.Call(ctx, "/sign-block", body, &signature)
+	return
 }
 
 func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, conf *config.Config) (a []*remoteSigner) {
