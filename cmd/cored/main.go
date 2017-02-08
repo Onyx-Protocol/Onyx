@@ -237,7 +237,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 
 		var hsm blocksigner.Signer = mockHSM
 		if conf.BlockHSMURL != "" {
-			//TODO(ameets): these members may not all be needed - reevaluate
 			hsm = &remoteHSM{Client: &rpc.Client{
 				BaseURL:      conf.BlockHSMURL,
 				AccessToken:  conf.BlockHSMAccessToken,
