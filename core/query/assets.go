@@ -3,7 +3,6 @@ package query
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -18,7 +17,6 @@ func (ind *Indexer) SaveAnnotatedAsset(ctx context.Context, asset *AnnotatedAsse
 	if err != nil {
 		return errors.Wrap(err)
 	}
-	alias := sql.NullString{String: asset.Alias, Valid: asset.Alias != ""}
 
 	const q = `
 		INSERT INTO annotated_assets
@@ -26,7 +24,7 @@ func (ind *Indexer) SaveAnnotatedAsset(ctx context.Context, asset *AnnotatedAsse
 		VALUES($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9)
 		ON CONFLICT (id) DO UPDATE SET sort_id = $2, tags = $8::jsonb
 	`
-	_, err = ind.db.Exec(ctx, q, asset.ID, sortID, alias, []byte(asset.IssuanceProgram),
+	_, err = ind.db.Exec(ctx, q, asset.ID, sortID, asset.Alias, []byte(asset.IssuanceProgram),
 		keysJSON, asset.Quorum, string(*asset.Definition), string(*asset.Tags), bool(asset.IsLocal))
 	return errors.Wrap(err, "saving annotated asset")
 }

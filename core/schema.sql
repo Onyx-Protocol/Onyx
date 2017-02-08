@@ -217,7 +217,7 @@ CREATE TABLE accounts (
 
 CREATE TABLE annotated_accounts (
     id text NOT NULL,
-    alias text,
+    alias text NOT NULL,
     keys jsonb NOT NULL,
     quorum integer NOT NULL,
     tags jsonb NOT NULL
@@ -231,7 +231,7 @@ CREATE TABLE annotated_accounts (
 CREATE TABLE annotated_assets (
     id bytea NOT NULL,
     sort_id text NOT NULL,
-    alias text,
+    alias text NOT NULL,
     issuance_program bytea NOT NULL,
     keys jsonb NOT NULL,
     quorum integer NOT NULL,
@@ -893,3 +893,4 @@ CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
 --
 
 insert into migrations (filename, hash) values ('2017-02-03.0.core.schema-snapshot.sql', '1d55668affe0be9f3c19ead9d67bc75cfd37ec430651434d0f2af2706d9f08cd');
+insert into migrations (filename, hash) values ('2017-02-07.0.query.non-null-alias.sql', '17028a0bdbc95911e299dc65fe641184e54c87a0d07b3c576d62d023b9a8defc');
