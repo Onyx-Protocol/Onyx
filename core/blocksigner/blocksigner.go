@@ -53,7 +53,6 @@ func New(pub ed25519.PublicKey, hsm Signer, db pg.DB, c *protocol.Chain) *BlockS
 func (s *BlockSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	sig, err := s.hsm.Sign(ctx, s.Pub, &b.BlockHeader)
 	if err != nil {
-		//TODO(ameets): rethink error pkg to preserve full stack trace
 		return nil, errors.Wrapf(ErrInvalidKey, "err=%s", err.Error())
 	}
 	return sig, nil
