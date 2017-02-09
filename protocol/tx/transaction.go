@@ -49,6 +49,18 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 
 	hashes.VMContexts = make([]*bc.VMContext, len(oldTx.Inputs))
 
+	getRefDataHash := func(id entryRef) (bc.Hash, error) {
+		dEntry, ok := entries[id]
+		if !ok {
+			return bc.EmptyStringHash, nil
+		}
+		d, ok := dEntry.(*data)
+		if !ok {
+			return bc.Hash{}, fmt.Errorf("unexpected type %T for entry %x", dEntry, id[:])
+		}
+		return d.body, nil
+	}
+
 	for entryID, ent := range entries {
 		switch ent := ent.(type) {
 		case *nonce:
@@ -70,13 +82,19 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 
 		case *issuance:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
-			vmc.RefDataHash = bc.Hash(ent.body.Data)
+			vmc.RefDataHash, err = getRefDataHash(ent.body.Data)
+			if err != nil {
+				return nil, err
+			}
 			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 
 		case *spend:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, txRefDataHash)
-			vmc.RefDataHash = bc.Hash(ent.body.Data)
+			vmc.RefDataHash, err = getRefDataHash(ent.body.Data)
+			if err != nil {
+				return nil, err
+			}
 			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 		}
