@@ -163,7 +163,7 @@ func Data(err error) map[string]interface{} {
 // Sub returns nil when either new or old is nil.
 //
 // Use this when you need to substitute a new root error in place
-// of an existing error that may already have an associated stack trace
+// of an existing error that may already hold a stack trace
 // or other metadata.
 func Sub(new, old error) error {
 	if wrapper, ok := old.(wrapperError); ok && new != nil {
