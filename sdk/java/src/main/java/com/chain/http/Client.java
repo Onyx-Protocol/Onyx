@@ -442,7 +442,8 @@ public class Client {
 
     if ((response.code() / 100) != 2) {
       try {
-        APIException err = Utils.serializer.fromJson(response.body().charStream(), APIException.class);
+        APIException err =
+            Utils.serializer.fromJson(response.body().charStream(), APIException.class);
         if (err.code != null) {
           err.requestId = rid;
           err.statusCode = response.code();

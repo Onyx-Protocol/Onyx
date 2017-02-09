@@ -170,34 +170,28 @@ public class CreateTest {
     client = TestUtils.generateClient();
     key = MockHsm.Key.create(client);
     String alice = "CreateTest.testReceiverCreate.alice";
-    Account account = new Account.Builder()
-      .setAlias(alice)
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .addTag("name", alice)
-      .create(client);
+    Account account =
+        new Account.Builder()
+            .setAlias(alice)
+            .addRootXpub(key.xpub)
+            .setQuorum(1)
+            .addTag("name", alice)
+            .create(client);
 
-    Receiver r = new Account.ReceiverBuilder()
-      .setAccountId(account.id)
-      .create(client);
-
-    assertNotNull(r.controlProgram);
-    assert(r.expiresAt.after(new Date()));
-
-    Date expiresAt = new SimpleDateFormat(Utils.rfc3339DateFormat)
-      .parse("2020-01-01T00:00:00.000Z");
-    r = new Account.ReceiverBuilder()
-      .setAccountAlias(alice)
-      .setExpiresAt(expiresAt)
-      .create(client);
+    Receiver r = new Account.ReceiverBuilder().setAccountId(account.id).create(client);
 
     assertNotNull(r.controlProgram);
-    assert(r.expiresAt.equals(expiresAt));
+    assert (r.expiresAt.after(new Date()));
+
+    Date expiresAt =
+        new SimpleDateFormat(Utils.rfc3339DateFormat).parse("2020-01-01T00:00:00.000Z");
+    r = new Account.ReceiverBuilder().setAccountAlias(alice).setExpiresAt(expiresAt).create(client);
+
+    assertNotNull(r.controlProgram);
+    assert (r.expiresAt.equals(expiresAt));
 
     try {
-      new Account.ReceiverBuilder()
-        .setAccountId("bad-id")
-        .create(client);
+      new Account.ReceiverBuilder().setAccountId("bad-id").create(client);
     } catch (APIException e) {
       return;
     }
@@ -208,17 +202,19 @@ public class CreateTest {
     client = TestUtils.generateClient();
     key = MockHsm.Key.create(client);
     String alice = "CreateTest.testReceiverCreateBatch.alice";
-    Account account = new Account.Builder()
-      .setAlias(alice)
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .addTag("name", alice)
-      .create(client);
+    Account account =
+        new Account.Builder()
+            .setAlias(alice)
+            .addRootXpub(key.xpub)
+            .setQuorum(1)
+            .addTag("name", alice)
+            .create(client);
 
     Account.ReceiverBuilder builder = new Account.ReceiverBuilder().setAccountId(account.id);
     Account.ReceiverBuilder failure = new Account.ReceiverBuilder().setAccountId("bad-id");
 
-    BatchResponse<Receiver> resp = Account.createReceiverBatch(client, Arrays.asList(builder, failure));
+    BatchResponse<Receiver> resp =
+        Account.createReceiverBatch(client, Arrays.asList(builder, failure));
     assertEquals(1, resp.successes().size());
     assertEquals(1, resp.errors().size());
   }

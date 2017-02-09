@@ -1,14 +1,7 @@
 package com.chain.integration;
 
 import com.chain.TestUtils;
-import com.chain.api.Account;
-import com.chain.api.Asset;
-import com.chain.api.Balance;
-import com.chain.api.ControlProgram;
-import com.chain.api.MockHsm;
-import com.chain.api.PagedItems;
-import com.chain.api.Transaction;
-import com.chain.api.UnspentOutput;
+import com.chain.api.*;
 import com.chain.http.BatchResponse;
 import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
@@ -437,8 +430,7 @@ public class TransactionTest {
         .setRootXpubs(Arrays.asList(key.xpub))
         .setQuorum(1)
         .create(client);
-    ControlProgram bobCtrlP =
-        new ControlProgram.Builder().controlWithAccountByAlias(bob).create(client);
+    Receiver bobReceiver = new Account.ReceiverBuilder().setAccountAlias(bob).create(client);
 
     Transaction.Template issuance =
         new Transaction.Builder()
@@ -459,8 +451,8 @@ public class TransactionTest {
                     .setAccountAlias(alice)
                     .setAmount(10))
             .addAction(
-                new Transaction.Action.ControlWithProgram()
-                    .setControlProgram(bobCtrlP)
+                new Transaction.Action.ControlWithReceiver()
+                    .setReceiver(bobReceiver)
                     .setAssetAlias(asset)
                     .setAmount(10))
             .build(client);

@@ -2,7 +2,6 @@ package com.chain.api;
 
 import com.chain.exception.*;
 import com.chain.http.*;
-import com.chain.common.*;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -899,22 +898,6 @@ public class Transaction {
       }
 
       /**
-       * Specifies the receiver (as a JSON string) that is being paid to.
-       *
-       * @param serialized the JSON-serialized receiver being paid to
-       * @return the updated action object
-       */
-      public ControlWithReceiver setReceiver(String serialized) throws JSONException {
-        Receiver r;
-        try {
-          r = Utils.serializer.fromJson(serialized, Receiver.class);
-        } catch (IllegalStateException e) {
-          throw new JSONException("Unable to parse serialized receiver: " + e.getMessage());
-        }
-        return this.setReceiver(r);
-      }
-
-      /**
        * Specifies the asset to be controlled using its alias.<br>
        * <strong>Either this or {@link ControlWithReceiver#setAssetId(String)} must be called.</strong>
        * @param alias alias of the asset to be controlled
@@ -1120,7 +1103,7 @@ public class Transaction {
   /**
    * Transaction.Builder utilizes the builder pattern to create {@link Transaction.Template} objects.
    * At minimum, a {@link Action.Issue} or {@link Action.SpendFromAccount}/{@link Action.SpendAccountUnspentOutput}
-   * must be coupled with a {@link Action.ControlWithAccount}/{@link Action.ControlWithProgram} before calling {@link #build(Client)}.
+   * must be coupled with a {@link Action.ControlWithAccount}/{@link Action.ControlWithReceiver} before calling {@link #build(Client)}.
    */
   public static class Builder {
     /**

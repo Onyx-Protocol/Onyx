@@ -320,8 +320,7 @@ public class Account {
      * @throws HTTPException This exception is raised when errors occur making http requests.
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
-    public Receiver create(Client client)
-        throws ChainException {
+    public Receiver create(Client client) throws ChainException {
       return client.singletonBatchRequest(
           "create-account-receiver", Arrays.asList(this), Receiver.class, APIException.class);
     }
@@ -339,8 +338,8 @@ public class Account {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<Receiver> createReceiverBatch(Client client, List<ReceiverBuilder> builders)
-      throws ChainException {
+  public static BatchResponse<Receiver> createReceiverBatch(
+      Client client, List<ReceiverBuilder> builders) throws ChainException {
     return client.batchRequest(
         "create-account-receiver", builders, Receiver.class, APIException.class);
   }

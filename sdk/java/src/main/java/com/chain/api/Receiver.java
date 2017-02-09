@@ -1,6 +1,7 @@
 package com.chain.api;
 
 import com.chain.common.Utils;
+import com.chain.exception.*;
 
 import java.util.Date;
 
@@ -31,7 +32,22 @@ public class Receiver {
   /**
    * Serializes the receiver into a form that is safe to transfer over the wire.
    */
-  public String serialize() {
+  public String toJson() {
     return Utils.serializer.toJson(this);
+  }
+
+  /**
+   * Deserializes a Receiver from JSON.
+   *
+   * @param json the serialized Receiver object
+   * @return the deserialized Receiver object
+   * @throws JSONException Raised if the provided string is not valid JSON.
+   */
+  public static Receiver fromJson(String json) throws JSONException {
+    try {
+      return Utils.serializer.fromJson(json, Receiver.class);
+    } catch (IllegalStateException e) {
+      throw new JSONException("Unable to parse serialized receiver: " + e.getMessage());
+    }
   }
 }
