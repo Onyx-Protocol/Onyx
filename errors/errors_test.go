@@ -117,3 +117,26 @@ func TestData(t *testing.T) {
 		}
 	}
 }
+
+func TestSub(t *testing.T) {
+	x := errors.New("x")
+	y := errors.New("y")
+	cases := []struct{ new, old, want error }{
+		{nil, nil, nil},
+		{x, nil, nil},
+		{nil, Wrap(y), nil},
+		{Wrap(x), nil, nil},
+		{nil, y, nil},
+		{x, y, errors.New("y: x")},
+		{Wrap(x), y, errors.New("y: x")},
+		{x, Wrap(y), errors.New("y: x")},
+		{Wrap(x, "z"), Wrap(y), errors.New("y: z: x")},
+	}
+
+	for _, test := range cases {
+		got := Sub(test.new, test.old)
+		if !(got == nil && test.want == nil || got.Error() == test.want.Error()) {
+			t.Errorf("Sub(%#v, %#v) = %v, want %v", test.new, test.old, got, test.want)
+		}
+	}
+}

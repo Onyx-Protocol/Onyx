@@ -42,9 +42,7 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *bc.Tx) 
 	// If this transaction is valid, ValidateTxCached will store it in the cache.
 	err = c.ValidateTxCached(tx)
 	if errors.Root(err) == validation.ErrBadTx {
-		detail := errors.Detail(err)
-		err = errors.Wrap(ErrRejected, err)
-		return errors.WithDetail(err, detail)
+		return errors.Sub(ErrRejected, err)
 	} else if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}

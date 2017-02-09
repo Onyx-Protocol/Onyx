@@ -42,7 +42,7 @@ func ValidateBlockForAccept(ctx context.Context, snapshot *state.Snapshot, initi
 				witnessStrs = append(witnessStrs, hex.EncodeToString(w))
 			}
 			witnessStr := strings.Join(witnessStrs, "; ")
-			return errors.Wrapf(ErrBadSig, "validation failed in script execution in block (program [%s] witness [%s]): %s", pkScriptStr, witnessStr, err)
+			return errors.Sub(ErrBadSig, errors.Wrapf(err, "program [%s] witness [%s]", pkScriptStr, witnessStr))
 		}
 	}
 

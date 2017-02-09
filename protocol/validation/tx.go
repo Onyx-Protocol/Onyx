@@ -41,16 +41,16 @@ var (
 	errUnbalancedV1           = errors.New("amounts for asset are not balanced on v1 inputs and outputs")
 )
 
-func badTxErr(suberr error) error {
-	err := errors.WithData(ErrBadTx, "badtx", suberr)
-	err = errors.WithDetail(err, suberr.Error())
-	return err
+func badTxErr(err error) error {
+	err = errors.WithData(err, "badtx", err)
+	err = errors.WithDetail(err, err.Error())
+	return errors.Sub(ErrBadTx, err)
 }
 
-func badTxErrf(suberr error, f string, args ...interface{}) error {
-	err := errors.WithData(ErrBadTx, "badtx", suberr)
+func badTxErrf(err error, f string, args ...interface{}) error {
+	err = errors.WithData(err, "badtx", err)
 	err = errors.WithDetailf(err, f, args...)
-	return err
+	return errors.Sub(ErrBadTx, err)
 }
 
 // ConfirmTx validates the given transaction against the given state tree
