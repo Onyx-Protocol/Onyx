@@ -111,7 +111,10 @@ module Chain
           http.send "#{k}=", @opts[k]
         end
 
-        req = Net::HTTP::Post.new(@url.request_uri + path)
+        full_path = @url.request_uri.chomp('/')
+        full_path += (path[0] == '/') ? path : '/' + path
+
+        req = Net::HTTP::Post.new(full_path)
         req['Accept'] = 'application/json'
         req['Content-Type'] = 'application/json'
         req['User-Agent'] = 'chain-sdk-ruby/' + Chain::VERSION
