@@ -18,7 +18,11 @@ var isLeading atomic.Value
 // IsLeading returns true if this process is
 // the core leader.
 func IsLeading() bool {
-	return isLeading.Load().(bool)
+	v := isLeading.Load()
+	if v == nil {
+		return false
+	}
+	return v.(bool)
 }
 
 // Run runs as a goroutine, trying once every five seconds to become
