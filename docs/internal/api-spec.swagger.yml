@@ -260,8 +260,22 @@ definitions:
         type: integer
         description: The number of items to be returned in each page
 
+  Receiver:
+    type: object
+    required:
+      - control_program
+      - expires_at
+    properties:
+      control_program:
+        type: string
+        description: The raw hex of the control program.
+      expires_at:
+        type: string
+        description: An RFC3339 timestamp indicating when the receiver expires.
+
   ControlProgram:
     type: object
+    description: DEPRECATED as of Chain Core 1.1. Please use Receiver instead.
     required:
       - control_program
     properties:
@@ -389,6 +403,8 @@ definitions:
 
   SpentOutput:
     type: object
+    description: DEPRECATED as of Chain Core 1.1. Please use `spent_output_id`
+      instead.
     required:
       - transaction_id
       - position
@@ -396,11 +412,9 @@ definitions:
       transaction_id:
         type: string
         description: The unique ID of the transaction containing the output.
-          This field is deprecated, use `spent_output_id` instead.
       position:
         type: integer
         description: The position of the output within the containing
-          tranasction’s outputs. This field is deprecated, use `spent_output_id` instead.
 
   TransactionOutput:
     type: object
@@ -559,8 +573,8 @@ definitions:
       Since Swagger 2.0 does not allow for polymorphic types, the individual
       properties are not listed here. Please refer to the definitions of
       IssueAction, SpendFromAccountAction, SpendFromAccountUnspentOutputAction,
-      ControlWithAccountAction, ControlWithProgramAction, and
-      SetTransactionReferenceDataAction.
+      ControlWithAccountAction, ControlWithReceiverAction,
+      ControlWithProgramAction, and SetTransactionReferenceDataAction.
 
   IssueAction:
     description: This action adds an issuance input for the specified asset to
@@ -633,11 +647,13 @@ definitions:
   SpendFromAccountUnspentOutputAction:
     description: This action spends a specific output controlled by an account
       on the local core. The entire sum of assets controlled in the output will
-      be spent, and the user is required to handle change manually.
+      be spent, and the user is required to handle change manually. To identify
+      the unspent output, you must provide either 1) `output_id` (recommended),
+      or 2) `transaction_id` and `position` as a pair. The latter version is
+      DEPRECATED as of Chain Core 1.1.
     type: object
     required:
       - type
-      - output_id
     properties:
       type:
         type: string
@@ -651,12 +667,14 @@ definitions:
           This field replaces fields transaction_id and position.
       transaction_id:
         type: string
-        description: The unique ID of the transaction containing the output
-          being spent. This field is supported, but deprecated. Use output_id instead.
+        description: DEPRECATED as of Chain Core 1.1. Please use `output_id`
+          instead. The unique ID of the transaction containing the output
+          being spent.
       position:
         type: string
-        description: The output's index relative to other outputs in the
-          containing transaction. This field is supported, but deprecated. Use output_id instead.
+        description: DEPRECATED as of Chain Core 1.1. Please use `output_id`
+          instead. The output's index relative to other outputs in the
+          containing transaction.
       reference_data:
         type: object
         description: Arbitrary, immutable key/value data that will accompany
@@ -700,11 +718,47 @@ definitions:
         description: Arbitrary, immutable key/value data that will accompany
           the inputs and/or outputs created by this action.
 
-  ControlWithProgramAction:
+  ControlWithReceiverAction:
     description: This action adds an output to the transaction that controls
-      some amount of an asset with a control program in the specified control
-      program. Typically, this is used to make payments to control programs
-      created from accounts that are not on the local core.
+      some amount of an asset with a control program in the specified receiver.
+      Typically, this is used to make payments to receivers created from
+      accounts that are not on the local core.
+    type: object
+    required:
+      - type
+      - receiver
+      - amount
+    properties:
+      type:
+        type: string
+        description: Value identifying the action type to the API
+          (required to be `control_receiver`)
+        enum:
+          - control_receiver
+      receiver:
+        $ref: '#/definitions/Receiver'
+      asset_id:
+        type: string
+        description: The unique ID of the incoming asset. Either `asset_id` or
+          `asset_alias` is required.
+      asset_alias:
+        type: string
+        description: The unique alias of the incoming asset. Either `asset_id`
+          or `asset_alias` is required.
+      amount:
+        type: integer
+        description: The amount of the incoming asset.
+      reference_data:
+        type: object
+        description: Arbitrary, immutable key/value data that will accompany
+          the inputs and/or outputs created by this action.
+
+  ControlWithProgramAction:
+    description: DEPRECATED as of Chain Core 1.1. Please use
+      ControlWithReceiverAction instead. This action adds an output to the
+      transaction that controls some amount of an asset with a control program
+      in the specified control program. Typically, this is used to make payments
+      to control programs created from accounts that are not on the local core.
     type: object
     required:
       - type
@@ -1284,9 +1338,53 @@ paths:
           schema:
             $ref: '#/definitions/AccountQuery'
 
+  '/create-account-receiver':
+    post:
+      description: Creates one or more receivers under the specified accounts.
+      responses:
+        <<: *commonErrorResponses
+        200:
+          description: A list of control programs and/or error messages. Items
+            in the list may be Error objects in case of errors, but Swagger 2.0
+            does not allow for polymorphic array items.
+          headers:
+            <<: *commonHeaders
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Receiver'
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                account_id:
+                  type: string
+                  description: The unique ID of the account. Either
+                    `account_id` or `account_alias` is required.
+                account_alias:
+                  type: string
+                  description: The unique alias of the account. Either
+                    `account_id` or `account_alias` is required.
+                expires_at:
+                  type: string
+                  description: An RFC3339 timestamp indicating when the receiver
+                    will expire. By default, this will be set to 30 days into
+                    the future.
+                params:
+                  type: object
+                  description: Parameters for creating the control program.
+                    Currently, only parameters for the "account" type are
+                    accepted.
+
   '/create-control-program':
     post:
-      description: Creates one or more control programs.
+      description: DEPRECATED as of Chain Core 1.1. Please use
+        `/create-account-receiver` instead. Creates one or more control
+        programs.
       responses:
         <<: *commonErrorResponses
         200:
