@@ -16,8 +16,7 @@ import org.junit.Test;
 import java.util.*;
 import java.text.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class CreateTest {
   static Client client;
@@ -181,14 +180,14 @@ public class CreateTest {
     Receiver r = new Account.ReceiverBuilder().setAccountId(account.id).create(client);
 
     assertNotNull(r.controlProgram);
-    assert (r.expiresAt.after(new Date()));
+    assertTrue(r.expiresAt.after(new Date()));
 
     Date expiresAt =
         new SimpleDateFormat(Utils.rfc3339DateFormat).parse("2020-01-01T00:00:00.000Z");
     r = new Account.ReceiverBuilder().setAccountAlias(alice).setExpiresAt(expiresAt).create(client);
 
     assertNotNull(r.controlProgram);
-    assert (r.expiresAt.equals(expiresAt));
+    assertTrue(r.expiresAt.equals(expiresAt));
 
     try {
       new Account.ReceiverBuilder().setAccountId("bad-id").create(client);
