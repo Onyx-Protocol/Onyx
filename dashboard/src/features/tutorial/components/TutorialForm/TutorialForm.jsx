@@ -24,32 +24,38 @@ class TutorialForm extends React.Component {
                   title = contentLine['title'].replace('STRING', replacement['alias'])
                 }
                 let rows = [
-                  <tr key={i}>
+                  <tr>
                     <td className={styles.listBullet}>{i+1}</td>
                     <td>{title}</td>
                   </tr>
                 ]
                 if (contentLine['description']) {
-                  let descriptionResult = ''
-                  contentLine['description'].forEach(function (descriptionLine, j){
+                  let descriptionResult = []
+                  contentLine['description'].forEach(function (descriptionLine){
                     let description = descriptionLine['line']
                     if (descriptionLine['type']) {
-                      let replacement = userInput[descriptionLine['type']]
+                      let replacement = userInput[descriptionLine['type']] || descriptionLine['type']
                       if ('index' in descriptionLine){
                         replacement = replacement[descriptionLine['index']]
                       }
-                      description = descriptionLine['line'].replace('STRING', replacement['alias'])
-                    }
-                    descriptionResult += description
-                  })
+                      replacement = replacement['alias'] || replacement
 
-                  rows.push (<tr className={styles.listItemDescription}>
+                      description.split('STRING').forEach(function (item, i, arr){
+                        descriptionResult.push(item)
+                        let replacementText = i < arr.length - 1 && <span className={styles.userInputData}>{replacement}</span>
+                        descriptionResult.push(replacementText)
+                      })
+                    } else {
+                      descriptionResult.push(description)
+                    }
+                  })
+                  rows.push(<tr className={styles.listItemDescription}>
                     <td></td>
-                    <td key={i}>{descriptionResult}</td>
+                    <td>{descriptionResult}</td>
                   </tr>)
                 }
 
-                return <tbody className={styles.listItemGroup}>{rows}</tbody>
+                return <tbody key={i} className={styles.listItemGroup}>{rows}</tbody>
               })}
             </table>
           </div>

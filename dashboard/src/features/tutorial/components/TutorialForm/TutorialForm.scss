@@ -57,6 +57,11 @@
 
         .listItemDescription {
           color: #A3A9B8;
+
+          .userInputData {
+            color: $highlight-default;
+            font-weight: bolder;
+          }
         }
       }
     }
