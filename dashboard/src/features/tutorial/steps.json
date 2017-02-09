@@ -292,7 +292,11 @@
           "description": [
             {
               "type": "asset",
-              "line": "Select STRING for the asset alias, and enter 100 for the amount."
+              "line": "Select STRING for the asset alias, "
+            },
+            {
+              "type": 100,
+              "line": "and enter STRING for the amount."
             }
           ]
         },
@@ -363,7 +367,8 @@
               "line": "STRING for the asset alias "
             },
             {
-              "line": "and enter 10 for the amount."
+              "type": 10,
+              "line": "and enter STRING for the amount."
             }
           ]
         },
@@ -380,7 +385,8 @@
               "line": "STRING for the asset alias "
             },
             {
-              "line": "and enter 10 for the amount."
+              "type": 10,
+              "line": "and enter STRING for the amount."
             }
           ]
         },
@@ -433,7 +439,8 @@
               "line": "STRING for the asset alias "
             },
             {
-              "line": "and enter 5 for the amount."
+              "type": 5,
+              "line": "and enter STRING for the amount."
             }
           ]
         },
@@ -445,7 +452,8 @@
               "line": "Select STRING for the asset alias "
             },
             {
-              "line": "and enter 5 for the amount."
+              "type": 5,
+              "line": "and enter STRING for the amount."
             }
           ]
         },
