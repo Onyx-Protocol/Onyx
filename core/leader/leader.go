@@ -71,10 +71,10 @@ func Run(db *sql.DB, addr string, lead func(context.Context)) {
 // returned channel.
 //
 // It provides the invariants:
-// * the first value sent on the channel is `true` when the
-//   process is first elected leader
-// * every value sent on the channel is the opposite of the
-//   previous value
+// * The first value sent on the channel is true. (This will
+//   happen at the time the process is first elected leader.)
+// * Every value sent on the channel is the opposite of the
+//   previous value.
 func leadershipChanges(ctx context.Context, l *leader) chan bool {
 	ch := make(chan bool)
 	go func() {
