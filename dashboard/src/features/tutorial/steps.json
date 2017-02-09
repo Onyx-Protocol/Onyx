@@ -3,7 +3,7 @@
     "component": "TutorialModal",
     "modalTitle": "Tutorial - Welcome to Chain Core!",
     "modalNext": "Start 5-minute Tutorial",
-    "modalDismiss": "Skip tutorial",
+    "modalDismiss": "Close",
     "route": "mockhsms",
     "image": null,
     "content": [
