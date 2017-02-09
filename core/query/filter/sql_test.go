@@ -12,10 +12,12 @@ var (
 		Name:  "annotated_inputs",
 		Alias: "inp",
 		Columns: map[string]*SQLColumn{
-			"a":        {Name: "a", Type: String, SQLType: SQLText},
-			"b":        {Name: "b", Type: String, SQLType: SQLText},
-			"type":     {Name: "type", Type: String, SQLType: SQLText},
-			"asset_id": {Name: "asset_id", Type: String, SQLType: SQLBytea},
+			"a":            {Name: "a", Type: String, SQLType: SQLText},
+			"b":            {Name: "b", Type: String, SQLType: SQLText},
+			"type":         {Name: "type", Type: String, SQLType: SQLText},
+			"amount":       {Name: "amount", Type: Integer, SQLType: SQLBigint},
+			"asset_id":     {Name: "asset_id", Type: String, SQLType: SQLBytea},
+			"account_tags": {Name: "account_tags", Type: Object, SQLType: SQLJSONB},
 		},
 		ForeignKeys: map[string]*SQLForeignKey{},
 	}
@@ -32,7 +34,7 @@ var (
 		Alias: "txs",
 		Columns: map[string]*SQLColumn{
 			"id":       {Name: "tx_hash", Type: String, SQLType: SQLBytea},
-			"ref":      {Name: "ref", Type: String, SQLType: SQLJSONB},
+			"ref":      {Name: "ref", Type: Object, SQLType: SQLJSONB},
 			"position": {Name: "position", Type: Integer, SQLType: SQLInteger},
 			"is_local": {Name: "local", Type: Bool, SQLType: SQLBool},
 		},
@@ -103,7 +105,17 @@ func TestAsSQL(t *testing.T) {
 		{ // indexing into arbitrary json
 			q:   `ref.buyer.address.state = 'CA' AND ref.buyer.address.city = 'San Francisco'`,
 			tbl: transactionsSQLTable,
-			sql: `txs."ref"->'buyer'->'address'->>'state' = 'CA' AND txs."ref"->'buyer'->'address'->>'city' = 'San Francisco'`,
+			sql: `(txs."ref"->'buyer'->'address'->>'state') = 'CA' AND (txs."ref"->'buyer'->'address'->>'city') = 'San Francisco'`,
+		},
+		{ // indexing into arbitrary json as an integer
+			q:   `ref.buyer.address.street_number = 200`,
+			tbl: transactionsSQLTable,
+			sql: `(txs."ref"->'buyer'->'address'->>'street_number')::bigint = 200::bigint`,
+		},
+		{ // indexing into arbitrary json as a boolean
+			q:   `ref.buyer.is_high_priority`,
+			tbl: transactionsSQLTable,
+			sql: `(txs."ref"->'buyer'->>'is_high_priority')::boolean`,
 		},
 		{ // error - indexing into non-json attribute
 			q:   `is_local.but_really`,
@@ -151,20 +163,24 @@ EXISTS(SELECT 1 FROM annotated_outputs AS out WHERE out."tx_hash" = txs."tx_hash
 			tbl: transactionsSQLTable,
 			sql: `
 EXISTS(SELECT 1 FROM annotated_inputs AS inp WHERE inp."tx_hash" = txs."tx_hash" AND (inp."a" = 'a'))
- AND txs."ref"->>'txbankref' = '1ab'`,
+ AND (txs."ref"->>'txbankref') = '1ab'`,
 		},
 	}
 
+	values := []interface{}{"hey"}
 	for _, tc := range testCases {
-		e, _, err := parse(tc.q)
+		p, err := Parse(tc.q, tc.tbl, values)
+		if !testutil.DeepEqual(errors.Root(err), errors.Root(tc.err)) {
+			t.Errorf("got error %q want error %q", err, tc.err)
+		}
 		if err != nil {
-			t.Fatal(err)
+			continue
 		}
 
-		b := &sqlBuilder{baseTbl: tc.tbl, values: []interface{}{"hey"}}
+		b := &sqlBuilder{baseTbl: tc.tbl, values: values, selectorTypes: p.selectorTypes}
 		c := &sqlContext{sqlBuilder: b, tbl: tc.tbl}
 
-		err = asSQL(c, e)
+		err = asSQL(c, p.expr)
 		if !testutil.DeepEqual(errors.Root(err), errors.Root(tc.err)) {
 			t.Errorf("got error %q want error %q", err, tc.err)
 		}

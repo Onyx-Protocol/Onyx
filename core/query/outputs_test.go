@@ -54,11 +54,8 @@ func TestOutputsAfter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	q, err := filter.Parse(`asset_id = 'deadbeef'`)
-	if err != nil {
-		t.Fatal(err)
-	}
 
+	const q = `asset_id = 'deadbeef'`
 	indexer := NewIndexer(db, &protocol.Chain{}, nil)
 	results, after, err := indexer.Outputs(ctx, q, nil, 25, nil, 2)
 	if err != nil {
@@ -119,7 +116,7 @@ func TestConstructOutputsQuery(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		f, err := filter.Parse(tc.filter)
+		f, err := filter.Parse(tc.filter, outputsTable, tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}

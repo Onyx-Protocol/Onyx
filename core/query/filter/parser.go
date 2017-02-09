@@ -13,8 +13,9 @@ var ErrBadFilter = errors.New("invalid query filter")
 
 // Predicate represents a parsed filter predicate.
 type Predicate struct {
-	expr       expr
-	Parameters int
+	expr          expr
+	selectorTypes map[string]Type
+	Parameters    int
 }
 
 // String returns a cleaned, canonical representation of the
@@ -34,19 +35,20 @@ func (p Predicate) MarshalText() ([]byte, error) {
 
 // Parse parses a predicate and returns an internal representation of the
 // predicate or an error if it fails to parse.
-func Parse(predicate string) (p Predicate, err error) {
+func Parse(predicate string, tbl *SQLTable, vals []interface{}) (p Predicate, err error) {
 	expr, parser, err := parse(predicate)
 	if err != nil {
 		return p, errors.WithDetail(ErrBadFilter, err.Error())
 	}
-	err = typeCheck(expr)
+	selectorTypes, err := typeCheck(expr, tbl, vals)
 	if err != nil {
 		return p, errors.WithDetail(ErrBadFilter, err.Error())
 	}
 
 	return Predicate{
-		Parameters: parser.maxPlaceholder,
-		expr:       expr,
+		expr:          expr,
+		selectorTypes: selectorTypes,
+		Parameters:    parser.maxPlaceholder,
 	}, nil
 }
 
@@ -64,7 +66,7 @@ func (f Field) String() string {
 func ParseField(s string) (f Field, err error) {
 	expr, _, err := parse(s)
 	if err != nil {
-		return f, err
+		return f, errors.WithDetail(ErrBadFilter, err.Error())
 	}
 	if expr == nil {
 		return f, errors.WithDetail(ErrBadFilter, "empty field expression")

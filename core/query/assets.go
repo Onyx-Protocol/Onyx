@@ -30,7 +30,11 @@ func (ind *Indexer) SaveAnnotatedAsset(ctx context.Context, asset *AnnotatedAsse
 }
 
 // Assets queries the blockchain for annotated assets matching the query.
-func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interface{}, after string, limit int) ([]*AnnotatedAsset, string, error) {
+func (ind *Indexer) Assets(ctx context.Context, filt string, vals []interface{}, after string, limit int) ([]*AnnotatedAsset, string, error) {
+	p, err := filter.Parse(filt, assetsTable, vals)
+	if err != nil {
+		return nil, "", err
+	}
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}

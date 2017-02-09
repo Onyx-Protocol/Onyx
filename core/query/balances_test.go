@@ -45,7 +45,7 @@ func TestConstructBalancesQuery(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		p, err := filter.Parse(tc.predicate)
+		p, err := filter.Parse(tc.predicate, outputsTable, tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}

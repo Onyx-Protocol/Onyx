@@ -13,7 +13,11 @@ import (
 )
 
 // Balances performs a balances query against the annotated_outputs.
-func (ind *Indexer) Balances(ctx context.Context, p filter.Predicate, vals []interface{}, sumBy []filter.Field, timestampMS uint64) ([]interface{}, error) {
+func (ind *Indexer) Balances(ctx context.Context, filt string, vals []interface{}, sumBy []filter.Field, timestampMS uint64) ([]interface{}, error) {
+	p, err := filter.Parse(filt, outputsTable, vals)
+	if err != nil {
+		return nil, err
+	}
 	if len(vals) != p.Parameters {
 		return nil, ErrParameterCountMismatch
 	}

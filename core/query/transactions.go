@@ -50,6 +50,11 @@ func DecodeTxAfter(str string) (c TxAfter, err error) {
 	return TxAfter{FromBlockHeight: from, FromPosition: uint32(pos), StopBlockHeight: stop}, nil
 }
 
+func ValidateTransactionFilter(filt string) error {
+	_, err := filter.Parse(filt, transactionsTable, nil)
+	return err
+}
+
 // LookupTxAfter looks up the transaction `after` for the provided time range.
 func (ind *Indexer) LookupTxAfter(ctx context.Context, begin, end uint64) (TxAfter, error) {
 	const q = `
@@ -70,8 +75,12 @@ func (ind *Indexer) LookupTxAfter(ctx context.Context, begin, end uint64) (TxAft
 }
 
 // Transactions queries the blockchain for transactions matching the
-// filter predicate `p`.
-func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals []interface{}, after TxAfter, limit int, asc bool) ([]*AnnotatedTx, *TxAfter, error) {
+// filter predicate `filt`.
+func (ind *Indexer) Transactions(ctx context.Context, filt string, vals []interface{}, after TxAfter, limit int, asc bool) ([]*AnnotatedTx, *TxAfter, error) {
+	p, err := filter.Parse(filt, transactionsTable, vals)
+	if err != nil {
+		return nil, nil, err
+	}
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}

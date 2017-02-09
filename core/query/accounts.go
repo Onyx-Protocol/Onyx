@@ -29,7 +29,11 @@ func (ind *Indexer) SaveAnnotatedAccount(ctx context.Context, account *Annotated
 }
 
 // Accounts queries the blockchain for accounts matching the query `q`.
-func (ind *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []interface{}, after string, limit int) ([]*AnnotatedAccount, string, error) {
+func (ind *Indexer) Accounts(ctx context.Context, filt string, vals []interface{}, after string, limit int) ([]*AnnotatedAccount, string, error) {
+	p, err := filter.Parse(filt, accountsTable, vals)
+	if err != nil {
+		return nil, "", err
+	}
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
