@@ -69,6 +69,12 @@ func Run(db *sql.DB, addr string, lead func(context.Context)) {
 // is leader periodically. Every time the process becomes leader
 // or is demoted from being a leader, it sends a bool on the
 // returned channel.
+//
+// It provides the invariants:
+// * the first value sent on the channel is `true` when the
+//   process is first elected leader
+// * every value sent on the channel is the opposite of the
+//   previous value
 func leadershipChanges(ctx context.Context, l *leader) chan bool {
 	ch := make(chan bool)
 	go func() {
