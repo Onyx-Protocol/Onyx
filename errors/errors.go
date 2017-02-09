@@ -155,10 +155,9 @@ func Data(err error) map[string]interface{} {
 	return wrapper.data
 }
 
-// Sub returns an error with all the associated data from err,
-// including stack trace, detail, message, and data, but using
-// root as the root error. It also wraps the newly-created error
-// with the formatted error string from err.
+// Sub returns an error containing root as its root and
+// taking all other metadata (stack trace, detail, message,
+// and data items) from err.
 //
 // Sub returns nil when either root or err is nil.
 //
