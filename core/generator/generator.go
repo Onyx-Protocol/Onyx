@@ -93,13 +93,9 @@ func (g *Generator) Generate(
 	ctx context.Context,
 	period time.Duration,
 	health func(error),
+	recoveredBlock *bc.Block,
+	recoveredSnapshot *state.Snapshot,
 ) {
-	// This process just became leader, so it's responsible
-	// for recovering after the previous leader's exit.
-	recoveredBlock, recoveredSnapshot, err := g.chain.Recover(ctx)
-	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
-	}
 	g.latestBlock, g.latestSnapshot = recoveredBlock, recoveredSnapshot
 
 	// Check to see if we already have a pending, generated block.

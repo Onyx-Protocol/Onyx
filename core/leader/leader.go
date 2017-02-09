@@ -47,17 +47,18 @@ func Run(db *sql.DB, addr string, lead func(context.Context)) {
 	var leadCtx context.Context
 	var cancel func()
 	for leader := range leadershipChanges(ctx, l) {
-		isLeading.Store(leader)
-
 		if leader {
 			log.Messagef(ctx, "I am the core leader")
 			leadCtx, cancel = context.WithCancel(ctx)
-			go l.lead(leadCtx)
+			l.lead(leadCtx)
 		} else {
 			log.Messagef(ctx, "No longer core leader")
 			cancel()
 		}
+
+		isLeading.Store(leader)
 	}
+	panic("unreachable")
 }
 
 // leadershipChanges spawns a goroutine to check if this process

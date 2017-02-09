@@ -36,7 +36,7 @@ func TestGeneratorRecovery(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	go New(c, nil, dbtx).Generate(ctx, time.Second, func(error) {})
+	go New(c, nil, dbtx).Generate(ctx, time.Second, func(error) {}, b, s)
 
 	// Wait for the block to land, and then make sure it's the same block
 	// that was pending before we ran Generate.
