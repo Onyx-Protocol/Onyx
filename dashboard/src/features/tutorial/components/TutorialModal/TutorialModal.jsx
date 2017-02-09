@@ -7,7 +7,7 @@ class TutorialModal extends React.Component {
   render() {
     return (
       <div className={styles.main}>
-        <div className={styles.backdrop}></div>
+        <div className={styles.backdrop} onClick={this.props.dismissTutorial}></div>
           <div className={styles.content}>
             <div className={styles.header}>
               {this.props.modalTitle}
