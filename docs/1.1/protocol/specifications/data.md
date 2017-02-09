@@ -476,6 +476,14 @@ An entry's ID is based on its type and body. The body is length-prefixed, and it
 entryID = HASH("entryid:" || entry.type || ":" || entry.body_hash)
 ```
 
+#### Entry Pointer
+
+TKTK
+
+#### ValueSource
+
+TKTK
+
 #### Abstract Entry
 
 Field               | Type                 | Description
@@ -509,12 +517,51 @@ Witness             | Hashable             | See below.
 Field      | Type                                          | Description
 -----------|-----------------------------------------------|-------------------------
 Version    | Integer                                       | Transaction version, equals 1.
-Results    | List<Pointer<Output|Retirement|UnknownEntry>> | A list of pointers to "results," which, if known, are Outputs or Retirements.  
-Data       | Pointer<Data|UnknownEntry>                    |  
-Mintime    | Intger
-Maxtime    |
-ExtHash    |
+Results    | List<Pointer<Output|Retirement|UnknownEntry>> | A list of pointers to "results." If the version is known, result entries must be Outputs or Retirements. This list must contain at least one item. 
+Data       | Pointer<Data|UnknownEntry>                    | A single pointer to a Data or Unknown entry.
+Mintime    | Integer                                       | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction
+Maxtime    | Integer                                       | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction.
+ExtHash    | Hash                                          | Hash of all struct extensions. (See [Extstruct](#extstruct).) If the version is known, all ext_hashes must be hashes of empty strings. 
 
+##### TxHeader Witness
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
+#### Data
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "data1"
+Body                | Hash                 | Hash of the underlying data. 
+Witness             | Hash                 | Hash of empty string.
+
+The body is a hash of the underlying data. The underlying data may not be known. If a transaction author wants to provide the underlying data, it must be done in the transport layer alongisde the actual transaction.
+
+TKTK Address comments about specifying the hash function for the underlying data. I know we sorted this out, but now I can't remember.
+
+#### Output 
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "output1"
+Body                | Hashable             | See below. 
+Witness             | Hashable             | See below.
+
+##### Output Body
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Source              | ValueSource          | tktk
+ControlProgram      | Program              | tktk 
+Data                | Pointer<Data>        | tktk
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
+##### Output Witness
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
+TKTK: Somehow include the "rules" from the draft doc.
 
 ### Program
 
