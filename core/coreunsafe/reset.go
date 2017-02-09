@@ -7,12 +7,12 @@ package coreunsafe
 
 import (
 	"context"
-	"expvar"
 	"fmt"
 	"strings"
 
 	"github.com/lib/pq"
 
+	"chain/core/config"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -22,16 +22,11 @@ var (
 	neverReset             = []string{"migrations"}
 )
 
-func isProduction() bool {
-	p := expvar.Get("prod")
-	return p != nil && p.String() == `"yes"`
-}
-
 // ResetBlockchain deletes all blockchain data, resulting in an
 // unconfigured core. It does not delete access tokens or mockhsm
 // keys.
 func ResetBlockchain(ctx context.Context, db pg.DB) error {
-	if isProduction() {
+	if config.Production {
 		// Shouldn't ever happen; This package shouldn't even be
 		// included in a production binary.
 		panic("reset called on production")
@@ -61,7 +56,7 @@ func ResetBlockchain(ctx context.Context, db pg.DB) error {
 
 // ResetEverything deletes all of a Core's data.
 func ResetEverything(ctx context.Context, db pg.DB) error {
-	if isProduction() {
+	if config.Production {
 		// Shouldn't ever happen; This package shouldn't even be
 		// included in a production binary.
 		panic("reset called on production")
