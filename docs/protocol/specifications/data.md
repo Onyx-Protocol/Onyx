@@ -478,9 +478,21 @@ entryID = HASH("entryid:" || entry.type || ":" || entry.body_hash)
 
 #### Entry Pointer
 
-TKTK
+A Pointer is encoded as a Hash, and identifies another entry by its ID. It also restricts the possible acceptable types: Pointer<X> must refer to an entry of type X. 
+
+A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte hash `0x00000000000000000000000000000000`.
 
 #### ValueSource
+
+TKTK 
+
+Field            | Type                        | Description
+-----------------|-----------------------------|----------------
+Ref              | Pointer<Issuance|Spend|Mux> | Previous entry referenced by this ValueSource.
+Value            | AssetAmount                 |  
+Position         | Integer                     | 
+
+#### ValueDestination 
 
 TKTK
 
