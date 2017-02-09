@@ -42,7 +42,7 @@ class TutorialForm extends React.Component {
 
                       description.split('STRING').forEach(function (item, i, arr){
                         descriptionResult.push(item)
-                        let replacementText = i < arr.length - 1 && <span className={styles.userInputData}>{replacement}</span>
+                        let replacementText = i < arr.length - 1 && <span className={styles.userInputData}>"{replacement}"</span>
                         descriptionResult.push(replacementText)
                       })
                     } else {
