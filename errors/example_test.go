@@ -1,25 +1,21 @@
 package errors_test
 
-import (
-	"fmt"
-
-	"chain/errors"
-)
+import "chain/errors"
 
 var ErrInvalidKey = errors.New("invalid key")
 
-func ExampleSub() error {
-	sig, err := sign()
+func ExampleSub() {
+	err := sign()
 	if err != nil {
-		return errors.Sub(ErrInvalidKey, err)
+		err = errors.Sub(ErrInvalidKey, err)
+		return
 	}
-	fmt.Println(sig)
-	return nil
 }
 
-func ExampleSub_return() ([]byte, error) {
-	sig, err := sign()
-	return sig, errors.Sub(ErrInvalidKey, err)
+func ExampleSub_return() {
+	err := sign()
+	err = errors.Sub(ErrInvalidKey, err)
+	return
 }
 
-func sign() ([]byte, error) { return nil, nil }
+func sign() error { return nil }
