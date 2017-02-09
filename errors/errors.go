@@ -168,6 +168,7 @@ func Data(err error) map[string]interface{} {
 func Sub(new, old error) error {
 	if wrapper, ok := old.(wrapperError); ok && new != nil {
 		wrapper.root = Root(new)
+		wrapper.msg = new.Error()
 		new = wrapper
 	}
 	if old == nil {
