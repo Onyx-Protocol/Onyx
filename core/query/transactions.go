@@ -40,7 +40,7 @@ func DecodeTxAfter(str string) (c TxAfter, err error) {
 	var from, pos, stop uint64
 	_, err = fmt.Sscanf(str, "%d:%d-%d", &from, &pos, &stop)
 	if err != nil {
-		return c, errors.Wrap(ErrBadAfter, err.Error())
+		return c, errors.Sub(ErrBadAfter, err)
 	}
 	if from > math.MaxInt64 ||
 		pos > math.MaxUint32 ||

@@ -103,7 +103,7 @@ func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, pr
 	newState := state.Copy(prevState)
 	err := validation.ValidateBlockForAccept(ctx, newState, c.InitialBlockHash, prev, block, c.ValidateTxCached)
 	if err != nil {
-		return nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
+		return nil, errors.Sub(ErrBadBlock, err)
 	}
 	// TODO(kr): consider calling CommitBlock here and
 	// renaming this function to AcceptBlock.

@@ -163,10 +163,10 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		for _, signer := range c.Signers {
 			_, err = url.Parse(signer.URL)
 			if err != nil {
-				return errors.Wrap(ErrBadSignerURL, err.Error())
+				return errors.Sub(ErrBadSignerURL, err)
 			}
 			if len(signer.Pubkey) != ed25519.PublicKeySize {
-				return errors.Wrap(ErrBadSignerPubkey, err.Error())
+				return errors.Sub(ErrBadSignerPubkey, err)
 			}
 			signingKeys = append(signingKeys, ed25519.PublicKey(signer.Pubkey))
 		}
@@ -248,7 +248,7 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) er
 	}
 	err := client.Call(ctx, "/rpc/block-height", nil, &x)
 	if err != nil {
-		return errors.Wrap(ErrBadGenerator, err.Error())
+		return errors.Sub(ErrBadGenerator, err)
 	}
 
 	if x.BlockHeight < 1 {

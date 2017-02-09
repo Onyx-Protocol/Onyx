@@ -32,7 +32,7 @@ func DecodeOutputsAfter(str string) (c *OutputsAfter, err error) {
 	var lastBlockHeight, lastTxPos, lastIndex uint64
 	_, err = fmt.Sscanf(str, "%d:%d:%d", &lastBlockHeight, &lastTxPos, &lastIndex)
 	if err != nil {
-		return c, errors.Wrap(ErrBadAfter, err.Error())
+		return c, errors.Sub(ErrBadAfter, err)
 	}
 	if lastBlockHeight > math.MaxInt64 ||
 		lastTxPos > math.MaxUint32 ||
