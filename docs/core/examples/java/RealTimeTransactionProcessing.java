@@ -8,21 +8,23 @@ class RealTimeTransactionProcessing {
     setup(client);
 
     // snippet processing-thread
-    new Thread(() -> {
-        processingLoop(client);
-    }).start();
+    new Thread(
+            () -> {
+              processingLoop(client);
+            })
+        .start();
     // endsnippet
 
     // snippet issue
-    Transaction.Template issuance = new Transaction.Builder()
-      .addAction(new Transaction.Action.Issue()
-        .setAssetAlias("gold")
-        .setAmount(100)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("gold")
-        .setAmount(100)
-      ).build(client);
+    Transaction.Template issuance =
+        new Transaction.Builder()
+            .addAction(new Transaction.Action.Issue().setAssetAlias("gold").setAmount(100))
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAccountAlias("alice")
+                    .setAssetAlias("gold")
+                    .setAmount(100))
+            .build(client);
 
     Transaction.submit(client, HsmSigner.sign(issuance));
     // endsnippet
@@ -30,16 +32,19 @@ class RealTimeTransactionProcessing {
     Thread.sleep(1000);
 
     // snippet transfer
-    Transaction.Template transfer = new Transaction.Builder()
-      .addAction(new Transaction.Action.SpendFromAccount()
-        .setAccountAlias("alice")
-        .setAssetAlias("gold")
-        .setAmount(50)
-      ).addAction(new Transaction.Action.ControlWithAccount()
-        .setAccountAlias("bob")
-        .setAssetAlias("gold")
-        .setAmount(50)
-      ).build(client);
+    Transaction.Template transfer =
+        new Transaction.Builder()
+            .addAction(
+                new Transaction.Action.SpendFromAccount()
+                    .setAccountAlias("alice")
+                    .setAssetAlias("gold")
+                    .setAmount(50))
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAccountAlias("bob")
+                    .setAssetAlias("gold")
+                    .setAmount(50))
+            .build(client);
 
     Transaction.submit(client, HsmSigner.sign(transfer));
     // endsnippet
@@ -52,40 +57,21 @@ class RealTimeTransactionProcessing {
     MockHsm.Key key = MockHsm.Key.create(client);
     HsmSigner.addKey(key, MockHsm.getSignerClient(client));
 
-    new Asset.Builder()
-      .setAlias("gold")
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .create(client);
+    new Asset.Builder().setAlias("gold").addRootXpub(key.xpub).setQuorum(1).create(client);
 
-    new Account.Builder()
-      .setAlias("alice")
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .create(client);
+    new Account.Builder().setAlias("alice").addRootXpub(key.xpub).setQuorum(1).create(client);
 
-    new Account.Builder()
-      .setAlias("bob")
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .create(client);
+    new Account.Builder().setAlias("bob").addRootXpub(key.xpub).setQuorum(1).create(client);
 
     // snippet create-feed
-    Transaction.Feed feed = Transaction.Feed.create(
-      client,
-      "local-transactions",
-      "is_local='yes'"
-    );
+    Transaction.Feed feed = Transaction.Feed.create(client, "local-transactions", "is_local='yes'");
     // endsnippet
   }
 
   public static void processingLoop(Client client) {
     try {
       // snippet get-feed
-      Transaction.Feed feed = Transaction.Feed.getByAlias(
-        client,
-        "local-transactions"
-      );
+      Transaction.Feed feed = Transaction.Feed.getByAlias(client, "local-transactions");
       // endsnippet
 
       // snippet processing-loop

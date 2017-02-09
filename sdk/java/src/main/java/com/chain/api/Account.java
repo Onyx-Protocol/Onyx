@@ -271,8 +271,8 @@ public class Account {
      * Specifies the account under which the receiver is created. You must use
      * this method or @{link ReceiverBuilder#setAccountId}, but not both.
      *
-     * @param alias the unique alias of the account
-     * @return the updated ReceiverBuilder object
+     * @param alias The unique alias of the account.
+     * @return The updated ReceiverBuilder object.
      */
     public ReceiverBuilder setAccountAlias(String alias) {
       this.accountAlias = alias;
@@ -283,8 +283,8 @@ public class Account {
      * Specifies the account under which the receiver is created. You must use
      * this method or @{link ReceiverBuilder#setAccountAlias}, but not both.
      *
-     * @param id the unique ID of the account
-     * @return the updated ReceiverBuilder object
+     * @param id The unique ID of the account.
+     * @return The updated ReceiverBuilder object.
      */
     public ReceiverBuilder setAccountId(String id) {
       this.accountId = id;
@@ -301,8 +301,8 @@ public class Account {
      * builder will ensure that transactions that pay to expired receivers will
      * be rejected by the blockchain.
      *
-     * @param date the date when the receiver expires
-     * @return the updated ReceiverBuilder object
+     * @param date The date when the receiver expires.
+     * @return The updated ReceiverBuilder object.
      */
     public ReceiverBuilder setExpiresAt(Date date) {
       this.expiresAt = date;
@@ -312,8 +312,8 @@ public class Account {
     /**
      * Creates a single Receiver object under an account.
      *
-     * @param client the client object providing access to an instance of Chain Core
-     * @return a new Receiver object
+     * @param client The client object providing access to an instance of Chain Core.
+     * @return A new Receiver object.
      * @throws APIException This exception is raised if the api returns errors while creating the control programs.
      * @throws BadURLException This exception wraps java.net.MalformedURLException.
      * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
@@ -329,9 +329,9 @@ public class Account {
   /**
    * Creates multiple Receiver objects under one or more accounts, as a batch.
    *
-   * @param client the client object providing access to an instance of Chain Core
-   * @param builders a list of builder objects, one for each new Receiver to be created
-   * @return a list of new Receiver objects or error messages, as a {@link BatchResponse}
+   * @param client The client object providing access to an instance of Chain Core.
+   * @param builders A list of builder objects, one for each new Receiver to be created.
+   * @return A list of new Receiver objects or error messages, as a {@link BatchResponse}.
    * @throws APIException This exception is raised if the api returns errors while creating the control programs.
    * @throws BadURLException This exception wraps java.net.MalformedURLException.
    * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.

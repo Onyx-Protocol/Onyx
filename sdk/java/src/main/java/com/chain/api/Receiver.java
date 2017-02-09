@@ -31,6 +31,8 @@ public class Receiver {
 
   /**
    * Serializes the receiver into a form that is safe to transfer over the wire.
+   *
+   * @return The JSON-serialized representation of the Receiver object.
    */
   public String toJson() {
     return Utils.serializer.toJson(this);
@@ -39,8 +41,8 @@ public class Receiver {
   /**
    * Deserializes a Receiver from JSON.
    *
-   * @param json the serialized Receiver object
-   * @return the deserialized Receiver object
+   * @param json A JSON-serialized Receiver object.
+   * @return The deserialized Receiver object.
    * @throws JSONException Raised if the provided string is not valid JSON.
    */
   public static Receiver fromJson(String json) throws JSONException {

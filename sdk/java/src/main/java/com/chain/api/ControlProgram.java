@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * A predicate to be satisfied when transferring assets.
  *
- * @deprecated use {@link Receiver} instead.
+ * @deprecated Please use {@link Receiver} instead.
  */
 @Deprecated
 public class ControlProgram {

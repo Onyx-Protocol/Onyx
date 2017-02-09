@@ -2,7 +2,6 @@ package com.chain.api;
 
 import com.chain.exception.*;
 import com.chain.http.*;
-
 import com.google.gson.annotations.SerializedName;
 
 import java.util.*;
@@ -889,8 +888,8 @@ public class Transaction {
       /**
        * Specifies the receiver that is being paid to.
        *
-       * @param receiver the receiver being paid to
-       * @return the updated action object
+       * @param receiver The receiver being paid to.
+       * @return The updated action object.
        */
       public ControlWithReceiver setReceiver(Receiver receiver) {
         this.put("receiver", receiver);
@@ -898,10 +897,11 @@ public class Transaction {
       }
 
       /**
-       * Specifies the asset to be controlled using its alias.<br>
+       * Specifies the asset to be controlled using its alias.
+       * <br><br>
        * <strong>Either this or {@link ControlWithReceiver#setAssetId(String)} must be called.</strong>
-       * @param alias alias of the asset to be controlled
-       * @return updated action object
+       * @param alias Unique alias of the asset to be controlled.
+       * @return The updated action object.
        */
       public ControlWithReceiver setAssetAlias(String alias) {
         this.put("asset_alias", alias);
@@ -909,10 +909,11 @@ public class Transaction {
       }
 
       /**
-       * Specifies the asset to be controlled using its id.<br>
+       * Specifies the asset to be controlled using its id.
+       * <br><br>
        * <strong>Either this or {@link ControlWithReceiver#setAssetAlias(String)} must be called.</strong>
-       * @param id id of the asset to be controlled
-       * @return updated action object
+       * @param id Unique ID of the asset to be controlled.
+       * @return The updated action object.
        */
       public ControlWithReceiver setAssetId(String id) {
         this.put("asset_id", id);
@@ -920,10 +921,11 @@ public class Transaction {
       }
 
       /**
-       * Specifies the amount of the asset to be controlled.<br>
+       * Specifies the amount of the asset to be controlled.
+       * <br><br>
        * <strong>Must be called.</strong>
-       * @param amount number of units of the asset to be controlled
-       * @return updated action object
+       * @param amount The number of units of the asset to be controlled.
+       * @return The updated action object.
        */
       public ControlWithReceiver setAmount(long amount) {
         this.put("amount", amount);
