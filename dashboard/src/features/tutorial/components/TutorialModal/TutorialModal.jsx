@@ -26,12 +26,12 @@ class TutorialModal extends React.Component {
               })}
             </div>
             <div className={styles.footer}>
+              <button onClick={this.props.dismissTutorial} className={`btn btn-primary ${styles.dismiss}`}>{this.props.modalDismiss}</button>
               {this.props.modalNext && <Link to={this.props.route}>
                   <button key='showNext' className={`btn btn-primary ${styles.next}`} onClick={this.props.handleNext}>
                     {this.props.modalNext}
                   </button>
                 </Link>}
-              <button onClick={this.props.dismissTutorial} className={`btn btn-primary ${styles.dismiss}`}>{this.props.modalDismiss}</button>
             </div>
           </div>
       </div>

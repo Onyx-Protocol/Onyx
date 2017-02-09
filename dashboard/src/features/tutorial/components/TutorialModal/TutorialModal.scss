@@ -14,7 +14,6 @@
 
 .content {
   background: $background-color;
-  padding-bottom: $gutter-size;
   position: absolute;
   top: 10%;
   left: calc(50% - 250px);
@@ -36,7 +35,7 @@
   }
 
   .text {
-    padding: $gutter-size;
+    padding: $gutter-size/2 $gutter-size;
     font-size: 15px;
     font-weight: 500;
     line-height: 18px;
@@ -56,11 +55,11 @@
 
   .footer {
     margin: $gutter-size;
+    text-align: right;
 
     .dismiss {
       text-align: right;
-      margin-right: $gutter-size;
-      float: right;
+      margin-right: $gutter-size/2;
       background-color: $background-color;
       border: 1px solid $highlight-tutorial;
       border-radius: 2px;
@@ -70,7 +69,6 @@
     .next {
       background: $highlight-tutorial;
       border-color: $highlight-tutorial;
-      float: right;
     }
   }
 }

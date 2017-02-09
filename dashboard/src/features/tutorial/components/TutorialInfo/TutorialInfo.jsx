@@ -11,9 +11,9 @@ class TutorialInfo extends React.Component {
     } catch (err) { /* do nothing */ }
 
     const userInput = this.props.userInput
-    const nextButton = <Link to={this.props.route}>
+    const nextButton = <Link to={this.props.route} className={styles.nextWrapper}>
         <button key='showNext' className={`btn ${styles.next}`} onClick={this.props.handleNext}>
-          Next: {this.props.button} <span className='glyphicon glyphicon-chevron-right'></span>
+          Next: {this.props.button}
         </button>
       </Link>
 
@@ -36,7 +36,7 @@ class TutorialInfo extends React.Component {
             })}
           </div>
 
-          {nextButton && nextButton}
+          {nextButton}
         </div>
     </div>
     )
