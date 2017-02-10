@@ -421,7 +421,7 @@ describe('Callback style', () => {
         next()
       }),
 
-      // Control program creation
+      // Control program creation (deprecated)
 
       (next) => client.accounts.createControlProgram({alias: aliceAlias}, (err, cp) => {
         assert(cp.controlProgram)
@@ -440,7 +440,7 @@ describe('Callback style', () => {
         next()
       }),
 
-      // Pay to control program
+      // Pay to control program (deprecated)
 
       (next) => async.waterfall([
         cb => client.accounts.createControlProgram({alias: aliceAlias}, cb),
