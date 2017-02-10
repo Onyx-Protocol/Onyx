@@ -484,17 +484,23 @@ A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte 
 
 #### ValueSource
 
-TKTK 
+An Entry uses a ValueSource to refer to other Entries that provide inputs to the initial Entry. 
 
 Field            | Type                        | Description
 -----------------|-----------------------------|----------------
 Ref              | Pointer<Issuance|Spend|Mux> | Previous entry referenced by this ValueSource.
-Value            | AssetAmount                 |  
-Position         | Integer                     | 
+Value            | AssetAmount                 | Amount and Asset ID contained in the referenced entry. 
+Position         | Integer                     | TKTK
 
 #### ValueDestination 
 
-TKTK
+An Entry uses a ValueDestination to refer to other entries that result from the initial Entry.
+
+Field            | Type                           | Description
+-----------------|--------------------------------|----------------
+Ref              | Pointer<Output|Retirement|Mux> | Next entry referenced by this ValueSource.
+Value            | AssetAmount                    | Amount and Asset ID contained in the referenced entry
+Position         | Integer                        | TKTK
 
 #### Abstract Entry
 
