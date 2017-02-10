@@ -45,8 +45,8 @@ You must also perform the following steps:
    should not be trusted for production.
    
 -  On the client host, use the “nfast” utilities from Thales to
-   install the signed firmware and userdata files.
-   - `loadmache xprvseemodule.sar`
+   install the signed firmware and userdata files. This command must be run on each module. The `-m` flag specifies the module.
+   - `loadsee-setup -s -m 1 -M xprvseemodule.sar`
 
 -  On the client host, use the `xprvseetool` binary from Chain to
    create a private key in the HSM.
