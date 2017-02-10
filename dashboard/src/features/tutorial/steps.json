@@ -18,7 +18,7 @@
     "route": "mockhsms/create",
     "image": "mockhsm",
     "content": [
-      "Cryptographic private keys are the primary authorization mechanism on a blockchain. They control both the issuance and transfer of asset units. An asset or account will define a one or more keys required for issuance or transfers.",
+      "Cryptographic private keys are the primary authorization mechanism on a blockchain. They control both the issuance and transfer of asset units. An asset or account will define one or more keys required for issuance or transfers.",
       "For development environments, Chain Core provides a convenient MockHSM that simulates production behaviors. Let's begin by creating a new key in our HSM."
     ]
   },
@@ -34,7 +34,7 @@
           "title": "Enter an alias for your key (ex. 'goldkey')",
           "description": [
             {
-              "line": "An alias is friendly label used to distinguish between keys. We will use this alias in the next step."
+              "line": "An alias is a friendly label used to distinguish between keys. We will use this alias in the next step."
             }
           ]
         },
@@ -98,7 +98,7 @@
           ]
         },
         {
-          "title": "Click 'Submit' button",
+          "title": "Click 'Submit' button"
         }
       ]
     }
@@ -127,7 +127,7 @@
     "image": "account",
     "content": [
       "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs. The account object does not exist on the blockchain - it is local to this Chain Core. Only the control programs created in the account are visible on the blockchain.",
-      "We'll be moving assets from on account to another; let's create the first one now."
+      "We'll be moving assets from one account to another; let's create the first one now."
     ]
   },
   {
@@ -155,8 +155,7 @@
           ]
         },
         {
-          "title": "Click 'Submit' button",
-          "description": null
+          "title": "Click 'Submit' button"
         }
       ]
     }
@@ -209,8 +208,7 @@
           ]
         },
         {
-          "title": "Click 'Submit' button",
-          "description": null
+          "title": "Click 'Submit' button"
         }
       ]
     }
@@ -290,8 +288,7 @@
           ]
         },
         {
-          "title": "Click 'Submit transaction' button",
-          "description": null
+          "title": "Click 'Submit transaction' button"
         }
       ]
     }
