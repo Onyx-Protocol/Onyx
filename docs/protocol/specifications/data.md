@@ -502,6 +502,7 @@ Ref              | Pointer<Output|Retirement|Mux> | Next entry referenced by thi
 Value            | AssetAmount                    | Amount and Asset ID contained in the referenced entry
 Position         | Integer                        | TKTK
 
+
 #### Abstract Entry
 
 Field               | Type                 | Description
@@ -580,6 +581,26 @@ Field               | Type                 | Description
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 TKTK: Somehow include the "rules" from the draft doc.
+
+#### Retirement 
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "retirement1"
+Body                | Hashable             | See below. 
+Witness             | Hashable             | See below.
+
+##### Retirement Body
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Source              | ValueSource          | The source of the units that are being retired.
+Data                | Pointer<Data>        | Reference data included on this entry. 
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
+##### Retirement Witness
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 ### Program
 
