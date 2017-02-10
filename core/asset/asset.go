@@ -331,10 +331,9 @@ func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{})
 		}
 	}
 	if len(a.rawDefinition) > 0 {
-		err := json.Unmarshal(a.rawDefinition, &a.definition)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
+		// ignore errors; non-JSON asset definitions can still end up
+		// on the blockchain from non-Chain Core clients.
+		_ = json.Unmarshal(a.rawDefinition, &a.definition)
 	}
 
 	return &a, nil
