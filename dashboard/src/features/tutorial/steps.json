@@ -12,29 +12,29 @@
   },
   {
     "component": "TutorialInfo",
-    "title": "Tutorial - MockHSM keys - Step 1 of 7",
+    "title": "Tutorial - Creating Keys - Step 1 of 7",
     "button": "Create MockHSM key",
     "dismiss": "End tutorial",
     "route": "mockhsms/create",
     "image": "mockhsm",
     "content": [
       "Cryptographic private keys are the primary authorization mechanism on a blockchain. They control both the issuance and transfer of asset units. An asset or account will define a one or more keys required for issuance or transfers.",
-      "Let's begin by creating a new key in our simulated HSM, which we'll use to issue assets."
+      "For development environments, Chain Core provides a convenient MockHSM that simulates production behaviors. Let's begin by creating a new key in our HSM."
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "mockhsm",
-    "title": "Tutorial - MockHSM keys - Step 1 of 7",
+    "title": "Tutorial - Creating Keys - Step 1 of 7",
     "dismiss": "End tutorial",
     "content": {
       "header": "Create MockHSM key",
       "steps": [
         {
-          "title": "Type a name for key alias (ex. 'gold', 'silver', 'bronze')",
+          "title": "Enter an alias for your key (ex. 'goldkey')",
           "description": [
             {
-              "line": "A key alias is a label used to distinguish between keys. We will use this key in the next step."
+              "line": "An alias is friendly label used to distinguish between keys. We will use this alias in the next step."
             }
           ]
         },
@@ -47,7 +47,7 @@
   {
     "component": "TutorialInfo",
     "objectType": "mockhsm",
-    "title": "Tutorial - MockHSM keys - Step 1 of 7",
+    "title": "Tutorial - Creating Keys - Step 1 of 7",
     "button": "Learn about assets",
     "dismiss": "End tutorial",
     "route": "assets",
@@ -55,52 +55,50 @@
     "content": [
       {
         "type": "mockhsm",
-        "line": "Great work! You created the STRING key."
-      },
-      "Next up, you will learn about assets and how to create one."
+        "line": "Great work! You created a new key in the MockHSM named \"STRING\". Next up, we'll learn about assets and how to create them."
+      }
+
     ]
   },
   {
     "component": "TutorialInfo",
-    "title": "Tutorial - Assets - Step 2 of 7",
+    "title": "Tutorial - Creating Assets - Step 2 of 7",
     "button": "Create Asset",
     "dismiss": "End tutorial",
     "route": "assets/create",
     "image": "asset",
     "content": [
-      "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer."
+      "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer.",
+      "Let's create a new asset now."
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "asset",
-    "title": "Tutorial - Assets - Step 2 of 7",
-    "button": null,
+    "title": "Tutorial - Creating Assets - Step 2 of 7",
     "dismiss": "End tutorial",
-    "route": null,
     "content": {
-      "header": "Create Asset",
+      "header": "Create new Asset",
       "steps": [
         {
-          "title": "Type name for asset alias (ex. 'gold', 'silver', 'bronze')",
+          "title": "Enter an alias for your asset (ex. 'gold')",
           "description": [
             {
-              "line": "An asset alias is a label used to distinguish between assets."
+              "line": "An alias is a friendly label used to distinguish between assets."
             }
           ]
         },
         {
-          "type": "mockhsm",
-          "title": "Select STRING key to use existing MockHSM key",
+          "title": "Select \"Use existing MockHSM key\" under \"Keys and Signing\"",
           "description": [
             {
-              "line": "This key will be used for the issuance and transfer of asset units."
+              "type": "mockhsm",
+              "line": "Choose STRING key from the dropdown"
             }
           ]
         },
         {
           "title": "Click 'Submit' button",
-          "description": null
         }
       ]
     }
@@ -108,7 +106,7 @@
   {
     "component": "TutorialInfo",
     "objectType": "asset",
-    "title": "Tutorial - Assets - Step 2 of 7",
+    "title": "Tutorial - Creating Assets - Step 2 of 7",
     "button": "Learn about accounts",
     "dismiss": "End tutorial",
     "route": "accounts",
@@ -116,30 +114,27 @@
     "content": [
       {
         "type": "asset",
-        "line": "Great! You created the STRING asset."
-      },
-      "Next up, you will learn about accounts and how to create one."
+        "line": "Great! You created a new asset type named \"STRING\". Next up, we'll learn about accounts and create them for two parties who want to trade assets."
+      }
     ]
   },
   {
     "component": "TutorialInfo",
-    "title": "Tutorial - Accounts - Step 3 of 7",
+    "title": "Tutorial - Creating Accounts - Step 3 of 7",
     "button": "Create Account",
     "dismiss": "End tutorial",
     "route": "accounts/create",
     "image": "account",
     "content": [
-      "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs.",
-      "When you create an account, you provide one or more “root” keys and a quorum."
+      "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs. The account object does not exist on the blockchain - it is local to this Chain Core. Only the control programs created in the account are visible on the blockchain.",
+      "We'll be moving assets from on account to another; let's create the first one now."
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "account",
-    "title": "Tutorial - Accounts - Step 3 of 7",
-    "button": null,
+    "title": "Tutorial - Creating Accounts - Step 3 of 7",
     "dismiss": "End tutorial",
-    "route": null,
     "content": {
       "header": "Create Account",
       "steps": [
