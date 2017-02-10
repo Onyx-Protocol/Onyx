@@ -4,7 +4,7 @@ package leader
 
 import (
 	"context"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"chain/database/pg"
@@ -13,18 +13,16 @@ import (
 	"chain/log"
 )
 
-var (
-	isLeading bool
-	lock      sync.Mutex
-)
+var isLeading atomic.Value
 
 // IsLeading returns true if this process is
 // the core leader.
 func IsLeading() bool {
-	lock.Lock()
-	l := isLeading
-	lock.Unlock()
-	return l
+	v := isLeading.Load()
+	if v == nil {
+		return false
+	}
+	return v.(bool)
 }
 
 // Run runs as a goroutine, trying once every five seconds to become
@@ -50,10 +48,51 @@ func Run(db *sql.DB, addr string, lead func(context.Context)) {
 	}
 	log.Messagef(ctx, "Using leaderKey: %q", l.key)
 
-	update(ctx, l)
-	for range time.Tick(5 * time.Second) {
-		update(ctx, l)
+	var leadCtx context.Context
+	var cancel func()
+	for leader := range leadershipChanges(ctx, l) {
+		if leader {
+			log.Messagef(ctx, "I am the core leader")
+			leadCtx, cancel = context.WithCancel(ctx)
+			l.lead(leadCtx)
+		} else {
+			log.Messagef(ctx, "No longer core leader")
+			cancel()
+		}
+
+		isLeading.Store(leader)
 	}
+	panic("unreachable")
+}
+
+// leadershipChanges spawns a goroutine to check if this process
+// is leader periodically. Every time the process becomes leader
+// or is demoted from being a leader, it sends a bool on the
+// returned channel.
+//
+// It provides the invariants:
+// * The first value sent on the channel is true. (This will
+//   happen at the time the process is first elected leader.)
+// * Every value sent on the channel is the opposite of the
+//   previous value.
+func leadershipChanges(ctx context.Context, l *leader) chan bool {
+	ch := make(chan bool)
+	go func() {
+		ticks := time.Tick(5 * time.Second)
+
+		for {
+			for !tryForLeadership(ctx, l) {
+				<-ticks
+			}
+			ch <- true // elected leader
+
+			for maintainLeadership(ctx, l) {
+				<-ticks
+			}
+			ch <- false // demoted
+		}
+	}()
+	return ch
 }
 
 type leader struct {
@@ -62,84 +101,52 @@ type leader struct {
 	key     string
 	lead    func(context.Context)
 	address string
-
-	// state
-	leading bool
-	cancel  func()
 }
 
-func update(ctx context.Context, l *leader) {
-	const (
-		insertQ = `
-			INSERT INTO leader (leader_key, address, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
-			ON CONFLICT (singleton) DO UPDATE SET leader_key = $1, address = $2, expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
-				WHERE leader.expiry < CURRENT_TIMESTAMP
-		`
-		updateQ = `
-			UPDATE leader SET expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
-				WHERE leader_key = $1
-		`
-	)
+func tryForLeadership(ctx context.Context, l *leader) bool {
+	const insertQ = `
+		INSERT INTO leader (leader_key, address, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
+		ON CONFLICT (singleton) DO UPDATE SET leader_key = $1, address = $2, expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
+			WHERE leader.expiry < CURRENT_TIMESTAMP
+	`
 
-	if l.leading {
-		res, err := l.db.Exec(ctx, updateQ, l.key)
-		if err == nil {
-			rowsAffected, err := res.RowsAffected()
-			if err == nil && rowsAffected > 0 {
-				// still leading
-				return
-			}
-		}
-
-		// Either the UPDATE affected no rows, or it (or RowsAffected)
-		// produced an error.
-
-		if err != nil {
-			log.Error(ctx, err)
-		}
-		log.Messagef(ctx, "No longer core leader")
-		l.cancel()
-		l.leading = false
-
-		lock.Lock()
-		isLeading = false
-		lock.Unlock()
-
-		l.cancel = nil
-	} else {
-		// Try to put this process's key into the leader table.  It
-		// succeeds if the table's empty or the existing row (there can be
-		// only one) is expired.  It fails otherwise.
-		//
-		// On success, this process's leadership expires in 10 seconds
-		// unless it's renewed in the UPDATE query above.
-		// That extends it for another 10 seconds.
-		res, err := l.db.Exec(ctx, insertQ, l.key, l.address)
-		if err != nil {
-			log.Error(ctx, err)
-			return
-		}
-		rowsAffected, err := res.RowsAffected()
-		if err != nil {
-			log.Error(ctx, err)
-			return
-		}
-
-		if rowsAffected == 0 {
-			return
-		}
-
-		log.Messagef(ctx, "I am the core leader")
-
-		l.leading = true
-
-		lock.Lock()
-		isLeading = true
-		lock.Unlock()
-
-		ctx, l.cancel = context.WithCancel(ctx)
-		go l.lead(ctx)
+	// Try to put this process's key into the leader table.  It
+	// succeeds if the table's empty or the existing row (there can be
+	// only one) is expired.  It fails otherwise.
+	//
+	// On success, this process's leadership expires in 10 seconds
+	// unless it's renewed in the UPDATE query above.
+	// That extends it for another 10 seconds.
+	res, err := l.db.Exec(ctx, insertQ, l.key, l.address)
+	if err != nil {
+		log.Error(ctx, err)
+		return false
 	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		log.Error(ctx, err)
+		return false
+	}
+	return rowsAffected > 0
+}
+
+func maintainLeadership(ctx context.Context, l *leader) bool {
+	const updateQ = `
+		UPDATE leader SET expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
+		WHERE leader_key = $1
+	`
+
+	res, err := l.db.Exec(ctx, updateQ, l.key)
+	if err != nil {
+		log.Error(ctx, err)
+		return false
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		log.Error(ctx, err)
+		return false
+	}
+	return rowsAffected > 0
 }
 
 // Address retrieves the IP address of the current

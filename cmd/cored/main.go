@@ -371,12 +371,19 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	// callbacks to be initialized before leader.Run() and the http server,
 	// otherwise there's a data race within protocol.Chain.
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
-		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
-		if conf.IsGenerator {
-			go gen.Generate(ctx, blockPeriod, genhealth)
-		} else {
-			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
+		// This process just became leader, so it's responsible
+		// for recovering after the previous leader's exit.
+		recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
+
+		if conf.IsGenerator {
+			go gen.Generate(ctx, blockPeriod, genhealth, recoveredBlock, recoveredSnapshot)
+		} else {
+			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth, recoveredBlock, recoveredSnapshot)
+		}
+		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
 		go h.Accounts.ProcessBlocks(ctx)
 		go h.Assets.ProcessBlocks(ctx)
 		if *indexTxs {

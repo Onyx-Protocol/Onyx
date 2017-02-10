@@ -54,7 +54,7 @@ func SnapshotProgress() *Snapshot {
 // It returns when its context is canceled.
 // After each attempt to fetch and apply a block, it calls health
 // to report either an error or nil to indicate success.
-func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error)) {
+func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error), prevBlock *bc.Block, prevSnapshot *state.Snapshot) {
 	// Fetch the generator height periodically.
 	go pollGeneratorHeight(ctx, peer)
 
@@ -68,13 +68,13 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 			}
 			logNetworkError(ctx, err)
 		}
-	}
 
-	// This process just became leader, so it's responsible
-	// for recovering after the previous leader's exit.
-	prevBlock, prevSnapshot, err := c.Recover(ctx)
-	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
+		// We need to Recover again to load the just downloaded snapshot.
+		var err error
+		prevBlock, prevSnapshot, err = c.Recover(ctx)
+		if err != nil {
+			log.Fatal(ctx, log.KeyError, err)
+		}
 	}
 
 	// If we downloaded a snapshot, now that we've recovered and successfully
@@ -90,6 +90,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 
 	blockch, errch := DownloadBlocks(ctx, peer, height+1)
 
+	var err error
 	var nfailures uint
 	for {
 		select {
