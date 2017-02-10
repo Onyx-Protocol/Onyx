@@ -335,8 +335,8 @@ func TestTxSighashCommitment(t *testing.T) {
 	tx.Outputs[0].Amount = 4
 	tx = bc.NewTx(tx.TxData) // recompute the tx hash
 	err = checkTxSighashCommitment(tx)
-	if err != ErrNoTxSighashCommitment {
-		t.Errorf("no spend inputs committing to txsighash: got error %s, want ErrNoTxSighashCommitment", err)
+	if err != ErrNoTxSighashAttempt {
+		t.Errorf("no spend inputs committing to txsighash: got error %s, want ErrNoTxSighashAttempt", err)
 	}
 
 	// Tx with a spend input committing to the wrong txsighash is not OK
@@ -396,6 +396,35 @@ func TestTxSighashCommitment(t *testing.T) {
 	err = checkTxSighashCommitment(tx)
 	if err != nil {
 		t.Errorf("spend input committing to the right txsighash: got error %s, want no error", err)
+	}
+
+	//Tx with a spend input missing signature argument is not OK
+	spendInput = &bc.SpendInput{
+		OutputCommitment: bc.OutputCommitment{
+			AssetAmount: bc.AssetAmount{
+				AssetID: assetID,
+				Amount:  5,
+			},
+			VMVersion:      1,
+			ControlProgram: []byte{byte(vm.OP_TRUE)},
+		},
+	}
+	tx.Inputs = append(tx.Inputs, &bc.TxInput{
+		AssetVersion: 1,
+		TypedInput:   spendInput,
+	})
+	tx.Outputs[0].Amount = 16
+	tx = bc.NewTx(tx.TxData) // recompute the tx hash
+	spendInput.Arguments = make([][]byte, 2)
+	h = tx.SigHash(5)
+	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h[:]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	spendInput.Arguments[1] = prog
+	err = checkTxSighashCommitment(tx)
+	if err != ErrTxSignatureFailure {
+		t.Errorf("spend input missing siguature: got error %s, want ErrTxSignatureFailure", err)
 	}
 }
 

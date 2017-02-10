@@ -51,15 +51,26 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *bc.Tx) 
 	return errors.Wrap(err)
 }
 
-// ErrNoTxSighashCommitment is returned when no input commits to the
-// complete transaction.
-// To permit idempotence of transaction submission, we require at
-// least one input to commit to the complete transaction (what you get
-// when you build a transaction with allow_additional_actions=false).
-var ErrNoTxSighashCommitment = errors.New("no commitment to tx sighash")
+var (
+	// ErrNoTxSighashCommitment is returned when no input commits to the
+	// complete transaction.
+	// To permit idempotence of transaction submission, we require at
+	// least one input to commit to the complete transaction (what you get
+	// when you build a transaction with allow_additional_actions=false).
+	ErrNoTxSighashCommitment = errors.New("no commitment to tx sighash")
+
+	// ErrNoTxSighashAttempt is returned when there was no attempt made to sign
+	// this transaction.
+	ErrNoTxSighashAttempt = errors.New("no tx sighash attempted")
+
+	// ErrTxSignatureFailure is returned when there was an attempt to sign this
+	// transaction, but it failed.
+	ErrTxSignatureFailure = errors.New("tx signature was attempted but failed")
+)
 
 func checkTxSighashCommitment(tx *bc.Tx) error {
 	allIssuances := true
+	var lastError error
 
 	for i, inp := range tx.Inputs {
 		var args [][]byte
@@ -70,14 +81,21 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 		case *bc.IssuanceInput:
 			args = t.Arguments
 		}
-		if len(args) < 3 {
-			// A conforming arguments list contains
-			// [... arg1 arg2 ... argN N sig1 sig2 ... sigM prog]
-			// The args are the opaque arguments to prog. In the case where
-			// N is 0 (prog takes no args), and assuming there must be at
-			// least one signature, args has a minimum length of 3.
+		// Note: These numbers will need to change if more args are added such that the minimum length changes
+		switch {
+		// A conforming arguments list contains
+		// [... arg1 arg2 ... argN N sig1 sig2 ... sigM prog]
+		// The args are the opaque arguments to prog. In the case where
+		// N is 0 (prog takes no args), and assuming there must be at
+		// least one signature, args has a minimum length of 3.
+		case len(args) == 0:
+			lastError = ErrNoTxSighashAttempt
+			continue
+		case len(args) < 3:
+			lastError = ErrTxSignatureFailure
 			continue
 		}
+		lastError = ErrNoTxSighashCommitment
 		prog := args[len(args)-1]
 		if len(prog) != 35 {
 			continue
@@ -92,11 +110,12 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 		if !bytes.Equal(h[:], prog[1:33]) {
 			continue
 		}
+		// At least one input passes commitment checks
 		return nil
 	}
 
 	if !allIssuances {
-		return ErrNoTxSighashCommitment
+		return lastError
 	}
 
 	return nil
