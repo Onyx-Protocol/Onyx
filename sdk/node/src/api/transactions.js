@@ -71,6 +71,22 @@ class TransactionBuilder {
   }
 
   /**
+   * Add an action that controls assets with a receiver.
+   *
+   * @param {Object} params - Action parameters.
+   * @param {Object} params.receiver - The receiver object in which assets will be controlled.
+   * @param {String} params.assetId - Asset ID specifying the asset to be controlled.
+   *                                   You must specify either an ID or an alias.
+   * @param {String} params.assetAlias - Asset alias specifying the asset to be controlled.
+   *                                   You must specify either an ID or an alias.
+   * @param {Number} params.amount - Amount of the asset to be controlled.
+   */
+  controlWithReceiver(params) {
+    this.actions.push(Object.assign({}, params, {type: 'control_receiver'}))
+  }
+
+  /**
+   * @deprecated as of version 1.1. Use {@link #controlWithReceiver} instead.
    * Add an action that controls assets with a control program.
    *
    * @param {Object} params - Action parameters.
@@ -108,21 +124,12 @@ class TransactionBuilder {
    *
    * @param {Object} params - Action parameters.
    * @param {String} params.outputId - ID of the transaction output to be spent.
-   */
-  spendUnspentOutput(params) {
-    this.actions.push(Object.assign({}, params, {type: 'spend_account_unspent_output'}))
-  }
-
-  /**
-   * Add an action that spends an unspent output.
-   *
-   * @param {Object} params - Action parameters.
-   * @param {String} params.transactionId - Transaction ID specifying the
+   * @param {String} params.transactionId - DEPRECATED in version 1.1. Transaction ID specifying the
    *                                        transaction to select an output from.
-   * @param {Number} params.position - Position of the output within the
+   * @param {Number} params.position - DEPRECATED in version 1.1. Position of the output within the
    *                                   transaction to be spent.
    */
-  spendUnspentOutputDeprecated(params) {
+  spendUnspentOutput(params) {
     this.actions.push(Object.assign({}, params, {type: 'spend_account_unspent_output'}))
   }
 

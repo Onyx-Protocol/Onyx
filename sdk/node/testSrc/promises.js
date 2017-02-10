@@ -340,7 +340,65 @@ describe('Promise style', () => {
       assert.deepEqual([submitBatch.errors[0], submitBatch.errors[2]], [null, null])
     })
 
-    // Control program creation
+    // Receiver creation
+
+    .then(() =>
+      expect(client.accounts.createReceiver({accountAlias: aliceAlias})).to.be.fulfilled)
+    .then(receiver => {
+      assert(receiver.controlProgram)
+      assert(receiver.expiresAt)
+    })
+
+    .then(() =>
+      expect(client.accounts.createReceiver({accountId: aliceId})).to.be.fulfilled)
+    .then(receiver => {
+      assert(receiver.controlProgram)
+      assert(receiver.expiresAt)
+    })
+
+    .then(() =>
+      // Empty alias/id
+      expect(client.accounts.createReceiver({}))
+      .to.be.rejectedWith('CH002'))
+
+    .then(() =>
+      // Non-existent alias
+      expect(client.accounts.createReceiver({accountAlias: 'unobtalias'}))
+      .to.be.rejectedWith('CH002'))
+
+    // Batch receiver creation
+
+    .then(() =>
+      expect(client.accounts.createReceiverBatch([
+        {accountAlias: aliceAlias}, // success
+        {accountAlias: 'unobtalias'},
+        {accountAlias: bobAlias}, // success
+      ])).to.be.fulfilled
+    ).then(batchResponse => {
+      assert.equal(batchResponse.successes[1], null)
+      assert.deepEqual([batchResponse.errors[0], batchResponse.errors[2]], [null, null])
+    })
+
+    // Pay to receiver
+
+    .then(() =>
+      expect(client.accounts.createReceiver({accountAlias: aliceAlias})).to.be.fulfilled)
+    .then(receiver =>
+      expect(client.transactions.build(builder => {
+        builder.issue({
+          assetAlias: goldAlias,
+          amount: 1,
+        })
+        builder.controlWithReceiver({
+          receiver,
+          assetAlias: goldAlias,
+          amount: 1,
+        })
+      })).to.be.fulfilled)
+    .then(issuance => expect(signer.sign(issuance)).to.be.fulfilled)
+    .then(signed => expect(client.transactions.submit(signed)).to.be.fulfilled)
+
+    // Control program creation (deprecated)
 
     .then(() =>
       expect(client.accounts.createControlProgram({alias: aliceAlias})).to.be.fulfilled)
@@ -360,7 +418,7 @@ describe('Promise style', () => {
       expect(client.accounts.createControlProgram({alias: 'unobtalias'}))
       .to.be.rejectedWith('CH002'))
 
-    // Pay to control program
+    // Pay to control program (deprecated)
 
     .then(() =>
       expect(client.accounts.createControlProgram({alias: aliceAlias})).to.be.fulfilled)
