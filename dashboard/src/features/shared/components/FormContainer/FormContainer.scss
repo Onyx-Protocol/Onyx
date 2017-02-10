@@ -3,10 +3,11 @@
   padding: 0;
   display: flex;
   flex-direction: row;
+  padding: 0 $gutter-size;
 }
 
 .content {
-  min-width: 500px;
+  min-width: 400px;
   width: 55%;
   margin: 0 auto;
 }
