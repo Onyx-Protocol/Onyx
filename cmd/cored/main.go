@@ -347,13 +347,20 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		fetchhealth = h.HealthSetter("fetch")
 	)
 
-	go func() {
-		<-c.Ready()
+	go leader.Run(db, *listenAddr, func(ctx context.Context) {
+		// This process just became leader, so it's responsible
+		// for recovering after the previous leader's exit.
+		recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
+		}
+
+		// Create all of the block processor pins.
 		height := c.Height()
 		if height > 0 {
 			height = height - 1
 		}
-		err := pinStore.CreatePin(ctx, account.PinName, height)
+		err = pinStore.CreatePin(ctx, account.PinName, height)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
@@ -362,18 +369,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
 		err = pinStore.CreatePin(ctx, query.TxPinName, height)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-	}()
-
-	// Note, it's important for any services that will install blockchain
-	// callbacks to be initialized before leader.Run() and the http server,
-	// otherwise there's a data race within protocol.Chain.
-	go leader.Run(db, *listenAddr, func(ctx context.Context) {
-		// This process just became leader, so it's responsible
-		// for recovering after the previous leader's exit.
-		recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
