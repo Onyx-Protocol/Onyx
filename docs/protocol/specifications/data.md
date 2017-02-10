@@ -569,9 +569,9 @@ Witness             | Hashable             | See below.
 ##### Output Body
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-Source              | ValueSource          | tktk
-ControlProgram      | Program              | tktk 
-Data                | Pointer<Data>        | tktk
+Source              | ValueSource          | The source of the units to be included in this output.
+ControlProgram      | Program              | The program to control this output.
+Data                | Pointer<Data>        | Reference data included on this entry.
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 ##### Output Witness
