@@ -1,11 +1,7 @@
 package com.chain.integration;
 
 import com.chain.TestUtils;
-import com.chain.api.Account;
-import com.chain.api.Asset;
-import com.chain.api.Receiver;
-import com.chain.api.MockHsm;
-import com.chain.api.Transaction;
+import com.chain.api.*;
 import com.chain.exception.APIException;
 import com.chain.http.BatchResponse;
 import com.chain.http.Client;
@@ -31,6 +27,8 @@ public class CreateTest {
     testAssetCreateBatch();
     testReceiverCreate();
     testReceiverCreateBatch();
+    testControlProgramCreate(); // deprecated
+    testControlProgramCreateBatch(); // deprecated
     testTransactionFeedCreate();
   }
 
@@ -214,6 +212,58 @@ public class CreateTest {
 
     BatchResponse<Receiver> resp =
         Account.createReceiverBatch(client, Arrays.asList(builder, failure));
+    assertEquals(1, resp.successes().size());
+    assertEquals(1, resp.errors().size());
+  }
+
+  // deprecated
+  public void testControlProgramCreate() throws Exception {
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
+    String alice = "CreateTest.testControlProgramCreate.alice";
+    Account account =
+        new Account.Builder()
+            .setAlias(alice)
+            .addRootXpub(key.xpub)
+            .setQuorum(1)
+            .addTag("name", alice)
+            .create(client);
+
+    ControlProgram ctrlp =
+        new ControlProgram.Builder().controlWithAccountById(account.id).create(client);
+    assertNotNull(ctrlp.controlProgram);
+
+    ctrlp = new ControlProgram.Builder().controlWithAccountByAlias(account.alias).create(client);
+    assertNotNull(ctrlp.controlProgram);
+
+    try {
+      new ControlProgram.Builder().controlWithAccountById("bad-id").create(client);
+    } catch (APIException e) {
+      return;
+    }
+    throw new Exception("expecting APIException");
+  }
+
+  // deprecated
+  public void testControlProgramCreateBatch() throws Exception {
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
+    String alice = "CreateTest.testControlProgramCreateBatch.alice";
+    Account account =
+        new Account.Builder()
+            .setAlias(alice)
+            .addRootXpub(key.xpub)
+            .setQuorum(1)
+            .addTag("name", alice)
+            .create(client);
+
+    ControlProgram.Builder builder =
+        new ControlProgram.Builder().controlWithAccountById(account.id);
+
+    ControlProgram.Builder failure = new ControlProgram.Builder().controlWithAccountById("bad-id");
+
+    BatchResponse<ControlProgram> resp =
+        ControlProgram.createBatch(client, Arrays.asList(builder, failure));
     assertEquals(1, resp.successes().size());
     assertEquals(1, resp.errors().size());
   }
