@@ -2,13 +2,35 @@ import React from 'react'
 import styles from './TutorialForm.scss'
 
 class TutorialForm extends React.Component {
+  constructor() {
+    super()
+
+    this.state = { showFixed: false }
+
+    // We must bind in the constructor so that we have a reference to the bound
+    // function to remove from the window event listener later. 
+    this.handleScroll = this.handleScroll.bind(this)
+  }
+
+  handleScroll(event) {
+    const scrollTop = event.srcElement.scrollingElement.scrollTop
+    this.setState({showFixed: scrollTop > 140})
+  }
+
+  componentDidMount() {
+    window.addEventListener('scroll', this.handleScroll)
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this.handleScroll)
+  }
 
   render() {
     const userInput = this.props.userInput
 
     return (
       <div className={styles.container}>
-        <div className={styles.tutorialContainer}>
+        <div className={`${styles.tutorialContainer} ${this.state.showFixed && styles.fixedTutorial}`}>
           <div className={styles.header}>
             Tutorial: {this.props.content['header']}
           </div>
