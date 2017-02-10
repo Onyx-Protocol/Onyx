@@ -51,14 +51,22 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *bc.Tx) 
 	return errors.Wrap(err)
 }
 
-// ErrNoTxSighashCommitment is returned when no input commits to the
-// complete transaction.
-// To permit idempotence of transaction submission, we require at
-// least one input to commit to the complete transaction (what you get
-// when you build a transaction with allow_additional_actions=false).
-var ErrNoTxSighashCommitment = errors.New("no commitment to tx sighash")
-var ErrNoTxSighashAttempt = errors.New("no tx sighash attempted")
-var ErrTxSignatureFailure = errors.New("tx signature was attempted but failed")
+var (
+	// ErrNoTxSighashCommitment is returned when no input commits to the
+	// complete transaction.
+	// To permit idempotence of transaction submission, we require at
+	// least one input to commit to the complete transaction (what you get
+	// when you build a transaction with allow_additional_actions=false).
+	ErrNoTxSighashCommitment = errors.New("no commitment to tx sighash")
+
+	// ErrNoTxSighashAttempt is returned when there was no attempt made to sign
+	// this transaction.
+	ErrNoTxSighashAttempt = errors.New("no tx sighash attempted")
+
+	// ErrTxSignatureFailure is returned when there was an attempt to sign this
+	// transaction, but it failed.
+	ErrTxSignatureFailure = errors.New("tx signature was attempted but failed")
+)
 
 func checkTxSighashCommitment(tx *bc.Tx) error {
 	allIssuances := true
