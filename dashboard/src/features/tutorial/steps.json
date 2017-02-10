@@ -5,14 +5,9 @@
     "modalNext": "Start 5-minute Tutorial",
     "modalDismiss": "Close",
     "route": "mockhsms",
-    "image": null,
     "content": [
-      {
-        "line": "The dashboard is a UI to be used with the SDKs, which enable your application to communicate with Chain Core."
-      },
-      {
-        "line": "To get started, learn about the primitives of Chain Core in this 5-minute Tutorial."
-      }
+      "This guide will walk you through the basic functions available in the Chain Core Dashboard. This dashboard is built into the Chain Core binary, and is available at all times when your server is running.",
+      "If this is your first time launching Chain Core, or you're just looking for a refresher, click \"Start\" and let's begin."
     ]
   },
   {
@@ -23,21 +18,15 @@
     "route": "mockhsms/create",
     "image": "mockhsm",
     "content": [
-      {
-        "line": "Cryptographic private keys are the primary authorization mechanism on a blockchain."
-      },
-      {
-        "line": "They control both the issuance and transfer of asset units. An asset or account will define a single key required for issuance or transfers."
-      }
+      "Cryptographic private keys are the primary authorization mechanism on a blockchain. They control both the issuance and transfer of asset units. An asset or account will define a one or more keys required for issuance or transfers.",
+      "Let's begin by creating a new key in our simulated HSM, which we'll use to issue assets."
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "mockhsm",
     "title": "Tutorial - MockHSM keys - Step 1 of 7",
-    "button": null,
     "dismiss": "End tutorial",
-    "route": null,
     "content": {
       "header": "Create MockHSM key",
       "steps": [
@@ -50,8 +39,7 @@
           ]
         },
         {
-          "title": "Click 'Submit' button",
-          "description": null
+          "title": "Click 'Submit' button"
         }
       ]
     }
@@ -69,9 +57,7 @@
         "type": "mockhsm",
         "line": "Great work! You created the STRING key."
       },
-      {
-        "line": "Next up, you will learn about assets and how to create one."
-      }
+      "Next up, you will learn about assets and how to create one."
     ]
   },
   {
@@ -82,9 +68,7 @@
     "route": "assets/create",
     "image": "asset",
     "content": [
-      {
-        "line": "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer."
-      }
+      "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer."
     ]
   },
   {
@@ -134,9 +118,7 @@
         "type": "asset",
         "line": "Great! You created the STRING asset."
       },
-      {
-        "line": "Next up, you will learn about accounts and how to create one."
-      }
+      "Next up, you will learn about accounts and how to create one."
     ]
   },
   {
@@ -147,12 +129,8 @@
     "route": "accounts/create",
     "image": "account",
     "content": [
-      {
-        "line": "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs."
-      },
-      {
-        "line": "When you create an account, you provide one or more “root” keys and a quorum."
-      }
+      "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs.",
+      "When you create an account, you provide one or more “root” keys and a quorum."
     ]
   },
   {
@@ -256,9 +234,7 @@
         "index": 1,
         "line": "Great! You created an account for STRING."
       },
-      {
-        "line": "Next, you will learn about transactions and how to issue assets."
-      }
+      "Next, you will learn about transactions and how to issue assets."
     ]
   },
   {
@@ -391,8 +367,7 @@
           ]
         },
         {
-          "title": "Click 'Submit transaction' button",
-          "description": null
+          "title": "Click 'Submit transaction' button"
         }
       ]
     }
@@ -420,9 +395,7 @@
     "component": "TutorialForm",
     "objectType": "transaction",
     "title": "Tutorial - Transactions - Step 7 of 7",
-    "button": null,
     "dismiss": "End tutorial",
-    "route": null,
     "content": {
       "header": "Retire asset units",
       "steps": [
@@ -458,8 +431,7 @@
           ]
         },
         {
-          "title": "Click 'Submit transaction' button",
-          "description": null
+          "title": "Click 'Submit transaction' button"
         }
       ]
     }
@@ -477,22 +449,15 @@
         "type": "asset",
         "line": "Great! You retired 5 units of STRING."
       },
-      {
-        "line": "You are ready to finish the tutorial and recap what you learned."
-      }
+      "You are ready to finish the tutorial and recap what you learned."
     ]
   },
   {
     "component": "TutorialModal",
     "modalTitle": "5-minute tutorial completed!",
-    "modalNext": null,
     "modalDismiss": "Done",
-    "route": null,
-    "image": null,
     "content": [
-      {
-        "line": "In this tutorial, you learned how to:"
-      },
+      "In this tutorial, you learned how to:",
       {
         "list": [
           "create and issue assets",
@@ -500,9 +465,7 @@
           "build, sign and submit transactions"
         ]
       },
-      {
-        "line": "If you need to revisit this tutorial, you can click Tutorial in the sidenav. For detailed information on how Chain Core works, please take a look at the Developer Documentation."
-      }
+      "If you need to revisit this tutorial, you can click Tutorial in the sidenav. For detailed information on how Chain Core works, please take a look at the Developer Documentation."
     ]
   }
 ]
