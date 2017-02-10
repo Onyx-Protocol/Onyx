@@ -612,7 +612,7 @@ Witness             | Hashable             | See below.
 ##### Spend Body
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-SpentOutput         | Pointer<Output>      | tktk
+SpentOutput         | Pointer<Output>      | The Output Entry consumed by this spend.
 Data                | Pointer<Data>        | Reference data included on this entry. 
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
@@ -620,8 +620,34 @@ ExtHash             | Hash                 | If the transaction version is known
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-Destination         | ValueDestination     | tktk
-Arguments           | String               | tktk
+Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. In principle, this can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
+Arguments           | String               | Arguments for the control program contained in the SpentOutput. 
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
+TKTK include validation rules somehow 
+
+#### Issuance  
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "issuance1"
+Body                | Hashable             | See below. 
+Witness             | Hashable             | See below.
+
+##### Issuance Body 
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
+Value               | AssetAmount          | Asset ID and amount being issued. 
+Data                | Pointer<Data>        | Reference data included on this entry.
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
+##### Issuance Witness
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
+Value               | AssetAmount          | Asset ID and amount being issued. 
+Data                | Pointer<Data>        | Reference data included on this entry.
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 ### Program
