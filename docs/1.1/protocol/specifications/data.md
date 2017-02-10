@@ -602,6 +602,28 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
+#### Spend  
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "spend1"
+Body                | Hashable             | See below. 
+Witness             | Hashable             | See below.
+
+##### Spend Body
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+SpentOutput         | Pointer<Output>      | tktk
+Data                | Pointer<Data>        | Reference data included on this entry. 
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
+##### Spend Witness
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Destination         | ValueDestination     | tktk
+Arguments           | String               | tktk
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
 ### Program
 
 A variable-length string of instructions executed by a virtual machine during blockchain verification.
