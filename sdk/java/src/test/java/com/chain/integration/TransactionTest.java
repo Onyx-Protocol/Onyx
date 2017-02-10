@@ -1,14 +1,7 @@
 package com.chain.integration;
 
 import com.chain.TestUtils;
-import com.chain.api.Account;
-import com.chain.api.Asset;
-import com.chain.api.Balance;
-import com.chain.api.ControlProgram;
-import com.chain.api.MockHsm;
-import com.chain.api.PagedItems;
-import com.chain.api.Transaction;
-import com.chain.api.UnspentOutput;
+import com.chain.api.*;
 import com.chain.http.BatchResponse;
 import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
@@ -36,7 +29,8 @@ public class TransactionTest {
     testMultiSigTransaction();
     testBatchTransaction();
     testAtomicSwap();
-    testControlPrograms();
+    testReceivers();
+    testControlPrograms(); // deprecated
     testUnspentOutputs();
   }
 
@@ -418,6 +412,88 @@ public class TransactionTest {
     assertEquals(20, bobBalances.get(silver).intValue());
   }
 
+  public void testReceivers() throws Exception {
+    client = TestUtils.generateClient();
+    key = MockHsm.Key.create(client);
+    HsmSigner.addKey(key, MockHsm.getSignerClient(client));
+    String alice = "TransactionTest.testReceivers.alice";
+    String bob = "TransactionTest.testReceivers.bob";
+    String asset = "TransactionTest.testReceivers.asset";
+
+    new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(client);
+    new Account.Builder()
+        .setAlias(bob)
+        .setRootXpubs(Arrays.asList(key.xpub))
+        .setQuorum(1)
+        .create(client);
+    new Asset.Builder()
+        .setAlias(asset)
+        .setRootXpubs(Arrays.asList(key.xpub))
+        .setQuorum(1)
+        .create(client);
+    Receiver bobReceiver = new Account.ReceiverBuilder().setAccountAlias(bob).create(client);
+    String bobJsonReceiver =
+        new Account.ReceiverBuilder().setAccountAlias(bob).create(client).toJson();
+
+    Transaction.Template issuance =
+        new Transaction.Builder()
+            .addAction(new Transaction.Action.Issue().setAssetAlias(asset).setAmount(100))
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAccountAlias(alice)
+                    .setAssetAlias(asset)
+                    .setAmount(100))
+            .build(client);
+    Transaction.submit(client, HsmSigner.sign(issuance));
+
+    Transaction.Template spending =
+        new Transaction.Builder()
+            .addAction(
+                new Transaction.Action.SpendFromAccount()
+                    .setAssetAlias(asset)
+                    .setAccountAlias(alice)
+                    .setAmount(10))
+            .addAction(
+                new Transaction.Action.ControlWithReceiver()
+                    .setReceiver(bobReceiver)
+                    .setAssetAlias(asset)
+                    .setAmount(10))
+            .build(client);
+    Transaction.submit(client, HsmSigner.sign(spending));
+
+    Transaction.Template spending2 =
+        new Transaction.Builder()
+            .addAction(
+                new Transaction.Action.SpendFromAccount()
+                    .setAssetAlias(asset)
+                    .setAccountAlias(alice)
+                    .setAmount(10))
+            .addAction(
+                new Transaction.Action.ControlWithReceiver()
+                    .setReceiver(Receiver.fromJson(bobJsonReceiver))
+                    .setAssetAlias(asset)
+                    .setAmount(10))
+            .build(client);
+    Transaction.submit(client, HsmSigner.sign(spending2));
+
+    Balance.Items balances =
+        new Balance.QueryBuilder()
+            .setFilter("account_alias=$1")
+            .addFilterParameter(alice)
+            .execute(client);
+    assertEquals(1, balances.list.size());
+    Map<String, Long> aliceBalances = createBalanceMap(balances);
+    assertEquals(80, aliceBalances.get(asset).intValue());
+    balances =
+        new Balance.QueryBuilder()
+            .setFilter("account_alias=$1")
+            .addFilterParameter(bob)
+            .execute(client);
+    Map<String, Long> bobBalances = createBalanceMap(balances);
+    assertEquals(20, bobBalances.get(asset).intValue());
+  }
+
+  // deprecated
   public void testControlPrograms() throws Exception {
     client = TestUtils.generateClient();
     key = MockHsm.Key.create(client);

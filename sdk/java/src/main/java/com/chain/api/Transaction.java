@@ -875,8 +875,70 @@ public class Transaction {
     }
 
     /**
-     * Represents a control action taken on a control program.
+     * Use this action to pay assets into a {@link Receiver}.
      */
+    public static class ControlWithReceiver extends Action {
+      /**
+       * Default constructor.
+       */
+      public ControlWithReceiver() {
+        this.put("type", "control_receiver");
+      }
+
+      /**
+       * Specifies the receiver that is being paid to.
+       *
+       * @param receiver the receiver being paid to
+       * @return this ControlWithReceiver object
+       */
+      public ControlWithReceiver setReceiver(Receiver receiver) {
+        this.put("receiver", receiver);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be controlled using its alias.
+       * <p>
+       * <strong>Either this or {@link ControlWithReceiver#setAssetId(String)} must be called.</strong>
+       * @param alias unique alias of the asset to be controlled
+       * @return this ControlWithReceiver object
+       */
+      public ControlWithReceiver setAssetAlias(String alias) {
+        this.put("asset_alias", alias);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be controlled using its id.
+       * <p>
+       * <strong>Either this or {@link ControlWithReceiver#setAssetAlias(String)} must be called.</strong>
+       * @param id unique ID of the asset to be controlled
+       * @return this ControlWithReceiver object
+       */
+      public ControlWithReceiver setAssetId(String id) {
+        this.put("asset_id", id);
+        return this;
+      }
+
+      /**
+       * Specifies the amount of the asset to be controlled.
+       * <p>
+       * <strong>Must be called.</strong>
+       * @param amount the number of units of the asset to be controlled
+       * @return this ControlWithReceiver object
+       */
+      public ControlWithReceiver setAmount(long amount) {
+        this.put("amount", amount);
+        return this;
+      }
+    }
+
+    /**
+     * Represents a control action taken on a control program.
+     *
+     * @deprecated Please use {@link ControlWithReceiver} instead.
+     */
+    @Deprecated
     public static class ControlWithProgram extends Action {
       /**
        * Default constructor defines the action type as "control_program"
@@ -1043,7 +1105,7 @@ public class Transaction {
   /**
    * Transaction.Builder utilizes the builder pattern to create {@link Transaction.Template} objects.
    * At minimum, a {@link Action.Issue} or {@link Action.SpendFromAccount}/{@link Action.SpendAccountUnspentOutput}
-   * must be coupled with a {@link Action.ControlWithAccount}/{@link Action.ControlWithProgram} before calling {@link #build(Client)}.
+   * must be coupled with a {@link Action.ControlWithAccount}/{@link Action.ControlWithReceiver} before calling {@link #build(Client)}.
    */
   public static class Builder {
     /**

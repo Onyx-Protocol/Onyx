@@ -1,13 +1,7 @@
 package com.chain.integration;
 
 import com.chain.TestUtils;
-import com.chain.api.Account;
-import com.chain.api.Asset;
-import com.chain.api.Balance;
-import com.chain.api.ControlProgram;
-import com.chain.api.MockHsm;
-import com.chain.api.Transaction;
-import com.chain.api.UnspentOutput;
+import com.chain.api.*;
 import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
 
@@ -104,8 +98,7 @@ public class QueryTest {
 
     new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(client);
     new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(client);
-    ControlProgram ctrlp =
-        new ControlProgram.Builder().controlWithAccountByAlias(alice).create(client);
+    Receiver receiver = new Account.ReceiverBuilder().setAccountAlias(alice).create(client);
 
     Map<String, Object> refData = new HashMap<>();
     refData.put("asset", asset);
@@ -118,8 +111,8 @@ public class QueryTest {
                     .setReferenceData(refData)
                     .addReferenceDataField("test", test))
             .addAction(
-                new Transaction.Action.ControlWithProgram()
-                    .setControlProgram(ctrlp)
+                new Transaction.Action.ControlWithReceiver()
+                    .setReceiver(receiver)
                     .setAssetAlias(asset)
                     .setAmount(amount)
                     .setReferenceData(refData)

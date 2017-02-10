@@ -11,7 +11,10 @@ import java.util.Map;
 
 /**
  * A predicate to be satisfied when transferring assets.
+ *
+ * @deprecated Please use {@link Receiver} instead.
  */
+@Deprecated
 public class ControlProgram {
   /**
    * Hex-encoded string representation of the control program.

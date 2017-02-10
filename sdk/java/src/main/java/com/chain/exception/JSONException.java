@@ -11,7 +11,16 @@ public class JSONException extends ChainException {
   public String requestId;
 
   /**
+   * Default constructor.
+   */
+  public JSONException(String message) {
+    super(message);
+  }
+
+  /**
    * Initializes exception with its message and requestId attributes.
+   * Use this constructor in context of an API call.
+   *
    * @param message error message
    * @param requestId unique identifier of the request
    */
@@ -21,6 +30,10 @@ public class JSONException extends ChainException {
   }
 
   public String getMessage() {
-    return "Message: " + super.getMessage() + " Request-ID: " + this.requestId;
+    String message = "Message: " + super.getMessage();
+    if (requestId != null) {
+      message += " Request-ID: " + requestId;
+    }
+    return message;
   }
 }
