@@ -1,4 +1,5 @@
 dist
 node_modules
 doc
-test
+test/*
+!test/mocha.opts
