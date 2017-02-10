@@ -26,11 +26,28 @@ const accountsAPI = (client) => {
    * User-specified tag structure for the account.
    */
 
+  /**
+   * @typedef accountsAPI~createReceiverRequest
+   * @type {Object}
+   *
+   * @property {String} [account_alias]
+   * The unique alias of the account. account_alias or account_id must be
+   * provided.
+   *
+   * @property {String} [account_id]
+   * The unique ID of the account. account_alias or account_id must be
+   * provided.
+   *
+   * @property {String} [expires_at]
+   * An RFC3339 timestamp indicating when the receiver will cease to be valid.
+   * Defaults to 30 days in the future.
+   */
+
   return {
     /**
      * Create a new account.
      *
-     * @param {Accounts~createRequest} params - Parameters for account creation.
+     * @param {accountsAPI~createRequest} params - Parameters for account creation.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Newly created account.
      */
@@ -39,7 +56,7 @@ const accountsAPI = (client) => {
     /**
      * Create multiple new accounts.
      *
-     * @param {Accounts~createRequest[]} params - Parameters for creation of multiple accounts.
+     * @param {accountsAPI~createRequest[]} params - Parameters for creation of multiple accounts.
      * @param {batchCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {BatchResponse} Newly created accounts.
      */
@@ -67,6 +84,7 @@ const accountsAPI = (client) => {
     queryAll: (params, processor, cb) => shared.queryAll(client, 'accounts', params, processor, cb),
 
     /**
+     * @deprecated as of version 1.1. Use {@link #createReceiver} instead.
      * Create a new control program, specifying either an account ID or account
      * alias to indicate the controlling party.
      * <br/><br/>
@@ -89,7 +107,25 @@ const accountsAPI = (client) => {
         shared.create(client, '/create-control-program', body),
         cb
       )
-    }
+    },
+
+    /**
+     * Create a new receiver under the specified account.
+     *
+     * @param {accountsAPI~createReceiverRequest} params - Parameters for receiver creation.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<Object>} Newly created receiver.
+     */
+    createReceiver: (params, cb) => shared.create(client, '/create-account-receiver', params, {cb}),
+
+    /**
+     * Create multiple receivers under the specified accounts.
+     *
+     * @param {accountsAPI~createReceiverRequest[]} params - Parameters for creation of multiple receivers.
+     * @param {batchCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {BatchResponse} Newly created receivers.
+     */
+    createReceiverBatch: (params, cb) => shared.createBatch(client, '/create-account-receiver', params, {cb}),
   }
 }
 

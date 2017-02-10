@@ -365,7 +365,63 @@ describe('Callback style', () => {
         next()
       }),
 
-      // Control program creation
+      // Receiver creation
+
+      (next) => client.accounts.createReceiver({accountAlias: aliceAlias}, (err, cp) => {
+        assert(cp.controlProgram)
+        assert(cp.expiresAt)
+        next()
+      }),
+      (next) => client.accounts.createReceiver({accountId: aliceId}, (err, cp) => {
+        assert(cp.controlProgram)
+        assert(cp.expiresAt)
+        next()
+      }),
+      (next) => client.accounts.createReceiver({}, (err) => {
+        expect(err.code).to.equal('CH002')
+        next()
+      }),
+      (next) => client.accounts.createReceiver({accountAlias: 'unobtalias'}, (err) => {
+        expect(err.code).to.equal('CH002')
+        next()
+      }),
+
+      // Batch receiver creation
+
+      (next) => client.accounts.createReceiverBatch([
+          {accountAlias: aliceAlias}, // success
+          {accountAlias: 'unobtalias'},
+          {accountAlias: bobAlias}, // success
+      ], (err, batchResponse) => {
+        assert.equal(batchResponse.successes[1], null)
+        assert.deepEqual([batchResponse.errors[0], batchResponse.errors[2]], [null, null])
+        next()
+      }),
+
+      // Pay to receiver
+
+      (next) => async.waterfall([
+        cb => client.accounts.createReceiver({accountAlias: aliceAlias}, cb),
+        (receiver, cb) => client.transactions.build(builder => {
+          builder.issue({
+            assetAlias: goldAlias,
+            amount: 1
+          })
+          builder.controlWithReceiver({
+            receiver,
+            assetAlias: goldAlias,
+            amount: 1,
+          })
+        }, cb),
+        (issuance, cb) => signer.sign(issuance, cb),
+        (signed, cb) => client.transactions.submit(signed, cb),
+      ], (err, submitted) => {
+        assert(err === null)
+        assert(submitted.id)
+        next()
+      }),
+
+      // Control program creation (deprecated)
 
       (next) => client.accounts.createControlProgram({alias: aliceAlias}, (err, cp) => {
         assert(cp.controlProgram)
@@ -384,7 +440,7 @@ describe('Callback style', () => {
         next()
       }),
 
-      // Pay to control program
+      // Pay to control program (deprecated)
 
       (next) => async.waterfall([
         cb => client.accounts.createControlProgram({alias: aliceAlias}, cb),
