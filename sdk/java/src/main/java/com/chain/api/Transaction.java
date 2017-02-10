@@ -888,8 +888,8 @@ public class Transaction {
       /**
        * Specifies the receiver that is being paid to.
        *
-       * @param receiver The receiver being paid to.
-       * @return The updated action object.
+       * @param receiver the receiver being paid to
+       * @return this ControlWithReceiver object
        */
       public ControlWithReceiver setReceiver(Receiver receiver) {
         this.put("receiver", receiver);
@@ -898,10 +898,10 @@ public class Transaction {
 
       /**
        * Specifies the asset to be controlled using its alias.
-       * <br><br>
+       * <p>
        * <strong>Either this or {@link ControlWithReceiver#setAssetId(String)} must be called.</strong>
-       * @param alias Unique alias of the asset to be controlled.
-       * @return The updated action object.
+       * @param alias unique alias of the asset to be controlled
+       * @return this ControlWithReceiver object
        */
       public ControlWithReceiver setAssetAlias(String alias) {
         this.put("asset_alias", alias);
@@ -910,10 +910,10 @@ public class Transaction {
 
       /**
        * Specifies the asset to be controlled using its id.
-       * <br><br>
+       * <p>
        * <strong>Either this or {@link ControlWithReceiver#setAssetAlias(String)} must be called.</strong>
-       * @param id Unique ID of the asset to be controlled.
-       * @return The updated action object.
+       * @param id unique ID of the asset to be controlled
+       * @return this ControlWithReceiver object
        */
       public ControlWithReceiver setAssetId(String id) {
         this.put("asset_id", id);
@@ -922,10 +922,10 @@ public class Transaction {
 
       /**
        * Specifies the amount of the asset to be controlled.
-       * <br><br>
+       * <p>
        * <strong>Must be called.</strong>
-       * @param amount The number of units of the asset to be controlled.
-       * @return The updated action object.
+       * @param amount the number of units of the asset to be controlled
+       * @return this ControlWithReceiver object
        */
       public ControlWithReceiver setAmount(long amount) {
         this.put("amount", amount);

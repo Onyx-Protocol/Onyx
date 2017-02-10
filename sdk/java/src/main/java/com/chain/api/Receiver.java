@@ -11,7 +11,7 @@ import com.google.gson.annotations.SerializedName;
  * Receivers are used to facilitate payments between accounts on different
  * cores. They contain a control program and an expiration date. In the future,
  * more payment-related metadata may be placed here.
- * <br><br>
+ * <p>
  * This class supersedes the {@link ControlProgram} class. Receivers are
  * typically created under accounts via the {@link Account.ReceiverBuilder} class.
  */
@@ -32,7 +32,7 @@ public class Receiver {
   /**
    * Serializes the receiver into a form that is safe to transfer over the wire.
    *
-   * @return The JSON-serialized representation of the Receiver object.
+   * @return the JSON-serialized representation of the Receiver object
    */
   public String toJson() {
     return Utils.serializer.toJson(this);
@@ -41,8 +41,8 @@ public class Receiver {
   /**
    * Deserializes a Receiver from JSON.
    *
-   * @param json A JSON-serialized Receiver object.
-   * @return The deserialized Receiver object.
+   * @param json a JSON-serialized Receiver object
+   * @return the deserialized Receiver object
    * @throws JSONException Raised if the provided string is not valid JSON.
    */
   public static Receiver fromJson(String json) throws JSONException {
