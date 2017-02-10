@@ -13,7 +13,8 @@
 }
 
 .content {
-  background: $background-color;
+  border: solid $highlight-tutorial 1px;
+  background: $background-emphasis-color;
   position: absolute;
   top: 10%;
   left: calc(50% - 250px);

@@ -1,6 +1,6 @@
 .container {
   width: 100%;
-  background-color: $background-color;
+  background-color: $background-emphasis-color;
   padding: 25px $gutter-size;
   display: flex;
   align-items: center;
@@ -21,6 +21,7 @@
   }
 
   .nextWrapper {
+    margin-left: $gutter-size;
     text-align: right;
     flex: 1;
   }
