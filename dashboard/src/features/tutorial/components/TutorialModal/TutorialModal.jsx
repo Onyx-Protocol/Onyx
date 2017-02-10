@@ -21,7 +21,9 @@ class TutorialModal extends React.Component {
                   })
                   return <ul className={styles.list}>{list}</ul>
                 } else {
-                  return <span className={styles.line} key={i}>{contentLine['line']}</span>
+                  let value = contentLine
+                  if (typeof(value) === 'object') { value = value['line'] }
+                  return <p key={i}>{value}</p>
                 }
               })}
             </div>
