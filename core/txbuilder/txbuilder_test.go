@@ -416,7 +416,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	tx.Outputs[0].Amount = 16
 	tx = bc.NewTx(tx.TxData) // recompute the tx hash
 	spendInput.Arguments = make([][]byte, 2)
-	h = tx.HashForSig(5)
+	h = tx.SigHash(5)
 	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h[:]))
 	if err != nil {
 		t.Fatal(err)
