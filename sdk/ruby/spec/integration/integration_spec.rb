@@ -196,7 +196,41 @@ context 'Chain SDK integration test' do
     expect(submit_batch.errors.keys).to eq([1])
     expect(submit_batch.successes.keys).to eq([0, 2])
 
-    # Control program creation
+    # Receiver creation
+
+    r = chain.accounts.create_receiver(account_alias: :alice)
+    expect(r.control_program).not_to be_empty
+    expect(r.expires_at).not_to be_nil
+
+    r = chain.accounts.create_receiver(account_id: alice.id)
+    expect(r.control_program).not_to be_empty
+    expect(r.expires_at).not_to be_nil
+
+    expect { chain.accounts.create_receiver({}) }.to raise_error(Chain::APIError)
+
+    # Batch receiver creation
+
+    receiver_batch = chain.accounts.create_receiver_batch([
+      {account_alias: :alice}, # success
+      {}, # error
+      {account_id: alice.id}, #success
+    ])
+
+    expect(receiver_batch.errors.keys).to eq([1])
+    expect(receiver_batch.successes.keys).to eq([0, 2])
+
+    # Pay to receiver
+
+    r = chain.accounts.create_receiver(account_alias: :alice)
+
+    tx = chain.transactions.build do |b|
+      b.issue asset_alias: :gold, amount: 1
+      b.control_with_receiver receiver: r, asset_alias: :gold, amount: 1
+    end
+
+    chain.transactions.submit(signer.sign(tx))
+
+    # Control program creation (deprecated)
 
     cp = chain.accounts.create_control_program(alias: :alice)
     expect(cp.control_program).not_to be_empty
@@ -209,7 +243,7 @@ context 'Chain SDK integration test' do
       chain.accounts.create_control_program()
     }.to raise_error(Chain::APIError)
 
-    # Pay to control program
+    # Pay to control program (deprecated)
 
     cp = chain.accounts.create_control_program(alias: :alice)
 

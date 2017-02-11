@@ -1,5 +1,4 @@
 require 'securerandom'
-require 'time'
 
 require_relative './client_module'
 require_relative './query'
@@ -16,7 +15,7 @@ module Chain
     # @!attribute [r] timestamp
     # Time of transaction.
     # @return [Time]
-    attrib(:timestamp) { |raw| Time.parse(raw) }
+    attrib :timestamp, rfc3339_time: true
 
     # @!attribute [r] block_id
     # Unique identifier, or block hash, of the block containing a transaction.
@@ -155,6 +154,7 @@ module Chain
       # @return [String]
       attrib :spent_output_id
 
+      # @deprecated (as of version 1.1) Use {#spent_output_id} instead.
       # @!attribute [r] spent_output
       # The output consumed by this input.
       # @return [SpentOutput]
@@ -202,6 +202,7 @@ module Chain
       # @return [Boolean]
       attrib :is_local
 
+      # @deprecated (as of version 1.1)
       class SpentOutput < ResponseObject
         # @!attribute [r] transaction_id
         # Unique transaction identifier.
@@ -405,17 +406,10 @@ module Chain
       # Add a spend action taken on a particular unspent output.
       # @param [Hash] params Action parameters
       # @option params [String] :output_id Output ID specifying the transaction output to spend.
+      # @option params [String] :transaction_id DEPRECATED (as of version 1.1) Transaction ID specifying the transaction to select an output from.
+      # @option params [Integer] :position DEPRECATED (as of version 1.1) Position of the output within the transaction to be spent.
       # @return [Builder]
       def spend_account_unspent_output(params)
-        add_action(params.merge(type: :spend_account_unspent_output))
-      end
-
-      # Add a spend action taken on a particular unspent output.
-      # @param [Hash] params Action parameters
-      # @option params [String] :transaction_id Transaction ID specifying the transaction to select an output from.
-      # @option params [Integer] :position Position of the output within the transaction to be spent.
-      # @return [Builder]
-      def spend_account_unspent_output_deprecated(params)
         add_action(params.merge(type: :spend_account_unspent_output))
       end
 
@@ -435,6 +429,21 @@ module Chain
         add_action(params.merge(type: :control_account))
       end
 
+      # Sends assets to the specified receiver.
+      #
+      # @param [Hash] params Action parameters
+      # @option params [Receiver] :control_program the receiver object.
+      # @option params [String] :asset_id Asset ID specifying the asset to be controlled.
+      #                                   You must specify either an ID or an alias.
+      # @option params [String] :asset_alias Asset alias specifying the asset to be controlled.
+      #                                   You must specify either an ID or an alias.
+      # @option params [Integer] :amount amount of the asset to be controlled.
+      # @return [Builder]
+      def control_with_receiver(params)
+        add_action(params.merge(type: :control_receiver))
+      end
+
+      # @deprecated (as of version 1.1) Use {#control_with_receiver} instead.
       # Add a control action taken on a control program.
       # @param [Hash] params Action parameters
       # @option params [String] :asset_id Asset ID specifying the asset to be controlled.
