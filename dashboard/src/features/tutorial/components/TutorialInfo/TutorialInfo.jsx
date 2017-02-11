@@ -23,7 +23,8 @@ class TutorialInfo extends React.Component {
           {this.props.image && <img className={styles.image} src={objectImage} />}
           <div className={styles.text}>
             {this.props.content.map(function (contentLine, i){
-              let str = contentLine['line']
+              let str = contentLine
+              if (contentLine['line']) { str = contentLine['line'] }
               if (contentLine['type']){
                 let replacement = userInput[contentLine['type']]
                 if ('index' in contentLine){

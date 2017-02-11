@@ -8,7 +8,7 @@ class TutorialForm extends React.Component {
     this.state = { showFixed: false }
 
     // We must bind in the constructor so that we have a reference to the bound
-    // function to remove from the window event listener later. 
+    // function to remove from the window event listener later.
     this.handleScroll = this.handleScroll.bind(this)
   }
 
@@ -32,7 +32,7 @@ class TutorialForm extends React.Component {
       <div className={styles.container}>
         <div className={`${styles.tutorialContainer} ${this.state.showFixed && styles.fixedTutorial}`}>
           <div className={styles.header}>
-            Tutorial: {this.props.content['header']}
+            {this.props.content['header']}
           </div>
           <div className={styles.list}>
             <table className={styles.listItemContainer}>
@@ -54,13 +54,18 @@ class TutorialForm extends React.Component {
                 if (contentLine['description']) {
                   let descriptionResult = []
                   contentLine['description'].forEach(function (descriptionLine){
-                    let description = descriptionLine['line']
+                    let description = descriptionLine
+                    if (description['line']) { description = description['line'] }
+
                     if (descriptionLine['type']) {
                       let replacement = userInput[descriptionLine['type']] || descriptionLine['type']
                       if ('index' in descriptionLine){
                         replacement = replacement[descriptionLine['index']]
                       }
-                      replacement = replacement['alias'] || replacement
+
+                      if (replacement.hasOwnProperty('alias')) {
+                        replacement = replacement['alias'] || ''
+                      }
 
                       description.split('STRING').forEach(function (item, i, arr){
                         descriptionResult.push(item)

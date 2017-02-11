@@ -16,14 +16,13 @@ class TutorialHeader extends React.Component {
         <div className={styles.main}>
           <div className={styles.header}>
             {this.props.currentStep.title}
-            {this.props.currentStep.dismiss &&
-              <div className={styles.skip}>
-                {!this.props.showTutorial && <Link to={this.props.tutorial.route}>
-                  Resume tutorial
-                </Link>}
-                {this.props.showTutorial &&
-                <a onClick={this.props.dismissTutorial}>{this.props.currentStep.dismiss}</a>}
-              </div>}
+            <div className={styles.skip}>
+              {!this.props.showTutorial && <Link to={this.props.tutorial.route}>
+                Resume tutorial
+              </Link>}
+              {this.props.showTutorial &&
+              <a onClick={this.props.dismissTutorial}>{this.props.currentStep.dismiss || 'End tutorial'}</a>}
+            </div>
           </div>
           {this.props.showTutorial && this.props.children}
         </div>

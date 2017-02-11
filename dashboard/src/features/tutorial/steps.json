@@ -1,57 +1,41 @@
 [
   {
     "component": "TutorialModal",
-    "modalTitle": "Welcome to Chain Core!",
-    "modalNext": "Start 5-minute Tutorial",
-    "modalDismiss": "Close",
+    "title": "Welcome to Chain Core!",
+    "button": "Start 5-minute Tutorial",
+    "dismiss": "Close",
     "route": "mockhsms",
-    "image": null,
     "content": [
-      {
-        "line": "The dashboard is a UI to be used with the SDKs, which enable your application to communicate with Chain Core."
-      },
-      {
-        "line": "To get started, learn about the primitives of Chain Core in this 5-minute Tutorial."
-      }
+      "This guide will walk you through the basic functions available in the Chain Core Dashboard. This dashboard is built into the Chain Core binary, and is available at all times when your server is running.",
+      "If this is your first time launching Chain Core, or you're just looking for a refresher, click \"Start\" and let's begin."
     ]
   },
   {
     "component": "TutorialInfo",
-    "title": "Tutorial - MockHSM keys - Step 1 of 7",
+    "title": "Tutorial - Creating Keys - Step 1 of 7",
     "button": "Create MockHSM key",
-    "dismiss": "End tutorial",
     "route": "mockhsms/create",
     "image": "mockhsm",
     "content": [
-      {
-        "line": "Cryptographic private keys are the primary authorization mechanism on a blockchain."
-      },
-      {
-        "line": "They control both the issuance and transfer of asset units. An asset or account will define a single key required for issuance or transfers."
-      }
+      "Cryptographic private keys are the primary authorization mechanism on a blockchain. They control both the issuance and transfer of asset units. An asset or account will define one or more keys required for issuance or transfers.",
+      "For development environments, Chain Core provides a convenient MockHSM that simulates production behaviors. Let's begin by creating a new key in our HSM."
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "mockhsm",
-    "title": "Tutorial - MockHSM keys - Step 1 of 7",
-    "button": null,
-    "dismiss": "End tutorial",
-    "route": null,
+    "title": "Tutorial - Creating Keys - Step 1 of 7",
     "content": {
       "header": "Create MockHSM key",
       "steps": [
         {
-          "title": "Type a name for key alias (ex. 'gold', 'silver', 'bronze')",
+          "title": "Enter an alias for your key (ex. 'goldkey')",
           "description": [
-            {
-              "line": "A key alias is a label used to distinguish between keys. We will use this key in the next step."
-            }
+            "An alias is a friendly label used to distinguish between keys. We will use this alias in the next step."
           ]
         },
         {
-          "title": "Click 'Submit' button",
-          "description": null
+          "title": "Click the 'Submit' button"
         }
       ]
     }
@@ -59,64 +43,53 @@
   {
     "component": "TutorialInfo",
     "objectType": "mockhsm",
-    "title": "Tutorial - MockHSM keys - Step 1 of 7",
+    "title": "Tutorial - Creating Keys - Step 1 of 7",
     "button": "Learn about assets",
-    "dismiss": "End tutorial",
     "route": "assets",
     "image": "mockhsm",
     "content": [
       {
         "type": "mockhsm",
-        "line": "Great work! You created the STRING key."
-      },
-      {
-        "line": "Next up, you will learn about assets and how to create one."
+        "line": "Great work! You created a new key in the MockHSM named \"STRING\". Next up, we'll learn about assets and how to create them."
       }
+
     ]
   },
   {
     "component": "TutorialInfo",
-    "title": "Tutorial - Assets - Step 2 of 7",
+    "title": "Tutorial - Creating Assets - Step 2 of 7",
     "button": "Create Asset",
-    "dismiss": "End tutorial",
     "route": "assets/create",
     "image": "asset",
     "content": [
-      {
-        "line": "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer."
-      }
+      "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer.",
+      "Let's create a new asset now."
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "asset",
-    "title": "Tutorial - Assets - Step 2 of 7",
-    "button": null,
-    "dismiss": "End tutorial",
-    "route": null,
+    "title": "Tutorial - Creating Assets - Step 2 of 7",
     "content": {
-      "header": "Create Asset",
+      "header": "Create new Asset",
       "steps": [
         {
-          "title": "Type name for asset alias (ex. 'gold', 'silver', 'bronze')",
+          "title": "Enter an alias for your asset (ex. 'gold')",
+          "description": [
+            "An alias is a friendly label used to distinguish between assets."
+          ]
+        },
+        {
+          "title": "Select \"Use existing MockHSM key\" under \"Keys and Signing\"",
           "description": [
             {
-              "line": "An asset alias is a label used to distinguish between assets."
+              "type": "mockhsm",
+              "line": "Choose STRING key from the dropdown"
             }
           ]
         },
         {
-          "type": "mockhsm",
-          "title": "Select STRING key to use existing MockHSM key",
-          "description": [
-            {
-              "line": "This key will be used for the issuance and transfer of asset units."
-            }
-          ]
-        },
-        {
-          "title": "Click 'Submit' button",
-          "description": null
+          "title": "Click the 'Submit' button"
         }
       ]
     }
@@ -124,66 +97,49 @@
   {
     "component": "TutorialInfo",
     "objectType": "asset",
-    "title": "Tutorial - Assets - Step 2 of 7",
+    "title": "Tutorial - Creating Assets - Step 2 of 7",
     "button": "Learn about accounts",
-    "dismiss": "End tutorial",
     "route": "accounts",
     "image": "asset",
     "content": [
       {
         "type": "asset",
-        "line": "Great! You created the STRING asset."
-      },
-      {
-        "line": "Next up, you will learn about accounts and how to create one."
+        "line": "Great! You created a new asset type named \"STRING\". Next up, we'll learn about accounts and create them for two parties who want to trade assets."
       }
     ]
   },
   {
     "component": "TutorialInfo",
-    "title": "Tutorial - Accounts - Step 3 of 7",
+    "title": "Tutorial - Creating Accounts - Step 3 of 7",
     "button": "Create Account",
-    "dismiss": "End tutorial",
     "route": "accounts/create",
     "image": "account",
     "content": [
-      {
-        "line": "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs."
-      },
-      {
-        "line": "When you create an account, you provide one or more “root” keys and a quorum."
-      }
+      "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs. The account object does not exist on the blockchain - it is local to this Chain Core. Only the control programs created in the account are visible on the blockchain.",
+      "We'll be moving assets from one account to another; let's create the first one now."
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "account",
-    "title": "Tutorial - Accounts - Step 3 of 7",
-    "button": null,
-    "dismiss": "End tutorial",
-    "route": null,
+    "title": "Tutorial - Creating Accounts - Step 3 of 7",
     "content": {
       "header": "Create Account",
       "steps": [
         {
-          "title": "Type name for account alias (ex. 'alice', 'bob')",
+          "title": "Type name for account alias (ex. 'alice')",
           "description": [
-            {
-              "line": "An account alias is a label used to distinguish between accounts."
-            }
+            "An alias is a friendly  label used to distinguish between accounts."
           ]
         },
         {
-          "title": "Type name for key to generate new MockHSM key (ex. 'alice key', 'bob key')",
+          "title": "Select \"Generate new MockHSM key\" under \"Keys and Signing\"",
           "description": [
-            {
-              "line": "This key will be used for the issuance and transfer of asset units in this account."
-            }
+            "You can create a new MockHSM key here as well. Enter a descriptive alias for your new key (ex. 'aliceKey')."
           ]
         },
         {
-          "title": "Click 'Submit' button",
-          "description": null
+          "title": "Click the 'Submit' button"
         }
       ]
     }
@@ -192,20 +148,14 @@
     "component": "TutorialInfo",
     "objectType": "account",
     "title": "Tutorial - Accounts - Step 3 of 7",
-    "button": "Create 2nd account",
-    "dismiss": "End tutorial",
+    "button": "Create another account",
     "route": "accounts/create",
     "image": "account",
     "content": [
       {
         "type": "accounts",
         "index": 0,
-        "line": "Great! You created an account for STRING."
-      },
-      {
-        "type": "accounts",
-        "index": 0,
-        "line": "Next, you will create a second account to interact with the newly created STRING account."
+        "line": "Great! You created a new account named \"STRING\". Let's create a second account to trade assets with."
       }
     ]
   },
@@ -214,30 +164,24 @@
     "objectType": "account",
     "title": "Tutorial - Accounts - Step 3 of 7",
     "button": null,
-    "dismiss": "End tutorial",
     "route": null,
     "content": {
       "header": "Create 2nd Account",
       "steps": [
         {
-          "title": "Type name for account alias (ex. 'alice', 'bob')",
+          "title": "Type name for account alias (ex. 'bob')",
           "description": [
-            {
-              "line": "An account alias is a label used to distinguish between accounts."
-            }
+            "An alias is a friendly  label used to distinguish between accounts."
           ]
         },
         {
-          "title": "Type name for key to generate new MockHSM key (ex. 'alice key', 'bob key')",
+          "title": "Select \"Generate new MockHSM key\" under \"Keys and Signing\"",
           "description": [
-            {
-              "line": "This key will be used for the issuance and transfer of asset units in this account."
-            }
+            "You can leave the name field blank, and Chain Core will generate a key with a unique name based on your alias."
           ]
         },
         {
-          "title": "Click 'Submit' button",
-          "description": null
+          "title": "Click the 'Submit' button"
         }
       ]
     }
@@ -247,66 +191,61 @@
     "objectType": "account",
     "title": "Tutorial - Accounts - Step 4 of 7",
     "button": "Learn about transactions",
-    "dismiss": "End tutorial",
     "route": "transactions",
     "image": "account",
     "content": [
       {
         "type": "accounts",
         "index": 1,
-        "line": "Great! You created an account for STRING."
-      },
-      {
-        "line": "Next, you will learn about transactions and how to issue assets."
+        "line": "Great! Now we've got an account for \"STRING\" too. Let's start to  learn about transactions, and how to issue units of your asset."
       }
     ]
   },
   {
     "component": "TutorialInfo",
-    "title": "Tutorial - Transactions - Step 5 of 7",
-    "button": "Issue asset units",
-    "dismiss": "End tutorial",
+    "title": "Tutorial - Issuing - Step 5 of 7",
+    "button": "Create issuance transaction",
     "route": "transactions/create",
     "image": "transaction",
     "content": [
       {
-        "line": "A transaction contains one or more inputs, and one or more outputs."
-      },
-      {
-        "line": "The Chain Core API allows you to build transactions using actions, which include issue, spend and retire."
+        "type": "asset",
+        "line": "The Chain Core API allows you to build transactions using a predefined set of actions to issue, spend, control or retire asset units. We'll start by creating a transaction that issues units of our \"STRING\" asset."
       }
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "transaction",
-    "title": "Tutorial - Transactions - Step 5 of 7",
+    "title": "Tutorial - Issuing - Step 5 of 7",
     "button": null,
-    "dismiss": "End tutorial",
     "route": null,
     "content": {
       "header": "Issue asset units",
       "steps": [
         {
-          "title": "Add 'Issue' action",
+          "title": "Use the \"Add Action\" button to add the following two actions to your transaction"
+        },
+        {
+          "title": "Add an \"Issue\" action",
           "description": [
             {
               "type": "asset",
-              "line": "Select STRING for the asset alias, "
+              "line": "Enter STRING for the asset alias, "
             },
             {
               "type": 100,
-              "line": "and enter STRING for the amount."
+              "line": "and STRING for the amount."
             }
           ]
         },
         {
-          "title": "Add 'Control with account' action",
+          "title": "Add a \"Control with account\" action",
           "description": [
             {
               "type": "accounts",
               "index": 0,
-              "line": "Select STRING for the account alias, "
+              "line": "Enter STRING for the account alias, "
             },
             {
               "type": "asset",
@@ -314,13 +253,12 @@
             },
             {
               "type": 100,
-              "line": " and enter STRING for the amount."
+              "line": " and STRING for the amount."
             }
           ]
         },
         {
-          "title": "Click 'Submit transaction' button",
-          "description": null
+          "title": "Click the 'Submit transaction' button"
         }
       ]
     }
@@ -328,39 +266,39 @@
   {
     "component": "TutorialInfo",
     "objectType": "transaction",
-    "title": "Tutorial - Transactions - Step 5 of 7",
+    "title": "Tutorial - Issuing - Step 5 of 7",
     "button": "Spend asset units",
-    "dismiss": "End tutorial",
     "route": "transactions/create",
     "image": "transaction",
     "content": [
       {
         "type": "asset",
-        "line": "Great! You issued 100 units of STRING."
+        "line": "You just issued your first units of \"STRING\" onto the blockchain. Nice work!"
       },
+      "When you clicked \"Submit transaction\", Chain Core Dashboard built your blockchain transaction in three steps. First, your raw actions were sent to Chain Core and an unsigned transaction was returned. Next, the Dashboard submitted the unsigned transaction to the MockHSM for signature. Finally, the signed transaction was submitted to the blockchain, and you can see the committed result below.",
       {
-        "type": "asset",
-        "line": "Next, you will spend the STRING assets you just issued."
+        "type": "accounts",
+        "index": 1,
+        "line": "Now let's spend some of the units we just issued and send them to to STRING's account."
       }
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "transaction",
-    "title": "Tutorial - Transactions - Step 6 of 7",
+    "title": "Tutorial - Spending - Step 6 of 7",
     "button": null,
-    "dismiss": "End tutorial",
     "route": null,
     "content": {
       "header": "Spend asset units",
       "steps": [
         {
-          "title": "Add 'Spend from account' action",
+          "title": "Add a 'Spend from account' action",
           "description": [
             {
               "type": "accounts",
               "index": 0,
-              "line": "Select STRING for the account alias, "
+              "line": "Enter STRING for the account alias, "
             },
             {
               "type": "asset",
@@ -368,17 +306,17 @@
             },
             {
               "type": 10,
-              "line": "and enter STRING for the amount."
+              "line": "and STRING for the amount."
             }
           ]
         },
         {
-          "title": "Add 'Control with account' action",
+          "title": "Add a 'Control with account' action",
           "description": [
             {
               "type": "accounts",
               "index": 1,
-              "line": "Select STRING for the account alias, "
+              "line": "Enter STRING for the account alias, "
             },
             {
               "type": "asset",
@@ -386,13 +324,12 @@
             },
             {
               "type": 10,
-              "line": "and enter STRING for the amount."
+              "line": "and STRING for the amount."
             }
           ]
         },
         {
-          "title": "Click 'Submit transaction' button",
-          "description": null
+          "title": "Click the 'Submit transaction' button"
         }
       ]
     }
@@ -400,39 +337,37 @@
   {
     "component": "TutorialInfo",
     "objectType": "transaction",
-    "title": "Tutorial - Transactions - Step 6 of 7",
+    "title": "Tutorial - Spending - Step 6 of 7",
     "button": "Retire asset units",
-    "dismiss": "End tutorial",
     "route": "transactions/create",
     "image": "transaction",
     "content": [
       {
-        "type": "asset",
-        "line": "Great! You spent 10 units of STRING."
+        "type": "accounts",
+        "index": 1,
+        "line": "Rad! You spent 10 units of your asset and sent them to \"STRING\"."
       },
+      "Within a transaction, the total amount of assets being spent must equal the total amount of assets being received (which we call \"controlled\"). Any combination of issues, spends and controls can be used in a single transaction, as long as what goes in equals what comes out.",
       {
         "type": "asset",
-        "line": "Next, you will retire the STRING assets you just issued."
+        "line": "Finally, let's retire some units of \"STRING\" from circulation."
       }
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "transaction",
-    "title": "Tutorial - Transactions - Step 7 of 7",
-    "button": null,
-    "dismiss": "End tutorial",
-    "route": null,
+    "title": "Tutorial - Retiring - Step 7 of 7",
     "content": {
       "header": "Retire asset units",
       "steps": [
         {
-          "title": "Add 'Spend from account' action",
+          "title": "Add a 'Spend from account' action",
           "description": [
             {
               "type": "accounts",
               "index": 1,
-              "line": "Select STRING for the account alias, "
+              "line": "Enter STRING for the account alias, "
             },
             {
               "type": "asset",
@@ -440,26 +375,25 @@
             },
             {
               "type": 5,
-              "line": "and enter STRING for the amount."
+              "line": "and STRING for the amount."
             }
           ]
         },
         {
-          "title": "Add 'Retire' action",
+          "title": "Add a 'Retire' action",
           "description": [
             {
               "type": "asset",
-              "line": "Select STRING for the asset alias "
+              "line": "Enter STRING for the asset alias "
             },
             {
               "type": 5,
-              "line": "and enter STRING for the amount."
+              "line": "and STRING for the amount."
             }
           ]
         },
         {
-          "title": "Click 'Submit transaction' button",
-          "description": null
+          "title": "Click the 'Submit transaction' button"
         }
       ]
     }
@@ -467,7 +401,7 @@
   {
     "component": "TutorialInfo",
     "objectType": "transaction",
-    "title": "Tutorial - Transactions - Step 7 of 7",
+    "title": "Tutorial - Retiring - Step 7 of 7",
     "button": "Finish tutorial",
     "dismiss": " ",
     "route": "transactions",
@@ -475,34 +409,27 @@
     "content": [
       {
         "type": "asset",
-        "line": "Great! You retired 5 units of STRING."
+        "line": "That's it - your 5 units of \"STRING\" have been removed from circulation on the blockchain. These units can no longer be spent or transacted upon."
       },
-      {
-        "line": "You are ready to finish the tutorial and recap what you learned."
-      }
+      "Let's wrap up this tutorial with a quick recap of what we've learned."
     ]
   },
   {
     "component": "TutorialModal",
-    "modalTitle": "5-minute tutorial completed!",
-    "modalNext": null,
-    "modalDismiss": "Done",
-    "route": null,
-    "image": null,
+    "title": "Tutorial - Complete",
+    "dismiss": "Close",
     "content": [
-      {
-        "line": "In this tutorial, you learned how to:"
-      },
+      "Congratulations! You now know how the basics of:",
       {
         "list": [
-          "create and issue assets",
-          "create accounts",
-          "build, sign and submit transactions"
+          "creating assets and accounts tied to cryptographic keys",
+          "the process of building a blockchain transaction",
+          "issuing, spending and retiring asset units"
         ]
       },
-      {
-        "line": "If you need to revisit this tutorial, you can click Tutorial in the sidenav. For detailed information on how Chain Core works, please take a look at the Developer Documentation."
-      }
+      "You can revisit this tutorial at any time by clicking \"Tutorial\" in the sidebar.",
+      "To dig deeper, check out the \"Documentation\" link in the sidebar for information about building applications, using our SDKs, and the underlying Chain Protocol that underpins the entire system.",
+      "Happy building!"
     ]
   }
 ]
