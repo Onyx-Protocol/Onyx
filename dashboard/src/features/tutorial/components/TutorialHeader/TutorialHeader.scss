@@ -3,6 +3,12 @@
   margin-bottom: $gutter-size/2;
   border-bottom: solid $highlight-tutorial 1px;
 }
+
+.collapsed {
+  border-bottom: 1px darken($highlight-tutorial, 15%) solid;
+  box-shadow: none;
+}
+
 .header {
   background-color: $highlight-tutorial;
   box-sizing: border-box;

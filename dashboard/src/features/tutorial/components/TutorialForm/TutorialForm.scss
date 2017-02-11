@@ -8,7 +8,6 @@
     min-height: 100px;
     border: solid $highlight-tutorial 1px;
     background-color: $background-emphasis-color;
-    box-shadow: 0 1px 2px 1px rgba(0,0,0,0.09);
 
     &.fixedTutorial {
       position: fixed;
@@ -29,10 +28,10 @@
     }
 
     .list {
-      margin: 0 25px;
+      margin: 25px;
 
       .listItemContainer {
-        margin: 15px 0;
+        margin: 0;
 
         .listBullet {
           margin-right: 10px;
@@ -56,6 +55,10 @@
           font-weight: 500;
           line-height: 18px;
           color: #20252D;
+
+          td {
+            padding-bottom: 5px;
+          }
         }
 
         .listItemDescription {
