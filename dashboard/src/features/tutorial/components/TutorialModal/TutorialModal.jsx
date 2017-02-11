@@ -10,7 +10,7 @@ class TutorialModal extends React.Component {
         <div className={styles.backdrop} onClick={this.props.dismissTutorial}></div>
           <div className={styles.content}>
             <div className={styles.header}>
-              {this.props.modalTitle}
+              {this.props.title}
             </div>
             <div className={styles.text}>
               {this.props.content.map(function (contentLine, i){
@@ -28,10 +28,10 @@ class TutorialModal extends React.Component {
               })}
             </div>
             <div className={styles.footer}>
-              <button onClick={this.props.dismissTutorial} className={`btn btn-primary ${styles.dismiss}`}>{this.props.modalDismiss}</button>
-              {this.props.modalNext && <Link to={this.props.route}>
+              <button onClick={this.props.dismissTutorial} className={`btn btn-primary ${styles.dismiss}`}>{this.props.dismiss}</button>
+              {this.props.button && <Link to={this.props.route}>
                   <button key='showNext' className={`btn btn-primary ${styles.next}`} onClick={this.props.handleNext}>
-                    {this.props.modalNext}
+                    {this.props.button}
                   </button>
                 </Link>}
             </div>
