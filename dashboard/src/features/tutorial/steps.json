@@ -3,11 +3,10 @@
     "component": "TutorialModal",
     "title": "Welcome to Chain Core!",
     "button": "Start 5-minute Tutorial",
-    "dismiss": "Close",
+    "dismiss": "Skip",
     "route": "mockhsms",
     "content": [
-      "This guide will walk you through the basic functions available in the Chain Core Dashboard. This dashboard is built into the Chain Core binary, and is available at all times when your server is running.",
-      "If this is your first time launching Chain Core, or you're just looking for a refresher, click \"Start\" and let's begin."
+      "Would you like a brief tutorial? This guide will walk you through the basic functions available in the Chain Core Dashboard."
     ]
   },
   {
@@ -104,7 +103,7 @@
     "content": [
       {
         "type": "asset",
-        "line": "Great! You created a new asset type named \"STRING\". Next up, we'll learn about accounts and create them for two parties who want to trade assets."
+        "line": "Great! You created a new asset type named \"STRING\". Next up, we'll learn about accounts and create two of them for parties who want to trade assets."
       }
     ]
   },
@@ -155,7 +154,7 @@
       {
         "type": "accounts",
         "index": 0,
-        "line": "Great! You created a new account named \"STRING\". Let's create a second account to trade assets with."
+        "line": "Great! You created a new account named \"STRING\". In order to do some trading, let's create our second account."
       }
     ]
   },
@@ -197,7 +196,7 @@
       {
         "type": "accounts",
         "index": 1,
-        "line": "Great! Now we've got an account for \"STRING\" too. Let's start to  learn about transactions, and how to issue units of your asset."
+        "line": "Great! Now we've got an account for \"STRING\" too. Let's start to learn about transactions and how to issue units of your asset."
       }
     ]
   },
@@ -210,7 +209,7 @@
     "content": [
       {
         "type": "asset",
-        "line": "The Chain Core API allows you to build transactions using a predefined set of actions to issue, spend, control or retire asset units. We'll start by creating a transaction that issues units of our \"STRING\" asset."
+        "line": "Chain Core allows you to build transactions using a predefined set of actions to issue, spend, control, or retire asset units. We'll start by creating a transaction that issues units of your \"STRING\" asset."
       }
     ]
   },
@@ -224,14 +223,17 @@
       "header": "Issue asset units",
       "steps": [
         {
-          "title": "Use the \"Add Action\" button to add the following two actions to your transaction"
+          "title": "Click the \"Add Action\" button",
+          "description": [
+            "Select \"Issue\" to add a new action to your transaction."
+          ]
         },
         {
-          "title": "Add an \"Issue\" action",
+          "title": "Fill in the issue action",
           "description": [
             {
               "type": "asset",
-              "line": "Enter STRING for the asset alias, "
+              "line": "Enter STRING for the asset alias "
             },
             {
               "type": 100,
@@ -240,7 +242,13 @@
           ]
         },
         {
-          "title": "Add a \"Control with account\" action",
+          "title": "Click the \"Add Action\" button",
+          "description": [
+            "Select \"Control with account\"."
+          ]
+        },
+        {
+          "title": "Fill in the control action",
           "description": [
             {
               "type": "accounts",
@@ -275,22 +283,22 @@
         "type": "asset",
         "line": "You just issued your first units of \"STRING\" onto the blockchain. Nice work!"
       },
-      "When you clicked \"Submit transaction\", Chain Core Dashboard built your blockchain transaction in three steps. First, your raw actions were sent to Chain Core and an unsigned transaction was returned. Next, the Dashboard submitted the unsigned transaction to the MockHSM for signature. Finally, the signed transaction was submitted to the blockchain, and you can see the committed result below.",
+      "When you clicked \"Submit transaction\", three things happened: 1. Your raw actions were sent to Chain Core and an unsigned transaction was returned. 2. The unsigned transaction was sent to the MockHSM for signature. 3. The signed transaction was submitted to the blockchain.",
       {
         "type": "accounts",
         "index": 1,
-        "line": "Now let's spend some of the units we just issued and send them to to STRING's account."
+        "line": "Now let's transfer some of the newly issued asset units to \"STRING\"."
       }
     ]
   },
   {
     "component": "TutorialForm",
     "objectType": "transaction",
-    "title": "Tutorial - Spending - Step 6 of 7",
+    "title": "Tutorial - Transfering - Step 6 of 7",
     "button": null,
     "route": null,
     "content": {
-      "header": "Spend asset units",
+      "header": "Transfer asset units",
       "steps": [
         {
           "title": "Add a 'Spend from account' action",
@@ -337,7 +345,7 @@
   {
     "component": "TutorialInfo",
     "objectType": "transaction",
-    "title": "Tutorial - Spending - Step 6 of 7",
+    "title": "Tutorial - Transfering - Step 6 of 7",
     "button": "Retire asset units",
     "route": "transactions/create",
     "image": "transaction",
@@ -345,9 +353,9 @@
       {
         "type": "accounts",
         "index": 1,
-        "line": "Rad! You spent 10 units of your asset and sent them to \"STRING\"."
+        "line": "Rad! You transferred 10 units of your asset to \"STRING\"."
       },
-      "Within a transaction, the total amount of assets being spent must equal the total amount of assets being received (which we call \"controlled\"). Any combination of issues, spends and controls can be used in a single transaction, as long as what goes in equals what comes out.",
+      "In your transaction, the total amount of assets spent was equal to the total amount of assets controlled (received). Any combination of actions can be added to a single transaction, as long as what goes in equals what comes out.",
       {
         "type": "asset",
         "line": "Finally, let's retire some units of \"STRING\" from circulation."
@@ -409,7 +417,7 @@
     "content": [
       {
         "type": "asset",
-        "line": "That's it - your 5 units of \"STRING\" have been removed from circulation on the blockchain. These units can no longer be spent or transacted upon."
+        "line": "That's it - your 5 units of \"STRING\" have been removed from circulation. These units can no longer be spent, but their history is a permanent part of the blockchain."
       },
       "Let's wrap up this tutorial with a quick recap of what we've learned."
     ]
@@ -422,14 +430,13 @@
       "Congratulations! You now know how the basics of:",
       {
         "list": [
-          "creating assets and accounts tied to cryptographic keys",
-          "the process of building a blockchain transaction",
-          "issuing, spending and retiring asset units"
+          "creating cryptographic keys",
+          "using keys to create assets and accounts",
+          "building transactions to issue, spend and retire"
         ]
       },
-      "You can revisit this tutorial at any time by clicking \"Tutorial\" in the sidebar.",
-      "To dig deeper, check out the \"Documentation\" link in the sidebar for information about building applications, using our SDKs, and the underlying Chain Protocol that underpins the entire system.",
-      "Happy building!"
+      "To dig deeper, check out the \"Documentation\" link in the sidebar for information about building applications, using our SDKs, and about how the blockchain works.",
+      "You can revisit this tutorial at any time by clicking \"Tutorial\" in the sidebar."
     ]
   }
 ]

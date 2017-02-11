@@ -1,6 +1,6 @@
 .container {
   width: 100%;
-  background-color: $background-color;
+  background-color: $background-emphasis-color;
   padding: 25px $gutter-size;
   display: flex;
   align-items: center;
@@ -33,7 +33,7 @@
 
   .next {
     background-color: $background-color;
-    background: url('assets/images/chevron-blue.png');
+    background-image: url('assets/images/chevron-blue.png');
     background-repeat: no-repeat;
     background-position: right 8px center;
     background-size: 5px 9px;
