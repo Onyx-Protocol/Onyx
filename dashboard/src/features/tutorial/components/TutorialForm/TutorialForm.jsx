@@ -55,9 +55,8 @@ class TutorialForm extends React.Component {
                   let descriptionResult = []
                   contentLine['description'].forEach(function (descriptionLine){
                     let description = descriptionLine
-                    if (description['line']) {
-                      description = description['line']
-                    }
+                    if (description['line']) { description = description['line'] }
+
                     if (descriptionLine['type']) {
                       let replacement = userInput[descriptionLine['type']] || descriptionLine['type']
                       if ('index' in descriptionLine){
