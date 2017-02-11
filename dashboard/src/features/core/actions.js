@@ -1,5 +1,3 @@
-import chain from '_chain'
-import { context } from 'utility/environment'
 import { chainClient } from 'utility/environment'
 
 const updateInfo = (param) => ({type: 'UPDATE_CORE_INFO', param})
