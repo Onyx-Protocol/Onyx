@@ -13,9 +13,12 @@ import (
 	"chain/testutil"
 )
 
-const rawdef = `{
+const (
+	rawdef = `{
   "currency": "USD"
 }`
+	notJSON = `{{{{{{{`
+)
 
 type fakeSaver func(context.Context, *query.AnnotatedAsset, string) error
 
@@ -59,6 +62,18 @@ func TestIndexNonLocalAssets(t *testing.T) {
 								},
 							},
 						},
+						{ // non-local asset, non-JSON asset definition
+							AssetVersion: 1,
+							TypedInput: &bc.IssuanceInput{
+								Amount: 10000,
+								IssuanceWitness: bc.IssuanceWitness{
+									InitialBlock:    r.initialBlockHash,
+									AssetDefinition: []byte(notJSON),
+									IssuanceProgram: issuanceProgram,
+									VMVersion:       remotevmver,
+								},
+							},
+						},
 						{ // local asset
 							AssetVersion: 1,
 							TypedInput: &bc.IssuanceInput{
@@ -76,34 +91,35 @@ func TestIndexNonLocalAssets(t *testing.T) {
 			},
 		},
 	}
-	remoteAssetID := b.Transactions[0].Inputs[0].AssetID()
+	remoteAssetID1 := b.Transactions[0].Inputs[0].AssetID()
+	remoteAssetID2 := b.Transactions[0].Inputs[1].AssetID()
 
-	var assetsSaved []bc.AssetID
+	assetsSaved := make(map[bc.AssetID]bool)
 	r.indexer = fakeSaver(func(ctx context.Context, aa *query.AnnotatedAsset, sortID string) error {
 		var aid bc.AssetID
 		copy(aid[:], aa.ID[:])
-		assetsSaved = append(assetsSaved, aid)
+		assetsSaved[aid] = true
 		return nil
 	})
 
-	// Call the block callback and index the remote asset.
+	// Call the block callback and index the remote assets.
 	err = r.indexAssets(ctx, b)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Ensure that the annotated asset got saved to the query indexer.
-	if !testutil.DeepEqual(assetsSaved, []bc.AssetID{remoteAssetID}) {
-		t.Errorf("saved annotated assets got %#v, want %#v", assetsSaved, []bc.AssetID{remoteAssetID})
+	if !testutil.DeepEqual(assetsSaved, map[bc.AssetID]bool{remoteAssetID1: true, remoteAssetID2: true}) {
+		t.Errorf("saved annotated assets got %#v, want %#v", assetsSaved, []bc.AssetID{remoteAssetID1, remoteAssetID2})
 	}
 
-	// Ensure that the asset was saved to the `assets` table.
-	got, err := r.findByID(ctx, remoteAssetID)
+	// Ensure that the assets were saved to the `assets` table.
+	got, err := r.findByID(ctx, remoteAssetID1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := &Asset{
-		AssetID:          remoteAssetID,
+		AssetID:          remoteAssetID1,
 		VMVersion:        remotevmver,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: r.initialBlockHash,
