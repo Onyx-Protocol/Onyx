@@ -5,7 +5,7 @@ import styles from './TutorialHeader.scss'
 class TutorialHeader extends React.Component {
 
   render() {
-    if(!this.props.tutorial.isShowing || this.props.currentStep.modalTitle){
+    if(!this.props.tutorial.isShowing || this.props.currentStep.component == 'TutorialModal'){
       return (
         <div>
           {this.props.children}
