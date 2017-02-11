@@ -91,7 +91,7 @@ export const mapStateToProps = (type, itemComponent, additionalProps = {}) => (s
   const cursor = currentQuery.cursor || {}
 
   const lastPageIndex = Math.ceil(currentIds.length/pageSize) - 1
-  const isLastPage = ((currentPage - 1) == lastPageIndex) && cursor && cursor.last_page
+  const isLastPage = ((currentPage - 1) == lastPageIndex) && cursor && cursor.lastPage
   const startIndex = (currentPage - 1) * pageSize
   const items = currentIds.slice(startIndex, startIndex + pageSize).map(
     id => state[type].items[id]

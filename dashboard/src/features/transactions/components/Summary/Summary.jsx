@@ -14,9 +14,9 @@ class Summary extends React.Component {
     const normalized = {}
 
     inouts.forEach(inout => {
-      let asset = normalized[inout.asset_id]
-      if (!asset) asset = normalized[inout.asset_id] = {
-        alias: inout.asset_alias,
+      let asset = normalized[inout.assetId]
+      if (!asset) asset = normalized[inout.assetId] = {
+        alias: inout.assetAlias,
         issue: 0,
         retire: 0
       }
@@ -24,10 +24,10 @@ class Summary extends React.Component {
       if (['issue', 'retire'].includes(inout.type)) {
         asset[inout.type] += inout.amount
       } else {
-        let accountKey = inout.account_id || 'external'
+        let accountKey = inout.accountId || 'external'
         let account = asset[accountKey]
         if (!account) account = asset[accountKey] = {
-          alias: inout.account_alias,
+          alias: inout.accountAlias,
           spend: 0,
           control: 0
         }
@@ -50,8 +50,8 @@ class Summary extends React.Component {
     const summary = this.normalizeInouts(inouts)
     const items = []
 
-    Object.keys(summary).forEach((asset_id) => {
-      const asset = summary[asset_id]
+    Object.keys(summary).forEach((assetId) => {
+      const asset = summary[assetId]
       const nonAccountTypes = ['issue','retire']
 
       nonAccountTypes.forEach((type) => {
@@ -60,21 +60,21 @@ class Summary extends React.Component {
             type: INOUT_TYPES[type],
             rawAction: type,
             amount: asset[type],
-            asset: asset.alias ? asset.alias : <code className={styles.rawId}>{asset_id}</code>,
-            assetId: asset_id,
+            asset: asset.alias ? asset.alias : <code className={styles.rawId}>{assetId}</code>,
+            assetId: assetId,
           })
         }
       })
 
 
-      Object.keys(asset).forEach((account_id) => {
-        if (nonAccountTypes.includes(account_id)) return
-        const account = asset[account_id]
+      Object.keys(asset).forEach((accountId) => {
+        if (nonAccountTypes.includes(accountId)) return
+        const account = asset[accountId]
         if (!account) return
 
-        if (account_id == 'external') {
-          account.alias= 'external'
-          account_id = null
+        if (accountId == 'external') {
+          account.alias = 'external'
+          accountId = null
         }
 
         const accountTypes = ['spend', 'control']
@@ -84,11 +84,11 @@ class Summary extends React.Component {
               type: INOUT_TYPES[type],
               rawAction: type,
               amount: account[type],
-              asset: asset.alias ? asset.alias : <code className={styles.rawId}>{asset_id}</code>,
-              assetId: asset_id,
+              asset: asset.alias ? asset.alias : <code className={styles.rawId}>{assetId}</code>,
+              assetId: assetId,
               direction: type == 'spend' ? 'from' : 'to',
-              account: account.alias ? account.alias : <code className={styles.rawId}>{account_id}</code>,
-              accountId: account_id,
+              account: account.alias ? account.alias : <code className={styles.rawId}>{accountId}</code>,
+              accountId: accountId,
             })
           }
         })

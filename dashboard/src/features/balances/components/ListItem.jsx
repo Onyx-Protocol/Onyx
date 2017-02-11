@@ -1,20 +1,20 @@
 import React from 'react'
 import { KeyValueTable } from 'features/shared/components'
+import buildInOutDisplay from 'utility/buildInOutDisplay'
 
 class ListItem extends React.Component {
   render() {
     const item = {...this.props.item}
-    delete item.id
 
-    const sumBy = []
-    Object.keys(item.sum_by).forEach(key =>
-      sumBy.push({label: key, value: item.sum_by[key]})
+    const sumBy = {}
+    Object.keys(item.sumBy).forEach(key =>
+      sumBy[key] = item.sumBy[key]
     )
 
     return(
       <KeyValueTable items={[
         {label: 'Amount', value: item.amount},
-        ...sumBy
+        ...buildInOutDisplay(sumBy)
       ]} />
     )
   }

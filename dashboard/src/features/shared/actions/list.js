@@ -1,4 +1,4 @@
-import chain from '_chain'
+import { chainClient } from 'utility/environment'
 import { context, pageSize } from 'utility/environment'
 import { push, replace } from 'react-router-redux'
 
@@ -14,12 +14,13 @@ export default function(type, options = {}) {
   // Dispatch a single request for the specified query, and persist the
   // results to the default item store
   const fetchItems = (params) => {
+    const clientApi = options.clientApi ? options.clientApi() : chainClient()[`${type}s`]
     const requiredParams = options.requiredParams || {}
 
     params = { ...params, ...requiredParams }
 
     return (dispatch) => {
-      const promise = chain[className].query(context(), params)
+      const promise = clientApi.query(params)
 
       promise.then(
         (param) => dispatch(receive(param))
@@ -82,7 +83,7 @@ export default function(type, options = {}) {
       let refresh = requestOptions.refresh || false
       let filter = query.filter || ''
 
-      if (!refresh && latestResponse && latestResponse.last_page) {
+      if (!refresh && latestResponse && latestResponse.lastPage) {
         return Promise.resolve({last: true})
       } else if (!refresh && latestResponse.nextPage) {
         promise = latestResponse.nextPage(context())
@@ -91,7 +92,7 @@ export default function(type, options = {}) {
         let params = {}
 
         if (query.filter) params.filter = filter
-        if (query.sum_by) params.sum_by = query.sum_by.split(',')
+        if (query.sumBy) params.sumBy = query.sumBy.split(',')
 
         promise = dispatch(fetchItems(params))
       }
@@ -120,7 +121,7 @@ export default function(type, options = {}) {
         return
       }
 
-      chain[className].delete(context(), id)
+      clientApi.delete(context(), id)
         .then(() => dispatch({
           type: `DELETE_${type.toUpperCase()}`,
           id: id,

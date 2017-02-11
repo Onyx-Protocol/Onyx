@@ -9,7 +9,7 @@ import {
 } from 'features/shared/components'
 
 import { Summary } from './'
-import { buildInOutDisplay } from 'features/transactions/utility'
+import buildInOutDisplay from 'utility/buildInOutDisplay'
 
 class Show extends BaseShow {
 

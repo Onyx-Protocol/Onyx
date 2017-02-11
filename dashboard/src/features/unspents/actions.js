@@ -1,2 +1,6 @@
 import { baseListActions } from 'features/shared/actions'
-export default baseListActions('unspent')
+import { chainClient } from 'utility/environment'
+
+export default baseListActions('unspent', {
+  clientApi: () => chainClient().unspentOutputs
+})

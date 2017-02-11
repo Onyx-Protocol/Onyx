@@ -1,6 +1,6 @@
 import React from 'react'
 import { KeyValueTable, RawJsonButton, } from 'features/shared/components'
-import { buildInOutDisplay } from 'features/transactions/utility'
+import buildInOutDisplay from 'utility/buildInOutDisplay'
 
 class ListItem extends React.Component {
   render() {
