@@ -43,8 +43,30 @@
     color: #747C89;
     border-bottom: 1px solid rgba(182,188,197,0.27);
 
-    .list {
-      list-style-type: decimal;
+    .listItemContainer {
+      margin: 15px 0;
+
+      .listBullet {
+        margin-right: 10px;
+        padding: 2px;
+        display: inline-block;
+        border-radius: 50%;
+        background: $highlight-tutorial;
+        width: 18px;
+        height: 18px;
+        font-size: 12px;
+        font-weight: bold;
+        text-align: center;
+        line-height: 14px;
+        color: #FFFFFF;
+      }
+
+      .listItemGroup {
+        margin-bottom: 10px;
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.4;
+      }
     }
 
     p {

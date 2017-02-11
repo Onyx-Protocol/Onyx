@@ -17,9 +17,12 @@ class TutorialModal extends React.Component {
                 if(contentLine['list']){
                   let list = []
                   contentLine['list'].forEach(function(listItem, j){
-                    list.push(<li key={j}>{listItem}</li>)
+                    list.push(<tr key={j} className={styles.listItemGroup}>
+                      <td className={styles.listBullet}>{j+1}</td>
+                      <td>{listItem}</td>
+                    </tr>)
                   })
-                  return <ul className={styles.list}>{list}</ul>
+                  return <table className={styles.listItemContainer}>{list}</table>
                 } else {
                   let value = contentLine
                   if (typeof(value) === 'object') { value = value['line'] }

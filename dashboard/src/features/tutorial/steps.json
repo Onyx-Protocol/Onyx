@@ -28,13 +28,13 @@
       "header": "Create MockHSM key",
       "steps": [
         {
-          "title": "Enter an alias for your key (ex. 'goldkey')",
+          "title": "Enter an alias for your key (ex. \"goldkey\")",
           "description": [
             "An alias is a friendly label used to distinguish between keys. We will use this alias in the next step."
           ]
         },
         {
-          "title": "Click the 'Submit' button"
+          "title": "Click the \"Submit\" button"
         }
       ]
     }
@@ -73,7 +73,7 @@
       "header": "Create new Asset",
       "steps": [
         {
-          "title": "Enter an alias for your asset (ex. 'gold')",
+          "title": "Enter an alias for your asset (ex. \"gold\")",
           "description": [
             "An alias is a friendly label used to distinguish between assets."
           ]
@@ -88,7 +88,7 @@
           ]
         },
         {
-          "title": "Click the 'Submit' button"
+          "title": "Click the \"Submit\" button"
         }
       ]
     }
@@ -126,7 +126,7 @@
       "header": "Create Account",
       "steps": [
         {
-          "title": "Type name for account alias (ex. 'alice')",
+          "title": "Type name for account alias (ex. \"alice\")",
           "description": [
             "An alias is a friendly  label used to distinguish between accounts."
           ]
@@ -138,7 +138,7 @@
           ]
         },
         {
-          "title": "Click the 'Submit' button"
+          "title": "Click the \"Submit\" button"
         }
       ]
     }
@@ -168,7 +168,7 @@
       "header": "Create 2nd Account",
       "steps": [
         {
-          "title": "Type name for account alias (ex. 'bob')",
+          "title": "Type name for account alias (ex. \"bob\")",
           "description": [
             "An alias is a friendly  label used to distinguish between accounts."
           ]
@@ -180,7 +180,7 @@
           ]
         },
         {
-          "title": "Click the 'Submit' button"
+          "title": "Click the \"Submit\" button"
         }
       ]
     }
@@ -266,7 +266,7 @@
           ]
         },
         {
-          "title": "Click the 'Submit transaction' button"
+          "title": "Click the \"Submit transaction\" button"
         }
       ]
     }
@@ -283,7 +283,14 @@
         "type": "asset",
         "line": "You just issued your first units of \"STRING\" onto the blockchain. Nice work!"
       },
-      "When you clicked \"Submit transaction\", three things happened: 1. Your raw actions were sent to Chain Core and an unsigned transaction was returned. 2. The unsigned transaction was sent to the MockHSM for signature. 3. The signed transaction was submitted to the blockchain.",
+      "When you clicked \"Submit transaction\", Chain Core Dashboard built your blockchain transaction in three steps:",
+      {
+        "list": [
+          "your raw actions were sent to Chain Core and an unsigned transaction was returned.",
+          "the Dashboard submitted the unsigned transaction to the MockHSM for signature.",
+          "the signed transaction was submitted to the blockchain (you can see the committed result below)."
+        ]
+      },
       {
         "type": "accounts",
         "index": 1,
@@ -301,7 +308,7 @@
       "header": "Transfer asset units",
       "steps": [
         {
-          "title": "Add a 'Spend from account' action",
+          "title": "Add a \"Spend from account\" action",
           "description": [
             {
               "type": "accounts",
@@ -319,7 +326,7 @@
           ]
         },
         {
-          "title": "Add a 'Control with account' action",
+          "title": "Add a \"Control with account\" action",
           "description": [
             {
               "type": "accounts",
@@ -337,7 +344,7 @@
           ]
         },
         {
-          "title": "Click the 'Submit transaction' button"
+          "title": "Click the \"Submit transaction\" button"
         }
       ]
     }
@@ -370,7 +377,7 @@
       "header": "Retire asset units",
       "steps": [
         {
-          "title": "Add a 'Spend from account' action",
+          "title": "Add a \"Spend from account\" action",
           "description": [
             {
               "type": "accounts",
@@ -388,7 +395,7 @@
           ]
         },
         {
-          "title": "Add a 'Retire' action",
+          "title": "Add a \"Retire\" action",
           "description": [
             {
               "type": "asset",
@@ -401,7 +408,7 @@
           ]
         },
         {
-          "title": "Click the 'Submit transaction' button"
+          "title": "Click the \"Submit transaction\" button"
         }
       ]
     }
@@ -427,7 +434,7 @@
     "title": "Tutorial - Complete",
     "dismiss": "Close",
     "content": [
-      "Congratulations! You now know how the basics of:",
+      "Congratulations! You now know the basics of:",
       {
         "list": [
           "creating cryptographic keys",

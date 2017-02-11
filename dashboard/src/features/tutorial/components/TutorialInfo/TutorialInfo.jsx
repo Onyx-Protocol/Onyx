@@ -25,6 +25,16 @@ class TutorialInfo extends React.Component {
             {this.props.content.map(function (contentLine, i){
               let str = contentLine
               if (contentLine['line']) { str = contentLine['line'] }
+              if(contentLine['list']){
+                let list = []
+                contentLine['list'].forEach(function(listItem, j){
+                  list.push(<tr key={j} className={styles.listItemGroup}>
+                    <td className={styles.listBullet}>{j+1}</td>
+                    <td>{listItem}</td>
+                  </tr>)
+                })
+                return <table className={styles.listItemContainer}>{list}</table>
+              }
               if (contentLine['type']){
                 let replacement = userInput[contentLine['type']]
                 if ('index' in contentLine){
