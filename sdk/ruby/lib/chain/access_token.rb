@@ -23,7 +23,7 @@ module Chain
     # @!attribute [r] created_at
     # Timestamp of token creation.
     # @return [Time]
-    attrib(:created_at) { |raw| Time.parse(raw) }
+    attrib :created_at, rfc3339_time: true
 
     class ClientModule < Chain::ClientModule
 

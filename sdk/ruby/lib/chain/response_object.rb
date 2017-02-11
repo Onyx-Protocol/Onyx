@@ -18,7 +18,12 @@ module Chain
     end
 
     def to_json(opts = nil)
-      to_h.to_json(opts)
+      h = to_h.reduce({}) do |memo, (k, v)|
+        memo[k] = self.class.detranslate(k, v)
+        memo
+      end
+
+      h.to_json
     end
 
     def [](attrib_name)
@@ -41,8 +46,9 @@ module Chain
     end
 
     # @!visibility private
-    def self.attrib(attrib_name, &translate)
-      attrib_opts[attrib_name.to_sym] = {translate: translate}
+    def self.attrib(attrib_name, opts = {}, &translate)
+      opts[:translate] = translate
+      attrib_opts[attrib_name.to_sym] = opts
       attr_accessor attrib_name
     end
 
@@ -55,6 +61,8 @@ module Chain
     def self.translate(attrib_name, raw_value)
       attrib_name = attrib_name.to_sym
       opts = attrib_opts[attrib_name]
+
+      return Time.parse(raw_value) if opts[:rfc3339_time]
       return raw_value if opts[:translate].nil?
 
       begin
@@ -64,18 +72,45 @@ module Chain
       end
     end
 
+    # @!visibility private
+    def self.detranslate(attrib_name, raw_value)
+      opts = attrib_opts.fetch(attrib_name, {})
+
+      if opts[:rfc3339_time]
+        begin
+          return raw_value.to_datetime.rfc3339
+        rescue => e
+          raise DetranslateError.new(attrib_name, raw_value, e)
+        end
+      end
+
+      raw_value
+    end
+
     class TranslateError < StandardError
       attr_reader :attrib_name
       attr_reader :raw_value
       attr_reader :source
 
       def initialize(attrib_name, raw_value, source)
-        super "Translation error for attrib #{attrib_name}: #{source}"
+        super "Error translating attrib #{attrib_name}: #{source}"
         @attrib_name = attrib_name
         @raw_value = raw_value
         @source = source
       end
     end
 
+    class DetranslateError < StandardError
+      attr_reader :attrib_name
+      attr_reader :raw_value
+      attr_reader :source
+
+      def initialize(attrib_name, raw_value, source)
+        super "Error de-translating attrib #{attrib_name}: #{source}"
+        @attrib_name = attrib_name
+        @raw_value = raw_value
+        @source = source
+      end
+    end
   end
 end

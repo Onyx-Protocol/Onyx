@@ -2,6 +2,7 @@ require_relative './client_module'
 require_relative './control_program'
 require_relative './errors'
 require_relative './query'
+require_relative './receiver'
 require_relative './response_object'
 
 module Chain
@@ -48,6 +49,7 @@ module Chain
         client.conn.batch_request('create-account', opts) { |item| Account.new(item) }
       end
 
+      # @deprecated (as of version 1.1) Use {#create_receiver} instead.
       # @param [Hash] opts
       # @return [ControlProgram]
       def create_control_program(opts = {})
@@ -61,6 +63,25 @@ module Chain
           'create-control-program',
           [{type: :account, params: params}]
         ) { |item| ControlProgram.new(item) }
+      end
+
+      # Creates a new receiver under the specified account.
+      #
+      # @param opts [Hash] Options hash
+      # @option opts [String] :account_alias Unique alias for an account. Either account_alias or account_id is required.
+      # @option opts [String] :account_id Unique ID for an account. Either account_alias or account_id is required.
+      # @option opts [String] :expires_at An RFC3339 timestamp indicating when the receiver will expire. Defaults to 30 days in the future.
+      # @return [Receiver]
+      def create_receiver(opts)
+        client.conn.singleton_batch_request('create-account-receiver', [opts]) { |item| Receiver.new(item) }
+      end
+
+      # Creates new receivers under the specified accounts.
+      #
+      # @param opts_list [Array<Hash>] Array of options hashes. See {#create_receiver} for a description of the hash structure.
+      # @return [BatchResponse]
+      def create_receiver_batch(opts_list)
+        client.conn.batch_request('create-account-receiver', opts_list) { |item| Receiver.new(item) }
       end
 
       # @param [Hash] query

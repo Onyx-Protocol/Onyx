@@ -33,7 +33,7 @@ module Chain
 
       # @!attribute [r] configured_at
       # @return [Time]
-      attrib(:configured_at) { |raw| Time.parse(raw) }
+      attrib :configured_at, rfc3339_time: true
 
       # @!attribute [r] is_signer
       # @return [Boolean]
@@ -65,7 +65,7 @@ module Chain
 
       # @!attribute [r] generator_block_height_fetched_at
       # @return [Time]
-      attrib(:generator_block_height_fetched_at) { |raw| Time.parse(raw) }
+      attrib :generator_block_height_fetched_at, rfc3339_time: true
 
       # @!attribute [r] is_production
       # @return [Boolean]
