@@ -17,12 +17,12 @@ class AccountShow extends BaseShow {
   }
 
   createControlProgram() {
-    this.props.createControlProgram([{
+    this.props.createControlProgram({
       type: 'account',
-      params: { account_id: this.props.item.id }
-    }]).then((program) => this.props.showControlProgram(<div>
+      id: this.props.item.id
+    }).then((program) => this.props.showControlProgram(<div>
       <p>Copy this one-time use control program to use in a transaction:</p>
-      <CopyableBlock value={program.control_program} />
+      <CopyableBlock value={program.controlProgram} />
     </div>))
   }
 
