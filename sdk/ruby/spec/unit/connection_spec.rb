@@ -2,9 +2,16 @@ require 'chain'
 require 'webmock'
 
 include WebMock::API
-WebMock.enable!
 
 describe Chain::Connection do
+
+  before :all do
+    WebMock.enable!
+  end
+
+  after :all do
+    WebMock.disable!
+  end
 
   example 'works with mixtures of relative and absolute paths' do
     stub_request(:any, 'foo.test/bar').to_return(body: '{}', headers: {'Chain-Request-ID' => 'test'})
