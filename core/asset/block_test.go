@@ -94,11 +94,11 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	remoteAssetID1 := b.Transactions[0].Inputs[0].AssetID()
 	remoteAssetID2 := b.Transactions[0].Inputs[1].AssetID()
 
-	var assetsSaved []bc.AssetID
+	assetsSaved := make(map[bc.AssetID]bool)
 	r.indexer = fakeSaver(func(ctx context.Context, aa *query.AnnotatedAsset, sortID string) error {
 		var aid bc.AssetID
 		copy(aid[:], aa.ID[:])
-		assetsSaved = append(assetsSaved, aid)
+		assetsSaved[aid] = true
 		return nil
 	})
 
@@ -109,7 +109,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	}
 
 	// Ensure that the annotated asset got saved to the query indexer.
-	if !testutil.DeepEqual(assetsSaved, []bc.AssetID{remoteAssetID1, remoteAssetID2}) {
+	if !testutil.DeepEqual(assetsSaved, map[bc.AssetID]bool{remoteAssetID1: true, remoteAssetID2: true}) {
 		t.Errorf("saved annotated assets got %#v, want %#v", assetsSaved, []bc.AssetID{remoteAssetID1, remoteAssetID2})
 	}
 
