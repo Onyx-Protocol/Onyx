@@ -17,13 +17,13 @@ import { clear as clearStorage } from 'utility/localStorage'
 
 const makeRootReducer = () => (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO' &&
-      !action.param.is_configured) {
+      !action.param.isConfigured) {
     const newState = {
       form: state.form,
       routing: state.routing,
     }
 
-    if (state.core.blockchainId == (action.param.blockchain_id || 0)) {
+    if (state.core.blockchainId == (action.param.blockchainId || 0)) {
       newState.core = state.core
     }
 
