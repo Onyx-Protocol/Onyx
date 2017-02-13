@@ -69,7 +69,6 @@ var (
 )
 
 func checkTxSighashCommitment(tx *bc.Tx) error {
-	allIssuances := true
 	var lastError error
 
 	for i, inp := range tx.Inputs {
@@ -77,7 +76,6 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 		switch t := inp.TypedInput.(type) {
 		case *bc.SpendInput:
 			args = t.Arguments
-			allIssuances = false
 		case *bc.IssuanceInput:
 			args = t.Arguments
 		}
@@ -114,11 +112,7 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 		return nil
 	}
 
-	if !allIssuances {
-		return lastError
-	}
-
-	return nil
+	return lastError
 }
 
 // RemoteGenerator implements the Submitter interface and submits the

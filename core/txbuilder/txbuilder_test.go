@@ -267,7 +267,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	issuanceProg := []byte{byte(vm.OP_TRUE)}
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
 
-	// Tx with only issuance inputs is OK
+	// all-issuance input tx should fail if none of the inputs commit to the tx signature
 	tx := bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
@@ -313,8 +313,8 @@ func TestTxSighashCommitment(t *testing.T) {
 		MaxTime: bc.Millis(time.Now().Add(time.Hour)),
 	})
 	err := checkTxSighashCommitment(tx)
-	if err != nil {
-		t.Errorf("issuances-only: got error %s, want no error", err)
+	if err != ErrNoTxSighashAttempt {
+		t.Errorf("no issuance inputs committing to txsighash: got error %s, want ErrNoTxSighashAttempt", err)
 	}
 
 	// Tx with any spend inputs, none committing to the txsighash, is not OK
