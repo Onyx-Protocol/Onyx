@@ -242,7 +242,7 @@ Note that secrecy of all derived private keys (both hardened and non-hardened, a
 
 **BIP32 is fully compatible with ECDSA. Why this scheme does not follow standard EdDSA?**
 
-EdDSA treats private key not as a raw scalar (which is what ECDSA does), but as a buffer being hashed and then split into a scalar and a `prefix` material for the nonce. This hashing creates a non-linear relationship that is impossible to map to curve points that only support linear operations for non-hardened derivation. This scheme therefore deviates from EdDSA and encodes a non-hardened private key as a scalar directly, without its hash preimage. For consistancy, the hardened key also stores only the scalar, not its preimage. At the same time, signature verification is fully compatible with EdDSA for both hardened and non-hardened public keys.
+EdDSA treats private key not as a raw scalar (which is what ECDSA does), but as a buffer being hashed and then split into a scalar and a `prefix` material for the nonce. This hashing creates a non-linear relationship that is impossible to map to curve points that only support linear operations for non-hardened derivation. This scheme therefore deviates from EdDSA and encodes a non-hardened private key as a scalar directly, without its hash preimage. For consistency, the hardened key also stores only the scalar, not its preimage. At the same time, signature verification is fully compatible with EdDSA for both hardened and non-hardened public keys.
 
 **Is it safe to derive signature nonce directly from the secret scalar?**
 
