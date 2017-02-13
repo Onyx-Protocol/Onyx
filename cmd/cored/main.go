@@ -117,11 +117,15 @@ func init() {
 }
 
 func main() {
-	v := flag.Bool("version", false, "prints cored version")
+	v := flag.Bool("version", false, "print version information")
 	flag.Parse()
 
 	if *v {
-		fmt.Printf("cored version: %s production=%t\n", config.Version, config.Production)
+		fmt.Printf("cored %s\n", config.Version)
+		fmt.Printf("production=%t\n", config.Production)
+		fmt.Printf("build-commit=%v\n", config.BuildCommit)
+		fmt.Printf("build-date=%v\n", config.BuildDate)
+
 		return
 	}
 	runServer()
