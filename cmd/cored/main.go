@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"expvar"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -72,7 +73,7 @@ var (
 	indexTxs      = env.Bool("INDEX_TRANSACTIONS", true)
 
 	// build vars; initialized by the linker
-	buildTag    = "dev"
+	buildTag    = "?"
 	buildCommit = "?"
 	buildDate   = "?"
 
@@ -92,7 +93,7 @@ func init() {
 		version = latestVersion + "-" + buildTag
 	} else {
 		// -dev suffix indicates intermediate, non-release build
-		version = latestVersion + "-dev"
+		version = latestVersion + "+changes"
 	}
 
 	prodStr := "no"
@@ -116,6 +117,21 @@ func init() {
 }
 
 func main() {
+	v := flag.Bool("version", false, "print version information")
+	flag.Parse()
+
+	if *v {
+		fmt.Printf("cored %s\n", config.Version)
+		fmt.Printf("production=%t\n", config.Production)
+		fmt.Printf("build-commit=%v\n", config.BuildCommit)
+		fmt.Printf("build-date=%v\n", config.BuildDate)
+
+		return
+	}
+	runServer()
+}
+
+func runServer() {
 	maybeMonitorIfOnWindows() // special-case windows
 
 	ctx := context.Background()
