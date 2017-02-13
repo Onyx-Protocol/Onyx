@@ -89,16 +89,16 @@ $ dumpschema
 
 ### Dependencies
 
-To add or update a Go dependency, do the following:
+To add or update a Go dependency at import path `x`, do the following:
 
-Copy the code from `$(go env GOPATH)/src/x`
+Copy the code from the package's directory
 to `$CHAIN/vendor/x`. For example, to vendor the package
 `github.com/kr/pretty`, run
 
 ```
 $ mkdir -p $CHAIN/vendor/github.com/kr
 $ rm -r $CHAIN/vendor/github.com/kr/pretty
-$ cp -r $(go env GOPATH)/src/github.com/kr/pretty $CHAIN/vendor/github.com/kr/pretty
+$ cp -r $(go list -f {{.Dir}} github.com/kr/pretty) $CHAIN/vendor/github.com/kr/pretty
 $ rm -rf $CHAIN/vendor/github.com/kr/pretty/.git
 ```
 
