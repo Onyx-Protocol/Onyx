@@ -123,13 +123,6 @@ func (h *Handler) init() {
 	m := http.NewServeMux()
 	m.Handle("/", alwaysError(errNotFound))
 
-	if h.MockHSM != nil {
-		m.Handle("/mockhsm/create-key", devOnly(needConfig(h.mockhsmCreateKey)))
-		m.Handle("/mockhsm/list-keys", devOnly(needConfig(h.mockhsmListKeys)))
-		m.Handle("/mockhsm/delkey", devOnly(needConfig(h.mockhsmDelKey)))
-		m.Handle("/mockhsm/sign-transaction", devOnly(needConfig(h.mockhsmSignTemplates)))
-	}
-
 	m.Handle("/create-account", needConfig(h.createAccount))
 	m.Handle("/create-asset", needConfig(h.createAsset))
 	m.Handle("/build-transaction", needConfig(h.build))
@@ -140,6 +133,10 @@ func (h *Handler) init() {
 	m.Handle("/get-transaction-feed", needConfig(h.getTxFeed))
 	m.Handle("/update-transaction-feed", needConfig(h.updateTxFeed))
 	m.Handle("/delete-transaction-feed", needConfig(h.deleteTxFeed))
+	m.Handle("/mockhsm/create-key", devOnly(needConfig(h.mockhsmCreateKey)))
+	m.Handle("/mockhsm/list-keys", devOnly(needConfig(h.mockhsmListKeys)))
+	m.Handle("/mockhsm/delkey", devOnly(needConfig(h.mockhsmDelKey)))
+	m.Handle("/mockhsm/sign-transaction", devOnly(needConfig(h.mockhsmSignTemplates)))
 	m.Handle("/list-accounts", needConfig(h.listAccounts))
 	m.Handle("/list-assets", needConfig(h.listAssets))
 	m.Handle("/list-transaction-feeds", needConfig(h.listTxFeeds))
