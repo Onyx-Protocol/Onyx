@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"expvar"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -116,6 +117,17 @@ func init() {
 }
 
 func main() {
+	v := flag.Bool("version", false, "prints cored version")
+	flag.Parse()
+
+	if *v {
+		fmt.Printf("version: %s\n", config.Version)
+		return
+	}
+	runServer()
+}
+
+func runServer() {
 	maybeMonitorIfOnWindows() // special-case windows
 
 	ctx := context.Background()
