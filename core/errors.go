@@ -91,6 +91,7 @@ var (
 		config.ErrBadQuorum:            errorInfo{400, "CH108", "Quorum must be greater than 0 if there are signers"},
 		config.ErrNoProdBlockPub:       errorInfo{400, "CH109", "Block Pub cannot be empty when configuring a production signer"},
 		errProduction:                  errorInfo{400, "CH110", "This endpoint can only be called in a development system"},
+		config.ErrNoProdBlockHSMURL:    errorInfo{400, "CH111", "Block HSM URL cannot be empty when running a signer in production"},
 		errNoClientTokens:              errorInfo{400, "CH120", "Cannot enable client authentication with no client tokens"},
 		blocksigner.ErrConsensusChange: errorInfo{400, "CH150", "Refuse to sign block with consensus change"},
 

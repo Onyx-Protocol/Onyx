@@ -27,11 +27,12 @@ const (
 )
 
 var (
-	ErrBadGenerator    = errors.New("generator returned an unsuccessful response")
-	ErrBadSignerURL    = errors.New("block signer URL is invalid")
-	ErrBadSignerPubkey = errors.New("block signer pubkey is invalid")
-	ErrBadQuorum       = errors.New("quorum must be greater than 0 if there are signers")
-	ErrNoProdBlockPub  = errors.New("blockpub cannot be empty in production")
+	ErrBadGenerator      = errors.New("generator returned an unsuccessful response")
+	ErrBadSignerURL      = errors.New("block signer URL is invalid")
+	ErrBadSignerPubkey   = errors.New("block signer pubkey is invalid")
+	ErrBadQuorum         = errors.New("quorum must be greater than 0 if there are signers")
+	ErrNoProdBlockPub    = errors.New("blockpub cannot be empty in production")
+	ErrNoProdBlockHSMURL = errors.New("block hsm URL cannot be empty in production")
 
 	Version, BuildCommit, BuildDate string
 	Production                      bool
@@ -136,6 +137,10 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	var signingKeys []ed25519.PublicKey
 	if c.IsSigner {
 		var blockPub ed25519.PublicKey
+		err = checkProdBlockHSMURL(c.BlockHSMURL)
+		if err != nil {
+			return err
+		}
 		if c.BlockPub == "" {
 			blockPub, err = getOrCreateDevKey(ctx, db, c)
 			if err != nil {

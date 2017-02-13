@@ -29,3 +29,7 @@ func getOrCreateDevKey(ctx context.Context, db pg.DB, c *Config) (blockPub []byt
 	return blockPub, nil
 
 }
+
+func checkProdBlockHSMURL(_ string) error {
+	return nil
+}
