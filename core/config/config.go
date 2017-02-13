@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"time"
 
-	"chain/core/mockhsm"
 	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
@@ -18,7 +17,6 @@ import (
 	"chain/database/sql"
 	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -33,6 +31,7 @@ var (
 	ErrBadSignerURL    = errors.New("block signer URL is invalid")
 	ErrBadSignerPubkey = errors.New("block signer pubkey is invalid")
 	ErrBadQuorum       = errors.New("quorum must be greater than 0 if there are signers")
+	ErrNoProdBlockPub  = errors.New("blockpub cannot be empty in production")
 
 	Version, BuildCommit, BuildDate string
 	Production                      bool
@@ -112,7 +111,8 @@ func Load(ctx context.Context, db pg.DB) (*Config, error) {
 // the caller must ensure that the new configuration is properly reloaded,
 // for example by restarting the process.
 //
-// If c.IsSigner is true, Configure generates a new mockhsm keypair
+// When running in non-production mode, if c.IsSigner is true and c.BlockPub is empty,
+// Configure generates a new mockhsm keypair
 // for signing blocks, and assigns it to c.BlockPub.
 //
 // If c.IsGenerator is true, Configure creates an initial block,
@@ -137,19 +137,10 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	if c.IsSigner {
 		var blockPub ed25519.PublicKey
 		if c.BlockPub == "" {
-			hsm := mockhsm.New(db)
-			corePub, created, err := hsm.GetOrCreate(ctx, autoBlockKeyAlias)
+			blockPub, err = getOrCreateDevKey(ctx, db, c)
 			if err != nil {
 				return err
 			}
-			blockPub = corePub.Pub
-			blockPubStr := hex.EncodeToString(blockPub)
-			if created {
-				log.Messagef(ctx, "Generated new block-signing key %s\n", blockPubStr)
-			} else {
-				log.Messagef(ctx, "Using block-signing key %s\n", blockPubStr)
-			}
-			c.BlockPub = blockPubStr
 		} else {
 			blockPub, err = hex.DecodeString(c.BlockPub)
 			if err != nil {
