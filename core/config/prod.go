@@ -3,8 +3,9 @@
 package config
 
 import (
-	"chain/database/pg"
 	"context"
+
+	"chain/database/pg"
 )
 
 func getOrCreateDevKey(_ context.Context, _ pg.DB, _ *Config) (blockpub []byte, err error) {

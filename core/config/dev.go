@@ -3,11 +3,12 @@
 package config
 
 import (
+	"context"
+	"encoding/hex"
+
 	"chain/core/mockhsm"
 	"chain/database/pg"
 	"chain/log"
-	"context"
-	"encoding/hex"
 )
 
 func getOrCreateDevKey(ctx context.Context, db pg.DB, c *Config) (blockPub []byte, err error) {
