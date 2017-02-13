@@ -73,7 +73,7 @@ var (
 	indexTxs      = env.Bool("INDEX_TRANSACTIONS", true)
 
 	// build vars; initialized by the linker
-	buildTag    = "dev"
+	buildTag    = "?"
 	buildCommit = "?"
 	buildDate   = "?"
 
@@ -93,7 +93,7 @@ func init() {
 		version = latestVersion + "-" + buildTag
 	} else {
 		// -dev suffix indicates intermediate, non-release build
-		version = latestVersion + "-dev"
+		version = latestVersion + "+changes"
 	}
 
 	prodStr := "no"
@@ -121,7 +121,7 @@ func main() {
 	flag.Parse()
 
 	if *v {
-		fmt.Printf("version: %s\n", config.Version)
+		fmt.Printf("cored version: %s production=%t\n", config.Version, config.Production)
 		return
 	}
 	runServer()
