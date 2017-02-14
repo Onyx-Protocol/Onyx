@@ -217,7 +217,6 @@ func TestTransfer(t *testing.T) {
 	go api.Accounts.ProcessBlocks(ctx)
 	api.Indexer.RegisterAnnotator(api.Accounts.AnnotateTxs)
 	api.Indexer.RegisterAnnotator(api.Assets.AnnotateTxs)
-	api.init()
 
 	// TODO(jackson): Replace this with a mock leader.
 	var wg sync.WaitGroup

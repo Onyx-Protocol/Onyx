@@ -19,6 +19,31 @@ import (
 
 var defaultTxTTL = 5 * time.Minute
 
+func (a *API) actionDecoder(action string) (func([]byte) (txbuilder.Action, error), bool) {
+	var decoder func([]byte) (txbuilder.Action, error)
+	switch action {
+	case "control_account":
+		decoder = a.Accounts.DecodeControlAction
+	case "control_program":
+		decoder = txbuilder.DecodeControlProgramAction
+	case "control_receiver":
+		decoder = txbuilder.DecodeControlReceiverAction
+	case "issue":
+		decoder = a.Assets.DecodeIssueAction
+	case "retire":
+		decoder = txbuilder.DecodeRetireAction
+	case "spend_account":
+		decoder = a.Accounts.DecodeSpendAction
+	case "spend_account_unspent_output":
+		decoder = a.Accounts.DecodeSpendUTXOAction
+	case "set_transaction_reference_data":
+		decoder = txbuilder.DecodeSetTxRefDataAction
+	default:
+		return nil, false
+	}
+	return decoder, true
+}
+
 func (a *API) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
 	err := a.filterAliases(ctx, req)
 	if err != nil {
@@ -30,7 +55,7 @@ func (a *API) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Te
 		if !ok {
 			return nil, errors.WithDetailf(errBadActionType, "no action type provided on action %d", i)
 		}
-		decoder, ok := a.actionDecoders[typ]
+		decoder, ok := a.actionDecoder(typ)
 		if !ok {
 			return nil, errors.WithDetailf(errBadActionType, "unknown action type %q on action %d", typ, i)
 		}
