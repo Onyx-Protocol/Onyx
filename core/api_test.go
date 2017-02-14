@@ -194,7 +194,8 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	Handler(&API{Config: &config.Config{}})
+	m := &MockHSMHandler{}
+	Handler(&API{Config: &config.Config{}}, m.Register)
 }
 
 func TestTransfer(t *testing.T) {

@@ -29,7 +29,6 @@ import (
 	"chain/core/generator"
 	"chain/core/leader"
 	"chain/core/migrate"
-	"chain/core/mockhsm"
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/rpc"
@@ -234,11 +233,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 
-	var mockHSM *mockhsm.HSM
-	if !prod {
-		mockHSM = mockhsm.New(db)
-	}
-
 	var generatorSigners []generator.BlockSigner
 	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
 	if conf.IsSigner {
@@ -247,7 +241,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
 
-		var hsm blocksigner.Signer = mockHSM
+		var hsm blocksigner.Signer
 		if conf.BlockHSMURL != "" {
 			// TODO(ameets): potential option to take only a password when configuring
 			//  and convert to an access token string here for BlockHSMAccessToken
@@ -259,6 +253,11 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 				BuildTag:     buildTag,
 				BlockchainID: conf.BlockchainID.String(),
 			}}
+		} else {
+			hsm, err = devHSM(db)
+			if err != nil {
+				chainlog.Fatal(ctx, chainlog.KeyError, err)
+			}
 		}
 		s := blocksigner.New(blockPub, hsm, db, c)
 
@@ -328,7 +327,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		PinStore:     pinStore,
 		Assets:       assets,
 		Accounts:     accounts,
-		MockHSM:      mockHSM,
 		Submitter:    submitter,
 		TxFeeds:      &txfeed.Tracker{DB: db},
 		Indexer:      indexer,
@@ -398,7 +396,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		}
 	})
 
-	handler := core.Handler(h)
+	handler := core.Handler(h, hsmRegister(db))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set(rpc.HeaderBlockchainID, conf.BlockchainID.String())
@@ -412,7 +410,7 @@ func launchUnconfiguredCore(ctx context.Context, db pg.DB) http.Handler {
 		DB:           db,
 		AltAuth:      authLoopbackInDev,
 		AccessTokens: &accesstoken.CredentialStore{DB: db},
-	})
+	}, nil)
 }
 
 // remoteSigner defines the address and public key of another Core

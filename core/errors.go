@@ -8,7 +8,6 @@ import (
 	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/config"
-	"chain/core/mockhsm"
 	"chain/core/query"
 	"chain/core/query/filter"
 	"chain/core/rpc"
@@ -65,19 +64,18 @@ var (
 	// See chain.com/docs.
 	errorInfoTab = map[error]errorInfo{
 		// General error namespace (0xx)
-		context.DeadlineExceeded:     errorInfo{408, "CH001", "Request timed out"},
-		pg.ErrUserInputNotFound:      errorInfo{400, "CH002", "Not found"},
-		httpjson.ErrBadRequest:       errorInfo{400, "CH003", "Invalid request body"},
-		errBadReqHeader:              errorInfo{400, "CH004", "Invalid request header"},
-		errNotFound:                  errorInfo{404, "CH006", "Not found"},
-		errRateLimited:               errorInfo{429, "CH007", "Request limit exceeded"},
-		errLeaderElection:            errorInfo{503, "CH008", "Electing a new leader for the core; try again soon"},
-		errNotAuthenticated:          errorInfo{401, "CH009", "Request could not be authenticated"},
-		txbuilder.ErrMissingFields:   errorInfo{400, "CH010", "One or more fields are missing"},
-		asset.ErrDuplicateAlias:      errorInfo{400, "CH050", "Alias already exists"},
-		account.ErrDuplicateAlias:    errorInfo{400, "CH050", "Alias already exists"},
-		txfeed.ErrDuplicateAlias:     errorInfo{400, "CH050", "Alias already exists"},
-		mockhsm.ErrDuplicateKeyAlias: errorInfo{400, "CH050", "Alias already exists"},
+		context.DeadlineExceeded:   errorInfo{408, "CH001", "Request timed out"},
+		pg.ErrUserInputNotFound:    errorInfo{400, "CH002", "Not found"},
+		httpjson.ErrBadRequest:     errorInfo{400, "CH003", "Invalid request body"},
+		errBadReqHeader:            errorInfo{400, "CH004", "Invalid request header"},
+		errNotFound:                errorInfo{404, "CH006", "Not found"},
+		errRateLimited:             errorInfo{429, "CH007", "Request limit exceeded"},
+		errLeaderElection:          errorInfo{503, "CH008", "Electing a new leader for the core; try again soon"},
+		errNotAuthenticated:        errorInfo{401, "CH009", "Request could not be authenticated"},
+		txbuilder.ErrMissingFields: errorInfo{400, "CH010", "One or more fields are missing"},
+		asset.ErrDuplicateAlias:    errorInfo{400, "CH050", "Alias already exists"},
+		account.ErrDuplicateAlias:  errorInfo{400, "CH050", "Alias already exists"},
+		txfeed.ErrDuplicateAlias:   errorInfo{400, "CH050", "Alias already exists"},
 
 		// Core error namespace
 		errUnconfigured:                errorInfo{400, "CH100", "This core still needs to be configured"},
@@ -138,8 +136,6 @@ var (
 		account.ErrReserved:     errorInfo{400, "CH761", "Some outputs are reserved; try again"},
 
 		// Mock HSM error namespace (80x)
-		mockhsm.ErrInvalidAfter:         errorInfo{400, "CH801", "Invalid `after` in query"},
-		mockhsm.ErrTooManyAliasesToList: errorInfo{400, "CH802", "Too many aliases to list"},
 	}
 )
 
