@@ -14,7 +14,6 @@ import (
 	"chain/core/accesstoken"
 	"chain/core/config"
 	"chain/core/migrate"
-	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
 	"chain/database/sql"
 	chainjson "chain/encoding/json"
@@ -149,21 +148,6 @@ func configGenerator(db *sql.DB, args []string) {
 	}
 
 	fmt.Println("blockchain id", conf.BlockchainID)
-}
-
-func createBlockKeyPair(db *sql.DB, args []string) {
-	if len(args) != 0 {
-		fatalln("error: create-block-keypair takes no args")
-	}
-
-	hsm := mockhsm.New(db)
-	ctx := context.Background()
-	pub, err := hsm.Create(ctx, "block_key")
-	if err != nil {
-		fatalln("error:", err)
-	}
-
-	fmt.Printf("%x\n", pub.Pub)
 }
 
 func createToken(db *sql.DB, args []string) {
