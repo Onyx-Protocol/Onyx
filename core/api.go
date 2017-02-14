@@ -68,9 +68,8 @@ type API struct {
 	Signer        func(context.Context, *bc.Block) ([]byte, error)
 	RequestLimits []RequestLimit
 
-	once           sync.Once
-	handler        http.Handler
-	actionDecoders map[string]func(data []byte) (txbuilder.Action, error)
+	once    sync.Once
+	handler http.Handler
 
 	healthMu     sync.Mutex
 	healthErrors map[string]interface{}
@@ -95,18 +94,6 @@ func maxBytes(h http.Handler) http.Handler {
 }
 
 func (a *API) init() {
-	// Setup the available transact actions.
-	a.actionDecoders = map[string]func(data []byte) (txbuilder.Action, error){
-		"control_account":                a.Accounts.DecodeControlAction,
-		"control_program":                txbuilder.DecodeControlProgramAction,
-		"control_receiver":               txbuilder.DecodeControlReceiverAction,
-		"issue":                          a.Assets.DecodeIssueAction,
-		"retire":                         txbuilder.DecodeRetireAction,
-		"spend_account":                  a.Accounts.DecodeSpendAction,
-		"spend_account_unspent_output":   a.Accounts.DecodeSpendUTXOAction,
-		"set_transaction_reference_data": txbuilder.DecodeSetTxRefDataAction,
-	}
-
 	// Setup the muxer.
 	needConfig := jsonHandler
 	if a.Config == nil {
