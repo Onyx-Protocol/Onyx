@@ -50,7 +50,7 @@ var (
 )
 
 // Handler serves the Chain HTTP API
-type Handler struct {
+type API struct {
 	Chain         *protocol.Chain
 	Store         *txdb.Store
 	PinStore      *pin.Store
@@ -94,22 +94,22 @@ func maxBytes(h http.Handler) http.Handler {
 	})
 }
 
-func (h *Handler) init() {
+func (a *API) init() {
 	// Setup the available transact actions.
-	h.actionDecoders = map[string]func(data []byte) (txbuilder.Action, error){
-		"control_account":                h.Accounts.DecodeControlAction,
+	a.actionDecoders = map[string]func(data []byte) (txbuilder.Action, error){
+		"control_account":                a.Accounts.DecodeControlAction,
 		"control_program":                txbuilder.DecodeControlProgramAction,
 		"control_receiver":               txbuilder.DecodeControlReceiverAction,
-		"issue":                          h.Assets.DecodeIssueAction,
+		"issue":                          a.Assets.DecodeIssueAction,
 		"retire":                         txbuilder.DecodeRetireAction,
-		"spend_account":                  h.Accounts.DecodeSpendAction,
-		"spend_account_unspent_output":   h.Accounts.DecodeSpendUTXOAction,
+		"spend_account":                  a.Accounts.DecodeSpendAction,
+		"spend_account_unspent_output":   a.Accounts.DecodeSpendUTXOAction,
 		"set_transaction_reference_data": txbuilder.DecodeSetTxRefDataAction,
 	}
 
 	// Setup the muxer.
 	needConfig := jsonHandler
-	if h.Config == nil {
+	if a.Config == nil {
 		needConfig = func(f interface{}) http.Handler {
 			return alwaysError(errUnconfigured)
 		}
@@ -123,48 +123,48 @@ func (h *Handler) init() {
 	m := http.NewServeMux()
 	m.Handle("/", alwaysError(errNotFound))
 
-	m.Handle("/create-account", needConfig(h.createAccount))
-	m.Handle("/create-asset", needConfig(h.createAsset))
-	m.Handle("/build-transaction", needConfig(h.build))
-	m.Handle("/submit-transaction", needConfig(h.submit))
-	m.Handle("/create-control-program", needConfig(h.createControlProgram)) // DEPRECATED
-	m.Handle("/create-account-receiver", needConfig(h.createAccountReceiver))
-	m.Handle("/create-transaction-feed", needConfig(h.createTxFeed))
-	m.Handle("/get-transaction-feed", needConfig(h.getTxFeed))
-	m.Handle("/update-transaction-feed", needConfig(h.updateTxFeed))
-	m.Handle("/delete-transaction-feed", needConfig(h.deleteTxFeed))
-	m.Handle("/mockhsm/create-key", devOnly(needConfig(h.mockhsmCreateKey)))
-	m.Handle("/mockhsm/list-keys", devOnly(needConfig(h.mockhsmListKeys)))
-	m.Handle("/mockhsm/delkey", devOnly(needConfig(h.mockhsmDelKey)))
-	m.Handle("/mockhsm/sign-transaction", devOnly(needConfig(h.mockhsmSignTemplates)))
-	m.Handle("/list-accounts", needConfig(h.listAccounts))
-	m.Handle("/list-assets", needConfig(h.listAssets))
-	m.Handle("/list-transaction-feeds", needConfig(h.listTxFeeds))
-	m.Handle("/list-transactions", needConfig(h.listTransactions))
-	m.Handle("/list-balances", needConfig(h.listBalances))
-	m.Handle("/list-unspent-outputs", needConfig(h.listUnspentOutputs))
-	m.Handle("/reset", devOnly(needConfig(h.reset)))
+	m.Handle("/create-account", needConfig(a.createAccount))
+	m.Handle("/create-asset", needConfig(a.createAsset))
+	m.Handle("/build-transaction", needConfig(a.build))
+	m.Handle("/submit-transaction", needConfig(a.submit))
+	m.Handle("/create-control-program", needConfig(a.createControlProgram)) // DEPRECATED
+	m.Handle("/create-account-receiver", needConfig(a.createAccountReceiver))
+	m.Handle("/create-transaction-feed", needConfig(a.createTxFeed))
+	m.Handle("/get-transaction-feed", needConfig(a.getTxFeed))
+	m.Handle("/update-transaction-feed", needConfig(a.updateTxFeed))
+	m.Handle("/delete-transaction-feed", needConfig(a.deleteTxFeed))
+	m.Handle("/mockhsm/create-key", devOnly(needConfig(a.mockhsmCreateKey)))
+	m.Handle("/mockhsm/list-keys", devOnly(needConfig(a.mockhsmListKeys)))
+	m.Handle("/mockhsm/delkey", devOnly(needConfig(a.mockhsmDelKey)))
+	m.Handle("/mockhsm/sign-transaction", devOnly(needConfig(a.mockhsmSignTemplates)))
+	m.Handle("/list-accounts", needConfig(a.listAccounts))
+	m.Handle("/list-assets", needConfig(a.listAssets))
+	m.Handle("/list-transaction-feeds", needConfig(a.listTxFeeds))
+	m.Handle("/list-transactions", needConfig(a.listTransactions))
+	m.Handle("/list-balances", needConfig(a.listBalances))
+	m.Handle("/list-unspent-outputs", needConfig(a.listUnspentOutputs))
+	m.Handle("/reset", devOnly(needConfig(a.reset)))
 
 	m.Handle(networkRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *bc.Tx) error {
-		return h.Submitter.Submit(ctx, tx)
+		return a.Submitter.Submit(ctx, tx)
 	}))
-	m.Handle(networkRPCPrefix+"get-blocks", needConfig(h.getBlocksRPC)) // DEPRECATED: use get-block instead
-	m.Handle(networkRPCPrefix+"get-block", needConfig(h.getBlockRPC))
-	m.Handle(networkRPCPrefix+"get-snapshot-info", needConfig(h.getSnapshotInfoRPC))
-	m.Handle(networkRPCPrefix+"get-snapshot", http.HandlerFunc(h.getSnapshotRPC))
-	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(h.leaderSignHandler(h.Signer)))
+	m.Handle(networkRPCPrefix+"get-blocks", needConfig(a.getBlocksRPC)) // DEPRECATED: use get-block instead
+	m.Handle(networkRPCPrefix+"get-block", needConfig(a.getBlockRPC))
+	m.Handle(networkRPCPrefix+"get-snapshot-info", needConfig(a.getSnapshotInfoRPC))
+	m.Handle(networkRPCPrefix+"get-snapshot", http.HandlerFunc(a.getSnapshotRPC))
+	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(a.leaderSignHandler(a.Signer)))
 	m.Handle(networkRPCPrefix+"block-height", needConfig(func(ctx context.Context) map[string]uint64 {
-		h := h.Chain.Height()
+		h := a.Chain.Height()
 		return map[string]uint64{
 			"block_height": h,
 		}
 	}))
 
-	m.Handle("/create-access-token", jsonHandler(h.createAccessToken))
-	m.Handle("/list-access-tokens", jsonHandler(h.listAccessTokens))
-	m.Handle("/delete-access-token", jsonHandler(h.deleteAccessToken))
-	m.Handle("/configure", jsonHandler(h.configure))
-	m.Handle("/info", jsonHandler(h.info))
+	m.Handle("/create-access-token", jsonHandler(a.createAccessToken))
+	m.Handle("/list-access-tokens", jsonHandler(a.listAccessTokens))
+	m.Handle("/delete-access-token", jsonHandler(a.deleteAccessToken))
+	m.Handle("/configure", jsonHandler(a.configure))
+	m.Handle("/info", jsonHandler(a.info))
 
 	m.Handle("/debug/vars", http.HandlerFunc(expvarHandler))
 	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
@@ -180,27 +180,27 @@ func (h *Handler) init() {
 	})
 
 	var handler = (&apiAuthn{
-		tokens:   h.AccessTokens,
+		tokens:   a.AccessTokens,
 		tokenMap: make(map[string]tokenResult),
-		alt:      h.AltAuth,
+		alt:      a.AltAuth,
 	}).handler(latencyHandler)
 	handler = maxBytes(handler)
 	handler = webAssetsHandler(handler)
 	handler = healthHandler(handler)
-	for _, l := range h.RequestLimits {
+	for _, l := range a.RequestLimits {
 		handler = limit.Handler(handler, alwaysError(errRateLimited), l.PerSecond, l.Burst, l.Key)
 	}
 	handler = gzip.Handler{Handler: handler}
 	handler = coreCounter(handler)
 	handler = reqid.Handler(handler)
 	handler = timeoutContextHandler(handler)
-	h.handler = handler
+	a.handler = handler
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.once.Do(h.init)
+func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	a.once.Do(a.init)
 
-	h.handler.ServeHTTP(w, r)
+	a.handler.ServeHTTP(w, r)
 }
 
 // Used as a request object for api queries
@@ -282,7 +282,7 @@ func webAssetsHandler(next http.Handler) http.Handler {
 	})
 }
 
-func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, error)) func(context.Context, *bc.Block) ([]byte, error) {
+func (a *API) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, error)) func(context.Context, *bc.Block) ([]byte, error) {
 	return func(ctx context.Context, b *bc.Block) ([]byte, error) {
 		if f == nil {
 			return nil, errNotFound // TODO(kr): is this really the right error here?
@@ -291,7 +291,7 @@ func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, 
 			return f(ctx, b)
 		}
 		var resp []byte
-		err := h.forwardToLeader(ctx, "/rpc/signer/sign-block", b, &resp)
+		err := a.forwardToLeader(ctx, "/rpc/signer/sign-block", b, &resp)
 		return resp, err
 	}
 }
@@ -300,8 +300,8 @@ func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, 
 // process. It propagates the same credentials used in the current
 // request. For that reason, it cannot be used outside of a request-
 // handling context.
-func (h *Handler) forwardToLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
-	addr, err := leader.Address(ctx, h.DB)
+func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
+	addr, err := leader.Address(ctx, a.DB)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -309,7 +309,7 @@ func (h *Handler) forwardToLeader(ctx context.Context, path string, body interfa
 	// Don't infinite loop if the leader's address is our own address.
 	// This is possible if we just became the leader. The client should
 	// just retry.
-	if addr == h.Addr {
+	if addr == a.Addr {
 		return errLeaderElection
 	}
 

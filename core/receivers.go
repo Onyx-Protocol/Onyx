@@ -9,7 +9,7 @@ import (
 )
 
 // POST /create-account-receiver
-func (h *Handler) createAccountReceiver(ctx context.Context, ins []struct {
+func (a *API) createAccountReceiver(ctx context.Context, ins []struct {
 	AccountID    string    `json:"account_id"`
 	AccountAlias string    `json:"account_alias"`
 	ExpiresAt    time.Time `json:"expires_at"`
@@ -24,7 +24,7 @@ func (h *Handler) createAccountReceiver(ctx context.Context, ins []struct {
 			defer wg.Done()
 			defer batchRecover(subctx, &responses[i])
 
-			receiver, err := h.Accounts.CreateReceiver(subctx, ins[i].AccountID, ins[i].AccountAlias, ins[i].ExpiresAt)
+			receiver, err := a.Accounts.CreateReceiver(subctx, ins[i].AccountID, ins[i].AccountAlias, ins[i].ExpiresAt)
 			if err != nil {
 				responses[i] = err
 			} else {

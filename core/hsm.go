@@ -9,17 +9,17 @@ import (
 	"chain/net/http/httpjson"
 )
 
-func (h *Handler) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {
-	return h.MockHSM.XCreate(ctx, in.Alias)
+func (a *API) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {
+	return a.MockHSM.XCreate(ctx, in.Alias)
 }
 
-func (h *Handler) mockhsmListKeys(ctx context.Context, query requestQuery) (page, error) {
+func (a *API) mockhsmListKeys(ctx context.Context, query requestQuery) (page, error) {
 	limit := query.PageSize
 	if limit == 0 {
 		limit = defGenericPageSize
 	}
 
-	xpubs, after, err := h.MockHSM.ListKeys(ctx, query.Aliases, query.After, limit)
+	xpubs, after, err := a.MockHSM.ListKeys(ctx, query.Aliases, query.After, limit)
 	if err != nil {
 		return page{}, err
 	}
@@ -38,17 +38,17 @@ func (h *Handler) mockhsmListKeys(ctx context.Context, query requestQuery) (page
 	}, nil
 }
 
-func (h *Handler) mockhsmDelKey(ctx context.Context, xpub chainkd.XPub) error {
-	return h.MockHSM.DeleteChainKDKey(ctx, xpub)
+func (a *API) mockhsmDelKey(ctx context.Context, xpub chainkd.XPub) error {
+	return a.MockHSM.DeleteChainKDKey(ctx, xpub)
 }
 
-func (h *Handler) mockhsmSignTemplates(ctx context.Context, x struct {
+func (a *API) mockhsmSignTemplates(ctx context.Context, x struct {
 	Txs   []*txbuilder.Template `json:"transactions"`
 	XPubs []chainkd.XPub        `json:"xpubs"`
 }) []interface{} {
 	resp := make([]interface{}, 0, len(x.Txs))
 	for _, tx := range x.Txs {
-		err := txbuilder.Sign(ctx, tx, x.XPubs, h.mockhsmSignTemplate)
+		err := txbuilder.Sign(ctx, tx, x.XPubs, a.mockhsmSignTemplate)
 		if err != nil {
 			info, _ := errInfo(err)
 			resp = append(resp, info)
@@ -59,8 +59,8 @@ func (h *Handler) mockhsmSignTemplates(ctx context.Context, x struct {
 	return resp
 }
 
-func (h *Handler) mockhsmSignTemplate(ctx context.Context, xpub chainkd.XPub, path [][]byte, data [32]byte) ([]byte, error) {
-	sigBytes, err := h.MockHSM.XSign(ctx, xpub, path, data[:])
+func (a *API) mockhsmSignTemplate(ctx context.Context, xpub chainkd.XPub, path [][]byte, data [32]byte) ([]byte, error) {
+	sigBytes, err := a.MockHSM.XSign(ctx, xpub, path, data[:])
 	if err == mockhsm.ErrNoKey {
 		return nil, nil
 	}

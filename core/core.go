@@ -27,7 +27,7 @@ const (
 	networkRPCVersion = 1
 )
 
-func (h *Handler) reset(ctx context.Context, req struct {
+func (a *API) reset(ctx context.Context, req struct {
 	Everything bool `json:"everything"`
 }) error {
 	dataToReset := "blockchain"
@@ -40,29 +40,29 @@ func (h *Handler) reset(ctx context.Context, req struct {
 	panic("unreached")
 }
 
-func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
-	if h.Config == nil {
+func (a *API) info(ctx context.Context) (map[string]interface{}, error) {
+	if a.Config == nil {
 		// never configured
 		return map[string]interface{}{
 			"is_configured": false,
 		}, nil
 	}
 	if leader.IsLeading() {
-		return h.leaderInfo(ctx)
+		return a.leaderInfo(ctx)
 	}
 	var resp map[string]interface{}
-	err := h.forwardToLeader(ctx, "/info", nil, &resp)
+	err := a.forwardToLeader(ctx, "/info", nil, &resp)
 	return resp, err
 }
 
-func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
+func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	var (
 		generatorHeight  uint64
 		generatorFetched time.Time
 		snapshot         = fetch.SnapshotProgress()
-		localHeight      = h.Chain.Height()
+		localHeight      = a.Chain.Height()
 	)
-	if h.Config.IsGenerator {
+	if a.Config.IsGenerator {
 		now := time.Now()
 		generatorHeight = localHeight
 		generatorFetched = now
@@ -85,22 +85,22 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 
 	m := map[string]interface{}{
 		"is_configured":                     true,
-		"configured_at":                     h.Config.ConfiguredAt,
-		"is_signer":                         h.Config.IsSigner,
-		"is_generator":                      h.Config.IsGenerator,
-		"generator_url":                     h.Config.GeneratorURL,
-		"generator_access_token":            obfuscateTokenSecret(h.Config.GeneratorAccessToken),
-		"blockchain_id":                     h.Config.BlockchainID,
+		"configured_at":                     a.Config.ConfiguredAt,
+		"is_signer":                         a.Config.IsSigner,
+		"is_generator":                      a.Config.IsGenerator,
+		"generator_url":                     a.Config.GeneratorURL,
+		"generator_access_token":            obfuscateTokenSecret(a.Config.GeneratorAccessToken),
+		"blockchain_id":                     a.Config.BlockchainID,
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
 		"is_production":                     config.Production,
 		"network_rpc_version":               networkRPCVersion,
-		"core_id":                           h.Config.ID,
+		"core_id":                           a.Config.ID,
 		"version":                           config.Version,
 		"build_commit":                      config.BuildCommit,
 		"build_date":                        config.BuildDate,
-		"health":                            h.health(),
+		"health":                            a.health(),
 	}
 
 	// Add in snapshot information if we're downloading a snapshot.
@@ -116,8 +116,8 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 	return m, nil
 }
 
-func (h *Handler) configure(ctx context.Context, x *config.Config) error {
-	if h.Config != nil {
+func (a *API) configure(ctx context.Context, x *config.Config) error {
+	if a.Config != nil {
 		return errAlreadyConfigured
 	}
 
@@ -125,7 +125,7 @@ func (h *Handler) configure(ctx context.Context, x *config.Config) error {
 		x.MaxIssuanceWindow.Duration = 24 * time.Hour
 	}
 
-	err := config.Configure(ctx, h.DB, x)
+	err := config.Configure(ctx, a.DB, x)
 	if err != nil {
 		return err
 	}

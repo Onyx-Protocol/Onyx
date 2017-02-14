@@ -10,7 +10,7 @@ import (
 )
 
 // POST /create-account
-func (h *Handler) createAccount(ctx context.Context, ins []struct {
+func (a *API) createAccount(ctx context.Context, ins []struct {
 	RootXPubs []chainkd.XPub `json:"root_xpubs"`
 	Quorum    int
 	Alias     string
@@ -32,7 +32,7 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 			defer wg.Done()
 			defer batchRecover(subctx, &responses[i])
 
-			acc, err := h.Accounts.Create(subctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
+			acc, err := a.Accounts.Create(subctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
 			if err != nil {
 				responses[i] = err
 				return

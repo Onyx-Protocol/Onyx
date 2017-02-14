@@ -10,7 +10,7 @@ import (
 )
 
 // POST /create-asset
-func (h *Handler) createAsset(ctx context.Context, ins []struct {
+func (a *API) createAsset(ctx context.Context, ins []struct {
 	Alias      string
 	RootXPubs  []chainkd.XPub `json:"root_xpubs"`
 	Quorum     int
@@ -33,7 +33,7 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 			defer wg.Done()
 			defer batchRecover(subctx, &responses[i])
 
-			a, err := h.Assets.Define(
+			a, err := a.Assets.Define(
 				subctx,
 				ins[i].RootXPubs,
 				ins[i].Quorum,

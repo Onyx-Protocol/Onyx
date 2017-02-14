@@ -177,7 +177,7 @@ func runServer() {
 		h = launchConfiguredCore(ctx, db, conf, processID)
 	} else {
 		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
-		h = &core.Handler{
+		h = &core.API{
 			DB:           db,
 			AltAuth:      authLoopbackInDev,
 			AccessTokens: &accesstoken.CredentialStore{DB: db},
@@ -326,7 +326,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	// GC old submitted txs periodically.
 	go core.CleanupSubmittedTxs(ctx, db)
 
-	h := &core.Handler{
+	h := &core.API{
 		Chain:        c,
 		Store:        store,
 		PinStore:     pinStore,
