@@ -1,7 +1,10 @@
+//+build !prod
+
 package core
 
 import (
 	"context"
+	"net/http"
 
 	"chain/core/mockhsm"
 	"chain/core/txbuilder"
@@ -9,17 +12,37 @@ import (
 	"chain/net/http/httpjson"
 )
 
-func (a *API) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {
-	return a.MockHSM.XCreate(ctx, in.Alias)
+func init() {
+	errorInfoTab[mockhsm.ErrDuplicateKeyAlias] = errorInfo{400, "CH050", "Alias already exists"}
+	errorInfoTab[mockhsm.ErrInvalidAfter] = errorInfo{400, "CH801", "Invalid `after` in query"}
+	errorInfoTab[mockhsm.ErrTooManyAliasesToList] = errorInfo{400, "CH802", "Too many aliases to list"}
 }
 
-func (a *API) mockhsmListKeys(ctx context.Context, query requestQuery) (page, error) {
+type MockHSMHandler struct {
+	MockHSM *mockhsm.HSM
+}
+
+func (h *MockHSMHandler) Register(m *http.ServeMux, a *API) {
+	// Setup the muxer.
+	needConfig := a.needConfig()
+
+	m.Handle("/mockhsm/create-key", needConfig(h.mockhsmCreateKey))
+	m.Handle("/mockhsm/list-keys", needConfig(h.mockhsmListKeys))
+	m.Handle("/mockhsm/delkey", needConfig(h.mockhsmDelKey))
+	m.Handle("/mockhsm/sign-transaction", needConfig(h.mockhsmSignTemplates))
+}
+
+func (h *MockHSMHandler) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {
+	return h.MockHSM.XCreate(ctx, in.Alias)
+}
+
+func (h *MockHSMHandler) mockhsmListKeys(ctx context.Context, query requestQuery) (page, error) {
 	limit := query.PageSize
 	if limit == 0 {
 		limit = defGenericPageSize
 	}
 
-	xpubs, after, err := a.MockHSM.ListKeys(ctx, query.Aliases, query.After, limit)
+	xpubs, after, err := h.MockHSM.ListKeys(ctx, query.Aliases, query.After, limit)
 	if err != nil {
 		return page{}, err
 	}
@@ -38,17 +61,17 @@ func (a *API) mockhsmListKeys(ctx context.Context, query requestQuery) (page, er
 	}, nil
 }
 
-func (a *API) mockhsmDelKey(ctx context.Context, xpub chainkd.XPub) error {
-	return a.MockHSM.DeleteChainKDKey(ctx, xpub)
+func (h *MockHSMHandler) mockhsmDelKey(ctx context.Context, xpub chainkd.XPub) error {
+	return h.MockHSM.DeleteChainKDKey(ctx, xpub)
 }
 
-func (a *API) mockhsmSignTemplates(ctx context.Context, x struct {
+func (h *MockHSMHandler) mockhsmSignTemplates(ctx context.Context, x struct {
 	Txs   []*txbuilder.Template `json:"transactions"`
 	XPubs []chainkd.XPub        `json:"xpubs"`
 }) []interface{} {
 	resp := make([]interface{}, 0, len(x.Txs))
 	for _, tx := range x.Txs {
-		err := txbuilder.Sign(ctx, tx, x.XPubs, a.mockhsmSignTemplate)
+		err := txbuilder.Sign(ctx, tx, x.XPubs, h.mockhsmSignTemplate)
 		if err != nil {
 			info, _ := errInfo(err)
 			resp = append(resp, info)
@@ -59,8 +82,8 @@ func (a *API) mockhsmSignTemplates(ctx context.Context, x struct {
 	return resp
 }
 
-func (a *API) mockhsmSignTemplate(ctx context.Context, xpub chainkd.XPub, path [][]byte, data [32]byte) ([]byte, error) {
-	sigBytes, err := a.MockHSM.XSign(ctx, xpub, path, data[:])
+func (h *MockHSMHandler) mockhsmSignTemplate(ctx context.Context, xpub chainkd.XPub, path [][]byte, data [32]byte) ([]byte, error) {
+	sigBytes, err := h.MockHSM.XSign(ctx, xpub, path, data[:])
 	if err == mockhsm.ErrNoKey {
 		return nil, nil
 	}

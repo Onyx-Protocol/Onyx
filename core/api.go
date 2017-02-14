@@ -15,7 +15,6 @@ import (
 	"chain/core/asset"
 	"chain/core/config"
 	"chain/core/leader"
-	"chain/core/mockhsm"
 	"chain/core/pin"
 	"chain/core/query"
 	"chain/core/rpc"
@@ -56,7 +55,6 @@ type API struct {
 	PinStore      *pin.Store
 	Assets        *asset.Registry
 	Accounts      *account.Manager
-	MockHSM       *mockhsm.HSM
 	Indexer       *query.Indexer
 	TxFeeds       *txfeed.Tracker
 	AccessTokens  *accesstoken.CredentialStore
@@ -90,14 +88,18 @@ func maxBytes(h http.Handler) http.Handler {
 	})
 }
 
-func Handler(a *API) http.Handler {
-	// Setup the muxer.
-	needConfig := jsonHandler
+func (a *API) needConfig() func(f interface{}) http.Handler {
 	if a.Config == nil {
-		needConfig = func(f interface{}) http.Handler {
+		return func(f interface{}) http.Handler {
 			return alwaysError(errUnconfigured)
 		}
 	}
+	return jsonHandler
+}
+
+func Handler(a *API, register func(*http.ServeMux, *API)) http.Handler {
+	// Setup the muxer.
+	needConfig := a.needConfig()
 
 	devOnly := func(h http.Handler) http.Handler { return h }
 	if config.Production {
@@ -117,10 +119,7 @@ func Handler(a *API) http.Handler {
 	m.Handle("/get-transaction-feed", needConfig(a.getTxFeed))
 	m.Handle("/update-transaction-feed", needConfig(a.updateTxFeed))
 	m.Handle("/delete-transaction-feed", needConfig(a.deleteTxFeed))
-	m.Handle("/mockhsm/create-key", devOnly(needConfig(a.mockhsmCreateKey)))
-	m.Handle("/mockhsm/list-keys", devOnly(needConfig(a.mockhsmListKeys)))
-	m.Handle("/mockhsm/delkey", devOnly(needConfig(a.mockhsmDelKey)))
-	m.Handle("/mockhsm/sign-transaction", devOnly(needConfig(a.mockhsmSignTemplates)))
+	m.Handle("/mockhsm", alwaysError(errProduction))
 	m.Handle("/list-accounts", needConfig(a.listAccounts))
 	m.Handle("/list-assets", needConfig(a.listAssets))
 	m.Handle("/list-transaction-feeds", needConfig(a.listTxFeeds))
@@ -155,6 +154,10 @@ func Handler(a *API) http.Handler {
 	m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 	m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+
+	if register != nil {
+		register(m, a)
+	}
 
 	latencyHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if l := latency(m, req); l != nil {
