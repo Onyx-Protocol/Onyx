@@ -194,7 +194,7 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	(&API{Config: &config.Config{}}).init()
+	Handler(&API{Config: &config.Config{}})
 }
 
 func TestTransfer(t *testing.T) {

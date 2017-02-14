@@ -37,6 +37,7 @@ import (
 	"chain/core/txdb"
 	"chain/core/txfeed"
 	"chain/crypto/ed25519"
+	"chain/database/pg"
 	"chain/database/sql"
 	"chain/encoding/json"
 	"chain/env"
@@ -176,12 +177,7 @@ func runServer() {
 	if conf != nil {
 		h = launchConfiguredCore(ctx, db, conf, processID)
 	} else {
-		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
-		h = &core.API{
-			DB:           db,
-			AltAuth:      authLoopbackInDev,
-			AccessTokens: &accesstoken.CredentialStore{DB: db},
-		}
+		h = launchUnconfiguredCore(ctx, db)
 	}
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
@@ -402,9 +398,20 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		}
 	})
 
+	handler := core.Handler(h)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set(rpc.HeaderBlockchainID, conf.BlockchainID.String())
-		h.ServeHTTP(w, req)
+		handler.ServeHTTP(w, req)
+	})
+}
+
+func launchUnconfiguredCore(ctx context.Context, db pg.DB) http.Handler {
+	chainlog.Messagef(ctx, "Launching as unconfigured Core.")
+	return core.Handler(&core.API{
+		DB:           db,
+		AltAuth:      authLoopbackInDev,
+		AccessTokens: &accesstoken.CredentialStore{DB: db},
 	})
 }
 
