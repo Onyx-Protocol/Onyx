@@ -25,7 +25,7 @@ func TestQueryWithClockSkew(t *testing.T) {
 	}
 
 	indexer := query.NewIndexer(db, c, pinStore)
-	h := &Handler{DB: db, Chain: c, Indexer: indexer}
+	api := &API{DB: db, Chain: c, Indexer: indexer}
 
 	tx := bc.NewTx(bc.TxData{})
 	block := &bc.Block{
@@ -40,7 +40,7 @@ func TestQueryWithClockSkew(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p, err := h.listTransactions(ctx, requestQuery{})
+	p, err := api.listTransactions(ctx, requestQuery{})
 	if err != nil {
 		t.Fatal(err)
 	}

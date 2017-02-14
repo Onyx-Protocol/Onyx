@@ -194,7 +194,7 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	(&Handler{Config: &config.Config{}}).init()
+	(&API{Config: &config.Config{}}).init()
 }
 
 func TestTransfer(t *testing.T) {
@@ -204,7 +204,7 @@ func TestTransfer(t *testing.T) {
 	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
-	handler := &Handler{
+	api := &API{
 		Chain:     c,
 		Submitter: g,
 		Assets:    asset.NewRegistry(db, c, pinStore),
@@ -212,12 +212,12 @@ func TestTransfer(t *testing.T) {
 		Indexer:   query.NewIndexer(db, c, pinStore),
 		DB:        db,
 	}
-	handler.Assets.IndexAssets(handler.Indexer)
-	handler.Accounts.IndexAccounts(handler.Indexer)
-	go handler.Accounts.ProcessBlocks(ctx)
-	handler.Indexer.RegisterAnnotator(handler.Accounts.AnnotateTxs)
-	handler.Indexer.RegisterAnnotator(handler.Assets.AnnotateTxs)
-	handler.init()
+	api.Assets.IndexAssets(api.Indexer)
+	api.Accounts.IndexAccounts(api.Indexer)
+	go api.Accounts.ProcessBlocks(ctx)
+	api.Indexer.RegisterAnnotator(api.Accounts.AnnotateTxs)
+	api.Indexer.RegisterAnnotator(api.Assets.AnnotateTxs)
+	api.init()
 
 	// TODO(jackson): Replace this with a mock leader.
 	var wg sync.WaitGroup
@@ -231,9 +231,9 @@ func TestTransfer(t *testing.T) {
 	account1Alias := "first-account"
 	account2Alias := "second-account"
 
-	assetID := coretest.CreateAsset(ctx, t, handler.Assets, nil, assetAlias, nil)
-	account1ID := coretest.CreateAccount(ctx, t, handler.Accounts, account1Alias, nil)
-	account2ID := coretest.CreateAccount(ctx, t, handler.Accounts, account2Alias, nil)
+	assetID := coretest.CreateAsset(ctx, t, api.Assets, nil, assetAlias, nil)
+	account1ID := coretest.CreateAccount(ctx, t, api.Accounts, account1Alias, nil)
+	account2ID := coretest.CreateAccount(ctx, t, api.Accounts, account2Alias, nil)
 
 	assetIDStr := assetID.String()
 
@@ -243,8 +243,8 @@ func TestTransfer(t *testing.T) {
 		Amount:  100,
 	}
 	txTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
-		handler.Assets.NewIssueAction(issueAssetAmount, nil),
-		handler.Accounts.NewControlAction(issueAssetAmount, account1ID, nil),
+		api.Assets.NewIssueAction(issueAssetAmount, nil),
+		api.Accounts.NewControlAction(issueAssetAmount, account1ID, nil),
 	}, time.Now().Add(time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -275,7 +275,7 @@ func TestTransfer(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	buildResult, err := handler.build(ctx, []*buildRequest{&buildReq})
+	buildResult, err := api.build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -298,7 +298,7 @@ func TestTransfer(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
-	_, err = handler.submitSingle(ctx, txTemplate, "none")
+	_, err = api.submitSingle(ctx, txTemplate, "none")
 	if err != nil && errors.Root(err) != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
 	}
@@ -316,7 +316,7 @@ func TestTransfer(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	buildResult, err = handler.build(ctx, []*buildRequest{&buildReq})
+	buildResult, err = api.build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -338,7 +338,7 @@ func TestTransfer(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	_, err = handler.submitSingle(ctx, txTemplate, "none")
+	_, err = api.submitSingle(ctx, txTemplate, "none")
 	if err != nil && errors.Root(err) != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
 	}

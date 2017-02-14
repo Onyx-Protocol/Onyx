@@ -16,9 +16,9 @@ func TestGetBlock(t *testing.T) {
 	ctx := context.Background()
 	store := txdb.NewStore(db)
 	chain := prottest.NewChainWithStorage(t, store)
-	h := &Handler{Chain: chain, Store: store}
+	api := &API{Chain: chain, Store: store}
 
-	block, err := h.getBlockRPC(ctx, 1)
+	block, err := api.getBlockRPC(ctx, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestGetBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	block, err = h.getBlockRPC(ctx, 2)
+	block, err = api.getBlockRPC(ctx, 2)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

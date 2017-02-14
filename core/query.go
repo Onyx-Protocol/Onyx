@@ -14,7 +14,7 @@ import (
 // an index or an ad-hoc filter.
 //
 // POST /list-accounts
-func (h *Handler) listAccounts(ctx context.Context, in requestQuery) (page, error) {
+func (a *API) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 	limit := in.PageSize
 	if limit == 0 {
 		limit = defGenericPageSize
@@ -22,7 +22,7 @@ func (h *Handler) listAccounts(ctx context.Context, in requestQuery) (page, erro
 	after := in.After
 
 	// Use the filter engine for querying account tags.
-	accounts, after, err := h.Indexer.Accounts(ctx, in.Filter, in.FilterParams, after, limit)
+	accounts, after, err := a.Indexer.Accounts(ctx, in.Filter, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running acc query")
 	}
@@ -41,7 +41,7 @@ func (h *Handler) listAccounts(ctx context.Context, in requestQuery) (page, erro
 // an index or an ad-hoc filter.
 //
 // POST /list-assets
-func (h *Handler) listAssets(ctx context.Context, in requestQuery) (page, error) {
+func (a *API) listAssets(ctx context.Context, in requestQuery) (page, error) {
 	limit := in.PageSize
 	if limit == 0 {
 		limit = defGenericPageSize
@@ -49,7 +49,7 @@ func (h *Handler) listAssets(ctx context.Context, in requestQuery) (page, error)
 	after := in.After
 
 	// Use the query engine for querying asset tags.
-	assets, after, err := h.Indexer.Assets(ctx, in.Filter, in.FilterParams, after, limit)
+	assets, after, err := a.Indexer.Assets(ctx, in.Filter, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running asset query")
 	}
@@ -64,7 +64,7 @@ func (h *Handler) listAssets(ctx context.Context, in requestQuery) (page, error)
 }
 
 // POST /list-balances
-func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
+func (a *API) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
 	var sumBy []filter.Field
 
 	// Since an empty SumBy yields a meaningless result, we'll provide a
@@ -89,7 +89,7 @@ func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result pag
 	}
 
 	// TODO(jackson): paginate this endpoint.
-	balances, err := h.Indexer.Balances(ctx, in.Filter, in.FilterParams, sumBy, timestampMS)
+	balances, err := a.Indexer.Balances(ctx, in.Filter, in.FilterParams, sumBy, timestampMS)
 	if err != nil {
 		return result, err
 	}
@@ -104,7 +104,7 @@ func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result pag
 // an index or an ad-hoc filter.
 //
 // POST /list-transactions
-func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
+func (a *API) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
 	var c context.CancelFunc
 	timeout := in.Timeout.Duration
 	if timeout != 0 {
@@ -132,13 +132,13 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 			return result, errors.Wrap(err, "decoding `after`")
 		}
 	} else {
-		after, err = h.Indexer.LookupTxAfter(ctx, in.StartTimeMS, endTimeMS)
+		after, err = a.Indexer.LookupTxAfter(ctx, in.StartTimeMS, endTimeMS)
 		if err != nil {
 			return result, err
 		}
 	}
 
-	txns, nextAfter, err := h.Indexer.Transactions(ctx, in.Filter, in.FilterParams, after, limit, in.AscLongPoll)
+	txns, nextAfter, err := a.Indexer.Transactions(ctx, in.Filter, in.FilterParams, after, limit, in.AscLongPoll)
 	if err != nil {
 		return result, errors.Wrap(err, "running tx query")
 	}
@@ -155,7 +155,7 @@ func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result
 // listTxFeeds is an http handler for listing txfeeds. It does not take a filter.
 //
 // POST /list-transaction-feeds
-func (h *Handler) listTxFeeds(ctx context.Context, in requestQuery) (page, error) {
+func (a *API) listTxFeeds(ctx context.Context, in requestQuery) (page, error) {
 	limit := in.PageSize
 	if limit == 0 {
 		limit = defGenericPageSize
@@ -163,7 +163,7 @@ func (h *Handler) listTxFeeds(ctx context.Context, in requestQuery) (page, error
 
 	after := in.After
 
-	txfeeds, after, err := h.TxFeeds.Query(ctx, after, limit)
+	txfeeds, after, err := a.TxFeeds.Query(ctx, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running txfeed query")
 	}
@@ -178,7 +178,7 @@ func (h *Handler) listTxFeeds(ctx context.Context, in requestQuery) (page, error
 }
 
 // POST /list-unspent-outputs
-func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
+func (a *API) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
 	limit := in.PageSize
 	if limit == 0 {
 		limit = defGenericPageSize
@@ -198,7 +198,7 @@ func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (resu
 	} else if timestampMS > math.MaxInt64 {
 		return result, errors.WithDetail(httpjson.ErrBadRequest, "timestamp is too large")
 	}
-	outputs, nextAfter, err := h.Indexer.Outputs(ctx, in.Filter, in.FilterParams, timestampMS, after, limit)
+	outputs, nextAfter, err := a.Indexer.Outputs(ctx, in.Filter, in.FilterParams, timestampMS, after, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "querying outputs")
 	}
