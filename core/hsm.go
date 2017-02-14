@@ -23,7 +23,6 @@ type MockHSMHandler struct {
 }
 
 func (h *MockHSMHandler) Register(m *http.ServeMux, a *API) {
-	// Setup the muxer.
 	needConfig := a.needConfig()
 
 	m.Handle("/mockhsm/create-key", needConfig(h.mockhsmCreateKey))
