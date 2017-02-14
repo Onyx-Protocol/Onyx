@@ -24,5 +24,5 @@ func hsmRegister(_ pg.DB) func(*http.ServeMux, *core.API) {
 }
 
 func devHSM(_ pg.DB) (blocksigner.Signer, error) {
-	return nil, errors.New("cannot use mockhsm in production")
+	return nil, errors.New("cannot use mockhsm in production, must configure block hsm url")
 }
