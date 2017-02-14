@@ -68,9 +68,6 @@ type API struct {
 	Signer        func(context.Context, *bc.Block) ([]byte, error)
 	RequestLimits []RequestLimit
 
-	once    sync.Once
-	handler http.Handler
-
 	healthMu     sync.Mutex
 	healthErrors map[string]interface{}
 }
@@ -93,7 +90,7 @@ func maxBytes(h http.Handler) http.Handler {
 	})
 }
 
-func (a *API) init() {
+func Handler(a *API) http.Handler {
 	// Setup the muxer.
 	needConfig := jsonHandler
 	if a.Config == nil {
@@ -181,13 +178,8 @@ func (a *API) init() {
 	handler = coreCounter(handler)
 	handler = reqid.Handler(handler)
 	handler = timeoutContextHandler(handler)
-	a.handler = handler
-}
 
-func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	a.once.Do(a.init)
-
-	a.handler.ServeHTTP(w, r)
+	return handler
 }
 
 // Used as a request object for api queries

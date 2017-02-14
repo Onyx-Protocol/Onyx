@@ -177,11 +177,11 @@ func runServer() {
 		h = launchConfiguredCore(ctx, db, conf, processID)
 	} else {
 		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
-		h = &core.API{
+		h = core.Handler(&core.API{
 			DB:           db,
 			AltAuth:      authLoopbackInDev,
 			AccessTokens: &accesstoken.CredentialStore{DB: db},
-		}
+		})
 	}
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
@@ -402,9 +402,11 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		}
 	})
 
+	handler := core.Handler(h)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set(rpc.HeaderBlockchainID, conf.BlockchainID.String())
-		h.ServeHTTP(w, req)
+		handler.ServeHTTP(w, req)
 	})
 }
 
