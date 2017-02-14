@@ -248,6 +248,9 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		}
 
 		var hsm blocksigner.Signer = mockHSM
+		if conf.BlockHSMURL == "" && prod {
+			chainlog.Fatal(ctx, chainlog.KeyError, errors.New("Misconfigured production block hsm"))
+		}
 		if conf.BlockHSMURL != "" {
 			// TODO(ameets): potential option to take only a password when configuring
 			//  and convert to an access token string here for BlockHSMAccessToken
