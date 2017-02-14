@@ -118,14 +118,12 @@ func configGenerator(db *sql.DB, args []string) {
 			if err != nil {
 				fatalln(usage)
 			}
+			if len(pubkey) != ed25519.PublicKeySize {
+				fatalln("error:", "bad ed25519 public key length")
+			}
 			url := args[i+1]
 			signers = append(signers, config.BlockSigner{
-				// Silently truncate the input (which is likely to be an xpub
-				// produced by the create-block-keypair subcommand) to
-				// bare-pubkey size.
-				// TODO(bobg): When the mockhsm can produce bare pubkeys,
-				// treat xpubs on input as an error instead.
-				Pubkey: pubkey[:ed25519.PublicKeySize],
+				Pubkey: pubkey,
 				URL:    url,
 			})
 		}
