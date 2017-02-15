@@ -170,8 +170,8 @@ func TestGenerateBlock(t *testing.T) {
 
 	// TODO(bobg): verify these hashes are correct
 	var wantTxRoot, wantAssetsRoot bc.Hash
-	copy(wantTxRoot[:], mustDecodeHex("f093e35c3bcc331ee9016b1ed09e2e2f6e9f5cc77415237b2f25fdfdf55a14a7"))
-	copy(wantAssetsRoot[:], mustDecodeHex("c2b8b829d77d687aa6ecd7908803e166911ec599874d19c32ac883f9de55f520"))
+	copy(wantTxRoot[:], mustDecodeHex("ed7f53b68f00dac4f6a1b93f706c1ae34d30b023a8d4eb1f6d09d2b016ca1cdd"))
+	copy(wantAssetsRoot[:], mustDecodeHex("7e3b7d5b6676568c770f3fe085054d6695427e59a36c2ddc073faf996eff7fca"))
 
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{
