@@ -964,7 +964,7 @@ func TestConfirmTx(t *testing.T) {
 	})
 
 	outid1 := tx.OutputID(0)
-	stateout := state.NewOutput(txout, outid1)
+	stateout := state.NewOutput(outid1)
 
 	snapshot := state.Empty()
 	err := snapshot.Tree.Insert(state.OutputTreeItem(stateout))

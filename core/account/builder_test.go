@@ -31,9 +31,9 @@ func TestAccountSourceReserve(t *testing.T) {
 		assets   = asset.NewRegistry(db, c, pinStore)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
-		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
-		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		out   = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
+		accID           = coretest.CreateAccount(ctx, t, accounts, "", nil)
+		asset           = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
+		txOut, stateOut = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
 	)
 
 	coretest.CreatePins(ctx, t, pinStore)
@@ -60,7 +60,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.OutputID, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
+	wantTxIns := []*bc.TxInput{bc.NewSpendInput(stateOut.OutputID, nil, txOut.AssetID, txOut.Amount, txOut.ControlProgram, nil)}
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
@@ -86,9 +86,9 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		assets   = asset.NewRegistry(db, c, pinStore)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
-		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
-		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		out   = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
+		accID           = coretest.CreateAccount(ctx, t, accounts, "", nil)
+		asset           = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
+		txOut, stateOut = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
 	)
 
 	coretest.CreatePins(ctx, t, pinStore)
@@ -99,7 +99,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
-	source := accounts.NewSpendUTXOAction(out.OutputID)
+	source := accounts.NewSpendUTXOAction(stateOut.OutputID)
 
 	builder := txbuilder.NewBuilder(time.Now().Add(5 * time.Minute))
 	err := source.Build(ctx, builder)
@@ -111,7 +111,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.OutputID, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
+	wantTxIns := []*bc.TxInput{bc.NewSpendInput(stateOut.OutputID, nil, txOut.AssetID, txOut.Amount, txOut.ControlProgram, nil)}
 
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
@@ -129,10 +129,14 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		assets   = asset.NewRegistry(db, c, pinStore)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
-		accID        = coretest.CreateAccount(ctx, t, accounts, "", nil)
-		asset        = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		_            = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
-		_            = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
+		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
+		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
+	)
+
+	coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
+	coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
+
+	var (
 		assetAmount1 = bc.AssetAmount{
 			AssetID: asset,
 			Amount:  1,

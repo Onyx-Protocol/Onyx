@@ -7,7 +7,6 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
-	"chain/protocol/state"
 	"chain/testutil"
 )
 
@@ -23,13 +22,11 @@ func TestLoadAccountInfo(t *testing.T) {
 	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
 
 	outs := []*rawOutput{{
-		Output: state.Output{
-			TxOutput: *to1,
-		},
+		AssetAmount:    to1.AssetAmount,
+		ControlProgram: to1.ControlProgram,
 	}, {
-		Output: state.Output{
-			TxOutput: *to2,
-		},
+		AssetAmount:    to2.AssetAmount,
+		ControlProgram: to2.ControlProgram,
 	}}
 
 	got, err := m.loadAccountInfo(ctx, outs)
