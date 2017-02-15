@@ -130,6 +130,11 @@ func (t *Tracker) Find(ctx context.Context, id, alias string) (*TxFeed, error) {
 	)
 
 	err := t.DB.QueryRow(ctx, q.String(), id).Scan(&feed.ID, &sqlAlias, &feed.Filter, &feed.After)
+	if err == sql.ErrNoRows {
+		err = errors.Sub(pg.ErrUserInputNotFound, err)
+		err = errors.WithDetailf(err, "alias: %s", alias)
+		return nil, err
+	}
 	if err != nil {
 		return nil, err
 	}
