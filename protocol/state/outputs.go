@@ -8,13 +8,11 @@ import (
 // for the validation process.
 type Output struct {
 	bc.OutputID
-	bc.TxOutput
 }
 
 // NewOutput creates a new Output.
-func NewOutput(o bc.TxOutput, outid bc.OutputID) *Output {
+func NewOutput(outid bc.OutputID) *Output {
 	return &Output{
-		TxOutput: o,
 		OutputID: outid,
 	}
 }
@@ -23,13 +21,8 @@ func NewOutput(o bc.TxOutput, outid bc.OutputID) *Output {
 // only includes the output data that is embedded within inputs (ex,
 // excludes reference data).
 func Prevout(in *bc.TxInput) *Output {
-	assetAmount := in.AssetAmount()
-	// TODO(oleg): for new outputid we need to have correct output commitment, not reconstruct this here
-	// Also we do not care about all these, but only about UnspentID
-	t := bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, in.ControlProgram(), nil)
 	return &Output{
 		OutputID: in.SpentOutputID(),
-		TxOutput: *t,
 	}
 }
 

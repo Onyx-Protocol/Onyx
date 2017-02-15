@@ -74,8 +74,10 @@ func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
 
 type rawOutput struct {
 	state.Output
-	txHash      bc.Hash
-	outputIndex uint32
+	bc.AssetAmount
+	ControlProgram []byte
+	txHash         bc.Hash
+	outputIndex    uint32
 }
 
 type accountOutput struct {
@@ -112,11 +114,12 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 		for j, out := range tx.Outputs {
 			out := &rawOutput{
 				Output: state.Output{
-					TxOutput: *out,
 					OutputID: tx.OutputID(uint32(j)),
 				},
-				txHash:      tx.ID,
-				outputIndex: uint32(j),
+				AssetAmount:    out.AssetAmount,
+				ControlProgram: out.ControlProgram,
+				txHash:         tx.ID,
+				outputIndex:    uint32(j),
 			}
 			outs = append(outs, out)
 		}
