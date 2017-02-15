@@ -92,7 +92,7 @@ func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		return errTooFewSigners
 	}
 
-	hashForSig := b.HashForSig()
+	hashForSig := b.Hash()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

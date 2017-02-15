@@ -176,3 +176,9 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 
 	return headerID, h.(*header), entryMap, nil
 }
+
+func mapBlockHeader(old *bc.BlockHeader) (bhID entryRef, bh *blockHeader, err error) {
+	bh = newBlockHeader(old.Version, old.Height, entryRef(old.PreviousBlockHash), old.TimestampMS, old.TransactionsMerkleRoot, old.AssetsMerkleRoot, old.ConsensusProgram)
+	bhID, err = entryID(bh)
+	return
+}
