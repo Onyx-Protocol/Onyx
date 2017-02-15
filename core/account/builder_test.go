@@ -33,7 +33,7 @@ func TestAccountSourceReserve(t *testing.T) {
 
 		accID           = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset           = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		txOut, stateOut = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
+		txOut, outputID = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
 	)
 
 	coretest.CreatePins(ctx, t, pinStore)
@@ -60,7 +60,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(stateOut.OutputID, nil, txOut.AssetID, txOut.Amount, txOut.ControlProgram, nil)}
+	wantTxIns := []*bc.TxInput{bc.NewSpendInput(outputID, nil, txOut.AssetID, txOut.Amount, txOut.ControlProgram, nil)}
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
@@ -88,7 +88,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 		accID           = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset           = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		txOut, stateOut = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
+		txOut, outputID = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
 	)
 
 	coretest.CreatePins(ctx, t, pinStore)
@@ -99,7 +99,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
-	source := accounts.NewSpendUTXOAction(stateOut.OutputID)
+	source := accounts.NewSpendUTXOAction(outputID)
 
 	builder := txbuilder.NewBuilder(time.Now().Add(5 * time.Minute))
 	err := source.Build(ctx, builder)
@@ -111,7 +111,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(stateOut.OutputID, nil, txOut.AssetID, txOut.Amount, txOut.ControlProgram, nil)}
+	wantTxIns := []*bc.TxInput{bc.NewSpendInput(outputID, nil, txOut.AssetID, txOut.Amount, txOut.ControlProgram, nil)}
 
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)

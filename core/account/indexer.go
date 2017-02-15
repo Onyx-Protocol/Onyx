@@ -12,7 +12,6 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
-	"chain/protocol/state"
 )
 
 // PinName is used to identify the pin associated with
@@ -73,7 +72,7 @@ func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
 }
 
 type rawOutput struct {
-	state.Output
+	bc.OutputID
 	bc.AssetAmount
 	ControlProgram []byte
 	txHash         bc.Hash
@@ -113,9 +112,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 		blockPositions[tx.ID] = uint32(i)
 		for j, out := range tx.Outputs {
 			out := &rawOutput{
-				Output: state.Output{
-					OutputID: tx.OutputID(uint32(j)),
-				},
+				OutputID:       tx.OutputID(uint32(j)),
 				AssetAmount:    out.AssetAmount,
 				ControlProgram: out.ControlProgram,
 				txHash:         tx.ID,
@@ -157,7 +154,7 @@ func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
 	return
 }
 
-// loadAccountInfo turns a set of state.Outputs into a set of
+// loadAccountInfo turns a set of output IDs into a set of
 // outputs by adding account annotations.  Outputs that can't be
 // annotated are excluded from the result.
 func (m *Manager) loadAccountInfo(ctx context.Context, outs []*rawOutput) ([]*accountOutput, error) {
