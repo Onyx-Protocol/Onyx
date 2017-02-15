@@ -45,8 +45,8 @@ func TestGeneratorRecovery(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	if confirmedBlock.HashForSig() != pendingBlock.HashForSig() {
-		t.Errorf("got=%s, want=%s", confirmedBlock.HashForSig(), pendingBlock.HashForSig())
+	if confirmedBlock.Hash() != pendingBlock.Hash() {
+		t.Errorf("got=%s, want=%s", confirmedBlock.Hash(), pendingBlock.Hash())
 	}
 }
 
@@ -113,7 +113,7 @@ type testSigner struct {
 }
 
 func (s testSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
-	hash := b.HashForSig()
+	hash := b.Hash()
 	return ed25519.Sign(s.privKey, hash[:]), nil
 }
 

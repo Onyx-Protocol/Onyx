@@ -10,6 +10,10 @@ import (
 
 func init() {
 	bc.TxHashesFunc = TxHashes
+	bc.BlockHeaderHashFunc = func(old *bc.BlockHeader) (bc.Hash, error) {
+		hash, _, err := mapBlockHeader(old)
+		return bc.Hash(hash), err
+	}
 }
 
 // TxHashes returns all hashes needed for validation and state updates.

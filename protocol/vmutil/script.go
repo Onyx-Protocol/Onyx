@@ -19,14 +19,14 @@ func IsUnspendable(prog []byte) bool {
 // program where nrequired of the keys in pubkeys are required to have
 // signed the block for success.  An ErrBadValue will be returned if
 // nrequired is larger than the number of keys provided.  The result
-// is: BLOCKSIGHASH <pubkey>... <nrequired> <npubkeys> CHECKMULTISIG
+// is: BLOCKHASH <pubkey>... <nrequired> <npubkeys> CHECKMULTISIG
 func BlockMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
 	err := checkMultiSigParams(int64(nrequired), int64(len(pubkeys)))
 	if err != nil {
 		return nil, err
 	}
 	builder := NewBuilder()
-	builder.AddOp(vm.OP_BLOCKSIGHASH)
+	builder.AddOp(vm.OP_BLOCKHASH)
 	for _, key := range pubkeys {
 		builder.AddData(key)
 	}

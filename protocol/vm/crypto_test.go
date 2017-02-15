@@ -429,7 +429,7 @@ func TestCryptoOps(t *testing.T) {
 		},
 		wantErr: ErrContext,
 	}, {
-		op: OP_BLOCKSIGHASH,
+		op: OP_BLOCKHASH,
 		startVM: &virtualMachine{
 			runLimit: 50000,
 			block:    &bc.Block{},
@@ -437,20 +437,22 @@ func TestCryptoOps(t *testing.T) {
 		wantVM: &virtualMachine{
 			runLimit: 49832,
 			dataStack: [][]byte{{
-				46, 87, 204, 195, 74, 20, 1, 41, 253, 183, 90, 121, 57, 8, 151, 70,
-				184, 65, 6, 185, 30, 180, 112, 95, 211, 21, 21, 49, 218, 27, 166, 88,
+				240, 133, 79, 136, 180, 137, 0, 153,
+				47, 236, 64, 67, 249, 101, 250, 2,
+				157, 235, 138, 214, 147, 207, 55, 17,
+				254, 131, 9, 179, 144, 106, 90, 134,
 			}},
 			block: &bc.Block{},
 		},
 	}, {
-		op: OP_BLOCKSIGHASH,
+		op: OP_BLOCKHASH,
 		startVM: &virtualMachine{
 			runLimit: 0,
 			block:    &bc.Block{},
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
-		op: OP_BLOCKSIGHASH,
+		op: OP_BLOCKHASH,
 		startVM: &virtualMachine{
 			runLimit: 50000,
 			block:    nil,

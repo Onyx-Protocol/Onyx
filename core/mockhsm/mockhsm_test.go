@@ -69,7 +69,7 @@ func TestMockHSMEd25519Keys(t *testing.T) {
 		t.Fatal(err)
 	}
 	bh := bc.BlockHeader{}
-	msg := bh.HashForSig()
+	msg := bh.Hash()
 	sig, err := hsm.Sign(ctx, pub.Pub, &bh)
 	if err != nil {
 		t.Fatal(err)

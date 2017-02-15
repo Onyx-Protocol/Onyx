@@ -270,6 +270,6 @@ func (h *HSM) Sign(ctx context.Context, pub ed25519.PublicKey, bh *bc.BlockHeade
 	if len(prv) != ed25519.PrivateKeySize {
 		return nil, ErrInvalidKeySize
 	}
-	msg := bh.HashForSig()
+	msg := bh.Hash()
 	return ed25519.Sign(prv, msg[:]), nil
 }

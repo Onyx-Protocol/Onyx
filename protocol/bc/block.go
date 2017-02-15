@@ -8,7 +8,6 @@ import (
 	"io"
 	"time"
 
-	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/encoding/bufpool"
 	"chain/errors"
@@ -170,24 +169,11 @@ func (bh *BlockHeader) Value() (driver.Value, error) {
 
 // Hash returns complete hash of the block header.
 func (bh *BlockHeader) Hash() Hash {
-	h := sha3pool.Get256()
-	bh.WriteTo(h) // error is impossible
-	var v [32]byte
-	h.Read(v[:])
-	sha3pool.Put256(h)
-	return v
-}
-
-// HashForSig returns a hash of the block header without witness.
-// This hash is used for signing the block and verifying the
-// signature.
-func (bh *BlockHeader) HashForSig() Hash {
-	h := sha3pool.Get256()
-	bh.WriteForSigTo(h) // error is impossible
-	var v [32]byte
-	h.Read(v[:])
-	sha3pool.Put256(h)
-	return v
+	h, err := BlockHeaderHashFunc(bh)
+	if err != nil {
+		panic(err)
+	}
+	return h
 }
 
 // MarshalText fulfills the json.Marshaler interface.

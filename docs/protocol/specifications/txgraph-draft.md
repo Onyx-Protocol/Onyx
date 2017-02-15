@@ -637,7 +637,7 @@ The `MerkleTree` and `PatriciaTree` types are just 32-byte hashes representing t
 
 This generates a new BlockHeader data structure, for hashing purposes, from an old block.
 
-1. Let `oldblock` be the transaction in old format.
+1. Let `oldblock` be the block in old format.
 2. Let `newblock` be a new instance of `BlockHeader` entry.
 3. Set `newblock.version` to `oldblock.version`.
 4. Set `newblock.height` to `oldblock.height`.

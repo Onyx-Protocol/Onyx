@@ -138,11 +138,11 @@ func opTxSigHash(vm *virtualMachine) error {
 	return vm.push(h[:], false)
 }
 
-func opBlockSigHash(vm *virtualMachine) error {
+func opBlockHash(vm *virtualMachine) error {
 	if vm.block == nil {
 		return ErrContext
 	}
-	h := vm.block.HashForSig()
+	h := vm.block.Hash()
 	err := vm.applyCost(4 * int64(len(h)))
 	if err != nil {
 		return err
