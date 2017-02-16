@@ -1,52 +1,52 @@
-### Transaction Serialization for Hashing
+# Entries Specification
+
+TBD: Table of Contents
+
+This is a specification of the semantic data structures used by transactions. These data structures and rules are used for validation and hashing. This format is independent from the format for [transaction wire serialization](data.md#transaction-wire-serialization).
+
+A transaction is composed of a set of Transaction Entries, all of which inherit from the common type [Abstract Entry](#abstract-entry). 
+
+Entries are used to define transactions. For example, they are used to specify inputs or outputs and add reference data. Each Transaction must include a [Header Entry](#header-entry). Entries can be identified by their [Entry ID](#entry-id).
+
+## Entries Serialization
 
 Serialization is defined using the serialization primitives [Byte](#byte), [Hash](#hash), [Integer](#integer), [String](#string), [List](#list) and [Struct](#struct). 
 
-When hashing, a transaction is composed of a set of Transaction Entries, all of which inherit from the common type [Abstract Entry](#abstract-entry). 
-
-Entries are used to define transactions. For example, they are used to specify inputs or outputs and add reference data. Each Transaction must include a [Header Entry](#header-entry). Entries can be identified by their [Entry ID](#entry-id). 
-
 Older nodes may come across Entries with a type that they don't recognize. All unrecognized Entries should be treated as [Unknown Entries](#unknown-entry).
 
-Field               | Type                 | Description
---------------------|----------------------|----------------------------------------------------------
-Header              | Header               | A Header entry.
-Entries             | List<AbstractEntry>  | A list of TransactionEntries. 
-
-
-#### Byte
+### Byte
 
 A `Byte` is encoded as 1 byte.
 
-#### Hash
+### Hash
 
 A `Hash` is encoded as 32 bytes. 
 
-#### Integer
+### Integer
 
 An `Integer` is encoded a [Varint63](#varint63).
 
-#### String
+### String
 
 A `String` is encoded as a [Varstring31](#varstring31).
 
-#### List
+### List
 
 A `List` is encoded as a [Varstring31](#varstring31) containing the serialized items, one by one, as defined by the schema. 
 
-#### Struct
+### Struct
 
 A `Struct` is encoded as a concatenation of all its serialized fields. 
 
-#### Extstruct
+### Extstruct
 
 An `ExtStruct` is encoded as a single 32-byte hash.
 
-#### Hashable 
+### Hashable 
 
 A Hashable is any type for which a hashing serialization is defined. 
 
-#### Entry ID 
+### Entry ID 
 
 An entry's ID is based on its type and body. The body is length-prefixed, and its type is varint-encoded. 
 
@@ -54,13 +54,15 @@ An entry's ID is based on its type and body. The body is length-prefixed, and it
 entryID = HASH("entryid:" || entry.type || ":" || entry.body_hash)
 ```
 
-#### Entry Pointer
+### Entry Pointer
 
 A Pointer is encoded as a Hash, and identifies another entry by its ID. It also restricts the possible acceptable types: Pointer<X> must refer to an entry of type X. 
 
 A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte hash `0x00000000000000000000000000000000`.
 
-#### ValueSource
+## Data Structures
+
+### ValueSource
 
 An Entry uses a ValueSource to refer to other Entries that provide inputs to the initial Entry. 
 
@@ -70,7 +72,7 @@ Ref              | Pointer<Issuance|Spend|Mux> | Previous entry referenced by th
 Value            | AssetAmount                 | Amount and Asset ID contained in the referenced entry. 
 Position         | Integer                     | Iff this source refers to a mux entry, then the Position is one of the mux's numbered Outputs. If this source refers to an inp
 
-#### ValueDestination 
+### ValueDestination 
 
 An Entry uses a ValueDestination to refer to other entries that result from the initial Entry.
 
@@ -80,8 +82,9 @@ Ref              | Pointer<Output|Retirement|Mux> | Next entry referenced by thi
 Value            | AssetAmount                    | Amount and Asset ID contained in the referenced entry
 Position         | Integer                        | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
 
+## Entry Types
 
-#### Abstract Entry
+### Abstract Entry
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------------------------------------------------
@@ -89,7 +92,7 @@ Type                | String               | The type of this Entry. e.g. Issuan
 Body                | Hashable             | Varies by type. 
 Witness             | Hashable             | Varies by type. 
 
-#### Unknown Entry
+### Unknown Entry
 
 When older nodes come across an Entry with a type that they don't recognize, that Entry must be treated as an Unknown Entry. 
 
@@ -101,7 +104,7 @@ Type                     | String               | Not statically known.
 Body_Hash                | Hash                 | - 
 Witness_Hash             | Hash                 | - 
 
-#### TxHeader
+### TxHeader
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -109,7 +112,7 @@ Type                | String               | "txheader"
 Body                | Hashable             | See below.  
 Witness             | Hashable             | See below. 
 
-##### TxHeader Body
+#### TxHeader Body
  
 Field      | Type                                          | Description
 -----------|-----------------------------------------------|-------------------------
@@ -120,13 +123,13 @@ Mintime    | Integer                                       | Must be either zero
 Maxtime    | Integer                                       | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction.
 ExtHash    | Hash                                          | Hash of all struct extensions. (See [Extstruct](#extstruct).) If the version is known, all ext_hashes must be hashes of empty strings. 
 
-##### TxHeader Witness
+#### TxHeader Witness
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
-#### Data
+### Data
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -138,7 +141,7 @@ The body is a hash of the underlying data. The underlying data may not be known.
 
 TKTK Address comments about specifying the hash function for the underlying data. I know we sorted this out, but now I can't remember.
 
-#### Output 
+### Output 
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -146,7 +149,7 @@ Type                | String               | "output1"
 Body                | Hashable             | See below. 
 Witness             | Hashable             | See below.
 
-##### Output Body
+#### Output Body
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -155,7 +158,7 @@ ControlProgram      | Program              | The program to control this output.
 Data                | Pointer<Data>        | Reference data included on this entry.
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
-##### Output Witness
+#### Output Witness
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -169,7 +172,7 @@ Type                | String               | "retirement1"
 Body                | Hashable             | See below. 
 Witness             | Hashable             | See below.
 
-##### Retirement Body
+#### Retirement Body
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -177,14 +180,14 @@ Source              | ValueSource          | The source of the units that are be
 Data                | Pointer<Data>        | Reference data included on this entry. 
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
-##### Retirement Witness
+#### Retirement Witness
 
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
-#### Spend  
+### Spend  
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -192,7 +195,7 @@ Type                | String               | "spend1"
 Body                | Hashable             | See below. 
 Witness             | Hashable             | See below.
 
-##### Spend Body
+#### Spend Body
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -200,7 +203,7 @@ SpentOutput         | Pointer<Output>      | The Output Entry consumed by this s
 Data                | Pointer<Data>        | Reference data included on this entry. 
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
-##### Spend Witness
+#### Spend Witness
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -208,7 +211,7 @@ Destination         | ValueDestination     | The Destination ("forward pointer")
 Arguments           | String               | Arguments for the control program contained in the SpentOutput. 
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
-#### Issuance  
+### Issuance  
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -216,7 +219,7 @@ Type                | String               | "issuance1"
 Body                | Hashable             | See below. 
 Witness             | Hashable             | See below.
 
-##### Issuance Body
+#### Issuance Body
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -225,7 +228,7 @@ Value               | AssetAmount          | Asset ID and amount being issued.
 Data                | Pointer<Data>        | Reference data included on this entry.
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
-##### Issuance Witness
+#### Issuance Witness
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
