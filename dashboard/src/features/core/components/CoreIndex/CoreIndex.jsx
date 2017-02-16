@@ -20,7 +20,7 @@ class CoreIndex extends React.Component {
 
     this.setState({deleteDisabled: true})
 
-    chainClient().config.reset().then(() => {
+    chainClient().config.reset(true).then(() => {
       // TODO: Use Redux state reset and nav action instead of window.location.
       // Also, move confirmation message to a bonafide flash div. alert() in a
       // browser microtask is going away. cf https://www.chromestatus.com/features/5647113010544640
