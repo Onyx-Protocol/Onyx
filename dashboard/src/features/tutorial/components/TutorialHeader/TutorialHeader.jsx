@@ -31,7 +31,6 @@ class TutorialHeader extends React.Component {
   }
 }
 
-import { actions } from 'features/tutorial'
 import { connect } from 'react-redux'
 
 const mapStateToProps = (state) => ({
@@ -41,7 +40,7 @@ const mapStateToProps = (state) => ({
 })
 
 const mapDispatchToProps = ( dispatch ) => ({
-  dismissTutorial: () => dispatch(actions.dismissTutorial)
+  dismissTutorial: () => dispatch({ type: 'DISMISS_TUTORIAL' })
 })
 
 export default connect(

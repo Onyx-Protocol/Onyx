@@ -23,7 +23,7 @@ export const flashMessages = (tutorial) => (state = new Map(), action) => {
     }
 
     case 'UPDATE_TUTORIAL': {
-      if(tutorial.isShowing && tutorial.currentStep.objectType == action.object){
+      if (tutorial.isShowing && tutorial.currentStep.objectType == action.object) {
         return []
       } else {
         return state

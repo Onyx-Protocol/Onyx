@@ -1,5 +1,3 @@
-const dismissTutorial = { type: 'DISMISS_TUTORIAL' }
-const openTutorial = { type: 'OPEN_TUTORIAL' }
 function tutorialNextStep(route){
   return { type: 'TUTORIAL_NEXT_STEP', route }
 }
@@ -8,8 +6,6 @@ function submitTutorialForm(data, object){
 }
 
 let actions = {
-  dismissTutorial,
-  openTutorial,
   tutorialNextStep,
   submitTutorialForm
 }

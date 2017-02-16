@@ -54,7 +54,7 @@ const mapStateToProps = (state) => ({
 })
 
 const mapDispatchToProps = ( dispatch ) => ({
-  dismissTutorial: () => dispatch(actions.dismissTutorial)
+  dismissTutorial: () => dispatch({ type: 'DISMISS_TUTORIAL' })
 })
 
 export default connect(

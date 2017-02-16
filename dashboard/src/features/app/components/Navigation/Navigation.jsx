@@ -1,6 +1,5 @@
 import React from 'react'
 import { connect } from 'react-redux'
-import actions from 'actions'
 import { Link } from 'react-router'
 import styles from './Navigation.scss'
 import Sync from '../Sync/Sync'
@@ -104,6 +103,6 @@ export default connect(
     showSync: state.core.configured && !state.core.generator,
   }),
   (dispatch) => ({
-    openTutorial: () => dispatch(actions.tutorial.openTutorial)
+    openTutorial: () => dispatch({ type: 'OPEN_TUTORIAL' })
   })
 )(Navigation)

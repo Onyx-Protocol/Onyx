@@ -53,7 +53,7 @@ class TutorialForm extends React.Component {
                 ]
                 if (contentLine['description']) {
                   let descriptionResult = []
-                  contentLine['description'].forEach(function (descriptionLine){
+                  contentLine['description'].forEach( (descriptionLine) => {
                     let description = descriptionLine
                     if (description['line']) { description = description['line'] }
 
@@ -67,7 +67,7 @@ class TutorialForm extends React.Component {
                         replacement = replacement['alias'] || ''
                       }
 
-                      description.split('STRING').forEach(function (item, i, arr){
+                      description.split('STRING').forEach( (item, i, arr) => {
                         descriptionResult.push(item)
                         let replacementText = i < arr.length - 1 && <span className={styles.userInputData}>"{replacement}"</span>
                         descriptionResult.push(replacementText)
