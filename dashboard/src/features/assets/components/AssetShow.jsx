@@ -47,9 +47,9 @@ class AssetShow extends BaseShow {
               title={`Key ${index + 1}`}
               items={[
                 {label: 'Index', value: index},
-                {label: 'Root Xpub', value: key.root_xpub},
-                {label: 'Asset Pubkey', value: key.asset_pubkey},
-                {label: 'Asset Derivation Path', value: key.asset_derivation_path},
+                {label: 'Root Xpub', value: key.rootXpub},
+                {label: 'Asset Pubkey', value: key.assetPubkey},
+                {label: 'Asset Derivation Path', value: key.assetDerivationPath},
               ]}
             />
           )}

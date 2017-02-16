@@ -68,9 +68,9 @@ class AccountShow extends BaseShow {
               key={index}
               title={`Key ${index + 1}`}
               items={[
-                {label: 'Root Xpub', value: key.root_xpub},
-                {label: 'Account Xpub', value: key.account_xpub},
-                {label: 'Account Derivation Path', value: key.account_derivation_path},
+                {label: 'Root Xpub', value: key.rootXpub},
+                {label: 'Account Xpub', value: key.accountXpub},
+                {label: 'Account Derivation Path', value: key.accountDerivationPath},
               ]}
             />
           )}
