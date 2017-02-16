@@ -177,6 +177,7 @@ module Chain
       # @return [String]
       attrib :account_tags
 
+      # @deprecated (as of version 1.1) Do not use this field.
       # @!attribute [r] input_witness
       # @return [String]
       attrib :input_witness
@@ -187,6 +188,7 @@ module Chain
       # @return [String]
       attrib :issuance_program
 
+      # @deprecated (as of version 1.1) Do not use this field.
       # @!attribute [r] control_program
       # @return [String]
       attrib :control_program
