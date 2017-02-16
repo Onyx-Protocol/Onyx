@@ -237,7 +237,7 @@ See also the note in the [Make Block](#make-block) algorithm.
     3. Previous block ID: the hash of the blockchain state’s block.
     4. Timestamp: the input time, or the timestamp of the blockchain state increased by 1 millisecond, whichever is greater: `time[n] = max(input_time, time[n-1]+1)`.
     5. [Block commitment](data.md#block-commitment):
-        1. [Transactions merkle root](data.md#transactions-merkle-root): [merkle binary tree hash](data.md#merkle-binary-tree) of [witness hashes](data.md#transaction-witness-hash) in T.
+        1. [Transactions merkle root](data.md#transactions-merkle-root): [merkle binary tree hash](data.md#merkle-binary-tree) of [transaction IDs](data.md#transaction-id) in T.
         2. [Assets merkle root](data.md#assets-merkle-root): [merkle patricia tree hash](data.md#merkle-patricia-tree) of S.
         3. Consensus program: the input consensus program.
     6. [Block witness](data.md#block-witness): 0x01 0x00 (an empty list of program arguments).

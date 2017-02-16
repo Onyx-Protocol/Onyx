@@ -30,7 +30,6 @@
   * [Transaction Output Witness](#transaction-output-witness)
   * [Transaction Serialization Flags](#transaction-serialization-flags)
   * [Transaction ID](#transaction-id)
-  * [Transaction Witness Hash](#transaction-witness-hash)
   * [Transaction Signature Hash](#transaction-signature-hash)
   * [Program](#program)
   * [VM Version](#vm-version)
@@ -154,7 +153,7 @@ Unknown appended commitments must be ignored. Changes to the format of the commi
 
 Field                                   | Type        | Description
 ----------------------------------------|-------------|----------------------------------------------------------
-Transactions Merkle Root                | sha3-256    | Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the transaction witness hashes of all transactions included in the block.
+Transactions Merkle Root                | sha3-256    | Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
 Assets Merkle Root                      | sha3-256    | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](#assets-merkle-root) for details.
 Next [Consensus Program](#consensus-program) | varstring31 | Authentication predicate for adding a new block after this one.
 —                                       | —           | Additional fields may be added by future extensions.
@@ -212,8 +211,6 @@ Maximum Time        | varint63      | Zero or a block timestamp after which tran
 The *transaction common witness* string contains data necessary to verify the entire transaction, but not specific to any particular input or output. Witness string does not affect the *outcome* of the transaction and therefore is excluded from the [transaction ID](#transaction-id).
 
 Present version of the protocol does not define any fields in the common witness.
-
-The common witness string is committed to the blockchain via the [witness hash](#transaction-witness-hash).
 
 Field               | Type        | Description
 --------------------|-------------|----------------------------------------------------------
@@ -290,7 +287,7 @@ Note: the timestamp values are used exactly as specified in the [transaction](#t
 
 The *transaction input witness* string contains [program arguments](#program-arguments) ([cryptographic signatures](#signature) and other data necessary to verify the input). Witness string does not affect the *outcome* of the transaction and therefore is excluded from the [transaction ID](#transaction-id).
 
-The input witness string can be extended with additional commitments, proofs or validation hints that are excluded from the [transaction ID](#transaction-id), but committed to the blockchain via the [witness hash](#transaction-witness-hash).
+The input witness string can be extended with additional commitments, proofs or validation hints that are excluded from the [transaction ID](#transaction-id).
 
 Asset version 1 defines two witness structures: one for issuances and another one for spends.
 
@@ -362,7 +359,7 @@ Control Program | varstring31             | Predicate [program](#control-program
 
 Like the input witness data, the *output witness* string contains data necessary for transaction verification, but which does not affect the *outcome* of the transaction and therefore is excluded from the [transaction ID](#transaction-id).
 
-The output witness string can be extended with additional commitments, proofs or validation hints that are excluded from the [transaction ID](#transaction-id), but committed to the blockchain via the [witness hash](#transaction-witness-hash).
+The output witness string can be extended with additional commitments, proofs or validation hints that are excluded from the [transaction ID](#transaction-id).
 
 **Asset version 1** and **VM version 1** do not use the output witness data which is set to an empty string (encoded as a single byte 0x00 that represents a varstring31 encoding of an empty string). To support future upgrades, nodes must accept and ignore arbitrary data in the output witness string.
 
@@ -388,26 +385,6 @@ Serialization Flags Examples | Description
 ### Transaction ID
 
 The *transaction ID* (also called *txid* or *transaction hash*) is defined as [SHA3-256](#sha3) of the transaction serialized with 0x00 [serialization flags](#transaction-serialization-flags). Thus, reference data is hashed via intermediate hashes and transaction witness data is excluded.
-
-### Transaction Witness Hash
-
-The *transaction witness hash* is defined as [SHA3-256](#sha3) of the following structure:
-
-Field                           | Type                    | Description
---------------------------------|-------------------------|----------------------------------------------------------
-Transaction ID                  | sha3-256                | [Transaction identifier](#transaction-id).
-Transaction Common Witness Hash | sha3-256                | [SHA3-256](#sha3) hash of the [transaction common witness](#transaction-common-witness) string.
-Inputs Count                    | varint31                | Number of transaction inputs.
-Hashed Input Witnesses          | [sha3-256]              | [SHA3-256](#sha3) hash of the [input witness data](#transaction-input-witness) from each input (same order as inputs).
-Outputs Count                   | varint31                | Number of transaction outputs.
-Hashed Output Witnesses         | [sha3-256]              | [SHA3-256](#sha3) hash of the [output witness data](#transaction-output-witness) from each output (same order as outputs).
-
-
-Reusing the transaction ID saves time hashing again the rest of input and output data that can be arbitrarily large. Intermediate hashing of each witness enables compact proofs with partial reveal of witness data in cases of large transactions or large witnesses.
-
-Note: hashes of input witness data cover not only the [program arguments](#program-arguments) with their count, but the rest of the data in the witness [extensible string](#extensible-string) (not including the length prefix of the entire witness string). So if the input witness data contains two program arguments `0xaa` and `0xbbbb` and an additional suffix `0xffff`, then the witness data is defined as `0x0201aa02bbbbffff` (`0x02` being the number of arguments, `0x01` — the length of the first argument, `0x02` — the length of the second argument and additional data `0xffff` outside the scope of this specification). The hash of such data is then:
-
-    SHA3-256(0x0201aa02bbbbffff) = 0x0c5ff1a162fc8ef7b742bfbf556c1a85ab404d27ec89e206c29f9a7e28b5f712
 
 
 ### Transaction Signature Hash
@@ -481,7 +458,7 @@ Note: many other kinds of control programs may render the output unspendable (e.
 
 ### Transactions Merkle Root
 
-Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the *transaction witness hashes* of all transactions included in the block.
+Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the [transaction IDs](#transaction-id) of all transactions included in the block.
 
 ### Assets Merkle Root
 
