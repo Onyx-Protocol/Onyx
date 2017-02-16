@@ -145,6 +145,8 @@ func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *bc.Block, anno
 		inputIssuancePrograms pq.ByteaArray
 		inputReferenceDatas   pq.StringArray
 		inputLocals           pq.BoolArray
+		inputSpentOutputIDs   pq.ByteaArray
+		inputSpentOutputs     []sql.NullString
 	)
 
 	for _, annotatedTx := range annotatedTxs {
@@ -168,23 +170,37 @@ func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *bc.Block, anno
 			inputIssuancePrograms = append(inputIssuancePrograms, in.IssuanceProgram)
 			inputReferenceDatas = append(inputReferenceDatas, string(*in.ReferenceData))
 			inputLocals = append(inputLocals, bool(in.IsLocal))
+			if in.SpentOutputID != nil {
+				inputSpentOutputIDs = append(inputSpentOutputIDs, in.SpentOutputID.Hash[:])
+			} else {
+				inputSpentOutputIDs = append(inputSpentOutputIDs, nil)
+			}
+			if in.SpentOutput != nil {
+				b, err := json.Marshal(in.SpentOutput)
+				if err != nil {
+					return errors.Wrap(err)
+				}
+				inputSpentOutputs = append(inputSpentOutputs, sql.NullString{String: string(b), Valid: true})
+			} else {
+				inputSpentOutputs = append(inputSpentOutputs, sql.NullString{})
+			}
 		}
 	}
 	const insertQ = `
 		INSERT INTO annotated_inputs (tx_hash, index, type,
 			asset_id, asset_alias, asset_definition, asset_tags, asset_local,
 			amount, account_id, account_alias, account_tags, issuance_program,
-			reference_data, local)
+			reference_data, local, spent_output_id, spent_output)
 		SELECT unnest($1::bytea[]), unnest($2::integer[]), unnest($3::text[]), unnest($4::bytea[]),
 		unnest($5::text[]), unnest($6::jsonb[]), unnest($7::jsonb[]), unnest($8::boolean[]),
 		unnest($9::bigint[]), unnest($10::text[]), unnest($11::text[]), unnest($12::jsonb[]),
-		unnest($13::bytea[]), unnest($14::jsonb[]), unnest($15::boolean[])
+		unnest($13::bytea[]), unnest($14::jsonb[]), unnest($15::boolean[]), unnest($16::bytea[]), unnest($17::jsonb[])
 		ON CONFLICT (tx_hash, index) DO NOTHING;
 	`
 	_, err := ind.db.Exec(ctx, insertQ, inputTxHashes, inputIndexes, inputTypes, inputAssetIDs,
 		inputAssetAliases, inputAssetDefinitions, pq.Array(inputAssetTags), inputAssetLocals,
 		inputAmounts, pq.Array(inputAccountIDs), pq.Array(inputAccountAliases), pq.Array(inputAccountTags),
-		inputIssuancePrograms, inputReferenceDatas, inputLocals)
+		inputIssuancePrograms, inputReferenceDatas, inputLocals, inputSpentOutputIDs, pq.Array(inputSpentOutputs))
 	return errors.Wrap(err, "batch inserting annotated inputs")
 }
 

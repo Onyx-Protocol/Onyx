@@ -29,4 +29,9 @@ var migrations = []migration{
 		ALTER TABLE annotated_assets ALTER COLUMN alias SET NOT NULL;
 		ALTER TABLE annotated_accounts ALTER COLUMN alias SET NOT NULL;
 	`},
+	{Name: `2017-02-16.0.query.spent-output.sql`, SQL: `
+		ALTER TABLE annotated_inputs
+			ADD COLUMN spent_output_id bytea NOT NULL,
+			ADD COLUMN spent_output jsonb;
+	`},
 }

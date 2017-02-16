@@ -260,7 +260,9 @@ CREATE TABLE annotated_inputs (
     account_tags jsonb,
     issuance_program bytea NOT NULL,
     reference_data jsonb NOT NULL,
-    local boolean NOT NULL
+    local boolean NOT NULL,
+    spent_output_id bytea NOT NULL,
+    spent_output jsonb
 );
 
 
@@ -894,3 +896,4 @@ CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
 
 insert into migrations (filename, hash) values ('2017-02-03.0.core.schema-snapshot.sql', '1d55668affe0be9f3c19ead9d67bc75cfd37ec430651434d0f2af2706d9f08cd');
 insert into migrations (filename, hash) values ('2017-02-07.0.query.non-null-alias.sql', '17028a0bdbc95911e299dc65fe641184e54c87a0d07b3c576d62d023b9a8defc');
+insert into migrations (filename, hash) values ('2017-02-16.0.query.spent-output.sql', '7cd52095b6f202d7a25ffe666b7b7d60e7700d314a7559b911e236b72661a738');
