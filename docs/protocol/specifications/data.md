@@ -464,7 +464,7 @@ Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the [t
 
 Root hash of the [merkle patricia tree](#merkle-patricia-tree) formed by unspent outputs with an **asset version 1** after applying the block. Allows bootstrapping nodes from recent blocks and an archived copy of the corresponding merkle patricia tree without processing all historical transactions.
 
-The tree contains the list of the [Output IDs](#output-id) of all [non-retired](#retired-asset) unspent outputs (one or more per [asset ID](#asset-id)).
+The tree contains the list of the [Output IDs](#output-id) of all [non-retired](#retired-asset) unspent outputs.
 
 
 ### Merkle Root
