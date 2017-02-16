@@ -230,7 +230,6 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		outputLocals           pq.BoolArray
 		prevoutIDs             pq.ByteaArray
 	)
-
 	for pos, tx := range b.Transactions {
 		for _, in := range tx.Inputs {
 			if !in.IsIssuance() {
@@ -240,10 +239,6 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		}
 
 		for outIndex, out := range annotatedTxs[pos].Outputs {
-			if out.Type == "retire" {
-				continue
-			}
-
 			outputIDs = append(outputIDs, out.OutputID.Hash[:])
 			outputTxPositions = append(outputTxPositions, uint32(pos))
 			outputIndexes = append(outputIndexes, uint32(outIndex))
@@ -271,15 +266,24 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 
 	// Insert all of the block's outputs at once.
 	const insertQ = `
+		WITH utxos AS (
+			SELECT * FROM unnest($2::integer[], $3::integer[], $4::bytea[], $6::bytea[], $7::text[], $8::text[],
+				$9::bytea[], $10::text[], $11::jsonb[], $12::jsonb[], $13::boolean[], $14::bigint[],
+				$15::text[], $16::text[], $17::jsonb[], $18::bytea[], $19::jsonb[], $20::boolean[])
+			AS t(tx_pos, output_index, tx_hash, output_id, type, purpose,
+				asset_id, asset_alias, asset_definition, asset_tags, asset_local, amount,
+				account_id, account_alias, account_tags, control_program, reference_data, local)
+		)
 		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash,
 			timespan, output_id, type, purpose, asset_id, asset_alias, asset_definition,
 			asset_tags, asset_local, amount, account_id, account_alias, account_tags,
 			control_program, reference_data, local)
-		SELECT $1, unnest($2::integer[]), unnest($3::integer[]), unnest($4::bytea[]),
-		int8range($5, NULL), unnest($6::bytea[]), unnest($7::text[]), unnest($8::text[]),
-		unnest($9::bytea[]), unnest($10::text[]), unnest($11::jsonb[]), unnest($12::jsonb[]),
-		unnest($13::boolean[]), unnest($14::bigint[]), unnest($15::text[]), unnest($16::text[]),
-		unnest($17::jsonb[]), unnest($18::bytea[]), unnest($19::jsonb[]), unnest($20::boolean[])
+		SELECT $1, tx_pos, output_index, tx_hash,
+		CASE WHEN type='retired' THEN int8range($5, $5) ELSE int8range($5, NULL) END,
+		output_id, type, purpose, asset_id, asset_alias, asset_definition, asset_tags,
+		asset_local, amount, account_id, account_alias, account_tags, control_program,
+		reference_data, local
+		FROM utxos
 		ON CONFLICT (block_height, tx_pos, output_index) DO NOTHING;
 	`
 	_, err := ind.db.Exec(ctx, insertQ, b.Height, outputTxPositions,
