@@ -59,8 +59,8 @@ func TestRecovery(t *testing.T) {
 		bob     = coretest.CreateAccount(ctx, t, accounts, "bob", nil)
 	)
 	// Issue some apples to Alice and a dollar to Bob.
-	_ = coretest.IssueAssets(ctx, t, c, g, assets, accounts, apple, 10, alice)
-	_ = coretest.IssueAssets(ctx, t, c, g, assets, accounts, usd, 1, bob)
+	coretest.IssueAssets(ctx, t, c, g, assets, accounts, apple, 10, alice)
+	coretest.IssueAssets(ctx, t, c, g, assets, accounts, usd, 1, bob)
 	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
