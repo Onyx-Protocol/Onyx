@@ -240,10 +240,6 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		}
 
 		for outIndex, out := range annotatedTxs[pos].Outputs {
-			if out.Type == "retire" {
-				continue
-			}
-
 			outputIDs = append(outputIDs, out.OutputID.Hash[:])
 			outputTxPositions = append(outputTxPositions, uint32(pos))
 			outputIndexes = append(outputIndexes, uint32(outIndex))
