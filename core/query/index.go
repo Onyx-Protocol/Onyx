@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 
 	"github.com/lib/pq"
 
@@ -231,6 +232,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		prevoutIDs             pq.ByteaArray
 	)
 
+	fmt.Println("INDEX outputs attempt")
 	for pos, tx := range b.Transactions {
 		for _, in := range tx.Inputs {
 			if !in.IsIssuance() {
@@ -240,6 +242,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		}
 
 		for outIndex, out := range annotatedTxs[pos].Outputs {
+			fmt.Println(out.OutputID.Hash)
 			outputIDs = append(outputIDs, out.OutputID.Hash[:])
 			outputTxPositions = append(outputTxPositions, uint32(pos))
 			outputIndexes = append(outputIndexes, uint32(outIndex))
