@@ -518,7 +518,7 @@ For n > 1, let the bit string p be the longest common prefix of all items in `D[
 
 where `||` is concatenation and `D[k1:k2]` denotes the list `{d(k1), d(k1+1),..., d(k2-1)}` of length `(k2 - k1)`. (Note that the hash calculations for leaves and nodes differ. This domain separation is required to give second preimage resistance.)
 
-Note that the resulting merkle patricia tree may not be balanced; however, its shape is uniquely determined by the number of leaves.
+Note that the resulting merkle patricia tree may not be balanced; however, its shape is uniquely determined by the input data.
 
 ![Merkle Patricia Tree](merkle-patricia-tree.png)
 
