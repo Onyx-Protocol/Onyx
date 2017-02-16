@@ -4,7 +4,7 @@ type (
 	// TxHashes holds data needed for validation and state updates.
 	TxHashes struct {
 		ID Hash
-		// contains OutputIDs and retirment hashes.
+		// contains OutputIDs and retirement hashes.
 		// each OutputID is also the corresponding UnspentID
 		ResultHashes []Hash
 		Issuances    []struct {
