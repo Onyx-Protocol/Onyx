@@ -1,15 +1,13 @@
 import { reducers } from 'features/shared'
 import { combineReducers } from 'redux'
 
-const type = 'access_token'
-
 export default {
-  client_access_token: combineReducers({
-    items: reducers.itemsReducer('client_' + type),
-    queries: reducers.queriesReducer('client_' + type),
+  clientAccessToken: combineReducers({
+    items: reducers.itemsReducer('clientAccessToken'),
+    queries: reducers.queriesReducer('clientAccessToken'),
   }),
-  network_access_token: combineReducers({
-    items: reducers.itemsReducer('network_' + type),
-    queries: reducers.queriesReducer('network_' + type),
+  networkAccessToken: combineReducers({
+    items: reducers.itemsReducer('networkAccessToken'),
+    queries: reducers.queriesReducer('networkAccessToken'),
   }),
 }

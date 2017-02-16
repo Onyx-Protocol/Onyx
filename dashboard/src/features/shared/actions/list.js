@@ -5,6 +5,7 @@ import { push, replace } from 'react-router-redux'
 export default function(type, options = {}) {
   const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
   const listPath  = options.listPath || `/${type}s`
+  const clientApi = () => options.clientApi ? options.clientApi() : chainClient()[`${type}s`]
 
   const receive = (param) => ({
     type: `RECEIVED_${type.toUpperCase()}_ITEMS`,
@@ -14,13 +15,12 @@ export default function(type, options = {}) {
   // Dispatch a single request for the specified query, and persist the
   // results to the default item store
   const fetchItems = (params) => {
-    const clientApi = options.clientApi ? options.clientApi() : chainClient()[`${type}s`]
     const requiredParams = options.requiredParams || {}
 
     params = { ...params, ...requiredParams }
 
     return (dispatch) => {
-      const promise = clientApi.query(params)
+      const promise = clientApi().query(params)
 
       promise.then(
         (param) => dispatch(receive(param))
@@ -121,7 +121,7 @@ export default function(type, options = {}) {
         return
       }
 
-      clientApi.delete(context(), id)
+      clientApi().delete(id)
         .then(() => dispatch({
           type: `DELETE_${type.toUpperCase()}`,
           id: id,

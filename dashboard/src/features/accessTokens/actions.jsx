@@ -12,26 +12,28 @@ const makeCreateModal = token => {
 }
 
 let actions = {
-  client_access_token: {
-    ...baseListActions('client_access_token', {
+  clientAccessToken: {
+    ...baseListActions('clientAccessToken', {
       listPath: '/access_tokens/client',
       className: 'AccessToken',
       requiredParams: { type: 'client'},
+      clientApi: () => chainClient().accessTokens,
     }),
-    ...baseCreateActions('client_access_token', {
+    ...baseCreateActions('clientAccessToken', {
       listPath: '/access_tokens/client',
       className: 'AccessToken',
       createModal: makeCreateModal,
       clientApi: () => chainClient().accessTokens,
     }),
   },
-  network_access_token: {
-    ...baseListActions('network_access_token', {
+  networkAccessToken: {
+    ...baseListActions('networkAccessToken', {
       listPath: '/access_tokens/network',
       className: 'AccessToken',
       requiredParams: { type: 'network'},
+      clientApi: () => chainClient().accessTokens,
     }),
-    ...baseCreateActions('network_access_token', {
+    ...baseCreateActions('networkAccesToken', {
       listPath: '/access_tokens/network',
       className: 'AccessToken',
       createModal: makeCreateModal,
