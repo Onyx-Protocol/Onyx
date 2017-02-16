@@ -5,7 +5,6 @@ import (
 	"context"
 	"expvar"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/pprof"
 	"sync"
@@ -152,7 +151,7 @@ func Handler(a *API, register func(*http.ServeMux, *API)) http.Handler {
 	m.Handle("/configure", jsonHandler(a.configure))
 	m.Handle("/info", jsonHandler(a.info))
 
-	m.Handle("/raft/", h.RaftDB)
+	m.Handle("/raft/", a.RaftDB)
 
 	m.Handle("/debug/vars", http.HandlerFunc(expvarHandler))
 	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))

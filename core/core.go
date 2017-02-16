@@ -91,7 +91,7 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"is_generator":                      a.Config.IsGenerator,
 		"generator_url":                     a.Config.GeneratorUrl,
 		"generator_access_token":            obfuscateTokenSecret(a.Config.GeneratorAccessToken),
-		"blockchain_id":                     a.Config.BlockchainId.Hash()
+		"blockchain_id":                     a.Config.BlockchainId.Hash(),
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
@@ -126,7 +126,7 @@ func (a *API) configure(ctx context.Context, x *config.Config) error {
 		x.MaxIssuanceWindow = bc.DurationMillis(24 * time.Hour)
 	}
 
-	err := config.Configure(ctx, h.DB, h.RaftDB, x)
+	err := config.Configure(ctx, a.DB, a.RaftDB, x)
 	if err != nil {
 		return err
 	}

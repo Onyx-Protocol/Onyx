@@ -4,29 +4,27 @@ package config
 
 import (
 	"context"
-	"encoding/hex"
 
 	"chain/core/mockhsm"
+	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/log"
 )
 
-func getOrCreateDevKey(ctx context.Context, db pg.DB, c *Config) (blockPub []byte, err error) {
+func getOrCreateDevKey(ctx context.Context, db pg.DB, c *Config) (blockPub ed25519.PublicKey, err error) {
 	hsm := mockhsm.New(db)
 	corePub, created, err := hsm.GetOrCreate(ctx, autoBlockKeyAlias)
 	if err != nil {
 		return nil, err
 	}
-	blockPub = corePub.Pub
-	blockPubStr := hex.EncodeToString(blockPub)
 	if created {
-		log.Messagef(ctx, "Generated new block-signing key %s\n", blockPubStr)
+		log.Messagef(ctx, "Generated new block-signing key %x\n", corePub.Pub)
 	} else {
-		log.Messagef(ctx, "Using block-signing key %s\n", blockPubStr)
+		log.Messagef(ctx, "Using block-signing key %x\n", corePub.Pub)
 	}
-	c.BlockPub = blockPubStr
+	c.BlockPub = corePub.Pub
 
-	return blockPub, nil
+	return corePub.Pub, nil
 
 }
 

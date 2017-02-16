@@ -11,11 +11,13 @@ message Config {
 	bc.ProtoHash blockchain_id = 4;
 	string generator_url = 5;
 	string generator_access_token = 6;
-	uint64 configured_at = 7;
-	bytes block_pub = 8;
-	repeated BlockSigner signers = 9;
-	uint32 quorum = 10;
-	uint64 max_issuance_window = 11	;
+	string block_hsm_url = 7;
+	string block_hsm_access_token = 8;
+	uint64 configured_at = 9;
+	bytes block_pub = 10;
+	repeated BlockSigner signers = 11;
+	uint32 quorum = 12;
+	uint64 max_issuance_window = 13	;
 }
 
 message BlockSigner {
