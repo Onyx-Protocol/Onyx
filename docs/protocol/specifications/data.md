@@ -512,7 +512,7 @@ The hash of a list with one entry (also known as a leaf hash) is:
 
     MPTH({d(0)}) = SHA3-256(0x00 || d(0))
 
-For n > 1, let the bit string p be the longest common prefix of all items in D[n], and let k be the number of items that have a prefix `p||0` (that is, p concatenated with the single bit 0). The merkle patricia tree hash of an n-element list `D[n]` is then defined recursively as:
+For n > 1, let the bit string p be the longest common prefix of all items in `D[n]`, and let k be the number of items that have a prefix `p||0` (that is, p concatenated with the single bit 0). The merkle patricia tree hash of an n-element list `D[n]` is then defined recursively as:
 
     MPTH(D[n]) = SHA3-256(0x01 || MPTH(D[0:k]) || MPTH(D[k:n]))
 
