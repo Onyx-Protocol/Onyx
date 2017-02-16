@@ -464,11 +464,7 @@ Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the [t
 
 Root hash of the [merkle patricia tree](#merkle-patricia-tree) formed by unspent outputs with an **asset version 1** after applying the block. Allows bootstrapping nodes from recent blocks and an archived copy of the corresponding merkle patricia tree without processing all historical transactions.
 
-The tree contains [non-retired](#retired-asset) unspent outputs (one or more per [asset ID](#asset-id)) where both key and value are the same value — the [Output ID](#output-id) of the unspent output.
-
-Key                     | Value
-------------------------|------------------------------
-[Output ID](#output-id) | [Output ID](#output-id)
+The tree contains the list of the [Output IDs](#output-id) of all [non-retired](#retired-asset) unspent outputs (one or more per [asset ID](#asset-id)).
 
 
 ### Merkle Root
@@ -506,7 +502,7 @@ Note that we do not require the length of the input list to be a power of two. T
 
 The protocol uses a binary radix tree with variable-length branches to implement a *merkle patricia tree*. This tree structure is used for efficient concurrent updates of the [assets merkle root](#assets-merkle-root) and compact recency proofs for unspent outputs.
 
-The input to the *merkle patricia tree hash* (MPTH) is a list of key-value pairs of binary strings of arbitrary length ordered lexicographically by keys. Keys are unique bitstrings of a fixed length (length specified for each instance of the tree). Values are bitstrings of arbitrary length and are not required to be unique. Given a list of sorted key-value pairs, the MPTH is thus defined as follows:
+The input to the *merkle patricia tree hash* (MPTH) is a list of data entries; these entries will be hashed to form the leaves of the merkle hash tree. The output is a single 32-byte hash value. Given a sorted list of n unique inputs, `D[n] = {d(0), d(1), ..., d(n-1)}`, the MPTH is thus defined as follows:
 
 The hash of an empty list is a 32-byte all-zero string:
 
@@ -514,21 +510,17 @@ The hash of an empty list is a 32-byte all-zero string:
 
 The hash of a list with one entry (also known as a leaf hash) is:
 
-    MPTH({(key,value)}) = SHA3-256(0x00 || value)
+    MPTH({d(0)}) = SHA3-256(0x00 || d(0))
 
-In case a list contains multiple items, all keys have a common bit-prefix extracted and the list is split in two lists A and B with elements in each list sharing at least one prefix bit of their keys. This way the top level hash may have an empty common prefix, but nested hashes never have an empty prefix. The hash of multiple items is defined recursively:
+For n > 1, let the bit string p be the longest common prefix of all items in D[n], and let k be the number of items that have a prefix `p||0` (that is, p concatenated with the single bit 0). The merkle patricia tree hash of an n-element list `D[n]` is then defined recursively as:
 
-    MPTH(A + B) = SHA3-256(0x01 || MPTH(A) || MPTH(B))
+    MPTH(D[n]) = SHA3-256(0x01 || MPTH(D[0:k]) || MPTH(D[k:n]))
+
+where `||` is concatenation and `D[k1:k2]` denotes the list `{d(k1), d(k1+1),..., d(k2-1)}` of length `(k2 - k1)`. (Note that the hash calculations for leaves and nodes differ. This domain separation is required to give second preimage resistance.)
+
+Note that the resulting merkle patricia tree may not be balanced; however, its shape is uniquely determined by the number of leaves.
 
 ![Merkle Patricia Tree](merkle-patricia-tree.png)
-
-
-
-
-
-
-
-
 
 ## References
 
