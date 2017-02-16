@@ -41,11 +41,11 @@ class Show extends BaseShow {
             items={[
               {label: 'ID', value: item.id},
               {label: 'Timestamp', value: item.timestamp},
-              {label: 'Block ID', value: item.block_id},
-              {label: 'Block Height', value: item.block_height},
+              {label: 'Block ID', value: item.blockId},
+              {label: 'Block Height', value: item.blockHeight},
               {label: 'Position', value: item.position},
-              {label: 'Local?', value: item.is_local},
-              {label: 'Reference Data', value: item.reference_data},
+              {label: 'Local?', value: item.isLocal},
+              {label: 'Reference Data', value: item.referenceData},
             ]}
           />
 
