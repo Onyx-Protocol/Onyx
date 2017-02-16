@@ -420,7 +420,7 @@ Field                   | Type                                      | Descriptio
 Transaction ID          | sha3-256                                  | Current [transaction ID](#transaction-id).
 Input Index             | varint31                                  | Index of a given input encoded as [varint31](#varint31).
 
-#### Transaction Serialization for Hashing
+### Transaction Serialization for Hashing
 
 Serialization is defined using the serialization primitives [Byte](#byte), [Hash](#hash), [Integer](#integer), [String](#string), [List](#list) and [Struct](#struct). 
 
@@ -462,7 +462,7 @@ A `Struct` is encoded as a concatenation of all its serialized fields.
 
 #### Extstruct
 
-An `ExtStruct` is encoded as a concatentation of TKTK DO I NEED TO INCLUDE THIS?
+An `ExtStruct` is encoded as a single 32-byte hash.
 
 #### Hashable 
 
@@ -490,7 +490,7 @@ Field            | Type                        | Description
 -----------------|-----------------------------|----------------
 Ref              | Pointer<Issuance|Spend|Mux> | Previous entry referenced by this ValueSource.
 Value            | AssetAmount                 | Amount and Asset ID contained in the referenced entry. 
-Position         | Integer                     | Iff this source refers to a mux entry, then the Position is one of the mux's numbered Outputs. Otherwise, the position must be 0.
+Position         | Integer                     | Iff this source refers to a mux entry, then the Position is one of the mux's numbered Outputs. If this source refers to an inp
 
 #### ValueDestination 
 
@@ -549,6 +549,7 @@ Field               | Type                 | Description
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 #### Data
+
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Type                | String               | "data1"
@@ -560,6 +561,7 @@ The body is a hash of the underlying data. The underlying data may not be known.
 TKTK Address comments about specifying the hash function for the underlying data. I know we sorted this out, but now I can't remember.
 
 #### Output 
+
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Type                | String               | "output1"
@@ -567,6 +569,7 @@ Body                | Hashable             | See below.
 Witness             | Hashable             | See below.
 
 ##### Output Body
+
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource          | The source of the units to be included in this output.
@@ -580,9 +583,8 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
-TKTK: Somehow include the "rules" from the draft doc.
-
 #### Retirement 
+
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Type                | String               | "retirement1"
@@ -590,6 +592,7 @@ Body                | Hashable             | See below.
 Witness             | Hashable             | See below.
 
 ##### Retirement Body
+
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource          | The source of the units that are being retired.
@@ -598,11 +601,13 @@ ExtHash             | Hash                 | If the transaction version is known
 
 ##### Retirement Witness
 
+
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 #### Spend  
+
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Type                | String               | "spend1"
@@ -610,6 +615,7 @@ Body                | Hashable             | See below.
 Witness             | Hashable             | See below.
 
 ##### Spend Body
+
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 SpentOutput         | Pointer<Output>      | The Output Entry consumed by this spend.
@@ -620,11 +626,9 @@ ExtHash             | Hash                 | If the transaction version is known
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. In principle, this can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
+Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
 Arguments           | String               | Arguments for the control program contained in the SpentOutput. 
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
-
-TKTK include validation rules somehow 
 
 #### Issuance  
 
@@ -634,7 +638,8 @@ Type                | String               | "issuance1"
 Body                | Hashable             | See below. 
 Witness             | Hashable             | See below.
 
-##### Issuance Body 
+##### Issuance Body
+
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
@@ -643,6 +648,7 @@ Data                | Pointer<Data>        | Reference data included on this ent
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 ##### Issuance Witness
+
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
