@@ -3,9 +3,11 @@ package bc
 type (
 	// TxHashes holds data needed for validation and state updates.
 	TxHashes struct {
-		ID        Hash
-		OutputIDs []Hash // each OutputID is also the corresponding UnspentID
-		Issuances []struct {
+		ID Hash
+		// contains OutputIDs and retirement hashes.
+		// each OutputID is also the corresponding UnspentID
+		ResultHashes []Hash
+		Issuances    []struct {
 			ID           Hash
 			ExpirationMS uint64
 		}
