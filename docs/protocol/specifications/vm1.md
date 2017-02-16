@@ -63,7 +63,7 @@ Blocks use [consensus programs](data.md#consensus-program) to define predicates 
 
 ### Block context
 
-Block context is defined by the block necessary for [BLOCKSIGHASH](#blocksighash), [NEXTPROGRAM](#nextprogram) and [BLOCKTIME](#blocktime) execution.
+Block context is defined by the block necessary for [BLOCKHASH](#blockhash), [NEXTPROGRAM](#nextprogram) and [BLOCKTIME](#blocktime) execution.
 
 Instruction [PROGRAM](#program) behaves differently than in transaction context.
 
@@ -88,7 +88,7 @@ Transaction context is defined by the pair of the entire transaction and the ind
 
 Execution of any of the following instructions results in immediate failure:
 
-* [BLOCKSIGHASH](#blocksighash)
+* [BLOCKHASH](#blockhash)
 * [NEXTPROGRAM](#nextprogram)
 * [BLOCKTIME](#blocktime)
 
@@ -1073,13 +1073,13 @@ Typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
 Fails if executed in the [block context](#block-context).
 
 
-#### BLOCKSIGHASH
+#### BLOCKHASH
 
 Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xaf  | (∅ → hash)                     | 4·L<sub>hashed data</sub> + [standard memory cost](#standard-memory-cost)
 
-Returns the [block signature hash](data.md#block-signature-hash).
+Returns the [block ID](data.md#block-id).
 
 Typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
 

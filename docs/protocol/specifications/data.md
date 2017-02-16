@@ -17,7 +17,6 @@
   * [Block Commitment](#block-commitment)
   * [Block Witness](#block-witness)
   * [Block ID](#block-id)
-  * [Block Signature Hash](#block-signature-hash)
   * [Transaction](#transaction)
   * [Transaction Common Fields](#transaction-common-fields)
   * [Transaction Common Witness](#transaction-common-witness)
@@ -134,7 +133,7 @@ Non-zero **higher bits** and value 0x02 are reserved for future use.
 
 Serialization Flags Examples | Description
 -----------------------------|---------------------------
-0000 0000                    | Block with neither witness nor transactions. Used in [block signature hash](#block-signature-hash).
+0000 0000                    | Block with neither witness nor transactions. Used in [block ID](#block-id).
 0000 0001                    | Block with witness but without transactions. Also called a “[block header](#block-header)”.
 0000 0011                    | Block with both witness and transactions. Also called simply a “[block](#block)”.
 0000 0010                    | Reserved for future use.
@@ -172,17 +171,13 @@ Program Arguments Count | varint31      | Number of [program arguments](#program
 Program Arguments       | [varstring31] | List of [signatures](#signature) and other data satisfying previous block’s [next consensus program](#consensus-program).
 —                       | —             | Additional fields may be added by future extensions.
 
-The entire witness data string (including any unsupported fields) is excluded from the [block’s signature hash](#block-signature-hash).
+The entire witness data string (including any unsupported fields) is excluded from the [block’s ID](#block-id).
 
 
 ### Block ID
 
-The *block ID* (also called *block hash*) is defined as [SHA3-256](#sha3) of the block serialized with 0x01 [serialization flags](#block-serialization-flags). This covers all header data including the block witness and the transactions’ merkle root, but it excludes transactions themselves.
+The *block ID* (also called *block hash*) is defined as [SHA3-256](#sha3) of the block serialized with 0x00 [serialization flags](#block-serialization-flags). This covers header data excluding the block witness, but including the [transactions’ merkle root](#transactions-merkle-root).
 
-
-### Block Signature Hash
-
-The *block signature hash* is defined as [SHA3-256](#sha3) of the block serialized with 0x00 [serialization flags](#block-serialization-flags). This covers header data excluding the block witness, but including the [transactions’ merkle root](#transactions-merkle-root).
 
 ### Transaction
 
