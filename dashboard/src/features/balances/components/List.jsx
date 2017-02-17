@@ -10,7 +10,7 @@ const newStateToProps = (state, ownProps) => {
     defaultFilter: "is_local='yes'"
   }
 
-  props.searchState.sumBy = ownProps.location.query.sum_by || ''
+  props.searchState.sumBy = ownProps.location.query.sumBy || ''
   return props
 }
 

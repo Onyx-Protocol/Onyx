@@ -29,8 +29,8 @@ let actions = {
       } else {
         if (data.type == 'new') {
           data = {
-            is_generator: true,
-            is_signer: true,
+            isGenerator: true,
+            isSigner: true,
             quorum: 1,
           }
         }

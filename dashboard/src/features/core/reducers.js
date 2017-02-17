@@ -36,7 +36,7 @@ export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    if (action.param.generator_block_height == 0) return '???'
+    if (action.param.generatorBlockHeight == 0) return '???'
   }
 
   return coreConfigReducer('generatorBlockHeight', state, 0, action)

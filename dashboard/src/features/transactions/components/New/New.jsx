@@ -31,7 +31,7 @@ class Form extends React.Component {
   addActionItem(type) {
     this.props.fields.actions.addField({
       type: type,
-      reference_data: '{\n\t\n}'
+      referenceData: '{\n\t\n}'
     })
     this.closeDropdown()
   }
@@ -61,7 +61,7 @@ class Form extends React.Component {
             response.actions = []
 
             err.data.forEach((error) => {
-              response.actions[error.data.action_index] = {type: error}
+              response.actions[error.data.actionIndex] = {type: error}
             })
           }
 
@@ -73,14 +73,14 @@ class Form extends React.Component {
 
   render() {
     const {
-      fields: { base_transaction, actions, submit_action },
+      fields: { baseTransaction, actions, submitAction },
       error,
       handleSubmit,
       submitting
     } = this.props
 
     let submitLabel = 'Submit transaction'
-    if (submit_action.value == 'generate') {
+    if (submitAction.value == 'generate') {
       submitLabel = 'Generate transaction hex'
     }
 
@@ -149,14 +149,14 @@ class Form extends React.Component {
             <TextField
               title='Base transaction'
               placeholder='Paste transaction hex here...'
-              fieldProps={base_transaction}
+              fieldProps={baseTransaction}
               autoFocus={true} />
 
             <FieldLabel>Transaction Build Type</FieldLabel>
             <table className={styles.submitTable}>
               <tbody>
                 <tr>
-                  <td><input id='submit_action_submit' type='radio' {...submit_action} value='submit' checked={submit_action.value == 'submit'} /></td>
+                  <td><input id='submit_action_submit' type='radio' {...submitAction} value='submit' checked={submitAction.value == 'submit'} /></td>
                   <td>
                     <label htmlFor='submit_action_submit'>Submit transaction to blockchain</label>
                     <br />
@@ -166,7 +166,7 @@ class Form extends React.Component {
                   </td>
                 </tr>
                 <tr>
-                  <td><input id='submit_action_generate' type='radio' {...submit_action} value='generate' checked={submit_action.value == 'generate'} /></td>
+                  <td><input id='submit_action_generate' type='radio' {...submitAction} value='generate' checked={submitAction.value == 'generate'} /></td>
                   <td>
                     <label htmlFor='submit_action_generate'>Allow additional actions</label>
                     <br />
@@ -191,17 +191,17 @@ const validate = values => {
   const errors = {actions: {}}
 
   // Base transaction
-  let baseTx = values.base_transaction || ''
+  let baseTx = values.baseTransaction || ''
   if (baseTx.trim().match(/[^0-9a-fA-F]/)) {
-    errors.base_transaction = 'Base transaction must be a hex string.'
+    errors.baseTransaction = 'Base transaction must be a hex string.'
   }
 
   // Actions
   let fieldError
   values.actions.forEach((action, index) => {
-    fieldError = JsonField.validator(values.actions[index].reference_data)
+    fieldError = JsonField.validator(values.actions[index].referenceData)
     if (fieldError) {
-      errors.actions[index] = {...errors.actions[index], reference_data: fieldError}
+      errors.actions[index] = {...errors.actions[index], referenceData: fieldError}
     }
   })
 
@@ -217,21 +217,21 @@ export default BaseNew.connect(
   reduxForm({
     form: 'NewTransactionForm',
     fields: [
-      'base_transaction',
-      'actions[].account_id',
-      'actions[].account_alias',
-      'actions[].asset_id',
-      'actions[].asset_alias',
+      'baseTransaction',
+      'actions[].accountId',
+      'actions[].accountAlias',
+      'actions[].assetId',
+      'actions[].assetAlias',
       'actions[].amount',
-      'actions[].control_program',
-      'actions[].output_id',
-      'actions[].reference_data',
+      'actions[].controlProgram',
+      'actions[].outputId',
+      'actions[].referenceData',
       'actions[].type',
-      'submit_action',
+      'submitAction',
     ],
     validate,
     initialValues: {
-      submit_action: 'submit',
+      submitAction: 'submit',
     },
   }
   )(Form)

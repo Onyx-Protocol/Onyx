@@ -14,7 +14,7 @@ const form = baseCreateActions(type)
 function preprocessTransaction(formParams) {
   const copy = JSON.parse(JSON.stringify(formParams))
   const builder = {
-    baseTransaction: copy.base_transaction,
+    baseTransaction: copy.baseTransaction,
     actions: copy.actions,
   }
 
@@ -22,7 +22,7 @@ function preprocessTransaction(formParams) {
     delete builder.baseTransaction
   }
 
-  if (formParams.submit_action == 'generate') {
+  if (formParams.submitAction == 'generate') {
     builder.ttl = '1h' // 1 hour
   }
 
@@ -49,7 +49,7 @@ function preprocessTransaction(formParams) {
     }
 
     try {
-      a.reference_data = parseNonblankJSON(a.reference_data)
+      a.referenceData = parseNonblankJSON(a.referenceData)
     } catch (err) {
       throw new Error(`Action ${parseInt(i)+1} reference data should be valid JSON, or blank.`)
     }
@@ -80,7 +80,7 @@ form.submitForm = (formParams) => function(dispatch) {
     }
   })
 
-  if (formParams.submit_action == 'submit') {
+  if (formParams.submitAction == 'submit') {
     return buildPromise
       .then(tpl => {
         const signer = chainSigner()
@@ -102,7 +102,7 @@ form.submitForm = (formParams) => function(dispatch) {
       })
   }
 
-  // submit_action == 'generate'
+  // submitAction == 'generate'
   return buildPromise
     .then(tpl => {
       const signer = chainSigner()

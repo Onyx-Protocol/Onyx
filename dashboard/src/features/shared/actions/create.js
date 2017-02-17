@@ -30,7 +30,7 @@ export default function(type, options = {}) {
       })
 
       if (data.xpubs) {
-        data.root_xpubs = []
+        data.rootXpubs = []
         data.xpubs.forEach(key => {
           if (key.type == 'generate') {
             promise = promise
@@ -41,10 +41,10 @@ export default function(type, options = {}) {
 
                 return chainClient().mockHsm.keys.create({alias})
               }).then(newKey => {
-                data.root_xpubs.push(newKey.xpub)
+                data.rootXpubs.push(newKey.xpub)
               })
           } else {
-            data.root_xpubs.push(key.value)
+            data.rootXpubs.push(key.value)
           }
         })
         delete data.xpubs
