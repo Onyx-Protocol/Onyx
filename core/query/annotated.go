@@ -47,7 +47,7 @@ type AnnotatedOutput struct {
 	Type            string             `json:"type"`
 	Purpose         string             `json:"purpose,omitempty"`
 	OutputID        bc.OutputID        `json:"id"`
-	TransactionID   bc.Hash            `json:"transaction_id,omitempty"`
+	TransactionID   *bc.Hash           `json:"transaction_id,omitempty"`
 	Position        uint32             `json:"position"`
 	AssetID         bc.AssetID         `json:"asset_id"`
 	AssetAlias      string             `json:"asset_alias,omitempty"`

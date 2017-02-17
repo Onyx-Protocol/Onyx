@@ -10,6 +10,7 @@ import (
 
 	"chain/core/query/filter"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 var defaultOutputsAfter = OutputsAfter{
@@ -75,6 +76,7 @@ func (ind *Indexer) Outputs(ctx context.Context, filt string, vals []interface{}
 		var (
 			blockHeight  uint64
 			txPos        uint32
+			txID         = new(bc.Hash)
 			accountID    *string
 			accountAlias *string
 			out          = new(AnnotatedOutput)
@@ -83,7 +85,7 @@ func (ind *Indexer) Outputs(ctx context.Context, filt string, vals []interface{}
 			&blockHeight,
 			&txPos,
 			&out.Position,
-			&out.TransactionID,
+			txID,
 			&out.OutputID,
 			&out.Type,
 			&out.Purpose,
@@ -103,6 +105,8 @@ func (ind *Indexer) Outputs(ctx context.Context, filt string, vals []interface{}
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "scanning annotated output")
 		}
+
+		out.TransactionID = txID
 
 		// Set nullable fields.
 		if accountID != nil {
