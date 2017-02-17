@@ -1,5 +1,5 @@
 import { chainClient } from 'utility/environment'
-import { context, pageSize } from 'utility/environment'
+import { pageSize } from 'utility/environment'
 import { push, replace } from 'react-router-redux'
 
 export default function(type, options = {}) {
@@ -78,19 +78,27 @@ export default function(type, options = {}) {
 
   const _load = function(query = {}, list = {}, requestOptions) {
     return function(dispatch) {
-      let latestResponse = list.cursor || {}
-      let promise
-      let refresh = requestOptions.refresh || false
-      let filter = query.filter || ''
+      const latestResponse = list.cursor || null
+      const refresh = requestOptions.refresh || false
 
       if (!refresh && latestResponse && latestResponse.lastPage) {
         return Promise.resolve({last: true})
-      } else if (!refresh && latestResponse.nextPage) {
-        promise = latestResponse.nextPage(context())
-        promise.then(resp => dispatch(receive(resp)))
-      } else {
-        let params = {}
+      }
 
+      let promise
+      const filter = query.filter || ''
+
+      if (!refresh && latestResponse) {
+        let responsePage
+        promise = latestResponse.nextPage()
+          .then(resp => {
+            responsePage = resp
+            return dispatch(receive(responsePage))
+          }).then(() =>
+            responsePage
+          )
+      } else {
+        const params = {}
         if (query.filter) params.filter = filter
         if (query.sumBy) params.sumBy = query.sumBy.split(',')
 
