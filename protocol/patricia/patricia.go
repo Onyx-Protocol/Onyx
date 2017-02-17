@@ -75,7 +75,7 @@ func (t *Tree) ContainsKey(bkey []byte) bool {
 	if t.root == nil {
 		return false
 	}
-	return t.lookup(t.root, bitKey(bkey)) != nil
+	return lookup(t.root, bitKey(bkey)) != nil
 }
 
 // Contains returns true if the tree contains the provided
@@ -86,7 +86,7 @@ func (t *Tree) Contains(bkey, val []byte) bool {
 	}
 
 	key := bitKey(bkey)
-	n := t.lookup(t.root, key)
+	n := lookup(t.root, key)
 
 	var hash bc.Hash
 	h := sha3pool.Get256()
@@ -97,7 +97,7 @@ func (t *Tree) Contains(bkey, val []byte) bool {
 	return n != nil && n.Hash() == hash
 }
 
-func (t *Tree) lookup(n *node, key []uint8) *node {
+func lookup(n *node, key []uint8) *node {
 	if bytes.Equal(n.key, key) {
 		if !n.isLeaf {
 			return nil
@@ -109,7 +109,7 @@ func (t *Tree) lookup(n *node, key []uint8) *node {
 	}
 
 	bit := key[len(n.key)]
-	return t.lookup(n.children[bit], key)
+	return lookup(n.children[bit], key)
 }
 
 // Insert enters data into the tree.
@@ -135,11 +135,11 @@ func (t *Tree) Insert(bkey, val []byte) error {
 	}
 
 	var err error
-	t.root, err = t.insert(t.root, key, &hash)
+	t.root, err = insert(t.root, key, &hash)
 	return err
 }
 
-func (t *Tree) insert(n *node, key []uint8, hash *bc.Hash) (*node, error) {
+func insert(n *node, key []uint8, hash *bc.Hash) (*node, error) {
 	if bytes.Equal(n.key, key) {
 		if !n.isLeaf {
 			return n, errors.Wrap(ErrPrefix)
@@ -160,7 +160,7 @@ func (t *Tree) insert(n *node, key []uint8, hash *bc.Hash) (*node, error) {
 		bit := key[len(n.key)]
 
 		child := n.children[bit]
-		child, err := t.insert(child, key, hash)
+		child, err := insert(child, key, hash)
 		if err != nil {
 			return n, err
 		}
@@ -195,11 +195,11 @@ func (t *Tree) Delete(bkey []byte) error {
 	}
 
 	var err error
-	t.root, err = t.delete(t.root, key)
+	t.root, err = delete(t.root, key)
 	return err
 }
 
-func (t *Tree) delete(n *node, key []uint8) (*node, error) {
+func delete(n *node, key []uint8) (*node, error) {
 	if bytes.Equal(key, n.key) {
 		if !n.isLeaf {
 			return n, errors.Wrap(ErrPrefix)
@@ -212,7 +212,7 @@ func (t *Tree) delete(n *node, key []uint8) (*node, error) {
 	}
 
 	bit := key[len(n.key)]
-	newChild, err := t.delete(n.children[bit], key)
+	newChild, err := delete(n.children[bit], key)
 	if err != nil {
 		return nil, err
 	}

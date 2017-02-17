@@ -137,7 +137,7 @@ func TestLookup(t *testing.T) {
 	tr := &Tree{
 		root: &node{key: bools("11111111"), hash: &hashes[0], isLeaf: true},
 	}
-	got := tr.lookup(tr.root, bitKey(bits("11111111")))
+	got := lookup(tr.root, bitKey(bits("11111111")))
 	if !testutil.DeepEqual(got, tr.root) {
 		t.Log("lookup on 1-node tree")
 		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root, 0))
@@ -146,7 +146,7 @@ func TestLookup(t *testing.T) {
 	tr = &Tree{
 		root: &node{key: bools("11111110"), hash: &hashes[1], isLeaf: true},
 	}
-	got = tr.lookup(tr.root, bitKey(bits("11111111")))
+	got = lookup(tr.root, bitKey(bits("11111111")))
 	if got != nil {
 		t.Log("lookup nonexistent key on 1-node tree")
 		t.Fatalf("got:\n%swant nil", prettyNode(got, 0))
@@ -162,7 +162,7 @@ func TestLookup(t *testing.T) {
 			},
 		},
 	}
-	got = tr.lookup(tr.root, bitKey(bits("11110000")))
+	got = lookup(tr.root, bitKey(bits("11110000")))
 	if !testutil.DeepEqual(got, tr.root.children[0]) {
 		t.Log("lookup root's first child")
 		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root.children[0], 0))
@@ -185,7 +185,7 @@ func TestLookup(t *testing.T) {
 			},
 		},
 	}
-	got = tr.lookup(tr.root, bitKey(bits("11111100")))
+	got = lookup(tr.root, bitKey(bits("11111100")))
 	if !testutil.DeepEqual(got, tr.root.children[1].children[0]) {
 		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root.children[1].children[0], 0))
 	}
