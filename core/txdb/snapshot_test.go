@@ -65,10 +65,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 			}
 		}
 		for _, key := range changeset.deletes {
-			err := snapshot.Tree.Delete(key[:])
-			if err != nil {
-				t.Fatal(err)
-			}
+			snapshot.Tree.Delete(key[:])
 		}
 
 		err := storeStateSnapshot(ctx, dbtx, snapshot, uint64(i))

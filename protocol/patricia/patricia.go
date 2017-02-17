@@ -19,7 +19,7 @@ import (
 	"chain/protocol/bc"
 )
 
-// ErrPrefix is returned from Insert or Delete if
+// ErrPrefix is returned from Insert if
 // the key provided is a prefix to existing nodes.
 var ErrPrefix = errors.New("key provided is a prefix to other keys")
 
@@ -187,38 +187,31 @@ func insert(n *node, key []uint8, hash *bc.Hash) (*node, error) {
 // Delete removes up to one value with a matching key.
 // After removing the node, it will rearrange the tree
 // to the optimal structure.
-func (t *Tree) Delete(bkey []byte) error {
+func (t *Tree) Delete(bkey []byte) {
 	key := bitKey(bkey)
 
-	if t.root == nil {
+	if t.root != nil {
+		t.root = delete(t.root, key)
+	}
+}
+
+func delete(n *node, key []uint8) *node {
+	if bytes.Equal(key, n.key) {
+		if !n.isLeaf {
+			return n
+		}
 		return nil
 	}
 
-	var err error
-	t.root, err = delete(t.root, key)
-	return err
-}
-
-func delete(n *node, key []uint8) (*node, error) {
-	if bytes.Equal(key, n.key) {
-		if !n.isLeaf {
-			return n, errors.Wrap(ErrPrefix)
-		}
-		return nil, nil
-	}
-
 	if !bytes.HasPrefix(key, n.key) {
-		return n, nil
+		return n
 	}
 
 	bit := key[len(n.key)]
-	newChild, err := delete(n.children[bit], key)
-	if err != nil {
-		return nil, err
-	}
+	newChild := delete(n.children[bit], key)
 
 	if newChild == nil {
-		return n.children[1-bit], nil
+		return n.children[1-bit]
 	}
 
 	newNode := new(node)
@@ -227,7 +220,7 @@ func delete(n *node, key []uint8) (*node, error) {
 	newNode.children[bit] = newChild
 	newNode.hash = nil
 
-	return newNode, nil
+	return newNode
 }
 
 // RootHash returns the merkle root of the tree.
