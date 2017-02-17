@@ -9,7 +9,7 @@ import {
 } from 'features/shared/components'
 
 import { Summary } from './'
-import buildInOutDisplay from 'utility/buildInOutDisplay'
+import { buildTxInputDisplay, buildTxOutputDisplay } from 'utility/buildInOutDisplay'
 
 class Show extends BaseShow {
 
@@ -53,7 +53,7 @@ class Show extends BaseShow {
             <KeyValueTable
               key={index}
               title={index == 0 ? 'Inputs' : ''}
-              items={buildInOutDisplay(input)}
+              items={buildTxInputDisplay(input)}
             />
           )}
 
@@ -61,7 +61,7 @@ class Show extends BaseShow {
             <KeyValueTable
               key={index}
               title={index == 0 ? 'Outputs' : ''}
-              items={buildInOutDisplay(output)}
+              items={buildTxOutputDisplay(output)}
             />
           )}
         </PageContent>
