@@ -444,6 +444,24 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+func TestDeletePrefix(t *testing.T) {
+	_, hashes := makeVals(4)
+	root := &node{
+		key:  bools("111111"),
+		hash: hashPtr(hashForNonLeaf(hashes[2], hashes[3])),
+		children: [2]*node{
+			{key: bools("11111110"), hash: &hashes[2], isLeaf: true},
+			{key: bools("11111111"), hash: &hashes[3], isLeaf: true},
+		},
+	}
+
+	got := delete(root, bools("111111"))
+	got.calcHash()
+	if !testutil.DeepEqual(got, root) {
+		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(root, 0))
+	}
+}
+
 func TestBoolKey(t *testing.T) {
 	cases := []struct {
 		b []byte

@@ -273,10 +273,7 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 
 		// Remove the consumed output from the state tree.
 		uid := si.SpentOutputID
-		err := snapshot.Tree.Delete(uid.Bytes())
-		if err != nil {
-			return err
-		}
+		snapshot.Tree.Delete(uid.Bytes())
 	}
 
 	for i, out := range tx.Outputs {
