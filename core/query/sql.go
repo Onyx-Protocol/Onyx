@@ -68,6 +68,8 @@ var (
 			"issuance_program": {Name: "issuance_program", Type: filter.String, SQLType: filter.SQLBytea},
 			"reference_data":   {Name: "reference_data", Type: filter.Object, SQLType: filter.SQLJSONB},
 			"is_local":         {Name: "local", Type: filter.Bool, SQLType: filter.SQLBool},
+			"spent_output_id":  {Name: "spent_output_id", Type: filter.String, SQLType: filter.SQLBytea},
+			"spent_output":     {Name: "spent_output", Type: filter.Object, SQLType: filter.SQLJSONB},
 		},
 	}
 	transactionsTable = &filter.SQLTable{
