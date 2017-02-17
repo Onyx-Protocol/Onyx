@@ -295,7 +295,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 			asset_tags, asset_local, amount, account_id, account_alias, account_tags,
 			control_program, reference_data, local)
 		SELECT $1, tx_pos, output_index, tx_hash,
-		CASE WHEN type='retired' THEN int8range($5, $5) ELSE int8range($5, NULL) END,
+		CASE WHEN type='retire' THEN int8range($5, $5) ELSE int8range($5, NULL) END,
 		output_id, type, purpose, asset_id, asset_alias, asset_definition, asset_tags,
 		asset_local, amount, account_id, account_alias, account_tags, control_program,
 		reference_data, local
