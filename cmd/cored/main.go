@@ -240,7 +240,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	store := txdb.NewStore(db)
-	c, err := protocol.NewChain(ctx, conf.BlockchainID, store, heights)
+	c, err := protocol.NewChain(ctx, conf.BlockchainId, store, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
