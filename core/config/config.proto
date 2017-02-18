@@ -14,7 +14,7 @@ message Config {
 	string block_hsm_url = 7;
 	string block_hsm_access_token = 8;
 	uint64 configured_at = 9;
-	bytes block_pub = 10;
+	string block_pub = 10;
 	repeated BlockSigner signers = 11;
 	uint32 quorum = 12;
 	uint64 max_issuance_window = 13	;
