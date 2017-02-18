@@ -116,7 +116,8 @@ func lookup(n *node, key []uint8) *node {
 // and its value is updated, leaving the structure of
 // the tree alone.
 // It is an error for bkey to be a prefix
-// of a key already in t.
+// of a key already in t or to contain a key already
+// in t as a prefix.
 func (t *Tree) Insert(bkey, val []byte) error {
 	key := bitKey(bkey)
 
