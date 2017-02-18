@@ -1,4 +1,3 @@
-import { combineReducers } from 'redux'
 import steps from './steps.json'
 
 export const step = (state = 0, action) => {
@@ -39,21 +38,14 @@ export const userInputs = (currentStep) => (state = { accounts: [] }, action) =>
 }
 
 export default (state = {}, action) => {
-  const tutorialRoute = state.route
-  const tutorialUserInputs = state.userInputs
-
-  delete state.currentStep // combineReducers logs error because currentStep set outside of function
-  delete state.route
-  delete state.userInputs
-
-  const newState = combineReducers({
-    step,
-    isShowing
-  })(state, action)
+  const newState = {
+    step: step(state.step, action),
+    isShowing: isShowing(state.isShowing, action)
+  }
 
   newState.currentStep = steps[newState.step]
-  newState.userInputs = userInputs(newState.currentStep)(tutorialUserInputs, action)
-  newState.route = route(newState.currentStep)(tutorialRoute, action)
+  newState.userInputs = userInputs(newState.currentStep)(state.userInputs, action)
+  newState.route = route(newState.currentStep)(state.route, action)
 
   return newState
 }

@@ -223,7 +223,7 @@
       "header": "Issue asset units",
       "steps": [
         {
-          "title": "Click the \"Add Action\" button",
+          "title": "Click the \"Add action\" button",
           "description": [
             "Select \"Issue\" to add a new action to your transaction."
           ]
@@ -242,7 +242,7 @@
           ]
         },
         {
-          "title": "Click the \"Add Action\" button",
+          "title": "Click the \"Add action\" button",
           "description": [
             "Select \"Control with account\"."
           ]
