@@ -143,14 +143,13 @@ func configGenerator(db *sql.DB, rDB *raft.Service, args []string) {
 
 	conf := &config.Config{
 		IsGenerator:         true,
-		IsSigner:            *isSigner,
 		Quorum:              quorum,
 		Signers:             signers,
 		MaxIssuanceWindow:   bc.DurationMillis(*maxIssuanceWindow),
 		IsSigner:            *flagK != "",
-		BlockPub:            *flagK,
-		BlockHSMURL:         *flagHSMURL,
-		BlockHSMAccessToken: *flagHSMToken,
+		BlockPub:            []byte(*flagK),
+		BlockHsmUrl:         *flagHSMURL,
+		BlockHsmAccessToken: *flagHSMToken,
 	}
 
 	ctx := context.Background()
@@ -227,8 +226,8 @@ func configNongenerator(db *sql.DB, rDB *raft.Service, args []string) {
 	conf.GeneratorAccessToken = *flagT
 	conf.IsSigner = *flagK != ""
 	conf.BlockPub = []byte(*flagK)
-	conf.BlockHSMURL = *flagHSMURL
-	conf.BlockHSMAccessToken = *flagHSMToken
+	conf.BlockHsmUrl = *flagHSMURL
+	conf.BlockHsmAccessToken = *flagHSMToken
 
 	ctx := context.Background()
 	err = config.Configure(ctx, db, rDB, &conf)

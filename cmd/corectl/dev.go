@@ -24,7 +24,7 @@ func reset(db *sql.DB, rDB *raft.Service, args []string) {
 	}
 }
 
-func createBlockKeyPair(db *sql.DB, args []string) {
+func createBlockKeyPair(db *sql.DB, _ *raft.Service, args []string) {
 	if len(args) != 0 {
 		fatalln("error: create-block-keypair takes no args")
 	}
