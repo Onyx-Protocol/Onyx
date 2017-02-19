@@ -31,7 +31,7 @@ Programs are executed in a stack-based [virtual machine](#vm-state).
 * First, the program arguments are pushed on the stack one after the other (so that the last argument is on the top of the stack).
 * Then the VM executes the actual predicate program (control program, issuance program or consensus program) encoded as a sequence of **opcodes**.
 * If execution halts early (because of a disabled opcode, [FAIL](#fail), a [VERIFY](#verify) failure, or exceeding the run limit), validation fails.
-* If execution completes successfully, the top stack value is inspected. If it’s zero, validation fails, otherwise validation succeeds.
+* If execution completes successfully, validation succeeds.
 
 Each instruction has a built-in [run cost](#instruction-cost) that counts against a built-in *run limit* to protect the network from resource exhaustion. Currently, the protocol [mandates](#vm-state) a specific run limit. Future VM versions will provide more fine-grained control over run limit by operators and users of the network.
 
@@ -133,7 +133,13 @@ Initializes VM with a predicate program (e.g. a [control program](data.md#contro
 
 At the beginning of each execution step, the PC is checked. If it is less than the length of the program, VM reads the opcode at that byte position in the program and executes a corresponding instruction. Instructions are executed as described in the [Instructions](#instructions) section. The run limit is decreased or increased according to the instruction’s *run cost*. If the instruction’s run cost exceeds the current run limit, the instruction is not executed and execution fails immediately.
 
-If the PC is equal to or greater than the length of the program at the beginning of an execution step, execution is complete, and the top value of the data stack is checked and interpreted as a boolean. If it is `false`, or if the data stack is empty, verification fails; otherwise, verification succeeds. (Note: The data stack may contain any number of elements when execution finishes; there is no "clean stack" requirement. The alt stack also can be non-empty upon completion.)
+If the PC is equal to or greater than the length of the program at the beginning of an execution step, execution is complete and verification succeeds. 
+
+[sidenote]
+
+The data stack may contain any number of elements when execution finishes; there is no "clean stack" requirement. The alt stack also can be non-empty upon completion.
+
+[/sidenote]
 
 After each step, the PC is incremented by the size of the current instruction.
 
@@ -227,8 +233,6 @@ Validation fails when:
 * an invalid encoding is detected for keys or [signatures](data.md#signature)
 * coercion fails for [numbers](#vm-number)
 * a bounds check fails for one of the [splice](#splice-operators) or [numeric](#logical-and-numeric-operators) instructions
-* the program execution finishes with an empty data stack
-* the program execution finishes with a [false](#vm-boolean) item on the top of the data stack
 * an instruction specifies that it fails (see below)
 
 
@@ -367,7 +371,7 @@ If the remaining run limit is less than 256, execution fails immediately.
 5. Reduces VM’s run limit by `256 + limit`.
 6. Instantiates a new VM instance (“child VM”) with its run limit set to `limit`.
 7. Moves the top `n` items from the parent VM’s data stack to the child VM’s data stack without incurring run limit refund or charge of their [standard memory cost](#standard-memory-cost) in either VM. The order of the moved items is unchanged. The memory cost of these items will be refunded when the child VM pops them, or when the child VM is destroyed and its parent VM is refunded.
-8. Child VM evaluates the predicate and pushes `true` to the parent VM data stack if the evaluation did not fail and the child VM’s data stack is non-empty with a `true` value on top (this implements the same semantics as for the top-level [verify predicate](#verify-predicate) operation). It pushes `false` otherwise. Note that the parent VM does not fail when the child VM exhausts its run limit or otherwise fails.
+8. Child VM evaluates the predicate and pushes `true` to the parent VM data stack if the evaluation succeeded (this implements the same semantics as for the top-level [verify predicate](#verify-predicate) operation). It pushes `false` otherwise. Note that the parent VM does not fail when the child VM exhausts its run limit or otherwise fails.
 9. After the child VM finishes execution (normally or due to a failure), the parent VM’s run limit is refunded with a `leftover` value computed as a sum of the following values:
     1. Remaining run limit of the child VM.
     2. [Standard memory cost](#standard-memory-cost) of all items left on the child VM’s data stack.
