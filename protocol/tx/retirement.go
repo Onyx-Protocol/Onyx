@@ -1,10 +1,12 @@
 package tx
 
+import "chain/protocol/bc"
+
 type retirement struct {
 	body struct {
-		Source  valueSource
-		Data    entryRef
-		ExtHash extHash
+		Source      valueSource
+		RefDataHash bc.Hash
+		ExtHash     extHash
 	}
 	ordinal int
 }
@@ -14,10 +16,10 @@ func (r *retirement) Body() interface{} { return r.body }
 
 func (r retirement) Ordinal() int { return r.ordinal }
 
-func newRetirement(source valueSource, data entryRef, ordinal int) *retirement {
+func newRetirement(source valueSource, refDataHash bc.Hash, ordinal int) *retirement {
 	r := new(retirement)
 	r.body.Source = source
-	r.body.Data = data
+	r.body.RefDataHash = refDataHash
 	r.ordinal = ordinal
 	return r
 }
