@@ -6,7 +6,7 @@ type output struct {
 	body struct {
 		Source         valueSource
 		ControlProgram program
-		RefDataHash    bc.Hash
+		Data           bc.Hash
 		ExtHash        extHash
 	}
 	ordinal int
@@ -17,11 +17,11 @@ func (o *output) Body() interface{} { return o.body }
 
 func (o output) Ordinal() int { return o.ordinal }
 
-func newOutput(source valueSource, controlProgram program, refDataHash bc.Hash, ordinal int) *output {
+func newOutput(source valueSource, controlProgram program, data bc.Hash, ordinal int) *output {
 	out := new(output)
 	out.body.Source = source
 	out.body.ControlProgram = controlProgram
-	out.body.RefDataHash = refDataHash
+	out.body.Data = data
 	out.ordinal = ordinal
 	return out
 }

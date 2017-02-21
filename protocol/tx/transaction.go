@@ -54,12 +54,12 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *issuance:
-			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.RefDataHash, ent.body.RefDataHash)
+			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.Data, ent.body.Data)
 			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 
 		case *spend:
-			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.RefDataHash, ent.body.RefDataHash)
+			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.Data, ent.body.Data)
 			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 		}
@@ -70,14 +70,14 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 
 // populates the common fields of a VMContext for an Entry, regardless of whether
 // that Entry is a Spend or an Issuance
-func newVMContext(entryID, txid, txRefDataHash, inpRefDataHash bc.Hash) *bc.VMContext {
+func newVMContext(entryID, txid, txData, inpData bc.Hash) *bc.VMContext {
 	vmc := new(bc.VMContext)
 
 	// TxRefDataHash
-	vmc.TxRefDataHash = txRefDataHash
+	vmc.TxRefDataHash = txData
 
 	// RefDataHash (input-specific)
-	vmc.RefDataHash = inpRefDataHash
+	vmc.RefDataHash = inpData
 
 	// EntryID
 	vmc.EntryID = entryID

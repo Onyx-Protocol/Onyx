@@ -4,9 +4,9 @@ import "chain/protocol/bc"
 
 type retirement struct {
 	body struct {
-		Source      valueSource
-		RefDataHash bc.Hash
-		ExtHash     extHash
+		Source  valueSource
+		Data    bc.Hash
+		ExtHash extHash
 	}
 	ordinal int
 }
@@ -16,10 +16,10 @@ func (r *retirement) Body() interface{} { return r.body }
 
 func (r retirement) Ordinal() int { return r.ordinal }
 
-func newRetirement(source valueSource, refDataHash bc.Hash, ordinal int) *retirement {
+func newRetirement(source valueSource, data bc.Hash, ordinal int) *retirement {
 	r := new(retirement)
 	r.body.Source = source
-	r.body.RefDataHash = refDataHash
+	r.body.Data = data
 	r.ordinal = ordinal
 	return r
 }
