@@ -41,6 +41,7 @@ import (
 	"chain/encoding/json"
 	"chain/env"
 	"chain/errors"
+	"chain/generated/rev"
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
@@ -52,7 +53,6 @@ import (
 const (
 	httpReadTimeout  = 2 * time.Minute
 	httpWriteTimeout = time.Hour
-	latestVersion    = "1.1.3"
 )
 
 var (
@@ -85,14 +85,11 @@ var (
 
 func init() {
 	var version string
-	if strings.HasPrefix(buildTag, "chain-core-server-") {
-		// build tag with chain-core-server- prefix indicates official release
-		version = latestVersion
-	} else if buildTag != "?" {
-		version = latestVersion + "-" + buildTag
+	if buildTag != "?" {
+		version = strings.TrimPrefix(buildTag, "chain-core-server-")
 	} else {
-		// -dev suffix indicates intermediate, non-release build
-		version = latestVersion + "+changes"
+		// +changes suffix indicates non-release build
+		version = rev.ID
 	}
 
 	prodStr := "no"
