@@ -110,7 +110,7 @@ ExtHash    | Hash                                          | Hash of all struct 
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
 
 ### Output
 
@@ -133,7 +133,7 @@ ExtHash             | Hash                 | If the transaction version is known
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
 
 #### Retirement
 
@@ -153,10 +153,9 @@ ExtHash             | Hash                 | If the transaction version is known
 
 #### Retirement Witness
 
-
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
 
 ### Spend  
 
@@ -180,7 +179,6 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
 Arguments           | String               | Arguments for the control program contained in the SpentOutput.
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 ### Issuance  
 
@@ -205,4 +203,3 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
 Value               | AssetAmount          | Asset ID and amount being issued.
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
