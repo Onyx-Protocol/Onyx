@@ -85,7 +85,6 @@ Field               | Type                 | Description
 Type                | String               | The type of this Entry. e.g. Issuance, Retirement
 Body                | Struct               | Varies by type.
 Witness             | Struct               | Varies by type.
-Extension           | Pointer<Extension>   | Must be empty if version is known.
 
 
 ### TxHeader
@@ -102,7 +101,7 @@ Field      | Type                                          | Description
 -----------|-----------------------------------------------|-------------------------
 Version    | Integer                                       | Transaction version, equals 1.
 Results    | List<Pointer<Output|Retirement>>              | A list of pointers to Outputs or Retirements. This list must contain at least one item.
-Data       | Pointer<Data>                                 | A single pointer to a Data entry.
+Data       | Hash                                          | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
 Mintime    | Integer                                       | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
 Maxtime    | Integer                                       | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
 ExtHash    | Hash                                          | Hash of all struct extensions. (See [Extstruct](#extstruct).) If the version is known, all ext_hashes must be hashes of empty strings.
@@ -112,18 +111,6 @@ ExtHash    | Hash                                          | Hash of all struct 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
-
-### Data
-
-Field               | Type                 | Description
---------------------|----------------------|----------------
-Type                | String               | "data1"
-Body                | Hash                 | Hash of the underlying data.
-Witness             | Hash                 | Hash of empty string.
-
-The body is a hash of the underlying data. The underlying data may not be known. If a transaction author wants to provide the underlying data, it must be done in the transport layer alongisde the actual transaction.
-
-TKTK Address comments about specifying the hash function for the underlying data. I know we sorted this out, but now I can't remember.
 
 ### Output
 
@@ -139,7 +126,7 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource          | The source of the units to be included in this output.
 ControlProgram      | Program              | The program to control this output.
-Data                | Pointer<Data>        | Reference data included on this entry.
+Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 #### Output Witness
@@ -161,7 +148,7 @@ Witness             | Struct               | See below.
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource          | The source of the units that are being retired.
-Data                | Pointer<Data>        | Reference data included on this entry.
+Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 #### Retirement Witness
@@ -184,7 +171,7 @@ Witness             | Struct               | See below.
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 SpentOutput         | Pointer<Output>      | The Output Entry consumed by this spend.
-Data                | Pointer<Data>        | Reference data included on this entry.
+Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 #### Spend Witness
@@ -209,7 +196,7 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
 Value               | AssetAmount          | Asset ID and amount being issued.
-Data                | Pointer<Data>        | Reference data included on this entry.
+Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 #### Issuance Witness
@@ -218,5 +205,4 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
 Value               | AssetAmount          | Asset ID and amount being issued.
-Data                | Pointer<Data>        | Reference data included on this entry.
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
