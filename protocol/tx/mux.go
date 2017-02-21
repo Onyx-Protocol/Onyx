@@ -3,6 +3,7 @@ package tx
 type mux struct {
 	body struct {
 		Sources []valueSource
+		ExtHash extHash
 	}
 }
 
