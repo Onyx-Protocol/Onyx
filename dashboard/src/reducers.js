@@ -46,7 +46,7 @@ const makeRootReducer = () => (state, action) => {
   const finalState = combineReducers({
     ...access_token,
     account,
-    app: () => ({}),
+    app,
     asset,
     balance,
     core,
@@ -59,7 +59,6 @@ const makeRootReducer = () => (state, action) => {
     tutorial,
     unspent,
   })(state, action)
-  finalState.app = app(state.app, action, finalState.tutorial)
   return finalState
 
 }

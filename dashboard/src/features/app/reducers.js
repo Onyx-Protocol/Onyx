@@ -7,7 +7,7 @@ const flash = (message, title, type) => ({ message, title, type, displayed: fals
 const success = (message, title) => flash(message, title, 'success')
 const error = (message, title) => flash(message, title, 'danger')
 
-export const flashMessages = (tutorial) => (state = new Map(), action) => {
+export const flashMessages = (state = new Map(), action) => {
   switch (action.type) {
     case '@@router/LOCATION_CHANGE': {
       if (action.payload.state && action.payload.state.preserveFlash) {
@@ -19,14 +19,6 @@ export const flashMessages = (tutorial) => (state = new Map(), action) => {
           }
         })
         return new Map(state)
-      }
-    }
-
-    case 'UPDATE_TUTORIAL': {
-      if (tutorial.isShowing && tutorial.currentStep.objectType == action.object) {
-        return []
-      } else {
-        return state
       }
     }
 
@@ -112,8 +104,8 @@ export const dropdownState = (state = '', action) => {
   return state
 }
 
-export default (state, action, tutorial) => combineReducers({
-  flashMessages: flashMessages(tutorial),
+export default (state, action) => combineReducers({
+  flashMessages,
   modal,
   dropdownState,
 })(state, action)
