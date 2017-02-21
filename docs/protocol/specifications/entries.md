@@ -52,7 +52,7 @@ An `ExtStruct` is encoded as a single 32-byte hash.
 
 A Pointer is encoded as a Hash, and identifies another entry by its ID. It also restricts the possible acceptable types: Pointer<X> must refer to an entry of type X.
 
-A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte hash `0x00000000000000000000000000000000`.
+A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte hash `0x0000000000000000000000000000000000000000000000000000000000000000`.
 
 ## Data Structures
 
@@ -64,7 +64,7 @@ Field            | Type                        | Description
 -----------------|-----------------------------|----------------
 Ref              | Pointer<Issuance|Spend|Mux> | Previous entry referenced by this ValueSource.
 Value            | AssetAmount                 | Amount and Asset ID contained in the referenced entry.
-Position         | Integer                     | Iff this source refers to a mux entry, then the Position is one of the mux's numbered Outputs. If this source refers to an inp
+Position         | Integer                     | Iff this source refers to a Mux entry, then the Position is one of the Mux's numbered Outputs. If this source refers to an Issuance or Spend entry, then the Position must be 0.
 
 ### ValueDestination
 
@@ -201,5 +201,6 @@ ExtHash             | Hash                 | If the transaction version is known
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
-Value               | AssetAmount          | Asset ID and amount being issued.
+Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
+Arguments           | String               | Arguments for the control program contained in the SpentOutput.
+
