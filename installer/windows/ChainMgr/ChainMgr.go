@@ -182,16 +182,14 @@ func rewriteConfig() error {
 func blockUntilReady(pglog *log.Logger) {
 	// TODO(tessr): add a timeout or something so we can't block indefinitely
 	for {
-		out, err := exec.Command(pg+"pg_isready.exe", "-p", pgPort, "-d", "postgres").Output()
-		if err != nil {
-			pglog.Printf("out: %s; err: %s", out, err)
-		}
+		err := exec.Command(pg+"pg_isready.exe", "-p", pgPort, "-d", "postgres").Run()
 
-		if strings.Contains(string(out), "accepting") {
+		if err != nil {
+			pglog.Printf("still waiting for postgres ready status: %s", err)
+		} else {
 			return
 		}
 
-		pglog.Printf("still waiting for postgres ready status: %s", out)
 		time.Sleep(500 * time.Millisecond)
 	}
 }
