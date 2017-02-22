@@ -5,45 +5,49 @@ import { Link } from 'react-router'
 class TutorialInfo extends React.Component {
 
   render() {
+    let objectImage
+    try {
+      objectImage = require(`assets/images/empty/${this.props.image}.svg`)
+    } catch (err) { /* do nothing */ }
+
     const userInput = this.props.userInput
-    const nextButton = <div className={styles.next}>
-      <Link to={this.props.route}>
-        <button key='showNext' className='btn btn-primary' onClick={this.props.handleNext}>
-          {this.props.button}
+    const nextButton = <Link to={this.props.route} className={styles.nextWrapper}>
+        <button key='showNext' className={`btn ${styles.next}`} onClick={this.props.handleNext}>
+          Next: {this.props.button}
         </button>
       </Link>
-    </div>
 
     return (
       <div>
         <div className={styles.container}>
-          <div className={styles.header}>
-            {this.props.title}
-            {this.props.dismiss &&
-              <div className={styles.skip}>
-                <a onClick={this.props.handleDismiss}>{this.props.dismiss}</a>
-              </div>
-            }
-          </div>
-          <div className={styles.content}>
-            {this.props.logo && <span className={`glyphicon ${this.props.logo}`}></span>}
-            <div className={styles.text}>
-              {this.props.content.map(function (contentLine, i){
-                let str = contentLine['line']
-                if (contentLine['type']){
-                  let replacement = userInput[contentLine['type']]
-                  if ('index' in contentLine){
-                    replacement = replacement[contentLine['index']]
-                  }
-                  str = str.replace('STRING', replacement['alias'])
+          {this.props.image && <img className={styles.image} src={objectImage} />}
+          <div className={styles.text}>
+            {this.props.content.map(function (contentLine, i){
+              let str = contentLine
+              if (contentLine['line']) { str = contentLine['line'] }
+              if(contentLine['list']){
+                let list = []
+                contentLine['list'].forEach(function(listItem, j){
+                  list.push(<tr key={j} className={styles.listItemGroup}>
+                    <td className={styles.listBullet}>{j+1}</td>
+                    <td>{listItem}</td>
+                  </tr>)
+                })
+                return <table className={styles.listItemContainer}>{list}</table>
+              }
+              if (contentLine['type']){
+                let replacement = userInput[contentLine['type']]
+                if ('index' in contentLine){
+                  replacement = replacement[contentLine['index']]
                 }
+                str = str.replace('STRING', replacement['alias'])
+              }
 
-                return <li key={i}>{str}</li>
-              })}
-            </div>
-
-            {nextButton && nextButton}
+              return <p key={i}>{str}</p>
+            })}
           </div>
+
+          {nextButton}
         </div>
     </div>
     )

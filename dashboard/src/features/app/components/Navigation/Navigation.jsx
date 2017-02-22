@@ -1,6 +1,5 @@
 import React from 'react'
 import { connect } from 'react-redux'
-import actions from 'actions'
 import { Link } from 'react-router'
 import styles from './Navigation.scss'
 import Sync from '../Sync/Sync'
@@ -86,7 +85,7 @@ class Navigation extends React.Component {
           </li>
           <li>
             <a href='#' onClick={this.openTutorial}>
-            {navIcon('feed', styles)}
+            {navIcon('tutorial', styles)}
               Tutorial
             </a>
           </li>
@@ -104,6 +103,6 @@ export default connect(
     showSync: state.core.configured && !state.core.generator,
   }),
   (dispatch) => ({
-    openTutorial: () => dispatch(actions.tutorial.openTutorial)
+    openTutorial: () => dispatch({ type: 'OPEN_TUTORIAL' })
   })
 )(Navigation)

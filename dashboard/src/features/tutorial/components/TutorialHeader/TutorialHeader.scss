@@ -1,0 +1,37 @@
+.main {
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.25);
+  margin-bottom: $gutter-size/2;
+  border-bottom: solid $highlight-tutorial 1px;
+}
+
+.collapsed {
+  border-bottom: 1px darken($highlight-tutorial, 15%) solid;
+  box-shadow: none;
+}
+
+.header {
+  background-color: $highlight-tutorial;
+  box-sizing: border-box;
+  color: $text-inverse-color;
+  padding: 0 $gutter-size;
+  height: $title-height;
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: bold;
+  width: 100%;
+}
+
+.skip {
+  flex: 1;
+  text-align: right;
+
+  a {
+    color: $text-inverse-color;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 18px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}

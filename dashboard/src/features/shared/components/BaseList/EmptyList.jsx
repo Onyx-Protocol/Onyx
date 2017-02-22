@@ -17,8 +17,10 @@ class EmptyList extends React.Component {
       emptyBlock = this.props.firstTimeContent
     } else if (this.props.showFirstTimeFlow) {
       emptyBlock = <div>
+        <span className={`${styles.emptyLabel} ${styles.noResultsLabel}`}>
+          There are no {this.props.objectName}s on the blockchain
+        </span>
         {this.props.firstTimeContent}
-        {this.props.newButton}
       </div>
     } else if (!this.props.showFirstTimeFlow) {
       emptyBlock = <div className={styles.emptyContainer}>

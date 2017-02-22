@@ -1,0 +1,449 @@
+[
+  {
+    "component": "TutorialModal",
+    "title": "Welcome to Chain Core!",
+    "button": "Start 5-minute Tutorial",
+    "dismiss": "Skip",
+    "route": "mockhsms",
+    "content": [
+      "Would you like a brief tutorial? This guide will walk you through the basic functions available in the Chain Core Dashboard."
+    ]
+  },
+  {
+    "component": "TutorialInfo",
+    "title": "Tutorial - Creating Keys - Step 1 of 7",
+    "button": "Create MockHSM key",
+    "route": "mockhsms/create",
+    "image": "mockhsm",
+    "content": [
+      "Cryptographic private keys are the primary authorization mechanism on a blockchain. They control both the issuance and transfer of asset units. An asset or account will define one or more keys required for issuance or transfers.",
+      "For development environments, Chain Core provides a convenient MockHSM that simulates production behaviors. Let's begin by creating a new key in our HSM."
+    ]
+  },
+  {
+    "component": "TutorialForm",
+    "objectType": "mockhsm",
+    "title": "Tutorial - Creating Keys - Step 1 of 7",
+    "content": {
+      "header": "Create MockHSM key",
+      "steps": [
+        {
+          "title": "Enter an alias for your key (ex. \"goldkey\")",
+          "description": [
+            "An alias is a friendly label used to distinguish between keys. We will use this alias in the next step."
+          ]
+        },
+        {
+          "title": "Click the \"Submit\" button"
+        }
+      ]
+    }
+  },
+  {
+    "component": "TutorialInfo",
+    "objectType": "mockhsm",
+    "title": "Tutorial - Creating Keys - Step 1 of 7",
+    "button": "Learn about assets",
+    "route": "assets",
+    "image": "mockhsm",
+    "content": [
+      {
+        "type": "mockhsm",
+        "line": "Great work! You created a new key in the MockHSM named \"STRING\". Next up, we'll learn about assets and how to create them."
+      }
+
+    ]
+  },
+  {
+    "component": "TutorialInfo",
+    "title": "Tutorial - Creating Assets - Step 2 of 7",
+    "button": "Create Asset",
+    "route": "assets/create",
+    "image": "asset",
+    "content": [
+      "An asset is a type of value that can be issued on a blockchain. All units of an asset are fungible and can be transacted directly between parties without the involvement of the issuer.",
+      "Let's create a new asset now."
+    ]
+  },
+  {
+    "component": "TutorialForm",
+    "objectType": "asset",
+    "title": "Tutorial - Creating Assets - Step 2 of 7",
+    "content": {
+      "header": "Create new Asset",
+      "steps": [
+        {
+          "title": "Enter an alias for your asset (ex. \"gold\")",
+          "description": [
+            "An alias is a friendly label used to distinguish between assets."
+          ]
+        },
+        {
+          "title": "Select \"Use existing MockHSM key\" under \"Keys and Signing\"",
+          "description": [
+            {
+              "type": "mockhsm",
+              "line": "Choose STRING key from the dropdown"
+            }
+          ]
+        },
+        {
+          "title": "Click the \"Submit\" button"
+        }
+      ]
+    }
+  },
+  {
+    "component": "TutorialInfo",
+    "objectType": "asset",
+    "title": "Tutorial - Creating Assets - Step 2 of 7",
+    "button": "Learn about accounts",
+    "route": "accounts",
+    "image": "asset",
+    "content": [
+      {
+        "type": "asset",
+        "line": "Great! You created a new asset type named \"STRING\". Next up, we'll learn about accounts and create two of them for parties who want to trade assets."
+      }
+    ]
+  },
+  {
+    "component": "TutorialInfo",
+    "title": "Tutorial - Creating Accounts - Step 3 of 7",
+    "button": "Create Account",
+    "route": "accounts/create",
+    "image": "account",
+    "content": [
+      "An account is an object in Chain Core that tracks ownership of assets on a blockchain by creating and tracking control programs. The account object does not exist on the blockchain - it is local to this Chain Core. Only the control programs created in the account are visible on the blockchain.",
+      "We'll be moving assets from one account to another; let's create the first one now."
+    ]
+  },
+  {
+    "component": "TutorialForm",
+    "objectType": "account",
+    "title": "Tutorial - Creating Accounts - Step 3 of 7",
+    "content": {
+      "header": "Create Account",
+      "steps": [
+        {
+          "title": "Type name for account alias (ex. \"alice\")",
+          "description": [
+            "An alias is a friendly  label used to distinguish between accounts."
+          ]
+        },
+        {
+          "title": "Select \"Generate new MockHSM key\" under \"Keys and Signing\"",
+          "description": [
+            "You can create a new MockHSM key here as well. Enter a descriptive alias for your new key (ex. 'aliceKey')."
+          ]
+        },
+        {
+          "title": "Click the \"Submit\" button"
+        }
+      ]
+    }
+  },
+  {
+    "component": "TutorialInfo",
+    "objectType": "account",
+    "title": "Tutorial - Accounts - Step 3 of 7",
+    "button": "Create another account",
+    "route": "accounts/create",
+    "image": "account",
+    "content": [
+      {
+        "type": "accounts",
+        "index": 0,
+        "line": "Great! You created a new account named \"STRING\". In order to do some trading, let's create our second account."
+      }
+    ]
+  },
+  {
+    "component": "TutorialForm",
+    "objectType": "account",
+    "title": "Tutorial - Accounts - Step 3 of 7",
+    "button": null,
+    "route": null,
+    "content": {
+      "header": "Create 2nd Account",
+      "steps": [
+        {
+          "title": "Type name for account alias (ex. \"bob\")",
+          "description": [
+            "An alias is a friendly  label used to distinguish between accounts."
+          ]
+        },
+        {
+          "title": "Select \"Generate new MockHSM key\" under \"Keys and Signing\"",
+          "description": [
+            "You can leave the name field blank, and Chain Core will generate a key with a unique name based on your alias."
+          ]
+        },
+        {
+          "title": "Click the \"Submit\" button"
+        }
+      ]
+    }
+  },
+  {
+    "component": "TutorialInfo",
+    "objectType": "account",
+    "title": "Tutorial - Accounts - Step 4 of 7",
+    "button": "Learn about transactions",
+    "route": "transactions",
+    "image": "account",
+    "content": [
+      {
+        "type": "accounts",
+        "index": 1,
+        "line": "Great! Now we've got an account for \"STRING\" too. Let's start to learn about transactions and how to issue units of your asset."
+      }
+    ]
+  },
+  {
+    "component": "TutorialInfo",
+    "title": "Tutorial - Issuing - Step 5 of 7",
+    "button": "Create issuance transaction",
+    "route": "transactions/create",
+    "image": "transaction",
+    "content": [
+      {
+        "type": "asset",
+        "line": "Chain Core allows you to build transactions using a predefined set of actions to issue, spend, control, or retire asset units. We'll start by creating a transaction that issues units of your \"STRING\" asset."
+      }
+    ]
+  },
+  {
+    "component": "TutorialForm",
+    "objectType": "transaction",
+    "title": "Tutorial - Issuing - Step 5 of 7",
+    "button": null,
+    "route": null,
+    "content": {
+      "header": "Issue asset units",
+      "steps": [
+        {
+          "title": "Click the \"Add action\" button",
+          "description": [
+            "Select \"Issue\" to add a new action to your transaction."
+          ]
+        },
+        {
+          "title": "Fill in the issue action",
+          "description": [
+            {
+              "type": "asset",
+              "line": "Enter STRING for the asset alias "
+            },
+            {
+              "type": 100,
+              "line": "and STRING for the amount."
+            }
+          ]
+        },
+        {
+          "title": "Click the \"Add action\" button",
+          "description": [
+            "Select \"Control with account\"."
+          ]
+        },
+        {
+          "title": "Fill in the control action",
+          "description": [
+            {
+              "type": "accounts",
+              "index": 0,
+              "line": "Enter STRING for the account alias, "
+            },
+            {
+              "type": "asset",
+              "line": " STRING for the asset alias"
+            },
+            {
+              "type": 100,
+              "line": " and STRING for the amount."
+            }
+          ]
+        },
+        {
+          "title": "Click the \"Submit transaction\" button"
+        }
+      ]
+    }
+  },
+  {
+    "component": "TutorialInfo",
+    "objectType": "transaction",
+    "title": "Tutorial - Issuing - Step 5 of 7",
+    "button": "Spend asset units",
+    "route": "transactions/create",
+    "image": "transaction",
+    "content": [
+      {
+        "type": "asset",
+        "line": "You just issued your first units of \"STRING\" onto the blockchain. Nice work!"
+      },
+      "When you clicked \"Submit transaction\", Chain Core Dashboard built your blockchain transaction in three steps:",
+      {
+        "list": [
+          "your raw actions were sent to Chain Core and an unsigned transaction was returned.",
+          "the Dashboard submitted the unsigned transaction to the MockHSM for signature.",
+          "the signed transaction was submitted to the blockchain (you can see the committed result below)."
+        ]
+      },
+      {
+        "type": "accounts",
+        "index": 1,
+        "line": "Now let's transfer some of the newly issued asset units to \"STRING\"."
+      }
+    ]
+  },
+  {
+    "component": "TutorialForm",
+    "objectType": "transaction",
+    "title": "Tutorial - Transfering - Step 6 of 7",
+    "button": null,
+    "route": null,
+    "content": {
+      "header": "Transfer asset units",
+      "steps": [
+        {
+          "title": "Add a \"Spend from account\" action",
+          "description": [
+            {
+              "type": "accounts",
+              "index": 0,
+              "line": "Enter STRING for the account alias, "
+            },
+            {
+              "type": "asset",
+              "line": "STRING for the asset alias "
+            },
+            {
+              "type": 10,
+              "line": "and STRING for the amount."
+            }
+          ]
+        },
+        {
+          "title": "Add a \"Control with account\" action",
+          "description": [
+            {
+              "type": "accounts",
+              "index": 1,
+              "line": "Enter STRING for the account alias, "
+            },
+            {
+              "type": "asset",
+              "line": "STRING for the asset alias "
+            },
+            {
+              "type": 10,
+              "line": "and STRING for the amount."
+            }
+          ]
+        },
+        {
+          "title": "Click the \"Submit transaction\" button"
+        }
+      ]
+    }
+  },
+  {
+    "component": "TutorialInfo",
+    "objectType": "transaction",
+    "title": "Tutorial - Transfering - Step 6 of 7",
+    "button": "Retire asset units",
+    "route": "transactions/create",
+    "image": "transaction",
+    "content": [
+      {
+        "type": "accounts",
+        "index": 1,
+        "line": "Rad! You transferred 10 units of your asset to \"STRING\"."
+      },
+      "In your transaction, the total amount of assets spent was equal to the total amount of assets controlled (received). Any combination of actions can be added to a single transaction, as long as what goes in equals what comes out.",
+      {
+        "type": "asset",
+        "line": "Finally, let's retire some units of \"STRING\" from circulation."
+      }
+    ]
+  },
+  {
+    "component": "TutorialForm",
+    "objectType": "transaction",
+    "title": "Tutorial - Retiring - Step 7 of 7",
+    "content": {
+      "header": "Retire asset units",
+      "steps": [
+        {
+          "title": "Add a \"Spend from account\" action",
+          "description": [
+            {
+              "type": "accounts",
+              "index": 1,
+              "line": "Enter STRING for the account alias, "
+            },
+            {
+              "type": "asset",
+              "line": "STRING for the asset alias "
+            },
+            {
+              "type": 5,
+              "line": "and STRING for the amount."
+            }
+          ]
+        },
+        {
+          "title": "Add a \"Retire\" action",
+          "description": [
+            {
+              "type": "asset",
+              "line": "Enter STRING for the asset alias "
+            },
+            {
+              "type": 5,
+              "line": "and STRING for the amount."
+            }
+          ]
+        },
+        {
+          "title": "Click the \"Submit transaction\" button"
+        }
+      ]
+    }
+  },
+  {
+    "component": "TutorialInfo",
+    "objectType": "transaction",
+    "title": "Tutorial - Retiring - Step 7 of 7",
+    "button": "Finish tutorial",
+    "dismiss": " ",
+    "route": "transactions",
+    "image": "transaction",
+    "content": [
+      {
+        "type": "asset",
+        "line": "That's it - your 5 units of \"STRING\" have been removed from circulation. These units can no longer be spent, but their history is a permanent part of the blockchain."
+      },
+      "Let's wrap up this tutorial with a quick recap of what we've learned."
+    ]
+  },
+  {
+    "component": "TutorialModal",
+    "title": "Tutorial - Complete",
+    "dismiss": "Close",
+    "content": [
+      "Congratulations! You now know the basics of:",
+      {
+        "list": [
+          "creating cryptographic keys",
+          "using keys to create assets and accounts",
+          "building transactions to issue, spend and retire"
+        ]
+      },
+      "To dig deeper, check out the \"Documentation\" link in the sidebar for information about building applications, using our SDKs, and about how the blockchain works.",
+      "You can revisit this tutorial at any time by clicking \"Tutorial\" in the sidebar."
+    ]
+  }
+]

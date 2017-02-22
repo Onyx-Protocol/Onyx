@@ -1,0 +1,97 @@
+.main {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+}
+.backdrop {
+  background: transparentize(black, 0.2);
+  width: 100%;
+  height: 100%;
+}
+
+.content {
+  border: solid $highlight-tutorial 1px;
+  background: $background-emphasis-color;
+  position: absolute;
+  top: 10%;
+  left: calc(50% - 250px);
+  width: 500px;
+  max-height: 80%;
+  overflow: scroll;
+
+  .header {
+    background-color: $highlight-tutorial;
+    box-sizing: border-box;
+    color: $text-inverse-color;
+    padding: 0 $gutter-size;
+    height: $title-height;
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    font-weight: bold;
+    width: 100%;
+  }
+
+  .text {
+    padding: $gutter-size/2 $gutter-size;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 18px;
+    color: #747C89;
+    border-bottom: 1px solid rgba(182,188,197,0.27);
+
+    .listItemContainer {
+      margin: 15px 0;
+
+      .listBullet {
+        margin-right: 10px;
+        padding: 2px;
+        display: inline-block;
+        border-radius: 50%;
+        background: $highlight-tutorial;
+        width: 18px;
+        height: 18px;
+        font-size: 12px;
+        font-weight: bold;
+        text-align: center;
+        line-height: 14px;
+        color: #FFFFFF;
+      }
+
+      .listItemGroup {
+        margin-bottom: 10px;
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+    }
+
+    p {
+      margin: $gutter-size/2 0;
+      display: block;
+      padding: 0;
+    }
+  }
+
+  .footer {
+    margin: $gutter-size;
+    text-align: right;
+
+    .dismiss {
+      text-align: right;
+      margin-right: $gutter-size/2;
+      background-color: $background-color;
+      border: 1px solid $highlight-tutorial;
+      border-radius: 2px;
+      color: $highlight-tutorial;
+    }
+
+    .next {
+      background: $highlight-tutorial;
+      border-color: $highlight-tutorial;
+    }
+  }
+}

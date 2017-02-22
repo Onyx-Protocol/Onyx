@@ -1,35 +1,30 @@
 import React from 'react'
-import steps from './steps.json'
 import TutorialInfo from './TutorialInfo/TutorialInfo'
 import TutorialForm from './TutorialForm/TutorialForm'
-import TutorialComplete from './TutorialComplete/TutorialComplete'
+import TutorialModal from './TutorialModal/TutorialModal'
 
 const components = {
   TutorialInfo,
   TutorialForm,
-  TutorialComplete
+  TutorialModal
 }
 
 class Tutorial extends React.Component {
   render() {
-    const tutorialStep = this.props.tutorialStep
-    const userInput = this.props.tutorialInputs
-    const tutorialOpen = this.props.tutorialOpen
+    const userInput = this.props.tutorial.userInputs
+    const tutorialOpen = this.props.tutorial.isShowing
+    const tutorialRoute = this.props.currentStep['route']
     const tutorialTypes = this.props.types
-    const TutorialComponent = components[steps[tutorialStep]['component']]
+    const TutorialComponent = components[this.props.currentStep['component']]
 
     return (
       <div>
-      {tutorialOpen && (tutorialTypes.includes(steps[tutorialStep]['component'])) &&
-          <TutorialComponent
-            userInput={userInput}
-            step={tutorialStep}
-            {...steps[tutorialStep]}
-            handleNext={this.props.showNextStep}
-            handleDismiss={this.props.dismissTutorial}
-          />
-        }
-    </div>
+      {tutorialOpen && (tutorialTypes.includes(this.props.currentStep['component'])) &&
+        <TutorialComponent
+          userInput={userInput}
+          {...this.props.currentStep}
+          handleNext={() => this.props.showNextStep(tutorialRoute)}/>}
+      </div>
     )
   }
 }
@@ -38,14 +33,12 @@ import { actions } from 'features/tutorial'
 import { connect } from 'react-redux'
 
 const mapStateToProps = (state) => ({
-  tutorialStep: state.tutorial.step,
-  tutorialOpen: state.tutorial.isShowing,
-  tutorialInputs: state.tutorial.userInputs
+  currentStep: state.tutorial.currentStep,
+  tutorial: state.tutorial
 })
 
 const mapDispatchToProps = ( dispatch ) => ({
-  dismissTutorial: () => dispatch(actions.dismissTutorial),
-  showNextStep: () => dispatch(actions.tutorialNextStep)
+  showNextStep: (route) => dispatch(actions.tutorialNextStep(route))
 })
 
 export default connect(
