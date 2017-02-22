@@ -16,7 +16,7 @@ entryID = HASH("entryid:" || entry.type || ":" || entry.body_hash)
 
 ## Fields
 
-Each entry contains a defined combination of the following fields: [Byte](#byte), [Hash](#hash), [Integer](#integer), [String](#string), [List](#list), [Struct](#struct), [Extstruct](#extstruct), and [Entry Pointer](#entry-pointer).
+Each entry contains a defined combination of the following fields: [Byte](#byte), [Hash](#hash), [Integer](#integer), [String](#string), [List](#list), [Struct](#struct), [Extstruct](#extstruct), and [Pointer](#entry-pointer).
 
 Below is the serialization of those fields.
 
@@ -48,13 +48,23 @@ A `Struct` is encoded as a concatenation of all its serialized fields.
 
 An `ExtStruct` is encoded as a single 32-byte hash.
 
-### Entry Pointer
+### Pointer
 
 A Pointer is encoded as a Hash, and identifies another entry by its ID. It also restricts the possible acceptable types: Pointer<X> must refer to an entry of type X.
 
 A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte hash `0x0000000000000000000000000000000000000000000000000000000000000000`.
 
 ## Data Structures
+
+
+### AssetAmount
+
+An Entry uses a ValueSource to refer to other Entries that provide inputs to the initial Entry.
+
+Field            | Type                        | Description
+-----------------|-----------------------------|----------------
+AssetID          | Hash                        | Asset ID.
+Value            | Integer                     | Number of units of the referenced asset.
 
 ### ValueSource
 
@@ -169,7 +179,7 @@ Witness             | Struct               | See below.
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-SpentOutput         | Pointer<Output>      | The Output Entry consumed by this spend.
+SpentOutput         | Pointer<Output>      | The Output entry consumed by this spend.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
@@ -177,7 +187,7 @@ ExtHash             | Hash                 | If the transaction version is known
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
+Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output entry, or to a Mux, which points to Output entries via its own Destinations.
 Arguments           | String               | Arguments for the control program contained in the SpentOutput.
 
 ### Issuance  
@@ -203,4 +213,70 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
 Arguments           | String               | Arguments for the control program contained in the SpentOutput.
+
+### Nonce  
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "nonce"
+Body                | Struct               | See below.
+Witness             | Struct               | See below.
+
+#### Nonce Body
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Program             | AssetAmount          | Asset ID and amount being issued.
+Time Range          | Pointer<TimeRange>   | Reference to a TimeRange entry.
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
+#### Nonce Witness
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Arguments           | String               | Arguments for the program contained in the Nonce.
+
+
+### TimeRange  
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "nonce"
+Body                | Struct               | See below.
+Witness             | Struct               | See below.
+
+#### TimeRange Body
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Mintime             | Integer              | Minimum time for this transaction.
+Maxtime             | Integer              | Maximum time for this transaction.
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
+#### TimeRange Witness
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+
+
+### Mux
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "mux1"
+Body                | Struct               | See below.
+Witness             | Struct               | See below.
+
+#### Mux Body
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Sources             | List<ValueSource>    | The source of the units to be included in this Mux.
+ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+
+#### Mux Witness
+
+Field               | Type                       | Description
+--------------------|----------------------------|----------------
+Destination         | List<ValueDestination>     | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
 
