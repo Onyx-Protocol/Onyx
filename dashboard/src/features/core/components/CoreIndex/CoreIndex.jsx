@@ -1,7 +1,6 @@
+import { chainClient } from 'utility/environment'
 import { connect } from 'react-redux'
-import { context } from 'utility/environment'
 import componentClassNames from 'utility/componentClassNames'
-import chain from '_chain'
 import { PageContent, ErrorBanner, PageTitle } from 'features/shared/components'
 import React from 'react'
 import styles from './CoreIndex.scss'
@@ -21,7 +20,7 @@ class CoreIndex extends React.Component {
 
     this.setState({deleteDisabled: true})
 
-    chain.Core.reset(context()).then(() => {
+    chainClient().config.reset(true).then(() => {
       // TODO: Use Redux state reset and nav action instead of window.location.
       // Also, move confirmation message to a bonafide flash div. alert() in a
       // browser microtask is going away. cf https://www.chromestatus.com/features/5647113010544640

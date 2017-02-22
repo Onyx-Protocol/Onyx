@@ -68,8 +68,8 @@ const setUpObjects = (signer) => {
 
 const issueTransaction = (signer) => expect(
   client.transactions.build((builder) => {
-    builder.issue({ asset_alias: 'gold', amount: 100 })
-    builder.controlWithAccount({ account_alias: 'alice', asset_alias: 'gold', amount: 100 })
+    builder.issue({ assetAlias: 'gold', amount: 100 })
+    builder.controlWithAccount({ accountAlias: 'alice', assetAlias: 'gold', amount: 100 })
   })
   .then(tpl => signer.sign(tpl))
   .then(tpl => client.transactions.submit(tpl))

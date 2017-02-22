@@ -1,7 +1,7 @@
 import { combineReducers } from 'redux'
 import { routerReducer as routing} from 'react-router-redux'
 import { reducer as form } from 'redux-form'
-import { reducers as access_token } from 'features/accessTokens'
+import { reducers as accessToken } from 'features/accessTokens'
 import { reducers as account } from 'features/accounts'
 import { reducers as app } from 'features/app'
 import { reducers as asset } from 'features/assets'
@@ -17,13 +17,13 @@ import { clear as clearStorage } from 'utility/localStorage'
 
 const makeRootReducer = () => (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO' &&
-      !action.param.is_configured) {
+      !action.param.isConfigured) {
     const newState = {
       form: state.form,
       routing: state.routing,
     }
 
-    if (state.core.blockchainId == (action.param.blockchain_id || 0)) {
+    if (state.core.blockchainId == (action.param.blockchainId || 0)) {
       newState.core = state.core
     }
 
@@ -44,7 +44,7 @@ const makeRootReducer = () => (state, action) => {
   }
 
   return combineReducers({
-    ...access_token,
+    ...accessToken,
     account,
     app,
     asset,

@@ -23,9 +23,9 @@ const actionLabels = {
 const visibleFields = {
   [ISSUE_KEY]: {asset: true, amount: true},
   [SPEND_ACCOUNT_KEY]: {asset: true, account: true, amount: true},
-  [SPEND_UNSPENT_KEY]: {output_id: true},
+  [SPEND_UNSPENT_KEY]: {outputId: true},
   [CONTROL_ACCOUNT_KEY]: {asset: true, account: true, amount: true},
-  [CONTROL_PROGRAM_KEY]: {asset: true, control_program: true, amount: true},
+  [CONTROL_PROGRAM_KEY]: {asset: true, controlProgram: true, amount: true},
   [RETIRE_ASSET_KEY]: {asset: true, amount: true},
   [TRANSACTION_REFERENCE_DATA]: {},
 }
@@ -52,15 +52,15 @@ export default class ActionItem extends React.Component {
 
   render() {
     const {
-      output_id,
+      outputId,
       type,
-      account_id,
-      account_alias,
-      control_program,
-      asset_id,
-      asset_alias,
+      accountId,
+      accountAlias,
+      controlProgram,
+      assetId,
+      assetAlias,
       amount,
-      reference_data } = this.props.fieldProps
+      referenceData } = this.props.fieldProps
 
     const visible = visibleFields[type.value] || {}
     const remove = (event) => {
@@ -87,24 +87,24 @@ export default class ActionItem extends React.Component {
             title='Account'
             aliasField={Autocomplete.AccountAlias}
             fieldProps={{
-              id: account_id,
-              alias: account_alias
+              id: accountId,
+              alias: accountAlias
             }}
           />}
 
-        {visible.control_program &&
-          <TextField title='Control Program' fieldProps={control_program} />}
+        {visible.controlProgram &&
+          <TextField title='Control Program' fieldProps={controlProgram} />}
 
-        {visible.output_id &&
-          <TextField title='Output ID' fieldProps={output_id} />}
+        {visible.outputId &&
+          <TextField title='Output ID' fieldProps={outputId} />}
 
         {visible.asset &&
           <ObjectSelectorField
             title='Asset'
             aliasField={Autocomplete.AssetAlias}
             fieldProps={{
-              id: asset_id,
-              alias: asset_alias
+              id: assetId,
+              alias: assetAlias
             }}
           />}
 
@@ -112,7 +112,7 @@ export default class ActionItem extends React.Component {
           <TextField title='Amount' fieldProps={amount} />}
 
         {this.state.referenceDataOpen &&
-          <JsonField title='Reference data' fieldProps={reference_data} />
+          <JsonField title='Reference data' fieldProps={referenceData} />
         }
         {!this.state.referenceDataOpen &&
           <button type='button' className='btn btn-link' onClick={this.openReferenceData}>

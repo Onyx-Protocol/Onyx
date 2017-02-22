@@ -17,12 +17,12 @@ class AccountShow extends BaseShow {
   }
 
   createControlProgram() {
-    this.props.createControlProgram([{
+    this.props.createControlProgram({
       type: 'account',
-      params: { account_id: this.props.item.id }
-    }]).then((program) => this.props.showControlProgram(<div>
+      id: this.props.item.id
+    }).then((program) => this.props.showControlProgram(<div>
       <p>Copy this one-time use control program to use in a transaction:</p>
-      <CopyableBlock value={program.control_program} />
+      <CopyableBlock value={program.controlProgram} />
     </div>))
   }
 
@@ -68,9 +68,9 @@ class AccountShow extends BaseShow {
               key={index}
               title={`Key ${index + 1}`}
               items={[
-                {label: 'Root Xpub', value: key.root_xpub},
-                {label: 'Account Xpub', value: key.account_xpub},
-                {label: 'Account Derivation Path', value: key.account_derivation_path},
+                {label: 'Root Xpub', value: key.rootXpub},
+                {label: 'Account Xpub', value: key.accountXpub},
+                {label: 'Account Derivation Path', value: key.accountDerivationPath},
               ]}
             />
           )}

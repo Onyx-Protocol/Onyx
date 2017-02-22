@@ -1,6 +1,5 @@
 /* global process */
 
-import chain from '_chain'
 import chainSdk from 'chain-sdk'
 import { store } from 'app'
 
@@ -16,13 +15,12 @@ if (process.env.NODE_ENV === 'production') {
   basename = '/'
 }
 
-// API context
-export const context = () => new chain.Context({
-  url: apiHost,
-  clientToken: store.getState().core.clientToken
-})
-
 export const chainClient = () => new chainSdk.Client(
+  apiHost,
+  store.getState().core.clientToken
+)
+
+export const chainSigner = () => new chainSdk.HsmSigner(
   apiHost,
   store.getState().core.clientToken
 )

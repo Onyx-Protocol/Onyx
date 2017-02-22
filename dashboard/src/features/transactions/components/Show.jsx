@@ -9,7 +9,7 @@ import {
 } from 'features/shared/components'
 
 import { Summary } from './'
-import { buildInOutDisplay } from 'features/transactions/utility'
+import { buildTxInputDisplay, buildTxOutputDisplay } from 'utility/buildInOutDisplay'
 
 class Show extends BaseShow {
 
@@ -41,11 +41,11 @@ class Show extends BaseShow {
             items={[
               {label: 'ID', value: item.id},
               {label: 'Timestamp', value: item.timestamp},
-              {label: 'Block ID', value: item.block_id},
-              {label: 'Block Height', value: item.block_height},
+              {label: 'Block ID', value: item.blockId},
+              {label: 'Block Height', value: item.blockHeight},
               {label: 'Position', value: item.position},
-              {label: 'Local?', value: item.is_local},
-              {label: 'Reference Data', value: item.reference_data},
+              {label: 'Local?', value: item.isLocal},
+              {label: 'Reference Data', value: item.referenceData},
             ]}
           />
 
@@ -53,7 +53,7 @@ class Show extends BaseShow {
             <KeyValueTable
               key={index}
               title={index == 0 ? 'Inputs' : ''}
-              items={buildInOutDisplay(input)}
+              items={buildTxInputDisplay(input)}
             />
           )}
 
@@ -61,7 +61,7 @@ class Show extends BaseShow {
             <KeyValueTable
               key={index}
               title={index == 0 ? 'Outputs' : ''}
-              items={buildInOutDisplay(output)}
+              items={buildTxOutputDisplay(output)}
             />
           )}
         </PageContent>

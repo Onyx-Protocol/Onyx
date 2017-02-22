@@ -1,10 +1,11 @@
-import chain from '_chain'
-import { context, pageSize } from 'utility/environment'
+import { chainClient } from 'utility/environment'
+import { pageSize } from 'utility/environment'
 import { push, replace } from 'react-router-redux'
 
 export default function(type, options = {}) {
   const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
   const listPath  = options.listPath || `/${type}s`
+  const clientApi = () => options.clientApi ? options.clientApi() : chainClient()[`${type}s`]
 
   const receive = (param) => ({
     type: `RECEIVED_${type.toUpperCase()}_ITEMS`,
@@ -19,7 +20,7 @@ export default function(type, options = {}) {
     params = { ...params, ...requiredParams }
 
     return (dispatch) => {
-      const promise = chain[className].query(context(), params)
+      const promise = clientApi().query(params)
 
       promise.then(
         (param) => dispatch(receive(param))
@@ -77,21 +78,29 @@ export default function(type, options = {}) {
 
   const _load = function(query = {}, list = {}, requestOptions) {
     return function(dispatch) {
-      let latestResponse = list.cursor || {}
-      let promise
-      let refresh = requestOptions.refresh || false
-      let filter = query.filter || ''
+      const latestResponse = list.cursor || null
+      const refresh = requestOptions.refresh || false
 
-      if (!refresh && latestResponse && latestResponse.last_page) {
+      if (!refresh && latestResponse && latestResponse.lastPage) {
         return Promise.resolve({last: true})
-      } else if (!refresh && latestResponse.nextPage) {
-        promise = latestResponse.nextPage(context())
-        promise.then(resp => dispatch(receive(resp)))
-      } else {
-        let params = {}
+      }
 
+      let promise
+      const filter = query.filter || ''
+
+      if (!refresh && latestResponse) {
+        let responsePage
+        promise = latestResponse.nextPage()
+          .then(resp => {
+            responsePage = resp
+            return dispatch(receive(responsePage))
+          }).then(() =>
+            responsePage
+          )
+      } else {
+        const params = {}
         if (query.filter) params.filter = filter
-        if (query.sum_by) params.sum_by = query.sum_by.split(',')
+        if (query.sumBy) params.sumBy = query.sumBy.split(',')
 
         promise = dispatch(fetchItems(params))
       }
@@ -120,7 +129,7 @@ export default function(type, options = {}) {
         return
       }
 
-      chain[className].delete(context(), id)
+      clientApi().delete(id)
         .then(() => dispatch({
           type: `DELETE_${type.toUpperCase()}`,
           id: id,

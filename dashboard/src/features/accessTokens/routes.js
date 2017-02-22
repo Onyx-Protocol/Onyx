@@ -12,13 +12,13 @@ export default (store) => {
     childRoutes: [
       makeRoutes(
         store,
-        'client_access_token',
+        'clientAccessToken',
         ClientTokenList, NewClientToken, null,
         { path: 'client', skipFilter: true, name: 'Client access tokens' }
       ),
       makeRoutes(
         store,
-        'network_access_token',
+        'networkAccessToken',
         NetworkTokenList, NewNetworkToken, null,
         { path: 'network', skipFilter: true, name: 'Network access tokens' }
       ),

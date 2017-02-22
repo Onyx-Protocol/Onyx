@@ -1,5 +1,4 @@
-import chain from '_chain'
-import { context } from 'utility/environment'
+import { chainClient } from 'utility/environment'
 import { actions as coreActions } from 'features/core'
 import { fetchTestnetInfo } from 'features/testnet/actions'
 
@@ -19,7 +18,7 @@ const retry = (dispatch, promise, count = 10) => {
 let actions = {
   submitConfiguration: (data) => {
     const configureWithRetry = (dispatch, config) => {
-      return chain.Core.configure(context(), config)
+      return chainClient().config.configure(config)
         .then(() => retry(dispatch, coreActions.fetchCoreInfo({throw: true})))
     }
 
@@ -30,8 +29,8 @@ let actions = {
       } else {
         if (data.type == 'new') {
           data = {
-            is_generator: true,
-            is_signer: true,
+            isGenerator: true,
+            isSigner: true,
             quorum: 1,
           }
         }

@@ -25,7 +25,7 @@ class Index extends React.Component {
   }
 
   submitWithValidation(data) {
-    if (data.generator_url && !data.blockchain_id) {
+    if (data.generatorUrl && !data.blockchainId) {
       return new Promise((_, reject) => reject({
         _error: 'You must specify a blockchain ID to connect to a network'
       }))
@@ -41,9 +41,9 @@ class Index extends React.Component {
     const {
       fields: {
         type,
-        generator_url,
-        generator_access_token,
-        blockchain_id
+        generatorUrl,
+        generatorAccessToken,
+        blockchainId
       },
       handleSubmit,
       submitting,
@@ -53,9 +53,9 @@ class Index extends React.Component {
       const value = type.onChange(event).value
 
       if (value != 'join') {
-        generator_url.onChange('')
-        generator_access_token.onChange('')
-        blockchain_id.onChange('')
+        generatorUrl.onChange('')
+        generatorAccessToken.onChange('')
+        blockchainId.onChange('')
       }
     }
 
@@ -149,11 +149,11 @@ class Index extends React.Component {
               <TextField
                 title='Block Generator URL'
                 placeholder='https://<block-generator-host>'
-                fieldProps={generator_url} />
+                fieldProps={generatorUrl} />
               <TextField
                 title='Blockchain ID'
                 placeholder='896a800000000000000'
-                fieldProps={blockchain_id} />
+                fieldProps={blockchainId} />
               <TextField
                 title={[
                   'Network Access Token',
@@ -163,7 +163,7 @@ class Index extends React.Component {
                     </small>
                   </a>]}
                 placeholder='token-id:9e5f139755366add8c76'
-                fieldProps={generator_access_token} />
+                fieldProps={generatorAccessToken} />
 
               {configSubmit}
             </div>}
@@ -188,9 +188,9 @@ const config = {
   form: 'coreConfigurationForm',
   fields: [
     'type',
-    'generator_url',
-    'generator_access_token',
-    'blockchain_id'
+    'generatorUrl',
+    'generatorAccessToken',
+    'blockchainId'
   ]
 }
 

@@ -1,5 +1,4 @@
-import chain from '_chain'
-import { context } from 'utility/environment'
+import { chainClient } from 'utility/environment'
 import { baseCreateActions, baseListActions } from 'features/shared/actions'
 
 const type = 'account'
@@ -14,8 +13,9 @@ const form = baseCreateActions(type, {
 let actions = {
   ...list,
   ...form,
-  createControlProgram: (data) => () =>
-    chain.ControlProgram.create(data, context())
+  createControlProgram: (data) => () => {
+    return chainClient().accounts.createControlProgram(data)
+  }
 }
 
 export default actions

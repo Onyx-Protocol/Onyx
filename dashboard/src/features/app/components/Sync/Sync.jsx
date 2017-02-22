@@ -19,7 +19,7 @@ class Sync extends React.Component {
       testnetNextReset
     } = this.props
 
-    if (snapshot && snapshot.in_progress) { // Currently downloading the snapshot.
+    if (snapshot && snapshot.inProgress) { // Currently downloading the snapshot.
       const downloaded = (snapshot.downloaded / snapshot.size) * 100
 
       return <ul className={`${navStyles.navigation} ${styles.main}`}>
