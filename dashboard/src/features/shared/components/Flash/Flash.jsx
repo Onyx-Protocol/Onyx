@@ -41,7 +41,7 @@ class Flash extends React.Component {
 import { connect } from 'react-redux'
 
 const mapStateToProps = (state) => ({
-  hideFlash: state.tutorial.isShowing && state.routing.locationBeforeTransitions.pathname.startsWith(state.tutorial.route)
+  hideFlash: state.tutorial.isShowing && state.routing.locationBeforeTransitions.pathname.includes(state.tutorial.route)
 })
 
 export default connect(

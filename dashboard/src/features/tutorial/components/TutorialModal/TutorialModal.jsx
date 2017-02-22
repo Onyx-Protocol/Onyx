@@ -44,13 +44,12 @@ class TutorialModal extends React.Component {
   }
 }
 
-import { actions } from 'features/tutorial'
 import { connect } from 'react-redux'
 
 const mapStateToProps = (state) => ({
   tutorialRoute: state.tutorial.route,
   currentStep: state.tutorial.currentStep,
-  showTutorial: state.routing.locationBeforeTransitions.pathname.startsWith(state.tutorial.route)
+  showTutorial: state.routing.locationBeforeTransitions.pathname.includes(state.tutorial.route)
 })
 
 const mapDispatchToProps = ( dispatch ) => ({

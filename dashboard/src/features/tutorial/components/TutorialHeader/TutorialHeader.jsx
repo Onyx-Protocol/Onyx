@@ -36,7 +36,7 @@ import { connect } from 'react-redux'
 const mapStateToProps = (state) => ({
   tutorial: state.tutorial,
   currentStep: state.tutorial.currentStep,
-  showTutorial: state.routing.locationBeforeTransitions.pathname.startsWith(state.tutorial.route)
+  showTutorial: state.routing.locationBeforeTransitions.pathname.includes(state.tutorial.route)
 })
 
 const mapDispatchToProps = ( dispatch ) => ({
