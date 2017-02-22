@@ -1,5 +1,9 @@
 # Chain Ruby SDK
 
+## 1.0.2 (February 21, 2017)
+
+* Syntax compatibility update
+
 ## 1.0.1 (January 24, 2017)
 
 * Set minimum Ruby version requirement to 2.1
