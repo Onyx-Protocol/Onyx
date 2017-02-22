@@ -59,12 +59,24 @@ A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte 
 
 ### AssetAmount
 
-An Entry uses a ValueSource to refer to other Entries that provide inputs to the initial Entry.
-
 Field            | Type                        | Description
 -----------------|-----------------------------|----------------
 AssetID          | Hash                        | Asset ID.
 Value            | Integer                     | Number of units of the referenced asset.
+
+
+### Program
+
+An Entry uses a ValueSource to refer to other Entries that provide inputs to the initial Entry.
+
+Field            | Type                        | Description
+-----------------|-----------------------------|----------------
+Script           | String                      | The program to be executed.
+VM Version       | Integer                     | The VM version to be used when evaluating the program.
+
+Evaluating a program means evaluating .
+
+If the transaction version is known and the VM Versioon, evaluation fails. If both the transaction version and VM version are not known, evaluation succeeds.
 
 ### ValueSource
 
@@ -236,6 +248,9 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Arguments           | String               | Arguments for the program contained in the Nonce.
 
+#### Nonce Validation
+
+1. Verify that the Program evaluates to `true`.
 
 ### TimeRange  
 
@@ -258,6 +273,10 @@ ExtHash             | Hash                 | If the transaction version is known
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 
+#### TimeRange Validation
+
+1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the transaction header.
+2. Verify that `Maxtime` is equal to or greater than the `Maxtime` specified in the transaction header.
 
 ### Mux
 
@@ -272,6 +291,7 @@ Witness             | Struct               | See below.
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Sources             | List<ValueSource>    | The source of the units to be included in this Mux.
+Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
 ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
 
 #### Mux Witness
@@ -279,4 +299,4 @@ ExtHash             | Hash                 | If the transaction version is known
 Field               | Type                       | Description
 --------------------|----------------------------|----------------
 Destination         | List<ValueDestination>     | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
-
+Arguments           | String                     | Arguments for the program contained in the Nonce.
