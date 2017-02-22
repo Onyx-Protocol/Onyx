@@ -92,7 +92,7 @@ func TestTransaction(t *testing.T) {
 				"066f7574707574" + // output 0, reference data
 				"00" + // output 0, output witness
 				"0869737375616e6365"), // reference data
-			hash: mustDecodeHash("2a13aca9b22ec611f752ccb8d1915f4891cbe539c4c21d7d1b838b4f5b3564fc"),
+			hash: mustDecodeHash("cd4669d5363374f8661621273501c23e613fc98b0fab9d5d858f30e16ccd24ce"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -146,7 +146,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 1, reference data
 				"00" + // output 1, output witness
 				"0c646973747269627574696f6e"), // reference data
-			hash: mustDecodeHash("61695be1dfb779cffdb8cb49947af0e3509998c2b9388ab98b30f20771d00f40"),
+			hash: mustDecodeHash("db56dd46919fe91055e6441bdee2c7e0393f561995e11bd2a063b690adde4205"),
 		},
 
 		//07
