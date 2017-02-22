@@ -53,7 +53,7 @@ import (
 const (
 	httpReadTimeout  = 2 * time.Minute
 	httpWriteTimeout = time.Hour
-	latestVersion    = "1.0.2"
+	latestVersion    = "1.1rc5"
 )
 
 var (

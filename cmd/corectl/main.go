@@ -22,6 +22,8 @@ import (
 	_ "chain/protocol/tx" // for BlockHeaderHashFunc
 )
 
+const version = "1.1rc5"
+
 // config vars
 var (
 	dbURL = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
@@ -46,6 +48,12 @@ var commands = map[string]*command{
 func main() {
 	log.SetOutput(&logbuf)
 	env.Parse()
+
+	if len(os.Args) >= 2 && os.Args[1] == "-version" {
+		fmt.Printf("corectl (Chain Core) %s\n", version)
+		return
+	}
+
 	db, err := sql.Open("hapg", *dbURL)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -230,10 +238,12 @@ func fatalln(v ...interface{}) {
 }
 
 func help(w io.Writer) {
-	fmt.Fprintln(w, "usage: corectl [command] [arguments]")
+	fmt.Fprintln(w, "usage: corectl [-version] [command] [arguments]")
 	fmt.Fprint(w, "\nThe commands are:\n\n")
 	for name := range commands {
 		fmt.Fprintln(w, "\t", name)
 	}
+	fmt.Fprint(w, "\nFlags:\n")
+	fmt.Fprintln(w, "\t-version   print version information")
 	fmt.Fprintln(w)
 }
