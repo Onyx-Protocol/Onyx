@@ -17,7 +17,7 @@ var revIDLang = map[string]*template.Template{
 
 const revIDGo = `
 package rev
-var ID string = "{{.}}"
+const ID string = "{{.}}"
 `
 
 // tktk do java things need to go in a special place?
@@ -29,7 +29,7 @@ public final class RevId {
 
 // tktk [i have no idea what i'm doing dot jpeg]
 const revIDJavaScript = `
-export const RevID = "{{.}}"
+export const rev_id = "{{.}}"
 `
 
 // tktk rubby idk; please look
