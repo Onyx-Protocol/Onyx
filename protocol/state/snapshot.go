@@ -35,9 +35,10 @@ func Copy(original *Snapshot) *Snapshot {
 	// We already handle it that way in many places (with explicit
 	// calls to Copy to get the right behavior).
 	c := &Snapshot{
-		Tree:      patricia.Copy(original.Tree),
+		Tree:      new(patricia.Tree),
 		Issuances: make(PriorIssuances, len(original.Issuances)),
 	}
+	*c.Tree = *original.Tree
 	for k, v := range original.Issuances {
 		c.Issuances[k] = v
 	}

@@ -8,7 +8,10 @@
 // within the tree.
 //
 // The nodes in the tree form an immutable persistent data
-// structure, therefore Copy is a O(1) operation.
+// structure. It is okay to copy a Tree struct,
+// which contains the root of the tree, to obtain a new tree
+// with the same contents. The time to make such a copy is
+// independent of the size of the tree.
 package patricia
 
 import (
@@ -27,14 +30,6 @@ var (
 // Tree implements a patricia tree.
 type Tree struct {
 	root *node
-}
-
-// Copy returns a new tree with the same root as this tree. It
-// is an O(1) operation.
-func Copy(t *Tree) *Tree {
-	newT := new(Tree)
-	newT.root = t.root
-	return newT
 }
 
 // WalkFunc is the type of the function called for each leaf
