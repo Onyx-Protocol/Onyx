@@ -6,7 +6,7 @@ type issuance struct {
 	body struct {
 		Anchor  entryRef
 		Value   bc.AssetAmount
-		Data    entryRef
+		Data    bc.Hash
 		ExtHash extHash
 	}
 	ordinal int
@@ -17,7 +17,7 @@ func (iss *issuance) Body() interface{} { return iss.body }
 
 func (iss issuance) Ordinal() int { return iss.ordinal }
 
-func newIssuance(anchor entryRef, value bc.AssetAmount, data entryRef, ordinal int) *issuance {
+func newIssuance(anchor entryRef, value bc.AssetAmount, data bc.Hash, ordinal int) *issuance {
 	iss := new(issuance)
 	iss.body.Anchor = anchor
 	iss.body.Value = value

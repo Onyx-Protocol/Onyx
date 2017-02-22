@@ -1,10 +1,12 @@
 package tx
 
+import "chain/protocol/bc"
+
 type output struct {
 	body struct {
 		Source         valueSource
 		ControlProgram program
-		Data           entryRef
+		Data           bc.Hash
 		ExtHash        extHash
 	}
 	ordinal int
@@ -15,7 +17,7 @@ func (o *output) Body() interface{} { return o.body }
 
 func (o output) Ordinal() int { return o.ordinal }
 
-func newOutput(source valueSource, controlProgram program, data entryRef, ordinal int) *output {
+func newOutput(source valueSource, controlProgram program, data bc.Hash, ordinal int) *output {
 	out := new(output)
 	out.body.Source = source
 	out.body.ControlProgram = controlProgram
