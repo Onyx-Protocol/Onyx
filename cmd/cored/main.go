@@ -128,6 +128,16 @@ func main() {
 
 		return
 	}
+
+	fmt.Printf("Chain Core starting\n")
+	fmt.Printf("* Version %s\n", config.Version)
+	if config.Production {
+		fmt.Printf("* Production mode\n")
+	} else {
+		fmt.Printf("* Development mode\n")
+	}
+
+	fmt.Printf("\n")
 	runServer()
 }
 
