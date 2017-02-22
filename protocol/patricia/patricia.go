@@ -19,10 +19,6 @@ import (
 	"chain/protocol/bc"
 )
 
-// ErrPrefix is returned from Insert if
-// the key provided is a prefix to existing nodes.
-var ErrPrefix = errors.New("key provided is a prefix to other keys")
-
 var (
 	leafPrefix     = []byte{0x00}
 	interiorPrefix = []byte{0x01}
@@ -119,6 +115,9 @@ func lookup(n *node, key []uint8) *node {
 // If the key is present, the existing node is found
 // and its value is updated, leaving the structure of
 // the tree alone.
+// It is an error for bkey to be a prefix
+// of a key already in t or to contain a key already
+// in t as a prefix.
 func (t *Tree) Insert(bkey, val []byte) error {
 	key := bitKey(bkey)
 
@@ -142,7 +141,7 @@ func (t *Tree) Insert(bkey, val []byte) error {
 func insert(n *node, key []uint8, hash *bc.Hash) (*node, error) {
 	if bytes.Equal(n.key, key) {
 		if !n.isLeaf {
-			return n, errors.Wrap(ErrPrefix)
+			return n, errors.Wrap(errors.New("key provided is a prefix to other keys"))
 		}
 
 		n = &node{
@@ -155,7 +154,7 @@ func insert(n *node, key []uint8, hash *bc.Hash) (*node, error) {
 
 	if bytes.HasPrefix(key, n.key) {
 		if n.isLeaf {
-			return n, errors.Wrap(ErrPrefix)
+			return n, errors.Wrap(errors.New("key provided is a prefix to other keys"))
 		}
 		bit := key[len(n.key)]
 
