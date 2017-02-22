@@ -18,7 +18,7 @@ func TestTxHashes(t *testing.T) {
 		},
 		{
 			txdata: sampleTx(),
-			hash:   mustDecodeHash("0c473037d9d36dee142999a7d98bf7f7e718a9097e7fd47f9acac0f20860fad8"),
+			hash:   mustDecodeHash("0a1ef3935e4bc83a8b59603146fc88d09405b9f5531ac5774f61350290b0fe1c"),
 		},
 	}
 
