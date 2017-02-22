@@ -185,8 +185,8 @@ Ivy syntax brings additional structure to programs, making it easy to construct 
 
 Here is an example of a control program written in Ivy:
 
-	program SingleKeyProgram(publicKey) {
-		path spend(signature) {
+	program SingleKeyProgram(publicKey: PublicKey) {
+		path spend(signature: Signature) {
 			verify checksig(publicKey, tx.hash, signature)
 		}
 	}
@@ -194,6 +194,7 @@ Here is an example of a control program written in Ivy:
 Let’s break this program down piece by piece.
 
 * Programs can have **parameters**. This program has one parameter, `publicKey`. Values for a program’s parameters, called **arguments**, are specified at the time the program is *instantiated*, or created. In the case of a control program like this, that is the time that an unspent output is added to the blockchain state by a transaction.
+* Parameters have **types**—such as PublicKey and Signature. These types help the compiler catch bugs in your programs, and make the code more readable.
 * Programs define one or more **paths**. This program has only one path: `spend`. If this control program could be satisfied in different ways, it would have more than one path.
 * Each path can define its own parameters. Arguments for path parameters are provided in the input witness. These arguments are passed — and the path is chosen — at the time the program is executed. In the case of a control program like this, that is the time the unspent output is used as an input in a new transaction. This program takes one argument: a `signature`.
 * Paths contain one or more **conditions**. This path only uses a single condition, which uses the `CHECKSIG` instruction to check that the provided signature on the hash of the new transaction corresponds to the previously specified public key.
@@ -216,13 +217,13 @@ When the output is spent and the control program is run:
 
 Many control, issuance, and consensus programs use a multisignature check.
 
-	program MultiKeyProgram(n, m, publicKeys[n]) {
-		path spend(signatures[m]) {
+	program MultiKeyProgram(n: Number, m: Number, publicKeys: PublicKey[n]) {
+		path spend(signatures: Signature[m]) {
 			verify checkmultisig(n, m, publicKeys, tx.hash, signatures)
 		}
 	}
 
-The `publicKeys[n]` syntax allows programs to take variable numbers of arguments.
+The `PublicKey[n]` syntax allows an argument to be a list of another type of argument, with a given length.
 
 
 ### Composing programs
@@ -235,9 +236,9 @@ Bitcoin supports a similar pattern, known as “[Pay to Script Hash](https://git
 
 [/sidenote]
 
-	program HashedProgram(programHash) {
-		path spend(program, m, arguments[m]) {
-			verify sha3(program) == programHash
+	program HashedProgram(programHash: Hash) {
+		path spend(program: Program, arguments: Arguments) {
+			verify sha3(string(program)) == programHash
 			verify program(arguments)
 		}
 	}
@@ -279,8 +280,8 @@ To issue units of an asset, an issuer creates a transaction with one or more iss
 
 A simple issuance program might just check one or more signatures on the transaction doing the issuance. It would therefore look a lot like the control program described above, with only program and path names changed to match the issuance context:
 
-    program MultisigIssuanceProgram(n, m, publickeys[n]) {
-    	path issue(signatures[m]) {
+    program MultisigIssuanceProgram(n: Number, m: Number, publickeys: PublicKey[n]) {
+    	path issue(signatures: Signature[m]) {
     		verify checkmultisig(n, m, publicKeys, tx.hash, signatures)
     	}
     }
@@ -293,8 +294,8 @@ Each block includes the consensus program that must be satisfied by the *next* b
 
 Chain’s [federated consensus protocol](federated-consensus.md) relies on a quorum of block signers signing the hash of the block. The consensus program can therefore look a lot like the multisignature issuance and control programs described above:
 
-    program ConsensusProgram(n, m, publickeys[n]) {
-    	path checkBlock(signatures[m]) {
+    program ConsensusProgram(n: Number, m: Number, publickeys: PublicKey[n]) {
+    	path checkBlock(signatures: Signature[m]) {
     		verify checkmultisig(n, m, publicKeys, block.hash, signatures)
     	}
     }
@@ -319,8 +320,8 @@ Instead of authorizing a specific transaction, it would be useful if a spender o
 
 To enable this, the control program for Alice’s Acme shares cannot have the simple form described above, which checks a signature against the transaction hash, since at the time Alice signs it, the transaction is still incomplete and its hash is therefore not yet known. Instead, the control program should look like this:
 
-    program AliceAccount(publicKey) {
-    	path spend(signature, prog, m, arguments[m]) {
+    program AliceAccount(publicKey: PublicKey) {
+    	path spend(signature: Signature, prog: Program, arguments: Arguments) {
     		verify checksig(publicKey, prog, signature)
     		verify prog(arguments)
     	}
@@ -332,7 +333,7 @@ The signature program can use transaction introspection to set conditions on par
 
 For example:
 
-    program TransactionHashCheck(targetHash) {
+    program TransactionHashCheck(targetHash: Hash) {
     	path check() {
     		verify tx.hash == targetHash
     	}
@@ -348,7 +349,7 @@ This program turns a signature program into a traditional signature by committin
 
 But a signature program can do much more than that. For example, this program solves the “exchange” problem described above:
 
-    program ExchangeProgram(targetOutputIndex, targetAmount, targetAssetID, targetControlProgram) {
+    program ExchangeProgram(targetOutputIndex: Number, targetAmount: Number, targetAssetID: AssetID, targetControlProgram: Program) {
     	path exchange() {
     		verify tx.outputs[targetOutputIndex] == (targetAmount, targetAssetID, targetControlProgram)
     	}
@@ -373,31 +374,31 @@ The examples that follow are provided as illustrations only. They gloss over som
 
 The following control program implements an open offer to sell the controlled assets to anyone who pays the specified price to the seller's address:
 
-    program Offer(askingPrice, currency, sellerProgram) {
-    	path lift(paymentIndex) {
+    program Offer(askingPrice: Number, currency: AssetID, sellerProgram: Program) {
+    	path lift(paymentIndex: Number) {
     		verify tx.outputs[paymentIndex] == (askingPrice, currency, sellerProgram)
     	}
     }
 
 That program will be on the blockchain until someone satisfies it with a corresponding payment. What if we want to make it revocable by the seller?
 
-    program RevocableOffer(askingPrice, currency, sellerProgram) {
-    	path lift(paymentIndex) {
+    program RevocableOffer(askingPrice: Number, currency: AssetID, sellerProgram: Program) {
+    	path lift(paymentIndex: Number) {
     		verify tx.outputs[paymentIndex] == (askingPrice, currency, sellerProgram)
     	}
-    	path cancel(m, arguments[m]) {
+    	path cancel(arguments: Arguments) {
     		verify sellerProgram(arguments)
     	}
     }
 
 The offer can be made irrevocable for a certain period of time, and then automatically expire after some later point.
 
-    program TimeLimitedOffer(askingPrice, currency, sellerProgram, revocabilityTime, expirationTime) {
-    	path lift(paymentIndex) {
+    program TimeLimitedOffer(askingPrice: Number, currency: AssetID, sellerProgram: Program, revocabilityTime: Time, expirationTime: Time) {
+    	path lift(paymentIndex: Number) {
     		verify tx.maxtime < expirationTime
     		verify tx.outputs[paymentIndex] == (askingPrice, currency, sellerProgram)
     	}
-    	path cancel(m, arguments[m]) {
+    	path cancel(arguments: Arguments) {
     		verify tx.mintime > revocabilityTime
     		verify sellerProgram(arguments)
     	}
@@ -405,15 +406,15 @@ The offer can be made irrevocable for a certain period of time, and then automat
 
 What if we want to be able to fill a *partial* order, allowing someone to pay for part of the program and leaving the rest available for someone else to purchase?
 
-    program PartiallyFillableOffer(pricePerUnit, currency, sellerProgram) {
-    	path lift(purchasedAmount, paymentIndex, remainderIndex) {
+    program PartiallyFillableOffer(pricePerUnit: number, currency: AssetID, sellerProgram: Program) {
+    	path lift(purchasedAmount: Number, paymentIndex: Number, remainderIndex: Number) {
     		verify purchasedAmount > 0
     		verify tx.outputs[paymentIndex] == (purchasedAmount * pricePerUnit, currency, sellerProgram)
     		verify tx.outputs[remainderIndex] == (tx.currentInput.amount - purchasedAmount,
     											  tx.currentInput.asset,
     											  tx.currentInput.program)
     	}
-    	path cancel(m, arguments[m]) {
+    	path cancel(arguments: Arguments) {
     		verify sellerProgram(arguments)
     	}
     }
@@ -427,8 +428,8 @@ What if you want to get more complex than just replicating the same program, but
 
 This program will prevent its assets from being transferred more than once within a certain time period:
 
-    program OncePerPeriod(authorizationPredicate, lastSpend, period) {
-    	path spend(m, arguments[m]) {
+    program OncePerPeriod(authorizationPredicate: Program, lastSpend: Time, period: Duration) {
+    	path spend(index: Number, arguments: Arguments) {
     		// check that the spending is otherwise authorized
     		// this could be a signature check
     		verify authorizationPredicate(arguments)
@@ -440,7 +441,7 @@ This program will prevent its assets from being transferred more than once withi
     										   tx.maxtime,
     										   period)
 
-    		verify tx.outputs[m] == (tx.currentInput.amount,
+    		verify tx.outputs[index] == (tx.currentInput.amount,
     								 tx.currentInput.asset,
     								 nextControlProgram)
     	}
@@ -453,8 +454,8 @@ While most state should be tracked locally in the program-level arguments for a 
 
 First, one needs to create an asset for which only one unit can ever be issued. This requires some understanding of how the Chain Protocol handles issuances. Unique issuance — ensuring that issuances cannot be replayed — is a challenging problem that is outside the scope of this paper. The Chain Protocol’s solution is that each issuance input has a nonce that, when combined with the transaction’s `mintime`, `maxtime`, and asset ID, must be unique throughout the blockchain’s history. As a result, an issuance *program* can ensure that it is only used once by committing to a specific nonce, transaction mintime, and transaction maxtime:
 
-    program SinglyIssuableAssetSingletonToken(nonce, mintime, maxtime, amount, lockProgram) {
-    	path issue(outputIndex) {
+    program SinglyIssuableAssetSingletonToken(nonce: String, mintime: Time, maxtime: Time, amount: Number, lockProgram: Program) {
+    	path issue(outputIndex: Number) {
     		// ensure that asset can only be issued once
     		verify nonce == tx.currentInput.nonce
     		verify mintime == tx.mintime
@@ -478,8 +479,8 @@ For example, we've already seen the `OncePerPeriod` program. If that program is 
 
 How does that help us with metered issuance? We can create a separate asset with an issuance program that checks that the singleton is also spent in the same transaction, and that no more than a given amount is issued.
 
-    program MeteredAssetIssuanceProgram(authorizationPredicate, singletonAssetID, maxAmount) {
-    	path issue(singletonControlProgram, singletonIndex, m, arguments[m]) {
+    program MeteredAssetIssuanceProgram(authorizationPredicate: Program, singletonAssetID: AssetID, maxAmount: Number) {
+    	path issue(singletonControlProgram: Program, singletonIndex: Number, arguments: Arguments) {
     		// check that the issuance is otherwise authorized
     		verify authorizationPredicate(arguments)
 
@@ -489,7 +490,7 @@ How does that help us with metered issuance? We can create a separate asset with
     		// check that the singleton token is being spent
     		// its index and control program don't need to be checked
     		// which is why they are passed as arguments
-    		verify tx.outputs[outputIndex] == (1,
+    		verify tx.outputs[singletonIndex] == (1,
     										   singletonAssetID,
     										   singletonControlProgram)
     	}
@@ -500,12 +501,12 @@ How does that help us with metered issuance? We can create a separate asset with
 
 Programs on the blockchain are made secure because the entire network may verify correctness of their execution. This necessarily means that all data necessary for execution is made public. But what if parties to a contract wish to avoid revealing sensitive parameters (such as prices, interest rates, deadlines etc)? They can achieve a level of privacy by adding an additional path that lets all interested parties spend the output without revealing the path that actually enforces the contract:
 
-    program PrivateControlProgram(programHash, n, publicKeys[n]) {
-    	path settle(signatures[n]) {
+    program PrivateControlProgram(programHash: Hash, n: Number, publicKeys: PublicKeys[n]) {
+    	path settle(signatures: Signature[n]) {
     		// all interested parties can agree to the final result of the program
     		verify checkmultisig(n, n, publicKeys, tx.hash, signatures)
     	}
-    	path enforce(prog, m, arguments[m]) {
+    	path enforce(prog: Program, arguments: Arguments) {
     		// any party can reveal the program and enforce it
     		verify sha3(prog) == programHash
     		verify prog(arguments)
@@ -524,4 +525,3 @@ This idea can be extended to implement full [Merklized Abstract Syntax Trees](ht
 ## Conclusion
 
 The Chain Protocol enables flexible control over assets through programmatic conditions that govern both issuance and transfer, as well as integrity of the ledger. Programs are executed by a Chain Virtual Machine with a Turing-complete instruction set. Programs are evaluated as predicates in a restricted, stateless environment that ensures safety and scalability. Programs can use powerful transaction introspection instructions that allow building sophisticated smart contracts and state machines. To make it more efficient to design programs, Chain is developing Ivy, a high-level programming language that compiles to CVM bytecode.
-
