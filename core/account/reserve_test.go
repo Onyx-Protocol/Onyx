@@ -49,7 +49,7 @@ func TestCancelReservation(t *testing.T) {
 
 	// Fake the output in the state tree.
 	_, s := c.State()
-	err = s.Tree.Insert(outputID.Bytes(), []byte{0xc0, 0x01, 0xca, 0xfe})
+	err = s.Tree.Insert(outputID.Hash[:], outputID.Hash[:])
 	if err != nil {
 		t.Error(err)
 	}

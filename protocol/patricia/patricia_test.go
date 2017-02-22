@@ -192,32 +192,19 @@ func TestLookup(t *testing.T) {
 }
 
 func TestContains(t *testing.T) {
-	vals, hashes := makeVals(4)
-	tr := &Tree{
-		root: &node{
-			key:  bools("1111"),
-			hash: hashPtr(hashForNonLeaf(hashes[2], hashForNonLeaf(hashes[3], hashes[1]))),
-			children: [2]*node{
-				{key: bools("11110000"), hash: &hashes[2], isLeaf: true},
-				{
-					key:  bools("111111"),
-					hash: hashPtr(hashForNonLeaf(hashes[3], hashes[1])),
-					children: [2]*node{
-						{key: bools("11111100"), hash: &hashes[3], isLeaf: true},
-						{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
-					},
-				},
-			},
-		},
-	}
-	contains := tr.Contains(bits("11111100"), vals[3])
-	if !contains {
-		t.Errorf("expected tree to contain %v, %x, but did not", bits("11111100"), vals[3])
+	tr := new(Tree)
+	tr.Insert(bits("00000011"), bits("00000011"))
+	tr.Insert(bits("00000010"), bits("00000000")) // note different val
+
+	if !tr.Contains(bits("00000011")) {
+		t.Errorf("expected tree to contain %x, but did not", bits("00000011"))
 	}
 
-	contains = tr.Contains(bits("11111111"), vals[3])
-	if contains {
-		t.Errorf("expected tree to not contain %v, %x, but did", bits("11111111"), vals[3])
+	if tr.Contains(bits("00000000")) {
+		t.Errorf("expected tree to not contain %x, but did", bits("00000000"))
+	}
+	if tr.Contains(bits("00000010")) {
+		t.Errorf("expected tree to not contain %x, but did", bits("00000000"))
 	}
 }
 

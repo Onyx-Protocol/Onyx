@@ -104,8 +104,7 @@ func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, block *bc.Blo
 		// txin is a spend
 
 		// Lookup the prevout in the blockchain state tree.
-		k, val := state.OutputTreeItem(txin.SpentOutputID())
-		if !snapshot.Tree.Contains(k, val) {
+		if !snapshot.Tree.Contains(txin.SpentOutputID().Bytes()) {
 			return badTxErrf(errInvalidOutput, "output %s for input %d is invalid", txin.SpentOutputID().String(), i)
 		}
 	}
@@ -281,7 +280,8 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 			continue
 		}
 		// Insert new outputs into the state tree.
-		err := snapshot.Tree.Insert(state.OutputTreeItem(tx.OutputID(uint32(i))))
+		outputID := tx.OutputID(uint32(i))
+		err := snapshot.Tree.Insert(outputID.Hash[:], outputID.Hash[:])
 		if err != nil {
 			return err
 		}
