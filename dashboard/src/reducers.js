@@ -43,7 +43,7 @@ const makeRootReducer = () => (state, action) => {
     window.location.href = '/'
   }
 
-  const finalState = combineReducers({
+  return combineReducers({
     ...access_token,
     account,
     app,
@@ -59,7 +59,5 @@ const makeRootReducer = () => (state, action) => {
     tutorial,
     unspent,
   })(state, action)
-  return finalState
-
 }
 export default makeRootReducer

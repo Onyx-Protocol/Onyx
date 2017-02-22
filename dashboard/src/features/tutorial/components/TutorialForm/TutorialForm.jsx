@@ -14,6 +14,9 @@ class TutorialForm extends React.Component {
 
   handleScroll(event) {
     const scrollTop = event.srcElement.scrollingElement.scrollTop
+
+    // Hardcoding visual distance between top of screen and top of TutorialForm
+    // component to create smooth scrolling effect.
     this.setState({showFixed: scrollTop > 140})
   }
 

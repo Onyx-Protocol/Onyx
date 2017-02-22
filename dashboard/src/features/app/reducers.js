@@ -104,8 +104,8 @@ export const dropdownState = (state = '', action) => {
   return state
 }
 
-export default (state, action) => combineReducers({
+export default combineReducers({
   flashMessages,
   modal,
   dropdownState,
-})(state, action)
+})
