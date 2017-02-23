@@ -79,7 +79,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		}
 
 		for _, lookup := range changeset.lookups {
-			if !snapshot.Tree.Contains(lookup[:], lookup[:]) {
+			if !snapshot.Tree.Contains(lookup[:]) {
 				t.Errorf("Lookup(%s, %s) = false, want true", lookup, lookup)
 			}
 		}

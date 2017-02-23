@@ -60,29 +60,20 @@ func walk(n *node, walkFn WalkFunc) error {
 	return err
 }
 
-// ContainsKey returns true if the key contains the provided
-// key, without checking its corresponding hash.
-func (t *Tree) ContainsKey(bkey []byte) bool {
-	if t.root == nil {
-		return false
-	}
-	return lookup(t.root, bitKey(bkey)) != nil
-}
-
-// Contains returns true if the tree contains the provided
-// key, value pair.
-func (t *Tree) Contains(bkey, val []byte) bool {
+// Contains returns whether the tree contains (item, item)
+// as a (key, value) pair.
+func (t *Tree) Contains(item []byte) bool {
 	if t.root == nil {
 		return false
 	}
 
-	key := bitKey(bkey)
+	key := bitKey(item)
 	n := lookup(t.root, key)
 
 	var hash bc.Hash
 	h := sha3pool.Get256()
 	h.Write(leafPrefix)
-	h.Write(val[:])
+	h.Write(item)
 	h.Read(hash[:])
 	sha3pool.Put256(h)
 	return n != nil && n.Hash() == hash
