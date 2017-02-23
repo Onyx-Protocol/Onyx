@@ -43,7 +43,7 @@ export default function(type, options = {}) {
               }).then(newKey => {
                 data.rootXpubs.push(newKey.xpub)
               })
-          } else {
+          } else if (key.value) {
             data.rootXpubs.push(key.value)
           }
         })
