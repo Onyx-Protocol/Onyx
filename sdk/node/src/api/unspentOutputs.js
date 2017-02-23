@@ -14,18 +14,18 @@ const shared = require('../shared')
  * @property {String} type
  * @property {String} purpose
  * @property {String} transactionId
- * @property {Integer} position
+ * @property {Number} position
  * @property {String} assetId
  * @property {String} assetAlias
- * @property {Hash} assetDefinition
- * @property {Hash} assetTags
+ * @property {Object} assetDefinition
+ * @property {Object} assetTags
  * @property {Boolean} assetIsLocal
- * @property {Integer} amount
+ * @property {Number} amount
  * @property {String} accountId
  * @property {String} accountAlias
- * @property {Hash} accountTags
+ * @property {Object} accountTags
  * @property {String} controlProgram
- * @property {Hash} referenceData
+ * @property {Object} referenceData
  * @property {Boolean} isLocal
  */
 

@@ -14,6 +14,43 @@ function checkForError(resp) {
 }
 
 /**
+ * A blockchain consists of an immutable set of cryptographically linked
+ * transactions. Each transaction contains one or more actions.
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/build-applications/transaction-basics}
+ * @typedef {Object} Transaction
+ * @global
+ *
+ *
+ * @property {String} id
+ * Unique transaction identifier.
+ *
+ * @property {String} timestamp
+ * Time of transaction, RFC3339 formatted.
+ *
+ * @property {String} blockId
+ * Unique identifier, or block hash, of the block containing a transaction.
+ *
+ * @property {Number} blockHeight
+ * Height of the block containing a transaction.
+ *
+ * @property {Number} position
+ * Position of a transaction within the block.
+ *
+ * @property {Object} referenceData
+ * User specified, unstructured data embedded within a transaction.
+ *
+ * @property {Boolean} isLocal
+ * A flag indicating one or more inputs or outputs are local.
+ *
+ * @property {Object[]} inputs
+ * List of specified inputs for a transaction.
+ *
+ * @property {Object[]} outputs
+ * List of specified outputs for a transaction.
+ */
+
+/**
  * @class
  * A convenience class for building transaction template objects.
  */
@@ -42,9 +79,9 @@ class TransactionBuilder {
    * Add an action that issues assets.
    *
    * @param {Object} params - Action parameters.
-   * @param {String} params.asset_id - Asset ID specifying the asset to be issued.
+   * @param {String} params.assetId - Asset ID specifying the asset to be issued.
    *                                   You must specify either an ID or an alias.
-   * @param {String} params.asset_alias - Asset alias specifying the asset to be issued.
+   * @param {String} params.assetAlias - Asset alias specifying the asset to be issued.
    *                                      You must specify either an ID or an alias.
    * @param {String} params.amount - Amount of the asset to be issued.
    */
@@ -163,29 +200,28 @@ class TransactionBuilder {
 }
 
 /**
- * Processing callback for building a transaction. The instance of
- * {@link TransactionBuilder} modified in the function is used to build a transaction
- * in Chain Core.
- *
- * @callback Transactions~builderCallback
- * @param {TransactionBuilder} builder
- */
-
-/**
- * A blockchain consists of an immutable set of cryptographically linked
- * transactions. Each transaction contains one or more actions.
+ * API for interacting with {@link Transaction transactions}.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/transaction-basics}
  * @module TransactionsApi
  */
 const transactionsAPI = (client) => {
+  /**
+   * Processing callback for building a transaction. The instance of
+   * {@link TransactionBuilder} modified in the function is used to build a transaction
+   * in Chain Core.
+   *
+   * @callback builderCallback
+   * @param {TransactionBuilder} builder
+   */
+
   return {
     /**
      * Get one page of transactions matching the specified query.
      *
      * @param {Query} params={} - Filter and pagination information.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Page>} Requested page of results.
+     * @returns {Promise<Page<Transaction>>} Requested page of results.
      */
     query: (params, cb) => shared.query(client, 'transactions', '/list-transactions', params, {cb}),
 
@@ -194,7 +230,7 @@ const transactionsAPI = (client) => {
      * supplied processor callback with each item individually.
      *
      * @param {Query} params - Filter and pagination information.
-     * @param {QueryProcessor} processor - Processing callback.
+     * @param {QueryProcessor<Transaction>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.
@@ -204,10 +240,10 @@ const transactionsAPI = (client) => {
     /**
      * Build an unsigned transaction from a set of actions.
      *
-     * @param {builderCallback} builderBlock - Function that adds desired actions
+     * @param {module:TransactionsApi~builderCallback} builderBlock - Function that adds desired actions
      *                                         to a given builder object.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} - Unsigned transaction template, or error.
+     * @returns {Promise<Object>} Unsigned transaction template, or error.
      */
     build: (builderBlock, cb) => {
       const builder = new TransactionBuilder()
@@ -222,11 +258,11 @@ const transactionsAPI = (client) => {
     /**
      * Build multiple unsigned transactions from multiple sets of actions.
      *
-     * @param {Array<builderCallback>} builderBlocks - Functions that add desired actions
+     * @param {Array<module:TransactionsApi~builderCallback>} builderBlocks - Functions that add desired actions
      *                                                 to a given builder object, one
      *                                                 per transaction.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<BatchResponse>} - Batch of unsigned transaction templates, or errors.
+     * @returns {Promise<BatchResponse>} Batch of unsigned transaction templates, or errors.
      */
     buildBatch: (builderBlocks, cb) => {
       const builders = builderBlocks.map((builderBlock) => {
@@ -253,7 +289,7 @@ const transactionsAPI = (client) => {
      * Submit multiple signed transactions to the blockchain.
      *
      * @param {Array<Object>} signed - An array of fully signed transaction templates.
-     * @returns {Promise<BatchResponse>} - Batch response of transaction IDs, or errors.
+     * @returns {Promise<BatchResponse>} Batch response of transaction IDs, or errors.
      */
     submitBatch: (signed, cb) => shared.tryCallback(
       client.request('/submit-transaction', {transactions: signed})
