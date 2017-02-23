@@ -100,19 +100,19 @@ Promise.all([
     // endsnippet
   )
 }).then(() => {
-  const externalProgramPromise = client.accounts.createControlProgram({
-    alias: 'acme_treasury',
+  const externalReceiverPromise = client.accounts.createReceiver({
+    accountAlias: 'acme_treasury',
   })
 
-  return externalProgramPromise.then(externalProgram =>
+  return externalReceiverPromise.then(externalReceiver =>
     // snippet external-issue
     client.transactions.build(builder => {
       builder.issue({
         assetAlias: 'acme_preferred',
         amount: 2000
       })
-      builder.controlWithProgram({
-        controlProgram: externalProgram.controlProgram,
+      builder.controlWithReceiver({
+        receiver: externalReceiver,
         assetAlias: 'acme_preferred',
         amount: 2000
       })

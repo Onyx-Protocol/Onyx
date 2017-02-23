@@ -92,8 +92,8 @@ class Assets {
     Transaction.submit(client, signedIssuanceTransaction);
     // endsnippet
 
-    ControlProgram externalProgram = new ControlProgram.Builder()
-      .controlWithAccountByAlias("acme_treasury")
+    Receiver externalReceiver = new Account.ReceiverBuilder()
+      .setAccountAlias("acme_treasury")
       .create(client);
 
     // snippet external-issue
@@ -101,8 +101,8 @@ class Assets {
       .addAction(new Transaction.Action.Issue()
         .setAssetAlias("acme_preferred")
         .setAmount(2000)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(externalProgram)
+      ).addAction(new Transaction.Action.ControlWithReceiver()
+        .setReceiver(externalReceiver)
         .setAssetAlias("acme_preferred")
         .setAmount(2000)
       ).build(client);

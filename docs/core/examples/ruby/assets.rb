@@ -82,14 +82,14 @@ signed_issuance_tx = signer.sign(issuance_tx)
 chain.transactions.submit(signed_issuance_tx)
 # endsnippet
 
-external_program = chain.accounts.create_control_program(
-  alias: 'acme_treasury'
-).control_program
+external_receiver = chain.accounts.create_receiver(
+  account_alias: 'acme_treasury'
+)
 
 # snippet external-issue
 external_issuance = chain.transactions.build do |b|
   b.issue asset_alias: 'acme_preferred', amount: 2000
-  b.control_with_program control_program: external_program, asset_alias: 'acme_preferred', amount: 2000
+  b.control_with_receiver receiver: external_receiver, asset_alias: 'acme_preferred', amount: 2000
 end
 
 chain.transactions.submit(signer.sign(external_issuance))
