@@ -64,4 +64,4 @@ A blockchain can be configured to require network tokens in order to connect to 
 
 ### Adding/removing blockchain operators
 
-To adjust the set of blockchain operators, a change must be made to the consensus program, and a quorum of existing block signers must agree to the change. This procedure requires tools still under development and coming soon; see the [Chain Core product roadmap](../reference/product-roadmap.md).
+To adjust the set of blockchain operators, a change must be made to the consensus program, and a quorum of existing block signers must agree to the change. This procedure requires tools still under development and coming soon.

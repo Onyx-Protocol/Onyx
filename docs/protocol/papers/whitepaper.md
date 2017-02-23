@@ -204,7 +204,7 @@ Chain’s implementation of the Chain Protocol, Chain Core, uses unique public k
 
 Programs that facilitate multi-party contracts may depend on sensitive data such as deadlines, prices, and interest rates. These can be hidden via Merkleized programs (see [MAST](http://www.mit.edu/~jlrubin/public/pdfs/858report.pdf)) that contain only hashes of each branch, for which only the executed branches need to be revealed during execution. Such a smart contract could allow spending in one of two ways: by providing signatures from all parties on the new transaction (allowing parties to agree to how a contract should be resolved, while preserving privacy), or by revealing and executing the private smart contract code. This is similar to how contracts work in the real world — while enforcement in court typically requires the terms of the contract to be made public, most contracts are settled in private, with the public system only necessary as an implicit backstop.
 
-The Chain Protocol can also be extended with additional confidentiality features, as covered in [Blockchain Extensibility](blockchain-extensibility.md) and [Protocol Roadmap](protocol-roadmap.md).
+The Chain Protocol can also be extended with additional confidentiality features, as covered in [Blockchain Extensibility](blockchain-extensibility.md).
 
 #### Consensus security
 
@@ -267,7 +267,6 @@ Chain Core is software that implements the Chain Protocol. Using Chain Core, org
 * [Federated Consensus](federated-consensus.md)
 * [Blockchain Programs](blockchain-programs.md)
 * [Blockchain Extensibility](blockchain-extensibility.md)
-* [Protocol Roadmap](protocol-roadmap.md)
 * [Data Model Specification](../specifications/data.md)
 * [Virtual Machine Specification](../specifications/vm1.md)
 * [Key Derivation Specification](../specifications/chainkd.md)
