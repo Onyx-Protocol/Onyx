@@ -205,7 +205,7 @@ Promise.all([
     filter: 'asset_alias=$1',
     filterParams: ['acme_common'],
   }, (unspent, next) => {
-    console.log('Acme Common held in output ' + unspent.transactionId + ': ' + unspent.position)
+    console.log('Acme Common held in output ' + unspent.id)
     next()
   })
   // endsnippet
