@@ -39,7 +39,7 @@ alice_receiver_serialized = alice_receiver.to_json
 # endsnippet
 
 # snippet build-transaction
-payment_to_program = chain.transactions.build do |b|
+payment_to_receiver = chain.transactions.build do |b|
   b.spend_from_account account_alias: 'bob', asset_alias: 'gold', amount: 10
   b.control_with_receiver(
     receiver: JSON.parse(alice_receiver_serialized),
@@ -48,7 +48,7 @@ payment_to_program = chain.transactions.build do |b|
   )
 end
 
-chain.transactions.submit(signer.sign(payment_to_program))
+chain.transactions.submit(signer.sign(payment_to_receiver))
 # endsnippet
 
 # snippet retire
