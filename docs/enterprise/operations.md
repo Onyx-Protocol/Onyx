@@ -10,18 +10,18 @@ Chain Core exposes two HTTP endpoints for monitoring.
 
 ### `/health`
 
-For uptime monitoring |  check `/health` periodically check. If your request returns anything but a 200 status code |  then the server is unavailable.
+For uptime monitoring, check `/health` periodically. If your request returns anything but a 200 status code, then the server is unavailable.
 
 This endpoint is **unauthenticated**.
 
 ### `/info`
 
-The `/info` endpoint reports basic information about the configuration of Chain Core |  as well as any errors encountered when updating the local state of the blockchain. These errors include problems with generating new blocks (if the core is a generator) |  or problems making requests to the generator core.
+The `/info` endpoint reports basic information about the configuration of Chain Core, as well as any errors encountered when updating the local state of the blockchain. These errors include problems with generating new blocks (if the core is a generator), or problems making requests to the generator core.
 
-This endpoint is **authenticated** via HTTP Basic Auth. Use a client API token in the password basic auth field |  e.g.:
+This endpoint is **authenticated** via HTTP Basic Auth. For the password field, use a client API token. The username should be left blank, e.g.:
 
 ```
-GET https://:client API token@chaincore.example.com/info
+GET https://:<client API token>@chaincore.example.com/info
 ```
 
 #### Response
@@ -40,7 +40,7 @@ Field | Type | Description
 `generator_block_height` | integer | Height of the blockchain in the generator
 `generator_block_height_fetched_at` | string | RFC3339 timestamp reflecting the last time `generator_block_height` was updated
 `generator_url` | string | URL of the generator
-`health` | object | Blockchain error information (see below)
+`health` | object | **Blockchain error information (see below)**
 `is_configured` | boolean | Whether the core has been configured
 `is_generator` | boolean | Whether the core is configured as the blockchain generator
 `is_production` | boolean | Whether the core is running in production mode
@@ -61,7 +61,9 @@ The `health` object has the following structure:
 
 There are two types of errors:
 
-- **fetch** errors occur when the core encounters errors synchronizing blocks from the generator. Among other things, this could mean the generator is not reachable from this core.
-- **generator** errors occur when the core is acting as a generator, and encounters errors generating a new block.
+- **fetch** errors occur when the core encounters errors synchronizing blocks from the generator. Among other things, this could mean the generator is not reachable from this core. This field is undefined if the core is a generator.
+- **generator** errors occur when the core is acting as a generator, and encounters errors generating a new block. This field is undefined if the core is not a generator.
+
+These fields will be `null` if no errors have been encountered.
 
 
