@@ -196,15 +196,15 @@ func TestContains(t *testing.T) {
 	tr.Insert(bits("00000011"), bits("00000011"))
 	tr.Insert(bits("00000010"), bits("00000000")) // note different val
 
-	if !tr.Contains(bits("00000011")) {
-		t.Errorf("expected tree to contain %x, but did not", bits("00000011"))
+	if v := bits("00000011"); !tr.Contains(v) {
+		t.Errorf("expected tree to contain %x, but did not", v)
 	}
 
-	if tr.Contains(bits("00000000")) {
-		t.Errorf("expected tree to not contain %x, but did", bits("00000000"))
+	if v := bits("00000000"); tr.Contains(v) {
+		t.Errorf("expected tree to not contain %x, but did", v)
 	}
-	if tr.Contains(bits("00000010")) {
-		t.Errorf("expected tree to not contain %x, but did", bits("00000000"))
+	if v := bits("00000010"); tr.Contains(v) {
+		t.Errorf("expected tree to not contain %x, but did", v)
 	}
 }
 
