@@ -9,7 +9,7 @@ This guide shows how to install Chain Core and how to configure systemd to manag
 ## Downloading cored
 
 ```
-$ curl -o /usr/bin/cored -L https://s3.amazonaws.com/chain-core/1.0.2/cored
+$ curl -o /usr/bin/cored -L https://s3.amazonaws.com/chain-core/1.1.0/cored
 $ chmod +x /usr/bin/cored
 ```
 
