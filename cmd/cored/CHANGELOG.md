@@ -12,7 +12,7 @@ Other changes:
 
 * The network version has been updated to **2**. Chain Core instances on the same network must share the same network version. If you're upgrading to version 1.1.0, make sure to upgrade all Chain Cores in your blockchain network.
 * Transaction outputs now have a unique `id` property.
-* Transaction inputs refer to previous outputs using a new `spent_output_id` property. The existing `spent_output` property, which contained a transaction ID and position, is **deprecated**.
+* Transaction inputs refer to previous outputs using a new `spent_output_id` property. The existing `spent_output` property, which contains a transaction ID and position, is **deprecated**.
 * Accounts now use **receivers**, a cross-core payment primitive that supersedes the Chain 1.0.x pattern of creating and paying to control programs. See the SDK changelogs for usage examples.
 
 ## 1.0.2 (December 2, 2016)<a name="1.0.2"></a>
