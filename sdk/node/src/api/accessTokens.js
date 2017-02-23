@@ -23,7 +23,7 @@ const shared = require('../shared')
  */
 
 /**
- * API for interacting with {@link AccessToken access tokens}
+ * API for interacting with {@link AccessToken access tokens}.
  *
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
@@ -60,7 +60,7 @@ const accessTokens = (client) => {
      *
      * @param {Query} params={} - Pagination information.
      * @param {String} [params.type] - Type of access tokens to return.
-     * @param {QueryProcessor} processor - Processing callback.
+     * @param {QueryProcessor<AccessToken>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                    rejected on error.

@@ -22,7 +22,7 @@ const shared = require('../shared')
  * @property {Number} quorum
  * The number of keys required to sign transactions for the account.
  *
- * @property {Hash} tags
+ * @property {Object} tags
  * User-specified tag structure for the account.
  */
 
@@ -43,7 +43,7 @@ const shared = require('../shared')
  */
 
 /**
- * API for interacting with {@link Account account} objects.
+ * API for interacting with {@link Account accounts}.
  *
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/accounts}
@@ -51,7 +51,7 @@ const shared = require('../shared')
  */
 const accountsAPI = (client) => {
   /**
-   * @typedef {Object} createAccountRequest
+   * @typedef {Object} createRequest
    *
    * @property {String} [alias]
    * User specified, unique identifier.
@@ -86,7 +86,7 @@ const accountsAPI = (client) => {
     /**
      * Create a new account.
      *
-     * @param {module:AccountsApi~createAccountRequest} params - Parameters for account creation.
+     * @param {module:AccountsApi~createRequest} params - Parameters for account creation.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Account>} Newly created account.
      */
@@ -95,7 +95,7 @@ const accountsAPI = (client) => {
     /**
      * Create multiple new accounts.
      *
-     * @param {module:AccountsApi~createAccountRequest[]} params - Parameters for creation of multiple accounts.
+     * @param {module:AccountsApi~createRequest[]} params - Parameters for creation of multiple accounts.
      * @param {batchCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<BatchResponse<Account>>} Newly created accounts.
      */
@@ -115,7 +115,7 @@ const accountsAPI = (client) => {
      * supplied processor callback with each item individually.
      *
      * @param {Query} params={} - Filter information.
-     * @param {QueryProcessor} processor - Processing callback.
+     * @param {QueryProcessor<Account>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.
