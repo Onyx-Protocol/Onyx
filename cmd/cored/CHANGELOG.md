@@ -2,7 +2,7 @@
 
 ## 1.1.0 (February 24, 2017)
 
-This release is a minor version update, and contains **new features** and **deprecations**. cored 1.1.0 is backward-compatible with 1.0.x SDKs, but we strongly recommend upgrading to the 1.1.x SDKs as soon as possible. See SDK-level changes here:
+This release is a minor version update, and contains **new features** and **deprecations**. cored 1.1.0 is backward-compatible with 1.0.x SDKs, but we strongly recommend upgrading to 1.1.x SDKs as soon as possible. See SDK-level changes here:
 
 - [Java SDK changelog](https://github.com/chain/chain/blob/main/sdk/java/CHANGELOG.md)
 - [Node SDK changelog](https://github.com/chain/chain/blob/main/sdk/node/CHANGELOG.md)
