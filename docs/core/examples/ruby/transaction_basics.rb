@@ -76,7 +76,7 @@ bob_payment_receiver_serialized = bob_payment_receiver.to_json
 # endsnippet
 
 # snippet pay-between-cores
-payment_to_program = chain.transactions.build do |b|
+payment_to_receiver = chain.transactions.build do |b|
   b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 10
   b.control_with_receiver(
     receiver: JSON.parse(bob_payment_receiver_serialized),
@@ -85,9 +85,9 @@ payment_to_program = chain.transactions.build do |b|
   )
 end
 
-signed_payment_to_program = signer.sign(payment_to_program)
+signed_payment_to_receiver = signer.sign(payment_to_receiver)
 
-chain.transactions.submit(signed_payment_to_program)
+chain.transactions.submit(signed_payment_to_receiver)
 # endsnippet
 
 if (chain.opts[:url] == other_core.opts[:url])
@@ -118,7 +118,7 @@ bob_silver_receiver_serialized = bob_silver_receiver.to_json
 # endsnippet
 
 # snippet multiasset-between-cores
-multi_asset_to_program = chain.transactions.build do |b|
+multi_asset_to_receiver = chain.transactions.build do |b|
   b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 10
   b.spend_from_account account_alias: 'alice', asset_alias: 'silver', amount: 20
   b.control_with_receiver(
@@ -133,9 +133,9 @@ multi_asset_to_program = chain.transactions.build do |b|
   )
 end
 
-signed_multi_asset_to_program = signer.sign(multi_asset_to_program)
+signed_multi_asset_to_receiver = signer.sign(multi_asset_to_receiver)
 
-chain.transactions.submit(signed_multi_asset_to_program)
+chain.transactions.submit(signed_multi_asset_to_receiver)
 # endsnippet
 
 # snippet retire
