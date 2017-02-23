@@ -13,7 +13,6 @@ class AccountShow extends BaseShow {
   constructor(props) {
     super(props)
 
-    this.createControlProgram = this.createControlProgram.bind(this)
     this.createReceiver = this.createReceiver.bind(this)
   }
 
@@ -22,17 +21,7 @@ class AccountShow extends BaseShow {
       accountId: this.props.item.id
     }).then((receiver) => this.props.showReceiver(<div>
       <p>Copy this one-time use receiver to use in a transaction:</p>
-      <CopyableBlock value={JSON.stringify(receiver)} />
-    </div>))
-  }
-
-  createControlProgram() {
-    this.props.createControlProgram({
-      type: 'account',
-      id: this.props.item.id
-    }).then((program) => this.props.showControlProgram(<div>
-      <p>Copy this one-time use control program to use in a transaction:</p>
-      <CopyableBlock value={program.controlProgram} />
+      <CopyableBlock value={JSON.stringify(receiver, null, 1)} />
     </div>))
   }
 
@@ -118,16 +107,11 @@ const mapDispatchToProps = ( dispatch ) => ({
 
     dispatch(actions.balance.pushList({ filter }))
   },
-  createControlProgram: (data) => dispatch(actions.account.createControlProgram(data)),
   createReceiver: (data) => dispatch(actions.account.createReceiver(data)),
   showReceiver: (body) => dispatch(actions.app.showModal(
     body,
     actions.app.hideModal
-  )),
-  showControlProgram: (body) => dispatch(actions.app.showModal(
-    body,
-    actions.app.hideModal
-  )),
+  ))
 })
 
 export default connect(

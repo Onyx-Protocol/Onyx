@@ -53,6 +53,12 @@ function preprocessTransaction(formParams) {
     } catch (err) {
       throw new Error(`Action ${parseInt(i)+1} reference data should be valid JSON, or blank.`)
     }
+
+    try {
+      a.receiver = parseNonblankJSON(a.receiver)
+    } catch (err) {
+      throw new Error(`Action ${parseInt(i)+1} receiver should be valid JSON.`)
+    }
   }
 
   return builder
