@@ -6,17 +6,57 @@ const shared = require('../shared')
  *
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/accounts}
+ * @typedef {Object} Account
+ * @global
+ *
+ * @property {String} id
+ * Unique account identifier.
+ *
+ * @property {String} alias
+ * User specified, unique identifier.
+ *
+ * @property {Key[]} keys
+ * The list of keys used to create control programs under the account.
+ * Signatures from these keys are required for spending funds held in the account.
+ *
+ * @property {Number} quorum
+ * The number of keys required to sign transactions for the account.
+ *
+ * @property {Hash} tags
+ * User-specified tag structure for the account.
+ */
+
+/**
+ * A receiver is an object that wraps an account control program with additional
+ * payment information, such as expiration dates.
+ *
+ * <br/></br>
+ * More info: {@link https://chain.com/docs/core/build-applications/control-programs}
+ * @typedef {Object} Receiver
+ * @global
+ *
+ * @property {String} controlProgram
+ * The underlying control program that will be used in transactions paying to this receiver.
+ *
+ * @property {String} expiresAt
+ * An RFC3339 timestamp indicating when the receiver will cease to be valid.
+ */
+
+/**
+ * API for interacting with {@link Account account} objects.
+ *
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/build-applications/accounts}
  * @module AccountsApi
  */
 const accountsAPI = (client) => {
   /**
-   * @typedef accountsAPI~createRequest
-   * @type {Object}
+   * @typedef {Object} createAccountRequest
    *
    * @property {String} [alias]
    * User specified, unique identifier.
    *
-   * @property {string[]} rootXpubs
+   * @property {String[]} rootXpubs
    * The list of keys used to create control programs under the account.
    *
    * @property {Number} quorum
@@ -27,18 +67,17 @@ const accountsAPI = (client) => {
    */
 
   /**
-   * @typedef accountsAPI~createReceiverRequest
-   * @type {Object}
+   * @typedef {Object} createReceiverRequest
    *
-   * @property {String} [account_alias]
-   * The unique alias of the account. account_alias or account_id must be
+   * @property {String} [accountAlias]
+   * The unique alias of the account. accountAlias or accountId must be
    * provided.
    *
-   * @property {String} [account_id]
-   * The unique ID of the account. account_alias or account_id must be
+   * @property {String} [accountId]
+   * The unique ID of the account. accountAlias or accountId must be
    * provided.
    *
-   * @property {String} [expires_at]
+   * @property {String} [expiresAt]
    * An RFC3339 timestamp indicating when the receiver will cease to be valid.
    * Defaults to 30 days in the future.
    */
@@ -47,18 +86,18 @@ const accountsAPI = (client) => {
     /**
      * Create a new account.
      *
-     * @param {accountsAPI~createRequest} params - Parameters for account creation.
+     * @param {module:AccountsApi~createAccountRequest} params - Parameters for account creation.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Newly created account.
+     * @returns {Promise<Account>} Newly created account.
      */
     create: (params, cb) => shared.create(client, '/create-account', params, {cb}),
 
     /**
      * Create multiple new accounts.
      *
-     * @param {accountsAPI~createRequest[]} params - Parameters for creation of multiple accounts.
+     * @param {module:AccountsApi~createAccountRequest[]} params - Parameters for creation of multiple accounts.
      * @param {batchCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {BatchResponse} Newly created accounts.
+     * @returns {Promise<BatchResponse<Account>>} Newly created accounts.
      */
     createBatch: (params, cb) => shared.createBatch(client, '/create-account', params, {cb}),
 
@@ -112,18 +151,18 @@ const accountsAPI = (client) => {
     /**
      * Create a new receiver under the specified account.
      *
-     * @param {accountsAPI~createReceiverRequest} params - Parameters for receiver creation.
+     * @param {module:AccountsApi~createReceiverRequest} params - Parameters for receiver creation.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Newly created receiver.
+     * @returns {Promise<Receiver>} Newly created receiver.
      */
     createReceiver: (params, cb) => shared.create(client, '/create-account-receiver', params, {cb}),
 
     /**
      * Create multiple receivers under the specified accounts.
      *
-     * @param {accountsAPI~createReceiverRequest[]} params - Parameters for creation of multiple receivers.
+     * @param {module:AccountsApi~createReceiverRequest[]} params - Parameters for creation of multiple receivers.
      * @param {batchCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {BatchResponse} Newly created receivers.
+     * @returns {Promise<BatchResponse<Receiver>>} Newly created receivers.
      */
     createReceiverBatch: (params, cb) => shared.createBatch(client, '/create-account-receiver', params, {cb}),
   }
