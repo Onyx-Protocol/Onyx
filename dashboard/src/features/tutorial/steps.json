@@ -301,7 +301,7 @@
   {
     "component": "TutorialForm",
     "objectType": "transaction",
-    "title": "Tutorial - Transfering - Step 6 of 7",
+    "title": "Tutorial - Transferring - Step 6 of 7",
     "button": null,
     "route": null,
     "content": {
@@ -352,7 +352,7 @@
   {
     "component": "TutorialInfo",
     "objectType": "transaction",
-    "title": "Tutorial - Transfering - Step 6 of 7",
+    "title": "Tutorial - Transferring - Step 6 of 7",
     "button": "Retire asset units",
     "route": "transactions/create",
     "image": "transaction",
