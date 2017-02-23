@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "chain-sdk": "file:../../../../sdk/node"
+  }
+}
