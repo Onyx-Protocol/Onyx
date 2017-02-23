@@ -65,7 +65,7 @@ Issue                                   | Issues new units of a specified asset.
 Spend from account                      | Spends units of a specified asset from a specified account. Automatically handles locating outputs with enough units, and the creation of change outputs.
 Spend an unspent output from an account | Spends an entire, specific unspent output in an account. Change must be handled manually, using other actions.
 Control with account                    | Receives units of a specified asset into a specified account.
-Control with program                    | Receives units of an asset into a specificed control program. Used when making a payment to an external party/account in another Chain Core.
+Control with receiver                   | Receives units of an asset into a receiver, which contains a control program and supplementary payment information, such as an expiration date. Used when making a payment to an external party/account in another Chain Core.
 Retire                                  | Retires units of a specified asset.
 Set transaction reference data          | Sets arbitrary reference data on the transaction.
 
@@ -87,7 +87,7 @@ The Chain Core SDK assumes that private keys are held within an HSM controlled b
 
 Once a transaction is balanced and all inputs are signed, it is considered valid and can be submitted to the blockchain. The local core will forward the transaction to the generator, which adds it to the blockchain and propagates it to other cores on the network.
 
-The Chain Core API does not return a response until either the transaction has been added to the blockchain and indexed by the local core, or there was an error. This allows you to write your programs in a linear fashion. In general, if a submission responds with success, the rest of your program may proceed with the guarantee that the transaction has been committed to the blockchain.
+The Chain Core API does not return a response until either the transaction has been added to the blockchain and indexed by the local core, or there was an error. This allows you to write your applications in a linear fashion. In general, if a submission responds with success, the rest of your application may proceed with the guarantee that the transaction has been committed to the blockchain.
 
 ## Examples
 
@@ -101,13 +101,13 @@ $code issue-within-core ../examples/java/TransactionBasics.java ../examples/ruby
 
 #### Between two Chain Cores
 
-First, Bob creates a control program in his account, which he can send to the issuer of gold.
+First, Bob creates a receiver in his account, which he can serialize and send to the issuer of gold.
 
-$code create-bob-issue-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
+$code create-bob-issue-receiver ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
-The issuer then builds, signs, and submits a transaction, sending gold to Bob's control program.
+The issuer then builds, signs, and submits a transaction, sending gold to Bob's receiver.
 
-$code issue-to-bob-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
+$code issue-to-bob-receiver ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 ### Simple payment
 
@@ -119,11 +119,11 @@ $code pay-within-core ../examples/java/TransactionBasics.java ../examples/ruby/t
 
 #### Between two Chain Cores
 
-First, Bob creates a control program in his account, which he can send to Alice.
+First, Bob creates a receiver in his account, which he can serialize and send to Alice.
 
-$code create-bob-payment-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
+$code create-bob-payment-receiver ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
-Alice then builds, signs, and submits a transaction, sending gold to Bob's control program.
+Alice then builds, signs, and submits a transaction, sending gold to Bob's receiver.
 
 $code pay-between-cores ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
@@ -137,11 +137,11 @@ $code multiasset-within-core ../examples/java/TransactionBasics.java ../examples
 
 #### Between two Chain Cores
 
-First Bob creates a control program in his account, which he can send to Alice.
+Currently, the transaction builder API assigns each receiver to its own output, which means that a single receiver can only be used to receive a single asset type. It's important for Bob not to re-use receivers, so he creates one for each asset payment he will receive. He serializes both and sends them to Alice.
 
-$code create-bob-multiasset-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
+$code create-bob-multiasset-receiver ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
-Alice then builds, signs, and submits a transaction, sending gold and silver to Bob's control program.
+Alice then builds, signs, and submits a transaction, sending gold and silver to Bob's receivers.
 
 $code multiasset-between-cores ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 

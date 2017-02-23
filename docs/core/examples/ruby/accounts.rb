@@ -90,16 +90,21 @@ signed_spending_tx = signer.sign(spending_tx)
 chain.transactions.submit(signed_spending_tx)
 # endsnippet
 
-# snippet create-control-program
-bob_program = chain.accounts.create_control_program(
-  alias: 'bob'
-).control_program
+# snippet create-receiver
+bob_receiver = chain.accounts.create_receiver(
+  account_alias: 'bob'
+)
+bob_receiver_serialized = bob_receiver.to_json
 # endsnippet
 
-# snippet transfer-to-control-program
+# snippet transfer-to-receiver
 spending_tx2 = chain.transactions.build do |b|
   b.spend_from_account account_alias: 'alice', asset_alias: 'gold', amount: 10
-  b.control_with_program control_program: bob_program, asset_alias: 'gold', amount: 10
+  b.control_with_receiver(
+    receiver: JSON.parse(bob_receiver_serialized),
+    asset_alias: 'gold',
+    amount: 10
+  )
 end
 
 chain.transactions.submit(signer.sign(spending_tx2))

@@ -79,7 +79,7 @@ $code submit-issue ../examples/java/Assets.java ../examples/ruby/assets.rb ../ex
 
 ## Issue asset units to an external party
 
-If you wish to issue asset units to an external party, you must first request a control program from them. You can then build, sign, and submit a transaction issuing asset units to their control program.
+If you wish to issue asset units to an external party, you must first request a receiver from them. You can then build, sign, and submit a transaction issuing asset units to their receiver.
 
 We will issue 2000 units of Acme Common stock to an external party.
 
@@ -125,7 +125,7 @@ $code list-retirements ../examples/java/Assets.java ../examples/ruby/assets.rb .
 
 ## Get asset circulation
 
-The circulation of an asset is the sum of all non-retired units of that asset existing in unspent transaction outputs in the blockchain, regardless of control program.
+The circulation of an asset is the sum of all non-retired units of that asset existing in unspent transaction outputs in the blockchain.
 
 To list the circulation of Acme Common stock, we build a balance query, filtering on the Acme Common stock `asset_alias`.
 
@@ -135,6 +135,6 @@ To list the circulation of all classes of Acme stock, we build a balance query, 
 
 $code list-acme-balance ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
-To list all the control programs that hold a portion of the circulation of Acme Common stock, we build an unspent outputs query, filtering on the Acme Common stock `asset_alias`.
+To list all the unspent outputs that hold a portion of the circulation of Acme Common stock, we build an unspent outputs query, filtering on the Acme Common stock `asset_alias`.
 
 $code list-acme-common-unspents ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js

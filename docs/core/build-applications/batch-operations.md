@@ -8,7 +8,7 @@ Operations that support batching include:
 
 * Creating assets
 * Creating accounts
-* Creating control programs
+* Creating receivers
 * Building transactions
 * Signing transactions
 * Submitting transactions
@@ -23,7 +23,7 @@ All code samples in this guide can be viewed in a single, runnable script. Avail
 
 ## Example: Creating assets in a batch
 
-All batch operations share a common workflow. To illustrate this, we’ll walk through an example program that creates several assets as a batch.
+All batch operations share a common workflow. To illustrate this, we’ll walk through an example application that creates several assets as a batch.
 
 #### Preparing the request
 

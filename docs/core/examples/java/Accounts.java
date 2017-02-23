@@ -110,20 +110,21 @@ class Accounts {
     Transaction.submit(client, signedSpendingTransaction);
     // endsnippet
 
-    // snippet create-control-program
-    ControlProgram bobProgram = new ControlProgram.Builder()
-      .controlWithAccountByAlias("bob")
+    // snippet create-receiver
+    Receiver bobReceiver = new Account.ReceiverBuilder()
+      .setAccountAlias("bob")
       .create(client);
+    String bobReceiverSerialized = bobReceiver.toJson();
     // endsnippet
 
-    // snippet transfer-to-control-program
+    // snippet transfer-to-receiver
     Transaction.Template spendingTransaction2 = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendFromAccount()
         .setAccountAlias("alice")
         .setAssetAlias("gold")
         .setAmount(10)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram)
+      ).addAction(new Transaction.Action.ControlWithReceiver()
+        .setReceiver(Receiver.fromJson(bobReceiverSerialized))
         .setAssetAlias("gold")
         .setAmount(10)
       ).build(client);

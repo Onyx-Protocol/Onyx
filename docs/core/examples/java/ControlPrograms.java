@@ -9,25 +9,26 @@ class ControlPrograms {
     Client client = new Client();
     setup(client);
 
-    // snippet create-control-program
-    ControlProgram aliceProgram = new ControlProgram.Builder()
-      .controlWithAccountByAlias("alice")
+    // snippet create-receiver
+    Receiver aliceReceiver = new Account.ReceiverBuilder()
+      .setAccountAlias("alice")
       .create(client);
+    String aliceReceiverSerialized = aliceReceiver.toJson();
     // endsnippet
 
     // snippet build-transaction
-    Transaction.Template paymentToProgram = new Transaction.Builder()
+    Transaction.Template paymentToReceiver = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendFromAccount()
         .setAccountAlias("bob")
         .setAssetAlias("gold")
         .setAmount(10)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(aliceProgram.controlProgram)
+      ).addAction(new Transaction.Action.ControlWithReceiver()
+        .setReceiver(Receiver.fromJson(aliceReceiverSerialized))
         .setAssetAlias("gold")
         .setAmount(10)
       ).build(client);
 
-    Transaction.submit(client, HsmSigner.sign(paymentToProgram));
+    Transaction.submit(client, HsmSigner.sign(paymentToReceiver));
     // endsnippet
 
     // snippet retire
