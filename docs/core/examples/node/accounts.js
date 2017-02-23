@@ -108,22 +108,24 @@ Promise.all([
     // endsnippet
   )
 }).then(() => {
-  // snippet create-control-program
-  const bobProgramPromise = client.accounts.createControlProgram({
-    alias: 'bob',
+  // snippet create-receiver
+  const bobReceiverSerializedPromise = client.accounts.createReceiver({
+    accountAlias: 'bob',
+  }).then(bobReceiver => {
+    return JSON.stringify(bobReceiver)
   })
   // endsnippet
 
-  return bobProgramPromise.then(bobProgram =>
-    // snippet transfer-to-control-program
+  return bobReceiverSerializedPromise.then(bobReceiverSerialized =>
+    // snippet transfer-to-receiver
     client.transactions.build(builder => {
       builder.spendFromAccount({
         accountAlias: 'alice',
         assetAlias: 'gold',
         amount: 10
       })
-      builder.controlWithProgram({
-        controlProgram: bobProgram.controlProgram,
+      builder.controlWithReceiver({
+        receiver: JSON.parse(bobReceiverSerialized),
         assetAlias: 'gold',
         amount: 10
       })

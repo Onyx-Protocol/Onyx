@@ -72,15 +72,15 @@ $code submit-transfer ../examples/java/Accounts.java ../examples/ruby/accounts.r
 
 ## Receive asset units from an external party
 
-Account IDs and aliases are local Chain Core data. They do not exist in the blockchain. When an external party wishes to transfer assets to your account, you must first create a control program for the account. We will create a control program for Bob’s account, which we can then send to the external party (see following example).
+Account IDs and aliases are local Chain Core data. They do not exist in the blockchain. When an external party wishes to transfer assets to your account, you must first create a receiver for the account. We will create a receiver for Bob’s account, which we can then send to the external party (see following example).
 
-$code create-control-program ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
+$code create-receiver ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 ## Transfer asset units to an external party
 
-If you wish to transfer asset units to an external party, you must first request a control program from them. You can then build, sign, and submit a transaction sending asset units to their control program. We will use the control program we created in Bob’s account to demonstrate this external facing functionality.
+If you wish to transfer asset units to an external party, you must first request a receiver from them. You can then build, sign, and submit a transaction sending asset units to their control program. We will use the receiver we created in Bob’s account to demonstrate this external facing functionality.
 
-$code transfer-to-control-program ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
+$code transfer-to-receiver ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
 ## List account transactions
 
