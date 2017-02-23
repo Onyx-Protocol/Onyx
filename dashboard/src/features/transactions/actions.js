@@ -41,17 +41,16 @@ function preprocessTransaction(formParams) {
       }
     })
 
-    // HACK: Check for retire actions and replace with OP_FAIL control programs.
-    // TODO: update JS SDK to support Java SDK builder style.
-    if (a.type == 'retire_asset') {
-      a.type = 'control_program'
-      a.controlProgram = '6a' // OP_FAIL hex byte
-    }
-
     try {
       a.referenceData = parseNonblankJSON(a.referenceData)
     } catch (err) {
       throw new Error(`Action ${parseInt(i)+1} reference data should be valid JSON, or blank.`)
+    }
+
+    try {
+      a.receiver = parseNonblankJSON(a.receiver)
+    } catch (err) {
+      throw new Error(`Action ${parseInt(i)+1} receiver should be valid JSON.`)
     }
   }
 
