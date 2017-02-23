@@ -128,6 +128,6 @@ unspentOutputs = chain.unspent_outputs.query(
   filter: 'account_alias=$1 AND asset_alias=$2',
   filter_params: ['alice', 'gold'],
 ).each do |u|
-  puts "#{u.transaction_id} position #{u.position}"
+  puts "Output ID: #{u.id}"
 end
 # endsnippet

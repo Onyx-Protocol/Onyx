@@ -30,7 +30,7 @@ goldUnspentOutputs = chain.unspent_outputs.query(
   filter: 'asset_alias=$1',
   filter_params: ['gold'],
 ).each do |utxo|
-  puts "Unspent output containing gold: #{utxo.transaction_id}:#{utxo.position}"
+  puts "Unspent output containing gold: #{utxo.id}"
 end
 # endsnippet
 

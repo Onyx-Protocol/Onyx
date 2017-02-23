@@ -160,7 +160,7 @@ Promise.all([
     filter: 'account_alias=$1 AND asset_alias=$2',
     filterParams: ['alice', 'gold'],
   }, (unspent, next) => {
-    console.log(unspent.transactionId + ' position ' + unspent.position)
+    console.log('Output ID: ' + unspent.id)
     next()
   })
   // endsnippet

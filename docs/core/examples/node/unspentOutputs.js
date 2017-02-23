@@ -61,7 +61,7 @@ client.mockHsm.keys.create()
     filter: 'account_alias=$1',
     filterParams: ['alice'],
   }, (utxo, next) => {
-    console.log(`Unspent output in alice account: ${utxo.transactionId}:${utxo.position}`)
+    console.log(`Unspent output in alice account: ${utxo.id}`)
     next()
   })
   // endsnippet
@@ -72,7 +72,7 @@ client.mockHsm.keys.create()
     filter: 'asset_alias=$1',
     filterParams: ['gold'],
   }, (utxo, next) => {
-    console.log(`Unspent output containing gold: ${utxo.transactionId}:${utxo.position}`)
+    console.log(`Unspent output containing gold: ${utxo.id}`)
     next()
   })
   // endsnippet

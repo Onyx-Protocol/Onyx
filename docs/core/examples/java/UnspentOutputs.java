@@ -56,7 +56,7 @@ class UnspentOutputs {
 
     while (aliceUnspentOutputs.hasNext()) {
       UnspentOutput utxo = aliceUnspentOutputs.next();
-      System.out.println("Unspent output in alice account: " + utxo.transactionId + ":" + utxo.position);
+      System.out.println("Unspent output in alice account: " + utxo.id);
     }
     // endsnippet
 
@@ -68,7 +68,7 @@ class UnspentOutputs {
 
     while (goldUnspentOutputs.hasNext()) {
       UnspentOutput utxo = goldUnspentOutputs.next();
-      System.out.println("Unspent output containing gold: " + utxo.transactionId + ":" + utxo.position);
+      System.out.println("Unspent output containing gold: " + utxo.id);
     }
     // endsnippet
 
