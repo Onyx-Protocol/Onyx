@@ -137,7 +137,7 @@ $code multiasset-within-core ../examples/java/TransactionBasics.java ../examples
 
 #### Between two Chain Cores
 
-Currently, the transaction builder API assigns each receiver to its own output, which means that a single receiver can only be used to receive single asset type. It's important for Bob not to re-use receivers, so he creates one for each asset payment he will receive. He serializes both and sends them to Alice.
+Currently, the transaction builder API assigns each receiver to its own output, which means that a single receiver can only be used to receive a single asset type. It's important for Bob not to re-use receivers, so he creates one for each asset payment he will receive. He serializes both and sends them to Alice.
 
 $code create-bob-multiasset-receiver ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
