@@ -7,6 +7,32 @@ const shared = require('../shared')
  * the unspent output set.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/unspent-outputs}
+ * @typedef {Object} UnspentOutput
+ * @global
+ *
+ * @property {String} id
+ * @property {String} type
+ * @property {String} purpose
+ * @property {String} transactionId
+ * @property {Integer} position
+ * @property {String} assetId
+ * @property {String} assetAlias
+ * @property {Hash} assetDefinition
+ * @property {Hash} assetTags
+ * @property {Boolean} assetIsLocal
+ * @property {Integer} amount
+ * @property {String} accountId
+ * @property {String} accountAlias
+ * @property {Hash} accountTags
+ * @property {String} controlProgram
+ * @property {Hash} referenceData
+ * @property {Boolean} isLocal
+ */
+
+/**
+ * API for interacting with {@link UnspentOutput unspent outputs}.
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/build-applications/unspent-outputs}
  * @module UnspentOutputsApi
  */
 const unspentOutputsAPI = (client) => {
@@ -16,7 +42,7 @@ const unspentOutputsAPI = (client) => {
      *
      * @param {Query} params={} - Filter and pagination information.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Page>} Requested page of results.
+     * @returns {Promise<Page<UnspentOutput>>} Requested page of results.
      */
     query: (params, cb) => shared.query(client, 'unspentOutputs', '/list-unspent-outputs', params, {cb}),
 
@@ -25,7 +51,7 @@ const unspentOutputsAPI = (client) => {
      * supplied processor callback with each item individually.
      *
      * @param {Query} params - Filter and pagination information.
-     * @param {QueryProcessor} processor - Processing callback.
+     * @param {QueryProcessor<UnspentOutput>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.
