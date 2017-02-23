@@ -583,15 +583,6 @@ section:after {
 
 /* Custom overrides */
 
-#doc-content.docs_protocol_papers_protocol-roadmap > h2,
-#doc-content.docs_core_reference_product-roadmap > h2 {
-    padding-top:20px;
-    margin-top:0px;
-    border-top:none;
-}
-
-
-
 h1:hover a.anchor, h2:hover a.anchor, h3:hover a.anchor, h4:hover a.anchor, h5:hover a.anchor, h6:hover a.anchor {
     opacity: 1
 }
