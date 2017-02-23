@@ -966,7 +966,7 @@ func TestConfirmTx(t *testing.T) {
 	outid1 := tx.OutputID(0)
 
 	snapshot := state.Empty()
-	err := snapshot.Tree.Insert(outid1.Hash[:], outid1.Hash[:])
+	err := snapshot.Tree.Insert(state.OutputTreeItem(outid1))
 	if err != nil {
 		t.Fatal(err)
 	}
