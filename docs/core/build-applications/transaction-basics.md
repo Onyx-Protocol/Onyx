@@ -65,7 +65,7 @@ Issue                                   | Issues new units of a specified asset.
 Spend from account                      | Spends units of a specified asset from a specified account. Automatically handles locating outputs with enough units, and the creation of change outputs.
 Spend an unspent output from an account | Spends an entire, specific unspent output in an account. Change must be handled manually, using other actions.
 Control with account                    | Receives units of a specified asset into a specified account.
-Control with receiver                   | Receives units of an asset into a receiver, which contains a control program and associated payment information. Used when making a payment to an external party/account in another Chain Core.
+Control with receiver                   | Receives units of an asset into a receiver, which contains a control program and supplementary payment information, such as an expiration date. Used when making a payment to an external party/account in another Chain Core.
 Retire                                  | Retires units of a specified asset.
 Set transaction reference data          | Sets arbitrary reference data on the transaction.
 

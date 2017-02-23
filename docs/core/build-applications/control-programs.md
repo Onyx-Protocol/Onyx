@@ -30,7 +30,7 @@ Although all control programs in one account are controlled by keys derived from
 
 ### Receivers
 
-Since version 1.1., the Chain API does not expose account control programs directly. Instead, you can generate **receiver** objects that wrap account control programs with additional payment information, such as expiration dates. If control programs are like payment addresses, then receivers are like invoices, which contain additional information in addition to mere addresses.
+Since version 1.1, the Chain Core accounts API does not expose account control programs directly. Instead, you can generate **receiver** objects, which wrap account control programs with additional payment information, such as expiration dates. If control programs are like payment addresses, then receivers are like invoices, which contain additional information on top of the addresses themselves.
 
 ### Example
 

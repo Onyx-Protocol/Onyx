@@ -72,7 +72,9 @@ $code submit-transfer ../examples/java/Accounts.java ../examples/ruby/accounts.r
 
 ## Receive asset units from an external party
 
-Account IDs and aliases are local Chain Core data. They do not exist in the blockchain. When an external party wishes to transfer assets to your account, you must first create a receiver for the account. We will create a receiver for Bob’s account, which we can then send to the external party (see following example).
+When an external party wishes to transfer assets to your account, you must first create a **receiver** for the account. A receiver is a one-time-use payment object similar to an invoice, and it contains a new control program derived from the account's root keys, as well as supplementary payment information.
+
+We will create a receiver for Bob’s account, which we can then serialize and send to an external party (see following example).
 
 $code create-receiver ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
 
