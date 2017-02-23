@@ -39,6 +39,15 @@ const Page = require('./page')
  *                               callback depending on async calling style.
  */
 
+ /**
+  * @typedef {Object} Key
+  * @global
+  *
+  * @property {String} rootXpub
+  * @property {String} accountXpub
+  * @property {String[]} accountDerivationPath
+  */
+
 /**
  * @class
  */

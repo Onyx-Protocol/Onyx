@@ -1,6 +1,40 @@
 const shared = require('../shared')
 
 /**
+ * @typedef {Object} CoreInfo
+ *
+ * @property {Object} snapshot
+ * @property {Number} snapshot.attempt
+ * @property {Number} snapshot.height
+ * @property {Number} snapshot.size
+ * @property {Number} snapshot.downloaded
+ * @property {Boolean} snapshot.inProgress
+
+ * @property {Boolean} isConfigured
+ * @property {String} configuredAt RFC3339 timestamp
+ * @property {Boolean} isSigner
+ * @property {Boolean} isGenerator
+ * @property {String} generatorUrl
+ * @property {String} generatorAccessToken
+ * @property {String} blockchainId
+ * @property {Number} blockHeight
+ * @property {Number} generatorBlockHeight
+ * @property {String} generatorBlockHeightFetchedAt RFC3339 timestamp
+ * @property {Boolean} isProduction
+ * @property {Number} networkRpcVersion
+ * @property {String} coreId
+ * @property {String} version
+ * @property {String} buildCommit
+ *
+ * @property {String} buildDate
+ * Date when the core binary was compiled.
+ *
+ * The API is not guaranteed to return this field as an RFC3399 timestamp.
+ *
+ * @property {Object} health
+ */
+
+/**
  * Chain Core can be configured as a new blockchain network, or as a node in an
  * existing blockchain network.
  * <br/><br/>
@@ -16,7 +50,7 @@ const configAPI = (client) => {
      *                               MockHSM keys will be deleted. If `false`, then access tokens
      *                               and MockHSM keys will be preserved.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Status of reset request.
+     * @returns {Promise} Promise resolved on success.
      */
     reset: (everything = false, cb) => shared.tryCallback(
       client.request('/reset', {everything: everything}),
@@ -38,7 +72,7 @@ const configAPI = (client) => {
      * @param {String} opts.blockchainId - The unique ID of the generator's blockchain.
      *                                      Required if `isGenerator` is false.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Status of configuration request.
+     * @returns {Promise} Promise resolved on success.
      */
     configure: (opts = {}, cb) => shared.tryCallback(
       client.request('/configure', opts),
@@ -49,7 +83,7 @@ const configAPI = (client) => {
      * Get info on specified Chain Core.
      *
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Requested info of specified Chain Core.
+     * @returns {Promise<CoreInfo>} Requested info of specified Chain Core.
      */
     info: (cb) => shared.tryCallback(
       client.request('/info'),

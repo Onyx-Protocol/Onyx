@@ -1,10 +1,25 @@
 const uuid = require('uuid')
 const shared = require('../shared')
 
+ /**
+  * Cryptographic private keys are the primary authorization mechanism on a
+  * blockchain. For development environments, Chain Core provides a convenient
+  * Mock HSM.
+  * <br/><br/>
+  * More info: {@link https://chain.com/docs/core/build-applications/keys}
+  *
+  * @typedef {Object} MockHsmKey
+  * @global
+  *
+  * @property {String} alias
+  * User specified, unique identifier of the key.
+  *
+  * @property {String} xpub
+  * Hex-encoded string representation of the key.
+  */
+
 /**
- * Cryptographic private keys are the primary authorization mechanism on a
- * blockchain. For development environments, Chain Core provides a convenient
- * Mock HSM.
+ * API for interacting with {@link MockHsmKey Mock HSM keys}.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/keys}
  * @module MockHsmKeysApi
