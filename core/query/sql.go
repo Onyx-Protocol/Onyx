@@ -15,7 +15,7 @@ var (
 			"quorum":           {Name: "quorum", Type: filter.Integer, SQLType: filter.SQLInteger},
 			"tags":             {Name: "tags", Type: filter.Object, SQLType: filter.SQLJSONB},
 			"definition":       {Name: "definition", Type: filter.Object, SQLType: filter.SQLJSONB},
-			"is_local":         {Name: "local", Type: filter.Bool, SQLType: filter.SQLBool},
+			"is_local":         {Name: "local", Type: filter.String, SQLType: filter.SQLBool},
 		},
 	}
 	accountsTable = &filter.SQLTable{
@@ -67,7 +67,7 @@ var (
 			"account_tags":     {Name: "account_tags", Type: filter.Object, SQLType: filter.SQLJSONB},
 			"issuance_program": {Name: "issuance_program", Type: filter.String, SQLType: filter.SQLBytea},
 			"reference_data":   {Name: "reference_data", Type: filter.Object, SQLType: filter.SQLJSONB},
-			"is_local":         {Name: "local", Type: filter.Bool, SQLType: filter.SQLBool},
+			"is_local":         {Name: "local", Type: filter.String, SQLType: filter.SQLBool},
 			"spent_output_id":  {Name: "spent_output_id", Type: filter.String, SQLType: filter.SQLBytea},
 			"spent_output":     {Name: "spent_output", Type: filter.Object, SQLType: filter.SQLJSONB},
 		},
@@ -82,7 +82,7 @@ var (
 			"block_height":   {Name: "block_height", Type: filter.Integer, SQLType: filter.SQLBigint},
 			"position":       {Name: "tx_pos", Type: filter.Integer, SQLType: filter.SQLInteger},
 			"reference_data": {Name: "reference_data", Type: filter.Object, SQLType: filter.SQLJSONB},
-			"is_local":       {Name: "local", Type: filter.Bool, SQLType: filter.SQLBool},
+			"is_local":       {Name: "local", Type: filter.String, SQLType: filter.SQLBool},
 		},
 		ForeignKeys: map[string]*filter.SQLForeignKey{
 			"inputs":  {Table: inputsTable, LocalColumn: "tx_hash", ForeignColumn: "tx_hash"},
