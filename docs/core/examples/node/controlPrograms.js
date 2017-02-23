@@ -41,14 +41,16 @@ client.mockHsm.keys.create().then(key => {
 ).then(
   signed => client.transactions.submit(signed)
 ).then(() => {
-  // snippet create-control-program
-  const aliceProgramPromise = client.accounts.createControlProgram({
-    alias: 'alice',
+  // snippet create-receiver
+  const aliceReceiverSerializedPromise = client.accounts.createReceiver({
+    accountAlias: 'alice',
+  }).then(aliceReceiver => {
+    return JSON.stringify(aliceReceiver)
   })
   // endsnippet
 
-  return aliceProgramPromise
-}).then(aliceProgram => {
+  return aliceReceiverSerializedPromise
+}).then(aliceReceiverSerialized => {
   // snippet build-transaction
   return client.transactions.build(builder => {
     builder.spendFromAccount({
@@ -56,8 +58,8 @@ client.mockHsm.keys.create().then(key => {
       assetAlias: 'gold',
       amount: 10
     })
-    builder.controlWithProgram({
-      controlProgram: aliceProgram.controlProgram,
+    builder.controlWithReceiver({
+      receiver: JSON.parse(aliceReceiverSerialized),
       assetAlias: 'gold',
       amount: 10
     })

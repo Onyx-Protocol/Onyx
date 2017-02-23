@@ -28,13 +28,17 @@ The most basic type of control program is an account control program, which defi
 
 Although all control programs in one account are controlled by keys derived from the same root keys, it is impossible for other participants on the blockchain to recognize any relationship between them. This technique (known as hierarchical deterministic key derivation) ensures that only the participant on the blockchain with whom you transact will know that a specific control program is yours. To everyone else, the creator of the control program will be unknown. For more information about key derivation, see the [Chain key derivation specification](../../protocol/specifications/chainkd.md).
 
+### Receivers
+
+Since version 1.1., the Chain API does not expose account control programs directly. Instead, you can generate **receiver** objects that wrap account control programs with additional payment information, such as expiration dates. If control programs are like payment addresses, then receivers are like invoices, which contain additional information in addition to mere addresses.
+
 ### Example
 
-If Alice wishes to be paid gold by an external party (Bob), she first creates a new control program in her account:
+If Alice wishes to be paid gold by an external party (Bob), she first creates a new receiver in her account:
 
-$code create-control-program ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb ../examples/node/controlPrograms.js
+$code create-receiver ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb ../examples/node/controlPrograms.js
 
-She then delivers the control program to Bob, who provides it to the transaction builder:
+The new receiver contains a control program for the specified account. Alice then serializes the receiver and delivers it to Bob, who deserializes it and sends it to the transaction builder:
 
 $code build-transaction ../examples/java/ControlPrograms.java ../examples/ruby/control_programs.rb ../examples/node/controlPrograms.js
 

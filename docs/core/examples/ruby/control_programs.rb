@@ -31,16 +31,21 @@ end
 
 chain.transactions.submit(signer.sign(tx))
 
-# snippet create-control-program
-alice_program = chain.accounts.create_control_program(
-  alias: 'alice'
-).control_program
+# snippet create-receiver
+alice_receiver = chain.accounts.create_receiver(
+  account_alias: 'alice'
+)
+alice_receiver_serialized = alice_receiver.to_json
 # endsnippet
 
 # snippet build-transaction
 payment_to_program = chain.transactions.build do |b|
   b.spend_from_account account_alias: 'bob', asset_alias: 'gold', amount: 10
-  b.control_with_program control_program: alice_program, asset_alias: 'gold', amount: 10
+  b.control_with_receiver(
+    receiver: JSON.parse(alice_receiver_serialized),
+    asset_alias: 'gold',
+    amount: 10
+  )
 end
 
 chain.transactions.submit(signer.sign(payment_to_program))
