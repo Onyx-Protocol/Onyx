@@ -72,15 +72,16 @@ class UnspentOutputs {
     }
     // endsnippet
 
-    // TODO: update API to include output IDs into Transaction.SubmitResponse, not just txid.
-    //       Or have a client-side helper to compute OutputID from (txid,position) pair.
-    String prevTransactionId = issuanceTx.id;
+    Transaction prevTransaction = new Transaction.QueryBuilder()
+      .setFilter("id=$1")
+      .addFilterParameter(issuanceTx.id)
+      .execute(client)
+      .next();
 
     // snippet build-transaction-all
     Transaction.Template spendOutput = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendAccountUnspentOutput()
-        .setTransactionId(prevTransactionId)
-        .setPosition(0)
+        .setOutputId(prevTransaction.outputs.get(0).id)
       ).addAction(new Transaction.Action.ControlWithAccount()
         .setAccountAlias("bob")
         .setAssetAlias("gold")
@@ -93,8 +94,7 @@ class UnspentOutputs {
     // snippet build-transaction-partial
     Transaction.Template spendOutputWithChange = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendAccountUnspentOutput()
-        .setTransactionId(prevTransactionId)
-        .setPosition(1)
+        .setOutputId(prevTransaction.outputs.get(1).id)
       ).addAction(new Transaction.Action.ControlWithAccount()
         .setAccountAlias("bob")
         .setAssetAlias("gold")

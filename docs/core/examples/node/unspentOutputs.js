@@ -2,7 +2,7 @@ const chain = require('chain-sdk')
 
 const client = new chain.Client()
 const signer = new chain.HsmSigner()
-let key, issuanceTxId
+let key, prevTx
 
 client.mockHsm.keys.create()
 .then(Key => {
@@ -47,7 +47,13 @@ client.mockHsm.keys.create()
   .then(signed => client.transactions.submit(signed))
 )
 .then(issuanceTx => {
-  issuanceTxId = issuanceTx.id
+  client.transactions.queryAll({
+    filter: 'id=$1',
+    filterParams: [issuanceTx.id]
+  }, (tx, next) => {
+    prevTx = tx
+    next()
+  })
 })
 .then(() =>
   // snippet alice-unspent-outputs
@@ -75,8 +81,7 @@ client.mockHsm.keys.create()
   // snippet build-transaction-all
   client.transactions.build(builder => {
     builder.spendUnspentOutput({
-      transactionId: issuanceTxId,
-      position: 0,
+      outputId: prevTx.outputs[0].id,
     })
     builder.controlWithAccount({
       accountAlias: 'bob',
@@ -92,8 +97,7 @@ client.mockHsm.keys.create()
   // snippet build-transaction-partial
   client.transactions.build(builder => {
     builder.spendUnspentOutput({
-      transactionId: issuanceTxId,
-      position: 1,
+      outputId: prevTx.outputs[1].id,
     })
     builder.controlWithAccount({
       accountAlias: 'bob',
