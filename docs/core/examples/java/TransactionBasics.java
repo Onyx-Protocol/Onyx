@@ -26,26 +26,27 @@ class TransactionBasics {
     Transaction.submit(client, signedIssuance);
     // endsnippet
 
-    // snippet create-bob-issue-program
-    ControlProgram bobProgram = new ControlProgram.Builder()
-      .controlWithAccountByAlias("bob")
+    // snippet create-bob-issue-receiver
+    Receiver bobIssuanceReceiver = new Account.ReceiverBuilder()
+      .setAccountAlias("bob")
       .create(otherCoreClient);
+    String bobIssuanceReceiverSerialized = bobIssuanceReceiver.toJson();
     // endsnippet
 
-    // snippet issue-to-bob-program
-    Transaction.Template issuanceToProgram = new Transaction.Builder()
+    // snippet issue-to-bob-receiver
+    Transaction.Template issuanceToReceiver = new Transaction.Builder()
       .addAction(new Transaction.Action.Issue()
         .setAssetAlias("gold")
         .setAmount(10)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.controlProgram)
+      ).addAction(new Transaction.Action.ControlWithReceiver()
+        .setReceiver(Receiver.fromJson(bobIssuanceReceiverSerialized))
         .setAssetAlias("gold")
         .setAmount(10)
       ).build(client);
 
-    Transaction.Template signedIssuanceToProgram = HsmSigner.sign(issuanceToProgram);
+    Transaction.Template signedIssuanceToReceiver = HsmSigner.sign(issuanceToReceiver);
 
-    Transaction.submit(client, signedIssuanceToProgram);
+    Transaction.submit(client, signedIssuanceToReceiver);
     // endsnippet
 
     // snippet pay-within-core
@@ -65,27 +66,28 @@ class TransactionBasics {
     Transaction.submit(client, signedPayment);
     // endsnippet
 
-    // snippet create-bob-payment-program
-    bobProgram = new ControlProgram.Builder()
-      .controlWithAccountByAlias("bob")
+    // snippet create-bob-payment-receiver
+    Receiver bobPaymentReceiver = new Account.ReceiverBuilder()
+      .setAccountAlias("bob")
       .create(otherCoreClient);
+    String bobPaymentReceiverSerialized = bobPaymentReceiver.toJson();
     // endsnippet
 
     // snippet pay-between-cores
-    Transaction.Template paymentToProgram = new Transaction.Builder()
+    Transaction.Template paymentToReceiver = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendFromAccount()
         .setAccountAlias("alice")
         .setAssetAlias("gold")
         .setAmount(10)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.controlProgram)
+      ).addAction(new Transaction.Action.ControlWithReceiver()
+        .setReceiver(Receiver.fromJson(bobPaymentReceiverSerialized))
         .setAssetAlias("gold")
         .setAmount(10)
       ).build(client);
 
-    Transaction.Template signedPaymentToProgram = HsmSigner.sign(paymentToProgram);
+    Transaction.Template signedPaymentToReceiver = HsmSigner.sign(paymentToReceiver);
 
-    Transaction.submit(client, signedPaymentToProgram);
+    Transaction.submit(client, signedPaymentToReceiver);
     // endsnippet
 
     if (client.equals(otherCoreClient)) {
@@ -115,14 +117,20 @@ class TransactionBasics {
       // endsnippet
     }
 
-    // snippet create-bob-multiasset-program
-    bobProgram = new ControlProgram.Builder()
-      .controlWithAccountByAlias("bob")
+    // snippet create-bob-multiasset-receiver
+    Receiver bobGoldReceiver = new Account.ReceiverBuilder()
+      .setAccountAlias("bob")
       .create(otherCoreClient);
+    String bobGoldReceiverSerialized = bobGoldReceiver.toJson();
+
+    Receiver bobSilverReceiver = new Account.ReceiverBuilder()
+      .setAccountAlias("bob")
+      .create(otherCoreClient);
+    String bobSilverReceiverSerialized = bobSilverReceiver.toJson();
     // endsnippet
 
     // snippet multiasset-between-cores
-    Transaction.Template multiAssetToProgram = new Transaction.Builder()
+    Transaction.Template multiAssetToReceiver = new Transaction.Builder()
       .addAction(new Transaction.Action.SpendFromAccount()
         .setAccountAlias("alice")
         .setAssetAlias("gold")
@@ -131,19 +139,19 @@ class TransactionBasics {
         .setAccountAlias("alice")
         .setAssetAlias("silver")
         .setAmount(20)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.controlProgram)
+      ).addAction(new Transaction.Action.ControlWithReceiver()
+        .setReceiver(Receiver.fromJson(bobGoldReceiverSerialized))
         .setAssetAlias("gold")
         .setAmount(10)
-      ).addAction(new Transaction.Action.ControlWithProgram()
-        .setControlProgram(bobProgram.controlProgram)
+      ).addAction(new Transaction.Action.ControlWithReceiver()
+        .setReceiver(Receiver.fromJson(bobSilverReceiverSerialized))
         .setAssetAlias("silver")
         .setAmount(20)
       ).build(client);
 
-    Transaction.Template signedMultiAssetToProgram = HsmSigner.sign(multiAssetToProgram);
+    Transaction.Template signedMultiAssetToReceiver = HsmSigner.sign(multiAssetToReceiver);
 
-    Transaction.submit(client, signedMultiAssetToProgram);
+    Transaction.submit(client, signedMultiAssetToReceiver);
     // endsnippet
 
     // snippet retire

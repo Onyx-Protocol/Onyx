@@ -6,7 +6,7 @@ const client = new chain.Client()
 const otherClient = new chain.Client()
 
 const signer = new chain.HsmSigner()
-let aliceKey, bobKey, bobProgram
+let aliceKey, bobKey
 
 Promise.all([
   client.mockHsm.keys.create(),
@@ -74,32 +74,35 @@ Promise.all([
   .then(signed => client.transactions.submit(signed))
 ).then(() =>
 
-  // snippet create-bob-issue-program
-  otherClient.accounts.createControlProgram({
-    alias: 'bob'
+  // snippet create-bob-issue-receiver
+  otherClient.accounts.createReceiver({
+    accountAlias: 'bob'
+  }).then(bobIssuanceReceiver => {
+    return JSON.stringify(bobIssuanceReceiver)
   })
   // endsnippet
 
-).then(program => bobProgram = program.controlProgram)
-  .then(() =>
+).then(bobIssuanceReceiverSerialized => {
+  return (
 
-  // snippet issue-to-bob-program
-  client.transactions.build(builder => {
-    builder.issue({
-      assetAlias: 'gold',
-      amount: 10
+    // snippet issue-to-bob-receiver
+    client.transactions.build(builder => {
+      builder.issue({
+        assetAlias: 'gold',
+        amount: 10
+      })
+      builder.controlWithReceiver({
+        receiver: JSON.parse(bobIssuanceReceiverSerialized),
+        assetAlias: 'gold',
+        amount: 10
+      })
     })
-    builder.controlWithProgram({
-      controlProgram: bobProgram,
-      assetAlias: 'gold',
-      amount: 10
-    })
-  })
-  .then(issuance => signer.sign(issuance))
-  .then(signed => client.transactions.submit(signed))
-  // endsnippet
+    .then(issuance => signer.sign(issuance))
+    .then(signed => client.transactions.submit(signed))
+    // endsnippet
 
-).then(() => {
+  )
+}).then(() => {
   if (client.baseUrl == otherClient.baseUrl){
 
     // snippet pay-within-core
@@ -124,14 +127,16 @@ Promise.all([
   }
 }).then(() =>
 
-  // snippet create-bob-payment-program
-  otherClient.accounts.createControlProgram({
-    alias: 'bob'
-  }))
+  // snippet create-bob-payment-receiver
+  otherClient.accounts.createReceiver({
+    accountAlias: 'bob'
+  }).then(bobPaymentReceiver => {
+    return JSON.stringify(bobPaymentReceiver)
+  })
   // endsnippet
 
-  .then(program => bobProgram = program.controlProgram)
-    .then(() =>
+).then(bobPaymentReceiverSerialized => {
+  return (
 
     // snippet pay-between-cores
     client.transactions.build(builder => {
@@ -140,8 +145,8 @@ Promise.all([
         assetAlias: 'gold',
         amount: 10
       })
-      builder.controlWithProgram({
-        controlProgram: bobProgram,
+      builder.controlWithReceiver({
+        receiver: JSON.parse(bobPaymentReceiverSerialized),
         assetAlias: 'gold',
         amount: 10
       })
@@ -150,7 +155,8 @@ Promise.all([
     .then(signed => client.transactions.submit(signed))
     // endsnippet
 
-).then(() => {
+  )
+}).then(() => {
   if (client.baseUrl == otherClient.baseUrl){
 
     //snippet multiasset-within-core
@@ -183,16 +189,28 @@ Promise.all([
   } else {
     return
   }
-}).then(() =>
+}).then(() => {
+  return (
 
-  // snippet create-bob-multiasset-program
-  otherClient.accounts.createControlProgram({
-    alias: 'bob'
-  }))
-  // endsnippet
+    // snippet create-bob-multiasset-receiver
+    Promise.all([
+      otherClient.accounts.createReceiver({
+        accountAlias: 'bob'
+      }),
+      otherClient.accounts.createReceiver({
+        accountAlias: 'bob'
+      }),
+    ]).then(receivers => {
+      return {
+        bobGoldReceiverSerialized: JSON.stringify(receivers[0]),
+        bobSilverReceiverSerialized: JSON.stringify(receivers[1]),
+      }
+    })
+    // endsnippet
 
-  .then(program => bobProgram = program.controlProgram)
-  .then(() =>
+  )
+}).then(({bobGoldReceiverSerialized, bobSilverReceiverSerialized}) => {
+  return (
 
     // snippet multiasset-between-cores
     client.transactions.build(builder => {
@@ -206,13 +224,13 @@ Promise.all([
         assetAlias: 'silver',
         amount: 20
       })
-      builder.controlWithProgram({
-        controlProgram: bobProgram,
+      builder.controlWithReceiver({
+        receiver: JSON.parse(bobGoldReceiverSerialized),
         assetAlias: 'gold',
         amount: 10
       })
-      builder.controlWithProgram({
-        controlProgram: bobProgram,
+      builder.controlWithReceiver({
+        receiver: JSON.parse(bobSilverReceiverSerialized),
         assetAlias: 'silver',
         amount: 20
       })
@@ -221,7 +239,8 @@ Promise.all([
     .then(signed => client.transactions.submit(signed))
     // endsnippet
 
-  ).then(() =>
+  )
+}).then(() =>
 
   // snippet retire
   client.transactions.build(builder => {
@@ -238,6 +257,7 @@ Promise.all([
   .then(retirement => signer.sign(retirement))
   .then(signed => client.transactions.submit(signed))
   // endsnippet
+
 ).catch(err =>
   process.nextTick(() => { throw err })
 )
