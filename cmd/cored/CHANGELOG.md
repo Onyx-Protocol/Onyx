@@ -8,7 +8,7 @@ This release is a minor version update, and contains **new features** and **depr
 - [Node SDK changelog](https://github.com/chain/chain/blob/main/sdk/node/CHANGELOG.md)
 - [Ruby SDK changelog](https://github.com/chain/chain/blob/main/sdk/ruby/CHANGELOG.md)
 
-Other changes:
+Notable changes:
 
 * The network version has been updated to **2**. Chain Core instances on the same network must share the same network version. If you're upgrading to version 1.1.0, make sure to upgrade all Chain Cores in your blockchain network.
 * Transaction outputs now have a unique `id` property.
