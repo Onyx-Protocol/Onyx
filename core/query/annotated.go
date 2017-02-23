@@ -33,7 +33,7 @@ type AnnotatedInput struct {
 	AssetIsLocal    Bool               `json:"asset_is_local"`
 	Amount          uint64             `json:"amount"`
 	IssuanceProgram chainjson.HexBytes `json:"issuance_program,omitempty"`
-	ControlProgram  chainjson.HexBytes `json:"control_program,omitempty"`
+	ControlProgram  chainjson.HexBytes `json:"-"`
 	SpentOutputID   *bc.OutputID       `json:"spent_output_id,omitempty"`
 	SpentOutput     *SpentOutput       `json:"spent_output,omitempty"`
 	AccountID       string             `json:"account_id,omitempty"`
