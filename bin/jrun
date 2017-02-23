@@ -23,5 +23,5 @@ trap "rm -rf $COMPILE_PATH" EXIT
 JARFILE=`echo $CHAIN/sdk/java/target/chain-sdk-java*[[:digit:]].jar`
 export CLASSPATH=.:$JARFILE:$COMPILE_PATH
 
-javac -d $COMPILE_PATH $SRC
+javac -d $COMPILE_PATH -Xlint:deprecation $SRC
 java $CLASS
