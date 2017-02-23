@@ -126,7 +126,7 @@ Results    | List<Pointer<Output|Retirement>>              | A list of pointers 
 Data       | Hash                                          | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
 Mintime    | Integer                                       | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
 Maxtime    | Integer                                       | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
-ExtHash    | Hash                                          | Hash of all struct extensions. (See [Extstruct](#extstruct).) If the version is known, all ext_hashes must be hashes of empty strings.
+ExtHash    | Hash                                          | Hash of all struct extensions. (See [Extstruct](#extstruct).) If the version is known, this must be 32 zero-bytes.
 
 #### TxHeader Witness
 
@@ -149,7 +149,7 @@ Field               | Type                 | Description
 Source              | ValueSource          | The source of the units to be included in this output.
 ControlProgram      | Program              | The program to control this output.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
 #### Output Witness
 
@@ -171,7 +171,7 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource          | The source of the units that are being retired.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
 #### Retirement Witness
 
@@ -193,7 +193,7 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 SpentOutput         | Pointer<Output>      | The Output entry consumed by this spend.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
 #### Spend Witness
 
@@ -217,7 +217,7 @@ Field               | Type                 | Description
 Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
 Value               | AssetAmount          | Asset ID and amount being issued.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
 #### Issuance Witness
 
@@ -240,7 +240,7 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Program             | AssetAmount          | Asset ID and amount being issued.
 Time Range          | Pointer<TimeRange>   | Reference to a TimeRange entry.
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
 #### Nonce Witness
 
@@ -266,7 +266,7 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Mintime             | Integer              | Minimum time for this transaction.
 Maxtime             | Integer              | Maximum time for this transaction.
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
 #### TimeRange Witness
 
@@ -292,7 +292,7 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Sources             | List<ValueSource>    | The source of the units to be included in this Mux.
 Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
-ExtHash             | Hash                 | If the transaction version is known, this must be the hash of the empty string.
+ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
 #### Mux Witness
 
