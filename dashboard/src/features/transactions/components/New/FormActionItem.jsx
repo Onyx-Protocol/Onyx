@@ -7,6 +7,7 @@ const SPEND_ACCOUNT_KEY = 'spend_account'
 const SPEND_UNSPENT_KEY = 'spend_account_unspent_output'
 const CONTROL_ACCOUNT_KEY = 'control_account'
 const CONTROL_PROGRAM_KEY = 'control_program'
+const CONTROL_RECEIVER = 'CONTROL_RECEIVER'
 const RETIRE_ASSET_KEY = 'retire_asset'
 const TRANSACTION_REFERENCE_DATA = 'set_transaction_reference_data'
 
@@ -16,6 +17,7 @@ const actionLabels = {
   [SPEND_UNSPENT_KEY]: 'Spend unspent output',
   [CONTROL_ACCOUNT_KEY]: 'Control with account',
   [CONTROL_PROGRAM_KEY]: 'Control with program',
+  [CONTROL_RECEIVER]: 'Control with receiver',
   [RETIRE_ASSET_KEY]: 'Retire',
   [TRANSACTION_REFERENCE_DATA]: 'Set transaction reference data',
 }

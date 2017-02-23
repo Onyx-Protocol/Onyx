@@ -15,6 +15,9 @@ let actions = {
   ...form,
   createControlProgram: (data) => () => {
     return chainClient().accounts.createControlProgram(data)
+  },
+  createReceiver: (data) => () => {
+    return chainClient().accounts.createReceiver(data)
   }
 }
 

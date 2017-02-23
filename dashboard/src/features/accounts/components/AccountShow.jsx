@@ -14,6 +14,16 @@ class AccountShow extends BaseShow {
     super(props)
 
     this.createControlProgram = this.createControlProgram.bind(this)
+    this.createReceiver = this.createReceiver.bind(this)
+  }
+
+  createReceiver() {
+    this.props.createReceiver({
+      accountId: this.props.item.id
+    }).then((receiver) => this.props.showReceiver(<div>
+      <p>Copy this one-time use receiver to use in a transaction:</p>
+      <CopyableBlock value={JSON.stringify(receiver)} />
+    </div>))
   }
 
   createControlProgram() {
@@ -40,8 +50,8 @@ class AccountShow extends BaseShow {
         <PageTitle
           title={title}
           actions={[
-            <button className='btn btn-link' onClick={this.createControlProgram}>
-              Create control program
+            <button className='btn btn-link' onClick={this.createReceiver}>
+              Create receiver
             </button>
           ]}
         />
@@ -109,6 +119,11 @@ const mapDispatchToProps = ( dispatch ) => ({
     dispatch(actions.balance.pushList({ filter }))
   },
   createControlProgram: (data) => dispatch(actions.account.createControlProgram(data)),
+  createReceiver: (data) => dispatch(actions.account.createReceiver(data)),
+  showReceiver: (body) => dispatch(actions.app.showModal(
+    body,
+    actions.app.hideModal
+  )),
   showControlProgram: (body) => dispatch(actions.app.showModal(
     body,
     actions.app.hideModal
