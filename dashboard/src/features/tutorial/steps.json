@@ -2,7 +2,7 @@
   {
     "component": "TutorialModal",
     "title": "Welcome to Chain Core!",
-    "button": "Start 5-minute Tutorial",
+    "button": "Start 5-minute tutorial",
     "dismiss": "Skip",
     "route": "mockhsms",
     "content": [
@@ -11,7 +11,7 @@
   },
   {
     "component": "TutorialInfo",
-    "title": "Tutorial - Creating Keys - Step 1 of 7",
+    "title": "Tutorial - Creating keys - Step 1 of 7",
     "button": "Create MockHSM key",
     "route": "mockhsms/create",
     "image": "mockhsm",
@@ -23,7 +23,7 @@
   {
     "component": "TutorialForm",
     "objectType": "mockhsm",
-    "title": "Tutorial - Creating Keys - Step 1 of 7",
+    "title": "Tutorial - Creating keys - Step 1 of 7",
     "content": {
       "header": "Create MockHSM key",
       "steps": [
@@ -42,7 +42,7 @@
   {
     "component": "TutorialInfo",
     "objectType": "mockhsm",
-    "title": "Tutorial - Creating Keys - Step 1 of 7",
+    "title": "Tutorial - Creating keys - Step 1 of 7",
     "button": "Learn about assets",
     "route": "assets",
     "image": "mockhsm",
@@ -56,8 +56,8 @@
   },
   {
     "component": "TutorialInfo",
-    "title": "Tutorial - Creating Assets - Step 2 of 7",
-    "button": "Create Asset",
+    "title": "Tutorial - Creating assets - Step 2 of 7",
+    "button": "Create asset",
     "route": "assets/create",
     "image": "asset",
     "content": [
@@ -68,9 +68,9 @@
   {
     "component": "TutorialForm",
     "objectType": "asset",
-    "title": "Tutorial - Creating Assets - Step 2 of 7",
+    "title": "Tutorial - Creating assets - Step 2 of 7",
     "content": {
-      "header": "Create new Asset",
+      "header": "Create asset",
       "steps": [
         {
           "title": "Enter an alias for your asset (ex. \"gold\")",
@@ -96,7 +96,7 @@
   {
     "component": "TutorialInfo",
     "objectType": "asset",
-    "title": "Tutorial - Creating Assets - Step 2 of 7",
+    "title": "Tutorial - Creating assets - Step 2 of 7",
     "button": "Learn about accounts",
     "route": "accounts",
     "image": "asset",
@@ -109,8 +109,8 @@
   },
   {
     "component": "TutorialInfo",
-    "title": "Tutorial - Creating Accounts - Step 3 of 7",
-    "button": "Create Account",
+    "title": "Tutorial - Creating accounts - Step 3 of 7",
+    "button": "Create account",
     "route": "accounts/create",
     "image": "account",
     "content": [
@@ -121,9 +121,9 @@
   {
     "component": "TutorialForm",
     "objectType": "account",
-    "title": "Tutorial - Creating Accounts - Step 3 of 7",
+    "title": "Tutorial - Creating accounts - Step 3 of 7",
     "content": {
-      "header": "Create Account",
+      "header": "Create account",
       "steps": [
         {
           "title": "Type name for account alias (ex. \"alice\")",
@@ -165,7 +165,7 @@
     "button": null,
     "route": null,
     "content": {
-      "header": "Create 2nd Account",
+      "header": "Create 2nd account",
       "steps": [
         {
           "title": "Type name for account alias (ex. \"bob\")",
@@ -439,10 +439,10 @@
         "list": [
           "creating cryptographic keys",
           "using keys to create assets and accounts",
-          "building transactions to issue, spend and retire"
+          "building transactions to issue, spend, and retire"
         ]
       },
-      "To dig deeper, check out the \"Documentation\" link in the sidebar for information about building applications, using our SDKs, and about how the blockchain works.",
+      "To dig deeper, check out the \"Documentation\" link in the sidebar for information about building applications, using our SDKs, and how the blockchain works.",
       "You can revisit this tutorial at any time by clicking \"Tutorial\" in the sidebar."
     ]
   }
