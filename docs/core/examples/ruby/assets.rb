@@ -160,6 +160,6 @@ chain.unspent_outputs.query(
   filter: 'asset_alias=$1',
   filter_params: ['acme_common'],
 ).each do |u|
-  puts "Acme Common held in output #{u.transaction_id}:#{u.position}"
+  puts "Acme Common held in output #{u.id}"
 end
 # endsnippet

@@ -202,7 +202,7 @@ class Assets {
 
     while (acmeCommonUnspentOutputs.hasNext()) {
       UnspentOutput utxo = acmeCommonUnspentOutputs.next();
-      System.out.println("Acme Common held in output " + utxo.transactionId + ":" + utxo.position);
+      System.out.println("Acme Common held in output " + utxo.id);
     }
     // endsnippet
   }

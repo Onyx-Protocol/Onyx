@@ -167,7 +167,7 @@ class Accounts {
 
     while (unspentOutputs.hasNext()) {
       UnspentOutput u = unspentOutputs.next();
-      System.out.println("Transaction " + u.transactionId + " position " + u.position);
+      System.out.println("Output ID: " + u.id);
     }
     // endsnippet
   }
