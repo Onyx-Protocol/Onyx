@@ -3,6 +3,28 @@ const shared = require('../shared')
 /**
  * There are two APIs in Chain Core: the client API and the network API. Each
  * API is authenticated using access tokens with HTTP Basic Authentication.
+ *
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/learn-more/authentication}
+ * @typedef {Object} AccessToken
+ * @global
+ *
+ * @property {String} id
+ * User specified, unique identifier.
+ *
+ * @property {String} token
+ * Only returned in the response from {@link AccessTokensApi~create}.
+ *
+ * @property {String} type
+ * Either 'client' or 'network'.
+ *
+ * @property {String} createdAt
+ * Timestamp of token creation, RFC3339 formatted.
+ */
+
+/**
+ * API for interacting with {@link AccessToken access tokens}
+ *
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
  * @module AccessTokensApi
@@ -16,7 +38,7 @@ const accessTokens = (client) => {
      * @param {String} params.id - User specified, unique identifier.
      * @param {String} params.type - Either 'client' or 'network'.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Newly created access token.
+     * @returns {Promise<AccessToken>} Newly created access token.
      */
     create: (params, cb) =>
       shared.create(client, '/create-access-token', params, {skipArray: true, cb}),
@@ -28,7 +50,7 @@ const accessTokens = (client) => {
      * @param {Query} params - Pagination information.
      * @param {String} [params.type] - Type of access tokens to return.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Page>} Requested page of results.
+     * @returns {Promise<Page<AccessToken>>} Requested page of results.
      */
     query: (params, cb) => shared.query(client, 'accessTokens', '/list-access-tokens', params, {cb}),
 

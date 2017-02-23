@@ -39,7 +39,7 @@ const shared = require('../shared')
  * The underlying control program that will be used in transactions paying to this receiver.
  *
  * @property {String} expiresAt
- * An RFC3339 timestamp indicating when the receiver will cease to be valid.
+ * Timestamp indicating when the receiver will cease to be valid, RFC3339 formatted.
  */
 
 /**
@@ -106,7 +106,7 @@ const accountsAPI = (client) => {
      *
      * @param {Query} params={} - Filter and pagination information.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Page>} Requested page of results.
+     * @returns {Promise<Page<Account>>} Requested page of results.
      */
     query: (params, cb) => shared.query(client, 'accounts', '/list-accounts', params, {cb}),
 
