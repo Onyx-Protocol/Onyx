@@ -25,7 +25,7 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 
 	tree := new(patricia.Tree)
 	for _, node := range storedSnapshot.Nodes {
-		err = tree.Insert(node.Key, node.Key)
+		err = tree.Insert(node.Key)
 		if err != nil {
 			return nil, errors.Wrap(err, "reconstructing state tree")
 		}

@@ -59,7 +59,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		t.Logf("Applying changeset %d\n", i)
 
 		for _, insert := range changeset.inserts {
-			err := snapshot.Tree.Insert(insert[:], insert[:])
+			err := snapshot.Tree.Insert(insert[:])
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -126,7 +126,7 @@ func benchmarkStoreSnapshot(nodes, issuances int, b *testing.B) {
 			b.Fatal(err)
 		}
 
-		err = snapshot.Tree.Insert(h[:], h[:])
+		err = snapshot.Tree.Insert(h[:])
 		if err != nil {
 			b.Fatal(err)
 		}
