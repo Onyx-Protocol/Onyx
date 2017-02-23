@@ -8,7 +8,6 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
-	"chain/protocol/state"
 )
 
 const sampleAccountUTXOs = `
@@ -50,7 +49,7 @@ func TestCancelReservation(t *testing.T) {
 
 	// Fake the output in the state tree.
 	_, s := c.State()
-	err = s.Tree.Insert(state.OutputTreeItem(outputID))
+	err = s.Tree.Insert(outputID.Hash[:], outputID.Hash[:])
 	if err != nil {
 		t.Error(err)
 	}
