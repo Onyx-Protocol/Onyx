@@ -14,7 +14,7 @@ All code samples in this guide can be viewed in a single, runnable script. Avail
 
 ## Example
 
-To illustrate how to use transaction feeds, we'll create a program that prints information about new [local](../learn-more/global-vs-local-data.md) transactions as they arrive.
+To illustrate how to use transaction feeds, we'll create an application that prints information about new [local](../learn-more/global-vs-local-data.md) transactions as they arrive.
 
 #### Creating and retrieving a transaction feed
 
@@ -40,7 +40,7 @@ Next, we'll set up an infinite loop that reads from the transaction feed, and se
 
 $code processing-loop ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
-Note that the processing loop **acknowledges** consumption of the current item. (In most platforms, this is a call to an `ack` method; in Node, this is achieved by passing `true` to the `next` callback). This updates the transaction feed via an API call so that if your program terminates for any reason, it can pick back up from the point that `ack` was last called. It's safest, but not necessary, to acknowledge on every cycle of the processing loop.
+Note that the processing loop **acknowledges** consumption of the current item. (In most platforms, this is a call to an `ack` method; in Node, this is achieved by passing `true` to the `next` callback). This updates the transaction feed via an API call so that if your application terminates for any reason, it can pick back up from the point that `ack` was last called. It's safest, but not necessary, to acknowledge on every cycle of the processing loop.
 
 The body of the processing loop will run once for every new transaction that arrives on the blockchain. If you've already processed all available transactions, then the call to `next` will **block the active thread** until a transaction matching the filter arrives. Because of this blocking behavior, we'll run the processing loop in its own thread:
 
@@ -110,7 +110,7 @@ Under the hood, the SDK reads data from a transaction feed using a long-polling 
 
 #### When to acknowledge in the processing loop
 
-Acknowledging each item as you consume it in your processing loop is the safest strategy, but it's not the only strategy. If you'd prefer to cut down on API calls to the Chain Core, you can acknowledge less frequently. The less frequently you acknowledge, the more risk you'll have of repeating some processing if your program terminates unexpectedly.
+Acknowledging each item as you consume it in your processing loop is the safest strategy, but it's not the only strategy. If you'd prefer to cut down on API calls to the Chain Core, you can acknowledge less frequently. The less frequently you acknowledge, the more risk you'll have of repeating some processing if your application terminates unexpectedly.
 
 Transaction feeds provide *at-least-once* delivery of transactions; occasionally, a transaction may be delivered multiple times. Regardless of how frequently you acknowledge, it's a good idea to design your transaction processing to be **idempotent**, so that your application can process a given transaction twice or more without adverse effects.
 

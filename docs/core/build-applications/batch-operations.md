@@ -8,7 +8,7 @@ Operations that support batching include:
 
 * Creating assets
 * Creating accounts
-* Creating control programs
+* Creating receivers
 * Building transactions
 * Signing transactions
 * Submitting transactions
