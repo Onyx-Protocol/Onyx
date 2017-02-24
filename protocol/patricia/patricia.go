@@ -1,11 +1,16 @@
-// Package patricia implements a patricia tree, or a radix
-// tree with a radix of 2 -- creating an uneven binary tree.
+// Package patricia computes the Merkle Patricia Tree Hash of a
+// set of bit strings, as described in the Chain Protocol spec.
+// See https://chain.com/docs/protocol/specifications/data#merkle-patricia-tree.
+// Because a patricia tree (a radix tree with a radix of 2)
+// provides efficient incremental updates, so does the Merkle
+// Patricia Tree Hash computation, making this structure suitable
+// for the blockchain full-state commitment.
 //
-// Each entry is a key value pair. The key determines
-// where the value is placed in the tree, with each bit
-// of the key indicating a path. Values are arbitrary byte
-// slices but only the SHA3-256 hash of the value is stored
-// within the tree.
+// Type Tree represents a set, where the elements are bit strings.
+// The set must be prefix-free -- no item can be a prefix of
+// any other -- enforced by Insert.
+// The length of each bit string must also be a multiple of eight,
+// because the interface uses []byte to represent an item.
 //
 // The nodes in the tree form an immutable persistent data
 // structure. It is okay to copy a Tree struct,
@@ -32,12 +37,12 @@ type Tree struct {
 	root *node
 }
 
-// WalkFunc is the type of the function called for each leaf
+// WalkFunc is the type of the function called for each item
 // visited by Walk. If an error is returned, processing stops.
-type WalkFunc func(k []byte) error
+type WalkFunc func(item []byte) error
 
-// Walk walks the patricia tree calling walkFn for each leaf in
-// the tree. If an error is returned by walkFn at any point,
+// Walk walks t calling walkFn for each item.
+// If an error is returned by walkFn at any point,
 // processing is stopped and the error is returned.
 func Walk(t *Tree, walkFn WalkFunc) error {
 	if t.root == nil {
@@ -60,8 +65,7 @@ func walk(n *node, walkFn WalkFunc) error {
 	return err
 }
 
-// Contains returns whether the tree contains (item, item)
-// as a (key, value) pair.
+// Contains returns whether t contains item.
 func (t *Tree) Contains(item []byte) bool {
 	if t.root == nil {
 		return false
@@ -94,17 +98,19 @@ func lookup(n *node, key []uint8) *node {
 	return lookup(n.children[bit], key)
 }
 
-// Insert enters data into the tree.
-// If the key is not already present in the tree,
-// a new node will be created and inserted,
-// rearranging the tree to the optimal structure.
-// If the key is present, the existing node is found
-// and its value is updated, leaving the structure of
-// the tree alone.
-// It is an error for bkey to be a prefix
-// of a key already in t or to contain a key already
-// in t as a prefix.
-func (t *Tree) Insert(bkey, val []byte) error {
+// Insert inserts item into t.
+//
+// It is an error for item to be a prefix of an element
+// in t or to contain an element in t as a prefix.
+// If item itself is already in t, Insert does nothing
+// (and this is not an error).
+func (t *Tree) Insert(item []byte) error {
+	return t.insert(item, item)
+}
+
+// TODO(kr): rewrite tests to always use Insert
+// and remove the extra func
+func (t *Tree) insert(bkey, val []byte) error {
 	key := bitKey(bkey)
 
 	var hash bc.Hash
@@ -169,11 +175,9 @@ func insert(n *node, key []uint8, hash *bc.Hash) (*node, error) {
 	return newNode, nil
 }
 
-// Delete removes up to one value with a matching key.
-// After removing the node, it will rearrange the tree
-// to the optimal structure.
-func (t *Tree) Delete(bkey []byte) {
-	key := bitKey(bkey)
+// Delete removes item from t, if present.
+func (t *Tree) Delete(item []byte) {
+	key := bitKey(item)
 
 	if t.root != nil {
 		t.root = delete(t.root, key)
@@ -208,7 +212,7 @@ func delete(n *node, key []uint8) *node {
 	return newNode
 }
 
-// RootHash returns the merkle root of the tree.
+// RootHash returns the Merkle root of the tree.
 func (t *Tree) RootHash() bc.Hash {
 	root := t.root
 	if root == nil {

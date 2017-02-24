@@ -27,7 +27,7 @@ func BenchmarkInserts(b *testing.B) {
 				b.Fatal(err)
 			}
 
-			err = tr.Insert(h[:], h[:])
+			err = tr.Insert(h[:])
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -47,7 +47,7 @@ func BenchmarkInsertsRootHash(b *testing.B) {
 				b.Fatal(err)
 			}
 
-			err = tr.Insert(h[:], h[:])
+			err = tr.Insert(h[:])
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -59,16 +59,16 @@ func BenchmarkInsertsRootHash(b *testing.B) {
 func TestRootHashBug(t *testing.T) {
 	tr := new(Tree)
 
-	err := tr.Insert([]byte{0x94}, []byte{0x01})
+	err := tr.insert([]byte{0x94}, []byte{0x01})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = tr.Insert([]byte{0x36}, []byte{0x02})
+	err = tr.insert([]byte{0x36}, []byte{0x02})
 	if err != nil {
 		t.Fatal(err)
 	}
 	before := tr.RootHash()
-	err = tr.Insert([]byte{0xba}, []byte{0x03})
+	err = tr.insert([]byte{0xba}, []byte{0x03})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,30 +80,30 @@ func TestRootHashBug(t *testing.T) {
 func TestLeafVsInternalNodes(t *testing.T) {
 	tr0 := new(Tree)
 
-	err := tr0.Insert([]byte{0x01}, []byte{0x01})
+	err := tr0.Insert([]byte{0x01})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = tr0.Insert([]byte{0x02}, []byte{0x02})
+	err = tr0.Insert([]byte{0x02})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = tr0.Insert([]byte{0x03}, []byte{0x03})
+	err = tr0.Insert([]byte{0x03})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = tr0.Insert([]byte{0x04}, []byte{0x04})
+	err = tr0.Insert([]byte{0x04})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create a second tree using an internal node from tr1.
 	tr1 := new(Tree)
-	err = tr1.Insert([]byte{0x02}, mustDecodeHash("82b08f644c16985d2d9961b4104cc4bf4ba2be6bb5c3d0df2ecb94149f212fc9")) // this is an internal node of tr0
+	err = tr1.insert([]byte{0x02}, mustDecodeHash("82b08f644c16985d2d9961b4104cc4bf4ba2be6bb5c3d0df2ecb94149f212fc9")) // this is an internal node of tr0
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = tr1.Insert([]byte{0x04}, []byte{0x04})
+	err = tr1.Insert([]byte{0x04})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestRootHashInsertQuickCheck(t *testing.T) {
 	f := func(b [32]byte) bool {
 		before := tr.RootHash()
 		h := sha3.Sum256(b[:])
-		err := tr.Insert(b[:], h[:])
+		err := tr.insert(b[:], h[:])
 		keys = append(keys, b[:])
 		if err != nil {
 			return false
@@ -193,8 +193,8 @@ func TestLookup(t *testing.T) {
 
 func TestContains(t *testing.T) {
 	tr := new(Tree)
-	tr.Insert(bits("00000011"), bits("00000011"))
-	tr.Insert(bits("00000010"), bits("00000000")) // note different val
+	tr.Insert(bits("00000011"))
+	tr.insert(bits("00000010"), bits("00000000")) // note different val
 
 	if v := bits("00000011"); !tr.Contains(v) {
 		t.Errorf("expected tree to contain %x, but did not", v)
@@ -212,7 +212,7 @@ func TestInsert(t *testing.T) {
 	tr := new(Tree)
 	vals, hashes := makeVals(6)
 
-	tr.Insert(bits("11111111"), vals[0])
+	tr.insert(bits("11111111"), vals[0])
 	tr.RootHash()
 	want := &Tree{
 		root: &node{key: bools("11111111"), hash: &hashes[0], isLeaf: true},
@@ -223,7 +223,7 @@ func TestInsert(t *testing.T) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
-	tr.Insert(bits("11111111"), vals[1])
+	tr.insert(bits("11111111"), vals[1])
 	tr.RootHash()
 	want = &Tree{
 		root: &node{key: bools("11111111"), hash: &hashes[1], isLeaf: true},
@@ -233,7 +233,7 @@ func TestInsert(t *testing.T) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
-	tr.Insert(bits("11110000"), vals[2])
+	tr.insert(bits("11110000"), vals[2])
 	tr.RootHash()
 	want = &Tree{
 		root: &node{
@@ -250,7 +250,7 @@ func TestInsert(t *testing.T) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
-	tr.Insert(bits("11111100"), vals[3])
+	tr.insert(bits("11111100"), vals[3])
 	tr.RootHash()
 	want = &Tree{
 		root: &node{
@@ -273,7 +273,7 @@ func TestInsert(t *testing.T) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
-	tr.Insert(bits("11111110"), vals[4])
+	tr.insert(bits("11111110"), vals[4])
 	tr.RootHash()
 	want = &Tree{
 		root: &node{
@@ -304,7 +304,7 @@ func TestInsert(t *testing.T) {
 		t.Fatalf("got:\n%swant:\n%s", pretty(tr), pretty(want))
 	}
 
-	tr.Insert(bits("11111011"), vals[5])
+	tr.insert(bits("11111011"), vals[5])
 	tr.RootHash()
 	want = &Tree{
 		root: &node{
