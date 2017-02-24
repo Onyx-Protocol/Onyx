@@ -21,7 +21,7 @@ The `/info` endpoint reports basic information about the configuration of Chain 
 This endpoint is **authenticated** via HTTP Basic Auth. For the password field, use a client API token. The username should be left blank, e.g.:
 
 ```
-GET https://:<client API token>@chaincore.example.com/info
+GET https://<client API token>@chaincore.example.com/info
 ```
 
 #### Response
