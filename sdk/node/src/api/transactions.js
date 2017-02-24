@@ -21,7 +21,6 @@ function checkForError(resp) {
  * @typedef {Object} Transaction
  * @global
  *
- *
  * @property {String} id
  * Unique transaction identifier.
  *
@@ -43,12 +42,79 @@ function checkForError(resp) {
  * @property {Boolean} isLocal
  * A flag indicating one or more inputs or outputs are local.
  *
- * @property {Object[]} inputs
+ * @property {TransactionInput[]} inputs
  * List of specified inputs for a transaction.
  *
- * @property {Object[]} outputs
+ * @property {TransactionOutput[]} outputs
  * List of specified outputs for a transaction.
  */
+
+/**
+ * @typedef {Object} TransactionInput
+ * @global
+ *
+ * @property {String} type
+ * The type of the input. Possible values are "issue", "spend".
+ *
+ * @property {String} assetId
+ * The id of the asset being issued or spent.
+ *
+ * @property {String} assetAlias
+ * The alias of the asset being issued or spent (possibly null).
+ *
+ * @property {Hash} assetDefinition
+ * The definition of the asset being issued or spent (possibly null).
+ *
+ * @property {Hash} assetTags
+ * The tags of the asset being issued or spent (possibly null).
+ *
+ * @property {Boolean} assetIsLocal
+ * A flag indicating whether the asset being issued or spent is local.
+ *
+ * @property {Integer} amount
+ * The number of units of the asset being issued or spent.
+ *
+ * @property {String} spentOutputId
+ * The id of the output consumed by this input. ID is nil if this is an issuance input.
+ *
+ * @property {String} accountId
+ * The id of the account transferring the asset (possibly null if the
+ * input is an issuance or an unspent output is specified).
+ *
+ * @property {String} accountAlias
+ * The alias of the account transferring the asset (possibly null if the
+ * input is an issuance or an unspent output is specified).
+ *
+ * @property {String} accountTags
+ * The tags associated with the account (possibly null).
+ *
+ * @property {String} issuanceProgram
+ * A program specifying a predicate for issuing an asset (possibly null
+ * if input is not an issuance).
+ *
+ * @property {Object} referenceData
+ * User specified, unstructured data embedded within an input (possibly null).
+ *
+ * @property {Boolean} isLocal
+ * A flag indicating if the input is local.
+ *
+ * @property {Object} [spentOutput]
+ * DEPRECATED (as of version 1.1) Use {#spentOutputId} instead.
+ * The output consumed by this input.
+ *
+ * @property {String} [inputWitness]
+ * DEPRECATED (as of version 1.1) Do not use this field.
+ *
+ * @property {String} [controlProgram]
+ * DEPRECATED (as of version 1.1) Do not use this field.
+ */
+
+ /**
+  * @typedef {Object} TransactionOutput
+  * @global
+  *
+  *
+  */
 
 /**
  * @class
