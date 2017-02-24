@@ -124,7 +124,7 @@ func main() {
 		fmt.Printf("Chain Core starting...\n\n")
 	}
 
-	fmt.Printf("cored %s\n", config.Version)
+	fmt.Printf("cored (Chain Core) %s\n", config.Version)
 	fmt.Printf("production: %t\n", config.Production)
 	fmt.Printf("build-commit: %v\n", config.BuildCommit)
 	fmt.Printf("build-date: %v\n", config.BuildDate)
