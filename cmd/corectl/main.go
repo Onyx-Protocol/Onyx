@@ -22,7 +22,7 @@ import (
 	_ "chain/protocol/tx" // for BlockHeaderHashFunc
 )
 
-const version = "1.1rc5"
+const version = "1.1.0"
 
 // config vars
 var (
