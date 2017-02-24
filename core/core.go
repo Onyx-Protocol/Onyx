@@ -45,6 +45,10 @@ func (a *API) info(ctx context.Context) (map[string]interface{}, error) {
 		// never configured
 		return map[string]interface{}{
 			"is_configured": false,
+			"is_production": config.Production,
+			"version":       config.Version,
+			"build_commit":  config.BuildCommit,
+			"build_date":    config.BuildDate,
 		}, nil
 	}
 	if leader.IsLeading() {
