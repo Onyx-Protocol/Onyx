@@ -1,5 +1,9 @@
 # Chain Core Windows Installer changelog
 
+## 1.1.0 (February 24, 2017)
+
+* Updated to Chain Core [1.1.0](../../cmd/cored/CHANGELOG.md#1.1.0)
+
 ## 1.0.2 (February 22, 2017)
 
 * Resolved issue running Chain Core on non-English systems
