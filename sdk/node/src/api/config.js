@@ -1,6 +1,72 @@
 const shared = require('../shared')
 
 /**
+ * Basic information about the configuration of Chain Core, as well as any
+ * errors encountered when updating the local state of the blockchain
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/get-started/configure}
+ * @typedef {Object} CoreInfo
+ *
+ * @property {Object} snapshot
+ * @property {Number} snapshot.attempt
+ * @property {Number} snapshot.height
+ * @property {Number} snapshot.size
+ * @property {Number} snapshot.downloaded
+ * @property {Boolean} snapshot.inProgress
+
+ * @property {Boolean} isConfigured
+ * Whether the core has been configured.
+ *
+ * @property {String} configuredAt
+ * RFC3339 timestamp reflecting when the core was configured.
+ *
+ * @property {Boolean} isSigner
+ * Whether the core is configured as a block signer.
+ *
+ * @property {Boolean} isGenerator
+ * Whether the core is configured as the blockchain generator.
+ *
+ * @property {String} generatorUrl
+ * URL of the generator.
+ *
+ * @property {String} generatorAccessToken
+ * The access token used to connect to the generator.
+ *
+ * @property {String} blockchainId
+ * Hash of the initial block.
+ *
+ * @property {Number} blockHeight
+ * Height of the blockchain in the local core.
+ *
+ * @property {Number} generatorBlockHeight
+ * Height of the blockchain in the generator
+ *
+ * @property {String} generatorBlockHeightFetchedAt
+ * RFC3339 timestamp reflecting the last time generator_block_height was updated.
+ *
+ * @property {Boolean} isProduction
+ * Whether the core is running in production mode.
+ *
+ * @property {Number} networkRpcVersion
+ * The network version supported by this core.
+ *
+ * @property {String} coreId
+ * A random identifier for the core, generated during configuration.
+ *
+ * @property {String} version
+ * The release version of the cored binary.
+ *
+ * @property {String} buildCommit
+ * Git SHA of build source.
+ *
+ * @property {String} buildDate
+ * Unixtime (as string) of binary build.
+ *
+ * @property {Object} health
+ * Blockchain error information.
+ */
+
+/**
  * Chain Core can be configured as a new blockchain network, or as a node in an
  * existing blockchain network.
  * <br/><br/>
@@ -16,7 +82,7 @@ const configAPI = (client) => {
      *                               MockHSM keys will be deleted. If `false`, then access tokens
      *                               and MockHSM keys will be preserved.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Status of reset request.
+     * @returns {Promise} Promise resolved on success.
      */
     reset: (everything = false, cb) => shared.tryCallback(
       client.request('/reset', {everything: everything}),
@@ -38,7 +104,7 @@ const configAPI = (client) => {
      * @param {String} opts.blockchainId - The unique ID of the generator's blockchain.
      *                                      Required if `isGenerator` is false.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Status of configuration request.
+     * @returns {Promise} Promise resolved on success.
      */
     configure: (opts = {}, cb) => shared.tryCallback(
       client.request('/configure', opts),
@@ -49,7 +115,7 @@ const configAPI = (client) => {
      * Get info on specified Chain Core.
      *
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Requested info of specified Chain Core.
+     * @returns {Promise<CoreInfo>} Requested info of specified Chain Core.
      */
     info: (cb) => shared.tryCallback(
       client.request('/info'),

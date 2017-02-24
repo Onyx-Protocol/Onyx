@@ -9,6 +9,15 @@ const MAX_BLOCK_HEIGHT = (2 * 63) - 1
  * for actions to create TransactionFeed objects.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/real-time-transaction-processing}
+ *
+ * @property {String} id
+ * Unique transaction feed identifier.
+ *
+ * @property {String} alias
+ * User specified, unique identifier.
+ *
+ * @property {String} filter
+ * @property {String} after
  */
 class TransactionFeed {
   /**
@@ -40,16 +49,18 @@ class TransactionFeed {
    * @returns {TransactionFeed}
    */
   constructor(feed, client) {
+    this.id = feed['id']
+    this.alias = feed['aias']
+    this.after = feed['after']
+    this.filter = feed['filter']
+
     let nextAfter
-    let after = feed['after']
-    const filter = feed['filter']
-    const id = feed['id']
 
     const ack = () => client.request('/update-transaction-feed', {
-      id,
+      id: this.id,
       after: nextAfter,
-      previousAfter: after
-    }).then(() => { after = nextAfter })
+      previousAfter: this.after
+    }).then(() => { this.after = nextAfter })
 
     const query = params => client.transactions.query(params)
 
@@ -87,8 +98,8 @@ class TransactionFeed {
 
       const promise = new Promise((resolve, reject) => {
         let queryArgs = {
-          filter,
-          after,
+          filter: this.filter,
+          after: this.after,
           timeout: (timeout * 1000),
           ascendingWithLongPoll: true,
         }
@@ -176,7 +187,8 @@ const transactionFeedsAPI = (client) => {
      * @param {String} params.filter - A valid filter string for the `/list-transactions`
      *                               endpoint. The transaction feed will be composed of future
      *                               transactions that match the filter.
-     * @returns {TransactionFeed}
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<TransactionFeed>} Newly created transaction feed
      */
     create: (params, cb) => {
       let body = Object.assign({ clientToken: uuid.v4() }, params)
@@ -194,7 +206,8 @@ const transactionFeedsAPI = (client) => {
      *                           `alias` is required.
      * @param {String} params.alias - The unique alias of a transaction feed. Either `id` or
      *                              `alias` is required.
-     * @returns {TransactionFeed}
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<TransactionFeed>} Requested transaction feed object
      */
     get: (params, cb) => shared.tryCallback(
       client.request('/get-transaction-feed', params).then(data => new TransactionFeed(data, client)),
@@ -209,6 +222,8 @@ const transactionFeedsAPI = (client) => {
      *                           `alias` is required.
      * @param {String} params.alias - The unique alias of a transaction feed. Either `id` or
      *                              `alias` is required.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @return {Promise} Promise resolved on success
      */
     delete: (params, cb) => shared.tryCallback(
       client.request('/delete-transaction-feed', params).then(data => data),
@@ -221,7 +236,7 @@ const transactionFeedsAPI = (client) => {
      *
      * @param {Query} params={} - Pagination information.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Page>} Requested page of results.
+     * @returns {Promise<Page<TransactionFeed>>} Requested page of results.
      */
     query: (params, cb) => shared.query(client, 'transactionFeeds', '/list-transaction-feeds', params, {cb}),
 
@@ -230,7 +245,7 @@ const transactionFeedsAPI = (client) => {
      * supplied processor callback with each item individually.
      *
      * @param {Query} params={} - Pagination information.
-     * @param {QueryProcessor} processor - Processing callback.
+     * @param {QueryProcessor<TransactionFeed>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.

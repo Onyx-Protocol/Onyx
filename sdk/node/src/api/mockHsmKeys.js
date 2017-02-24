@@ -1,10 +1,25 @@
 const uuid = require('uuid')
 const shared = require('../shared')
 
+ /**
+  * Cryptographic private keys are the primary authorization mechanism on a
+  * blockchain. For development environments, Chain Core provides a convenient
+  * MockHSM.
+  * <br/><br/>
+  * More info: {@link https://chain.com/docs/core/build-applications/keys}
+  *
+  * @typedef {Object} MockHsmKey
+  * @global
+  *
+  * @property {String} alias
+  * User specified, unique identifier of the key.
+  *
+  * @property {String} xpub
+  * Hex-encoded string representation of the key.
+  */
+
 /**
- * Cryptographic private keys are the primary authorization mechanism on a
- * blockchain. For development environments, Chain Core provides a convenient
- * Mock HSM.
+ * API for interacting with {@link MockHsmKey MockHSM keys}.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/keys}
  * @module MockHsmKeysApi
@@ -15,11 +30,10 @@ const mockHsmKeysAPI = (client) => {
     /**
      * Create a new MockHsm key.
      *
-     * @param {Object} [params={}] - Parameters for access token creation.
-     * @param {createCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @param {Object} [params={}] - Parameters for MockHSM key creation.
      * @param {String} params.alias - User specified, unique identifier.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Newly created Mock HSM key.
+     * @returns {Promise<MockHsmKey>} Newly created MockHSM key.
      */
     create: (params, cb) => {
       let body = Object.assign({ clientToken: uuid.v4() }, params)
@@ -32,12 +46,12 @@ const mockHsmKeysAPI = (client) => {
     /**
      * Get one page of MockHsm keys, optionally filtered to specified aliases.
      * <br/><br/>
-     * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the Mock HSM.
+     * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the MockHSM.
      *
      * @param {Query} params={} - Filter and pagination information.
      * @param {Array.<string>} [params.aliases] - List of requested aliases, max 200.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Page>} Requested page of results.
+     * @returns {Promise<Page<MockHsmKey>>} Requested page of results.
      */
     query: (params, cb) => {
       if (Array.isArray(params.aliases) && params.aliases.length > 0) {
@@ -51,10 +65,10 @@ const mockHsmKeysAPI = (client) => {
      * Request all MockHsm keys matching the specified query, calling the
      * supplied processor callback with each item individually.
      * <br/><br/>
-     * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the Mock HSM.
+     * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the MockHSM.
      *
      * @param {Query} params={} - Pagination information.
-     * @param {QueryProcessor} processor - Processing callback.
+     * @param {QueryProcessor<MockHsmKey>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.

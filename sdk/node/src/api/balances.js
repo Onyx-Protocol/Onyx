@@ -7,6 +7,20 @@ const shared = require('../shared')
  * unspent output objects
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/queries}
+ * @typedef {Object} Balance
+ * @global
+ *
+ * @property {Number} amount
+ * Sum of the unspent outputs.
+ *
+ * @property {Object} sumBy
+ * List of parameters on which to sum unspent outputs.
+ */
+
+/**
+* API for interacting with {@link Balance balances}.
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/build-applications/queries}
  * @module BalancesApi
  */
 const balancesAPI = (client) => {
@@ -16,7 +30,7 @@ const balancesAPI = (client) => {
      *
      * @param {Query} params={} - Filter and pagination information.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Page>} Requested page of results.
+     * @returns {Promise<Page<Balance>>} Requested page of results.
      */
     query: (params, cb) => shared.query(client, 'balances', '/list-balances', params, {cb}),
 
@@ -25,7 +39,7 @@ const balancesAPI = (client) => {
      * supplied processor callback with each item individually.
      *
      * @param {Query} params={} - Filter and pagination information.
-     * @param {QueryProcessor} processor - Processing callback.
+     * @param {QueryProcessor<Balance>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
      *                   rejected on error.
