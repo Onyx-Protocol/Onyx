@@ -150,20 +150,14 @@ function checkForError(resp) {
  * The number of units of the asset being issued or spent.
  *
  * @property {String} accountId
- * The id of the account transferring the asset (possibly null if the
- * input is an issuance or an unspent output is specified).
+ * The id of the account transferring the asset (possibly null).
  *
  * @property {String} accountAlias
- * The alias of the account transferring the asset (possibly null if the
- * input is an issuance or an unspent output is specified).
+ * The alias of the account transferring the asset (possibly null).
  *
  * @property {String} accountTags
  * The tags associated with the account (possibly null).
- *
- * @property {String} issuanceProgram
- * A program specifying a predicate for issuing an asset (possibly null
- * if input is not an issuance).
- *
+ * 
  * @property {String} controlProgram
  * The control program which must be satisfied to transfer this output.
  *
