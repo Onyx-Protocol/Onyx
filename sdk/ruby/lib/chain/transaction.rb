@@ -53,9 +53,10 @@ module Chain
     attrib(:outputs) { |raw| raw.map { |v| Output.new(v) } }
 
     class ClientModule < Chain::ClientModule
-      # @param [Builder] builder
-      # @yield Block defining transaction actions.
-      # @return [Template]
+      # Build an unsigned transaction from a set of actions.
+      # @param [Builder] builder Builder object with actions defined. If provided, overrides block parameter.
+      # @yield Block defining transaction actions. A {Builder} object is passed as the only parameter.
+      # @return [Template] Unsigned transaction template, or error.
       def build(builder = nil, &block)
         if builder.nil?
           builder = Builder.new(&block)
@@ -67,8 +68,9 @@ module Chain
         ) { |item| Template.new(item) }
       end
 
-      # @param [Array<Builder>] builders
-      # @return [Array<Template>]
+      # Build multiple unsigned transactions from multiple sets of actions.
+      # @param [Array<Builder>] builders Multiple builder objects with actions defined.
+      # @return [BatchResponse<Template>] Batch of unsigned transaction templates, or errors.
       def build_batch(builders)
         client.conn.batch_request(
           'build-transaction',
@@ -76,7 +78,8 @@ module Chain
         ) { |item| Template.new(item) }
       end
 
-      # @param [Template] template
+      # Submit a signed transaction to the blockchain.
+      # @param [Template] template Signed transaction template.
       # @return [SubmitResponse]
       def submit(template)
         client.conn.singleton_batch_request(
@@ -85,8 +88,9 @@ module Chain
         ) { |item| SubmitResponse.new(item) }
       end
 
-      # @param [Array<Template>] templates
-      # @return [Array<SubmitResponse>]
+      # Submit multiple signed transactions to the blockchain.
+      # @param [Array<Template>] templates Array of signed transaction templates.
+      # @return [BatchResponse<SubmitResponse>]
       def submit_batch(templates)
         client.conn.batch_request(
           'submit-transaction',
@@ -94,10 +98,16 @@ module Chain
         ) { |item| SubmitResponse.new(item) }
       end
 
-      # @param [Hash] query
+      # List all transactions, optionally filtered
+      # @param [Hash] opts Filtering information
+      # @option opts [String] filter Filter string, see {https://chain.com/docs/core/build-applications/queries}
+      # @option opts [Array<String|Integer>] filter_params Parameter values for filter string (if needed)
+      # @option opts [Integer] start_time A Unix timestamp in milliseconds. When specified, only transactions with a block time greater than the start time will be returned.
+      # @option opts [Integer] end_time A Unix timestamp in milliseconds. When specified, only transactions with a block time less than the start time will be returned.
+      # @option opts [Integer] timeout A time in milliseconds after which a server timeout should occur. Defaults to 1000 (1 second).
       # @return [Query]
-      def query(query = {})
-        Query.new(client, query)
+      def query(opts = {})
+        Query.new(client, opts)
       end
     end
 

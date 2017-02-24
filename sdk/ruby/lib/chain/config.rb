@@ -43,7 +43,7 @@ module Chain
       # @return [Boolean]
       attrib :is_generator
 
-      # @!attribute [r] is_generator
+      # @!attribute [r] generator_url
       # @return [String]
       attrib :generator_url
 
@@ -105,16 +105,25 @@ module Chain
     end
 
     class ClientModule < Chain::ClientModule
+      # Reset specified Chain Core.
+      # @param [Boolean] everything 	If `true`, all objects including access tokens and MockHSM keys will be deleted. If `false`, then access tokens and MockHSM keys will be preserved.
       # @return [void]
       def reset(everything: false)
         client.conn.request('reset', {everything: everything})
       end
 
+      # Configure specified Chain Core.
+      # @param [Hash] opts Options for configuring Chain Core.
+      # @option opts [Boolean] is_generator Whether the local core will be a block generator for the blockchain; i.e., you are starting a new blockchain on the local core. `false` if you are connecting to a pre-existing blockchain.
+      # @option opts [String] generator_url A URL for the block generator. Required if `isGenerator` is false.
+      # @option opts [String] generator_access_token 	A network access token provided by administrators of the block generator. Required if `isGenerator` is false.
+      # @option opts [String] blockchain_id The unique ID of the generator's blockchain. Required if `isGenerator` is false.
       # @return [void]
       def configure(opts)
         client.conn.request('configure', opts)
       end
 
+      # Get info on specified Chain Core.
       # @return [Info]
       def info
         Info.new(client.conn.request('info'))

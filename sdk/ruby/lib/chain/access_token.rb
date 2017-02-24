@@ -29,16 +29,19 @@ module Chain
 
       # Create client/network access token.
       # @param [Hash] opts
-      # @option params [String] :type Type specifiying the type of access token to be created.
+      # @option opts [String] :type Type specifiying the type of access token to be created.
       #                                   You must specify either 'client' or 'network'.
-      # @option params [String] :id ID specifying the ID of newly created access token.
+      # @option opts [String] :id ID specifying the ID of newly created access token.
       #                                   You must specify a unique ID for access token.
       # @return [AccessToken]
       def create(opts = {})
         AccessToken.new(client.conn.request('create-access-token', opts))
       end
 
-      # @param [Hash] opts
+      # Get all access tokens sorted by descending creation time,
+      # optionally filtered by type.
+      # @param [Hash] opts Filtering information
+      # @option opts [String] :type Type of access tokens to return; either 'client' or 'network'.
       # @return [Query]
       def query(opts = {})
         Query.new(client, opts)

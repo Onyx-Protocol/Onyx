@@ -35,15 +35,19 @@ module Chain
     attrib :tags
 
     class ClientModule < Chain::ClientModule
-      # @param [Hash] opts
+      # @param [Hash] opts Options hash specifiying account creation details.
+      # @option opts [String] alias User specified, unique identifier.
+      # @option opts [Array<String>] root_xpubs The list of keys used to create control programs under the account.
+      # @option opts [Integer] quorum	The number of keys required to sign transactions for the account.
+      # @option opts [Hash] tags User-specified tag structure for the account.
       # @return [Account]
       def create(opts)
         opts = {client_token: SecureRandom.uuid}.merge(opts)
         client.conn.singleton_batch_request('create-account', [opts]) { |item| Account.new(item) }
       end
 
-      # @param [Array<Hash>] opts
-      # @return [Array<Account>]
+      # @param [Array<Hash>] opts An array of options hashes. See {#create} for a description of the hash structure.
+      # @return [BatchResponse<Account>]
       def create_batch(opts)
         opts = opts.map { |i| {client_token: SecureRandom.uuid}.merge(i) }
         client.conn.batch_request('create-account', opts) { |item| Account.new(item) }
@@ -79,15 +83,17 @@ module Chain
       # Creates new receivers under the specified accounts.
       #
       # @param opts_list [Array<Hash>] Array of options hashes. See {#create_receiver} for a description of the hash structure.
-      # @return [BatchResponse]
+      # @return [BatchResponse<Receiver>]
       def create_receiver_batch(opts_list)
         client.conn.batch_request('create-account-receiver', opts_list) { |item| Receiver.new(item) }
       end
 
-      # @param [Hash] query
+      # @param [Hash] opts Filtering information
+      # @option opts [String] filter Filter string, see {https://chain.com/docs/core/build-applications/queries}
+      # @option opts [Array<String|Integer>] filter_params Parameter values for filter string (if needed)
       # @return [Query]
-      def query(query = {})
-        Query.new(client, query)
+      def query(opts = {})
+        Query.new(client, opts)
       end
     end
 
