@@ -38,13 +38,14 @@ module Chain
       class ClientModule < Chain::ClientModule
 
         # Creates a key object.
-        # @param [Hash] opts
+        # @param [Hash] opts Parameters for Mock HSM key creation.
+        # @option opts [String] alias User specified, unique identifier.
         # @return [Key]
         def create(opts = {})
           Key.new(client.conn.request('mockhsm/create-key', opts))
         end
 
-        # @param [Hash] query
+        # @param [QueryOpts || Hash] query
         # @return [Query]
         def query(query = {})
           Query.new(client, query)
