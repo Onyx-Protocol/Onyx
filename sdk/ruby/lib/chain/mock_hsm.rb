@@ -48,8 +48,8 @@ module Chain
         # @param [Hash] opts Filtering information
         # @option opts [Array<String>] aliases Optional list of requested aliases, max 200.
         # @return [Query]
-        def query(query = {})
-          Query.new(client, query)
+        def query(opts = {})
+          Query.new(client, opts)
         end
       end
 
