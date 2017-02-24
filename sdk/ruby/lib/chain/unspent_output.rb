@@ -73,8 +73,8 @@ module Chain
     attrib :is_local
 
     class ClientModule < Chain::ClientModule
-      # @param [Hash] query
-      # @return Query
+      # @param [QueryOpts || Hash] query
+      # @return [Query]
       def query(query = {})
         Query.new(client, query)
       end

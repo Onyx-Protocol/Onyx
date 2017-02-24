@@ -12,7 +12,7 @@ module Chain
         @keys_module ||= Key::ClientModule.new(client)
       end
 
-      # Mock HSM signer connection.
+      # MockHSM signer connection.
       # @return [Connection]
       def signer_conn
         return @signer_conn if @signer_conn
@@ -38,7 +38,7 @@ module Chain
       class ClientModule < Chain::ClientModule
 
         # Creates a key object.
-        # @param [Hash] opts Parameters for Mock HSM key creation.
+        # @param [Hash] opts Parameters for MockHSM key creation.
         # @option opts [String] alias User specified, unique identifier.
         # @return [Key]
         def create(opts = {})

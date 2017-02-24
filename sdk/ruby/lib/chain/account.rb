@@ -47,7 +47,7 @@ module Chain
       end
 
       # @param [Array<Hash>] opts An array of options hashes. See {#create} for a description of the hash structure.
-      # @return [Array<Account>]
+      # @return [BatchResponse<Account>]
       def create_batch(opts)
         opts = opts.map { |i| {client_token: SecureRandom.uuid}.merge(i) }
         client.conn.batch_request('create-account', opts) { |item| Account.new(item) }
@@ -83,7 +83,7 @@ module Chain
       # Creates new receivers under the specified accounts.
       #
       # @param opts_list [Array<Hash>] Array of options hashes. See {#create_receiver} for a description of the hash structure.
-      # @return [BatchResponse]
+      # @return [BatchResponse<Receiver>]
       def create_receiver_batch(opts_list)
         client.conn.batch_request('create-account-receiver', opts_list) { |item| Receiver.new(item) }
       end

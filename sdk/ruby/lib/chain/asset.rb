@@ -64,7 +64,7 @@ module Chain
       end
 
       # @param [Array<Hash>] opts An array of options hashes. See {#create} for a description of the hash structure.
-      # @return [Array<Asset>]
+      # @return [BatchResponse<Asset>]
       def create_batch(opts)
         opts = opts.map { |i| {client_token: SecureRandom.uuid}.merge(i) }
         client.conn.batch_request('create-asset', opts) { |item| Asset.new(item) }

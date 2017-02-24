@@ -82,15 +82,20 @@ module Chain
 
     class ClientModule < Chain::ClientModule
 
-      # @param [Hash] opts
-      # @return [TransactionFeed]
+      # @param [Hash] opts Parameters for creating a Transaction Feed.
+      # @option opts [String] alias A unique alias for the transaction feed.
+      # @option opts [String] filter A valid filter string for the `/list-transactions` endpoint. The transaction feed will be composed of future transactions that match the filter.
+      # @return [TransactionFeed] Newly created transaction feed
       def create(opts)
         opts = {client_token: SecureRandom.uuid()}.merge(opts)
         TransactionFeed.new(client.conn.request('create-transaction-feed', opts), client.conn)
       end
 
-      # @param [Hash] opts
-      # @return [TransactionFeed]
+      # Get single transaction feed given an id/alias.
+      # @param [Hash] opts Parameters to get single Transaction Feed.
+      # @option opts [String] id The unique ID of a transaction feed. Either `id` or `alias` is required.
+      # @option opts [String] alias The unique alias of a transaction feed. Either `id` or `alias` is required.
+      # @return [TransactionFeed] Requested transaction feed object
       def get(opts)
         TransactionFeed.new(client.conn.request('get-transaction-feed', opts), client.conn)
       end
@@ -104,6 +109,7 @@ module Chain
         nil
       end
 
+      # @param [QueryOpts || Hash] query
       # @return [Query]
       def query
         Query.new(client)
