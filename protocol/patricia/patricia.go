@@ -10,7 +10,7 @@
 // The set must be prefix-free -- no item can be a prefix of
 // any other -- enforced by Insert.
 // The length of each bit string must also be a multiple of eight,
-// simply because the interface uses []byte to represent an item.
+// because the interface uses []byte to represent an item.
 //
 // The nodes in the tree form an immutable persistent data
 // structure. It is okay to copy a Tree struct,
@@ -101,8 +101,7 @@ func lookup(n *node, key []uint8) *node {
 // Insert inserts item into t.
 //
 // It is an error for item to be a prefix of an element
-// already in t or to contain an element already in t
-// as a prefix.
+// in t or to contain an element in t as a prefix.
 // If item itself is already in t, Insert does nothing
 // (and this is not an error).
 func (t *Tree) Insert(item []byte) error {
