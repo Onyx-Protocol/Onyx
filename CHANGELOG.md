@@ -12,7 +12,7 @@ For updates to subpackages, see below:
 
 ## 1.1.0 (February 24, 2017)
 
-This release is a minor version update, and contains **new features**, **deprecations**, and protocol breaking changes. cored 1.1.0 is backward-compatible with 1.0.x SDKs, but we strongly recommend upgrading to 1.1.x SDKs as soon as possible. cored 1.1.0 is not backward-compatible with 1.0.X coreds due to fundamental protocol changes.
+This release is a minor version update, and contains new features, deprecations, and protocol breaking changes. cored 1.1.0 is backward-compatible with 1.0.x SDKs, but we strongly recommend upgrading to 1.1.x SDKs as soon as possible. cored 1.1.0 is not backward-compatible with 1.0.X coreds due to fundamental protocol changes.
 
 Notable changes:
 
