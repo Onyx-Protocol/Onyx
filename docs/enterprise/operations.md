@@ -18,7 +18,7 @@ This endpoint is **unauthenticated**.
 
 The `/info` endpoint reports basic information about the configuration of Chain Core, as well as any errors encountered when updating the local state of the blockchain. These errors include problems with generating new blocks (if the core is a generator), or problems making requests to the generator core.
 
-This endpoint is **authenticated** via HTTP Basic Auth. For the password field, use a client API token. The username should be left blank, e.g.:
+This endpoint is **authenticated** via HTTP Basic Auth. Your client API token can be used as a username/password pair, e.g.:
 
 ```
 GET https://<client API token>@chaincore.example.com/info
