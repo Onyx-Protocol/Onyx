@@ -502,7 +502,7 @@ Note that we do not require the length of the input list to be a power of two. T
 
 The protocol uses a binary radix tree with variable-length branches to implement a *merkle patricia tree*. This tree structure is used for efficient concurrent updates of the [assets merkle root](#assets-merkle-root) and compact recency proofs for unspent outputs.
 
-The input to the *merkle patricia tree hash* (MPTH) is a list of data entries; these entries will be hashed to form the leaves of the merkle hash tree. The output is a single 32-byte hash value. The input list must be prefix-free; that is, no element may be a prefix of any other. Given a sorted list of n unique inputs, `D[n] = {d(0), d(1), ..., d(n-1)}`, the MPTH is thus defined as follows:
+The input to the *merkle patricia tree hash* (MPTH) is a list of data entries; these entries will be hashed to form the leaves of the merkle hash tree. The output is a single 32-byte hash value. The input list must be prefix-free; that is, no element can be a prefix of any other. Given a sorted list of n unique inputs, `D[n] = {d(0), d(1), ..., d(n-1)}`, the MPTH is thus defined as follows:
 
 The hash of an empty list is a 32-byte all-zero string:
 
