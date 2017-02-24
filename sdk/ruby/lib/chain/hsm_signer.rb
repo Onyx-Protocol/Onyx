@@ -10,6 +10,9 @@ module Chain
       @xpubs_by_signer = {}
     end
 
+    # Add a new key/signer pair to the HSM signer.
+    # @param [MockHsm::Key || String] xpub_or_key An object with an xpub key, or an xpub as a string.
+    # @param [Connection] signer_conn Authenticated connection to a specific HSM instance.
     def add_key(xpub_or_key, signer_conn)
       xpub = xpub_or_key.is_a?(MockHSM::Key) ? xpub_or_key.xpub : xpub_or_key
       @xpubs_by_signer[signer_conn] ||= []
@@ -17,6 +20,8 @@ module Chain
       @xpubs_by_signer[signer_conn].uniq!
     end
 
+    # Sign a single transaction
+    # @param [Hash] tx_template	A single transaction template.
     def sign(tx_template)
       return tx_template if @xpubs_by_signer.empty?
 
@@ -31,6 +36,8 @@ module Chain
       tx_template
     end
 
+    # Sign a batch of transactions
+    # @param [Array<Hash>] tx_template	Array of transaction templates.
     def sign_batch(tx_templates)
       if @xpubs_by_signer.empty?
         # Treat all templates as if signed successfully.

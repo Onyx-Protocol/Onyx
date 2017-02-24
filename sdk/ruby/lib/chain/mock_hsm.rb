@@ -12,6 +12,7 @@ module Chain
         @keys_module ||= Key::ClientModule.new(client)
       end
 
+      # Mock HSM signer connection.
       # @return [Connection]
       def signer_conn
         return @signer_conn if @signer_conn
