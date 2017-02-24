@@ -40,8 +40,8 @@ module Chain
 
       # Get all access tokens sorted by descending creation time,
       # optionally filtered by type.
-      # @param [QueryOpts || Hash] opts Filter and pagination information; see {QueryOpts} for field reference.
-      # @option opts [String] :type Type of access tokens to return.
+      # @param [Hash] opts Filtering information
+      # @option opts [String] :type Type of access tokens to return; either 'client' or 'network'.
       # @return [Query]
       def query(opts = {})
         Query.new(client, opts)

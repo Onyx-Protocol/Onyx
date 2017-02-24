@@ -109,7 +109,7 @@ module Chain
         nil
       end
 
-      # @param [QueryOpts || Hash] query
+      # List all transaction feeds
       # @return [Query]
       def query
         Query.new(client)

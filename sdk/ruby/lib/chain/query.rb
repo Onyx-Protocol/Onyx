@@ -47,10 +47,4 @@ module Chain
 
     alias_method :all, :to_a
   end
-
-  class QueryOpts < Hash
-    attr_accessor :filter
-    attr_accessor :after
-    attr_accessor :page_size
-  end
 end

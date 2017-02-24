@@ -45,7 +45,8 @@ module Chain
           Key.new(client.conn.request('mockhsm/create-key', opts))
         end
 
-        # @param [QueryOpts || Hash] query
+        # @param [Hash] opts Filtering information
+        # @option opts [Array<String>] aliases Optional list of requested aliases, max 200.
         # @return [Query]
         def query(query = {})
           Query.new(client, query)

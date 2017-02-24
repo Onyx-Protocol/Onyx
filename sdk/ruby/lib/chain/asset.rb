@@ -70,7 +70,9 @@ module Chain
         client.conn.batch_request('create-asset', opts) { |item| Asset.new(item) }
       end
 
-      # @param [QueryOpts || Hash] query
+      # @param [Hash] opts Filtering information
+      # @option opts [String] filter Filter string, see {https://chain.com/docs/core/build-applications/queries}
+      # @option opts [Array<String>] filter_params Parameter values for filter string (if needed)
       # @return [Query]
       def query(query = {})
         Query.new(client, query)

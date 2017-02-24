@@ -1,3 +1,9 @@
+def ensure_key_sorting(h)
+  sorted = h.keys.sort
+  return h if sorted == h.keys
+  sorted.reduce({}) { |memo, k| memo[k] = h[k]; memo }
+end
+
 module Chain
   class BatchResponse
     def initialize(successes: {}, errors: {}, response: nil)
@@ -11,14 +17,6 @@ module Chain
     end
 
     attr_reader :successes, :errors, :response
-
-    private
-
-    def ensure_key_sorting(h)
-      sorted = h.keys.sort
-      return h if sorted == h.keys
-      sorted.reduce({}) { |memo, k| memo[k] = h[k]; memo }
-    end
   end
 
   private

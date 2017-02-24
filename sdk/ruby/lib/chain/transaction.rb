@@ -98,10 +98,16 @@ module Chain
         ) { |item| SubmitResponse.new(item) }
       end
 
-      # @param [QueryOpts || Hash] query
+      # List all transactions, optionally filtered
+      # @param [Hash] opts Filtering information
+      # @option opts [String] filter Filter string, see {https://chain.com/docs/core/build-applications/queries}
+      # @option opts [Array<String>] filter_params Parameter values for filter string (if needed)
+      # @option opts [Integer] start_time A Unix timestamp in milliseconds. When specified, only transactions with a block time greater than the start time will be returned.
+      # @option opts [Integer] end_time A Unix timestamp in milliseconds. When specified, only transactions with a block time less than the start time will be returned.
+      # @option opts [Integer] timeout A time in milliseconds after which a server timeout should occur. Defaults to 1000 (1 second).
       # @return [Query]
-      def query(query = {})
-        Query.new(client, query)
+      def query(opts = {})
+        Query.new(client, opts)
       end
     end
 

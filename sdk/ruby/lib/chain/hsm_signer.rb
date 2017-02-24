@@ -37,7 +37,7 @@ module Chain
     end
 
     # Sign a batch of transactions
-    # @param [Array<Hash>] tx_template	Array of transaction templates.
+    # @param [Array<Hash>] tx_templates Array of transaction templates.
     def sign_batch(tx_templates)
       if @xpubs_by_signer.empty?
         # Treat all templates as if signed successfully.
