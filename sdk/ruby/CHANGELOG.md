@@ -22,7 +22,7 @@ The `create_control_program` method is **deprecated**. Instead, use `create_rece
 
 ```
 cp = client.accounts.create_control_program(
-  account_alias: 'alice'
+  alias: 'alice'
 )
 ```
 
