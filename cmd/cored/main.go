@@ -120,21 +120,17 @@ func main() {
 	v := flag.Bool("version", false, "print version information")
 	flag.Parse()
 
-	if *v {
-		fmt.Printf("cored %s\n", config.Version)
-		fmt.Printf("production=%t\n", config.Production)
-		fmt.Printf("build-commit=%v\n", config.BuildCommit)
-		fmt.Printf("build-date=%v\n", config.BuildDate)
-
-		return
+	if !*v {
+		fmt.Printf("Chain Core starting...\n\n")
 	}
 
-	fmt.Printf("Chain Core starting\n")
-	fmt.Printf("* Version %s\n", config.Version)
-	if config.Production {
-		fmt.Printf("* Production mode\n")
-	} else {
-		fmt.Printf("* Development mode\n")
+	fmt.Printf("cored %s\n", config.Version)
+	fmt.Printf("production: %t\n", config.Production)
+	fmt.Printf("build_commit: %v\n", config.BuildCommit)
+	fmt.Printf("build_date: %v\n", config.BuildDate)
+
+	if *v {
+		return
 	}
 
 	fmt.Printf("\n")
