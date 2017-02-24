@@ -28,7 +28,7 @@ ControlProgram controlProgram = new ControlProgram.Builder()
 
 ##### New (1.1.x)
 
-You can create receivers with an expiration time. This parameter is options and defaults to 30 days into the future.
+You can create receivers with an expiration time. This parameter is optional and defaults to 30 days into the future.
 
 ```
 Receiver receiver = new Account.ReceiverBuilder()
