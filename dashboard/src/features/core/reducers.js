@@ -31,7 +31,7 @@ export const configuredAt = (state, action) => {
 }
 
 export const production = (state, action) =>
-  coreConfigReducer('isproduction', state, false, action)
+  coreConfigReducer('isProduction', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {

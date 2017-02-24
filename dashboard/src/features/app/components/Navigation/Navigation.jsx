@@ -56,12 +56,14 @@ class Navigation extends React.Component {
 
         <ul className={styles.navigation}>
           <li className={styles.navigationTitle}>services</li>
-          <li>
-            <Link to='/mockhsms' activeClassName={styles.active}>
-              {navIcon('mockhsm', styles)}
-              MockHSM
-            </Link>
-          </li>
+          {!this.props.production &&
+            <li>
+              <Link to='/mockhsms' activeClassName={styles.active}>
+                {navIcon('mockhsm', styles)}
+                MockHSM
+              </Link>
+            </li>
+          }
           <li>
             <Link to='/transaction-feeds' activeClassName={styles.active}>
               {navIcon('feed', styles)}
@@ -101,6 +103,7 @@ export default connect(
   state => ({
     routing: state.routing, // required for <Link>s to update active state on navigation
     showSync: state.core.configured && !state.core.generator,
+    production: state.core.production,
   }),
   (dispatch) => ({
     openTutorial: () => dispatch({ type: 'OPEN_TUTORIAL' })

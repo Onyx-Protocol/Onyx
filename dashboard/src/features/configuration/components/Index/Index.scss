@@ -49,6 +49,14 @@
     background-color: $background-emphasis-color;
   }
 
+  &.disabled {
+    cursor: default;
+  }
+
+  &.disabled:hover {
+    background-color: inherit;
+  }
+
   p {
     line-height: 1.4;
   }
