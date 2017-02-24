@@ -51,10 +51,12 @@
 
   &.disabled {
     cursor: default;
-  }
+    background-color: $background-emphasis-color;
+    opacity: 0.75;
 
-  &.disabled:hover {
-    background-color: inherit;
+    .choice_title {
+      color: $text-light-color;
+    }
   }
 
   p {
