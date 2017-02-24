@@ -4,7 +4,7 @@ const shared = require('../shared')
  /**
   * Cryptographic private keys are the primary authorization mechanism on a
   * blockchain. For development environments, Chain Core provides a convenient
-  * Mock HSM.
+  * MockHSM.
   * <br/><br/>
   * More info: {@link https://chain.com/docs/core/build-applications/keys}
   *
@@ -19,7 +19,7 @@ const shared = require('../shared')
   */
 
 /**
- * API for interacting with {@link MockHsmKey Mock HSM keys}.
+ * API for interacting with {@link MockHsmKey MockHSM keys}.
  * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/keys}
  * @module MockHsmKeysApi
@@ -30,10 +30,10 @@ const mockHsmKeysAPI = (client) => {
     /**
      * Create a new MockHsm key.
      *
-     * @param {Object} [params={}] - Parameters for Mock HSM key creation.
+     * @param {Object} [params={}] - Parameters for MockHSM key creation.
      * @param {String} params.alias - User specified, unique identifier.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<MockHsmKey>} Newly created Mock HSM key.
+     * @returns {Promise<MockHsmKey>} Newly created MockHSM key.
      */
     create: (params, cb) => {
       let body = Object.assign({ clientToken: uuid.v4() }, params)
@@ -46,7 +46,7 @@ const mockHsmKeysAPI = (client) => {
     /**
      * Get one page of MockHsm keys, optionally filtered to specified aliases.
      * <br/><br/>
-     * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the Mock HSM.
+     * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the MockHSM.
      *
      * @param {Query} params={} - Filter and pagination information.
      * @param {Array.<string>} [params.aliases] - List of requested aliases, max 200.
@@ -65,7 +65,7 @@ const mockHsmKeysAPI = (client) => {
      * Request all MockHsm keys matching the specified query, calling the
      * supplied processor callback with each item individually.
      * <br/><br/>
-     * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the Mock HSM.
+     * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the MockHSM.
      *
      * @param {Query} params={} - Pagination information.
      * @param {QueryProcessor<MockHsmKey>} processor - Processing callback.

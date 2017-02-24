@@ -59,8 +59,8 @@ class Client {
     this.config = configAPI(this)
 
     /**
-     * @property {module:MockHsmKeysApi} keys API actions for Mock HSM keys.
-     * @property {Connection} signerConnection Mock HSM signer connection.
+     * @property {module:MockHsmKeysApi} keys API actions for MockHSM keys.
+     * @property {Connection} signerConnection MockHSM signer connection.
      */
     this.mockHsm = {
       keys: mockHsmKeysAPI(this),

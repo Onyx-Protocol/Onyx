@@ -51,7 +51,7 @@ client.transactions.query({}, callback)
 
 ## Using external signers
 
-To connect to an HSM other than the built-in Mock HSM, you must create a new
+To connect to an HSM other than the built-in MockHSM, you must create a new
 `Connection` object:
 
 ```
