@@ -47,8 +47,9 @@ const accessTokens = (client) => {
      * Get one page of access tokens sorted by descending creation time,
      * optionally filtered by type.
      *
-     * @param {Query} params - Pagination information.
-     * @param {String} [params.type] - Type of access tokens to return.
+     * @param {Object} params={} - Filter and pagination information.
+     * @param {String} params.type - Type of access tokens to return.
+     * @param {Number} params.pageSize - Number of items to return in result set.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page<AccessToken>>} Requested page of results.
      */
@@ -58,8 +59,9 @@ const accessTokens = (client) => {
      * Request all access tokens matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
-     * @param {Query} params={} - Pagination information.
-     * @param {String} [params.type] - Type of access tokens to return.
+     * @param {Object} params={} - Filter and pagination information.
+     * @param {String} params.type - Type of access tokens to return.
+     * @param {Number} params.pageSize - Number of items to return in result set.
      * @param {QueryProcessor<AccessToken>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or

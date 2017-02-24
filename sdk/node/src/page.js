@@ -29,8 +29,10 @@ class Page {
     this.items = []
 
     /**
-     * Object representing the query for the immediate next page of results.
-     * @type {Query}
+     * Object representing the query for the immediate next page of results. Can
+     * be passed without modification to the `query` method that generated the
+     * Page object containing it. 
+     * @type {Object}
      */
     this.next = {}
 

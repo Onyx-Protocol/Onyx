@@ -73,7 +73,11 @@ const unspentOutputsAPI = (client) => {
     /**
      * Get one page of unspent outputs matching the specified query.
      *
-     * @param {Query} params={} - Filter and pagination information.
+     * @param {Object} params={} - Filter and pagination information.
+     * @param {String} params.filter - Filter string, see {@link https://chain.com/docs/core/build-applications/queries}.
+     * @param {Array<String|Number>} params.filterParams - Parameter values for filter string (if needed).
+     * @param {Integer} params.timestamp - A millisecond Unix timestamp. By using this parameter, you can perform queries that reflect the state of the blockchain at different points in time.
+     * @param {Number} params.pageSize - Number of items to return in result set.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page<UnspentOutput>>} Requested page of results.
      */
@@ -83,7 +87,11 @@ const unspentOutputsAPI = (client) => {
      * Request all unspent outputs matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
-     * @param {Query} params - Filter and pagination information.
+     * @param {Object} params={} - Filter and pagination information.
+     * @param {String} params.filter - Filter string, see {@link https://chain.com/docs/core/build-applications/queries}.
+     * @param {Array<String|Number>} params.filterParams - Parameter values for filter string (if needed).
+     * @param {Integer} params.timestamp - A millisecond Unix timestamp. By using this parameter, you can perform queries that reflect the state of the blockchain at different points in time.
+     * @param {Number} params.pageSize - Number of items to return in result set.
      * @param {QueryProcessor<UnspentOutput>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or

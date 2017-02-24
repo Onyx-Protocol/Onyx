@@ -15,19 +15,6 @@ const Page = require('./page')
  */
 
 /**
- * Object specifying how to request records from a given endpoint. Queries can
- * be optionally extended with additional fields to provide extra options for
- * filtering.
- *
- * @typedef {Object} Query
- * @property {String} [filter] - String used to filter results. See the
- *                            {@link https://chain.com/docs/core/build-applications/queries#filters|documentation on filter strings}
- *                            for more details.
- * @property {String} [after] - Cursor pointing to the start of the result set.
- * @property {Number} [pageSize] - Number of items to return in result set.
- */
-
-/**
  * Called once for each item in the result set.
  *
  * @callback QueryProcessor

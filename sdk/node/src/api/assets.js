@@ -50,7 +50,7 @@ const assetsAPI = (client) => {
    * @property {String} [alias]
    * User specified, unique identifier.
    *
-   * @property {string[]} rootXpubs
+   * @property {String[]} rootXpubs
    * The list of keys used to create the issuance program for the asset.
    *
    * @property {Number} quorum
@@ -85,7 +85,10 @@ const assetsAPI = (client) => {
     /**
      * Get one page of assets matching the specified query.
      *
-     * @param {Query} params={} - Filter and pagination information.
+     * @param {Object} params={} - Filter and pagination information.
+     * @param {String} params.filter - Filter string, see {@link https://chain.com/docs/core/build-applications/queries}.
+     * @param {Array<String|Number>} params.filterParams - Parameter values for filter string (if needed).
+     * @param {Number} params.pageSize - Number of items to return in result set.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page<Asset>>} Requested page of results.
      */
@@ -95,7 +98,10 @@ const assetsAPI = (client) => {
      * Request all assets matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
-     * @param {Query} params={} - Filter and pagination information.
+     * @param {Object} params={} - Filter and pagination information.
+     * @param {String} params.filter - Filter string, see {@link https://chain.com/docs/core/build-applications/queries}.
+     * @param {Number} params.pageSize - Number of items to return in result set.
+     * @param {Array<String|Number>} params.filterParams - Parameter values for filter string (if needed).
      * @param {QueryProcessor<Asset>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
