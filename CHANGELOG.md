@@ -24,7 +24,7 @@ Notable changes:
 * Block signing has been improved to better support HSM integration.
 * Disable MockHSM and blockchain reset functions in production mode.
 * Improve version string printing in cored and corectl commands.
-* Bug fixes and performance improvements
+* Bug fixes and performance improvements.
 
 ## 1.0.2 (December 2, 2016)<a name="1.0.2"></a>
 
