@@ -59,7 +59,7 @@ templatePromise = client.transactions.build(builder => {
 ```
 templatePromise = client.transactions.build(builder => {
   builder.controlWithReceiver({
-    reciever: receiver,
+    receiver: receiver,
     assetAlias: 'gold',
     amount: 1
   })
@@ -86,7 +86,7 @@ console.log(utxo.id)
 
 ##### Transaction inputs
 
-The `spentOutput` property on transaction intputs is **deprecated**. Use `spentOutputId` instead.
+The `spentOutput` property on transaction inputs is **deprecated**. Use `spentOutputId` instead.
 
 ```
 console.log(tx.inputs[0].spentOutputId)
@@ -94,7 +94,7 @@ console.log(tx.inputs[0].spentOutputId)
 
 #### Spending unspent outputs in transactions
 
-The `spendUnspentOutput` method now takes an `outputId` parameter. The `transactionId` and `position` parmeters are **deprecated**.
+The `spendUnspentOutput` method now takes an `outputId` parameter. The `transactionId` and `position` parameters are **deprecated**.
 
 ##### Deprecated (1.0.x)
 
