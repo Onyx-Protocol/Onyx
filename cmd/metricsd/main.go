@@ -252,9 +252,9 @@ type attributes struct {
 }
 
 type debugVarsResponse struct {
-	BuildCommit string               `json:"buildcommit"`
-	BuildDate   string               `json:"builddate"`
-	BuildTag    string               `json:"buildtag"`
+	BuildCommit string               `json:"build_commit"`
+	BuildDate   string               `json:"build_date"`
+	BuildTag    string               `json:"build_tag"`
 	Latency     map[string]latencies `json:"latency"`
 	Memstats    runtime.MemStats     `json:"memstats"`
 	ProcessID   string               `json:"processID"`
