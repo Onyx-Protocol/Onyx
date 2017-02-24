@@ -89,8 +89,8 @@ module Chain
       end
 
       # @param [Hash] opts Filtering information
-      # @option opts [String] filter Filter string, see {https://chain.com/docs/core/build-applications/queries}
-      # @option opts [Array<String|Integer>] filter_params Parameter values for filter string (if needed)
+      # @option opts [String] filter Filter string, see {https://chain.com/docs/core/build-applications/queries}.
+      # @option opts [Array<String|Integer>] filter_params Parameter values for filter string (if needed).
       # @return [Query]
       def query(opts = {})
         Query.new(client, opts)
