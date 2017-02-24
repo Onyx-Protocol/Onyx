@@ -12,11 +12,7 @@ For updates to subpackages, see below:
 
 ## 1.1.0 (February 24, 2017)
 
-This release is a minor version update, and contains **new features** and **deprecations**. cored 1.1.0 is backward-compatible with 1.0.x SDKs, but we strongly recommend upgrading to 1.1.x SDKs as soon as possible. See SDK-level changes here:
-
-- [Java](./sdk/java/CHANGELOG.md)
-- [Node](./sdk/node/CHANGELOG.md)
-- [Ruby](./sdk/ruby/CHANGELOG.md)
+This release is a minor version update, and contains **new features**, **deprecations**, and protocol breaking changes. cored 1.1.0 is backward-compatible with 1.0.x SDKs, but we strongly recommend upgrading to 1.1.x SDKs as soon as possible. cored 1.1.0 is not backward-compatible with 1.0.X coreds due to fundamental protocol changes.
 
 Notable changes:
 
@@ -24,6 +20,11 @@ Notable changes:
 * Transaction outputs now have a unique `id` property.
 * Transaction inputs refer to previous outputs using a new `spent_output_id` property. The existing `spent_output` property, which contains a transaction ID and position, is **deprecated**.
 * Accounts now use **receivers**, a cross-core payment primitive that supersedes the Chain 1.0.x pattern of creating and paying to control programs. See the SDK changelogs for usage examples.
+* The dashboard has an improved on-boarding experience which guides new users through the basics.
+* Block signing has been improved to better support HSM integration.
+* Disable MockHSM and blockchain reset functions in production mode.
+* Improve version string printing in cored and corectl commands.
+* Bugfixes and performance improvements
 
 ## 1.0.2 (December 2, 2016)<a name="1.0.2"></a>
 
