@@ -17,7 +17,6 @@ const shared = require('../shared')
  * List of parameters on which to sum unspent outputs.
  */
 
-
 /**
 * API for interacting with {@link Balance balances}.
  * <br/><br/>

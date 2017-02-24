@@ -30,7 +30,7 @@ const mockHsmKeysAPI = (client) => {
     /**
      * Create a new MockHsm key.
      *
-     * @param {Object} [params={}] - Parameters for access token creation.
+     * @param {Object} [params={}] - Parameters for Mock HSM key creation.
      * @param {String} params.alias - User specified, unique identifier.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<MockHsmKey>} Newly created Mock HSM key.

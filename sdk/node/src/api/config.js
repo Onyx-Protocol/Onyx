@@ -1,6 +1,10 @@
 const shared = require('../shared')
 
 /**
+ * Basic information about the configuration of Chain Core, as well as any
+ * errors encountered when updating the local state of the blockchain
+ * <br/><br/>
+ * More info: {@link https://chain.com/docs/core/get-started/configure}
  * @typedef {Object} CoreInfo
  *
  * @property {Object} snapshot
@@ -11,27 +15,55 @@ const shared = require('../shared')
  * @property {Boolean} snapshot.inProgress
 
  * @property {Boolean} isConfigured
- * @property {String} configuredAt RFC3339 timestamp
+ * Whether the core has been configured.
+ *
+ * @property {String} configuredAt
+ * RFC3339 timestamp reflecting when the core was configured.
+ *
  * @property {Boolean} isSigner
+ * Whether the core is configured as a block signer.
+ *
  * @property {Boolean} isGenerator
+ * Whether the core is configured as the blockchain generator.
+ *
  * @property {String} generatorUrl
+ * URL of the generator.
+ *
  * @property {String} generatorAccessToken
+ * The access token used to connect to the generator.
+ *
  * @property {String} blockchainId
+ * Hash of the initial block.
+ *
  * @property {Number} blockHeight
+ * Height of the blockchain in the local core.
+ *
  * @property {Number} generatorBlockHeight
- * @property {String} generatorBlockHeightFetchedAt RFC3339 timestamp
+ * Height of the blockchain in the generator
+ *
+ * @property {String} generatorBlockHeightFetchedAt
+ * RFC3339 timestamp reflecting the last time generator_block_height was updated.
+ *
  * @property {Boolean} isProduction
+ * Whether the core is running in production mode.
+ *
  * @property {Number} networkRpcVersion
+ * The network version supported by this core.
+ *
  * @property {String} coreId
+ * A random identifier for the core, generated during configuration.
+ *
  * @property {String} version
+ * The release version of the cored binary.
+ *
  * @property {String} buildCommit
+ * Git SHA of build source.
  *
  * @property {String} buildDate
- * Date when the core binary was compiled.
- *
- * The API is not guaranteed to return this field as an RFC3399 timestamp.
+ * Unixtime (as string) of binary build.
  *
  * @property {Object} health
+ * Blockchain error information.
  */
 
 /**
