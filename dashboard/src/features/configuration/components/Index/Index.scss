@@ -49,6 +49,16 @@
     background-color: $background-emphasis-color;
   }
 
+  &.disabled {
+    cursor: default;
+    background-color: $background-emphasis-color;
+    opacity: 0.75;
+
+    .choice_title {
+      color: $text-light-color;
+    }
+  }
+
   p {
     line-height: 1.4;
   }

@@ -95,13 +95,17 @@ class Index extends React.Component {
               <input className={styles.choice_radio_button}
                     type='radio'
                     {...typeProps}
-                    value='new' />
-              <div className={`${styles.choice} ${styles.new}`}>
+                    value='new'
+                    disabled={this.props.production} />
+              <div className={`${styles.choice} ${styles.new} ` + (this.props.production ? styles.disabled : '')}>
                 <span className={styles.choice_title}>Create new blockchain network</span>
 
-                <p>
-                  Start a new blockchain network with this Chain Core as the block generator.
-                </p>
+                {this.props.production &&
+                  <p>This core is compiled for production. Use <code>corectl</code> to configure as a generator.</p>
+                }
+                {!this.props.production &&
+                  <p>Start a new blockchain network with this Chain Core as the block generator.</p>
+                }
               </div>
             </label>
           </div>
@@ -180,6 +184,10 @@ class Index extends React.Component {
   }
 }
 
+const mapStateToProps = state => ({
+  production: state.core.production,
+})
+
 const mapDispatchToProps = (dispatch) => ({
   submitForm: (data) => dispatch(actions.configuration.submitConfiguration(data))
 })
@@ -196,6 +204,6 @@ const config = {
 
 export default reduxForm(
   config,
-  () => {},
+  mapStateToProps,
   mapDispatchToProps
 )(Index)
