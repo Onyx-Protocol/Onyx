@@ -16,7 +16,7 @@ module Chain
     attrib :sum_by
 
     class ClientModule < Chain::ClientModule
-      # @param [Hash] query
+      # @param [QueryOpts || Hash] query
       # @return [Query]
       def query(query = {})
         Query.new(client, query)

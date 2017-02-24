@@ -51,21 +51,26 @@ module Chain
     attrib :is_local
 
     class ClientModule < Chain::ClientModule
-      # @param [Hash] opts
+      # @param [Hash] opts Options hash specifiying asset creation details.
+      # @option opts [String] alias User specified, unique identifier.
+      # @option opts [Array<String>] root_xpubs The list of keys used to create the issuance program for the asset.
+      # @option opts [Integer] quorum		The number of keys required to issue units of the asset.
+      # @option opts [Hash] tags User-specified, arbitrary/unstructured data local to the asset's originating core.
+      # @option opts [Hash] definition User-specified, arbitrary/unstructured data visible across blockchain networks.
       # @return [Asset]
       def create(opts)
         opts = {client_token: SecureRandom.uuid}.merge(opts)
         client.conn.singleton_batch_request('create-asset', [opts]) { |item| Asset.new(item) }
       end
 
-      # @param [Hash] opts
+      # @param [Array<Hash>] opts An array of options hashes. See {#create} for a description of the hash structure.
       # @return [Array<Asset>]
       def create_batch(opts)
         opts = opts.map { |i| {client_token: SecureRandom.uuid}.merge(i) }
         client.conn.batch_request('create-asset', opts) { |item| Asset.new(item) }
       end
 
-      # @param [Hash] query
+      # @param [QueryOpts || Hash] query
       # @return [Query]
       def query(query = {})
         Query.new(client, query)

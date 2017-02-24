@@ -37,7 +37,7 @@ module Chain
     class ClientModule < Chain::ClientModule
       # @param [Hash] opts Options hash specifiying account creation details.
       # @option opts [String] alias User specified, unique identifier.
-      # @option opts [Array<String>] rootXpubs The list of keys used to create control programs under the account.
+      # @option opts [Array<String>] root_xpubs The list of keys used to create control programs under the account.
       # @option opts [Integer] quorum	The number of keys required to sign transactions for the account.
       # @option opts [Hash] tags User-specified tag structure for the account.
       # @return [Account]
@@ -88,7 +88,7 @@ module Chain
         client.conn.batch_request('create-account-receiver', opts_list) { |item| Receiver.new(item) }
       end
 
-      # @param [Hash] query
+      # @param [QueryOpts || Hash] query
       # @return [Query]
       def query(query = {})
         Query.new(client, query)
