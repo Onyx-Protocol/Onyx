@@ -54,7 +54,7 @@ module Chain
       # @param [Hash] opts Options hash specifiying asset creation details.
       # @option opts [String] alias User specified, unique identifier.
       # @option opts [Array<String>] root_xpubs The list of keys used to create the issuance program for the asset.
-      # @option opts [Integer] quorum		The number of keys required to issue units of the asset.
+      # @option opts [Integer] quorum The number of keys required to issue units of the asset.
       # @option opts [Hash] tags User-specified, arbitrary/unstructured data local to the asset's originating core.
       # @option opts [Hash] definition User-specified, arbitrary/unstructured data visible across blockchain networks.
       # @return [Asset]
@@ -72,7 +72,7 @@ module Chain
 
       # @param [Hash] opts Filtering information
       # @option opts [String] filter Filter string, see {https://chain.com/docs/core/build-applications/queries}
-      # @option opts [Array<String>] filter_params Parameter values for filter string (if needed)
+      # @option opts [Array<String|Integer>] filter_params Parameter values for filter string (if needed)
       # @return [Query]
       def query(query = {})
         Query.new(client, query)

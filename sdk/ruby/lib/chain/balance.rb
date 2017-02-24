@@ -18,7 +18,7 @@ module Chain
     class ClientModule < Chain::ClientModule
       # @param [Hash] opts Filtering information
       # @option opts [String] filter Filter string, see {https://chain.com/docs/core/build-applications/queries}
-      # @option opts [Array<String>] filter_params Parameter values for filter string (if needed)
+      # @option opts [Array<String|Integer>] filter_params Parameter values for filter string (if needed)
       # @option opts [Array<String] sum_by List of unspent output attributes to sum by
       # @option opts [Integer] timestamp A millisecond Unix timestamp. By using this parameter, you can perform queries that reflect the state of the blockchain at different points in time.
       # @return [Query]
