@@ -35,14 +35,18 @@ module Chain
     attrib :tags
 
     class ClientModule < Chain::ClientModule
-      # @param [Hash] opts
+      # @param [Hash] opts Options hash specifiying account creation details.
+      # @option opts [String] alias User specified, unique identifier.
+      # @option opts [Array<String>] rootXpubs The list of keys used to create control programs under the account.
+      # @option opts [Integer] quorum	The number of keys required to sign transactions for the account.
+      # @option opts [Hash] tags User-specified tag structure for the account.
       # @return [Account]
       def create(opts)
         opts = {client_token: SecureRandom.uuid}.merge(opts)
         client.conn.singleton_batch_request('create-account', [opts]) { |item| Account.new(item) }
       end
 
-      # @param [Array<Hash>] opts
+      # @param [Array<Hash>] opts An array of options hashes. See {#create} for a description of the hash structure.
       # @return [Array<Account>]
       def create_batch(opts)
         opts = opts.map { |i| {client_token: SecureRandom.uuid}.merge(i) }

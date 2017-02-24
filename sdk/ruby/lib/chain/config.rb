@@ -43,7 +43,7 @@ module Chain
       # @return [Boolean]
       attrib :is_generator
 
-      # @!attribute [r] is_generator
+      # @!attribute [r] generator_url
       # @return [String]
       attrib :generator_url
 
