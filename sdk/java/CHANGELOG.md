@@ -10,7 +10,7 @@ Chain Core 1.1.x introduces the concept of a **receiver**, a cross-core payment 
 
 A receiver wraps a control program with other pieces of payment-related metadata, such as expiration dates. Receivers provide the basis for future payment features, such as the transfer of blinding factors for encrypted outputs, as well as off-chain proof of payment via X.509 certificates or some other cryptographic authentication scheme.
 
-Initially, receivers consist of a **control program** and an **expiration date**. Transactions that pay to a receiver after the expiration date may not be tracked by Chain Core, and application logic should regard such payments as invalid. As long as both the payer and payee to do not tamper with receiver objects, the Chain Core API will ensure that transactions that pay to expired receivers will fail to validate.
+Initially, receivers consist of a **control program** and an **expiration date**. Transactions that pay to a receiver after the expiration date may not be tracked by Chain Core, and application logic should regard such payments as invalid. As long as both the payer and payee do not tamper with receiver objects, the Chain Core API will ensure that transactions that pay to expired receivers will fail to validate.
 
 Working with receivers is very similar to working with control programs, and should require only small adjustments to your application code.
 
