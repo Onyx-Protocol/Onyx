@@ -234,7 +234,8 @@ const transactionFeedsAPI = (client) => {
     /**
      * Get one page of transaction feeds.
      *
-     * @param {Query} params={} - Pagination information.
+     * @param {Object} params={} - Pagination information.
+     * @param {Number} params.pageSize - Number of items to return in result set.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page<TransactionFeed>>} Requested page of results.
      */
@@ -244,7 +245,8 @@ const transactionFeedsAPI = (client) => {
      * Request all transaction feeds matching the specified query, calling the
      * supplied processor callback with each item individually.
      *
-     * @param {Query} params={} - Pagination information.
+     * @param {Object} params={} - Pagination information.
+     * @param {Number} params.pageSize - Number of items to return in result set.
      * @param {QueryProcessor<TransactionFeed>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or

@@ -48,8 +48,9 @@ const mockHsmKeysAPI = (client) => {
      * <br/><br/>
      * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the MockHSM.
      *
-     * @param {Query} params={} - Filter and pagination information.
-     * @param {Array.<string>} [params.aliases] - List of requested aliases, max 200.
+     * @param {Object} params={} - Filter and pagination information.
+     * @param {Array.<string>} params.aliases - List of requested aliases, max 200.
+     * @param {Number} params.pageSize - Number of items to return in result set.
      * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Page<MockHsmKey>>} Requested page of results.
      */
@@ -67,7 +68,9 @@ const mockHsmKeysAPI = (client) => {
      * <br/><br/>
      * <b>NOTE</b>: The <code>filter</code> parameter of {@link Query} is unavailable for the MockHSM.
      *
-     * @param {Query} params={} - Pagination information.
+     * @param {Object} params={} - Filter and pagination information.
+     * @param {Array.<string>} params.aliases - List of requested aliases, max 200.
+     * @param {Number} params.pageSize - Number of items to return in result set.
      * @param {QueryProcessor<MockHsmKey>} processor - Processing callback.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise} A promise resolved upon processing of all items, or
