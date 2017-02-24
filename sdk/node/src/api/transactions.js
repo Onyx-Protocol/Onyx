@@ -109,12 +109,64 @@ function checkForError(resp) {
  * DEPRECATED (as of version 1.1) Do not use this field.
  */
 
- /**
-  * @typedef {Object} TransactionOutput
-  * @global
-  *
-  *
-  */
+/**
+ * @typedef {Object} TransactionOutput
+ * @global
+ *
+ * @property {String} id
+ * The id of the output.
+ *
+ * @property {String} type
+ * The type of the output. Possible values are "control" and "retire".
+ *
+ * @property {String} purpose
+ * The purpose of the output. Possible values are "receive" and "change".
+ *
+ * @property {Number} position
+ * The output's position in a transaction's list of outputs.
+ *
+ * @property {String} assetId
+ * The id of the asset being issued or spent.
+ *
+ * @property {String} assetAlias
+ * The alias of the asset being issued or spent (possibly null).
+ *
+ * @property {Hash} assetDefinition
+ * The definition of the asset being issued or spent (possibly null).
+ *
+ * @property {Hash} assetTags
+ * The tags of the asset being issued or spent (possibly null).
+ *
+ * @property {Boolean} assetIsLocal
+ * A flag indicating whether the asset being issued or spent is local.
+ *
+ * @property {Integer} amount
+ * The number of units of the asset being issued or spent.
+ *
+ * @property {String} accountId
+ * The id of the account transferring the asset (possibly null if the
+ * input is an issuance or an unspent output is specified).
+ *
+ * @property {String} accountAlias
+ * The alias of the account transferring the asset (possibly null if the
+ * input is an issuance or an unspent output is specified).
+ *
+ * @property {String} accountTags
+ * The tags associated with the account (possibly null).
+ *
+ * @property {String} issuanceProgram
+ * A program specifying a predicate for issuing an asset (possibly null
+ * if input is not an issuance).
+ *
+ * @property {String} controlProgram
+ * The control program which must be satisfied to transfer this output.
+ *
+ * @property {Object} referenceData
+ * User specified, unstructured data embedded within an input (possibly null).
+ *
+ * @property {Boolean} isLocal
+ * A flag indicating if the input is local.
+ */
 
 /**
  * @class
