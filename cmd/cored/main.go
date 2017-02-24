@@ -126,8 +126,8 @@ func main() {
 
 	fmt.Printf("cored %s\n", config.Version)
 	fmt.Printf("production: %t\n", config.Production)
-	fmt.Printf("build_commit: %v\n", config.BuildCommit)
-	fmt.Printf("build_date: %v\n", config.BuildDate)
+	fmt.Printf("build-commit: %v\n", config.BuildCommit)
+	fmt.Printf("build-date: %v\n", config.BuildDate)
 
 	if *v {
 		return
