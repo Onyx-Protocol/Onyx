@@ -103,9 +103,9 @@ func init() {
 
 	expvar.NewString("prod").Set(prodStr)
 	expvar.NewString("version").Set(version)
-	expvar.NewString("buildtag").Set(buildTag)
-	expvar.NewString("builddate").Set(buildDate)
-	expvar.NewString("buildcommit").Set(buildCommit)
+	expvar.NewString("build_tag").Set(buildTag)
+	expvar.NewString("build_date").Set(buildDate)
+	expvar.NewString("build_commit").Set(buildCommit)
 	expvar.NewString("runtime.GOOS").Set(runtime.GOOS)
 	expvar.NewString("runtime.GOARCH").Set(runtime.GOARCH)
 	expvar.NewString("runtime.Version").Set(runtime.Version())
