@@ -76,6 +76,7 @@
 		20BC087E1DC93237002A3C1E /* makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = makefile; path = pg/src/makefile; sourceTree = "<group>"; };
 		20C5E44E1DB0A28100C8CB2D /* TaskCleaner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = TaskCleaner.swift; path = ChainCore/TaskCleaner.swift; sourceTree = "<group>"; };
 		20DED1391DD3DE9800B81D66 /* renamesha256.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; name = renamesha256.sh; path = tools/renamesha256.sh; sourceTree = "<group>"; };
+		20DED1371DD3C04900B81D66 /* updates-dev.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = "updates-dev.xml"; sourceTree = "<group>"; };
 		830658E41D536F2E00BA1752 /* Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Extensions.swift; path = ChainCore/Extensions.swift; sourceTree = "<group>"; };
 		830B4B251D1C132300F16762 /* ServerManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ServerManager.swift; path = ChainCore/ServerManager.swift; sourceTree = "<group>"; };
 		831C84AC1D771B4800FA5F59 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = ChainCore/Vendor/Sparkle.framework; sourceTree = "<group>"; };
@@ -128,6 +129,7 @@
 			isa = PBXGroup;
 			children = (
 				20A50E541DA586D900F36C00 /* updates.xml */,
+				20DED1371DD3C04900B81D66 /* updates-dev.xml */,
 			);
 			name = Updates;
 			path = updates;
@@ -344,6 +346,71 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		20DED1351DD3BDA600B81D66 /* DevRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/pg/build/include";
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/pg/build/lib";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = "-lpq";
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+			};
+			name = DevRelease;
+		};
+		20DED1361DD3BDA600B81D66 /* DevRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APP_VERSION = 1.0.2dev1;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				DB_VERSION = v1.0;
+				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/ChainCore/Vendor",
+				);
+				INFOPLIST_FILE = ChainCore/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.chain.ChainCoreApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "ChainCore/ChainCore-Bridging-Header.h";
+				SWIFT_VERSION = 3.0.1;
+				UPDATES_PATH = "updates-dev.xml";
+			};
+			name = DevRelease;
+		};
 		83FB57251D1B05F000A903A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -457,6 +524,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "ChainCore/ChainCore-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 3.0.1;
+				UPDATES_PATH = "updates-dev.xml";
 			};
 			name = Debug;
 		};
@@ -480,6 +548,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "ChainCore/ChainCore-Bridging-Header.h";
 				SWIFT_VERSION = 3.0.1;
+				UPDATES_PATH = updates.xml;
 			};
 			name = Release;
 		};
@@ -491,6 +560,7 @@
 			buildConfigurations = (
 				83FB57251D1B05F000A903A3 /* Debug */,
 				83FB57261D1B05F000A903A3 /* Release */,
+				20DED1351DD3BDA600B81D66 /* DevRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -500,6 +570,7 @@
 			buildConfigurations = (
 				83FB57281D1B05F000A903A3 /* Debug */,
 				83FB57291D1B05F000A903A3 /* Release */,
+				20DED1361DD3BDA600B81D66 /* DevRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
