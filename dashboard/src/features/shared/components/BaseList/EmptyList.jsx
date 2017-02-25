@@ -18,7 +18,7 @@ class EmptyList extends React.Component {
     } else if (this.props.showFirstTimeFlow) {
       emptyBlock = <div>
         <span className={`${styles.emptyLabel} ${styles.noResultsLabel}`}>
-          There are no {this.props.objectName}s on the blockchain
+          There are no {this.props.objectName}s
         </span>
         {this.props.firstTimeContent}
       </div>
