@@ -29,7 +29,7 @@ const usage = `
 Command deploy builds and deploys a Chain cmd
 to a remote, ubuntu vm. It requires the cmd
 name and the ip addr of the target vm. It assumes
-the name of the upstart service matches the name
+the name of the systemd service matches the name
 of the cmd. It will attempt to stop the service
 before deployment, and restart once the code is
 deployed. It uses ssh and also requires either
@@ -64,10 +64,10 @@ func main() {
 	cmd := os.Args[1]
 	addr := os.Args[2]
 	bin := mustBuild(cmd)
-	might(runOn(addr, "sudo stop "+cmd))
+	might(runOn(addr, "sudo systemctl stop "+cmd))
 	must(scpPut(addr, bin, cmd, 0755))
 	must(runOn(addr, fmt.Sprintf("sudo mv %s /usr/bin/%s", cmd, cmd)))
-	must(runOn(addr, "sudo start "+cmd))
+	must(runOn(addr, "sudo systemctl start "+cmd))
 	log.Println("SUCCESS")
 }
 
