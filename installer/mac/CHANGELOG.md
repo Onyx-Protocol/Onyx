@@ -1,5 +1,9 @@
 # Chain Core Mac Installer changelog
 
+## 1.1.0 (February 24, 2017)
+
+* Updated to Chain Core [1.1.0](../../CHANGELOG.md#1.1.0)
+
 ## 1.0.2 (December 2, 2016)
 
 * Updated to Chain Core [1.0.2](../../cmd/cored/CHANGELOG.md#1.0.2)
