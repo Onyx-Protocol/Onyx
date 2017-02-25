@@ -2,7 +2,7 @@
 
 ## Build instructions
 
-Make sure you are running macOS Sierra (10.12) and have Xcode 8. 
+Make sure you are running macOS Sierra (10.12) and have Xcode 8.
 
 1) Install [MacPorts](https://www.macports.org/install.php).
 
@@ -35,7 +35,7 @@ Make sure you do `make clean` before re-build. Later we will improve this by pat
 5. Place `Chain Core.app` in the `updates` folder directly, without extra stuff.
 6. Run `tools/update_appcast.rb`. 
 7. Edit `updates/updates.xml` to specify relevant release notes.
-8. Upload the latest `Chain_Core_X.Y.zip`, `Chain_Core.zip`, and `updates.xml` to the server specified in the `tools/update_appcast.rb`. 
+8. Upload the latest `Chain_Core_X.Y.zip`, `Chain_Core_Latest.zip`, and `updates.xml` to the server specified in the `tools/update_appcast.rb`.
 
 
 ## License

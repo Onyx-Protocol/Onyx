@@ -8,7 +8,7 @@ dirpath = File.expand_path("../updates", File.dirname(__FILE__))
 filename = "Chain Core.app"
 version = JSON.load(`plutil -convert json -o - "#{dirpath}/#{filename}/Contents/Info.plist"`)["CFBundleVersion"]
 zipname = "Chain_Core_#{version}.zip"
-latestname = "Chain_Core.zip"
+latestname = "Chain_Core_Latest.zip"
 
 system(%{rm -rf #{dirpath}/#{zipname}})
 system(%{ditto -ck --keepParent --rsrc "#{dirpath}/#{filename}" "#{dirpath}/#{zipname}"})
