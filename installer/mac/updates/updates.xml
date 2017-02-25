@@ -9,6 +9,9 @@
         <title>Chain Core Developer Edition 1.1.0</title>
         <description>
           <![CDATA[
+            <p><b>NOTE:</b> This update will create a fresh blockchain; please backup
+              any blockchain data you wish to preserve.
+            </p>
             <ul>
               <li>Update to Chain Core 1.1.0</li>
             </ul>
