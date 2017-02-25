@@ -9,7 +9,7 @@ export PATH="${PATH}:/usr/local/go/bin"
 
 tempBuildPath=`mktemp -d`
 trap "rm -rf $tempBuildPath" EXIT
-"${CHAIN}/bin/build-cored-release" cmd.cored-1.0.2 $tempBuildPath
+"${CHAIN}/bin/build-cored-release" cmd.cored-1.1.0 $tempBuildPath
 
 cp -f $tempBuildPath/cored "${TARGET_DIR}/"
 cp -f $tempBuildPath/corectl "${TARGET_DIR}/"
