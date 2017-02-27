@@ -12,9 +12,12 @@ class KeyValueTable extends React.Component {
 
   stringify(value) {
     let separator = '  '
+
     if ((Array.isArray(value) && value.length <= 1) ||
-        Object.keys(value).length <= 1) {
-      separator = null
+         Object.keys(value).length <= 1) {
+      for (let index in value) {
+        if (typeof value[index] !== 'object') separator = null
+      }
     }
 
     return JSON.stringify(value, null, separator)
