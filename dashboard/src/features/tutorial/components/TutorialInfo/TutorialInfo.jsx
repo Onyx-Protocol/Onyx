@@ -7,7 +7,7 @@ class TutorialInfo extends React.Component {
   render() {
     let objectImage
     try {
-      objectImage = require(`assets/images/empty/${this.props.image}.svg`)
+      objectImage = require(`images/empty/${this.props.image}.svg`)
     } catch (err) { /* do nothing */ }
 
     const userInput = this.props.userInput

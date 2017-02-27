@@ -20,7 +20,7 @@ class Login extends React.Component {
   }
 
   render() {
-    let logo = require('assets/images/logo-white.png')
+    let logo = require('images/logo-white.png')
 
     const {
       fields: { token },
