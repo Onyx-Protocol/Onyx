@@ -309,6 +309,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	}
 	// Start listeners
 	go pinStore.Listen(ctx, account.PinName, *dbURL)
+	go pinStore.Listen(ctx, account.ExpirePinName, *dbURL)
 	go pinStore.Listen(ctx, asset.PinName, *dbURL)
 
 	// Setup the transaction query indexer to index every transaction.
@@ -377,6 +378,10 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 			height = height - 1
 		}
 		err = pinStore.CreatePin(ctx, account.PinName, height)
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
+		}
+		err = pinStore.CreatePin(ctx, account.ExpirePinName, height)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
