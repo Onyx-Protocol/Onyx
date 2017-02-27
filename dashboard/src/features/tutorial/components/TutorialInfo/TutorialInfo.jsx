@@ -33,7 +33,9 @@ class TutorialInfo extends React.Component {
                     <td>{listItem}</td>
                   </tr>)
                 })
-                return <table className={styles.listItemContainer}>{list}</table>
+                return <table key={i} className={styles.listItemContainer}>
+                  <tbody>{list}</tbody>
+                </table>
               }
               if (contentLine['type']){
                 let replacement = userInput[contentLine['type']]
