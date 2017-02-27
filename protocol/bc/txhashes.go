@@ -39,4 +39,4 @@ func (t TxHashes) SigHash(n uint32) Hash {
 // BlockHeaderHashFunc is initialized to a function in protocol/tx
 // that can compute the hash of a blockheader. It is a variable here
 // to avoid a circular dependency between the bc and tx packages.
-var BlockHeaderHashFunc func(*BlockHeader) (Hash, error)
+var BlockHeaderHashFunc func(*BlockHeader) Hash

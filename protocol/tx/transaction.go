@@ -10,9 +10,9 @@ import (
 
 func init() {
 	bc.TxHashesFunc = TxHashes
-	bc.BlockHeaderHashFunc = func(old *bc.BlockHeader) (bc.Hash, error) {
-		hash, _, err := mapBlockHeader(old)
-		return bc.Hash(hash), err
+	bc.BlockHeaderHashFunc = func(old *bc.BlockHeader) bc.Hash {
+		hash, _ := mapBlockHeader(old)
+		return hash
 	}
 }
 

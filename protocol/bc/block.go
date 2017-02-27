@@ -169,11 +169,7 @@ func (bh *BlockHeader) Value() (driver.Value, error) {
 
 // Hash returns complete hash of the block header.
 func (bh *BlockHeader) Hash() Hash {
-	h, err := BlockHeaderHashFunc(bh)
-	if err != nil {
-		panic(err)
-	}
-	return h
+	return BlockHeaderHashFunc(bh)
 }
 
 // MarshalText fulfills the json.Marshaler interface.
