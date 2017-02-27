@@ -2,10 +2,10 @@ import React from 'react'
 
 export const navIcon = (name, styles) => {
   let active = false
-  const icon = require(`assets/images/navigation/${name}.png`)
+  const icon = require(`images/navigation/${name}.png`)
 
   try {
-    active = require(`assets/images/navigation/${name}-active.png`)
+    active = require(`images/navigation/${name}-active.png`)
   } catch (err) { /* do nothing */ }
   return (
     <span className={styles.iconWrapper}>

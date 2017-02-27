@@ -2,10 +2,10 @@
   bootstrapVersion: 3,
 
   // This gets loaded before bootstrap/variables
-  preBootstrapCustomizations: ./src/assets/styles/_bootstrap-overrides.scss,
+  preBootstrapCustomizations: ./static/styles/_bootstrap-overrides.scss,
 
   // Imports app styles into project
-  appStyles: ./src/assets/styles/app.scss,
+  appStyles: ./static/styles/app.scss,
 
   env: {
     development: {

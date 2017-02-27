@@ -83,7 +83,7 @@ for (let item of loaders) {
 }
 
 config.module.loaders = loaders
-config.sassResources = './src/assets/styles/resources.scss'
+config.sassResources = './static/styles/resources.scss'
 
 // Configure node modules which may or
 // may not be present in the browser.
@@ -95,7 +95,10 @@ config.node = {
 }
 
 config.resolve = {
-  root: path.resolve('./src'),
+  root: [
+    path.resolve('./src'),
+    path.resolve('./static'),
+  ],
   extensions: [ '', '.js', '.jsx' ]
 }
 
