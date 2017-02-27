@@ -49,7 +49,7 @@ class TutorialForm extends React.Component {
                   title = contentLine['title'].replace('STRING', replacement['alias'])
                 }
                 let rows = [
-                  <tr>
+                  <tr key={`item-title-${i}`}>
                     <td className={styles.listBullet}>{i+1}</td>
                     <td>{title}</td>
                   </tr>
@@ -79,13 +79,13 @@ class TutorialForm extends React.Component {
                       descriptionResult.push(description)
                     }
                   })
-                  rows.push(<tr className={styles.listItemDescription}>
+                  rows.push(<tr key={`item-description-${i}`} className={styles.listItemDescription}>
                     <td></td>
                     <td>{descriptionResult}</td>
                   </tr>)
                 }
 
-                return <tbody key={i} className={styles.listItemGroup}>{rows}</tbody>
+                return <tbody key={`item-${i}`} className={styles.listItemGroup}>{rows}</tbody>
               })}
             </table>
           </div>
