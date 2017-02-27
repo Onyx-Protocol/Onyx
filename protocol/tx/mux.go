@@ -1,10 +1,12 @@
 package tx
 
+import "chain/protocol/bc"
+
 type mux struct {
 	body struct {
 		Sources []valueSource
 		Program program
-		ExtHash extHash
+		ExtHash bc.Hash
 	}
 }
 

@@ -23,13 +23,9 @@ type entry interface {
 	Ordinal() int
 }
 
-type entryRef bc.Hash
-
-type extHash bc.Hash
-
 var errInvalidValue = errors.New("invalid value")
 
-func entryID(e entry) (entryRef, error) {
+func entryID(e entry) (bc.Hash, error) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 
@@ -41,13 +37,13 @@ func entryID(e entry) (entryRef, error) {
 	defer sha3pool.Put256(bh)
 	err := writeForHash(bh, e.Body())
 	if err != nil {
-		return entryRef{}, err
+		return bc.Hash{}, err
 	}
 	var innerHash bc.Hash
 	bh.Read(innerHash[:])
 	h.Write(innerHash[:])
 
-	var hash entryRef
+	var hash bc.Hash
 	h.Read(hash[:])
 
 	return hash, nil
@@ -74,12 +70,6 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case bc.Hash:
 		_, err := w.Write(v[:])
 		return errors.Wrap(err, "writing bc.Hash for hash")
-	case entryRef:
-		_, err := w.Write(v[:])
-		return errors.Wrap(err, "writing entryRef for hash")
-	case extHash:
-		_, err := w.Write(v[:])
-		return errors.Wrap(err, "writing extHash for hash")
 	case bc.AssetID:
 		_, err := w.Write(v[:])
 		return errors.Wrap(err, "writing bc.AssetID for hash")

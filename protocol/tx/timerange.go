@@ -1,9 +1,11 @@
 package tx
 
+import "chain/protocol/bc"
+
 type timeRange struct {
 	body struct {
 		MinTimeMS, MaxTimeMS uint64
-		ExtHash              extHash
+		ExtHash              bc.Hash
 	}
 }
 

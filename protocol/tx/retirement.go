@@ -6,7 +6,7 @@ type retirement struct {
 	body struct {
 		Source  valueSource
 		Data    bc.Hash
-		ExtHash extHash
+		ExtHash bc.Hash
 	}
 	ordinal int
 }

@@ -7,7 +7,7 @@ type output struct {
 		Source         valueSource
 		ControlProgram program
 		Data           bc.Hash
-		ExtHash        extHash
+		ExtHash        bc.Hash
 	}
 	ordinal int
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
+	"chain/protocol/bc"
 	"chain/testutil"
 )
 
@@ -51,7 +52,7 @@ func TestMapTx(t *testing.T) {
 					want := hashData(oldOut.ReferenceData)
 					t.Errorf("header.body.Results[%d].(*output).body.Data is %x, expected %x", i, newOut.body.Data[:], want[:])
 				}
-				if (newOut.body.ExtHash != extHash{}) {
+				if (newOut.body.ExtHash != bc.Hash{}) {
 					t.Errorf("header.body.Results[%d].(*output).body.ExtHash is %x, expected zero", i, newOut.body.ExtHash[:])
 				}
 			} else {
