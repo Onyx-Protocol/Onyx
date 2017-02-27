@@ -14,13 +14,14 @@ func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]e
 	entryMap = make(map[bc.Hash]entry)
 
 	addEntry := func(e entry) (id bc.Hash, entry entry, err error) {
-		id, err = entryID(e)
-		if err != nil {
-			err = errors.Wrapf(err, "computing entryID for %s entry", e.Type())
-			return
-		}
+		defer func() {
+			if pErr, ok := recover().(error); ok {
+				err = pErr
+			}
+		}()
+		id = entryID(e)
 		entryMap[id] = e
-		return id, e, nil
+		return id, e, err
 	}
 
 	// Loop twice over tx.Inputs, once for spends and once for
@@ -143,9 +144,9 @@ func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]e
 	return headerID, h.(*header), entryMap, nil
 }
 
-func mapBlockHeader(old *bc.BlockHeader) (bhID bc.Hash, bh *blockHeader, err error) {
+func mapBlockHeader(old *bc.BlockHeader) (bhID bc.Hash, bh *blockHeader) {
 	bh = newBlockHeader(old.Version, old.Height, old.PreviousBlockHash, old.TimestampMS, old.TransactionsMerkleRoot, old.AssetsMerkleRoot, old.ConsensusProgram)
-	bhID, err = entryID(bh)
+	bhID = entryID(bh)
 	return
 }
 
