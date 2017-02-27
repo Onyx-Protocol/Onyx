@@ -10,10 +10,20 @@ class KeyValueTable extends React.Component {
     return item.value != null && (typeof item.value == 'object')
   }
 
+  stringify(value) {
+    let separator = '  '
+    if ((Array.isArray(value) && value.length <= 1) ||
+        Object.keys(value).length <= 1) {
+      separator = null
+    }
+
+    return JSON.stringify(value, null, separator)
+  }
+
   renderValue(item) {
     let value = item.value
     if (this.shouldUsePre(item)) {
-      value = <pre className={styles.pre}>{JSON.stringify(item.value, null, '  ')}</pre>
+      value = <pre className={styles.pre}>{this.stringify(item.value)}</pre>
     }
     if (item.link) {
       value = <Link to={item.link}>{value}</Link>
