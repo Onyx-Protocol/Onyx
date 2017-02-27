@@ -14,9 +14,14 @@ import (
 	"chain/protocol/bc"
 )
 
-// PinName is used to identify the pin associated with
-// the account block processor.
-const PinName = "account"
+const (
+	// PinName is used to identify the pin associated with
+	// the account indexer block processor.
+	PinName = "account"
+	// ExpirePinName is used to identify the pin associated
+	// with the account control program expiration processor.
+	ExpirePinName = "expire-control-programs"
+)
 
 var emptyJSONObject = json.RawMessage(`{}`)
 
@@ -92,18 +97,17 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 	if m.pinStore == nil {
 		return
 	}
-	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, m.processBlock)
+	go m.pinStore.ProcessBlocks(ctx, m.chain, ExpirePinName, m.expireControlPrograms)
+	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, m.indexAccountUTXOs)
 }
 
-func (m *Manager) processBlock(ctx context.Context, b *bc.Block) error {
-	err := m.indexAccountUTXOs(ctx, b)
-	if err != nil {
-		return err
-	}
+func (m *Manager) expireControlPrograms(ctx context.Context, b *bc.Block) error {
+	<-m.pinStore.PinWaiter(PinName, b.Height)
+	<-m.pinStore.PinWaiter(query.TxPinName, b.Height)
 
 	// Delete expired account control programs.
 	const deleteQ = `DELETE FROM account_control_programs WHERE expires_at IS NOT NULL AND expires_at < $1`
-	_, err = m.db.Exec(ctx, deleteQ, b.Time())
+	_, err := m.db.Exec(ctx, deleteQ, b.Time())
 	return err
 }
 
