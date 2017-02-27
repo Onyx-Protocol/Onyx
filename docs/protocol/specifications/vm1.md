@@ -1273,7 +1273,9 @@ The unassigned codes are reserved for future expansion and have no effect on the
 * [FIPS180] ["Secure Hash Standard", United States of America, National Institute of Standards and Technology, Federal Information Processing Standard (FIPS) 180-2](http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf).
 * [FIPS202] [Federal Inf. Process. Stds. (NIST FIPS) - 202 (SHA3)](https://dx.doi.org/10.6028/NIST.FIPS.202)
 * [LEB128] [Little-Endian Base-128 Encoding](https://developers.google.com/protocol-buffers/docs/encoding)
-* [CFRG1] [Edwards-curve Digital Signature Algorithm (EdDSA) draft-irtf-cfrg-eddsa-05](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)
-* [RFC 6962](https://tools.ietf.org/html/rfc6962#section-2.1)
+* [RFC 6962]
+* [RFC 8032] 
 
+[RFC 6962]: https://tools.ietf.org/html/rfc6962#section-2.1
+[RFC 8032]: https://tools.ietf.org/html/rfc8032
 
