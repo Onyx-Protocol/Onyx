@@ -22,7 +22,9 @@ class TutorialModal extends React.Component {
                       <td>{listItem}</td>
                     </tr>)
                   })
-                  return <table className={styles.listItemContainer}>{list}</table>
+                  return <table key={i} className={styles.listItemContainer}>
+                    <tbody>{list}</tbody>
+                  </table>
                 } else {
                   let value = contentLine
                   if (typeof(value) === 'object') { value = value['line'] }
