@@ -2,6 +2,7 @@ import React from 'react'
 import styles from './KeyValueTable.scss'
 import { Section } from 'features/shared/components'
 import { Link } from 'react-router'
+import { size, sample, isArray, isObject, toPairs } from 'lodash'
 
 class KeyValueTable extends React.Component {
   shouldUsePre(item) {
@@ -11,16 +12,20 @@ class KeyValueTable extends React.Component {
   }
 
   stringify(value) {
-    let separator = '  '
+    if (isObject(value) && size(value) == 1) {
+      // Random sample will always be the lone value here
+      let sampled = sample(value)
 
-    if ((Array.isArray(value) && value.length <= 1) ||
-         Object.keys(value).length <= 1) {
-      for (let index in value) {
-        if (typeof value[index] !== 'object') separator = null
+      if (!isObject(sampled)) {
+        if (isArray(value)) return JSON.stringify(value)
+
+        // Manually construct single-key object stringify for better formatting
+        const pair = toPairs(value)[0]
+        return `{${JSON.stringify(pair[0])}: ${JSON.stringify(pair[1])}}`
       }
     }
 
-    return JSON.stringify(value, null, separator)
+    return JSON.stringify(value, null, '  ')
   }
 
   renderValue(item) {
