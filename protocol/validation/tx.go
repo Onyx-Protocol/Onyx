@@ -61,16 +61,16 @@ func badTxErrf(err error, f string, args ...interface{}) error {
 // CheckTxWellFormed. This should have happened when the tx was added
 // to the pool.
 //
-// ConfirmTx must not mutate the snapshot or the block.
-func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, block *bc.Block, tx *bc.Tx) error {
-	if tx.Version < 1 || tx.Version > block.Version {
-		return badTxErrf(errTxVersion, "unknown transaction version %d for block version %d", tx.Version, block.Version)
+// ConfirmTx must not mutate the snapshot.
+func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, blockVersion, blockTimestampMS uint64, tx *bc.Tx) error {
+	if tx.Version < 1 || tx.Version > blockVersion {
+		return badTxErrf(errTxVersion, "unknown transaction version %d for block version %d", tx.Version, blockVersion)
 	}
 
-	if block.TimestampMS < tx.MinTime {
+	if blockTimestampMS < tx.MinTime {
 		return badTxErr(errNotYet)
 	}
-	if tx.MaxTime > 0 && block.TimestampMS > tx.MaxTime {
+	if tx.MaxTime > 0 && blockTimestampMS > tx.MaxTime {
 		return badTxErr(errTooLate)
 	}
 
@@ -88,7 +88,7 @@ func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, block *bc.Blo
 			if tx.MinTime == 0 || tx.MaxTime == 0 {
 				return badTxErr(errTimelessIssuance)
 			}
-			if block.TimestampMS < tx.MinTime || block.TimestampMS > tx.MaxTime {
+			if blockTimestampMS < tx.MinTime || blockTimestampMS > tx.MaxTime {
 				return badTxErr(errIssuanceTime)
 			}
 			iHash, err := tx.IssuanceHash(i)

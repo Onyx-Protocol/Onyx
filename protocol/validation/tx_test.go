@@ -17,6 +17,7 @@ func TestUniqueIssuance(t *testing.T) {
 	trueProg := []byte{byte(vm.OP_TRUE)}
 	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyStringHash)
 	now := time.Now()
+	nowMS := bc.Millis(now)
 	issuanceInp := bc.NewIssuanceInput(nil, 1, nil, initialBlockHash, trueProg, nil, nil)
 
 	// Transaction with empty nonce (and no other inputs) is invalid
@@ -24,7 +25,7 @@ func TestUniqueIssuance(t *testing.T) {
 		Version: 1,
 		Inputs:  []*bc.TxInput{issuanceInp},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
-		MinTime: bc.Millis(now),
+		MinTime: nowMS,
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
 	if err == nil {
@@ -38,7 +39,7 @@ func TestUniqueIssuance(t *testing.T) {
 		Version: 1,
 		Inputs:  []*bc.TxInput{issuanceInp},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
-		MinTime: bc.Millis(now),
+		MinTime: nowMS,
 	})
 	if CheckTxWellFormed(tx) == nil {
 		t.Errorf("expected tx with unbounded time window to fail validation")
@@ -59,7 +60,7 @@ func TestUniqueIssuance(t *testing.T) {
 		Version: 1,
 		Inputs:  []*bc.TxInput{issuanceInp, issuanceInp},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 2, trueProg, nil)},
-		MinTime: bc.Millis(now),
+		MinTime: nowMS,
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
 	if CheckTxWellFormed(tx) == nil {
@@ -71,7 +72,7 @@ func TestUniqueIssuance(t *testing.T) {
 		Version: 1,
 		Inputs:  []*bc.TxInput{issuanceInp},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
-		MinTime: bc.Millis(now),
+		MinTime: nowMS,
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
 	err = CheckTxWellFormed(tx)
@@ -108,14 +109,7 @@ func TestUniqueIssuance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	block := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:     1,
-			TimestampMS: bc.Millis(now),
-		},
-	}
-
-	err = ConfirmTx(snapshot, initialBlockHash, block, tx)
+	err = ConfirmTx(snapshot, initialBlockHash, 1, nowMS, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,14 +132,14 @@ func TestUniqueIssuance(t *testing.T) {
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(asset2ID, 1, trueProg, nil),
 		},
-		MinTime: bc.Millis(now),
+		MinTime: nowMS,
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
 	err = CheckTxWellFormed(tx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ConfirmTx(snapshot, initialBlockHash, block, tx)
+	err = ConfirmTx(snapshot, initialBlockHash, 1, nowMS, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +155,7 @@ func TestUniqueIssuance(t *testing.T) {
 		t.Errorf("expected input with non-empty nonce to be added to issuance memory")
 	}
 	// Adding it again should fail
-	if ConfirmTx(snapshot, initialBlockHash, block, tx) == nil {
+	if ConfirmTx(snapshot, initialBlockHash, 1, nowMS, tx) == nil {
 		t.Errorf("expected adding duplicate issuance tx to fail")
 	}
 }
@@ -925,13 +919,7 @@ func TestValidateInvalidIssuances(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		block := &bc.Block{
-			BlockHeader: bc.BlockHeader{
-				Version:     1,
-				TimestampMS: c.timestamp,
-			},
-		}
-		err := ConfirmTx(state.Empty(), initialBlockHash, block, &c.tx)
+		err := ConfirmTx(state.Empty(), initialBlockHash, 1, c.timestamp, &c.tx)
 		if !c.ok && errors.Root(err) != ErrBadTx {
 			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue
@@ -972,25 +960,19 @@ func TestConfirmTx(t *testing.T) {
 	}
 
 	cases := []struct {
-		blockheader *bc.BlockHeader
-		tx          *bc.TxData
-		suberr      error
-		doApply     bool
+		blockTimestampMS uint64
+		tx               *bc.TxData
+		suberr           error
+		doApply          bool
 	}{
 		{
-			blockheader: &bc.BlockHeader{
-				Version: 1,
-			},
 			tx: &bc.TxData{
 				Version: 2,
 			},
 			suberr: errTxVersion,
 		},
 		{
-			blockheader: &bc.BlockHeader{
-				Version:     1,
-				TimestampMS: 10,
-			},
+			blockTimestampMS: 10,
 			tx: &bc.TxData{
 				Version: 1,
 				MinTime: 11,
@@ -998,10 +980,7 @@ func TestConfirmTx(t *testing.T) {
 			suberr: errNotYet,
 		},
 		{
-			blockheader: &bc.BlockHeader{
-				Version:     1,
-				TimestampMS: 10,
-			},
+			blockTimestampMS: 10,
 			tx: &bc.TxData{
 				Version: 1,
 				MaxTime: 9,
@@ -1009,9 +988,6 @@ func TestConfirmTx(t *testing.T) {
 			suberr: errTooLate,
 		},
 		{
-			blockheader: &bc.BlockHeader{
-				Version: 1,
-			},
 			tx: &bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
@@ -1029,9 +1005,6 @@ func TestConfirmTx(t *testing.T) {
 			suberr: errWrongBlockchain,
 		},
 		{
-			blockheader: &bc.BlockHeader{
-				Version: 1,
-			},
 			tx: &bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
@@ -1046,9 +1019,6 @@ func TestConfirmTx(t *testing.T) {
 			suberr: errTimelessIssuance,
 		},
 		{
-			blockheader: &bc.BlockHeader{
-				Version: 1,
-			},
 			tx: &bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
@@ -1063,9 +1033,6 @@ func TestConfirmTx(t *testing.T) {
 			suberr: errInvalidOutput,
 		},
 		{
-			blockheader: &bc.BlockHeader{
-				Version: 1,
-			},
 			tx: &bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
@@ -1083,11 +1050,8 @@ func TestConfirmTx(t *testing.T) {
 	}
 	for i, c := range cases {
 		var initialBlockHash bc.Hash
-		block := &bc.Block{
-			BlockHeader: *c.blockheader,
-		}
 		tx := bc.NewTx(*c.tx)
-		err := ConfirmTx(snapshot, initialBlockHash, block, tx)
+		err := ConfirmTx(snapshot, initialBlockHash, 1, c.blockTimestampMS, tx)
 		if c.suberr == nil {
 			if err != nil {
 				t.Errorf("case %d: got error %s, want no error", i, err)
@@ -1101,7 +1065,7 @@ func TestConfirmTx(t *testing.T) {
 				}
 				// Apply succeeded, now try to confirm again - it should fail
 				// with "invalid output."
-				err = ConfirmTx(snapshot, initialBlockHash, block, tx)
+				err = ConfirmTx(snapshot, initialBlockHash, 1, c.blockTimestampMS, tx)
 				if err == nil {
 					t.Errorf("case %d: confirm and apply succeeded, second confirm succeeded unexpectedly", i)
 					continue

@@ -74,7 +74,7 @@ func ValidateBlock(ctx context.Context, snapshot *state.Snapshot, initialBlockHa
 		// TODO(erykwalder): consider writing to a copy of the state tree
 		// of the one provided and make the caller call ApplyBlock as well
 		for _, tx := range block.Transactions {
-			err = ConfirmTx(snapshot, initialBlockHash, block, tx)
+			err = ConfirmTx(snapshot, initialBlockHash, block.Version, block.TimestampMS, tx)
 			if err != nil {
 				return err
 			}
