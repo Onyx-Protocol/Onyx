@@ -4,10 +4,8 @@ import { SelectField, XpubField } from 'features/shared/components'
 const rangeOptions = [1,2,3,4,5,6].map(val => ({label: val, value: val}))
 
 class KeyConfiguration extends React.Component {
-  constructor(props) {
-    super(props)
-
-    this.state = { keys: 1 }
+  componentWillMount() {
+    this.setState({ keys: 1 })
     this.props.xpubs.addField()
   }
 
