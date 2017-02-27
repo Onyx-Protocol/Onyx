@@ -88,7 +88,7 @@ func TestCheckSig(t *testing.T) {
 
 func TestCryptoOps(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
-		Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.OutputID{}, nil, bc.AssetID{}, 5, nil, nil)},
+		Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, nil, bc.AssetID{}, 5, nil, nil)},
 		Outputs: []*bc.TxOutput{},
 	})
 

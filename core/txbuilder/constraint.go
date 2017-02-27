@@ -46,11 +46,11 @@ func (t timeConstraint) code() []byte {
 
 // outpointConstraint requires the outputID (and therefore, the outpoint) being spent to equal the
 // given value.
-type outputIDConstraint bc.OutputID
+type outputIDConstraint bc.Hash
 
 func (o outputIDConstraint) code() []byte {
 	builder := vmutil.NewBuilder()
-	builder.AddData(o.Bytes())
+	builder.AddData(o[:])
 	builder.AddOp(vm.OP_OUTPUTID)
 	builder.AddOp(vm.OP_EQUAL)
 	return builder.Program

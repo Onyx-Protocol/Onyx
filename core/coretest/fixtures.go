@@ -45,7 +45,7 @@ func CreateAsset(ctx context.Context, t testing.TB, assets *asset.Registry, def 
 	return asset.AssetID
 }
 
-func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, assets *asset.Registry, accounts *account.Manager, assetID bc.AssetID, amount uint64, accountID string) (*bc.TxOutput, bc.OutputID) {
+func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, assets *asset.Registry, accounts *account.Manager, assetID bc.AssetID, amount uint64, accountID string) (*bc.TxOutput, bc.Hash) {
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
 
 	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{

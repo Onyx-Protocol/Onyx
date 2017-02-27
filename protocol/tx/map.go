@@ -33,7 +33,7 @@ func mapTx(tx *bc.TxData) (headerID entryRef, hdr *header, entryMap map[entryRef
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*bc.SpendInput); ok {
 			var spID entryRef
-			spID, _, err = addEntry(newSpend(entryRef(oldSp.SpentOutputID.Hash), hashData(inp.ReferenceData), i))
+			spID, _, err = addEntry(newSpend(entryRef(oldSp.SpentOutputID), hashData(inp.ReferenceData), i))
 			if err != nil {
 				err = errors.Wrapf(err, "adding spend entry for input %d", i)
 				return

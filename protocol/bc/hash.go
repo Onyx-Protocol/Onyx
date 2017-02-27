@@ -110,3 +110,13 @@ func writeFastHash(w io.Writer, d []byte) error {
 	_, err := blockchain.WriteVarstr31(w, h[:])
 	return err
 }
+
+// WriteTo writes p to w.
+func (h *Hash) WriteTo(w io.Writer) (int64, error) {
+	n, err := w.Write(h[:])
+	return int64(n), err
+}
+
+func (h *Hash) readFrom(r io.Reader) (int, error) {
+	return io.ReadFull(r, h[:])
+}
