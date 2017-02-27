@@ -18,18 +18,20 @@ func init() {
 
 // TxHashes returns all hashes needed for validation and state updates.
 func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
-	txid, header, entries, err := mapTx(oldTx)
+	headerRef, entries, err := mapTx(oldTx)
 	if err != nil {
 		return nil, errors.Wrap(err, "mapping old transaction to new")
 	}
 
 	hashes = new(bc.TxHashes)
-	hashes.ID = bc.Hash(txid)
+	hashes.ID = bc.Hash(headerRef.Hash)
+
+	header := headerRef.entry.(*header)
 
 	// ResultHashes
 	hashes.ResultHashes = make([]bc.Hash, len(header.body.Results))
-	for i, resultHash := range header.body.Results {
-		hashes.ResultHashes[i] = bc.Hash(resultHash)
+	for i, resultRef := range header.body.Results {
+		hashes.ResultHashes[i] = resultRef.Hash
 	}
 
 	hashes.VMContexts = make([]*bc.VMContext, len(oldTx.Inputs))
@@ -38,14 +40,10 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 		switch ent := ent.(type) {
 		case *nonce:
 			// TODO: check time range is within network-defined limits
-			trID := ent.body.TimeRange
-			trEntry, ok := entries[trID]
+			trRef := ent.body.TimeRange
+			tr, ok := trRef.entry.(*timeRange)
 			if !ok {
-				return nil, fmt.Errorf("nonce entry refers to nonexistent timerange entry")
-			}
-			tr, ok := trEntry.(*timeRange)
-			if !ok {
-				return nil, fmt.Errorf("nonce entry refers to %s entry, should be timerange", trEntry.Type())
+				return nil, fmt.Errorf("nonce entry refers to %s entry, should be timerange", trRef.entry.Type())
 			}
 			iss := struct {
 				ID           bc.Hash
@@ -55,12 +53,12 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 
 		case *issuance:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.Data, ent.body.Data)
-			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
+			vmc.NonceID = &ent.body.Anchor.Hash
 			hashes.VMContexts[ent.Ordinal()] = vmc
 
 		case *spend:
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.Data, ent.body.Data)
-			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
+			vmc.OutputID = &ent.body.SpentOutput.Hash
 			hashes.VMContexts[ent.Ordinal()] = vmc
 		}
 	}

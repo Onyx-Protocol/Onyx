@@ -1,4 +1,4 @@
-package vm
+package vm_test
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 
 	"chain/errors"
 	"chain/protocol/bc"
+	. "chain/protocol/vm"
 	"chain/testutil"
 )
 
@@ -152,13 +153,13 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 		fmt.Printf("* case %d, prog [%s] [%x]\n", i, progSrc, prog)
 		trace := new(tracebuf)
 		TraceOut = trace
-		vm := &virtualMachine{
-			program:   prog,
-			runLimit:  initialRunLimit,
-			dataStack: append([][]byte{}, c.args...),
-		}
-		err = vm.run()
-		if err == nil && vm.falseResult() {
+		vm := NewVM(&VM{
+			Program:   prog,
+			RunLimit:  InitialRunLimit,
+			DataStack: append([][]byte{}, c.args...),
+		})
+		err = RunVM(vm)
+		if err == nil && IsFalseResult(vm) {
 			err = ErrFalseVMResult
 		}
 		if expectOK && err != nil {
@@ -224,9 +225,6 @@ func TestVerifyTxInput(t *testing.T) {
 			nil,
 		),
 		wantErr: ErrRunLimitExceeded,
-	}, {
-		input:   &bc.TxInput{},
-		wantErr: ErrUnsupportedTx,
 	}}
 
 	for i, c := range cases {
@@ -279,17 +277,18 @@ func TestVerifyBlockHeader(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	cases := []struct {
-		vm      *virtualMachine
+		vm      *VM
 		wantErr error
 	}{{
-		vm: &virtualMachine{runLimit: 50000, program: []byte{byte(OP_TRUE)}},
+		vm: &VM{RunLimit: 50000, Program: []byte{byte(OP_TRUE)}},
 	}, {
-		vm:      &virtualMachine{runLimit: 50000, program: []byte{byte(OP_ADD)}},
+		vm:      &VM{RunLimit: 50000, Program: []byte{byte(OP_ADD)}},
 		wantErr: ErrDataStackUnderflow,
 	}}
 
 	for i, c := range cases {
-		gotErr := c.vm.run()
+		vm := NewVM(c.vm)
+		gotErr := RunVM(vm)
 
 		if gotErr != c.wantErr {
 			t.Errorf("run test %d: got err = %v want %v", i, gotErr, c.wantErr)
@@ -304,118 +303,119 @@ func TestRun(t *testing.T) {
 
 func TestStep(t *testing.T) {
 	cases := []struct {
-		startVM *virtualMachine
-		wantVM  *virtualMachine
+		startVM *VM
+		wantVM  *VM
 		wantErr error
 	}{{
-		startVM: &virtualMachine{
-			program:  []byte{byte(OP_TRUE)},
-			runLimit: 50000,
+		startVM: &VM{
+			Program:  []byte{byte(OP_TRUE)},
+			RunLimit: 50000,
 		},
-		wantVM: &virtualMachine{
-			program:   []byte{byte(OP_TRUE)},
-			runLimit:  49990,
-			dataStack: [][]byte{{1}},
-			pc:        1,
-			nextPC:    1,
-			data:      []byte{1},
-		},
-	}, {
-		startVM: &virtualMachine{
-			program:   []byte{byte(OP_TRUE), byte(OP_JUMP), byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
-			runLimit:  49990,
-			dataStack: [][]byte{},
-			pc:        1,
-		},
-		wantVM: &virtualMachine{
-			program:      []byte{byte(OP_TRUE), byte(OP_JUMP), byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
-			runLimit:     49989,
-			dataStack:    [][]byte{},
-			data:         []byte{byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
-			pc:           255,
-			nextPC:       255,
-			deferredCost: 0,
+		wantVM: &VM{
+			Program:   []byte{byte(OP_TRUE)},
+			RunLimit:  49990,
+			DataStack: [][]byte{{1}},
+			PC:        1,
+			NextPC:    1,
+			Data:      []byte{1},
 		},
 	}, {
-		startVM: &virtualMachine{
-			program:   []byte{byte(OP_TRUE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
-			runLimit:  49995,
-			dataStack: [][]byte{{1}},
-			pc:        1,
+		startVM: &VM{
+			Program:   []byte{byte(OP_TRUE), byte(OP_JUMP), byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
+			RunLimit:  49990,
+			DataStack: [][]byte{},
+			PC:        1,
 		},
-		wantVM: &virtualMachine{
-			program:      []byte{byte(OP_TRUE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
-			runLimit:     50003,
-			dataStack:    [][]byte{},
-			pc:           0,
-			nextPC:       0,
-			data:         []byte{byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
-			deferredCost: -9,
-		},
-	}, {
-		startVM: &virtualMachine{
-			program:   []byte{byte(OP_FALSE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
-			runLimit:  49995,
-			dataStack: [][]byte{{}},
-			pc:        1,
-		},
-		wantVM: &virtualMachine{
-			program:      []byte{byte(OP_FALSE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
-			runLimit:     50002,
-			dataStack:    [][]byte{},
-			pc:           6,
-			nextPC:       6,
-			data:         []byte{byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
-			deferredCost: -8,
+		wantVM: &VM{
+			Program:      []byte{byte(OP_TRUE), byte(OP_JUMP), byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
+			RunLimit:     49989,
+			DataStack:    [][]byte{},
+			Data:         []byte{byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
+			PC:           255,
+			NextPC:       255,
+			DeferredCost: 0,
 		},
 	}, {
-		startVM: &virtualMachine{
-			program:   []byte{255},
-			runLimit:  50000,
-			dataStack: [][]byte{},
+		startVM: &VM{
+			Program:   []byte{byte(OP_TRUE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			RunLimit:  49995,
+			DataStack: [][]byte{{1}},
+			PC:        1,
 		},
-		wantVM: &virtualMachine{
-			program:   []byte{255},
-			runLimit:  49999,
-			pc:        1,
-			nextPC:    1,
-			dataStack: [][]byte{},
+		wantVM: &VM{
+			Program:      []byte{byte(OP_TRUE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			RunLimit:     50003,
+			DataStack:    [][]byte{},
+			PC:           0,
+			NextPC:       0,
+			Data:         []byte{byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			DeferredCost: -9,
 		},
 	}, {
-		startVM: &virtualMachine{
-			program:  []byte{byte(OP_ADD)},
-			runLimit: 50000,
+		startVM: &VM{
+			Program:   []byte{byte(OP_FALSE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			RunLimit:  49995,
+			DataStack: [][]byte{{}},
+			PC:        1,
+		},
+		wantVM: &VM{
+			Program:      []byte{byte(OP_FALSE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			RunLimit:     50002,
+			DataStack:    [][]byte{},
+			PC:           6,
+			NextPC:       6,
+			Data:         []byte{byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			DeferredCost: -8,
+		},
+	}, {
+		startVM: &VM{
+			Program:   []byte{255},
+			RunLimit:  50000,
+			DataStack: [][]byte{},
+		},
+		wantVM: &VM{
+			Program:   []byte{255},
+			RunLimit:  49999,
+			PC:        1,
+			NextPC:    1,
+			DataStack: [][]byte{},
+		},
+	}, {
+		startVM: &VM{
+			Program:  []byte{byte(OP_ADD)},
+			RunLimit: 50000,
 		},
 		wantErr: ErrDataStackUnderflow,
 	}, {
-		startVM: &virtualMachine{
-			program:  []byte{byte(OP_INDEX)},
-			runLimit: 1,
-			tx:       &bc.Tx{},
+		startVM: &VM{
+			Program:  []byte{byte(OP_INDEX)},
+			RunLimit: 1,
+			TX:       &bc.Tx{},
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
-		startVM: &virtualMachine{
-			program:           []byte{255},
-			runLimit:          100,
-			expansionReserved: true,
+		startVM: &VM{
+			Program:           []byte{255},
+			RunLimit:          100,
+			ExpansionReserved: true,
 		},
 		wantErr: ErrDisallowedOpcode,
 	}, {
-		startVM: &virtualMachine{
-			program:  []byte{255},
-			runLimit: 100,
+		startVM: &VM{
+			Program:  []byte{255},
+			RunLimit: 100,
 		},
-		wantVM: &virtualMachine{
-			program:  []byte{255},
-			runLimit: 99,
-			pc:       1,
-			nextPC:   1,
+		wantVM: &VM{
+			Program:  []byte{255},
+			RunLimit: 99,
+			PC:       1,
+			NextPC:   1,
 		},
 	}}
 
 	for i, c := range cases {
-		gotErr := c.startVM.step()
+		vm := NewVM(c.startVM)
+		gotErr := StepVM(vm)
 
 		if gotErr != c.wantErr {
 			t.Errorf("step test %d: got err = %v want %v", i, gotErr, c.wantErr)
@@ -468,7 +468,7 @@ func TestVerifyTxInputQuickCheck(t *testing.T) {
 		tx := bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, witnesses, bc.AssetID{}, 10, program, nil)},
 		})
-		verifyTxInput(tx, 0)
+		VerifyTxInput(tx, 0)
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -498,7 +498,7 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 				Witness: witnesses,
 			},
 		}}
-		verifyBlockHeader(prev, block)
+		VerifyBlockHeader(prev, block)
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
