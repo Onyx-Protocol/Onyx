@@ -12,7 +12,7 @@ if (process.env.NODE_ENV === 'production') {
   basename = '/dashboard'
 } else {
   apiHost = process.env.API_URL || 'http://localhost:3000/api'
-  basename = '/'
+  basename = ''
 }
 
 export const chainClient = () => new chainSdk.Client(
