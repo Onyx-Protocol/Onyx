@@ -99,6 +99,7 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 }
 
 func (m *Manager) expireControlPrograms(ctx context.Context, b *bc.Block) error {
+	<-m.pinStore.PinWaiter(PinName, b.Height)
 	<-m.pinStore.PinWaiter(query.TxPinName, b.Height)
 
 	// Delete expired account control programs.
