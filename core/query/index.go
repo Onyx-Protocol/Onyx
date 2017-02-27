@@ -171,7 +171,7 @@ func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *bc.Block, anno
 			inputReferenceDatas = append(inputReferenceDatas, string(*in.ReferenceData))
 			inputLocals = append(inputLocals, bool(in.IsLocal))
 			if in.SpentOutputID != nil {
-				inputSpentOutputIDs = append(inputSpentOutputIDs, in.SpentOutputID.Hash[:])
+				inputSpentOutputIDs = append(inputSpentOutputIDs, in.SpentOutputID[:])
 			} else {
 				inputSpentOutputIDs = append(inputSpentOutputIDs, nil)
 			}
@@ -204,16 +204,15 @@ func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *bc.Block, anno
 	return errors.Wrap(err, "batch inserting annotated inputs")
 }
 
-func (ind *Indexer) loadOutpoints(ctx context.Context, outputIDs pq.ByteaArray) (map[bc.OutputID]bc.Outpoint, error) {
+func (ind *Indexer) loadOutpoints(ctx context.Context, outputIDs pq.ByteaArray) (map[bc.Hash]bc.Outpoint, error) {
 	const q = `
 		SELECT tx_hash, output_index, output_id
 		FROM annotated_outputs
 		WHERE output_id IN (SELECT unnest($1::bytea[]))
 	`
-	results := make(map[bc.OutputID]bc.Outpoint)
+	results := make(map[bc.Hash]bc.Outpoint)
 	err := pg.ForQueryRows(ctx, ind.db, q, outputIDs, func(txHash bc.Hash, outputIndex uint32, outid bc.Hash) {
-		oid := bc.OutputID{outid}
-		results[oid] = bc.Outpoint{
+		results[outid] = bc.Outpoint{
 			Hash:  txHash,
 			Index: outputIndex,
 		}
@@ -255,7 +254,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		}
 
 		for outIndex, out := range annotatedTxs[pos].Outputs {
-			outputIDs = append(outputIDs, out.OutputID.Hash[:])
+			outputIDs = append(outputIDs, out.OutputID[:])
 			outputTxPositions = append(outputTxPositions, uint32(pos))
 			outputIndexes = append(outputIndexes, uint32(outIndex))
 			outputTxHashes = append(outputTxHashes, tx.ID[:])

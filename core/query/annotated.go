@@ -34,7 +34,7 @@ type AnnotatedInput struct {
 	Amount          uint64             `json:"amount"`
 	IssuanceProgram chainjson.HexBytes `json:"issuance_program,omitempty"`
 	ControlProgram  chainjson.HexBytes `json:"-"`
-	SpentOutputID   *bc.OutputID       `json:"spent_output_id,omitempty"`
+	SpentOutputID   *bc.Hash           `json:"spent_output_id,omitempty"`
 	SpentOutput     *SpentOutput       `json:"spent_output,omitempty"`
 	AccountID       string             `json:"account_id,omitempty"`
 	AccountAlias    string             `json:"account_alias,omitempty"`
@@ -46,7 +46,7 @@ type AnnotatedInput struct {
 type AnnotatedOutput struct {
 	Type            string             `json:"type"`
 	Purpose         string             `json:"purpose,omitempty"`
-	OutputID        bc.OutputID        `json:"id"`
+	OutputID        bc.Hash            `json:"id"`
 	TransactionID   *bc.Hash           `json:"transaction_id,omitempty"`
 	Position        uint32             `json:"position"`
 	AssetID         bc.AssetID         `json:"asset_id"`
@@ -120,7 +120,7 @@ func (b *Bool) UnmarshalJSON(raw []byte) error {
 
 var emptyJSONObject = json.RawMessage(`{}`)
 
-func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedTx {
+func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, outpoints map[bc.Hash]bc.Outpoint) *AnnotatedTx {
 	tx := &AnnotatedTx{
 		ID:            orig.ID,
 		Timestamp:     b.Time(),
@@ -145,7 +145,7 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, ou
 	return tx
 }
 
-func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedInput {
+func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.Hash]bc.Outpoint) *AnnotatedInput {
 	in := &AnnotatedInput{
 		AssetID:         orig.AssetID(),
 		Amount:          orig.Amount(),

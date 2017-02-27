@@ -72,7 +72,7 @@ func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
 }
 
 type rawOutput struct {
-	bc.OutputID
+	OutputID bc.Hash
 	bc.AssetAmount
 	ControlProgram []byte
 	txHash         bc.Hash

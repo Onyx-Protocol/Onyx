@@ -95,7 +95,7 @@ func (a *spendAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) e
 	return nil
 }
 
-func (m *Manager) NewSpendUTXOAction(outputID bc.OutputID) txbuilder.Action {
+func (m *Manager) NewSpendUTXOAction(outputID bc.Hash) txbuilder.Action {
 	return &spendUTXOAction{
 		accounts: m,
 		OutputID: &outputID,
@@ -110,16 +110,16 @@ func (m *Manager) DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
 
 type spendUTXOAction struct {
 	accounts *Manager
-	OutputID *bc.OutputID `json:"output_id"`
-	TxHash   *bc.Hash     `json:"transaction_id"`
-	TxOut    *uint32      `json:"position"`
+	OutputID *bc.Hash `json:"output_id"`
+	TxHash   *bc.Hash `json:"transaction_id"`
+	TxOut    *uint32  `json:"position"`
 
 	ReferenceData chainjson.Map `json:"reference_data"`
 	ClientToken   *string       `json:"client_token"`
 }
 
 func (a *spendUTXOAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) error {
-	var outid bc.OutputID
+	var outid bc.Hash
 
 	if a.OutputID != nil {
 		outid = *a.OutputID

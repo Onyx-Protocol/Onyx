@@ -302,7 +302,7 @@ func (t *TxInput) writeInputWitness(w io.Writer) error {
 	return nil
 }
 
-func (t *TxInput) SpentOutputID() (o OutputID) {
+func (t *TxInput) SpentOutputID() (o Hash) {
 	if si, ok := t.TypedInput.(*SpendInput); ok {
 		o = si.SpentOutputID
 	}
