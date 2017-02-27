@@ -44,4 +44,4 @@ if (!exists(dllManifestPath)) {
 }
 
 // the BUILDING_DLL env var is set to avoid confusing the development environment
-exec('webpack --display-chunks --display-error-details --color --config src/config/webpack.dll.js')
+exec('webpack --display-chunks --display-error-details --color --config webpack/webpack.dll.js')
