@@ -19,11 +19,11 @@ RUN apk --no-cache add bash clang git g++ make nodejs openjdk8 python perl \
     && git clone https://github.com/GoASTScanner/gas $(go env GOPATH)/src/github.com/GoASTScanner/gas \
     && cd $(go env GOPATH)/src/github.com/GoASTScanner/gas \
     && git reset --hard d30c5cde3613e9ba0129febda849e4d4df1d57cd \
-    && go install github.com/GoASTScanner/gas
-    && curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-02-25
-    && ~/.cargo/bin/cargo install rustfmt
-    && ~/.cargo/bin/cargo install clippy
-    && ~/.cargo/bin/cargo install cargo-audit
+    && go install github.com/GoASTScanner/gas \
+    && curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-02-25 \
+    && ~/.cargo/bin/cargo install rustfmt \
+    && ~/.cargo/bin/cargo install clippy \
+    && ~/.cargo/bin/cargo install cargo-audit \
 
 ADD bin /usr/bin
 ENV CHAIN ${GOPATH:-$HOME/go}/src/chain
