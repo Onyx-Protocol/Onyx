@@ -3,7 +3,6 @@
 ## List of versioned packages
 
 - `cmd.cored`
-- `cmd.corectl`: Historically this has been released in lockstep with `cmd.cored`. For the time being, it's not necessary to keep separate branches/tags for this package.
 - `cmd.signerd`
 - `docker.de`
 - `docs`: Markdown documentation, not including SDK-specific docs.
