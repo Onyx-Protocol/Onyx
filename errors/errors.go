@@ -41,6 +41,10 @@ func Root(e error) error {
 // The argument stackSkip is the number of stack frames to ascend when
 // generating stack straces, where 0 is the caller of wrap.
 func wrap(err error, msg string, stackSkip int) error {
+	if err == nil {
+		return nil
+	}
+
 	werr, ok := err.(wrapperError)
 	if !ok {
 		werr.root = err
