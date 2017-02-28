@@ -299,42 +299,6 @@ func TestInvalidIssuance(t *testing.T) {
 	}
 }
 
-func TestEmptyOutpoint(t *testing.T) {
-	g := Outpoint{}.String()
-	w := "0000000000000000000000000000000000000000000000000000000000000000:0"
-	if g != w {
-		t.Errorf("Empty outpoint has incorrect string representation '%v'", g)
-	}
-}
-
-func TestIssuanceOutpoint(t *testing.T) {
-	hex := "fbc27d22c48b9b2533c4e97f7863f3dca805b8924ea2b7c6783f3fd99fdb2c29"
-	o := Outpoint{
-		Hash:  mustDecodeHash(hex),
-		Index: 0xffffffff,
-	}
-	if got := o.String(); got != hex+":4294967295" {
-		t.Errorf("Issuance outpoint has incorrect string representation '%v'", got)
-	}
-}
-
-func TestOutpointWriteErr(t *testing.T) {
-	var w errWriter
-	var p Outpoint
-	ew := errors.NewWriter(w)
-	p.WriteTo(ew)
-	err := ew.Err()
-	if err == nil {
-		t.Error("outpoint WriteTo(w) err = nil; want non-nil error")
-	}
-}
-
-type errWriter struct{}
-
-func (errWriter) Write(p []byte) (int, error) {
-	return 0, errors.New("bad write")
-}
-
 func BenchmarkTxWriteToTrue(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < b.N; i++ {
@@ -407,12 +371,5 @@ func BenchmarkAssetAmountWriteTo(b *testing.B) {
 	aa := AssetAmount{}
 	for i := 0; i < b.N; i++ {
 		aa.writeTo(ioutil.Discard)
-	}
-}
-
-func BenchmarkOutpointWriteTo(b *testing.B) {
-	o := Outpoint{}
-	for i := 0; i < b.N; i++ {
-		o.WriteTo(ioutil.Discard)
 	}
 }

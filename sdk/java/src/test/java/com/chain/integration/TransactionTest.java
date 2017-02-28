@@ -97,7 +97,6 @@ public class TransactionTest {
     assertNull(input.accountTags);
     assertEquals("yes", input.isLocal);
     assertNull(input.spentOutputId);
-    assertNull(input.spentOutput);
     assertNotNull(input.issuanceProgram);
     assertNotNull(input.referenceData);
 
@@ -148,9 +147,6 @@ public class TransactionTest {
 
     input = tx.inputs.get(0);
     assertNotNull(input.spentOutputId);
-    assertNotNull(input.spentOutput);
-    assertNotNull(input.spentOutput.position);
-    assertNotNull(input.spentOutput.transactionId);
 
     Transaction.Template retirement =
         new Transaction.Builder()

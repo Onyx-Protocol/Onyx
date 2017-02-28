@@ -279,10 +279,6 @@ class TransactionBuilder {
    *
    * @param {Object} params - Action parameters.
    * @param {String} params.outputId - ID of the transaction output to be spent.
-   * @param {String} params.transactionId - DEPRECATED in version 1.1. Transaction ID specifying the
-   *                                        transaction to select an output from.
-   * @param {Number} params.position - DEPRECATED in version 1.1. Position of the output within the
-   *                                   transaction to be spent.
    */
   spendUnspentOutput(params) {
     this.actions.push(Object.assign({}, params, {type: 'spend_account_unspent_output'}))
