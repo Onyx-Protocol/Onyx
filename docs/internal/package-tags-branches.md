@@ -2,12 +2,12 @@
 
 ## List of versioned packages
 
-- `cmd.cored`
-- `cmd.signerd`
+- `chain-core-server`: `cored` and associated utilities. Previously known as `cmd.cored`.
+- `chain-enclave`: HSM utilities, such as `signerd`.
 - `docker.de`
 - `docs`: Markdown documentation, not including SDK-specific docs.
-- `installer.mac`
-- `installer.windows`
+- `chain-core-mac`: Mac app. Previously known as `installer.mac`.
+- `chain-core-windows`: Windows installer. Previously known as `installer.windows`.
 - `sdk.java`
 - `sdk.node`
 - `sdk.ruby`
