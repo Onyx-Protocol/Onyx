@@ -1,7 +1,7 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import actions from 'actions'
-import { Main, Config, Login, Modal } from './'
+import { Main, Config, Login, Loading, Modal } from './'
 
 const CORE_POLLING_TIME = 2 * 1000
 const TESTNET_INFO_POLLING_TIME = 30 * 1000
@@ -63,7 +63,7 @@ class Container extends React.Component {
     if (!this.props.authOk) {
       layout = <Login />
     } else if (!this.props.configKnown) {
-      return <div>Loading core configuration...</div>
+      return <Loading>Connecting to Chain Core...</Loading>
     } else if (!this.props.configured) {
       layout = <Config>{this.props.children}</Config>
     } else {
