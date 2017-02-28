@@ -13,7 +13,7 @@ class FormContainer extends React.Component {
 
         <div className={`${styles.main} flex-container`}>
           <div className={styles.content}>
-            <form onSubmit={this.props.onSubmit}>
+            <form onSubmit={this.props.onSubmit} autoComplete='off'>
               {this.props.children}
 
               <FormSection className={styles.submitSection}>

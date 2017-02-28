@@ -33,6 +33,7 @@ class TextField extends React.Component {
           type={this.state.type}
           placeholder={this.props.placeholder}
           autoFocus={!!this.props.autoFocus}
+          autoComplete='off'
           {...fieldProps} />
 
         {this.props.hint && <span className='help-block'>{this.props.hint}</span>}
