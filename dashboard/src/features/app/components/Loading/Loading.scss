@@ -10,11 +10,11 @@
   justify-content: center;
   color: $text-color;
   font-size: 24px;
-  margin-top: -50px;
+  margin-top: -75px;
 }
 
 .logo {
-  width: 250px;
+  width: 175px;
   padding-bottom: $gutter-size;
   @include animation(pulsing 2s infinite);
   @include animation-timing-function(ease-in-out);
