@@ -27,7 +27,7 @@ If a point release is necessary for a package, we should create a new major-mino
 
 Note that there's a `.x` suffix to distinguish the branch name from the corresponding `.0` release.
 
-Updates to these branches should be as conservative as possible.  Our [versioning scheme](../../docs/reference/versioning.md) is such that it should always be safe to deploy artifacts from the tip of each package branch.
+Updates to these branches should be as conservative as possible.  Our [versioning scheme](../core/reference/versioning.md) is such that it should always be safe to deploy artifacts from the tip of each package branch.
 
 Naturally, release tags should live on their relevant branches, e.g.:
 
