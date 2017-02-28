@@ -1,5 +1,6 @@
 import React from 'react'
 import styles from './SearchBar.scss'
+import disableAutocomplete from 'utility/disableAutocomplete'
 
 class SearchBar extends React.Component {
   constructor(props) {
@@ -121,7 +122,7 @@ class SearchBar extends React.Component {
 
     return (
       <div className={styles.main}>
-        <form onSubmit={this.handleSubmit}>
+        <form onSubmit={this.handleSubmit} {...disableAutocomplete}>
           <span className={`${styles.searchField} ${searchFieldClass}`}>
             <input
               value={this.state.query || ''}
