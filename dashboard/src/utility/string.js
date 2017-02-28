@@ -1,4 +1,5 @@
 import _pluralize from 'pluralize'
+import { snakeCase } from 'lodash'
 
 export const pluralize = _pluralize
 
@@ -7,7 +8,7 @@ export const capitalize = (string) => {
 }
 
 export const humanize = (string) => {
-  return string
+  return snakeCase(string)
     .replace(/_/g, ' ')
 }
 
