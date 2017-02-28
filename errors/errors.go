@@ -64,11 +64,17 @@ func wrap(err error, msg string, stackSkip int) error {
 // Use Stack to recover the stack trace.
 // Wrap returns nil if err is nil.
 func Wrap(err error, a ...interface{}) error {
+	if err == nil {
+		return nil
+	}
 	return wrap(err, fmt.Sprint(a...), 1)
 }
 
 // Wrapf is like Wrap, but arguments are handled as in fmt.Printf.
 func Wrapf(err error, format string, a ...interface{}) error {
+	if err == nil {
+		return nil
+	}
 	return wrap(err, fmt.Sprintf(format, a...), 1)
 }
 
@@ -138,6 +144,9 @@ func withData(err error, v map[string]interface{}) error {
 // Note that if err already has a data item of any other type,
 // it will not be accessible via the returned error value.
 func WithData(err error, keyval ...interface{}) error {
+	if err == nil {
+		return nil
+	}
 	// TODO(kr): add vet check for odd-length keyval and non-string keys
 	newkv := make(map[string]interface{})
 	for k, v := range Data(err) {
