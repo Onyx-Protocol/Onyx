@@ -1,4 +1,4 @@
-FROM golang:1.7.1-alpine
+FROM golang:1.8-alpine
 ENV CHAIN /go/src/chain
 ENV DATABASE_URL postgres://testbot:@localhost/core?sslmode=disable
 ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
