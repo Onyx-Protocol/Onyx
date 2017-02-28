@@ -8,8 +8,6 @@ import (
 	"chain/encoding/blockchain"
 )
 
-const assetVersion = 1
-
 // AssetID is the Hash256 of the issuance script for the asset and the
 // initial block of the chain where it appears.
 type AssetID [32]byte
