@@ -34,6 +34,8 @@ class TextField extends React.Component {
           placeholder={this.props.placeholder}
           autoFocus={!!this.props.autoFocus}
           autoComplete='off'
+          autoCorrect='off'
+          spellCheck='false'
           {...fieldProps} />
 
         {this.props.hint && <span className='help-block'>{this.props.hint}</span>}

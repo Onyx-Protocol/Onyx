@@ -121,7 +121,7 @@ class SearchBar extends React.Component {
 
     return (
       <div className={styles.main}>
-        <form onSubmit={this.handleSubmit} autoComplete='off'>
+        <form onSubmit={this.handleSubmit} autoComplete='off' autoCorrect='off' spellCheck='false'>
           <span className={`${styles.searchField} ${searchFieldClass}`}>
             <input
               value={this.state.query || ''}
