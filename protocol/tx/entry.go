@@ -11,26 +11,24 @@ import (
 	"chain/protocol/bc"
 )
 
-type (
-	entry interface {
-		Type() string
-		Body() interface{}
+type entry interface {
+	Type() string
+	Body() interface{}
 
-		// When an entry is created from a bc.TxInput or a bc.TxOutput, this
-		// reports the position of that antecedent object within its
-		// transaction. Both inputs (spends and issuances) and outputs
-		// (including retirements) are numbered beginning at zero. Entries
-		// not originating in this way report -1.
-		Ordinal() int
-	}
+	// When an entry is created from a bc.TxInput or a bc.TxOutput, this
+	// reports the position of that antecedent object within its
+	// transaction. Both inputs (spends and issuances) and outputs
+	// (including retirements) are numbered beginning at zero. Entries
+	// not originating in this way report -1.
+	Ordinal() int
+}
 
-	// EntryRef holds an entry and its ID. The entry may be nil, but the
-	// ID of a valid entry must still be present.
-	EntryRef struct {
-		entry
-		bc.Hash
-	}
-)
+// EntryRef holds an entry and its ID. The entry may be nil, but the
+// ID of a valid entry must still be present.
+type EntryRef struct {
+	entry
+	bc.Hash
+}
 
 var errInvalidValue = errors.New("invalid value")
 
