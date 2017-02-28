@@ -254,13 +254,6 @@ func (bh *BlockHeader) WriteTo(w io.Writer) (int64, error) {
 	return ew.Written(), ew.Err()
 }
 
-// WriteForSigTo writes bh to w in a format suitable for signing.
-func (bh *BlockHeader) WriteForSigTo(w io.Writer) (int64, error) {
-	ew := errors.NewWriter(w)
-	bh.writeTo(ew, SerBlockSigHash)
-	return ew.Written(), ew.Err()
-}
-
 // writeTo writes bh to w.
 func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
 	w.Write([]byte{serflags})

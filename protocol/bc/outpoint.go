@@ -27,13 +27,3 @@ func (p *Outpoint) WriteTo(w io.Writer) (int64, error) {
 	n2, err := blockchain.WriteVarint31(w, uint64(p.Index))
 	return int64(n + n2), err
 }
-
-func (p *Outpoint) readFrom(r io.Reader) (int, error) {
-	n1, err := io.ReadFull(r, p.Hash[:])
-	if err != nil {
-		return n1, err
-	}
-	var n2 int
-	p.Index, n2, err = blockchain.ReadVarint31(r)
-	return n1 + n2, err
-}
