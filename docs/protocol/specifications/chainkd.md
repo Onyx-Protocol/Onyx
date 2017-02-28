@@ -30,7 +30,7 @@ Features:
 1. Scheme is fully deterministic and allows producing complex hierarchies of keys from a single high-entropy seed.
 2. Derive private keys from extended private keys using “hardened derivation”.
 3. Derive public keys independently from private keys using “non-hardened derivation”.
-4. Hardened and non-hardened public keys and signatures are compatible with [EdDSA](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-08) specification.
+4. Hardened and non-hardened public keys and signatures are compatible with [EdDSA][RFC 8032] specification.
 5. Variable-length string selectors instead of fixed-length integer indexes.
 6. Short 64-byte extended public and private keys without special encoding.
 7. No metadata: an extended key carries only an additional 32-byte salt to avoid having the derivation function depend only on the key itself.
@@ -45,7 +45,7 @@ Features:
 
 **Secret scalar** is 32-byte string representing a 256-bit integer using little-endian convention.
 
-**Public key** is a 32-byte string representing a point on elliptic curve Ed25519 [CFRG].
+**Public key** is a 32-byte string representing a point on elliptic curve Ed25519 [RFC 8032].
 
 **Extended private key** (aka “xprv”) is a 64-byte string representing a key that can be used for deriving *child extended private and public keys*.
 
@@ -208,7 +208,7 @@ Knowledge of a parent extended public key and one of non-hardened derived extend
 **Output:** boolean value indicating if the signature is valid or not.
 
 1. Extract public key `pubkey` as first 32 bytes of `xpub`.
-2. Verify the EdDSA signature `(R,S)` over `message` using `pubkey` per [CFRG](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-08) substituting SHA512 hash function with Hash512 (which equals SHA512 in ChainKD-SHA2 instance thus retaining full compatibility with EdDSA verification procedure).
+2. Verify the EdDSA signature `(R,S)` over `message` using `pubkey` per [RFC 8032] substituting SHA512 hash function with Hash512 (which equals SHA512 in ChainKD-SHA2 instance thus retaining full compatibility with EdDSA verification procedure).
 
 
 ### Generate secret scalar
@@ -322,6 +322,8 @@ All values use hexadecimal encoding.
 
 ## References
 
-1. [CFRG](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-08)
+1. [RFC 8032]
 2. [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
 3. [LEB-128](https://developers.google.com/protocol-buffers/docs/encoding#varints)
+
+[RFC 8032]: https://tools.ietf.org/html/rfc8032
