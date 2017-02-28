@@ -1,6 +1,7 @@
 import React from 'react'
 import { ErrorBanner, PageTitle, FormSection, SubmitIndicator } from 'features/shared/components'
 import componentClassNames from 'utility/componentClassNames'
+import disableAutocomplete from 'utility/disableAutocomplete'
 
 import styles from './FormContainer.scss'
 import Tutorial from 'features/tutorial/components/Tutorial'
@@ -13,7 +14,7 @@ class FormContainer extends React.Component {
 
         <div className={`${styles.main} flex-container`}>
           <div className={styles.content}>
-            <form onSubmit={this.props.onSubmit} autoComplete='off' autoCorrect='off' spellCheck='false'>
+            <form onSubmit={this.props.onSubmit} {...disableAutocomplete}>
               {this.props.children}
 
               <FormSection className={styles.submitSection}>

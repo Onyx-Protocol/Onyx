@@ -2,6 +2,7 @@ import React from 'react'
 import styles from './TextField.scss'
 import pick from 'lodash/pick'
 import { FieldLabel } from 'features/shared/components'
+import disableAutocomplete from 'utility/disableAutocomplete'
 
 const TEXT_FIELD_PROPS = [
   'value',
@@ -33,9 +34,7 @@ class TextField extends React.Component {
           type={this.state.type}
           placeholder={this.props.placeholder}
           autoFocus={!!this.props.autoFocus}
-          autoComplete='off'
-          autoCorrect='off'
-          spellCheck='false'
+          {...disableAutocomplete}
           {...fieldProps} />
 
         {this.props.hint && <span className='help-block'>{this.props.hint}</span>}
