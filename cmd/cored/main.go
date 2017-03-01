@@ -328,6 +328,9 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	// GC old submitted txs periodically.
 	go core.CleanupSubmittedTxs(ctx, db)
 
+	// Clean up expired UTXO reservations periodically.
+	go accounts.ExpireReservations(ctx, expireReservationsPeriod)
+
 	h := &core.API{
 		Chain:        c,
 		Store:        store,
@@ -399,7 +402,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth, recoveredBlock, recoveredSnapshot)
 		}
-		go h.Accounts.ExpireReservations(ctx, expireReservationsPeriod)
 		go h.Accounts.ProcessBlocks(ctx)
 		go h.Assets.ProcessBlocks(ctx)
 		if *indexTxs {
