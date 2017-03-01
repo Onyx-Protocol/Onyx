@@ -2,6 +2,7 @@ FROM golang:1.7.4-alpine
 
 RUN apk --no-cache add bash clang git g++ make nodejs openjdk8 python perl \
     ruby ruby-bigdecimal ruby-bundler ruby-io-console ruby-irb ruby-json openssl ca-certificates \
+    curl \
     && echo "http://dl-cdn.alpinelinux.org/alpine/v3.5/main" >> /etc/apk/repositories \
     && apk --no-cache add "protobuf>3.1.0" \
     && go get -u github.com/golang/protobuf/proto \
@@ -10,7 +11,8 @@ RUN apk --no-cache add bash clang git g++ make nodejs openjdk8 python perl \
 # TODO: remove third party glibc (as well as openssl and ca-certificates) package when protobuf works with musl (next release)
     && wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub \
     && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.23-r3/glibc-2.23-r3.apk \
-    && apk add glibc-2.23-r3.apk \
+    && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.23-r3/glibc-bin-2.23-r3.apk \
+    && apk add glibc-2.23-r3.apk glibc-bin-2.23-r3.apk \
     && MAVEN_VERSION=3.3.9 \
     && cd /usr/share \
     && wget -q http://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz -O - | tar xzf - \
@@ -19,11 +21,20 @@ RUN apk --no-cache add bash clang git g++ make nodejs openjdk8 python perl \
     && git clone https://github.com/GoASTScanner/gas $(go env GOPATH)/src/github.com/GoASTScanner/gas \
     && cd $(go env GOPATH)/src/github.com/GoASTScanner/gas \
     && git reset --hard d30c5cde3613e9ba0129febda849e4d4df1d57cd \
-    && go install github.com/GoASTScanner/gas
-    && curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-02-25
-    && ~/.cargo/bin/cargo install rustfmt
-    && ~/.cargo/bin/cargo install clippy
-    && ~/.cargo/bin/cargo install cargo-audit
+    && go install github.com/GoASTScanner/gas \
+    && curl -Ls -o zlib.tar.gz https://www.archlinux.org/packages/core/x86_64/zlib/download/ \
+    && mkdir -p /usr/zlib-compat \
+    && tar -C /usr/zlib-compat -xvf zlib.tar.gz \
+    && rm zlib.tar.gz \
+    && rm /usr/glibc-compat/etc/ld.so.conf \
+    && echo /usr/zlib-compat/usr/lib >> /usr/glibc-compat/etc/ld.so.conf \
+    && echo /usr/lib >> /usr/glibc-compat/etc/ld.so.conf \
+    && echo /lib >> /usr/glibc-compat/etc/ld.so.conf \
+    && /usr/glibc-compat/sbin/ldconfig \
+    && curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2017-02-25 \
+    && ~/.cargo/bin/cargo install rustfmt \
+    && ~/.cargo/bin/cargo install clippy \
+    && ~/.cargo/bin/cargo install cargo-audit \
 
 ADD bin /usr/bin
 ENV CHAIN ${GOPATH:-$HOME/go}/src/chain
