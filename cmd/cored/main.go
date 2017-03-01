@@ -364,6 +364,15 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	)
 
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
+		if !conf.IsGenerator {
+			fetch.Init(ctx, remoteGenerator)
+			// If don't have any blocks, bootstrap from the generator's
+			// latest snapshot.
+			if c.Height() == 0 {
+				fetch.BootstrapSnapshot(ctx, c, remoteGenerator, fetchhealth)
+			}
+		}
+
 		// This process just became leader, so it's responsible
 		// for recovering after the previous leader's exit.
 		recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
