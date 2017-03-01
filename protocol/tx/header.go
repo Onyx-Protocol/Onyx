@@ -21,17 +21,18 @@ func (h *header) Body() interface{} { return h.body }
 
 func (header) Ordinal() int { return -1 }
 
-func newHeader(version uint64, results []entry, data bc.Hash, minTimeMS, maxTimeMS uint64) *header {
+func newHeader(version uint64, data bc.Hash, minTimeMS, maxTimeMS uint64) *header {
 	h := new(header)
 	h.body.Version = version
 	h.body.Data = data
 	h.body.MinTimeMS = minTimeMS
 	h.body.MaxTimeMS = maxTimeMS
 
-	h.Results = results
-	for _, r := range results {
-		h.body.Results = append(h.body.Results, entryID(r))
-	}
-
 	return h
+}
+
+func (h *header) addResult(e entry) {
+	w := newIDWrapper(e, nil)
+	h.body.Results = append(h.body.Results, w.Hash)
+	h.Results = append(h.Results, w)
 }

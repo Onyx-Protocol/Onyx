@@ -30,6 +30,10 @@ func entryID(e entry) (hash bc.Hash) {
 		return hash
 	}
 
+	if e, ok := e.(*idWrapper); ok {
+		return e.Hash
+	}
+
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 

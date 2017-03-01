@@ -13,15 +13,15 @@ import (
 func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]entry, err error) {
 	entryMap = make(map[bc.Hash]entry)
 
-	addEntry := func(e entry) (id bc.Hash, err error) {
+	addEntry := func(e entry) (w *idWrapper, err error) {
 		defer func() {
 			if pErr, ok := recover().(error); ok {
 				err = pErr
 			}
 		}()
-		id = entryID(e)
-		entryMap[id] = e
-		return id, err
+		w = newIDWrapper(e, nil)
+		entryMap[w.Hash] = w
+		return w, err
 	}
 
 	// Loop twice over tx.Inputs, once for spends and once for
@@ -37,14 +37,14 @@ func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]e
 			out := newOutput(prog, oldSp.RefDataHash, 0) // ordinal doesn't matter for prevouts, only for result outputs
 			out.setSourceID(oldSp.SourceID, oldSp.AssetAmount, oldSp.SourcePosition)
 			sp := newSpend(out, hashData(inp.ReferenceData), i)
-			var id bc.Hash
-			id, err = addEntry(sp)
+			var w *idWrapper
+			w, err = addEntry(sp)
 			if err != nil {
 				err = errors.Wrapf(err, "adding spend entry for input %d", i)
 				return
 			}
 			muxSources[i] = valueSource{
-				Ref:   id,
+				Ref:   w.Hash,
 				Value: oldSp.AssetAmount,
 			}
 			if firstSpend == nil {
@@ -90,15 +90,15 @@ func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]e
 			val := inp.AssetAmount()
 
 			iss := newIssuance(nonce, val, hashData(inp.ReferenceData), i)
-			var issID bc.Hash
-			issID, err = addEntry(iss)
+			var w *idWrapper
+			w, err = addEntry(iss)
 			if err != nil {
 				err = errors.Wrapf(err, "adding issuance entry for input %d", i)
 				return
 			}
 
 			muxSources[i] = valueSource{
-				Ref:   issID,
+				Ref:   w.Hash,
 				Value: val,
 			}
 		}
@@ -144,14 +144,18 @@ func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]e
 		}
 	}
 
-	h := newHeader(tx.Version, results, hashData(tx.ReferenceData), tx.MinTime, tx.MaxTime)
-	headerID, err = addEntry(h)
+	h := newHeader(tx.Version, hashData(tx.ReferenceData), tx.MinTime, tx.MaxTime)
+	for _, res := range results {
+		h.addResult(res)
+	}
+	var w *idWrapper
+	w, err = addEntry(h)
 	if err != nil {
 		err = errors.Wrap(err, "adding header entry")
 		return
 	}
 
-	return headerID, h, entryMap, nil
+	return w.Hash, h, entryMap, nil
 }
 
 func mapBlockHeader(old *bc.BlockHeader) (bhID bc.Hash, bh *blockHeader) {
