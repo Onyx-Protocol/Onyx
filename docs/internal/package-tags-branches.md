@@ -16,12 +16,12 @@
 
 Every release has a **tag** that specifies the major, minor, and build versions, e.g.:
 
-- `cmd.cored-1.1.0`
+- `chain-core-server-1.1.0`
 - `sdk.ruby-1.0.2`
 
 If a point release is necessary for a package, we should create a new major-minor version **branch** e.g.:
 
-- `cmd.cored-1.1.x`
+- `chain-core-server-1.1.x`
 - `sdk.ruby-1.0.x`
 
 Note that there's a `.x` suffix to distinguish the branch name from the corresponding `.0` release.
@@ -30,5 +30,5 @@ Updates to these branches should be as conservative as possible.  Our [versionin
 
 Naturally, release tags should live on their relevant branches, e.g.:
 
-- `cmd.cored-1.1.0` is on the `cmd.cored-1.1.x` branch
+- `chain-core-server-1.1.0` is on the `chain-core-server-1.1.x` branch
 - `sdk.ruby-1.0.2` is on the `sdk.ruby-1.0.x` branch
