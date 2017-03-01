@@ -42,7 +42,8 @@ func (s *spend) setSpentOutput(o *output) {
 	s.SpentOutput = o
 }
 
-func (s *spend) setSpentInfo(value bc.AssetAmount, program program) {
+func (s *spend) setSpentInfo(spentOutputID bc.Hash, value bc.AssetAmount, program program) {
+	s.body.SpentOutput = spentOutputID
 	s.spentInfo = &spentInfo{
 		AssetAmount: value,
 		program:     program,
