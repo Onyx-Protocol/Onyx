@@ -43,7 +43,7 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 	}
 
 	hashes = new(bc.TxHashes)
-	hashes.ID = bc.Hash(txid)
+	hashes.ID = txid
 
 	// Results
 	hashes.Results = make([]bc.ResultInfo, len(header.body.Results))
@@ -76,16 +76,16 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 			iss := struct {
 				ID           bc.Hash
 				ExpirationMS uint64
-			}{bc.Hash(entryID), tr.body.MaxTimeMS}
+			}{entryID, tr.body.MaxTimeMS}
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *issuance:
-			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.Data, ent.body.Data)
+			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
 			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 
 		case *spend:
-			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.Data, ent.body.Data)
+			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
 			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 			hashes.SpentOutputIDs[ent.Ordinal()] = ent.body.SpentOutput
