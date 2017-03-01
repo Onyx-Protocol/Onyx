@@ -1,16 +1,13 @@
 import React from 'react'
-import { BaseList, EmptyContent } from 'features/shared/components'
+import { BaseList } from 'features/shared/components'
 import ListItem from './ListItem'
 
 const type = 'unspent'
-const firstTimeContent = <EmptyContent
-  title='There are no unspent outputs' />
 
 const newStateToProps = (state, ownProps) => ({
   ...BaseList.mapStateToProps(type, ListItem)(state, ownProps),
   skipCreate: true,
-  label: 'Unspent outputs',
-  firstTimeContent
+  label: 'unspent outputs'
 })
 
 export default BaseList.connect(
