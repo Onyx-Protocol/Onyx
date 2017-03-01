@@ -373,20 +373,18 @@ definitions:
       spent_output_id:
         type: string
         description: The unique ID of the output being spent.
-      spent_output:
-        $ref: '#/definitions/SpentOutput'
       account_id:
         type: string
-        description: The unique ID of the account. Only present if `SpentOutput`
-          is controlled by an account on this core.
+        description: The unique ID of the account. Only present if the spent
+          output is controlled by an account on this core.
       account_alias:
         type: string
-        description: The alias of the account. Only present if `SpentOutput`
+        description: The alias of the account. Only present if the spent output
           is controlled by an account on this core.
       account_tags:
         type: object
         description: Arbitrary key/value data associated with the account. Only
-          present if `SpentOutput` is controlled by an account on this core.
+          present if the spent output is controlled by an account on this core.
       issuance_program:
         type: string
         description: The issuance program that defines the asset ID. Only
@@ -400,21 +398,6 @@ definitions:
         description: Either "yes" or "no". "yes" if `type` is "issue" and
           `asset_is_local` is "yes", OR if `type` is "spend" and
           `account_is_local` is "yes". "no" otherwise.
-
-  SpentOutput:
-    type: object
-    description: DEPRECATED as of Chain Core 1.1. Please use `spent_output_id`
-      instead.
-    required:
-      - transaction_id
-      - position
-    properties:
-      transaction_id:
-        type: string
-        description: The unique ID of the transaction containing the output.
-      position:
-        type: integer
-        description: The position of the output within the containing
 
   TransactionOutput:
     type: object
@@ -665,16 +648,6 @@ definitions:
         type: string
         description: The unique ID of the transaction output being spent.
           This field replaces fields transaction_id and position.
-      transaction_id:
-        type: string
-        description: DEPRECATED as of Chain Core 1.1. Please use `output_id`
-          instead. The unique ID of the transaction containing the output
-          being spent.
-      position:
-        type: string
-        description: DEPRECATED as of Chain Core 1.1. Please use `output_id`
-          instead. The output's index relative to other outputs in the
-          containing transaction.
       reference_data:
         type: object
         description: Arbitrary, immutable key/value data that will accompany
