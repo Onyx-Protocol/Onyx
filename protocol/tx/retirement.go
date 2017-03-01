@@ -12,7 +12,7 @@ type retirement struct {
 
 	// Source contains (a pointer to) the manifested entry corresponding
 	// to body.Source.
-	Source entry
+	Source entry // *issuance, *spend, or *mux
 }
 
 func (retirement) Type() string         { return "retirement1" }

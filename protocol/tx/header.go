@@ -13,7 +13,7 @@ type header struct {
 
 	// Results contains (pointers to) the manifested entries for the
 	// items in body.Results.
-	Results []entry
+	Results []entry // each entry is *output or *retirement
 }
 
 func (header) Type() string         { return "txheader" }
