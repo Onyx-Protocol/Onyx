@@ -25,10 +25,24 @@ func NewChain(tb testing.TB) *protocol.Chain {
 	return NewChainWithStorage(tb, memstore.New())
 }
 
+// Option defines optional configuration settings a new Chain.
+type Option func(*state.Snapshot)
+
+// WithOutput creates a Chain with the provided output ID hash already
+// in the state tree.
+func WithOutput(outputID bc.Hash) Option {
+	return func(snap *state.Snapshot) {
+		err := snap.Tree.Insert(outputID[:])
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 // NewChainWithStorage makes a new Chain using store for storage, along
 // with an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
-func NewChainWithStorage(tb testing.TB, store protocol.Store) *protocol.Chain {
+func NewChainWithStorage(tb testing.TB, store protocol.Store, opts ...Option) *protocol.Chain {
 	ctx := context.Background()
 	b1, err := protocol.NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
@@ -39,7 +53,13 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store) *protocol.Chain {
 		testutil.FatalErr(tb, err)
 	}
 	c.MaxIssuanceWindow = 48 * time.Hour // TODO(tessr): consider adding MaxIssuanceWindow to NewChain
-	err = c.CommitBlock(ctx, b1, state.Empty())
+
+	s := state.Empty()
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	err = c.CommitBlock(ctx, b1, s)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
