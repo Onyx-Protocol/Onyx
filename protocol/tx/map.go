@@ -34,7 +34,7 @@ func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]e
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*bc.SpendInput); ok {
 			sp := newSpend(hashData(inp.ReferenceData), i)
-			sp.setSpentInfo(oldSp.AssetAmount, program{VMVersion: oldSp.VMVersion, Code: oldSp.ControlProgram})
+			sp.setSpentInfo(oldSp.SpentOutputID, oldSp.AssetAmount, program{VMVersion: oldSp.VMVersion, Code: oldSp.ControlProgram})
 			var id bc.Hash
 			id, err = addEntry(sp)
 			if err != nil {
@@ -104,7 +104,9 @@ func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]e
 
 	mux := newMux(program{VMVersion: 1, Code: []byte{byte(vm.OP_TRUE)}})
 	for _, src := range muxSources {
-		// xxx addSource will recompute the hash of entryMap[src.Ref], which is available as src.Ref - fix this
+		// TODO(bobg): addSource will recompute the hash of
+		// entryMap[src.Ref], which is already available as src.Ref - fix
+		// this (and a number of other such places)
 		mux.addSource(entryMap[src.Ref], src.Value, src.Position)
 	}
 	_, err = addEntry(mux)
