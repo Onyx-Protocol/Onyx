@@ -26,8 +26,9 @@ func newMux(program program) *mux {
 }
 
 func (m *mux) addSource(e entry, value bc.AssetAmount, position uint64) {
-	m.addSourceID(entryID(e), value, position)
-	m.Sources[len(m.Sources)-1] = e
+	w := newIDWrapper(e, nil)
+	m.addSourceID(w.Hash, value, position)
+	m.Sources[len(m.Sources)-1] = w
 }
 
 func (m *mux) addSourceID(sourceID bc.Hash, value bc.AssetAmount, position uint64) {

@@ -124,23 +124,25 @@ func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]e
 			// retirement
 			r := newRetirement(hashData(out.ReferenceData), i)
 			r.setSource(mux, out.AssetAmount, uint64(i))
-			_, err = addEntry(r)
+			var w *idWrapper
+			w, err = addEntry(r)
 			if err != nil {
 				err = errors.Wrapf(err, "adding retirement entry for output %d", i)
 				return
 			}
-			results = append(results, r)
+			results = append(results, w)
 		} else {
 			// non-retirement
 			prog := program{out.VMVersion, out.ControlProgram}
 			o := newOutput(prog, hashData(out.ReferenceData), i)
 			o.setSource(mux, out.AssetAmount, uint64(i))
-			_, err = addEntry(o)
+			var w *idWrapper
+			w, err = addEntry(o)
 			if err != nil {
 				err = errors.Wrapf(err, "adding output entry for output %d", i)
 				return
 			}
-			results = append(results, o)
+			results = append(results, w)
 		}
 	}
 

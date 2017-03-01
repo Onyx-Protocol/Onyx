@@ -33,8 +33,9 @@ func newOutput(controlProgram program, data bc.Hash, ordinal int) *output {
 // *mux) for an output. When you don't (you only have the ID of the
 // source), use setSourceID, below.
 func (o *output) setSource(e entry, value bc.AssetAmount, position uint64) {
-	o.setSourceID(entryID(e), value, position)
-	o.Source = e
+	w := newIDWrapper(e, nil)
+	o.setSourceID(w.Hash, value, position)
+	o.Source = w
 }
 
 func (o *output) setSourceID(sourceID bc.Hash, value bc.AssetAmount, position uint64) {
