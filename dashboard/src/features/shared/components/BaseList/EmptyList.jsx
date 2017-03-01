@@ -13,8 +13,6 @@ class EmptyList extends React.Component {
     let emptyBlock
     if (!this.props.loadedOnce) {
       emptyBlock = <span>LOADING…</span>
-    } else if (this.props.showFirstTimeFlow && this.props.skipCreate) {
-      emptyBlock = this.props.firstTimeContent
     } else if (this.props.showFirstTimeFlow) {
       emptyBlock = <div>
         <span className={`${styles.emptyLabel} ${styles.noResultsLabel}`}>
