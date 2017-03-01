@@ -98,10 +98,6 @@ function checkForError(resp) {
  * @property {Boolean} isLocal
  * A flag indicating if the input is local.
  *
- * @property {Object} [spentOutput]
- * DEPRECATED (as of version 1.1) Use {#spentOutputId} instead.
- * The output consumed by this input.
- *
  * @property {String} [inputWitness]
  * DEPRECATED (as of version 1.1) Do not use this field.
  *
