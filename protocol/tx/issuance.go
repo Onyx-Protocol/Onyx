@@ -24,8 +24,9 @@ func (iss issuance) Ordinal() int { return iss.ordinal }
 func newIssuance(anchor entry, value bc.AssetAmount, data bc.Hash, ordinal int) *issuance {
 	iss := new(issuance)
 	if anchor != nil {
-		iss.body.Anchor = entryID(anchor)
-		iss.Anchor = anchor
+		w := newIDWrapper(anchor, nil)
+		iss.body.Anchor = w.Hash
+		iss.Anchor = w
 	}
 	iss.body.Value = value
 	iss.body.Data = data

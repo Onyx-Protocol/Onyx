@@ -38,6 +38,9 @@ func TestMapTx(t *testing.T) {
 
 	for i, oldOut := range oldOuts {
 		if resultEntry, ok := entryMap[header.body.Results[i]]; ok {
+			if w, ok := resultEntry.(*idWrapper); ok {
+				resultEntry = w.entry
+			}
 			if newOut, ok := resultEntry.(*output); ok {
 				if newOut.body.Source.Value != oldOut.AssetAmount {
 					t.Errorf("header.body.Results[%d].(*output).body.Source is %v, expected %v", i, newOut.body.Source.Value, oldOut.AssetAmount)
