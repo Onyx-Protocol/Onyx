@@ -1,5 +1,9 @@
 # Chain Core Mac Installer changelog
 
+## 1.1.1 (March 1, 2017)
+
+* Improved startup detection of other Chain Cores
+
 ## 1.1.0 (February 24, 2017)
 
 * Updated to Chain Core [1.1.0](../../CHANGELOG.md#1.1.0)

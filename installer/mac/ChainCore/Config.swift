@@ -7,30 +7,27 @@ class Config: NSObject {
 
     /// Checks if the port is in use by another process.
     static func portInUse(_ port: UInt) -> Bool {
-        let sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)
-        if sock <= 0 {
-            return false
+        var output : [String] = []
+
+        let task = Process()
+        task.launchPath = "/usr/sbin/lsof"
+        task.arguments = ["-n", "-i:\(port)"]
+
+        let outpipe = Pipe()
+        task.standardOutput = outpipe
+        task.launch()
+
+        let outdata = outpipe.fileHandleForReading.readDataToEndOfFile()
+        if var string = String(data: outdata, encoding: .utf8) {
+            string = string.trimmingCharacters(in: .newlines)
+            output = string.components(separatedBy: "\n")
         }
 
-        var listenAddress = sockaddr_in()
-        listenAddress.sin_family = UInt8(AF_INET)
-        listenAddress.sin_port = in_port_t(port).bigEndian
-        listenAddress.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
-        listenAddress.sin_addr.s_addr = inet_addr("127.0.0.1")
+        task.waitUntilExit()
 
-        let bindRes = withUnsafePointer(to: &listenAddress) { (sockaddrPointer: UnsafePointer<sockaddr_in>) in
-            sockaddrPointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { (sockaddrPointer2: UnsafePointer<sockaddr>) in
-                Darwin.bind(sock, sockaddrPointer2, socklen_t(MemoryLayout<sockaddr_in>.stride))
-            }
-        }
-
-        let bindErr = Darwin.errno
-        close(sock)
-
-        if bindRes == -1 && bindErr == EADDRINUSE {
+        if (output.count > 0 && output[0] != "") {
             return true
         }
-        
         return false
     }
 }
