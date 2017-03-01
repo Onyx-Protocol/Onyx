@@ -34,4 +34,12 @@ var migrations = []migration{
 			ADD COLUMN spent_output_id bytea NOT NULL,
 			ADD COLUMN spent_output jsonb;
 	`},
+	{Name: `2017-02-28.0.core.remove-outpoints.sql`, SQL: `
+		ALTER TABLE annotated_inputs DROP COLUMN spent_output;
+		ALTER TABLE account_utxos DROP CONSTRAINT account_utxos_pkey;
+		ALTER TABLE account_utxos
+			DROP COLUMN tx_hash,
+			DROP COLUMN index;
+		ALTER TABLE account_utxos ADD PRIMARY KEY (output_id);
+	`},
 }

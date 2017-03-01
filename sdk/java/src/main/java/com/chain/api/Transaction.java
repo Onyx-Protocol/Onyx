@@ -198,12 +198,6 @@ public class Transaction {
     public String spentOutputId;
 
     /**
-     * The output consumed by this input. Null if the input is an issuance.
-     */
-    @SerializedName("spent_output")
-    public OutputPointer spentOutput;
-
-    /**
      * The id of the account transferring the asset (possibly null if the input is an issuance or an unspent output is specified).
      */
     @SerializedName("account_id")
@@ -341,17 +335,6 @@ public class Transaction {
      */
     @SerializedName("is_local")
     public String isLocal;
-  }
-
-  /**
-   * An OutputPointer consists of a transaction ID and an output position, and
-   * uniquely identifies an output on the blockchain.
-   */
-  public static class OutputPointer {
-    @SerializedName("transaction_id")
-    public String transactionId;
-
-    public int position;
   }
 
   /**
@@ -704,30 +687,6 @@ public class Transaction {
        */
       public SpendAccountUnspentOutput setOutputId(String id) {
         this.put("output_id", id);
-        return this;
-      }
-
-      /**
-       * Specifies the transaction id of the unspent output to be spent.<br>
-       * <strong>Must be called with {@link SpendAccountUnspentOutput#setPosition(int)}.</strong>
-       * @deprecated This method is deprecated in favor of {@link SpendAccountUnspentOutput#setOutputId(String)}.
-       * @param id
-       * @return
-       */
-      public SpendAccountUnspentOutput setTransactionId(String id) {
-        this.put("transaction_id", id);
-        return this;
-      }
-
-      /**
-       * Specifies the position in the transaction of the unspent output to be spent.<br>
-       * <strong>Must be called with {@link SpendAccountUnspentOutput#setTransactionId(String)}.</strong>
-       * @deprecated This method is deprecated in favor of {@link SpendAccountUnspentOutput#setOutputId(String)}.
-       * @param pos
-       * @return
-       */
-      public SpendAccountUnspentOutput setPosition(int pos) {
-        this.put("position", pos);
         return this;
       }
     }

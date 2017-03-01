@@ -202,8 +202,6 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*rawOutput) ([]*ac
 // block confirmation data will in the row will be updated.
 func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*accountOutput, pos map[bc.Hash]uint32, block *bc.Block) error {
 	var (
-		txHash    pq.ByteaArray
-		index     pg.Uint32s
 		outputID  pq.ByteaArray
 		assetID   pq.ByteaArray
 		amount    pq.Int64Array
@@ -212,8 +210,6 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		program   pq.ByteaArray
 	)
 	for _, out := range outs {
-		txHash = append(txHash, out.txHash[:])
-		index = append(index, out.outputIndex)
 		outputID = append(outputID, out.OutputID.Bytes())
 		assetID = append(assetID, out.AssetID[:])
 		amount = append(amount, int64(out.Amount))
@@ -223,15 +219,13 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 	}
 
 	const q = `
-		INSERT INTO account_utxos (tx_hash, index, output_id, asset_id, amount, account_id, control_program_index,
+		INSERT INTO account_utxos (output_id, asset_id, amount, account_id, control_program_index,
 			control_program, confirmed_in)
-		SELECT unnest($1::bytea[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::bytea[]),  unnest($5::bigint[]),
-			   unnest($6::text[]), unnest($7::bigint[]), unnest($8::bytea[]), $9
-		ON CONFLICT (tx_hash, index) DO NOTHING
+		SELECT unnest($1::bytea[]), unnest($2::bytea[]),  unnest($3::bigint[]),
+			   unnest($4::text[]), unnest($5::bigint[]), unnest($6::bytea[]), $7
+		ON CONFLICT (output_id) DO NOTHING
 	`
 	_, err := m.db.Exec(ctx, q,
-		txHash,
-		index,
 		outputID,
 		assetID,
 		amount,
