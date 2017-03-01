@@ -13,7 +13,7 @@ type issuance struct {
 
 	// Anchor is a pointer to the manifested entry corresponding to
 	// body.Anchor.
-	Anchor entry
+	Anchor entry // *nonce or *spend
 }
 
 func (issuance) Type() string           { return "issuance1" }

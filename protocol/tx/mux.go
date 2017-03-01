@@ -11,7 +11,7 @@ type mux struct {
 
 	// Sources contains (pointers to) the manifested entries for each
 	// body.Sources[i].Ref.
-	Sources []entry
+	Sources []entry // each entry is *issuance, *spend, or *mux
 }
 
 func (mux) Type() string         { return "mux1" }

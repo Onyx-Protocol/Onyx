@@ -13,7 +13,7 @@ type output struct {
 
 	// Source contains (a pointer to) the manifested entry corresponding
 	// to body.Source.
-	Source entry
+	Source entry // *issuance, *spend, or *mux
 }
 
 func (output) Type() string         { return "output1" }
