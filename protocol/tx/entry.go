@@ -26,6 +26,10 @@ type entry interface {
 var errInvalidValue = errors.New("invalid value")
 
 func entryID(e entry) bc.Hash {
+	if e, ok := e.(*idWrapper); ok {
+		return e.Hash
+	}
+
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 
