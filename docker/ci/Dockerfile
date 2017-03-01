@@ -2,6 +2,7 @@ FROM golang:1.7.4-alpine
 
 RUN apk --no-cache add bash clang git g++ make nodejs openjdk8 python perl \
     ruby ruby-bigdecimal ruby-bundler ruby-io-console ruby-irb ruby-json openssl ca-certificates \
+    curl \
     && echo "http://dl-cdn.alpinelinux.org/alpine/v3.5/main" >> /etc/apk/repositories \
     && apk --no-cache add "protobuf>3.1.0" \
     && go get -u github.com/golang/protobuf/proto \
