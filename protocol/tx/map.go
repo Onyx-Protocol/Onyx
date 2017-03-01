@@ -106,9 +106,6 @@ func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]e
 
 	mux := newMux(program{VMVersion: 1, Code: []byte{byte(vm.OP_TRUE)}})
 	for _, src := range muxSources {
-		// TODO(bobg): addSource will recompute the hash of
-		// entryMap[src.Ref], which is already available as src.Ref - fix
-		// this (and a number of other such places)
 		mux.addSource(entryMap[src.Ref], src.Value, src.Position)
 	}
 	_, err = addEntry(mux)
