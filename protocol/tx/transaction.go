@@ -17,6 +17,8 @@ func init() {
 	bc.OutputHash = ComputeOutputID
 }
 
+// ComputeOutputID assembles an output entry given a spend commitment
+// and computes and returns its corresponding entry ID.
 func ComputeOutputID(sc *bc.SpendCommitment) (h bc.Hash, err error) {
 	defer func() {
 		if r, ok := recover().(error); ok {

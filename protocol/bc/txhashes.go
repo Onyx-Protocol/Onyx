@@ -11,7 +11,7 @@ type (
 			ID           Hash
 			ExpirationMS uint64
 		}
-		SpentOutputIDs []Hash
+		SpentOutputIDs []Hash       // one per old-style Input. Non-spend inputs are blank hashes.
 		VMContexts     []*VMContext // one per old-style Input
 	}
 
@@ -52,4 +52,8 @@ func (t TxHashes) SigHash(n uint32) Hash {
 // to avoid a circular dependency between the bc and tx packages.
 var BlockHeaderHashFunc func(*BlockHeader) Hash
 
+// OutputHash is initialized to a function in protocol/tx
+// that can compute the hash of an output from a SpendCommitment.
+// It is a variable here to avoid a circular dependency between
+// the bc and tx packages.
 var OutputHash func(*SpendCommitment) (Hash, error)
