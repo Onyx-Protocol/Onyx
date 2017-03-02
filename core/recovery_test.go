@@ -4,8 +4,11 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -33,6 +36,7 @@ func TestRecovery(t *testing.T) {
 
 	// Setup the test environment using a clean db.
 	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
 	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	store := txdb.NewStore(db)
 	c := prottest.NewChainWithStorage(t, store)
@@ -44,11 +48,39 @@ func TestRecovery(t *testing.T) {
 	accounts := account.NewManager(db, c, pinStore)
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
+	go assets.ProcessBlocks(ctx)
 	go accounts.ProcessBlocks(ctx)
+	go indexer.ProcessBlocks(ctx)
 
 	// Setup the transaction query indexer to index every transaction.
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
+
+	var err error
+	pinHeight := c.Height()
+	if pinHeight > 0 {
+		pinHeight = pinHeight - 1
+	}
+	err = pinStore.CreatePin(ctx, account.PinName, pinHeight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = pinStore.CreatePin(ctx, account.ExpirePinName, pinHeight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = pinStore.CreatePin(ctx, account.DeleteSpentsPinName, pinHeight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = pinStore.CreatePin(ctx, asset.PinName, pinHeight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = pinStore.CreatePin(ctx, query.TxPinName, pinHeight)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Create two assets (USD & apples) and two accounts (Alice & Bob).
 	var (
@@ -61,8 +93,8 @@ func TestRecovery(t *testing.T) {
 	// Issue some apples to Alice and a dollar to Bob.
 	coretest.IssueAssets(ctx, t, c, g, assets, accounts, apple, 10, alice)
 	coretest.IssueAssets(ctx, t, c, g, assets, accounts, usd, 1, bob)
-	prottest.MakeBlock(t, c, g.PendingTxs())
-	<-pinStore.PinWaiter(account.PinName, c.Height())
+	setupBlock := prottest.MakeBlock(t, c, g.PendingTxs())
+	<-pinStore.AllWaiter(setupBlock.Height)
 
 	// Submit a transfer between Alice and Bob but don't publish it in a block.
 	coretest.Transfer(ctx, t, c, g, []txbuilder.Action{
@@ -73,7 +105,9 @@ func TestRecovery(t *testing.T) {
 	})
 	poolTxs := g.PendingTxs()
 
-	err := db.Close()
+	cancel()
+	t.Logf("Collected %d pending transactions", len(poolTxs))
+	err = db.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +120,9 @@ func TestRecovery(t *testing.T) {
 	// states should be identical.
 	timestamp := time.Now()
 	var databaseDumps []string
-	for n := 1; ; n++ {
+	for n := int64(1); ; n++ {
+		ctx = context.Background()
+		t.Logf("Beginning run; will crash on %d-th SQL query", n)
 		// Create a new, fresh database using the schema file we created
 		// above. The database will be identical.
 		cloneURL, err := pgtest.CloneDB(ctx, dbURL)
@@ -94,45 +130,54 @@ func TestRecovery(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		runCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
 		// Open a new handle to the same database but using a driver that
 		// will call our anonymous func to simulate crashes.
-		ch := make(chan error)
-		calls := 0
+		crashed := make(chan struct{})
+		completed := make(chan struct{})
+		var calls int64
 		wrappedDB := pgtest.WrapDB(t, cloneURL, func(q string) {
-			calls++
-
-			if calls == n {
-				t.Logf("crashing on query %d: %s\n", calls, q)
-				close(ch)        // let main goroutine know
+			num := atomic.AddInt64(&calls, 1)
+			if num == n {
+				t.Logf("crashing on query %d: %s\n", num, q)
+				cancel()         // cancel the context so other goroutines clean up too
+				close(crashed)   // let main goroutine know
 				runtime.Goexit() // crash this goroutine
 			}
 		})
 
-		ctx := context.Background()
 		go func() {
-			err := generateBlock(ctx, t, wrappedDB, timestamp, poolTxs)
-			ch <- err
+			err = generateBlock(runCtx, t, wrappedDB, timestamp, poolTxs)
+			if err != nil {
+				t.Errorf("generateBlock returned err %s", err)
+			}
+			close(completed)
 		}()
 
 		// Wait for the goroutine to finish or get killed on the N-th query.
-		err, ok := <-ch
-		if err != nil {
-			t.Fatal(err)
+		select {
+		case <-crashed:
+			t.Log("goroutine crashed on query")
+		case <-completed:
+			t.Log("goroutine completed successfully")
 		}
-		if ok {
+
+		if atomic.LoadInt64(&calls) < n {
 			// The driver never crashed the goroutine, so n is now greater than
 			// the total number of queries performed during `generateBlock`.
-			databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "*_id_seq"))
+			databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "*_id_seq", "block_processors"))
 			break
 		}
 
 		// We crashed at some point during block generation. Do it again,
 		// without crashing.
-		err = generateBlock(ctx, t, wrappedDB, timestamp, poolTxs)
+		err = generateBlock(context.Background(), t, wrappedDB, timestamp, poolTxs)
 		if err != nil {
 			t.Fatal(err)
 		}
-		databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "*_id_seq"))
+		databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "*_id_seq", "block_processors"))
 	}
 
 	if len(databaseDumps) < 2 {
@@ -141,6 +186,7 @@ func TestRecovery(t *testing.T) {
 	// Compare all of the pg_dumps. They should all be equal. Only
 	// print the hashes though so that the test output isn't overwhelming.
 	var prevHash string
+	dumps := make(map[string]string)
 	for n, v := range databaseDumps {
 		hasher := md5.New()
 		hasher.Write([]byte(v))
@@ -148,11 +194,31 @@ func TestRecovery(t *testing.T) {
 		if n >= 1 && prevHash != hash {
 			t.Errorf("previous run %d - %s; current run %d - %s", n, prevHash, n+1, hash)
 		}
+		dumps[hash] = v
 		prevHash = hash
+	}
+
+	// If the test failed, save the database dumps to a test directory
+	// so that they can be manually examined and diffed.
+	if len(dumps) > 1 {
+		dir, err := ioutil.TempDir("", "recovery-test")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for hash, dump := range dumps {
+			err = ioutil.WriteFile(filepath.Join(dir, hash), []byte(dump), os.ModePerm)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		t.Logf("Wrote database dumps to %s", dir)
 	}
 }
 
 func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.Time, poolTxs []*bc.Tx) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	store := txdb.NewStore(db)
 	b1, err := store.GetBlock(ctx, 1)
 	if err != nil {
@@ -169,9 +235,15 @@ func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.T
 	// Setup the transaction query indexer to index every transaction.
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
-	go accounts.ProcessBlocks(ctx)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
+	err = pinStore.LoadAll(ctx)
+	if err != nil {
+		return err
+	}
+	go assets.ProcessBlocks(ctx)
+	go accounts.ProcessBlocks(ctx)
+	go indexer.ProcessBlocks(ctx)
 
 	block, snapshot, err := c.Recover(ctx)
 	if err != nil {
@@ -185,5 +257,11 @@ func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.T
 	if len(b.Transactions) == 0 {
 		return nil
 	}
-	return c.CommitBlock(ctx, b, s)
+	err = c.CommitBlock(ctx, b, s)
+	if err != nil {
+		return err
+	}
+
+	<-pinStore.AllWaiter(b.Height)
+	return nil
 }
