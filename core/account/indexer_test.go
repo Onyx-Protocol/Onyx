@@ -61,7 +61,7 @@ func TestDeleteUTXOs(t *testing.T) {
 	block2 := &bc.Block{Transactions: []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(tx.OutputID(0), nil, assetID, 1, nil, nil),
+				bc.NewSpendInput(nil, tx.Results[0].SourceID, assetID, 1, tx.Results[0].SourcePos, acp, tx.Results[0].RefDataHash, nil),
 			},
 		}),
 	}}

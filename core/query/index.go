@@ -76,9 +76,9 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*Ann
 		outputIDs        = pq.ByteaArray(make([][]byte, 0))
 	)
 	for _, tx := range b.Transactions {
-		for _, in := range tx.Inputs {
+		for i, in := range tx.Inputs {
 			if !in.IsIssuance() {
-				outputIDs = append(outputIDs, in.SpentOutputID().Bytes())
+				outputIDs = append(outputIDs, tx.SpentOutputIDs[i].Bytes())
 			}
 		}
 	}
@@ -212,7 +212,7 @@ func (ind *Indexer) loadOutpoints(ctx context.Context, outputIDs pq.ByteaArray) 
 	`
 	results := make(map[bc.OutputID]bc.Outpoint)
 	err := pg.ForQueryRows(ctx, ind.db, q, outputIDs, func(txHash bc.Hash, outputIndex uint32, outid bc.Hash) {
-		oid := bc.OutputID{outid}
+		oid := bc.OutputID{Hash: outid}
 		results[oid] = bc.Outpoint{
 			Hash:  txHash,
 			Index: outputIndex,
@@ -247,10 +247,9 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		prevoutIDs             pq.ByteaArray
 	)
 	for pos, tx := range b.Transactions {
-		for _, in := range tx.Inputs {
+		for i, in := range tx.Inputs {
 			if !in.IsIssuance() {
-				prevoutID := in.SpentOutputID()
-				prevoutIDs = append(prevoutIDs, prevoutID.Bytes())
+				prevoutIDs = append(prevoutIDs, tx.SpentOutputIDs[i].Bytes())
 			}
 		}
 
