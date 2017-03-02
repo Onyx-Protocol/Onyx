@@ -1,6 +1,6 @@
 # Chain Ruby SDK
 
-## 1.0.2 (March 2, 2017)
+## 1.1.1 (March 2, 2017)
 
 * Relax minimum Ruby version requirement from 2.1 to 2.0. While the Ruby SDK is now compatible with Ruby 2.0, we strongly recommend using Ruby 2.1 or greater, since Ruby 2.0 has reached end-of-life and is no longer receiving critical security updates.
 
