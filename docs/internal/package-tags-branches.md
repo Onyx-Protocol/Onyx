@@ -16,14 +16,14 @@
 
 Every major/minor version pair will have its own branch named `<major>-<minor>.x`, e.g:
 
-- `1.0.x`
-- `1.1.x`
+- `1.0-stable`
+- `1.1-stable`
 
-Version branches act as the merge base for point release updates across all packages, and should start with the commit corresponding to `chain-core-server-<major>.<minor>.0`.*
+Version branches act as the merge base for point release updates across all packages, and should start with the commit corresponding to `chain-core-server-<major>.<minor>.0`.<sup>1</sup>
 
 Updates to the version branches should be as conservative as possible. We should ensure that the tip of each version branch maintains cross-compatibility across packages, per our [versioning scheme](../core/reference/versioning.md).
 
-* `1.0.x` is an exception, since it precedes this branching scheme.
+<sup>1</sup> `1.0-stable` is an exception, since it precedes this branching scheme.
 
 ## Release tags
 
