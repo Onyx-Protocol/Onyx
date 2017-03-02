@@ -9,6 +9,7 @@ You can use **transaction feeds** to process transactions as they arrive on the 
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/RealTimeTransactionProcessing.java)
+- [Node](../examples/node/realTimeTransactionProcessing.js)
 - [Ruby](../examples/ruby/real_time_transaction_processing.rb)
 
 ## Example
@@ -21,11 +22,11 @@ Transaction feeds can be created either in the Chain Core Dashboard, or from you
 
 First, we'll create a new feed programmatically, setting the filter expression to `is_local='yes'`.
 
-$code create-feed ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code create-feed ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 From now on, we can retrieve this feed using its alias:
 
-$code get-feed ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code get-feed ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 The Chain Core will record how much of a feed has been processed, so your application doesn't have to keep track itself.
 
@@ -33,23 +34,23 @@ The Chain Core will record how much of a feed has been processed, so your applic
 
 To process a transaction, our example application will print out some basic information to the console:
 
-$code processor-method ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code processor-method ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 Next, we'll set up an infinite loop that reads from the transaction feed, and sends each incoming transaction to our processor function:
 
-$code processing-loop ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code processing-loop ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
-Note the call to `ack` at the end of every cycle. This updates the transaction feed via an API call so that if your program terminates for any reason, it can pick back up from the point that `ack` was last called.
+Note that the processing loop **acknowledges** consumption of the current item. (In most platforms, this is a call to an `ack` method; in Node, this is achieved by passing `true` to the `next` callback). This updates the transaction feed via an API call so that if your program terminates for any reason, it can pick back up from the point that `ack` was last called. It's safest, but not necessary, to acknowledge on every cycle of the processing loop.
 
 The body of the processing loop will run once for every new transaction that arrives on the blockchain. If you've already processed all available transactions, then the call to `next` will **block the active thread** until a transaction matching the filter arrives. Because of this blocking behavior, we'll run the processing loop in its own thread:
 
-$code processing-thread ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code processing-thread ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 #### Testing the example
 
 In order to push some transactions through the transaction feed, we'll try generating a sample transaction:
 
-$code issue ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code issue ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 Almost immediately, we should see the following output in the console:
 
@@ -71,7 +72,7 @@ New transaction at Sun Oct 16 17:08:53 PDT 2016
 
 Let's try submitting another transaction:
 
-$code transfer ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb
+$code transfer ../examples/java/RealTimeTransactionProcessing.java ../examples/ruby/real_time_transaction_processing.rb ../examples/node/realTimeTransactionProcessing.js
 
 This should result in the following output:
 
@@ -107,11 +108,11 @@ A transaction feed provides transactions in the order they are arranged on the b
 
 Under the hood, the SDK reads data from a transaction feed using a long-polling mechanism. This ensures that network round trips between your application and the Chain Core are kept to a minimum.
 
-#### When to call `ack`
+#### When to acknowledge in the processing loop
 
-Calling `ack` for each cycle of your processing loop is the safest strategy, but it's not the only strategy. If you'd prefer to cut down on API calls to the Chain Core, you can call `ack` less frequently. The less frequently you call `ack`, the more risk you'll have of repeating some processing if your program terminates unexpectedly.
+Acknowledging each item as you consume it in your processing loop is the safest strategy, but it's not the only strategy. If you'd prefer to cut down on API calls to the Chain Core, you can acknowledge less frequently. The less frequently you acknowledge, the more risk you'll have of repeating some processing if your program terminates unexpectedly.
 
-Transaction feeds provide *at-least-once* delivery of transactions; occasionally, a transaction may be delivered multiple times. Regardless of how frequently you call `ack`, it's a good idea to design your transaction processing to be **idempotent**, so that your application can process a given transaction twice or more without adverse effects.
+Transaction feeds provide *at-least-once* delivery of transactions; occasionally, a transaction may be delivered multiple times. Regardless of how frequently you acknowledge, it's a good idea to design your transaction processing to be **idempotent**, so that your application can process a given transaction twice or more without adverse effects.
 
 #### Concurrency
 

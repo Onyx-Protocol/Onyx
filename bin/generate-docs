@@ -36,5 +36,17 @@ mkdir -p $ruby_yardoc_dest_path
 cp -R doc/* $ruby_yardoc_dest_path
 
 echo
+echo "Building Node.js SDK documentation..."
+
+node_dest_path=$compile_dest_path/node
+node_yardoc_dest_path=$node_dest_path/doc
+
+cd $CHAIN/sdk/node
+npm install
+npm run docs
+mkdir -p $node_yardoc_dest_path
+cp -R doc/* $node_yardoc_dest_path
+
+echo
 echo "Documentation generated. Output directory:"
 echo $compile_dest_path
