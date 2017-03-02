@@ -110,7 +110,6 @@ func init() {
 	expvar.NewString("runtime.GOARCH").Set(runtime.GOARCH)
 	expvar.NewString("runtime.Version").Set(runtime.Version())
 
-	config.TLS = *tlsCrt != ""
 	config.Version = version
 	config.BuildCommit = buildCommit
 	config.BuildDate = buildDate
@@ -143,6 +142,9 @@ func runServer() {
 
 	ctx := context.Background()
 	env.Parse()
+
+	// needs to happen after env.Parse()
+	config.TLS = *tlsCrt != ""
 
 	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("hapg", *dbURL)
