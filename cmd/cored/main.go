@@ -86,13 +86,10 @@ var (
 
 func init() {
 	var version string
-	if strings.HasPrefix(buildTag, "cmd.cored-") {
-		// build tag with cmd.cored- prefix indicates official release
-		version = latestVersion
-	} else if buildTag != "?" {
-		version = latestVersion + "-" + buildTag
+	if buildTag != "?" {
+		version = strings.TrimPrefix(buildTag, "cmd.cored-")
 	} else {
-		// -dev suffix indicates intermediate, non-release build
+		// +changes suffix indicates non-release build
 		version = latestVersion + "+changes"
 	}
 
