@@ -235,6 +235,7 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		SELECT unnest($1::bytea[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::bytea[]),  unnest($5::bigint[]),
 			   unnest($6::text[]), unnest($7::bigint[]), unnest($8::bytea[]), $9,
 				 unnest($10::bytea[]), unnest($11::bigint[]), unnest($12::bytea[])
+		ON CONFLICT (tx_hash, index) DO NOTHING;
 	`
 	_, err := m.db.Exec(ctx, q,
 		txHash,
