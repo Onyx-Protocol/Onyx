@@ -149,7 +149,7 @@ func Handler(a *API, register func(*http.ServeMux, *API)) http.Handler {
 	m.Handle("/configure", jsonHandler(a.configure))
 	m.Handle("/info", jsonHandler(a.info))
 
-	m.Handle("/debug/vars", http.HandlerFunc(expvarHandler))
+	m.Handle("/debug/vars", expvar.Handler())
 	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 	m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
@@ -312,23 +312,6 @@ func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}
 	}
 
 	return l.Call(ctx, path, body, resp)
-}
-
-// expvarHandler is copied from the expvar package.
-// TODO(jackson): In Go 1.8, use expvar.Handler.
-// https://go-review.googlesource.com/#/c/24722/
-func expvarHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	fmt.Fprintf(w, "{\n")
-	first := true
-	expvar.Do(func(kv expvar.KeyValue) {
-		if !first {
-			fmt.Fprintf(w, ",\n")
-		}
-		first = false
-		fmt.Fprintf(w, "%q: %s", kv.Key, kv.Value)
-	})
-	fmt.Fprintf(w, "\n}\n")
 }
 
 func healthHandler(handler http.Handler) http.Handler {
