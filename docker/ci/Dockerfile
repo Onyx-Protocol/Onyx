@@ -59,3 +59,4 @@ RUN yum install -y autoconf automake bash bison bzip2 curl gcc gcc-c++ git go ic
 
 ADD bin /usr/bin
 ENV CHAIN ${GOPATH:-$HOME/go}/src/chain
+ENV PATH=$PATH:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin
