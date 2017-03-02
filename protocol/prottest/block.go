@@ -28,7 +28,7 @@ func NewChain(tb testing.TB) *protocol.Chain {
 // NewChainWithStorage makes a new Chain using store for storage, along
 // with an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
-func NewChainWithStorage(tb testing.TB, store protocol.Store) *protocol.Chain {
+func NewChainWithStorage(tb testing.TB, store protocol.Store, outputIDs ...bc.Hash) *protocol.Chain {
 	ctx := context.Background()
 	b1, err := protocol.NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
@@ -39,7 +39,13 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store) *protocol.Chain {
 		testutil.FatalErr(tb, err)
 	}
 	c.MaxIssuanceWindow = 48 * time.Hour // TODO(tessr): consider adding MaxIssuanceWindow to NewChain
-	err = c.CommitBlock(ctx, b1, state.Empty())
+
+	s := state.Empty()
+	for _, outputID := range outputIDs {
+		s.Tree.Insert(outputID[:])
+	}
+
+	err = c.CommitBlock(ctx, b1, s)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
