@@ -1,4 +1,4 @@
-// Copyright 2015 CoreOS, Inc.
+// Copyright 2015 The etcd Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 package client
 
 import (
-	"context"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -29,6 +28,8 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/pkg/testutil"
+	"github.com/coreos/etcd/version"
+	"golang.org/x/net/context"
 )
 
 type actionAssertingHTTPClient struct {
@@ -295,7 +296,7 @@ func TestSimpleHTTPClientDoHeaderTimeout(t *testing.T) {
 			t.Fatalf("expected non-nil error, got nil")
 		}
 	case <-time.After(time.Second):
-		t.Fatalf("unexpected timeout when waitting for the test to finish")
+		t.Fatalf("unexpected timeout when waiting for the test to finish")
 	}
 }
 
@@ -444,7 +445,51 @@ func TestHTTPClusterClientDoDeadlineExceedContext(t *testing.T) {
 			t.Errorf("err = %+v, want %+v", err, context.DeadlineExceeded)
 		}
 	case <-time.After(time.Second):
-		t.Fatalf("unexpected timeout when waitting for request to deadline exceed")
+		t.Fatalf("unexpected timeout when waiting for request to deadline exceed")
+	}
+}
+
+type fakeCancelContext struct{}
+
+var fakeCancelContextError = errors.New("fake context canceled")
+
+func (f fakeCancelContext) Deadline() (time.Time, bool) { return time.Time{}, false }
+func (f fakeCancelContext) Done() <-chan struct{} {
+	d := make(chan struct{}, 1)
+	d <- struct{}{}
+	return d
+}
+func (f fakeCancelContext) Err() error                        { return fakeCancelContextError }
+func (f fakeCancelContext) Value(key interface{}) interface{} { return 1 }
+
+func withTimeout(parent context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	return parent, func() { parent = nil }
+}
+
+func TestHTTPClusterClientDoCanceledContext(t *testing.T) {
+	fakeURL := url.URL{}
+	tr := newFakeTransport()
+	tr.finishCancel <- struct{}{}
+	c := &httpClusterClient{
+		clientFactory: newHTTPClientFactory(tr, DefaultCheckRedirect, 0),
+		endpoints:     []url.URL{fakeURL},
+	}
+
+	errc := make(chan error)
+	go func() {
+		ctx, cancel := withTimeout(fakeCancelContext{}, time.Millisecond)
+		cancel()
+		_, _, err := c.Do(ctx, &fakeAction{})
+		errc <- err
+	}()
+
+	select {
+	case err := <-errc:
+		if err != fakeCancelContextError {
+			t.Errorf("err = %+v, want %+v", err, fakeCancelContextError)
+		}
+	case <-time.After(time.Second):
+		t.Fatalf("unexpected timeout when waiting for request to fake context canceled")
 	}
 }
 
@@ -811,8 +856,36 @@ func TestHTTPClusterClientAutoSyncFail(t *testing.T) {
 	}
 
 	err = hc.AutoSync(context.Background(), time.Hour)
-	if err.Error() != ErrClusterUnavailable.Error() {
+	if !strings.HasPrefix(err.Error(), ErrClusterUnavailable.Error()) {
 		t.Fatalf("incorrect error value: want=%v got=%v", ErrClusterUnavailable, err)
+	}
+}
+
+func TestHTTPClusterClientGetVersion(t *testing.T) {
+	body := []byte(`{"etcdserver":"2.3.2","etcdcluster":"2.3.0"}`)
+	cf := newStaticHTTPClientFactory([]staticHTTPResponse{
+		{
+			resp: http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Length": []string{"44"}}},
+			body: body,
+		},
+	})
+
+	hc := &httpClusterClient{
+		clientFactory: cf,
+		rand:          rand.New(rand.NewSource(0)),
+	}
+	err := hc.SetEndpoints([]string{"http://127.0.0.1:4003", "http://127.0.0.1:2379", "http://127.0.0.1:4001", "http://127.0.0.1:4002"})
+	if err != nil {
+		t.Fatalf("unexpected error during setup: %#v", err)
+	}
+
+	actual, err := hc.GetVersion(context.Background())
+	if err != nil {
+		t.Errorf("non-nil error: %#v", err)
+	}
+	expected := version.Versions{Server: "2.3.2", Cluster: "2.3.0"}
+	if !reflect.DeepEqual(&expected, actual) {
+		t.Errorf("incorrect Response: want=%#v got=%#v", expected, actual)
 	}
 }
 
@@ -851,7 +924,91 @@ func TestHTTPClusterClientSyncPinEndpoint(t *testing.T) {
 		}
 
 		if g := hc.endpoints[hc.pinned]; g != pinnedEndpoint {
-			t.Errorf("#%d: pinned endpoint = %s, want %s", i, g, pinnedEndpoint)
+			t.Errorf("#%d: pinned endpoint = %v, want %v", i, g, pinnedEndpoint)
+		}
+	}
+}
+
+// TestHTTPClusterClientSyncUnpinEndpoint tests that Sync() unpins the endpoint when
+// it gets a different member list than before.
+func TestHTTPClusterClientSyncUnpinEndpoint(t *testing.T) {
+	cf := newStaticHTTPClientFactory([]staticHTTPResponse{
+		{
+			resp: http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{"application/json"}}},
+			body: []byte(`{"members":[{"id":"2745e2525fce8fe","peerURLs":["http://127.0.0.1:7003"],"name":"node3","clientURLs":["http://127.0.0.1:4003"]},{"id":"42134f434382925","peerURLs":["http://127.0.0.1:2380","http://127.0.0.1:7001"],"name":"node1","clientURLs":["http://127.0.0.1:2379","http://127.0.0.1:4001"]},{"id":"94088180e21eb87b","peerURLs":["http://127.0.0.1:7002"],"name":"node2","clientURLs":["http://127.0.0.1:4002"]}]}`),
+		},
+		{
+			resp: http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{"application/json"}}},
+			body: []byte(`{"members":[{"id":"42134f434382925","peerURLs":["http://127.0.0.1:2380","http://127.0.0.1:7001"],"name":"node1","clientURLs":["http://127.0.0.1:2379","http://127.0.0.1:4001"]},{"id":"94088180e21eb87b","peerURLs":["http://127.0.0.1:7002"],"name":"node2","clientURLs":["http://127.0.0.1:4002"]}]}`),
+		},
+		{
+			resp: http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{"application/json"}}},
+			body: []byte(`{"members":[{"id":"2745e2525fce8fe","peerURLs":["http://127.0.0.1:7003"],"name":"node3","clientURLs":["http://127.0.0.1:4003"]},{"id":"42134f434382925","peerURLs":["http://127.0.0.1:2380","http://127.0.0.1:7001"],"name":"node1","clientURLs":["http://127.0.0.1:2379","http://127.0.0.1:4001"]},{"id":"94088180e21eb87b","peerURLs":["http://127.0.0.1:7002"],"name":"node2","clientURLs":["http://127.0.0.1:4002"]}]}`),
+		},
+	})
+
+	hc := &httpClusterClient{
+		clientFactory: cf,
+		rand:          rand.New(rand.NewSource(0)),
+	}
+	err := hc.SetEndpoints([]string{"http://127.0.0.1:4003", "http://127.0.0.1:2379", "http://127.0.0.1:4001", "http://127.0.0.1:4002"})
+	if err != nil {
+		t.Fatalf("unexpected error during setup: %#v", err)
+	}
+	wants := []string{"http://127.0.0.1:2379", "http://127.0.0.1:4001", "http://127.0.0.1:4002"}
+
+	for i := 0; i < 3; i++ {
+		err = hc.Sync(context.Background())
+		if err != nil {
+			t.Fatalf("#%d: unexpected error during Sync: %#v", i, err)
+		}
+
+		if g := hc.endpoints[hc.pinned]; g.String() != wants[i] {
+			t.Errorf("#%d: pinned endpoint = %v, want %v", i, g, wants[i])
+		}
+	}
+}
+
+// TestHTTPClusterClientSyncPinLeaderEndpoint tests that Sync() pins the leader
+// when the selection mode is EndpointSelectionPrioritizeLeader
+func TestHTTPClusterClientSyncPinLeaderEndpoint(t *testing.T) {
+	cf := newStaticHTTPClientFactory([]staticHTTPResponse{
+		{
+			resp: http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{"application/json"}}},
+			body: []byte(`{"members":[{"id":"2745e2525fce8fe","peerURLs":["http://127.0.0.1:7003"],"name":"node3","clientURLs":["http://127.0.0.1:4003"]},{"id":"42134f434382925","peerURLs":["http://127.0.0.1:2380","http://127.0.0.1:7001"],"name":"node1","clientURLs":["http://127.0.0.1:2379","http://127.0.0.1:4001"]},{"id":"94088180e21eb87b","peerURLs":["http://127.0.0.1:7002"],"name":"node2","clientURLs":["http://127.0.0.1:4002"]}]}`),
+		},
+		{
+			resp: http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{"application/json"}}},
+			body: []byte(`{"id":"2745e2525fce8fe","peerURLs":["http://127.0.0.1:7003"],"name":"node3","clientURLs":["http://127.0.0.1:4003"]}`),
+		},
+		{
+			resp: http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{"application/json"}}},
+			body: []byte(`{"members":[{"id":"2745e2525fce8fe","peerURLs":["http://127.0.0.1:7003"],"name":"node3","clientURLs":["http://127.0.0.1:4003"]},{"id":"42134f434382925","peerURLs":["http://127.0.0.1:2380","http://127.0.0.1:7001"],"name":"node1","clientURLs":["http://127.0.0.1:2379","http://127.0.0.1:4001"]},{"id":"94088180e21eb87b","peerURLs":["http://127.0.0.1:7002"],"name":"node2","clientURLs":["http://127.0.0.1:4002"]}]}`),
+		},
+		{
+			resp: http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{"application/json"}}},
+			body: []byte(`{"id":"94088180e21eb87b","peerURLs":["http://127.0.0.1:7002"],"name":"node2","clientURLs":["http://127.0.0.1:4002"]}`),
+		},
+	})
+
+	hc := &httpClusterClient{
+		clientFactory: cf,
+		rand:          rand.New(rand.NewSource(0)),
+		selectionMode: EndpointSelectionPrioritizeLeader,
+		endpoints:     []url.URL{{}}, // Need somewhere to pretend to send to initially
+	}
+
+	wants := []string{"http://127.0.0.1:4003", "http://127.0.0.1:4002"}
+
+	for i, want := range wants {
+		err := hc.Sync(context.Background())
+		if err != nil {
+			t.Fatalf("#%d: unexpected error during Sync: %#v", i, err)
+		}
+
+		pinned := hc.endpoints[hc.pinned].String()
+		if pinned != want {
+			t.Errorf("#%d: pinned endpoint = %v, want %v", i, pinned, want)
 		}
 	}
 }

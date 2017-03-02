@@ -1,4 +1,4 @@
-// Copyright 2015 CoreOS, Inc.
+// Copyright 2015 The etcd Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@ package client
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
+
+	"golang.org/x/net/context"
 )
 
 type Role struct {
@@ -117,13 +118,17 @@ func (r *httpAuthRoleAPI) ListRoles(ctx context.Context) ([]string, error) {
 	if err = assertStatusCode(resp.StatusCode, http.StatusOK); err != nil {
 		return nil, err
 	}
-	var userList struct {
-		Roles []string `json:"roles"`
+	var roleList struct {
+		Roles []Role `json:"roles"`
 	}
-	if err = json.Unmarshal(body, &userList); err != nil {
+	if err = json.Unmarshal(body, &roleList); err != nil {
 		return nil, err
 	}
-	return userList.Roles, nil
+	ret := make([]string, 0, len(roleList.Roles))
+	for _, r := range roleList.Roles {
+		ret = append(ret, r.Role)
+	}
+	return ret, nil
 }
 
 func (r *httpAuthRoleAPI) AddRole(ctx context.Context, rolename string) error {
