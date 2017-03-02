@@ -20,7 +20,7 @@ If you are interested in contributing to this code base, please read our [issue]
 
 ## Building from source
 
-* [Go](https://golang.org/doc/install) version 1.7, with $GOPATH set to your
+* [Go](https://golang.org/doc/install) version 1.8, with $GOPATH set to your
   preferred directory
 * Postgres (we suggest [Postgres.app](http://postgresapp.com/)),
   along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)

@@ -1,4 +1,4 @@
-FROM golang:1.7.4-alpine
+FROM golang:1.8-alpine
 
 RUN apk --no-cache add bash clang git g++ make nodejs openjdk8 python perl \
     ruby ruby-bigdecimal ruby-bundler ruby-io-console ruby-irb ruby-json openssl ca-certificates \

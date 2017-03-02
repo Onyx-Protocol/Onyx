@@ -1,6 +1,6 @@
 {
   "ImportPath": "chain",
-  "GoVersion": "go1.7",
+  "GoVersion": "go1.8",
   "Packages": [
     "./..."
   ],
