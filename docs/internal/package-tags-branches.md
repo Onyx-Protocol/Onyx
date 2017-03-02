@@ -34,5 +34,5 @@ Every package release has a **tag** that specifies the package name and its majo
 
 Naturally, release tags should live on their relevant version branches, e.g.:
 
-- `chain-core-server-1.1.1` is on the `1.1.x` branch
-- `sdk-ruby-1.0.2` is on the `1.0.x` branch
+- `chain-core-server-1.1.1` is on the `1.1-stable` branch
+- `sdk-ruby-1.0.2` is on the `1.0-stable` branch
