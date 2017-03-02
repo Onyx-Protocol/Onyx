@@ -4,11 +4,13 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"expvar"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -60,6 +62,7 @@ var (
 	// config vars
 	tlsCrt        = env.String("TLSCRT", "")
 	tlsKey        = env.String("TLSKEY", "")
+	rootCAs       = env.String("ROOT_CA_CERTS", "") // file path
 	listenAddr    = env.String("LISTEN", ":1999")
 	dbURL         = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
 	splunkAddr    = os.Getenv("SPLUNKADDR")
@@ -145,6 +148,12 @@ func runServer() {
 
 	// needs to happen after env.Parse()
 	config.TLS = *tlsCrt != ""
+
+	if *rootCAs != "" {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+			RootCAs: loadRootCAs(*rootCAs),
+		}
+	}
 
 	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("hapg", *dbURL)
@@ -523,4 +532,18 @@ func (w *errlog) Write(p []byte) (int, error) {
 		w.t = time.Now()
 	}
 	return len(p), nil // report success for the MultiWriter
+}
+
+// loadRootCAs reads a list of PEM-encoded X.509 certificates from name
+func loadRootCAs(name string) *x509.CertPool {
+	pem, err := ioutil.ReadFile(name)
+	if err != nil {
+		chainlog.Fatal(context.Background(), chainlog.KeyError, err)
+	}
+	pool := x509.NewCertPool()
+	ok := pool.AppendCertsFromPEM(pem)
+	if !ok {
+		chainlog.Fatal(context.Background(), chainlog.KeyError, "no certs found in "+name)
+	}
+	return pool
 }
