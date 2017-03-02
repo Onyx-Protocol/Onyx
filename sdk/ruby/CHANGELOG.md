@@ -1,5 +1,13 @@
 # Chain Ruby SDK
 
+This changelog is for the 1.1.x branch of the Ruby SDK. Older versions:
+
+- [1.0.x](https://github.com/chain/chain/blob/sdk-ruby-1.0.x/sdk/ruby/CHANGELOG.md)
+
+## 1.1.1 (March 2, 2017)
+
+* Relax minimum Ruby version requirement from 2.1 to 2.0. While the Ruby SDK is now compatible with Ruby 2.0, we strongly recommend using Ruby 2.1 or greater, since Ruby 2.0 has reached end-of-life and is no longer receiving critical security updates.
+
 ## 1.1.0 (February 24, 2017)
 
 This release is a minor version update, and contains **new features** and **deprecations**. It is not compatible with cored 1.0.x; please upgrade cored before updating your SDKs.
@@ -144,17 +152,3 @@ client.transactions.query(
   ...
 end
 ```
-
-## 1.0.2 (February 21, 2017)
-
-* Syntax compatibility update
-
-## 1.0.1 (January 24, 2017)
-
-* Set minimum Ruby version requirement to 2.1
-* Enhanced transaction feed API support
-* Fixed issue reading attributers with array getter syntax (@donce in [#422](https://github.com/chain/chain/pull/422))
-
-## 1.0.0 (November 17, 2016)
-
-* Initial release
