@@ -23,22 +23,23 @@ This guide will walk you through the basic key operations:
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/Keys.java)
+- [Node](../examples/node/keys.js)
 - [Ruby](../examples/ruby/keys.rb)
 
 ## Create key
 
 Create a new key in the Mock HSM. (Requires a context to have been created with `new Context()`.)
 
-$code create-key ../examples/java/Keys.java ../examples/ruby/keys.rb
+$code create-key ../examples/java/Keys.java ../examples/ruby/keys.rb ../examples/node/keys.js
 
 ## Load key
 
 To be able to sign transactions, load the key into the HSM Signer, which will communicate with the Mock HSM.
 
-$code signer-add-key ../examples/java/Keys.java ../examples/ruby/keys.rb
+$code signer-add-key ../examples/java/Keys.java ../examples/ruby/keys.rb ../examples/node/keys.js
 
 ## Sign transaction
 
 Once a transaction is built, send it to the HsmSigner for signing.
 
-$code sign-transaction ../examples/java/Keys.java ../examples/ruby/keys.rb
+$code sign-transaction ../examples/java/Keys.java ../examples/ruby/keys.rb ../examples/node/keys.js
