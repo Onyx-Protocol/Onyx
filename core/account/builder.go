@@ -151,7 +151,7 @@ func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData
 	*txbuilder.SigningInstruction,
 	error,
 ) {
-	txInput := bc.NewSpendInput(u.OutputID, nil, u.AssetID, u.Amount, u.ControlProgram, refData)
+	txInput := bc.NewSpendInput(nil, u.SourceID, u.AssetID, u.Amount, u.SourcePos, u.ControlProgram, u.RefDataHash, refData)
 
 	sigInst := &txbuilder.SigningInstruction{
 		AssetAmount: u.AssetAmount,

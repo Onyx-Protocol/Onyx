@@ -82,6 +82,9 @@ type rawOutput struct {
 	ControlProgram []byte
 	txHash         bc.Hash
 	outputIndex    uint32
+	sourceID       bc.Hash
+	sourcePos      uint64
+	refData        bc.Hash
 }
 
 type accountOutput struct {
@@ -121,6 +124,9 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 				ControlProgram: out.ControlProgram,
 				txHash:         tx.ID,
 				outputIndex:    uint32(j),
+				sourceID:       tx.Results[j].SourceID,
+				sourcePos:      tx.Results[j].SourcePos,
+				refData:        tx.Results[j].RefDataHash,
 			}
 			outs = append(outs, out)
 		}
@@ -147,12 +153,11 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 
 func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
 	for _, tx := range txs {
-		for _, in := range tx.Inputs {
+		for i, in := range tx.Inputs {
 			if in.IsIssuance() {
 				continue
 			}
-			o := in.SpentOutputID()
-			outputIDs = append(outputIDs, o.Bytes())
+			outputIDs = append(outputIDs, tx.SpentOutputIDs[i].Bytes())
 		}
 	}
 	return
@@ -208,6 +213,9 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		accountID pq.StringArray
 		cpIndex   pq.Int64Array
 		program   pq.ByteaArray
+		sourceID  pq.ByteaArray
+		sourcePos pq.Int64Array
+		refData   pq.ByteaArray
 	)
 	for _, out := range outs {
 		outputID = append(outputID, out.OutputID.Bytes())
@@ -216,13 +224,17 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		accountID = append(accountID, out.AccountID)
 		cpIndex = append(cpIndex, int64(out.keyIndex))
 		program = append(program, out.ControlProgram)
+		sourceID = append(sourceID, out.sourceID[:])
+		sourcePos = append(sourcePos, int64(out.sourcePos))
+		refData = append(refData, out.refData[:])
 	}
 
 	const q = `
 		INSERT INTO account_utxos (output_id, asset_id, amount, account_id, control_program_index,
-			control_program, confirmed_in)
+			control_program, confirmed_in, source_id, source_pos, ref_data_hash)
 		SELECT unnest($1::bytea[]), unnest($2::bytea[]),  unnest($3::bigint[]),
-			   unnest($4::text[]), unnest($5::bigint[]), unnest($6::bytea[]), $7
+			   unnest($4::text[]), unnest($5::bigint[]), unnest($6::bytea[]), $7,
+				 unnest($8::bytea[]), unnest($9::bigint[]), unnest($10::bytea[])
 		ON CONFLICT (output_id) DO NOTHING
 	`
 	_, err := m.db.Exec(ctx, q,
@@ -233,6 +245,9 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		cpIndex,
 		program,
 		block.Height,
+		sourceID,
+		sourcePos,
+		refData,
 	)
 	return errors.Wrap(err)
 }

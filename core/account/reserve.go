@@ -35,8 +35,11 @@ var (
 // utxo describes an individual account utxo.
 type utxo struct {
 	OutputID bc.Hash
+	SourceID bc.Hash
 	bc.AssetAmount
+	SourcePos      uint64
 	ControlProgram []byte
+	RefDataHash    bc.Hash
 
 	AccountID           string
 	ControlProgramIndex uint64
@@ -380,20 +383,24 @@ func (sr *sourceReserver) refillCache(ctx context.Context) error {
 
 func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height uint64) ([]*utxo, error) {
 	const q = `
-		SELECT output_id, amount, control_program_index, control_program
+		SELECT output_id, amount, control_program_index, control_program,
+			source_id, source_pos, ref_data_hash
 		FROM account_utxos
 		WHERE account_id = $1 AND asset_id = $2 AND confirmed_in > $3
 	`
 	var utxos []*utxo
 	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID, height,
-		func(oid bc.Hash, amount uint64, cpIndex uint64, controlProg []byte) {
+		func(oid bc.Hash, amount uint64, cpIndex uint64, controlProg []byte, sourceID bc.Hash, sourcePos uint64, refData bc.Hash) {
 			utxos = append(utxos, &utxo{
 				OutputID: oid,
+				SourceID: sourceID,
 				AssetAmount: bc.AssetAmount{
 					Amount:  amount,
 					AssetID: src.AssetID,
 				},
+				SourcePos:           sourcePos,
 				ControlProgram:      controlProg,
+				RefDataHash:         refData,
 				AccountID:           src.AccountID,
 				ControlProgramIndex: cpIndex,
 			})
@@ -406,13 +413,23 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height uint64)
 
 func findSpecificUTXO(ctx context.Context, db pg.DB, out bc.Hash) (*utxo, error) {
 	const q = `
-		SELECT account_id, asset_id, amount, control_program_index, control_program
+		SELECT account_id, asset_id, amount, control_program_index, control_program,
+			source_id, source_pos, ref_data_hash
 		FROM account_utxos
 		WHERE output_id = $1
 	`
 	u := new(utxo)
 	// TODO(oleg): maybe we need to scan txid:index too from here...
-	err := db.QueryRow(ctx, q, out).Scan(&u.AccountID, &u.AssetID, &u.Amount, &u.ControlProgramIndex, &u.ControlProgram)
+	err := db.QueryRow(ctx, q, out).Scan(
+		&u.AccountID,
+		&u.AssetID,
+		&u.Amount,
+		&u.ControlProgramIndex,
+		&u.ControlProgram,
+		&u.SourceID,
+		&u.SourcePos,
+		&u.RefDataHash,
+	)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	} else if err != nil {

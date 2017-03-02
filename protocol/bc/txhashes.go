@@ -4,14 +4,25 @@ type (
 	// TxHashes holds data needed for validation and state updates.
 	TxHashes struct {
 		ID Hash
+
 		// contains OutputIDs and retirement hashes.
-		// each OutputID is also the corresponding UnspentID
-		ResultHashes []Hash
-		Issuances    []struct {
+		Results   []ResultInfo
+		Issuances []struct {
 			ID           Hash
 			ExpirationMS uint64
 		}
-		VMContexts []*VMContext // one per old-style Input
+		SpentOutputIDs []Hash
+		VMContexts     []*VMContext // one per old-style Input
+	}
+
+	// ResultInfo contains information about each result in a transaction header.
+	ResultInfo struct {
+		ID Hash // outputID
+
+		// The following fields apply only to results that are outputs (not retirements).
+		SourceID    Hash   // the ID of this output's source entry
+		SourcePos   uint64 // the position within the source entry of this output's value
+		RefDataHash Hash   // contents of the result entry's data field (which is a hash of the source refdata, when converting from old-style transactions)
 	}
 
 	VMContext struct {
@@ -40,3 +51,5 @@ func (t TxHashes) SigHash(n uint32) Hash {
 // that can compute the hash of a blockheader. It is a variable here
 // to avoid a circular dependency between the bc and tx packages.
 var BlockHeaderHashFunc func(*BlockHeader) Hash
+
+var OutputHash func(*SpendCommitment) (Hash, error)

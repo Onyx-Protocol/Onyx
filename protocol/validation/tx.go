@@ -103,9 +103,14 @@ func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, blockVersion,
 
 		// txin is a spend
 
+		spentOutputID, err := txin.SpentOutputID()
+		if err != nil {
+			return badTxErrf(errInvalidOutput, "could not compute output id for input %d", i)
+		}
+
 		// Lookup the prevout in the blockchain state tree.
-		if !snapshot.Tree.Contains(txin.SpentOutputID().Bytes()) {
-			return badTxErrf(errInvalidOutput, "output %s for input %d is invalid", txin.SpentOutputID().String(), i)
+		if !snapshot.Tree.Contains(spentOutputID.Bytes()) {
+			return badTxErrf(errInvalidOutput, "output %s for input %d is invalid", spentOutputID, i)
 		}
 	}
 	return nil
@@ -268,10 +273,11 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 			continue
 		}
 
-		si := in.TypedInput.(*bc.SpendInput)
-
 		// Remove the consumed output from the state tree.
-		uid := si.SpentOutputID
+		uid, err := in.SpentOutputID()
+		if err != nil {
+			return err
+		}
 		snapshot.Tree.Delete(uid.Bytes())
 	}
 

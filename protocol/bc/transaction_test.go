@@ -98,7 +98,7 @@ func TestTransaction(t *testing.T) {
 			tx: NewTx(TxData{
 				Version: 1,
 				Inputs: []*TxInput{
-					NewSpendInput(mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), nil, AssetID{}, 1000000000000, []byte{1}, []byte("input")),
+					NewSpendInput(nil, mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), AssetID{}, 1000000000000, 1, []byte{1}, Hash{}, []byte("input")),
 				},
 				Outputs: []*TxOutput{
 					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash), 600000000000, []byte{1}, nil),
@@ -117,14 +117,16 @@ func TestTransaction(t *testing.T) {
 				"00" + // common witness extensible string length
 				"01" + // inputs count
 				"01" + // input 0, asset version
-				"4b" + // input 0, input commitment length prefix
-				"01" + // input 0, input commitment, "spend" type
-				"dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292" + // input 0, spend input commitment, output ID
-				"29" + // input 0, spend input commitment, output commitment length prefix
-				"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, spend input commitment, output commitment, asset id
-				"80a094a58d1d" + // input 0, spend input commitment, output commitment, amount
-				"01" + // input 0, spend input commitment, output commitment, vm version
-				"0101" + // input 0, spend input commitment, output commitment, control program
+				"6c" + // input 0, input commitment length prefix
+				"01" + // input 0, input commitment, "spend" type+
+				"6a" + // input 0, spend input commitment, spend commitment length prefix
+				"dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292" + // input 0, spend input commitment, spend commitment, source ID
+				"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, spend input commitment, spend commitment, asset id
+				"80a094a58d1d" + // input 0, spend input commitment, spend commitment, amount
+				"01" + // input 0, spend input commitment, spend commitment, source position
+				"01" + // input 0, spend input commitment, spend commitment, vm version
+				"0101" + // input 0, spend input commitment, spend commitment, control program
+				"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, spend input commitment, spend commitment, reference data hash
 				"05696e707574" + // input 0, reference data
 				"01" + // input 0, input witness length prefix
 				"00" + // input 0, input witness, number of args
@@ -146,7 +148,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 1, reference data
 				"00" + // output 1, output witness
 				"0c646973747269627574696f6e"), // reference data
-			hash: mustDecodeHash("db56dd46919fe91055e6441bdee2c7e0393f561995e11bd2a063b690adde4205"),
+			hash: mustDecodeHash("c328ad4278045b4c50e8af7e7d0df198e7d9436d2b5de35df1339f13a1192331"),
 		},
 
 		//07
@@ -232,7 +234,7 @@ func TestHasIssuance(t *testing.T) {
 	}, {
 		tx: &TxData{
 			Inputs: []*TxInput{
-				NewSpendInput(Hash{}, nil, AssetID{}, 0, nil, nil),
+				NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil),
 				NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil, nil),
 			},
 		},
@@ -240,7 +242,7 @@ func TestHasIssuance(t *testing.T) {
 	}, {
 		tx: &TxData{
 			Inputs: []*TxInput{
-				NewSpendInput(Hash{}, nil, AssetID{}, 0, nil, nil),
+				NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil),
 			},
 		},
 		want: false,
@@ -316,7 +318,7 @@ func BenchmarkTxWriteToFalse(b *testing.B) {
 func BenchmarkTxWriteToTrue200(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < 200; i++ {
-		tx.Inputs = append(tx.Inputs, NewSpendInput(Hash{}, nil, AssetID{}, 0, nil, nil))
+		tx.Inputs = append(tx.Inputs, NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil))
 		tx.Outputs = append(tx.Outputs, NewTxOutput(AssetID{}, 0, nil, nil))
 	}
 	for i := 0; i < b.N; i++ {
@@ -327,7 +329,7 @@ func BenchmarkTxWriteToTrue200(b *testing.B) {
 func BenchmarkTxWriteToFalse200(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < 200; i++ {
-		tx.Inputs = append(tx.Inputs, NewSpendInput(Hash{}, nil, AssetID{}, 0, nil, nil))
+		tx.Inputs = append(tx.Inputs, NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil))
 		tx.Outputs = append(tx.Outputs, NewTxOutput(AssetID{}, 0, nil, nil))
 	}
 	for i := 0; i < b.N; i++ {
@@ -336,7 +338,7 @@ func BenchmarkTxWriteToFalse200(b *testing.B) {
 }
 
 func BenchmarkTxInputWriteToTrue(b *testing.B) {
-	input := NewSpendInput(Hash{}, nil, AssetID{}, 0, nil, nil)
+	input := NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil)
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		input.writeTo(ew, 0)
@@ -344,7 +346,7 @@ func BenchmarkTxInputWriteToTrue(b *testing.B) {
 }
 
 func BenchmarkTxInputWriteToFalse(b *testing.B) {
-	input := NewSpendInput(Hash{}, nil, AssetID{}, 0, nil, nil)
+	input := NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil)
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		input.writeTo(ew, serRequired)

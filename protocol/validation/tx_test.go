@@ -96,7 +96,7 @@ func TestUniqueIssuance(t *testing.T) {
 	tx = bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(tx.OutputID(0), nil, assetID, 1, trueProg, nil),
+			bc.NewSpendInput(nil, tx.Results[0].SourceID, assetID, 1, tx.Results[0].SourcePos, trueProg, tx.Results[0].RefDataHash, nil),
 			issuance2Inp,
 		},
 		Outputs: []*bc.TxOutput{
@@ -168,6 +168,9 @@ func TestTxWellFormed(t *testing.T) {
 	aid2 := bc.AssetID([32]byte{2})
 
 	tx1 := bc.NewTx(bc.TxData{
+		Inputs: []*bc.TxInput{
+			bc.NewIssuanceInput([]byte{1}, 10, nil, initialBlockHash, issuanceProg, nil, nil),
+		},
 		Outputs: []*bc.TxOutput{
 			{
 				OutputCommitment: bc.OutputCommitment{
@@ -191,6 +194,8 @@ func TestTxWellFormed(t *testing.T) {
 			},
 		},
 	})
+	t.Log(tx1.Results[0].SourceID, tx1.Results[0].SourcePos, tx1.Results[0].RefDataHash)
+	t.Log(tx2.Results[0].SourceID, tx2.Results[0].SourcePos, tx2.Results[0].RefDataHash)
 
 	testCases := []struct {
 		suberr error
@@ -207,7 +212,7 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 1000, nil, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 1000, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 999, nil, nil),
@@ -219,8 +224,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 500, nil, nil),
-					bc.NewSpendInput(tx2.OutputID(0), nil, aid2, 500, nil, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 500, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
+					bc.NewSpendInput(nil, tx2.Results[0].SourceID, aid2, 500, tx2.Results[0].SourcePos, trueProg, tx2.Results[0].RefDataHash, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 500, nil, nil),
@@ -234,7 +239,7 @@ func TestTxWellFormed(t *testing.T) {
 				Version: 1,
 				Inputs: []*bc.TxInput{
 					bc.NewIssuanceInput(nil, 0, nil, initialBlockHash, issuanceProg, nil, nil),
-					bc.NewSpendInput(tx1.OutputID(0), nil, aid2, 0, nil, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid2, 0, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 0, nil, nil),
@@ -246,7 +251,7 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 1000, trueProg, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 1000, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -257,8 +262,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 500, trueProg, nil),
-					bc.NewSpendInput(tx2.OutputID(0), nil, aid2, 500, trueProg, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 500, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
+					bc.NewSpendInput(nil, tx2.Results[0].SourceID, aid2, 500, tx2.Results[0].SourcePos, trueProg, tx2.Results[0].RefDataHash, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 500, nil, nil),
@@ -272,8 +277,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 500, trueProg, nil),
-					bc.NewSpendInput(tx2.OutputID(0), nil, aid1, 500, trueProg, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 500, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
+					bc.NewSpendInput(nil, tx2.Results[0].SourceID, aid1, 500, tx2.Results[0].SourcePos, trueProg, tx2.Results[0].RefDataHash, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -287,7 +292,7 @@ func TestTxWellFormed(t *testing.T) {
 				MinTime: 2,
 				MaxTime: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(tx1.OutputID(0), nil, aid1, 1000, nil, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 1000, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -301,7 +306,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -333,7 +338,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -365,7 +370,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 2,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -397,7 +402,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -429,7 +434,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -461,7 +466,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -493,7 +498,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -526,7 +531,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 2,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -559,7 +564,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -592,7 +597,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -625,7 +630,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -658,7 +663,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -690,7 +695,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: math.MaxInt64,
 								},
@@ -702,7 +707,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 1,
 								},
@@ -722,7 +727,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 10,
 								},
@@ -734,7 +739,7 @@ func TestTxWellFormed(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{
+							SpendCommitment: bc.SpendCommitment{
 								AssetAmount: bc.AssetAmount{
 									Amount: 10,
 								},
@@ -780,7 +785,7 @@ func TestTxRangeErrs(t *testing.T) {
 				{
 					AssetVersion: 1,
 					TypedInput: &bc.SpendInput{
-						OutputCommitment: bc.OutputCommitment{
+						SpendCommitment: bc.SpendCommitment{
 							AssetAmount: bc.AssetAmount{
 								Amount: math.MaxInt64 + 1,
 							},
@@ -796,7 +801,7 @@ func TestTxRangeErrs(t *testing.T) {
 				{
 					AssetVersion: 1,
 					TypedInput: &bc.SpendInput{
-						OutputCommitment: bc.OutputCommitment{
+						SpendCommitment: bc.SpendCommitment{
 							AssetAmount: bc.AssetAmount{
 								Amount: 10,
 							},
@@ -952,6 +957,7 @@ func TestConfirmTx(t *testing.T) {
 	})
 
 	outid1 := tx.OutputID(0)
+	outres := tx.Results[0]
 
 	snapshot := state.Empty()
 	err := snapshot.Tree.Insert(outid1[:])
@@ -1025,7 +1031,7 @@ func TestConfirmTx(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							OutputCommitment: bc.OutputCommitment{},
+							SpendCommitment: bc.SpendCommitment{},
 						},
 					},
 				},
@@ -1039,8 +1045,14 @@ func TestConfirmTx(t *testing.T) {
 					{
 						AssetVersion: 1,
 						TypedInput: &bc.SpendInput{
-							SpentOutputID:    outid1,
-							OutputCommitment: out1,
+							SpendCommitment: bc.SpendCommitment{
+								AssetAmount:    out1.AssetAmount,
+								VMVersion:      out1.VMVersion,
+								ControlProgram: out1.ControlProgram,
+								SourceID:       outres.SourceID,
+								SourcePosition: outres.SourcePos,
+								RefDataHash:    outres.RefDataHash,
+							},
 						},
 					},
 				},

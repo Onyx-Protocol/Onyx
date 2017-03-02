@@ -14,6 +14,23 @@ func init() {
 		hash, _ := mapBlockHeader(old)
 		return hash
 	}
+	bc.OutputHash = ComputeOutputID
+}
+
+func ComputeOutputID(sc *bc.SpendCommitment) (h bc.Hash, err error) {
+	defer func() {
+		if r, ok := recover().(error); ok {
+			err = r
+		}
+	}()
+	o := newOutput(valueSource{
+		Ref:      sc.SourceID,
+		Value:    sc.AssetAmount,
+		Position: sc.SourcePosition,
+	}, program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
+
+	h = entryID(o)
+	return h, nil
 }
 
 // TxHashes returns all hashes needed for validation and state updates.
@@ -26,13 +43,20 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 	hashes = new(bc.TxHashes)
 	hashes.ID = bc.Hash(txid)
 
-	// ResultHashes
-	hashes.ResultHashes = make([]bc.Hash, len(header.body.Results))
+	// Results
+	hashes.Results = make([]bc.ResultInfo, len(header.body.Results))
 	for i, resultHash := range header.body.Results {
-		hashes.ResultHashes[i] = bc.Hash(resultHash)
+		hashes.Results[i].ID = resultHash
+		entry := entries[resultHash]
+		if out, ok := entry.(*output); ok {
+			hashes.Results[i].SourceID = out.body.Source.Ref
+			hashes.Results[i].SourcePos = out.body.Source.Position
+			hashes.Results[i].RefDataHash = out.body.Data
+		}
 	}
 
 	hashes.VMContexts = make([]*bc.VMContext, len(oldTx.Inputs))
+	hashes.SpentOutputIDs = make([]bc.Hash, len(oldTx.Inputs))
 
 	for entryID, ent := range entries {
 		switch ent := ent.(type) {
@@ -62,6 +86,7 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.Data, ent.body.Data)
 			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
 			hashes.VMContexts[ent.Ordinal()] = vmc
+			hashes.SpentOutputIDs[ent.Ordinal()] = ent.body.SpentOutput
 		}
 	}
 

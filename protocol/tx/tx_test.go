@@ -18,7 +18,7 @@ func TestTxHashes(t *testing.T) {
 		},
 		{
 			txdata: sampleTx(),
-			hash:   mustDecodeHash("0a1ef3935e4bc83a8b59603146fc88d09405b9f5531ac5774f61350290b0fe1c"),
+			hash:   mustDecodeHash("9fad4f5024412d99d17508ef3cc66f81f1e09914a71b2641683acca87081c098"), // todo: verify this value,
 		},
 	}
 
@@ -72,8 +72,8 @@ func sampleTx() *bc.TxData {
 	return &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), nil, assetID, 1000000000000, []byte{1}, []byte("input")),
-			bc.NewSpendInput(bc.Hash{17}, nil, assetID, 1, []byte{2}, []byte("input2")),
+			bc.NewSpendInput(nil, mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), assetID, 1000000000000, 1, []byte{1}, bc.Hash{}, []byte("input")),
+			bc.NewSpendInput(nil, bc.Hash{17}, assetID, 1, 1, []byte{2}, bc.Hash{}, []byte("input2")),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 600000000000, []byte{1}, nil),

@@ -194,7 +194,10 @@ CREATE TABLE account_utxos (
     control_program_index bigint NOT NULL,
     control_program bytea NOT NULL,
     confirmed_in bigint NOT NULL,
-    output_id bytea NOT NULL
+    output_id bytea NOT NULL,
+    source_id bytea NOT NULL,
+    source_pos bigint NOT NULL,
+    ref_data_hash bytea NOT NULL
 );
 
 
@@ -895,3 +898,4 @@ insert into migrations (filename, hash) values ('2017-02-03.0.core.schema-snapsh
 insert into migrations (filename, hash) values ('2017-02-07.0.query.non-null-alias.sql', '17028a0bdbc95911e299dc65fe641184e54c87a0d07b3c576d62d023b9a8defc');
 insert into migrations (filename, hash) values ('2017-02-16.0.query.spent-output.sql', '7cd52095b6f202d7a25ffe666b7b7d60e7700d314a7559b911e236b72661a738');
 insert into migrations (filename, hash) values ('2017-02-28.0.core.remove-outpoints.sql', '067638e2a826eac70d548f2d6bb234660f3200064072baf42db741456ecf8deb');
+insert into migrations (filename, hash) values ('2017-03-02.0.core.add-output-source-info.sql', 'f44c7cfbff346f6f797d497910c0a76f2a7600ca8b5be4fe4e4a04feaf32e0df');
