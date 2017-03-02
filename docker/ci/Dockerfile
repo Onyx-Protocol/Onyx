@@ -6,8 +6,10 @@ ENV GOLANG_SHA256 2e4dd6c44f0693bef4e7b46cc701513d74c3cc44f2419bf519d7868b12931a
 ENV GOPATH /go
 ENV JAVA_HOME /opt/jdk1.7.0_79
 ENV JRE_HOME /opt/jdk1.7.0_79/jre
+ENV MAVEN_HOME /usr/share/maven
+ENV MAVEN_VERSION=3.3.9
 
-RUN yum install -y bash curl gcc gcc-c++ git go make openssl \
+RUN yum install -y autoconf automake bash curl gcc gcc-c++ git go libtool make openssl wget unzip \
     && curl -fsSL -o golang.tar.gz "$GOLANG_URL" \
     && echo "$GOLANG_SHA256  golang.tar.gz" | sha256sum -c - \
     && tar -C /usr/local -xzf golang.tar.gz \
@@ -28,7 +30,22 @@ RUN yum install -y bash curl gcc gcc-c++ git go make openssl \
     && alternatives --install /usr/bin/javaws javaws /opt/jdk1.7.0_79/bin/javaws 2 \
     && alternatives --set jar /opt/jdk1.7.0_79/bin/jar \
     && alternatives --set javac /opt/jdk1.7.0_79/bin/javac \
-    && PATH=$PATH:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin
+    && PATH=$PATH:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin \
+    && cd /usr/share \
+    && wget -q http://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz -O - | tar xzf - \
+    && mv /usr/share/apache-maven-$MAVEN_VERSION /usr/share/maven \
+    && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn \
+    && git clone https://github.com/google/protobuf.git \
+    && cd protobuf \
+    && git checkout v3.1.0 \
+    && ./autogen.sh \
+    && ./configure \
+    && make \
+    && make install \
+    && ldconfig \
+    && go get -u github.com/golang/protobuf/proto \
+    && go get -u github.com/golang/protobuf/protoc-gen-go \
+    && go get -u google.golang.org/grpc
 
 # RUN yum install -y bash clang git g++ make nodejs openjdk8 python perl \
 #     ruby ruby-bigdecimal ruby-bundler ruby-io-console ruby-irb ruby-json \
@@ -61,5 +78,3 @@ RUN yum install -y bash curl gcc gcc-c++ git go make openssl \
 
 # ADD bin /usr/bin
 # ENV CHAIN ${GOPATH:-$HOME/go}/src/chain
-# ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
-# ENV MAVEN_HOME /usr/share/maven
