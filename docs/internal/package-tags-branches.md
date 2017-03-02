@@ -19,7 +19,9 @@ Every major/minor version pair will have its own branch named `<major>-<minor>.x
 - `1.0.x`
 - `1.1.x`
 
-Version branches should be the target for point release updates across all packages. These updates should be as conservative as possible.  Our [versioning scheme](../core/reference/versioning.md) is such that it should always be safe to deploy artifacts from the tip of each package branch.
+Version branches act as the merge base for point release updates across all packages. We should ensure that the tip of each version branch maintains cross-compatibility across packages, per our [versioning scheme](../core/reference/versioning.md).
+
+Updates to the version branches should be as conservative as possible.
 
 ## Release tags
 
