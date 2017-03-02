@@ -47,12 +47,6 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
 	}
 
-	// Topologically sort the transactions, if needed.
-	if !isTopSorted(txs) {
-		log.Messagef(ctx, "set of %d txs not in topo order; sorting", len(txs))
-		txs = topSort(txs)
-	}
-
 	// Make a copy of the state that we can apply our changes to.
 	result = state.Copy(snapshot)
 	result.PruneIssuances(timestampMS)
