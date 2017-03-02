@@ -1,14 +1,20 @@
 # Chain Ruby SDK
 
-## 1.1.1 (March 2, 2017)
+- [1.1.x](#1.1.x)
+- [1.0.x](#1.0.x)
+
+<a name='1.1.x'></a>
+## Version 1.1.x
+
+### 1.1.1 (March 2, 2017)
 
 * Relax minimum Ruby version requirement from 2.1 to 2.0. While the Ruby SDK is now compatible with Ruby 2.0, we strongly recommend using Ruby 2.1 or greater, since Ruby 2.0 has reached end-of-life and is no longer receiving critical security updates.
 
-## 1.1.0 (February 24, 2017)
+### 1.1.0 (February 24, 2017)
 
 This release is a minor version update, and contains **new features** and **deprecations**. It is not compatible with cored 1.0.x; please upgrade cored before updating your SDKs.
 
-### New object: receivers
+#### New object: receivers
 
 Chain Core 1.1.x introduces the concept of a **receiver**, a cross-core payment primitive that supersedes the Chain Core 1.0.x pattern of creating and paying to control programs. Control programs still exist in the Chain protocol, but are no longer used directly to facilitate cross-core payments.
 
@@ -18,11 +24,11 @@ Initially, receivers consist of a **control program** and an **expiration date**
 
 Working with receivers is very similar to working with control programs, and should require only small adjustments to your application code.
 
-#### Creating receivers
+##### Creating receivers
 
 The `create_control_program` method is **deprecated**. Instead, use `create_receiver`.
 
-##### Deprecated (1.0.x)
+Deprecated (1.0.x):
 
 ```
 cp = client.accounts.create_control_program(
@@ -30,7 +36,7 @@ cp = client.accounts.create_control_program(
 )
 ```
 
-##### New (1.1.x)
+New (1.1.x):
 
 You can create receivers with an expiration time. This parameter is optional and defaults to 30 days into the future.
 
@@ -41,11 +47,11 @@ receiver = client.accounts.create_receiver(
 )
 ```
 
-#### Using receivers in transactions
+##### Using receivers in transactions
 
 The `control_with_program` transaction builder method is **deprecated**. Use `control_with_receiver` instead.
 
-##### Deprecated (1.0.x)
+Deprecated (1.0.x):
 
 ```
 template = client.transactions.build do |builder|
@@ -58,7 +64,7 @@ template = client.transactions.build do |builder|
 end
 ```
 
-##### New (1.1.x)
+New (1.1.x):
 
 ```
 template = client.transactions.build do |builder|
@@ -73,13 +79,11 @@ end
 
 Transactions that pay to expired receivers will fail during validation, i.e., while they are being submitted.
 
-### New output property: unique IDs
+#### New output property: unique IDs
 
 In Chain Core 1.0.x, transaction outputs were addressed using a compound value consisting of a transaction ID and output position. Chain Core 1.1.x introduces an ID property for each output that is unique across the blockchain.
 
-#### Updates to data structures
-
-##### Transaction outputs and unspent outputs
+##### Updates to transaction outputs and unspent outputs
 
 Transaction output objects and unspent outputs now have an `id` property, which is unique for that output across the history of the blockchain.
 
@@ -88,7 +92,7 @@ puts tx.outputs.first.id
 puts utxo.id
 ```
 
-##### Transaction inputs
+##### Updates to transaction inputs
 
 The `spent_output` property on `Chain::Transaction::Input` is **deprecated**. Use `spent_output_id` instead.
 
@@ -96,11 +100,11 @@ The `spent_output` property on `Chain::Transaction::Input` is **deprecated**. Us
 puts tx.inputs.first.spent_output_id
 ```
 
-#### Spending unspent outputs in transactions
+##### Updates to spending unspent outputs in transactions
 
 The `spend_account_unspent_output` transaction builder method now accepts an `output_id` parameter. The `transaction_id` and `position` parameters are **deprecated**.
 
-##### Deprecated (1.0.x)
+Deprecated (1.0.x):
 
 ```
 template = client.transactions.build do |builder|
@@ -112,7 +116,7 @@ template = client.transactions.build do |builder|
 end
 ```
 
-##### New (1.1.x)
+New (1.1.x):
 
 ```
 template = client.transactions.build do |builder|
@@ -123,11 +127,11 @@ template = client.transactions.build do |builder|
 end
 ```
 
-#### Querying previous transactions
+##### Querying previous transactions
 
 To retrieve transactions that were partially consumed by a given transaction input, you can query against a specific output ID.
 
-##### Deprecated (1.0.x)
+Deprecated (1.0.x):
 
 ```
 client.transactions.query(
@@ -138,7 +142,7 @@ client.transactions.query(
 end
 ```
 
-##### New (1.1.x)
+New (1.1.x):
 
 ```
 client.transactions.query(
@@ -149,16 +153,23 @@ client.transactions.query(
 end
 ```
 
-## 1.0.2 (February 21, 2017)
+<a name='1.0.x'></a>
+## Version 1.0.x
+
+### 1.0.3 (March 2, 2017)
+
+* Relax minimum Ruby version requirement from 2.1 to 2.0. While the Ruby SDK is now compatible with Ruby 2.0, we strongly recommend using Ruby 2.1 or greater, since Ruby 2.0 has reached end-of-life and is no longer receiving critical security updates.
+
+### 1.0.2 (February 21, 2017)
 
 * Syntax compatibility update
 
-## 1.0.1 (January 24, 2017)
+### 1.0.1 (January 24, 2017)
 
 * Set minimum Ruby version requirement to 2.1
 * Enhanced transaction feed API support
 * Fixed issue reading attributers with array getter syntax (@donce in [#422](https://github.com/chain/chain/pull/422))
 
-## 1.0.0 (November 17, 2016)
+### 1.0.0 (November 17, 2016)
 
 * Initial release
