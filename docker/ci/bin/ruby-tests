@@ -5,6 +5,8 @@ set -veou pipefail
 : ${DATABASE_URL:?must be set}
 
 /bin/bash --login
+rvm use 2.0.0
 setup-core
 cd $CHAIN/sdk/ruby
+gem install bundler
 bundle exec rspec

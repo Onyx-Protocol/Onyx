@@ -63,5 +63,4 @@ ENV PATH=$PATH:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin
 RUN git clone https://github.com/GoASTScanner/gas $(go env GOPATH)/src/github.com/GoASTScanner/gas \
     && cd $(go env GOPATH)/src/github.com/GoASTScanner/gas \
     && git reset --hard d30c5cde3613e9ba0129febda849e4d4df1d57cd \
-    && go install github.com/GoASTScanner/gas \
-    && gem install bundler
+    && go install github.com/GoASTScanner/gas
