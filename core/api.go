@@ -295,10 +295,13 @@ func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}
 		return errLeaderElection
 	}
 
-	// TODO(jackson): If using TLS, use https:// here.
-	l := &rpc.Client{
-		BaseURL: "http://" + addr,
+	leaderURL := "http://" + addr
+	if config.TLS {
+		// Issue #674: If cored is configured to use TLS, assume the
+		// leader is reachable via https. This is a fix for the 1.1.1 release.
+		leaderURL = "https://" + addr
 	}
+	l := &rpc.Client{BaseURL: leaderURL}
 
 	// Forward the request credentials if we have them.
 	// TODO(jackson): Don't use the incoming request's credentials and

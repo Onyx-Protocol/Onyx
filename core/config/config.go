@@ -36,6 +36,7 @@ var (
 
 	Version, BuildCommit, BuildDate string
 	Production                      bool
+	TLS                             bool
 )
 
 // Config encapsulates Core-level, persistent configuration options.
