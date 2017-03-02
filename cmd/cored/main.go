@@ -86,8 +86,8 @@ var (
 
 func init() {
 	var version string
-	if strings.HasPrefix(buildTag, "cmd.cored-") {
-		// build tag with cmd.cored- prefix indicates official release
+	if strings.HasPrefix(buildTag, "chain-core-server-") {
+		// build tag with chain-core-server- prefix indicates official release
 		version = latestVersion
 	} else if buildTag != "?" {
 		version = latestVersion + "-" + buildTag
