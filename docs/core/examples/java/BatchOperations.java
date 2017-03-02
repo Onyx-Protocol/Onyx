@@ -13,11 +13,20 @@ class BatchOperations {
     HsmSigner.addKey(key, MockHsm.getSignerClient(client));
 
     // snippet asset-builders
-    List<Asset.Builder> assetBuilders =
-        Arrays.asList(
-            new Asset.Builder().setAlias("gold").addRootXpub(key.xpub).setQuorum(1),
-            new Asset.Builder().setAlias("silver").addRootXpub(key.xpub).setQuorum(1),
-            new Asset.Builder().setAlias("bronze").addRootXpub(key.xpub).setQuorum(0));
+    List<Asset.Builder> assetBuilders = Arrays.asList(
+      new Asset.Builder()
+        .setAlias("gold")
+        .addRootXpub(key.xpub)
+        .setQuorum(1),
+      new Asset.Builder()
+        .setAlias("silver")
+        .addRootXpub(key.xpub)
+        .setQuorum(1),
+      new Asset.Builder()
+        .setAlias("bronze")
+        .addRootXpub(key.xpub)
+        .setQuorum(0)
+    );
     // endsnippet
 
     // snippet asset-create-batch
@@ -37,11 +46,20 @@ class BatchOperations {
     // endsnippet
 
     // snippet nondeterministic-errors
-    assetBuilders =
-        Arrays.asList(
-            new Asset.Builder().setAlias("platinum").addRootXpub(key.xpub).setQuorum(1),
-            new Asset.Builder().setAlias("platinum").addRootXpub(key.xpub).setQuorum(1),
-            new Asset.Builder().setAlias("platinum").addRootXpub(key.xpub).setQuorum(1));
+    assetBuilders = Arrays.asList(
+      new Asset.Builder()
+        .setAlias("platinum")
+        .addRootXpub(key.xpub)
+        .setQuorum(1),
+      new Asset.Builder()
+        .setAlias("platinum")
+        .addRootXpub(key.xpub)
+        .setQuorum(1),
+      new Asset.Builder()
+        .setAlias("platinum")
+        .addRootXpub(key.xpub)
+        .setQuorum(1)
+    );
     // endsnippet
 
     assetBatch = Asset.createBatch(client, assetBuilders);
@@ -56,41 +74,54 @@ class BatchOperations {
       }
     }
 
-    new Account.Builder().setAlias("alice").addRootXpub(key.xpub).setQuorum(1).create(client);
+    new Account.Builder()
+      .setAlias("alice")
+      .addRootXpub(key.xpub)
+      .setQuorum(1)
+      .create(client);
 
-    new Account.Builder().setAlias("bob").addRootXpub(key.xpub).setQuorum(1).create(client);
+    new Account.Builder()
+      .setAlias("bob")
+      .addRootXpub(key.xpub)
+      .setQuorum(1)
+      .create(client);
 
     // snippet batch-build-builders
-    List<Transaction.Builder> txBuilders =
-        Arrays.asList(
-            new Transaction.Builder()
-                .addAction(new Transaction.Action.Issue().setAssetAlias("gold").setAmount(100))
-                .addAction(
-                    new Transaction.Action.ControlWithAccount()
-                        .setAccountAlias("alice")
-                        .setAssetAlias("gold")
-                        .setAmount(100)),
-            new Transaction.Builder()
-                .addAction(
-                    new Transaction.Action.Issue().setAssetAlias("not-a-real-asset").setAmount(100))
-                .addAction(
-                    new Transaction.Action.ControlWithAccount()
-                        .setAccountAlias("alice")
-                        .setAssetAlias("not-a-real-asset")
-                        .setAmount(100)),
-            new Transaction.Builder()
-                .addAction(new Transaction.Action.Issue().setAssetAlias("silver").setAmount(100))
-                .addAction(
-                    new Transaction.Action.ControlWithAccount()
-                        .setAccountAlias("alice")
-                        .setAssetAlias("silver")
-                        .setAmount(100)));
+    List<Transaction.Builder> txBuilders = Arrays.asList(
+      new Transaction.Builder()
+        .addAction(new Transaction.Action.Issue()
+          .setAssetAlias("gold")
+          .setAmount(100)
+        ).addAction(new Transaction.Action.ControlWithAccount()
+          .setAccountAlias("alice")
+          .setAssetAlias("gold")
+          .setAmount(100)
+        ),
+      new Transaction.Builder()
+        .addAction(new Transaction.Action.Issue()
+          .setAssetAlias("not-a-real-asset")
+          .setAmount(100)
+        ).addAction(new Transaction.Action.ControlWithAccount()
+          .setAccountAlias("alice")
+          .setAssetAlias("not-a-real-asset")
+          .setAmount(100)
+        ),
+      new Transaction.Builder()
+        .addAction(new Transaction.Action.Issue()
+          .setAssetAlias("silver")
+          .setAmount(100)
+        ).addAction(new Transaction.Action.ControlWithAccount()
+          .setAccountAlias("alice")
+          .setAssetAlias("silver")
+          .setAmount(100)
+        )
+    );
     // endsnippet
 
     // snippet batch-build-handle-errors
     BatchResponse<Transaction.Template> buildTxBatch = Transaction.buildBatch(client, txBuilders);
 
-    for (Map.Entry<Integer, APIException> err : buildTxBatch.errorsByIndex().entrySet()) {
+    for(Map.Entry<Integer, APIException> err : buildTxBatch.errorsByIndex().entrySet()) {
       System.out.println("Error building transaction " + err.getKey() + ": " + err.getValue());
     }
     // endsnippet
@@ -98,23 +129,20 @@ class BatchOperations {
     // snippet batch-sign
     BatchResponse<Transaction.Template> signTxBatch = HsmSigner.signBatch(buildTxBatch.successes());
 
-    for (Map.Entry<Integer, APIException> err : signTxBatch.errorsByIndex().entrySet()) {
+    for(Map.Entry<Integer, APIException> err : signTxBatch.errorsByIndex().entrySet()) {
       System.out.println("Error signing transaction " + err.getKey() + ": " + err.getValue());
     }
     // endsnippet
 
     // snippet batch-submit
-    BatchResponse<Transaction.SubmitResponse> submitTxBatch =
-        Transaction.submitBatch(client, signTxBatch.successes());
+    BatchResponse<Transaction.SubmitResponse> submitTxBatch = Transaction.submitBatch(client, signTxBatch.successes());
 
-    for (Map.Entry<Integer, APIException> err : submitTxBatch.errorsByIndex().entrySet()) {
+    for(Map.Entry<Integer, APIException> err : submitTxBatch.errorsByIndex().entrySet()) {
       System.out.println("Error submitting transaction " + err.getKey() + ": " + err.getValue());
     }
 
-    for (Map.Entry<Integer, Transaction.SubmitResponse> success :
-        submitTxBatch.successesByIndex().entrySet()) {
-      System.out.println(
-          "Transaction " + success.getKey() + " submitted, ID: " + success.getValue().id);
+    for(Map.Entry<Integer, Transaction.SubmitResponse> success : submitTxBatch.successesByIndex().entrySet()) {
+      System.out.println("Transaction " + success.getKey() + " submitted, ID: " + success.getValue().id);
     }
     // endsnippet
   }

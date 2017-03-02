@@ -1,6 +1,8 @@
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -102,11 +104,11 @@ public class UtxoReservation {
     Transaction.SubmitResponse tx = Transaction.submit(client, signedTemplate, "confirmed");
   }
 
-  static void transact(final Client client) throws Exception {
+  static void transact(Client client) throws Exception {
     loadKeys(client);
-    final Asset currency = getAsset(client, "currency");
-    final Account alice = getAccount(client, "alice");
-    final Account bob = getAccount(client, "bob");
+    Asset currency = getAsset(client, "currency");
+    Account alice = getAccount(client, "alice");
+    Account bob = getAccount(client, "bob");
 
     final int iterations = 300; // 5 minutes
     final int concurrentPayments = 250;
@@ -118,32 +120,28 @@ public class UtxoReservation {
     List<Callable<Integer>> x = new ArrayList<>();
     for (int i = 0; i < iterations; i++) {
       for (int j = 0; j < concurrentPayments; j++) {
-        final long amount = (long) r.nextInt(maxPerPayment - 1) + 1;
+        long amount = (long) r.nextInt(maxPerPayment - 1) + 1;
         x.add(
-            new Callable<Integer>() {
-              public Integer call() throws Exception {
-                pay(client, alice, bob, currency, amount);
-                return 1;
-              }
+            () -> {
+              pay(client, alice, bob, currency, amount);
+              return 1;
             });
         x.add(
-            new Callable<Integer>() {
-              public Integer call() throws Exception {
-                pay(client, bob, alice, currency, amount);
-                return 1;
-              }
+            () -> {
+              pay(client, bob, alice, currency, amount);
+              return 1;
             });
       }
     }
 
-    final long tstart = System.currentTimeMillis();
+    Instant tstart = Instant.now();
     List<Future<Integer>> futures = pool.invokeAll(x);
     for (int i = 0; i < futures.size(); i++) {
       futures.get(i).get();
     }
-    final long tend = System.currentTimeMillis();
+    Instant tend = Instant.now();
     System.out.println("done transacting.");
-    long elapsed = tend - tstart;
+    long elapsed = Duration.between(tstart, tend).toMillis();
     System.out.printf("elapsed time %dms\n", elapsed);
     PrintWriter stats = new PrintWriter(new FileWriter("stats.json"));
     stats.printf("{\"elapsed_ms\": %d, \"txs\": %d}\n", elapsed, futures.size());
