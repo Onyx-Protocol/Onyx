@@ -25,7 +25,7 @@ module Chain
       attrib_name = attrib_name.to_sym
       raise KeyError.new("key not found: #{attrib_name}") unless self.class.attrib_opts.key?(attrib_name)
 
-      instance_variable_get "@{attrib_name}"
+      instance_variable_get "@#{attrib_name}"
     end
 
     def []=(attrib_name, value)
