@@ -15,22 +15,21 @@ import (
 )
 
 func TestInferConstraints(t *testing.T) {
-	outputID := bc.OutputID{Hash: bc.Hash{255}}
 	tpl := &Template{
-		Transaction: &bc.Tx{TxData: bc.TxData{
+		Transaction: bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(outputID, nil, bc.AssetID{}, 123, nil, []byte{1}),
+				bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 123, 0, nil, bc.Hash{}, []byte{1}),
 			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(bc.AssetID{}, 123, []byte{10, 11, 12}, nil),
 			},
 			MinTime: 1,
 			MaxTime: 2,
-		}},
+		}),
 		AllowAdditional: true,
 	}
 	prog := buildSigProgram(tpl, 0)
-	wantSrc := fmt.Sprintf("MINTIME 1 GREATERTHANOREQUAL VERIFY MAXTIME 2 LESSTHANOREQUAL VERIFY 0x%x OUTPUTID EQUAL VERIFY 0x2767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7 REFDATAHASH EQUAL VERIFY 0 0 123 0x0000000000000000000000000000000000000000000000000000000000000000 1 0x0a0b0c CHECKOUTPUT", outputID.Hash[:])
+	wantSrc := fmt.Sprintf("MINTIME 1 GREATERTHANOREQUAL VERIFY MAXTIME 2 LESSTHANOREQUAL VERIFY 0x%x OUTPUTID EQUAL VERIFY 0x2767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7 REFDATAHASH EQUAL VERIFY 0 0 123 0x0000000000000000000000000000000000000000000000000000000000000000 1 0x0a0b0c CHECKOUTPUT", tpl.Transaction.SpentOutputIDs[0].Bytes())
 	want, err := vm.Assemble(wantSrc)
 	if err != nil {
 		t.Fatal(err)

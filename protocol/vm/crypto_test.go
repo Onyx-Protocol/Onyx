@@ -88,7 +88,7 @@ func TestCheckSig(t *testing.T) {
 
 func TestCryptoOps(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
-		Inputs:  []*bc.TxInput{bc.NewSpendInput(bc.OutputID{}, nil, bc.AssetID{}, 5, nil, nil)},
+		Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
 		Outputs: []*bc.TxOutput{},
 	})
 
@@ -409,10 +409,10 @@ func TestCryptoOps(t *testing.T) {
 			tx:        tx,
 			txContext: txContext(&tx.TxData, 0),
 			dataStack: [][]byte{{
-				64, 51, 183, 15, 140, 134, 122, 204,
-				29, 162, 137, 33, 203, 185, 114, 69,
-				247, 54, 170, 195, 70, 255, 127, 51,
-				88, 80, 120, 226, 199, 219, 108, 22,
+				47, 0, 60, 221, 100, 66, 123, 94,
+				237, 214, 204, 181, 133, 71, 2, 11,
+				2, 222, 242, 45, 197, 153, 126, 157,
+				169, 172, 64, 73, 195, 74, 88, 216,
 			}},
 		},
 	}, {

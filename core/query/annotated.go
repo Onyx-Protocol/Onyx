@@ -136,8 +136,8 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, ou
 		tx.ReferenceData = &referenceData
 	}
 
-	for _, in := range orig.Inputs {
-		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(in, outpoints))
+	for i := range orig.Inputs {
+		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(orig, uint32(i), outpoints))
 	}
 	for i := range orig.Outputs {
 		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(orig, uint32(i)))
@@ -145,7 +145,8 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32, ou
 	return tx
 }
 
-func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedInput {
+func buildAnnotatedInput(tx *bc.Tx, i uint32, outpoints map[bc.OutputID]bc.Outpoint) *AnnotatedInput {
+	orig := tx.Inputs[i]
 	in := &AnnotatedInput{
 		AssetID:         orig.AssetID(),
 		Amount:          orig.Amount(),
@@ -164,7 +165,7 @@ func buildAnnotatedInput(orig *bc.TxInput, outpoints map[bc.OutputID]bc.Outpoint
 		in.Type = "issue"
 		in.IssuanceProgram = prog
 	} else {
-		prevoutID := orig.SpentOutputID()
+		prevoutID := tx.SpentOutputIDs[i]
 		in.Type = "spend"
 		in.ControlProgram = orig.ControlProgram()
 		in.SpentOutputID = &prevoutID

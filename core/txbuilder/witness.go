@@ -167,7 +167,7 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 	})
 	inp := tpl.Transaction.Inputs[index]
 	if !inp.IsIssuance() {
-		constraints = append(constraints, outputIDConstraint(inp.SpentOutputID()))
+		constraints = append(constraints, outputIDConstraint(tpl.Transaction.SpentOutputIDs[index]))
 	}
 
 	// Commitment to the tx-level refdata is conditional on it being
