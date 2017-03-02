@@ -166,6 +166,7 @@ func buildAnnotatedInput(tx *bc.Tx, i uint32, outpoints map[bc.OutputID]bc.Outpo
 		in.IssuanceProgram = prog
 	} else {
 		prevoutID := tx.SpentOutputIDs[i]
+		in.Type = "spend"
 		in.ControlProgram = orig.ControlProgram()
 		in.SpentOutputID = &prevoutID
 
