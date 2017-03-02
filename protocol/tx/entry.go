@@ -23,7 +23,29 @@ type entry interface {
 	Ordinal() int
 }
 
+// EntryRef holds an entry and its ID. The entry may be nil, but the
+// ID of a valid entry must still be present.
+type EntryRef struct {
+	entry
+	bc.Hash
+}
+
 var errInvalidValue = errors.New("invalid value")
+
+// NewEntryRef produces a new EntryRef with a non-nil entry.
+func NewEntryRef(e entry) *EntryRef {
+	return &EntryRef{
+		entry: e,
+		Hash:  entryID(e),
+	}
+}
+
+// NewIDRef produces an EntryRef with a nil entry.
+func NewIDRef(hash bc.Hash) *EntryRef {
+	return &EntryRef{
+		Hash: hash,
+	}
+}
 
 func entryID(e entry) bc.Hash {
 	h := sha3pool.Get256()
@@ -73,6 +95,10 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case bc.AssetID:
 		_, err := w.Write(v[:])
 		return errors.Wrap(err, "writing bc.AssetID for hash")
+
+	case *EntryRef:
+		_, err := w.Write(v.Hash[:])
+		return errors.Wrap(err, "writing EntryRef for hash")
 	}
 
 	// The two container types in the spec (List and Struct)

@@ -16,12 +16,14 @@ func TestMapTx(t *testing.T) {
 	oldTx := sampleTx()
 	oldOuts := oldTx.Outputs
 
-	_, header, entryMap, err := mapTx(oldTx)
+	headerRef, entryMap, err := mapTx(oldTx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
 	t.Log(spew.Sdump(entryMap))
+
+	header := headerRef.entry.(*header)
 
 	if header.body.Version != 1 {
 		t.Errorf("header.body.Version is %d, expected 1", header.body.Version)
@@ -37,7 +39,7 @@ func TestMapTx(t *testing.T) {
 	}
 
 	for i, oldOut := range oldOuts {
-		if resultEntry, ok := entryMap[header.body.Results[i]]; ok {
+		if resultEntry, ok := entryMap[header.body.Results[i].Hash]; ok {
 			if newOut, ok := resultEntry.(*output); ok {
 				if newOut.body.Source.Value != oldOut.AssetAmount {
 					t.Errorf("header.body.Results[%d].(*output).body.Source is %v, expected %v", i, newOut.body.Source.Value, oldOut.AssetAmount)
@@ -59,7 +61,7 @@ func TestMapTx(t *testing.T) {
 				t.Errorf("header.body.Results[%d] has type %s, expected output1", i, resultEntry.Type())
 			}
 		} else {
-			t.Errorf("entryMap contains nothing for header.body.Results[%d] (%x)", i, header.body.Results[i][:])
+			t.Errorf("entryMap contains nothing for header.body.Results[%d] (%x)", i, header.body.Results[i].Hash[:])
 		}
 	}
 }
