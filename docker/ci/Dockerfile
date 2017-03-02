@@ -1,7 +1,9 @@
 FROM centos:6
 
-ENV GOLANG_VERSION="1.8" \
-    # GOLANG_URL="https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz" \
+ENV CHAIN="/go/src/chain" \
+    BUNDLE_APP_CONFIG="/usr/local/bundle" \
+    GEM_HOME="/usr/local/bundle" \
+    GOLANG_VERSION="1.8" \
     GOLANG_URL="https://golang.org/dl/go1.8.linux-amd64.tar.gz" \
     GOLANG_SHA256="53ab94104ee3923e228a2cb2116e5e462ad3ebaeea06ff04463479d7f12d27ca" \
     GOPATH="/go" \
@@ -10,17 +12,13 @@ ENV GOLANG_VERSION="1.8" \
     JRE_HOME="/opt/jdk1.7.0_79/jre" \
     MAVEN_HOME="/usr/share/maven" \
     MAVEN_VERSION="3.3.9" \
+    PATH="$PATH:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin"
     RUBY_MAJOR="2.0" \
     RUBY_VERSION="2.0.0-p594" \
-    # CHAIN="${GOPATH:-$HOME/go}/src/chain" \
-    CHAIN="/go/src/chain" \
-    GEM_HOME="/usr/local/bundle" \
-    BUNDLE_APP_CONFIG="/usr/local/bundle" \
-    PATH="$PATH:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin"
 
 RUN env && yum -y update \
     && yum install -y autoconf automake bash bison bzip2 curl gcc gcc-c++ git \
-    libtool make openssl-devel openssl patch readline ruby wget unzip \
+       libtool make openssl-devel openssl patch readline ruby wget unzip \
     && yum clean all \
 # Install Go 1.8
     && curl -fsSL -o golang.tar.gz "$GOLANG_URL" \
@@ -34,8 +32,8 @@ RUN env && yum -y update \
     && yum install -y nodejs && yum clean all \
 # Install Java 7
     && curl -L0 -o jdk-7u79-linux-x64.tar.gz -H \
-    "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" \
-    http://download.oracle.com/otn-pub/java/jdk/7u79-b15/jdk-7u79-linux-x64.tar.gz \
+       "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" \
+       http://download.oracle.com/otn-pub/java/jdk/7u79-b15/jdk-7u79-linux-x64.tar.gz \
     && tar -C /opt -xzf jdk-7u79-linux-x64.tar.gz \
     && rm jdk-7u79-linux-x64.tar.gz \
     && cd /opt/jdk1.7.0_79/ \
@@ -66,7 +64,7 @@ RUN env && yum -y update \
 # Install Ruby 2.0.0
     && mkdir -p /usr/src/ruby \
     && curl -SL "http://cache.ruby-lang.org/pub/ruby/$RUBY_MAJOR/ruby-$RUBY_VERSION.tar.bz2" \
-        | tar -xjC /usr/src/ruby --strip-components=1 \
+       | tar -xjC /usr/src/ruby --strip-components=1 \
     && cd /usr/src/ruby \
     && autoconf \
     && ./configure --disable-install-doc \
