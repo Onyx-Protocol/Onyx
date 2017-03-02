@@ -1,5 +1,9 @@
 # Chain Ruby SDK
 
+## 1.0.2 (March 2, 2017)
+
+* Relax minimum Ruby version requirement from 2.1 to 2.0. While the Ruby SDK is now compatible with Ruby 2.0, we strongly recommend using Ruby 2.1 or greater, since Ruby 2.0 has reached end-of-life and is no longer receiving critical security updates.
+
 ## 1.1.0 (February 24, 2017)
 
 This release is a minor version update, and contains **new features** and **deprecations**. It is not compatible with cored 1.0.x; please upgrade cored before updating your SDKs.
