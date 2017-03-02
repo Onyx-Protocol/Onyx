@@ -141,6 +141,7 @@ func land(req *landReq) {
 		Body      string
 		Merged    bool
 		Mergeable *bool
+		Base      struct{ Ref string }
 	}
 	err = doGithubReq("GET", "repos/"+*org+"/"+repo+"/pulls/"+pr, nil, &prState)
 	if err != nil {
@@ -167,7 +168,8 @@ func land(req *landReq) {
 		return
 	}
 
-	cmd := dirCmd(landdir, "git", "rebase", "origin/main")
+	// base branch e.g. origin/main, origin/chain-core-server-1.1.x
+	cmd := dirCmd(landdir, "git", "rebase", "origin/"+prState.Base.Ref)
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
