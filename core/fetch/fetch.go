@@ -47,6 +47,27 @@ func SnapshotProgress() *Snapshot {
 	return downloadingSnapshot
 }
 
+// Init initializes the fetch package.
+func Init(ctx context.Context, peer *rpc.Client) {
+	// Fetch the generator height periodically.
+	go pollGeneratorHeight(ctx, peer)
+}
+
+// BootstrapSnapshot downloads and stores the most recent snapshot from the
+// provided peer. It's run when bootstrapping a new Core to an existing
+// network. It should be run before invoking Chain.Recover.
+func BootstrapSnapshot(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error)) {
+	const maxAttempts = 5
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		err := fetchSnapshot(ctx, peer, c.Store(), attempt)
+		health(err)
+		if err == nil {
+			break
+		}
+		logNetworkError(ctx, err)
+	}
+}
+
 // Fetch runs in a loop, fetching blocks from the configured
 // peer (e.g. the generator) and applying them to the local
 // Chain.
@@ -55,28 +76,6 @@ func SnapshotProgress() *Snapshot {
 // After each attempt to fetch and apply a block, it calls health
 // to report either an error or nil to indicate success.
 func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error), prevBlock *bc.Block, prevSnapshot *state.Snapshot) {
-	// Fetch the generator height periodically.
-	go pollGeneratorHeight(ctx, peer)
-
-	if c.Height() == 0 {
-		const maxAttempts = 5
-		for attempt := 1; attempt <= maxAttempts; attempt++ {
-			err := fetchSnapshot(ctx, peer, c.Store(), attempt)
-			health(err)
-			if err == nil {
-				break
-			}
-			logNetworkError(ctx, err)
-		}
-
-		// We need to Recover again to load the just downloaded snapshot.
-		var err error
-		prevBlock, prevSnapshot, err = c.Recover(ctx)
-		if err != nil {
-			log.Fatal(ctx, log.KeyError, err)
-		}
-	}
-
 	// If we downloaded a snapshot, now that we've recovered and successfully
 	// booted from the snapshot, mark it as done.
 	if sp := SnapshotProgress(); sp != nil {
