@@ -12,23 +12,27 @@
 - `sdk-node`
 - `sdk-ruby`
 
-## Basic scheme
+## Version branches
 
-Every release has a **tag** that specifies the major, minor, and build versions, e.g.:
+Every major/minor version pair will have its own branch named `<major>-<minor>.x`, e.g:
+
+- `1.0-stable`
+- `1.1-stable`
+
+Version branches act as the merge base for point release updates across all packages, and should start with the commit corresponding to `chain-core-server-<major>.<minor>.0`.<sup>1</sup>
+
+Updates to the version branches should be as conservative as possible. We should ensure that the tip of each version branch maintains cross-compatibility across packages, per our [versioning scheme](../core/reference/versioning.md).
+
+<sup>1</sup> `1.0-stable` is an exception, since it precedes this branching scheme.
+
+## Release tags
+
+Every package release has a **tag** that specifies the package name and its major, minor, and build versions, e.g.:
 
 - `chain-core-server-1.1.0`
 - `sdk-ruby-1.0.2`
 
-If a point release is necessary for a package, we should create a new major-minor version **branch** e.g.:
+Naturally, release tags should live on their relevant version branches, e.g.:
 
-- `chain-core-server-1.1.x`
-- `sdk-ruby-1.0.x`
-
-Note that there's a `.x` suffix to distinguish the branch name from the corresponding `.0` release.
-
-Updates to these branches should be as conservative as possible.  Our [versioning scheme](../core/reference/versioning.md) is such that it should always be safe to deploy artifacts from the tip of each package branch.
-
-Naturally, release tags should live on their relevant branches, e.g.:
-
-- `chain-core-server-1.1.0` is on the `chain-core-server-1.1.x` branch
-- `sdk-ruby-1.0.2` is on the `sdk-ruby-1.0.x` branch
+- `chain-core-server-1.1.1` is on the `1.1-stable` branch
+- `sdk-ruby-1.0.2` is on the `1.0-stable` branch
