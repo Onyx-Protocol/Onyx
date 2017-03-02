@@ -11,7 +11,7 @@ Ruby 2.0 or greater is required. We strongly recommend upgrading to Ruby 2.1 or 
 For most applications, you can simply add the following to your `Gemfile`:
 
 ```
-gem 'chain-sdk', '~> 1.0.2', require: 'chain'
+gem 'chain-sdk', '~> 1.0.3', require: 'chain'
 ```
 
 ### In your code
