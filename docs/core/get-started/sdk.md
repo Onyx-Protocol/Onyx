@@ -53,5 +53,5 @@ The Ruby SDK is available [via Rubygems](https://rubygems.org/gems/chain-sdk). R
 To install, add the following to your `Gemfile`:
 
 ```
-gem 'chain-sdk', '>= 1.1.0', '< 1.2.0' require: 'chain'
+gem 'chain-sdk', '~> 1.1.0', require: 'chain'
 ```
