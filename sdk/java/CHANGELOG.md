@@ -1,5 +1,30 @@
 # Chain Java SDK changelog
 
+## 1.1.1 (March 3, 2017)
+
+### Trusted SSL certs
+
+You can now specify trusted server SSL certificates via a PEM-encoded file:
+
+```
+Client client = new Client.Builder()
+  .setURL("https://example:443")
+  .setTrustedCerts("path/to/certs.pem")
+  .build();
+```
+
+### Request logging
+
+To log requests, pass an `OutputStream` to the client builder:
+
+```
+OutputStream os = System.out;
+Client client = new Client.Builder()
+  .setLogger(os)
+  .setLogLevel(LoggingInterceptor.Level.ALL)
+  .build();
+```
+
 ## 1.1.0 (February 24, 2017)
 
 This release is a minor version update, and contains **new features** and **deprecations**. It is not compatible with cored 1.0.x; please upgrade cored before updating your SDKs.
