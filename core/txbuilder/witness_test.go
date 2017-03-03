@@ -47,7 +47,7 @@ func TestWitnessJSON(t *testing.T) {
 			Amount:  21,
 		},
 		Position: 17,
-		WitnessComponents: []WitnessComponent{
+		SignatureWitnesses: []*SignatureWitness{
 			&SignatureWitness{
 				Quorum: 4,
 				Keys: []KeyID{{

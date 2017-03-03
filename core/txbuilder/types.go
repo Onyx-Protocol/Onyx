@@ -37,14 +37,14 @@ func (t *Template) Hash(idx uint32) bc.Hash {
 type SigningInstruction struct {
 	Position uint32 `json:"position"`
 	bc.AssetAmount
-	WitnessComponents []WitnessComponent `json:"witness_components,omitempty"`
+	SignatureWitnesses []*SignatureWitness `json:"witness_components,omitempty"`
 }
 
 func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 	var pre struct {
 		bc.AssetAmount
-		Position          uint32 `json:"position"`
-		WitnessComponents []struct {
+		Position           uint32 `json:"position"`
+		SignatureWitnesses []struct {
 			Type string
 			SignatureWitness
 		} `json:"witness_components"`
@@ -56,12 +56,12 @@ func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 
 	si.AssetAmount = pre.AssetAmount
 	si.Position = pre.Position
-	si.WitnessComponents = make([]WitnessComponent, 0, len(pre.WitnessComponents))
-	for i, w := range pre.WitnessComponents {
+	si.SignatureWitnesses = make([]*SignatureWitness, 0, len(pre.SignatureWitnesses))
+	for i, w := range pre.SignatureWitnesses {
 		if w.Type != "signature" {
 			return errors.WithDetailf(ErrBadWitnessComponent, "witness component %d has unknown type '%s'", i, w.Type)
 		}
-		si.WitnessComponents = append(si.WitnessComponents, &w.SignatureWitness)
+		si.SignatureWitnesses = append(si.SignatureWitnesses, &w.SignatureWitness)
 	}
 	return nil
 }

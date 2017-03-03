@@ -68,7 +68,7 @@ func TestBuild(t *testing.T) {
 			ReferenceData: []byte("xyz"),
 		}),
 		SigningInstructions: []*SigningInstruction{{
-			WitnessComponents: []WitnessComponent{},
+			SignatureWitnesses: []*SignatureWitness{},
 		}},
 	}
 
@@ -127,7 +127,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 	tpl := &Template{
 		Transaction: unsigned,
 		SigningInstructions: []*SigningInstruction{{
-			WitnessComponents: []WitnessComponent{
+			SignatureWitnesses: []*SignatureWitness{
 				&SignatureWitness{
 					Quorum: 1,
 					Keys: []KeyID{{
@@ -206,7 +206,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 
 	// Test with more signatures than required, in correct order
 	tpl.SigningInstructions = []*SigningInstruction{{
-		WitnessComponents: []WitnessComponent{
+		SignatureWitnesses: []*SignatureWitness{
 			&SignatureWitness{
 				Quorum: 2,
 				Keys: []KeyID{
@@ -238,10 +238,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	}
 
 	// Test with exact amount of signatures required, in correct order
-	component, ok := tpl.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness)
-	if !ok {
-		t.Fatal("expecting WitnessComponent of type SignatureWitness")
-	}
+	component := tpl.SigningInstructions[0].SignatureWitnesses[0]
 	component.Sigs = []json.HexBytes{sig1, sig2}
 	err = materializeWitnesses(tpl)
 	if err != nil {

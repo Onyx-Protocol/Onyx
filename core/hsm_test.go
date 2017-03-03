@@ -105,13 +105,10 @@ func TestMockHSM(t *testing.T) {
 }
 
 func inspectSigInst(t *testing.T, si *txbuilder.SigningInstruction, expectSig bool) {
-	if len(si.WitnessComponents) != 1 {
-		t.Fatalf("len(si.WitnessComponents) is %d, want 1", len(si.WitnessComponents))
+	if len(si.SignatureWitnesses) != 1 {
+		t.Fatalf("len(si.SignatureWitnesses) is %d, want 1", len(si.SignatureWitnesses))
 	}
-	s, ok := si.WitnessComponents[0].(*txbuilder.SignatureWitness)
-	if !ok {
-		t.Fatalf("si.WitnessComponents[0] has type %T, want *txbuilder.SignatureWitness", si.WitnessComponents[0])
-	}
+	s := si.SignatureWitnesses[0]
 	if len(s.Sigs) != 1 {
 		t.Fatalf("len(s.Sigs) is %d, want 1", len(s.Sigs))
 	}

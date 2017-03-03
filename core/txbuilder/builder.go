@@ -132,8 +132,8 @@ func (b *TemplateBuilder) Build() (*Template, *bc.TxData, error) {
 		instruction.Position = uint32(len(tx.Inputs))
 
 		// Empty signature arrays should be serialized as empty arrays, not null.
-		if instruction.WitnessComponents == nil {
-			instruction.WitnessComponents = []WitnessComponent{}
+		if instruction.SignatureWitnesses == nil {
+			instruction.SignatureWitnesses = []*SignatureWitness{}
 		}
 		tpl.SigningInstructions = append(tpl.SigningInstructions, instruction)
 		tx.Inputs = append(tx.Inputs, in)

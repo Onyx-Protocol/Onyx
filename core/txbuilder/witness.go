@@ -18,20 +18,6 @@ import (
 // a signature for a given xpub, derivation path, and hash.
 type SignFunc func(context.Context, chainkd.XPub, [][]byte, [32]byte) ([]byte, error)
 
-// WitnessComponent encodes instructions for finalizing a transaction
-// by populating its InputWitness fields. Each WitnessComponent object
-// produces zero or more items for the InputWitness of the txinput it
-// corresponds to.
-type WitnessComponent interface {
-	// Sign is called to add signatures. Actual signing is delegated to
-	// a callback function.
-	Sign(context.Context, *Template, uint32, []chainkd.XPub, SignFunc) error
-
-	// Materialize is called to turn the component into a vector of
-	// arguments for the input witness.
-	Materialize(*Template, uint32, *[][]byte) error
-}
-
 // materializeWitnesses takes a filled in Template and "materializes"
 // each witness component, turning it into a vector of arguments for
 // the tx's input witness, creating a fully-signed transaction.
@@ -52,8 +38,8 @@ func materializeWitnesses(txTemplate *Template) error {
 		}
 
 		var witness [][]byte
-		for j, c := range sigInst.WitnessComponents {
-			err := c.Materialize(txTemplate, sigInst.Position, &witness)
+		for j, sw := range sigInst.SignatureWitnesses {
+			err := sw.Materialize(txTemplate, sigInst.Position, &witness)
 			if err != nil {
 				return errors.WithDetailf(err, "error in witness component %d of input %d", j, i)
 			}
@@ -241,5 +227,5 @@ func (si *SigningInstruction) AddWitnessKeys(keys []KeyID, quorum int) {
 		Quorum: quorum,
 		Keys:   keys,
 	}
-	si.WitnessComponents = append(si.WitnessComponents, sw)
+	si.SignatureWitnesses = append(si.SignatureWitnesses, sw)
 }
