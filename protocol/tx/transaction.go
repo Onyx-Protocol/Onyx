@@ -25,11 +25,8 @@ func ComputeOutputID(sc *bc.SpendCommitment) (h bc.Hash, err error) {
 			err = r
 		}
 	}()
-	o := newOutput(valueSource{
-		Ref:      sc.SourceID,
-		Value:    sc.AssetAmount,
-		Position: sc.SourcePosition,
-	}, program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
+	o := newOutput(program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
+	o.setSourceID(sc.SourceID, sc.AssetAmount, sc.SourcePosition)
 
 	h = entryID(o)
 	return h, nil
@@ -37,6 +34,12 @@ func ComputeOutputID(sc *bc.SpendCommitment) (h bc.Hash, err error) {
 
 // TxHashes returns all hashes needed for validation and state updates.
 func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
+	defer func() {
+		if r, ok := recover().(error); ok {
+			err = r
+		}
+	}()
+
 	txid, header, entries, err := mapTx(oldTx)
 	if err != nil {
 		return nil, errors.Wrap(err, "mapping old transaction to new")

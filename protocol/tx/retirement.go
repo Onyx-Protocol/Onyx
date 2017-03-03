@@ -28,10 +28,15 @@ func newRetirement(data bc.Hash, ordinal int) *retirement {
 }
 
 func (r *retirement) setSource(e entry, value bc.AssetAmount, position uint64) {
+	r.setSourceID(entryID(e), value, position)
+	r.Source = e
+}
+
+func (r *retirement) setSourceID(sourceID bc.Hash, value bc.AssetAmount, position uint64) {
 	r.body.Source = valueSource{
-		Ref:      entryID(e),
+		Ref:      sourceID,
 		Value:    value,
 		Position: position,
 	}
-	r.Source = e
+	r.Source = nil
 }

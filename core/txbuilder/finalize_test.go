@@ -255,21 +255,23 @@ func benchGenBlock(b *testing.B) {
 		"00" + // common witness extensible string length
 		"01" + // inputs count
 		"01" + // input 0, asset version
-		"4b" + // input 0, input commitment length prefix
-		"01" + // input 0, input commitment, "spend" type
-		"110bd1b4e5efc2994c9abc77f223a52c834d8f26b907c6c19d90b9e77a8e2fed" + // input 0, spend input commitment, output ID
-		"29" + // input 0, spend input commitment, output commitment length prefix
-		"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, spend input commitment, output commitment, asset id
-		"80a094a58d1d" + // input 0, spend input commitment, output commitment, amount
-		"01" + // input 0, spend input commitment, output commitment, vm version
-		"0101" + // input 0, spend input commitment, output commitment, control program
+		"6c" + // input 0, input commitment length prefix
+		"01" + // input 0, input commitment, "spend" type+
+		"6a" + // input 0, spend input commitment, spend commitment length prefix
+		"dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292" + // input 0, spend input commitment, spend commitment, source ID
+		"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, spend input commitment, spend commitment, asset id
+		"80a094a58d1d" + // input 0, spend input commitment, spend commitment, amount
+		"01" + // input 0, spend input commitment, spend commitment, source position
+		"01" + // input 0, spend input commitment, spend commitment, vm version
+		"0101" + // input 0, spend input commitment, spend commitment, control program
+		"0000000000000000000000000000000000000000000000000000000000000000" + // input 0, spend input commitment, spend commitment, reference data hash
 		"05696e707574" + // input 0, reference data
 		"01" + // input 0, input witness length prefix
 		"00" + // input 0, input witness, number of args
 		"02" + // outputs count
 		"01" + // output 0, asset version
 		"29" + // output 0, output commitment length
-		"9ed3e85a8c2d3717b5c94bd2db2ab9cab56955b2c4fb4696f345ca97aaab82d6" + // output 0, output commitment, asset id
+		"a9b2b6c5394888ab5396f583ae484b8459486b14268e2bef1b637440335eb6c1" + // output 0, output commitment, asset id
 		"80e0a596bb11" + // output 0, output commitment, amount
 		"01" + // output 0, output commitment, vm version
 		"0101" + // output 0, output commitment, control program
@@ -277,7 +279,7 @@ func benchGenBlock(b *testing.B) {
 		"00" + // output 0, output witness
 		"01" + // output 1, asset version
 		"29" + // output 1, output commitment length
-		"9ed3e85a8c2d3717b5c94bd2db2ab9cab56955b2c4fb4696f345ca97aaab82d6" + // output 1, output commitment, asset id
+		"a9b2b6c5394888ab5396f583ae484b8459486b14268e2bef1b637440335eb6c1" + // output 1, output commitment, asset id
 		"80c0ee8ed20b" + // output 1, output commitment, amount
 		"01" + // output 1, vm version
 		"0102" + // output 1, output commitment, control program

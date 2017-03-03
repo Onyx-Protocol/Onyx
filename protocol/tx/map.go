@@ -33,8 +33,10 @@ func mapTx(tx *bc.TxData) (headerID bc.Hash, hdr *header, entryMap map[bc.Hash]e
 
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*bc.SpendInput); ok {
-			sp := newSpend(hashData(inp.ReferenceData), i)
-			sp.setSpentInfo(oldSp.SpentOutputID, oldSp.AssetAmount, program{VMVersion: oldSp.VMVersion, Code: oldSp.ControlProgram})
+			prog := program{VMVersion: oldSp.VMVersion, Code: oldSp.ControlProgram}
+			out := newOutput(prog, oldSp.RefDataHash, 0) // ordinal doesn't matter for prevouts, only for result outputs
+			out.setSourceID(oldSp.SourceID, oldSp.AssetAmount, oldSp.SourcePosition)
+			sp := newSpend(out, hashData(inp.ReferenceData), i)
 			var id bc.Hash
 			id, err = addEntry(sp)
 			if err != nil {
