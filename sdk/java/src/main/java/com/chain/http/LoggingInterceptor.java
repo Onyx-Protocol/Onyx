@@ -4,9 +4,11 @@ import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 import okio.BufferedSink;
+import okio.BufferedSource;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 /**
  * The LoggingInterceptor object logs http requests given
@@ -56,14 +58,19 @@ public class LoggingInterceptor implements Interceptor {
     if (response.code() / 100 == 5) {
       label = "chain-error";
     }
+
+    BufferedSource source = response.body().source();
+    source.request(Long.MAX_VALUE);
+
     logger.write(
         String.format(
-                "%s:\n\treqid=%s\n\turl=%s\n\tcode=%d\n\trequest=%s\n",
+                "%s:\n\treqid=%s\n\turl=%s\n\tcode=%d\n\trequest=%s\n\tresponse=%s\n",
                 label,
                 reqid,
                 request.urlString(),
                 response.code(),
-                requestBody)
+                requestBody,
+                source.buffer().clone().readString(Charset.forName("UTF-8")))
             .getBytes());
   }
 }
