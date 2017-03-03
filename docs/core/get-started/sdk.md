@@ -36,10 +36,14 @@ You can also [download the JAR](https://search.maven.org/remotecontent?filepath=
 
 The Chain Node.js SDK is available [via npm](https://www.npmjs.com/package/chain-sdk). Node 4 or greater is required.
 
-To install, run the following command from your project directory:
+To install, add the `chain-sdk` NPM module to your `package.json`, using a tilde range (`~`) and specifying the patch version:
 
 ```
-npm install --save chain-sdk@1.1.0
+{
+  "dependencies": {
+    "chain-sdk": "~1.1.0"
+  }
+}
 ```
 
 ## Ruby
