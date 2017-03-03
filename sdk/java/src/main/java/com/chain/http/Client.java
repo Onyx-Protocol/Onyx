@@ -3,12 +3,9 @@ package com.chain.http;
 import com.chain.exception.*;
 import com.chain.common.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.Type;
 import java.net.*;
-import okio.Buffer;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
@@ -608,14 +605,14 @@ public class Client {
      * Trusts the given CA certs, and no others. Use this if you are running
      * your own CA, or are using a self-signed server certificate.
      *
-     * @param pem The signing certificates to trust, in PEM format. If you have
-     * multiple certificates, you can concatenate them.
+     * @param path The path of a file containing certificates to trust, in PEM
+     *   format.
      */
-    public Builder setTrustedCerts(String pem)
+    public Builder setTrustedCerts(String path)
         throws GeneralSecurityException, IOException, IllegalArgumentException,
             IllegalArgumentException {
       // Extract certs from PEM-encoded input.
-      InputStream pemStream = new Buffer().writeUtf8(pem).inputStream();
+      InputStream pemStream = new FileInputStream(path);
       CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
       Collection<? extends Certificate> certificates =
           certificateFactory.generateCertificates(pemStream);
