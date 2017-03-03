@@ -4,7 +4,7 @@ import com.chain.signing.*;
 
 class RealTimeTransactionProcessing {
   public static void main(String[] args) throws Exception {
-    Client client = new Client();
+    final Client client = new Client();
     setup(client);
 
     // snippet processing-thread

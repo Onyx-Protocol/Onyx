@@ -1,8 +1,6 @@
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.net.URL;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -84,8 +82,8 @@ public class IouSettlement {
     Bank northBank = new Bank(client, dealer, getAsset(client, "nbusd"), getAccount(client, "nb"));
     Bank southBank = new Bank(client, dealer, getAsset(client, "sbusd"), getAccount(client, "sb"));
 
-    Corp acme = new Corp("acme", northBank, client);
-    Corp zzzz = new Corp("zzzz", southBank, client);
+    final Corp acme = new Corp("acme", northBank, client);
+    final Corp zzzz = new Corp("zzzz", southBank, client);
 
     // Number of threads per corp.
     final int nthread = 20;
@@ -100,48 +98,52 @@ public class IouSettlement {
     // # of batches per corp
     final int nbatches = ntxTotal / batchSize / 2;
 
-    Instant start = Instant.now();
+    final long start = System.currentTimeMillis();
 
-    AtomicInteger processed = new AtomicInteger(0);
+    final AtomicInteger processed = new AtomicInteger(0);
     ExecutorService pool = Executors.newFixedThreadPool(2 * nthread);
     List<Callable<Integer>> x = new ArrayList<>();
     for (int b = 0; b < nbatches; b++) {
       x.add(
-          () -> {
-            acme.pay(zzzz, batchSize);
-            int v = processed.getAndAdd(batchSize) + batchSize;
-            if (v % 1000 == 0) {
-              long elapsed = Duration.between(start, Instant.now()).toMillis();
-              double tps = (double) v / elapsed * 1000.0;
-              System.out.printf(
-                  "%d / %d (%d%%) %.2f tx/sec\n", v, ntxTotal, 100 * v / ntxTotal, tps);
+          new Callable<Integer>() {
+            public Integer call() throws Exception {
+              acme.pay(zzzz, batchSize);
+              int v = processed.getAndAdd(batchSize) + batchSize;
+              if (v % 1000 == 0) {
+                long elapsed = System.currentTimeMillis() - start;
+                double tps = (double) v / elapsed * 1000.0;
+                System.out.printf(
+                    "%d / %d (%d%%) %.2f tx/sec\n", v, ntxTotal, 100 * v / ntxTotal, tps);
+              }
+              return 1;
             }
-            return 1;
           });
     }
     for (int b = 0; b < nbatches; b++) {
       x.add(
-          () -> {
-            zzzz.pay(acme, batchSize);
-            int v = processed.getAndAdd(batchSize) + batchSize;
-            if (v % 1000 == 0) {
-              long elapsed = Duration.between(start, Instant.now()).toMillis();
-              double tps = (double) v / elapsed * 1000.0;
-              System.out.printf(
-                  "%d / %d (%d%%) %.2f tx/sec\n", v, ntxTotal, 100 * v / ntxTotal, tps);
+          new Callable<Integer>() {
+            public Integer call() throws Exception {
+              zzzz.pay(acme, batchSize);
+              int v = processed.getAndAdd(batchSize) + batchSize;
+              if (v % 1000 == 0) {
+                long elapsed = System.currentTimeMillis() - start;
+                double tps = (double) v / elapsed * 1000.0;
+                System.out.printf(
+                    "%d / %d (%d%%) %.2f tx/sec\n", v, ntxTotal, 100 * v / ntxTotal, tps);
+              }
+              return 1;
             }
-            return 1;
           });
     }
 
-    Instant tstart = Instant.now();
+    final long tstart = System.currentTimeMillis();
     List<Future<Integer>> futures = pool.invokeAll(x);
     for (int b = 0; b < 2 * nbatches; b++) {
       futures.get(b).get();
     }
-    Instant tend = Instant.now();
+    final long tend = System.currentTimeMillis();
     System.out.println("done transacting.");
-    long elapsed = Duration.between(tstart, tend).toMillis();
+    long elapsed = tend - tstart;
     System.out.printf("elapsed time %dms\n", elapsed);
     PrintWriter stats = new PrintWriter(new FileWriter("stats.json"));
     stats.printf("{\"elapsed_ms\": %d, \"txs\": %d}\n", elapsed, ntxTotal);
