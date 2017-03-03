@@ -21,6 +21,9 @@ const (
 	// ExpirePinName is used to identify the pin associated
 	// with the account control program expiration processor.
 	ExpirePinName = "expire-control-programs"
+	// DeleteSpentsPinName is used to identify the pin associated
+	// with the processor that deletes spent account UTXOs.
+	DeleteSpentsPinName = "delete-account-spents"
 )
 
 var emptyJSONObject = json.RawMessage(`{}`)
@@ -97,18 +100,35 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 	if m.pinStore == nil {
 		return
 	}
-	go m.pinStore.ProcessBlocks(ctx, m.chain, ExpirePinName, m.expireControlPrograms)
+	go m.pinStore.ProcessBlocks(ctx, m.chain, ExpirePinName, func(ctx context.Context, b *bc.Block) error {
+		<-m.pinStore.PinWaiter(PinName, b.Height)
+		<-m.pinStore.PinWaiter(query.TxPinName, b.Height)
+		return m.expireControlPrograms(ctx, b)
+	})
+	go m.pinStore.ProcessBlocks(ctx, m.chain, DeleteSpentsPinName, func(ctx context.Context, b *bc.Block) error {
+		<-m.pinStore.PinWaiter(PinName, b.Height)
+		<-m.pinStore.PinWaiter(query.TxPinName, b.Height)
+		return m.deleteSpentOutputs(ctx, b)
+	})
 	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, m.indexAccountUTXOs)
 }
 
 func (m *Manager) expireControlPrograms(ctx context.Context, b *bc.Block) error {
-	<-m.pinStore.PinWaiter(PinName, b.Height)
-	<-m.pinStore.PinWaiter(query.TxPinName, b.Height)
-
 	// Delete expired account control programs.
 	const deleteQ = `DELETE FROM account_control_programs WHERE expires_at IS NOT NULL AND expires_at < $1`
 	_, err := m.db.Exec(ctx, deleteQ, b.Time())
 	return err
+}
+
+func (m *Manager) deleteSpentOutputs(ctx context.Context, b *bc.Block) error {
+	// Delete consumed account UTXOs.
+	delOutputIDs := prevoutDBKeys(b.Transactions...)
+	const delQ = `
+		DELETE FROM account_utxos
+		WHERE output_id IN (SELECT unnest($1::bytea[]))
+	`
+	_, err := m.db.Exec(ctx, delQ, delOutputIDs)
+	return errors.Wrap(err, "deleting spent account utxos")
 }
 
 func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
@@ -137,18 +157,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	}
 
 	err = m.upsertConfirmedAccountOutputs(ctx, accOuts, blockPositions, b)
-	if err != nil {
-		return errors.Wrap(err, "upserting confirmed account utxos")
-	}
-
-	// Delete consumed account UTXOs.
-	delOutputIDs := prevoutDBKeys(b.Transactions...)
-	const delQ = `
-		DELETE FROM account_utxos
-		WHERE output_id IN (SELECT unnest($1::bytea[]))
-	`
-	_, err = m.db.Exec(ctx, delQ, delOutputIDs)
-	return errors.Wrap(err, "deleting spent account utxos")
+	return errors.Wrap(err, "upserting confirmed account utxos")
 }
 
 func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
