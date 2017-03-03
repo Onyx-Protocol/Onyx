@@ -20,7 +20,7 @@ To log requests, pass an `OutputStream` to the client builder:
 ```
 OutputStream os = System.out;
 Client client = new Client.Builder()
-  .logRequests(os)
+  .setRequestLogStream(os)
   .build();
 ```
 
