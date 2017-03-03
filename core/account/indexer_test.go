@@ -57,6 +57,10 @@ func TestDeleteUTXOs(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+	err = m.deleteSpentOutputs(ctx, block1)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 
 	block2 := &bc.Block{Transactions: []*bc.Tx{
 		bc.NewTx(bc.TxData{
@@ -66,6 +70,10 @@ func TestDeleteUTXOs(t *testing.T) {
 		}),
 	}}
 	err = m.indexAccountUTXOs(ctx, block2)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	err = m.deleteSpentOutputs(ctx, block2)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

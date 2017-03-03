@@ -36,6 +36,7 @@ func setupQueryTest(t *testing.T) (context.Context, *query.Indexer, time.Time, t
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 	go assets.ProcessBlocks(ctx)
+	go accounts.ProcessBlocks(ctx)
 	go indexer.ProcessBlocks(ctx)
 
 	acct1 := coretest.CreateAccount(ctx, t, accounts, "", nil)

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/pin"
 	"chain/core/query"
@@ -20,6 +21,10 @@ func TestQueryWithClockSkew(t *testing.T) {
 
 	pinStore := pin.NewStore(db)
 	err := pinStore.CreatePin(ctx, asset.PinName, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = pinStore.CreatePin(ctx, account.PinName, 100)
 	if err != nil {
 		t.Fatal(err)
 	}
