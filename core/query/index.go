@@ -7,8 +7,10 @@ import (
 
 	"github.com/lib/pq"
 
+	"chain/core/pin"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/protocol"
 	"chain/protocol/bc"
 )
 
@@ -17,6 +19,24 @@ const (
 	// with the transaction block processor.
 	TxPinName = "tx"
 )
+
+// NewIndexer constructs a new indexer for indexing transactions.
+func NewIndexer(db pg.DB, c *protocol.Chain, pinStore *pin.Store) *Indexer {
+	indexer := &Indexer{
+		db:       db,
+		c:        c,
+		pinStore: pinStore,
+	}
+	return indexer
+}
+
+// Indexer creates, updates and queries against indexes.
+type Indexer struct {
+	db         pg.DB
+	c          *protocol.Chain
+	pinStore   *pin.Store
+	annotators []Annotator
+}
 
 // Annotator describes a function capable of adding annotations
 // to transactions, inputs and outputs.
