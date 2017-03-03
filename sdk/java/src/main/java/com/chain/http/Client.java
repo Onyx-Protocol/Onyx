@@ -3,18 +3,16 @@ package com.chain.http;
 import com.chain.exception.*;
 import com.chain.common.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.Type;
 import java.net.*;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Random;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.List;
-import java.util.Objects;
 
 import com.google.gson.Gson;
 
@@ -26,6 +24,8 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
+
+import javax.net.ssl.*;
 
 /**
  * The Client object contains all information necessary to
@@ -380,6 +380,11 @@ public class Client {
 
   private OkHttpClient buildHttpClient(Builder builder) {
     OkHttpClient httpClient = new OkHttpClient();
+
+    if (builder.sslSocketFactory != null) {
+      httpClient.setSslSocketFactory(builder.sslSocketFactory);
+    }
+
     httpClient.setFollowRedirects(false);
     httpClient.setReadTimeout(builder.readTimeout, builder.readTimeoutUnit);
     httpClient.setWriteTimeout(builder.writeTimeout, builder.writeTimeoutUnit);
@@ -519,6 +524,7 @@ public class Client {
     private List<URL> urls;
     private String accessToken;
     private CertificatePinner cp;
+    private SSLSocketFactory sslSocketFactory;
     private long connectTimeout;
     private TimeUnit connectTimeoutUnit;
     private long readTimeout;
@@ -592,6 +598,59 @@ public class Client {
      */
     public Builder setAccessToken(String accessToken) {
       this.accessToken = accessToken;
+      return this;
+    }
+
+    /**
+     * Trusts the given CA certs, and no others. Use this if you are running
+     * your own CA, or are using a self-signed server certificate.
+     *
+     * @param path The path of a file containing certificates to trust, in PEM
+     *   format.
+     */
+    public Builder setTrustedCerts(String path)
+        throws GeneralSecurityException, IOException, IllegalArgumentException,
+            IllegalArgumentException {
+      // Extract certs from PEM-encoded input.
+      InputStream pemStream = new FileInputStream(path);
+      CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+      Collection<? extends Certificate> certificates =
+          certificateFactory.generateCertificates(pemStream);
+      if (certificates.isEmpty()) {
+        throw new IllegalArgumentException("expected non-empty set of trusted certificates");
+      }
+
+      // Create empty key store.
+      KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+      char[] password =
+          "password".toCharArray(); // The password is unimportant as long as it used consistently.
+      keyStore.load(null, password);
+
+      // Load certs into key store.
+      int index = 0;
+      for (Certificate certificate : certificates) {
+        String certificateAlias = Integer.toString(index++);
+        keyStore.setCertificateEntry(certificateAlias, certificate);
+      }
+
+      // Use key store to build an X509 trust manager.
+      KeyManagerFactory keyManagerFactory =
+          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      keyManagerFactory.init(keyStore, password);
+      TrustManagerFactory trustManagerFactory =
+          TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      trustManagerFactory.init(keyStore);
+      TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+      if (trustManagers.length != 1 || !(trustManagers[0] instanceof X509TrustManager)) {
+        throw new IllegalStateException(
+            "Unexpected default trust managers:" + Arrays.toString(trustManagers));
+      }
+
+      // Finally, configure the socket factory.
+      SSLContext sslContext = SSLContext.getInstance("TLS");
+      sslContext.init(null, trustManagers, null);
+      sslSocketFactory = sslContext.getSocketFactory();
+
       return this;
     }
 
