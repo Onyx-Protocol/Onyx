@@ -4,11 +4,13 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"expvar"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -49,8 +51,10 @@ const (
 
 var (
 	// config vars
+	clientAuth    = env.Bool("CLIENT_AUTH", true)
 	tlsCrt        = env.String("TLSCRT", "")
 	tlsKey        = env.String("TLSKEY", "")
+	rootCAs       = env.String("ROOT_CA_CERTS", "")
 	listenAddr    = env.String("LISTEN", ":1999")
 	dbURL         = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
 	splunkAddr    = os.Getenv("SPLUNKADDR")
@@ -163,24 +167,26 @@ func runServer() {
 	// it's blocking and we need to proceed to the rest of the core setup after
 	// we call it.
 	go func() {
-		if *tlsCrt != "" {
-			cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
+		if *tlsCrt == "" {
+			err := generatePKIX(ctx, tlsCrt, tlsKey, rootCAs)
 			if err != nil {
-				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
+				chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 			}
+		}
+		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
+		if err != nil {
+			chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
+		}
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+			RootCAs: loadRootCAs(*rootCAs),
+		}
 
-			server.TLSConfig = &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			}
-			err = server.ListenAndServeTLS("", "") // uses TLS certs from above
-			if err != nil {
-				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
-			}
-		} else {
-			err := server.ListenAndServe()
-			if err != nil {
-				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
-			}
+		server.TLSConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
+		if err != nil {
+			chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
 		}
 	}()
 
@@ -194,7 +200,7 @@ func runServer() {
 
 	err = migrate.Run(db)
 	if err != nil {
-		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+		chainlog.Fatalkv(ctx, chainlog.KeyMessage, err)
 	}
 	resetInDevIfRequested(db)
 
@@ -424,4 +430,33 @@ func (w *errlog) Write(p []byte) (int, error) {
 		w.t = time.Now()
 	}
 	return len(p), nil // report success for the MultiWriter
+}
+
+// loadRootCAs reads a list of PEM-encoded X.509 certificates from name
+func loadRootCAs(name string) *x509.CertPool {
+	pem, err := ioutil.ReadFile(name)
+	if err != nil {
+		chainlog.Fatalkv(context.Background(), chainlog.KeyError, err)
+	}
+	pool := x509.NewCertPool()
+	ok := pool.AppendCertsFromPEM(pem)
+	if !ok {
+		chainlog.Fatalkv(context.Background(), chainlog.KeyError, "no certs found in "+name)
+	}
+	return pool
+}
+
+// loadX509KeyPair reads PEM-encoded X.509 certificate and
+// corresponding, RSA private key from provided filenames
+func loadX509KeyPair(cName, kName string) (tls.Certificate, error) {
+	cBytes, err := ioutil.ReadFile(cName)
+	if err != nil {
+		chainlog.Fatalkv(context.Background(), chainlog.KeyError, err)
+	}
+
+	kBytes, err := ioutil.ReadFile(kName)
+	if err != nil {
+		chainlog.Fatalkv(context.Background(), chainlog.KeyError, err)
+	}
+	return tls.X509KeyPair(cBytes, kBytes)
 }

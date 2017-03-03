@@ -11,4 +11,11 @@ public class HTTPException extends ChainException {
   public HTTPException(String message) {
     super(message);
   }
+
+  /**
+   * Initializes exception while storing original cause
+   */
+  public HTTPException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }
