@@ -8,13 +8,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.net.*;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Random;
+import okio.Buffer;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.List;
-import java.util.Objects;
 
 import com.google.gson.Gson;
 
@@ -26,6 +27,8 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
+
+import javax.net.ssl.*;
 
 /**
  * The Client object contains all information necessary to
@@ -378,8 +381,111 @@ public class Client {
     throw exception;
   }
 
+  /**
+   * Returns a trust manager that trusts {@code certificates} and none other. HTTPS services whose
+   * certificates have not been signed by these certificates will fail with a {@code
+   * SSLHandshakeException}.
+   *
+   * <p>This can be used to replace the host platform's built-in trusted certificates with a custom
+   * set. This is useful in development where certificate authority-trusted certificates aren't
+   * available. Or in production, to avoid reliance on third-party certificate authorities.
+   *
+   * <p>See also {@link CertificatePinner}, which can limit trusted certificates while still using
+   * the host platform's built-in trust store.
+   *
+   * <h3>Warning: Customizing Trusted Certificates is Dangerous!</h3>
+   *
+   * <p>Relying on your own trusted certificates limits your server team's ability to update their
+   * TLS certificates. By installing a specific set of trusted certificates, you take on additional
+   * operational complexity and limit your ability to migrate between certificate authorities. Do
+   * not use custom trusted certificates in production without the blessing of your server's TLS
+   * administrator.
+   */
+  private X509TrustManager trustManagerForCertificates(InputStream in) throws GeneralSecurityException {
+    CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+    Collection<? extends Certificate> certificates = certificateFactory.generateCertificates(in);
+    if (certificates.isEmpty()) {
+      throw new IllegalArgumentException("expected non-empty set of trusted certificates");
+    }
+
+    // Put the certificates a key store.
+    char[] password = "password".toCharArray(); // Any password will work.
+    KeyStore keyStore = newEmptyKeyStore(password);
+    int index = 0;
+    for (Certificate certificate : certificates) {
+      String certificateAlias = Integer.toString(index++);
+      keyStore.setCertificateEntry(certificateAlias, certificate);
+    }
+
+    // Use it to build an X509 trust manager.
+    KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+            KeyManagerFactory.getDefaultAlgorithm());
+    keyManagerFactory.init(keyStore, password);
+    TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+            TrustManagerFactory.getDefaultAlgorithm());
+    trustManagerFactory.init(keyStore);
+    TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+    if (trustManagers.length != 1 || !(trustManagers[0] instanceof X509TrustManager)) {
+      throw new IllegalStateException("Unexpected default trust managers:"
+              + Arrays.toString(trustManagers));
+    }
+    return (X509TrustManager) trustManagers[0];
+  }
+  /**
+   * Returns an input stream containing one or more certificate PEM files. This implementation just
+   * embeds the PEM files in Java strings; most applications will instead read this from a resource
+   * file that gets bundled with the application.
+   */
+  private InputStream trustedCertificatesInputStream() {
+    String pem = ""
+            + "-----BEGIN CERTIFICATE-----\n"
+            + "MIIDFzCCAf+gAwIBAgIRAMvPeFIQ29k4OpjIgZnsblowDQYJKoZIhvcNAQELBQAw\n"
+            + "KjEUMBIGA1UEChMLQ2hhaW4sIEluYy4xEjAQBgNVBAMTCWxvY2FsaG9zdDAeFw0x\n"
+            + "NzAzMDMwMDUyMDlaFw0xODAzMDMwMDUyMDlaMCoxFDASBgNVBAoTC0NoYWluLCBJ\n"
+            + "bmMuMRIwEAYDVQQDEwlsb2NhbGhvc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw\n"
+            + "ggEKAoIBAQCuF3GAjIfSgZn3wJ10kh6AetQrflCiye03KVh2JCOFCAs+vlaPnOXf\n"
+            + "HjIMjSZ811+Y8e2jwS4Yf9eVBQTpXNp5H0H4dSe7dhIPwurEW/QnrYNKsaWc7H6I\n"
+            + "WndY191pHcbphgsBiqxbkt6gYqEgTo8x/bs6ncFYt7Yn5TeBRz0o27NRvHDBdNBe\n"
+            + "ahRi6N23q12w1pPayX8kubWy/DO6M1pkWKx3VHZbKRCTAZka4dN2PxC28xCKd6co\n"
+            + "tN3oI1LfR1WfK4fSaxy2pCsZuselAdyYfxnd8Ot2frdtM4GRCz3DakDz9YXYC+C7\n"
+            + "ItvZ4rIJBENLNuJfOTEYkgFkfKsxgaGFAgMBAAGjODA2MA4GA1UdDwEB/wQEAwIC\n"
+            + "pDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3\n"
+            + "DQEBCwUAA4IBAQAk05UI4Qwx6swjvj4j/BPqK7VM52qz/ZPDDVBewQEim65YDC4f\n"
+            + "1BCd98MiPvh74UK8dTS40SLB8YkB4+gLvAnmQqCTCNKR58FTS1CPbOcX/fSlQCgO\n"
+            + "3NxMBJ4J4m+bbzP6bD80aSdzLEAbKbudkbKoDzr8tLl8U/GZI6VsSlrpj0s3Yl9j\n"
+            + "CXex8k9n43vIokn57l8ATKlwwmj4fEhAYY4KFp+OepoNRBJxRWkzJqSeL9Gvr9vS\n"
+            + "rsvgbhmEamE0l5QjDY34eDHxYIzQbjU+lBc0nDNdU6W7owy4dApcD2fGrkrQ24xa\n"
+            + "RAF+YjoCqcED7IWnVQ4dkifHp/K4BnRO7NAS\n"
+            + "-----END CERTIFICATE-----\n";
+    return new Buffer().writeUtf8(pem).inputStream();
+  }
+
+  private KeyStore newEmptyKeyStore(char[] password) throws GeneralSecurityException {
+    try {
+      KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+      InputStream in = null; // By convention, 'null' creates an empty key store.
+      keyStore.load(in, password);
+      return keyStore;
+    } catch (IOException e) {
+      throw new AssertionError(e);
+    }
+  }
+
   private OkHttpClient buildHttpClient(Builder builder) {
     OkHttpClient httpClient = new OkHttpClient();
+
+    X509TrustManager trustManager;
+    SSLSocketFactory sslSocketFactory;
+    try {
+      trustManager = trustManagerForCertificates(trustedCertificatesInputStream());
+      SSLContext sslContext = SSLContext.getInstance("TLS");
+      sslContext.init(null, new TrustManager[] { trustManager }, null);
+      sslSocketFactory = sslContext.getSocketFactory();
+    } catch (GeneralSecurityException e) {
+      throw new RuntimeException(e);
+    }
+
+    httpClient.setSslSocketFactory(sslSocketFactory);
     httpClient.setFollowRedirects(false);
     httpClient.setReadTimeout(builder.readTimeout, builder.readTimeoutUnit);
     httpClient.setWriteTimeout(builder.writeTimeout, builder.writeTimeoutUnit);
