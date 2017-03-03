@@ -20,7 +20,8 @@ To log requests, pass an `OutputStream` to the client builder:
 ```
 OutputStream os = System.out;
 Client client = new Client.Builder()
-  .setRequestLogStream(os)
+  .setLogger(os)
+  .setLogLevel(LoggingInterceptor.ALL)
   .build();
 ```
 
