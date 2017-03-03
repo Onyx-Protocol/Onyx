@@ -47,10 +47,10 @@ func TestWitnessJSON(t *testing.T) {
 			Amount:  21,
 		},
 		Position: 17,
-		SignatureWitnesses: []*SignatureWitness{
-			&SignatureWitness{
+		SignatureWitnesses: []*signatureWitness{
+			&signatureWitness{
 				Quorum: 4,
-				Keys: []KeyID{{
+				Keys: []keyID{{
 					XPub:           testutil.TestXPub,
 					DerivationPath: []chainjson.HexBytes{{5, 6, 7}},
 				}},

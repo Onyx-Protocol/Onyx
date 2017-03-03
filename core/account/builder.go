@@ -158,9 +158,7 @@ func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData
 	}
 
 	path := signers.Path(account, signers.AccountKeySpace, u.ControlProgramIndex)
-	keyIDs := txbuilder.KeyIDs(account.XPubs, path)
-
-	sigInst.AddWitnessKeys(keyIDs, account.Quorum)
+	sigInst.AddWitnessKeys(account.XPubs, path, account.Quorum)
 
 	return txInput, sigInst, nil
 }

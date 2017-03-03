@@ -68,7 +68,7 @@ func TestBuild(t *testing.T) {
 			ReferenceData: []byte("xyz"),
 		}),
 		SigningInstructions: []*SigningInstruction{{
-			SignatureWitnesses: []*SignatureWitness{},
+			SignatureWitnesses: []*signatureWitness{},
 		}},
 	}
 
@@ -127,10 +127,10 @@ func TestMaterializeWitnesses(t *testing.T) {
 	tpl := &Template{
 		Transaction: unsigned,
 		SigningInstructions: []*SigningInstruction{{
-			SignatureWitnesses: []*SignatureWitness{
-				&SignatureWitness{
+			SignatureWitnesses: []*signatureWitness{
+				&signatureWitness{
 					Quorum: 1,
-					Keys: []KeyID{{
+					Keys: []keyID{{
 						XPub:           pubkey,
 						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
 					}},
@@ -206,10 +206,10 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 
 	// Test with more signatures than required, in correct order
 	tpl.SigningInstructions = []*SigningInstruction{{
-		SignatureWitnesses: []*SignatureWitness{
-			&SignatureWitness{
+		SignatureWitnesses: []*signatureWitness{
+			&signatureWitness{
 				Quorum: 2,
-				Keys: []KeyID{
+				Keys: []keyID{
 					{
 						XPub:           pubkey1,
 						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
