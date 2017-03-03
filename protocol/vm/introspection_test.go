@@ -97,14 +97,17 @@ func TestBlockTime(t *testing.T) {
 
 func TestOutputIDAndNonceOp(t *testing.T) {
 	var zeroHash bc.Hash
-	outputID := bc.Hash{3, 2, 1}
 	nonce := []byte{36, 37, 38}
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(outputID, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
+			bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{1}, 5, 0, []byte("spendprog"), bc.Hash{}, []byte("ref")),
 			bc.NewIssuanceInput(nonce, 6, nil, zeroHash, []byte("issueprog"), nil, nil),
 		},
 	})
+	outputID, err := tx.Inputs[0].SpentOutputID()
+	if err != nil {
+		t.Fatal(err)
+	}
 	vm := &virtualMachine{
 		runLimit:   50000,
 		tx:         tx,
@@ -112,7 +115,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 		inputIndex: 0,
 		program:    []byte{uint8(OP_OUTPUTID)},
 	}
-	err := vm.step()
+	err = vm.step()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +166,7 @@ func TestIntrospectionOps(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
 		ReferenceData: []byte("txref"),
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(bc.Hash{}, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
+			bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{1}, 5, 1, []byte("spendprog"), bc.Hash{}, []byte("ref")),
 			bc.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil, nil),
 		},
 		Outputs: []*bc.TxOutput{

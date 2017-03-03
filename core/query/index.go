@@ -205,10 +205,9 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		prevoutIDs             pq.ByteaArray
 	)
 	for pos, tx := range b.Transactions {
-		for _, in := range tx.Inputs {
+		for i, in := range tx.Inputs {
 			if !in.IsIssuance() {
-				prevoutID := in.SpentOutputID()
-				prevoutIDs = append(prevoutIDs, prevoutID.Bytes())
+				prevoutIDs = append(prevoutIDs, tx.SpentOutputIDs[i].Bytes())
 			}
 		}
 

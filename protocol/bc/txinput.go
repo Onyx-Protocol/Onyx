@@ -125,12 +125,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 
 			case 1:
 				si = new(SpendInput)
-
-				_, err = si.SpentOutputID.readFrom(r)
-				if err != nil {
-					return err
-				}
-				si.OutputCommitmentSuffix, _, err = si.OutputCommitment.readFrom(r, 1)
+				si.SpendCommitmentSuffix, _, err = si.SpendCommitment.readFrom(r, 1)
 				if err != nil {
 					return err
 				}
@@ -255,14 +250,10 @@ func (t *TxInput) WriteInputCommitment(w io.Writer, serflags uint8) error {
 			if err != nil {
 				return err
 			}
-			_, err = inp.SpentOutputID.WriteTo(w)
-			if err != nil {
-				return err
-			}
 			if serflags&SerPrevout != 0 {
-				err = inp.OutputCommitment.writeExtensibleString(w, inp.OutputCommitmentSuffix, t.AssetVersion)
+				err = inp.SpendCommitment.writeExtensibleString(w, inp.SpendCommitmentSuffix, t.AssetVersion)
 			} else {
-				prevouthash := inp.OutputCommitment.Hash(inp.OutputCommitmentSuffix, t.AssetVersion)
+				prevouthash := inp.SpendCommitment.Hash(inp.SpendCommitmentSuffix, t.AssetVersion)
 				_, err = w.Write(prevouthash[:])
 			}
 			return err
@@ -302,9 +293,9 @@ func (t *TxInput) writeInputWitness(w io.Writer) error {
 	return nil
 }
 
-func (t *TxInput) SpentOutputID() (o Hash) {
+func (t *TxInput) SpentOutputID() (o Hash, err error) {
 	if si, ok := t.TypedInput.(*SpendInput); ok {
-		o = si.SpentOutputID
+		o, err = OutputHash(&si.SpendCommitment)
 	}
-	return o
+	return o, err
 }

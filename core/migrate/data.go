@@ -42,4 +42,10 @@ var migrations = []migration{
 			DROP COLUMN index;
 		ALTER TABLE account_utxos ADD PRIMARY KEY (output_id);
 	`},
+	{Name: `2017-03-02.0.core.add-output-source-info.sql`, SQL: `
+		ALTER TABLE account_utxos
+			ADD COLUMN source_id bytea NOT NULL,
+			ADD COLUMN source_pos bigint NOT NULL,
+			ADD COLUMN ref_data_hash bytea NOT NULL;
+	`},
 }

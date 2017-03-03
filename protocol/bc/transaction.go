@@ -221,7 +221,7 @@ func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 }
 
 func (tx *Tx) OutputID(outputIndex uint32) Hash {
-	return tx.ResultHashes[outputIndex]
+	return tx.Results[outputIndex].ID
 }
 
 func (tx *TxData) MarshalText() ([]byte, error) {
