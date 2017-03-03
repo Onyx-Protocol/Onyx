@@ -398,6 +398,9 @@ public class Client {
     if (builder.cp != null) {
       httpClient.setCertificatePinner(builder.cp);
     }
+    if (builder.logger != null) {
+      httpClient.interceptors().add(new LoggingInterceptor(builder.logger, builder.logLevel));
+    }
 
     return httpClient;
   }
@@ -533,6 +536,8 @@ public class Client {
     private TimeUnit writeTimeoutUnit;
     private Proxy proxy;
     private ConnectionPool pool;
+    private OutputStream logger;
+    private LoggingInterceptor.Level logLevel = LoggingInterceptor.Level.ERRORS;
 
     public Builder() {
       this.urls = new ArrayList<URL>();
@@ -714,6 +719,24 @@ public class Client {
      */
     public Builder setConnectionPool(int maxIdle, long timeout, TimeUnit unit) {
       this.pool = new ConnectionPool(maxIdle, unit.toMillis(timeout));
+      return this;
+    }
+
+    /**
+     * Sets the request logger.
+     * @param logger the output stream to log the requests to
+     */
+    public Builder setLogger(OutputStream logger) {
+      this.logger = logger;
+      return this;
+    }
+
+    /**
+     * Sets the level of the request logger.
+     * @param level all, errors or none
+     */
+    public Builder setLogLevel(LoggingInterceptor.Level level) {
+      this.logLevel = level;
       return this;
     }
 
