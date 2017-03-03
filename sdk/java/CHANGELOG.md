@@ -2,12 +2,25 @@
 
 ## 1.1.1 (March 3, 2017)
 
+### Trusted SSL certs
+
 You can now specify trusted server SSL certificates via a PEM-encoded file:
 
 ```
 Client client = new Client.Builder()
   .setURL("https://example:443")
   .setTrustedCerts("path/to/certs.pem")
+  .build();
+```
+
+### Request logging
+
+To log requests, pass an `OutputStream` to the client builder:
+
+```
+OutputStream os = System.out;
+Client client = new Client.Builder()
+  .logRequests(os)
   .build();
 ```
 
