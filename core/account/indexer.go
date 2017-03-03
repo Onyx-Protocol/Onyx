@@ -106,7 +106,13 @@ func (m *Manager) expireControlPrograms(ctx context.Context, b *bc.Block) error 
 	<-m.pinStore.PinWaiter(query.TxPinName, b.Height)
 
 	// Delete expired account control programs.
-	const deleteQ = `DELETE FROM account_control_programs WHERE expires_at IS NOT NULL AND expires_at < $1`
+	const deleteQ = `
+		DELETE FROM account_control_programs acp
+		WHERE acp.expires_at IS NOT NULL AND acp.expires_at < $1
+		AND NOT EXISTS (
+			SELECT 1 FROM account_utxos u
+			WHERE acp.control_prgoram = u.control_program
+		)`
 	_, err := m.db.Exec(ctx, deleteQ, b.Time())
 	return err
 }
