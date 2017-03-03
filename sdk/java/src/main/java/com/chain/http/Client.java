@@ -9,7 +9,10 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.net.*;
 import okio.Buffer;
-import java.security.*
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
