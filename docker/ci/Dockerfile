@@ -12,14 +12,13 @@ ENV CHAIN="/go/src/chain" \
     JRE_HOME="/opt/jdk1.7.0_79/jre" \
     MAVEN_HOME="/usr/share/maven" \
     MAVEN_VERSION="3.3.9" \
-    PATH="$PATH:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin"
+    PATH="$PATH:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin" \
     RUBY_MAJOR="2.0" \
-    RUBY_VERSION="2.0.0-p594" \
+    RUBY_VERSION="2.0.0-p594"
 
 RUN env && yum -y update \
-    && yum install -y autoconf automake bash bison bzip2 curl gcc gcc-c++ git \
-       libtool make openssl-devel openssl patch readline ruby wget unzip \
-    && yum clean all \
+    && yum install -y autoconf automake bash bison bzip2 curl gcc gcc-c++ epel-release git \
+       libtool make openssl-devel openssl patch readline ruby wget unzip && yum clean all \
 # Install Go 1.8
     && curl -fsSL -o golang.tar.gz "$GOLANG_URL" \
     && echo "$GOLANG_SHA256  golang.tar.gz" | sha256sum -c - \
@@ -77,6 +76,8 @@ RUN env && yum -y update \
     && gem install bundler \
     && bundle config --global path "$GEM_HOME" \
     && bundle config --global bin "$GEM_HOME/bin" \
+# Install clang 3.4.2
+    && yum install -y clang && yum clean all \
 # Install gas
     && git clone https://github.com/GoASTScanner/gas $(go env GOPATH)/src/github.com/GoASTScanner/gas \
     && cd $(go env GOPATH)/src/github.com/GoASTScanner/gas \
