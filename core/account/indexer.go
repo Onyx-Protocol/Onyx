@@ -111,7 +111,7 @@ func (m *Manager) expireControlPrograms(ctx context.Context, b *bc.Block) error 
 		WHERE acp.expires_at IS NOT NULL AND acp.expires_at < $1
 		AND NOT EXISTS (
 			SELECT 1 FROM account_utxos u
-			WHERE acp.control_prgoram = u.control_program
+			WHERE acp.control_program = u.control_program
 		)`
 	_, err := m.db.Exec(ctx, deleteQ, b.Time())
 	return err
