@@ -6,7 +6,7 @@
 
 The Chain Node SDK is available [via npm](https://www.npmjs.com/package/chain-sdk). Make sure to use the most recent version whose major and minor components (`major.minor.x`) match your version of Chain Core. Node 4 or greater is required.
 
-Add Chain to your `package.json` using a tilde range (`~`) and specifying the patch version:
+To install, add the `chain-sdk` NPM module to your `package.json`, using a tilde range (`~`) and specifying the patch version:
 
 ```
 {

@@ -36,7 +36,7 @@ You can also [download the JAR](https://search.maven.org/remotecontent?filepath=
 
 The Chain Node.js SDK is available [via npm](https://www.npmjs.com/package/chain-sdk). Node 4 or greater is required.
 
-To install, add Chain to your `package.json` using a tilde range (`~`) and specifying the patch version:
+To install, add the `chain-sdk` NPM module to your `package.json`, using a tilde range (`~`) and specifying the patch version:
 
 ```
 {
