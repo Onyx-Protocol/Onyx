@@ -241,6 +241,7 @@ func dumpBlocks(ctx context.Context, t *testing.T, db pg.DB) {
 }
 
 func BenchmarkGenerateBlock(b *testing.B) {
+	b.Skip() // b.N reaches 50000 which can eventually kill the process on macosx
 	for i := 0; i < b.N; i++ {
 		benchGenBlock(b)
 	}
