@@ -13,7 +13,7 @@ func BenchmarkEntryID(b *testing.B) {
 
 	entries := []entry{
 		newIssuance(nil, bc.AssetAmount{}, bc.Hash{}, 0),
-		newHeader(1, nil, bc.Hash{}, uint64(time.Now().Unix()), uint64(time.Now().Unix())),
+		newHeader(1, bc.Hash{}, uint64(time.Now().Unix()), uint64(time.Now().Unix())),
 		m,
 		newNonce(program{Code: []byte{1}, VMVersion: 1}, nil),
 		newOutput(program{Code: []byte{1}, VMVersion: 1}, bc.Hash{}, 0),
