@@ -53,6 +53,9 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 	for i, resultHash := range header.body.Results {
 		hashes.Results[i].ID = resultHash
 		entry := entries[resultHash]
+		if w, ok := entry.(*idWrapper); ok {
+			entry = w.entry
+		}
 		if out, ok := entry.(*output); ok {
 			hashes.Results[i].SourceID = out.body.Source.Ref
 			hashes.Results[i].SourcePos = out.body.Source.Position
@@ -64,15 +67,13 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 	hashes.SpentOutputIDs = make([]bc.Hash, len(oldTx.Inputs))
 
 	for entryID, ent := range entries {
-	retry:
-		switch ent2 := ent.(type) {
-		case *idWrapper:
+		if ent2, ok := ent.(*idWrapper); ok {
 			ent = ent2.entry
-			goto retry
-
+		}
+		switch ent := ent.(type) {
 		case *nonce:
 			// TODO: check time range is within network-defined limits
-			trID := ent2.body.TimeRange
+			trID := ent.body.TimeRange
 			trEntry, ok := entries[trID]
 			if !ok {
 				return nil, fmt.Errorf("nonce entry refers to nonexistent timerange entry")
@@ -91,14 +92,15 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *issuance:
-			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent2.body.Data)
-			vmc.NonceID = &ent2.body.Anchor
-			hashes.VMContexts[ent2.Ordinal()] = vmc
+			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
+			vmc.NonceID = &ent.body.Anchor
+			hashes.VMContexts[ent.Ordinal()] = vmc
 
 		case *spend:
-			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent2.body.Data)
-			vmc.OutputID = &ent2.body.SpentOutput
-			hashes.VMContexts[ent2.Ordinal()] = vmc
+			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
+			vmc.OutputID = &ent.body.SpentOutput
+			hashes.VMContexts[ent.Ordinal()] = vmc
+			hashes.SpentOutputIDs[ent.Ordinal()] = ent.body.SpentOutput
 		}
 	}
 
