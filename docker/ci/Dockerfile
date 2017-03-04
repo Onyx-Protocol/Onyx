@@ -17,8 +17,7 @@ ENV CHAIN="/go/src/chain" \
     RUBY_VERSION="2.0.0-p594"
 
 RUN env && yum -y update \
-    && yum install -y autoconf automake bash bison bzip2 curl gcc gcc-c++ epel-release git \
-       libtool make openssl-devel openssl patch readline ruby wget unzip && yum clean all \
+    && yum install -y autoconf automake bash curl gcc gcc-c++ git libtool make ruby wget unzip && yum clean all \
 # Install Go 1.8
     && curl -fsSL -o golang.tar.gz "$GOLANG_URL" \
     && echo "$GOLANG_SHA256  golang.tar.gz" | sha256sum -c - \
@@ -48,15 +47,17 @@ RUN env && yum -y update \
     && wget -q http://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz -O - | tar xzf - \
     && mv /usr/share/apache-maven-$MAVEN_VERSION /usr/share/maven \
     && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn \
-# Build protobuf 3.1.0 compiler (necessary because Centos 6 include glibc is incompatible with provided binary)
-    && git clone https://github.com/google/protobuf.git \
-    && cd protobuf \
+# Build protobuf 3.1.0 compiler (necessary because Centos 6 included glibc is incompatible with provided protobuf binary)
+    && mkdir -p /usr/src/protobuf \
+    && git clone https://github.com/google/protobuf.git /usr/src/protobuf \
+    && cd /usr/src/protobuf \
     && git checkout v3.1.0 \
     && ./autogen.sh \
     && ./configure \
     && make \
     && make install \
     && ldconfig \
+    && rm -rf /usr/src/protobuf && cd \
     && go get -u github.com/golang/protobuf/proto \
     && go get -u github.com/golang/protobuf/protoc-gen-go \
     && go get -u google.golang.org/grpc \
@@ -68,7 +69,7 @@ RUN env && yum -y update \
     && autoconf \
     && ./configure --disable-install-doc \
     && make -j"$(nproc)" \
-    && yum remove -y autoconf automake libtool gcc-c++ ruby \
+    && yum remove -y autoconf automake libtool gcc-c++ unzip ruby \
     && make install \
     && rm -r /usr/src/ruby && cd \
     && echo 'gem: --no-rdoc --no-ri' >> "$HOME/.gemrc" \
@@ -76,12 +77,11 @@ RUN env && yum -y update \
     && gem install bundler \
     && bundle config --global path "$GEM_HOME" \
     && bundle config --global bin "$GEM_HOME/bin" \
-# Install clang 3.4.2
-    && yum install -y clang && yum clean all \
 # Install gas
     && git clone https://github.com/GoASTScanner/gas $(go env GOPATH)/src/github.com/GoASTScanner/gas \
     && cd $(go env GOPATH)/src/github.com/GoASTScanner/gas \
     && git reset --hard d30c5cde3613e9ba0129febda849e4d4df1d57cd \
-    && go install github.com/GoASTScanner/gas
+    && go install github.com/GoASTScanner/gas \
+    && rm -rf $(go env GOPATH)/src/github.com/GoASTScanner/gas && cd
 
 ADD bin /usr/bin
