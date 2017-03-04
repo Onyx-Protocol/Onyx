@@ -59,8 +59,7 @@ func (a *issueAction) Build(ctx context.Context, builder *txbuilder.TemplateBuil
 
 	tplIn := &txbuilder.SigningInstruction{AssetAmount: a.AssetAmount}
 	path := signers.Path(asset.Signer, signers.AssetKeySpace)
-	keyIDs := txbuilder.KeyIDs(asset.Signer.XPubs, path)
-	tplIn.AddWitnessKeys(keyIDs, asset.Signer.Quorum)
+	tplIn.AddWitnessKeys(asset.Signer.XPubs, path, asset.Signer.Quorum)
 
 	builder.RestrictMinTime(time.Now())
 	return builder.AddInput(txin, tplIn)

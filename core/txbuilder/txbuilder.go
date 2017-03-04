@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"chain/crypto/ed25519/chainkd"
-	"chain/encoding/json"
 	"chain/errors"
 	"chain/math/checked"
 	"chain/protocol/bc"
@@ -66,24 +65,10 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 	return tpl, nil
 }
 
-// KeyIDs produces KeyIDs from a list of xpubs and a derivation path
-// (applied to all the xpubs).
-func KeyIDs(xpubs []chainkd.XPub, path [][]byte) []KeyID {
-	result := make([]KeyID, 0, len(xpubs))
-	var hexPath []json.HexBytes
-	for _, p := range path {
-		hexPath = append(hexPath, p)
-	}
-	for _, xpub := range xpubs {
-		result = append(result, KeyID{xpub, hexPath})
-	}
-	return result
-}
-
 func Sign(ctx context.Context, tpl *Template, xpubs []chainkd.XPub, signFn SignFunc) error {
 	for i, sigInst := range tpl.SigningInstructions {
-		for j, c := range sigInst.WitnessComponents {
-			err := c.Sign(ctx, tpl, uint32(i), xpubs, signFn)
+		for j, sw := range sigInst.SignatureWitnesses {
+			err := sw.sign(ctx, tpl, uint32(i), xpubs, signFn)
 			if err != nil {
 				return errors.WithDetailf(err, "adding signature(s) to witness component %d of input %d", j, i)
 			}

@@ -86,7 +86,7 @@ func TestBuildFinal(t *testing.T) {
 	coretest.SignTxTemplate(t, ctx, tmpl, nil)
 	coretest.SignTxTemplate(t, ctx, &tmpl2, nil)
 
-	prog1 := tmpl.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
+	prog1 := tmpl.SigningInstructions[0].SignatureWitnesses[0].Program
 	insts1, err := vm.ParseProgram(prog1)
 	if err != nil {
 		t.Fatal(err)
@@ -117,7 +117,7 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatalf("sigwitness program1 opcode %d is %02x, expected %02x", 18, insts1[18].Op, vm.OP_CHECKOUTPUT)
 	}
 
-	prog2 := tmpl2.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
+	prog2 := tmpl2.SigningInstructions[0].SignatureWitnesses[0].Program
 	insts2, err := vm.ParseProgram(prog2)
 	if err != nil {
 		t.Fatal(err)

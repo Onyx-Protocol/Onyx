@@ -18,20 +18,6 @@ import (
 // a signature for a given xpub, derivation path, and hash.
 type SignFunc func(context.Context, chainkd.XPub, [][]byte, [32]byte) ([]byte, error)
 
-// WitnessComponent encodes instructions for finalizing a transaction
-// by populating its InputWitness fields. Each WitnessComponent object
-// produces zero or more items for the InputWitness of the txinput it
-// corresponds to.
-type WitnessComponent interface {
-	// Sign is called to add signatures. Actual signing is delegated to
-	// a callback function.
-	Sign(context.Context, *Template, uint32, []chainkd.XPub, SignFunc) error
-
-	// Materialize is called to turn the component into a vector of
-	// arguments for the input witness.
-	Materialize(*Template, uint32, *[][]byte) error
-}
-
 // materializeWitnesses takes a filled in Template and "materializes"
 // each witness component, turning it into a vector of arguments for
 // the tx's input witness, creating a fully-signed transaction.
@@ -52,8 +38,8 @@ func materializeWitnesses(txTemplate *Template) error {
 		}
 
 		var witness [][]byte
-		for j, c := range sigInst.WitnessComponents {
-			err := c.Materialize(txTemplate, sigInst.Position, &witness)
+		for j, sw := range sigInst.SignatureWitnesses {
+			err := sw.materialize(txTemplate, sigInst.Position, &witness)
 			if err != nil {
 				return errors.WithDetailf(err, "error in witness component %d of input %d", j, i)
 			}
@@ -66,12 +52,12 @@ func materializeWitnesses(txTemplate *Template) error {
 }
 
 type (
-	SignatureWitness struct {
+	signatureWitness struct {
 		// Quorum is the number of signatures required.
 		Quorum int `json:"quorum"`
 
 		// Keys are the identities of the keys to sign with.
-		Keys []KeyID `json:"keys"`
+		Keys []keyID `json:"keys"`
 
 		// Program is the predicate part of the signature program, whose hash is what gets
 		// signed. If empty, it is computed during Sign from the outputs
@@ -83,7 +69,7 @@ type (
 		Sigs []chainjson.HexBytes `json:"signatures"`
 	}
 
-	KeyID struct {
+	keyID struct {
 		XPub           chainkd.XPub         `json:"xpub"`
 		DerivationPath []chainjson.HexBytes `json:"derivation_path"`
 	}
@@ -101,7 +87,7 @@ var ErrEmptyProgram = errors.New("empty signature program")
 //  - the mintime and maxtime of the transaction (if non-zero)
 //  - the outputID and (if non-empty) reference data of the current input
 //  - the assetID, amount, control program, and (if non-empty) reference data of each output.
-func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index uint32, xpubs []chainkd.XPub, signFn SignFunc) error {
+func (sw *signatureWitness) sign(ctx context.Context, tpl *Template, index uint32, xpubs []chainkd.XPub, signFn SignFunc) error {
 	// Compute the predicate to sign. This is either a
 	// txsighash program if tpl.AllowAdditional is false (i.e., the tx is complete
 	// and no further changes are allowed) or a program enforcing
@@ -203,7 +189,7 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 	return program
 }
 
-func (sw SignatureWitness) Materialize(tpl *Template, index uint32, args *[][]byte) error {
+func (sw signatureWitness) materialize(tpl *Template, index uint32, args *[][]byte) error {
 	// This is the value of N for the CHECKPREDICATE call. The code
 	// assumes that everything already in the arg list before this call
 	// to Materialize is input to the signature program, so N is
@@ -221,11 +207,11 @@ func (sw SignatureWitness) Materialize(tpl *Template, index uint32, args *[][]by
 	return nil
 }
 
-func (sw SignatureWitness) MarshalJSON() ([]byte, error) {
+func (sw signatureWitness) MarshalJSON() ([]byte, error) {
 	obj := struct {
 		Type   string               `json:"type"`
 		Quorum int                  `json:"quorum"`
-		Keys   []KeyID              `json:"keys"`
+		Keys   []keyID              `json:"keys"`
 		Sigs   []chainjson.HexBytes `json:"signatures"`
 	}{
 		Type:   "signature",
@@ -236,10 +222,23 @@ func (sw SignatureWitness) MarshalJSON() ([]byte, error) {
 	return json.Marshal(obj)
 }
 
-func (si *SigningInstruction) AddWitnessKeys(keys []KeyID, quorum int) {
-	sw := &SignatureWitness{
-		Quorum: quorum,
-		Keys:   keys,
+// AddWitnessKeys adds a signatureWitness with the given quorum and
+// list of keys derived by applying the derivation path to each of the
+// xpubs.
+func (si *SigningInstruction) AddWitnessKeys(xpubs []chainkd.XPub, path [][]byte, quorum int) {
+	hexPath := make([]chainjson.HexBytes, 0, len(path))
+	for _, p := range path {
+		hexPath = append(hexPath, p)
 	}
-	si.WitnessComponents = append(si.WitnessComponents, sw)
+
+	keyIDs := make([]keyID, 0, len(xpubs))
+	for _, xpub := range xpubs {
+		keyIDs = append(keyIDs, keyID{xpub, hexPath})
+	}
+
+	sw := &signatureWitness{
+		Quorum: quorum,
+		Keys:   keyIDs,
+	}
+	si.SignatureWitnesses = append(si.SignatureWitnesses, sw)
 }
