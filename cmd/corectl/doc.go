@@ -7,6 +7,13 @@ variable; the default is to connect to the "core" database on localhost.
 
 The config commands initialize the schema if necessary.
 
+Migrate
+
+Subcommand 'migrate' applies any pending database migrations, ensuring
+the database has an up-to-date schema.
+
+	corectl migrate
+
 Config Generator
 
 Subcommand 'config-generator' configures a new core as a generator.
