@@ -22,7 +22,6 @@ var (
 	errNoClientTokens    = errors.New("cannot enable client auth without client access tokens")
 )
 
-// reserved mockhsm key alias
 const (
 	networkRPCVersion = 2
 )
