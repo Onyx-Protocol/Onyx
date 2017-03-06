@@ -10,7 +10,8 @@ import (
 )
 
 func TestMapTx(t *testing.T) {
-	// sample data copied from protocol/bc/transaction_test.go xxx factor out into reusable test utility
+	// sample data copied from transaction_test.go
+	// TODO(bobg): factor out into reusable test utility
 
 	oldTx := sampleTx()
 	oldOuts := oldTx.Outputs
