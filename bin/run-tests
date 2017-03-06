@@ -17,7 +17,6 @@ cleanup() {(
 	rm -rf $CHAIN/sdk/java/target
 	rm -rf $(go env GOPATH)/bin/cored
 	rm -rf $(go env GOPATH)/bin/corectl
-	rm -rf $(go env GOPATH)/bin/migratedb
 	dropdb it-core
 )}
 trap cleanup EXIT
@@ -40,8 +39,8 @@ SDKTARGET=chain-test
 (
 	export DATABASE_URL="postgres:///it-core?sslmode=disable"
 	createdb it-core
-	go install chain/cmd/migratedb chain/cmd/cored chain/cmd/corectl
-	migratedb -d $DATABASE_URL
+	go install chain/cmd/cored chain/cmd/corectl
+	corectl migrate
 	corectl config-generator
 	cored | tee $initlog &
 	cd $CHAIN/sdk/java

@@ -8,12 +8,12 @@ then
 fi
 
 # be sure to pick up latest migrations
-go install chain/cmd/migratedb
+go install chain/cmd/corectl
 
 db=tmp_db_for_dump_schema
 dropdb --if-exists $db
 createdb $db
-migratedb -d postgres:///$db?sslmode=disable
+DATABASE_URL="postgres:///$db?sslmode=disable" corectl migrate
 pg_dump -sOx $db | grep -v COMMENT >$CHAIN/core/schema.sql
 
 psql -c 'SELECT filename, hash FROM migrations ORDER BY filename'\

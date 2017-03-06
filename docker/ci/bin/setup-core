@@ -22,6 +22,7 @@ waitForGenerator() {(
 PATH=$(go env GOPATH)/bin:$PATH:$CHAIN/bin
 go install -tags 'insecure_disable_https_redirect' chain/cmd/cored
 go install chain/cmd/corectl
+corectl migrate
 corectl config-generator
 initlog=`mktemp`
 cored 2>&1 | tee $initlog &
