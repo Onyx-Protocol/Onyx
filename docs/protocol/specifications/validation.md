@@ -46,8 +46,8 @@ A *blockchain state* comprises:
 
 * A [block header](data.md#block-header).
 * A *timestamp* equal to the timestamp in the [block header](data.md#block-header).
-* The set of [output IDs](data.md#output-id) representing [non-retired](data.md#retired-asset) unspent outputs in the block’s [assets merkle tree](data.md#assets-merkle-root).
-* An *issuance memory*: a set of (issuance hash, expiration timestamp) pairs. It records recent issuance inputs in the state in order to detect duplicates.
+* The set of [output IDs](data.md#output-id) representing [non-retired](data.md#retired-asset) unspent outputs.
+* A *nonce set*: a set of ([Nonce ID](entries.md#nonce), expiration timestamp) pairs. It records recent nonce entries in the state in order to prevent duplicates. Expiration timestamp is used to prune outdated records.
 
 
 ## Algorithms
@@ -222,7 +222,7 @@ A transaction is said to be *valid* with respect to a particular blockchain stat
     1. Both transaction minimum and maximum timestamps are not zero.
     2. State’s timestamp is greater or equal to the transaction minimum timestamp.
     3. State’s timestamp is less or equal to the transaction maximum timestamp.
-    4. Input’s [issuance hash](data.md#issuance-hash) does not appear in the state’s issuance memory.
+    4. Input’s [issuance hash](data.md#issuance-hash) does not appear in the state’s nonce set.
 7. For every input in the transaction with asset version equal 1, [validate that input](#validate-transaction-input) with respect to the blockchain state; if invalid, halt and return false.
 8. Return true.
 
@@ -300,7 +300,7 @@ Note: requirement for the input and output sums to be below 2<sup>63</sup> impli
     2. Replace S with S′.
 3. Replace the block header in S with the input block header, yielding a new state S′.
 4. Replace S with S′.
-5. Remove elements of the issuance memory in S where the expiration timestamp is less than the block’s timestamp, yielding a new state S′.
+5. Remove elements of the nonce set in S where the expiration timestamp is less than the block’s timestamp, yielding a new state S′.
 6. Return S′.
 
 ### Apply Transaction
@@ -322,7 +322,7 @@ Note: requirement for the input and output sums to be below 2<sup>63</sup> impli
     2. Replace S with S′.
 3. For all [asset version 1 issuance inputs](data.md#asset-version-1-issuance-commitment) with non-empty *nonce* string:
     1. Compute the [issuance hash](data.md#issuance-hash) H.
-    2. Add (H, transaction maximum timestamp) to the issuance memory in S, yielding a new state S′.
+    2. Add (H, transaction maximum timestamp) to the nonce set in S, yielding a new state S′.
     3. Replace S with S′.
 4. Return S.
 
