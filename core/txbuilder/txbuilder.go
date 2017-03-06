@@ -66,6 +66,26 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 }
 
 func Sign(ctx context.Context, tpl *Template, xpubs []chainkd.XPub, signFn SignFunc) error {
+	type swPair struct {
+		index int
+		sw *signatureWitness
+	}
+
+	m := make(map[chainkd.XPub][]swPair)
+
+	for i, sigInst := range tpl.SigningInstructions {
+		for _, sw := range sigInst.SignatureWitnesses {
+			for _, keyID := range sw.Keys {
+				m[keyID.XPub] = append(m[keyID.XPub], swPair{i, sw})
+			}
+		}
+	}
+
+	for xpub, swPairs := range m {
+		// xxx LEFT OFF HERE
+	}
+
+
 	for i, sigInst := range tpl.SigningInstructions {
 		for j, sw := range sigInst.SignatureWitnesses {
 			err := sw.sign(ctx, tpl, uint32(i), xpubs, signFn)
