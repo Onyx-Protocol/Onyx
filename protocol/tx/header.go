@@ -28,12 +28,9 @@ func newHeader(version uint64, results []entry, data bc.Hash, minTimeMS, maxTime
 	h.body.MinTimeMS = minTimeMS
 	h.body.MaxTimeMS = maxTimeMS
 
-	if len(results) > 0 {
-		h.Results = results
-		h.body.Results = make([]bc.Hash, 0, len(results))
-		for _, r := range results {
-			h.body.Results = append(h.body.Results, entryID(r))
-		}
+	h.Results = results
+	for _, r := range results {
+		h.body.Results = append(h.body.Results, entryID(r))
 	}
 
 	return h

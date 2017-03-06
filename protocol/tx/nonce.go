@@ -22,9 +22,7 @@ func (nonce) Ordinal() int { return -1 }
 func newNonce(p program, tr *timeRange) *nonce {
 	n := new(nonce)
 	n.body.Program = p
-	if tr != nil {
-		n.body.TimeRange = entryID(tr)
-		n.TimeRange = tr
-	}
+	n.body.TimeRange = entryID(tr)
+	n.TimeRange = tr
 	return n
 }
