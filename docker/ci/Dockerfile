@@ -16,7 +16,7 @@ ENV CHAIN="/go/src/chain" \
     RUBY_MAJOR="2.0" \
     RUBY_VERSION="2.0.0-p594"
 
-RUN env && yum -y update \
+RUN yum -y update \
     && yum install -y autoconf automake bash curl gcc gcc-c++ git libtool make ruby wget unzip && yum clean all \
 # Install Go 1.8
     && curl -fsSL -o golang.tar.gz "$GOLANG_URL" \
