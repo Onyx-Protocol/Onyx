@@ -1,4 +1,4 @@
-package tx
+package bc
 
 type program struct {
 	VMVersion uint64

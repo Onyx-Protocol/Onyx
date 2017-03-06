@@ -1,25 +1,15 @@
-package tx
+package bc
 
 import (
 	"fmt"
 
 	"chain/crypto/sha3pool"
 	"chain/errors"
-	"chain/protocol/bc"
 )
-
-func init() {
-	bc.TxHashesFunc = TxHashes
-	bc.BlockHeaderHashFunc = func(old *bc.BlockHeader) bc.Hash {
-		hash, _ := mapBlockHeader(old)
-		return hash
-	}
-	bc.OutputHash = ComputeOutputID
-}
 
 // ComputeOutputID assembles an output entry given a spend commitment
 // and computes and returns its corresponding entry ID.
-func ComputeOutputID(sc *bc.SpendCommitment) (h bc.Hash, err error) {
+func ComputeOutputID(sc *SpendCommitment) (h Hash, err error) {
 	defer func() {
 		if r, ok := recover().(error); ok {
 			err = r
@@ -33,7 +23,7 @@ func ComputeOutputID(sc *bc.SpendCommitment) (h bc.Hash, err error) {
 }
 
 // TxHashes returns all hashes needed for validation and state updates.
-func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
+func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 	defer func() {
 		if r, ok := recover().(error); ok {
 			err = r
@@ -45,11 +35,11 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 		return nil, errors.Wrap(err, "mapping old transaction to new")
 	}
 
-	hashes = new(bc.TxHashes)
+	hashes = new(TxHashes)
 	hashes.ID = txid
 
 	// Results
-	hashes.Results = make([]bc.ResultInfo, len(header.body.Results))
+	hashes.Results = make([]ResultInfo, len(header.body.Results))
 	for i, resultHash := range header.body.Results {
 		hashes.Results[i].ID = resultHash
 		entry := entries[resultHash]
@@ -60,8 +50,8 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 		}
 	}
 
-	hashes.VMContexts = make([]*bc.VMContext, len(oldTx.Inputs))
-	hashes.SpentOutputIDs = make([]bc.Hash, len(oldTx.Inputs))
+	hashes.VMContexts = make([]*VMContext, len(oldTx.Inputs))
+	hashes.SpentOutputIDs = make([]Hash, len(oldTx.Inputs))
 
 	for entryID, ent := range entries {
 		switch ent := ent.(type) {
@@ -77,19 +67,19 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 				return nil, fmt.Errorf("nonce entry refers to %s entry, should be timerange", trEntry.Type())
 			}
 			iss := struct {
-				ID           bc.Hash
+				ID           Hash
 				ExpirationMS uint64
 			}{entryID, tr.body.MaxTimeMS}
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *issuance:
 			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
-			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
+			vmc.NonceID = (*Hash)(&ent.body.Anchor)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 
 		case *spend:
 			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
-			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
+			vmc.OutputID = (*Hash)(&ent.body.SpentOutput)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 			hashes.SpentOutputIDs[ent.Ordinal()] = ent.body.SpentOutput
 		}
@@ -100,8 +90,8 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 
 // populates the common fields of a VMContext for an Entry, regardless of whether
 // that Entry is a Spend or an Issuance
-func newVMContext(entryID, txid, txData, inpData bc.Hash) *bc.VMContext {
-	vmc := new(bc.VMContext)
+func newVMContext(entryID, txid, txData, inpData Hash) *VMContext {
+	vmc := new(VMContext)
 
 	// TxRefDataHash
 	vmc.TxRefDataHash = txData

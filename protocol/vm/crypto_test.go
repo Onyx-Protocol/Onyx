@@ -511,7 +511,7 @@ func txContext(txData *bc.TxData, inputIndex int) (c bc.VMContext) {
 	if len(txData.Inputs) == 0 {
 		return
 	}
-	hashes, err := bc.TxHashesFunc(txData)
+	hashes, err := bc.ComputeTxHashes(txData)
 	if err != nil {
 		panic(err)
 	}

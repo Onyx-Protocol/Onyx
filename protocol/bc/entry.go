@@ -1,4 +1,4 @@
-package tx
+package bc
 
 import (
 	"fmt"
@@ -8,14 +8,13 @@ import (
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
-	"chain/protocol/bc"
 )
 
 type entry interface {
 	Type() string
 	Body() interface{}
 
-	// When an entry is created from a bc.TxInput or a bc.TxOutput, this
+	// When an entry is created from a TxInput or a TxOutput, this
 	// reports the position of that antecedent object within its
 	// transaction. Both inputs (spends and issuances) and outputs
 	// (including retirements) are numbered beginning at zero. Entries
@@ -25,7 +24,7 @@ type entry interface {
 
 var errInvalidValue = errors.New("invalid value")
 
-func entryID(e entry) (hash bc.Hash) {
+func entryID(e entry) (hash Hash) {
 	if e == nil {
 		return hash
 	}
@@ -43,7 +42,7 @@ func entryID(e entry) (hash bc.Hash) {
 	if err != nil {
 		panic(err)
 	}
-	var innerHash bc.Hash
+	var innerHash Hash
 	bh.Read(innerHash[:])
 	hasher.Write(innerHash[:])
 
@@ -69,12 +68,12 @@ func writeForHash(w io.Writer, c interface{}) error {
 		// TODO: The rest of these are all aliases for [32]byte. Do we
 		// really need them all?
 
-	case bc.Hash:
+	case Hash:
 		_, err := w.Write(v[:])
-		return errors.Wrap(err, "writing bc.Hash for hash")
-	case bc.AssetID:
+		return errors.Wrap(err, "writing Hash for hash")
+	case AssetID:
 		_, err := w.Write(v[:])
-		return errors.Wrap(err, "writing bc.AssetID for hash")
+		return errors.Wrap(err, "writing AssetID for hash")
 	}
 
 	// The two container types in the spec (List and Struct)

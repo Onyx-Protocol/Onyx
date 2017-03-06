@@ -295,7 +295,7 @@ func (t *TxInput) writeInputWitness(w io.Writer) error {
 
 func (t *TxInput) SpentOutputID() (o Hash, err error) {
 	if si, ok := t.TypedInput.(*SpendInput); ok {
-		o, err = OutputHash(&si.SpendCommitment)
+		o, err = ComputeOutputID(&si.SpendCommitment)
 	}
 	return o, err
 }

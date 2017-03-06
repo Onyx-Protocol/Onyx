@@ -1,14 +1,12 @@
-package tx
-
-import "chain/protocol/bc"
+package bc
 
 type header struct {
 	body struct {
 		Version              uint64
-		Results              []bc.Hash
-		Data                 bc.Hash
+		Results              []Hash
+		Data                 Hash
 		MinTimeMS, MaxTimeMS uint64
-		ExtHash              bc.Hash
+		ExtHash              Hash
 	}
 
 	// Results contains (pointers to) the manifested entries for the
@@ -21,7 +19,7 @@ func (h *header) Body() interface{} { return h.body }
 
 func (header) Ordinal() int { return -1 }
 
-func newHeader(version uint64, results []entry, data bc.Hash, minTimeMS, maxTimeMS uint64) *header {
+func newHeader(version uint64, results []entry, data Hash, minTimeMS, maxTimeMS uint64) *header {
 	h := new(header)
 	h.body.Version = version
 	h.body.Data = data
