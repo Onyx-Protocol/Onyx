@@ -211,6 +211,15 @@ func mapBlockHeader(old *BlockHeader) (bhID Hash, bh *BlockHeaderEntry) {
 	return
 }
 
+func MapBlock(old *Block) *BlockEntries {
+	b := new(BlockEntries)
+	b.ID, b.BlockHeaderEntry = mapBlockHeader(&old.BlockHeader)
+	for _, oldTx := range old.Transactions {
+		b.Transactions = append(b.Transactions, oldTx.TxEntries)
+	}
+	return b
+}
+
 func hashData(data []byte) (h Hash) {
 	sha3pool.Sum256(h[:], data)
 	return

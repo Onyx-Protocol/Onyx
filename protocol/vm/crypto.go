@@ -134,7 +134,7 @@ func opTxSigHash(vm *virtualMachine) error {
 	if vm.context.TxSigHash == nil {
 		return ErrContext
 	}
-	return vm.push(*vm.context.TxSigHash, false)
+	return vm.push(vm.context.TxSigHash(), false)
 }
 
 func opBlockHash(vm *virtualMachine) error {

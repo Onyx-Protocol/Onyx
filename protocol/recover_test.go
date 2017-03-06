@@ -14,7 +14,7 @@ import (
 
 func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 	store := memstore.New()
-	b, err := NewInitialBlock(nil, 0, time.Now())
+	b, err := NewInitialBlock(nil, 0, time.Now().Add(-time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -22,7 +22,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = c1.CommitBlock(context.Background(), b, state.Empty())
+	err = c1.CommitAppliedBlock(context.Background(), b, state.Empty())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -36,11 +36,13 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 		}
 	}
 
+	ctx := context.Background()
+
 	c2, err := NewChain(context.Background(), b.Hash(), store, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	block, snapshot, err := c2.Recover(context.Background())
+	block, snapshot, err := c2.Recover(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +50,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 		t.Fatalf("block.Height = %d, want %d", block.Height, 1)
 	}
 
-	err = c2.ValidateBlockForSig(context.Background(), createEmptyBlock(block, snapshot))
+	err = c2.ValidateBlockForSig(ctx, createEmptyBlock(block, snapshot))
 	if err != nil {
 		t.Fatal(err)
 	}

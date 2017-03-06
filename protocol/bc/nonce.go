@@ -1,5 +1,10 @@
 package bc
 
+import (
+	"chain/errors"
+	"chain/protocol/vm"
+)
+
 // Nonce contains data used, among other things, for distinguishing
 // otherwise-identical issuances (when used as those issuances'
 // "anchors"). It satisfies the Entry interface.
@@ -41,4 +46,28 @@ func NewNonce(p Program, tr *TimeRange) *Nonce {
 func (n *Nonce) SetAnchored(id Hash, entry Entry) {
 	n.Witness.AnchoredID = id
 	n.Anchored = entry
+}
+
+func (n *Nonce) CheckValid(vs *validationState) error {
+	err := vm.Verify(NewTxVMContext(vs.tx, n, n.Body.Program, n.Witness.Arguments))
+	if err != nil {
+		return errors.Wrap(err, "checking nonce program")
+	}
+
+	vs2 := *vs
+	vs2.entryID = n.Body.TimeRangeID
+	err = n.TimeRange.CheckValid(&vs2)
+	if err != nil {
+		return errors.Wrap(err, "checking nonce timerange")
+	}
+
+	if n.TimeRange.Body.MinTimeMS == 0 || n.TimeRange.Body.MaxTimeMS == 0 {
+		return errZeroTime
+	}
+
+	if vs.tx.Body.Version == 1 && (n.Body.ExtHash != Hash{}) {
+		return errNonemptyExtHash
+	}
+
+	return nil
 }

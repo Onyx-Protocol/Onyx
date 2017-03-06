@@ -36,3 +36,12 @@ func NewBlockHeaderEntry(version, height uint64, previousBlockID Hash, timestamp
 	bh.Body.NextConsensusProgram = nextConsensusProgram
 	return bh
 }
+
+// CheckValid does only part of the work of validating a block. The
+// rest is handled in ValidateBlock, which calls this.
+func (bh *BlockHeaderEntry) CheckValid(_ *validationState) error {
+	if bh.Body.Version == 1 && (bh.Body.ExtHash != Hash{}) {
+		return errNonemptyExtHash
+	}
+	return nil
+}

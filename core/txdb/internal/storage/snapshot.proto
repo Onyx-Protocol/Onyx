@@ -10,10 +10,19 @@ message Snapshot {
   repeated StateTreeNode nodes = 1;
 
   // Issuances contains the record of recent issuances for ensuring uniqueness
-  // of issuances.
-  repeated Issuance issuances = 2;
+  // of issuances. DEPRECATED in favor of nonces (below).
+  repeated Issuance issuances = 2 [deprecated=true];
+
+  // Nonces contains the record of recent nonces for ensuring
+  // uniqueness of issuances.
+  repeated Nonce nonces = 3;
 
   message Issuance {
+    bytes  hash      = 1;
+    uint64 expiry_ms = 2;
+  }
+
+  message Nonce {
     bytes  hash      = 1;
     uint64 expiry_ms = 2;
   }

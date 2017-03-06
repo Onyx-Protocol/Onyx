@@ -62,8 +62,7 @@ func Verify(context *Context) (err error) {
 		context:           context,
 	}
 
-	args := context.Arguments
-	for i, arg := range args {
+	for i, arg := range context.Arguments {
 		err = vm.push(arg, false)
 		if err != nil {
 			return errors.Wrapf(err, "pushing initial argument %d", i)
@@ -75,7 +74,7 @@ func Verify(context *Context) (err error) {
 		err = ErrFalseVMResult
 	}
 
-	return wrapErr(err, vm, args)
+	return wrapErr(err, vm, context.Arguments)
 }
 
 // falseResult returns true iff the stack is empty or the top

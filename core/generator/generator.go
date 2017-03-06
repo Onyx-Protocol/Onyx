@@ -14,7 +14,6 @@ import (
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
-	"chain/protocol/validation"
 )
 
 // A BlockSigner signs blocks.
@@ -106,8 +105,8 @@ func (g *Generator) Generate(
 		log.Fatalkv(ctx, log.KeyError, err)
 	}
 	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
-		s := state.Copy(g.latestSnapshot)
-		err := validation.ApplyBlock(s, b)
+		s := g.latestSnapshot.Copy()
+		err := s.ApplyBlock(bc.MapBlock(b))
 		if err != nil {
 			log.Fatalkv(ctx, log.KeyError, err)
 		}

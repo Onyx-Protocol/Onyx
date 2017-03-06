@@ -1,8 +1,6 @@
 package vm
 
-import (
-	"encoding/binary"
-)
+import "encoding/binary"
 
 func opVerify(vm *virtualMachine) error {
 	err := vm.applyCost(1)

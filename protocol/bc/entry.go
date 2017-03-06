@@ -10,10 +10,39 @@ import (
 	"chain/errors"
 )
 
+type (
+	// ValidChecker can check its validity with respect to a given
+	// validation state.
+	ValidChecker interface {
+		// CheckValid checks the entry for validity w.r.t. the given
+		// validation state.
+		CheckValid(*validationState) error
+	}
+
+	validationState struct {
+		// The ID of the blockchain
+		blockchainID Hash
+
+		// The enclosing transaction object
+		tx *TxEntries
+
+		// The ID of the nearest enclosing entry
+		entryID Hash
+
+		// The source position, for validating ValueSources
+		sourcePos uint64
+
+		// The destination position, for validating ValueDestinations
+		destPos uint64
+	}
+)
+
 // Entry is the interface implemented by each addressable unit in a
 // blockchain: transaction components such as spends, issuances,
 // outputs, and retirements (among others), plus blockheaders.
 type Entry interface {
+	ValidChecker
+
 	// Type produces a short human-readable string uniquely identifying
 	// the type of this entry.
 	Type() string
@@ -84,6 +113,9 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case []byte:
 		_, err := blockchain.WriteVarstr31(w, v)
 		return errors.Wrapf(err, "writing []byte (len %d) for hash", len(v))
+	case [][]byte:
+		_, err := blockchain.WriteVarstrList(w, v)
+		return errors.Wrapf(err, "writing [][]byte (len %d) for hash", len(v))
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
 		return errors.Wrapf(err, "writing string (len %d) for hash", len(v))

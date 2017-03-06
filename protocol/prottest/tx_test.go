@@ -3,11 +3,13 @@ package prottest
 import (
 	"testing"
 
-	"chain/protocol/validation"
+	"chain/protocol/bc"
 )
 
 func TestNewIssuance(t *testing.T) {
-	err := validation.CheckTxWellFormed(NewIssuanceTx(t, NewChain(t)))
+	c := NewChain(t)
+	iss := NewIssuanceTx(t, c)
+	err := bc.ValidateTx(iss.TxEntries, c.InitialBlockHash)
 	if err != nil {
 		t.Error(err)
 	}

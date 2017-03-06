@@ -402,11 +402,11 @@ func TestCryptoOps(t *testing.T) {
 		op: OP_TXSIGHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 50000,
-			Context:  bc.NewTxVMContext(tx, 0, bc.Program{VMVersion: 1}, nil),
+			Context:  bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1}, nil),
 		},
 		wantVM: &VirtualMachine{
 			RunLimit: 49704,
-			Context:  bc.NewTxVMContext(tx, 0, bc.Program{VMVersion: 1}, nil),
+			Context:  bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1}, nil),
 			DataStack: [][]byte{{
 				47, 0, 60, 221, 100, 66, 123, 94,
 				237, 214, 204, 181, 133, 71, 2, 11,
@@ -418,14 +418,13 @@ func TestCryptoOps(t *testing.T) {
 		op: OP_TXSIGHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 0,
-			Context:  bc.NewTxVMContext(tx, 0, bc.Program{VMVersion: 1}, nil),
+			Context:  bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1}, nil),
 		},
 		wantErr: ErrRunLimitExceeded,
-	}, {
 		op: OP_BLOCKHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 50000,
-			Context:  bc.NewBlockVMContext(&bc.Block{}, nil, nil),
+			Context:  bc.NewBlockVMContext(bc.MapBlock(&bc.Block{}), nil, nil),
 		},
 		wantVM: &VirtualMachine{
 			RunLimit: 49959,
@@ -435,13 +434,13 @@ func TestCryptoOps(t *testing.T) {
 				157, 235, 138, 214, 147, 207, 55, 17,
 				254, 131, 9, 179, 144, 106, 90, 134,
 			}},
-			Context: bc.NewBlockVMContext(&bc.Block{}, nil, nil),
+			Context: bc.NewBlockVMContext(bc.MapBlock(&bc.Block{}), nil, nil),
 		},
 	}, {
 		op: OP_BLOCKHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 0,
-			Context:  bc.NewBlockVMContext(&bc.Block{}, nil, nil),
+			Context:  bc.NewBlockVMContext(bc.MapBlock(&bc.Block{}), nil, nil),
 		},
 		wantErr: ErrRunLimitExceeded,
 	}}

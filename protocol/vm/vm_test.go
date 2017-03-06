@@ -243,35 +243,29 @@ func TestVerifyTxInput(t *testing.T) {
 }
 
 func TestVerifyBlockHeader(t *testing.T) {
-	block := &bc.Block{
+	block := bc.MapBlock(&bc.Block{
 		BlockHeader: bc.BlockHeader{
 			BlockWitness: bc.BlockWitness{
 				Witness: [][]byte{{2}, {3}},
 			},
 		},
-	}
-	prevBlock := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			BlockCommitment: bc.BlockCommitment{
-				ConsensusProgram: []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
-			},
-		},
-	}
+	})
+	consensusProg := []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}
 
-	gotErr := verifyBlock(&prevBlock.BlockHeader, block)
+	gotErr := Verify(bc.NewBlockVMContext(block, consensusProg, block.Witness.Arguments))
 	if gotErr != nil {
 		t.Errorf("unexpected error: %v", gotErr)
 	}
 
-	block = &bc.Block{
+	block = bc.MapBlock(&bc.Block{
 		BlockHeader: bc.BlockHeader{
 			BlockWitness: bc.BlockWitness{
 				Witness: [][]byte{make([]byte, 50000)},
 			},
 		},
-	}
+	})
 
-	gotErr = verifyBlock(&prevBlock.BlockHeader, block)
+	gotErr = Verify(bc.NewBlockVMContext(block, consensusProg, block.Witness.Arguments))
 	if errors.Root(gotErr) != ErrRunLimitExceeded {
 		t.Error("expected block to exceed run limit")
 	}
@@ -309,6 +303,7 @@ func TestStep(t *testing.T) {
 			bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 1, 0, nil, bc.Hash{}, nil),
 		},
 	})
+	txVMContext := bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{}, nil)
 	cases := []struct {
 		startVM *VirtualMachine
 		wantVM  *VirtualMachine
@@ -397,7 +392,7 @@ func TestStep(t *testing.T) {
 		startVM: &VirtualMachine{
 			Program:  []byte{byte(OP_INDEX)},
 			RunLimit: 1,
-			Context:  bc.NewTxVMContext(tx, 0, bc.Program{}, nil),
+			Context:  txVMContext,
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
@@ -494,17 +489,12 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 				ok = false
 			}
 		}()
-		prev := &bc.BlockHeader{
-			BlockCommitment: bc.BlockCommitment{
-				ConsensusProgram: program,
-			},
-		}
-		block := &bc.Block{BlockHeader: bc.BlockHeader{
+		block := bc.MapBlock(&bc.Block{BlockHeader: bc.BlockHeader{
 			BlockWitness: bc.BlockWitness{
 				Witness: witnesses,
 			},
-		}}
-		verifyBlock(prev, block)
+		}})
+		Verify(bc.NewBlockVMContext(block, program, witnesses))
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -514,23 +504,17 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 
 func verifyTx(tx *bc.Tx, index uint32) error {
 	var (
-		prog  []byte
+		prog bc.Program
 		args  [][]byte
-		vmver uint64
 	)
-	switch inp := tx.Inputs[index].TypedInput.(type) {
-	case *bc.IssuanceInput:
-		prog = inp.IssuanceProgram
-		args = inp.Arguments
-		vmver = inp.VMVersion
-	case *bc.SpendInput:
-		prog = inp.ControlProgram
-		args = inp.Arguments
-		vmver = inp.VMVersion
+	inp := tx.TxInputs[index]
+	switch inp.(type) {
+	case *bc.Issuance:
+		prog = inp.Witness.AssetDefinition.IssuanceProgram
+		args = inp.Witness.Arguments
+	case *bc.Spend:
+		prog = inp.SpentOutput.Body.ControlProgram
+		args = inp.Witness.Arguments
 	}
-	return Verify(bc.NewTxVMContext(tx, index, bc.Program{VMVersion: vmver, Code: prog}, args))
-}
-
-func verifyBlock(prev *bc.BlockHeader, block *bc.Block) error {
-	return Verify(bc.NewBlockVMContext(block, prev.ConsensusProgram, block.Witness))
+	return Verify(bc.NewTxVMContext(tx, inp, prog, args))
 }

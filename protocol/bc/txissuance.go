@@ -1,5 +1,10 @@
 package bc
 
+import (
+	"chain/errors"
+	"chain/protocol/vm"
+)
+
 // Issuance is a source of new value on a blockchain. It satisfies the
 // Entry interface.
 //
@@ -52,4 +57,59 @@ func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issua
 	iss.Body.Data = data
 	iss.ordinal = ordinal
 	return iss
+}
+
+func (iss *Issuance) CheckValid(vs *validationState) error {
+	if iss.Witness.AssetDefinition.InitialBlockID != vs.blockchainID {
+		return errors.WithDetailf(errWrongBlockchain, "current blockchain %x, asset defined on blockchain %x", vs.blockchainID[:], iss.Witness.AssetDefinition.InitialBlockID[:])
+	}
+
+	computedAssetID := iss.Witness.AssetDefinition.ComputeAssetID()
+	if computedAssetID != iss.Body.Value.AssetID {
+		return errors.WithDetailf(errMismatchedAssetID, "asset ID is %x, issuance wants %x", computedAssetID[:], iss.Body.Value.AssetID[:])
+	}
+
+	err := vm.Verify(NewTxVMContext(vs.tx, iss, iss.Witness.AssetDefinition.IssuanceProgram, iss.Witness.Arguments))
+	if err != nil {
+		return errors.Wrap(err, "checking issuance program")
+	}
+
+	var anchored Hash
+	switch a := iss.Anchor.(type) {
+	case *Nonce:
+		anchored = a.Witness.AnchoredID
+
+	case *Spend:
+		anchored = a.Witness.AnchoredID
+
+	case *Issuance:
+		anchored = a.Witness.AnchoredID
+
+	default:
+		return errors.WithDetailf(errEntryType, "issuance anchor has type %T, should be nonce, spend, or issuance", iss.Anchor)
+	}
+
+	if anchored != vs.entryID {
+		return errors.WithDetailf(errMismatchedReference, "issuance %x anchor is for %x", vs.entryID[:], anchored[:])
+	}
+
+	anchorVS := *vs
+	anchorVS.entryID = iss.Body.AnchorID
+	err = iss.Anchor.CheckValid(&anchorVS)
+	if err != nil {
+		return errors.Wrap(err, "checking issuance anchor")
+	}
+
+	destVS := *vs
+	destVS.destPos = 0
+	err = iss.Witness.Destination.CheckValid(&destVS)
+	if err != nil {
+		return errors.Wrap(err, "checking issuance destination")
+	}
+
+	if vs.tx.Body.Version == 1 && (iss.Body.ExtHash != Hash{}) {
+		return errNonemptyExtHash
+	}
+
+	return nil
 }

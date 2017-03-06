@@ -1,5 +1,7 @@
 package bc
 
+import "chain/errors"
+
 // TxHeader contains header information for a transaction. Every
 // transaction on a blockchain contains exactly one TxHeader. The ID
 // of the TxHeader is the ID of the transaction. TxHeader satisfies
@@ -37,4 +39,35 @@ func NewTxHeader(version uint64, results []Entry, data Hash, minTimeMS, maxTimeM
 	}
 
 	return h
+}
+
+// CheckValid does only part of the work of validating a tx header. The block-related parts of tx validation are in ValidateBlock.
+func (tx *TxHeader) CheckValid(vs *validationState) error {
+	if tx.Body.MaxTimeMS > 0 {
+		if tx.Body.MaxTimeMS < tx.Body.MinTimeMS {
+			return errors.WithDetailf(errBadTimeRange, "min time %d, max time %d", tx.Body.MinTimeMS, tx.Body.MaxTimeMS)
+		}
+	}
+
+	for i, resID := range tx.Body.ResultIDs {
+		res := tx.Results[i]
+		vs2 := *vs
+		vs2.entryID = resID
+		err := res.CheckValid(&vs2)
+		if err != nil {
+			return errors.Wrapf(err, "checking result %d", i)
+		}
+	}
+
+	if tx.Body.Version == 1 {
+		if len(tx.Body.ResultIDs) == 0 {
+			return errEmptyResults
+		}
+
+		if (tx.Body.ExtHash != Hash{}) {
+			return errNonemptyExtHash
+		}
+	}
+
+	return nil
 }

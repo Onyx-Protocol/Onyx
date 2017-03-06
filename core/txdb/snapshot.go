@@ -31,16 +31,16 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 		}
 	}
 
-	issuances := make(map[bc.Hash]uint64, len(storedSnapshot.Issuances))
-	for _, issuance := range storedSnapshot.Issuances {
+	nonces := make(map[bc.Hash]uint64, len(storedSnapshot.Nonces))
+	for _, nonce := range storedSnapshot.Nonces {
 		var hash bc.Hash
-		copy(hash[:], issuance.Hash)
-		issuances[hash] = issuance.ExpiryMs
+		copy(hash[:], nonce.Hash)
+		nonces[hash] = nonce.ExpiryMs
 	}
 
 	return &state.Snapshot{
-		Tree:      tree,
-		Issuances: issuances,
+		Tree:   tree,
+		Nonces: nonces,
 	}, nil
 }
 
@@ -55,10 +55,10 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 		return errors.Wrap(err, "walking patricia tree")
 	}
 
-	storedSnapshot.Issuances = make([]*storage.Snapshot_Issuance, 0, len(snapshot.Issuances))
-	for k, v := range snapshot.Issuances {
+	storedSnapshot.Nonces = make([]*storage.Snapshot_Nonce, 0, len(snapshot.Nonces))
+	for k, v := range snapshot.Nonces {
 		hash := k
-		storedSnapshot.Issuances = append(storedSnapshot.Issuances, &storage.Snapshot_Issuance{
+		storedSnapshot.Nonces = append(storedSnapshot.Nonces, &storage.Snapshot_Nonce{
 			Hash:     hash[:],
 			ExpiryMs: v,
 		})

@@ -22,6 +22,57 @@ type TxEntries struct {
 	OutputIDs      []Hash
 }
 
+// ValidateTx validates a transaction.
+func ValidateTx(tx *TxEntries, initialBlockID Hash) error {
+	vs := &validationState{
+		blockchainID: initialBlockID,
+	}
+	return tx.CheckValid(vs)
+}
+
+func (tx *TxEntries) CheckValid(vs *validationState) error {
+	vs2 := *vs
+	vs2.tx = tx
+	vs2.entryID = tx.ID
+	return tx.TxHeader.CheckValid(&vs2)
+}
+
+type BlockchainState interface {
+	// AddNonce adds a nonce entry's ID and its expiration time T to the
+	// state's nonce set.  It is an error for the nonce ID (with an
+	// expiry >= T) to already be present.
+	AddNonce(Hash, uint64) error
+
+	// DeleteSpentOutput removes an output ID from the utxo set. It is
+	// an error for the ID not to be present.
+	DeleteSpentOutput(Hash) error
+
+	// AddOutput adds an output ID to the utxo set.
+	AddOutput(Hash) error
+}
+
+func (tx *TxEntries) Apply(state BlockchainState) error {
+	for _, n := range tx.NonceIDs {
+		err := state.AddNonce(n, tx.Body.MaxTimeMS)
+		if err != nil {
+			return err
+		}
+	}
+	for _, s := range tx.SpentOutputIDs {
+		err := state.DeleteSpentOutput(s)
+		if err != nil {
+			return err
+		}
+	}
+	for _, o := range tx.OutputIDs {
+		err := state.AddOutput(o)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (tx *TxEntries) SigHash(n uint32) (hash Hash) {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)

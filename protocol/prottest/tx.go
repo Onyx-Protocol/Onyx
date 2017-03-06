@@ -77,7 +77,7 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 	witness = append(witness, vm.Int64Bytes(0)) // 0 args to the sigprog
 	witness = append(witness, signature)
 	witness = append(witness, sigprog)
-	tx.Inputs[0].SetArguments(witness)
+	tx.SetInputArguments(0, witness)
 
 	return tx
 }

@@ -8,7 +8,6 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/validation"
 	"chain/protocol/vm"
 )
 
@@ -40,8 +39,8 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *bc.Tx) 
 	<-c.BlockWaiter(1)
 
 	// If this transaction is valid, ValidateTxCached will store it in the cache.
-	err = c.ValidateTxCached(tx)
-	if errors.Root(err) == validation.ErrBadTx {
+	err = c.ValidateTx(tx.TxEntries)
+	if errors.Root(err) == protocol.ErrBadTx {
 		return errors.Sub(ErrRejected, err)
 	} else if err != nil {
 		return errors.Wrap(err, "tx rejected")

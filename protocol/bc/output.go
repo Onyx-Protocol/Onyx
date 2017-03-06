@@ -1,5 +1,7 @@
 package bc
 
+import "chain/errors"
+
 // Output is the result of a transfer of value. The value it contains
 // may be accessed by a later Spend entry (if that entry can satisfy
 // the Output's ControlProgram). Output satisfies the Entry interface.
@@ -28,4 +30,19 @@ func NewOutput(source ValueSource, controlProgram Program, data Hash, ordinal in
 	out.Body.Data = data
 	out.ordinal = ordinal
 	return out
+}
+
+func (o *Output) CheckValid(vs *validationState) error {
+	vs2 := *vs
+	vs2.sourcePos = 0
+	err := o.Body.Source.CheckValid(&vs2)
+	if err != nil {
+		return errors.Wrap(err, "checking output source")
+	}
+
+	if vs.tx.Body.Version == 1 && (o.Body.ExtHash != Hash{}) {
+		return errNonemptyExtHash
+	}
+
+	return nil
 }

@@ -1,5 +1,10 @@
 package bc
 
+import (
+	"chain/errors"
+	"chain/protocol/vm"
+)
+
 // Spend accesses the value in a prior Output for transfer
 // elsewhere. It satisfies the Entry interface.
 //
@@ -54,4 +59,35 @@ func NewSpend(out *Output, data Hash, ordinal int) *Spend {
 func (s *Spend) SetAnchored(id Hash, entry Entry) {
 	s.Witness.AnchoredID = id
 	s.Anchored = entry
+}
+
+func (s *Spend) CheckValid(vs *validationState) error {
+	err := vm.Verify(NewTxVMContext(vs.tx, s, s.SpentOutput.Body.ControlProgram, s.Witness.Arguments))
+	if err != nil {
+		return errors.Wrap(err, "checking control program")
+	}
+
+	if s.SpentOutput.Body.Source.Value != s.Witness.Destination.Value {
+		return errors.WithDetailf(
+			errMismatchedValue,
+			"previous output is for %d unit(s) of %x, spend wants %d unit(s) of %x",
+			s.SpentOutput.Body.Source.Value.Amount,
+			s.SpentOutput.Body.Source.Value.AssetID[:],
+			s.Witness.Destination.Value.Amount,
+			s.Witness.Destination.Value.AssetID[:],
+		)
+	}
+
+	vs2 := *vs
+	vs2.destPos = 0
+	err = s.Witness.Destination.CheckValid(&vs2)
+	if err != nil {
+		return errors.Wrap(err, "checking spend destination")
+	}
+
+	if vs.tx.Body.Version == 1 && (s.Body.ExtHash != Hash{}) {
+		return errNonemptyExtHash
+	}
+
+	return nil
 }

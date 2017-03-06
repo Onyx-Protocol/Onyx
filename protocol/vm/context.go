@@ -14,6 +14,8 @@ type Context struct {
 	Code      []byte
 	Arguments [][]byte
 
+	EntryID []byte
+
 	// TxVersion must be present when verifying transaction components
 	// (such as spends and issuances).
 	TxVersion *uint64
@@ -27,17 +29,18 @@ type Context struct {
 	// Fields below this point are required by particular opcodes when
 	// verifying transaction components.
 
-	TxSigHash        *[]byte
-	NumResults       *uint64
-	AssetID          *[]byte
-	Amount           *uint64
-	MinTimeMS        *uint64
-	MaxTimeMS        *uint64
-	InputRefDataHash *[]byte
-	TxRefDataHash    *[]byte
-	InputIndex       *uint32
-	Nonce            *[]byte
-	SpentOutputID    *[]byte
+	TxSigHash     *[]byte
+	NumResults    *uint64
+	AssetID       *[]byte
+	Amount        *uint64
+	MinTimeMS     *uint64
+	MaxTimeMS     *uint64
+	EntryData     *[]byte
+	TxData        *[]byte
+	DestPos       *uint32
+	AnchorID      *[]byte
+	SpentOutputID *[]byte
 
+	TxSigHash   func() []byte
 	CheckOutput func(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte) (bool, error)
 }
