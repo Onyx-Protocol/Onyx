@@ -65,35 +65,55 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 	return tpl, nil
 }
 
-func Sign(ctx context.Context, tpl *Template, xpubs []chainkd.XPub, signFn SignFunc) error {
-	type swPair struct {
-		index int
-		sw *signatureWitness
-	}
+type SignTuple struct {
+	// Path is the derivation path to use with the key.
+	Path [][]byte
 
-	m := make(map[chainkd.XPub][]swPair)
+	// Hash is the message to sign: the hash of the program.
+	Hash bc.Hash
+
+	// Sig is where to put the signature.
+	Sig *chainjson.HexBytes
+}
+
+func Sign(ctx context.Context, tpl *Template, xpubs []chainkd.XPub, signFn SignFunc) error {
+	m := make(map[chainkd.XPub][]SignTuple)
 
 	for i, sigInst := range tpl.SigningInstructions {
 		for _, sw := range sigInst.SignatureWitnesses {
-			for _, keyID := range sw.Keys {
-				m[keyID.XPub] = append(m[keyID.XPub], swPair{i, sw})
-			}
-		}
-	}
-
-	for xpub, swPairs := range m {
-		// xxx LEFT OFF HERE
-	}
-
-
-	for i, sigInst := range tpl.SigningInstructions {
-		for j, sw := range sigInst.SignatureWitnesses {
-			err := sw.sign(ctx, tpl, uint32(i), xpubs, signFn)
+			hash, err := sw.program(tpl, i)
 			if err != nil {
-				return errors.WithDetailf(err, "adding signature(s) to witness component %d of input %d", j, i)
+				return err
+			}
+			if len(sw.Sigs) < len(sw.Keys) {
+				// Each key in sw.Keys may produce a signature in sw.Sigs. Make
+				// sure there are enough slots in sw.Sigs and that we preserve any
+				// sigs already present.
+				newSigs := make([]chainjson.HexBytes, len(sw.Keys))
+				copy(newSigs, sw.Sigs)
+				sw.Sigs = newSigs
+			}
+			for k, keyID := range sw.Keys {
+				if len(sw.Sigs[k]) > 0 {
+					// Already have a signature for this key
+					continue
+				}
+				m[keyID.XPub] = append(m[keyID.XPub], SignTuple{
+					Path: keyID.DerivationPath,
+					Hash: hash,
+					Sig:  &(sw.Sigs[k]),
+				})
 			}
 		}
 	}
+
+	for xpub, signTuples := range m {
+		err = xxxmultisign(ctx, xpub, signTuples)
+		if err != nil {
+			return err
+		}
+	}
+
 	return materializeWitnesses(tpl)
 }
 
