@@ -56,6 +56,13 @@ A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte 
 
 ## Data Structures
 
+### Asset Definition
+
+Field                 | Type                        | Description
+----------------------|-----------------------------|----------------
+Initial Block ID      | Hash                        | ID of the genesis block for the blockchain in which this asset is defined.
+Asset Reference Data  | Hash                        | Hash of the reference data (formerly known as the "asset definition") for this asset.
+Issuance Program      | Program                     | Program that must be satisfied for this asset to be issued.
 
 ### AssetAmount
 
@@ -74,7 +81,9 @@ Field            | Type                        | Description
 Script           | String                      | The program to be executed.
 VM Version       | Integer                     | The VM version to be used when evaluating the program.
 
-Evaluating a program means evaluating .
+#### Validate Program
+
+TBD
 
 If the transaction version is known and the VM Versioon, evaluation fails. If both the transaction version and VM version are not known, evaluation succeeds.
 
@@ -86,17 +95,50 @@ Field            | Type                        | Description
 -----------------|-----------------------------|----------------
 Ref              | Pointer<Issuance|Spend|Mux> | Previous entry referenced by this ValueSource.
 Value            | AssetAmount                 | Amount and Asset ID contained in the referenced entry.
-Position         | Integer                     | Iff this source refers to a Mux entry, then the Position is one of the Mux's numbered Outputs. If this source refers to an Issuance or Spend entry, then the Position must be 0.
+Position         | Integer                     | Iff this source refers to a Mux entry, then the Position is the index of an output. If this source refers to an Issuance or Spend entry, then the Position must be 0.
+
+#### ValueSource Validation
+
+2. Verify that `Ref` is present and valid.
+3. Define `RefDestination` as follows:
+    1. If `Ref` is an Issuance or Spend:
+        1. Verify that `Position` is 0.
+        2. Define `RefDestination` as `Ref.Destination`.
+    2. If `Ref` is a `Mux`:
+        1. Verify that `Mux.Destinations` contains at least `Position + 1` ValueDestinations.
+        2. Define `RefDestination` as `Mux.Destinations[Position]`.
+4. Verify that `RefDestination.Ref` is equal to the ID of the current entry.
+5. Verify that `RefDestination.Position` is equal to `SourcePosition`, where `SourcePosition` is defined as follows:
+    1. If the current entry being validated is an `Output`, `SourcePosition` is 0.
+    2. If the current entry being validated is a `Mux`, `SourcePosition` is the index of this `ValueSource` in the current entry's `Sources`.
+5. Verify that `RefDestination.Value` is equal to `Value`. 
 
 ### ValueDestination
 
-An Entry uses a ValueDestination to refer to other entries that result from the initial Entry.
+An Entry uses a ValueDestination to refer to other entries that receive value from the current Entry.
 
 Field            | Type                           | Description
 -----------------|--------------------------------|----------------
 Ref              | Pointer<Output|Retirement|Mux> | Next entry referenced by this ValueSource.
 Value            | AssetAmount                    | Amount and Asset ID contained in the referenced entry
 Position         | Integer                        | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
+
+#### ValueDestination Validation
+
+1. Verify that `Ref` is present. (This means it must be reachable by traversing `Results` and `Sources` starting from the TxHeader.)
+2. Define `RefSource` as follows:
+    1. If `Ref` is an `Output` or `Retirement`:
+        1. Verify that `Position` is 0.
+        2. Define `RefSource` as `Ref.Source`.
+    2. If `Ref` is a `Mux`:
+        1. Verify that `Ref.Sources` contains at least `Position + 1` ValueSources.
+        2. Define `RefSource` as `Ref.Sources[Position]`.
+3. Verify that `RefSource.Ref` is equal to the ID of the current entry.
+4. Verify that `RefSource.Position` is equal to `DestinationPosition`, where `DestinationPosition` is defined as follows:
+    1. If the current entry being validated is an `Issuance` or `Spend`, `DestinationPosition` is 0.
+    2. If the current entry being validated is a `Mux`, `DestinationPosition` is 
+
+
 
 ## Entries
 
@@ -133,6 +175,15 @@ ExtHash    | Hash                                          | Hash of all struct 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 
+#### TxHeader Validation
+
+1. Check that `Results` includes at least one item.
+2. Check that each of the `Results` is present, is either an `Output` or a `Retirement`, and is valid.
+
+#### TxHeader Application to State
+
+1. Verify that mintime is lower than the timestamp of the block that includes the transaction.
+2. Verify that maxtime is either zero or is higher than the timestamp of the block that includes the transaction.
 
 ### Output 1
 
@@ -155,6 +206,10 @@ ExtHash             | Hash                 | If the transaction version is known
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
+
+#### Output Validation
+
+1. Verify that `Source` is valid.
 
 
 #### Retirement 1
@@ -202,6 +257,10 @@ Field               | Type                 | Description
 Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output entry, or to a Mux, which points to Output entries via its own Destinations.
 Arguments           | String               | Arguments for the control program contained in the SpentOutput.
 
+#### Spend Validation
+
+1. Verify that `SpentOutput.program` is satisfied by the given `Arguments`. (Do not check that `SpentOutput` itself is valid.)
+
 ### Issuance 1
 
 Field               | Type                 | Description
@@ -221,10 +280,17 @@ ExtHash             | Hash                 | If the transaction version is known
 
 #### Issuance Witness
 
-Field               | Type                 | Description
---------------------|----------------------|----------------
-Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
-Arguments           | String               | Arguments for the control program contained in the SpentOutput.
+Field               | Type                                      | Description
+--------------------|-------------------------------------------|----------------
+Destination         | ValueDestination                          | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
+AssetDefinition    | [Asset Definition](#asset-definition)     | Asset definition for the asset being issued.
+Arguments           | String                                    | Arguments for the control program contained in the SpentOutput.
+
+#### Issuance Validation
+
+1. Verify that `AssetDefinition` hashes to `Value.AssetID`.
+2. Verify that `AssetDefinition.Program` evaluates to `true` with the given `Arguments`.
+3. Verify that the `Anchor` is included in the transaction and valid.
 
 ### Nonce  
 
@@ -250,7 +316,12 @@ Arguments           | String               | Arguments for the program contained
 
 #### Nonce Validation
 
-1. Verify that the Program evaluates to `true`.
+1. Verify that the Program evaluates to `true` with the given arguments.
+
+#### Nonce Application to State
+
+1. Verify that the entry ID of the Nonce is not included in the Nonce set.
+2. Add the entry ID of the Nonce to the Nonce set.
 
 ### TimeRange  
 
@@ -276,7 +347,7 @@ Field               | Type                 | Description
 #### TimeRange Validation
 
 1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the transaction header.
-2. Verify that `Maxtime` is equal to or greater than the `Maxtime` specified in the transaction header.
+2. Verify that `Maxtime` is either zero, or is equal to or greater than the `Maxtime` specified in the transaction header.
 
 ### Mux
 
@@ -300,3 +371,6 @@ Field               | Type                       | Description
 --------------------|----------------------------|----------------
 Destination         | List<ValueDestination>     | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
 Arguments           | String                     | Arguments for the program contained in the Nonce.
+
+
+
