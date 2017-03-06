@@ -1,4 +1,4 @@
-package tx
+package bc
 
 import (
 	"bytes"
@@ -6,12 +6,11 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/protocol/bc"
 	"chain/testutil"
 )
 
 func TestMapTx(t *testing.T) {
-	// sample data copied from protocol/bc/transaction_test.go
+	// sample data copied from protocol/bc/transaction_test.go xxx factor out into reusable test utility
 
 	oldTx := sampleTx()
 	oldOuts := oldTx.Outputs
@@ -52,7 +51,7 @@ func TestMapTx(t *testing.T) {
 					want := hashData(oldOut.ReferenceData)
 					t.Errorf("header.body.Results[%d].(*output).body.Data is %x, expected %x", i, newOut.body.Data[:], want[:])
 				}
-				if (newOut.body.ExtHash != bc.Hash{}) {
+				if (newOut.body.ExtHash != Hash{}) {
 					t.Errorf("header.body.Results[%d].(*output).body.ExtHash is %x, expected zero", i, newOut.body.ExtHash[:])
 				}
 			} else {

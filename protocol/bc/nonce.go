@@ -1,12 +1,10 @@
-package tx
-
-import "chain/protocol/bc"
+package bc
 
 type nonce struct {
 	body struct {
 		Program   program
-		TimeRange bc.Hash
-		ExtHash   bc.Hash
+		TimeRange Hash
+		ExtHash   Hash
 	}
 
 	// TimeRange contains (a pointer to) the manifested entry

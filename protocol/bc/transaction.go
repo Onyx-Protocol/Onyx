@@ -27,7 +27,7 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 		return err
 	}
 
-	hashes, err := TxHashesFunc(&tx.TxData)
+	hashes, err := ComputeTxHashes(&tx.TxData)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -40,7 +40,7 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 // If you have already computed the hash, use struct literal
 // notation to make a Tx object directly.
 func NewTx(data TxData) *Tx {
-	hashes, err := TxHashesFunc(&data)
+	hashes, err := ComputeTxHashes(&data)
 	if err != nil {
 		panic(err)
 	}

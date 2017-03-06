@@ -1,13 +1,11 @@
-package tx
-
-import "chain/protocol/bc"
+package bc
 
 type issuance struct {
 	body struct {
-		Anchor  bc.Hash
-		Value   bc.AssetAmount
-		Data    bc.Hash
-		ExtHash bc.Hash
+		Anchor  Hash
+		Value   AssetAmount
+		Data    Hash
+		ExtHash Hash
 	}
 	ordinal int
 
@@ -21,7 +19,7 @@ func (iss *issuance) Body() interface{} { return iss.body }
 
 func (iss issuance) Ordinal() int { return iss.ordinal }
 
-func newIssuance(anchor entry, value bc.AssetAmount, data bc.Hash, ordinal int) *issuance {
+func newIssuance(anchor entry, value AssetAmount, data Hash, ordinal int) *issuance {
 	iss := new(issuance)
 	iss.body.Anchor = entryID(anchor)
 	iss.Anchor = anchor

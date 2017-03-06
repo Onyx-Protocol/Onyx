@@ -1,12 +1,10 @@
-package tx
-
-import "chain/protocol/bc"
+package bc
 
 type mux struct {
 	body struct {
 		Sources []valueSource
 		Program program
-		ExtHash bc.Hash
+		ExtHash Hash
 	}
 
 	// Sources contains (pointers to) the manifested entries for each
@@ -25,12 +23,12 @@ func newMux(program program) *mux {
 	return m
 }
 
-func (m *mux) addSource(e entry, value bc.AssetAmount, position uint64) {
+func (m *mux) addSource(e entry, value AssetAmount, position uint64) {
 	m.addSourceID(entryID(e), value, position)
 	m.Sources[len(m.Sources)-1] = e
 }
 
-func (m *mux) addSourceID(sourceID bc.Hash, value bc.AssetAmount, position uint64) {
+func (m *mux) addSourceID(sourceID Hash, value AssetAmount, position uint64) {
 	src := valueSource{
 		Ref:      sourceID,
 		Value:    value,
