@@ -102,7 +102,8 @@ Execution of any of the following instructions results in immediate failure:
 3. Data Stack
 4. Alt Stack
 5. Run Limit
-6. Execution Context:
+6. Expansion Flag
+7. Execution Context:
     a. Block
     b. (Transaction, Input Index)
 
@@ -115,6 +116,8 @@ Execution of any of the following instructions results in immediate failure:
 **Data Stack** and **Alt Stack** are stacks of binary strings.
 
 **Run Limit** is a built-in 64-bit integer specifying remaining total cost of execution. Run limit is decreased by the cost of each instruction and also affected by data added to and removed from the data stack and alt stack. Every byte added to either stack costs 1 unit, and every byte removed from either stack refunds 1 unit. (This includes explicit additions and removals by stack-manipulating instructions such as PUSHDATA and DROP, and also implicit additions and removals as when other instructions consume arguments and produce results.)
+
+**Expansion Flag** indicates whether the [expansion opcodes](#expansion-opcodes) are allowed in the program or not. If the flag is off, these opcodes immediately fail the program execution.
 
 **Execution Context** is either a [block context](#block-context) or [transaction context](#transaction-context).
 
@@ -206,8 +209,6 @@ Certain arithmetic operations use conservative bounds checks (explicitly specifi
 1. Create an 8-byte string matching the representation of the number as a [little-endian](https://en.wikipedia.org/wiki/Endianness#Little-endian) 64-bit integer, using [two's complement representation](https://en.wikipedia.org/wiki/Two%27s_complement) for negative integers.
 2. Trim the string by removing any `0x00` bytes from the right side.
 
-
-
 Value          | String (hexadecimal)        | Size in bytes
 ---------------|-----------------------------|------------------
 0              | `“”`                        | 0
@@ -215,6 +216,7 @@ Value          | String (hexadecimal)        | Size in bytes
 –1             | `“ff ff ff ff ff ff ff ff”` | 8
 2^63 - 1 (max) | `“ff ff ff ff ff ff ff 7f”` | 8
 -2^63 (min)    | `“00 00 00 00 00 00 00 80”` | 8
+
 
 ## Failure conditions
 
@@ -1262,7 +1264,11 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
-The unassigned codes are reserved for future expansion and have no effect on the state of the VM apart from reducing run limit by 1.
+The unassigned codes are reserved for future expansion.
+
+If the [expansion flag](#vm-state) is set, these opcodes have no effect on the state of the VM apart from reducing run limit by 1.
+
+If the [expansion flag](#vm-state) is not set, execution fails immediately.
 
 
 
