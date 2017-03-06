@@ -136,9 +136,9 @@ A new node starts here when joining a running network (with height > 1). In that
 **Algorithm:**
 
 1. [Evaluate](#evaluate-predicate) the [consensus program](data.md#consensus-program) of the blockchain state as a predicate using:
-    * VM version: 1 
-    * Program arguments from the block witness
-    * Extensibility: false. 
+    * VM version: 1.
+    * Program arguments from the block witness.
+    * Expansion flag: false.
 2. If the evaluation fails, halt and return blockchain state unchanged.
 3. [Validate the block](#validate-block) with “previous block header” set to the block header in the current blockchain state; if invalid, halt and return blockchain state unchanged.
 4. Let `S` be the input blockchain state.
@@ -241,8 +241,7 @@ A new node starts here when joining a running network (with height > 1). In that
     4. For each input, test that the [input commitment](data.md#transaction-input-commitment) contains only the fields defined in this version of the protocol (no additional data included).
     5. For each output, test that the [output commitment](data.md#transaction-output-commitment) contains only the fields defined in this version of the protocol (no additional data included); if not, halt and return false.
     6. Test that all VM versions in the transaction are 1 (including the VM version in the [issuance input witness](data.md#asset-version-1-issuance-witness)); if not, halt and return false.
-    7. Every control program must not contain any [expansion opcodes](vm1.md#expansion-opcodes).
-    8. Note: unknown suffixes (additional fields) in [transaction common witness](data.md#transaction-common-witness), [input witnesses](data.md#transaction-input-witness) and [output witnesses](data.md#transaction-output-witness) are not checked here; they are permitted.
+    7. Note: unknown suffixes (additional fields) in [transaction common witness](data.md#transaction-common-witness), [input witnesses](data.md#transaction-input-witness) and [output witnesses](data.md#transaction-output-witness) are not checked here; they are permitted.
 6. For inputs and outputs with asset version 1:
     1. For each asset on these inputs and outputs:
         1. Sum the input amounts of that asset and sum the output amounts of that asset.
@@ -263,9 +262,8 @@ A new node starts here when joining a running network (with height > 1). In that
         2. Compute [asset ID](data.md#asset-id) from the initial block ID, asset version 1, and the *VM version* and *issuance program* declared in the witness. If the resulting asset ID is not equal to the declared asset ID in the issuance commitment, halt and return false.
         3. [Evaluate](#evaluate-predicate) its [issuance program](data.md#issuance-program), for the VM version specified in the issuance commitment and with the [input witness](data.md#transaction-input-witness) [program arguments](data.md#program-arguments); if execution fails, halt and return false.
     2. If the input is a *spend*:
-        1. Check if the state contains the input’s [output ID](data.md#output-id). If the output ID does not exist in the state, halt and return false.
-        2. [Evaluate](#evaluate-predicate) the previous output’s control program, for the VM version specified in the previous output and with the [input witness](data.md#transaction-input-witness) program arguments.
-        3. If the evaluation returns false, halt and return false.
+        1. [Evaluate](#evaluate-predicate) the previous output’s control program, for the VM version specified in the previous output and with the [input witness](data.md#transaction-input-witness) program arguments. Set the VM expansion flag to false if transaction version equals 1. Otherwise, set expension flag to true.
+        2. If the evaluation returns false, halt and return false.
     3. Return true.
 8. Return true.
 
@@ -277,14 +275,14 @@ A new node starts here when joining a running network (with height > 1). In that
 1. VM version,
 2. program,
 3. list of program arguments,
-4. extensibility flag.
+4. expansion flag.
 
 **Output:** true or false.
 
 **Algorithm:**
 
 1. If the [VM version](vm1.md#versioning) is > 1, halt and return true.
-2. [Create a VM](vm1.md#vm-state) with initial state and a given extensibility flag.
+2. [Create a VM](vm1.md#vm-state) with initial state and a given expansion flag.
 3. [Prepare VM](vm1.md#prepare-vm).
 4. Set the VM’s program to the predicate program and execute [Verify Predicate](vm1.md#verify-predicate) operation. If it fails, halt and return false.
 5. Return true.
