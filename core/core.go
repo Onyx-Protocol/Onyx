@@ -24,7 +24,7 @@ var (
 
 // reserved mockhsm key alias
 const (
-	networkRPCVersion = 2
+	networkRPCVersion = 3
 )
 
 func (a *API) reset(ctx context.Context, req struct {
