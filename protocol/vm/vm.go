@@ -33,11 +33,10 @@ type virtualMachine struct {
 	dataStack [][]byte
 	altStack  [][]byte
 
-	tx         *bc.Tx
-	txContext  bc.VMContext
+	tx         *bc.TxEntries
 	inputIndex uint32
 
-	block *bc.Block
+	block *bc.BlockEntries
 }
 
 // ErrFalseVMResult is one of the ways for a transaction to fail validation
@@ -47,7 +46,7 @@ var ErrFalseVMResult = errors.New("false VM result")
 // execution.
 var TraceOut io.Writer
 
-func VerifyTxInput(tx *bc.Tx, inputIndex uint32) (err error) {
+func VerifyTxInput(tx *bc.TxEntries, inputIndex uint32) (err error) {
 	defer func() {
 		if panErr := recover(); panErr != nil {
 			err = ErrUnexpected
@@ -56,54 +55,54 @@ func VerifyTxInput(tx *bc.Tx, inputIndex uint32) (err error) {
 	return verifyTxInput(tx, inputIndex)
 }
 
-func verifyTxInput(tx *bc.Tx, inputIndex uint32) error {
-	if inputIndex < 0 || inputIndex >= uint32(len(tx.Inputs)) {
+func verifyTxInput(tx *bc.TxEntries, inputIndex uint32) error {
+	if inputIndex < 0 || inputIndex >= uint32(len(tx.TxInputs)) {
 		return ErrBadValue
 	}
 
-	txinput := tx.Inputs[inputIndex]
-
-	expansionReserved := tx.Version == 1
-
-	f := func(vmversion uint64, prog []byte, args [][]byte) error {
-		if vmversion != 1 {
-			return ErrUnsupportedVM
-		}
-
-		vm := virtualMachine{
-			tx:         tx,
-			txContext:  *tx.VMContexts[inputIndex],
-			inputIndex: inputIndex,
-
-			expansionReserved: expansionReserved,
-
-			mainprog: prog,
-			program:  prog,
-			runLimit: initialRunLimit,
-		}
-		for _, arg := range args {
-			err := vm.push(arg, false)
-			if err != nil {
-				return err
-			}
-		}
-		err := vm.run()
-		if err == nil && vm.falseResult() {
-			err = ErrFalseVMResult
-		}
-		return wrapErr(err, &vm, args)
+	var (
+		prog bc.Program
+		args [][]byte
+	)
+	switch inp := tx.TxInputs[inputIndex].(type) {
+	case *bc.Issuance:
+		prog = inp.IssuanceProgram()
+		args = inp.Arguments()
+	case *bc.Spend:
+		prog = inp.ControlProgram()
+		args = inp.Arguments()
+	default:
+		return errors.WithDetailf(ErrUnsupportedTx, "transaction input %d has unknown type %T", inputIndex, tx.TxInputs[inputIndex])
 	}
 
-	switch inp := txinput.TypedInput.(type) {
-	case *bc.IssuanceInput:
-		return f(inp.VMVersion, inp.IssuanceProgram, inp.Arguments)
-	case *bc.SpendInput:
-		return f(inp.VMVersion, inp.ControlProgram, inp.Arguments)
+	if prog.VMVersion != 1 {
+		return ErrUnsupportedVM
 	}
-	return errors.WithDetailf(ErrUnsupportedTx, "transaction input %d has unknown type %T", inputIndex, txinput.TypedInput)
+
+	vm := &virtualMachine{
+		tx:         tx,
+		inputIndex: inputIndex,
+
+		expansionReserved: tx.Version() == 1,
+
+		mainprog: prog.Code,
+		program:  prog.Code,
+		runLimit: initialRunLimit,
+	}
+	for _, arg := range args {
+		err := vm.push(arg, false)
+		if err != nil {
+			return err
+		}
+	}
+	err := vm.run()
+	if err == nil && vm.falseResult() {
+		err = ErrFalseVMResult
+	}
+	return wrapErr(err, vm, args)
 }
 
-func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (err error) {
+func VerifyBlockHeader(prev *bc.BlockHeaderEntry, block *bc.BlockEntries) (err error) {
 	defer func() {
 		if panErr := recover(); panErr != nil {
 			err = ErrUnexpected
@@ -112,18 +111,18 @@ func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (err error) {
 	return verifyBlockHeader(prev, block)
 }
 
-func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
-	vm := virtualMachine{
+func verifyBlockHeader(prev *bc.BlockHeaderEntry, block *bc.BlockEntries) error {
+	vm := &virtualMachine{
 		block: block,
 
 		expansionReserved: true,
 
-		mainprog: prev.ConsensusProgram,
-		program:  prev.ConsensusProgram,
+		mainprog: prev.NextConsensusProgram(),
+		program:  prev.NextConsensusProgram(),
 		runLimit: initialRunLimit,
 	}
 
-	for _, arg := range block.Witness {
+	for _, arg := range block.Arguments() {
 		err := vm.push(arg, false)
 		if err != nil {
 			return err
@@ -134,7 +133,7 @@ func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
 	if err == nil && vm.falseResult() {
 		err = ErrFalseVMResult
 	}
-	return wrapErr(err, &vm, block.Witness)
+	return wrapErr(err, vm, block.Arguments())
 }
 
 // falseResult returns true iff the stack is empty or the top

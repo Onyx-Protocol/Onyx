@@ -74,15 +74,16 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			continue
 		}
 
-		if validation.ConfirmTx(result, c.InitialBlockHash, bc.NewBlockVersion, timestampMS, tx) == nil {
-			err = validation.ApplyTx(result, tx)
+		if validation.ConfirmTx(result, c.InitialBlockHash, bc.NewBlockVersion, timestampMS, tx.TxEntries) == nil {
+			err = validation.ApplyTx(result, tx.TxEntries)
 			if err != nil {
 				return nil, nil, err
 			}
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}
-	b.TransactionsMerkleRoot, err = validation.CalcMerkleRoot(b.Transactions)
+	bEntries := bc.MapBlock(b)
+	b.TransactionsMerkleRoot, err = validation.CalcMerkleRoot(bEntries.Transactions)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "calculating tx merkle root")
 	}
@@ -95,7 +96,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 // the block has been applied.
 func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev, block *bc.Block) (*state.Snapshot, error) {
 	newState := state.Copy(prevState)
-	err := validation.ValidateBlockForAccept(ctx, newState, c.InitialBlockHash, prev, block, c.ValidateTxCached)
+	err := validation.ValidateBlockForAccept(ctx, newState, c.InitialBlockHash, bc.MapBlock(prev), bc.MapBlock(block), c.ValidateTxCached)
 	if err != nil {
 		return nil, errors.Sub(ErrBadBlock, err)
 	}
@@ -200,7 +201,11 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 	// TODO(kr): cache the applied snapshot, and maybe
 	// we can skip re-applying it later
 	snapshot = state.Copy(snapshot)
-	err := validation.ValidateBlock(ctx, snapshot, c.InitialBlockHash, prev, block, validation.CheckTxWellFormed)
+	var prevEntries *bc.BlockEntries
+	if prev != nil {
+		prevEntries = bc.MapBlock(prev)
+	}
+	err := validation.ValidateBlock(ctx, snapshot, c.InitialBlockHash, prevEntries, bc.MapBlock(block), validation.CheckTxWellFormed)
 	return errors.Wrap(err, "validation")
 }
 
@@ -210,7 +215,7 @@ func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 		return nil, err
 	}
 
-	root, err := validation.CalcMerkleRoot([]*bc.Tx{}) // calculate the zero value of the tx merkle root
+	root, err := validation.CalcMerkleRoot([]*bc.TxEntries{}) // calculate the zero value of the tx merkle root
 	if err != nil {
 		return nil, errors.Wrap(err, "calculating zero value of tx merkle root")
 	}

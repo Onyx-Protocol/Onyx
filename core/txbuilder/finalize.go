@@ -40,7 +40,7 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *bc.Tx) 
 	<-c.BlockWaiter(1)
 
 	// If this transaction is valid, ValidateTxCached will store it in the cache.
-	err = c.ValidateTxCached(tx)
+	err = c.ValidateTxCached(tx.TxEntries)
 	if errors.Root(err) == validation.ErrBadTx {
 		return errors.Sub(ErrRejected, err)
 	} else if err != nil {

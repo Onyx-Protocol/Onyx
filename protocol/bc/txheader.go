@@ -23,6 +23,26 @@ func (h *TxHeader) Body() interface{} { return h.body }
 
 func (TxHeader) Ordinal() int { return -1 }
 
+func (h *TxHeader) Version() uint64 {
+	return h.body.Version
+}
+
+func (h *TxHeader) Data() Hash {
+	return h.body.Data
+}
+
+func (h *TxHeader) ResultID(n uint32) Hash {
+	return h.body.Results[n]
+}
+
+func (h *TxHeader) MinTimeMS() uint64 {
+	return h.body.MinTimeMS
+}
+
+func (h *TxHeader) MaxTimeMS() uint64 {
+	return h.body.MaxTimeMS
+}
+
 // NewTxHeader creates an new TxHeader.
 func NewTxHeader(version uint64, results []Entry, data Hash, minTimeMS, maxTimeMS uint64) *TxHeader {
 	h := new(TxHeader)

@@ -60,14 +60,13 @@ func opCheckPredicate(vm *virtualMachine) error {
 		return err
 	}
 
-	childVM := virtualMachine{
+	childVM := &virtualMachine{
 		mainprog:   vm.mainprog,
 		program:    predicate,
 		runLimit:   limit,
 		depth:      vm.depth + 1,
 		dataStack:  append([][]byte{}, vm.dataStack[l-n:]...),
 		tx:         vm.tx,
-		txContext:  vm.txContext,
 		inputIndex: vm.inputIndex,
 	}
 	vm.dataStack = vm.dataStack[:l-n]
