@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+
+mkdir -p /usr/src/protobuf
+git clone https://github.com/google/protobuf.git /usr/src/protobuf
+cd /usr/src/protobuf
+git checkout v3.1.0
+./autogen.sh
+./configure
+make
+make install
+ldconfig
+rm -rf /usr/src/protobuf && cd
+go get -u github.com/golang/protobuf/proto
+go get -u github.com/golang/protobuf/protoc-gen-go
