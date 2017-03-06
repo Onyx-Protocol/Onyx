@@ -134,7 +134,7 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 
 
-### Output
+### Output 1
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -157,7 +157,7 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 
 
-#### Retirement
+#### Retirement 1
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -179,7 +179,7 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 
 
-### Spend  
+### Spend 1
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -202,7 +202,7 @@ Field               | Type                 | Description
 Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output entry, or to a Mux, which points to Output entries via its own Destinations.
 Arguments           | String               | Arguments for the control program contained in the SpentOutput.
 
-### Issuance  
+### Issuance 1
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
