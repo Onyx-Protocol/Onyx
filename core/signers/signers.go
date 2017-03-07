@@ -94,6 +94,7 @@ func Create(ctx context.Context, db pg.DB, typ string, xpubs []chainkd.XPub, quo
 
 	var xpubBytes [][]byte
 	for _, key := range xpubs {
+		key := key
 		xpubBytes = append(xpubBytes, key[:])
 	}
 
