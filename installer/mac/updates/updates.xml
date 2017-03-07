@@ -10,19 +10,19 @@
         <description>
           <![CDATA[
             <p><b>NOTE:</b> This update will create a fresh blockchain if you were previously
-              using versions 1.0.x; please backup any blockchain data you wish to preserve.
+              using versions 1.0.x or 1.1.0; please backup any blockchain data you wish to preserve.
             </p>
             <ul>
-              <li>Update to Chain Core 1.1.0</li>
+              <li>Update the Chain Core server package to version 1.1.2</li>
               <li>Improved startup detection of other Chain Cores</li>
             </ul>
           ]]>
         </description>
-        <pubDate>Wed, 01 Mar 2017 14:04:59 -0800</pubDate>
+        <pubDate>Mon, 06 Mar 2017 17:25:28 -0800</pubDate>
         <enclosure
         	url="https://download.chain.com/mac/Chain_Core_1.1.1.zip"
         	sparkle:version="1.1.1"
-        	length="54257974"
+        	length="53949592"
         	type="application/octet-stream"
         	sparkle:dsaSignature=""
         	/>
