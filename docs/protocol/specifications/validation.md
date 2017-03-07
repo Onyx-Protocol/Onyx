@@ -135,20 +135,20 @@ A new node starts here when joining a running network (with height > 1). In that
 
 **Algorithm:**
 
-1. [Evaluate](#evaluate-predicate) the [consensus program](data.md#consensus-program) of the blockchain state as a predicate using:
-    * VM version: 1.
-    * Program arguments from the block witness.
-    * Expansion flag: false.
-2. If the evaluation fails, halt and return blockchain state unchanged.
-3. [Validate the block](#validate-block) with “previous block header” set to the block header in the current blockchain state; if invalid, halt and return blockchain state unchanged.
-4. Let `S` be the input blockchain state.
-5. For each transaction in the block, in order:
+1. Evaluate the [consensus program](data.md#consensus-program):
+    1. [Create a VM 1](vm1.md#vm-state) with initial state and expansion flag set to `false`.
+    2. [Prepare VM](vm1.md#prepare-vm) with program arguments from the block witness.
+    4. Set the VM’s program to the consensus program as specified by the blockchain state’s block header.
+    5. Execute [Verify Predicate](vm1.md#verify-predicate) operation. If it fails, halt and return false.
+2. [Validate the block](#validate-block) with “previous block header” set to the block header in the current blockchain state; if invalid, halt and return blockchain state unchanged.
+3. Let `S` be the input blockchain state.
+4. For each transaction in the block, in order:
     1. [Apply the transaction](#apply-transaction) using the input block’s header to blockchain state `S`, yielding a new state `S′`.
     2. If transaction failed to be applied (did not change blockchain state), halt and return the input blockchain state unchanged.
     3. Test that [assets merkle root](data.md#assets-merkle-root) of `S′` is equal to the assets merkle root declared in the block commitment; if not, halt and return blockchain state unchanged.
     4. Replace `S` with `S′`.
-6. Remove elements of the nonce set in `S` where the expiration timestamp is less than the block’s timestamp, yielding a new state `S′`.
-7. Return the state `S’`.
+5. Remove elements of the nonce set in `S` where the expiration timestamp is less than the block’s timestamp, yielding a new state `S′`.
+6. Return the state `S’`.
 
 
 ### Apply transaction
@@ -266,25 +266,5 @@ A new node starts here when joining a running network (with height > 1). In that
         2. If the evaluation returns false, halt and return false.
     3. Return true.
 8. Return true.
-
-
-### Evaluate predicate
-
-**Inputs:**
-
-1. VM version,
-2. program,
-3. list of program arguments,
-4. expansion flag.
-
-**Output:** true or false.
-
-**Algorithm:**
-
-1. If the [VM version](vm1.md#versioning) is > 1, halt and return true.
-2. [Create a VM](vm1.md#vm-state) with initial state and a given expansion flag.
-3. [Prepare VM](vm1.md#prepare-vm).
-4. Set the VM’s program to the predicate program and execute [Verify Predicate](vm1.md#verify-predicate) operation. If it fails, halt and return false.
-5. Return true.
 
 
