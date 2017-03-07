@@ -327,7 +327,7 @@ Arguments           | String               | Arguments for the program contained
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-Type                | String               | "nonce"
+Type                | String               | "timerange"
 Body                | Struct               | See below.
 Witness             | Struct               | See below.
 
