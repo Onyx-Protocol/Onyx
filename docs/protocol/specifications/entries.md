@@ -202,24 +202,27 @@ Position         | [Integer](#integer)            | Iff this destination refers 
 5. Verify that `RefSource.Value` is equal to `Value`.
 
 
-#### Value flow validation
+#### Value flow validation WIP
 
 **Inputs:**
 
-1. [ValueSource](#valuesource),
-2. receiving entry (which contains [ValueSource](#valuesource) struct),
-3. source index (within the receiving entry),
-4. [ValueDestination](#valuedestination),
-5. sending entry (which contains [ValueDestination](#valuedestination) struct),
-6. destination index (within the receiving entry).
+1. `source`: [ValueSource](#valuesource) struct to be validated.
+2. `receiver`: the entry containing `source` struct.
+3. `source index`: the index of `source` within the receiving entry.
 
 **Algorithm:**
 
-1. Verify that `Value` fields in both source and destination are equal.
-2. Verify that `ValueSource.Ref` is equal to the sending entry’s ID.
-3. Verify that `ValueDestination.Ref` is equal to the receiving entry’s ID.
-4. Verify that `ValueSource.Position` is equal to the destination index.
-5. Verify that `ValueDestination.Position` is equal to the source index.
+1. Let `sender` be the entry pointed to by `source.Ref`. 
+2. If `sender` is an [Issuance](#issuance) or [Spend](#spend):
+    1. Verify that `source.Position` is 0.
+    2. Let `destination` be the `sender.Destination`.
+3. If `sender` is a [Mux](#mux):
+    1. Verify that `sender.Destinations` contains at least `source.Position + 1` [ValueDestination](#valuedestination) items.
+    2. Let `destination` be the `sender.Destinations[source.Position]`.
+4. Verify that `source.Value` is equal to `destination.Value`.
+5. Verify that `destination.Ref` is equal to the ID of the `receiver`.
+6. Verify that `destination.Position` is equal to the `source index`.
+7. Validate the entry `sender`.
 
 
 ## Entries
@@ -307,8 +310,9 @@ ExtHash    | Hash                                    | Hash of all extension fie
 
 #### TxHeader Validation
 
-1. Check that `Results` includes at least one item.
-2. Check that each of the `Results` is present and valid.
+1. If the `Maxtime` is greater than zero, verify that it is greater than or equal to the `Mintime`.
+2. Check that `Results` includes at least one item.
+3. Check that each of the `Results` is present and valid.
 
 
 ### Output 1
@@ -329,7 +333,11 @@ ExtHash             | Hash                 | If the transaction version is known
 
 #### Output Validation
 
-1. [Validate](#valuesource-validation) `Source`.
+1. [Validate value flow](#value-flow-validation) to this output’s `Source`:
+    * `source`: this output’s `Source`.
+    * `receiver`: this output.
+    * `source index`: 0.
+
 
 
 #### Retirement 1
@@ -348,7 +356,11 @@ ExtHash             | Hash                 | If the transaction version is known
 
 #### Retirement Validation
 
-1. [Validate](#valuesource-validation) `Source`.
+1. [Validate value flow](#value-flow-validation) to this output’s `Source`:
+    * `source`: this retirement’s `Source`.
+    * `receiver`: this retirement.
+    * `source index`: 0.
+    
 
 ### Spend 1
 
@@ -371,10 +383,9 @@ Arguments           | List<String>         | Arguments for the control program c
 
 #### Spend Validation
 
-1. Verify that `SpentOutput` is present in the transaction (do not check that it is valid.)
-2. [Validate](#program-validation) `SpentOutput.ControlProgram` with the given `Arguments`.
-3. Verify that `SpentOutput.Value` is equal to `Destination.Value`.
-4. [Validate](#valuedestination-validation) `Destination`.
+1. Verify that `SpentOutput` is present in the transaction, but do not validate it.
+2. [Validate program](#program-validation) `SpentOutput.ControlProgram` with the given `Arguments`.
+3. Verify that `Destination.Value` is equal to `SpentOutput.Value`.
 
 
 ### Issuance 1
@@ -401,9 +412,10 @@ Arguments           | List<String>                              | Arguments for 
 #### Issuance Validation
 
 1. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
-2. [Validate](#program-validation) `AssetDefinition.Program` with the given `Arguments`.
+2. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments`.
 3. Verify that `Anchor` is present and valid.
-4. [Validate](#valuedestination-validation) `Destination`.
+4. Verify that `Destination.Value` is equal to `Value`.
+
 
 ### Nonce  
 
