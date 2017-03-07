@@ -76,8 +76,6 @@ All entries and [auxiliary data structures](#auxiliary-data-structures) are defi
 * [ExtStruct](#extstruct)
 * [Pointer](#pointer).
 
-Below is the serialization of those fields.
-
 ### Hash
 
 A `Hash` is encoded as 32 bytes.
@@ -119,13 +117,14 @@ A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte 
 
 ## Auxiliary data structures
 
+Auxiliary data structures are [Structs](#struct) with the fields defined below. They are not [entries](#entries) by themselves.
 
-### Asset Definition
+### AssetDefinition
 
 Field                 | Type       | Description
 ----------------------|------------|----------------
-Initial Block ID      | Hash       | ID of the genesis block for the blockchain in which this asset is defined.
-Asset Reference Data  | Hash       | Hash of the reference data (formerly known as the "asset definition") for this asset.
+Initial Block ID      | Hash       | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
+Asset Reference Data  | Hash       | Hash of the reference data (formerly known as the “asset definition”) for this asset.
 Issuance Program      | Program    | Program that must be satisfied for this asset to be issued.
 
 ### AssetAmount
@@ -139,7 +138,7 @@ Value            | Integer                     | Number of units of the referenc
 
 Field            | Type                        | Description
 -----------------|-----------------------------|----------------
-Script           | String                      | The program to be executed.
+Code             | String                      | The program code to be executed.
 VM Version       | Integer                     | The VM version to be used when evaluating the program.
 
 #### Program Validation
@@ -150,8 +149,8 @@ To validate a program with given `Arguments`:
     1. If the transaction version is 1, validation fails.
     2. If the transaction version is greater than 1, validation succeeds.
 2. If the `VM Version` is equal to 1:
-    1. Evaluate the `Script` with the given `Arguments` using [VM Version 1](#vm.md).
-    2. If the script evaluates successfully, validation succeeds. If the script fails evaluation, validation fails.
+    1. Evaluate the `Code` with the given `Arguments` using [VM Version 1](vm1.md).
+    2. If the code evaluates successfully, validation succeeds. If the code fails evaluation, validation fails.
 
 ### ValueSource
 
@@ -212,6 +211,10 @@ Position         | Integer                        | Iff this destination refers 
 
 ## Entries
 
+Entries form a _directed acyclic graph_ within a blockchain: [block headers](#blockheader) reference the [transaction headers](#txheader) (organized in a [merkle tree](data.md#merkle-binary-tree)) that in turn reference [outputs](#output), that are coming from [muxes](#mux), [issuances](#issuance) and [spends](#spend).
+
+### Generic Entry
+
 All entries have the following structure:
 
 Field               | Type                 | Description
@@ -220,7 +223,7 @@ Type                | String               | The type of this Entry. E.g. [Issua
 Body                | Struct               | Varies by type.
 Witness             | Struct               | Varies by type.
 
-## Entry ID
+### Entry ID
 
 An entry's ID is based on its _type_ and _body_. The type is encoded as raw sequence of bytes (without a length prefix).
 The body is encoded as a SHA3-256 hash of all the fields of the body struct concatenated.
