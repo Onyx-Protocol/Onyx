@@ -97,7 +97,9 @@ A `String` is encoded as a [Varstring31](data.md#varstring31).
 
 ### List
 
-A `List` is encoded as a [Varstring31](data.md#varstring31) containing the serialized items, one by one, as defined by the schema.
+A `List` is encoded as a [Varstring31](data.md#varstring31) containing the serialized items, one by one, as defined by the schema. 
+
+Note: since the `List` is encoded as a variable-length string, its length prefix indicates not the number of _items_, but the number of _bytes_ of all the items in their serialized form.
 
 ### Struct
 
