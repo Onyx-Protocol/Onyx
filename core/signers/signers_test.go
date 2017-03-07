@@ -74,11 +74,45 @@ func TestCreate(t *testing.T) {
 		want:   nil,
 	}}
 
-	for _, c := range cases {
-		_, got := Create(ctx, db, c.typ, c.xpubs, c.quorum, "")
+	for i, c := range cases {
+		s, gotErr := Create(ctx, db, c.typ, c.xpubs, c.quorum, "")
 
-		if errors.Root(got) != c.want {
-			t.Errorf("Create(%s, %v, %d) = %q want %q", c.typ, c.xpubs, c.quorum, errors.Root(got), c.want)
+		if errors.Root(gotErr) != c.want {
+			t.Errorf("case %d: Create(%s, %v, %d) = %q want %q", i, c.typ, c.xpubs, c.quorum, errors.Root(gotErr), c.want)
+			continue
+		}
+		if c.want != nil {
+			continue
+		}
+
+		id := s.ID
+		var err error
+		s, err = Find(ctx, db, c.typ, id)
+		if err != nil {
+			t.Errorf("case %d: cannot Find new signer %s", i, id)
+			continue
+		}
+		if len(s.XPubs) != len(c.xpubs) {
+			t.Errorf("case %d: signer created with %d xpub(s) now has %d xpub(s)", i, len(c.xpubs), len(s.XPubs))
+			continue
+		}
+		for _, key1 := range c.xpubs {
+			var found bool
+			for _, key2 := range s.XPubs {
+				if key1 == key2 {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("case %d: list of xpubs mismatch", i)
+				for j, key := range c.xpubs {
+					t.Logf("want %d: %x", j, key[:])
+				}
+				for j, key := range s.XPubs {
+					t.Logf("got %d: %x", j, key[:])
+				}
+			}
 		}
 	}
 }
