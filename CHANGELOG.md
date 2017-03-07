@@ -10,7 +10,7 @@ For updates to subpackages, see below:
 - [Node.js SDK](./sdk/node/CHANGELOG.md)
 - [Ruby SDK](./sdk/ruby/CHANGELOG.md)
 
-<a name="1.1.1"></a>
+<a name="1.1.2"></a>
 ## 1.1.2 (March 7, 2017)
 
 * The network version has been updated to **3**. Chain Core instances on the same network must share the same network version. If you're upgrading to version 1.1.2, make sure to upgrade all Chain Cores in your blockchain network. This version change is due to ([#648](https://github.com/chain/chain/issues/648)), which was resolved in version 1.1.1.
