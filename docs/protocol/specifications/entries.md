@@ -304,7 +304,7 @@ Witness             | Struct               | See below.
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
-Program             | AssetAmount          | Asset ID and amount being issued.
+Program             | Program              | A program that protects the nonce against replay and must evaluate to true.
 Time Range          | Pointer<TimeRange>   | Reference to a TimeRange entry.
 ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
