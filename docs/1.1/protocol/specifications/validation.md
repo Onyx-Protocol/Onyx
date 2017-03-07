@@ -11,7 +11,6 @@
   * [Apply transaction](#apply-transaction)
   * [Validate block](#validate-block)
   * [Validate transaction](#validate-transaction)
-  * [Evaluate predicate](#evaluate-predicate)
 
 
 ## Introduction
