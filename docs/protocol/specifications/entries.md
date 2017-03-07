@@ -56,27 +56,23 @@
   	* [Mux Witness](#mux-witness)
   	* [Mux Validation](#mux-validation)
 
-This is a specification of the semantic data structures used by transactions. These data structures and rules are used for validation and hashing. This format is independent from the format for [transaction wire serialization](data.md#transaction-wire-serialization).
+This is a specification of the semantic data structures used by blocks and transactions. These data structures and rules are used for validation and hashing. This format is independent from the format for [transaction wire serialization](data.md#transaction-wire-serialization).
 
-A transaction is composed of a set of [transaction entries](#entries). Each transaction must include a [Header Entry](#header-entry), which references other entries in the transaction, which in turn can reference additional entries. Entries can be identified by their [Entry ID](#entry-id).
+A block is a set of [entries](#entries), which must include a [Block Header](#blockheader) entry.
 
-## Entry Serialization
+A transaction is composed of a set of [entries](#entries). Each transaction must include a [Transaction Header Entry](#txheader), which references other entries in the transaction, which in turn can reference additional entries. Entries can be identified by their [Entry ID](#entry-id).
+
+## Entry ID
 
 An entry's ID is based on its type and body. The body is encoded as a [string](#string), and its type is [Varint63](data.md#varint63)-encoded.
 
-```
-entryID = HASH("entryid:" || entry.type || ":" || entry.body_hash)
-```
+    entryID = HASH("entryid:" || entry.type || ":" || entry.body_hash)
 
 ## Basic types
 
-Each entry contains a defined combination of the following fields: [Byte](#byte), [Hash](#hash), [Integer](#integer), [String](#string), [List](#list), [Struct](#struct), [Extstruct](#extstruct), and [Pointer](#entry-pointer).
+Each entry contains a defined combination of the following fields: [Hash](#hash), [Integer](#integer), [String](#string), [List](#list), [Struct](#struct), [Extstruct](#extstruct), and [Pointer](#entry-pointer).
 
 Below is the serialization of those fields.
-
-### Byte
-
-A `Byte` is encoded as 1 byte.
 
 ### Hash
 
@@ -207,6 +203,10 @@ Field               | Type                 | Description
 Type                | String               | The type of this Entry. e.g. Issuance, Retirement
 Body                | Struct               | Varies by type.
 Witness             | Struct               | Varies by type.
+
+### BlockHeader
+
+
 
 ### TxHeader
 
