@@ -95,13 +95,6 @@ class Form extends React.Component {
         disabled={this.disableSubmit(actions)} >
 
         <FormSection title='Actions'>
-          <p className={styles.actionInfo}>
-            Add actions to issue, spend, control, or retire asset units.
-            For more information, please consult the&nbsp;
-            <a href='/docs/core/build-applications/transaction-basics#creating-transactions' target='_blank'>
-              documentation
-            </a>.
-          </p>
           {actions.map((action, index) =>
             <ActionItem
               key={index}

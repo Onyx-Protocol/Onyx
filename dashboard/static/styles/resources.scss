@@ -1,0 +1,65 @@
+// Contents of this file are included in every
+// CSS module.
+//
+// Do NOT put styles in here that generate output. Only include
+// variables, mixins and other functions describing common
+// functionality.
+
+@import 'static/styles/bootstrap-overrides';
+@import 'node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_variables';
+@import 'node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_mixins';
+
+$background-color: #ffffff;
+$background-content-color: #f2f2f2;
+$background-emphasis-color: #fafafa;
+
+$border-color: #dadee2;
+$border-strong-color: #cccccc;
+$border-light-color: $background-content-color;
+$text-color: #747c89;
+$text-light-color: #bac0c7;
+$text-inverse-color: #ffffff;
+$text-strong-color: #20252d;
+$text-table-value-color: #747c89;
+$text-table-label-color: #9ea8b6;
+$text-danger: #d44c4c;
+
+$highlight-default: #00bfaa;
+$highlight-secondary: #00D9C2;
+$highlight-danger: #be4343;
+$highlight-danger-background: #f8cece;
+$highlight-danger-border: #f3aaaa;
+$highlight-tutorial: #69A7E4;
+
+$success-background: #dff0d3;
+$success-border: #cbe6b7;
+$success: #227855;
+$background-inverse-color: #20252D;
+$border-inverse-color: #303638;
+$highlight-inverse-color: #d4d7de;
+
+$border-radius-standard: 3px;
+
+$title-height: 60px;
+$gutter-size: 30px;
+
+$minWidth: 900px;
+$maxWidth: 1240px;
+$sidebar-width: 220px;
+
+$box-shadow: 0 3px 6px -2px rgba(0,0,0,0.15);
+
+@mixin keyframes($name) {
+  @-webkit-keyframes #{$name} {
+    @content;
+  }
+  @-moz-keyframes #{$name} {
+    @content;
+  }
+  @-ms-keyframes #{$name} {
+    @content;
+  }
+  @keyframes #{$name} {
+    @content;
+  }
+}

@@ -1,0 +1,147 @@
+@font-face {
+  font-family: "Nitti";
+  src: url('fonts/nitti-normal.woff');
+}
+
+@font-face {
+  font-family: "Nitti Grotesk";
+  src: url('fonts/nittigrotesk-normal.woff');
+}
+
+@font-face {
+  font-family: "Nitti Grotesk";
+  font-weight: bold;
+  src: url('fonts/nittigrotesk-medium.woff');
+}
+
+html {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: 0 auto;
+  min-height: 100%;
+  min-width: $minWidth;
+  color: $text-color;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+}
+
+:focus, .focus {
+  outline: none !important;
+}
+
+.jumbotron p {
+  margin-bottom: 0;
+  color: $gray-light;
+}
+
+p {
+  line-height: 1.5;
+  margin-bottom: $grid-gutter-width/2;
+}
+
+.flex-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.btn-primary,
+.btn-default {
+  height: 36px;
+  padding: 0 20px;
+  border-radius: $border-radius-standard;
+}
+
+.btn-primary {
+  border-color: $highlight-default;
+  color: $text-inverse-color;
+  background-color: $highlight-default;
+}
+
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:focus,
+.btn-primary:active:hover,
+.btn-primary:focus,
+.btn-primary:active:focus,
+.btn-primary:focus, .btn-primary.focus
+.btn-primary:active.focus, .btn-primary.active:hover,
+.btn-primary.active:focus, .btn-primary.active.focus {
+  text-decoration: none;
+  color: $text-inverse-color;
+  background: $highlight-secondary;
+  border-color: $highlight-secondary;
+}
+
+.btn-default {
+  background-color: $background-color;
+  border-color: $border-strong-color;
+}
+.btn-default:active:hover,
+.btn-default:hover,
+.btn-default:focus,
+.btn-default:active:focus,
+.btn-default:focus, .btn-default.focus
+.btn-default:active.focus, .btn-default.active:hover,
+.btn-default.active:focus, .btn-default.active.focus,
+.open > .btn-default.dropdown-toggle:hover,
+.open > .btn-default.dropdown-toggle:focus, .open > .btn-default.dropdown-toggle.focus {
+  color: $text-strong-color;
+  background-color: $background-content-color;
+  border-color: $border-strong-color;
+}
+
+a:hover,
+a:focus {
+  color: $highlight-secondary;
+  text-decoration: none;
+}
+
+.form-control {
+  height: 36px;
+  &:focus {
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 2px rgba(0, 217, 194, 0.6);
+  }
+}
+.help-block {
+  color: $text-light-color;
+}
+.jumbotron {
+  background: transparent;
+}
+.btn-lg {
+  height: 44px;
+  font-size: $font-size-btn-lg;
+}
+.label-primary {
+  color: $text-color;
+  background: $background-emphasis-color;
+  border: 1px solid transparentize($border-color, 0.5);
+}
+.close {
+  text-shadow: none;
+  font-size: $font-size-close;
+  font-weight: normal;
+}

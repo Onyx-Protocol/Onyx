@@ -1,0 +1,21 @@
+@include keyframes(pulsing) {
+  0%   { opacity: 0.6; }
+  50%  { opacity: 1.0; }
+  100% { opacity: 0.6; }
+}
+
+.main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $text-color;
+  font-size: 24px;
+  margin-top: -75px;
+}
+
+.logo {
+  width: 175px;
+  padding-bottom: $gutter-size;
+  @include animation(pulsing 2s infinite);
+  @include animation-timing-function(ease-in-out);
+}

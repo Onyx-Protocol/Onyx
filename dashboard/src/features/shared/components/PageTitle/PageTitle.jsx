@@ -10,7 +10,7 @@ import componentClassNames from 'utility/componentClassNames'
 
 class PageTitle extends React.Component {
   render() {
-    const chevron = require('assets/images/chevron.png')
+    const chevron = require('images/chevron.png')
 
     return(
       <div className={componentClassNames(this)}>

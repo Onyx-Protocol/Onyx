@@ -1,0 +1,52 @@
+$grid-gutter-width: 30px;
+
+$font-size-caps: 13px;
+$font-size-code: $font-size-caps;
+$font-size-base: 15px;
+$font-size-nav: 16px;
+$font-size-form-section-title: $font-size-nav;
+$font-size-section-title: 18px;
+$font-size-btn-lg: $font-size-section-title;
+$font-size-page-title: 22px;
+$font-size-close: 26px;
+$font-size-h2: 28px;
+$line-height-base: 1.7;
+$font-family-sans-serif: "Nitti Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+$font-family-monospace: "Nitti", Menlo, Monaco, Consolas, "Courier New", monospace;
+
+// Disable responsive styles below 900px wide
+$screen-xs: 1px;
+$screen-sm: 2px;
+$container-sm: 900px;
+$container-desktop: 1040px + $grid-gutter-width;
+$screen-md: $container-desktop;
+
+$brand-primary: #00bfaa;
+$brand-danger: #EF5354;
+
+$text-color: #8c8e94;
+$headings-color: #222834;
+
+$navbar-default-bg: #20252D;
+
+$link-color: $brand-primary;
+$navbar-default-link-color: transparentize(white, 0.1);
+$navbar-default-link-active-color: white;
+$navbar-default-link-hover-color: white;
+
+$input-border-focus: $brand-primary;
+
+$page-header-border-color: #e3e3e3;
+$pre-bg: #fff;
+$panel-footer-bg: #fff;
+$pre-border-color: transparent;
+
+$code-color: #747c89;
+$code-bg: none;
+
+$border-radius-base: 3px;
+$border-radius-large: 3px;
+
+$form-group-margin-bottom: 30px;
+
+$input-border-focus: #00D9C2;

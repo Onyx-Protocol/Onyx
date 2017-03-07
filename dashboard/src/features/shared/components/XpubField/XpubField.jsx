@@ -71,26 +71,28 @@ class XpubField extends React.Component {
         <FieldLabel>Key {this.props.index + 1}</FieldLabel>
 
         <table className={styles.options}>
-          {Object.keys(methodOptions).map((key) =>
-            <tr>
-              <td className={styles.label}>
-                <label key={`key-${this.props.index}-option-${key}`}>
-                  <input type='radio'
-                    className={styles.radio}
-                    name={`keys-${this.props.index}`}
-                    onChange={typeOnChange}
-                    checked={key == typeProps.value}
-                    value={key}
-                  />
-                  {methodOptions[key]}
-                </label>
-              </td>
+          <tbody>
+            {Object.keys(methodOptions).map((key) =>
+              <tr key={`key-${this.props.index}-option-${key}`}>
+                <td className={styles.label}>
+                  <label>
+                    <input type='radio'
+                      className={styles.radio}
+                      name={`keys-${this.props.index}`}
+                      onChange={typeOnChange}
+                      checked={key == typeProps.value}
+                      value={key}
+                    />
+                    {methodOptions[key]}
+                  </label>
+                </td>
 
-              <td className={styles.field}>
-                {typeProps.value == key && fields[key]}
-              </td>
-            </tr>
-          )}
+                <td className={styles.field}>
+                  {typeProps.value == key && fields[key]}
+                </td>
+              </tr>
+            )}
+          </tbody>
         </table>
       </div>
     )

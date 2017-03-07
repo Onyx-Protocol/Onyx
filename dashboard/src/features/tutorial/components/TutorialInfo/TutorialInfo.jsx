@@ -7,7 +7,7 @@ class TutorialInfo extends React.Component {
   render() {
     let objectImage
     try {
-      objectImage = require(`assets/images/empty/${this.props.image}.svg`)
+      objectImage = require(`images/empty/${this.props.image}.svg`)
     } catch (err) { /* do nothing */ }
 
     const userInput = this.props.userInput
@@ -33,7 +33,9 @@ class TutorialInfo extends React.Component {
                     <td>{listItem}</td>
                   </tr>)
                 })
-                return <table className={styles.listItemContainer}>{list}</table>
+                return <table key={i} className={styles.listItemContainer}>
+                  <tbody>{list}</tbody>
+                </table>
               }
               if (contentLine['type']){
                 let replacement = userInput[contentLine['type']]
