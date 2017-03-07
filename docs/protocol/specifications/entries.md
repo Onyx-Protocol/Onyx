@@ -12,11 +12,8 @@
   * [Asset Definition](#asset-definition)
   * [AssetAmount](#assetamount)
   * [Program](#program)
-  	* [Program Validation](#program-validation)
   * [ValueSource](#valuesource)
-  	* [ValueSource Validation](#valuesource-validation)
   * [ValueDestination](#valuedestination)
-  	* [ValueDestination Validation](#valuedestination-validation)
 * [Entries](#entries)
   * [TxHeader](#txheader)
   	* [TxHeader Body](#txheader-body)
@@ -117,50 +114,73 @@ A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte 
 
 ## Auxiliary data structures
 
-Auxiliary data structures are [Structs](#struct) with the fields defined below. They are not [entries](#entries) by themselves.
-
-### AssetDefinition
-
-Field                 | Type       | Description
-----------------------|------------|----------------
-Initial Block ID      | Hash       | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
-Asset Reference Data  | Hash       | Hash of the reference data (formerly known as the “asset definition”) for this asset.
-Issuance Program      | Program    | Program that must be satisfied for this asset to be issued.
-
-### AssetAmount
-
-Field            | Type                        | Description
------------------|-----------------------------|----------------
-AssetID          | Hash                        | Asset ID.
-Value            | Integer                     | Number of units of the referenced asset.
+Auxiliary data structures are [Structs](#struct) that are not [entries](#entries) by themselves, but used as fields within the entries.
 
 ### Program
 
-Field            | Type                        | Description
------------------|-----------------------------|----------------
-Code             | String                      | The program code to be executed.
-VM Version       | Integer                     | The VM version to be used when evaluating the program.
+Program encapsulates the version of the [VM](vm1.md) and the bytecode that should be executed by that VM.
+
+Field            | Type                | Description
+-----------------|---------------------|----------------
+VM Version       | [Integer](#integer) | The VM version to be used when evaluating the program.
+Bytecode         | [String](#string)   | The program code to be executed.
 
 #### Program Validation
 
-To validate a program with given `Arguments`:
+**Inputs:**
+
+1. program,
+2. arguments (list of strings),
+3. expansion flag (true/false),
+4. transaction version (integer).
+
+**Algorithm:**
 
 1. If the `VM Version` is greater than 1:
     1. If the transaction version is 1, validation fails.
     2. If the transaction version is greater than 1, validation succeeds.
 2. If the `VM Version` is equal to 1:
-    1. Evaluate the `Code` with the given `Arguments` using [VM Version 1](vm1.md).
-    2. If the code evaluates successfully, validation succeeds. If the code fails evaluation, validation fails.
+    1. Evaluate the `Bytecode` with the given arguments and a given expansion flag using [VM Version 1](vm1.md).
+    2. If the program evaluates successfully, validation succeeds. If the program fails evaluation, validation fails.
+
+
+### AssetDefinition
+
+Field                 | Type                | Description
+----------------------|---------------------|----------------
+Initial Block ID      | [Hash](#hash)       | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
+Issuance Program      | [Program](#program) | Program that must be satisfied for this asset to be issued.
+Asset Reference Data  | [Hash](#hash)       | Hash of the reference data (formerly known as the “asset definition”) for this asset.
+
+
+### Asset ID
+
+Asset ID is a globally unique identifier of a given asset across all blockchains.
+
+Asset ID is defined as the [SHA3-256](#sha3) of the [Asset Definition](#assetdefinition):
+
+    AssetID = SHA3-256(AssetDefinition)
+
+
+### AssetAmount
+
+AssetAmount struct encapsulates the number of units of an asset together with its [asset ID](#asset-id).
+
+Field            | Type                 | Description
+-----------------|----------------------|----------------
+AssetID          | [Hash](#hash)        | [Asset ID](#asset-id).
+Value            | [Integer](#integer)  | Number of units of the referenced asset.
+
 
 ### ValueSource
 
-An Entry uses a ValueSource to refer to other Entries that provide inputs to the initial Entry.
+An [Entry](#entry) uses a ValueSource to refer to other [Entries](#entry) that provide the value for it.
 
 Field            | Type                        | Description
 -----------------|-----------------------------|----------------
-Ref              | Pointer<Issuance|Spend|Mux> | Previous entry referenced by this ValueSource.
-Value            | AssetAmount                 | Amount and Asset ID contained in the referenced entry.
-Position         | Integer                     | Iff this source refers to a Mux entry, then the Position is the index of an output. If this source refers to an Issuance or Spend entry, then the Position must be 0.
+Ref              | [Pointer](#pointer)<[Issuance](#issuance)|[Spend](#spend)|[Mux](#mux)> | Previous entry referenced by this ValueSource.
+Value            | [AssetAmount](#assetamount) | Amount and Asset ID contained in the referenced entry.
+Position         | [Integer](#integer)         | Iff this source refers to a [Mux](#mux) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance) or [Spend](#spend) entry, then the `Position` must be 0.
 
 #### ValueSource Validation
 
@@ -213,9 +233,9 @@ Position         | Integer                        | Iff this destination refers 
 
 Entries form a _directed acyclic graph_ within a blockchain: [block headers](#blockheader) reference the [transaction headers](#txheader) (organized in a [merkle tree](data.md#merkle-binary-tree)) that in turn reference [outputs](#output), that are coming from [muxes](#mux), [issuances](#issuance) and [spends](#spend).
 
-### Generic Entry
+### Entry
 
-All entries have the following structure:
+Each entry has the following generic structure:
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------------------------------------------------
@@ -225,7 +245,7 @@ Witness             | Struct               | Varies by type.
 
 ### Entry ID
 
-An entry's ID is based on its _type_ and _body_. The type is encoded as raw sequence of bytes (without a length prefix).
+An entry’s ID is based on its _type_ and _body_. The type is encoded as raw sequence of bytes (without a length prefix).
 The body is encoded as a SHA3-256 hash of all the fields of the body struct concatenated.
 
     entryID = SHA3-256("entryid:" || type || ":" || SHA3-256(body))
