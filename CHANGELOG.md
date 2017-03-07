@@ -10,7 +10,23 @@ For updates to subpackages, see below:
 - [Node.js SDK](./sdk/node/CHANGELOG.md)
 - [Ruby SDK](./sdk/ruby/CHANGELOG.md)
 
-## 1.1.0 (February 24, 2017)<a name="1.1.0"></a>
+<a name="1.1.2"></a>
+## 1.1.2 (March 7, 2017)
+
+* The network version has been updated to **3**. Chain Core instances on the same network must share the same network version. If you're upgrading to version 1.1.2, make sure to upgrade all Chain Cores in your blockchain network. This version change is due to ([#648](https://github.com/chain/chain/issues/648)), which was resolved in version 1.1.1.
+* Resolved issue where some transaction inputs were not correctly annotated with account information ([#668](https://github.com/chain/chain/issues/668)).
+* Dashboard cosmetic changes.
+
+<a name="1.1.1"></a>
+## 1.1.1 (March 3, 2017)
+
+* The list of root CA certificates that Chain Core uses is now configurable via the `ROOT_CA_CERTS` enviornment variable. This list is used when Chain Core acts as an TLS client, i.e. when making RPC calls to signerd or other Chain Core instances.
+* Resolved issue where spent output ID was not being validated correctly ([#648](https://github.com/chain/chain/issues/648)).
+* Resolved connectivity issues when bootstrapping a core from a generator snapshot ([#643](https://github.com/chain/chain/pull/643)).
+* Resolved issue when connecting to other cores via HTTPS ([#674](https://github.com/chain/chain/issues/674)).
+
+<a name="1.1.0"></a>
+## 1.1.0 (February 24, 2017)
 
 This release is a minor version update, and contains new features, deprecations, and protocol breaking changes. cored 1.1.0 is backward-compatible with 1.0.x SDKs, but we strongly recommend upgrading to 1.1.x SDKs as soon as possible. cored 1.1.0 is not backward-compatible with 1.0.X coreds due to fundamental protocol changes.
 
