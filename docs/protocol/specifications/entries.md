@@ -108,8 +108,7 @@ Bytecode         | [String](#string)   | The program code to be executed.
 
 1. program,
 2. arguments (list of strings),
-3. expansion flag (true/false),
-4. transaction version (integer).
+3. transaction version (integer).
 
 **Algorithm:**
 
@@ -117,8 +116,9 @@ Bytecode         | [String](#string)   | The program code to be executed.
     1. If the transaction version is 1, validation fails.
     2. If the transaction version is greater than 1, validation succeeds.
 2. If the `VM Version` is equal to 1:
-    1. Evaluate the `Bytecode` with the given arguments and a given expansion flag using [VM Version 1](vm1.md).
-    2. If the program evaluates successfully, validation succeeds. If the program fails evaluation, validation fails.
+    1. Instantiate [VM version 1](vm1.md) with initial state and expansion flag set to `true` iff transaction version is greater than 1.
+    2. Evaluate the `Bytecode` with the given arguments.
+    3. If the program evaluates successfully, validation succeeds. If the program fails evaluation, validation fails.
 
 
 ### AssetDefinition
@@ -281,10 +281,10 @@ Program Arguments        | List\<String\>    | List of [signatures](data.md#sign
 **Algorithm:**
 
 1. Verify that the block’s version is greater or equal the block version in the previous block header.
-2. Verify that `Height` is equal to `PrevBlockHeader.Height + 1`. If not, halt and return false.
+2. Verify that `Height` is equal to `PrevBlockHeader.Height + 1`.
 4. Verify that `PreviousBlockID` is equal to the entry ID of `PrevBlockHeader`.
 5. Verify that `Timestamp` is greater than `PrevBlockHeader.Timestamp`.
-6. Verify that `PreviousBlockID.NextConsensusProgram` with VM version 1.
+6. Evaluate program `PreviousBlockID.NextConsensusProgram` with [VM version 1](vm1.md) and expansion flag set to `false`. If program execution failed, fail validation.
 7. For each transaction in the block:
     1. [Validate transaction](#validate-transaction) with the timestamp and block version of the input block header; if it is not valid, halt and return false.
 8. Compute the [transactions merkle root](data.md#transactions-merkle-root) for the block.
@@ -378,7 +378,7 @@ Arguments           | List<String>         | Arguments for the control program c
 #### Spend Validation
 
 1. Verify that `SpentOutput` is present in the transaction, but do not validate it.
-2. [Validate program](#program-validation) `SpentOutput.ControlProgram` with the given `Arguments`.
+2. [Validate program](#program-validation) `SpentOutput.ControlProgram` with the given `Arguments` and the transaction version.
 3. Verify that `SpentOutput.Value` is equal to `Destination.Value`.
 4. [Validate](#valuedestination-validation) `Destination`.
 
@@ -407,7 +407,7 @@ Arguments           | List<String>                              | Arguments for 
 #### Issuance Validation
 
 1. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
-2. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments`.
+2. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the transaction version.
 3. Verify that `Anchor` entry is present and valid.
 4. [Validate](#valuedestination-validation) `Destination`.
 
@@ -477,7 +477,7 @@ Arguments           | String                     | Arguments for the program con
 
 #### Mux Validation
 
-1. [Validate](#program-validation) `Program` with the given `Arguments`.
+1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
 2. For each `Source` in `Sources`, [validate](#valuesource-validation) `Source`.
 3. For each `Destination` in `Destinations`, [validate](#valuedestination-validation) `Destination`.
 4. For each `AssetID` represented in `Sources` and `Destinations`:
