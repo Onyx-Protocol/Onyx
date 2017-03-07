@@ -51,7 +51,7 @@ func logQuery(ctx context.Context, query string, args interface{}) {
 		if len(s) > maxArgsLogLen {
 			s = s[:maxArgsLogLen-3] + "..."
 		}
-		log.Write(ctx, "query", query, "args", s)
+		log.Printkv(ctx, "query", query, "args", s)
 	}
 }
 

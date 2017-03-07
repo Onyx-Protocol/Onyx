@@ -94,7 +94,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 	for {
 		select {
 		case <-ctx.Done():
-			log.Messagef(ctx, "Deposed, Fetch exiting")
+			log.Printf(ctx, "Deposed, Fetch exiting")
 			return
 		case err = <-errch:
 			health(err)
@@ -103,7 +103,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 			for {
 				prevSnapshot, prevBlock, err = applyBlock(ctx, c, prevSnapshot, prevBlock, b)
 				if err == protocol.ErrBadBlock {
-					log.Fatal(ctx, log.KeyError, err)
+					log.Fatalkv(ctx, log.KeyError, err)
 				} else if err != nil {
 					// This is a serious I/O error.
 					health(err)
@@ -174,7 +174,7 @@ func pollGeneratorHeight(ctx context.Context, peer *rpc.Client) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Messagef(ctx, "Deposed, fetchGeneratorHeight exiting")
+			log.Printf(ctx, "Deposed, fetchGeneratorHeight exiting")
 			ticker.Stop()
 			return
 		case <-ticker.C:
@@ -259,7 +259,7 @@ func getHeight(ctx context.Context, peer *rpc.Client) (uint64, error) {
 
 func logNetworkError(ctx context.Context, err error) {
 	if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
-		log.Messagef(ctx, "%s", err.Error())
+		log.Printf(ctx, "%s", err.Error())
 	} else {
 		log.Error(ctx, err)
 	}

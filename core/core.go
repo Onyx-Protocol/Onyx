@@ -144,21 +144,21 @@ func closeConnOK(w http.ResponseWriter, req *http.Request) {
 
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
-		log.Messagef(req.Context(), "no hijacker")
+		log.Printf(req.Context(), "no hijacker")
 		return
 	}
 	conn, buf, err := hijacker.Hijack()
 	if err != nil {
-		log.Messagef(req.Context(), "could not hijack connection: %s\n", err)
+		log.Printf(req.Context(), "could not hijack connection: %s\n", err)
 		return
 	}
 	err = buf.Flush()
 	if err != nil {
-		log.Messagef(req.Context(), "could not flush connection buffer: %s\n", err)
+		log.Printf(req.Context(), "could not flush connection buffer: %s\n", err)
 	}
 	err = conn.Close()
 	if err != nil {
-		log.Messagef(req.Context(), "could not close connection: %s\n", err)
+		log.Printf(req.Context(), "could not close connection: %s\n", err)
 	}
 }
 

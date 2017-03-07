@@ -57,9 +57,9 @@ func main() {
 	// Ensure that we can access cored.
 	err := client.Call(ctx, "/health", nil, nil)
 	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
+		log.Fatalkv(ctx, log.KeyError, err)
 	}
-	log.Messagef(ctx, "Successfully pinged cored at %s.", *coredAddr)
+	log.Printf(ctx, "Successfully pinged cored at %s.", *coredAddr)
 
 	// Periodically, report metrics.
 	latestNumRots := make(map[string]int)

@@ -103,19 +103,19 @@ func (g *Generator) Generate(
 	// the block and committing the signed block to the blockchain.
 	b, err := getPendingBlock(ctx, g.db)
 	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
+		log.Fatalkv(ctx, log.KeyError, err)
 	}
 	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
 		s := state.Copy(g.latestSnapshot)
 		err := validation.ApplyBlock(s, b)
 		if err != nil {
-			log.Fatal(ctx, log.KeyError, err)
+			log.Fatalkv(ctx, log.KeyError, err)
 		}
 
 		// g.commitBlock will update g.latestBlock and g.latestSnapshot.
 		err = g.commitBlock(ctx, b, s)
 		if err != nil {
-			log.Fatal(ctx, log.KeyError, err)
+			log.Fatalkv(ctx, log.KeyError, err)
 		}
 	}
 
@@ -123,7 +123,7 @@ func (g *Generator) Generate(
 	for {
 		select {
 		case <-ctx.Done():
-			log.Messagef(ctx, "Deposed, Generate exiting")
+			log.Printf(ctx, "Deposed, Generate exiting")
 			return
 		case <-ticks:
 			err := g.makeBlock(ctx)

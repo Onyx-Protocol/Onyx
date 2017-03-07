@@ -152,7 +152,7 @@ func (c *Chain) queueSnapshot(ctx context.Context, height uint64, timestamp time
 		c.lastQueuedSnapshot = timestamp
 	default:
 		// Skip it; saving snapshots is taking longer than the snapshotting period.
-		log.Messagef(ctx, "snapshot storage is taking too long; last queued at %s",
+		log.Printf(ctx, "snapshot storage is taking too long; last queued at %s",
 			c.lastQueuedSnapshot)
 	}
 }

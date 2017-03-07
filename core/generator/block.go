@@ -115,7 +115,7 @@ func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 			goodSigs[k] = sig
 			nready++
 		} else if k < 0 {
-			log.Write(ctx, "error", "invalid signature", "block", b.Hash(), "signature", sig)
+			log.Printkv(ctx, "error", "invalid signature", "block", b.Hash(), "signature", sig)
 		}
 	}
 
@@ -139,7 +139,7 @@ func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, sig *[]byte, i
 	var err error
 	*sig, err = signer.SignBlock(ctx, b)
 	if err != nil && ctx.Err() != context.Canceled {
-		log.Write(ctx, "error", err, "signer", signer)
+		log.Printkv(ctx, "error", err, "signer", signer)
 	}
 	done <- i
 }

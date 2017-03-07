@@ -4,11 +4,11 @@ package testdata
 
 import chainlog "chain/log"
 
-// WriteTestsWithRename never executes, but it serves as a simple test for
+// PrintkvTestsWithRename never executes, but it serves as a simple test for
 // the program. Test with (cd ..; go test).
-func WriteTestsWithRename() {
-	chainlog.Write(nil, "k", "v")       // ok
-	chainlog.Write(nil)                 // zero is ok too
-	chainlog.Write(nil, "k")            // ERROR "odd number of arguments in call to chainlog.Write"
-	chainlog.Write(nil, "k", "v", "k2") // ERROR "odd number of arguments in call to chainlog.Write"
+func PrintkvTestsWithRename() {
+	chainlog.Printkv(nil, "k", "v")       // ok
+	chainlog.Printkv(nil)                 // zero is ok too
+	chainlog.Printkv(nil, "k")            // ERROR "odd number of arguments in call to chainlog.Printkv"
+	chainlog.Printkv(nil, "k", "v", "k2") // ERROR "odd number of arguments in call to chainlog.Printkv"
 }
