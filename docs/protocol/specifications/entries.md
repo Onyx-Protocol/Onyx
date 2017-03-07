@@ -103,10 +103,11 @@ Future versions of the protocol may add additional fields as “Extension Struct
 
 ### Pointer
 
-A `Pointer` is encoded as a [Hash](#hash), and identifies another entry by its ID. 
-It also restricts the possible acceptable types: `Pointer<X>` must refer to an entry of type `X`.
+A `Pointer` is encoded as a [Hash](#hash), and identifies another [entry](#entry) by its [ID](#entry-id). 
 
-A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte hash:
+`Pointer` restricts the possible acceptable types: `Pointer<X>` must refer to an entry of type `X`.
+
+A `Pointer` can be `nil` (not pointing to any entry), in which case it is represented by the all-zero 32-byte hash:
     
     0x0000000000000000000000000000000000000000000000000000000000000000
 
@@ -253,19 +254,37 @@ The body is encoded as a SHA3-256 hash of all the fields of the body struct conc
 
 ### BlockHeader
 
+Field      | Type                 | Description
+-----------|----------------------|----------------
+Type       | String               | "blockheader"
+Body       | Struct               | See below.  
+Witness    | Struct               | See below.
+
+Body Field               | Type              | Description
+-------------------------|-------------------|----------------------------------------------------------
+Version                  | Integer           | Block version, equals 1.
+Height                   | Integer           | Block serial number.
+Previous Block ID        | Hash              | [Hash](#block-id) of the previous block or all-zero string.
+Timestamp                | Integer           | Time of the block in milliseconds since 00:00:00 UTC Jan 1, 1970.
+Transactions Merkle Root | Hash    | Root hash of the [merkle binary hash tree](data.md#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
+Assets Merkle Root       | Hash    | Root hash of the [merkle patricia tree](data.md#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](data.md#assets-merkle-root) for details.
+Next [Consensus Program](data.md#consensus-program) | String | Authentication predicate for adding a new block after this one.
+ExtHash                  | [ExtStruct](#extstruct)    | Extension fields.
+
+Witness Field            | Type              | Description
+-------------------------|-------------------|----------------------------------------------------------
+Program Arguments        | List\<String\>    | List of [signatures](data.md#signature) and other data satisfying previous block’s [next consensus program](data.md#consensus-program).
 
 
 ### TxHeader
 
-Field               | Type                 | Description
---------------------|----------------------|----------------
-Type                | String               | "txheader"
-Body                | Struct               | See below.  
-Witness             | Struct               | See below.
+Field      | Type                 | Description
+-----------|----------------------|----------------
+Type       | String               | "txheader"
+Body       | Struct               | See below.  
+Witness    | Struct               | Empty struct.
 
-#### TxHeader Body
-
-Field      | Type                                    | Description
+Body Field | Type                                    | Description
 -----------|-----------------------------------------|-------------------------
 Version    | Integer                                 | Transaction version, equals 1.
 Results    | List\<Pointer\<Output\|Retirement\>\>   | A list of pointers to Outputs or Retirements. This list must contain at least one item.
@@ -274,10 +293,6 @@ Mintime    | Integer                                 | Must be either zero or a 
 Maxtime    | Integer                                 | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
 ExtHash    | Hash                                    | Hash of all extension fields. (See [Extstruct](#extstruct).) If `Version` is known, this must be 32 zero-bytes.
 
-#### TxHeader Witness
-
-Field               | Type                 | Description
---------------------|----------------------|----------------
 
 #### TxHeader Validation
 
