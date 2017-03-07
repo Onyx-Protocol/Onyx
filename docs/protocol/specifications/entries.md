@@ -1,16 +1,14 @@
 # Entries Specification
 
-* [Entry Serialization](#entry-serialization)
 * [Basic types](#basic-types)
-  * [Byte](#byte)
   * [Hash](#hash)
   * [Integer](#integer)
   * [String](#string)
   * [List](#list)
   * [Struct](#struct)
-  * [Extstruct](#extstruct)
-  * [Pointer](#pointer)
-* [Data Structures](#data-structures)
+  * [ExtStruct](#extstruct)
+  * [Pointer](#pointer).
+* [Auxiliary data structures](#auxiliary-data-structures)
   * [Asset Definition](#asset-definition)
   * [AssetAmount](#assetamount)
   * [Program](#program)
@@ -56,21 +54,27 @@
   	* [Mux Witness](#mux-witness)
   	* [Mux Validation](#mux-validation)
 
-This is a specification of the semantic data structures used by blocks and transactions. These data structures and rules are used for validation and hashing. This format is independent from the format for [transaction wire serialization](data.md#transaction-wire-serialization).
+## Introduction
 
-A block is a set of [entries](#entries), which must include a [Block Header](#blockheader) entry.
+This is a specification of the semantic data structures used by blocks and transactions. These data structures and rules are used for validation and hashing. This format is independent from the format for transaction wire serialization.
 
-A transaction is composed of a set of [entries](#entries). Each transaction must include a [Transaction Header Entry](#txheader), which references other entries in the transaction, which in turn can reference additional entries. Entries can be identified by their [Entry ID](#entry-id).
+A **block** is a set of [entries](#entries), which must include a [Block Header](#blockheader) entry.
 
-## Entry ID
+A **transaction** is composed of a set of [entries](#entries). Each transaction must include a [TxHeader Entry](#txheader), which references other entries in the transaction, which in turn can reference additional entries. 
 
-An entry's ID is based on its type and body. The body is encoded as a [string](#string), and its type is [Varint63](data.md#varint63)-encoded.
-
-    entryID = HASH("entryid:" || entry.type || ":" || entry.body_hash)
+Every entry is identified by its [Entry ID](#entry-id).
 
 ## Basic types
 
-Each entry contains a defined combination of the following fields: [Hash](#hash), [Integer](#integer), [String](#string), [List](#list), [Struct](#struct), [Extstruct](#extstruct), and [Pointer](#entry-pointer).
+All entries and [auxiliary data structures](#auxiliary-data-structures) are defined in terms of the following basic types:
+
+* [Hash](#hash)
+* [Integer](#integer)
+* [String](#string)
+* [List](#list)
+* [Struct](#struct)
+* [ExtStruct](#extstruct)
+* [Pointer](#pointer).
 
 Below is the serialization of those fields.
 
@@ -90,7 +94,8 @@ A `String` is encoded as a [Varstring31](data.md#varstring31).
 
 A `List` is encoded as a [Varstring31](data.md#varstring31) containing the serialized items, one by one, as defined by the schema. 
 
-Note: since the `List` is encoded as a variable-length string, its length prefix indicates not the number of _items_, but the number of _bytes_ of all the items in their serialized form.
+Note: since the `List` is encoded as a variable-length string, its length prefix indicates not the number of _items_,
+but the number of _bytes_ of all the items in their serialized form.
 
 ### Struct
 
@@ -98,23 +103,30 @@ A `Struct` is encoded as a concatenation of all its serialized fields.
 
 ### ExtStruct
 
-An `ExtStruct` is encoded as a single 32-byte hash. Future versions of the protocol may add additional fields as “Extension Structs” that will be compressed in a single hash for backwards compatibility.
+An `ExtStruct` is encoded as a single 32-byte hash. 
+Future versions of the protocol may add additional fields as “Extension Structs” that will be compressed in a single hash for backwards compatibility.
 
 ### Pointer
 
-A Pointer is encoded as a [Hash](#hash), and identifies another entry by its ID. It also restricts the possible acceptable types: Pointer<X> must refer to an entry of type X.
+A `Pointer` is encoded as a [Hash](#hash), and identifies another entry by its ID. 
+It also restricts the possible acceptable types: `Pointer<X>` must refer to an entry of type `X`.
 
-A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte hash `0x0000000000000000000000000000000000000000000000000000000000000000`.
+A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte hash:
+    
+    0x0000000000000000000000000000000000000000000000000000000000000000
 
-## Data Structures
+
+
+## Auxiliary data structures
+
 
 ### Asset Definition
 
-Field                 | Type                        | Description
-----------------------|-----------------------------|----------------
-Initial Block ID      | Hash                        | ID of the genesis block for the blockchain in which this asset is defined.
-Asset Reference Data  | Hash                        | Hash of the reference data (formerly known as the "asset definition") for this asset.
-Issuance Program      | Program                     | Program that must be satisfied for this asset to be issued.
+Field                 | Type       | Description
+----------------------|------------|----------------
+Initial Block ID      | Hash       | ID of the genesis block for the blockchain in which this asset is defined.
+Asset Reference Data  | Hash       | Hash of the reference data (formerly known as the "asset definition") for this asset.
+Issuance Program      | Program    | Program that must be satisfied for this asset to be issued.
 
 ### AssetAmount
 
@@ -194,15 +206,27 @@ Position         | Integer                        | Iff this destination refers 
 5. Verify that `RefSource.Value` is equal to `Value`.
 
 
+
+
+
+
 ## Entries
 
 All entries have the following structure:
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------------------------------------------------
-Type                | String               | The type of this Entry. e.g. Issuance, Retirement
+Type                | String               | The type of this Entry. E.g. [Issuance](#issuance), [Retirement](#retirement) etc.
 Body                | Struct               | Varies by type.
 Witness             | Struct               | Varies by type.
+
+## Entry ID
+
+An entry's ID is based on its _type_ and _body_. The type is encoded as raw sequence of bytes (without a length prefix).
+The body is encoded as a SHA3-256 hash of all the fields of the body struct concatenated.
+
+    entryID = SHA3-256("entryid:" || type || ":" || SHA3-256(body))
+
 
 ### BlockHeader
 
