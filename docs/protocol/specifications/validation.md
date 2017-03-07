@@ -222,7 +222,7 @@ A new node starts here when joining a running network (with height > 1). In that
     1. Test that the input timestamp is greater than or equal to the transaction mintime; if not, halt and return false.
 5. If the transaction maxtime is greater than zero:
     1. Test that the input timestamp is less than or equal to the transaction maxtime; if not, halt and return false.
-6. [Validate TxHeader](entries.md#txheader-validity); if not valid, halt and return false.
+6. [Validate TxHeader](entries.md#txheader-validation); if not valid, halt and return false.
 7. Return true.
 
 
