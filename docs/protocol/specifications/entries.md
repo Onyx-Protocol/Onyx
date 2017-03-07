@@ -178,7 +178,7 @@ An [Entry](#entry) uses a ValueSource to refer to other [Entries](#entry) that p
 
 Field            | Type                        | Description
 -----------------|-----------------------------|----------------
-Ref              | [Pointer](#pointer)<[Issuance](#issuance)|[Spend](#spend)|[Mux](#mux)> | Previous entry referenced by this ValueSource.
+Ref              | [Pointer](#pointer)<[Issuance](#issuance)\|[Spend](#spend)\|[Mux](#mux)> | Previous entry referenced by this ValueSource.
 Value            | [AssetAmount](#assetamount) | Amount and Asset ID contained in the referenced entry.
 Position         | [Integer](#integer)         | Iff this source refers to a [Mux](#mux) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance) or [Spend](#spend) entry, then the `Position` must be 0.
 
@@ -186,7 +186,7 @@ Position         | [Integer](#integer)         | Iff this source refers to a [Mu
 
 1. Verify that `Ref` is present and valid.
 2. Define `RefDestination` as follows:
-    1. If `Ref` is an Issuance or Spend:
+    1. If `Ref` is an [Issuance](#issuance) or [Spend](#spend):
         1. Verify that `Position` is 0.
         2. Define `RefDestination` as `Ref.Destination`.
     2. If `Ref` is a `Mux`:
@@ -204,7 +204,7 @@ An Entry uses a ValueDestination to refer to other entries that receive value fr
 
 Field            | Type                           | Description
 -----------------|--------------------------------|----------------
-Ref              | Pointer<Output|Retirement|Mux> | Next entry referenced by this ValueSource.
+Ref              | Pointer<Output\|Retirement\|Mux> | Next entry referenced by this ValueSource.
 Value            | AssetAmount                    | Amount and Asset ID contained in the referenced entry
 Position         | Integer                        | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
 
