@@ -271,6 +271,10 @@ Field               | Type                 | Description
 
 1. [Validate](#valuesource-validation) `Source`.
 
+#### Output Application to State
+
+1. Add the entry ID of the Output entry to the UTXO set.
+
 #### Retirement 1
 
 Field               | Type                 | Description
