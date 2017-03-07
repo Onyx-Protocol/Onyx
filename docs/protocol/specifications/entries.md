@@ -202,8 +202,24 @@ Position         | [Integer](#integer)            | Iff this destination refers 
 5. Verify that `RefSource.Value` is equal to `Value`.
 
 
+#### Value flow validation
 
+**Inputs:**
 
+1. [ValueSource](#valuesource),
+2. receiving entry (which contains [ValueSource](#valuesource) struct),
+3. source index (within the receiving entry),
+4. [ValueDestination](#valuedestination),
+5. sending entry (which contains [ValueDestination](#valuedestination) struct),
+6. destination index (within the receiving entry).
+
+**Algorithm:**
+
+1. Verify that `Value` fields in both source and destination are equal.
+2. Verify that `ValueSource.Ref` is equal to the sending entry’s ID.
+3. Verify that `ValueDestination.Ref` is equal to the receiving entry’s ID.
+4. Verify that `ValueSource.Position` is equal to the destination index.
+5. Verify that `ValueDestination.Position` is equal to the source index.
 
 
 ## Entries
@@ -236,18 +252,18 @@ Type       | String               | "blockheader"
 Body       | Struct               | See below.  
 Witness    | Struct               | See below.
 
-Body Field               | Type              | Description
+Body field               | Type              | Description
 -------------------------|-------------------|----------------------------------------------------------
 Version                  | Integer           | Block version, equals 1.
 Height                   | Integer           | Block serial number.
-PreviousBlockID          | Hash              | [Hash](#block-id) of the previous block or all-zero string.
+Previous Block ID        | Hash              | [Hash](#block-id) of the previous block or all-zero string.
 Timestamp                | Integer           | Time of the block in milliseconds since 00:00:00 UTC Jan 1, 1970.
-TransactionsMerkleRoot   | Hash              | Root hash of the [merkle binary hash tree](data.md#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
-AssetsMerkleRoot         | Hash              | Root hash of the [merkle patricia tree](data.md#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](data.md#assets-merkle-root) for details.
-Next[ConsensusProgram](data.md#consensus-program) | String | Authentication predicate for adding a new block after this one.
-ExtHash                  | [ExtStruct](#extstruct)    | Hash of all extension fields. (See [Extstruct](#extstruct).) If `Version` is known, this must be 32 zero-bytes.
+Transactions Merkle Root | Hash    | Root hash of the [merkle binary hash tree](data.md#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
+Assets Merkle Root       | Hash    | Root hash of the [merkle patricia tree](data.md#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](data.md#assets-merkle-root) for details.
+Next [Consensus Program](data.md#consensus-program) | String | Authentication predicate for adding a new block after this one.
+ExtHash                  | [ExtStruct](#extstruct)    | Extension fields.
 
-Witness Field            | Type              | Description
+Witness field            | Type              | Description
 -------------------------|-------------------|----------------------------------------------------------
 Program Arguments        | List\<String\>    | List of [signatures](data.md#signature) and other data satisfying previous block’s [next consensus program](data.md#consensus-program).
 
@@ -291,8 +307,8 @@ ExtHash    | Hash                                    | Hash of all extension fie
 
 #### TxHeader Validation
 
-1. Verify that `Results` includes at least one item.
-2. Verify that each of the `Results` is present and valid.
+1. Check that `Results` includes at least one item.
+2. Check that each of the `Results` is present and valid.
 
 
 ### Output 1
@@ -301,21 +317,15 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Type                | String               | "output1"
 Body                | Struct               | See below.
-Witness             | Struct               | See below.
+Witness             | Struct               | Empty struct.
 
-#### Output Body
-
-Field               | Type                 | Description
+Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource          | The source of the units to be included in this output.
 ControlProgram      | Program              | The program to control this output.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
-#### Output Witness
-
-Field               | Type                 | Description
---------------------|----------------------|----------------
 
 #### Output Validation
 
@@ -328,20 +338,13 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Type                | String               | "retirement1"
 Body                | Struct               | See below.
-Witness             | Struct               | See below.
+Witness             | Struct               | Empty struct.
 
-#### Retirement Body
-
-Field               | Type                 | Description
+Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource          | The source of the units that are being retired.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
-
-#### Retirement Witness
-
-Field               | Type                 | Description
---------------------|----------------------|----------------
 
 #### Retirement Validation
 
