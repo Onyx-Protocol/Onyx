@@ -349,7 +349,7 @@ Field               | Type                 | Description
 1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the transaction header.
 2. Verify that `Maxtime` is either zero, or is equal to or greater than the `Maxtime` specified in the transaction header.
 
-### Mux
+### Mux 1
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
