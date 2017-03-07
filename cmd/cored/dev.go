@@ -35,10 +35,10 @@ func resetInDevIfRequested(db pg.DB) {
 		case "everything":
 			err = coreunsafe.ResetEverything(ctx, db)
 		default:
-			log.Fatal(ctx, log.KeyError, fmt.Errorf("unrecognized argument to reset: %s", *reset))
+			log.Fatalkv(ctx, log.KeyError, fmt.Errorf("unrecognized argument to reset: %s", *reset))
 		}
 		if err != nil {
-			log.Fatal(ctx, log.KeyError, err)
+			log.Fatalkv(ctx, log.KeyError, err)
 		}
 	}
 }

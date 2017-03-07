@@ -46,7 +46,7 @@ const (
 
 	KeyMessage = "message" // produced by Message
 	KeyError   = "error"   // produced by Error
-	KeyStack   = "stack"   // used by Write to print stack on subsequent lines
+	KeyStack   = "stack"   // used by Printkv to print stack on subsequent lines
 
 	keyLogError = "log-error" // for errors produced by the log package itself
 )
@@ -80,7 +80,7 @@ func SetPrefix(keyval ...interface{}) {
 	logWriterMu.Unlock()
 }
 
-// Write writes a structured log entry to stdout. Log fields are
+// Printkv prints a structured log entry to stdout. Log fields are
 // specified as a variadic sequence of alternating keys and values.
 //
 // Duplicate keys will be preserved.
@@ -91,14 +91,14 @@ func SetPrefix(keyval ...interface{}) {
 //
 // As a special case, the auto-generated caller may be overridden by passing in
 // a new value for the KeyCaller key as the first key-value pair. The override
-// feature should be reserved for custom logging functions that wrap Write.
+// feature should be reserved for custom logging functions that wrap Printkv.
 //
-// Write will also print the stack trace, if any, on separate lines
+// Printkv will also print the stack trace, if any, on separate lines
 // following the message. The stack is obtained from the following,
 // in order of preference:
 //   - a KeyStack value with type []byte or []errors.StackFrame
 //   - a KeyError value with type error, using the result of errors.Stack
-func Write(ctx context.Context, keyvals ...interface{}) {
+func Printkv(ctx context.Context, keyvals ...interface{}) {
 	// Invariant: len(keyvals) is always even.
 	if len(keyvals)%2 != 0 {
 		keyvals = append(keyvals, "", keyLogError, "odd number of log params")
@@ -154,9 +154,9 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 	logWriterMu.Unlock()
 }
 
-// Fatal is equivalent to Write() followed by a call to os.Exit(1).
-func Fatal(ctx context.Context, keyvals ...interface{}) {
-	Write(ctx, keyvals...)
+// Fatalkv is equivalent to Printkv() followed by a call to os.Exit(1).
+func Fatalkv(ctx context.Context, keyvals ...interface{}) {
+	Printkv(ctx, keyvals...)
 	os.Exit(1)
 }
 
@@ -185,13 +185,13 @@ func isStackVal(v interface{}) bool {
 	return false
 }
 
-// Messagef writes a log entry containing a message assigned to the
+// Printf prints a log entry containing a message assigned to the
 // "message" key. Arguments are handled as in fmt.Printf.
-func Messagef(ctx context.Context, format string, a ...interface{}) {
-	Write(ctx, KeyCaller, caller(1), KeyMessage, fmt.Sprintf(format, a...))
+func Printf(ctx context.Context, format string, a ...interface{}) {
+	Printkv(ctx, KeyCaller, caller(1), KeyMessage, fmt.Sprintf(format, a...))
 }
 
-// Error writes a log entry containing an error message assigned to the
+// Error prints a log entry containing an error message assigned to the
 // "error" key.
 // Optionally, an error message prefix can be included. Prefix arguments are
 // handled as in fmt.Print.
@@ -201,7 +201,7 @@ func Error(ctx context.Context, err error, a ...interface{}) {
 	} else if len(a) > 0 {
 		err = fmt.Errorf("%s: %s", fmt.Sprint(a...), err) // don't add a stack here
 	}
-	Write(ctx, KeyCaller, caller(1), KeyError, err)
+	Printkv(ctx, KeyCaller, caller(1), KeyError, err)
 }
 
 // caller returns a string containing filename and line number of a
@@ -257,7 +257,7 @@ func RecoverAndLogError(ctx context.Context) {
 		const size = 64 << 10
 		buf := make([]byte, size)
 		buf = buf[:runtime.Stack(buf, false)]
-		Write(ctx,
+		Printkv(ctx,
 			KeyMessage, "panic",
 			KeyError, err,
 			KeyStack, buf,

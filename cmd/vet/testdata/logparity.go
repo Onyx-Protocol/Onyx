@@ -6,20 +6,20 @@ import "chain/log"
 
 // This function never executes, but it serves as a simple test for the program.
 // Test with (cd ..; go test).
-func WriteTests() {
-	log.Write(nil, "k", "v")       // ok
-	log.Write(nil)                 // zero is ok too
-	log.Write(nil, []int{0}...)    // any 'arg...' is ok too
-	log.Write(nil, "k")            // ERROR "odd number of arguments in call to log.Write"
-	log.Write(nil, "k", "v", "k2") // ERROR "odd number of arguments in call to log.Write"
+func PrintkvTests() {
+	log.Printkv(nil, "k", "v")            // ok
+	log.Printkv(nil)                      // zero is ok too
+	log.Printkv(nil, []interface{}{0}...) // any 'arg...' is ok too
+	log.Printkv(nil, "k")                 // ERROR "odd number of arguments in call to log.Printkv"
+	log.Printkv(nil, "k", "v", "k2")      // ERROR "odd number of arguments in call to log.Printkv"
 
 	var log writer
-	log.Write(nil, "k", "v")       // ok
-	log.Write(nil)                 // zero is ok too
-	log.Write(nil, "k")            // ok, log is not the package
-	log.Write(nil, "k", "v", "k2") // ok, log is not the package
+	log.Printkv(nil, "k", "v")       // ok
+	log.Printkv(nil)                 // zero is ok too
+	log.Printkv(nil, "k")            // ok, log is not the package
+	log.Printkv(nil, "k", "v", "k2") // ok, log is not the package
 }
 
 type writer struct{}
 
-func (w writer) Write(interface{}, ...interface{}) {}
+func (w writer) Printkv(interface{}, ...interface{}) {}

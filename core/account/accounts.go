@@ -70,7 +70,7 @@ func (m *Manager) ExpireReservations(ctx context.Context, period time.Duration) 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Messagef(ctx, "Deposed, ExpireReservations exiting")
+			log.Printf(ctx, "Deposed, ExpireReservations exiting")
 			return
 		case <-ticks:
 			err := m.utxoDB.ExpireReservations(ctx)

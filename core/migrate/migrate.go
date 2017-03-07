@@ -49,7 +49,7 @@ func Run(db pg.DB) error {
 			return err
 		}
 
-		log.Write(ctx, "migration", m.Name, "status", "success")
+		log.Printkv(ctx, "migration", m.Name, "status", "success")
 	}
 	return nil
 }
@@ -98,7 +98,7 @@ func loadStatus(db pg.DB, ms []migration) error {
 	var n int
 	err := db.QueryRow(ctx, q).Scan(&n)
 	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
+		log.Fatalkv(ctx, log.KeyError, err)
 	}
 	if n == 0 {
 		return nil // no schema; nothing has been applied

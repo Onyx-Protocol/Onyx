@@ -146,26 +146,26 @@ func runServer() {
 	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("hapg", *dbURL)
 	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 	db.SetMaxOpenConns(*maxDBConns)
 	db.SetMaxIdleConns(*maxDBConns)
 
 	err = migrate.Run(db)
 	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 	resetInDevIfRequested(db)
 
 	conf, err := config.Load(ctx, db)
 	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
 	// Initialize internode rpc clients.
 	hostname, err := os.Hostname()
 	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 	processID := fmt.Sprintf("chain-%s-%d", hostname, os.Getpid())
 	if conf != nil {
@@ -193,7 +193,7 @@ func runServer() {
 	// ListenAndServe call, then log a welcome message.
 	go func() {
 		time.Sleep(time.Second)
-		chainlog.Messagef(ctx, "Chain Core online and listening at %s", *listenAddr)
+		chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
 	}()
 
 	server := &http.Server{
@@ -209,7 +209,7 @@ func runServer() {
 	if *tlsCrt != "" {
 		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
+			chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
 		}
 
 		server.TLSConfig = &tls.Config{
@@ -217,12 +217,12 @@ func runServer() {
 		}
 		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
+			chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
 		}
 	} else {
 		err = server.ListenAndServe()
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
+			chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
 		}
 	}
 }
@@ -231,12 +231,12 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	// Initialize the protocol.Chain.
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 	store := txdb.NewStore(db)
 	c, err := protocol.NewChain(ctx, conf.BlockchainID, store, heights)
 	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
 	var generatorSigners []generator.BlockSigner
@@ -244,7 +244,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	if conf.IsSigner {
 		blockPub, err := hex.DecodeString(conf.BlockPub)
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
 
 		var hsm blocksigner.Signer
@@ -262,7 +262,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		} else {
 			hsm, err = devHSM(db)
 			if err != nil {
-				chainlog.Fatal(ctx, chainlog.KeyError, err)
+				chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 			}
 		}
 		s := blocksigner.New(blockPub, hsm, db, c)
@@ -271,7 +271,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
 			sig, err := s.ValidateAndSignBlock(ctx, b)
 			if errors.Root(err) == blocksigner.ErrInvalidKey {
-				chainlog.Fatal(ctx, chainlog.KeyError, err)
+				chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 			}
 			return sig, err
 		}
@@ -305,7 +305,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 	pinStore := pin.NewStore(db)
 	err = pinStore.LoadAll(ctx)
 	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 	// Start listeners
 	go pinStore.Listen(ctx, account.PinName, *dbURL)
@@ -382,7 +382,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		// for recovering after the previous leader's exit.
 		recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
 
 		// Create all of the block processor pins.
@@ -392,23 +392,23 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 		}
 		err = pinStore.CreatePin(ctx, account.PinName, pinHeight)
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
 		err = pinStore.CreatePin(ctx, account.ExpirePinName, pinHeight)
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
 		err = pinStore.CreatePin(ctx, account.DeleteSpentsPinName, pinHeight)
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
 		err = pinStore.CreatePin(ctx, asset.PinName, pinHeight)
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
 		err = pinStore.CreatePin(ctx, query.TxPinName, pinHeight)
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
 
 		if conf.IsGenerator {
@@ -432,7 +432,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 }
 
 func launchUnconfiguredCore(ctx context.Context, db pg.DB) http.Handler {
-	chainlog.Messagef(ctx, "Launching as unconfigured Core.")
+	chainlog.Printf(ctx, "Launching as unconfigured Core.")
 	return core.Handler(&core.API{
 		DB:           db,
 		AltAuth:      authLoopbackInDev,
@@ -465,10 +465,10 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 	for _, signer := range conf.Signers {
 		u, err := url.Parse(signer.URL)
 		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
 		if len(signer.Pubkey) != ed25519.PublicKeySize {
-			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err), "at", "decoding signer public key")
+			chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err), "at", "decoding signer public key")
 		}
 		client := &rpc.Client{
 			BaseURL:      u.String(),

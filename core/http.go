@@ -49,7 +49,7 @@ func logHTTPError(ctx context.Context, err error) {
 	if info.HTTPStatus == 500 {
 		keyvals = append(keyvals, log.KeyStack, errors.Stack(err))
 	}
-	log.Write(ctx, keyvals...)
+	log.Printkv(ctx, keyvals...)
 }
 
 func alwaysError(err error) http.Handler {

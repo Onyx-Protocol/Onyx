@@ -46,17 +46,17 @@ func Run(db *sql.DB, addr string, lead func(context.Context)) {
 		lead:    lead,
 		address: addr,
 	}
-	log.Messagef(ctx, "Using leaderKey: %q", l.key)
+	log.Printf(ctx, "Using leaderKey: %q", l.key)
 
 	var leadCtx context.Context
 	var cancel func()
 	for leader := range leadershipChanges(ctx, l) {
 		if leader {
-			log.Messagef(ctx, "I am the core leader")
+			log.Printf(ctx, "I am the core leader")
 			leadCtx, cancel = context.WithCancel(ctx)
 			l.lead(leadCtx)
 		} else {
-			log.Messagef(ctx, "No longer core leader")
+			log.Printf(ctx, "No longer core leader")
 			cancel()
 		}
 

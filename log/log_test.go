@@ -16,7 +16,7 @@ func TestSetOutput(t *testing.T) {
 	var buf bytes.Buffer
 	want := "foobar"
 	SetOutput(&buf)
-	Messagef(context.Background(), want)
+	Printf(context.Background(), want)
 	SetOutput(os.Stdout)
 	got := buf.String()
 	if !strings.Contains(got, want) {
@@ -28,7 +28,7 @@ func TestPrefix(t *testing.T) {
 	buf := new(bytes.Buffer)
 	SetOutput(buf)
 	SetPrefix("foo", "bar")
-	Write(context.Background(), "baz", 1)
+	Printkv(context.Background(), "baz", 1)
 	SetOutput(os.Stdout)
 
 	got := buf.String()
@@ -101,7 +101,7 @@ func TestWrite(t *testing.T) {
 		buf := new(bytes.Buffer)
 		SetOutput(buf)
 
-		Write(context.Background(), ex.keyvals...)
+		Printkv(context.Background(), ex.keyvals...)
 
 		read, err := ioutil.ReadAll(buf)
 		if err != nil {
@@ -129,7 +129,7 @@ func TestWriteRequestID(t *testing.T) {
 	SetOutput(buf)
 	defer SetOutput(os.Stdout)
 
-	Write(reqid.NewContext(context.Background(), "example-request-id"))
+	Printkv(reqid.NewContext(context.Background(), "example-request-id"))
 
 	read, err := ioutil.ReadAll(buf)
 	if err != nil {
@@ -149,7 +149,7 @@ func TestMessagef(t *testing.T) {
 	SetOutput(buf)
 	defer SetOutput(os.Stdout)
 
-	Messagef(context.Background(), "test round %d", 0)
+	Printf(context.Background(), "test round %d", 0)
 
 	read, err := ioutil.ReadAll(buf)
 	if err != nil {
@@ -176,7 +176,7 @@ func TestWriteStack(t *testing.T) {
 
 	root := errors.New("boo")
 	wrapped := errors.Wrap(root)
-	Write(context.Background(), KeyError, wrapped)
+	Printkv(context.Background(), KeyError, wrapped)
 
 	read, err := ioutil.ReadAll(buf)
 	if err != nil {
@@ -239,7 +239,7 @@ func TestRawStack(t *testing.T) {
 	defer SetOutput(os.Stdout)
 
 	stack := []byte("this\nis\na\nraw\nstack")
-	Write(context.Background(), "message", "foo", "stack", stack)
+	Printkv(context.Background(), "message", "foo", "stack", stack)
 
 	got := buf.String()
 	if !strings.HasSuffix(got, "\n"+string(stack)+"\n") {

@@ -52,12 +52,12 @@ func main() {
 
 	u, err := url.Parse(*target)
 	if err != nil {
-		log.Fatal(context.Background(), log.KeyError, err)
+		log.Fatalkv(context.Background(), log.KeyError, err)
 	}
 
 	db, err := sql.Open("postgres", *dbURL)
 	if err != nil {
-		log.Fatal(context.Background(), log.KeyError, err)
+		log.Fatalkv(context.Background(), log.KeyError, err)
 	}
 
 	peer := &rpc.Client{
@@ -75,7 +75,7 @@ func main() {
 		id, err = getBlockchainID(peer)
 	}
 	if err != nil {
-		log.Fatal(context.Background(), log.KeyError, err)
+		log.Fatalkv(context.Background(), log.KeyError, err)
 	}
 
 	peer.BlockchainID = id
@@ -122,7 +122,7 @@ func main() {
 	if *tlsCrt != "" {
 		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
 		if err != nil {
-			log.Fatal(context.Background(), log.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
+			log.Fatalkv(context.Background(), log.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
 		}
 
 		server := &http.Server{
@@ -255,14 +255,14 @@ func cacheBlocks(cache *blockCache, peer *rpc.Client) {
 				peer.BlockchainID = "" // prevent ErrWrongNetwork
 				peer.BlockchainID, err = getBlockchainID(peer)
 				if err != nil {
-					log.Fatal(ctx, log.KeyError, err)
+					log.Fatalkv(ctx, log.KeyError, err)
 				}
 				height = 1
 
 				ctx, cancel = context.WithCancel(context.Background())
 				blocks, errs = fetch.DownloadBlocks(ctx, peer, height)
 			} else {
-				log.Fatal(ctx, log.KeyError, err)
+				log.Fatalkv(ctx, log.KeyError, err)
 			}
 		}
 	}
