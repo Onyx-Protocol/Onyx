@@ -178,7 +178,7 @@ An [Entry](#entry) uses a ValueSource to refer to other [Entries](#entry) that p
 
 Field            | Type                        | Description
 -----------------|-----------------------------|----------------
-Ref              | [Pointer](#pointer)<[Issuance](#issuance)\|[Spend](#spend)\|[Mux](#mux)> | Previous entry referenced by this ValueSource.
+Ref              | [Pointer](#pointer)\<[Issuance](#issuance)\|[Spend](#spend)\|[Mux](#mux)\> | Previous entry referenced by this ValueSource.
 Value            | [AssetAmount](#assetamount) | Amount and Asset ID contained in the referenced entry.
 Position         | [Integer](#integer)         | Iff this source refers to a [Mux](#mux) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance) or [Spend](#spend) entry, then the `Position` must be 0.
 
@@ -204,7 +204,7 @@ An Entry uses a ValueDestination to refer to other entries that receive value fr
 
 Field            | Type                           | Description
 -----------------|--------------------------------|----------------
-Ref              | Pointer<Output\|Retirement\|Mux> | Next entry referenced by this ValueSource.
+Ref              | Pointer\<Output\|Retirement\|Mux\> | Next entry referenced by this ValueSource.
 Value            | AssetAmount                    | Amount and Asset ID contained in the referenced entry
 Position         | Integer                        | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
 
@@ -268,7 +268,7 @@ Witness             | Struct               | See below.
 Field      | Type                                          | Description
 -----------|-----------------------------------------------|-------------------------
 Version    | Integer                                       | Transaction version, equals 1.
-Results    | List<Pointer<Output|Retirement>>              | A list of pointers to Outputs or Retirements. This list must contain at least one item.
+Results    | List\<Pointer\<Output\|Retirement\>\>              | A list of pointers to Outputs or Retirements. This list must contain at least one item.
 Data       | Hash                                          | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
 Mintime    | Integer                                       | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
 Maxtime    | Integer                                       | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
