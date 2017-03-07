@@ -8,26 +8,17 @@ import (
 )
 
 func BenchmarkEntryID(b *testing.B) {
+	m := newMux(program{Code: []byte{1}, VMVersion: 1})
+	m.addSourceID(bc.Hash{}, bc.AssetAmount{}, 1)
+
 	entries := []entry{
-		newIssuance(bc.Hash{}, bc.AssetAmount{}, bc.Hash{}, 0),
-		newHeader(1, []bc.Hash{{}}, bc.Hash{}, uint64(time.Now().Unix()), uint64(time.Now().Unix())),
-		newMux([]valueSource{{
-			Ref:      bc.Hash{},
-			Value:    bc.AssetAmount{},
-			Position: 1,
-		}}, program{Code: []byte{1}, VMVersion: 1}),
-		newNonce(program{Code: []byte{1}, VMVersion: 1}, bc.Hash{}),
-		newOutput(valueSource{
-			Ref:      bc.Hash{},
-			Value:    bc.AssetAmount{},
-			Position: 1,
-		}, program{Code: []byte{1}, VMVersion: 1}, bc.Hash{}, 0),
-		newRetirement(valueSource{
-			Ref:      bc.Hash{},
-			Value:    bc.AssetAmount{},
-			Position: 1,
-		}, bc.Hash{}, 1),
-		newSpend(bc.Hash{}, bc.Hash{}, 0),
+		newIssuance(nil, bc.AssetAmount{}, bc.Hash{}, 0),
+		newHeader(1, nil, bc.Hash{}, uint64(time.Now().Unix()), uint64(time.Now().Unix())),
+		m,
+		newNonce(program{Code: []byte{1}, VMVersion: 1}, nil),
+		newOutput(program{Code: []byte{1}, VMVersion: 1}, bc.Hash{}, 0),
+		newRetirement(bc.Hash{}, 1),
+		newSpend(newOutput(program{Code: []byte{1}, VMVersion: 1}, bc.Hash{}, 0), bc.Hash{}, 0),
 	}
 
 	for _, e := range entries {

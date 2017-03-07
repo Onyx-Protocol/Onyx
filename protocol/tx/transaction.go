@@ -25,11 +25,8 @@ func ComputeOutputID(sc *bc.SpendCommitment) (h bc.Hash, err error) {
 			err = r
 		}
 	}()
-	o := newOutput(valueSource{
-		Ref:      sc.SourceID,
-		Value:    sc.AssetAmount,
-		Position: sc.SourcePosition,
-	}, program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
+	o := newOutput(program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
+	o.setSourceID(sc.SourceID, sc.AssetAmount, sc.SourcePosition)
 
 	h = entryID(o)
 	return h, nil
@@ -37,13 +34,19 @@ func ComputeOutputID(sc *bc.SpendCommitment) (h bc.Hash, err error) {
 
 // TxHashes returns all hashes needed for validation and state updates.
 func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
+	defer func() {
+		if r, ok := recover().(error); ok {
+			err = r
+		}
+	}()
+
 	txid, header, entries, err := mapTx(oldTx)
 	if err != nil {
 		return nil, errors.Wrap(err, "mapping old transaction to new")
 	}
 
 	hashes = new(bc.TxHashes)
-	hashes.ID = bc.Hash(txid)
+	hashes.ID = txid
 
 	// Results
 	hashes.Results = make([]bc.ResultInfo, len(header.body.Results))
@@ -76,16 +79,16 @@ func TxHashes(oldTx *bc.TxData) (hashes *bc.TxHashes, err error) {
 			iss := struct {
 				ID           bc.Hash
 				ExpirationMS uint64
-			}{bc.Hash(entryID), tr.body.MaxTimeMS}
+			}{entryID, tr.body.MaxTimeMS}
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *issuance:
-			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.Data, ent.body.Data)
+			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
 			vmc.NonceID = (*bc.Hash)(&ent.body.Anchor)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 
 		case *spend:
-			vmc := newVMContext(bc.Hash(entryID), hashes.ID, header.body.Data, ent.body.Data)
+			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
 			vmc.OutputID = (*bc.Hash)(&ent.body.SpentOutput)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 			hashes.SpentOutputIDs[ent.Ordinal()] = ent.body.SpentOutput

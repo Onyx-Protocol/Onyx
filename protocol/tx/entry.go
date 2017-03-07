@@ -25,13 +25,17 @@ type entry interface {
 
 var errInvalidValue = errors.New("invalid value")
 
-func entryID(e entry) bc.Hash {
-	h := sha3pool.Get256()
-	defer sha3pool.Put256(h)
+func entryID(e entry) (hash bc.Hash) {
+	if e == nil {
+		return hash
+	}
 
-	h.Write([]byte("entryid:"))
-	h.Write([]byte(e.Type()))
-	h.Write([]byte{':'})
+	hasher := sha3pool.Get256()
+	defer sha3pool.Put256(hasher)
+
+	hasher.Write([]byte("entryid:"))
+	hasher.Write([]byte(e.Type()))
+	hasher.Write([]byte{':'})
 
 	bh := sha3pool.Get256()
 	defer sha3pool.Put256(bh)
@@ -41,11 +45,9 @@ func entryID(e entry) bc.Hash {
 	}
 	var innerHash bc.Hash
 	bh.Read(innerHash[:])
-	h.Write(innerHash[:])
+	hasher.Write(innerHash[:])
 
-	var hash bc.Hash
-	h.Read(hash[:])
-
+	hasher.Read(hash[:])
 	return hash
 }
 
