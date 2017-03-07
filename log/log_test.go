@@ -43,7 +43,7 @@ func TestPrefix(t *testing.T) {
 	}
 }
 
-func TestWrite(t *testing.T) {
+func TestPrintkv(t *testing.T) {
 	examples := []struct {
 		keyvals []interface{}
 		want    []string
@@ -124,7 +124,7 @@ func TestWrite(t *testing.T) {
 	}
 }
 
-func TestWriteRequestID(t *testing.T) {
+func TestPrintkvRequestID(t *testing.T) {
 	buf := new(bytes.Buffer)
 	SetOutput(buf)
 	defer SetOutput(os.Stdout)
@@ -169,7 +169,7 @@ func TestMessagef(t *testing.T) {
 	}
 }
 
-func TestWriteStack(t *testing.T) {
+func TestPrintkvStack(t *testing.T) {
 	buf := new(bytes.Buffer)
 	SetOutput(buf)
 	defer SetOutput(os.Stdout)
@@ -189,7 +189,7 @@ func TestWriteStack(t *testing.T) {
 		"error=boo",
 
 		// stack trace
-		"TestWriteStack\n",
+		"TestPrintkvStack\n",
 		"/go/",
 	}
 
