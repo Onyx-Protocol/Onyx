@@ -1110,16 +1110,24 @@ Code  | Stack Diagram                                        | Cost
 2. Fails if `index` is negative or not a valid [number](#vm-number).
 3. Fails if the number of outputs is less or equal to `index`.
 4. Fails if `amount` and `version` are not non-negative [numbers](#vm-number).
-5. Finds a transaction output at the given `index`.
-6. If the output satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
-    1. control program equals `prog`,
-    2. VM version equals `version`,
-    3. asset ID equals `assetid`,
-    4. amount equals `amount`,
-    5. `datahash` is an empty string or it matches the [SHA3-256](data.md#sha3) hash of the reference data.
+5. If the current entry is a [Mux](entries.md#mux):
+    1. Finds a [destination entry](entries.md#valuedestination) at the given `index`.
+    2. If the entry satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
+        1. the destination entry is an [output](entries.md#output-1) or a [retirement](entries.md#retirement-1),
+        2. if the destination is an output: control program equals `prog` and VM version equals `version`,
+        3. if the destination is a retirement: `prog` is an empty string and `version` is zero,
+        4. asset ID equals `assetid`,
+        5. amount equals `amount`,
+        6. `datahash` is an empty string or it matches the [SHA3-256](data.md#sha3) hash of the data.
+5. If the entry is an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1):
+    1. If the [destination entry](entries.md#valuedestination) is a [Mux](entries.md#mux), performs checks as described in the step 5.
+    2. If the [destination entry](entries.md#valuedestination) is an [output](entries.md#output-1) or a [retirement](entries.md#retirement-1):
+        1. If `index` is not zero, pushes [false](#vm-boolean) on the data stack.
+        2. Otherwise, performs checks as described in the step 5.2.
 
 Fails if executed in the [block context](#block-context).
 
+Fails if the entry is not a [mux](entries.md#mux), an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
 
 #### ASSET
 
@@ -1127,23 +1135,25 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc2  | (∅ → assetid)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the asset ID assigned to the current entry on the data stack.
+Pushes the asset ID assigned to the current entry on the data stack. 
+For the [nonce](entries.md#nonce) entry, the asset ID of the referenced [issuance](entries.md#issuance-1) is used.
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the entry is not an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
+Fails if the entry is not a [nonce](entries.md#nonce), an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
 
 #### AMOUNT
 
 Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
-0xc3  | (∅ → amount)    | 1; [standard memory cost](#standard-memory-cost)
+0xc3  | (∅ → amount)   | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes the amount assigned to the current entry on the data stack.
+For the [nonce](entries.md#nonce) entry, the amount of the referenced [issuance](entries.md#issuance-1) is used.
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the entry is not an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
+Fails if the entry is not a [nonce](entries.md#nonce), an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
 
 
 #### PROGRAM
