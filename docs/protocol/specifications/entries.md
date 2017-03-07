@@ -336,17 +336,13 @@ Type                | String               | "spend1"
 Body                | Struct               | See below.
 Witness             | Struct               | See below.
 
-#### Spend Body
-
-Field               | Type                 | Description
+Body field          | Type                 | Description
 --------------------|----------------------|----------------
 SpentOutput         | Pointer<Output>      | The Output entry consumed by this spend.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
-#### Spend Witness
-
-Field               | Type                 | Description
+Witness field       | Type                 | Description
 --------------------|----------------------|----------------
 Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output entry, or to a Mux, which points to Output entries via its own Destinations.
 Arguments           | List<String>         | Arguments for the control program contained in the SpentOutput.
@@ -367,18 +363,14 @@ Type                | String               | "issuance1"
 Body                | Struct               | See below.
 Witness             | Struct               | See below.
 
-#### Issuance Body
-
-Field               | Type                 | Description
+Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
 Value               | AssetAmount          | Asset ID and amount being issued.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
-#### Issuance Witness
-
-Field               | Type                                      | Description
+Witness field       | Type                                      | Description
 --------------------|-------------------------------------------|----------------
 Destination         | ValueDestination                          | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
 AssetDefinition     | [Asset Definition](#asset-definition)     | Asset definition for the asset being issued.
@@ -386,7 +378,7 @@ Arguments           | List<String>                              | Arguments for 
 
 #### Issuance Validation
 
-1. Verify that `AssetDefinition` hashes to `Value.AssetID`.
+1. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
 2. [Validate](#program-validation) `AssetDefinition.Program` with the given `Arguments`.
 3. Verify that `Anchor` is present and valid.
 4. [Validate](#valuedestination-validation) `Destination`.
@@ -399,17 +391,13 @@ Type                | String               | "nonce"
 Body                | Struct               | See below.
 Witness             | Struct               | See below.
 
-#### Nonce Body
-
-Field               | Type                 | Description
+Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Program             | Program              | A program that protects the nonce against replay and must evaluate to true.
 Time Range          | Pointer<TimeRange>   | Reference to a TimeRange entry.
 ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
-#### Nonce Witness
-
-Field               | Type                         | Description
+Witness field       | Type                         | Description
 --------------------|------------------------------|----------------
 Arguments           | List<String>                 | Arguments for the program contained in the Nonce.
 Issuance            | Pointer<Issuance>            | Pointer to an issuance entry.
@@ -428,7 +416,7 @@ Type                | String               | "timerange"
 Body                | Struct               | See below.
 Witness             | Struct               | Empty struct.
 
-Body Field          | Type                 | Description
+Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Mintime             | Integer              | Minimum time for this transaction.
 Maxtime             | Integer              | Maximum time for this transaction.
@@ -436,8 +424,8 @@ ExtHash             | Hash                 | If the transaction version is known
 
 #### TimeRange Validation
 
-1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the transaction header.
-2. Verify that `Maxtime` is either zero, or is equal to or greater than the `Maxtime` specified in the transaction header.
+1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the [transaction header](#txheader).
+2. Verify that `Maxtime` is either zero, or is equal to or greater than the `Maxtime` specified in the [transaction header](#txheader).
 
 ### Mux 1
 
@@ -447,13 +435,13 @@ Type                | String               | "mux1"
 Body                | Struct               | See below.
 Witness             | Struct               | See below.
 
-Body Field          | Type                 | Description
+Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Sources             | List<ValueSource>    | The source of the units to be included in this Mux.
 Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
 ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
-Witness Field       | Type                       | Description
+Witness field       | Type                       | Description
 --------------------|----------------------------|----------------
 Destinations        | List<ValueDestination>     | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
 Arguments           | String                     | Arguments for the program contained in the Nonce.
