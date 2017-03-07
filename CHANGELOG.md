@@ -10,12 +10,18 @@ For updates to subpackages, see below:
 - [Node.js SDK](./sdk/node/CHANGELOG.md)
 - [Ruby SDK](./sdk/ruby/CHANGELOG.md)
 
-<a name="1.1.2"></a>
-## 1.1.2 (March 7, 2017)
+<a name="1.1.3"></a>
+## 1.1.3 (March 7, 2017)
 
+* Resolved issue preventing the creation of valid multisig transactions.
 * The network version has been updated to **3**. Chain Core instances on the same network must share the same network version. If you're upgrading to version 1.1.2, make sure to upgrade all Chain Cores in your blockchain network. This version change is due to ([#648](https://github.com/chain/chain/issues/648)), which was resolved in version 1.1.1.
 * Resolved issue where some transaction inputs were not correctly annotated with account information ([#668](https://github.com/chain/chain/issues/668)).
 * Dashboard cosmetic changes.
+
+<a name="1.1.2"></a>
+## 1.1.2 (Unreleased)
+
+* Version 1.1.2 was not released.
 
 <a name="1.1.1"></a>
 ## 1.1.1 (March 3, 2017)
