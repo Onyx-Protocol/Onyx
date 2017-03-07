@@ -333,10 +333,7 @@ ExtHash             | Hash                 | If the transaction version is known
 
 #### Output Validation
 
-1. [Validate value flow](#value-flow-validation) to this output’s `Source`:
-    * `source`: this output’s `Source`.
-    * `receiver`: this output.
-    * `source index`: 0.
+1. [Validate](#valuesource-validation) `Source`.
 
 
 
@@ -356,11 +353,8 @@ ExtHash             | Hash                 | If the transaction version is known
 
 #### Retirement Validation
 
-1. [Validate value flow](#value-flow-validation) to this output’s `Source`:
-    * `source`: this retirement’s `Source`.
-    * `receiver`: this retirement.
-    * `source index`: 0.
-    
+1. [Validate](#valuesource-validation) `Source`.
+
 
 ### Spend 1
 
@@ -385,7 +379,8 @@ Arguments           | List<String>         | Arguments for the control program c
 
 1. Verify that `SpentOutput` is present in the transaction, but do not validate it.
 2. [Validate program](#program-validation) `SpentOutput.ControlProgram` with the given `Arguments`.
-3. Verify that `Destination.Value` is equal to `SpentOutput.Value`.
+3. Verify that `SpentOutput.Value` is equal to `Destination.Value`.
+4. [Validate](#valuedestination-validation) `Destination`.
 
 
 ### Issuance 1
@@ -413,8 +408,8 @@ Arguments           | List<String>                              | Arguments for 
 
 1. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
 2. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments`.
-3. Verify that `Anchor` is present and valid.
-4. Verify that `Destination.Value` is equal to `Value`.
+3. Verify that `Anchor` entry is present and valid.
+4. [Validate](#valuedestination-validation) `Destination`.
 
 
 ### Nonce  
