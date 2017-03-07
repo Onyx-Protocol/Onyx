@@ -10,7 +10,7 @@ import (
 	"chain/errors"
 )
 
-type entry interface {
+type Entry interface {
 	Type() string
 	Body() interface{}
 
@@ -24,7 +24,7 @@ type entry interface {
 
 var errInvalidValue = errors.New("invalid value")
 
-func entryID(e entry) (hash Hash) {
+func EntryID(e Entry) (hash Hash) {
 	if e == nil {
 		return hash
 	}

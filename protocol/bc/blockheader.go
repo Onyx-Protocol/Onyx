@@ -1,6 +1,6 @@
 package bc
 
-type blockHeader struct {
+type BlockHeaderEntry struct {
 	body struct {
 		Version              uint64
 		Height               uint64
@@ -13,13 +13,13 @@ type blockHeader struct {
 	}
 }
 
-func (blockHeader) Type() string          { return "blockheader" }
-func (bh *blockHeader) Body() interface{} { return bh.body }
+func (BlockHeaderEntry) Type() string          { return "blockheader" }
+func (bh *BlockHeaderEntry) Body() interface{} { return bh.body }
 
-func (blockHeader) Ordinal() int { return -1 }
+func (BlockHeaderEntry) Ordinal() int { return -1 }
 
-func newBlockHeader(version, height uint64, previousBlockID Hash, timestampMS uint64, transactionsRoot, assetsRoot Hash, nextConsensusProgram []byte) *blockHeader {
-	bh := new(blockHeader)
+func newBlockHeader(version, height uint64, previousBlockID Hash, timestampMS uint64, transactionsRoot, assetsRoot Hash, nextConsensusProgram []byte) *BlockHeaderEntry {
+	bh := new(BlockHeaderEntry)
 	bh.body.Version = version
 	bh.body.Height = height
 	bh.body.PreviousBlockID = previousBlockID

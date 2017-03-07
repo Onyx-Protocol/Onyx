@@ -1,34 +1,34 @@
 package bc
 
-type mux struct {
+type Mux struct {
 	body struct {
 		Sources []valueSource
-		Program program
+		Program Program
 		ExtHash Hash
 	}
 
 	// Sources contains (pointers to) the manifested entries for each
 	// body.Sources[i].Ref.
-	Sources []entry // each entry is *issuance, *spend, or *mux
+	Sources []Entry // each entry is *issuance, *spend, or *mux
 }
 
-func (mux) Type() string         { return "mux1" }
-func (m *mux) Body() interface{} { return m.body }
+func (Mux) Type() string         { return "mux1" }
+func (m *Mux) Body() interface{} { return m.body }
 
-func (mux) Ordinal() int { return -1 }
+func (Mux) Ordinal() int { return -1 }
 
-func newMux(program program) *mux {
-	m := new(mux)
+func newMux(program Program) *Mux {
+	m := new(Mux)
 	m.body.Program = program
 	return m
 }
 
-func (m *mux) addSource(e entry, value AssetAmount, position uint64) {
-	m.addSourceID(entryID(e), value, position)
+func (m *Mux) addSource(e Entry, value AssetAmount, position uint64) {
+	m.addSourceID(EntryID(e), value, position)
 	m.Sources[len(m.Sources)-1] = e
 }
 
-func (m *mux) addSourceID(sourceID Hash, value AssetAmount, position uint64) {
+func (m *Mux) addSourceID(sourceID Hash, value AssetAmount, position uint64) {
 	src := valueSource{
 		Ref:      sourceID,
 		Value:    value,

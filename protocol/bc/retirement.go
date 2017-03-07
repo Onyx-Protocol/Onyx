@@ -1,6 +1,6 @@
 package bc
 
-type retirement struct {
+type Retirement struct {
 	body struct {
 		Source  valueSource
 		Data    Hash
@@ -10,27 +10,27 @@ type retirement struct {
 
 	// Source contains (a pointer to) the manifested entry corresponding
 	// to body.Source.
-	Source entry // *issuance, *spend, or *mux
+	Source Entry // *issuance, *spend, or *mux
 }
 
-func (retirement) Type() string         { return "retirement1" }
-func (r *retirement) Body() interface{} { return r.body }
+func (Retirement) Type() string         { return "retirement1" }
+func (r *Retirement) Body() interface{} { return r.body }
 
-func (r retirement) Ordinal() int { return r.ordinal }
+func (r Retirement) Ordinal() int { return r.ordinal }
 
-func newRetirement(data Hash, ordinal int) *retirement {
-	r := new(retirement)
+func newRetirement(data Hash, ordinal int) *Retirement {
+	r := new(Retirement)
 	r.body.Data = data
 	r.ordinal = ordinal
 	return r
 }
 
-func (r *retirement) setSource(e entry, value AssetAmount, position uint64) {
-	r.setSourceID(entryID(e), value, position)
+func (r *Retirement) setSource(e Entry, value AssetAmount, position uint64) {
+	r.setSourceID(EntryID(e), value, position)
 	r.Source = e
 }
 
-func (r *retirement) setSourceID(sourceID Hash, value AssetAmount, position uint64) {
+func (r *Retirement) setSourceID(sourceID Hash, value AssetAmount, position uint64) {
 	r.body.Source = valueSource{
 		Ref:      sourceID,
 		Value:    value,

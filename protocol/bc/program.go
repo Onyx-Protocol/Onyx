@@ -1,6 +1,6 @@
 package bc
 
-type program struct {
+type Program struct {
 	VMVersion uint64
 	Code      []byte
 }

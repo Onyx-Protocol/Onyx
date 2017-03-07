@@ -1,6 +1,6 @@
 package bc
 
-type spend struct {
+type Spend struct {
 	body struct {
 		SpentOutput Hash // the hash of an output entry
 		Data        Hash
@@ -10,17 +10,17 @@ type spend struct {
 
 	// SpentOutput contains (a pointer to) the manifested entry
 	// corresponding to body.SpentOutput.
-	SpentOutput *output
+	SpentOutput *Output
 }
 
-func (spend) Type() string         { return "spend1" }
-func (s *spend) Body() interface{} { return s.body }
+func (Spend) Type() string         { return "spend1" }
+func (s *Spend) Body() interface{} { return s.body }
 
-func (s spend) Ordinal() int { return s.ordinal }
+func (s Spend) Ordinal() int { return s.ordinal }
 
-func newSpend(out *output, data Hash, ordinal int) *spend {
-	s := new(spend)
-	s.body.SpentOutput = entryID(out)
+func newSpend(out *Output, data Hash, ordinal int) *Spend {
+	s := new(Spend)
+	s.body.SpentOutput = EntryID(out)
 	s.body.Data = data
 	s.ordinal = ordinal
 	s.SpentOutput = out

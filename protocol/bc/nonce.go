@@ -1,26 +1,26 @@
 package bc
 
-type nonce struct {
+type Nonce struct {
 	body struct {
-		Program   program
+		Program   Program
 		TimeRange Hash
 		ExtHash   Hash
 	}
 
 	// TimeRange contains (a pointer to) the manifested entry
 	// corresponding to body.TimeRange.
-	TimeRange *timeRange
+	TimeRange *TimeRange
 }
 
-func (nonce) Type() string         { return "nonce1" }
-func (n *nonce) Body() interface{} { return n.body }
+func (Nonce) Type() string         { return "nonce1" }
+func (n *Nonce) Body() interface{} { return n.body }
 
-func (nonce) Ordinal() int { return -1 }
+func (Nonce) Ordinal() int { return -1 }
 
-func newNonce(p program, tr *timeRange) *nonce {
-	n := new(nonce)
+func newNonce(p Program, tr *TimeRange) *Nonce {
+	n := new(Nonce)
 	n.body.Program = p
-	n.body.TimeRange = entryID(tr)
+	n.body.TimeRange = EntryID(tr)
 	n.TimeRange = tr
 	return n
 }

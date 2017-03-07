@@ -15,10 +15,10 @@ func ComputeOutputID(sc *SpendCommitment) (h Hash, err error) {
 			err = r
 		}
 	}()
-	o := newOutput(program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
+	o := newOutput(Program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
 	o.setSourceID(sc.SourceID, sc.AssetAmount, sc.SourcePosition)
 
-	h = entryID(o)
+	h = EntryID(o)
 	return h, nil
 }
 
@@ -43,7 +43,7 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 	for i, resultHash := range header.body.Results {
 		hashes.Results[i].ID = resultHash
 		entry := entries[resultHash]
-		if out, ok := entry.(*output); ok {
+		if out, ok := entry.(*Output); ok {
 			hashes.Results[i].SourceID = out.body.Source.Ref
 			hashes.Results[i].SourcePos = out.body.Source.Position
 			hashes.Results[i].RefDataHash = out.body.Data
@@ -55,14 +55,14 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 
 	for entryID, ent := range entries {
 		switch ent := ent.(type) {
-		case *nonce:
+		case *Nonce:
 			// TODO: check time range is within network-defined limits
 			trID := ent.body.TimeRange
 			trEntry, ok := entries[trID]
 			if !ok {
 				return nil, fmt.Errorf("nonce entry refers to nonexistent timerange entry")
 			}
-			tr, ok := trEntry.(*timeRange)
+			tr, ok := trEntry.(*TimeRange)
 			if !ok {
 				return nil, fmt.Errorf("nonce entry refers to %s entry, should be timerange", trEntry.Type())
 			}
@@ -72,12 +72,12 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 			}{entryID, tr.body.MaxTimeMS}
 			hashes.Issuances = append(hashes.Issuances, iss)
 
-		case *issuance:
+		case *Issuance:
 			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
 			vmc.NonceID = (*Hash)(&ent.body.Anchor)
 			hashes.VMContexts[ent.Ordinal()] = vmc
 
-		case *spend:
+		case *Spend:
 			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
 			vmc.OutputID = (*Hash)(&ent.body.SpentOutput)
 			hashes.VMContexts[ent.Ordinal()] = vmc

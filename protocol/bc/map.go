@@ -8,16 +8,16 @@ import (
 	"chain/errors"
 )
 
-func mapTx(tx *TxData) (headerID Hash, hdr *header, entryMap map[Hash]entry, err error) {
-	entryMap = make(map[Hash]entry)
+func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, err error) {
+	entryMap = make(map[Hash]Entry)
 
-	addEntry := func(e entry) (id Hash, err error) {
+	addEntry := func(e Entry) (id Hash, err error) {
 		defer func() {
 			if pErr, ok := recover().(error); ok {
 				err = pErr
 			}
 		}()
-		id = entryID(e)
+		id = EntryID(e)
 		entryMap[id] = e
 		return id, err
 	}
@@ -26,12 +26,12 @@ func mapTx(tx *TxData) (headerID Hash, hdr *header, entryMap map[Hash]entry, err
 	// issuances.  Do spends first so the entry ID of the first spend is
 	// available in case an issuance needs it for its anchor.
 
-	var firstSpend *spend
+	var firstSpend *Spend
 	muxSources := make([]valueSource, len(tx.Inputs))
 
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*SpendInput); ok {
-			prog := program{VMVersion: oldSp.VMVersion, Code: oldSp.ControlProgram}
+			prog := Program{VMVersion: oldSp.VMVersion, Code: oldSp.ControlProgram}
 			out := newOutput(prog, oldSp.RefDataHash, 0) // ordinal doesn't matter for prevouts, only for result outputs
 			out.setSourceID(oldSp.SourceID, oldSp.AssetAmount, oldSp.SourcePosition)
 			sp := newSpend(out, hashData(inp.ReferenceData), i)
@@ -57,7 +57,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *header, entryMap map[Hash]entry, err
 			// programs are omitted here because they do not contribute to
 			// the body hash of an issuance.
 
-			var nonce entry
+			var nonce Entry
 
 			if len(oldIss.Nonce) == 0 {
 				if firstSpend == nil {
@@ -103,7 +103,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *header, entryMap map[Hash]entry, err
 				code = append(code, assetID[:]...)
 				code = append(code, 0x87)
 
-				nonce = newNonce(program{VMVersion: 1, Code: code}, tr)
+				nonce = newNonce(Program{VMVersion: 1, Code: code}, tr)
 				_, err = addEntry(nonce)
 				if err != nil {
 					err = errors.Wrapf(err, "adding nonce entry for input %d", i)
@@ -128,7 +128,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *header, entryMap map[Hash]entry, err
 		}
 	}
 
-	mux := newMux(program{VMVersion: 1, Code: []byte{0x51}}) // 0x51 == vm.OP_TRUE, minus a circular dependency on protocol/vm
+	mux := newMux(Program{VMVersion: 1, Code: []byte{0x51}}) // 0x51 == vm.OP_TRUE, minus a circular dependency on protocol/vm
 	for _, src := range muxSources {
 		// TODO(bobg): addSource will recompute the hash of
 		// entryMap[src.Ref], which is already available as src.Ref - fix
@@ -141,7 +141,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *header, entryMap map[Hash]entry, err
 		return
 	}
 
-	var results []entry
+	var results []Entry
 
 	for i, out := range tx.Outputs {
 		if isUnspendable(out.ControlProgram) {
@@ -156,7 +156,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *header, entryMap map[Hash]entry, err
 			results = append(results, r)
 		} else {
 			// non-retirement
-			prog := program{out.VMVersion, out.ControlProgram}
+			prog := Program{out.VMVersion, out.ControlProgram}
 			o := newOutput(prog, hashData(out.ReferenceData), i)
 			o.setSource(mux, out.AssetAmount, uint64(i))
 			_, err = addEntry(o)
@@ -178,9 +178,9 @@ func mapTx(tx *TxData) (headerID Hash, hdr *header, entryMap map[Hash]entry, err
 	return headerID, h, entryMap, nil
 }
 
-func mapBlockHeader(old *BlockHeader) (bhID Hash, bh *blockHeader) {
+func mapBlockHeader(old *BlockHeader) (bhID Hash, bh *BlockHeaderEntry) {
 	bh = newBlockHeader(old.Version, old.Height, old.PreviousBlockHash, old.TimestampMS, old.TransactionsMerkleRoot, old.AssetsMerkleRoot, old.ConsensusProgram)
-	bhID = entryID(bh)
+	bhID = EntryID(bh)
 	return
 }
 
