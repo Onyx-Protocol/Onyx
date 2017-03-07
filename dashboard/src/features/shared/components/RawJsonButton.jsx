@@ -1,8 +1,10 @@
 import React from 'react'
+import { Connection } from 'chain-sdk'
 
 class RawJsonButton extends React.Component {
   showRawJson(item){
-    this.props.showRawJson(<pre>{JSON.stringify(item, null, 2)}</pre>)
+    const snakeCased = Connection.snakeize(item)
+    this.props.showJsonModal(<pre>{JSON.stringify(snakeCased, null, 2)}</pre>)
   }
 
   render() {
@@ -18,7 +20,7 @@ import { connect } from 'react-redux'
 import actions from 'actions'
 
 const mapDispatchToProps = ( dispatch ) => ({
-  showRawJson: (body) => dispatch(actions.app.showModal(
+  showJsonModal: (body) => dispatch(actions.app.showModal(
     body,
     actions.app.hideModal,
     null,
