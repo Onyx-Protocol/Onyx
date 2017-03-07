@@ -490,6 +490,6 @@ Arguments           | String                     | Arguments for the program con
 2. For each `Source` in `Sources`, [validate](#valuesource-validation) `Source`.
 3. For each `Destination` in `Destinations`, [validate](#valuedestination-validation) `Destination`.
 4. For each `AssetID` represented in `Sources` and `Destinations`:
-    1. Sum the total `Amounts` of the `Sources` with that asset ID.
-    2. Sum the total `Amounts` of the `Destinations` with that asset ID.
+    1. Sum the total `Amounts` of the `Sources` with that asset ID. Validation fails if the sum overflows 63-bit integer.
+    2. Sum the total `Amounts` of the `Destinations` with that asset ID. Validation fails if the sum overflows 63-bit integer.
     3. Verify that the two sums are equal.
