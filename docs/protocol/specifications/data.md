@@ -30,7 +30,6 @@
   * [Transaction Output Witness](#transaction-output-witness)
   * [Transaction Serialization Flags](#transaction-serialization-flags)
   * [Transaction ID](#transaction-id)
-  * [Transaction Signature Hash](#transaction-signature-hash)
   * [Transaction Wire Serialization](#wire-format-serialization)
       * [Transaction Common Fields](#transaction-common-fields)
       * [Transaction Common Witness](#transaction-common-witness)
@@ -44,7 +43,6 @@
       * [Transaction Output Witness](#transaction-output-witness)
       * [Transaction Serialization Flags](#transaction-serialization-flags)
       * [Transaction ID](#transaction-id)
-      * [Transaction Signature Hash](#transaction-signature-hash)
   * [Program](#program)
   * [VM Version](#vm-version)
   * [Consensus Program](#consensus-program)
@@ -409,16 +407,6 @@ Serialization Flags Examples | Description
 
 The *transaction ID* (also called *txid* or *transaction hash*) is defined as [SHA3-256](#sha3) of the transaction serialized with 0x00 [serialization flags](#transaction-serialization-flags). Thus, reference data is hashed via intermediate hashes and transaction witness data is excluded.
 
-#### Transaction Signature Hash
-
-A *signature hash* (or *sighash*) corresponding to a given input is a hash of the [transaction ID](#transaction-id) and the index for that input. It is returned by [TXSIGHASH](vm1.md#txsighash), and is designed for use with [CHECKSIG](vm1.md#checksig) and [CHECKMULTISIG](vm1.md#checkmultisig) instructions.
-
-The transaction signature hash is the [SHA3-256](#sha3) of the following structure:
-
-Field                   | Type                                      | Description
-------------------------|-------------------------------------------|----------------------------------------------------------
-Transaction ID          | sha3-256                                  | Current [transaction ID](#transaction-id).
-Input Index             | varint31                                  | Index of a given input encoded as [varint31](#varint31).
 
 ### Transaction Serialization for Hashing
 

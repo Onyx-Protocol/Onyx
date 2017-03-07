@@ -75,8 +75,8 @@ Execution of any of the following instructions results in immediate failure:
 * [AMOUNT](#amount)
 * [MINTIME](#mintime)
 * [MAXTIME](#maxtime)
-* [TXREFDATAHASH](#txrefdatahash)
-* [REFDATAHASH](#refdatahash)
+* [TXDATAHASH](#txdatahash)
+* [DATAHASH](#datahash)
 * [INDEX](#index)
 * [OUTPUTID](#outputid)
 * [NONCE](#nonce)
@@ -1068,9 +1068,11 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xae  | (∅ → hash)                     | 256 + [standard memory cost](#standard-memory-cost)
 
-Computes the [transaction signature hash](data.md#transaction-signature-hash) corresponding to the current input.
+Computes the transaction signature hash corresponding to the current entry. Equals [SHA3-256](#sha3) of the concatenation of the current [entry ID](entries.md#entry-id) and [transaction ID](data.md#transaction-id):
 
-Typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
+    TXSIGHASH = SHA3-256(entryID || txID)
+
+This instruction is typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1102,9 +1104,9 @@ Note: [standard memory cost](#standard-memory-cost) is applied *after* the instr
 
 Code  | Stack Diagram                                        | Cost
 ------|------------------------------------------------------|-----------------------------------------------------
-0xc1  | (index refdatahash amount assetid version prog → q)  | 16; [standard memory cost](#standard-memory-cost)
+0xc1  | (index datahash amount assetid version prog → q)     | 16; [standard memory cost](#standard-memory-cost)
 
-1. Pops 6 items from the data stack: `index`, `refdatahash`, `amount`, `assetid`, `version`, `prog`.
+1. Pops 6 items from the data stack: `index`, `datahash`, `amount`, `assetid`, `version`, `prog`.
 2. Fails if `index` is negative or not a valid [number](#vm-number).
 3. Fails if the number of outputs is less or equal to `index`.
 4. Fails if `amount` and `version` are not non-negative [numbers](#vm-number).
@@ -1114,7 +1116,7 @@ Code  | Stack Diagram                                        | Cost
     2. VM version equals `version`,
     3. asset ID equals `assetid`,
     4. amount equals `amount`,
-    5. `refdatahash` is an empty string or it matches the [SHA3-256](data.md#sha3) hash of the reference data.
+    5. `datahash` is an empty string or it matches the [SHA3-256](data.md#sha3) hash of the reference data.
 
 Fails if executed in the [block context](#block-context).
 
@@ -1123,12 +1125,13 @@ Fails if executed in the [block context](#block-context).
 
 Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
-0xc2  | (∅ → assetid)   | 1; [standard memory cost](#standard-memory-cost)
+0xc2  | (∅ → assetid)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the asset ID assigned to the current input on the data stack.
+Pushes the asset ID assigned to the current entry on the data stack.
 
 Fails if executed in the [block context](#block-context).
 
+Fails if the entry is not an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
 
 #### AMOUNT
 
@@ -1136,9 +1139,11 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc3  | (∅ → amount)    | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the amount assigned to the current input on the data stack.
+Pushes the amount assigned to the current entry on the data stack.
 
 Fails if executed in the [block context](#block-context).
+
+Fails if the entry is not an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
 
 
 #### PROGRAM
@@ -1148,8 +1153,10 @@ Code  | Stack Diagram  | Cost
 0xc4  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
 1. In [transaction context](#transaction-context):
-  * For spend inputs: pushes the control program from the output being spent.
-  * For issuance inputs: pushes the issuance program.
+  * For [spends](entries.md#spend-1): pushes the control program from the output being spent.
+  * For [issuances](entries.md#issuances-1): pushes the issuance program.
+  * For [muxes](entries.md#mux-1): pushes the mux program.
+  * For [nonces](entries.md#nonce): pushes the nonce program.
 2. In [block context](#block-context):
   * Pushes the current [consensus program](data.md#consensus-program) being executed (that is specified in the previous block header).
 
@@ -1160,7 +1167,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc5  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the transaction minimum time in milliseconds on the data stack.
+Pushes the [TxHeader](entries.md#txheader) mintime in milliseconds on the data stack.
 If the value is greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>–1 (encoded as [VM number](#vm-number) 0xffffffffffffff7f).
 
 Fails if executed in the [block context](#block-context).
@@ -1171,31 +1178,33 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc6  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the transaction maximum time in milliseconds on the data stack.
+Pushes the [TxHeader](entries.md#txheader) maxtime in milliseconds on the data stack.
 If the value is zero or greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>–1 (encoded as [VM number](#vm-number) 0xffffffffffffff7f).
 
 Fails if executed in the [block context](#block-context).
 
-#### TXREFDATAHASH
+#### TXDATAHASH
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc7  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the [transaction](data.md#transaction)'s reference data.
+Pushes the SHA3-256 hash of the data as specified in the [TxHeader](entries.md#txheader).
 
 Fails if executed in the [block context](#block-context).
 
 
-#### REFDATAHASH
+#### DATAHASH
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc8  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the current [input](data.md#transaction-input)'s reference data.
+Pushes the SHA3-256 hash of the data as specified in the current [entry](entries.md#entry).
 
 Fails if executed in the [block context](#block-context).
+
+Fails if the current entry is not an [issuance](entries.md#issuance-1), a [spend](entries.md#spend-1), an [output](entries.md#output-1) or a [retirement](entries.md#retirement-1).
 
 
 #### INDEX
@@ -1204,7 +1213,20 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc9  | (∅ → index)     | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the index of the current input on the data stack.
+Pushes the [ValueDestination.position](entries.md#valuedestination) of the current entry on the data stack.
+
+Fails if executed in the [block context](#block-context).
+
+Fails if the current entry is not an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
+
+
+#### ENTRYID
+
+Code  | Stack Diagram   | Cost
+------|-----------------|-----------------------------------------------------
+0xca  | (∅ → entryid)   | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes the [current entry ID](entries.md#entry-id) on the data stack (e.g. a [spend](entries.md#spend-1), an [issuance](entries.md#issuance-1) or a [nonce](entries.md#nonce)).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1215,11 +1237,11 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xcb  | (∅ → outputid)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [output ID](data.md#output-id) on the data stack.
-
-Fails if the current input is an [issuance input](data.md#transaction-input-commitment).
+Pushes the [spent output ID](entries.md#spend-1) on the data stack.
 
 Fails if executed in the [block context](#block-context).
+
+Fails if the current entry is not a [spend](entries.md#spend-1).
 
 
 #### NONCE
@@ -1228,11 +1250,11 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xcc  | (∅ → nonce)     | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the nonce declared in the current input's [issuance commitment](data.md#asset-version-1-issuance-commitment) on the data stack.
-
-Fails if the current input is not an [issuance input](data.md#transaction-input-commitment).
+Pushes the [anchor ID](entries.md#issuance-1) of the [issuance entry](entries.md#issuance-1) on the data stack.
 
 Fails if executed in the [block context](#block-context).
+
+Fails if the current entry is not an [issuance](entries.md#issuance-1).
 
 
 #### NEXTPROGRAM
@@ -1262,7 +1284,7 @@ Fails if executed in the [transaction context](#transaction-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion.
 
