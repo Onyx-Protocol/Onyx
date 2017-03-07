@@ -194,7 +194,7 @@ Position         | [Integer](#integer)         | Iff this source refers to a [Mu
         2. Define `RefDestination` as `Mux.Destinations[Position]`.
 3. Verify that `RefDestination.Ref` is equal to the ID of the current entry.
 4. Verify that `RefDestination.Position` is equal to `SourcePosition`, where `SourcePosition` is defined as follows:
-    1. If the current entry being validated is an `Output`, `SourcePosition` is 0.
+    1. If the current entry being validated is an [Output](#output) or [Retirement](#retirement), `SourcePosition` is 0.
     2. If the current entry being validated is a `Mux`, `SourcePosition` is the index of this `ValueSource` in the current entry's `Sources`.
 5. Verify that `RefDestination.Value` is equal to `Value`.
 
@@ -204,9 +204,9 @@ An Entry uses a ValueDestination to refer to other entries that receive value fr
 
 Field            | Type                           | Description
 -----------------|--------------------------------|----------------
-Ref              | Pointer\<Output\|Retirement\|Mux\> | Next entry referenced by this ValueSource.
-Value            | AssetAmount                    | Amount and Asset ID contained in the referenced entry
-Position         | Integer                        | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
+Ref              | [Pointer](#pointer)\<[Output](#output)\|[Retirement](#retirement)\|[Mux](#mux)\> | Next entry referenced by this ValueDestination.
+Value            | [AssetAmount](#assetamount)    | Amount and Asset ID contained in the referenced entry
+Position         | [Integer](#integer)            | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
 
 #### ValueDestination Validation
 
@@ -265,14 +265,14 @@ Witness             | Struct               | See below.
 
 #### TxHeader Body
 
-Field      | Type                                          | Description
------------|-----------------------------------------------|-------------------------
-Version    | Integer                                       | Transaction version, equals 1.
-Results    | List\<Pointer\<Output\|Retirement\>\>              | A list of pointers to Outputs or Retirements. This list must contain at least one item.
-Data       | Hash                                          | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
-Mintime    | Integer                                       | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
-Maxtime    | Integer                                       | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
-ExtHash    | Hash                                          | Hash of all extension fields. (See [Extstruct](#extstruct).) If `Version` is known, this must be 32 zero-bytes.
+Field      | Type                                    | Description
+-----------|-----------------------------------------|-------------------------
+Version    | Integer                                 | Transaction version, equals 1.
+Results    | List\<Pointer\<Output\|Retirement\>\>   | A list of pointers to Outputs or Retirements. This list must contain at least one item.
+Data       | Hash                                    | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
+Mintime    | Integer                                 | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
+Maxtime    | Integer                                 | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
+ExtHash    | Hash                                    | Hash of all extension fields. (See [Extstruct](#extstruct).) If `Version` is known, this must be 32 zero-bytes.
 
 #### TxHeader Witness
 
