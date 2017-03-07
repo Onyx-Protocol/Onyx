@@ -105,13 +105,13 @@ Note: since the `List` is encoded as a variable-length string, its length prefix
 
 A `Struct` is encoded as a concatenation of all its serialized fields.
 
-### Extstruct
+### ExtStruct
 
-An `ExtStruct` is encoded as a single 32-byte hash.
+An `ExtStruct` is encoded as a single 32-byte hash. Future versions of the protocol may add additional fields as “Extension Structs” that will be compressed in a single hash for backwards compatibility.
 
 ### Pointer
 
-A Pointer is encoded as a Hash, and identifies another entry by its ID. It also restricts the possible acceptable types: Pointer<X> must refer to an entry of type X.
+A Pointer is encoded as a [Hash](#hash), and identifies another entry by its ID. It also restricts the possible acceptable types: Pointer<X> must refer to an entry of type X.
 
 A Pointer can be `nil`, in which case it is represented by the all-zero 32-byte hash `0x0000000000000000000000000000000000000000000000000000000000000000`.
 
