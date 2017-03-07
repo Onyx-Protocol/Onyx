@@ -275,10 +275,6 @@ ExtHash    | Hash                                    | Hash of all extension fie
 1. Check that `Results` includes at least one item.
 2. Check that each of the `Results` is present and valid.
 
-#### TxHeader Application to State
-
-1. Verify that mintime is lower than the timestamp of the block that includes the transaction.
-2. Verify that maxtime is either zero or is higher than the timestamp of the block that includes the transaction.
 
 ### Output 1
 
@@ -306,9 +302,6 @@ Field               | Type                 | Description
 
 1. [Validate](#valuesource-validation) `Source`.
 
-#### Output Application to State
-
-1. Add the entry ID of the Output entry to the UTXO set.
 
 #### Retirement 1
 
@@ -365,10 +358,6 @@ Arguments           | List<String>         | Arguments for the control program c
 3. Verify that `SpentOutput.Value` is equal to `Destination.Value`.
 4. [Validate](#valuedestination-validation) `Destination`.
 
-#### Spend Application to State
-
-1. Verify that the entry ID of `SpentOutput` is included in the UTXO set.
-2. Remove the entry ID of `SpentOutput` from the UTXO set.
 
 ### Issuance 1
 
@@ -430,10 +419,6 @@ Issuance            | Pointer<Issuance>            | Pointer to an issuance entr
 1. [Validate](#program-validation) `Program` with the given `Arguments`.
 2. Verify that `Issuance` points to an issuance that is present in the transaction (meaning visitable by traversing `Results` and `Sources` from the transaction header) and whose `Anchor` is equal to this nonce's ID.
 
-#### Nonce Application to State
-
-1. Verify that the entry ID of the Nonce is not included in the Nonce set.
-2. Add the entry ID of the Nonce to the Nonce set.
 
 ### TimeRange  
 
@@ -441,20 +426,13 @@ Field               | Type                 | Description
 --------------------|----------------------|----------------
 Type                | String               | "timerange"
 Body                | Struct               | See below.
-Witness             | Struct               | See below.
+Witness             | Struct               | Empty struct.
 
-#### TimeRange Body
-
-Field               | Type                 | Description
+Body Field          | Type                 | Description
 --------------------|----------------------|----------------
 Mintime             | Integer              | Minimum time for this transaction.
 Maxtime             | Integer              | Maximum time for this transaction.
 ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
-
-#### TimeRange Witness
-
-Field               | Type                 | Description
---------------------|----------------------|----------------
 
 #### TimeRange Validation
 
@@ -469,17 +447,13 @@ Type                | String               | "mux1"
 Body                | Struct               | See below.
 Witness             | Struct               | See below.
 
-#### Mux Body
-
-Field               | Type                 | Description
+Body Field          | Type                 | Description
 --------------------|----------------------|----------------
 Sources             | List<ValueSource>    | The source of the units to be included in this Mux.
 Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
 ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
 
-#### Mux Witness
-
-Field               | Type                       | Description
+Witness Field       | Type                       | Description
 --------------------|----------------------------|----------------
 Destinations        | List<ValueDestination>     | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
 Arguments           | String                     | Arguments for the program contained in the Nonce.
