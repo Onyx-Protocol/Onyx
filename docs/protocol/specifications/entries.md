@@ -240,17 +240,36 @@ Body Field               | Type              | Description
 -------------------------|-------------------|----------------------------------------------------------
 Version                  | Integer           | Block version, equals 1.
 Height                   | Integer           | Block serial number.
-Previous Block ID        | Hash              | [Hash](#block-id) of the previous block or all-zero string.
+PreviousBlockID          | Hash              | [Hash](#block-id) of the previous block or all-zero string.
 Timestamp                | Integer           | Time of the block in milliseconds since 00:00:00 UTC Jan 1, 1970.
-Transactions Merkle Root | Hash    | Root hash of the [merkle binary hash tree](data.md#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
-Assets Merkle Root       | Hash    | Root hash of the [merkle patricia tree](data.md#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](data.md#assets-merkle-root) for details.
-Next [Consensus Program](data.md#consensus-program) | String | Authentication predicate for adding a new block after this one.
-ExtHash                  | [ExtStruct](#extstruct)    | Extension fields.
+TransactionsMerkleRoot   | Hash              | Root hash of the [merkle binary hash tree](data.md#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
+AssetsMerkleRoot         | Hash              | Root hash of the [merkle patricia tree](data.md#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](data.md#assets-merkle-root) for details.
+Next[ConsensusProgram](data.md#consensus-program) | String | Authentication predicate for adding a new block after this one.
+ExtHash                  | [ExtStruct](#extstruct)    | Hash of all extension fields. (See [Extstruct](#extstruct).) If `Version` is known, this must be 32 zero-bytes.
 
 Witness Field            | Type              | Description
 -------------------------|-------------------|----------------------------------------------------------
 Program Arguments        | List\<String\>    | List of [signatures](data.md#signature) and other data satisfying previous block’s [next consensus program](data.md#consensus-program).
 
+#### BlockHeader Validation
+
+**Inputs:** 
+
+1. BlockHeader entry,
+2. BlockHeader entry from the previous block, `PrevBlockHeader`.
+3. List of transactions included in block.
+
+**Algorithm:**
+
+1. Verify that the block’s version is greater or equal the block version in the previous block header.
+2. Verify that `Height` is equal to `PrevBlockHeader.Height + 1`. If not, halt and return false.
+4. Verify that `PreviousBlockID` is equal to the entry ID of `PrevBlockHeader`.
+5. Verify that `Timestamp` is greater than `PrevBlockHeader.Timestamp`.
+6. Verify that `PreviousBlockID.NextConsensusProgram` with VM version 1.
+7. For each transaction in the block:
+    1. [Validate transaction](#validate-transaction) with the timestamp and block version of the input block header; if it is not valid, halt and return false.
+8. Compute the [transactions merkle root](data.md#transactions-merkle-root) for the block.
+9. Verify that the computed merkle tree hash is equal to `TransactionsMerkleRoot`.
 
 ### TxHeader
 
@@ -272,8 +291,8 @@ ExtHash    | Hash                                    | Hash of all extension fie
 
 #### TxHeader Validation
 
-1. Check that `Results` includes at least one item.
-2. Check that each of the `Results` is present and valid.
+1. Verify that `Results` includes at least one item.
+2. Verify that each of the `Results` is present and valid.
 
 
 ### Output 1
