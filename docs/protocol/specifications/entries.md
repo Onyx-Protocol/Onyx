@@ -289,6 +289,7 @@ Program Arguments        | List\<String\>    | List of [signatures](data.md#sign
     1. [Validate transaction](#validate-transaction) with the timestamp and block version of the input block header; if it is not valid, halt and return false.
 8. Compute the [transactions merkle root](data.md#transactions-merkle-root) for the block.
 9. Verify that the computed merkle tree hash is equal to `TransactionsMerkleRoot`.
+10. If the block version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### TxHeader
 
@@ -305,7 +306,7 @@ Results    | List\<Pointer\<Output\|Retirement\>\>   | A list of pointers to Out
 Data       | Hash                                    | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
 Mintime    | Integer                                 | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
 Maxtime    | Integer                                 | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
-ExtHash    | Hash                                    | Hash of all extension fields. (See [Extstruct](#extstruct).) If `Version` is known, this must be 32 zero-bytes.
+ExtHash    | [ExtStruct](#extstruct)                 | Hash of all extension fields. (See [Extstruct](#extstruct).) If `Version` is known, this must be 32 zero-bytes.
 
 
 #### TxHeader Validation
@@ -313,7 +314,7 @@ ExtHash    | Hash                                    | Hash of all extension fie
 1. If the `Maxtime` is greater than zero, verify that it is greater than or equal to the `Mintime`.
 2. Check that `Results` includes at least one item.
 3. Check that each of the `Results` is present and valid.
-
+4. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Output 1
 
@@ -328,13 +329,13 @@ Body field          | Type                 | Description
 Source              | ValueSource          | The source of the units to be included in this output.
 ControlProgram      | Program              | The program to control this output.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
+ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
 
 
 #### Output Validation
 
 1. [Validate](#valuesource-validation) `Source`.
-
+2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 
 #### Retirement 1
@@ -349,12 +350,12 @@ Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource          | The source of the units that are being retired.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
+ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
 
 #### Retirement Validation
 
 1. [Validate](#valuesource-validation) `Source`.
-
+2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Spend 1
 
@@ -368,7 +369,7 @@ Body field          | Type                 | Description
 --------------------|----------------------|----------------
 SpentOutput         | Pointer<Output>      | The Output entry consumed by this spend.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
+ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                 | Description
 --------------------|----------------------|----------------
@@ -381,7 +382,7 @@ Arguments           | List<String>         | Arguments for the control program c
 2. [Validate program](#program-validation) `SpentOutput.ControlProgram` with the given `Arguments` and the transaction version.
 3. Verify that `SpentOutput.Value` is equal to `Destination.Value`.
 4. [Validate](#valuedestination-validation) `Destination`.
-
+5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Issuance 1
 
@@ -396,11 +397,11 @@ Body field          | Type                 | Description
 Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
 Value               | AssetAmount          | Asset ID and amount being issued.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
+ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                                      | Description
 --------------------|-------------------------------------------|----------------
-Destination         | ValueDestination                          | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output Entry, or to a Mux, which points to Output Entries via its own Destinations.
+Destination         | ValueDestination                          | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an `Output`, or to a `Mux`, which points to `Output` entries via its own `Destinations`.
 AssetDefinition     | [Asset Definition](#asset-definition)     | Asset definition for the asset being issued.
 Arguments           | List<String>                              | Arguments for the control program contained in the SpentOutput.
 
@@ -410,7 +411,7 @@ Arguments           | List<String>                              | Arguments for 
 2. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the transaction version.
 3. Verify that `Anchor` entry is present and valid.
 4. [Validate](#valuedestination-validation) `Destination`.
-
+5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Nonce  
 
@@ -424,7 +425,7 @@ Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Program             | Program              | A program that protects the nonce against replay and must evaluate to true.
 Time Range          | Pointer<TimeRange>   | Reference to a TimeRange entry.
-ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
+ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                         | Description
 --------------------|------------------------------|----------------
@@ -435,7 +436,7 @@ Issuance            | Pointer<Issuance>            | Pointer to an issuance entr
 
 1. [Validate](#program-validation) `Program` with the given `Arguments`.
 2. Verify that `Issuance` points to an issuance that is present in the transaction (meaning visitable by traversing `Results` and `Sources` from the transaction header) and whose `Anchor` is equal to this nonce's ID.
-
+3. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### TimeRange  
 
@@ -449,12 +450,13 @@ Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Mintime             | Integer              | Minimum time for this transaction.
 Maxtime             | Integer              | Maximum time for this transaction.
-ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
+ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
 
 #### TimeRange Validation
 
 1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the [transaction header](#txheader).
 2. Verify that `Maxtime` is either zero, or is equal to or greater than the `Maxtime` specified in the [transaction header](#txheader).
+3. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Mux 1
 
@@ -468,7 +470,7 @@ Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Sources             | List<ValueSource>    | The source of the units to be included in this Mux.
 Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
-ExtHash             | Hash                 | If the transaction version is known, this must be 32 zero-bytes.
+ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                       | Description
 --------------------|----------------------------|----------------
@@ -484,3 +486,4 @@ Arguments           | String                     | Arguments for the program con
     1. Sum the total `Amounts` of the `Sources` with that asset ID. Validation fails if the sum overflows 63-bit integer.
     2. Sum the total `Amounts` of the `Destinations` with that asset ID. Validation fails if the sum overflows 63-bit integer.
     3. Verify that the two sums are equal.
+5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
