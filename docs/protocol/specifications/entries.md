@@ -23,9 +23,9 @@
   * [Retirement 1](#retirement-1)
   * [Spend 1](#spend-1)
   * [Issuance 1](#issuance-1)
+  * [Mux 1](#mux-1)
   * [Nonce](#nonce)
   * [TimeRange](#timerange)
-  * [Mux 1](#mux-1)
 
 ## Introduction
 
@@ -428,6 +428,40 @@ Arguments           | List<String>                              | Arguments for 
 4. [Validate](#valuedestination-validation) `Destination`.
 5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
+
+### Mux 1
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "mux1"
+Body                | Struct               | See below.
+Witness             | Struct               | See below.
+
+Body field          | Type                 | Description
+--------------------|----------------------|----------------
+Sources             | List<ValueSource>    | The source of the units to be included in this Mux.
+Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
+ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
+
+Witness field       | Type                       | Description
+--------------------|----------------------------|----------------
+Destinations        | List<ValueDestination>     | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
+Arguments           | String                     | Arguments for the program contained in the Nonce.
+
+#### Mux Validation
+
+1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
+2. For each `Source` in `Sources`, [validate](#valuesource-validation) `Source`.
+3. For each `Destination` in `Destinations`, [validate](#valuedestination-validation) `Destination`.
+4. For each `AssetID` represented in `Sources` and `Destinations`:
+    1. Sum the total `Amounts` of the `Sources` with that asset ID. Validation fails if the sum overflows 63-bit integer.
+    2. Sum the total `Amounts` of the `Destinations` with that asset ID. Validation fails if the sum overflows 63-bit integer.
+    3. Verify that the two sums are equal.
+5. Verify that for every asset ID among `Destinations`, there is at least one `Source` with such asset ID. (This prevents creating zero units of an asset not present among the valid sources.)
+6. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+
+
+
 ### Nonce  
 
 Field               | Type                 | Description
@@ -472,34 +506,3 @@ ExtHash             | [ExtStruct](#extstruct) | If the transaction version is kn
 1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the [transaction header](#txheader).
 2. Verify that `Maxtime` is either zero, or is equal to or greater than the `Maxtime` specified in the [transaction header](#txheader).
 3. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
-
-### Mux 1
-
-Field               | Type                 | Description
---------------------|----------------------|----------------
-Type                | String               | "mux1"
-Body                | Struct               | See below.
-Witness             | Struct               | See below.
-
-Body field          | Type                 | Description
---------------------|----------------------|----------------
-Sources             | List<ValueSource>    | The source of the units to be included in this Mux.
-Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
-ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
-
-Witness field       | Type                       | Description
---------------------|----------------------------|----------------
-Destinations        | List<ValueDestination>     | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
-Arguments           | String                     | Arguments for the program contained in the Nonce.
-
-#### Mux Validation
-
-1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
-2. For each `Source` in `Sources`, [validate](#valuesource-validation) `Source`.
-3. For each `Destination` in `Destinations`, [validate](#valuedestination-validation) `Destination`.
-4. For each `AssetID` represented in `Sources` and `Destinations`:
-    1. Sum the total `Amounts` of the `Sources` with that asset ID. Validation fails if the sum overflows 63-bit integer.
-    2. Sum the total `Amounts` of the `Destinations` with that asset ID. Validation fails if the sum overflows 63-bit integer.
-    3. Verify that the two sums are equal.
-5. Verify that for every asset ID among `Destinations`, there is at least one `Source` with such asset ID. (This prevents creating zero units of an asset not present among the valid sources.)
-6. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
