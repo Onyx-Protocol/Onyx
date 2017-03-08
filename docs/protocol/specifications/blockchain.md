@@ -491,6 +491,28 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 
 An `Output2` has the same data structure and validation rules as an `Output1`, except that the type string must be "output2" instead of "output1", and all pointers and references to [ValueSource1](#value-source-1) must instead be references to [ValueSource2](#value-source-2).
 
+#### Output 2
+
+An output with type 2 uses [ElGamal commitments](https://en.wikipedia.org/wiki/ElGamal_signature_scheme), rather than plaintext values, to represent assets and amounts.
+
+TBD.
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "output2"
+Body                | Struct               | See below.
+Witness             | Struct               | Empty struct.
+
+Body field          | Type                 | Description
+--------------------|----------------------|----------------
+Source              | ValueSource1         | The source of the units to be included in this output.
+ControlProgram      | Program              | The program to control this output.
+Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+
+
+
+
 #### Retirement 1
 
 Field               | Type                 | Description
