@@ -203,8 +203,13 @@ Position         | [Integer](#integer)         | Iff this source refers to a [Mu
 3. Verify that `RefDestination.Ref` is equal to the ID of the current entry.
 4. Verify that `RefDestination.Position` is equal to `SourcePosition`, where `SourcePosition` is defined as follows:
     1. If the current entry being validated is an [Output1](#output-1) or [Retirement1](#retirement-1), `SourcePosition` is 0.
-    2. If the current entry being validated is a `Mux`, `SourcePosition` is the index of this `ValueSource` in the current entry's `Sources`.
+    2. If the current entry being validated is a [Mux1](#mux-1), `SourcePosition` is the index of this `ValueSource` in the current entry's `Sources`.
 5. Verify that `RefDestination.Value` is equal to `Value`.
+
+### Value Source 2
+
+A `ValueSource2` has the same data structure and validation rules as a `ValueSource1`, except that all pointers and references to [Issuance1](#issuance-1), [Spend1](#spend-1), [Mux1](#mux-1), [Output1](#output-1), and [Retirement1](#retirement-1) must instead be references to [Issuance2](#issuance-2), [Spend2](#spend-2), [Mux2](#mux-2), [Output2](#output-2), and [Retirement2](#retirement-2), respectively.
+
 
 ### Value Destination 1
 
@@ -449,7 +454,7 @@ Witness             | Struct               | Empty struct.
 
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
-Source              | ValueSource1         | The source of the units to be included in this output.
+Source              | ValueSource2         | The source of the units to be included in this output.
 ControlProgram      | Program              | The program to control this output.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
