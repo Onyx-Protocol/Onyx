@@ -364,14 +364,14 @@ public class Client {
         // ConnectivityExceptions are always retriable.
         exception = ex;
       } catch (APIException ex) {
-        // This URL's process might be unhealthy; move to the next.
-        this.nextURL(idx);
-
         // Check if this error is retriable (either it's a status code that's
         // always retriable or the error is explicitly marked as temporary.
         if (!isRetriableStatusCode(ex.statusCode) && !ex.temporary) {
           throw ex;
         }
+
+        // This URL's process might be unhealthy; move to the next.
+        this.nextURL(idx);
         exception = ex;
       }
     }
