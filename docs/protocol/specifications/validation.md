@@ -115,8 +115,9 @@ A new node starts here when joining a running network (with height > 1). In that
     5. Transactions merkle root: [merkle binary tree hash](blockchain.md#merkle-binary-tree) of the empty list.
     6. Assets merkle root: [merkle patricia tree hash](blockchain.md#merkle-patricia-tree) of the empty list.
     7. Consensus program: the input consensus program.
-    8. Transaction count: 0.
-    9. Transactions: none.
+    8. Arguments: an empty list.
+    9. Transaction count: 0.
+    10. Transactions: none.
 
 
 ### Apply block

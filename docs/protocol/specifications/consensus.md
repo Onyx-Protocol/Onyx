@@ -34,7 +34,7 @@ Each block signer stores, in addition to its node state:
 
 * The *last signed block*. This last signed block can be replaced with a new block in an algorithm below.
 * The *generator’s verification key* used to authenticate the block produced by the generator before validating and signing it.
-* The *signing key* required by the [consensus program](data.md#consensus-program) in the last signed block. The signing key can be replaced by an operator after an out-of-band agreement with other nodes (by updating the consensus program in one of the future blocks).
+* The *signing key* required by the [consensus program](blockchain.md#block-header) in the last signed block. The signing key can be replaced by an operator after an out-of-band agreement with other nodes (by updating the consensus program in one of the future blocks).
 
 
 
@@ -64,7 +64,7 @@ Entry Point                                              | When used
 
 **Algorithm:**
 
-1. Create a [consensus program](data.md#consensus-program). The contents of this program are a matter of local policy.
+1. Create a [consensus program](blockchain.md#block-header). The contents of this program are a matter of local policy.
 2. [Make an initial block](#make-initial-block) with the current time and the created consensus program.
 3. Allocate an empty unspent output set.
 4. The initial block and these empty sets together constitute the *initial state*.
@@ -83,7 +83,7 @@ A new node starts here when joining a new network (with height = 1).
 
 **Algorithm:**
 
-1. [Make an initial block](#make-initial-block) with the input block’s timestamp and [consensus program](data.md#consensus-program).
+1. [Make an initial block](#make-initial-block) with the input block’s timestamp and [consensus program](blockchain.md#block-header).
 2. The created block must equal the input block; if not, halt and return false.
 3. Allocate an empty unspent output set.
 4. The initial block and these empty sets together constitute the *initial state*.
@@ -107,9 +107,9 @@ The block generator collects transactions to include in each block it generates.
 
 **Algorithm:**
 
-1. [Validate the transaction](validation.md#validate-transaction) with respect to the current blockchain state, but using system timestamp instead of the latest block timestamp; if invalid, halt and return false.
-2. If the transaction contains at least one [issuance input with asset version 1](data.md#asset-version-1-issuance-commitment) and a non-empty nonce:
-    1. Test that transaction minimum timestamp plus the [maximum issuance window](#generator-state) is greater or equal to the transaction maximum timestamp; if not, halt and return false.
+1. [Validate the transaction](blockchain.md#transaction-header-validation) with respect to the current blockchain state, but using system timestamp instead of the latest block timestamp; if invalid, halt and return false.
+2. For every visited [Nonce](blockchain.md#nonce) entry in the transaction:
+    1. Test that transaction mintime plus the [maximum issuance window](#generator-state) is greater or equal to the transaction maxtime; if not, halt and return false.
 3. Add the transaction to the transaction pool.
 4. Return true.
 
@@ -136,14 +136,14 @@ The generator runs this periodically or when the transaction pool reaches a cert
 1. If the last generated block exists with height greater than the current blockchain state, halt and return it.
 2. [Make Block](#make-block) with the current blockchain state, the transaction pool, and the current time.
 3. For each block signer:
-    1. Send the block and the generator’s [signature](data.md#signature) to the signer [asking the signer to sign the block](#sign-block)
-    2. Receive a [signature](data.md#signature) from the signer.
-    3. Add the signature to the [block witness](data.md#block-witness) program arguments.
+    1. Send the block and the generator’s [signature](types.md#signature) to the signer [asking the signer to sign the block](#sign-block)
+    2. Receive a [signature](types.md#signature) from the signer.
+    3. Add the signature to the [block witness](blockchain.md#block-header) program arguments.
 4. Replace the last generated block with the new block.
 5. [Apply the block](validation.md#apply-block) to the current blockchain state, yielding a new state.
 6. Let T be an empty list of transactions.
 7. For each transaction in the transaction pool:
-    1. [Validate the transaction](validation.md#validate-transaction) with respect to the new state; if invalid, discard it and continue to the next.
+    1. [Validate the transaction](blockchain.md#transaction-header-validation) with respect to the new state; if invalid, discard it and continue to the next.
     2. Add the transaction to T.
 8. Replace the transaction pool with T.
 9. Return the block.
@@ -163,7 +163,7 @@ See also the note in the [Make Block](#make-block) algorithm.
 5. signing key,
 6. system time
 
-**Output:** [signature](data.md#signature) or nothing.
+**Output:** [signature](types.md#signature) or nothing.
 
 **Affects:** last signed block.
 
@@ -171,18 +171,14 @@ See also the note in the [Make Block](#make-block) algorithm.
 
 1. Test that the height of the input block is strictly greater than the height of the last signed block; if not, halt and return nothing.
 2. Verify the generator’s signature using the generator’s verification key in the current blockchain state. If the signature is invalid, halt and return nothing.
-3. [Validate the block](validation.md#validate-block) with respect to the current blockchain state; if invalid, halt and return nothing.
-4. Check that the block’s [consensus program](data.md#consensus-program) equals the consensus program in the last signed block; if not, halt and return nothing.
+3. [Validate the block](blockchain.md#block-header-validation) with respect to the current blockchain state; if invalid, halt and return nothing.
+4. Check that the block’s [consensus program](blockchain.md#block-header) equals the consensus program in the last signed block; if not, halt and return nothing.
 5. Ensure that reserved values and versions are unused. If any of the following conditions are not satisfied, halt and return nothing:
     1. The block version must equal 1.
-    2. For every transaction in the block:
-        1. Transaction version must equal 1.
-        2. [Transaction common witness](data.md#transaction-common-witness) string must be empty.
-        3. Every [input witness](data.md#transaction-input-witness) must contain only the fields defined in this version of the protocol (no additional data included).
-        4. Every [output witness](data.md#transaction-output-witness) must be empty.
+    2. For every transaction in the block transaction version must equal 1.
 6. Check that the block's timestamp is less than 2 minutes after the system time. If it is not, halt and return nothing.
-7. Compute the [block hash](data.md#block-id) for the block.
-8. Sign the hash with the signing key, yielding a [signature](data.md#signature).
+7. Compute the [block ID](blockchain.md#block-id) for the block.
+8. Sign the hash with the signing key, yielding a [signature](types.md#signature).
 9. Replace the last signed block with the input block.
 10. Return the signature.
 
@@ -202,13 +198,12 @@ See also the note in the [Make Block](#make-block) algorithm.
     2. Height: 1.
     3. Previous block ID: 32 zero bytes.
     4. Timestamp: the input time.
-    5. [Block commitment](data.md#block-commitment):
-        1. Transactions merkle root: [merkle binary tree hash](data.md#merkle-binary-tree) of the empty list.
-        2. Assets merkle root: [merkle patricia tree hash](data.md#merkle-patricia-tree) of the empty list.
-        3. Consensus program: the input consensus program.
-    6. [Block witness](data.md#block-witness): 0x00 (the empty string).
-    7. Transaction count: 0.
-    8. Transactions: none.
+    5. Transactions merkle root: [merkle binary tree hash](blockchain.md#merkle-binary-tree) of the empty list.
+    6. Assets merkle root: [merkle patricia tree hash](blockchain.md#merkle-patricia-tree) of the empty list.
+    7. Consensus program: the input consensus program.
+    8. Arguments: an empty list.
+    9. Transaction count: 0.
+    10. Transactions: none.
 
 
 ### Make block
@@ -236,13 +231,12 @@ See also the note in the [Make Block](#make-block) algorithm.
     2. Height: 1 + the height of the blockchain state.
     3. Previous block ID: the hash of the blockchain state’s block.
     4. Timestamp: the input time, or the timestamp of the blockchain state increased by 1 millisecond, whichever is greater: `time[n] = max(input_time, time[n-1]+1)`.
-    5. [Block commitment](data.md#block-commitment):
-        1. [Transactions merkle root](data.md#transactions-merkle-root): [merkle binary tree hash](data.md#merkle-binary-tree) of [transaction IDs](data.md#transaction-id) in T.
-        2. [Assets merkle root](data.md#assets-merkle-root): [merkle patricia tree hash](data.md#merkle-patricia-tree) of S.
-        3. Consensus program: the input consensus program.
-    6. [Block witness](data.md#block-witness): 0x01 0x00 (an empty list of program arguments).
-    7. Transaction count: the number of transactions in T.
-    8. Transactions: T.
+    5. [Transactions merkle root](blockchain.md#transactions-merkle-root): [merkle binary tree hash](blockchain.md#merkle-binary-tree) of [transaction IDs](blockchain.md#transaction-id) in T.
+    6. [Assets merkle root](blockchain.md#assets-merkle-root): [merkle patricia tree hash](blockchain.md#merkle-patricia-tree) of S.
+    7. Consensus program: the input consensus program.
+    8. Arguments: an empty list.
+    9. Transaction count: the number of transactions in T.
+    10. Transactions: T.
 
 Note: “local policy” in this section gives the generator the ability to exclude
 a transaction for any reason. For example, it might apply a fixed size limit
