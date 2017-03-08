@@ -402,7 +402,7 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 
 #### Output Validation
 
-1. [Validate](#value-source-validation) `Source`.
+1. [Validate](#value-source-1-validation) `Source`.
 2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 
@@ -422,7 +422,7 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 
 #### Retirement Validation
 
-1. [Validate](#value-source-validation) `Source`.
+1. [Validate](#value-source-1-validation) `Source`.
 2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Spend 1
@@ -449,7 +449,7 @@ Arguments           | List<String>         | Arguments for the control program c
 1. Verify that `SpentOutput` is present in the transaction, but do not validate it.
 2. [Validate program](#program-validation) `SpentOutput.ControlProgram` with the given `Arguments` and the transaction version.
 3. Verify that `SpentOutput.Value` is equal to `Destination.Value`.
-4. [Validate](#value-destination-validation) `Destination`.
+4. [Validate](#value-destination-1-validation) `Destination`.
 5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Issuance 1
@@ -487,7 +487,7 @@ Arguments           | List<String>                              | Arguments for 
 3. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the transaction version.
 4. Verify that `Anchor` entry is present and is either [Nonce](#nonce) or [Spend](#spend-1) entry.
 5. Validate the `Anchor` entry.
-6. [Validate](#value-destination-validation) `Destination`.
+6. [Validate](#value-destination-1-validation) `Destination`.
 7. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 
@@ -513,8 +513,8 @@ Arguments           | String                     | Arguments for the program con
 #### Mux Validation
 
 1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
-2. For each `Source` in `Sources`, [validate](#value-source-validation) `Source`.
-3. For each `Destination` in `Destinations`, [validate](#value-destination-validation) `Destination`.
+2. For each `Source` in `Sources`, [validate](#value-source-1-validation) `Source`.
+3. For each `Destination` in `Destinations`, [validate](#value-destination-1-validation) `Destination`.
 4. For each `AssetID` represented in `Sources` and `Destinations`:
     1. Sum the total `Amounts` of the `Sources` with that asset ID. Validation fails if the sum overflows 63-bit integer.
     2. Sum the total `Amounts` of the `Destinations` with that asset ID. Validation fails if the sum overflows 63-bit integer.
@@ -566,6 +566,6 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 
 #### Time Range Validation
 
-1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the [transaction header](#txheader).
-2. Verify that `Maxtime` is either zero, or is equal to or greater than the `Maxtime` specified in the [transaction header](#txheader).
+1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the [transaction header](#transaction-header).
+2. Verify that `Maxtime` is either zero, or is equal to or greater than the `Maxtime` specified in the [transaction header](#transaction-header).
 3. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
