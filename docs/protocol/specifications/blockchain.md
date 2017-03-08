@@ -148,7 +148,7 @@ Position         | [Integer](types.md#integer)         | Iff this source refers 
     2. If the current entry being validated is a `Mux`, `SourcePosition` is the index of this `ValueSource` in the current entry's `Sources`.
 5. Verify that `RefDestination.Value` is equal to `Value`.
 
-### Value 1 Destination
+### Value Destination 1
 
 An Entry uses a ValueDestination to refer to other entries that receive value from the current Entry.
 
@@ -338,7 +338,7 @@ Program Arguments        | List\<String\>    | List of [signatures](types.md#sig
 
 ### Block ID
 
-Block ID is defined as an [Entry ID](#entry-id) of the [block header](#blockheader) structure.
+Block ID is defined as an [Entry ID](#entry-id) of the [block header](#block-header) structure.
 
 ### Transaction Header
 
@@ -402,7 +402,7 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 
 #### Output Validation
 
-1. [Validate](#valuesource-validation) `Source`.
+1. [Validate](#value-source-validation) `Source`.
 2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 
