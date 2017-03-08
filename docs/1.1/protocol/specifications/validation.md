@@ -171,7 +171,7 @@ A new node starts here when joining a running network (with height > 1). In that
 4. For each visited [spend version 1](entries.md#spend-1) in the transaction:
     1. Delete the spent output ID from `S`, yielding a new state `S′`.
     2. Replace `S` with `S′`.
-5. For each visited [output version 1](entries.md#output-1) in the transaction:
+5. For each [output version 1](entries.md#output-1) in the transaction header:
     1. Add that output’s [ID](entries.md#entry-id) to `S`, yielding a new state `S′`.
     2. Replace `S` with `S′`.
 6. Return `S`.
