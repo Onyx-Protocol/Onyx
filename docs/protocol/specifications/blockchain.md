@@ -36,6 +36,8 @@
 
 This is a specification of the semantic data structures used by blocks and transactions. These data structures and rules are used for validation and hashing. This format is independent from the format for transaction wire serialization.
 
+Lower-level data structures are defined in a supporting document [Data Types Specification](types.md).
+
 ### Block
 
 A **block** is a [block header](#block-header) together with a list of [transactions](#transaction).
