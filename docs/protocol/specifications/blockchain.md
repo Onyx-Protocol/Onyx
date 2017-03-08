@@ -10,8 +10,8 @@
   * [Asset Definition](#asset-definition)
   * [Asset ID](#asset-id)
   * [Asset Amount](#asset-amount)
-  * [Value Source](#value-source)
-  * [Value Destination](#value-destination)
+  * [Value Source 1](#value-source-1)
+  * [Value Destination 1](#value-destination-1)
   * [Merkle Root](#merkle-root)
   * [Merkle Binary Tree](#merkle-binary-tree)
   * [Merkle Patricia Tree](#merkle-patricia-tree)
@@ -122,7 +122,7 @@ AssetID          | [Hash](types.md#hash)        | [Asset ID](#asset-id).
 Value            | [Integer](types.md#integer)  | Number of units of the referenced asset.
 
 
-### Value Source
+### Value Source 1
 
 An [Entry](#entry) uses a ValueSource to refer to other [Entries](#entry) that provide the value for it.
 
@@ -132,7 +132,7 @@ Ref              | [Pointer](#pointer)\<[Issuance1](#issuance-1)\|[Spend1](#spen
 Value            | [AssetAmount](#asset-amount) | Amount and Asset ID contained in the referenced entry.
 Position         | [Integer](types.md#integer)         | Iff this source refers to a [Mux](#mux-1) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance-1) or [Spend](#spend-1) entry, then the `Position` must be 0.
 
-#### Value Source Validation
+#### Value Source 1 Validation
 
 1. Verify that `Ref` is present and valid.
 2. Define `RefDestination` as follows:
@@ -148,7 +148,7 @@ Position         | [Integer](types.md#integer)         | Iff this source refers 
     2. If the current entry being validated is a `Mux`, `SourcePosition` is the index of this `ValueSource` in the current entry's `Sources`.
 5. Verify that `RefDestination.Value` is equal to `Value`.
 
-### Value Destination
+### Value 1 Destination
 
 An Entry uses a ValueDestination to refer to other entries that receive value from the current Entry.
 
@@ -158,7 +158,7 @@ Ref              | [Pointer](#pointer)\<[Output1](#output-1)\|[Retirement1](#ret
 Value            | [AssetAmount](#asset-amount)    | Amount and Asset ID contained in the referenced entry
 Position         | [Integer](types.md#integer)            | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
 
-#### Value Destination Validation
+#### Value Destination 1 Validation
 
 1. Verify that `Ref` is present. (This means it must be reachable by traversing `Results` and `Sources` starting from the TxHeader.)
 2. Define `RefSource` as follows:
@@ -179,7 +179,7 @@ Position         | [Integer](types.md#integer)            | Iff this destination
 
 **Inputs:**
 
-1. `source`: [ValueSource](#value-source) struct to be validated.
+1. `source`: [ValueSource](#value-source-1) struct to be validated.
 2. `receiver`: the entry containing `source` struct.
 3. `source index`: the index of `source` within the receiving entry.
 
@@ -190,7 +190,7 @@ Position         | [Integer](types.md#integer)            | Iff this destination
     1. Verify that `source.Position` is 0.
     2. Let `destination` be the `sender.Destination`.
 3. If `sender` is a [Mux](#mux-1):
-    1. Verify that `sender.Destinations` contains at least `source.Position + 1` [ValueDestination](#value-destination) items.
+    1. Verify that `sender.Destinations` contains at least `source.Position + 1` [ValueDestination](#value-destination-1) items.
     2. Let `destination` be the `sender.Destinations[source.Position]`.
 4. Verify that `source.Value` is equal to `destination.Value`.
 5. Verify that `destination.Ref` is equal to the ID of the `receiver`.
