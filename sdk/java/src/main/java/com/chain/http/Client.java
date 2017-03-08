@@ -417,7 +417,7 @@ public class Client {
     max = Math.min(max, RETRY_MAX_DELAY_MILLIS);
 
     // To incorporate jitter, use a pseudo random delay between [max/2, max] millis.
-    return randomGenerator.nextInt(max/2) + max/2 + 1;
+    return randomGenerator.nextInt(max / 2) + max / 2 + 1;
   }
 
   private static final int[] RETRIABLE_STATUS_CODES = {
