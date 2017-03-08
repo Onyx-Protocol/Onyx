@@ -267,7 +267,7 @@ Chain Core is software that implements the Chain Protocol. Using Chain Core, org
 * [Federated Consensus](federated-consensus.md)
 * [Blockchain Programs](blockchain-programs.md)
 * [Blockchain Extensibility](blockchain-extensibility.md)
-* [Data Model Specification](../specifications/data.md)
+* [Blockchain Data Model Specification](../specifications/blockchain.md)
 * [Virtual Machine Specification](../specifications/vm1.md)
 * [Key Derivation Specification](../specifications/chainkd.md)
 * [Chain Core Documentation](../../)
