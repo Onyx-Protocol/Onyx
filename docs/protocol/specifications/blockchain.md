@@ -3,6 +3,16 @@
 * [Introduction](#introduction)
   * [Block](#block)
   * [Transaction](#transaction)
+* [Types](#types)
+  * [LEB128](#leb128)
+  * [Integer](#integer)
+  * [String](#string)
+  * [SHA3](#sha3)
+  * [Hash](#hash)
+  * [List](#list)
+  * [Struct](#struct)
+  * [Public Key](#public-key)
+  * [Signature](#signature)
 * [Auxiliary data structures](#auxiliary-data-structures)
   * [Extension Struct](#extension-struct)
   * [Pointer](#pointer)
@@ -36,7 +46,7 @@
 
 This is a specification of the semantic data structures used by blocks and transactions. These data structures and rules are used for validation and hashing. This format is independent from the format for transaction wire serialization.
 
-Lower-level data structures are defined in a supporting document [Data Types Specification](types.md).
+Lower-level data structures are defined in a supporting document [Data Types Specification](blockchain.md).
 
 ### Block
 
@@ -49,9 +59,59 @@ A **transaction** is composed of a set of [entries](#entries). Each transaction 
 Every entry is identified by its [Entry ID](#entry-id).
 
 
+## Types
+
+### LEB128
+
+[Little Endian Base 128](https://developers.google.com/protocol-buffers/docs/encoding) encoding for unsigned integers typically used to specify length prefixes for arrays and strings. Values in range [0, 127] are encoded in one byte. Larger values use two or more bytes.
+
+### Integer
+
+A LEB128 integer with a maximum allowed value of 0x7fffffffffffffff (2<sup>63</sup> – 1) and a minimum of 0. A varint63 fits into a signed 64-bit integer.
+
+### String
+
+A binary string with a LEB128 prefix specifying its length in bytes.
+The maximum allowed length of the underlying string is 0x7fffffff (2<sup>31</sup> – 1).
+
+The empty string is encoded as a single byte 0x00, a one-byte string is encoded with two bytes 0x01 0xNN, a two-byte string is 0x02 0xNN 0xMM, etc. 
+
+### SHA3
+
+*SHA3* refers to the SHA3-256 function as defined in [FIPS202](https://dx.doi.org/10.6028/NIST.FIPS.202) with a fixed-length 32-byte output.
+
+This hash function is used throughout all data structures and algorithms in this spec,
+with the exception of SHA-512 (see [FIPS180](http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf)) used internally as function H inside Ed25519 (see [CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)).
+
+### Hash
+
+A fixed-length 32-byte string.
+
+### List
+
+A `List` is encoded as a [Varstring31](data.md#varstring31) containing the serialized items, one by one, as defined by the schema. 
+
+Note: since the `List` is encoded as a variable-length string, its length prefix indicates not the number of _items_,
+but the number of _bytes_ of all the items in their serialized form.
+
+### Struct
+
+A `Struct` is encoded as a concatenation of all its serialized fields.
+
+### Public Key
+
+In this document, a *public key* is the 32-byte binary encoding
+of an Ed25519 (EdDSA) public key, as defined in [CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05).
+
+### Signature
+
+In this document, a *signature* is the 64-byte binary encoding
+of an Ed25519 (EdDSA) signature, as defined in [CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05).
+
+
 ## Auxiliary data structures
 
-Auxiliary data structures are [Structs](types.md#struct) that are not [entries](#entries) by themselves, but used as fields within the entries.
+Auxiliary data structures are [Structs](blockchain.md#struct) that are not [entries](#entries) by themselves, but used as fields within the entries.
 
 ### Extension Struct
 
@@ -60,7 +120,7 @@ Future versions of the protocol may add additional fields as `Extension Structs`
 
 ### Pointer
 
-A `Pointer` is encoded as a [Hash](types.md#hash), and identifies another [entry](#entry) by its [ID](#entry-id). 
+A `Pointer` is encoded as a [Hash](blockchain.md#hash), and identifies another [entry](#entry) by its [ID](#entry-id). 
 
 `Pointer` restricts the possible acceptable types: `Pointer<X>` must refer to an entry of type `X`.
 
@@ -74,8 +134,8 @@ Program encapsulates the version of the [VM](vm1.md) and the bytecode that shoul
 
 Field            | Type                | Description
 -----------------|---------------------|----------------
-VM Version       | [Integer](types.md#integer) | The VM version to be used when evaluating the program.
-Bytecode         | [String](types.md#string)   | The program code to be executed.
+VM Version       | [Integer](blockchain.md#integer) | The VM version to be used when evaluating the program.
+Bytecode         | [String](blockchain.md#string)   | The program code to be executed.
 
 #### Program Validation
 
@@ -100,16 +160,16 @@ Bytecode         | [String](types.md#string)   | The program code to be executed
 
 Field                 | Type                | Description
 ----------------------|---------------------|----------------
-Initial Block ID      | [Hash](types.md#hash)       | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
+Initial Block ID      | [Hash](blockchain.md#hash)       | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
 Issuance Program      | [Program](#program) | Program that must be satisfied for this asset to be issued.
-Asset Reference Data  | [Hash](types.md#hash)       | Hash of the reference data (formerly known as the “asset definition”) for this asset.
+Asset Reference Data  | [Hash](blockchain.md#hash)       | Hash of the reference data (formerly known as the “asset definition”) for this asset.
 
 
 ### Asset ID
 
 Asset ID is a globally unique identifier of a given asset across all blockchains.
 
-Asset ID is defined as the [SHA3-256](types.md#sha3) of the [Asset Definition](#asset-definition):
+Asset ID is defined as the [SHA3-256](blockchain.md#sha3) of the [Asset Definition](#asset-definition):
 
     AssetID = SHA3-256(AssetDefinition)
 
@@ -120,8 +180,8 @@ AssetAmount struct encapsulates the number of units of an asset together with it
 
 Field            | Type                 | Description
 -----------------|----------------------|----------------
-AssetID          | [Hash](types.md#hash)        | [Asset ID](#asset-id).
-Value            | [Integer](types.md#integer)  | Number of units of the referenced asset.
+AssetID          | [Hash](blockchain.md#hash)        | [Asset ID](#asset-id).
+Value            | [Integer](blockchain.md#integer)  | Number of units of the referenced asset.
 
 
 ### Value Source 1
@@ -132,7 +192,7 @@ Field            | Type                        | Description
 -----------------|-----------------------------|----------------
 Ref              | [Pointer](#pointer)\<[Issuance1](#issuance-1)\|[Spend1](#spend-1)\|[Mux1](#mux-1)\> | Previous entry referenced by this ValueSource.
 Value            | [AssetAmount](#asset-amount) | Amount and Asset ID contained in the referenced entry.
-Position         | [Integer](types.md#integer)         | Iff this source refers to a [Mux](#mux-1) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance-1) or [Spend](#spend-1) entry, then the `Position` must be 0.
+Position         | [Integer](blockchain.md#integer)         | Iff this source refers to a [Mux](#mux-1) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance-1) or [Spend](#spend-1) entry, then the `Position` must be 0.
 
 #### Value Source 1 Validation
 
@@ -158,7 +218,7 @@ Field            | Type                           | Description
 -----------------|--------------------------------|----------------
 Ref              | [Pointer](#pointer)\<[Output1](#output-1)\|[Retirement1](#retirement-1)\|[Mux1](#mux-1)\> | Next entry referenced by this ValueDestination.
 Value            | [AssetAmount](#asset-amount)    | Amount and Asset ID contained in the referenced entry
-Position         | [Integer](types.md#integer)            | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
+Position         | [Integer](blockchain.md#integer)            | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
 
 #### Value Destination 1 Validation
 
@@ -292,7 +352,7 @@ ExtHash                  | [ExtStruct](#extension-struct)  | Extension fields.
 
 Witness field            | Type              | Description
 -------------------------|-------------------|----------------------------------------------------------
-Program Arguments        | List\<String\>    | List of [signatures](types.md#signature) and other data satisfying previous block’s next consensus program.
+Program Arguments        | List\<String\>    | List of [signatures](blockchain.md#signature) and other data satisfying previous block’s next consensus program.
 
 #### Block Header Validation
 
