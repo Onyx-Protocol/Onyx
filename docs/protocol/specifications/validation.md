@@ -41,7 +41,7 @@ A *blockchain state* comprises:
 
 * A [block header](data.md#block-header).
 * A *timestamp* equal to the timestamp in the [block header](data.md#block-header).
-* The set of [output IDs](data.md#output-id) representing [non-retired](data.md#retired-asset) unspent outputs.
+* A *UTXO set*: a set of output [IDs](blockchain.md#entry-id) representing unspent [outputs](blockchain.md#output).
 * A *nonce set*: a set of ([Nonce ID](entries.md#nonce), expiration timestamp) pairs. It records recent nonce entries in the state in order to prevent duplicates. Expiration timestamp is used to prune outdated records.
 
 
