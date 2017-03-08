@@ -249,7 +249,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 
 ### Asset ID Commitment
 
-An asset ID commitment `H` is a point on Curve25519 encoded as a 32-byte string as specified in [[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)].
+An asset ID commitment `AC` is a [point pair](#point-pair) `(H, Ba)`.
 
 The asset ID commitment can either be nonblinded (clear) or blinded (confidential):
 
@@ -257,8 +257,6 @@ The asset ID commitment can either be nonblinded (clear) or blinded (confidentia
 * [Create Blinded Asset ID Commitment](#create-blinded-asset-id-commitment)
 
 Note: even if the asset ID is provided in the clear, the corresponding nonblinded asset ID commitment is necessary for algorithms that validate the transaction as a whole.
-
-Asset ID commitments are pedersen commitments as described in [[CITATION]].
 
 
 ### Encrypted Asset ID
