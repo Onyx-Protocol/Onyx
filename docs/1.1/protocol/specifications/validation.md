@@ -182,8 +182,8 @@ A new node starts here when joining a running network (with height > 1). In that
 
 **Tx Validity:**
 
-[ ] 3. Test that the transaction has at least one input; if not, halt and return false.
-[ ] 3. Ensure that each [input commitment](data.md#transaction-input-commitment) appears only once; if there is a duplicate, halt and return false.
+[x] 3. Test that the transaction has at least one input; if not, halt and return false.
+[x] 3. Ensure that each [input commitment](data.md#transaction-input-commitment) appears only once; if there is a duplicate, halt and return false.
 [x] 4. If the transaction maxtime is greater than zero test that it is greater than or equal to the mintime; if not, halt and return false.
 [x] 5. If transaction version equals 1, check each of the following conditions. If any are not satisfied, halt and return false:
 [x]     1. [Transaction common fields](data.md#transaction-common-fields) string must contain only the fields defined in this version of the protocol (no additional data included).
@@ -198,7 +198,7 @@ A new node starts here when joining a running network (with height > 1). In that
 [x]         1. Sum the input amounts of that asset and sum the output amounts of that asset.
 [x]         2. Test that both input and output sums are less than 2<sup>63</sup>; if not, halt and return false.
 [x]         3. Test that the input sum equals the output sum; if not, halt and return false.
-[ ]         4. Check that there is at least one input with that asset ID; if not, halt and return false.
+[x]         4. Check that there is at least one input with that asset ID; if not, halt and return false.
 [x] 7. Return true.
 [ ] 5. If all inputs in transaction are [issuance with asset version 1](data.md#asset-version-1-issuance-commitment), test if at least one of them has a non-empty nonce. If all have empty nonces, halt and return false.
 [ ]     * Note: this means that transaction uniqueness is guaranteed not only by spending inputs and issuance inputs with non-empty nonce, but also by future inputs of unknown asset versions. The future asset versions will provide rules enforcing transaction uniqueness.
