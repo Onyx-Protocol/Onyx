@@ -1177,7 +1177,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc5  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [Transaction Header](blockchain.md#transaction-header) mintime in milliseconds on the data stack.
+Pushes the [transaction header](blockchain.md#transaction-header) mintime in milliseconds on the data stack.
 If the value is greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>–1 (encoded as [VM number](#vm-number) 0xffffffffffffff7f).
 
 Fails if executed in the [block context](#block-context).
@@ -1199,7 +1199,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc7  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the data as specified in the [transaction header](blockchain.md#transaction-header).
+Pushes the SHA3-256 hash of the transaction's reference data as specified in the Data field of the [transaction header](blockchain.md#transaction-header).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1210,7 +1210,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc8  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the data as specified in the current [entry](blockchain.md#entry).
+Pushes the SHA3-256 hash of the reference data as specified in the Data field of the current [entry](blockchain.md#entry).
 
 Fails if executed in the [block context](#block-context).
 
