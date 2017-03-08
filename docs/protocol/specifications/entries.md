@@ -7,7 +7,7 @@
   * [List](#list)
   * [Struct](#struct)
   * [ExtStruct](#extstruct)
-  * [Pointer](#pointer).
+  * [Pointer](#pointer)
 * [Auxiliary data structures](#auxiliary-data-structures)
   * [Asset Definition](#asset-definition)
   * [AssetAmount](#assetamount)
