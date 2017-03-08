@@ -87,7 +87,7 @@ A fixed-length 32-byte string.
 
 ### List
 
-A `List` is encoded as a [Varstring31](data.md#varstring31) containing the serialized items, one by one, as defined by the schema. 
+A `List` is encoded as a [Varstring31](#string) containing the serialized items, one by one, as defined by the schema. 
 
 Note: since the `List` is encoded as a variable-length string, its length prefix indicates not the number of _items_,
 but the number of _bytes_ of all the items in their serialized form.
@@ -109,7 +109,7 @@ of an Ed25519 (EdDSA) signature, as defined in [CFRG1](https://tools.ietf.org/ht
 
 ## Auxiliary data structures
 
-Auxiliary data structures are [Structs](blockchain.md#struct) that are not [entries](#entries) by themselves, but used as fields within the entries.
+Auxiliary data structures are [Structs](#struct) that are not [entries](#entries) by themselves, but used as fields within the entries.
 
 ### Extension Struct
 
@@ -118,7 +118,7 @@ Future versions of the protocol may add additional fields as `Extension Structs`
 
 ### Pointer
 
-A `Pointer` is encoded as a [Hash](blockchain.md#hash), and identifies another [entry](#entry) by its [ID](#entry-id). 
+A `Pointer` is encoded as a [Hash](#hash), and identifies another [entry](#entry) by its [ID](#entry-id). 
 
 `Pointer` restricts the possible acceptable types: `Pointer<X>` must refer to an entry of type `X`.
 
@@ -132,8 +132,8 @@ Program encapsulates the version of the [VM](vm1.md) and the bytecode that shoul
 
 Field            | Type                | Description
 -----------------|---------------------|----------------
-VM Version       | [Integer](blockchain.md#integer) | The VM version to be used when evaluating the program.
-Bytecode         | [String](blockchain.md#string)   | The program code to be executed.
+VM Version       | [Integer](#integer) | The VM version to be used when evaluating the program.
+Bytecode         | [String](#string)   | The program code to be executed.
 
 #### Program Validation
 
@@ -158,16 +158,16 @@ Bytecode         | [String](blockchain.md#string)   | The program code to be exe
 
 Field                 | Type                | Description
 ----------------------|---------------------|----------------
-Initial Block ID      | [Hash](blockchain.md#hash)       | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
+Initial Block ID      | [Hash](#hash)       | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
 Issuance Program      | [Program](#program) | Program that must be satisfied for this asset to be issued.
-Asset Reference Data  | [Hash](blockchain.md#hash)       | Hash of the reference data (formerly known as the “asset definition”) for this asset.
+Asset Reference Data  | [Hash](#hash)       | Hash of the reference data (formerly known as the “asset definition”) for this asset.
 
 
 ### Asset ID
 
 Asset ID is a globally unique identifier of a given asset across all blockchains.
 
-Asset ID is defined as the [SHA3-256](blockchain.md#sha3) of the [Asset Definition](#asset-definition):
+Asset ID is defined as the [SHA3-256](#sha3) of the [Asset Definition](#asset-definition):
 
     AssetID = SHA3-256(AssetDefinition)
 
@@ -178,8 +178,8 @@ AssetAmount struct encapsulates the number of units of an asset together with it
 
 Field            | Type                 | Description
 -----------------|----------------------|----------------
-AssetID          | [Hash](blockchain.md#hash)        | [Asset ID](#asset-id).
-Value            | [Integer](blockchain.md#integer)  | Number of units of the referenced asset.
+AssetID          | [Hash](#hash)        | [Asset ID](#asset-id).
+Value            | [Integer](#integer)  | Number of units of the referenced asset.
 
 
 ### Value Source 1
@@ -190,7 +190,7 @@ Field            | Type                        | Description
 -----------------|-----------------------------|----------------
 Ref              | [Pointer](#pointer)\<[Issuance1](#issuance-1)\|[Spend1](#spend-1)\|[Mux1](#mux-1)\> | Previous entry referenced by this ValueSource.
 Value            | [AssetAmount](#asset-amount) | Amount and Asset ID contained in the referenced entry.
-Position         | [Integer](blockchain.md#integer)         | Iff this source refers to a [Mux](#mux-1) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance-1) or [Spend](#spend-1) entry, then the `Position` must be 0.
+Position         | [Integer](#integer)         | Iff this source refers to a [Mux](#mux-1) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance-1) or [Spend](#spend-1) entry, then the `Position` must be 0.
 
 #### Value Source 1 Validation
 
@@ -216,7 +216,7 @@ Field            | Type                           | Description
 -----------------|--------------------------------|----------------
 Ref              | [Pointer](#pointer)\<[Output1](#output-1)\|[Retirement1](#retirement-1)\|[Mux1](#mux-1)\> | Next entry referenced by this ValueDestination.
 Value            | [AssetAmount](#asset-amount)    | Amount and Asset ID contained in the referenced entry
-Position         | [Integer](blockchain.md#integer)            | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
+Position         | [Integer](#integer)            | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
 
 #### Value Destination 1 Validation
 
@@ -350,7 +350,7 @@ ExtHash                  | [ExtStruct](#extension-struct)  | Extension fields.
 
 Witness field            | Type              | Description
 -------------------------|-------------------|----------------------------------------------------------
-Program Arguments        | List\<String\>    | List of [signatures](blockchain.md#signature) and other data satisfying previous block’s next consensus program.
+Program Arguments        | List\<String\>    | List of [signatures](#signature) and other data satisfying previous block’s next consensus program.
 
 #### Block Header Validation
 

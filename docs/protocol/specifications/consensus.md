@@ -136,8 +136,8 @@ The generator runs this periodically or when the transaction pool reaches a cert
 1. If the last generated block exists with height greater than the current blockchain state, halt and return it.
 2. [Make Block](#make-block) with the current blockchain state, the transaction pool, and the current time.
 3. For each block signer:
-    1. Send the block and the generator’s [signature](types.md#signature) to the signer [asking the signer to sign the block](#sign-block)
-    2. Receive a [signature](types.md#signature) from the signer.
+    1. Send the block and the generator’s [signature](blockchain.md#signature) to the signer [asking the signer to sign the block](#sign-block)
+    2. Receive a [signature](blockchain.md#signature) from the signer.
     3. Add the signature to the [block witness](blockchain.md#block-header) program arguments.
 4. Replace the last generated block with the new block.
 5. [Apply the block](validation.md#apply-block) to the current blockchain state, yielding a new state.
@@ -163,7 +163,7 @@ See also the note in the [Make Block](#make-block) algorithm.
 5. signing key,
 6. system time
 
-**Output:** [signature](types.md#signature) or nothing.
+**Output:** [signature](blockchain.md#signature) or nothing.
 
 **Affects:** last signed block.
 
@@ -178,7 +178,7 @@ See also the note in the [Make Block](#make-block) algorithm.
     2. For every transaction in the block transaction version must equal 1.
 6. Check that the block's timestamp is less than 2 minutes after the system time. If it is not, halt and return nothing.
 7. Compute the [block ID](blockchain.md#block-id) for the block.
-8. Sign the hash with the signing key, yielding a [signature](types.md#signature).
+8. Sign the hash with the signing key, yielding a [signature](blockchain.md#signature).
 9. Replace the last signed block with the input block.
 10. Return the signature.
 
