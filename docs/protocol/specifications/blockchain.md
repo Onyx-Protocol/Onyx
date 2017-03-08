@@ -19,7 +19,7 @@
   * [Program](#program)
   * [Asset Definition](#asset-definition)
   * [Asset ID](#asset-id)
-  * [Asset Amount](#asset-amount)
+  * [Asset Amount](#asset-amount-1)
   * [Value Source 1](#value-source-1)
   * [Value Destination 1](#value-destination-1)
   * [Merkle Root](#merkle-root)
@@ -172,9 +172,9 @@ Asset ID is defined as the [SHA3-256](#sha3) of the [Asset Definition](#asset-de
     AssetID = SHA3-256(AssetDefinition)
 
 
-### Asset Amount
+### Asset Amount 1
 
-AssetAmount struct encapsulates the number of units of an asset together with its [asset ID](#asset-id).
+AssetAmount1 struct encapsulates the number of units of an asset together with its [asset ID](#asset-id).
 
 Field            | Type                 | Description
 -----------------|----------------------|----------------
@@ -189,7 +189,7 @@ An [Entry](#entry) uses a ValueSource to refer to other [Entries](#entry) that p
 Field            | Type                        | Description
 -----------------|-----------------------------|----------------
 Ref              | [Pointer](#pointer)\<[Issuance1](#issuance-1)\|[Spend1](#spend-1)\|[Mux1](#mux-1)\> | Previous entry referenced by this ValueSource.
-Value            | [AssetAmount](#asset-amount) | Amount and Asset ID contained in the referenced entry.
+Value            | [AssetAmount1](#asset-amount-1) | Amount and Asset ID contained in the referenced entry.
 Position         | [Integer](#integer)         | Iff this source refers to a [Mux](#mux-1) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance-1) or [Spend](#spend-1) entry, then the `Position` must be 0.
 
 #### Value Source 1 Validation
@@ -215,7 +215,7 @@ An Entry uses a ValueDestination to refer to other entries that receive value fr
 Field            | Type                           | Description
 -----------------|--------------------------------|----------------
 Ref              | [Pointer](#pointer)\<[Output1](#output-1)\|[Retirement1](#retirement-1)\|[Mux1](#mux-1)\> | Next entry referenced by this ValueDestination.
-Value            | [AssetAmount](#asset-amount)    | Amount and Asset ID contained in the referenced entry
+Value            | [AssetAmount1](#asset-amount-1)    | Amount and Asset ID contained in the referenced entry
 Position         | [Integer](#integer)            | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
 
 #### Value Destination 1 Validation
@@ -500,7 +500,7 @@ Witness             | Struct               | See below.
 Body field          | Type                   | Description
 --------------------|------------------------|----------------
 Anchor              | Pointer<Nonce1|Spend1> | Used to guarantee uniqueness of this entry.
-Value               | AssetAmount            | Asset ID and amount being issued.
+Value               | AssetAmount1           | Asset ID and amount being issued.
 Data                | Hash                   | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct)| If the transaction version is known, this must be 32 zero-bytes.
 
