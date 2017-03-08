@@ -87,8 +87,6 @@ A `Pointer` can be `nil` (not pointing to any entry), in which case it is repres
     
     0x0000000000000000000000000000000000000000000000000000000000000000
 
-
-
 ## Auxiliary data structures
 
 Auxiliary data structures are [Structs](#struct) that are not [entries](#entries) by themselves, but used as fields within the entries.
@@ -224,6 +222,10 @@ Position         | [Integer](#integer)            | Iff this destination refers 
 6. Verify that `destination.Position` is equal to the `source index`.
 7. Validate the entry `sender`.
 
+### Merkle Root
+
+
+
 
 ## Entries
 
@@ -257,14 +259,14 @@ Witness    | Struct               | See below.
 
 Body field               | Type              | Description
 -------------------------|-------------------|----------------------------------------------------------
-Version                  | Integer           | Block version, equals 1.
-Height                   | Integer           | Block serial number.
-Previous Block ID        | Hash              | [Hash](#block-id) of the previous block or all-zero string.
-Timestamp                | Integer           | Time of the block in milliseconds since 00:00:00 UTC Jan 1, 1970.
-Transactions Merkle Root | Hash    | Root hash of the [merkle binary hash tree](data.md#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
-Assets Merkle Root       | Hash    | Root hash of the [merkle patricia tree](data.md#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](data.md#assets-merkle-root) for details.
+Version                  | Integer                 | Block version, equals 1.
+Height                   | Integer                 | Block serial number.
+Previous Block ID        | Hash                    | [Hash](#block-id) of the previous block or all-zero string.
+Timestamp                | Integer                 | Time of the block in milliseconds since 00:00:00 UTC Jan 1, 1970.
+Transactions Merkle Root | MerkleRoot<TxHeader>    | Root hash of the [merkle binary hash tree](data.md#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
+Assets Merkle Root       | PatriciaRoot<Output1>   | Root hash of the [merkle patricia tree](data.md#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](data.md#assets-merkle-root) for details.
 Next [Consensus Program](data.md#consensus-program) | String | Authentication predicate for adding a new block after this one.
-ExtHash                  | [ExtStruct](#extstruct)    | Extension fields.
+ExtHash                  | [ExtStruct](#extstruct)  | Extension fields.
 
 Witness field            | Type              | Description
 -------------------------|-------------------|----------------------------------------------------------
@@ -286,7 +288,7 @@ Program Arguments        | List\<String\>    | List of [signatures](data.md#sign
 5. Verify that `Timestamp` is greater than `PrevBlockHeader.Timestamp`.
 6. Evaluate program `PreviousBlockID.NextConsensusProgram` with [VM version 1](vm1.md) and expansion flag set to `false`. If program execution failed, fail validation.
 7. For each transaction in the block:
-    1. [Validate transaction](#validate-transaction) with the timestamp and block version of the input block header; if it is not valid, halt and return false.
+    1. [Validate transaction](#validate-transaction) with the timestamp and block version of the input block header.
 8. Compute the [transactions merkle root](data.md#transactions-merkle-root) for the block.
 9. Verify that the computed merkle tree hash is equal to `TransactionsMerkleRoot`.
 10. If the block version is 1: verify that the `ExtHash` is the all-zero hash.
@@ -302,7 +304,7 @@ Witness    | Struct               | Empty struct.
 Body Field | Type                                    | Description
 -----------|-----------------------------------------|-------------------------
 Version    | Integer                                 | Transaction version, equals 1.
-Results    | List\<Pointer\<Output\|Retirement\>\>   | A list of pointers to Outputs or Retirements. This list must contain at least one item.
+Results    | List\<Pointer\<Output 1\|Retirement 1\>\>   | A list of pointers to Outputs or Retirements. This list must contain at least one item.
 Data       | Hash                                    | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
 Mintime    | Integer                                 | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
 Maxtime    | Integer                                 | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
@@ -382,7 +384,7 @@ Witness             | Struct               | See below.
 
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
-SpentOutput         | Pointer<Output>      | The Output entry consumed by this spend.
+SpentOutput         | Pointer<Output1>      | The Output entry consumed by this spend.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
 
@@ -407,12 +409,12 @@ Type                | String               | "issuance1"
 Body                | Struct               | See below.
 Witness             | Struct               | See below.
 
-Body field          | Type                 | Description
---------------------|----------------------|----------------
-Anchor              | Pointer<Nonce|Spend> | Used to guarantee uniqueness of this entry.
-Value               | AssetAmount          | Asset ID and amount being issued.
-Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
+Body field          | Type                   | Description
+--------------------|------------------------|----------------
+Anchor              | Pointer<Nonce1|Spend1> | Used to guarantee uniqueness of this entry.
+Value               | AssetAmount            | Asset ID and amount being issued.
+Data                | Hash                   | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+ExtHash             | [ExtStruct](#extstruct)| If the transaction version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                                      | Description
 --------------------|-------------------------------------------|----------------
@@ -488,7 +490,7 @@ ExtHash             | [ExtStruct](#extstruct) | If the transaction version is kn
 Witness field       | Type                         | Description
 --------------------|------------------------------|----------------
 Arguments           | List<String>                 | Arguments for the program contained in the Nonce.
-Issuance            | Pointer<Issuance>            | Pointer to an issuance entry.
+Issuance            | Pointer<Issuance1>            | Pointer to an issuance entry.
 
 #### Nonce Validation
 
