@@ -57,7 +57,7 @@ All other instructions are encoded simply by a single-byte opcode. The protocol 
 
 A program executes in a context, either a *block* or a *transaction*. Some instructions have different meaning based on the context.
 
-Transactions use [control programs](blockchain.md#output-1 to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
+Transactions use [control programs](blockchain.md#output-1) to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
 
 Blocks use [consensus programs](blockchain.md#block-header) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
 
@@ -147,7 +147,7 @@ Every instruction has a cost that affects VM *run limit*. Total instruction cost
 
 ### Execution cost
 
-Every instruction has a constant or variable execution cost. Simple instructions such as [ADD](#add) have constant execution cost. More complex instructions like [SHA3](#sha3) or [CHECKSIG](#checksig) have cost depending on amount of data that must be processed.
+Every instruction has a constant or variable execution cost. Simple instructions such as [ADD](#add) have constant execution cost. More complex instructions like [SHA3](blockchain.md#sha3) or [CHECKSIG](#checksig) have cost depending on amount of data that must be processed.
 
 In order to account for spikes in memory usage some instructions (e.g. [CAT](#cat)) define a cost and a refund: before execution begins the cost is applied to the run limit, then after completion refund is applied together with run limit changes due to memory usage.
 
