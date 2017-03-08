@@ -41,7 +41,7 @@ Virtual machines for control and issuance programs inside transactions are versi
 
 Nodes ignore programs with unknown versions, treating them like “anyone can issue/spend.” To discourage use of unassigned versions, block signers refuse to include transactions that use unassigned VM versions.
 
-Blocks do not specify VM version explicitly. [Consensus programs](data.md#consensus-program) use VM version 1 with additional [block-context restrictions](#block-context) applied to some instructions. Upgrades to block authentication can be made via additional fields in the block commitment string.
+Blocks do not specify VM version explicitly. [Consensus programs](blockchain.md#output-1) use VM version 1 with additional [block-context restrictions](#block-context) applied to some instructions. Upgrades to block authentication can be made via additional fields in the block commitment string.
 
 
 ## Program format
@@ -57,9 +57,9 @@ All other instructions are encoded simply by a single-byte opcode. The protocol 
 
 A program executes in a context, either a *block* or a *transaction*. Some instructions have different meaning based on the context.
 
-Transactions use [control programs](data.md#control-program) to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
+Transactions use [control programs](blockchain.md#output-1) to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
 
-Blocks use [consensus programs](data.md#consensus-program) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
+Blocks use [consensus programs](blockchain.md#block-header) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
 
 ### Block context
 
@@ -75,8 +75,8 @@ Execution of any of the following instructions results in immediate failure:
 * [AMOUNT](#amount)
 * [MINTIME](#mintime)
 * [MAXTIME](#maxtime)
-* [TXREFDATAHASH](#txrefdatahash)
-* [REFDATAHASH](#refdatahash)
+* [TXDATAHASH](#txdatahash)
+* [DATAHASH](#datahash)
 * [INDEX](#index)
 * [OUTPUTID](#outputid)
 * [NONCE](#nonce)
@@ -102,7 +102,8 @@ Execution of any of the following instructions results in immediate failure:
 3. Data Stack
 4. Alt Stack
 5. Run Limit
-6. Execution Context:
+6. Expansion Flag
+7. Execution Context:
     a. Block
     b. (Transaction, Input Index)
 
@@ -115,6 +116,8 @@ Execution of any of the following instructions results in immediate failure:
 **Data Stack** and **Alt Stack** are stacks of binary strings.
 
 **Run Limit** is a built-in 64-bit integer specifying remaining total cost of execution. Run limit is decreased by the cost of each instruction and also affected by data added to and removed from the data stack and alt stack. Every byte added to either stack costs 1 unit, and every byte removed from either stack refunds 1 unit. (This includes explicit additions and removals by stack-manipulating instructions such as PUSHDATA and DROP, and also implicit additions and removals as when other instructions consume arguments and produce results.)
+
+**Expansion Flag** indicates whether the [expansion opcodes](#expansion-opcodes) are allowed in the program or not. If the flag is off, these opcodes immediately fail the program execution.
 
 **Execution Context** is either a [block context](#block-context) or [transaction context](#transaction-context).
 
@@ -129,7 +132,7 @@ Places program arguments on the data stack one after another so that last argume
 
 ### Verify predicate
 
-Initializes VM with a predicate program (e.g. a [control program](data.md#control-program)) and begins its execution with PC set to zero.
+Initializes VM with a predicate program and begins its execution with PC set to zero.
 
 At the beginning of each execution step, the PC is checked. If it is less than the length of the program, VM reads the opcode at that byte position in the program and executes a corresponding instruction. Instructions are executed as described in the [Instructions](#instructions) section. The run limit is decreased or increased according to the instruction’s *run cost*. If the instruction’s run cost exceeds the current run limit, the instruction is not executed and execution fails immediately.
 
@@ -144,7 +147,7 @@ Every instruction has a cost that affects VM *run limit*. Total instruction cost
 
 ### Execution cost
 
-Every instruction has a constant or variable execution cost. Simple instructions such as [ADD](#add) have constant execution cost. More complex instructions like [SHA3](data.md#sha3) or [CHECKSIG](#checksig) have cost depending on amount of data that must be processed.
+Every instruction has a constant or variable execution cost. Simple instructions such as [ADD](#add) have constant execution cost. More complex instructions like [SHA3](blockchain.md#sha3) or [CHECKSIG](#checksig) have cost depending on amount of data that must be processed.
 
 In order to account for spikes in memory usage some instructions (e.g. [CAT](#cat)) define a cost and a refund: before execution begins the cost is applied to the run limit, then after completion refund is applied together with run limit changes due to memory usage.
 
@@ -206,8 +209,6 @@ Certain arithmetic operations use conservative bounds checks (explicitly specifi
 1. Create an 8-byte string matching the representation of the number as a [little-endian](https://en.wikipedia.org/wiki/Endianness#Little-endian) 64-bit integer, using [two's complement representation](https://en.wikipedia.org/wiki/Two%27s_complement) for negative integers.
 2. Trim the string by removing any `0x00` bytes from the right side.
 
-
-
 Value          | String (hexadecimal)        | Size in bytes
 ---------------|-----------------------------|------------------
 0              | `“”`                        | 0
@@ -215,6 +216,7 @@ Value          | String (hexadecimal)        | Size in bytes
 –1             | `“ff ff ff ff ff ff ff ff”` | 8
 2^63 - 1 (max) | `“ff ff ff ff ff ff ff 7f”` | 8
 -2^63 (min)    | `“00 00 00 00 00 00 00 80”` | 8
+
 
 ## Failure conditions
 
@@ -224,7 +226,7 @@ Validation fails when:
 * a [VERIFY](#verify) instruction fails
 * a [FAIL](#fail) instruction is executed
 * the run limit is below the value required by the current instruction
-* an invalid encoding is detected for keys or [signatures](data.md#signature)
+* an invalid encoding is detected for keys or [signatures](blockchain.md#signature)
 * coercion fails for [numbers](#vm-number)
 * a bounds check fails for one of the [splice](#splice-operators) or [numeric](#logical-and-numeric-operators) instructions
 * the program execution finishes with an empty data stack
@@ -1020,7 +1022,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xaa  | (a → SHA3-256(a))              | max(64, 4·L<sub>x</sub>) + [standard memory cost](#standard-memory-cost)
 
-Replaces top stack item with its [SHA3-256](data.md#sha3) hash value.
+Replaces top stack item with its [SHA3-256](blockchain.md#sha3) hash value.
 
 
 #### CHECKSIG
@@ -1029,7 +1031,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xac  | (sig hash pubkey → q)          | 1024; [standard memory cost](#standard-memory-cost)
 
-Pops the top three items on the data stack, verifies the [signature](data.md#signature) `sig` of the `hash` with a given public key `pubkey` and pushes `true` if the signature is valid; pushes `false` if it is not.
+Pops the top three items on the data stack, verifies the [signature](blockchain.md#signature) `sig` of the `hash` with a given public key `pubkey` and pushes `true` if the signature is valid; pushes `false` if it is not.
 
 Fails if `hash` is not a 32-byte string.
 
@@ -1045,7 +1047,7 @@ Code  | Stack Diagram                  | Cost
 3. Pops `n` public keys.
 4. Pops `hash` from the data stack.
 5. Pops `m` signatures.
-6. Verifies [signatures](data.md#signature) one by one against the public keys and the given `hash`. Signatures must be in the same order as public keys and no two signatures are verified with the same public key.
+6. Verifies [signatures](blockchain.md#signature) one by one against the public keys and the given `hash`. Signatures must be in the same order as public keys and no two signatures are verified with the same public key.
 7. Pushes `true` if all of the signatures are valid, and `false` otherwise.
 
 Failure conditions:
@@ -1066,9 +1068,11 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xae  | (∅ → hash)                     | 256 + [standard memory cost](#standard-memory-cost)
 
-Computes the [transaction signature hash](data.md#transaction-signature-hash) corresponding to the current input.
+Computes the transaction signature hash corresponding to the current entry. Equals [SHA3-256](blockchain.md#sha3) of the concatenation of the current [entry ID](blockchain.md#entry-id) and [transaction ID](blockchain.md#transaction-id):
 
-Typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
+    TXSIGHASH = SHA3-256(entryID || txID)
+
+This instruction is typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1079,7 +1083,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xaf  | (∅ → hash)                     | 4·L<sub>hashed data</sub> + [standard memory cost](#standard-memory-cost)
 
-Returns the [block ID](data.md#block-id).
+Returns the [block ID](blockchain.md#block-id).
 
 Typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
 
@@ -1100,43 +1104,56 @@ Note: [standard memory cost](#standard-memory-cost) is applied *after* the instr
 
 Code  | Stack Diagram                                        | Cost
 ------|------------------------------------------------------|-----------------------------------------------------
-0xc1  | (index refdatahash amount assetid version prog → q)  | 16; [standard memory cost](#standard-memory-cost)
+0xc1  | (index datahash amount assetid version prog → q)     | 16; [standard memory cost](#standard-memory-cost)
 
-1. Pops 6 items from the data stack: `index`, `refdatahash`, `amount`, `assetid`, `version`, `prog`.
+1. Pops 6 items from the data stack: `index`, `datahash`, `amount`, `assetid`, `version`, `prog`.
 2. Fails if `index` is negative or not a valid [number](#vm-number).
 3. Fails if the number of outputs is less or equal to `index`.
 4. Fails if `amount` and `version` are not non-negative [numbers](#vm-number).
-5. Finds a transaction output at the given `index`.
-6. If the output satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
-    1. control program equals `prog`,
-    2. VM version equals `version`,
-    3. asset ID equals `assetid`,
-    4. amount equals `amount`,
-    5. `refdatahash` is an empty string or it matches the [SHA3-256](data.md#sha3) hash of the reference data.
+5. If the current entry is a [Mux](blockchain.md#mux-1):
+    1. Finds a [destination entry](blockchain.md#value-destination-1) at the given `index`.
+    2. If the entry satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
+        1. the destination entry is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1),
+        2. if the destination is an output: control program equals `prog` and VM version equals `version`,
+        3. if the destination is a retirement: `prog` is an empty string and `version` is zero,
+        4. asset ID equals `assetid`,
+        5. amount equals `amount`,
+        6. `datahash` is an empty string or it matches the [SHA3-256](blockchain.md#sha3) hash of the data.
+5. If the entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1):
+    1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](blockchain.md#mux-1), performs checks as described in the step 5.
+    2. If the [destination entry](blockchain.md#value-destination-1) is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1):
+        1. If `index` is not zero, pushes [false](#vm-boolean) on the data stack.
+        2. Otherwise, performs checks as described in the step 5.2.
 
 Fails if executed in the [block context](#block-context).
 
+Fails if the entry is not a [mux](blockchain.md#mux-1), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
 
 #### ASSET
 
 Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
-0xc2  | (∅ → assetid)   | 1; [standard memory cost](#standard-memory-cost)
+0xc2  | (∅ → assetid)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the asset ID assigned to the current input on the data stack.
+Pushes the asset ID assigned to the current entry on the data stack. 
+For the [nonce](blockchain.md#nonce) entry, the asset ID of the referenced [issuance](blockchain.md#issuance-1) is used.
 
 Fails if executed in the [block context](#block-context).
 
+Fails if the entry is not a [nonce](blockchain.md#nonce), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
 
 #### AMOUNT
 
 Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
-0xc3  | (∅ → amount)    | 1; [standard memory cost](#standard-memory-cost)
+0xc3  | (∅ → amount)   | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the amount assigned to the current input on the data stack.
+Pushes the amount assigned to the current entry on the data stack.
+For the [nonce](blockchain.md#nonce) entry, the amount of the referenced [issuance](blockchain.md#issuance-1) is used.
 
 Fails if executed in the [block context](#block-context).
+
+Fails if the entry is not a [nonce](blockchain.md#nonce), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
 
 
 #### PROGRAM
@@ -1146,10 +1163,12 @@ Code  | Stack Diagram  | Cost
 0xc4  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
 1. In [transaction context](#transaction-context):
-  * For spend inputs: pushes the control program from the output being spent.
-  * For issuance inputs: pushes the issuance program.
+  * For [spends](blockchain.md#spend-1): pushes the control program from the output being spent.
+  * For [issuances](blockchain.md#issuance-1): pushes the issuance program.
+  * For [muxes](blockchain.md#mux-1): pushes the mux program.
+  * For [nonces](blockchain.md#nonce): pushes the nonce program.
 2. In [block context](#block-context):
-  * Pushes the current [consensus program](data.md#consensus-program) being executed (that is specified in the previous block header).
+  * Pushes the current [consensus program](blockchain.md#block-header) being executed (that is specified in the previous block header).
 
 
 #### MINTIME
@@ -1158,7 +1177,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc5  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the transaction minimum time in milliseconds on the data stack.
+Pushes the [Transaction Header](blockchain.md#transaction-header) mintime in milliseconds on the data stack.
 If the value is greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>–1 (encoded as [VM number](#vm-number) 0xffffffffffffff7f).
 
 Fails if executed in the [block context](#block-context).
@@ -1169,31 +1188,33 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc6  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the transaction maximum time in milliseconds on the data stack.
+Pushes the [transaction header](blockchain.md#transaction-header) maxtime in milliseconds on the data stack.
 If the value is zero or greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>–1 (encoded as [VM number](#vm-number) 0xffffffffffffff7f).
 
 Fails if executed in the [block context](#block-context).
 
-#### TXREFDATAHASH
+#### TXDATAHASH
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc7  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the [transaction](data.md#transaction)'s reference data.
+Pushes the SHA3-256 hash of the data as specified in the [transaction header](blockchain.md#transaction-header).
 
 Fails if executed in the [block context](#block-context).
 
 
-#### REFDATAHASH
+#### DATAHASH
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc8  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the current [input](data.md#transaction-input)'s reference data.
+Pushes the SHA3-256 hash of the data as specified in the current [entry](blockchain.md#entry).
 
 Fails if executed in the [block context](#block-context).
+
+Fails if the current entry is not an [issuance](blockchain.md#issuance-1), a [spend](blockchain.md#spend-1), an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1).
 
 
 #### INDEX
@@ -1202,7 +1223,20 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc9  | (∅ → index)     | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the index of the current input on the data stack.
+Pushes the [ValueDestination.position](blockchain.md#value-destination-1) of the current entry on the data stack.
+
+Fails if executed in the [block context](#block-context).
+
+Fails if the current entry is not an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
+
+
+#### ENTRYID
+
+Code  | Stack Diagram   | Cost
+------|-----------------|-----------------------------------------------------
+0xca  | (∅ → entryid)   | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes the [current entry ID](blockchain.md#entry-id) on the data stack (e.g. a [spend](blockchain.md#spend-1), an [issuance](blockchain.md#issuance-1) or a [nonce](blockchain.md#nonce)).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1213,11 +1247,11 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xcb  | (∅ → outputid)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [output ID](data.md#output-id) on the data stack.
-
-Fails if the current input is an [issuance input](data.md#transaction-input-commitment).
+Pushes the [spent output ID](blockchain.md#spend-1) on the data stack.
 
 Fails if executed in the [block context](#block-context).
+
+Fails if the current entry is not a [spend](blockchain.md#spend-1).
 
 
 #### NONCE
@@ -1226,11 +1260,11 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xcc  | (∅ → nonce)     | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the nonce declared in the current input's [issuance commitment](data.md#asset-version-1-issuance-commitment) on the data stack.
-
-Fails if the current input is not an [issuance input](data.md#transaction-input-commitment).
+Pushes the [anchor ID](blockchain.md#issuance-1) of the [issuance entry](blockchain.md#issuance-1) on the data stack.
 
 Fails if executed in the [block context](#block-context).
+
+Fails if the current entry is not an [issuance](blockchain.md#issuance-1).
 
 
 #### NEXTPROGRAM
@@ -1239,7 +1273,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xcd  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [next consensus program](data.md#consensus-program) specified in the current block header.
+Pushes the [next consensus program](blockchain.md#block-header) specified in the current block header.
 
 Fails if executed in the [transaction context](#transaction-context).
 
@@ -1260,9 +1294,13 @@ Fails if executed in the [transaction context](#transaction-context).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xca, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
 
-The unassigned codes are reserved for future expansion and have no effect on the state of the VM apart from reducing run limit by 1.
+The unassigned codes are reserved for future expansion.
+
+If the [expansion flag](#vm-state) is set, these opcodes have no effect on the state of the VM apart from reducing run limit by 1.
+
+If the [expansion flag](#vm-state) is not set, execution fails immediately.
 
 
 
