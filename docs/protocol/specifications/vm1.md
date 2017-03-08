@@ -41,7 +41,7 @@ Virtual machines for control and issuance programs inside transactions are versi
 
 Nodes ignore programs with unknown versions, treating them like “anyone can issue/spend.” To discourage use of unassigned versions, block signers refuse to include transactions that use unassigned VM versions.
 
-Blocks do not specify VM version explicitly. [Consensus programs](blockchain.md#output) use VM version 1 with additional [block-context restrictions](#block-context) applied to some instructions. Upgrades to block authentication can be made via additional fields in the block commitment string.
+Blocks do not specify VM version explicitly. [Consensus programs](blockchain.md#output-1) use VM version 1 with additional [block-context restrictions](#block-context) applied to some instructions. Upgrades to block authentication can be made via additional fields in the block commitment string.
 
 
 ## Program format
@@ -57,9 +57,9 @@ All other instructions are encoded simply by a single-byte opcode. The protocol 
 
 A program executes in a context, either a *block* or a *transaction*. Some instructions have different meaning based on the context.
 
-Transactions use [control programs](blockchain.md#output) to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
+Transactions use [control programs](blockchain.md#output-1 to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
 
-Blocks use [consensus programs](blockchain.md#blockheader) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
+Blocks use [consensus programs](blockchain.md#block-header) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
 
 ### Block context
 
@@ -1110,8 +1110,8 @@ Code  | Stack Diagram                                        | Cost
 2. Fails if `index` is negative or not a valid [number](#vm-number).
 3. Fails if the number of outputs is less or equal to `index`.
 4. Fails if `amount` and `version` are not non-negative [numbers](#vm-number).
-5. If the current entry is a [Mux](blockchain.md#mux):
-    1. Finds a [destination entry](blockchain.md#valuedestination) at the given `index`.
+5. If the current entry is a [Mux](blockchain.md#mux-1):
+    1. Finds a [destination entry](blockchain.md#value-destination-1) at the given `index`.
     2. If the entry satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
         1. the destination entry is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1),
         2. if the destination is an output: control program equals `prog` and VM version equals `version`,
@@ -1120,14 +1120,14 @@ Code  | Stack Diagram                                        | Cost
         5. amount equals `amount`,
         6. `datahash` is an empty string or it matches the [SHA3-256](blockchain.md#sha3) hash of the data.
 5. If the entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1):
-    1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](blockchain.md#mux), performs checks as described in the step 5.
+    1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](blockchain.md#mux-1), performs checks as described in the step 5.
     2. If the [destination entry](blockchain.md#value-destination-1) is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1):
         1. If `index` is not zero, pushes [false](#vm-boolean) on the data stack.
         2. Otherwise, performs checks as described in the step 5.2.
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the entry is not a [mux](blockchain.md#mux), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
+Fails if the entry is not a [mux](blockchain.md#mux-1), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
 
 #### ASSET
 
@@ -1164,11 +1164,11 @@ Code  | Stack Diagram  | Cost
 
 1. In [transaction context](#transaction-context):
   * For [spends](blockchain.md#spend-1): pushes the control program from the output being spent.
-  * For [issuances](blockchain.md#issuances-1): pushes the issuance program.
+  * For [issuances](blockchain.md#issuance-1): pushes the issuance program.
   * For [muxes](blockchain.md#mux-1): pushes the mux program.
   * For [nonces](blockchain.md#nonce): pushes the nonce program.
 2. In [block context](#block-context):
-  * Pushes the current [consensus program](blockchain.md#blockheader) being executed (that is specified in the previous block header).
+  * Pushes the current [consensus program](blockchain.md#block-header) being executed (that is specified in the previous block header).
 
 
 #### MINTIME
@@ -1177,7 +1177,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc5  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [TxHeader](blockchain.md#txheader) mintime in milliseconds on the data stack.
+Pushes the [Transaction Header](blockchain.md#transaction-header) mintime in milliseconds on the data stack.
 If the value is greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>–1 (encoded as [VM number](#vm-number) 0xffffffffffffff7f).
 
 Fails if executed in the [block context](#block-context).
@@ -1188,7 +1188,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc6  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [TxHeader](blockchain.md#txheader) maxtime in milliseconds on the data stack.
+Pushes the [transaction header](blockchain.md#transaction-header) maxtime in milliseconds on the data stack.
 If the value is zero or greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>–1 (encoded as [VM number](#vm-number) 0xffffffffffffff7f).
 
 Fails if executed in the [block context](#block-context).
@@ -1199,7 +1199,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc7  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the data as specified in the [TxHeader](blockchain.md#txheader).
+Pushes the SHA3-256 hash of the data as specified in the [transaction header](blockchain.md#transaction-header).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1223,7 +1223,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc9  | (∅ → index)     | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [ValueDestination.position](blockchain.md#valuedestination) of the current entry on the data stack.
+Pushes the [ValueDestination.position](blockchain.md#value-destination-1) of the current entry on the data stack.
 
 Fails if executed in the [block context](#block-context).
 
@@ -1273,7 +1273,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xcd  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [next consensus program](blockchain.md#blockheader) specified in the current block header.
+Pushes the [next consensus program](blockchain.md#block-header) specified in the current block header.
 
 Fails if executed in the [transaction context](#transaction-context).
 
