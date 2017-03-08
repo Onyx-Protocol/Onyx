@@ -12,7 +12,7 @@ func (tr *TimeRange) Body() interface{} { return tr.body }
 
 func (TimeRange) Ordinal() int { return -1 }
 
-func newTimeRange(minTimeMS, maxTimeMS uint64) *TimeRange {
+func NewTimeRange(minTimeMS, maxTimeMS uint64) *TimeRange {
 	tr := new(TimeRange)
 	tr.body.MinTimeMS = minTimeMS
 	tr.body.MaxTimeMS = maxTimeMS

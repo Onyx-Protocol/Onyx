@@ -18,7 +18,7 @@ func (s *Spend) Body() interface{} { return s.body }
 
 func (s Spend) Ordinal() int { return s.ordinal }
 
-func newSpend(out *Output, data Hash, ordinal int) *Spend {
+func NewSpend(out *Output, data Hash, ordinal int) *Spend {
 	s := new(Spend)
 	s.body.SpentOutput = EntryID(out)
 	s.body.Data = data

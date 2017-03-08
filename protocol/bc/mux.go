@@ -17,7 +17,7 @@ func (m *Mux) Body() interface{} { return m.body }
 
 func (Mux) Ordinal() int { return -1 }
 
-func newMux(program Program) *Mux {
+func NewMux(program Program) *Mux {
 	m := new(Mux)
 	m.body.Program = program
 	return m

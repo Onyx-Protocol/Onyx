@@ -15,7 +15,7 @@ func ComputeOutputID(sc *SpendCommitment) (h Hash, err error) {
 			err = r
 		}
 	}()
-	o := newOutput(Program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
+	o := NewOutput(Program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
 	o.setSourceID(sc.SourceID, sc.AssetAmount, sc.SourcePosition)
 
 	h = EntryID(o)

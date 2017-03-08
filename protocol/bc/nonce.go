@@ -17,7 +17,7 @@ func (n *Nonce) Body() interface{} { return n.body }
 
 func (Nonce) Ordinal() int { return -1 }
 
-func newNonce(p Program, tr *TimeRange) *Nonce {
+func NewNonce(p Program, tr *TimeRange) *Nonce {
 	n := new(Nonce)
 	n.body.Program = p
 	n.body.TimeRange = EntryID(tr)

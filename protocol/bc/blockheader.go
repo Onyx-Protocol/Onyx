@@ -18,7 +18,7 @@ func (bh *BlockHeaderEntry) Body() interface{} { return bh.body }
 
 func (BlockHeaderEntry) Ordinal() int { return -1 }
 
-func newBlockHeader(version, height uint64, previousBlockID Hash, timestampMS uint64, transactionsRoot, assetsRoot Hash, nextConsensusProgram []byte) *BlockHeaderEntry {
+func NewBlockHeader(version, height uint64, previousBlockID Hash, timestampMS uint64, transactionsRoot, assetsRoot Hash, nextConsensusProgram []byte) *BlockHeaderEntry {
 	bh := new(BlockHeaderEntry)
 	bh.body.Version = version
 	bh.body.Height = height

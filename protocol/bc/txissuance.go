@@ -19,7 +19,7 @@ func (iss *Issuance) Body() interface{} { return iss.body }
 
 func (iss Issuance) Ordinal() int { return iss.ordinal }
 
-func newIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issuance {
+func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issuance {
 	iss := new(Issuance)
 	iss.body.Anchor = EntryID(anchor)
 	iss.Anchor = anchor

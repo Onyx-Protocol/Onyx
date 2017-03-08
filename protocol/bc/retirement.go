@@ -18,7 +18,7 @@ func (r *Retirement) Body() interface{} { return r.body }
 
 func (r Retirement) Ordinal() int { return r.ordinal }
 
-func newRetirement(data Hash, ordinal int) *Retirement {
+func NewRetirement(data Hash, ordinal int) *Retirement {
 	r := new(Retirement)
 	r.body.Data = data
 	r.ordinal = ordinal

@@ -19,7 +19,7 @@ func (o *Output) Body() interface{} { return o.body }
 
 func (o Output) Ordinal() int { return o.ordinal }
 
-func newOutput(controlProgram Program, data Hash, ordinal int) *Output {
+func NewOutput(controlProgram Program, data Hash, ordinal int) *Output {
 	out := new(Output)
 	out.body.ControlProgram = controlProgram
 	out.body.Data = data
