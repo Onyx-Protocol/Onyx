@@ -139,7 +139,7 @@ A new node starts here when joining a running network (with height > 1). In that
     2. [Prepare VM](vm1.md#prepare-vm) with program arguments from the block witness.
     4. Set the VM’s program to the consensus program as specified by the blockchain state’s block header.
     5. Execute [Verify Predicate](vm1.md#verify-predicate) operation. If it fails, halt and return false.
-2. [Validate the block](#validate-block) with “previous block header” set to the block header in the current blockchain state; if invalid, halt and return blockchain state unchanged.
+2. [Validate the block](entries.md#blockheader-validation) with “previous block header” set to the block header in the current blockchain state; if invalid, halt and return blockchain state unchanged.
 3. Let `S` be the input blockchain state.
 4. For each transaction in the block, in order:
     1. [Apply the transaction](#apply-transaction) using the input block’s header to blockchain state `S`, yielding a new state `S′`.
@@ -175,32 +175,6 @@ A new node starts here when joining a running network (with height > 1). In that
     1. Add that output’s [ID](entries.md#entry-id) to `S`, yielding a new state `S′`.
     2. Replace `S` with `S′`.
 5. Return `S`.
-
-
-
-### Validate block
-
-**Inputs:** 
-
-1. block,
-2. previous block header.
-
-**Output:** true or false.
-
-**Algorithm:**
-
-1. Test that the block’s version is greater or equal the block version in the previous block header; if not, halt and return false.
-2. If the block’s version is 1:
-    * Test that the [block commitment](data.md#block-commitment) contains only the fields defined in this version of the protocol; if it contains additional fields, halt and return false.
-    * Test that the [block witness](data.md#block-witness) contains only a program arguments field; if it contains additional fields, halt and return false.
-3. Test that the block’s [height](data.md#block) is one greater than the height of the previous block header; if not, halt and return false.
-4. Test that the block’s [previous block ID](data.md#block) is equal to the [ID](data.md#block-id) of the provided previous block header; if not, halt and return false.
-5. Test that the block’s timestamp is greater than the timestamp of the previous block header; if not, halt and return false.
-6. For each transaction in the block:
-    1. [Validate transaction](#validate-transaction) with the timestamp and block version of the input block header; if it is not valid, halt and return false.
-7. Compute the [transactions merkle root](data.md#transactions-merkle-root) for the block.
-8. Test that the computed merkle tree hash equals the value recorded in the block’s commitment; if not, halt and return false.
-9. Return true.
 
 
 ### Validate transaction
