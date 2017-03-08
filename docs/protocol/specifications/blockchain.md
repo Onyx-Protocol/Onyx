@@ -172,12 +172,23 @@ Asset ID is defined as the [SHA3-256](#sha3) of the [Asset Definition](#asset-de
 
 ### Asset Amount 1
 
-AssetAmount1 struct encapsulates the number of units of an asset together with its [asset ID](#asset-id).
+An AssetAmount1 struct encapsulates the number of units of an asset together with its [asset ID](#asset-id).
 
 Field            | Type                 | Description
 -----------------|----------------------|----------------
 AssetID          | [String32](#string32)| [Asset ID](#asset-id).
 Value            | [Integer](#integer)  | Number of units of the referenced asset.
+
+
+### Asset Amount 2
+
+An AssetAmount2 struct uses [ElGamal commitments](https://en.wikipedia.org/wiki/ElGamal_signature_scheme), rather than plaintext values, to represent assets and amounts.
+
+Field            | Type                                        | Description
+-----------------|---------------------------------------------|----------------
+Asset ID         | [AssetCommitment](ca.md#point-pair)         | Encrypted asset ID.
+Value            | [ValueCommitment](ca.md#value-commitment)   | Encrypted value commitment.
+
 
 
 ### Value Source 1
@@ -208,7 +219,7 @@ Position         | [Integer](#integer)         | Iff this source refers to a [Mu
 
 ### Value Source 2
 
-A `ValueSource2` has the same data structure and validation rules as a `ValueSource1`, except that all pointers and references to [Issuance1](#issuance-1), [Spend1](#spend-1), [Mux1](#mux-1), [Output1](#output-1), and [Retirement1](#retirement-1) must instead be references to [Issuance2](#issuance-2), [Spend2](#spend-2), [Mux2](#mux-2), [Output2](#output-2), and [Retirement2](#retirement-2), respectively.
+A `ValueSource2` has the same data structure and validation rules as a `ValueSource1`, except that all pointers and references to [Issuance1](#issuance-1), [Spend1](#spend-1), [Mux1](#mux-1), [Output1](#output-1), [Retirement1](#retirement-1), and [AssetAmount1](#asset-amount-1) must instead be references to [Issuance2](#issuance-2), [Spend2](#spend-2), [Mux2](#mux-2), [Output2](#output-2), [Retirement2](#retirement-2), and , and [AssetAmount2](#asset-amount-2) respectively.
 
 
 ### Value Destination 1
@@ -219,7 +230,7 @@ Field            | Type                           | Description
 -----------------|--------------------------------|----------------
 Ref              | [Pointer](#pointer)\<[Output1](#output-1)\|[Retirement1](#retirement-1)\|[Mux1](#mux-1)\> | Next entry referenced by this ValueDestination.
 Value            | [AssetAmount1](#asset-amount-1)    | Amount and Asset ID contained in the referenced entry
-Position         | [Integer](#integer)            | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
+Position         | [Integer](#integer)                | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
 
 #### Value Destination 1 Validation
 
@@ -433,34 +444,27 @@ Data                | String32             | Hash of the reference data for this
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
 
-#### Output Validation
+#### Output 1 Validation
 
 1. [Validate](#value-source-1-validation) `Source`.
 2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 3. Verify that the program VM version is not equal to 0.
 4. If the program VM version is 1, verify that the program’s bytecode does not begin with [FAIL](vm1.md#fail) instruction.
 
-#### Output 2
-
-An output with type 2 uses [ElGamal commitments](https://en.wikipedia.org/wiki/ElGamal_signature_scheme), rather than plaintext values, to represent assets and amounts.
-
-TBD.
+### Output 2
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Type                | String               | "output2"
 Body                | Struct               | See below.
-Witness             | Struct               | Empty struct.
+Witness             | Struct               | See below.
 
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource2         | The source of the units to be included in this output.
-ControlProgram      | Program              | The program to control this output.
+Control Program     | Program              | The program to control this output.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
-
-
-
 
 #### Retirement 1
 
@@ -588,6 +592,46 @@ Arguments           | String                     | Arguments for the program con
 
 Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
 
+### Mux 2
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "mux2"
+Body                | Struct               | See below.
+Witness             | Struct               | See below.
+
+Body field          | Type                 | Description
+--------------------|----------------------|----------------
+Sources             | List<ValueSource2>   | The source of the units to be included in this Mux.
+Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
+ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+
+Witness field       | Type                       | Description
+--------------------|----------------------------|----------------
+Destinations        | List<ValueDestination2>    | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
+Arguments           | String                     | Arguments for the program contained in the Nonce.
+
+#### Mux Validation
+
+1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
+2. For each `Source` in `Sources`, [validate](#value-source-2-validation) `Source`.
+3. For each `Destination` in `Destinations`, [validate](#value-destination-2-validation) `Destination`.
+4. For each `AssetID` represented in `Sources` and `Destinations`:
+    1. Sum the total `Amounts` of the `Sources` with that asset ID. Validation fails if the sum overflows 63-bit integer.
+    2. Sum the total `Amounts` of the `Destinations` with that asset ID. Validation fails if the sum overflows 63-bit integer.
+    3. Verify that the two sums are equal.
+5. Verify that for every asset ID among `Destinations`, there is at least one `Source` with such asset ID. (This prevents creating zero units of an asset not present among the valid sources.)
+6. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+
+Witness field       | Type                                         | Description
+--------------------|----------------------------------------------|----------------
+Asset Range Proof   | [Asset Range Proof](ca.md#asset-range-proof) | Proof that `Source.Value.AssetID` is a valid asset ID.
+Value Range Proof   | [Value Range Proof](ca.md#value-range-proof) | Proof that `Source.Value.Amount` is within an acceptable range.
+
+#### Output 2 Validation
+
+1. [Validate](ca.md#validate-asset-range-proof) `AssetRangeProof` with respect to `Source.Value.AssetID`.
+2. [Validate](ca.md#validate-value-range-proof) `ValueRangeProof` with respect to `Source.Value.Amount`.
 
 ### Nonce
 
