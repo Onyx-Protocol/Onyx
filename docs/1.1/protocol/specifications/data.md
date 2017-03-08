@@ -10,7 +10,6 @@
   * [Public Key](#public-key)
   * [Signature](#signature)
   * [SHA3](#sha3)
-  * [Optional Hash](#optional-hash)
   * [Block](#block)
   * [Block Serialization Flags](#block-serialization-flags)
   * [Block Header](#block-header)
@@ -104,15 +103,6 @@ of an Ed25519 (EdDSA) signature, as defined in [CFRG1](https://tools.ietf.org/ht
 
 This hash function is used throughout all data structures and algorithms in this spec,
 with the exception of SHA-512 (see [FIPS180](http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf)) used internally as function H inside Ed25519 (see [CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)).
-
-### Optional Hash
-
-An *optional hash* is a function that transforms a variable-length binary string to another variable-length binary string using SHA3-256 with a special case for an empty string: it is hashed to an empty string.
-
-Input String      | Optional Hash               | Varstring31-encoded Optional Hash
-------------------|-----------------------------|----------------------------------------
-Empty string      | Empty string                | One-byte string: 0x00
-Non-empty string  | 32-byte result of SHA3-256  | 33-byte string; first byte equals 0x20
 
 
 
