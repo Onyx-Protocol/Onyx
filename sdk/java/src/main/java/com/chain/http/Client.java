@@ -408,15 +408,17 @@ public class Client {
   private static final Random randomGenerator = new Random();
   private static final int MAX_RETRIES = 10;
   private static final int RETRY_BASE_DELAY_MILLIS = 40;
-  private static final int RETRY_MAX_DELAY_MILLIS = 4000;
+
+  // the max amount of time cored leader election could take
+  private static final int RETRY_MAX_DELAY_MILLIS = 15000;
 
   private static int retryDelayMillis(int retryAttempt) {
     // Calculate the max delay as base * 2 ^ (retryAttempt - 1).
     int max = RETRY_BASE_DELAY_MILLIS * (1 << (retryAttempt - 1));
     max = Math.min(max, RETRY_MAX_DELAY_MILLIS);
 
-    // To incorporate jitter, use a pseudorandom delay between [1, max] millis.
-    return randomGenerator.nextInt(max) + 1;
+    // To incorporate jitter, use a pseudo random delay between [max/2, max] millis.
+    return randomGenerator.nextInt(max / 2) + max / 2 + 1;
   }
 
   private static final int[] RETRIABLE_STATUS_CODES = {
