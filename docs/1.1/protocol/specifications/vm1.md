@@ -1068,7 +1068,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xae  | (∅ → hash)                     | 256 + [standard memory cost](#standard-memory-cost)
 
-Computes the transaction signature hash corresponding to the current entry. Equals [SHA3-256](blockchain.md#sha3) of the concatenation of the current [entry ID](entries.md#entry-id) and [transaction ID](blockchain.md#transaction-id):
+Computes the transaction signature hash corresponding to the current entry. Equals [SHA3-256](blockchain.md#sha3) of the concatenation of the current [entry ID](blockchain.md#entry-id) and [transaction ID](blockchain.md#transaction-id):
 
     TXSIGHASH = SHA3-256(entryID || txID)
 
@@ -1110,18 +1110,18 @@ Code  | Stack Diagram                                        | Cost
 2. Fails if `index` is negative or not a valid [number](#vm-number).
 3. Fails if the number of outputs is less or equal to `index`.
 4. Fails if `amount` and `version` are not non-negative [numbers](#vm-number).
-5. If the current entry is a [Mux](entries.md#mux):
-    1. Finds a [destination entry](entries.md#valuedestination) at the given `index`.
+5. If the current entry is a [Mux](blockchain.md#mux):
+    1. Finds a [destination entry](blockchain.md#valuedestination) at the given `index`.
     2. If the entry satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
-        1. the destination entry is an [output](entries.md#output-1) or a [retirement](entries.md#retirement-1),
+        1. the destination entry is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1),
         2. if the destination is an output: control program equals `prog` and VM version equals `version`,
         3. if the destination is a retirement: `prog` is an empty string and `version` is zero,
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
         6. `datahash` is an empty string or it matches the [SHA3-256](blockchain.md#sha3) hash of the data.
 5. If the entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1):
-    1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](entries.md#mux), performs checks as described in the step 5.
-    2. If the [destination entry](blockchain.md#value-destination-1) is an [output](entries.md#output-1) or a [retirement](entries.md#retirement-1):
+    1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](blockchain.md#mux), performs checks as described in the step 5.
+    2. If the [destination entry](blockchain.md#value-destination-1) is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1):
         1. If `index` is not zero, pushes [false](#vm-boolean) on the data stack.
         2. Otherwise, performs checks as described in the step 5.2.
 
@@ -1136,11 +1136,11 @@ Code  | Stack Diagram  | Cost
 0xc2  | (∅ → assetid)  | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes the asset ID assigned to the current entry on the data stack. 
-For the [nonce](entries.md#nonce) entry, the asset ID of the referenced [issuance](entries.md#issuance-1) is used.
+For the [nonce](blockchain.md#nonce) entry, the asset ID of the referenced [issuance](blockchain.md#issuance-1) is used.
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the entry is not a [nonce](entries.md#nonce), an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
+Fails if the entry is not a [nonce](blockchain.md#nonce), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
 
 #### AMOUNT
 
@@ -1149,11 +1149,11 @@ Code  | Stack Diagram  | Cost
 0xc3  | (∅ → amount)   | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes the amount assigned to the current entry on the data stack.
-For the [nonce](entries.md#nonce) entry, the amount of the referenced [issuance](entries.md#issuance-1) is used.
+For the [nonce](blockchain.md#nonce) entry, the amount of the referenced [issuance](blockchain.md#issuance-1) is used.
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the entry is not a [nonce](entries.md#nonce), an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
+Fails if the entry is not a [nonce](blockchain.md#nonce), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
 
 
 #### PROGRAM
@@ -1163,10 +1163,10 @@ Code  | Stack Diagram  | Cost
 0xc4  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
 1. In [transaction context](#transaction-context):
-  * For [spends](entries.md#spend-1): pushes the control program from the output being spent.
-  * For [issuances](entries.md#issuances-1): pushes the issuance program.
-  * For [muxes](entries.md#mux-1): pushes the mux program.
-  * For [nonces](entries.md#nonce): pushes the nonce program.
+  * For [spends](blockchain.md#spend-1): pushes the control program from the output being spent.
+  * For [issuances](blockchain.md#issuances-1): pushes the issuance program.
+  * For [muxes](blockchain.md#mux-1): pushes the mux program.
+  * For [nonces](blockchain.md#nonce): pushes the nonce program.
 2. In [block context](#block-context):
   * Pushes the current [consensus program](blockchain.md#blockheader) being executed (that is specified in the previous block header).
 
@@ -1177,7 +1177,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc5  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [TxHeader](entries.md#txheader) mintime in milliseconds on the data stack.
+Pushes the [TxHeader](blockchain.md#txheader) mintime in milliseconds on the data stack.
 If the value is greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>–1 (encoded as [VM number](#vm-number) 0xffffffffffffff7f).
 
 Fails if executed in the [block context](#block-context).
@@ -1188,7 +1188,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc6  | (∅ → timestamp) | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [TxHeader](entries.md#txheader) maxtime in milliseconds on the data stack.
+Pushes the [TxHeader](blockchain.md#txheader) maxtime in milliseconds on the data stack.
 If the value is zero or greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>–1 (encoded as [VM number](#vm-number) 0xffffffffffffff7f).
 
 Fails if executed in the [block context](#block-context).
@@ -1199,7 +1199,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc7  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the data as specified in the [TxHeader](entries.md#txheader).
+Pushes the SHA3-256 hash of the data as specified in the [TxHeader](blockchain.md#txheader).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1210,11 +1210,11 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc8  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the data as specified in the current [entry](entries.md#entry).
+Pushes the SHA3-256 hash of the data as specified in the current [entry](blockchain.md#entry).
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the current entry is not an [issuance](entries.md#issuance-1), a [spend](entries.md#spend-1), an [output](entries.md#output-1) or a [retirement](entries.md#retirement-1).
+Fails if the current entry is not an [issuance](blockchain.md#issuance-1), a [spend](blockchain.md#spend-1), an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1).
 
 
 #### INDEX
@@ -1223,11 +1223,11 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc9  | (∅ → index)     | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [ValueDestination.position](entries.md#valuedestination) of the current entry on the data stack.
+Pushes the [ValueDestination.position](blockchain.md#valuedestination) of the current entry on the data stack.
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the current entry is not an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
+Fails if the current entry is not an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
 
 
 #### ENTRYID
@@ -1236,7 +1236,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xca  | (∅ → entryid)   | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [current entry ID](entries.md#entry-id) on the data stack (e.g. a [spend](entries.md#spend-1), an [issuance](entries.md#issuance-1) or a [nonce](entries.md#nonce)).
+Pushes the [current entry ID](blockchain.md#entry-id) on the data stack (e.g. a [spend](blockchain.md#spend-1), an [issuance](blockchain.md#issuance-1) or a [nonce](blockchain.md#nonce)).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1247,11 +1247,11 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xcb  | (∅ → outputid)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [spent output ID](entries.md#spend-1) on the data stack.
+Pushes the [spent output ID](blockchain.md#spend-1) on the data stack.
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the current entry is not a [spend](entries.md#spend-1).
+Fails if the current entry is not a [spend](blockchain.md#spend-1).
 
 
 #### NONCE
@@ -1260,11 +1260,11 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xcc  | (∅ → nonce)     | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [anchor ID](entries.md#issuance-1) of the [issuance entry](entries.md#issuance-1) on the data stack.
+Pushes the [anchor ID](blockchain.md#issuance-1) of the [issuance entry](blockchain.md#issuance-1) on the data stack.
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the current entry is not an [issuance](entries.md#issuance-1).
+Fails if the current entry is not an [issuance](blockchain.md#issuance-1).
 
 
 #### NEXTPROGRAM
