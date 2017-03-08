@@ -435,6 +435,28 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 3. Verify that the program VM version is not equal to 0.
 4. If the program VM version is 1, verify that the program’s bytecode does not begin with [FAIL](vm1.md#fail) instruction.
 
+#### Output 2
+
+An output with type 2 uses [ElGamal commitments](https://en.wikipedia.org/wiki/ElGamal_signature_scheme), rather than plaintext values, to represent assets and amounts.
+
+TBD.
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "output2"
+Body                | Struct               | See below.
+Witness             | Struct               | Empty struct.
+
+Body field          | Type                 | Description
+--------------------|----------------------|----------------
+Source              | ValueSource1         | The source of the units to be included in this output.
+ControlProgram      | Program              | The program to control this output.
+Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+
+
+
+
 #### Retirement 1
 
 Field               | Type                 | Description
