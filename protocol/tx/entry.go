@@ -32,8 +32,7 @@ func entryID(e entry) (hash bc.Hash) {
 		return hash
 	}
 
-	// This nil test handles the case where e is a nil value with a
-	// concrete type.
+	// This nil test handles the case where e is a nil pointer.
 	if reflect.ValueOf(e).IsNil() {
 		return hash
 	}
