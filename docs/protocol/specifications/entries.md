@@ -311,10 +311,25 @@ ExtHash    | [ExtStruct](#extstruct)                 | Hash of all extension fie
 
 #### TxHeader Validation
 
-1. If the `Maxtime` is greater than zero, verify that it is greater than or equal to the `Mintime`.
-2. Check that `Results` includes at least one item.
-3. Check that each of the `Results` is present and valid.
-4. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+**Inputs:**
+
+1. TxHeader entry,
+2. timestamp,
+3. block version.
+
+**Algorithm:**
+
+1. If the block version is 1, verify that version is equal to 1.
+2. If the `Maxtime` is greater than zero, verify that it is greater than or equal to the `Mintime`.
+3. If the `Mintime` is greater than zero:
+    1. Verify that the input timestamp is greater than or equal to the `Mintime`.
+4. If the transaction maxtime is greater than zero:
+    1. Verify that the input timestamp is less than or equal to the `Maxtime`.
+5. Check that `Results` includes at least one item.
+6. Check that each of the `Results` is present and valid.
+7. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+
+
 
 ### Output 1
 
