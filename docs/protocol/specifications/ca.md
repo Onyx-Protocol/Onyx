@@ -256,48 +256,10 @@ The asset ID commitment can either be nonblinded (clear) or blinded (confidentia
 * [Create Nonblinded Asset ID Commitment](#create-nonblinded-asset-id-commitment)
 * [Create Blinded Asset ID Commitment](#create-blinded-asset-id-commitment)
 
-Note: even if the asset ID is provided in the clear, the corresponding nonblinded asset ID commitment is necessary for algorithms that validate the transaction as a whole.
-
-
-### Encrypted Asset ID
-
-A 64-byte string consisting of two encrypted elements: [asset ID](data.md#asset-id) and [its blinding factor](#asset-id-blinding-factor) (32 bytes each).
-
-These values are present in the [output commitment](data.md#transaction-output-commitment) along with the [asset range proof](#asset-range-proof). The encrypted asset ID can be decrypted and verified by the recipient against the declared [asset ID commitment](#asset-id-commitment). It also serves as an additional hash-based commitment in case ECDLP ceases to be computationally infeasible.
-
-
-### Asset ID Descriptor
-
-Asset ID Descriptor is a data structure that contains either a cleartext [asset ID](data.md#asset-id), or a pair of [asset ID commitment](#asset-id-commitment) with [encrypted asset ID](#encrypted-asset-id). Asset ID Descriptors represent asset ID in outputs and issuance inputs.
-
-Asset ID Descriptor may contain _nonblinded_, _blinded_ or _blinded+encrypted_ asset ID as indicated by its 1-byte field `type`.
-
-#### Nonblinded Asset ID Descriptor
-
-Field                | Type     | Description
----------------------|----------|------------------
-Type                 | byte     | Contains value 0x00 if asset ID is not blinded.
-Asset ID             | sha3-256 | Cleartext asset ID.
-
-#### Blinded Asset ID Descriptor
-
-Field                | Type     | Description
----------------------|----------|------------------
-Type                 | byte     | Contains value 0x01 if asset ID is blinded, but encrypted portion is not stored (used in issuance inputs).
-Asset ID Commitment  | [Asset ID Commitment](#asset-id-commitment)  | 32-byte [public key](#public-key) representing asset ID commitment.
-
-#### Encrypted Asset ID Descriptor
-
-Field                | Type     | Description
----------------------|----------|------------------
-Type                 | byte     | Contains value 0x03 if asset ID is both blinded and encrypted.
-Asset ID Commitment  | [Asset ID Commitment](#asset-id-commitment)  | 32-byte [public key](#public-key) representing asset ID commitment.
-Encrypted Asset ID   | [Encrypted Asset ID](#encrypted-asset-id) | 64-byte sequence representing encrypted asset ID (32 bytes) and its [blinding factor](#asset-id-blinding-factor) (32 bytes).
-
 
 ### Asset Range Proof
 
-The asset range proof demonstrates that a given [asset ID commitment](#asset-id-commitment) commits to one of the asset IDs specified in the transaction inputs. A separate [validation procedure](validation.md#check-transaction-is-well-formed) makes sure that all of the declared asset ID commitments in fact belong to the transaction inputs.
+The asset range proof demonstrates that a given [asset ID commitment](#asset-id-commitment) commits to one of the asset IDs specified in the transaction inputs. A [whole-transaction validation procedure](#verify-confidential-assets) makes sure that all of the declared asset ID commitments in fact belong to the transaction inputs.
 
 Field                        | Type      | Description
 -----------------------------|-----------|------------------
