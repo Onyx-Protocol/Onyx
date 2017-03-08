@@ -26,7 +26,15 @@ type entry interface {
 var errInvalidValue = errors.New("invalid value")
 
 func entryID(e entry) (hash bc.Hash) {
+	// This nil test only handles the case where e is the zero value of
+	// the entry interface.
 	if e == nil {
+		return hash
+	}
+
+	// This nil test handles the case where e is a nil value with a
+	// concrete type.
+	if reflect.ValueOf(e).IsNil() {
 		return hash
 	}
 
