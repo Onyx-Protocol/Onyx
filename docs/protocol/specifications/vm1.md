@@ -226,7 +226,7 @@ Validation fails when:
 * a [VERIFY](#verify) instruction fails
 * a [FAIL](#fail) instruction is executed
 * the run limit is below the value required by the current instruction
-* an invalid encoding is detected for keys or [signatures](types.md#signature)
+* an invalid encoding is detected for keys or [signatures](blockchain.md#signature)
 * coercion fails for [numbers](#vm-number)
 * a bounds check fails for one of the [splice](#splice-operators) or [numeric](#logical-and-numeric-operators) instructions
 * the program execution finishes with an empty data stack
@@ -1022,7 +1022,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xaa  | (a → SHA3-256(a))              | max(64, 4·L<sub>x</sub>) + [standard memory cost](#standard-memory-cost)
 
-Replaces top stack item with its [SHA3-256](types.md#sha3) hash value.
+Replaces top stack item with its [SHA3-256](blockchain.md#sha3) hash value.
 
 
 #### CHECKSIG
@@ -1031,7 +1031,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xac  | (sig hash pubkey → q)          | 1024; [standard memory cost](#standard-memory-cost)
 
-Pops the top three items on the data stack, verifies the [signature](types.md#signature) `sig` of the `hash` with a given public key `pubkey` and pushes `true` if the signature is valid; pushes `false` if it is not.
+Pops the top three items on the data stack, verifies the [signature](blockchain.md#signature) `sig` of the `hash` with a given public key `pubkey` and pushes `true` if the signature is valid; pushes `false` if it is not.
 
 Fails if `hash` is not a 32-byte string.
 
@@ -1047,7 +1047,7 @@ Code  | Stack Diagram                  | Cost
 3. Pops `n` public keys.
 4. Pops `hash` from the data stack.
 5. Pops `m` signatures.
-6. Verifies [signatures](types.md#signature) one by one against the public keys and the given `hash`. Signatures must be in the same order as public keys and no two signatures are verified with the same public key.
+6. Verifies [signatures](blockchain.md#signature) one by one against the public keys and the given `hash`. Signatures must be in the same order as public keys and no two signatures are verified with the same public key.
 7. Pushes `true` if all of the signatures are valid, and `false` otherwise.
 
 Failure conditions:
@@ -1068,7 +1068,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xae  | (∅ → hash)                     | 256 + [standard memory cost](#standard-memory-cost)
 
-Computes the transaction signature hash corresponding to the current entry. Equals [SHA3-256](types.md#sha3) of the concatenation of the current [entry ID](entries.md#entry-id) and [transaction ID](blockchain.md#transaction-id):
+Computes the transaction signature hash corresponding to the current entry. Equals [SHA3-256](blockchain.md#sha3) of the concatenation of the current [entry ID](entries.md#entry-id) and [transaction ID](blockchain.md#transaction-id):
 
     TXSIGHASH = SHA3-256(entryID || txID)
 
@@ -1118,7 +1118,7 @@ Code  | Stack Diagram                                        | Cost
         3. if the destination is a retirement: `prog` is an empty string and `version` is zero,
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
-        6. `datahash` is an empty string or it matches the [SHA3-256](types.md#sha3) hash of the data.
+        6. `datahash` is an empty string or it matches the [SHA3-256](blockchain.md#sha3) hash of the data.
 5. If the entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1):
     1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](entries.md#mux), performs checks as described in the step 5.
     2. If the [destination entry](blockchain.md#value-destination-1) is an [output](entries.md#output-1) or a [retirement](entries.md#retirement-1):
