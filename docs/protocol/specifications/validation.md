@@ -169,8 +169,9 @@ A new node starts here when joining a running network (with height > 1). In that
     2. Add ([nonce ID](entries.md#entry-id), transaction maxtime) to the nonce set in `S`, yielding a new state `S′`.
     3. Replace `S` with `S′`.
 4. For each visited [spend version 1](entries.md#spend-1) in the transaction:
-    1. Delete the spent output ID from `S`, yielding a new state `S′`.
-    2. Replace `S` with `S′`.
+    1. Test that the spent output ID is stored in the set of unspent outputs in `S`. If not, halt and return the input blockchain state unchanged.
+    2. Delete the spent output ID from `S`, yielding a new state `S′`.
+    3. Replace `S` with `S′`.
 5. For each [output version 1](entries.md#output-1) in the transaction header:
     1. Add that output’s [ID](entries.md#entry-id) to `S`, yielding a new state `S′`.
     2. Replace `S` with `S′`.
@@ -211,11 +212,11 @@ A new node starts here when joining a running network (with height > 1). In that
 [x]     1. If the input is an *issuance*:
 [x]         1. Test that the *initial block ID* declared in the witness matches the initial block ID of the current blockchain; if not, halt and return false.
 [x]         2. Compute [asset ID](data.md#asset-id) from the initial block ID, asset version 1, and the *VM version* and *issuance program* declared in the witness. If the resulting asset ID is not equal to the declared asset ID in the issuance commitment, halt and return false.
-[ ]         3. [Evaluate](#evaluate-predicate) its [issuance program](data.md#issuance-program), for the VM version specified in the issuance commitment and with the [input witness](data.md#transaction-input-witness) [program arguments](data.md#program-arguments); if execution fails, halt and return false.
-[ ]     2. If the input is a *spend*:
-[ ]         1. [Evaluate](#evaluate-predicate) the previous output’s control program, for the VM version specified in the previous output and with the [input witness](data.md#transaction-input-witness) program arguments. Set the VM expansion flag to false if transaction version equals 1. Otherwise, set expension flag to true.
-[ ]         2. If the evaluation returns false, halt and return false.
-[ ]     3. Return true.
-[ ] 8. Return true.
+[x]         3. [Evaluate](#evaluate-predicate) its [issuance program](data.md#issuance-program), for the VM version specified in the issuance commitment and with the [input witness](data.md#transaction-input-witness) [program arguments](data.md#program-arguments); if execution fails, halt and return false.
+[x]     2. If the input is a *spend*:
+[x]         1. [Evaluate](#evaluate-predicate) the previous output’s control program, for the VM version specified in the previous output and with the [input witness](data.md#transaction-input-witness) program arguments. Set the VM expansion flag to false if transaction version equals 1. Otherwise, set expension flag to true.
+[x]         2. If the evaluation returns false, halt and return false.
+[x]     3. Return true.
+[x] 8. Return true.
 
 
