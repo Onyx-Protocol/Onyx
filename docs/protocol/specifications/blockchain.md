@@ -491,27 +491,20 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 
 An `Output2` has the same data structure and validation rules as an `Output1`, except that the type string must be "output2" instead of "output1", and all pointers and references to [ValueSource1](#value-source-1) must instead be references to [ValueSource2](#value-source-2).
 
-#### Output 2
-
-An output with type 2 uses [ElGamal commitments](https://en.wikipedia.org/wiki/ElGamal_signature_scheme), rather than plaintext values, to represent assets and amounts.
-
-TBD.
+### Output 2
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
 Type                | String               | "output2"
 Body                | Struct               | See below.
-Witness             | Struct               | Empty struct.
+Witness             | Struct               | See below.
 
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource2         | The source of the units to be included in this output.
-ControlProgram      | Program              | The program to control this output.
+Control Program     | Program              | The program to control this output.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
-
-
-
 
 #### Retirement 1
 
@@ -749,6 +742,47 @@ Arguments           | String                     | Arguments for the program con
 8. If the program VM version is 1, verify that the program’s bytecode does not begin with [FAIL](vm1.md#fail) instruction.
 
 Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
+
+### Mux 2
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "mux2"
+Body                | Struct               | See below.
+Witness             | Struct               | See below.
+
+Body field          | Type                 | Description
+--------------------|----------------------|----------------
+Sources             | List<ValueSource2>   | The source of the units to be included in this Mux.
+Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
+ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+
+Witness field       | Type                       | Description
+--------------------|----------------------------|----------------
+Destinations        | List<ValueDestination2>    | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
+Arguments           | String                     | Arguments for the program contained in the Nonce.
+
+#### Mux Validation
+
+1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
+2. For each `Source` in `Sources`, [validate](#value-source-2-validation) `Source`.
+3. For each `Destination` in `Destinations`, [validate](#value-destination-2-validation) `Destination`.
+4. For each `AssetID` represented in `Sources` and `Destinations`:
+    1. Sum the total `Amounts` of the `Sources` with that asset ID. Validation fails if the sum overflows 63-bit integer.
+    2. Sum the total `Amounts` of the `Destinations` with that asset ID. Validation fails if the sum overflows 63-bit integer.
+    3. Verify that the two sums are equal.
+5. Verify that for every asset ID among `Destinations`, there is at least one `Source` with such asset ID. (This prevents creating zero units of an asset not present among the valid sources.)
+6. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+
+Witness field       | Type                                         | Description
+--------------------|----------------------------------------------|----------------
+Asset Range Proof   | [Asset Range Proof](ca.md#asset-range-proof) | Proof that `Source.Value.AssetID` is a valid asset ID.
+Value Range Proof   | [Value Range Proof](ca.md#value-range-proof) | Proof that `Source.Value.Amount` is within an acceptable range.
+
+#### Output 2 Validation
+
+1. [Validate](ca.md#validate-asset-range-proof) `AssetRangeProof` with respect to `Source.Value.AssetID`.
+2. [Validate](ca.md#validate-value-range-proof) `ValueRangeProof` with respect to `Source.Value.Amount`.
 
 ### Mux 2
 
