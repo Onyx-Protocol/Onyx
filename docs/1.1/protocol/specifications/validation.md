@@ -162,42 +162,20 @@ A new node starts here when joining a running network (with height > 1). In that
 
 **Algorithm:**
 
-1. [Validate transaction](#validate-transaction) with the timestamp and block version of the input block header; if it is not valid, halt and return the input blockchain state unchanged.
-1. Let `S` be the input blockchain state.
-2. For all [nonce entries](entries.md#nonce) in the transaction:
+1. [Validate transaction header](entries.md#txheader-validation) with the timestamp and block version of the input block header; if it is not valid, halt and return the input blockchain state unchanged.
+2. Let `S` be the input blockchain state.
+3. For each visited [nonce entry](entries.md#nonce) in the transaction:
     1. If [nonce ID](entries.md#entry-id) is already stored in the nonce set of the blockchain state, halt and return the input blockchain state unchanged.
     2. Add ([nonce ID](entries.md#entry-id), transaction maxtime) to the nonce set in `S`, yielding a new state `S′`.
     3. Replace `S` with `S′`.
-3. For each [spend version 1](entries.md#spend-1) in the transaction:
+4. For each visited [spend version 1](entries.md#spend-1) in the transaction:
     1. Delete the spent output ID from `S`, yielding a new state `S′`.
     2. Replace `S` with `S′`.
-4. For each [output version 1](entries.md#output-1) in the transaction:
+5. For each visited [output version 1](entries.md#output-1) in the transaction:
     1. Add that output’s [ID](entries.md#entry-id) to `S`, yielding a new state `S′`.
     2. Replace `S` with `S′`.
-5. Return `S`.
+6. Return `S`.
 
-
-### Validate transaction
-
-**Inputs:** 
-
-1. transaction,
-2. timestamp,
-3. block version.
-
-**Output:** true or false.
-
-**Algorithm:**
-
-1. Test that the transaction has exactly one [TxHeader](entries.md#txheader) entry; if not, halt and return false.
-2. If the block version is 1, test that [TxHeader](entries.md#txheader) version equals 1; if not, halt and return false.
-3. If the transaction maxtime is greater than zero test that it is greater than or equal to the mintime; if not, halt and return false. TODO: move this line to entries.md.
-4. If the transaction mintime is greater than zero:
-    1. Test that the input timestamp is greater than or equal to the transaction mintime; if not, halt and return false.
-5. If the transaction maxtime is greater than zero:
-    1. Test that the input timestamp is less than or equal to the transaction maxtime; if not, halt and return false.
-6. [Validate TxHeader](entries.md#txheader-validation); if not valid, halt and return false.
-7. Return true.
 
 
 ### Old Rules (check new rules against these)
@@ -207,21 +185,21 @@ A new node starts here when joining a running network (with height > 1). In that
 [ ] 3. Test that the transaction has at least one input; if not, halt and return false.
 [ ] 3. Ensure that each [input commitment](data.md#transaction-input-commitment) appears only once; if there is a duplicate, halt and return false.
 [x] 4. If the transaction maxtime is greater than zero test that it is greater than or equal to the mintime; if not, halt and return false.
-[ ] 5. If transaction version equals 1, check each of the following conditions. If any are not satisfied, halt and return false:
-[ ]     1. [Transaction common fields](data.md#transaction-common-fields) string must contain only the fields defined in this version of the protocol (no additional data included).
-[ ]     2. Every [input](data.md#transaction-input) [asset version](data.md#asset-version) must equal 1.
-[ ]     3. Every [output](data.md#transaction-output) [asset version](data.md#asset-version) must equal 1.
-[ ]     4. For each input, test that the [input commitment](data.md#transaction-input-commitment) contains only the fields defined in this version of the protocol (no additional data included).
-[ ]     5. For each output, test that the [output commitment](data.md#transaction-output-commitment) contains only the fields defined in this version of the protocol (no additional data included); if not, halt and return false.
-[ ]     6. Test that all VM versions in the transaction are 1 (including the VM version in the [issuance input witness](data.md#asset-version-1-issuance-witness)); if not, halt and return false.
-[ ]     7. Note: unknown suffixes (additional fields) in [transaction common witness](data.md#transaction-common-witness), [input witnesses](data.md#transaction-input-witness) and [output witnesses](data.md#transaction-output-witness) are not checked here; they are permitted.
-[ ] 6. For inputs and outputs with asset version 1:
-[ ]     1. For each asset on these inputs and outputs:
-[ ]         1. Sum the input amounts of that asset and sum the output amounts of that asset.
-[ ]         2. Test that both input and output sums are less than 2<sup>63</sup>; if not, halt and return false.
-[ ]         3. Test that the input sum equals the output sum; if not, halt and return false.
+[x] 5. If transaction version equals 1, check each of the following conditions. If any are not satisfied, halt and return false:
+[x]     1. [Transaction common fields](data.md#transaction-common-fields) string must contain only the fields defined in this version of the protocol (no additional data included).
+[x]     2. Every [input](data.md#transaction-input) [asset version](data.md#asset-version) must equal 1.
+[x]     3. Every [output](data.md#transaction-output) [asset version](data.md#asset-version) must equal 1.
+[x]     4. For each input, test that the [input commitment](data.md#transaction-input-commitment) contains only the fields defined in this version of the protocol (no additional data included).
+[x]     5. For each output, test that the [output commitment](data.md#transaction-output-commitment) contains only the fields defined in this version of the protocol (no additional data included); if not, halt and return false.
+[x]     6. Test that all VM versions in the transaction are 1 (including the VM version in the [issuance input witness](data.md#asset-version-1-issuance-witness)); if not, halt and return false.
+[x]     7. Note: unknown suffixes (additional fields) in [transaction common witness](data.md#transaction-common-witness), [input witnesses](data.md#transaction-input-witness) and [output witnesses](data.md#transaction-output-witness) are not checked here; they are permitted.
+[x] 6. For inputs and outputs with asset version 1:
+[x]     1. For each asset on these inputs and outputs:
+[x]         1. Sum the input amounts of that asset and sum the output amounts of that asset.
+[x]         2. Test that both input and output sums are less than 2<sup>63</sup>; if not, halt and return false.
+[x]         3. Test that the input sum equals the output sum; if not, halt and return false.
 [ ]         4. Check that there is at least one input with that asset ID; if not, halt and return false.
-[ ] 7. Return true.
+[x] 7. Return true.
 [ ] 5. If all inputs in transaction are [issuance with asset version 1](data.md#asset-version-1-issuance-commitment), test if at least one of them has a non-empty nonce. If all have empty nonces, halt and return false.
 [ ]     * Note: this means that transaction uniqueness is guaranteed not only by spending inputs and issuance inputs with non-empty nonce, but also by future inputs of unknown asset versions. The future asset versions will provide rules enforcing transaction uniqueness.
 [ ] 6. For each [issuance input with asset version 1](data.md#asset-version-1-issuance-commitment) and a non-empty nonce, test the following conditions. If any condition is not satisfied, halt and return false:
