@@ -501,4 +501,5 @@ Arguments           | String                     | Arguments for the program con
     1. Sum the total `Amounts` of the `Sources` with that asset ID. Validation fails if the sum overflows 63-bit integer.
     2. Sum the total `Amounts` of the `Destinations` with that asset ID. Validation fails if the sum overflows 63-bit integer.
     3. Verify that the two sums are equal.
-5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+5. Verify that for every asset ID among `Destinations`, there is at least one `Source` with such asset ID. (This prevents creating zero units of an asset not present among the valid sources.)
+6. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
