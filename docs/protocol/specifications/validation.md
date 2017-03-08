@@ -200,17 +200,17 @@ A new node starts here when joining a running network (with height > 1). In that
 [x]         3. Test that the input sum equals the output sum; if not, halt and return false.
 [x]         4. Check that there is at least one input with that asset ID; if not, halt and return false.
 [x] 7. Return true.
-[ ] 5. If all inputs in transaction are [issuance with asset version 1](data.md#asset-version-1-issuance-commitment), test if at least one of them has a non-empty nonce. If all have empty nonces, halt and return false.
-[ ]     * Note: this means that transaction uniqueness is guaranteed not only by spending inputs and issuance inputs with non-empty nonce, but also by future inputs of unknown asset versions. The future asset versions will provide rules enforcing transaction uniqueness.
-[ ] 6. For each [issuance input with asset version 1](data.md#asset-version-1-issuance-commitment) and a non-empty nonce, test the following conditions. If any condition is not satisfied, halt and return false:
-[ ]     1. Both transaction mintime and maxtime are not zero.
-[ ]     2. State’s timestamp is greater or equal to the transaction mintime.
-[ ]     3. State’s timestamp is less or equal to the transaction maxtime.
-[ ]     4. Input’s [issuance hash](data.md#issuance-hash) does not appear in the state’s nonce set.
-[ ] 7. For every input in the transaction with asset version equal 1, [validate that input](#validate-transaction-input) with respect to the blockchain state; if invalid, halt and return false:
-[ ]     1. If the input is an *issuance*:
-[ ]         1. Test that the *initial block ID* declared in the witness matches the initial block ID of the current blockchain; if not, halt and return false.
-[ ]         2. Compute [asset ID](data.md#asset-id) from the initial block ID, asset version 1, and the *VM version* and *issuance program* declared in the witness. If the resulting asset ID is not equal to the declared asset ID in the issuance commitment, halt and return false.
+[x] 5. If all inputs in transaction are [issuance with asset version 1](data.md#asset-version-1-issuance-commitment), test if at least one of them has a non-empty nonce. If all have empty nonces, halt and return false.
+[x]     * Note: this means that transaction uniqueness is guaranteed not only by spending inputs and issuance inputs with non-empty nonce, but also by future inputs of unknown asset versions. The future asset versions will provide rules enforcing transaction uniqueness.
+[x] 6. For each [issuance input with asset version 1](data.md#asset-version-1-issuance-commitment) and a non-empty nonce, test the following conditions. If any condition is not satisfied, halt and return false:
+[x]     1. Both transaction mintime and maxtime are not zero.
+[x]     2. State’s timestamp is greater or equal to the transaction mintime.
+[x]     3. State’s timestamp is less or equal to the transaction maxtime.
+[x]     4. Input’s [issuance hash](data.md#issuance-hash) does not appear in the state’s nonce set.
+[x] 7. For every input in the transaction with asset version equal 1, [validate that input](#validate-transaction-input) with respect to the blockchain state; if invalid, halt and return false:
+[x]     1. If the input is an *issuance*:
+[x]         1. Test that the *initial block ID* declared in the witness matches the initial block ID of the current blockchain; if not, halt and return false.
+[x]         2. Compute [asset ID](data.md#asset-id) from the initial block ID, asset version 1, and the *VM version* and *issuance program* declared in the witness. If the resulting asset ID is not equal to the declared asset ID in the issuance commitment, halt and return false.
 [ ]         3. [Evaluate](#evaluate-predicate) its [issuance program](data.md#issuance-program), for the VM version specified in the issuance commitment and with the [input witness](data.md#transaction-input-witness) [program arguments](data.md#program-arguments); if execution fails, halt and return false.
 [ ]     2. If the input is a *spend*:
 [ ]         1. [Evaluate](#evaluate-predicate) the previous output’s control program, for the VM version specified in the previous output and with the [input witness](data.md#transaction-input-witness) program arguments. Set the VM expansion flag to false if transaction version equals 1. Otherwise, set expension flag to true.
