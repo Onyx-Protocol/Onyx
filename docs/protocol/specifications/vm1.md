@@ -41,7 +41,7 @@ Virtual machines for control and issuance programs inside transactions are versi
 
 Nodes ignore programs with unknown versions, treating them like “anyone can issue/spend.” To discourage use of unassigned versions, block signers refuse to include transactions that use unassigned VM versions.
 
-Blocks do not specify VM version explicitly. [Consensus programs](data.md#consensus-program) use VM version 1 with additional [block-context restrictions](#block-context) applied to some instructions. Upgrades to block authentication can be made via additional fields in the block commitment string.
+Blocks do not specify VM version explicitly. [Consensus programs](blockchain.md#output) use VM version 1 with additional [block-context restrictions](#block-context) applied to some instructions. Upgrades to block authentication can be made via additional fields in the block commitment string.
 
 
 ## Program format
@@ -57,9 +57,9 @@ All other instructions are encoded simply by a single-byte opcode. The protocol 
 
 A program executes in a context, either a *block* or a *transaction*. Some instructions have different meaning based on the context.
 
-Transactions use [control programs](data.md#control-program) to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
+Transactions use [control programs](blockchain.md#output) to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
 
-Blocks use [consensus programs](data.md#consensus-program) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
+Blocks use [consensus programs](blockchain.md#blockheader) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
 
 ### Block context
 
@@ -132,7 +132,7 @@ Places program arguments on the data stack one after another so that last argume
 
 ### Verify predicate
 
-Initializes VM with a predicate program (e.g. a [control program](data.md#control-program)) and begins its execution with PC set to zero.
+Initializes VM with a predicate program and begins its execution with PC set to zero.
 
 At the beginning of each execution step, the PC is checked. If it is less than the length of the program, VM reads the opcode at that byte position in the program and executes a corresponding instruction. Instructions are executed as described in the [Instructions](#instructions) section. The run limit is decreased or increased according to the instruction’s *run cost*. If the instruction’s run cost exceeds the current run limit, the instruction is not executed and execution fails immediately.
 
@@ -147,7 +147,7 @@ Every instruction has a cost that affects VM *run limit*. Total instruction cost
 
 ### Execution cost
 
-Every instruction has a constant or variable execution cost. Simple instructions such as [ADD](#add) have constant execution cost. More complex instructions like [SHA3](data.md#sha3) or [CHECKSIG](#checksig) have cost depending on amount of data that must be processed.
+Every instruction has a constant or variable execution cost. Simple instructions such as [ADD](#add) have constant execution cost. More complex instructions like [SHA3](#sha3) or [CHECKSIG](#checksig) have cost depending on amount of data that must be processed.
 
 In order to account for spikes in memory usage some instructions (e.g. [CAT](#cat)) define a cost and a refund: before execution begins the cost is applied to the run limit, then after completion refund is applied together with run limit changes due to memory usage.
 
@@ -226,7 +226,7 @@ Validation fails when:
 * a [VERIFY](#verify) instruction fails
 * a [FAIL](#fail) instruction is executed
 * the run limit is below the value required by the current instruction
-* an invalid encoding is detected for keys or [signatures](data.md#signature)
+* an invalid encoding is detected for keys or [signatures](types.md#signature)
 * coercion fails for [numbers](#vm-number)
 * a bounds check fails for one of the [splice](#splice-operators) or [numeric](#logical-and-numeric-operators) instructions
 * the program execution finishes with an empty data stack
@@ -1022,7 +1022,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xaa  | (a → SHA3-256(a))              | max(64, 4·L<sub>x</sub>) + [standard memory cost](#standard-memory-cost)
 
-Replaces top stack item with its [SHA3-256](data.md#sha3) hash value.
+Replaces top stack item with its [SHA3-256](types.md#sha3) hash value.
 
 
 #### CHECKSIG
@@ -1031,7 +1031,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xac  | (sig hash pubkey → q)          | 1024; [standard memory cost](#standard-memory-cost)
 
-Pops the top three items on the data stack, verifies the [signature](data.md#signature) `sig` of the `hash` with a given public key `pubkey` and pushes `true` if the signature is valid; pushes `false` if it is not.
+Pops the top three items on the data stack, verifies the [signature](types.md#signature) `sig` of the `hash` with a given public key `pubkey` and pushes `true` if the signature is valid; pushes `false` if it is not.
 
 Fails if `hash` is not a 32-byte string.
 
@@ -1047,7 +1047,7 @@ Code  | Stack Diagram                  | Cost
 3. Pops `n` public keys.
 4. Pops `hash` from the data stack.
 5. Pops `m` signatures.
-6. Verifies [signatures](data.md#signature) one by one against the public keys and the given `hash`. Signatures must be in the same order as public keys and no two signatures are verified with the same public key.
+6. Verifies [signatures](types.md#signature) one by one against the public keys and the given `hash`. Signatures must be in the same order as public keys and no two signatures are verified with the same public key.
 7. Pushes `true` if all of the signatures are valid, and `false` otherwise.
 
 Failure conditions:
@@ -1068,7 +1068,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xae  | (∅ → hash)                     | 256 + [standard memory cost](#standard-memory-cost)
 
-Computes the transaction signature hash corresponding to the current entry. Equals [SHA3-256](#sha3) of the concatenation of the current [entry ID](entries.md#entry-id) and [transaction ID](data.md#transaction-id):
+Computes the transaction signature hash corresponding to the current entry. Equals [SHA3-256](types.md#sha3) of the concatenation of the current [entry ID](entries.md#entry-id) and [transaction ID](blockchain.md#transaction-id):
 
     TXSIGHASH = SHA3-256(entryID || txID)
 
@@ -1083,7 +1083,7 @@ Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
 0xaf  | (∅ → hash)                     | 4·L<sub>hashed data</sub> + [standard memory cost](#standard-memory-cost)
 
-Returns the [block ID](data.md#block-id).
+Returns the [block ID](blockchain.md#block-id).
 
 Typically used with [CHECKSIG](#checksig) or [CHECKMULTISIG](#checkmultisig).
 
@@ -1118,16 +1118,16 @@ Code  | Stack Diagram                                        | Cost
         3. if the destination is a retirement: `prog` is an empty string and `version` is zero,
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
-        6. `datahash` is an empty string or it matches the [SHA3-256](data.md#sha3) hash of the data.
-5. If the entry is an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1):
-    1. If the [destination entry](entries.md#valuedestination) is a [Mux](entries.md#mux), performs checks as described in the step 5.
-    2. If the [destination entry](entries.md#valuedestination) is an [output](entries.md#output-1) or a [retirement](entries.md#retirement-1):
+        6. `datahash` is an empty string or it matches the [SHA3-256](types.md#sha3) hash of the data.
+5. If the entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1):
+    1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](entries.md#mux), performs checks as described in the step 5.
+    2. If the [destination entry](blockchain.md#value-destination-1) is an [output](entries.md#output-1) or a [retirement](entries.md#retirement-1):
         1. If `index` is not zero, pushes [false](#vm-boolean) on the data stack.
         2. Otherwise, performs checks as described in the step 5.2.
 
 Fails if executed in the [block context](#block-context).
 
-Fails if the entry is not a [mux](entries.md#mux), an [issuance](entries.md#issuance-1) or a [spend](entries.md#spend-1).
+Fails if the entry is not a [mux](blockchain.md#mux), an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1).
 
 #### ASSET
 
@@ -1168,7 +1168,7 @@ Code  | Stack Diagram  | Cost
   * For [muxes](entries.md#mux-1): pushes the mux program.
   * For [nonces](entries.md#nonce): pushes the nonce program.
 2. In [block context](#block-context):
-  * Pushes the current [consensus program](data.md#consensus-program) being executed (that is specified in the previous block header).
+  * Pushes the current [consensus program](blockchain.md#blockheader) being executed (that is specified in the previous block header).
 
 
 #### MINTIME
@@ -1273,7 +1273,7 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xcd  | (∅ → program)   | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the [next consensus program](data.md#consensus-program) specified in the current block header.
+Pushes the [next consensus program](blockchain.md#blockheader) specified in the current block header.
 
 Fails if executed in the [transaction context](#transaction-context).
 
