@@ -175,29 +175,6 @@ Position         | [Integer](types.md#integer)            | Iff this destination
 5. Verify that `RefSource.Value` is equal to `Value`.
 
 
-#### Value flow validation WIP - IGNORE THIS
-
-**Inputs:**
-
-1. `source`: [ValueSource](#value-source-1) struct to be validated.
-2. `receiver`: the entry containing `source` struct.
-3. `source index`: the index of `source` within the receiving entry.
-
-**Algorithm:**
-
-1. Let `sender` be the entry pointed to by `source.Ref`. 
-2. If `sender` is an [Issuance](#issuance-1) or [Spend](#spend-1):
-    1. Verify that `source.Position` is 0.
-    2. Let `destination` be the `sender.Destination`.
-3. If `sender` is a [Mux](#mux-1):
-    1. Verify that `sender.Destinations` contains at least `source.Position + 1` [ValueDestination](#value-destination-1) items.
-    2. Let `destination` be the `sender.Destinations[source.Position]`.
-4. Verify that `source.Value` is equal to `destination.Value`.
-5. Verify that `destination.Ref` is equal to the ID of the `receiver`.
-6. Verify that `destination.Position` is equal to the `source index`.
-7. Validate the entry `sender`.
-
-
 ### Merkle Root
 
 A top hash of a *merkle tree* (binary or patricia). Merkle roots are used within blocks to commit to a set of transactions and complete state of the blockchain. They are also used in merkleized programs and may also be used for structured reference data commitments.
@@ -394,7 +371,7 @@ Witness             | Struct               | Empty struct.
 
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
-Source              | ValueSource          | The source of the units to be included in this output.
+Source              | ValueSource1         | The source of the units to be included in this output.
 ControlProgram      | Program              | The program to control this output.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
@@ -416,7 +393,7 @@ Witness             | Struct               | Empty struct.
 
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
-Source              | ValueSource          | The source of the units that are being retired.
+Source              | ValueSource1         | The source of the units that are being retired.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
@@ -441,7 +418,7 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 
 Witness field       | Type                 | Description
 --------------------|----------------------|----------------
-Destination         | ValueDestination     | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output entry, or to a Mux, which points to Output entries via its own Destinations.
+Destination         | ValueDestination1    | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output entry, or to a Mux, which points to Output entries via its own Destinations.
 Arguments           | List<String>         | Arguments for the control program contained in the SpentOutput.
 
 #### Spend Validation
@@ -469,7 +446,7 @@ ExtHash             | [ExtStruct](#extension-struct)| If the transaction version
 
 Witness field       | Type                                      | Description
 --------------------|-------------------------------------------|----------------
-Destination         | ValueDestination                          | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an `Output`, or to a `Mux`, which points to `Output` entries via its own `Destinations`.
+Destination         | ValueDestination1                         | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an `Output`, or to a `Mux`, which points to `Output` entries via its own `Destinations`.
 AssetDefinition     | [Asset Definition](#asset-definition)     | Asset definition for the asset being issued.
 Arguments           | List<String>                              | Arguments for the control program contained in the SpentOutput.
 
@@ -501,13 +478,13 @@ Witness             | Struct               | See below.
 
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
-Sources             | List<ValueSource>    | The source of the units to be included in this Mux.
+Sources             | List<ValueSource1>   | The source of the units to be included in this Mux.
 Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                       | Description
 --------------------|----------------------------|----------------
-Destinations        | List<ValueDestination>     | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
+Destinations        | List<ValueDestination1>    | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
 Arguments           | String                     | Arguments for the program contained in the Nonce.
 
 #### Mux Validation
