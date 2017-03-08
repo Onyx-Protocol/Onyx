@@ -46,8 +46,6 @@
 
 This is a specification of the semantic data structures used by blocks and transactions. These data structures and rules are used for validation and hashing. This format is independent from the format for transaction wire serialization.
 
-Lower-level data structures are defined in a supporting document [Data Types Specification](blockchain.md).
-
 ### Block
 
 A **block** is a [block header](#block-header) together with a list of [transactions](#transaction).
@@ -67,11 +65,11 @@ Every entry is identified by its [Entry ID](#entry-id).
 
 ### Integer
 
-A LEB128 integer with a maximum allowed value of 0x7fffffffffffffff (2<sup>63</sup> – 1) and a minimum of 0. A varint63 fits into a signed 64-bit integer.
+A [LEB128](#leb128) integer with a maximum allowed value of 0x7fffffffffffffff (2<sup>63</sup> – 1) and a minimum of 0. A varint63 fits into a signed 64-bit integer.
 
 ### String
 
-A binary string with a LEB128 prefix specifying its length in bytes.
+A binary string with a [LEB128](#leb128) prefix specifying its length in bytes.
 The maximum allowed length of the underlying string is 0x7fffffff (2<sup>31</sup> – 1).
 
 The empty string is encoded as a single byte 0x00, a one-byte string is encoded with two bytes 0x01 0xNN, a two-byte string is 0x02 0xNN 0xMM, etc. 
