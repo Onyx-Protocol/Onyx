@@ -422,11 +422,20 @@ Arguments           | List<String>                              | Arguments for 
 
 #### Issuance Validation
 
-1. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
-2. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the transaction version.
-3. Verify that `Anchor` entry is present and valid.
-4. [Validate](#valuedestination-validation) `Destination`.
-5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+**Inputs:**
+
+1. Issuance entry,
+2. initial block ID.
+
+**Algorithm:**
+
+1. Verify that `AssetDefinition.InitialBlockID` is equal to the given initial block ID.
+2. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
+3. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the transaction version.
+4. Verify that `Anchor` entry is present and is either [Nonce](#nonce) or [Spend](#spend) entry.
+5. Validate the `Anchor` entry.
+6. [Validate](#valuedestination-validation) `Destination`.
+7. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 
 ### Mux 1
@@ -485,7 +494,8 @@ Issuance            | Pointer<Issuance>            | Pointer to an issuance entr
 
 1. [Validate](#program-validation) `Program` with the given `Arguments`.
 2. Verify that `Issuance` points to an issuance that is present in the transaction (meaning visitable by traversing `Results` and `Sources` from the transaction header) and whose `Anchor` is equal to this nonce's ID.
-3. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+3. Verify that both mintime and maxtime in the `TimeRange` are not zero.
+4. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### TimeRange  
 
