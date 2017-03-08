@@ -353,10 +353,10 @@ public class Client {
         // This URL's process might be unhealthy; move to the next.
         this.nextURL(idx);
 
-        // The OkHttp library already performs retries for most
-        // I/O-related errors. We can add retries here too if this
-        // becomes a problem.
-        throw new HTTPException(ex.getMessage());
+        // The OkHttp library already performs retries for some
+        // I/O-related errors, but we've hit this case in a leader
+        // failover, so do our own retries too.
+        exception = new HTTPException(ex.getMessage());
       } catch (ConnectivityException ex) {
         // This URL's process might be unhealthy; move to the next.
         this.nextURL(idx);
