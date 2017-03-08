@@ -1,85 +1,64 @@
-# Entries Specification
+# Blockchain Specification
 
-* [Basic types](#basic-types)
-  * [Hash](#hash)
-  * [Integer](#integer)
-  * [String](#string)
-  * [List](#list)
-  * [Struct](#struct)
-  * [ExtStruct](#extstruct)
-  * [Pointer](#pointer)
+* [Introduction](#introduction)
+  * [Block](#block)
+  * [Transaction](#transaction)
 * [Auxiliary data structures](#auxiliary-data-structures)
-  * [Asset Definition](#asset-definition)
-  * [AssetAmount](#assetamount)
+  * [Extension Struct](#extension-struct)
+  * [Pointer](#pointer)
   * [Program](#program)
-  * [ValueSource](#valuesource)
-  * [ValueDestination](#valuedestination)
+  * [Asset Definition](#asset-definition)
+  * [Asset ID](#asset-id)
+  * [Asset Amount](#asset-amount)
+  * [Value Source](#value-source)
+  * [Value Destination](#value-destination)
+  * [Merkle Root](#merkle-root)
+  * [Merkle Binary Tree](#merkle-binary-tree)
+  * [Merkle Patricia Tree](#merkle-patricia-tree)
+  * [Transactions Merkle Root](#transactions-merkle-root)
+  * [Assets Merkle Root](#assets-merkle-root)
 * [Entries](#entries)
   * [Entry](#entry)
   * [Entry ID](#entry-id)
-  * [BlockHeader](#blockheader)
-  * [TxHeader](#txheader)
+  * [Block Header](#block-header)
+  * [Block ID](#block-id)
+  * [Transaction Header](#transaction-header)
+  * [Transaction ID](#transaction-id)
   * [Output 1](#output-1)
-  * [Retirement 1](#retirement-1)
   * [Spend 1](#spend-1)
   * [Issuance 1](#issuance-1)
   * [Mux 1](#mux-1)
   * [Nonce](#nonce)
-  * [TimeRange](#timerange)
+  * [Time Range](#time-range)
+
 
 ## Introduction
 
 This is a specification of the semantic data structures used by blocks and transactions. These data structures and rules are used for validation and hashing. This format is independent from the format for transaction wire serialization.
 
-A **block** is a set of [entries](#entries), which must include a [Block Header](#blockheader) entry.
+### Block
 
-A **transaction** is composed of a set of [entries](#entries). Each transaction must include a [TxHeader Entry](#txheader), which references other entries in the transaction, which in turn can reference additional entries. 
+A **block** is a [block header](#block-header) together with a list of [transactions](#transaction).
+
+### Transaction
+
+A **transaction** is composed of a set of [entries](#entries). Each transaction must include a [transaction header](#transaction-header), which references other entries in the transaction, which in turn can reference additional entries. 
 
 Every entry is identified by its [Entry ID](#entry-id).
 
-## Basic types
 
-All entries and [auxiliary data structures](#auxiliary-data-structures) are defined in terms of the following basic types:
+## Auxiliary data structures
 
-* [Hash](#hash)
-* [Integer](#integer)
-* [String](#string)
-* [List](#list)
-* [Struct](#struct)
-* [ExtStruct](#extstruct)
-* [Pointer](#pointer).
+Auxiliary data structures are [Structs](types.md#struct) that are not [entries](#entries) by themselves, but used as fields within the entries.
 
-### Hash
+### Extension Struct
 
-A `Hash` is encoded as 32 bytes.
-
-### Integer
-
-An `Integer` is encoded a [Varint63](data.md#varint63).
-
-### String
-
-A `String` is encoded as a [Varstring31](data.md#varstring31).
-
-### List
-
-A `List` is encoded as a [Varstring31](data.md#varstring31) containing the serialized items, one by one, as defined by the schema. 
-
-Note: since the `List` is encoded as a variable-length string, its length prefix indicates not the number of _items_,
-but the number of _bytes_ of all the items in their serialized form.
-
-### Struct
-
-A `Struct` is encoded as a concatenation of all its serialized fields.
-
-### ExtStruct
-
-An `ExtStruct` is encoded as a single 32-byte hash. 
-Future versions of the protocol may add additional fields as “Extension Structs” that will be compressed in a single hash for backwards compatibility.
+An `Extension Struct` is encoded as a single 32-byte hash. 
+Future versions of the protocol may add additional fields as `Extension Structs` that will be compressed in a single hash for backwards compatibility.
 
 ### Pointer
 
-A `Pointer` is encoded as a [Hash](#hash), and identifies another [entry](#entry) by its [ID](#entry-id). 
+A `Pointer` is encoded as a [Hash](types.md#hash), and identifies another [entry](#entry) by its [ID](#entry-id). 
 
 `Pointer` restricts the possible acceptable types: `Pointer<X>` must refer to an entry of type `X`.
 
@@ -87,18 +66,14 @@ A `Pointer` can be `nil` (not pointing to any entry), in which case it is repres
     
     0x0000000000000000000000000000000000000000000000000000000000000000
 
-## Auxiliary data structures
-
-Auxiliary data structures are [Structs](#struct) that are not [entries](#entries) by themselves, but used as fields within the entries.
-
 ### Program
 
 Program encapsulates the version of the [VM](vm1.md) and the bytecode that should be executed by that VM.
 
 Field            | Type                | Description
 -----------------|---------------------|----------------
-VM Version       | [Integer](#integer) | The VM version to be used when evaluating the program.
-Bytecode         | [String](#string)   | The program code to be executed.
+VM Version       | [Integer](types.md#integer) | The VM version to be used when evaluating the program.
+Bytecode         | [String](types.md#string)   | The program code to be executed.
 
 #### Program Validation
 
@@ -119,49 +94,49 @@ Bytecode         | [String](#string)   | The program code to be executed.
     3. If the program evaluates successfully, validation succeeds. If the program fails evaluation, validation fails.
 
 
-### AssetDefinition
+### Asset Definition
 
 Field                 | Type                | Description
 ----------------------|---------------------|----------------
-Initial Block ID      | [Hash](#hash)       | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
+Initial Block ID      | [Hash](types.md#hash)       | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
 Issuance Program      | [Program](#program) | Program that must be satisfied for this asset to be issued.
-Asset Reference Data  | [Hash](#hash)       | Hash of the reference data (formerly known as the “asset definition”) for this asset.
+Asset Reference Data  | [Hash](types.md#hash)       | Hash of the reference data (formerly known as the “asset definition”) for this asset.
 
 
 ### Asset ID
 
 Asset ID is a globally unique identifier of a given asset across all blockchains.
 
-Asset ID is defined as the [SHA3-256](#sha3) of the [Asset Definition](#assetdefinition):
+Asset ID is defined as the [SHA3-256](types.md#sha3) of the [Asset Definition](#asset-definition):
 
     AssetID = SHA3-256(AssetDefinition)
 
 
-### AssetAmount
+### Asset Amount
 
 AssetAmount struct encapsulates the number of units of an asset together with its [asset ID](#asset-id).
 
 Field            | Type                 | Description
 -----------------|----------------------|----------------
-AssetID          | [Hash](#hash)        | [Asset ID](#asset-id).
-Value            | [Integer](#integer)  | Number of units of the referenced asset.
+AssetID          | [Hash](types.md#hash)        | [Asset ID](#asset-id).
+Value            | [Integer](types.md#integer)  | Number of units of the referenced asset.
 
 
-### ValueSource
+### Value Source
 
 An [Entry](#entry) uses a ValueSource to refer to other [Entries](#entry) that provide the value for it.
 
 Field            | Type                        | Description
 -----------------|-----------------------------|----------------
-Ref              | [Pointer](#pointer)\<[Issuance](#issuance)\|[Spend](#spend)\|[Mux](#mux)\> | Previous entry referenced by this ValueSource.
-Value            | [AssetAmount](#assetamount) | Amount and Asset ID contained in the referenced entry.
-Position         | [Integer](#integer)         | Iff this source refers to a [Mux](#mux) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance) or [Spend](#spend) entry, then the `Position` must be 0.
+Ref              | [Pointer](#pointer)\<[Issuance1](#issuance-1)\|[Spend1](#spend-1)\|[Mux1](#mux-1)\> | Previous entry referenced by this ValueSource.
+Value            | [AssetAmount](#asset-amount) | Amount and Asset ID contained in the referenced entry.
+Position         | [Integer](types.md#integer)         | Iff this source refers to a [Mux](#mux-1) entry, then the `Position` is the index of an output. If this source refers to an [Issuance](#issuance-1) or [Spend](#spend-1) entry, then the `Position` must be 0.
 
-#### ValueSource Validation
+#### Value Source Validation
 
 1. Verify that `Ref` is present and valid.
 2. Define `RefDestination` as follows:
-    1. If `Ref` is an [Issuance](#issuance) or [Spend](#spend):
+    1. If `Ref` is an [Issuance](#issuance-1) or [Spend](#spend-1):
         1. Verify that `Position` is 0.
         2. Define `RefDestination` as `Ref.Destination`.
     2. If `Ref` is a `Mux`:
@@ -169,21 +144,21 @@ Position         | [Integer](#integer)         | Iff this source refers to a [Mu
         2. Define `RefDestination` as `Mux.Destinations[Position]`.
 3. Verify that `RefDestination.Ref` is equal to the ID of the current entry.
 4. Verify that `RefDestination.Position` is equal to `SourcePosition`, where `SourcePosition` is defined as follows:
-    1. If the current entry being validated is an [Output](#output) or [Retirement](#retirement), `SourcePosition` is 0.
+    1. If the current entry being validated is an [Output](#output-1) or [Retirement](#retirement-1), `SourcePosition` is 0.
     2. If the current entry being validated is a `Mux`, `SourcePosition` is the index of this `ValueSource` in the current entry's `Sources`.
 5. Verify that `RefDestination.Value` is equal to `Value`.
 
-### ValueDestination
+### Value Destination
 
 An Entry uses a ValueDestination to refer to other entries that receive value from the current Entry.
 
 Field            | Type                           | Description
 -----------------|--------------------------------|----------------
-Ref              | [Pointer](#pointer)\<[Output](#output)\|[Retirement](#retirement)\|[Mux](#mux)\> | Next entry referenced by this ValueDestination.
-Value            | [AssetAmount](#assetamount)    | Amount and Asset ID contained in the referenced entry
-Position         | [Integer](#integer)            | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
+Ref              | [Pointer](#pointer)\<[Output1](#output-1)\|[Retirement1](#retirement-1)\|[Mux1](#mux-1)\> | Next entry referenced by this ValueDestination.
+Value            | [AssetAmount](#asset-amount)    | Amount and Asset ID contained in the referenced entry
+Position         | [Integer](types.md#integer)            | Iff this destination refers to a mux entry, then the Position is one of the mux's numbered Inputs. Otherwise, the position must be 0.
 
-#### ValueDestination Validation
+#### Value Destination Validation
 
 1. Verify that `Ref` is present. (This means it must be reachable by traversing `Results` and `Sources` starting from the TxHeader.)
 2. Define `RefSource` as follows:
@@ -204,32 +179,100 @@ Position         | [Integer](#integer)            | Iff this destination refers 
 
 **Inputs:**
 
-1. `source`: [ValueSource](#valuesource) struct to be validated.
+1. `source`: [ValueSource](#value-source) struct to be validated.
 2. `receiver`: the entry containing `source` struct.
 3. `source index`: the index of `source` within the receiving entry.
 
 **Algorithm:**
 
 1. Let `sender` be the entry pointed to by `source.Ref`. 
-2. If `sender` is an [Issuance](#issuance) or [Spend](#spend):
+2. If `sender` is an [Issuance](#issuance-1) or [Spend](#spend-1):
     1. Verify that `source.Position` is 0.
     2. Let `destination` be the `sender.Destination`.
-3. If `sender` is a [Mux](#mux):
-    1. Verify that `sender.Destinations` contains at least `source.Position + 1` [ValueDestination](#valuedestination) items.
+3. If `sender` is a [Mux](#mux-1):
+    1. Verify that `sender.Destinations` contains at least `source.Position + 1` [ValueDestination](#value-destination) items.
     2. Let `destination` be the `sender.Destinations[source.Position]`.
 4. Verify that `source.Value` is equal to `destination.Value`.
 5. Verify that `destination.Ref` is equal to the ID of the `receiver`.
 6. Verify that `destination.Position` is equal to the `source index`.
 7. Validate the entry `sender`.
 
+
 ### Merkle Root
+
+A top hash of a *merkle tree* (binary or patricia). Merkle roots are used within blocks to commit to a set of transactions and complete state of the blockchain. They are also used in merkleized programs and may also be used for structured reference data commitments.
+
+
+### Merkle Binary Tree
+
+The protocol uses a binary merkle hash tree for efficient proofs of validity. The construction is from [RFC 6962 Section 2.1](https://tools.ietf.org/html/rfc6962#section-2.1), but using SHA3–256 instead of SHA2–256. It is reproduced here, edited to update the hashing algorithm.
+
+The input to the *merkle binary tree hash* (MBTH) is a list of data entries; these entries will be hashed to form the leaves of the merkle hash tree. The output is a single 32-byte hash value. Given an ordered list of n inputs, `D[n] = {d(0), d(1), ..., d(n-1)}`, the MBTH is thus defined as follows:
+
+The hash of an empty list is the hash of an empty string:
+
+    MBTH({}) = SHA3-256("")
+
+The hash of a list with one entry (also known as a leaf hash) is:
+
+    MBTH({d(0)}) = SHA3-256(0x00 || d(0))
+
+For n > 1, let k be the largest power of two smaller than n (i.e., k < n ≤ 2k). The merkle binary tree hash of an n-element list `D[n]` is then defined recursively as
+
+    MBTH(D[n]) = SHA3-256(0x01 || MBTH(D[0:k]) || MBTH(D[k:n]))
+
+where `||` is concatenation and `D[k1:k2]` denotes the list `{d(k1), d(k1+1),..., d(k2-1)}` of length `(k2 - k1)`. (Note that the hash calculations for leaves and nodes differ. This domain separation is required to give second preimage resistance.)
+
+Note that we do not require the length of the input list to be a power of two. The resulting merkle binary tree may thus not be balanced; however, its shape is uniquely determined by the number of leaves.
+
+![Merkle Binary Tree](merkle-binary-tree.png)
+
+
+### Merkle Patricia Tree
+
+The protocol uses a binary radix tree with variable-length branches to implement a *merkle patricia tree*. This tree structure is used for efficient concurrent updates of the [assets merkle root](#assets-merkle-root) and compact recency proofs for unspent outputs.
+
+The input to the *merkle patricia tree hash* (MPTH) is a list of key-value pairs of binary strings of arbitrary length ordered lexicographically by keys. Keys are unique bitstrings of a fixed length (length specified for each instance of the tree). Values are bitstrings of arbitrary length and are not required to be unique. Given a list of sorted key-value pairs, the MPTH is thus defined as follows:
+
+The hash of an empty list is a 32-byte all-zero string:
+
+    MPTH({}) = 0x0000000000000000000000000000000000000000000000000000000000000000
+
+The hash of a list with one entry (also known as a leaf hash) is:
+
+    MPTH({(key,value)}) = SHA3-256(0x00 || value)
+
+In case a list contains multiple items, all keys have a common bit-prefix extracted and the list is split in two lists A and B with elements in each list sharing at least one prefix bit of their keys. This way the top level hash may have an empty common prefix, but nested hashes never have an empty prefix. The hash of multiple items is defined recursively:
+
+    MPTH(A + B) = SHA3-256(0x01 || MPTH(A) || MPTH(B))
+
+![Merkle Patricia Tree](merkle-patricia-tree.png)
+
+
+
+### Transactions Merkle Root
+
+Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the [transaction IDs](#transaction-id) of all transactions included in the block.
+
+### Assets Merkle Root
+
+Root hash of the [merkle patricia tree](#merkle-patricia-tree) formed by [unspent outputs version 1](#output-1) after applying the [block](#block-header). Allows bootstrapping nodes from recent blocks and an archived copy of the corresponding merkle patricia tree without processing all historical transactions.
+
+The tree contains unspent [outputs version 1](#output-1) (one or more per [asset ID](#asset-id)) where both key and value are the same value — the [Output ID](#output-1) of the unspent output.
+
+Key                     | Value
+------------------------|------------------------------
+[Output ID](#output-1)  | [Output ID](#output-1)
+
+
+
 
 
 
 
 ## Entries
 
-Entries form a _directed acyclic graph_ within a blockchain: [block headers](#blockheader) reference the [transaction headers](#txheader) (organized in a [merkle tree](data.md#merkle-binary-tree)) that in turn reference [outputs](#output), that are coming from [muxes](#mux), [issuances](#issuance) and [spends](#spend).
+Entries form a _directed acyclic graph_ within a blockchain: [block headers](#blockheader) reference the [transaction headers](#txheader) (organized in a [merkle tree](data.md#merkle-binary-tree)) that in turn reference [outputs](#output), that are coming from [muxes](#mux), [issuances](#issuance-1) and [spends](#spend-1).
 
 ### Entry
 
@@ -237,7 +280,7 @@ Each entry has the following generic structure:
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------------------------------------------------
-Type                | String               | The type of this Entry. E.g. [Issuance](#issuance), [Retirement](#retirement) etc.
+Type                | String               | The type of this Entry. E.g. [Issuance](#issuance-1), [Retirement](#retirement-1) etc.
 Body                | Struct               | Varies by type.
 Witness             | Struct               | Varies by type.
 
@@ -249,7 +292,7 @@ The body is encoded as a SHA3-256 hash of all the fields of the body struct conc
     entryID = SHA3-256("entryid:" || type || ":" || SHA3-256(body))
 
 
-### BlockHeader
+### Block Header
 
 Field      | Type                 | Description
 -----------|----------------------|----------------
@@ -265,14 +308,14 @@ Previous Block ID        | Hash                    | [Hash](#block-id) of the pr
 Timestamp                | Integer                 | Time of the block in milliseconds since 00:00:00 UTC Jan 1, 1970.
 Transactions Merkle Root | MerkleRoot<TxHeader>    | Root hash of the [merkle binary hash tree](data.md#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
 Assets Merkle Root       | PatriciaRoot<Output1>   | Root hash of the [merkle patricia tree](data.md#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](data.md#assets-merkle-root) for details.
-Next [Consensus Program](data.md#consensus-program) | String | Authentication predicate for adding a new block after this one.
-ExtHash                  | [ExtStruct](#extstruct)  | Extension fields.
+Next [Consensus Program Bytecode](data.md#consensus-program) | String | Authentication predicate for adding a new block after this one.
+ExtHash                  | [ExtStruct](#extension-struct)  | Extension fields.
 
 Witness field            | Type              | Description
 -------------------------|-------------------|----------------------------------------------------------
 Program Arguments        | List\<String\>    | List of [signatures](data.md#signature) and other data satisfying previous block’s [next consensus program](data.md#consensus-program).
 
-#### BlockHeader Validation
+#### Block Header Validation
 
 **Inputs:** 
 
@@ -293,7 +336,11 @@ Program Arguments        | List\<String\>    | List of [signatures](data.md#sign
 9. Verify that the computed merkle tree hash is equal to `TransactionsMerkleRoot`.
 10. If the block version is 1: verify that the `ExtHash` is the all-zero hash.
 
-### TxHeader
+### Block ID
+
+Block ID is defined as an [Entry ID](#entry-id) of the [block header](#blockheader) structure.
+
+### Transaction Header
 
 Field      | Type                 | Description
 -----------|----------------------|----------------
@@ -309,6 +356,10 @@ Data       | Hash                                    | Hash of the reference dat
 Mintime    | Integer                                 | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
 Maxtime    | Integer                                 | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
 ExtHash    | [ExtStruct](#extstruct)                 | Hash of all extension fields. (See [Extstruct](#extstruct).) If `Version` is known, this must be 32 zero-bytes.
+
+### Transaction ID
+
+Transaction ID is defined as an [Entry ID](#entry-id) of the [transaction header](#txheader) structure.
 
 
 #### TxHeader Validation
@@ -473,7 +524,7 @@ Arguments           | String                     | Arguments for the program con
 
 
 
-### Nonce  
+### Nonce
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -499,7 +550,7 @@ Issuance            | Pointer<Issuance1>            | Pointer to an issuance ent
 3. Verify that both mintime and maxtime in the `TimeRange` are not zero.
 4. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
-### TimeRange  
+### Time Range
 
 Field               | Type                 | Description
 --------------------|----------------------|----------------
@@ -513,7 +564,7 @@ Mintime             | Integer              | Minimum time for this transaction.
 Maxtime             | Integer              | Maximum time for this transaction.
 ExtHash             | [ExtStruct](#extstruct) | If the transaction version is known, this must be 32 zero-bytes.
 
-#### TimeRange Validation
+#### Time Range Validation
 
 1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the [transaction header](#txheader).
 2. Verify that `Maxtime` is either zero, or is equal to or greater than the `Maxtime` specified in the [transaction header](#txheader).
