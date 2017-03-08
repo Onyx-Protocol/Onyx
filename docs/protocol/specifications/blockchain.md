@@ -505,7 +505,7 @@ Witness             | Struct               | Empty struct.
 
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
-Source              | ValueSource1         | The source of the units to be included in this output.
+Source              | ValueSource2         | The source of the units to be included in this output.
 ControlProgram      | Program              | The program to control this output.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
