@@ -314,7 +314,6 @@ public class Client {
 
     ChainException exception = null;
     for (int attempt = 1; attempt - 1 <= MAX_RETRIES; attempt++) {
-
       int idx = this.urlIndex.get();
       URL endpointURL;
       try {
@@ -417,8 +416,8 @@ public class Client {
     int max = RETRY_BASE_DELAY_MILLIS * (1 << (retryAttempt - 1));
     max = Math.min(max, RETRY_MAX_DELAY_MILLIS);
 
-    // To incorporate jitter, use a pseudorandom delay between [1, max] millis.
-    return randomGenerator.nextInt(max) + 1;
+    // To incorporate jitter, use a pseudo random delay between [max/2, max] millis.
+    return randomGenerator.nextInt(max/2) + max/2 + 1;
   }
 
   private static final int[] RETRIABLE_STATUS_CODES = {
