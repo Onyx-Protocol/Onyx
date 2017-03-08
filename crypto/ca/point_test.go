@@ -2,7 +2,7 @@ package ca
 
 import "testing"
 
-var B = multiplyBasePoint(one)
+var B = G
 
 func (p *Point) flipBits(f func()) {
 	saved := *p
@@ -10,6 +10,26 @@ func (p *Point) flipBits(f func()) {
 
 	p.add(&B)
 	f()
+}
+
+func TestGeneratorG(t *testing.T) {
+
+	want := fromHex("5866666666666666666666666666666666666666666666666666666666666666")
+	got := G.bytes()
+
+	if !constTimeEqual(want, got) {
+		t.Errorf("G is %x, but must be %x", got, want)
+	}
+}
+
+func TestGeneratorJ(t *testing.T) {
+
+	want := fromHex("00c774b875ed4e395ebb0782b4d93db838d3c4c0840bc970570517555ca71b77")
+	got := J.bytes()
+
+	if !constTimeEqual(want, got) {
+		t.Errorf("J is %x, but must be %x", got, want)
+	}
 }
 
 func TestBasePointArith(t *testing.T) {

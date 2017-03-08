@@ -11,6 +11,8 @@ import (
 type Point edwards25519.ExtendedGroupElement
 
 var ZeroPoint Point
+var G = makeG()
+var J = makeJ()
 
 func (a *Point) add(b *Point) {
 	var b2 edwards25519.CachedGroupElement
@@ -147,6 +149,22 @@ func (p *Point) UnmarshalText(b []byte) error {
 		return fmt.Errorf("Point.UnmarshalText could not decode point")
 	}
 	return nil
+}
+
+func makeG() Point {
+	return multiplyBasePoint(one)
+}
+
+func makeJ() (j Point) {
+	// Decode the point from SHA3(G)
+	h := hash256(G.bytes())
+	err := j.fromBytes(&h)
+	if err != nil {
+		panic("failed to decode secondary generator")
+	}
+	// Calculate point `J = 8*J` (8 is a cofactor in edwards25519) which belongs to a subgroup of `G` with order `L`.
+	j.mul(&cofactor)
+	return
 }
 
 func init() {

@@ -82,7 +82,7 @@ Amounts can have *absolute privacy*, independent of the structure and history of
 
 Cryptographic proofs for blinded asset IDs and blinded amounts require relatively large amounts of data (typically 3 to 5 KB). However, almost 80% of that space can be reused to encrypt a confidential message addressed to a designated recipient of the transaction output. The protocol specifies algorithms for encrypting and decrypting this data, along with parameters that allow the user creating the transaction to tune the size of the proofs trading off some of the privacy for lower bandwidth requirements (e.g. blinding a 32-bit amount requires half as much data compared to blinding a full-resolution 64-bit integer).
 
-This scheme provides information-theoretic privacy, meaning that amounts and asset IDs would remain private even against an adversary with unbounded computational power, or a quantum computer that can efficiently solve the elliptic curve discrete logarithm problem (ECDLP). In other words, the scheme is perfectly *hiding*. As a necessary consequence, however, the scheme is not perfectly *binding* — if the ECDLP ceases to be computationally hard, a party could, in effect, freely change the asset ID or amount of blinded outputs. To protect against this possibility, the protocol defines provisional hash-based commitments to both asset ID and amount. If elliptic curve cryptography ceases to be secure, a protocol rule could be introduced (via a soft fork) that requires that transactions spending blinded outputs also publicly reveal values satisfying these hash-based commitments. The scheme allows keeping the encrypted message private even if the asset ID and amount are revealed.
+Present scheme is *perfectly binding*, but only *computationally hiding*. (In fact, [it is impossible](http://crypto.stackexchange.com/questions/41822/why-cant-the-commitment-schemes-have-both-information-theoretic-hiding-and-bind) for a commitment scheme to be both perfectly binding and perfectly hiding at the same time.) This means that breaking elliptic curve discrete logarithm problem (ECDLP) will not compromise the integrity of the commitments, that bind the value perfectly and do not allow manipulations using any amount of computational resources. However, breaking ECDLP can compromise commitments’ hiding property, which rests on discovery of the blinding factor being computationally hard (which is the case only until a powerful quantum computer is made or there is a breakthrough in solving ECDLP with classical computers).
 
 ## Usage
 
@@ -155,14 +155,58 @@ In this section we will provide a brief overview of various ways to use confiden
 
 **The elliptic curve** is edwards25519 as defined by [[RFC7748](https://tools.ietf.org/html/rfc7748)].
 
-Elliptic curve **point operations** `A+B`, `A-B` and scalar multiplication `a·B` are defined as in \[[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)\].
-
 **Encoding** for 32-byte scalars and public keys is defined as in \[[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)\].
 
 `L` is the **order of edwards25519** as defined by \[[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)\] (i.e. 2<sup>252</sup>+27742317777372353535851937790883648493).
 
-`G` is the **standard generator point** on the elliptic curve specified as "B" in Section 5.1 of [[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)].
 
+### Generators
+
+**Primary generator point** (`G`) is the elliptic curve specified as "B" in Section 5.1 of [[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)].
+
+Generator `G` has the following 32-byte encoding:
+
+    G = 0x5866666666666666666666666666666666666666666666666666666666666666
+
+**Secondary generator point** (`J`) is the elliptic curve defined as decoded hash of the primary generator `G`:
+
+    J = 8·Decode(SHA3-256(Encode(G)))
+
+Generator `J` has the following 32-byte encoding:
+
+    J = 0x00c774b875ed4e395ebb0782b4d93db838d3c4c0840bc970570517555ca71b77
+
+
+### Scalar
+
+A _scalar_ is an integer in the range from `0` to `L-1` where `L` is the order of [edwards25519](#elliptic-curve-parameters) subgroup.
+
+### Point
+
+A point is a two-dimensional point on [edwards25519](#elliptic-curve-parameters).
+
+### Point Pair
+
+A vector of two elliptic curve [points](#point). Pairs support addition and scalar multiplication operations defined as follows:
+
+### Point operations
+
+Elliptic curve *points* support two operations:
+
+1. Addition/subtraction of points (`A+B`, `A-B`)
+2. Scalar multiplication (`a·B`).
+
+These operations are defined as in \[[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)\].
+
+*Point pairs* support the same operations defined as:
+
+1. Sum of two pairs is a pair of sums:
+
+        (A,B) + (C,D) == (A+C, B+D)
+
+2. Multiplication of a pair by a [scalar](#scalar) is a pair of scalar multiplications of each point:
+
+        x·(A,B) == (x·A,x·B)
 
 ### Ring Signature
 
@@ -277,7 +321,7 @@ Where:
 * `value` is the 64-bit integer representing the amount,
 * `H` is an [asset ID commitment](#asset-id-commitment),
 * `f` is a [value blinding factor](#value-blinding-factor) (could be different from the blinding integer in the [asset ID commitment](#asset-id-commitment)),
-* `G` is the [standard generator point](#elliptic-curve-parameters) on the elliptic curve specified as "B" in Section 5.1 of [[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)].
+* `G` is the [primary generator point](#generators).
 
 Blinded value commitments in transaction outputs created individually using [Create Blinded Value Commitment](#create-blinded-value-commitment) algorithm. Balancing excess commitment is created using [Balance Blinding Factors](#balance-blinding-factors) algorithm.
 
