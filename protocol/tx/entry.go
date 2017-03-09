@@ -26,14 +26,13 @@ type entry interface {
 var errInvalidValue = errors.New("invalid value")
 
 func entryID(e entry) (hash bc.Hash) {
-	// This nil test only handles the case where e is the zero value of
-	// the entry interface.
 	if e == nil {
 		return hash
 	}
 
-	// This nil test handles the case where e is a nil pointer.
-	if reflect.ValueOf(e).IsNil() {
+	// Nil pointer; not the same as nil interface above. (See
+	// https://golang.org/doc/faq#nil_error.)
+	if v := reflect.ValueOf(e); v.Kind() == reflect.Ptr && v.IsNil() {
 		return hash
 	}
 
