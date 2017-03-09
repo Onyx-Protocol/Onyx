@@ -155,9 +155,7 @@ In this section we will provide a brief overview of various ways to use confiden
 
 **The elliptic curve** is edwards25519 as defined by [[RFC7748](https://tools.ietf.org/html/rfc7748)].
 
-**Encoding** for 32-byte scalars and public keys is defined as in \[[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)\].
-
-`L` is the **order of edwards25519** as defined by \[[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)\] (i.e. 2<sup>252</sup>+27742317777372353535851937790883648493).
+`L` is the **order of edwards25519** as defined by \[[RFC8032](https://tools.ietf.org/html/rfc8032)\] (i.e. 2<sup>252</sup>+27742317777372353535851937790883648493).
 
 
 ### Zero point
@@ -169,7 +167,7 @@ _Zero point_ `O` is a representation of the _point at infinity_, identity elemen
 
 ### Generators
 
-**Primary generator point** (`G`) is the elliptic curve specified as "B" in Section 5.1 of [[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)].
+**Primary generator point** (`G`) is the elliptic curve specified as "B" in Section 5.1 of [[RFC8032](https://tools.ietf.org/html/rfc8032)].
 
 Generator `G` has the following 32-byte encoding:
 
@@ -187,11 +185,12 @@ Generator `J` has the following 32-byte encoding:
 ### Scalar
 
 A _scalar_ is an integer in the range from `0` to `L-1` where `L` is the order of [edwards25519](#elliptic-curve-parameters) subgroup.
-
+Scalars are encoded according to [RFC8032](https://tools.ietf.org/html/rfc8032).
 
 ### Point
 
 A point is a two-dimensional point on [edwards25519](#elliptic-curve-parameters).
+Points are encoded according to [RFC8032](https://tools.ietf.org/html/rfc8032).
 
 
 ### Point Pair
@@ -206,7 +205,7 @@ Elliptic curve *points* support two operations:
 1. Addition/subtraction of points (`A+B`, `A-B`)
 2. Scalar multiplication (`a·B`).
 
-These operations are defined as in \[[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)\].
+These operations are defined as in \[[RFC8032](https://tools.ietf.org/html/rfc8032)\].
 
 *Point pairs* support the same operations defined as:
 
@@ -464,61 +463,65 @@ Program Arguments               | [varstring31]    | Data passed to the issuance
 
 **Inputs:**
 
-1. `msg`: the 32-byte string to be signed.
-2. `{P[i]}`: `n` [public keys](data.md#public-key), points on the elliptic curve.
-3. `j`: the index of the designated public key, so that `P[j] == p·G`.
-4. `p`: the private key for the public key `P[j]`.
+1. `msg`: the string to be signed.
+2. `B`: base [point](#point) to verify the signature (not necessarily a [generator](#generator) point).
+3. `{P[i]}`: `n` [points](#point) representing the public keys.
+4. `j`: the index of the designated public key, so that `P[j] == p·G`.
+5. `p`: the secret [scalar](#scalar) representing a private key for the public key `P[j]`.
 
 **Output:** `{e0, s[0], ..., s[n-1]}`: the ring signature, `n+1` 32-byte elements.
 
 **Algorithm:**
 
 1. Let `counter = 0`.
-2. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = SHAKE256(counter || msg || p || j || P[0] || ... || P[n-1], 8·(32·(n-1) + 64 + 1))`, where:
+2. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(msg || B || P[0] || ... || P[n-1])`.
+3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = SHAKE256(counter || msghash || p || j, 8·(32·(n-1) + 64 + 1))`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * `p` is encoded as a 256-bit little-endian integer,
-    * `j` is encoded as a 64-bit little-endian integer,
-    * points `P[i]` are encoded as [public keys](data.md#public-key).
-3. Calculate `k = nonce mod L`, where `nonce` is interpreted as a 64-byte little-endian integer and reduced modulo subgroup order `L`.
-4. Calculate the initial e-value, let `i = j+1 mod n`:
-    1. Calculate `R[i]` as the point `k·G` and encode it as a 32-byte [public key](data.md#public-key).
+    * `j` is encoded as a 64-bit little-endian integer.
+4. Calculate `k = nonce mod L`, where `nonce` is interpreted as a 64-byte little-endian integer and reduced modulo subgroup order `L`.
+5. Calculate the initial e-value, let `i = j+1 mod n`:
+    1. Calculate `R[i]` as the [point](#point) `k·B`.
     2. Define `w[j]` as `mask` with lower 4 bits set to zero: `w[j] = mask & 0xf0`.
-    3. Calculate `e[i] = SHA3-512(R[i] || msg || i || w[j])` where `i` is encoded as a 64-bit little-endian integer. Interpret `e[i]` as a little-endian integer reduced modulo `L`.
-5. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
+    3. Calculate `e[i] = SHA3-512(R[i] || msghash || i || w[j])` where `i` is encoded as a 64-bit little-endian integer. Interpret `e[i]` as a little-endian integer reduced modulo `L`.
+6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (j + step) mod n`.
     2. Calculate the forged s-value `s[i] = r[step-1]`, where `r[j]` is interpreted as a 64-byte little-endian integer and reduced modulo `L`.
     3. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero.
     4. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     5. Let `i’ = i+1 mod n`.
-    6. Calculate `R[i’] = z[i]·G - e[i]·P[i]` and encode it as a 32-byte [public key](data.md#public-key).
-    7. Calculate `e[i’] = SHA3-512(R[i’] || msg || i’ || w[i])` where `i’` is encoded as a 64-bit little-endian integer. Interpret `e[i’]` as a little-endian integer reduced modulo `L`.
-6. Calculate the non-forged `z[j] = k + p·e[j] mod L` and encode it as a 32-byte little-endian integer.
-7. If `z[j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
-8. Define `s[j]` as `z[j]` with 4 high bits set to high 4 bits of the `mask`.
-9. Return the ring signature `{e[0], s[0], ..., s[n-1]}`, total `n+1` 32-byte elements.
+    6. Calculate point `R[i’] = z[i]·B - e[i]·P[i]`.
+    7. Calculate `e[i’] = SHA3-512(R[i’] || msghash || i’ || w[i])` where `i’` is encoded as a 64-bit little-endian integer. Interpret `e[i’]` as a little-endian integer reduced modulo `L`.
+7. Calculate the non-forged `z[j] = k + p·e[j] mod L` and encode it as a 32-byte little-endian integer.
+8. If `z[j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
+9. Define `s[j]` as `z[j]` with 4 high bits set to high 4 bits of the `mask`.
+10. Return the ring signature `{e[0], s[0], ..., s[n-1]}`, total `n+1` 32-byte elements.
 
 
 ### Verify Ring Signature
 
 **Inputs:**
 
-1. `msg`: the 32-byte string being signed.
-2. `e[0], s[0], ... s[n-1]`: ring signature consisting of `n+1` 32-byte little-endian integers.
-3. `{P[i]}`: `n` public keys, [points](data.md#public-key) on the elliptic curve.
+1. `msg`: the string being signed.
+2. `B`: base [point](#point) to verify the signature (not necessarily a [generator](#generator) point).
+3. `{P[i]}`: `n` [points](#point) representing the public keys.
+4. `e[0], s[0], ... s[n-1]`: ring signature consisting of `n+1` 32-byte elements.
+
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. For each `i` from `0` to `n-1`:
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(msg || B || P[0] || ... || P[n-1])`.
+2. For each `i` from `0` to `n-1`:
     1. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero (see note below).
     2. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
-    3. Calculate `R[i+1] = z[i]·G - e[i]·P[i]` and encode it as a 32-byte [public key](data.md#public-key).
-    4. Calculate `e[i+1] = SHA3-512(R[i+1] || msg || i+1 || w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
+    3. Calculate point `R[i+1] = z[i]·B - e[i]·P[i]`.
+    4. Calculate `e[i+1] = SHA3-512(R[i+1] || msghash || i+1 || w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
     5. Interpret `e[i+1]` as a little-endian integer reduced modulo subgroup order `L`.
-2. Return true if `e[0]` equals `e[n]`, otherwise return false.
+3. Return true if `e[0]` equals `e[n]`, otherwise return false.
 
-Note: When the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.
+Note: when the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.
 
 
 
