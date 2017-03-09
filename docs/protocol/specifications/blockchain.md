@@ -481,6 +481,7 @@ Witness field       | Type                 | Description
 --------------------|----------------------|----------------
 Destination         | ValueDestination1    | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an Output entry, or to a Mux, which points to Output entries via its own Destinations.
 Arguments           | List<String>         | Arguments for the control program contained in the SpentOutput.
+AnchoredEntry       | Pointer                      | Optional pointer to a single entry of any type, which uniquely identifies that entry as one that can use this one as an `Anchor`.
 
 #### Spend Validation
 
@@ -498,9 +499,9 @@ Type                | String               | "issuance1"
 Body                | Struct               | See below.
 Witness             | Struct               | See below.
 
-Body field          | Type                   | Description
---------------------|------------------------|----------------
-Anchor              | Pointer<Nonce1|Spend1> | Used to guarantee uniqueness of this entry.
+Body field          | Type                            | Description
+--------------------|---------------------------------|----------------
+Anchor              | Pointer<Nonce|Spend1|Issuance1> | Entry that this issuance is anchored to.
 Value               | AssetAmount1           | Asset ID and amount being issued.
 Data                | Hash                   | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct)| If the transaction version is known, this must be 32 zero-bytes.
@@ -510,6 +511,7 @@ Witness field       | Type                                      | Description
 Destination         | ValueDestination1                         | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an `Output`, or to a `Mux`, which points to `Output` entries via its own `Destinations`.
 AssetDefinition     | [Asset Definition](#asset-definition)     | Asset definition for the asset being issued.
 Arguments           | List<String>                              | Arguments for the control program contained in the SpentOutput.
+AnchoredEntry       | Pointer                                   | Optional pointer to a single entry of any type, which uniquely identifies that entry as one that can use this one as an `Anchor`.
 
 #### Issuance Validation
 
@@ -523,10 +525,11 @@ Arguments           | List<String>                              | Arguments for 
 1. Verify that `AssetDefinition.InitialBlockID` is equal to the given initial block ID.
 2. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
 3. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the transaction version.
-4. Verify that `Anchor` entry is present and is either [Nonce](#nonce) or [Spend](#spend-1) entry.
-5. Validate the `Anchor` entry.
-6. [Validate](#value-destination-1-validation) `Destination`.
-7. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+4. Verify that `Anchor` entry is present and is either a [Nonce](#nonce), a [Spend 1](#spend-1), or an [Issuance 1](#issuance-1) entry.
+5. Verify that `Anchor.AnchoredEntry` points to this entry.
+6. Validate the `Anchor` entry.
+7. [Validate](#value-destination-1-validation) `Destination`.
+8. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 
 ### Mux 1
@@ -579,7 +582,8 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 Witness field       | Type                         | Description
 --------------------|------------------------------|----------------
 Arguments           | List<String>                 | Arguments for the program contained in the Nonce.
-Issuance            | Pointer<Issuance1>            | Pointer to an issuance entry.
+AnchoredEntry       | Pointer                      | Optional pointer to a single entry of any type, which uniquely identifies that entry as one that can use this one as an `Anchor`.
+
 
 #### Nonce Validation
 
