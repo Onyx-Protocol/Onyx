@@ -607,7 +607,7 @@ AssetDefinition     | [Asset Definition](#asset-definition)     | Asset definiti
 Arguments           | List<String>                              | Arguments for the control program contained in the SpentOutput.
 AnchoredEntry       | Pointer                                   | Optional pointer to a single entry of any type, which uniquely identifies that entry as one that can use this one as an `Anchor`.
 
-#### Issuance Validation
+#### Issuance 1 Validation
 
 **Inputs:**
 
@@ -620,9 +620,10 @@ AnchoredEntry       | Pointer                                   | Optional point
 2. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
 3. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the transaction version.
 4. Verify that `Anchor` entry is present and is either a [Nonce](#nonce), a [Spend 1](#spend-1), or an [Issuance 1](#issuance-1) entry.
-5. Validate the `Anchor` entry.
-6. [Validate](#value-destination-1-validation) `Destination`.
-7. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+5. Verify that `Anchor.AnchoredEntry` points to this entry.
+6. Validate the `Anchor` entry.
+7. [Validate](#value-destination-1-validation) `Destination`.
+8. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Issuance 2
 
@@ -639,22 +640,31 @@ Value               | AssetAmount2                  | Asset ID and amount being 
 Data                | Hash                          | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct)| If the transaction version is known, this must be 32 zero-bytes.
 
-Witness field       | Type                                      | Description
---------------------|-------------------------------------------|----------------
-Destination         | ValueDestination2                         | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an `Output`, or to a `Mux`, which points to `Output` entries via its own `Destinations`.
-AssetDefinition     | [Asset Definition](#asset-definition)     | Asset definition for the asset being issued.
-Arguments           | List<String>                              | Arguments for the control program contained in the SpentOutput.
+Witness field              | Type                                                    | Description
+---------------------------|---------------------------------------------------------|----------------
+Destination                | ValueDestination2                                       | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an `Output`, or to a `Mux`, which points to `Output` entries via its own `Destinations`.
+AssetIssuanceChoices       | List<AssetIssuanceChoice>                            | List of [asset issuance choices](#asset-issuance-choice) that could be issued by
+Issuance Keys              | List<PublicKey>                                      | List of [public keys] that are used in the issuance ring signature.
+Issuance Ring Signature    | [Issuance ring signature](ca.md#issuance-ring-signature)  | Ring signature using issuance keys.
+Issuance Signature Program | Program                                              | Program used to authorize issuance.
+Arguments                  | List<String>                                         | Arguments passed to issuance signature program.
 
-#### Issuance Validation
+#### Issuance 2 Validation
 
 **Inputs:**
 
 1. Issuance entry,
-2. initial block ID.
+2. Initial block ID.
 
 **Algorithm:**
 
-TBD.
+1. Validate `Anchor`.
+2. [Validate](#value-destination-2-validation) `Destination`.
+3. Verify that the length of `AssetIssuanceChoices` and `IssuanceKeys` are the same.
+4. For each `AssetIssuanceChoice` in `AssetIssuanceChoices`, [validate](#asset-issuance-choice-validation) that asset issuance choice, along with the `IssuanceKey` at the same index in `IssuanceKeys`.
+5. Define `AssetIDChoices` as the list composed by calculating the `AssetID` from the `AssetDefinition` in each of the `AssetIssuanceChoices`.
+6. [Validate](ca.md#validate-issuance-ring-signature) the issuance ring signature using `AssetIDChoices` as the asset ID choices, `IssuanceKeys` as the issuance keys, and `IssuanceSignatureProgram` as the message.
+7. [Validate](#program-validation) `IssuanceSignatureProgram` with `Arguments` as the arguments.
 
 
 ### Upgrade 1
@@ -749,7 +759,7 @@ Balancing Commitments | List<BalancingCommitment>| [Commitments](ca.md#balancing
 4. For each `AssetID` represented in `Sources` and `Destinations`:
     1. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Sources` with that asset ID.
     2. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Destinations` with that asset ID, plus the sum of the `BalancingCommitments`.
-5. Define `SourceAssetIDs` as the list composed of taking the `Value.AssetID` for each `Source`.
+5. Define `SourceAssetIDs` as the list composed by taking the `Value.AssetID` for each `Source`.
 6. Verify that the respective lengths of `Destinations`, `AssetRangeProofs`, and `ValueRangeProofs` are the same.
 7. For each `Destination` in `Destinations` (at index `index`):
   1. Define `AssetRangeProof` as `AssetRangeProof[index]`, and `ValueRangeProof` as `ValueRangeProofs[index]`.
