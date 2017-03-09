@@ -12,13 +12,23 @@ func (p *Point) flipBits(f func()) {
 	f()
 }
 
+func TestZeroPoint(t *testing.T) {
+
+	want := fromHex("0100000000000000000000000000000000000000000000000000000000000000")
+	got := ZeroPoint.bytes()
+
+	if !constTimeEqual(want, got) {
+		t.Errorf("ZeroPoint is encoded as %x, but must be %x", got, want)
+	}
+}
+
 func TestGeneratorG(t *testing.T) {
 
 	want := fromHex("5866666666666666666666666666666666666666666666666666666666666666")
 	got := G.bytes()
 
 	if !constTimeEqual(want, got) {
-		t.Errorf("G is %x, but must be %x", got, want)
+		t.Errorf("G is encoded as %x, but must be %x", got, want)
 	}
 }
 
@@ -28,7 +38,7 @@ func TestGeneratorJ(t *testing.T) {
 	got := J.bytes()
 
 	if !constTimeEqual(want, got) {
-		t.Errorf("J is %x, but must be %x", got, want)
+		t.Errorf("J is encoded as %x, but must be %x", got, want)
 	}
 }
 

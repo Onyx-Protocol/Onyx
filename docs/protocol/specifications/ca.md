@@ -186,13 +186,16 @@ Generator `J` has the following 32-byte encoding:
 
 A _scalar_ is an integer in the range from `0` to `L-1` where `L` is the order of [edwards25519](#elliptic-curve-parameters) subgroup.
 
+
 ### Point
 
 A point is a two-dimensional point on [edwards25519](#elliptic-curve-parameters).
 
+
 ### Point Pair
 
-A vector of two elliptic curve [points](#point). Pairs support addition and scalar multiplication operations defined as follows:
+A vector of two elliptic curve [points](#point). Point pair is encoded as 64-byte string composed of 32-byte encodings of each point.
+
 
 ### Point operations
 
@@ -212,6 +215,7 @@ These operations are defined as in \[[CFRG1](https://tools.ietf.org/html/draft-i
 2. Multiplication of a pair by a [scalar](#scalar) is a pair of scalar multiplications of each point:
 
         x·(A,B) == (x·A,x·B)
+
 
 ### Ring Signature
 
@@ -246,12 +250,33 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
     }
 
 
+### Asset ID Point
+
+_Asset ID point_ is a [point](#point) representing an asset ID. It is defined as follows:
+
+1. Let `counter = 0`.
+2. Calculate `SHA3-256(assetID || counter)` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
+3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
+4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
+5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
+6. Return `A`.
+
 
 ### Asset ID Commitment
 
-An asset ID commitment `AC` is a [point pair](#point-pair) `(H, Ba)`.
+An asset ID commitment `AC` is an ElGamal commitment represented by a [point pair](#point-pair):
 
-The asset ID commitment can either be nonblinded (clear) or blinded (confidential):
+    (H, Ba)
+    H  = A + b·G
+    Ba = b·J
+   
+where:      
+
+* `A` is an [Asset ID Point](#asset-id-point), an orthogonal point representing an asset ID.  
+* `b` is a blinding [scalar](#scalar) for the asset ID.
+* `G`, `J` are [generator points](#generators).
+
+The asset ID commitment can either be nonblinded or blinded:
 
 * [Create Nonblinded Asset ID Commitment](#create-nonblinded-asset-id-commitment)
 * [Create Blinded Asset ID Commitment](#create-blinded-asset-id-commitment)
@@ -261,12 +286,22 @@ The asset ID commitment can either be nonblinded (clear) or blinded (confidentia
 
 The asset range proof demonstrates that a given [asset ID commitment](#asset-id-commitment) commits to one of the asset IDs specified in the transaction inputs. A [whole-transaction validation procedure](#verify-confidential-assets) makes sure that all of the declared asset ID commitments in fact belong to the transaction inputs.
 
+Asset range proof can be [nonconfidential](#nonconfidential-asset-range-proof) or [confidential](#confidential-asset-range-proof).
+
+#### Non-Confidential Asset Range Proof
+
 Field                        | Type      | Description
 -----------------------------|-----------|------------------
-Asset ID Commitments Count   | varint31  | Number of input [asset ID commitments](#asset-id-commitment) used in the range proof.
-Asset ID Commitments         | [[Asset ID Commitment](#asset-id-commitment)] | List of asset ID commitments from the transaction inputs.
-Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signature proving that the asset ID committed in the output belongs to the set of declared input commitments.
+Type                         | byte      | Contains value 0x00 to indicate the commitment is not blinded.
+Asset ID                     | [AssetID](blockchain.md#asset-id)   | 32-byte asset identifier.
 
+#### Confidential Asset Range Proof
+
+Field                        | Type      | Description
+-----------------------------|-----------|------------------
+Type                         | byte      | Contains value 0x01 to indicate the commitment is blinded.
+Asset ID Commitments         | [List](blockchain.md#list)\<[Asset ID Commitment](#asset-id-commitment)\> | List of asset ID commitments from the transaction inputs used in the range proof.
+Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signature proving that the asset ID committed in the output belongs to the set of declared input commitments.
 
 ### Value Commitment
 
@@ -304,27 +339,6 @@ Value Descriptor is a data structure that contains either a cleartext [asset ID]
 
 Value Descriptor may contain _nonblinded_, _blinded_ or _blinded+encrypted_ value as indicated by its 1-byte field `type`.
 
-#### Nonblinded Value Descriptor
-
-Field                | Type     | Description
----------------------|----------|------------------
-Type                 | byte     | Contains value 0x00 if amount is not blinded.
-Amount               | varint63 | Cleartext amount.
-
-#### Blinded Value Descriptor
-
-Field                | Type     | Description
----------------------|----------|------------------
-Type                 | byte     | Contains value 0x01 if the amount is blinded, but encrypted portion is not stored (used in issuance inputs).
-Value Commitment     | [Value Commitment](#value-commitment)  | 32-byte [public key](#public-key) representing value commitment.
-
-#### Encrypted Value Descriptor
-
-Field                | Type     | Description
----------------------|----------|------------------
-Type                 | byte     | Contains value 0x03 if the amount is both blinded and encrypted.
-Value Commitment     | [Value Commitment](#value-commitment)  | 32-byte [public key](#public-key) representing value commitment.
-Encrypted Value      | [Encrypted Value](#encrypted-value) | 40-byte sequence representing encrypted value (8 bytes) and its blinding factor (32 bytes).
 
 
 ### Excess Factor
@@ -676,21 +690,19 @@ Note: When the s-values are decoded as little-endian integers we must set their 
 5. Return `{pt[i]}`.
 
 
-
 ### Create Nonblinded Asset ID Commitment
 
-**Input:** the cleartext asset ID `assetID`.
+**Input:** `assetID`: the cleartext asset ID.
 
-**Output:** the [asset ID commitment](#asset-id-commitment) encoded as a [public key](data.md#public-key).
+**Output:**  `(H,O)`: the nonblinded [asset ID commitment](#asset-id-commitment).
 
 **Algorithm:**
 
-1. Let `counter = 0`.
-2. Calculate `SHA3-256(assetID || counter)` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
-3. Decode the resulting hash as a [point](data.md#public-key) `P` on the elliptic curve.
-4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
-5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup of `G` with [order](#elliptic-curve-parameters) `L`.
-6. Return `A`.
+1. Compute an [asset ID point](#asset-id-point): `A = 8·SHA3-256(assetID || counter)`.
+2. Compute `secret = SHA3-512(assetID || aek)`.
+3. Compute [asset ID blinding factor](#asset-id-blinding-factor) `c` by reducing the `secret` modulo subgroup order `L`: `c = secret mod L`.
+4. Compute an [asset ID commitment](#asset-id-commitment): `H = A + c·G, Ba = c·J`.
+5. Return `((H,Ba),c)`.
 
 
 ### Create Blinded Asset ID Commitment
@@ -700,15 +712,19 @@ Note: When the s-values are decoded as little-endian integers we must set their 
 1. `assetID`: the cleartext asset ID.
 2. `aek`: the [asset ID encryption key](#asset-id-encryption-key).
 
-**Outputs:**  `(H,c)`: the new asset ID commitment and its [blinding factor](#asset-id-blinding-factor) such that `H == A + c·G`.
+**Outputs:**  
+
+1. `(H,Ba)`: the blinded [asset ID commitment](#asset-id-commitment).
+2. `c`: the [blinding factor](#asset-id-blinding-factor) such that `H == A + c·G, Ba = c·J`.
 
 **Algorithm:**
 
-1. [Created non-blinded asset ID commitment](#create-nonblinded-asset-id-commitment): `A = 8·SHA3-256(assetID || counter)`.
-2. Calculate `secret = SHA3-512(assetID || aek)`.
-3. Calculate [asset ID blinding factor](#asset-id-blinding-factor) `c` by reducing the `secret` modulo subgroup order `L`: `c = secret mod L`.
-4. Calculate blinded asset ID commitment: `H = A + c·G` and encode it as [public key](data.md#public-key).
-5. Return `(H,c)`.
+1. Compute an [asset ID point](#asset-id-point): `A = 8·SHA3-256(assetID || counter)`.
+2. Compute `secret = SHA3-512(assetID || aek)`.
+3. Compute [asset ID blinding factor](#asset-id-blinding-factor) `c` by reducing the `secret` modulo subgroup order `L`: `c = secret mod L`.
+4. Compute an [asset ID commitment](#asset-id-commitment): `H = A + c·G, Ba = c·J`.
+5. Return `((H,Ba),c)`.
+
 
 
 ### Encrypt Asset ID
