@@ -335,14 +335,13 @@ Excess factor is a [scalar](#scalar) representing a net difference between input
 
 ### Excess Commitment
 
-An excess commitment `VC` is an ElGamal commitment to an [excess factor](#excess-factor) represented by a [point pair](#point-pair):
+An excess commitment `QC` is an ElGamal commitment to an [excess factor](#excess-factor) represented by a [point pair](#point-pair) together with a signature proving the equality of the discrete logarithms in both points (`e,s`):
 
-    EC = (e·G, e·J)
+    QC = (q·G, q·J, e, s)
+    e = SHA3-256(q·G || q·J || nonce·G)
+    s = nonce + q·e
 
-
-Excess commitment is a 96-byte string encoding 3 elements: a public key `Q = q·G` and two 32-byte elements comprising a Schnorr signature `(e, s)`: `s = nonce + q·e; e = SHA3-256(Q || nonce·G)`.
-
-Excess public key `Q` is used to [verify balance of value commitments](#verify-value-commitments-balance) while the associated signature proves that `Q` does not contain a factor affecting the amount of any asset (see [Verify Excess Commitment](#verify-excess-commitment)).
+Excess pair `(q·G, q·J)` is used to [verify balance of value commitments](#verify-value-commitments-balance) while the associated signature proves that the points do not contain a factor affecting the amount of any asset (see [Verify Excess Commitment](#verify-excess-commitment)).
 
 
 ### Value Proof
