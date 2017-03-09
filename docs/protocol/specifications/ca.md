@@ -43,8 +43,6 @@
   * [Decrypt Payload](#decrypt-payload)
   * [Create Nonblinded Asset ID Commitment](#create-nonblinded-asset-id-commitment)
   * [Create Blinded Asset ID Commitment](#create-blinded-asset-id-commitment)
-  * [Encrypt Asset ID](#encrypt-asset-id)
-  * [Decrypt Asset ID](#decrypt-asset-id)
   * [Create Asset Range Proof](#create-asset-range-proof)
   * [Verify Asset Range Proof](#verify-asset-range-proof)
   * [Create Nonblinded Value Commitment](#create-nonblinded-value-commitment)
@@ -732,50 +730,6 @@ Note: When the s-values are decoded as little-endian integers we must set their 
 4. Compute an [asset ID commitment](#asset-id-commitment): `H = A + c·G, Ba = c·J`.
 5. Return `((H,Ba),c)`.
 
-
-
-### Encrypt Asset ID
-
-**Inputs:**
-
-1. `assetID`: the [asset ID](data.md#asset-id).
-2. `H`: the [asset ID commitment](#asset-id-commitment) hiding the `assetID`.
-3. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) for the commitment `H` such that `H == 8·SHA3-256(assetID || counter) + c·G`.
-4. `aek`: the [asset ID encryption key](#asset-id-encryption-key).
-
-**Output:** `(ea,ec)`, the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `H`.
-
-**Algorithm:**
-
-1. Expand the encryption key: `ek = SHA3-512(aek || H)`, split the resulting hash in two halves.
-2. Encrypt the asset ID using the first half: `ea = assetID XOR ek[0,32]`.
-3. Encrypt the blinding factor using the second half: `ec = c XOR ek[32,32]` where `c` is encoded as a 256-bit little-endian integer.
-4. Return `(ea,ec)`.
-
-Note: the encrypted pair also acts as a hash-based commitment to plaintext values (provided hash function is collision-resistant).
-
-
-### Decrypt Asset ID
-
-**Inputs:**
-
-1. `H`: the [asset ID commitment](#asset-id-commitment) that obfuscates the asset ID.
-2. `(ea,ec)`: the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `H`.
-3. `aek`: the [asset ID encryption key](#asset-id-encryption-key).
-
-First two inputs must be proven to be committed to a [well-formed transaction](validation.md#check-transaction-is-well-formed).
-
-**Outputs:** `(assetID,c)`: decrypted and verified [asset ID](data.md#asset-id) with its blinding factor, or `nil` if verification failed.
-
-**Algorithm:**
-
-1. Expand the encryption key: `ek = SHA3-512(aek || H)`, split the resulting hash in two halves.
-2. Decrypt the asset ID using the first half: `assetID = ea XOR ek[0,32]`.
-3. Decrypt the blinding factor using the second half: `c = ec XOR ek[32,32]`.
-4. Calculate `A` as a [nonblinded asset ID commitment](#create-nonblinded-asset-id-commitment): an elliptic curve point `8·decode(SHA3-256(assetID || counter))`.
-5. Calculate point `P = A + c·G` where `c` is interpreted as a little-endian 256-bit integer.
-6. Verify that `P` equals target commitment `H`. If not, halt and return `nil`.
-7. Return `(assetID, c)`.
 
 
 ### Create Asset Range Proof
