@@ -256,6 +256,20 @@ Position         | [Integer](#integer)                | Iff this destination ref
 A `ValueDestination2` has the same data structure and validation rules as a `ValueDestination1`, except that all pointers and references to [Issuance1](#issuance-1), [Spend1](#spend-1), [Mux1](#mux-1), [Output1](#output-1), [Retirement1](#retirement-1), and [AssetAmount1](#asset-amount-1) must instead be references to [Issuance2](#issuance-2), [Spend2](#spend-2), [Mux2](#mux-2), [Output2](#output-2), [Retirement2](#retirement-2), and , and [AssetAmount2](#asset-amount-2) respectively.
 
 
+### Asset Issuance Choice
+
+An Asset Issuance Choice struct represents a candidate asset that might be issued as part of an [Issuance2](#isssuance2).
+
+Field                   | Type                    | Description
+------------------------|-------------------------|----------------------------------------------------------
+Asset Definition        | AssetDefinition         | [Asset Definition] for the candidate asset. 
+Arguments               | List<String>            | Arguments passed to the asset's issuance program.
+Issuance Key            | PublicKey               | Key used in the corresponding issuance ring signature.
+
+#### Asset Issuance Choice Validation
+
+1. Validate `AssetDefinition.Program` with the given `Arguments`, with `IssuanceKey` and the current issuance entry as part of the context.
+
 ### Merkle Root
 
 A top hash of a *merkle tree* (binary or patricia). Merkle roots are used within blocks to commit to a set of transactions and complete state of the blockchain. They are also used in merkleized programs and may also be used for structured reference data commitments.
