@@ -4,7 +4,6 @@
 
 - `chain-core-server`: `cored` and associated utilities. Previously known as `cmd.cored`.
 - `chain-enclave`: HSM utilities, such as `signerd`.
-- `docs`: Markdown documentation, not including SDK-specific docs.
 - `chain-core-docker`: Docker image. Previously known as `docker.de`.
 - `chain-core-mac`: Mac app. Previously known as `installer.mac`.
 - `chain-core-windows`: Windows installer. Previously known as `installer.windows`.
