@@ -3,12 +3,14 @@ package account
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"testing"
 	"time"
 
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/protocol/vm"
 	"chain/testutil"
@@ -102,17 +104,49 @@ func (m *Manager) createTestAccount(ctx context.Context, t testing.TB, alias str
 	return account
 }
 
-func (m *Manager) createTestControlProgram(ctx context.Context, t testing.TB, accountID string) []byte {
+func (m *Manager) createTestControlProgram(ctx context.Context, t testing.TB, accountID string) *controlProgram {
 	if accountID == "" {
 		account := m.createTestAccount(ctx, t, "", nil)
 		accountID = account.ID
 	}
 
-	acp, err := m.CreateControlProgram(ctx, accountID, false, time.Now().Add(5*time.Minute))
+	cp, err := m.createControlProgram(ctx, accountID, false, time.Time{})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	return acp
+	err = m.insertAccountControlProgram(ctx, cp)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	return cp
+}
+
+func randHash() (h bc.Hash) {
+	rand.Read(h[:])
+	return h
+}
+
+func (m *Manager) createTestUTXO(ctx context.Context, t testing.TB, accountID string) bc.Hash {
+	if accountID == "" {
+		accountID = m.createTestAccount(ctx, t, "", nil).ID
+	}
+
+	// Create an account control program for the new UTXO.
+	cp := m.createTestControlProgram(ctx, t, accountID)
+
+	outputID := randHash()
+	const q = `
+		INSERT INTO account_utxos (asset_id, amount, account_id,
+		control_program_index, control_program, confirmed_in,
+		output_id, source_id, source_pos, ref_data_hash, change)
+		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false)
+	`
+	_, err := m.db.Exec(ctx, q, randHash(), 100, accountID,
+		cp.keyIndex, cp.controlProgram, 10, outputID, randHash(), 0, randHash())
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	return outputID
 }
 
 func TestFindByID(t *testing.T) {

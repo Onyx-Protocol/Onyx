@@ -12,20 +12,23 @@ import (
 )
 
 func TestAnnotateTxs(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	m := NewManager(db, prottest.NewChain(t), nil)
-	ctx := context.Background()
-	acc1 := m.createTestAccount(ctx, t, "", nil)
-	acc2 := m.createTestAccount(ctx, t, "", map[string]interface{}{"one": "foo", "two": "bar"})
-	acp1 := m.createTestControlProgram(ctx, t, acc1.ID)
-	acp2 := m.createTestControlProgram(ctx, t, acc2.ID)
+	var (
+		_, db = pgtest.NewDB(t, pgtest.SchemaPath)
+		m     = NewManager(db, prottest.NewChain(t), nil)
+		ctx   = context.Background()
+		acc1  = m.createTestAccount(ctx, t, "", nil)
+		acc2  = m.createTestAccount(ctx, t, "", map[string]interface{}{"one": "foo", "two": "bar"})
+		u1    = m.createTestUTXO(ctx, t, acc1.ID)
+		u2    = m.createTestUTXO(ctx, t, acc2.ID)
+		u3    = m.createTestUTXO(ctx, t, acc2.ID)
+	)
 
 	txs := []*query.AnnotatedTx{
 		{
 			Outputs: []*query.AnnotatedOutput{
-				{ControlProgram: acp1},
-				{ControlProgram: acp2},
-				{ControlProgram: acp2},
+				{OutputID: u1},
+				{OutputID: u2},
+				{OutputID: u3},
 			},
 		},
 	}
@@ -34,9 +37,9 @@ func TestAnnotateTxs(t *testing.T) {
 	want := []*query.AnnotatedTx{
 		{
 			Outputs: []*query.AnnotatedOutput{
-				{Purpose: "receive", ControlProgram: acp1, AccountID: acc1.ID, AccountTags: &empty},
-				{Purpose: "receive", ControlProgram: acp2, AccountID: acc2.ID, AccountTags: &wantTags},
-				{Purpose: "receive", ControlProgram: acp2, AccountID: acc2.ID, AccountTags: &wantTags},
+				{Purpose: "receive", OutputID: u1, AccountID: acc1.ID, AccountTags: &empty},
+				{Purpose: "receive", OutputID: u2, AccountID: acc2.ID, AccountTags: &wantTags},
+				{Purpose: "receive", OutputID: u3, AccountID: acc2.ID, AccountTags: &wantTags},
 			},
 		},
 	}
