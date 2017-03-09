@@ -30,7 +30,7 @@ The Java SDK is available via [Maven](https://search.maven.org/#search%7Cga%7C1%
 compile 'com.chain:chain-sdk-java:1.1.3'
 ```
 
-You can also [download the JAR](https://search.maven.org/remotecontent?filepath=com/chain/chain-sdk-java/1.1.0/chain-sdk-java-1.1.3.jar) as a binary.
+You can also [download the JAR](https://search.maven.org/remotecontent?filepath=com/chain/chain-sdk-java/1.1.3/chain-sdk-java-1.1.3.jar) as a binary.
 
 ## Node.js
 
