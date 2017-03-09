@@ -16,12 +16,8 @@
   * [Ring Signature](#ring-signature)
   * [Borromean Ring Signature](#borromean-ring-signature)
   * [Asset ID Commitment](#asset-id-commitment)
-  * [Encrypted Asset ID](#encrypted-asset-id)
-  * [Asset ID Descriptor](#asset-id-descriptor)
   * [Asset Range Proof](#asset-range-proof)
   * [Value Commitment](#value-commitment)
-  * [Encrypted Value](#encrypted-value)
-  * [Value Descriptor](#value-descriptor)
   * [Excess Factor](#excess-factor)
   * [Excess Commitment](#excess-commitment)
   * [Value Proof](#value-proof)
@@ -272,7 +268,8 @@ _Asset ID point_ is a [point](#point) representing an asset ID. It is defined as
 
 An asset ID commitment `AC` is an ElGamal commitment represented by a [point pair](#point-pair):
 
-    (H, Ba)
+    AC = (H, Ba)
+    
     H  = A + b·G
     Ba = b·J
    
@@ -310,51 +307,38 @@ Asset ID Commitments         | [List](blockchain.md#list)\<[Asset ID Commitment]
 Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signature proving that the asset ID committed in the output belongs to the set of declared input commitments.
 
 
-
 ### Value Commitment
 
-Value pedersen commitment is a point on Curve25519 encoded as a 32-byte string as specified in [[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)].
+A value commitment `VC` is an ElGamal commitment represented by a [point pair](#point-pair):
 
-Cleartext value commitment is simply a value multiplied by the [asset ID commitment](#asset-id-commitment):
+    VC = (V, Bv)
+    
+    V  = v·H  + f·G
+    Bv = v·Ba + f·J
 
-    V = value·H
+where:
 
-Confidential value commitment also contains a blinding factor `f`:
+* `(H, Ba)` is an [asset ID commitment](#asset-id-commitment).
+* `v` is an amount being committed.
+* `f` is a blinding [scalar](#scalar) for the amount.
+* `G`, `J` are [generator points](#generators).
 
-    V = value·H + f·G
+The asset ID commitment can either be _nonblinded_ or _blinded_:
 
-Where:
-
-* `V` is the value commitment,
-* `value` is the 64-bit integer representing the amount,
-* `H` is an [asset ID commitment](#asset-id-commitment),
-* `f` is a [value blinding factor](#value-blinding-factor) (could be different from the blinding integer in the [asset ID commitment](#asset-id-commitment)),
-* `G` is the [primary generator point](#generators).
-
-Blinded value commitments in transaction outputs created individually using [Create Blinded Value Commitment](#create-blinded-value-commitment) algorithm. Balancing excess commitment is created using [Balance Blinding Factors](#balance-blinding-factors) algorithm.
-
-
-### Encrypted Value
-
-A 40-byte string consisting of two encrypted elements: amount (8 bytes) and [value blinding factor](#value-blinding-factor) (32 bytes).
-
-These values are present in the [output commitment](data.md#transaction-output-commitment) along with the [value range proof](#asset-range-proof). Encrypted value can be decrypted and verified by the recipient against the [value commitment](#value-commitment). It also serves as an additional hash-based commitment in case ECDLP ceases to be computationally infeasible.
-
-
-### Value Descriptor
-
-Value Descriptor is a data structure that contains either a cleartext [asset ID](data.md#asset-id), or a pair of [value commitment](#value-commitment) with [encrypted value](#encrypted-value). Value Descriptors represent amounts in outputs and issuance inputs.
-
-Value Descriptor may contain _nonblinded_, _blinded_ or _blinded+encrypted_ value as indicated by its 1-byte field `type`.
-
+* [Create Nonblinded Value Commitment](#create-nonblinded-value-commitment)
+* [Create Blinded Value Commitment](#create-blinded-value-commitment)
 
 
 ### Excess Factor
 
-Excess factor is a scalar value representing a net difference between input and output blinding factors. It is computed using [Balance Blinding Factors](#balance-blinding-factors) and used to create an [Excess Commitment](#excess-commitment).
-
+Excess factor is a [scalar](#scalar) representing a net difference between input and output blinding factors. It is computed using [Balance Blinding Factors](#balance-blinding-factors) and used to create an [Excess Commitment](#excess-commitment).
 
 ### Excess Commitment
+
+An excess commitment `VC` is an ElGamal commitment to an [excess factor](#excess-factor) represented by a [point pair](#point-pair):
+
+    EC = (e·G, e·J)
+
 
 Excess commitment is a 96-byte string encoding 3 elements: a public key `Q = q·G` and two 32-byte elements comprising a Schnorr signature `(e, s)`: `s = nonce + q·e; e = SHA3-256(Q || nonce·G)`.
 
