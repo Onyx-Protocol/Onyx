@@ -318,7 +318,7 @@ public class Client {
       int idx = this.urlIndex.get();
       URL endpointURL;
       try {
-        URI u = new URI(this.urls.get(idx).toString() + "/" + path);
+        URI u = new URI(this.urls.get(idx % this.urls.size()).toString() + "/" + path);
         u = u.normalize();
         endpointURL = new URL(u.toString());
       } catch (MalformedURLException ex) {
@@ -473,7 +473,7 @@ public class Client {
 
     // A request to the url at failedIndex just failed. Move to the next
     // URL in the list.
-    int nextIndex = (failedIndex + 1) % this.urls.size();
+    int nextIndex = failedIndex + 1;
     this.urlIndex.compareAndSet(failedIndex, nextIndex);
   }
 
