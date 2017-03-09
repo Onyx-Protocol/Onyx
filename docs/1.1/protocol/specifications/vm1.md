@@ -1135,8 +1135,9 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc2  | (∅ → assetid)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the asset ID assigned to the current entry on the data stack. 
-For the [nonce](blockchain.md#nonce) entry, the asset ID of the referenced [issuance](blockchain.md#issuance-1) is used.
+If the current entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1) entry, pushes the `Value.AssetID` of that entry.
+
+If the current entry is a [nonce](blockchain.md#nonce) entry, verifies that the `AnchoredEntry` field is an [issuance](blockchain.md#issuance-1) entry, and pushes the `Value.AssetID` of that issuance entry.
 
 Fails if executed in the [block context](#block-context).
 
@@ -1148,8 +1149,9 @@ Code  | Stack Diagram  | Cost
 ------|----------------|-----------------------------------------------------
 0xc3  | (∅ → amount)   | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the amount assigned to the current entry on the data stack.
-For the [nonce](blockchain.md#nonce) entry, the amount of the referenced [issuance](blockchain.md#issuance-1) is used.
+If the current entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1) entry, pushes the `Value.Amount` of that entry.
+
+If the current entry is a [nonce](blockchain.md#nonce) entry, verifies that the `AnchoredEntry` field is an [issuance](blockchain.md#issuance-1) entry, and pushes the `Value.Amount` of that issuance entry.
 
 Fails if executed in the [block context](#block-context).
 
