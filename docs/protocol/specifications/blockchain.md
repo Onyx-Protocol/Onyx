@@ -576,7 +576,7 @@ Witness field       | Type                       | Description
 Destinations        | List<ValueDestination1>    | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
 Arguments           | String                     | Arguments for the program contained in the Nonce.
 
-#### Mux Validation
+#### Mux 1 Validation
 
 1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
 2. For each `Source` in `Sources`, [validate](#value-source-1-validation) `Source`.
@@ -610,28 +610,24 @@ Witness field       | Type                       | Description
 --------------------|----------------------------|----------------
 Destinations        | List<ValueDestination2>    | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
 Arguments           | String                     | Arguments for the program contained in the Nonce.
+Asset Range Proofs  | List<AssetRangeProof>      | Asset range proofs for `Destinations`.
+Value Range Proofs  | List<ValueRangeProof>      | Value range proofs for `Destinations`.
 
-#### Mux Validation
+#### Mux 2 Validation
 
 1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
 2. For each `Source` in `Sources`, [validate](#value-source-2-validation) `Source`.
 3. For each `Destination` in `Destinations`, [validate](#value-destination-2-validation) `Destination`.
 4. For each `AssetID` represented in `Sources` and `Destinations`:
-    1. Sum the total `Amounts` of the `Sources` with that asset ID. Validation fails if the sum overflows 63-bit integer.
-    2. Sum the total `Amounts` of the `Destinations` with that asset ID. Validation fails if the sum overflows 63-bit integer.
-    3. Verify that the two sums are equal.
-5. Verify that for every asset ID among `Destinations`, there is at least one `Source` with such asset ID. (This prevents creating zero units of an asset not present among the valid sources.)
-6. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
-
-Witness field       | Type                                         | Description
---------------------|----------------------------------------------|----------------
-Asset Range Proof   | [Asset Range Proof](ca.md#asset-range-proof) | Proof that `Source.Value.AssetID` is a valid asset ID.
-Value Range Proof   | [Value Range Proof](ca.md#value-range-proof) | Proof that `Source.Value.Amount` is within an acceptable range.
-
-#### Output 2 Validation
-
-1. [Validate](ca.md#validate-asset-range-proof) `AssetRangeProof` with respect to `Source.Value.AssetID`.
-2. [Validate](ca.md#validate-value-range-proof) `ValueRangeProof` with respect to `Source.Value.Amount`.
+    1. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Sources` with that asset ID.
+    2. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Destinations` with that asset ID.
+5. Define `SourceAssetIDs` as the list composed of taking the `Value.AssetID` for each `Source`.
+6. Verify that the respective lengths of `Destinations`, `AssetRangeProofs`, and `ValueRangeProofs` are the same.
+7. For each `Destination` in `Destinations` (at index `index`):
+  1. Define `AssetRangeProof` as `AssetRangeProof[index], and `ValueRangeProof` as `ValueRangeProofs[index]`.
+  2. [Validate](ca.md#validate-asset-range-proof) `AssetRangeProof` with `Destination.Value.AssetID` and `SourceAssetIDs` as the other inputs.
+  3. [Validate](ca.md#validate-value-range-proof) `ValueRangeProof` with `Destination.Value.Amount` as the other input.
+8. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Nonce
 
