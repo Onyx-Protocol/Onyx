@@ -503,6 +503,7 @@ Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource1         | The source of the units that are being retired.
 Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+<<<<<<< d23661c2662fb1ffc6945e87b755b80350efb2e6
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
 #### Retirement 1 Validation
@@ -531,12 +532,14 @@ Body field          | Type                           | Description
 Source              | ValueSource2                   | The source of the units to be included in this output.
 Control Program     | Program                        | The program to control this output.
 Data                | Hash                           | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is 1, this must be 32 zero-bytes. If the transaction version is 1, this must be the hash of the Extension Struct 1.
 
 Extension Struct 1                 | Type                                         | Description
 -----------------------------------|----------------------------------------------|-------------------------
-UpgradeDestination                 | Pointer<Upgrade1>                             | An optional pointer to an [Upgrade](#upgrade-1) entry that should receive the value being retired.
+UpgradeDestination                 | Pointer<Upgrade1>                            | An optional pointer to an [Upgrade](#upgrade-1) entry that should receive the value being retired.
 ExtHash2                           | [ExtStruct](#extension-struct)               | Hash of next extension struct. (See [Extstruct](#extension-struct).) If `Version` is 2, this must be 32 zero-bytes.
+
+#### Retirement 1 Validation
 
 1. [Validate](#value-source-1-validation) `Source`.
 2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
