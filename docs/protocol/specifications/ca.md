@@ -333,20 +333,29 @@ The asset ID commitment can either be _nonblinded_ or _blinded_:
 
 Excess factor is a [scalar](#scalar) representing a net difference between input and output blinding factors. It is computed using [Balance Blinding Factors](#balance-blinding-factors) and used to create an [Excess Commitment](#excess-commitment).
 
+
 ### Excess Commitment
 
-An excess commitment `QC` is an ElGamal commitment to an [excess factor](#excess-factor) represented by a [point pair](#point-pair) together with a signature proving the equality of the discrete logarithms in both points (`e,s`):
+An excess commitment `QC` is an ElGamal commitment to an [excess factor](#excess-factor) represented by a [point pair](#point-pair) together with a Schnorr signature proving the equality of the discrete logarithms in both points (`e,s`):
 
     QC = (q·G, q·J, e, s)
-    e = SHA3-256(q·G || q·J || nonce·G)
-    s = nonce + q·e
 
-Excess pair `(q·G, q·J)` is used to [verify balance of value commitments](#verify-value-commitments-balance) while the associated signature proves that the points do not contain a factor affecting the amount of any asset (see [Verify Excess Commitment](#verify-excess-commitment)).
+Excess pair `(q·G, q·J)` is used to [verify balance of value commitments](#verify-value-commitments-balance) while the associated signature proves that the points do not contain a factor affecting the amount of any asset.
+
+See: 
+
+* [Create Excess Commitment](#create-excess-commitment))
+* [Verify Excess Commitment](#verify-excess-commitment))
 
 
 ### Value Proof
 
-Value proof demonstrates that a given [value commitment](#value-commitment) encodes a specific value and asset ID. It is used to privately prove the contents of an output without revealing blinding factors.
+Value proof demonstrates that a given [value commitment](#value-commitment) encodes a specific amount and asset ID. It is used to privately prove the contents of an output without revealing blinding factors to a counter-party or an HSM.
+
+See:
+
+* [Create Value Proof](#create-value-proof)
+* [Verify Value Proof](#verify-value-proof)
 
 
 ### Value Range Proof
@@ -373,51 +382,61 @@ The total number of elements in the [Borromean Ring Signature](#borromean-ring-s
 
 ### Record Encryption Key
 
-Record encryption key (REK or `rek`) is a cryptographically-random 32-byte string unique to a given transaction output.
+Record encryption key (REK or `rek`) is a pair of [ChainKD](chainkd.md) extended public keys (xpubs).
+
+    REK = {xpub1, xpub2}
 
 It is used to decrypt the payload data from the [value range proof](#value-range-proof), and derive [asset ID encryption key](#asset-id-encryption-key) and [value encryption key](#value-encryption-key).
 
+The first `xpub1` is used to derive more specific keys as described below that all share the same second key `xpub2`.
+The second `xpub2` is used to derive the entire hierarchies of encryption keys, so that a [REK](#record-encryption-key), or [IEK](#intermediate-encryption-key) could be shared for the entire account instead of per-transaction.
 
 ### Intermediate Encryption Key
 
 Intermediate encryption key (IEK or `iek`) allows decrypting the asset ID and the value in the output commitment. It is derived from the [record encryption key](#record-encryption-key) as follows:
 
-    iek = SHA3-256(0x00 || rek)
+    IEK = {ND(REK.xpub1, "IEK"), REK.xpub2}
 
+where `ND` is non-hardened derivation as defined by [ChainKD](chainkd.md#derive-non-hardened-extended-public-key).
 
 ### Asset ID Encryption Key
 
 Asset ID encryption key (AEK or `aek`) allows decrypting the asset ID in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
 
-    aek = SHA3-256(0x00 || iek)
+    AEK = {ND(IEK.xpub1, "AEK"), IEK.xpub2}
 
+where `ND` is non-hardened derivation as defined by [ChainKD](chainkd.md#derive-non-hardened-extended-public-key).
 
 ### Value Encryption Key
 
 Value encryption key (VEK or `vek`) allows decrypting the amount in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
 
-    vek = SHA3-256(0x01 || iek)
+    VEK = {ND(IEK.xpub1, "VEK"), IEK.xpub2}
+
+where `ND` is non-hardened derivation as defined by [ChainKD](chainkd.md#derive-non-hardened-extended-public-key).
 
 
 ### Asset ID Blinding Factor
 
-An integer `c` used to produce a blinded asset ID commitment out of a [cleartext asset ID commitment](#asset-id-commitment):
+A [scalar](#scalar) `c` used to produce a blinded asset ID commitment out of a [cleartext asset ID commitment](#asset-id-commitment):
 
-    H = A + c·G
+    AC = (A + c·G, c·J)
 
 The asset ID blinding factor is created by [Create Blinded Asset ID Commitment](#create-blinded-asset-id-commitment).
 
 
 ### Value Blinding Factor
 
-An integer `f` used to produce a [value commitment](#value-commitment) out of the [asset ID commitment](#asset-id-commitment):
+An [scalar](#scalar) `f` used to produce a [value commitment](#value-commitment) out of the [asset ID commitment](#asset-id-commitment) `(H, Ba)`:
 
-    V = value·H + f·G
+    VC = (value·H + f·G, value·Ba + f·J)
 
 The value blinding factors are created by [Create Blinded Value Commitment](#create-blinded-value-commitment) algorithm.
 
 
 ### Issuance Asset Range Proof
+
+TBD. 
 
 The issuance asset range proof demonstrates that a given [confidential issuance](asset-version-2-confidential-issuance-witness) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [verification procedure](#verify-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [validation procedure](#validate-transaction-input).
 
@@ -433,9 +452,10 @@ Program Arguments Count         | varint31         | Number of [program argument
 Program Arguments               | [varstring31]    | Data passed to the issuance signature program.
 
 
+
+
+
 ## Core algorithms
-
-
 
 ### Create Ring Signature
 
@@ -1062,6 +1082,12 @@ In case of failure, returns `nil` instead of the range proof.
 2. `(e,s)`: the Schnorr signature proving that `Q` does not affect asset amounts.
 
 **Algorithm:**
+
+TBD:
+
+    e = SHA3-256(q·G || q·J || nonce·(SHA3-256(QG || QJ)*G + J))
+    s = nonce + q·e
+
 
 1. Calculate point `Q = q·G` and encode it as a 32-byte [public key](data.md#public-key).
 2. Calculate `k = SHA3-512(q)` where `q` is encoded as a 256-bit integer using little-endian notation. Interpret `k` as a little-endian integer reduced modulo `L`.
