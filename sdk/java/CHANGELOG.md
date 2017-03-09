@@ -1,5 +1,15 @@
 # Chain Java SDK changelog
 
+## 1.1.3 (March 8, 2017)
+
+### High availability improvements
+
+The client keeps a list of core URLs which it uses to load balance requests to a multi-process server. It will continue to make
+requests to a particular URL in the list until an error occurs (at which point it should update this position to the next URL in the list).
+A bug has been fixed which allowed separate requests to read the same position and update it separately.
+
+The request retry logic has also been updated to cover the maximum, potential leader election period for a multi-process server.
+
 ## 1.1.1 (March 3, 2017)
 
 ### Trusted SSL certs
