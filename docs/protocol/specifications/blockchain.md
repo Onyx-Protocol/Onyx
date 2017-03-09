@@ -182,7 +182,7 @@ Value            | [Integer](#integer)  | Number of units of the referenced asse
 
 ### Asset Amount 2
 
-An AssetAmount2 struct uses [ElGamal commitments](https://en.wikipedia.org/wiki/ElGamal_signature_scheme), rather than plaintext values, to represent assets and amounts.
+An AssetAmount2 struct also represents a number of units of an asset, but uses [ElGamal commitments](https://en.wikipedia.org/wiki/ElGamal_signature_scheme), rather than plaintext values, to represent assets and amounts. This allows those commitments to be encrypted so that they are not deducible by the blockchain.
 
 Field            | Type                                        | Description
 -----------------|---------------------------------------------|----------------
@@ -221,6 +221,8 @@ Position         | [Integer](#integer)         | Iff this source refers to a [Mu
 
 A `ValueSource2` has the same data structure and validation rules as a `ValueSource1`, except that all pointers and references to [Issuance1](#issuance-1), [Spend1](#spend-1), [Mux1](#mux-1), [Output1](#output-1), [Retirement1](#retirement-1), and [AssetAmount1](#asset-amount-1) must instead be references to [Issuance2](#issuance-2), [Spend2](#spend-2), [Mux2](#mux-2), [Output2](#output-2), [Retirement2](#retirement-2), and , and [AssetAmount2](#asset-amount-2) respectively.
 
+Additionally, the `Ref` pointer can additionally be a pointer to an `Upgrade` entry, in which case the validation logic is similar to the logic for `Ref` being an `Issuance` or `Spend` (i.e., `Position` must be 0).
+
 
 ### Value Destination 1
 
@@ -247,6 +249,11 @@ Position         | [Integer](#integer)                | Iff this destination ref
     1. If the current entry being validated is an `Issuance` or `Spend`, `DestinationPosition` is 0.
     2. If the current entry being validated is a `Mux`, `DestinationPosition` is the index of this `ValueDestination` in the current entry's `Destinations`.
 5. Verify that `RefSource.Value` is equal to `Value`.
+
+
+### Value Destination 2
+
+A `ValueDestination2` has the same data structure and validation rules as a `ValueDestination1`, except that all pointers and references to [Issuance1](#issuance-1), [Spend1](#spend-1), [Mux1](#mux-1), [Output1](#output-1), [Retirement1](#retirement-1), and [AssetAmount1](#asset-amount-1) must instead be references to [Issuance2](#issuance-2), [Spend2](#spend-2), [Mux2](#mux-2), [Output2](#output-2), [Retirement2](#retirement-2), and , and [AssetAmount2](#asset-amount-2) respectively.
 
 
 ### Merkle Root
@@ -403,14 +410,19 @@ Type       | String               | "txheader"
 Body       | Struct               | See below.  
 Witness    | Struct               | Empty struct.
 
-Body Field | Type                                    | Description
------------|-----------------------------------------|-------------------------
-Version    | Integer                                 | Transaction version, equals 1.
-Results    | List\<Pointer\<Output 1\|Retirement 1\>\>   | A list of pointers to Outputs or Retirements. This list must contain at least one item.
-Data       | String32                                | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
-Mintime    | Integer                                 | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
-Maxtime    | Integer                                 | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
-ExtHash    | [ExtStruct](#extension-struct)          | Hash of all extension fields. (See [Extstruct](#extension-struct).) If `Version` is known, this must be 32 zero-bytes.
+Body Field | Type                                         | Description
+-----------|----------------------------------------------|-------------------------
+Version    | Integer                                      | Transaction version.
+Results    | List\<Pointer\<Output 1\|Retirement 1\>\>    | A list of pointers to [Output 1s](#output-1) or [Retirements](#retirement-1). This list must contain at least one item.
+Data       | String32                                     | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
+Mintime    | Integer                                      | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
+Maxtime    | Integer                                      | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
+ExtHash1   | [ExtStruct](#extension-struct)               | See below. If `Version` is 1, this must be 32 zero-bytes. Otherwise, this must be the hash of the below ExtStruct.
+
+Extension Struct 1 | Type                                     | Description
+-------------------|------------------------------------------|-------------------------
+Output2 Results    | List\<Pointer\<Output 2\|Retirement\>\>  | A list of pointers to [Output 2s](#output-2).
+ExtHash2           | [ExtStruct](#extension-struct)           | Hash of next extension struct. (See [Extstruct](#extension-struct).) If `Version` is 2, this must be 32 zero-bytes.
 
 ### Transaction ID
 
@@ -426,7 +438,30 @@ Transaction ID is defined as an [Entry ID](#entry-id) of the [transaction header
     1. Verify that `Results` is not empty.
     2. Verify that the `ExtHash` is the all-zero hash.
 
+**Inputs:**
 
+1. TxHeader entry,
+2. timestamp,
+3. block version.
+
+**Algorithm:**
+
+1. If the block version is 1, verify that `Version` is equal to 1.
+2. If the `Maxtime` is greater than zero, verify that it is greater than or equal to the `Mintime`.
+3. If the `Mintime` is greater than zero:
+    1. Verify that the input timestamp is greater than or equal to the `Mintime`.
+4. If the transaction maxtime is greater than zero:
+    1. Verify that the input timestamp is less than or equal to the `Maxtime`.
+5. Validate each of the `Results` is present.
+6. If the transaction version is 1:
+  1. Check that `Results` includes at least one item.
+  2. Verify that the `ExtHash` is the all-zero hash.
+7. If the transaction version is greater than 1:
+  1. Verify that the `ExtHash` is the hash of the Transaction Header Extension Struct 1.
+  2. Verify that `Results` and `Output2 Results` are not both empty.
+  3. Validate each of the `Output2 Results`.
+  4. If the transaction version is 2:
+    1. Verify that the `ExtHash2` is the all-zero hash.
 
 ### Output 1
 
@@ -451,20 +486,10 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 3. Verify that the program VM version is not equal to 0.
 4. If the program VM version is 1, verify that the program’s bytecode does not begin with [FAIL](vm1.md#fail) instruction.
 
+
 ### Output 2
 
-Field               | Type                 | Description
---------------------|----------------------|----------------
-Type                | String               | "output2"
-Body                | Struct               | See below.
-Witness             | Struct               | See below.
-
-Body field          | Type                 | Description
---------------------|----------------------|----------------
-Source              | ValueSource2         | The source of the units to be included in this output.
-Control Program     | Program              | The program to control this output.
-Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
-ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+An `Output2` has the same data structure and validation rules as an `Output1`, except that the type string must be "output2" instead of "output1", and all pointers and references to [ValueSource1](#value-source-1) must instead be references to [ValueSource2](#value-source-2).
 
 #### Retirement 1
 
@@ -477,13 +502,50 @@ Witness             | Struct               | Empty struct.
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource1         | The source of the units that are being retired.
+Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+
+#### Retirement 1 Validation
+
+1. [Validate](#value-source-1-validation) `Source`.
+2. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
+
+#### Retirement 2
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "retirement2"
+Body                | Struct               | See below.
+Witness             | Struct               | Empty struct.
+
+Body field          | Type                 | Description
+--------------------|----------------------|----------------
+Source              | ValueSource1         | The source of the units that are being retired.
 Data                | String32             | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
-#### Retirement Validation
+#### Retirement 2 Validation
+
+Body field          | Type                           | Description
+--------------------|--------------------------------|----------------
+Source              | ValueSource2                   | The source of the units to be included in this output.
+Control Program     | Program                        | The program to control this output.
+Data                | Hash                           | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+
+Extension Struct 1                 | Type                                         | Description
+-----------------------------------|----------------------------------------------|-------------------------
+UpgradeDestination                 | Pointer<Upgrade1>                             | An optional pointer to an [Upgrade](#upgrade-1) entry that should receive the value being retired.
+ExtHash2                           | [ExtStruct](#extension-struct)               | Hash of next extension struct. (See [Extstruct](#extension-struct).) If `Version` is 2, this must be 32 zero-bytes.
 
 1. [Validate](#value-source-1-validation) `Source`.
 2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+3. If the transaction version is greater than 1:
+  1. Verify that the `ExtHash` is the hash of the Extension Struct 1.
+  2. Verify that `UpgradeDestination is either an all-zero hash, or a pointer to an [Upgrade1](#upgrade-1) entry that is present in the transaction.
+  3. If the transaction version is 2:
+    1. Verify that the `ExtHash2` is the all-zero hash.
+
 
 ### Spend 1
 
@@ -511,7 +573,12 @@ AnchoredEntry       | Pointer                      | Optional pointer to a singl
 2. [Validate program](#program-validation) `SpentOutput.ControlProgram` with the given `Arguments` and the transaction version.
 3. Verify that `SpentOutput.Source.Value` is equal to `Destination.Value`.
 4. [Validate](#value-destination-1-validation) `Destination`.
-5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+5. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
+
+### Spend 2
+
+A `Spend2` has the same data structure and validation rules as a `Spend1`, except that the type string must be "spend2" instead of "spend1", and all pointers and references to [Output 1](#output-1) and [Output 2](#output-2) must instead be references to [ValueSource2](#value-source-2) and [ValueDestination2](#value-destination-2).
+
 
 Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
 
@@ -550,10 +617,66 @@ AnchoredEntry       | Pointer                                   | Optional point
 2. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
 3. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the transaction version.
 4. Verify that `Anchor` entry is present and is either a [Nonce](#nonce), a [Spend 1](#spend-1), or an [Issuance 1](#issuance-1) entry.
-5. Verify that `Anchor.AnchoredEntry` points to this entry.
-6. Validate the `Anchor` entry.
-7. [Validate](#value-destination-1-validation) `Destination`.
-8. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+5. Validate the `Anchor` entry.
+6. [Validate](#value-destination-1-validation) `Destination`.
+7. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+
+### Issuance 2
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "issuance2"
+Body                | Struct               | See below.
+Witness             | Struct               | See below.
+
+Body field          | Type                          | Description
+--------------------|-------------------------------|----------------
+Anchor              | Pointer<Nonce1|Spend1|Spend2> | Used to guarantee uniqueness of this entry.
+Value               | AssetAmount2                  | Asset ID and amount being issued.
+Data                | Hash                          | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+ExtHash             | [ExtStruct](#extension-struct)| If the transaction version is known, this must be 32 zero-bytes.
+
+Witness field       | Type                                      | Description
+--------------------|-------------------------------------------|----------------
+Destination         | ValueDestination2                         | The Destination ("forward pointer") for the value contained in this spend. This can point directly to an `Output`, or to a `Mux`, which points to `Output` entries via its own `Destinations`.
+AssetDefinition     | [Asset Definition](#asset-definition)     | Asset definition for the asset being issued.
+Arguments           | List<String>                              | Arguments for the control program contained in the SpentOutput.
+
+#### Issuance Validation
+
+**Inputs:**
+
+1. Issuance entry,
+2. initial block ID.
+
+**Algorithm:**
+
+TBD.
+
+
+### Upgrade 1
+
+Field               | Type                 | Description
+--------------------|----------------------|----------------
+Type                | String               | "upgrade1"
+Body                | Struct               | See below.
+Witness             | Struct               | See below.
+
+Body field          | Type                           | Description
+--------------------|--------------------------------|----------------
+Source              | Pointer<Retirement>            | The source of the value being upgraded.
+ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+
+Witness field       | Type                       | Description
+--------------------|----------------------------|----------------
+Destination         | ValueDestination2          | The destination for the value contained in this `Upgrade`.
+
+
+#### Upgrade Validation
+
+1. [Convert](ca.md#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
+2. [Validate](#validate-value-destination-2) `Destination`.
+3. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
 Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
 
@@ -625,9 +748,9 @@ Value Range Proofs  | List<ValueRangeProof>      | Value range proofs for `Desti
 6. Verify that the respective lengths of `Destinations`, `AssetRangeProofs`, and `ValueRangeProofs` are the same.
 7. For each `Destination` in `Destinations` (at index `index`):
   1. Define `AssetRangeProof` as `AssetRangeProof[index], and `ValueRangeProof` as `ValueRangeProofs[index]`.
-  2. [Validate](ca.md#validate-asset-range-proof) `AssetRangeProof` with `Destination.Value.AssetID` and `SourceAssetIDs` as the other inputs.
-  3. [Validate](ca.md#validate-value-range-proof) `ValueRangeProof` with `Destination.Value.Amount` as the other input.
-8. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+  2. [Validate](ca.md#validate-asset-range-proof) `AssetRangeProof` with `Destination.Value.AssetID` and `SourceAssetIDs` as the `asset ID commitment` and `source asset IDs`, respectively.
+  3. [Validate](ca.md#validate-value-range-proof) `ValueRangeProof` with `Destination.Value.Amount` as the `value commitment`.
+8. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
 ### Nonce
 
@@ -654,7 +777,7 @@ AnchoredEntry       | Pointer              | Optional pointer to a single entry 
 1. [Validate](#program-validation) `Program` with the given `Arguments`.
 2. [Validate TimeRange entry](#time-range-validation).
 3. Verify that both mintime and maxtime in the `TimeRange` are not zero.
-3. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+4. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Time Range
 
@@ -674,4 +797,4 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 
 1. Verify that `Mintime` is equal to or less than the `Mintime` specified in the [transaction header](#transaction-header).
 2. Verify that `Maxtime` is either zero, or is equal to or greater than the `Maxtime` specified in the [transaction header](#transaction-header).
-3. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+3. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
