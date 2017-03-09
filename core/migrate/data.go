@@ -48,4 +48,13 @@ var migrations = []migration{
 			ADD COLUMN source_pos bigint NOT NULL,
 			ADD COLUMN ref_data_hash bytea NOT NULL;
 	`},
+	{Name: `2017-03-09.0.core.account-utxos-change.sql`, SQL: `
+		BEGIN;
+		ALTER TABLE account_utxos ADD COLUMN change bool;
+		UPDATE account_utxos AS u SET change = acp.change
+			FROM account_control_programs AS acp
+			WHERE acp.control_program = u.control_program;
+		ALTER TABLE account_utxos ALTER COLUMN change SET NOT NULL;
+		COMMIT;
+	`},
 }

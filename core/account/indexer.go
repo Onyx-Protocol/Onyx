@@ -94,6 +94,7 @@ type accountOutput struct {
 	rawOutput
 	AccountID string
 	keyIndex  uint64
+	change    bool
 }
 
 func (m *Manager) ProcessBlocks(ctx context.Context) {
@@ -190,16 +191,17 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*rawOutput) ([]*ac
 	result := make([]*accountOutput, 0, len(outs))
 
 	const q = `
-		SELECT signer_id, key_index, control_program
+		SELECT signer_id, key_index, control_program, change
 		FROM account_control_programs
 		WHERE control_program IN (SELECT unnest($1::bytea[]))
 	`
-	err := pg.ForQueryRows(ctx, m.db, q, scripts, func(accountID string, keyIndex uint64, program []byte) {
+	err := pg.ForQueryRows(ctx, m.db, q, scripts, func(accountID string, keyIndex uint64, program []byte, change bool) {
 		for _, out := range outsByScript[string(program)] {
 			newOut := &accountOutput{
 				rawOutput: *out,
 				AccountID: accountID,
 				keyIndex:  keyIndex,
+				change:    change,
 			}
 			result = append(result, newOut)
 		}
@@ -225,6 +227,7 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		sourceID  pq.ByteaArray
 		sourcePos pq.Int64Array
 		refData   pq.ByteaArray
+		change    pq.BoolArray
 	)
 	for _, out := range outs {
 		outputID = append(outputID, out.OutputID.Bytes())
@@ -236,14 +239,15 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		sourceID = append(sourceID, out.sourceID[:])
 		sourcePos = append(sourcePos, int64(out.sourcePos))
 		refData = append(refData, out.refData[:])
+		change = append(change, out.change)
 	}
 
 	const q = `
 		INSERT INTO account_utxos (output_id, asset_id, amount, account_id, control_program_index,
-			control_program, confirmed_in, source_id, source_pos, ref_data_hash)
+			control_program, confirmed_in, source_id, source_pos, ref_data_hash, change)
 		SELECT unnest($1::bytea[]), unnest($2::bytea[]),  unnest($3::bigint[]),
 			   unnest($4::text[]), unnest($5::bigint[]), unnest($6::bytea[]), $7,
-				 unnest($8::bytea[]), unnest($9::bigint[]), unnest($10::bytea[])
+			   unnest($8::bytea[]), unnest($9::bigint[]), unnest($10::bytea[]), unnest($11::boolean[])
 		ON CONFLICT (output_id) DO NOTHING
 	`
 	_, err := m.db.Exec(ctx, q,
@@ -257,6 +261,7 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		sourceID,
 		sourcePos,
 		refData,
+		change,
 	)
 	return errors.Wrap(err)
 }
