@@ -52,9 +52,9 @@ A **block** is a [block header](#block-header) together with a list of [transact
 
 ### Transaction
 
-A **transaction** is composed of a set of [entries](#entries). Each transaction must include a [transaction header](#transaction-header), which references other entries in the transaction, which in turn can reference additional entries. 
+A **transaction** is composed of a set of [entries](#entries). Each transaction must include one and only one [transaction header](#transaction-header), which references other entries in the transaction, which in turn can reference additional entries. 
 
-Every entry is identified by its [Entry ID](#entry-id).
+Every entry is identified by its [Entry ID](#entry-id). No two entries in a transaction may have the same [Entry ID].
 
 
 ## Types
