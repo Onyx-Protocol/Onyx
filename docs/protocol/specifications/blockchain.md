@@ -72,7 +72,7 @@ A [LEB128](#leb128) integer with a maximum allowed value of 0x7fffffffffffffff (
 A binary string with a [LEB128](#leb128) prefix specifying its length in bytes.
 The maximum allowed length of the underlying string is 0x7fffffff (2<sup>31</sup> – 1).
 
-The empty string is encoded as a single byte 0x00, a one-byte string is encoded with two bytes 0x01 0xNN, a two-byte string is 0x02 0xNN 0xMM, etc. 
+The empty string is encoded as a single byte 0x00, a one-byte string is encoded with two bytes 0x01 0xNN, a two-byte string is 0x02 0xNN 0xMM, etc.
 
 ### String32
 
@@ -121,7 +121,7 @@ A `Pointer` is encoded as a [String32](#string32), and identifies another [entry
 `Pointer` restricts the possible acceptable types: `Pointer<X>` must refer to an entry of type `X`.
 
 A `Pointer` can be `nil` (not pointing to any entry), in which case it is represented by the all-zero 32-byte hash:
-    
+
     0x0000000000000000000000000000000000000000000000000000000000000000
 
 ### Program
@@ -375,7 +375,7 @@ Program Arguments        | List\<String\>    | List of [signatures](#signature) 
 
 #### Block Header Validation
 
-**Inputs:** 
+**Inputs:**
 
 1. BlockHeader entry,
 2. BlockHeader entry from the previous block, `PrevBlockHeader`.
@@ -542,7 +542,7 @@ ExtHash2                           | [ExtStruct](#extension-struct)             
 2. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 3. If the transaction version is greater than 1:
   1. Verify that the `ExtHash` is the hash of the Extension Struct 1.
-  2. Verify that `UpgradeDestination is either an all-zero hash, or a pointer to an [Upgrade1](#upgrade-1) entry that is present in the transaction.
+  2. Verify that `UpgradeDestination` is either an all-zero hash, or a pointer to an [Upgrade1](#upgrade-1) entry that is present in the transaction.
   3. If the transaction version is 2:
     1. Verify that the `ExtHash2` is the all-zero hash.
 
@@ -733,21 +733,23 @@ Witness field       | Type                       | Description
 --------------------|----------------------------|----------------
 Destinations        | List<ValueDestination2>    | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
 Arguments           | String                     | Arguments for the program contained in the Nonce.
-Asset Range Proofs  | List<AssetRangeProof>      | Asset range proofs for `Destinations`.
-Value Range Proofs  | List<ValueRangeProof>      | Value range proofs for `Destinations`.
+Asset Range Proofs  | List<AssetRangeProof>      | [Asset range proofs](ca.md#asset-range-proof) for `Destinations`.
+Value Range Proofs  | List<ValueRangeProof>      | [Value range proofs](ca.md#value-range-proof) for `Destinations`.
+Balancing Commitments | List<BalancingCommitment>| [Commitments](ca.md#balancing-commitment) with no value; used to balance any excess
 
 #### Mux 2 Validation
 
 1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
-2. For each `Source` in `Sources`, [validate](#value-source-2-validation) `Source`.
-3. For each `Destination` in `Destinations`, [validate](#value-destination-2-validation) `Destination`.
+2. [Validate](#value-source-2-validation) each `Source` in `Sources`.
+3. [Validate](#value-destination-2-validation) each `Destination` in `Destinations`.
+4. [Validate](ca.md#validate-balancing-commitment) each `BalancingCommitment` in `BalancingCommitments`.
 4. For each `AssetID` represented in `Sources` and `Destinations`:
     1. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Sources` with that asset ID.
-    2. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Destinations` with that asset ID.
+    2. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Destinations` with that asset ID, plus the sum of the `BalancingCommitments`.
 5. Define `SourceAssetIDs` as the list composed of taking the `Value.AssetID` for each `Source`.
 6. Verify that the respective lengths of `Destinations`, `AssetRangeProofs`, and `ValueRangeProofs` are the same.
 7. For each `Destination` in `Destinations` (at index `index`):
-  1. Define `AssetRangeProof` as `AssetRangeProof[index], and `ValueRangeProof` as `ValueRangeProofs[index]`.
+  1. Define `AssetRangeProof` as `AssetRangeProof[index]`, and `ValueRangeProof` as `ValueRangeProofs[index]`.
   2. [Validate](ca.md#validate-asset-range-proof) `AssetRangeProof` with `Destination.Value.AssetID` and `SourceAssetIDs` as the `asset ID commitment` and `source asset IDs`, respectively.
   3. [Validate](ca.md#validate-value-range-proof) `ValueRangeProof` with `Destination.Value.Amount` as the `value commitment`.
 8. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
