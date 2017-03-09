@@ -7,6 +7,7 @@
   * [Multi-party transaction](#multi-party-transaction)
 * [Definitions](#definitions)
   * [Elliptic Curve Parameters](#elliptic-curve-parameters)
+  * [Zero point](#zero-point)
   * [Generators](#generators)
   * [Scalar](#scalar)
   * [Point](#point)
@@ -165,6 +166,13 @@ In this section we will provide a brief overview of various ways to use confiden
 `L` is the **order of edwards25519** as defined by \[[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)\] (i.e. 2<sup>252</sup>+27742317777372353535851937790883648493).
 
 
+### Zero point
+
+_Zero point_ `O` is a representation of the _point at infinity_, identity element in the [edwards25519](#elliptic-curve-parameters) subgroup. It is encoded as follows:
+
+    O = 0x0100000000000000000000000000000000000000000000000000000000000000
+
+
 ### Generators
 
 **Primary generator point** (`G`) is the elliptic curve specified as "B" in Section 5.1 of [[CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)].
@@ -302,6 +310,8 @@ Field                        | Type      | Description
 Type                         | byte      | Contains value 0x01 to indicate the commitment is blinded.
 Asset ID Commitments         | [List](blockchain.md#list)\<[Asset ID Commitment](#asset-id-commitment)\> | List of asset ID commitments from the transaction inputs used in the range proof.
 Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signature proving that the asset ID committed in the output belongs to the set of declared input commitments.
+
+
 
 ### Value Commitment
 
@@ -699,10 +709,7 @@ Note: When the s-values are decoded as little-endian integers we must set their 
 **Algorithm:**
 
 1. Compute an [asset ID point](#asset-id-point): `A = 8·SHA3-256(assetID || counter)`.
-2. Compute `secret = SHA3-512(assetID || aek)`.
-3. Compute [asset ID blinding factor](#asset-id-blinding-factor) `c` by reducing the `secret` modulo subgroup order `L`: `c = secret mod L`.
-4. Compute an [asset ID commitment](#asset-id-commitment): `H = A + c·G, Ba = c·J`.
-5. Return `((H,Ba),c)`.
+2. Return [point pair](#point-pair) `(A,O)` where `O` is a [zero point](#zero-point).
 
 
 ### Create Blinded Asset ID Commitment
