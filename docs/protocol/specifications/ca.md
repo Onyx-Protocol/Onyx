@@ -436,17 +436,20 @@ The value blinding factors are created by [Create Blinded Value Commitment](#cre
 
 ### Issuance Asset Range Proof
 
-TBD. 
-
 The issuance asset range proof demonstrates that a given [confidential issuance](asset-version-2-confidential-issuance-witness) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [verification procedure](#verify-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [validation procedure](#validate-transaction-input).
 
 The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`) are derived from `n` [asset issuance choices](data.md#asset-issuance-choice) specified outside the range proof.
 
+The proof also contains a _tracing point_ that that lets any issuer to prove or disprove whether the issuance is performed by their issuance key.
+
+TBD: extend this to allow "watch keys" (will require change of `{Y}` to `{(Y,W)}` and maybe a pair of tracing points).
+
 Field                           | Type             | Description
 --------------------------------|------------------|------------------
 Issuance Ring Signature         | [Ring Signature](#ring-signature)   | A ring signature proving that the issuer of an encrypted asset ID approved the issuance.
-Issuance Keys                   | [Public Key]     | Keys to be used to calculate the public key for the corresponding index in the ring signature.
-VM Version                      | varint63         | [Version of the VM](#vm-version) that executes the issuance signature program.
+Tracing Point                   | [Point](#point)  | A point that lets any issuer to prove or disprove if this issuance is done by them.
+Issuance Keys                   | [List](blockchain.md#list)\<[Point](#point)\> | Keys to be used to calculate the public key for the corresponding index in the ring signature.
+Issuance Program                | [Program](blockchain.md#program)  | [Version of the VM](#vm-version) that executes the issuance signature program.
 Issuance Signature Program      | varstring31      | Predicate committed to by the issuance asset range proof, which is evaluated to ensure that the transaction is authorized.
 Program Arguments Count         | varint31         | Number of [program arguments](#program-arguments) that follow.
 Program Arguments               | [varstring31]    | Data passed to the issuance signature program.
