@@ -1,5 +1,10 @@
 package bc
 
+// Output is the result of a transfer of value. The value it contains
+// may be accessed by a later Spend entry (if that entry can satisfy
+// the Output's ControlProgram). Output satisfies the Entry interface.
+//
+// (Not to be confused with the deprecated type TxOutput.)
 type Output struct {
 	body struct {
 		Source         valueSource
@@ -19,6 +24,8 @@ func (o *Output) Body() interface{} { return o.body }
 
 func (o Output) Ordinal() int { return o.ordinal }
 
+// NewOutput creates a new Output. Once created, its source should be
+// set with setSource or setSourceID.
 func NewOutput(controlProgram Program, data Hash, ordinal int) *Output {
 	out := new(Output)
 	out.body.ControlProgram = controlProgram

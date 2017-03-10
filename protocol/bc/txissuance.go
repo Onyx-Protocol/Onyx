@@ -1,5 +1,9 @@
 package bc
 
+// Issuance is a source of new value on a blockchain. It satisfies the
+// Entry interface.
+//
+// (Not to be confused with the deprecated type IssuanceInput.)
 type Issuance struct {
 	body struct {
 		Anchor  Hash
@@ -19,6 +23,7 @@ func (iss *Issuance) Body() interface{} { return iss.body }
 
 func (iss Issuance) Ordinal() int { return iss.ordinal }
 
+// NewIssuance creates a new Issuance.
 func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issuance {
 	iss := new(Issuance)
 	iss.body.Anchor = EntryID(anchor)

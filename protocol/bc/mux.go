@@ -1,5 +1,8 @@
 package bc
 
+// Mux splits and combines value from one or more source entries,
+// making it available to one or more destination entries. It
+// satisfies the Entry interface.
 type Mux struct {
 	body struct {
 		Sources []valueSource
@@ -17,6 +20,8 @@ func (m *Mux) Body() interface{} { return m.body }
 
 func (Mux) Ordinal() int { return -1 }
 
+// NewMux creates a new Mux. Once created, its sources should be added
+// with addSource or addSourceID.
 func NewMux(program Program) *Mux {
 	m := new(Mux)
 	m.body.Program = program

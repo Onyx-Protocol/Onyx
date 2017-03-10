@@ -1,5 +1,8 @@
 package bc
 
+// Retirement is for the permanent removal of some value from a
+// blockchain. The value it contains can never be obtained by later
+// entries. Retirement satisfies the Entry interface.
 type Retirement struct {
 	body struct {
 		Source  valueSource
@@ -18,6 +21,8 @@ func (r *Retirement) Body() interface{} { return r.body }
 
 func (r Retirement) Ordinal() int { return r.ordinal }
 
+// NewRetirement creates a new Retirement. Once created, its source
+// should be set with setSource or setSourceID.
 func NewRetirement(data Hash, ordinal int) *Retirement {
 	r := new(Retirement)
 	r.body.Data = data
