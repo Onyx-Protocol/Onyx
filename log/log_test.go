@@ -5,6 +5,7 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -38,8 +39,54 @@ func TestPrefix(t *testing.T) {
 	}
 
 	SetPrefix()
-	if prefix != nil {
-		t.Errorf("prefix = %q want nil", prefix)
+	if procPrefix != nil {
+		t.Errorf("procPrefix = %q want nil", procPrefix)
+	}
+}
+
+func TestAddPrefixkv0(t *testing.T) {
+	got := prefix(context.Background())
+	var want []byte = nil
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf(`prefix(context.Background()) = %#v want %#v`, got, want)
+	}
+}
+
+func TestAddPrefixkv1(t *testing.T) {
+	ctx := context.Background()
+	ctx1 := AddPrefixkv(ctx, "a", "b")
+	got := prefix(ctx1)
+	want := []byte("a=b ")
+	if !bytes.Equal(got, want) {
+		t.Errorf(`prefix(AddPrefixkv(bg, "a", "b")) = %q want %q`, got, want)
+	}
+}
+
+func TestAddPrefixkv2(t *testing.T) {
+	ctx := context.Background()
+	ctx1 := AddPrefixkv(ctx, "a", "b")
+	ctx2 := AddPrefixkv(ctx1, "c", "d")
+	got := prefix(ctx2)
+	want := []byte("a=b c=d ")
+	if !bytes.Equal(got, want) {
+		t.Errorf(`prefix(AddPrefixkv(AddPrefixkv(bg, "a", "b"), "c", "d")) = %q want %q`, got, want)
+	}
+}
+
+func TestAddPrefixkvAppendTwice(t *testing.T) {
+	ctx := context.Background()
+	ctx1 := AddPrefixkv(ctx, "a", "b")
+	ctx2a := AddPrefixkv(ctx1, "c", "d")
+	ctx2b := AddPrefixkv(ctx1, "e", "f")
+	gota := prefix(ctx2a)
+	wanta := []byte("a=b c=d ")
+	if !bytes.Equal(gota, wanta) {
+		t.Errorf(`prefix(AddPrefixkv(AddPrefixkv(bg, "a", "b"), "c", "d")) = %q want %q`, gota, wanta)
+	}
+	gotb := prefix(ctx2b)
+	wantb := []byte("a=b e=f ")
+	if !bytes.Equal(gotb, wantb) {
+		t.Errorf(`prefix(AddPrefixkv(AddPrefixkv(bg, "a", "b"), "e", "f")) = %q want %q`, gotb, wantb)
 	}
 }
 
