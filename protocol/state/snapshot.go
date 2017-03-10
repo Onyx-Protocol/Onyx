@@ -6,15 +6,14 @@ import (
 	"chain/protocol/patricia"
 )
 
-// PriorIssuances maps an "issuance hash" to the time (in Unix millis)
-// at which it should expire from the issuance memory.
-type PriorIssuances map[bc.Hash]uint64
-
 // Snapshot encompasses a snapshot of entire blockchain state. It
 // consists of a patricia state tree and the issuances memory.
+//
+// Issuances maps an "issuance hash" to the time (in Unix millis)
+// at which it should expire from the issuance memory.
 type Snapshot struct {
 	Tree      *patricia.Tree
-	Issuances PriorIssuances
+	Issuances map[bc.Hash]uint64
 }
 
 // PruneIssuances modifies a Snapshot, removing all issuance hashes
@@ -36,7 +35,7 @@ func Copy(original *Snapshot) *Snapshot {
 	// calls to Copy to get the right behavior).
 	c := &Snapshot{
 		Tree:      new(patricia.Tree),
-		Issuances: make(PriorIssuances, len(original.Issuances)),
+		Issuances: make(map[bc.Hash]uint64, len(original.Issuances)),
 	}
 	*c.Tree = *original.Tree
 	for k, v := range original.Issuances {
@@ -49,6 +48,6 @@ func Copy(original *Snapshot) *Snapshot {
 func Empty() *Snapshot {
 	return &Snapshot{
 		Tree:      new(patricia.Tree),
-		Issuances: make(PriorIssuances),
+		Issuances: make(map[bc.Hash]uint64),
 	}
 }

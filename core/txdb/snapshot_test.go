@@ -26,11 +26,11 @@ func TestReadWriteStateSnapshotIssuanceMemory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error reading state snapshot from db: %s\n", err)
 	}
-	want := state.PriorIssuances(map[bc.Hash]uint64{
+	want := map[bc.Hash]uint64{
 		bc.Hash{0x01}: 10,
 		bc.Hash{0x02}: 10,
 		bc.Hash{0x03}: 45,
-	})
+	}
 	if !testutil.DeepEqual(got.Issuances, want) {
 		t.Errorf("storing and loading snapshot issuance memory, got %#v, want %#v", got.Issuances, want)
 	}
