@@ -24,7 +24,7 @@ const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 var (
 	logWriterMu sync.Mutex // protects the following
 	logWriter   io.Writer  = os.Stdout
-	prefix      []byte
+	procPrefix  []byte     // process-global prefix; see SetPrefix vs AddPrefixkv
 
 	// pairDelims contains a list of characters that may be used as delimeters
 	// between key-value pairs in a log entry. Keys and values will be quoted or
@@ -60,13 +60,11 @@ func SetOutput(w io.Writer) {
 	logWriterMu.Unlock()
 }
 
-// SetPrefix sets the output prefix.
-func SetPrefix(keyval ...interface{}) {
+func appendPrefix(b []byte, keyval ...interface{}) []byte {
 	// Invariant: len(keyval) is always even.
 	if len(keyval)%2 != 0 {
 		panic(fmt.Sprintf("odd-length prefix args: %v", keyval))
 	}
-	var b []byte
 	for i := 0; i < len(keyval); i += 2 {
 		k := formatKey(keyval[i])
 		v := formatValue(keyval[i+1])
@@ -75,9 +73,36 @@ func SetPrefix(keyval ...interface{}) {
 		b = append(b, v...)
 		b = append(b, ' ')
 	}
+	return b
+}
+
+// SetPrefix sets the global output prefix.
+func SetPrefix(keyval ...interface{}) {
+	b := appendPrefix(nil, keyval...)
 	logWriterMu.Lock()
-	prefix = b
+	procPrefix = b
 	logWriterMu.Unlock()
+}
+
+// context key type
+type key int
+
+// context key for log line prefixes
+var prefixKey key = 0
+
+// AddPrefixkv appends keyval to any prefix stored in ctx,
+// and returns a new context with the longer prefix.
+func AddPrefixkv(ctx context.Context, keyval ...interface{}) context.Context {
+	p := appendPrefix(prefix(ctx), keyval...)
+	// Note: subsequent calls will append to p, so set cap(p) here.
+	// See TestAddPrefixkvAppendTwice.
+	p = p[0:len(p):len(p)]
+	return context.WithValue(ctx, prefixKey, p)
+}
+
+func prefix(ctx context.Context) []byte {
+	b, _ := ctx.Value(prefixKey).([]byte)
+	return b
 }
 
 // Printkv prints a structured log entry to stdout. Log fields are
@@ -147,7 +172,8 @@ func Printkv(ctx context.Context, keyvals ...interface{}) {
 	}
 
 	logWriterMu.Lock()
-	logWriter.Write(prefix)
+	logWriter.Write(procPrefix)
+	logWriter.Write(prefix(ctx))
 	logWriter.Write([]byte(out)) // ignore errors
 	logWriter.Write([]byte{'\n'})
 	writeRawStack(logWriter, stack)
