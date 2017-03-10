@@ -16,7 +16,7 @@ func TestLoadAccountInfo(t *testing.T) {
 	ctx := context.Background()
 
 	acc := m.createTestAccount(ctx, t, "", nil)
-	acp := m.createTestControlProgram(ctx, t, acc.ID)
+	acp := m.createTestControlProgram(ctx, t, acc.ID).controlProgram
 
 	to1 := bc.NewTxOutput(bc.AssetID{}, 0, acp, nil)
 	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
@@ -45,7 +45,7 @@ func TestDeleteUTXOs(t *testing.T) {
 	ctx := context.Background()
 
 	assetID := bc.AssetID{}
-	acp := m.createTestControlProgram(ctx, t, "")
+	acp := m.createTestControlProgram(ctx, t, "").controlProgram
 	tx := bc.NewTx(bc.TxData{
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 1, acp, nil),
