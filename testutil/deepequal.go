@@ -1,17 +1,25 @@
 package testutil
 
-import "reflect"
+import (
+	"reflect"
+	"unsafe"
+)
+
+type visit struct {
+	a1, a2 unsafe.Pointer
+	typ    reflect.Type
+}
 
 // DeepEqual is similar to reflect.DeepEqual, but treats nil as equal
-// to empty maps and slices.
-// (It's also a more naive implementation that doesn't detect cycles).
+// to empty maps and slices. Some of the implementation is cribbed
+// from Go's reflect package.
 func DeepEqual(x, y interface{}) bool {
 	vx := reflect.ValueOf(x)
 	vy := reflect.ValueOf(y)
-	return deepValueEqual(vx, vy)
+	return deepValueEqual(vx, vy, make(map[visit]bool))
 }
 
-func deepValueEqual(x, y reflect.Value) bool {
+func deepValueEqual(x, y reflect.Value, visited map[visit]bool) bool {
 	if isEmpty(x) && isEmpty(y) {
 		return true
 	}
@@ -27,6 +35,25 @@ func deepValueEqual(x, y reflect.Value) bool {
 	if tx != ty {
 		return false
 	}
+
+	switch tx.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.Struct:
+		if x.CanAddr() && y.CanAddr() {
+			a1 := unsafe.Pointer(x.UnsafeAddr())
+			a2 := unsafe.Pointer(y.UnsafeAddr())
+			if uintptr(a1) > uintptr(a2) {
+				// Canonicalize order to reduce number of entries in visited.
+				// Assumes non-moving garbage collector.
+				a1, a2 = a2, a1
+			}
+			v := visit{a1, a2, tx}
+			if visited[v] {
+				return true
+			}
+			visited[v] = true
+		}
+	}
+
 	switch tx.Kind() {
 	case reflect.Bool:
 		return x.Bool() == y.Bool()
@@ -48,7 +75,7 @@ func deepValueEqual(x, y reflect.Value) bool {
 
 	case reflect.Array:
 		for i := 0; i < tx.Len(); i++ {
-			if !deepValueEqual(x.Index(i), y.Index(i)) {
+			if !deepValueEqual(x.Index(i), y.Index(i), visited) {
 				return false
 			}
 		}
@@ -64,7 +91,7 @@ func deepValueEqual(x, y reflect.Value) bool {
 			return false
 		}
 		for i := 0; i < x.Len(); i++ {
-			if !deepValueEqual(x.Index(i), y.Index(i)) {
+			if !deepValueEqual(x.Index(i), y.Index(i), visited) {
 				return false
 			}
 		}
@@ -77,17 +104,17 @@ func deepValueEqual(x, y reflect.Value) bool {
 		if y.IsNil() {
 			return false
 		}
-		return deepValueEqual(x.Elem(), y.Elem())
+		return deepValueEqual(x.Elem(), y.Elem(), visited)
 
 	case reflect.Ptr:
 		if x.Pointer() == y.Pointer() {
 			return true
 		}
-		return deepValueEqual(x.Elem(), y.Elem())
+		return deepValueEqual(x.Elem(), y.Elem(), visited)
 
 	case reflect.Struct:
 		for i := 0; i < tx.NumField(); i++ {
-			if !deepValueEqual(x.Field(i), y.Field(i)) {
+			if !deepValueEqual(x.Field(i), y.Field(i), visited) {
 				return false
 			}
 		}
@@ -101,7 +128,7 @@ func deepValueEqual(x, y reflect.Value) bool {
 			return false
 		}
 		for _, k := range x.MapKeys() {
-			if !deepValueEqual(x.MapIndex(k), y.MapIndex(k)) {
+			if !deepValueEqual(x.MapIndex(k), y.MapIndex(k), visited) {
 				return false
 			}
 		}
