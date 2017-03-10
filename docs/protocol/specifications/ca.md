@@ -223,13 +223,13 @@ These operations are defined as in \[[RFC8032](https://tools.ietf.org/html/rfc80
 
 ### Hash256
 
-`Hash256` is a secure hash function that taking variable-length binary string as input and outputs a 256-bit string.
+`Hash256` is a secure hash function that takes a variable-length binary string as input and outputs a 256-bit string.
 
     Hash256(x) = SHA3-256("ChainCA-256" || x)
 
 ### ScalarHash
 
-`ScalarHash` is a secure hash function that takes variable-length binary string as input and outputs a [scalar](#scalar):
+`ScalarHash` is a secure hash function that takes a variable-length binary string as input and outputs a [scalar](#scalar):
 
 1. For the input string `x` compute a 512-bit hash `h`:
 
