@@ -21,6 +21,9 @@ import (
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
+// context key type
+type key int
+
 var (
 	logWriterMu sync.Mutex // protects the following
 	logWriter   io.Writer  = os.Stdout
@@ -34,6 +37,9 @@ var (
 	// http://answers.splunk.com/answers/143368/default-delimiters-for-key-value-extraction.html
 	pairDelims      = " ,;|&\t\n\r"
 	illegalKeyChars = pairDelims + `="`
+
+	// context key for log line prefixes
+	prefixKey key = 0
 )
 
 // Conventional key names for log entries
@@ -83,12 +89,6 @@ func SetPrefix(keyval ...interface{}) {
 	procPrefix = b
 	logWriterMu.Unlock()
 }
-
-// context key type
-type key int
-
-// context key for log line prefixes
-var prefixKey key = 0
 
 // AddPrefixkv appends keyval to any prefix stored in ctx,
 // and returns a new context with the longer prefix.
