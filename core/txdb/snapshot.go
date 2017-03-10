@@ -31,7 +31,7 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 		}
 	}
 
-	issuances := make(state.PriorIssuances, len(storedSnapshot.Issuances))
+	issuances := make(map[bc.Hash]uint64, len(storedSnapshot.Issuances))
 	for _, issuance := range storedSnapshot.Issuances {
 		var hash bc.Hash
 		copy(hash[:], issuance.Hash)
