@@ -30,6 +30,12 @@ func entryID(e entry) (hash bc.Hash) {
 		return hash
 	}
 
+	// Nil pointer; not the same as nil interface above. (See
+	// https://golang.org/doc/faq#nil_error.)
+	if v := reflect.ValueOf(e); v.Kind() == reflect.Ptr && v.IsNil() {
+		return hash
+	}
+
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 
