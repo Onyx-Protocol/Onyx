@@ -18,7 +18,13 @@ import (
 )
 
 func CreatePins(ctx context.Context, t testing.TB, s *pin.Store) {
-	pins := []string{account.PinName, asset.PinName, query.TxPinName}
+	pins := []string{
+		account.PinName,
+		account.ExpirePinName,
+		account.DeleteSpentsPinName,
+		asset.PinName,
+		query.TxPinName,
+	}
 	for _, p := range pins {
 		err := s.CreatePin(ctx, p, 0)
 		if err != nil {
