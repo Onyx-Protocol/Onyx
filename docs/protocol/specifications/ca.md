@@ -466,7 +466,7 @@ Program Arguments               | [varstring31]    | Data passed to the issuance
 1. `msg`: the string to be signed.
 2. `B`: base [point](#point) to verify the signature (not necessarily a [generator](#generator) point).
 3. `{P[i]}`: `n` [points](#point) representing the public keys.
-4. `j`: the index of the designated public key, so that `P[j] == p·G`.
+4. `j`: the index of the designated public key, so that `P[j] == p·B`.
 5. `p`: the secret [scalar](#scalar) representing a private key for the public key `P[j]`.
 
 **Output:** `{e0, s[0], ..., s[n-1]}`: the ring signature, `n+1` 32-byte elements.
@@ -533,24 +533,25 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 1. `msg`: the 32-byte string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{P[i,j]}`: `n·m` public keys, [points](data.md#public-key) on the elliptic curve.
-5. `{p[i]}`: the list of `n` scalars representing private keys.
-6. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·G`.
-7. `{payload[i]}`: sequence of `n·m` random 32-byte elements.
+4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generator) points).
+5. `{P[i,j]}`: `n·m` [points](#point) representing public keys.
+6. `{p[i]}`: the list of `n` [scalars](#scalar) representing private keys.
+7. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·B[i]`.
+8. `{payload[i]}`: sequence of `n·m` random 32-byte elements.
 
 **Output:** `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
 **Algorithm:**
 
-1. Let `counter = 0`.
-2. Let `cnt` byte contain lower 4 bits of `counter`: `cnt = counter & 0x0f`.
-3. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = SHAKE256(counter || msg || {p[i]} || {j[i]} || {P[i,j]}, 8·(32·n·m))`, where:
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(msg || n || m || {B[i]} || {P[i,j]})` where `n` and `m` are encoded as 64-bit little-endian integers.
+2. Let `counter = 0`.
+3. Let `cnt` byte contain lower 4 bits of `counter`: `cnt = counter & 0x0f`.
+4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = SHAKE256(counter || msghash || {p[i]} || {j[i]}, 8·(32·n·m))`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
     * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers,
-    * points `{P[i]}` are encoded as concatenation of [public keys](data.md#public-key).
-4. Define `r[i] = payload[i] XOR o[i]` for all `i` from 0 to `n·m - 1`.
-5. For `t` from `0` to `n-1` (each ring):
+5. Define `r[i] = payload[i] XOR o[i]` for all `i` from 0 to `n·m - 1`.
+6. For `t` from `0` to `n-1` (each ring):
     1. Let `j = j[t]`
     2. Let `x = r[m·t + j]` interpreted as a little-endian integer.
     3. Define `k[t]` as the lower 252 bits of `x`.
@@ -558,20 +559,20 @@ Note: when the s-values are decoded as little-endian integers we must set their 
     5. Define `w[t,j]` as a byte with lower 4 bits set to zero and higher 4 bits equal `mask[t]`.
     6. Calculate the initial e-value for the ring:
         1. Let `j’ = j+1 mod m`.
-        2. Calculate `R[t,j’]` as the point `k[t]·G` and encode it as a 32-byte [public key](data.md#public-key).
-        3. Calculate `e[t,j’] = SHA3-512(cnt, R[t, j’] || msg || t || j’ || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers. Interpret `e[t,j’]` as a little-endian integer reduced modulo `L`.
+        2. Calculate `R[t,j’]` as the point `k[t]·B[t]`.
+        3. Calculate `e[t,j’] = SHA3-512(cnt, R[t, j’] || msghash || t || j’ || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers. Interpret `e[t,j’]` as a little-endian integer reduced modulo `L`.
     7. If `j ≠ m-1`, then for `i` from `j+1` to `m-1`:
         1. Calculate the forged s-value: `s[t,i] = r[m·t + i]`.
         2. Define `z[t,i]` as `s[t,i]` with 4 most significant bits set to zero.
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
-        5. Calculate point `R[t,i’] = z[t,i]·G - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](data.md#public-key).
-        6. Calculate `e[t,i’] = SHA3-512(cnt, R[t,i’] || msg || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers. Interpret `e[t,i’]` as a little-endian integer reduced modulo `L`.
-6. Calculate the shared e-value `e0` for all the rings:
+        5. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`.
+        6. Calculate `e[t,i’] = SHA3-512(cnt, R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers. Interpret `e[t,i’]` as a little-endian integer reduced modulo `L`.
+7. Calculate the shared e-value `e0` for all the rings:
     1. Calculate `E` as concatenation of all `e[t,0]` values encoded as 32-byte little-endian integers: `E = e[0,0] || ... || e[n-1,0]`.
     2. Calculate `e0 = SHA3-512(E)`. Interpret `e0` as a little-endian integer reduced modulo `L`.
-    3. If `e0` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 2. The chance of this happening is below 1 in 2<sup>124</sup>.
-7. For `t` from `0` to `n-1` (each ring):
+    3. If `e0` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
+8. For `t` from `0` to `n-1` (each ring):
     1. Let `j = j[t]`.
     2. Let `e[t,0] = e0`.
     3. If `j` is not zero, then for `i` from `0` to `j-1`:
@@ -579,13 +580,13 @@ Note: when the s-values are decoded as little-endian integers we must set their 
         2. Define `z[t,i]` as `s[t,i]` with 4 most significant bits set to zero.
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
-        5. Calculate point `R[t,i’] = z[t,i]·G - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](data.md#public-key). If `i` is zero, use `e0` in place of `e[t,0]`.
-        6. Calculate `e[t,i’] = SHA3-512(cnt, R[t,i’] || msg || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers. Interpret `e[t,i’]` as a little-endian integer reduced modulo subgroup order `L`.
+        5. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`. If `i` is zero, use `e0` in place of `e[t,0]`.
+        6. Calculate `e[t,i’] = SHA3-512(cnt, R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers. Interpret `e[t,i’]` as a little-endian integer reduced modulo subgroup order `L`.
     4. Calculate the non-forged `z[t,j] = k[t] + p[t]·e[t,j] mod L` and encode it as a 32-byte little-endian integer.
-    5. If `z[t,j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 2. The chance of this happening is below 1 in 2<sup>124</sup>.
+    5. If `z[t,j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
     6. Define `s[t,j]` as `z[t,j]` with 4 high bits set to `mask[t]` bits.
-8. Set lower 4 bits of `counter` to top 4 bits of `e0`.
-9. Return the [borromean ring signature](#borromean-ring-signature):
+9. Set top 4 bits of `e0` to the lower 4 bits of `counter`.
+10. Return the [borromean ring signature](#borromean-ring-signature):
     * `{e,s[t,j]}`: `n·m+1` 32-byte elements.
 
 
@@ -597,28 +598,30 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 1. `msg`: the 32-byte string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{P[i,j]}`: `n·m` public keys, [points](data.md#public-key) on the elliptic curve.
-5. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
+4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generator) points).
+5. `{P[i,j]}`: `n·m` public keys, [points](data.md#public-key) on the elliptic curve.
+6. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. Define `E` to be an empty binary string.
-2. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
-3. Set top 4 bits of `e0` to zero.
-4. For `t` from `0` to `n-1` (each ring):
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(msg || n || m || {B[i]} || {P[i,j]})` where `n` and `m` are encoded as 64-bit little-endian integers.
+2. Define `E` to be an empty binary string.
+3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
+4. Set top 4 bits of `e0` to zero.
+5. For `t` from `0` to `n-1` (each ring):
     1. Let `e[t,0] = e0`.
     2. For `i` from `0` to `m-1` (each item):
         1. Calculate `z[t,i]` as `s[t,i]` with the most significant 4 bits set to zero.
         2. Calculate `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         3. Let `i’ = i+1 mod m`.
-        4. Calculate point `R[t,i’] = z[t,i]·G - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](data.md#public-key). Use `e0` instead of `e[t,0]` in each ring.
-        5. Calculate `e[t,i’] = SHA3-512(cnt || R[t,i’] || msg || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        4. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`. Use `e0` instead of `e[t,0]` in each ring.
+        5. Calculate `e[t,i’] = SHA3-512(cnt || R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
         6. Interpret `e[t,i’]` as a little-endian integer reduced modulo subgroup order `L`.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
-5. Calculate `e’ = SHA3-512(E)` and interpret it as a little-endian integer reduced modulo subgroup order `L`, and then encoded as a little-endian 32-byte integer.
-6. Return `true` if `e’` equals to `e0`. Otherwise, return `false`.
+6. Calculate `e’ = SHA3-512(E)` and interpret it as a little-endian integer reduced modulo subgroup order `L`, and then encoded as a little-endian 32-byte integer.
+7. Return `true` if `e’` equals to `e0`. Otherwise, return `false`.
 
 
 

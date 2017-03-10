@@ -242,7 +242,7 @@ func createBorromeanRingSignature(
 			s[t][j][31] |= mask[t]
 		}
 
-		// 8. Set low 4 bits of `counter` to top 4 bits of `e0`.
+		// 8. Set top 4 bits of `e0` to the lower 4 bits of `counter`.
 		counterByte := byte(counter & 0xff)
 		e0[31] |= ((counterByte << 4) & 0xf0)
 
