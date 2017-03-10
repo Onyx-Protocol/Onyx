@@ -13,6 +13,8 @@
   * [Point](#point)
   * [Point Pair](#point-pair)
   * [Point operations](#point-operations)
+  * [Hash256](#hash256)
+  * [ScalarHash](#scalarhash)
   * [Ring Signature](#ring-signature)
   * [Borromean Ring Signature](#borromean-ring-signature)
   * [Asset ID Commitment](#asset-id-commitment)
@@ -187,6 +189,7 @@ Generator `J` has the following 32-byte encoding:
 A _scalar_ is an integer in the range from `0` to `L-1` where `L` is the order of [edwards25519](#elliptic-curve-parameters) subgroup.
 Scalars are encoded according to [RFC8032](https://tools.ietf.org/html/rfc8032).
 
+
 ### Point
 
 A point is a two-dimensional point on [edwards25519](#elliptic-curve-parameters).
@@ -216,6 +219,27 @@ These operations are defined as in \[[RFC8032](https://tools.ietf.org/html/rfc80
 2. Multiplication of a pair by a [scalar](#scalar) is a pair of scalar multiplications of each point:
 
         x·(A,B) == (x·A,x·B)
+
+
+### Hash256
+
+`Hash256` is a secure hash function that taking variable-length binary string as input and outputs a 256-bit string.
+
+    Hash256(x) = SHA3-256("ChainCA-256" || x)
+
+### ScalarHash
+
+`ScalarHash` is a secure hash function that takes variable-length binary string as input and outputs a [scalar](#scalar):
+
+1. For the input string `x` compute a 512-bit hash `h`:
+
+        h = SHA3-512("ChainCA-scalar" || x)
+
+2. Interpret `h` as a little-endian integer and reduce modulo subgroup [order](#elliptic-curve-parameters) `L`:
+
+        s = h mod L
+
+3. Return the resulting scalar `s`.
 
 
 ### Ring Signature
@@ -1087,20 +1111,21 @@ In case of failure, returns `nil` instead of the range proof.
 
 **Output:**
 
-1. `Q`: the public key corresponding to the integer `q`.
-2. `(e,s)`: the Schnorr signature proving that `Q` does not affect asset amounts.
+1. `(QG,QJ)`: the [point pair](#point-pair) representing an ElGamal commitment to `q` using [generators](#generators) `G` and `J`.
+2. `(e,s)`: the Schnorr signature proving that `(QG,QJ)` does not affect asset amounts.
 
 **Algorithm:**
 
 TBD:
 
-    e = SHA3-256(q·G || q·J || nonce·(SHA3-256(QG || QJ)*G + J))
+    e = SHA3-512(q·G || q·J || nonce·(SHA3-256(QG || QJ)*G + J))
     s = nonce + q·e
 
-
-1. Calculate point `Q = q·G` and encode it as a 32-byte [public key](data.md#public-key).
+1. Calculate a [point pair](#point-pair) `QG = q·G, QJ = q·J`.
+2. Calculate a scalar `h = SHA3-512(G || J || QG || QJ) mod L`.
+3. Interpret `h` as a little-endian integer reduced modulo `L`.
 2. Calculate `k = SHA3-512(q)` where `q` is encoded as a 256-bit integer using little-endian notation. Interpret `k` as a little-endian integer reduced modulo `L`.
-3. Calculate point `R = k·G` and encode it as a 32-byte [public key](data.md#public-key).
+3. Calculate point `R = k·G`.
 4. Calculate `e = SHA3-512(Q || R)` where `Q||R` is a concatenation of public keys `Q` and `R`.
 5. Interpret `e` as a little-endian integer reduced modulo `L`.
 6. Calculate `s = k + q·e mod L`.
