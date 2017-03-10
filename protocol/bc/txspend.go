@@ -1,12 +1,10 @@
-package tx
-
-import "chain/protocol/bc"
+package bc
 
 type spend struct {
 	body struct {
-		SpentOutput bc.Hash // the hash of an output entry
-		Data        bc.Hash
-		ExtHash     bc.Hash
+		SpentOutput Hash // the hash of an output entry
+		Data        Hash
+		ExtHash     Hash
 	}
 	ordinal int
 
@@ -20,7 +18,7 @@ func (s *spend) Body() interface{} { return s.body }
 
 func (s spend) Ordinal() int { return s.ordinal }
 
-func newSpend(out *output, data bc.Hash, ordinal int) *spend {
+func newSpend(out *output, data Hash, ordinal int) *spend {
 	s := new(spend)
 	s.body.SpentOutput = entryID(out)
 	s.body.Data = data

@@ -1,17 +1,15 @@
-package tx
-
-import "chain/protocol/bc"
+package bc
 
 type blockHeader struct {
 	body struct {
 		Version              uint64
 		Height               uint64
-		PreviousBlockID      bc.Hash
+		PreviousBlockID      Hash
 		TimestampMS          uint64
-		TransactionsRoot     bc.Hash
-		AssetsRoot           bc.Hash
+		TransactionsRoot     Hash
+		AssetsRoot           Hash
 		NextConsensusProgram []byte
-		ExtHash              bc.Hash
+		ExtHash              Hash
 	}
 }
 
@@ -20,7 +18,7 @@ func (bh *blockHeader) Body() interface{} { return bh.body }
 
 func (blockHeader) Ordinal() int { return -1 }
 
-func newBlockHeader(version, height uint64, previousBlockID bc.Hash, timestampMS uint64, transactionsRoot, assetsRoot bc.Hash, nextConsensusProgram []byte) *blockHeader {
+func newBlockHeader(version, height uint64, previousBlockID Hash, timestampMS uint64, transactionsRoot, assetsRoot Hash, nextConsensusProgram []byte) *blockHeader {
 	bh := new(blockHeader)
 	bh.body.Version = version
 	bh.body.Height = height
