@@ -70,6 +70,8 @@
   * [VM1](#vm1)
   * [Blockchain data structures](#blockchain-data-structures)
   * [Blockchain validation](#blockchain-validation)
+* [Test vectors](#test-vectors)  
+  
 
 
 ## Introduction
@@ -187,7 +189,7 @@ Generator `J` has the following 32-byte encoding:
 ### Scalar
 
 A _scalar_ is an integer in the range from `0` to `L-1` where `L` is the order of [edwards25519](#elliptic-curve-parameters) subgroup.
-Scalars are encoded according to [RFC8032](https://tools.ietf.org/html/rfc8032).
+Scalars are encoded as little-endian 32-byte integers.
 
 
 ### Point
@@ -223,13 +225,22 @@ These operations are defined as in \[[RFC8032](https://tools.ietf.org/html/rfc80
 
 ### Hash256
 
-`Hash256` is a secure hash function that takes a variable-length binary string as input and outputs a 256-bit string.
+`Hash256` is a secure hash function that takes a variable-length binary string `x` as input and outputs a 256-bit string.
 
     Hash256(x) = SHA3-256("ChainCA-256" || x)
 
+
+### StreamHash
+
+`StreamHash` is a secure extendable-output hash function that takes a variable-length binary string `x` as input
+and outputs a variable-length hash string depending on a number of bytes (`n`) requested.
+
+    StreamHash(x, n) = SHAKE256("ChainCA-stream" || x, n)
+
+
 ### ScalarHash
 
-`ScalarHash` is a secure hash function that takes a variable-length binary string as input and outputs a [scalar](#scalar):
+`ScalarHash` is a secure hash function that takes a variable-length binary string `x` as input and outputs a [scalar](#scalar):
 
 1. For the input string `x` compute a 512-bit hash `h`:
 
@@ -280,7 +291,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 _Asset ID point_ is a [point](#point) representing an asset ID. It is defined as follows:
 
 1. Let `counter = 0`.
-2. Calculate `SHA3-256(assetID || counter)` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
+2. Calculate `Hash256("AssetID" || assetID || counter)` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
 3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
 4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
 5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
@@ -498,8 +509,8 @@ Program Arguments               | [varstring31]    | Data passed to the issuance
 **Algorithm:**
 
 1. Let `counter = 0`.
-2. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(msg || B || P[0] || ... || P[n-1])`.
-3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = SHAKE256(counter || msghash || p || j, 8·(32·(n-1) + 64 + 1))`, where:
+2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256(B || P[0] || ... || P[n-1] || msg)`.
+3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash(counter || msghash || p || j, 32·(n-1) + 64 + 1)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * `p` is encoded as a 256-bit little-endian integer,
     * `j` is encoded as a 64-bit little-endian integer.
@@ -507,7 +518,7 @@ Program Arguments               | [varstring31]    | Data passed to the issuance
 5. Calculate the initial e-value, let `i = j+1 mod n`:
     1. Calculate `R[i]` as the [point](#point) `k·B`.
     2. Define `w[j]` as `mask` with lower 4 bits set to zero: `w[j] = mask & 0xf0`.
-    3. Calculate `e[i] = SHA3-512(R[i] || msghash || i || w[j])` where `i` is encoded as a 64-bit little-endian integer. Interpret `e[i]` as a little-endian integer reduced modulo `L`.
+    3. Calculate `e[i] = ScalarHash(R[i] || msghash || i || w[j])` where `i` is encoded as a 64-bit little-endian integer.
 6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (j + step) mod n`.
     2. Calculate the forged s-value `s[i] = r[step-1]`, where `r[j]` is interpreted as a 64-byte little-endian integer and reduced modulo `L`.
@@ -515,7 +526,7 @@ Program Arguments               | [varstring31]    | Data passed to the issuance
     4. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     5. Let `i’ = i+1 mod n`.
     6. Calculate point `R[i’] = z[i]·B - e[i]·P[i]`.
-    7. Calculate `e[i’] = SHA3-512(R[i’] || msghash || i’ || w[i])` where `i’` is encoded as a 64-bit little-endian integer. Interpret `e[i’]` as a little-endian integer reduced modulo `L`.
+    7. Calculate `e[i’] = ScalarHash(R[i’] || msghash || i’ || w[i])` where `i’` is encoded as a 64-bit little-endian integer.
 7. Calculate the non-forged `z[j] = k + p·e[j] mod L` and encode it as a 32-byte little-endian integer.
 8. If `z[j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
 9. Define `s[j]` as `z[j]` with 4 high bits set to high 4 bits of the `mask`.
@@ -536,13 +547,12 @@ Program Arguments               | [varstring31]    | Data passed to the issuance
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(msg || B || P[0] || ... || P[n-1])`.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256(B || P[0] || ... || P[n-1] || msg)`.
 2. For each `i` from `0` to `n-1`:
     1. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero (see note below).
     2. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     3. Calculate point `R[i+1] = z[i]·B - e[i]·P[i]`.
-    4. Calculate `e[i+1] = SHA3-512(R[i+1] || msghash || i+1 || w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
-    5. Interpret `e[i+1]` as a little-endian integer reduced modulo subgroup order `L`.
+    4. Calculate `e[i+1] = ScalarHash(R[i+1] || msghash || i+1 || w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
 3. Return true if `e[0]` equals `e[n]`, otherwise return false.
 
 Note: when the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.
@@ -554,7 +564,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Inputs:**
 
-1. `msg`: the 32-byte string to be signed.
+1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
 4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generator) points).
@@ -567,10 +577,10 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(msg || n || m || {B[i]} || {P[i,j]})` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256(n || m || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Let `counter = 0`.
 3. Let `cnt` byte contain lower 4 bits of `counter`: `cnt = counter & 0x0f`.
-4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = SHAKE256(counter || msghash || {p[i]} || {j[i]}, 8·(32·n·m))`, where:
+4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(counter || msghash || {p[i]} || {j[i]}, 32·n·m)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
     * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers,
@@ -584,17 +594,17 @@ Note: when the s-values are decoded as little-endian integers we must set their 
     6. Calculate the initial e-value for the ring:
         1. Let `j’ = j+1 mod m`.
         2. Calculate `R[t,j’]` as the point `k[t]·B[t]`.
-        3. Calculate `e[t,j’] = SHA3-512(cnt, R[t, j’] || msghash || t || j’ || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers. Interpret `e[t,j’]` as a little-endian integer reduced modulo `L`.
+        3. Calculate `e[t,j’] = ScalarHash(cnt, R[t, j’] || msghash || t || j’ || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
     7. If `j ≠ m-1`, then for `i` from `j+1` to `m-1`:
         1. Calculate the forged s-value: `s[t,i] = r[m·t + i]`.
         2. Define `z[t,i]` as `s[t,i]` with 4 most significant bits set to zero.
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
         5. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`.
-        6. Calculate `e[t,i’] = SHA3-512(cnt, R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers. Interpret `e[t,i’]` as a little-endian integer reduced modulo `L`.
+        6. Calculate `e[t,i’] = ScalarHash(cnt, R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
 7. Calculate the shared e-value `e0` for all the rings:
     1. Calculate `E` as concatenation of all `e[t,0]` values encoded as 32-byte little-endian integers: `E = e[0,0] || ... || e[n-1,0]`.
-    2. Calculate `e0 = SHA3-512(E)`. Interpret `e0` as a little-endian integer reduced modulo `L`.
+    2. Calculate `e0 = ScalarHash(E)`.
     3. If `e0` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
 8. For `t` from `0` to `n-1` (each ring):
     1. Let `j = j[t]`.
@@ -605,7 +615,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
         5. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`. If `i` is zero, use `e0` in place of `e[t,0]`.
-        6. Calculate `e[t,i’] = SHA3-512(cnt, R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers. Interpret `e[t,i’]` as a little-endian integer reduced modulo subgroup order `L`.
+        6. Calculate `e[t,i’] = ScalarHash(cnt, R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     4. Calculate the non-forged `z[t,j] = k[t] + p[t]·e[t,j] mod L` and encode it as a 32-byte little-endian integer.
     5. If `z[t,j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
     6. Define `s[t,j]` as `z[t,j]` with 4 high bits set to `mask[t]` bits.
@@ -619,7 +629,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Inputs:**
 
-1. `msg`: the 32-byte string to be signed.
+1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
 4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generator) points).
@@ -630,7 +640,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(msg || n || m || {B[i]} || {P[i,j]})` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(n || m || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Define `E` to be an empty binary string.
 3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 4. Set top 4 bits of `e0` to zero.
@@ -641,10 +651,9 @@ Note: when the s-values are decoded as little-endian integers we must set their 
         2. Calculate `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         3. Let `i’ = i+1 mod m`.
         4. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`. Use `e0` instead of `e[t,0]` in each ring.
-        5. Calculate `e[t,i’] = SHA3-512(cnt || R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
-        6. Interpret `e[t,i’]` as a little-endian integer reduced modulo subgroup order `L`.
+        5. Calculate `e[t,i’] = ScalarHash(cnt || R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
-6. Calculate `e’ = SHA3-512(E)` and interpret it as a little-endian integer reduced modulo subgroup order `L`, and then encoded as a little-endian 32-byte integer.
+6. Calculate `e’ = ScalarHash(E)`.
 7. Return `true` if `e’` equals to `e0`. Otherwise, return `false`.
 
 
@@ -653,7 +662,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Inputs:**
 
-1. `msg`: the 32-byte string to be signed.
+1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
 4. `{P[i,j]}`: `n·m` public keys, [points](data.md#public-key) on the elliptic curve.
@@ -668,7 +677,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 1. Define `E` to be an empty binary string.
 2. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 3. Let `counter` integer equal `cnt`.
-4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = SHAKE256(counter || msg || {p[i]} || {j[i]} || {P[i,j]}, 8·(32·n·m))`, where:
+4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(counter || msg || {p[i]} || {j[i]} || {P[i,j]}, 32·n·m)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
     * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers,
@@ -687,10 +696,9 @@ Note: when the s-values are decoded as little-endian integers we must set their 
             1. Set `payload[m·t + i] = o[m·t + i] XOR s[t,i]`.
         5. Let `i’ = i+1 mod m`.
         6. Calculate point `R[t,i’] = z[t,i]·G - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](data.md#public-key). Use `e0` instead of `e[t,0]` in each ring.
-        7. Calculate `e[t,i’] = SHA3-512(cnt || R[t,i’] || msg || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
-        8. Interpret `e[t,i’]` as a little-endian integer reduced modulo subgroup order `L`.
+        7. Calculate `e[t,i’] = ScalarHash(cnt || R[t,i’] || msg || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
-7. Calculate `e’ = SHA3-512(E)` and interpret it as a little-endian integer reduced modulo subgroup order `L`, and then encoded as a little-endian 32-byte integer.
+7. Calculate `e’ = ScalarHash(E)`.
 8. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
 
 
@@ -708,7 +716,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = SHAKE256(ek, 8·(32·n))`.
+1. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash(ek, 32·n)`.
 2. Encrypt the plaintext payload: `{ct[i]} = {pt[i] XOR keystream[i]}`.
 3. Calculate MAC: `mac = SHA3-256(ek || ct[0] || ... || ct[n-1])`.
 4. Return a sequence of `n+1` 32-byte elements: `{ct[0], ..., ct[n-1], mac}`.
@@ -729,7 +737,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 1. Calculate MAC’: `mac’ = SHA3-256(ek || ct[0] || ... || ct[n-1])`.
 2. Extract the transmitted MAC: `mac = ct[n]`.
 3. Compare calculated  `mac’` with the received `mac`. If they are not equal, return `nil`.
-4. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = SHAKE256(ek, 8·(32·n))`.
+4. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash(ek, 32·n)`.
 5. Decrypt the plaintext payload: `{pt[i]} = {ct[i] XOR keystream[i]}`.
 5. Return `{pt[i]}`.
 
@@ -742,7 +750,10 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Compute an [asset ID point](#asset-id-point): `A = 8·SHA3-256(assetID || counter)`.
+1. Compute an [asset ID point](#asset-id-point):
+        
+        A = 8·Hash256(assetID || counter)
+
 2. Return [point pair](#point-pair) `(A,O)` where `O` is a [zero point](#zero-point).
 
 
@@ -760,11 +771,21 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Compute an [asset ID point](#asset-id-point): `A = 8·SHA3-256(assetID || counter)`.
-2. Compute `secret = SHA3-512(assetID || aek)`.
-3. Compute [asset ID blinding factor](#asset-id-blinding-factor) `c` by reducing the `secret` modulo subgroup order `L`: `c = secret mod L`.
-4. Compute an [asset ID commitment](#asset-id-commitment): `H = A + c·G, Ba = c·J`.
-5. Return `((H,Ba),c)`.
+1. Compute an [asset ID point](#asset-id-point): 
+        
+        A = 8·Hash256(assetID || counter)
+
+2. Compute [asset ID blinding factor](#asset-id-blinding-factor):
+
+        s = ScalarHash(assetID || aek)
+
+3. Compute an [asset ID commitment](#asset-id-commitment): 
+    
+        AC = (H, Ba)
+        H  = A + c·G
+        Ba = c·J
+
+4. Return `(AC, c)`.
 
 
 
@@ -844,10 +865,9 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 **Algorithm:**
 
-1. Calculate `fbuf = SHA3-512(0xbf || vek)`.
-2. Calculate `f` as `fbuf` interpreted as a little-endian integer reduced modulo subgroup order `L`: `f = fbuf mod L`.
-3. Calculate point `V = value·H + f·G`.
-4. Return `(V, f)`, where `V` is encoded as a [public key](data.md#public-key) and the blinding factor `f` is encoded as a 256-bit little-endian integer.
+1. Calculate `f = ScalarHash(0xbf || vek)`.
+2. Calculate point `V = value·H + f·G`.
+3. Return `(V, f)`, where `V` is encoded as a [public key](data.md#public-key) and the blinding factor `f` is encoded as a 256-bit little-endian integer.
 
 
 ### Balance Blinding Factors
@@ -975,7 +995,7 @@ In case of failure, returns `nil` instead of the range proof.
 7. Calculate the message to sign: `msg = SHA3-256(H’ || V || N || exp || vmin || ev || ef)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-payload) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPayload({pt[i]}, pek)`.
-10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = SHAKE256(0xbf || msg || f, 8·64·(n-1))`.
+10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash(0xbf || msg || f, 64·(n-1))`.
 11. Interpret each 64-byte `b[t]` (`t` from 0 to `n-2`) is interpreted as a little-endian integer and reduce modulo `L` to a 32-byte scalar.
 12. Calculate the last digit blinding factor: `b[n-1] = f - ∑b[t] mod L`, where `t` is from 0 to `n-2`.
 13. For `t` from `0` to `n-1` (each digit):
@@ -1078,7 +1098,7 @@ In case of failure, returns `nil` instead of the range proof.
 2. Let `n = N/2`.
 3. Calculate the message to verify: `msg = SHA3-256(H || V || N || exp || vmin || ev || ef)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(V - vmin·H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
-5. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = SHAKE256(0xbf || msg || f, 8·64·(n-1))`.
+5. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash(0xbf || msg || f, 64·(n-1))`.
 6. Interpret each 64-byte `b[t]` (`t` from 0 to `n-2`) is interpreted as a little-endian integer and reduce modulo `L` to a 32-byte scalar.
 7. Calculate the last digit blinding factor: `b[n-1] = f - ∑b[t] mod L`, where `t` is from 0 to `n-2`.
 8. For `t` from `0` to `n-1` (each digit):
@@ -1116,40 +1136,33 @@ In case of failure, returns `nil` instead of the range proof.
 
 **Algorithm:**
 
-TBD:
-
-    e = SHA3-512(q·G || q·J || nonce·(SHA3-256(QG || QJ)*G + J))
-    s = nonce + q·e
-
 1. Calculate a [point pair](#point-pair) `QG = q·G, QJ = q·J`.
-2. Calculate a scalar `h = SHA3-512(G || J || QG || QJ) mod L`.
-3. Interpret `h` as a little-endian integer reduced modulo `L`.
-2. Calculate `k = SHA3-512(q)` where `q` is encoded as a 256-bit integer using little-endian notation. Interpret `k` as a little-endian integer reduced modulo `L`.
-3. Calculate point `R = k·G`.
-4. Calculate `e = SHA3-512(Q || R)` where `Q||R` is a concatenation of public keys `Q` and `R`.
-5. Interpret `e` as a little-endian integer reduced modulo `L`.
-6. Calculate `s = k + q·e mod L`.
-7. Encode `s` and `e` as 256-bit little-endian integers.
-8. Return `(s,e)` encoded as a concatenation of two 256-bit integers (as a single 64-byte string).
-
-
+2. Calculate Fiat-Shamir factor `h = ScalarHash("h" || G || J || QG || QJ)`.
+3. Calculate the base point `B = h·G + J`.
+4. Calculate the nonce `k = ScalarHash(h || q)`.
+5. Calculate point `R = k·B`.
+6. Calculate scalar `e = ScalarHash("e" || QG || QJ || R)`.
+7. Calculate scalar `s = k + q·e mod L`.
+8. Return `(s,e)`.
 
 
 ### Verify Excess Commitment
 
 **Inputs:**
 
-1. `Q`: the public key for the excess commitment (32-byte string)
-2. `(e,s)`: the Schnorr signature (two 32-byte strings).
+1. `(QG,QJ)`: the [point pair](#point-pair) representing an ElGamal commitment to secret blinding factor `q` using [generators](#generators) `G` and `J`.
+2. `(e,s)`: the Schnorr signature proving that `(QG,QJ)` does not affect asset amounts.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. Calculate point `R = s·G - e·Q` and encode it as a 32-byte [public key](data.md#public-key).
-2. Calculate `e’ = SHA3-512(Q || R)` where `Q||R` is a concatenation of public keys `Q` and `R`.
-3. Interpret `e’` as a little-endian integer reduced modulo `L`.
-4. Return `true` if `e’ == e`, otherwise return `false`.
+1. Calculate Fiat-Shamir factor `h = ScalarHash("h" || G || J || QG || QJ)`.
+2. Calculate the base point `B = h·G + J`.
+3. Calculate combined public key point `Q = h·QG + QJ`.
+4. Calculate point `R = s·B - e·Q`.
+5. Calculate scalar `e’ = ScalarHash("e" || QG || QJ || R)`.
+6. Return `true` if `e’ == e`, otherwise return `false`.
 
 
 
@@ -1185,10 +1198,9 @@ TBD:
 
 **Algorithm:**
 
-1. Calculate `secret = SHA3-512(0xa1 || assetid || aek)`.
-2. Calculate scalar `y` by reducing the `secret` modulo subgroup order `L`: `y = secret mod L`.
-3. Calculate point `Y` by multiplying base point by `y`: `Y = y·G`.
-4. Return key pair `(y,Y)`.
+1. Calculate scalar `y = ScalarHash(0xa1 || assetid || aek)`.
+2. Calculate point `Y` by multiplying base point by `y`: `Y = y·G`.
+3. Return key pair `(y,Y)`.
 
 
 
@@ -1219,7 +1231,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 **Algorithm:**
 
 1. Calculate nonblinded asset commitments for the values in `a`: `A[i] = 8·Decode(SHA3(a[i]))`.
-2. Calculate a 96-byte commitment string: `commit = SHAKE256(0x66 || H || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || vmver || program, 8·96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
+2. Calculate a 96-byte commitment string: `commit = StreamHash(0x66 || H || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || vmver || program, 8·96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
 3. Calculate message to sign as first 32 bytes of the commitment string: `msg = commit[0:32]`.
 4. Calculate the coefficient `h` from the remaining 64 bytes of the commitment string: `h = commit[32:96]`. Interpret `h` as a 64-byte little-endian integer and reduce modulo subgroup order `L`.
 5. Calculate `n` public keys `{P[i]}`: `P[i] = H - A[i] + h·Y[i]`.
@@ -1251,7 +1263,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 **Algorithm:**
 
 1. Calculate nonblinded asset commitments for the values in `a`: `A[i] = 8·Decode(SHA3(a[i]))`.
-2. Calculate a 96-byte commitment string: `commit = SHAKE256(0x66 || H || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || vmver || program, 8·96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
+2. Calculate a 96-byte commitment string: `commit = StreamHash(0x66 || H || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || vmver || program, 96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
 3. Calculate message to sign as first 32 bytes of the commitment string: `msg = commit[0:32]`.
 4. Calculate the coefficient `h` from the remaining 64 bytes of the commitment string: `h = commit[32:96]`. Interpret `h` as a 64-byte little-endian integer and reduce modulo subgroup order `L`.
 5. Calculate the `n` public keys `{P[i]}`: `P[i] = H - A[i] + h·Y[i]`.
@@ -1521,5 +1533,13 @@ This section provides an overview for protocol changes in the VM1 and blockchain
 5. Verify issuance range proof.
 
 
+## Test vectors
 
+TBD: Hash256, StreamHash, ScalarHash.
+
+TBD: AC, VC, excess commits.
+
+TBD: RS, BRS.
+
+TBD: ARP, VRP.
 
