@@ -10,21 +10,31 @@ import (
 	"chain/errors"
 )
 
-type entry interface {
+// Entry is the interface implemented by each addressable unit in a
+// blockchain: transaction components such as spends, issuances,
+// outputs, and retirements (among others), plus blockheaders.
+type Entry interface {
+	// Type produces a short human-readable string uniquely identifying
+	// the type of this entry.
 	Type() string
+
+	// Body produces the entry's body, which is used as input to
+	// EntryID.
 	Body() interface{}
 
-	// When an entry is created from a TxInput or a TxOutput, this
-	// reports the position of that antecedent object within its
-	// transaction. Both inputs (spends and issuances) and outputs
-	// (including retirements) are numbered beginning at zero. Entries
-	// not originating in this way report -1.
+	// Ordinal reports the position of the TxInput or TxOutput within
+	// its transaction, when this entry was created from such an
+	// object. (See mapTx.) Both inputs (spends and issuances) and
+	// outputs (including retirements) are numbered beginning at
+	// zero. Entries not originating in this way report -1.
 	Ordinal() int
 }
 
 var errInvalidValue = errors.New("invalid value")
 
-func entryID(e entry) (hash Hash) {
+// EntryID computes the identifier of an entry, as the hash of its
+// body plus some metadata.
+func EntryID(e Entry) (hash Hash) {
 	if e == nil {
 		return hash
 	}

@@ -1,9 +1,14 @@
 package bc
 
-type output struct {
+// Output is the result of a transfer of value. The value it contains
+// may be accessed by a later Spend entry (if that entry can satisfy
+// the Output's ControlProgram). Output satisfies the Entry interface.
+//
+// (Not to be confused with the deprecated type TxOutput.)
+type Output struct {
 	body struct {
 		Source         valueSource
-		ControlProgram program
+		ControlProgram Program
 		Data           Hash
 		ExtHash        Hash
 	}
@@ -11,16 +16,18 @@ type output struct {
 
 	// Source contains (a pointer to) the manifested entry corresponding
 	// to body.Source.
-	Source entry // *issuance, *spend, or *mux
+	Source Entry // *issuance, *spend, or *mux
 }
 
-func (output) Type() string         { return "output1" }
-func (o *output) Body() interface{} { return o.body }
+func (Output) Type() string         { return "output1" }
+func (o *Output) Body() interface{} { return o.body }
 
-func (o output) Ordinal() int { return o.ordinal }
+func (o Output) Ordinal() int { return o.ordinal }
 
-func newOutput(controlProgram program, data Hash, ordinal int) *output {
-	out := new(output)
+// NewOutput creates a new Output. Once created, its source should be
+// set with setSource or setSourceID.
+func NewOutput(controlProgram Program, data Hash, ordinal int) *Output {
+	out := new(Output)
 	out.body.ControlProgram = controlProgram
 	out.body.Data = data
 	out.ordinal = ordinal
@@ -30,12 +37,12 @@ func newOutput(controlProgram program, data Hash, ordinal int) *output {
 // setSource is for when you have a complete source entry (e.g. a
 // *mux) for an output. When you don't (you only have the ID of the
 // source), use setSourceID, below.
-func (o *output) setSource(e entry, value AssetAmount, position uint64) {
-	o.setSourceID(entryID(e), value, position)
+func (o *Output) setSource(e Entry, value AssetAmount, position uint64) {
+	o.setSourceID(EntryID(e), value, position)
 	o.Source = e
 }
 
-func (o *output) setSourceID(sourceID Hash, value AssetAmount, position uint64) {
+func (o *Output) setSourceID(sourceID Hash, value AssetAmount, position uint64) {
 	o.body.Source = valueSource{
 		Ref:      sourceID,
 		Value:    value,
