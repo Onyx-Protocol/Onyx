@@ -366,7 +366,15 @@ Program Arguments        | List\<String\>    | List of [signatures](#signature) 
 2. Verify that `Height` is equal to `PrevBlockHeader.Height + 1`.
 4. Verify that `PreviousBlockID` is equal to the entry ID of `PrevBlockHeader`.
 5. Verify that `Timestamp` is greater than `PrevBlockHeader.Timestamp`.
-6. Evaluate program `PreviousBlockID.NextConsensusProgram` with [VM version 1](vm1.md) and expansion flag set to `false`. If program execution failed, fail validation.
+6. Verify that program `PrevBlockHeader.NextConsensusProgramBytecode` evaluates to true with: 
+    1. [VM version 1](vm1.md)
+    2. Expansion flag: `false`.
+    3. [Context](vm1.md#context): {
+      "Program": `PrevBlockHeader.NextConsensusProgramBytecode`
+      "NextProgram": `NextConsensusProgramBytecode`,
+      "Blocktime": `Timestamp`,
+      "Blockhash": `Entry.ID()` (the Entry ID of the current entry)
+    }
 7. For each transaction in the block:
     1. [Validate transaction](#transaction-header-validation) with the timestamp and block version of the input block header.
 8. Compute the [transactions merkle root](#transactions-merkle-root) for the block.
@@ -486,7 +494,19 @@ AnchoredEntry       | Pointer                      | Optional pointer to a singl
 #### Spend Validation
 
 1. Verify that `SpentOutput` is present in the transaction, but do not validate it.
-2. [Validate program](#program-validation) `SpentOutput.ControlProgram` with the given `Arguments` and the transaction version.
+2. [Validate program](#program-validation) `SpentOutput.ControlProgram` with the given arguments and the following context:
+  {
+    "EntryID": `Entry.ID()`,
+    "OutputID": `SpentOutput.ID()`,
+    "DataHash": `Data`,
+    "Mux": `Destination`,
+    "Asset": `Value.AssetID`,
+    "Value": `Value.Amount`,
+    "TxSigHash": `SHA3-256(Entry.ID() || TxHeader.ID())`,
+    "Mintime": `TxHeader.Mintime`,
+    "Maxtime": `TxHeader.Maxtime`,
+    "Index": `Destination.Position`
+   }
 3. Verify that `SpentOutput.Value` is equal to `Destination.Value`.
 4. [Validate](#value-destination-1-validation) `Destination`.
 5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
@@ -524,7 +544,19 @@ AnchoredEntry       | Pointer                                   | Optional point
 
 1. Verify that `AssetDefinition.InitialBlockID` is equal to the given initial block ID.
 2. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
-3. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the transaction version.
+3. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the following context:
+  {
+    "EntryID": `Entry.ID()`,
+    "Nonce": `Anchor.ID()`,
+    "DataHash": `Data`,
+    "Outputs": `Destination`,
+    "Asset": `Value.AssetID`,
+    "Value": `Value.Amount`,
+    "TxSigHash": `SHA3-256(Entry.ID() || TxHeader.ID())`,
+    "Mintime": `TxHeader.Mintime`,
+    "Maxtime": `TxHeader.Maxtime`,
+    "Index": `Destination.Position`
+   }
 4. Verify that `Anchor` entry is present and is either a [Nonce](#nonce), a [Spend 1](#spend-1), or an [Issuance 1](#issuance-1) entry.
 5. Verify that `Anchor.AnchoredEntry` points to this entry.
 6. Validate the `Anchor` entry.
@@ -544,16 +576,20 @@ Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Sources             | List<ValueSource1>   | The source of the units to be included in this Mux.
 Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
-ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
+ExtHash             | [ExtStruct](#extension-struct) | If the transact
+--------------------|----------------------------|----------------ion version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                       | Description
---------------------|----------------------------|----------------
 Destinations        | List<ValueDestination1>    | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
 Arguments           | String                     | Arguments for the program contained in the Nonce.
 
 #### Mux Validation
 
-1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
+1. [Validate](#program-validation) `Program` with the given `Arguments` and the following context:
+  {
+    "EntryID": `Entry.ID()`,
+    "
+  }
 2. For each `Source` in `Sources`, [validate](#value-source-1-validation) `Source`.
 3. For each `Destination` in `Destinations`, [validate](#value-destination-1-validation) `Destination`.
 4. For each `AssetID` represented in `Sources` and `Destinations`:
