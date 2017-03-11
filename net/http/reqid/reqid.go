@@ -5,9 +5,9 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"log"
 	"net/http"
-	"runtime"
+
+	"chain/log"
 )
 
 // key is an unexported type for keys defined in this package.
@@ -45,14 +45,18 @@ func New() string {
 	b := make([]byte, l)
 	_, err := rand.Read(b)
 	if err != nil {
-		log.Println("error making reqID")
+		log.Printf(context.Background(), "error making reqID")
 	}
 	return hex.EncodeToString(b)
 }
 
 // NewContext returns a new Context that carries reqid.
+// It also adds a log prefix to print the request ID using
+// package chain/log.
 func NewContext(ctx context.Context, reqid string) context.Context {
-	return context.WithValue(ctx, reqIDKey, reqid)
+	ctx = context.WithValue(ctx, reqIDKey, reqid)
+	ctx = log.AddPrefixkv(ctx, "reqid", reqid)
+	return ctx
 }
 
 // FromContext returns the request ID stored in ctx,
@@ -67,6 +71,8 @@ func FromContext(ctx context.Context) string {
 
 // CoreIDFromContext returns the Chain-Core-ID stored in ctx,
 // or the empty string.
+// It also adds a log prefix to print the Core ID using
+// package chain/log.
 func CoreIDFromContext(ctx context.Context) string {
 	id, _ := ctx.Value(coreIDKey).(string)
 	return id
@@ -80,8 +86,12 @@ func PathFromContext(ctx context.Context) string {
 }
 
 // NewSubContext returns a new Context that carries subreqid
+// It also adds a log prefix to print the sub-request ID using
+// package chain/log.
 func NewSubContext(ctx context.Context, reqid string) context.Context {
-	return context.WithValue(ctx, subReqIDKey, reqid)
+	ctx = context.WithValue(ctx, subReqIDKey, reqid)
+	ctx = log.AddPrefixkv(ctx, "subreqid", reqid)
+	return ctx
 }
 
 // FromSubContext returns the sub-request ID stored in ctx,
@@ -100,17 +110,19 @@ func Handler(handler http.Handler) http.Handler {
 		// TODO(kr): take half of request ID from the client
 		id := New()
 		ctx = NewContext(ctx, id)
-		ctx = context.WithValue(ctx, coreIDKey, req.Header.Get("Chain-Core-ID"))
 		ctx = context.WithValue(ctx, pathKey, req.URL.Path)
+		if coreID := req.Header.Get("Chain-Core-ID"); coreID != "" {
+			ctx = context.WithValue(ctx, coreIDKey, coreID)
+			ctx = log.AddPrefixkv(ctx, "coreid", coreID)
+		}
+
 		defer func() {
 			if err := recover(); err != nil {
-				// See also $GOROOT/src/net/http/server.go.
-				const size = 64 << 10
-				buf := make([]byte, size)
-				buf = buf[:runtime.Stack(buf, false)]
-				// TODO(kr): use chain/log here
-				// log.Write(ctx, log.KeyMessage, "panic", "remote-addr", req.RemoteAddr, log.KeyError, err, log.KeyStack, buf)
-				log.Printf(`message=panic remote-addr=%q error=%q\n%s\n`, req.RemoteAddr, err, buf)
+				log.Printkv(ctx,
+					"message", "panic",
+					"remote-addr", req.RemoteAddr,
+					"error", err,
+				)
 			}
 		}()
 		w.Header().Add("Chain-Request-Id", id)
