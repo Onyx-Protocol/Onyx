@@ -892,48 +892,6 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 4. Return `q`.
 
 
-### Encrypt Value
-
-**Inputs:**
-
-1. `V`: the [value commitment](#value-commitment).
-2. `value`: the 64-bit amount being encrypted and blinded.
-3. `f`: the [value blinding factor](#value-blinding-factor).
-4. `vek`: the [value encryption key](#value-encryption-key).
-
-**Output:** `(ev,ef)`, the [encrypted value](#encrypted-value) including its blinding factor.
-
-**Algorithm:**
-
-1. Expand the encryption key: `ek = SHA3-512(vek || V)`, split the resulting hash in two halves.
-2. Encrypt the value using the first half: `ev = value XOR ek[0,8]`.
-3. Encrypt the value blinding factor using the second half: `ef = f XOR ek[8,32]` where `f` is encoded as 256-bit little-endian integer.
-4. Return `(ev, ef)`.
-
-
-### Decrypt Value
-
-**Inputs:**
-
-1. `V`: the full [value commitment](#value-commitment).
-2. `H’`: the target [asset ID commitment](#asset-id-commitment) that obfuscates the asset ID.
-3. `(ev,ef)`: the [encrypted value](#encrypted-value) including its blinding factor.
-4. `vek`: the [value encryption key](#value-encryption-key).
-
-First three inputs must be proven to be committed to a [well-formed transaction](validation.md#check-transaction-is-well-formed).
-
-**Output:** `(value, f)`: decrypted and verified amount and the [value blinding factor](#value-blinding-factor); or `nil` if verification did not succeed.
-
-**Algorithm:**
-
-1. Expand the encryption key: `ek = SHA3-512(vek || V)`, split the resulting hash in two halves.
-2. Decrypt the value using the first half: `value = ev XOR ek[0,8]`.
-3. Decrypt the value blinding factor using the second half: `f = ef XOR ek[8,32]` where `f` is encoded as 256-bit little-endian integer.
-4. Calculate `P = value·H’ + f·G`.
-5. Verify that `P` equals `V`. If not, halt and return `nil`.
-6. Return `(value, f)`.
-
-
 
 ### Create Value Proof
 
@@ -1170,19 +1128,19 @@ In case of failure, returns `nil` instead of the range proof.
 
 **Inputs:**
 
-1. The list of `n` input value commitments `{V[i]}`.
-2. The list of `m` output value commitments `{V’[i]}`.
-3. The list of `k` [excess commitments](#excess-commitment) `{(Q[i], s[i], e[i])}`.
+1. The list of `n` input value commitments `{VC[i]}`.
+2. The list of `m` output value commitments `{VC’[i]}`.
+3. The list of `k` [excess commitments](#excess-commitment) `{(QC[i], s[i], e[i])}`.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. [Verify](#verify-excess-commitment) each of `k` excess commitments; if any is not valid, halt and return `false`.
-2. Calculate the sum of input value commitments: `Pi = ∑(V[i], j from 0 to n-1)`.
-3. Calculate the sum of output value commitments: `Po = ∑(V’[i], i from 0 to m-1)`.
-4. Calculate the sum of excess commitments: `Pq = ∑(Q[i], i from 0 to k-1)`.
-5. Return `true` if `Pi == Po + Pq`, otherwise return `false`.
+1. [Verify](#verify-excess-commitment) each of `k` [excess commitments](#excess-commitment); if any is not valid, halt and return `false`.
+2. Calculate the sum of input value commitments: `Ti = ∑(VC[i], j from 0 to n-1)`.
+3. Calculate the sum of output value commitments: `To = ∑(VC’[i], i from 0 to m-1)`.
+4. Calculate the sum of excess commitments: `Tq = ∑(QC[i], i from 0 to k-1)`.
+5. Return `true` if `Ti == To + Tq`, otherwise return `false`.
 
 
 
