@@ -15,7 +15,7 @@ var filterFunc = map[string]bool{
 // FilterFunc removes the named function from stack traces
 // and at=[file:line] entries printed to the log output.
 // The provided name should be a fully-qualified function name
-// comprising the import path and plain name separated by a dot.
+// comprising the import path and identifier separated by a dot.
 // For example, chain/log.Printkv.
 // FilterFunc must not be called concurrently with any function
 // in this package (including itself).
