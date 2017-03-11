@@ -24,6 +24,18 @@ func TestSetOutput(t *testing.T) {
 	}
 }
 
+func TestNoExtraFormatDirectives(t *testing.T) {
+	buf := new(bytes.Buffer)
+	SetOutput(buf)
+	SetPrefix("foo", "bar")
+	Printkv(context.Background(), "baz", 1)
+	SetOutput(os.Stdout)
+	got := buf.String()
+	if strings.Contains(got, "%") {
+		t.Errorf("log line appears to contain format directive: %q", got)
+	}
+}
+
 func TestPrefix(t *testing.T) {
 	buf := new(bytes.Buffer)
 	SetOutput(buf)

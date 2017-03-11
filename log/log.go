@@ -137,7 +137,7 @@ func Printkv(ctx context.Context, keyvals ...interface{}) {
 
 	// Prepend the log entry with auto-generated fields.
 	out := fmt.Sprintf(
-		"%s=%s %s=%s %s=%s",
+		"%s=%s %s=%s",
 		KeyCaller, vcaller,
 		KeyTime, formatValue(t.Format(rfc3339NanoFixed)),
 	)
