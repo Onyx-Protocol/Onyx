@@ -835,23 +835,19 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 
 
-
-
-
 ### Create Nonblinded Value Commitment
 
 **Inputs:**
 
 1. `value`: the cleartext amount,
-2. `H`: the [asset ID commitment](#asset-id-commitment).
+2. `(H,Ba)`: the [asset ID commitment](#asset-id-commitment).
 
-**Output:** the commitment `V` encoded as [public key](data.md#public-key).
+**Output:** the value commitment `VC` represented by a [point pair](#point-pair).
 
 **Algorithm:**
 
-1. Calculate `V = value·H`.
-2. Return `V`.
-
+1. Calculate [point pair](#point-pair) `VC = value·(H, Ba)`.
+2. Return `VC`.
 
 ### Create Blinded Value Commitment
 
@@ -859,15 +855,17 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 1. `vek`: the [value encryption key](#value-encryption-key) for the given output,
 2. `value`: the amount to be blinded in the output,
-3. `H`: the [asset ID commitment](#asset-id-commitment) in the output,
+3. `(H,Ba)`: the [asset ID commitment](#asset-id-commitment).
 
-**Output:** `(V, f)`: the tuple of a value commitment and its blinding factor.
+**Output:** `(VC, f)`: the pair of a [value commitment](#value-commitment) and its blinding factor.
 
 **Algorithm:**
 
 1. Calculate `f = ScalarHash(0xbf || vek)`.
 2. Calculate point `V = value·H + f·G`.
-3. Return `(V, f)`, where `V` is encoded as a [public key](data.md#public-key) and the blinding factor `f` is encoded as a 256-bit little-endian integer.
+3. Calculate point `Bv = value·Ba + f·J`.
+4. Create a [point pair](#point-pair): `VC = (V, Bv)`.
+5. Return `(VC, f)`.
 
 
 ### Balance Blinding Factors
