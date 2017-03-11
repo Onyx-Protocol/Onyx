@@ -583,7 +583,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(counter || msghash || {p[i]} || {j[i]}, 32·n·m)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
-    * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers,
+    * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers.
 5. Define `r[i] = payload[i] XOR o[i]` for all `i` from 0 to `n·m - 1`.
 6. For `t` from `0` to `n-1` (each ring):
     1. Let `j = j[t]`
@@ -665,25 +665,26 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{P[i,j]}`: `n·m` public keys, [points](data.md#public-key) on the elliptic curve.
-5. `{p[i]}`: the list of `n` scalars representing private keys.
-6. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·G`.
-7. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
+4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generator) points).
+5. `{P[i,j]}`: `n·m` public keys, [points](data.md#public-key) on the elliptic curve.
+6. `{p[i]}`: the list of `n` scalars representing private keys.
+7. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·G`.
+8. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
 **Output:** `{payload[i]}` list of `n·m` random 32-byte elements or `nil` if signature verification failed.
 
 **Algorithm:**
 
-1. Define `E` to be an empty binary string.
-2. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
-3. Let `counter` integer equal `cnt`.
-4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(counter || msg || {p[i]} || {j[i]} || {P[i,j]}, 32·n·m)`, where:
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(n || m || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+2. Define `E` to be an empty binary string.
+3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
+4. Let `counter` integer equal `cnt`.
+5. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(counter || msghash || {p[i]} || {j[i]}, 32·n·m)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
-    * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers,
-    * points `{P[i]}` are encoded as concatenation of [public keys](data.md#public-key).
-5. Set top 4 bits of `e0` to zero.
-6. For `t` from `0` to `n-1` (each ring):
+    * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers.
+6. Set top 4 bits of `e0` to zero.
+7. For `t` from `0` to `n-1` (each ring):
     1. Let `e[t,0] = e0`.
     2. For `i` from `0` to `m-1` (each item):
         1. Calculate `z[t,i]` as `s[t,i]` with the most significant 4 bits set to zero.
@@ -695,11 +696,11 @@ Note: when the s-values are decoded as little-endian integers we must set their 
         4. If `i` is not equal to `j[t]`:
             1. Set `payload[m·t + i] = o[m·t + i] XOR s[t,i]`.
         5. Let `i’ = i+1 mod m`.
-        6. Calculate point `R[t,i’] = z[t,i]·G - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](data.md#public-key). Use `e0` instead of `e[t,0]` in each ring.
-        7. Calculate `e[t,i’] = ScalarHash(cnt || R[t,i’] || msg || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](data.md#public-key). Use `e0` instead of `e[t,0]` in each ring.
+        7. Calculate `e[t,i’] = ScalarHash(cnt || R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
-7. Calculate `e’ = ScalarHash(E)`.
-8. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
+8. Calculate `e’ = ScalarHash(E)`.
+9. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
 
 
 
@@ -718,7 +719,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 1. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash(ek, 32·n)`.
 2. Encrypt the plaintext payload: `{ct[i]} = {pt[i] XOR keystream[i]}`.
-3. Calculate MAC: `mac = SHA3-256(ek || ct[0] || ... || ct[n-1])`.
+3. Calculate MAC: `mac = Hash256(ek || ct[0] || ... || ct[n-1])`.
 4. Return a sequence of `n+1` 32-byte elements: `{ct[0], ..., ct[n-1], mac}`.
 
 
@@ -734,7 +735,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Calculate MAC’: `mac’ = SHA3-256(ek || ct[0] || ... || ct[n-1])`.
+1. Calculate MAC’: `mac’ = Hash256(ek || ct[0] || ... || ct[n-1])`.
 2. Extract the transmitted MAC: `mac = ct[n]`.
 3. Compare calculated  `mac’` with the received `mac`. If they are not equal, return `nil`.
 4. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash(ek, 32·n)`.
@@ -881,13 +882,13 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
     * `c’[i]`: the [blinding factor](#asset-id-blinding-factor) in the i-th output (so that `H’[i] = A’[i] + c’[i]·G`),
     * `f’[i]`: the [value blinding factor](#value-blinding-factor) used in the i-th output (so that `V’[i] = value’[i]·H’[i] + f’[i]·G`).
 
-**Output:** `q`: the excess blinding factor that must be added to the output blinding factors in order to balance inputs and outputs.
+**Output:** `q`: the [excess blinding factor](#excess-factor) that must be added to the output blinding factors in order to balance inputs and outputs.
 
 **Algorithm:**
 
 1. Calculate the sum of input blinding factors: `Finput = ∑(value[j]·c[j]+f[j], j from 0 to n-1) mod L`.
 2. Calculate the sum of output blinding factors: `Foutput = ∑(value’[i]·c’[i]+f’[i], i from 0 to m-1) mod L`.
-3. Calculate excess blinding factor as difference between input and output sums: `q = Finput - Foutput mod L`.
+3. Calculate the [excess blinding factor](#excess-factor) as difference between input and output sums: `q = Finput - Foutput mod L`.
 4. Return `q`.
 
 
@@ -1125,7 +1126,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 **Inputs:**
 
-1. `q`: the excess blinding factor (an integer in range between 0 and `L-1`).
+1. `q`: the [excess blinding factor](#excess-factor)
 
 **Output:**
 
