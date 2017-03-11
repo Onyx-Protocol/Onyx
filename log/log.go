@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -106,12 +105,10 @@ func prefix(ctx context.Context) []byte {
 //
 // Duplicate keys will be preserved.
 //
-// Two fields are automatically added to the log entry: a timestamp
-// and a string indicating the file and line number of the caller.
-//
-// As a special case, the auto-generated caller may be overridden by passing in
-// a new value for the KeyCaller key as the first key-value pair. The override
-// feature should be reserved for custom logging functions that wrap Printkv.
+// Two fields are automatically added to the log entry: t=[time]
+// and at=[file:line] indicating the location of the caller.
+// Use FilterFunc to prevent helper functions from showing up in the
+// at=[file:line] entry.
 //
 // Printkv will also print the stack trace, if any, on separate lines
 // following the message. The stack is obtained from the following,
@@ -124,21 +121,12 @@ func Printkv(ctx context.Context, keyvals ...interface{}) {
 		keyvals = append(keyvals, "", keyLogError, "odd number of log params")
 	}
 
-	// The auto-generated caller value may be overwritten.
-	var vcaller string
-	if len(keyvals) >= 2 && keyvals[0] == KeyCaller {
-		vcaller = formatValue(keyvals[1])
-		keyvals = keyvals[2:]
-	} else {
-		vcaller = caller(1)
-	}
-
 	t := time.Now().UTC()
 
 	// Prepend the log entry with auto-generated fields.
 	out := fmt.Sprintf(
 		"%s=%s %s=%s",
-		KeyCaller, vcaller,
+		KeyCaller, caller(),
 		KeyTime, formatValue(t.Format(rfc3339NanoFixed)),
 	)
 
@@ -201,7 +189,7 @@ func isStackVal(v interface{}) bool {
 // Printf prints a log entry containing a message assigned to the
 // "message" key. Arguments are handled as in fmt.Printf.
 func Printf(ctx context.Context, format string, a ...interface{}) {
-	Printkv(ctx, KeyCaller, caller(1), KeyMessage, fmt.Sprintf(format, a...))
+	Printkv(ctx, KeyMessage, fmt.Sprintf(format, a...))
 }
 
 // Error prints a log entry containing an error message assigned to the
@@ -214,27 +202,7 @@ func Error(ctx context.Context, err error, a ...interface{}) {
 	} else if len(a) > 0 {
 		err = fmt.Errorf("%s: %s", fmt.Sprint(a...), err) // don't add a stack here
 	}
-	Printkv(ctx, KeyCaller, caller(1), KeyError, err)
-}
-
-// caller returns a string containing filename and line number of a
-// function invocation on the calling goroutine's stack.
-// The argument skip is the number of stack frames to ascend, where
-// 0 is the calling site of caller. If no stack information is not available,
-// "?:?" is returned.
-func caller(skip int) string {
-	_, file, nline, ok := runtime.Caller(skip + 1)
-
-	var line string
-	if ok {
-		file = filepath.Base(file)
-		line = strconv.Itoa(nline)
-	} else {
-		file = "?"
-		line = "?"
-	}
-
-	return file + ":" + line
+	Printkv(ctx, KeyError, err)
 }
 
 // formatKey ensures that the stringified key is valid for use in a
