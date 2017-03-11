@@ -12,8 +12,8 @@ import (
 )
 
 func init() {
-	log.FilterFunc("chain/core.logHTTPError")
-	log.FilterFunc("chain/core.WriteHTTPError")
+	log.SkipFunc("chain/core.logHTTPError")
+	log.SkipFunc("chain/core.WriteHTTPError")
 }
 
 // errBadReqHeader indicates the user supplied a malformed request header,
