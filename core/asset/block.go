@@ -43,10 +43,8 @@ func Annotated(a *Asset) (*query.AnnotatedAsset, error) {
 
 	aa := &query.AnnotatedAsset{
 		ID:              a.AssetID,
-		VMVersion:       a.VMVersion,
 		Definition:      &jsonDefinition,
 		Tags:            &jsonTags,
-		RawDefinition:   chainjson.HexBytes(a.RawDefinition()),
 		IssuanceProgram: chainjson.HexBytes(a.IssuanceProgram),
 	}
 	if a.Alias != nil {

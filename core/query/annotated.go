@@ -79,12 +79,10 @@ type AccountKey struct {
 type AnnotatedAsset struct {
 	ID              bc.AssetID         `json:"id"`
 	Alias           string             `json:"alias,omitempty"`
-	VMVersion       uint64             `json:"vm_version"`
 	IssuanceProgram chainjson.HexBytes `json:"issuance_program"`
 	Keys            []*AssetKey        `json:"keys"`
 	Quorum          int                `json:"quorum"`
 	Definition      *json.RawMessage   `json:"definition"`
-	RawDefinition   chainjson.HexBytes `json:"raw_definition"`
 	Tags            *json.RawMessage   `json:"tags"`
 	IsLocal         Bool               `json:"is_local"`
 }
