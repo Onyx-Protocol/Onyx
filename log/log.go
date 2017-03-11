@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"chain/errors"
-	"chain/net/http/reqid"
 )
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
@@ -44,11 +43,8 @@ var (
 
 // Conventional key names for log entries
 const (
-	KeyCaller   = "at"       // location of caller
-	KeyTime     = "t"        // time of call
-	KeyReqID    = "reqid"    // request ID from context
-	KeyCoreID   = "coreid"   // core ID from context
-	KeySubReqID = "subreqid" // potential sub-request ID from context
+	KeyCaller = "at" // location of caller
+	KeyTime   = "t"  // time of call
 
 	KeyMessage = "message" // produced by Message
 	KeyError   = "error"   // produced by Error
@@ -110,9 +106,8 @@ func prefix(ctx context.Context) []byte {
 //
 // Duplicate keys will be preserved.
 //
-// Several fields are automatically added to the log entry: a timestamp, a
-// string indicating the file and line number of the caller, and a request ID
-// taken from the context.
+// Two fields are automatically added to the log entry: a timestamp
+// and a string indicating the file and line number of the caller.
 //
 // As a special case, the auto-generated caller may be overridden by passing in
 // a new value for the KeyCaller key as the first key-value pair. The override
@@ -142,18 +137,10 @@ func Printkv(ctx context.Context, keyvals ...interface{}) {
 
 	// Prepend the log entry with auto-generated fields.
 	out := fmt.Sprintf(
-		"%s=%s %s=%s %s=%s",
-		KeyReqID, formatValue(reqid.FromContext(ctx)),
+		"%s=%s %s=%s",
 		KeyCaller, vcaller,
 		KeyTime, formatValue(t.Format(rfc3339NanoFixed)),
 	)
-	if s := reqid.CoreIDFromContext(ctx); s != "" {
-		out += " " + KeyCoreID + "=" + formatValue(reqid.CoreIDFromContext(ctx))
-	}
-
-	if subreqid := reqid.FromSubContext(ctx); subreqid != reqid.Unknown {
-		out += " " + KeySubReqID + "=" + formatValue(subreqid)
-	}
 
 	var stack interface{}
 	for i := 0; i < len(keyvals); i += 2 {

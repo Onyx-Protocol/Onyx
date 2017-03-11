@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"chain/errors"
-	"chain/net/http/reqid"
 )
 
 func TestSetOutput(t *testing.T) {
@@ -22,6 +21,18 @@ func TestSetOutput(t *testing.T) {
 	got := buf.String()
 	if !strings.Contains(got, want) {
 		t.Errorf("log = %q; should contain %q", got, want)
+	}
+}
+
+func TestNoExtraFormatDirectives(t *testing.T) {
+	buf := new(bytes.Buffer)
+	SetOutput(buf)
+	SetPrefix("foo", "bar")
+	Printkv(context.Background(), "baz", 1)
+	SetOutput(os.Stdout)
+	got := buf.String()
+	if strings.Contains(got, "%") {
+		t.Errorf("log line appears to contain format directive: %q", got)
 	}
 }
 
@@ -99,7 +110,6 @@ func TestPrintkv(t *testing.T) {
 		{
 			keyvals: []interface{}{"msg", "hello world"},
 			want: []string{
-				"reqid=unknown_req_id",
 				"at=log_test.go:",
 				"t=",
 				`msg="hello world"`,
@@ -110,7 +120,6 @@ func TestPrintkv(t *testing.T) {
 		{
 			keyvals: []interface{}{"msg", "hello world", "msg", "goodbye world"},
 			want: []string{
-				"reqid=unknown_req_id",
 				"at=log_test.go:",
 				"t=",
 				`msg="hello world"`,
@@ -122,7 +131,6 @@ func TestPrintkv(t *testing.T) {
 		{
 			keyvals: nil,
 			want: []string{
-				"reqid=unknown_req_id",
 				"at=log_test.go:",
 				"t=",
 			},
@@ -132,7 +140,6 @@ func TestPrintkv(t *testing.T) {
 		{
 			keyvals: []interface{}{"k1", "v1", "k2"},
 			want: []string{
-				"reqid=unknown_req_id",
 				"at=log_test.go:",
 				"t=",
 				"k1=v1",
@@ -168,26 +175,6 @@ func TestPrintkv(t *testing.T) {
 		}
 
 		SetOutput(os.Stdout)
-	}
-}
-
-func TestPrintkvRequestID(t *testing.T) {
-	buf := new(bytes.Buffer)
-	SetOutput(buf)
-	defer SetOutput(os.Stdout)
-
-	Printkv(reqid.NewContext(context.Background(), "example-request-id"))
-
-	read, err := ioutil.ReadAll(buf)
-	if err != nil {
-		t.Fatal("read buffer error:", err)
-	}
-
-	got := string(read)
-	want := "reqid=example-request-id"
-
-	if !strings.Contains(got, want) {
-		t.Errorf("Result did not contain string:\ngot:  %s\nwant: %s", got, want)
 	}
 }
 
