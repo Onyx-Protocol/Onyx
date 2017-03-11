@@ -71,8 +71,6 @@ func FromContext(ctx context.Context) string {
 
 // CoreIDFromContext returns the Chain-Core-ID stored in ctx,
 // or the empty string.
-// It also adds a log prefix to print the Core ID using
-// package chain/log.
 func CoreIDFromContext(ctx context.Context) string {
 	id, _ := ctx.Value(coreIDKey).(string)
 	return id
