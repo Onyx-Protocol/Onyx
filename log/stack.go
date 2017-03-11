@@ -31,6 +31,8 @@ func SkipFunc(name string) {
 // If no stack information is available, it returns "?:?".
 func caller() string {
 	for i := 1; ; i++ {
+		// NOTE(kr): This is quadratic in the number of frames we
+		// ultimately have to skip. Consider using Callers instead.
 		pc, file, line, ok := runtime.Caller(i)
 		if !ok {
 			return "?:?"
