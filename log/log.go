@@ -108,7 +108,7 @@ func prefix(ctx context.Context) []byte {
 // Two fields are automatically added to the log entry: t=[time]
 // and at=[file:line] indicating the location of the caller.
 // Use SkipFunc to prevent helper functions from showing up in the
-// at=[file:line] entry.
+// at=[file:line] field.
 //
 // Printkv will also print the stack trace, if any, on separate lines
 // following the message. The stack is obtained from the following,
