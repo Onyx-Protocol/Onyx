@@ -334,7 +334,7 @@ The asset ID commitment can either be nonblinded or blinded:
 
 The asset range proof demonstrates that a given [asset ID commitment](#asset-id-commitment) commits to one of the asset IDs specified in the transaction inputs. A [whole-transaction validation procedure](#verify-confidential-assets) makes sure that all of the declared asset ID commitments in fact belong to the transaction inputs.
 
-Asset range proof can be [nonconfidential](#nonconfidential-asset-range-proof) or [confidential](#confidential-asset-range-proof).
+Asset range proof can be [non-confidential](#non-confidential-asset-range-proof) or [confidential](#confidential-asset-range-proof).
 
 #### Non-Confidential Asset Range Proof
 
@@ -407,7 +407,22 @@ See:
 
 Value range proof demonstrates that a [value commitment](#value-commitment) encodes a value between 0 and 2<sup>63</sup>–1. The 63-bit limit is chosen for consistency with the numeric limits defined for the asset version 1 outputs and VM version 1 [numbers](vm1.md#vm-number).
 
-For the most compact encoding, value range proof uses base-4 digits represented by 4-key ring signatures proving the value of each pair of bits. If the number of bits is odd, the last ring signature contains only 2 elements proving the value of the highest-order bit. All ring signatures share the same e-value (see below) forming a so-called "[borromean ring signature](#borromean-ring-signature)".
+Value range proof can be [non-confidential](#non-confidential-value-range-proof) or [confidential](#confidential-value-range-proof).
+
+#### Non-Confidential Value Range Proof
+
+A non-confidential range proof demonstrates the non-encrypted amount and allows efficient verification that a given [value commitment](#value-commitment) commits to that amount.
+
+Field                        | Type      | Description
+-----------------------------|-----------|------------------
+Type                         | byte      | Contains value 0x00 to indicate the commitment is not blinded.
+Amount                       | varint63  | Amount
+
+#### Confidential Value Range Proof
+
+A confidential range proof proves that a given [value commitment](#value-commitment) commits to an amount in a valid range (between 0 and 2<sup>63</sup>–1) without revealing the exact value.
+
+For the most compact encoding, confidential value range proof uses base-4 digits represented by 4-key ring signatures proving the value of each pair of bits. If the number of bits is odd, the last ring signature contains only 2 elements proving the value of the highest-order bit. All ring signatures share the same e-value (see below) forming a so-called "[borromean ring signature](#borromean-ring-signature)".
 
 Value range proof allows a space-privacy tradeoff by making a smaller number of bits confidential while exposing a "minimum value" and a decimal exponent. The complete value is broken down in the following components:
 
@@ -417,6 +432,7 @@ Where d<sub>i</sub> is the i’th digit in a m-digit mantissa (that has either 2
 
 Field                     | Type      | Description
 --------------------------|-----------|------------------
+Type                      | byte      | Contains value 0x01 to indicate the commitment is blinded.
 Number of bits            | byte      | Integer `n` indicating number of confidential mantissa bits between 1 and 63.
 Exponent                  | byte      | Integer `exp` indicating the decimal exponent from 0 to 10.
 Minimum value             | varint63  | Minimum value `vmin` from 0 to 2<sup>63</sup>–1.
