@@ -304,13 +304,13 @@ An asset ID commitment `AC` is an ElGamal commitment represented by a [point pai
 
     AC = (H, Ba)
     
-    H  = A + b·G
-    Ba = b·J
+    H  = A + c·G
+    Ba = c·J
    
 where:      
 
 * `A` is an [Asset ID Point](#asset-id-point), an orthogonal point representing an asset ID.  
-* `b` is a blinding [scalar](#scalar) for the asset ID.
+* `c` is a blinding [scalar](#scalar) for the asset ID.
 * `G`, `J` are [generator points](#generators).
 
 The asset ID commitment can either be nonblinded or blinded:
@@ -521,7 +521,7 @@ Program Arguments               | [varstring31]    | Data passed to the issuance
     3. Calculate `e[i] = ScalarHash(R[i] || msghash || i || w[j])` where `i` is encoded as a 64-bit little-endian integer.
 6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (j + step) mod n`.
-    2. Calculate the forged s-value `s[i] = r[step-1]`, where `r[j]` is interpreted as a 64-byte little-endian integer and reduced modulo `L`.
+    2. Calculate the forged s-value `s[i] = r[step-1]`.
     3. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero.
     4. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     5. Let `i’ = i+1 mod n`.
@@ -789,7 +789,6 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 4. Return `(AC, c)`.
 
 
-
 ### Create Asset Range Proof
 
 **Inputs:**
@@ -834,8 +833,6 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 4. Return true if verification was successful, and false otherwise.
 
 
-
-
 ### Create Nonblinded Value Commitment
 
 **Inputs:**
@@ -849,6 +846,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 1. Calculate [point pair](#point-pair) `VC = value·(H, Ba)`.
 2. Return `VC`.
+
 
 ### Create Blinded Value Commitment
 
@@ -895,24 +893,44 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 ### Create Value Proof
 
-TBD.
+**Inputs:**
 
-1. Take `value, assetid, c, f`.
-2. Compute `q = value*c + f`
-3. Compute excess commitment `(Q,e,s)` from `q` (pubkey with signature).
-4. Return `value, assetid, Q,e,s`.
+1. `AC`: the [asset ID commitment](#asset-id-commitment) to `assetid`.
+2. `VC`: the [value commitment](#value-commitment) to `value`.
+3. `assetid`: the [asset ID](blockchain.md#asset-id) to be proven used in `AC`.
+4. `value`: the amount to be proven.
+5. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) used in `AC`.
+6. `f`: the [value blinding factor](#value-blinding-factor).
+
+**Output:**
+
+1. `(QG,QJ),e,s`: the [excess commitment](#excess-commitment) with its signature.
+
+**Algorithm:**
+
+1. Compute [scalar](#scalar) `q = value*c + f`.
+2. [Create excess commitment](#create-excess-commitment) `(QG,QJ),e,s` using `q`.
+
 
 
 ### Verify Value Proof
 
-TBD.
+**Inputs:**
 
-1. Take `value,assetid,Q,e,s`.
-2. Verify excess commitment `Q,e,s`.
-3. Compute nonblinded asset commitment: `A = 8*Decode(SHA3(assetid))`.
-4. Compute nonblinded value commitment: `V’ = value*A`.
-5. Add point `Q` to `V’`: `V’ = V’+Q`.
-6. Verify that `V’` equals `V` in the given output.
+1. `AC`: the [asset ID commitment](#asset-id-commitment) to `assetid`.
+2. `VC`: the [value commitment](#value-commitment) to `value`.
+3. `assetid`: the [asset ID](blockchain.md#asset-id) to be proven used in `AC`.
+4. `value`: the amount to be proven.
+5. `(QG,QJ),e,s`: the [excess commitment](#excess-commitment) with its signature that proves that `assetid` and `value` are committed to `AC` and `VC`.
+
+**Output:** `true` if the verification succeeded, `false` otherwise.
+
+**Algorithm:**
+
+1. [Verify excess commitment](#verify-excess-commitment) `(QG,QJ),e,s`.
+2. Create [asset ID point](#asset-id-point): `A’ = 8·Hash256(assetID || counter)`.
+4. [Create nonblinded value commitment](#create-nonblinded-value-commitment): `V’ = value·A’`.
+5. Verify that [point pair](#point-pair) `(QG + V’, QJ)` equals `VC`.
 
 
 
