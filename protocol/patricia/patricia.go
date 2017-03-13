@@ -105,18 +105,12 @@ func lookup(n *node, key []uint8) *node {
 // If item itself is already in t, Insert does nothing
 // (and this is not an error).
 func (t *Tree) Insert(item []byte) error {
-	return t.insert(item, item)
-}
-
-// TODO(kr): rewrite tests to always use Insert
-// and remove the extra func
-func (t *Tree) insert(bkey, val []byte) error {
-	key := bitKey(bkey)
+	key := bitKey(item)
 
 	var hash bc.Hash
 	h := sha3pool.Get256()
 	h.Write(leafPrefix)
-	h.Write(val)
+	h.Write(item)
 	h.Read(hash[:])
 	sha3pool.Put256(h)
 
