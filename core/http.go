@@ -11,6 +11,11 @@ import (
 	"chain/net/http/reqid"
 )
 
+func init() {
+	log.SkipFunc("chain/core.logHTTPError")
+	log.SkipFunc("chain/core.WriteHTTPError")
+}
+
 // errBadReqHeader indicates the user supplied a malformed request header,
 // possibly including a datatype that doesn't match what we expected.
 var errBadReqHeader = errors.New("bad request header")
