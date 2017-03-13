@@ -24,6 +24,7 @@
   * [Excess Commitment](#excess-commitment)
   * [Value Proof](#value-proof)
   * [Value Range Proof](#value-range-proof)
+  * [Extended Key Pair](#extended-key-pair)
   * [Record Encryption Key](#record-encryption-key)
   * [Intermediate Encryption Key](#intermediate-encryption-key)
   * [Asset ID Encryption Key](#asset-id-encryption-key)
@@ -424,9 +425,23 @@ Borromean Ring Signature  | [Borromean Ring Signature](#borromean-ring-signature
 
 The total number of elements in the [Borromean Ring Signature](#borromean-ring-signature) is `1 + 4·n/2` where `n` is number of bits and `n/2` is a number of rings.
 
+
+### Extended Key Pair
+
+*Extended key pair* (EKP) is a pair of [ChainKD](chainkd.md) extended public keys (xpubs):
+
+    {xpub1, xpub2}
+
+EKP is encoded as a 128-byte concatenation of the corresponding extended public keys (64 bytes each):
+
+    EKP = xpub1 || xpub2
+
+EKPs allows “two-dimensional” key derivation by deriving from one key and leaving the other one unchanged, therefore allowing “vertical” derivation from [Record Encryption Keys](#record-encryption-keys) to [Intermediate Encryption Keys](#intermediate-encryption-keys), [Asset ID Encryption Keys](#asset-id-encryption-keys) and [Value Encryption Keys](#value-encryption-keys) and “horizontal” derivation from a root key pair associated with a user’s account to per-transaction and per-output key pairs.
+
+
 ### Record Encryption Key
 
-Record encryption key (REK or `rek`) is a pair of [ChainKD](chainkd.md) extended public keys (xpubs).
+Record encryption key (REK or `rek`) is an [extended key pair](#extended-key-pair):
 
     REK = {xpub1, xpub2}
 
@@ -435,25 +450,28 @@ It is used to decrypt the payload data from the [value range proof](#value-range
 The first `xpub1` is used to derive more specific keys as described below that all share the same second key `xpub2`.
 The second `xpub2` is used to derive the entire hierarchies of encryption keys, so that a [REK](#record-encryption-key), or [IEK](#intermediate-encryption-key) could be shared for the entire account instead of per-transaction.
 
+
 ### Intermediate Encryption Key
 
-Intermediate encryption key (IEK or `iek`) allows decrypting the asset ID and the value in the output commitment. It is derived from the [record encryption key](#record-encryption-key) as follows:
+Intermediate encryption key (IEK or `iek`) is an [extended key pair](#extended-key-pair) that allows decrypting the asset ID and the value in the output commitment. It is derived from the [record encryption key](#record-encryption-key) as follows:
 
     IEK = {ND(REK.xpub1, "IEK"), REK.xpub2}
 
 where `ND` is non-hardened derivation as defined by [ChainKD](chainkd.md#derive-non-hardened-extended-public-key).
 
+
 ### Asset ID Encryption Key
 
-Asset ID encryption key (AEK or `aek`) allows decrypting the asset ID in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
+Asset ID encryption key (AEK or `aek`) is an [extended key pair](#extended-key-pair) that allows decrypting the asset ID in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
 
     AEK = {ND(IEK.xpub1, "AEK"), IEK.xpub2}
 
 where `ND` is non-hardened derivation as defined by [ChainKD](chainkd.md#derive-non-hardened-extended-public-key).
 
+
 ### Value Encryption Key
 
-Value encryption key (VEK or `vek`) allows decrypting the amount in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
+Value encryption key (VEK or `vek`) is an [extended key pair](#extended-key-pair) that allows decrypting the amount in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
 
     VEK = {ND(IEK.xpub1, "VEK"), IEK.xpub2}
 
@@ -497,6 +515,19 @@ Issuance Program                | [Program](blockchain.md#program)  | [Version o
 Issuance Signature Program      | varstring31      | Predicate committed to by the issuance asset range proof, which is evaluated to ensure that the transaction is authorized.
 Program Arguments Count         | varint31         | Number of [program arguments](#program-arguments) that follow.
 Program Arguments               | [varstring31]    | Data passed to the issuance signature program.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
