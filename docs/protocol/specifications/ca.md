@@ -351,6 +351,11 @@ Type                         | byte      | Contains value 0x01 to indicate the c
 Asset ID Commitments         | [List](blockchain.md#list)\<[Asset ID Commitment](#asset-id-commitment)\> | List of asset ID commitments from the transaction inputs used in the range proof.
 Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signature proving that the asset ID committed in the output belongs to the set of declared input commitments.
 
+See:
+
+* [Create Asset Range Proof](#create-asset-range-proof)
+* [Verify Asset Range Proof](#verify-asset-range-proof)
+
 
 ### Value Commitment
 
@@ -440,6 +445,11 @@ Digit commitments         | [pubkey]  | List of `(n+1)/2 – 1` individual digit
 Borromean Ring Signature  | [Borromean Ring Signature](#borromean-ring-signature) | List of all 32-byte elements comprising all ring signatures proving the value of each digit.
 
 The total number of elements in the [Borromean Ring Signature](#borromean-ring-signature) is `1 + 4·n/2` where `n` is number of bits and `n/2` is a number of rings.
+
+See:
+
+* [Create Value Range Proof](#create-value-range-proof)
+* [Verify Value Range Proof](#verify-value-range-proof)
 
 
 ### Extended Key Pair
@@ -850,22 +860,35 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Inputs:**
 
-1. `H’`: the output [asset ID commitment](#asset-id-commitment) for which the range proof is being created.
-2. `(ea,ec)`: the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `H’`.
-3. `{H[i]}`: `n` candidate [asset ID commitments](#asset-id-commitment).
-4. `j`: the index of the designated commitment among the input asset ID commitments, so that `H’ == H[j] + (c’ - c)·G`.
-5. `c’`: the [blinding factor](#asset-id-blinding-factor) for the commitment `H’`.
-6. `c`: the [blinding factor](#asset-id-blinding-factor) for the candidate commitment `H[j]`.
+1. `AC’`: the output [asset ID commitment](#asset-id-commitment) for which the range proof is being created.
+2. `{AC[i]}`: `n` candidate [asset ID commitments](#asset-id-commitment).
+3. `j`: the index of the designated commitment among the input asset ID commitments, so that `AC’ == AC[j] + (c’ - c)·(G,J)`.
+4. `c’`: the [blinding factor](#asset-id-blinding-factor) for the commitment `AC’`.
+5. `c`: the [blinding factor](#asset-id-blinding-factor) for the candidate commitment `AC[j]`.
 
-**Output:** an asset range proof consisting of a list of input asset ID commitments and a ring signature.
+**Output:** an [asset range proof](#asset-range-proof) consisting of a list of input asset ID commitments and a ring signature.
 
 **Algorithm:**
 
-1. Calculate the message to sign: `msg = SHA3-256(0x55 || H’ || H[0] || ... || H[n-1] || ea || ec)`.
-2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments: `P[i] = H’ - H[i]`.
-3. Calculate the private key: `p = c’ - c mod L`.
-4. [Create a ring signature](#create-ring-signature) using `msg`, `{P[i]}`, `j`, and `p`.
-5. Return the list of asset ID commitments `{H[i]}` and the ring signature `e[0], s[0], ... s[n-1]`.
+1. Calculate the message hash to sign:
+
+        msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1])
+
+2. Calculate the Fiat-Shamir factor (note that it commits to all input non-secret data via `msghash` as necessary):
+
+        h = ScalarHash("h" || msghash)
+
+3. Calculate the base point by applying `h` to [both generators](#generators):
+
+        B = h·G + J
+
+4. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
+    
+        P[i] = h·(AC’.H - AC[i].H) + AC’.Ba + AC[i].Ba
+
+5. Calculate the private key: `p = c’ - c mod L`.
+6. [Create a ring signature](#create-ring-signature) using `msghash`, `B`, `{P[i]}`, `j`, and `p`.
+7. Return the list of asset ID commitments `{AC[i]}` and the ring signature `e[0], s[0], ... s[n-1]`.
 
 Note: unlike the [value range proof](#value-range-proof), this ring signature is not used to store encrypted payload data because decrypting it would reveal the asset ID of one of the inputs to the recipient.
 
@@ -874,19 +897,40 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 **Inputs:**
 
-1. `H’`: the target [asset ID commitment](#asset-id-commitment).
-2. `(ea,ec)`: the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `H’`.
-3. The to-be-verified [asset range proof](#asset-range-proof) consisting of:
-    1. `{H[i]}`: `n` input [asset ID commitments](#asset-id-commitment).
-    2. `e[0], s[0], ... s[n-1]`: the ring signature.
+1. `AC’`: the target [asset ID commitment](#asset-id-commitment).
+2. One of the two [asset range proofs](#asset-range-proof):
+    1. A non-confidential asset range proof consisting of:
+        1. `assetID`: an [asset ID](blockchain.md#asset-id).
+    2. A confidential asset range proof consisting of:
+        1. `{AC[i]}`: `n` input [asset ID commitments](#asset-id-commitment).
+        2. `e[0], s[0], ... s[n-1]`: the ring signature.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. Calculate `msg = SHA3-256(0x55 || H’ || H[0] || ... || H[n-1] || ea || ec)`.
-2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments: `P[i] = H’ - H[i]`.
-3. [Verify the ring signature](#verify-ring-signature) `e[0], s[0], ... s[n-1]` with `msg` and `{P[i]}`.
+1. If the asset range proof is non-confidential:
+    1. Compute [asset ID point](#asset-id-point): `A’ = 8·Hash256(assetID || counter)`.
+    2. Verify that [point pair](#point-pair) `(A’,O)` equals `AC’`.
+2. If the asset range proof is confidential:
+    1. Calculate the message hash to sign:
+
+            msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1])
+    
+    2. Calculate the Fiat-Shamir factor (note that it commits to all input non-secret data via `msghash` as necessary):
+
+            h = ScalarHash("h" || msghash)
+
+    3. Calculate the base point by applying `h` to [both generators](#generators):
+
+            B = h·G + J
+
+    4. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
+
+            P[i] = h·(AC’.H - AC[i].H) + AC’.Ba + AC[i].Ba
+
+    
+    4. [Verify the ring signature](#verify-ring-signature) `e[0], s[0], ... s[n-1]` with `msg` and `{P[i]}`.
 4. Return true if verification was successful, and false otherwise.
 
 
@@ -985,7 +1029,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 **Algorithm:**
 
 1. [Verify excess commitment](#verify-excess-commitment) `(QG,QJ),e,s`.
-2. Create [asset ID point](#asset-id-point): `A’ = 8·Hash256(assetID || counter)`.
+2. Compute [asset ID point](#asset-id-point): `A’ = 8·Hash256(assetID || counter)`.
 4. [Create nonblinded value commitment](#create-nonblinded-value-commitment): `V’ = value·A’`.
 5. Verify that [point pair](#point-pair) `(QG + V’, QJ)` equals `VC`.
 
