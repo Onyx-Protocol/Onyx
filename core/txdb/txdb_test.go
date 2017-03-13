@@ -1,13 +1,129 @@
 package txdb
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/state"
 	"chain/testutil"
 )
+
+func TestLatestSnapshot(t *testing.T) {
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
+	store := NewStore(dbtx)
+
+	snap := state.Empty()
+	snap.Issuances[bc.Hash{0xc0, 0x01}] = 12345678
+	err := snap.Tree.Insert([]byte{0x01, 0x02, 0x03, 0x04})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = store.SaveSnapshot(ctx, 5, snap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check that LatestSnapshotInfo returns the info for the new snapshot.
+	height, size, err := store.LatestSnapshotInfo(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if height != 5 {
+		t.Errorf("LatestSnapshotInfo height got %d, want 5", height)
+	}
+	// Check that LatestSnapshot returns the same snapshot.
+	got, height, err := store.LatestSnapshot(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if height != 5 {
+		t.Errorf("LatestSnapshotInfo height got %d, want 5", height)
+	}
+	if !testutil.DeepEqual(got, snap) {
+		t.Errorf("LatestSnapshot got %#v want %#v", got, snap)
+	}
+	// Check that GetSnapshot returns the raw bytes of the same snapshot.
+	raw, err := store.GetSnapshot(ctx, height)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if uint64(len(raw)) != size {
+		t.Errorf("GetSnapshot returned %d-byte snapshot, info said it was %d bytes", size, len(raw))
+	}
+	decoded, err := DecodeSnapshot(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !testutil.DeepEqual(decoded, snap) {
+		t.Errorf("GetSnapshot got %#v, want %#v", decoded, snap)
+	}
+}
+
+func TestGetRawBlock(t *testing.T) {
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
+
+	block := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			Version:           1,
+			Height:            10,
+			PreviousBlockHash: bc.Hash{0x09},
+			TimestampMS:       123456,
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: bc.Hash{0x01},
+				AssetsMerkleRoot:       bc.Hash{0x02},
+				ConsensusProgram:       []byte{0xc0, 0x01},
+			},
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{[]byte{0xbe, 0xef}},
+			},
+		},
+	}
+	var buf bytes.Buffer
+	_, err := block.WriteTo(&buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	store := NewStore(dbtx)
+	err = store.SaveBlock(ctx, block)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := store.GetRawBlock(ctx, block.Height)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(buf.Bytes(), raw) {
+		t.Errorf("GetRawBlock got %x, want %x", raw, buf.Bytes())
+	}
+}
+
+func TestListenFinalizeBlocks(t *testing.T) {
+	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	store := NewStore(db)
+
+	// Start listening for new blocks.
+	heightCh, err := ListenBlocks(ctx, dbURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = store.FinalizeBlock(ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	height := <-heightCh
+	if height != 1 {
+		t.Errorf("heightCh: got %d want 1", height)
+	}
+}
 
 func TestGetBlock(t *testing.T) {
 	ctx := context.Background()
