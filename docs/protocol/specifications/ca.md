@@ -263,10 +263,15 @@ The ring signature is encoded as a string of `n+1` 32-byte elements where `n` is
 
 Each 32-byte element is an integer coded using little endian convention. I.e., a 32-byte string `x` `x[0],...,x[31]` represents the integer `x[0] + 2^8 · x[1] + ... + 2^248 · x[31]`.
 
+See:
+
+* [Create Ring Signature](#create-ring-signature)
+* [Verify Ring Signature](#verify-ring-signature)
+
 
 ### Borromean Ring Signature
 
-Borromean ring signature ([[Maxwell2015](https://github.com/Blockstream/borromean_paper)]) is a data structure representing several [ring signatures](#ring-signature) compactly joined with an AND function of the ring signatures: “I know the private key for (A or B) and (C or D)”. Borromean ring signatures are used in [value range proofs](#value-range-proof) that prove the range of multiple digits at once.
+Borromean ring signature ([Maxwell2015](https://github.com/Blockstream/borromean_paper)) is a data structure representing several [ring signatures](#ring-signature) compactly joined with an AND function of the ring signatures: “I know the private key for (A or B) and (C or D)”. Borromean ring signatures are used in [value range proofs](#value-range-proof) that prove the range of multiple digits at once.
 
 The borromean ring signature is encoded as a sequence of 32-byte elements.
 
@@ -284,6 +289,11 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
       s[0,0], s[0,1], s[0,2], s[0,3], # base-4 digit at position 0 (proof for the lower two bits)
       s[1,0], s[1,1], s[1,2], s[1,3], # base-4 digit at position 1 (proof for the higher two bits)
     }
+
+See:
+
+* [Create Borromean Ring Signature](#create-borromean-ring-signature)
+* [Verify Borromean Ring Signature](#verify-borromean-ring-signature)
 
 
 ### Asset ID Point
