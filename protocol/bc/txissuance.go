@@ -1,5 +1,12 @@
 package bc
 
+import (
+	"fmt"
+
+	"chain/errors"
+	"chain/protocol/bc"
+)
+
 // Issuance is a source of new value on a blockchain. It satisfies the
 // Entry interface.
 //
@@ -14,16 +21,19 @@ type Issuance struct {
 	ordinal int
 
 	witness struct {
-		Destination         ValueDestination
-		InitialBlockID      Hash
-		AssetDefinitionHash Hash
-		IssuanceProgram     Program
-		Arguments           [][]byte
+		Destination     ValueDestination
+		AssetDefinition AssetDefinition
+		Arguments       [][]byte
+		Anchored        Hash
 	}
 
 	// Anchor is a pointer to the manifested entry corresponding to
 	// body.Anchor.
-	Anchor Entry // *nonce or *spend
+	Anchor Entry // *nonce, *spend, or *issuance
+
+	// Anchored is a pointer to the manifested entry corresponding to
+	// witness.Anchored.
+	Anchored Entry
 }
 
 func (Issuance) Type() string           { return "issuance1" }
@@ -96,4 +106,45 @@ func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issua
 	iss.body.Data = data
 	iss.ordinal = ordinal
 	return iss
+}
+
+func (iss *Issuance) CheckValid(initialBlockID Hash) error {
+	if iss.witness.AssetDefinition.InitialBlockID != initialBlockID {
+		// xxx error
+	}
+
+	if iss.witness.AssetDefinition.ComputeAssetID() != iss.body.Value.AssetID {
+		// xxx error
+	}
+
+	// xxx run issuance program
+
+	switch iss.Anchor.(type) {
+	case *bc.Nonce:
+	case *bc.Spend:
+	case *bc.Issuance:
+		// ok
+	default:
+		return fmt.Errorf("issuance anchor has type %T, should be nonce, spend, or issuance", iss.Anchor)
+	}
+
+	if iss.Anchored != nil {
+		// xxx check iss is the anchor for iss.Anchored
+	}
+
+	err := iss.Anchor.CheckValid(xxx)
+	if err != nil {
+		return errors.Wrap(err, "checking issuance anchor")
+	}
+
+	err = iss.witness.Destination.CheckValid(iss, 0)
+	if err != nil {
+		return errors.Wrap(err, "checking issuance destination")
+	}
+
+	if txVersion == 1 && (iss.body.ExtHash != bc.Hash{}) {
+		// xxx error
+	}
+
+	return nil
 }

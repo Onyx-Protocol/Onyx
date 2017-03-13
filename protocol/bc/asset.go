@@ -19,15 +19,16 @@ func (a *AssetID) UnmarshalJSON(b []byte) error { return (*Hash)(a).UnmarshalJSO
 func (a AssetID) Value() (driver.Value, error)  { return Hash(a).Value() }
 func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 
-// ComputeAssetID computes the asset ID of the asset defined by
-// the given issuance program and initial block hash.
-func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint64, assetDefinitionHash Hash) (assetID AssetID) {
+type AssetDefinition struct {
+	InitialBlockID  Hash
+	IssuanceProgram Program
+	Data            Hash
+}
+
+func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
-	h.Write(initialHash[:])
-	blockchain.WriteVarint63(h, vmVersion)
-	blockchain.WriteVarstr31(h, issuanceProgram) // TODO(bobg): check and return error
-	h.Write(assetDefinitionHash[:])
+	writeForHash(h, *ad) // xxx errors impossible ?
 	h.Read(assetID[:])
 	return assetID
 }

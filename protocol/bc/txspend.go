@@ -76,3 +76,24 @@ func NewSpend(out *Output, data Hash, ordinal int) *Spend {
 	s.SpentOutput = out
 	return s
 }
+
+func (s *Spend) CheckValid(header *TxHeader) error {
+	// xxx SpentOutput "present"
+
+	// xxx run control program
+
+	if s.SpentOutput.body.Source.Value != s.witness.Destination.Value {
+		// xxx error
+	}
+
+	err := s.witness.Destination.CheckValid(s, 0)
+	if err != nil {
+		return errors.Wrap(err, "checking spend destination")
+	}
+
+	if header.body.Version == 1 && (s.body.ExtHash != bc.Hash{}) {
+		// xxx error
+	}
+
+	return nil
+}

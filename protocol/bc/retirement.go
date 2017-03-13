@@ -41,3 +41,16 @@ func NewRetirement(source valueSource, data Hash, ordinal int) *Retirement {
 	r.ordinal = ordinal
 	return r
 }
+
+func (r *Retirement) CheckValid(header *TxHeader) error {
+	err := r.body.Source.CheckValid(r, 0)
+	if err != nil {
+		return errors.Wrap(err, "checking retirement source")
+	}
+
+	if header.body.Version == 1 && (r.body.ExtHash != bc.Hash{}) {
+		// xxx error
+	}
+
+	return nil
+}

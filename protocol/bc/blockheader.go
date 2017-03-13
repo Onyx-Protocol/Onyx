@@ -72,3 +72,44 @@ func NewBlockHeaderEntry(version, height uint64, previousBlockID Hash, timestamp
 	bh.body.NextConsensusProgram = nextConsensusProgram
 	return bh
 }
+
+func (bh *BlockHeaderEntry) CheckValid(prev *BlockHeaderEntry, txs []*TxEntries) error {
+	if prev == nil {
+		if bh.body.Height != 1 {
+			// xxx error
+		}
+	} else {
+		if bh.body.Version < prev.body.Version {
+			// xxx error
+		}
+
+		if bh.body.Height != prev.body.Height + 1 {
+			// xxx error
+		}
+
+		// xxx check EntryID(prev) == bh.body.PreviousBlockID
+
+		if bh.body.TimestampMS <= prev.body.TimestampMS {
+			// xxx error
+		}
+	}
+
+	// xxx eval NextConsensusProgram
+
+	for i, tx := range txs {
+		err := tx.CheckValid(bh.body.TimestampMS, bh.body.Version)
+		if err != nil {
+			return errors.Wrapf(err, "checking validity of transaction %d of %d", i, len(txs))
+		}
+	}
+
+	// xxx check bh.body.TransactionsRoot == computeMerkleRoot(txs)
+
+	if bh.body.Version == 1 {
+		if (bh.body.ExtHash != bh.Hash{}) {
+			// xxx error
+		}
+	}
+
+	return nil
+}

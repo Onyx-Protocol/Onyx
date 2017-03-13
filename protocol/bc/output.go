@@ -13,10 +13,6 @@ type Output struct {
 		ExtHash        Hash
 	}
 	ordinal int
-
-	// Source contains (a pointer to) the manifested entry corresponding
-	// to body.Source.
-	Source Entry // *issuance, *spend, or *mux
 }
 
 func (Output) Type() string         { return "output1" }
@@ -56,4 +52,17 @@ func NewOutput(source valueSource, controlProgram Program, data Hash, ordinal in
 	out.body.Data = data
 	out.ordinal = ordinal
 	return out
+}
+
+func (o *Output) CheckValid(header *TxHeader) error {
+	err := o.body.Source.CheckValid(o, 0)
+	if err != nil {
+		return errors.Wrap(err, "checking output source")
+	}
+
+	if header.body.Version == 1 && (o.body.ExtHash != bc.Hash{}) {
+		// xxx error
+	}
+
+	return nil
 }
