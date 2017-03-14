@@ -81,7 +81,7 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
         return "ChainCore.app/\(Bundle.main.infoDictionary![kCFBundleVersionKey as String])"
     }
 
-    func doLoadDashboard() {
+    func doLoadModernDashboard() {
         if #available(OSX 10.11, *) {
             if webView != nil {
                 return
@@ -116,32 +116,42 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
                 wv.load(URLRequest(url: ChainCore.shared.dashboardURL))
             })
 
-//            // Debug:
-//            DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: { 
-//                wv.evaluateJavaScript("console.error('test from js bridge')", completionHandler: { (result, err) in
-//                    //                    NSLog("Executed JS: %@ %@", "\(result)", "\(err)")
-//                })
-//            })
+            //            // Debug:
+            //            DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: {
+            //                wv.evaluateJavaScript("console.error('test from js bridge')", completionHandler: { (result, err) in
+            //                    //                    NSLog("Executed JS: %@ %@", "\(result)", "\(err)")
+            //                })
+            //            })
 
             webView = wv
+        }
+    }
+
+    func doLoadLegacyDashboard() {
+        if webViewOld != nil {
+            return
+        }
+        let wv = WebView(frame: self.view.bounds)
+        wv.autoresizingMask = [.viewWidthSizable, .viewHeightSizable]
+        wv.translatesAutoresizingMaskIntoConstraints = true
+        self.view.addSubview(wv)
+        self.preloadView.isHidden = true
+
+        wv.uiDelegate = self
+        wv.customUserAgent = userAgent()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
+            wv.mainFrame.load(URLRequest(url: ChainCore.shared.dashboardURL))
+        })
+
+        webViewOld = wv
+    }
+
+    func doLoadDashboard() {
+        if #available(OSX 10.11, *) {
+            doLoadModernDashboard()
         } else {
-            if webViewOld != nil {
-                return
-            }
-            let wv = WebView(frame: self.view.bounds)
-            wv.autoresizingMask = [.viewWidthSizable, .viewHeightSizable]
-            wv.translatesAutoresizingMaskIntoConstraints = true
-            self.view.addSubview(wv)
-            self.preloadView.isHidden = true
-
-            wv.uiDelegate = self
-            wv.customUserAgent = userAgent()
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
-                wv.mainFrame.load(URLRequest(url: ChainCore.shared.dashboardURL))
-            })
-
-            webViewOld = wv
+            doLoadLegacyDashboard()
         }
     }
 

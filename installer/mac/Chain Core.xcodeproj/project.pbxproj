@@ -388,6 +388,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "-lpq";
 				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -430,6 +431,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				OTHER_LDFLAGS = "-lpq";
 				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 			};
 			name = Release;
@@ -437,9 +439,10 @@
 		83FB57281D1B05F000A903A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				APP_VERSION = 1.1.1;
+				APP_VERSION = "1.1.1-glitchfix1";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Developer ID Application: Chain Inc. (ZA97W57QRY)";
 				COMBINE_HIDPI_IMAGES = YES;
 				DB_VERSION = v1.1.1;
 				DEVELOPMENT_TEAM = ZA97W57QRY;
@@ -463,12 +466,13 @@
 		83FB57291D1B05F000A903A3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				APP_VERSION = 1.1.1;
+				APP_VERSION = "1.1.1-glitchfix1";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Developer ID Application: Chain Inc. (ZA97W57QRY)";
 				COMBINE_HIDPI_IMAGES = YES;
 				DB_VERSION = v1.1.1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = ZA97W57QRY;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -478,6 +482,8 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.chain.ChainCoreApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "52f8d7ba-ced6-496e-80e9-e209aa0fa82a";
+				PROVISIONING_PROFILE_SPECIFIER = "Chain Core App Mac Production";
 				SWIFT_OBJC_BRIDGING_HEADER = "ChainCore/ChainCore-Bridging-Header.h";
 				SWIFT_VERSION = 3.0.1;
 			};
