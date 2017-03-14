@@ -82,13 +82,15 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
     }
 
     func doLoadModernDashboard() {
-        if #available(OSX 10.11, *) {
+        if #available(OSX 10.10, *) {
             if webView != nil {
                 return
             }
             let config = WKWebViewConfiguration()
-            config.websiteDataStore = WKWebsiteDataStore.default()
-            config.applicationNameForUserAgent = userAgent()
+            if #available(OSX 10.11, *) {
+                config.websiteDataStore = WKWebsiteDataStore.default()
+                config.applicationNameForUserAgent = userAgent()
+            }
             let ctrl = WKUserContentController()
 
             let consoleOverride = "window.console = { }"
@@ -148,7 +150,7 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
     }
 
     func doLoadDashboard() {
-        if #available(OSX 10.11, *) {
+        if #available(OSX 10.10, *) {
             doLoadModernDashboard()
         } else {
             doLoadLegacyDashboard()
