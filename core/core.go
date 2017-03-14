@@ -60,12 +60,15 @@ func (a *API) info(ctx context.Context) (map[string]interface{}, error) {
 }
 
 func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
-	var (
-		generatorHeight  uint64
-		generatorFetched time.Time
-		snapshot         = fetch.SnapshotProgress()
-		localHeight      = a.chain.Height()
-	)
+	var generatorHeight uint64
+	var generatorFetched time.Time
+
+	a.downloadingSnapshotMu.Lock()
+	snapshot := a.downloadingSnapshot
+	a.downloadingSnapshotMu.Unlock()
+
+	localHeight := a.chain.Height()
+
 	if a.config.IsGenerator {
 		now := time.Now()
 		generatorHeight = localHeight
@@ -110,12 +113,13 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 
 	// Add in snapshot information if we're downloading a snapshot.
 	if snapshot != nil {
+		downloadedBytes, totalBytes := snapshot.Progress()
 		m["snapshot"] = map[string]interface{}{
-			"attempt":     snapshot.Attempt,
-			"height":      snapshot.Height,
-			"size":        snapshot.Size,
-			"downloaded":  snapshot.BytesRead(),
-			"in_progress": snapshot.InProgress(),
+			"attempt":     snapshot.Attempt(),
+			"height":      snapshot.Height(),
+			"size":        totalBytes,
+			"downloaded":  downloadedBytes,
+			"in_progress": true,
 		}
 	}
 	return m, nil
