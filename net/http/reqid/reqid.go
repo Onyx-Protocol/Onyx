@@ -30,8 +30,6 @@ const (
 	pathKey
 )
 
-const Unknown = "unknown_req_id"
-
 // New generates a random request ID.
 func New() string {
 	// Given n IDs of length b bits, the probability that there will be a collision is bounded by
@@ -60,12 +58,9 @@ func NewContext(ctx context.Context, reqid string) context.Context {
 }
 
 // FromContext returns the request ID stored in ctx,
-// or Unknown, if there is none.
+// if any.
 func FromContext(ctx context.Context) string {
-	reqID, ok := ctx.Value(reqIDKey).(string)
-	if !ok {
-		return Unknown
-	}
+	reqID, _ := ctx.Value(reqIDKey).(string)
 	return reqID
 }
 
@@ -93,12 +88,9 @@ func NewSubContext(ctx context.Context, reqid string) context.Context {
 }
 
 // FromSubContext returns the sub-request ID stored in ctx,
-// or Unknown if there is none
+// if any.
 func FromSubContext(ctx context.Context) string {
-	subReqID, ok := ctx.Value(subReqIDKey).(string)
-	if !ok {
-		return Unknown
-	}
+	subReqID, _ := ctx.Value(subReqIDKey).(string)
 	return subReqID
 }
 
