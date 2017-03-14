@@ -184,6 +184,17 @@ func land(req *landReq) {
 		return
 	}
 
+	err = commitRevIDs(landdir)
+	if err != nil {
+		sayf("<@%s|%s> failed to land %s: could not commit revision id: %s",
+			req.userID,
+			req.userName,
+			req.ref,
+			err,
+		)
+		return
+	}
+
 	cmd = dirCmd(landdir, "git", "push", "origin", req.ref, "-f")
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -242,6 +253,30 @@ func land(req *landReq) {
 	runIn(landdir, exec.Command("git", "push", "origin", ":"+req.ref))
 	fetch(landdir, "main", repo)
 	runIn(landdir, exec.Command("git", "branch", "-D", req.ref))
+}
+
+func commitRevIDs(landdir string) error {
+	revID, err := revID(landdir)
+	if err != nil {
+		return err
+	}
+
+	for name, tpl := range revIDLang {
+		var body bytes.Buffer
+		err = tpl.Execute(&body, revID)
+		if err != nil {
+			return err
+		}
+		path := filepath.Join(landdir, name)
+		err = ioutil.WriteFile(path, body.Bytes(), 0666)
+		if err != nil {
+			return err
+		}
+	}
+
+	cmd := dirCmd(landdir, "git", "commit", "--allow-empty", "-m", "auto rev id", "generated")
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func writeNetrc() error {
