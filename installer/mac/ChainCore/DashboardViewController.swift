@@ -77,6 +77,10 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
         })
     }
 
+    func userAgent() -> String {
+        return "ChainCore.app/\(Bundle.main.infoDictionary![kCFBundleVersionKey as String])"
+    }
+
     func doLoadDashboard() {
         if #available(OSX 10.11, *) {
             if webView != nil {
@@ -84,7 +88,7 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
             }
             let config = WKWebViewConfiguration()
             config.websiteDataStore = WKWebsiteDataStore.default()
-            config.applicationNameForUserAgent = "ChainCore.app/\(Bundle.main.infoDictionary![kCFBundleVersionKey as String])"
+            config.applicationNameForUserAgent = userAgent()
             let ctrl = WKUserContentController()
 
             let consoleOverride = "window.console = { }"
@@ -107,7 +111,10 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
             self.view.addSubview(wv)
             self.preloadView.isHidden = true
             wv.uiDelegate = self
-            wv.load(URLRequest(url: ChainCore.shared.dashboardURL))
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
+                wv.load(URLRequest(url: ChainCore.shared.dashboardURL))
+            })
 
 //            // Debug:
 //            DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: { 
@@ -127,9 +134,12 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
             self.view.addSubview(wv)
             self.preloadView.isHidden = true
 
-            wv.mainFrame.load(URLRequest(url: ChainCore.shared.dashboardURL))
             wv.uiDelegate = self
-            wv.customUserAgent = "ChainCore.app/\(Bundle.main.infoDictionary![kCFBundleVersionKey as String])"
+            wv.customUserAgent = userAgent()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
+                wv.mainFrame.load(URLRequest(url: ChainCore.shared.dashboardURL))
+            })
 
             webViewOld = wv
         }
@@ -169,8 +179,13 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
         return nil
     }
 
-    public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         NSLog("Chain Core js.console.%@: %@", "\(message.name)","\(message.body)")
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        self.view.setNeedsDisplay(self.view.bounds)
+        webView.setNeedsDisplay(webView.bounds)
     }
 
 
