@@ -16,6 +16,7 @@ var revIDLang = map[string]*template.Template{
 
 const revIDGo = `
 package rev
+
 const ID string = "{{.}}"
 `
 
