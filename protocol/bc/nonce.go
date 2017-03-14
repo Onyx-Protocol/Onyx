@@ -12,7 +12,7 @@ type Nonce struct {
 
 	witness struct {
 		Arguments [][]byte
-		Anchored Hash
+		Anchored  Hash
 	}
 
 	// TimeRange contains (a pointer to) the manifested entry

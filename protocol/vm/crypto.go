@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
+	"chain/errors"
 	"chain/math/checked"
 )
 
@@ -127,25 +128,29 @@ func opCheckMultiSig(vm *virtualMachine) error {
 }
 
 func opTxSigHash(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
 	err := vm.applyCost(256)
 	if err != nil {
 		return err
 	}
 
-	h := vm.tx.SigHash(vm.inputIndex)
-	return vm.push(h[:], false)
+	h, err := vm.vmContext.TxSigHash()
+	if err != nil {
+		return errors.Wrap(err, "computing txsighash")
+	}
+
+	return vm.push(h, false)
 }
 
 func opBlockHash(vm *virtualMachine) error {
-	if vm.block == nil {
-		return ErrContext
+	h, numHashedBytes, err := vm.vmContext.BlockHash()
+	if err != nil {
+		return errors.Wrap(err, "computing blockhash")
 	}
-	err := vm.applyCost(4 * int64(len(vm.block.ID)))
+
+	err := vm.applyCost(4 * int64(numHashedBytes))
 	if err != nil {
 		return err
 	}
-	return vm.push(vm.block.ID[:], false)
+
+	return vm.push(h, false)
 }

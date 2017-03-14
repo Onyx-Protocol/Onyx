@@ -42,7 +42,6 @@ func NewRetirement(source valueSource, data Hash, ordinal int) *Retirement {
 	return r
 }
 
-
 func (r *Retirement) CheckValid(state *validationState) error {
 	srcState := *state
 	srcState.sourcePosition = 0

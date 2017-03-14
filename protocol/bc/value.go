@@ -105,7 +105,7 @@ func (vd *ValueDestination) CheckValid(state *validationState) error {
 	}
 
 	if src.Ref != state.currentEntryID {
-		return fmt.Errorf("value destination for %x has disagreeing source %x", state.currentEntryID[:]. src.Ref[:])
+		return fmt.Errorf("value destination for %x has disagreeing source %x", state.currentEntryID[:].src.Ref[:])
 	}
 
 	if src.Position != state.destPosition {
