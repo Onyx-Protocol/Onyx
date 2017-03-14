@@ -153,6 +153,7 @@ func TestRecovery(t *testing.T) {
 			if err != nil {
 				t.Errorf("generateBlock returned err %s", err)
 			}
+			cancel()
 			close(completed)
 		}()
 
