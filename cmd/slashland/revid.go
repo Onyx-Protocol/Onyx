@@ -8,7 +8,6 @@ import (
 
 // Paths must begin with generated/; see commitRevIDs.
 var revIDLang = map[string]*template.Template{
-	// tktk are these paths appropriate?
 	"generated/rev/RevId.java": template.Must(template.New("").Parse(revIDJava)),
 	"generated/rev/revid.go":   template.Must(template.New("").Parse(revIDGo)),
 	"generated/rev/revid.js":   template.Must(template.New("").Parse(revIDJavaScript)),
@@ -20,19 +19,16 @@ package rev
 const ID string = "{{.}}"
 `
 
-// tktk do java things need to go in a special place?
 const revIDJava = `
 public final class RevId {
 	public final String Id = "{{.}}";
 }
 `
 
-// tktk [i have no idea what i'm doing dot jpeg]
 const revIDJavaScript = `
 export const rev_id = "{{.}}"
 `
 
-// tktk rubby idk; please look
 const revIDRuby = `
 module Chain::Rev
 	ID = "{{.}}".freeze
