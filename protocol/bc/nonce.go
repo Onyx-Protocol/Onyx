@@ -12,7 +12,7 @@ type Nonce struct {
 
 	witness struct {
 		Arguments [][]byte
-		Anchored Entry
+		Anchored Hash
 	}
 
 	// TimeRange contains (a pointer to) the manifested entry
@@ -41,5 +41,15 @@ func NewNonce(p Program, tr *TimeRange) *Nonce {
 func (n *Nonce) CheckValid(state *validationState) error {
 	// xxx eval program
 
-	// xxx
+	// xxx recursively validate the timerange?
+
+	if n.TimeRange.body.MinTimeMS == 0 || n.TimeRange.body.MaxTimeMS == 0 {
+		return vErr(errZeroTime)
+	}
+
+	if state.txVersion == 1 && (n.body.ExtHash != Hash{}) {
+		return vErr(errNonemptyExtHash)
+	}
+
+	return nil
 }

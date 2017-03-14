@@ -57,14 +57,13 @@ func NewOutput(source valueSource, controlProgram Program, data Hash, ordinal in
 func (o *Output) CheckValid(state *validationState) error {
 	srcState := *state
 	srcState.sourcePosition = 0
-	srcState.currentEntryID = EntryID(o) // xxx can this be supplied from somewhere?
-	err := o.body.Source.CheckValid(srcState)
+	err := o.body.Source.CheckValid(&srcState)
 	if err != nil {
 		return errors.Wrap(err, "checking output source")
 	}
 
 	if state.txVersion == 1 && (o.body.ExtHash != Hash{}) {
-		// xxx error
+		return vErr(errNonemptyExtHash)
 	}
 
 	return nil

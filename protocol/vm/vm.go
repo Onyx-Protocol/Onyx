@@ -8,14 +8,14 @@ import (
 
 	// TODO(bobg): very little of this package depends on bc, consider trying to remove the dependency
 	"chain/errors"
-	"chain/protocol/bc"
 )
 
 const initialRunLimit = 10000
 
 type virtualMachine struct {
+	vmContext VMContext
+
 	program      []byte // the program currently executing
-	mainprog     []byte // the outermost program, returned by OP_PROGRAM
 	pc, nextPC   uint32
 	runLimit     int64
 	deferredCost int64
@@ -32,11 +32,6 @@ type virtualMachine struct {
 	// In each of these stacks, stack[len(stack)-1] is the top element.
 	dataStack [][]byte
 	altStack  [][]byte
-
-	tx         *bc.TxEntries
-	inputIndex uint32
-
-	block *bc.BlockEntries
 }
 
 // ErrFalseVMResult is one of the ways for a transaction to fail validation
@@ -46,94 +41,40 @@ var ErrFalseVMResult = errors.New("false VM result")
 // execution.
 var TraceOut io.Writer
 
-func VerifyTxInput(tx *bc.TxEntries, inputIndex uint32) (err error) {
+func Verify(vmContext VMContext) (err error) {
 	defer func() {
-		if panErr := recover(); panErr != nil {
+		if pErr := recover(); pErr != nil {
 			err = ErrUnexpected
 		}
 	}()
-	return verifyTxInput(tx, inputIndex)
-}
 
-func verifyTxInput(tx *bc.TxEntries, inputIndex uint32) error {
-	if inputIndex < 0 || inputIndex >= uint32(len(tx.TxInputs)) {
-		return ErrBadValue
-	}
-
-	var (
-		prog bc.Program
-		args [][]byte
-	)
-	switch inp := tx.TxInputs[inputIndex].(type) {
-	case *bc.Issuance:
-		prog = inp.IssuanceProgram()
-		args = inp.Arguments()
-	case *bc.Spend:
-		prog = inp.ControlProgram()
-		args = inp.Arguments()
-	default:
-		return errors.WithDetailf(ErrUnsupportedTx, "transaction input %d has unknown type %T", inputIndex, tx.TxInputs[inputIndex])
-	}
-
-	if prog.VMVersion != 1 {
+	if vmContext.VMVersion() != 1 {
 		return ErrUnsupportedVM
 	}
 
+	txVersion, ok := vmContext.TXVersion()
+
+	code := vmContext.Code()
 	vm := &virtualMachine{
-		tx:         tx,
-		inputIndex: inputIndex,
-
-		expansionReserved: tx.Version() == 1,
-
-		mainprog: prog.Code,
-		program:  prog.Code,
-		runLimit: initialRunLimit,
+		expansionReserved: ok && (txVersion == 1),
+		program:           code,
+		runLimit:          initialRunLimit,
 	}
-	for _, arg := range args {
-		err := vm.push(arg, false)
+
+	args := vmContext.Arguments()
+	for i, arg := range vmContext.Arguments() {
+		err = vm.push(arg, false)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "pushing initial argument %d", i)
 		}
 	}
-	err := vm.run()
+
+	err = vm.run()
 	if err == nil && vm.falseResult() {
 		err = ErrFalseVMResult
 	}
+
 	return wrapErr(err, vm, args)
-}
-
-func VerifyBlockHeader(prev *bc.BlockHeaderEntry, block *bc.BlockEntries) (err error) {
-	defer func() {
-		if panErr := recover(); panErr != nil {
-			err = ErrUnexpected
-		}
-	}()
-	return verifyBlockHeader(prev, block)
-}
-
-func verifyBlockHeader(prev *bc.BlockHeaderEntry, block *bc.BlockEntries) error {
-	vm := &virtualMachine{
-		block: block,
-
-		expansionReserved: true,
-
-		mainprog: prev.NextConsensusProgram(),
-		program:  prev.NextConsensusProgram(),
-		runLimit: initialRunLimit,
-	}
-
-	for _, arg := range block.Arguments() {
-		err := vm.push(arg, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	err := vm.run()
-	if err == nil && vm.falseResult() {
-		err = ErrFalseVMResult
-	}
-	return wrapErr(err, vm, block.Arguments())
 }
 
 // falseResult returns true iff the stack is empty or the top

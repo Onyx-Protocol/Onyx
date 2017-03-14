@@ -1,5 +1,7 @@
 package bc
 
+import "chain/errors"
+
 // Spend accesses the value in a prior Output for transfer
 // elsewhere. It satisfies the Entry interface.
 //
@@ -15,7 +17,7 @@ type Spend struct {
 	witness struct {
 		Destination ValueDestination
 		Arguments   [][]byte
-		Anchored Hash
+		Anchored    Hash
 	}
 
 	// SpentOutput contains (a pointer to) the manifested entry
@@ -88,7 +90,14 @@ func (s *Spend) CheckValid(state *validationState) error {
 	// xxx run control program
 
 	if s.SpentOutput.body.Source.Value != s.witness.Destination.Value {
-		// xxx error
+		return vErrf(
+			errMismatchedValue,
+			"previous output is for %d unit(s) of %x, spend wants %d unit(s) of %x",
+			s.SpentOutput.body.Source.Value.Amount,
+			s.SpentOutput.body.Source.Value.AssetID[:],
+			s.witness.Destination.Value.Amount,
+			s.witness.Destination.Value.AssetID[:],
+		)
 	}
 
 	destState := *state
@@ -99,7 +108,7 @@ func (s *Spend) CheckValid(state *validationState) error {
 	}
 
 	if state.txVersion == 1 && (s.body.ExtHash != Hash{}) {
-		// xxx error
+		return vErr(errNonemptyExtHash)
 	}
 
 	return nil

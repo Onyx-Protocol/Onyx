@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"chain/errors"
-	"chain/protocol/bc"
 )
 
 // Issuance is a source of new value on a blockchain. It satisfies the
@@ -110,54 +109,51 @@ func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issua
 
 func (iss *Issuance) CheckValid(state *validationState) error {
 	if iss.witness.AssetDefinition.InitialBlockID != state.initialBlockID {
-		// xxx error
+		return vErrf(errWrongBlockchain, "current blockchain %x, asset defined on blockchain %x", state.initialBlockID[:], iss.witness.AssetDefinition.InitialBlockID[:])
 	}
 
-	if iss.witness.AssetDefinition.ComputeAssetID() != iss.body.Value.AssetID {
-		// xxx error
+	computedAssetID := iss.witness.AssetDefinition.ComputeAssetID()
+	if computedAssetID != iss.body.Value.AssetID {
+		return vErrf(errMismatchedAssetID, "asset ID is %x, issuance wants %x", computedAssetID[:], iss.body.Value.AssetID[:])
 	}
 
 	// xxx run issuance program
 
-	id := EntryID(iss) // xxx can this be supplied from somewhere?
-
+	var anchored Hash
 	switch a := iss.Anchor.(type) {
 	case *Nonce:
-		if a.witness.Anchored != id {
-			// xxx error
-		}
+		anchored = a.witness.Anchored
 
 	case *Spend:
-		if a.witness.Anchored != id {
-			// xxx error
-		}
+		anchored = a.witness.Anchored
 
 	case *Issuance:
-		if a.witness.Anchored != id {
-			// xxx error
-		}
+		anchored = a.witness.Anchored
 
 	default:
-		return fmt.Errorf("issuance anchor has type %T, should be nonce, spend, or issuance", iss.Anchor)
+		return vErrf(errEntryType, "issuance anchor has type %T, should be nonce, spend, or issuance", iss.Anchor)
+	}
+
+	if anchored != state.currentEntryID {
+		return vErrf(errMismatchedReference, "issuance %x anchor is for %x", state.currentEntryID[:], anchored[:])
 	}
 
 	anchorState := *state
-	anchorState.currentEntryID = id
+	anchorState.currentEntryID = iss.body.Anchor
 	err := iss.Anchor.CheckValid(&anchorState)
 	if err != nil {
 		return errors.Wrap(err, "checking issuance anchor")
 	}
 
 	destState := *state
-	destState.currentEntryID = id
 	destState.destPosition = 0
 	err = iss.witness.Destination.CheckValid(&destState)
 	if err != nil {
 		return errors.Wrap(err, "checking issuance destination")
 	}
 
-	if state.txVersion == 1 && (iss.body.ExtHash != bc.Hash{}) {
-		// xxx error
+	if state.txVersion == 1 && (iss.body.ExtHash != Hash{}) {
+		return vErr(errNonemptyExtHash)
 	}
 
 	return nil

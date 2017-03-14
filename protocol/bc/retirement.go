@@ -46,14 +46,13 @@ func NewRetirement(source valueSource, data Hash, ordinal int) *Retirement {
 func (r *Retirement) CheckValid(state *validationState) error {
 	srcState := *state
 	srcState.sourcePosition = 0
-	srcState.currentEntryID = EntryID(r) // xxx can this be supplied from somewhere?
-	err := r.body.Source.CheckValid(srcState)
+	err := r.body.Source.CheckValid(&srcState)
 	if err != nil {
 		return errors.Wrap(err, "checking retirement source")
 	}
 
 	if state.txVersion == 1 && (r.body.ExtHash != Hash{}) {
-		// xxx error
+		return vErr(errNonemptyExtHash)
 	}
 
 	return nil

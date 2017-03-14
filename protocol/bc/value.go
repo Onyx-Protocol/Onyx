@@ -21,7 +21,9 @@ type valueSource struct {
 func (vs *valueSource) CheckValid(state *validationState) error {
 	// xxx check that Entry's ID equals Ref?
 
-	err := vs.Entry.CheckValid()
+	refState := *state
+	refState.currentEntryID = vs.Ref
+	err := vs.Entry.CheckValid(&refState)
 	if err != nil {
 		return errors.Wrap(err, "checking value source")
 	}
@@ -30,28 +32,28 @@ func (vs *valueSource) CheckValid(state *validationState) error {
 	switch ref := vs.Entry.(type) {
 	case *Issuance:
 		if vs.Position != 0 {
-			return fmt.Errorf("invalid position %d for issuance source", vs.Position)
+			return vErrf(errPosition, "invalid position %d for issuance source", vs.Position)
 		}
 		dest = ref.witness.Destination
 
 	case *Spend:
 		if vs.Position != 0 {
-			return fmt.Errorf("invalid position %d for spend source", vs.Position)
+			return vErrf(errPosition, "invalid position %d for spend source", vs.Position)
 		}
 		dest = ref.witness.Destination
 
 	case *Mux:
 		if vs.Position >= len(ref.witness.Destinations) {
-			return fmt.Errorf("invalid position %d for %d-destination mux source", vs.Position, len(ref.witness.Destinations))
+			return VErrf(errPosition, "invalid position %d for %d-destination mux source", vs.Position, len(ref.witness.Destinations))
 		}
 		dest = ref.witness.Destinations[vs.Position]
 
 	default:
-		return fmt.Errorf("value source is %T, should be issuance, spend, or mux", vs.Entry)
+		return vErrf(errEntryType, "value source is %T, should be issuance, spend, or mux", vs.Entry)
 	}
 
 	if dest.Ref != state.currentEntryID {
-		return fmt.Errorf("value source for %x has disagreeing destination %x", state.currentEntryID[:], dest.Ref[:])
+		return vErrf(errMismatchedReference, "value source for %x has disagreeing destination %x", state.currentEntryID[:], dest.Ref[:])
 	}
 
 	if dest.Position != state.sourcePosition {
@@ -76,7 +78,7 @@ type ValueDestination struct {
 }
 
 func (vd *ValueDestination) CheckValid(state *validationState) error {
-	// xxx check reachability of vd.Ref from transaction
+	// xxx check reachability of vd.Ref from transaction?
 
 	var src valueSource
 	switch ref := vd.Entry.(type) {

@@ -81,23 +81,23 @@ func NewBlockHeaderEntry(version, height uint64, previousBlockID Hash, timestamp
 func (bh *BlockHeaderEntry) CheckValid(state *validationState) error {
 	if state.prevBlockHeader == nil {
 		if bh.body.Height != 1 {
-			// xxx error
+			return vErrf(errNoPrevBlock, "height %d", bh.body.Height)
 		}
 	} else {
 		if bh.body.Version < state.prevBlockHeader.body.Version {
-			// xxx error
+			return vErrf(errVersionRegression, "previous block verson %d, current block version %d", state.prevBlockHeader.body.Version, bh.body.Version)
 		}
 
 		if bh.body.Height != state.prevBlockHeader.body.Height+1 {
-			// xxx error
+			return vErrf(errMisorderedBlockHeight, "previous block height %d, current block height %d", state.prevBlockHeader.body.Height, bh.body.Height)
 		}
 
 		if state.prevBlockHeaderID != bh.body.PreviousBlockID {
-			// xxx error
+			return vErrf(errMismatchedBlock, "previous block ID %x, current block wants %x", state.prevBlockHeaderID[:], bh.body.PreviousBlockID[:])
 		}
 
 		if bh.body.TimestampMS <= state.prevBlockHeader.body.TimestampMS {
-			// xxx error
+			return vErrf(errMisorderedBlockTime, "previous block time %d, current block time %d", state.prevBlockHeader.body.TimestampMS, bh.body.TimestampMS)
 		}
 
 		blockEntries := &BlockEntries{
@@ -111,7 +111,7 @@ func (bh *BlockHeaderEntry) CheckValid(state *validationState) error {
 	}
 
 	for i, tx := range state.blockTxs {
-		txState := *state // new copy of validationState
+		txState := *state
 		txState.currentEntryID = tx.ID
 		err := tx.CheckValid(&txState)
 		if err != nil {
@@ -125,11 +125,11 @@ func (bh *BlockHeaderEntry) CheckValid(state *validationState) error {
 	}
 
 	if txRoot != bh.body.TransactionsRoot {
-		// xxx error
+		return vErrf(errMismatchedMerkleRoot, "computed %x, current block wants %x", txRoot[:], bh.body.TransactionsRoot[:])
 	}
 
 	if bh.body.Version == 1 && (bh.body.ExtHash != bh.Hash{}) {
-		// xxx error
+		return vErr(errNonemptyExtHash)
 	}
 
 	return nil
