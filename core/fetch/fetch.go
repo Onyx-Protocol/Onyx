@@ -56,10 +56,10 @@ func Init(ctx context.Context, peer *rpc.Client) {
 // BootstrapSnapshot downloads and stores the most recent snapshot from the
 // provided peer. It's run when bootstrapping a new Core to an existing
 // network. It should be run before invoking Chain.Recover.
-func BootstrapSnapshot(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error)) {
+func BootstrapSnapshot(ctx context.Context, c *protocol.Chain, store protocol.Store, peer *rpc.Client, health func(error)) {
 	const maxAttempts = 5
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		err := fetchSnapshot(ctx, peer, c.Store(), attempt)
+		err := fetchSnapshot(ctx, peer, store, attempt)
 		health(err)
 		if err == nil {
 			break

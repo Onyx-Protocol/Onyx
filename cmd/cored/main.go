@@ -373,7 +373,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, 
 			// If don't have any blocks, bootstrap from the generator's
 			// latest snapshot.
 			if c.Height() == 0 {
-				fetch.BootstrapSnapshot(ctx, c, remoteGenerator, fetchhealth)
+				fetch.BootstrapSnapshot(ctx, c, store, remoteGenerator, fetchhealth)
 			}
 		}
 
