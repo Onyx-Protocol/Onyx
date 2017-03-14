@@ -15,11 +15,16 @@ type Spend struct {
 	witness struct {
 		Destination ValueDestination
 		Arguments   [][]byte
+		Anchored Hash
 	}
 
 	// SpentOutput contains (a pointer to) the manifested entry
 	// corresponding to body.SpentOutput.
 	SpentOutput *Output
+
+	// Anchored contains a pointer to the manifested entry corresponding
+	// to witness.Anchored.
+	Anchored Entry
 }
 
 func (Spend) Type() string         { return "spend1" }
@@ -77,7 +82,7 @@ func NewSpend(out *Output, data Hash, ordinal int) *Spend {
 	return s
 }
 
-func (s *Spend) CheckValid(header *TxHeader) error {
+func (s *Spend) CheckValid(state *validationState) error {
 	// xxx SpentOutput "present"
 
 	// xxx run control program
@@ -86,12 +91,14 @@ func (s *Spend) CheckValid(header *TxHeader) error {
 		// xxx error
 	}
 
-	err := s.witness.Destination.CheckValid(s, 0)
+	destState := *state
+	destState.destPosition = 0
+	err := s.witness.Destination.CheckValid(&destState)
 	if err != nil {
 		return errors.Wrap(err, "checking spend destination")
 	}
 
-	if header.body.Version == 1 && (s.body.ExtHash != bc.Hash{}) {
+	if state.txVersion == 1 && (s.body.ExtHash != Hash{}) {
 		// xxx error
 	}
 

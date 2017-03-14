@@ -58,3 +58,40 @@ func NewTxHeader(version uint64, results []Entry, data Hash, minTimeMS, maxTimeM
 
 	return h
 }
+
+func (tx *TxHeader) CheckValid(state *validationState) error {
+	if state.blockVersion == 1 && tx.body.Version != 1 {
+		// xxx error
+	}
+
+	if tx.body.MaxTimeMS > 0 && tx.body.MaxTimeMS < tx.body.MinTimeMS {
+		// xxx error
+	}
+
+	if tx.body.MinTimeMS > 0 && state.timestampMS > tx.body.MaxTimeMS {
+		// xxx error
+	}
+
+	for i, resID := range tx.body.Results {
+		res := tx.Results[i]
+		resState := *state
+		resState.currentEntryID = resID
+		resState.txVersion = tx.body.Version
+		err := res.CheckValid(resState)
+		if err != nil {
+			return errors.Wrapf(err, "checking result %d", i)
+		}
+	}
+
+	if tx.body.Version == 1 {
+		if len(tx.body.Results) == 0 {
+			// xxx error
+		}
+
+		if (tx.body.ExtHash != Hash{}) {
+			// xxx error
+		}
+	}
+
+	return nil
+}

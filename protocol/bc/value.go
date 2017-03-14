@@ -18,7 +18,7 @@ type valueSource struct {
 
 // CheckValid checks the validity of a value source in the context of
 // its containing entry.
-func (vs *valueSource) CheckValid(entry Entry, srcPos uint64) error {
+func (vs *valueSource) CheckValid(state *validationState) error {
 	// xxx check that Entry's ID equals Ref?
 
 	err := vs.Entry.CheckValid()
@@ -50,13 +50,12 @@ func (vs *valueSource) CheckValid(entry Entry, srcPos uint64) error {
 		return fmt.Errorf("value source is %T, should be issuance, spend, or mux", vs.Entry)
 	}
 
-	id := EntryID(entry)
-	if dest.Ref != id {
-		return fmt.Errorf("value source for %x has disagreeing destination %x", id[:], dest.Ref[:])
+	if dest.Ref != state.currentEntryID {
+		return fmt.Errorf("value source for %x has disagreeing destination %x", state.currentEntryID[:], dest.Ref[:])
 	}
 
-	if dest.Position != srcPos {
-		return fmt.Errorf("value source position %d disagrees with %d", dest.Position, srcPos)
+	if dest.Position != state.sourcePosition {
+		return fmt.Errorf("value source position %d disagrees with %d", dest.Position, state.sourcePosition)
 	}
 
 	if dest.Value != vs.Value {
@@ -76,7 +75,7 @@ type ValueDestination struct {
 	Entry `entry:"-"`
 }
 
-func (vd *ValueDestination) CheckValid(entry Entry, destPos uint64) error {
+func (vd *ValueDestination) CheckValid(state *validationState) error {
 	// xxx check reachability of vd.Ref from transaction
 
 	var src valueSource
@@ -103,13 +102,12 @@ func (vd *ValueDestination) CheckValid(entry Entry, destPos uint64) error {
 		return fmt.Errorf("value destination is %T, should be output, retirement, or mux", vd.Entry)
 	}
 
-	id := EntryID(entry)
-	if src.Ref != id {
-		return fmt.Errorf("value destination for %x has disagreeing source %x", id[:]. src.Ref[:])
+	if src.Ref != state.currentEntryID {
+		return fmt.Errorf("value destination for %x has disagreeing source %x", state.currentEntryID[:]. src.Ref[:])
 	}
 
-	if src.Position != destPos {
-		return fmt.Errorf("value destination position %d disagrees with %d", src.Position, destPos)
+	if src.Position != state.destPosition {
+		return fmt.Errorf("value destination position %d disagrees with %d", src.Position, state.destPosition)
 	}
 
 	if src.Value != vd.Value {

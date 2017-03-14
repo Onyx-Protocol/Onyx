@@ -108,8 +108,8 @@ func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issua
 	return iss
 }
 
-func (iss *Issuance) CheckValid(initialBlockID Hash) error {
-	if iss.witness.AssetDefinition.InitialBlockID != initialBlockID {
+func (iss *Issuance) CheckValid(state *validationState) error {
+	if iss.witness.AssetDefinition.InitialBlockID != state.initialBlockID {
 		// xxx error
 	}
 
@@ -119,30 +119,44 @@ func (iss *Issuance) CheckValid(initialBlockID Hash) error {
 
 	// xxx run issuance program
 
-	switch iss.Anchor.(type) {
-	case *bc.Nonce:
-	case *bc.Spend:
-	case *bc.Issuance:
-		// ok
+	id := EntryID(iss) // xxx can this be supplied from somewhere?
+
+	switch a := iss.Anchor.(type) {
+	case *Nonce:
+		if a.witness.Anchored != id {
+			// xxx error
+		}
+
+	case *Spend:
+		if a.witness.Anchored != id {
+			// xxx error
+		}
+
+	case *Issuance:
+		if a.witness.Anchored != id {
+			// xxx error
+		}
+
 	default:
 		return fmt.Errorf("issuance anchor has type %T, should be nonce, spend, or issuance", iss.Anchor)
 	}
 
-	if iss.Anchored != nil {
-		// xxx check iss is the anchor for iss.Anchored
-	}
-
-	err := iss.Anchor.CheckValid(xxx)
+	anchorState := *state
+	anchorState.currentEntryID = id
+	err := iss.Anchor.CheckValid(&anchorState)
 	if err != nil {
 		return errors.Wrap(err, "checking issuance anchor")
 	}
 
-	err = iss.witness.Destination.CheckValid(iss, 0)
+	destState := *state
+	destState.currentEntryID = id
+	destState.destPosition = 0
+	err = iss.witness.Destination.CheckValid(&destState)
 	if err != nil {
 		return errors.Wrap(err, "checking issuance destination")
 	}
 
-	if txVersion == 1 && (iss.body.ExtHash != bc.Hash{}) {
+	if state.txVersion == 1 && (iss.body.ExtHash != bc.Hash{}) {
 		// xxx error
 	}
 

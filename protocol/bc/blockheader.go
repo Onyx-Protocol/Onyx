@@ -1,5 +1,10 @@
 package bc
 
+import (
+	"chain/errors"
+	"chain/protocol/vm"
+)
+
 // BlockHeaderEntry contains the header information for a blockchain
 // block. It satisfies the Entry interface.
 type BlockHeaderEntry struct {
@@ -73,42 +78,58 @@ func NewBlockHeaderEntry(version, height uint64, previousBlockID Hash, timestamp
 	return bh
 }
 
-func (bh *BlockHeaderEntry) CheckValid(prev *BlockHeaderEntry, txs []*TxEntries) error {
-	if prev == nil {
+func (bh *BlockHeaderEntry) CheckValid(state *validationState) error {
+	if state.prevBlockHeader == nil {
 		if bh.body.Height != 1 {
 			// xxx error
 		}
 	} else {
-		if bh.body.Version < prev.body.Version {
+		if bh.body.Version < state.prevBlockHeader.body.Version {
 			// xxx error
 		}
 
-		if bh.body.Height != prev.body.Height + 1 {
+		if bh.body.Height != state.prevBlockHeader.body.Height+1 {
 			// xxx error
 		}
 
-		// xxx check EntryID(prev) == bh.body.PreviousBlockID
-
-		if bh.body.TimestampMS <= prev.body.TimestampMS {
+		if state.prevBlockHeaderID != bh.body.PreviousBlockID {
 			// xxx error
+		}
+
+		if bh.body.TimestampMS <= state.prevBlockHeader.body.TimestampMS {
+			// xxx error
+		}
+
+		blockEntries := &BlockEntries{
+			BlockHeaderEntry: bh,
+			ID:               EntryID(bh),
+		}
+		err := vm.VerifyBlockHeader(state.prevBlockHeader, blockEntries)
+		if err != nil {
+			return errors.Wrap(err, "evaluating previous block's next consensus program")
 		}
 	}
 
-	// xxx eval NextConsensusProgram
-
-	for i, tx := range txs {
-		err := tx.CheckValid(bh.body.TimestampMS, bh.body.Version)
+	for i, tx := range state.blockTxs {
+		txState := *state // new copy of validationState
+		txState.currentEntryID = tx.ID
+		err := tx.CheckValid(&txState)
 		if err != nil {
 			return errors.Wrapf(err, "checking validity of transaction %d of %d", i, len(txs))
 		}
 	}
 
-	// xxx check bh.body.TransactionsRoot == computeMerkleRoot(txs)
+	txRoot, err := CalcMerkleRoot(state.blockTxs)
+	if err != nil {
+		return errors.Wrap(err, "computing transaction merkle root")
+	}
 
-	if bh.body.Version == 1 {
-		if (bh.body.ExtHash != bh.Hash{}) {
-			// xxx error
-		}
+	if txRoot != bh.body.TransactionsRoot {
+		// xxx error
+	}
+
+	if bh.body.Version == 1 && (bh.body.ExtHash != bh.Hash{}) {
+		// xxx error
 	}
 
 	return nil
