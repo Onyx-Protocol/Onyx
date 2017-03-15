@@ -32,8 +32,8 @@ func IsLeading() bool {
 // Function lead is called when the local process becomes the leader.
 // Its context is canceled when the process is deposed as leader.
 //
-// The Chain Core has up to a 10-second refractory period after
-// shutdown, during which no process can become the new leader.
+// The Chain Core has up to a 1.5-second refractory period after
+// shutdown, during which no process may be leader.
 func Run(db pg.DB, addr string, lead func(context.Context)) {
 	ctx := context.Background()
 	// We use our process's address as the key, because it's unique
@@ -77,7 +77,7 @@ func Run(db pg.DB, addr string, lead func(context.Context)) {
 func leadershipChanges(ctx context.Context, l *leader) chan bool {
 	ch := make(chan bool)
 	go func() {
-		ticks := time.Tick(5 * time.Second)
+		ticks := time.Tick(500 * time.Millisecond)
 
 		for {
 			for !tryForLeadership(ctx, l) {
@@ -104,8 +104,8 @@ type leader struct {
 
 func tryForLeadership(ctx context.Context, l *leader) bool {
 	const insertQ = `
-		INSERT INTO leader (leader_key, address, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
-		ON CONFLICT (singleton) DO UPDATE SET leader_key = $1, address = $2, expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
+		INSERT INTO leader (leader_key, address, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '1 second')
+		ON CONFLICT (singleton) DO UPDATE SET leader_key = $1, address = $2, expiry = CURRENT_TIMESTAMP + INTERVAL '1 second'
 			WHERE leader.expiry < CURRENT_TIMESTAMP
 	`
 
@@ -113,9 +113,9 @@ func tryForLeadership(ctx context.Context, l *leader) bool {
 	// succeeds if the table's empty or the existing row (there can be
 	// only one) is expired.  It fails otherwise.
 	//
-	// On success, this process's leadership expires in 10 seconds
-	// unless it's renewed in the UPDATE query above.
-	// That extends it for another 10 seconds.
+	// On success, this process's leadership expires in 1 second
+	// unless it's renewed in the UPDATE query in maintainLeadership.
+	// That extends it for another 1 second.
 	res, err := l.db.Exec(ctx, insertQ, l.key, l.address)
 	if err != nil {
 		log.Error(ctx, err)
@@ -131,7 +131,7 @@ func tryForLeadership(ctx context.Context, l *leader) bool {
 
 func maintainLeadership(ctx context.Context, l *leader) bool {
 	const updateQ = `
-		UPDATE leader SET expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
+		UPDATE leader SET expiry = CURRENT_TIMESTAMP + INTERVAL '1 second'
 		WHERE leader_key = $1
 	`
 
