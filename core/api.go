@@ -49,7 +49,7 @@ var (
 	errLeaderElection = errors.New("no leader; pending election")
 )
 
-// Handler serves the Chain HTTP API
+// API serves the Chain HTTP API
 type API struct {
 	chain           *protocol.Chain
 	store           *txdb.Store
