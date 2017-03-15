@@ -11,7 +11,7 @@ import (
 var errCurrentToken = errors.New("token cannot delete itself")
 
 func (a *API) createAccessToken(ctx context.Context, x struct{ ID, Type string }) (*accesstoken.Token, error) {
-	return a.AccessTokens.Create(ctx, x.ID, x.Type)
+	return a.accessTokens.Create(ctx, x.ID, x.Type)
 }
 
 func (a *API) listAccessTokens(ctx context.Context, x requestQuery) (*page, error) {
@@ -20,7 +20,7 @@ func (a *API) listAccessTokens(ctx context.Context, x requestQuery) (*page, erro
 		limit = defGenericPageSize
 	}
 
-	tokens, next, err := a.AccessTokens.List(ctx, x.Type, x.After, limit)
+	tokens, next, err := a.accessTokens.List(ctx, x.Type, x.After, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -40,5 +40,5 @@ func (a *API) deleteAccessToken(ctx context.Context, x struct{ ID string }) erro
 	if currentID == x.ID {
 		return errCurrentToken
 	}
-	return a.AccessTokens.Delete(ctx, x.ID)
+	return a.accessTokens.Delete(ctx, x.ID)
 }

@@ -14,6 +14,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/config"
+	"chain/core/generator"
 	"chain/core/leader"
 	"chain/core/pin"
 	"chain/core/query"
@@ -48,32 +49,37 @@ var (
 	errLeaderElection = errors.New("no leader; pending election")
 )
 
-// Handler serves the Chain HTTP API
+// API serves the Chain HTTP API
 type API struct {
-	Chain         *protocol.Chain
-	Store         *txdb.Store
-	PinStore      *pin.Store
-	Assets        *asset.Registry
-	Accounts      *account.Manager
-	Indexer       *query.Indexer
-	TxFeeds       *txfeed.Tracker
-	AccessTokens  *accesstoken.CredentialStore
-	Config        *config.Config
-	Submitter     txbuilder.Submitter
-	DB            pg.DB
-	Addr          string
-	AltAuth       func(*http.Request) bool
-	Signer        func(context.Context, *bc.Block) ([]byte, error)
-	RequestLimits []RequestLimit
+	chain           *protocol.Chain
+	store           *txdb.Store
+	pinStore        *pin.Store
+	assets          *asset.Registry
+	accounts        *account.Manager
+	indexer         *query.Indexer
+	txFeeds         *txfeed.Tracker
+	accessTokens    *accesstoken.CredentialStore
+	config          *config.Config
+	submitter       txbuilder.Submitter
+	db              pg.DB
+	addr            string
+	altAuth         func(*http.Request) bool
+	signer          func(context.Context, *bc.Block) ([]byte, error)
+	requestLimits   []requestLimit
+	generator       *generator.Generator
+	remoteGenerator *rpc.Client
+	indexTxs        bool
+	genhealth       func(error)
+	fetchhealth     func(error)
 
 	healthMu     sync.Mutex
 	healthErrors map[string]interface{}
 }
 
-type RequestLimit struct {
-	Key       func(*http.Request) string
-	Burst     int
-	PerSecond int
+type requestLimit struct {
+	key       func(*http.Request) string
+	burst     int
+	perSecond int
 }
 
 func maxBytes(h http.Handler) http.Handler {
@@ -89,7 +95,7 @@ func maxBytes(h http.Handler) http.Handler {
 }
 
 func (a *API) needConfig() func(f interface{}) http.Handler {
-	if a.Config == nil {
+	if a.config == nil {
 		return func(f interface{}) http.Handler {
 			return alwaysError(errUnconfigured)
 		}
@@ -97,7 +103,7 @@ func (a *API) needConfig() func(f interface{}) http.Handler {
 	return jsonHandler
 }
 
-func Handler(a *API, register func(*http.ServeMux, *API)) http.Handler {
+func (a *API) Handler(register func(*http.ServeMux, *API)) http.Handler {
 	// Setup the muxer.
 	needConfig := a.needConfig()
 
@@ -129,15 +135,15 @@ func Handler(a *API, register func(*http.ServeMux, *API)) http.Handler {
 	m.Handle("/reset", devOnly(needConfig(a.reset)))
 
 	m.Handle(networkRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *bc.Tx) error {
-		return a.Submitter.Submit(ctx, tx)
+		return a.submitter.Submit(ctx, tx)
 	}))
 	m.Handle(networkRPCPrefix+"get-blocks", needConfig(a.getBlocksRPC)) // DEPRECATED: use get-block instead
 	m.Handle(networkRPCPrefix+"get-block", needConfig(a.getBlockRPC))
 	m.Handle(networkRPCPrefix+"get-snapshot-info", needConfig(a.getSnapshotInfoRPC))
 	m.Handle(networkRPCPrefix+"get-snapshot", http.HandlerFunc(a.getSnapshotRPC))
-	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(a.leaderSignHandler(a.Signer)))
+	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(a.leaderSignHandler(a.signer)))
 	m.Handle(networkRPCPrefix+"block-height", needConfig(func(ctx context.Context) map[string]uint64 {
-		h := a.Chain.Height()
+		h := a.chain.Height()
 		return map[string]uint64{
 			"block_height": h,
 		}
@@ -167,15 +173,15 @@ func Handler(a *API, register func(*http.ServeMux, *API)) http.Handler {
 	})
 
 	var handler = (&apiAuthn{
-		tokens:   a.AccessTokens,
+		tokens:   a.accessTokens,
 		tokenMap: make(map[string]tokenResult),
-		alt:      a.AltAuth,
+		alt:      a.altAuth,
 	}).handler(latencyHandler)
 	handler = maxBytes(handler)
 	handler = webAssetsHandler(handler)
 	handler = healthHandler(handler)
-	for _, l := range a.RequestLimits {
-		handler = limit.Handler(handler, alwaysError(errRateLimited), l.PerSecond, l.Burst, l.Key)
+	for _, l := range a.requestLimits {
+		handler = limit.Handler(handler, alwaysError(errRateLimited), l.perSecond, l.burst, l.key)
 	}
 	handler = gzip.Handler{Handler: handler}
 	handler = coreCounter(handler)
@@ -283,7 +289,7 @@ func (a *API) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, erro
 // request. For that reason, it cannot be used outside of a request-
 // handling context.
 func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
-	addr, err := leader.Address(ctx, a.DB)
+	addr, err := leader.Address(ctx, a.db)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -291,7 +297,7 @@ func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}
 	// Don't infinite loop if the leader's address is our own address.
 	// This is possible if we just became the leader. The client should
 	// just retry.
-	if addr == a.Addr {
+	if addr == a.addr {
 		return errLeaderElection
 	}
 

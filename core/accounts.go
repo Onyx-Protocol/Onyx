@@ -32,7 +32,7 @@ func (a *API) createAccount(ctx context.Context, ins []struct {
 			defer wg.Done()
 			defer batchRecover(subctx, &responses[i])
 
-			acc, err := a.Accounts.Create(subctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
+			acc, err := a.accounts.Create(subctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
 			if err != nil {
 				responses[i] = err
 				return

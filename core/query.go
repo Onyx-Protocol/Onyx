@@ -22,7 +22,7 @@ func (a *API) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 	after := in.After
 
 	// Use the filter engine for querying account tags.
-	accounts, after, err := a.Indexer.Accounts(ctx, in.Filter, in.FilterParams, after, limit)
+	accounts, after, err := a.indexer.Accounts(ctx, in.Filter, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running acc query")
 	}
@@ -49,7 +49,7 @@ func (a *API) listAssets(ctx context.Context, in requestQuery) (page, error) {
 	after := in.After
 
 	// Use the query engine for querying asset tags.
-	assets, after, err := a.Indexer.Assets(ctx, in.Filter, in.FilterParams, after, limit)
+	assets, after, err := a.indexer.Assets(ctx, in.Filter, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running asset query")
 	}
@@ -89,7 +89,7 @@ func (a *API) listBalances(ctx context.Context, in requestQuery) (result page, e
 	}
 
 	// TODO(jackson): paginate this endpoint.
-	balances, err := a.Indexer.Balances(ctx, in.Filter, in.FilterParams, sumBy, timestampMS)
+	balances, err := a.indexer.Balances(ctx, in.Filter, in.FilterParams, sumBy, timestampMS)
 	if err != nil {
 		return result, err
 	}
@@ -132,13 +132,13 @@ func (a *API) listTransactions(ctx context.Context, in requestQuery) (result pag
 			return result, errors.Wrap(err, "decoding `after`")
 		}
 	} else {
-		after, err = a.Indexer.LookupTxAfter(ctx, in.StartTimeMS, endTimeMS)
+		after, err = a.indexer.LookupTxAfter(ctx, in.StartTimeMS, endTimeMS)
 		if err != nil {
 			return result, err
 		}
 	}
 
-	txns, nextAfter, err := a.Indexer.Transactions(ctx, in.Filter, in.FilterParams, after, limit, in.AscLongPoll)
+	txns, nextAfter, err := a.indexer.Transactions(ctx, in.Filter, in.FilterParams, after, limit, in.AscLongPoll)
 	if err != nil {
 		return result, errors.Wrap(err, "running tx query")
 	}
@@ -163,7 +163,7 @@ func (a *API) listTxFeeds(ctx context.Context, in requestQuery) (page, error) {
 
 	after := in.After
 
-	txfeeds, after, err := a.TxFeeds.Query(ctx, after, limit)
+	txfeeds, after, err := a.txFeeds.Query(ctx, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running txfeed query")
 	}
@@ -198,7 +198,7 @@ func (a *API) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 	} else if timestampMS > math.MaxInt64 {
 		return result, errors.WithDetail(httpjson.ErrBadRequest, "timestamp is too large")
 	}
-	outputs, nextAfter, err := a.Indexer.Outputs(ctx, in.Filter, in.FilterParams, timestampMS, after, limit)
+	outputs, nextAfter, err := a.indexer.Outputs(ctx, in.Filter, in.FilterParams, timestampMS, after, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "querying outputs")
 	}

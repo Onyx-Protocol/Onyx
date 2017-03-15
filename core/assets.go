@@ -33,7 +33,7 @@ func (a *API) createAsset(ctx context.Context, ins []struct {
 			defer wg.Done()
 			defer batchRecover(subctx, &responses[i])
 
-			a, err := a.Assets.Define(
+			a, err := a.assets.Define(
 				subctx,
 				ins[i].RootXPubs,
 				ins[i].Quorum,

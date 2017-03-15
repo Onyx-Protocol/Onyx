@@ -20,21 +20,12 @@ import (
 	"github.com/kr/secureheader"
 
 	"chain/core"
-	"chain/core/accesstoken"
-	"chain/core/account"
-	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/config"
-	"chain/core/fetch"
 	"chain/core/generator"
-	"chain/core/leader"
 	"chain/core/migrate"
-	"chain/core/pin"
-	"chain/core/query"
 	"chain/core/rpc"
-	"chain/core/txbuilder"
 	"chain/core/txdb"
-	"chain/core/txfeed"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/database/sql"
@@ -179,7 +170,9 @@ func runServer() {
 	if conf != nil {
 		h = launchConfiguredCore(ctx, db, conf, processID)
 	} else {
-		h = launchUnconfiguredCore(ctx, db)
+		chainlog.Printf(ctx, "Launching as unconfigured Core.")
+		api := core.RunUnconfigured(ctx, db, core.AlternateAuth(authLoopbackInDev))
+		h = api.Handler(nil)
 	}
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
@@ -236,205 +229,100 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
-	var generatorSigners []generator.BlockSigner
-	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
+	var localSigner *blocksigner.BlockSigner
+	var opts []core.RunOption
+
+	// Allow loopback/localhost requests in Developer Edition.
+	opts = append(opts, core.AlternateAuth(authLoopbackInDev))
+	opts = append(opts, core.IndexTransactions(*indexTxs))
+	// Add any configured API request rate limits.
+	if *rpsToken > 0 {
+		opts = append(opts, core.RateLimit(limit.AuthUserID, 2*(*rpsToken), *rpsToken))
+	}
+	if *rpsRemoteAddr > 0 {
+		opts = append(opts, core.RateLimit(limit.RemoteAddrID, 2*(*rpsRemoteAddr), *rpsRemoteAddr))
+	}
+	// If the Core is configured as a block signer, add the sign-block RPC handler.
 	if conf.IsSigner {
-		blockPub, err := hex.DecodeString(conf.BlockPub)
+		localSigner, err = initializeLocalSigner(ctx, conf, db, c, processID)
 		if err != nil {
 			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
-
-		var hsm blocksigner.Signer
-		if conf.BlockHSMURL != "" {
-			// TODO(ameets): potential option to take only a password when configuring
-			//  and convert to an access token string here for BlockHSMAccessToken
-			hsm = &remoteHSM{Client: &rpc.Client{
-				BaseURL:      conf.BlockHSMURL,
-				AccessToken:  conf.BlockHSMAccessToken,
-				Username:     processID,
-				CoreID:       conf.ID,
-				BuildTag:     buildTag,
-				BlockchainID: conf.BlockchainID.String(),
-			}}
-		} else {
-			hsm, err = devHSM(db)
-			if err != nil {
-				chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-			}
-		}
-		s := blocksigner.New(blockPub, hsm, db, c)
-
-		generatorSigners = append(generatorSigners, s) // "local" signer
-		signBlockHandler = func(ctx context.Context, b *bc.Block) ([]byte, error) {
-			sig, err := s.ValidateAndSignBlock(ctx, b)
-			if errors.Root(err) == blocksigner.ErrInvalidKey {
-				chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-			}
-			return sig, err
-		}
+		opts = append(opts, core.BlockSigner(localSigner.ValidateAndSignBlock))
 	}
+
+	// The Core is either configured as a generator or not. If it's configured
+	// as a generator, instantiate the generator with the configured local and
+	// remote block signers. Provide a launch option to the Core to use the
+	// generator.
+	//
+	// If the Core is not a generator, provide an RPC client for the generator
+	// so that the Core can replicate blocks.
 	if conf.IsGenerator {
+		var signers []generator.BlockSigner
+		if localSigner != nil {
+			signers = append(signers, localSigner)
+		}
 		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainID.String(), conf) {
-			generatorSigners = append(generatorSigners, signer)
+			signers = append(signers, signer)
 		}
 		c.MaxIssuanceWindow = conf.MaxIssuanceWindow.Duration
-	}
 
-	var submitter txbuilder.Submitter
-	var gen *generator.Generator
-	var remoteGenerator *rpc.Client
-	if !conf.IsGenerator {
-		remoteGenerator = &rpc.Client{
+		gen := generator.New(c, signers, db)
+		opts = append(opts, core.GeneratorLocal(gen))
+	} else {
+		opts = append(opts, core.GeneratorRemote(&rpc.Client{
 			BaseURL:      conf.GeneratorURL,
 			AccessToken:  conf.GeneratorAccessToken,
 			Username:     processID,
 			CoreID:       conf.ID,
 			BuildTag:     buildTag,
 			BlockchainID: conf.BlockchainID.String(),
-		}
-		submitter = &txbuilder.RemoteGenerator{Peer: remoteGenerator}
-	} else {
-		gen = generator.New(c, generatorSigners, db)
-		submitter = gen
+		}))
 	}
 
-	// Set up the pin store for block processing
-	pinStore := pin.NewStore(db)
-	err = pinStore.LoadAll(ctx)
+	// Start up the Core. This will start up the various Core subsystems,
+	// and begin leader election.
+	api, err := core.Run(ctx, conf, db, *dbURL, c, store, *listenAddr, opts...)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	// Start listeners
-	go pinStore.Listen(ctx, account.PinName, *dbURL)
-	go pinStore.Listen(ctx, account.ExpirePinName, *dbURL)
-	go pinStore.Listen(ctx, account.DeleteSpentsPinName, *dbURL)
-	go pinStore.Listen(ctx, asset.PinName, *dbURL)
 
-	// Setup the transaction query indexer to index every transaction.
-	indexer := query.NewIndexer(db, c, pinStore)
-
-	assets := asset.NewRegistry(db, c, pinStore)
-	accounts := account.NewManager(db, c, pinStore)
-	if *indexTxs {
-		go pinStore.Listen(ctx, query.TxPinName, *dbURL)
-		indexer.RegisterAnnotator(assets.AnnotateTxs)
-		indexer.RegisterAnnotator(accounts.AnnotateTxs)
-		assets.IndexAssets(indexer)
-		accounts.IndexAccounts(indexer)
-	}
-
-	// GC old submitted txs periodically.
-	go core.CleanupSubmittedTxs(ctx, db)
-
-	// Clean up expired UTXO reservations periodically.
-	go accounts.ExpireReservations(ctx, expireReservationsPeriod)
-
-	h := &core.API{
-		Chain:        c,
-		Store:        store,
-		PinStore:     pinStore,
-		Assets:       assets,
-		Accounts:     accounts,
-		Submitter:    submitter,
-		TxFeeds:      &txfeed.Tracker{DB: db},
-		Indexer:      indexer,
-		AccessTokens: &accesstoken.CredentialStore{DB: db},
-		Config:       conf,
-		DB:           db,
-		Addr:         *listenAddr,
-		Signer:       signBlockHandler,
-		AltAuth:      authLoopbackInDev,
-	}
-	if *rpsToken > 0 {
-		h.RequestLimits = append(h.RequestLimits, core.RequestLimit{
-			Key:       limit.AuthUserID,
-			Burst:     2 * (*rpsToken),
-			PerSecond: *rpsToken,
-		})
-	}
-	if *rpsRemoteAddr > 0 {
-		h.RequestLimits = append(h.RequestLimits, core.RequestLimit{
-			Key:       limit.RemoteAddrID,
-			Burst:     2 * (*rpsRemoteAddr),
-			PerSecond: *rpsRemoteAddr,
-		})
-	}
-
-	var (
-		genhealth   = h.HealthSetter("generator")
-		fetchhealth = h.HealthSetter("fetch")
-	)
-
-	go leader.Run(db, *listenAddr, func(ctx context.Context) {
-		if !conf.IsGenerator {
-			fetch.Init(ctx, remoteGenerator)
-			// If don't have any blocks, bootstrap from the generator's
-			// latest snapshot.
-			if c.Height() == 0 {
-				fetch.BootstrapSnapshot(ctx, c, store, remoteGenerator, fetchhealth)
-			}
-		}
-
-		// This process just became leader, so it's responsible
-		// for recovering after the previous leader's exit.
-		recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-		}
-
-		// Create all of the block processor pins.
-		pinHeight := c.Height()
-		if pinHeight > 0 {
-			pinHeight = pinHeight - 1
-		}
-		err = pinStore.CreatePin(ctx, account.PinName, pinHeight)
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-		}
-		err = pinStore.CreatePin(ctx, account.ExpirePinName, pinHeight)
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-		}
-		err = pinStore.CreatePin(ctx, account.DeleteSpentsPinName, pinHeight)
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-		}
-		err = pinStore.CreatePin(ctx, asset.PinName, pinHeight)
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-		}
-		err = pinStore.CreatePin(ctx, query.TxPinName, pinHeight)
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-		}
-
-		if conf.IsGenerator {
-			go gen.Generate(ctx, blockPeriod, genhealth, recoveredBlock, recoveredSnapshot)
-		} else {
-			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth, recoveredBlock, recoveredSnapshot)
-		}
-		go h.Accounts.ProcessBlocks(ctx)
-		go h.Assets.ProcessBlocks(ctx)
-		if *indexTxs {
-			go h.Indexer.ProcessBlocks(ctx)
-		}
-	})
-
-	handler := core.Handler(h, hsmRegister(db))
-
+	// Return the API's HTTP Handler.
+	handler := api.Handler(hsmRegister(db))
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		// TODO(jackson): Move this middleware into core.API.Handler?
 		w.Header().Set(rpc.HeaderBlockchainID, conf.BlockchainID.String())
 		handler.ServeHTTP(w, req)
 	})
 }
 
-func launchUnconfiguredCore(ctx context.Context, db pg.DB) http.Handler {
-	chainlog.Printf(ctx, "Launching as unconfigured Core.")
-	return core.Handler(&core.API{
-		DB:           db,
-		AltAuth:      authLoopbackInDev,
-		AccessTokens: &accesstoken.CredentialStore{DB: db},
-	}, nil)
+func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c *protocol.Chain, processID string) (*blocksigner.BlockSigner, error) {
+	blockPub, err := hex.DecodeString(conf.BlockPub)
+	if err != nil {
+		return nil, err
+	}
+
+	var hsm blocksigner.Signer
+	if conf.BlockHSMURL != "" {
+		// TODO(ameets): potential option to take only a password when configuring
+		//  and convert to an access token string here for BlockHSMAccessToken
+		hsm = &remoteHSM{Client: &rpc.Client{
+			BaseURL:      conf.BlockHSMURL,
+			AccessToken:  conf.BlockHSMAccessToken,
+			Username:     processID,
+			CoreID:       conf.ID,
+			BuildTag:     buildTag,
+			BlockchainID: conf.BlockchainID.String(),
+		}}
+	} else {
+		hsm, err = devHSM(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+	s := blocksigner.New(blockPub, hsm, db, c)
+	return s, nil
 }
 
 // remoteSigner defines the address and public key of another Core

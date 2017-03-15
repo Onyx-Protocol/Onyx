@@ -62,14 +62,14 @@ func (a *API) createAccountControlProgram(ctx context.Context, input []byte) (in
 
 	accountID := parsed.AccountID
 	if accountID == "" {
-		acc, err := a.Accounts.FindByAlias(ctx, parsed.AccountAlias)
+		acc, err := a.accounts.FindByAlias(ctx, parsed.AccountAlias)
 		if err != nil {
 			return nil, err
 		}
 		accountID = acc.ID
 	}
 
-	controlProgram, err := a.Accounts.CreateControlProgram(ctx, accountID, false, time.Time{})
+	controlProgram, err := a.accounts.CreateControlProgram(ctx, accountID, false, time.Time{})
 	if err != nil {
 		return nil, err
 	}
