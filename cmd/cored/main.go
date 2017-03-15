@@ -271,15 +271,14 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 		gen := generator.New(c, signers, db)
 		opts = append(opts, core.LocalGenerator(gen))
 	} else {
-		remoteGen := &rpc.Client{
+		opts = append(opts, core.RemoteGenerator(&rpc.Client{
 			BaseURL:      conf.GeneratorURL,
 			AccessToken:  conf.GeneratorAccessToken,
 			Username:     processID,
 			CoreID:       conf.ID,
 			BuildTag:     buildTag,
 			BlockchainID: conf.BlockchainID.String(),
-		}
-		opts = append(opts, core.RemoteGenerator(remoteGen))
+		}))
 	}
 
 	// Launch the Core. This will startup the various Core subsystems,
