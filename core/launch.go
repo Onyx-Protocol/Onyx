@@ -186,30 +186,17 @@ func (a *API) lead(ctx context.Context) {
 		log.Fatalkv(ctx, log.KeyError, err)
 	}
 
-	// Create all of the block processor pins.
+	// Create all of the block processor pins if they don't already exist.
 	pinHeight := a.chain.Height()
 	if pinHeight > 0 {
 		pinHeight = pinHeight - 1
 	}
-	err = a.pinStore.CreatePin(ctx, account.PinName, pinHeight)
-	if err != nil {
-		log.Fatalkv(ctx, log.KeyError, err)
-	}
-	err = a.pinStore.CreatePin(ctx, account.ExpirePinName, pinHeight)
-	if err != nil {
-		log.Fatalkv(ctx, log.KeyError, err)
-	}
-	err = a.pinStore.CreatePin(ctx, account.DeleteSpentsPinName, pinHeight)
-	if err != nil {
-		log.Fatalkv(ctx, log.KeyError, err)
-	}
-	err = a.pinStore.CreatePin(ctx, asset.PinName, pinHeight)
-	if err != nil {
-		log.Fatalkv(ctx, log.KeyError, err)
-	}
-	err = a.pinStore.CreatePin(ctx, query.TxPinName, pinHeight)
-	if err != nil {
-		log.Fatalkv(ctx, log.KeyError, err)
+	pins := []string{account.PinName, account.ExpirePinName, account.DeleteSpentsPinName, asset.PinName, query.TxPinName}
+	for _, p := range pins {
+		err = a.pinStore.CreatePin(ctx, p, pinHeight)
+		if err != nil {
+			log.Fatalkv(ctx, log.KeyError, err)
+		}
 	}
 
 	if a.config.IsGenerator {
