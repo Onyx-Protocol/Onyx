@@ -38,12 +38,12 @@ end
 
 // revID returns a string to use
 // for the revid of the next commit on main.
-func revID(landdir string) (string, error) {
-	cmd := dirCmd(landdir, "git", "rev-list", "--count", "main")
+func revID(landdir, baseBranch string) (string, error) {
+	cmd := dirCmd(landdir, "git", "rev-list", "--count", "origin/"+baseBranch, "--")
 	cmd.Stderr = os.Stderr
 	b, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
-	return "rev" + string(bytes.TrimSpace(b)), nil
+	return baseBranch + "/rev" + string(bytes.TrimSpace(b)), nil
 }

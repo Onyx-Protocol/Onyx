@@ -184,7 +184,7 @@ func land(req *landReq) {
 		return
 	}
 
-	err = commitRevIDs(landdir)
+	err = commitRevIDs(landdir, prState.Base.Ref)
 	if err != nil {
 		sayf("<@%s|%s> failed to land %s: could not commit revision id: %s",
 			req.userID,
@@ -255,8 +255,8 @@ func land(req *landReq) {
 	runIn(landdir, exec.Command("git", "branch", "-D", req.ref))
 }
 
-func commitRevIDs(landdir string) error {
-	revID, err := revID(landdir)
+func commitRevIDs(landdir, baseBranch string) error {
+	revID, err := revID(landdir, baseBranch)
 	if err != nil {
 		return err
 	}
