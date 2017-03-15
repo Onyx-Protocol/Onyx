@@ -178,7 +178,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 
 		initialBlockHash := block.Hash()
 
-		store := txdb.NewStore(db.(*sql.DB))
+		store := txdb.NewStore(db)
 		chain, err := protocol.NewChain(ctx, initialBlockHash, store, nil)
 		if err != nil {
 			return err

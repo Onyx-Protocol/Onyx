@@ -17,8 +17,8 @@ import (
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
@@ -152,7 +152,7 @@ func TestRecovery(t *testing.T) {
 	}
 }
 
-func generateBlock(ctx context.Context, t testing.TB, db *sql.DB, timestamp time.Time, poolTxs []*bc.Tx) error {
+func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.Time, poolTxs []*bc.Tx) error {
 	store := txdb.NewStore(db)
 	b1, err := store.GetBlock(ctx, 1)
 	if err != nil {

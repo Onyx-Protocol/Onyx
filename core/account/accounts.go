@@ -16,7 +16,6 @@ import (
 	"chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
 	"chain/protocol"
@@ -27,7 +26,7 @@ const maxAccountCache = 1000
 
 var ErrDuplicateAlias = errors.New("duplicate account alias")
 
-func NewManager(db *sql.DB, chain *protocol.Chain, pinStore *pin.Store) *Manager {
+func NewManager(db pg.DB, chain *protocol.Chain, pinStore *pin.Store) *Manager {
 	return &Manager{
 		db:          db,
 		chain:       chain,
@@ -41,7 +40,7 @@ func NewManager(db *sql.DB, chain *protocol.Chain, pinStore *pin.Store) *Manager
 
 // Manager stores accounts and their associated control programs.
 type Manager struct {
-	db       *sql.DB
+	db       pg.DB
 	chain    *protocol.Chain
 	utxoDB   *reserver
 	indexer  Saver
