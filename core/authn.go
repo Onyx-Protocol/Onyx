@@ -20,6 +20,7 @@ type apiAuthn struct {
 	tokens *accesstoken.CredentialStore
 	// alternative authentication mechanism,
 	// used when no basic auth creds are provided.
+	// alt is ignored if nil.
 	alt func(*http.Request) bool
 
 	tokenMu  sync.Mutex // protects the following
@@ -44,7 +45,7 @@ func (a *apiAuthn) handler(next http.Handler) http.Handler {
 
 func (a *apiAuthn) auth(req *http.Request) error {
 	user, pw, ok := req.BasicAuth()
-	if !ok && a.alt(req) {
+	if !ok && a.alt != nil && a.alt(req) {
 		return nil
 	}
 
