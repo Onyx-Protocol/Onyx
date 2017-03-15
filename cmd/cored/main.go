@@ -226,7 +226,7 @@ func runServer() {
 	}
 }
 
-func launchConfiguredCore(ctx context.Context, db *sql.DB, conf *config.Config, processID string) http.Handler {
+func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, processID string) http.Handler {
 	// Initialize the protocol.Chain.
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {

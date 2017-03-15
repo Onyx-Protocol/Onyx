@@ -14,7 +14,6 @@ import (
 	. "chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -347,7 +346,7 @@ type testInfo struct {
 
 // TODO(kr): refactor this into new package core/coreutil
 // and consume it from cmd/corectl.
-func bootdb(ctx context.Context, db *sql.DB, t testing.TB) (*testInfo, error) {
+func bootdb(ctx context.Context, db pg.DB, t testing.TB) (*testInfo, error) {
 	c := prottest.NewChain(t)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)

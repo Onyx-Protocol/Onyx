@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"chain/database/pg"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
 )
@@ -35,7 +34,7 @@ func IsLeading() bool {
 //
 // The Chain Core has up to a 10-second refractory period after
 // shutdown, during which no process can become the new leader.
-func Run(db *sql.DB, addr string, lead func(context.Context)) {
+func Run(db pg.DB, addr string, lead func(context.Context)) {
 	ctx := context.Background()
 	// We use our process's address as the key, because it's unique
 	// among all processes within a Core and it allows a restarted
@@ -97,7 +96,7 @@ func leadershipChanges(ctx context.Context, l *leader) chan bool {
 
 type leader struct {
 	// config
-	db      *sql.DB
+	db      pg.DB
 	key     string
 	lead    func(context.Context)
 	address string
