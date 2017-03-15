@@ -240,7 +240,7 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 		opts = append(opts, core.RateLimit(limit.AuthUserID, 2*(*rpsToken), *rpsToken))
 	}
 	if *rpsRemoteAddr > 0 {
-		opts = append(opts, core.RateLimit(limit.AuthUserID, 2*(*rpsRemoteAddr), *rpsRemoteAddr))
+		opts = append(opts, core.RateLimit(limit.RemoteAddrID, 2*(*rpsRemoteAddr), *rpsRemoteAddr))
 	}
 	// If the Core is configured as a block signer, add the sign-block RPC handler.
 	// TODO(jackson): Should this be handled using the callback passed to
