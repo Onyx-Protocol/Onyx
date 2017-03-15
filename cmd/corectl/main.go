@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"chain/core/accesstoken"
@@ -18,14 +19,18 @@ import (
 	"chain/database/sql"
 	chainjson "chain/encoding/json"
 	"chain/env"
+	"chain/generated/rev"
 	"chain/log"
 )
-
-const version = "1.1.3"
 
 // config vars
 var (
 	dbURL = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
+
+	// build vars; initialized by the linker
+	buildTag    = "?"
+	buildCommit = "?"
+	buildDate   = "?"
 )
 
 // We collect log output in this buffer,
@@ -50,7 +55,18 @@ func main() {
 	env.Parse()
 
 	if len(os.Args) >= 2 && os.Args[1] == "-version" {
+		var version string
+		if buildTag != "?" {
+			// build tag with chain-core-server- prefix indicates official release
+			version = strings.TrimPrefix(buildTag, "chain-core-server-")
+		} else {
+			// version of the form rev123 indicates non-release build
+			version = rev.ID
+		}
 		fmt.Printf("corectl (Chain Core) %s\n", version)
+		versionProdPrintln()
+		fmt.Printf("build-commit: %v\n", buildCommit)
+		fmt.Printf("build-date: %v\n", buildDate)
 		return
 	}
 

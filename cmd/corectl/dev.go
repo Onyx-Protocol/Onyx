@@ -37,3 +37,7 @@ func createBlockKeyPair(db *sql.DB, args []string) {
 
 	fmt.Printf("%x\n", pub.Pub)
 }
+
+func versionProdPrintln() {
+	fmt.Println("production: false")
+}
