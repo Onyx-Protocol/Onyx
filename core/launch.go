@@ -29,32 +29,32 @@ const (
 	expireReservationsPeriod = time.Second
 )
 
-// LaunchOption describes a runtime configuration option.
-type LaunchOption func(*API)
+// RunOption describes a runtime configuration option.
+type RunOption func(*API)
 
 // AlternateAuth configures the Core to use authFn to authenticate
 // incoming requests in addition to the default access token authentication.
-func AlternateAuth(authFn func(*http.Request) bool) LaunchOption {
+func AlternateAuth(authFn func(*http.Request) bool) RunOption {
 	return func(a *API) { a.altAuth = authFn }
 }
 
 // BlockSigner configures the Core to use signFn to handle block-signing
 // requests. In production, this will be a function to call out to signerd
 // and its HSM. In development, it'll use the MockHSM.
-func BlockSigner(signFn func(context.Context, *bc.Block) ([]byte, error)) LaunchOption {
+func BlockSigner(signFn func(context.Context, *bc.Block) ([]byte, error)) RunOption {
 	return func(a *API) { a.signer = signFn }
 }
 
 // IndexTransactions configures whether or not transactions should be
 // annotated and indexed for the query engine.
-func IndexTransactions(b bool) LaunchOption {
+func IndexTransactions(b bool) RunOption {
 	return func(a *API) { a.indexTxs = b }
 }
 
 // RateLimit adds a rate-limiting restriction, using keyFn to extract the
 // key to rate limit on. It will allow up to burst requests in the bucket
 // and will refill the bucket at perSecond tokens per second.
-func RateLimit(keyFn func(*http.Request) string, burst, perSecond int) LaunchOption {
+func RateLimit(keyFn func(*http.Request) string, burst, perSecond int) RunOption {
 	return func(a *API) {
 		a.requestLimits = append(a.requestLimits, requestLimit{
 			key:       keyFn,
@@ -65,7 +65,7 @@ func RateLimit(keyFn func(*http.Request) string, burst, perSecond int) LaunchOpt
 }
 
 // LocalGenerator configures the launched Core to run as a Generator.
-func LocalGenerator(gen *generator.Generator) LaunchOption {
+func LocalGenerator(gen *generator.Generator) RunOption {
 	return func(a *API) {
 		if a.remoteGenerator != nil {
 			panic("core configured with local and remote generator")
@@ -77,7 +77,7 @@ func LocalGenerator(gen *generator.Generator) LaunchOption {
 
 // RemoteGenerator configures the launched Core to fetch blocks from
 // the provided remote generator.
-func RemoteGenerator(client *rpc.Client) LaunchOption {
+func RemoteGenerator(client *rpc.Client) RunOption {
 	return func(a *API) {
 		if a.generator != nil {
 			panic("core configured with local and remote generator")
@@ -87,11 +87,11 @@ func RemoteGenerator(client *rpc.Client) LaunchOption {
 	}
 }
 
-// LaunchUnconfigured launches a new unconfigured Chain Core. This is
+// RunUnconfigured launches a new unconfigured Chain Core. This is
 // used for Chain Core Developer Edition to expose the configuration UI
 // in the dashboard. API authentication still applies to an unconfigured
 // Chain Core.
-func LaunchUnconfigured(ctx context.Context, db pg.DB, opts ...LaunchOption) *API {
+func RunUnconfigured(ctx context.Context, db pg.DB, opts ...RunOption) *API {
 	a := &API{
 		db:           db,
 		accessTokens: &accesstoken.CredentialStore{DB: db},
@@ -102,12 +102,12 @@ func LaunchUnconfigured(ctx context.Context, db pg.DB, opts ...LaunchOption) *AP
 	return a
 }
 
-// Launch launches a new configured Chain Core. It will start goroutines
+// Run launches a new configured Chain Core. It will start goroutines
 // for the various Core subsystems and enter leader election. It will not
 // start listening for HTTP requests. To begin serving HTTP requests, use
 // API.Handler to retrieve an http.Handler that can be used in a call to
 // http.ListenAndServe.
-func Launch(
+func Run(
 	ctx context.Context,
 	conf *config.Config,
 	db pg.DB,
@@ -115,7 +115,7 @@ func Launch(
 	c *protocol.Chain,
 	store *txdb.Store,
 	routableAddress string,
-	opts ...LaunchOption,
+	opts ...RunOption,
 ) (*API, error) {
 	// Set up the pin store for block processing
 	pinStore := pin.NewStore(db)

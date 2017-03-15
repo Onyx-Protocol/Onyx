@@ -171,7 +171,7 @@ func runServer() {
 		h = launchConfiguredCore(ctx, db, conf, processID)
 	} else {
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		api := core.LaunchUnconfigured(ctx, db, core.AlternateAuth(authLoopbackInDev))
+		api := core.RunUnconfigured(ctx, db, core.AlternateAuth(authLoopbackInDev))
 		h = api.Handler(nil)
 	}
 
@@ -230,7 +230,7 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 	}
 
 	var localSigner *blocksigner.BlockSigner
-	var opts []core.LaunchOption
+	var opts []core.RunOption
 
 	// Allow loopback/localhost requests in Developer Edition.
 	opts = append(opts, core.AlternateAuth(authLoopbackInDev))
@@ -281,9 +281,9 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 		}))
 	}
 
-	// Launch the Core. This will start up the various Core subsystems,
+	// Start up the Core. This will start up the various Core subsystems,
 	// and begin leader election.
-	api, err := core.Launch(ctx, conf, db, *dbURL, c, store, *listenAddr, opts...)
+	api, err := core.Run(ctx, conf, db, *dbURL, c, store, *listenAddr, opts...)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
