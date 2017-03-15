@@ -25,7 +25,7 @@ const sampleAccountUTXOs = `
 
 func TestCancelReservation(t *testing.T) {
 	ctx := context.Background()
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	db := pgtest.NewTx(t)
 	_, err := db.Exec(ctx, sampleAccountUTXOs)
 	if err != nil {
 		t.Fatal(err)
