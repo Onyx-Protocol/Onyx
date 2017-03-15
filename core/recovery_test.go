@@ -166,8 +166,8 @@ func TestRecovery(t *testing.T) {
 		}
 
 		if atomic.LoadInt64(&calls) < n {
-			// The driver never crashed the goroutine, so n is now greater than
-			// the total number of queries performed during `generateBlock`.
+			// calls never reached n, so the goroutine completed without
+			// simulating a crash.
 			databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "*_id_seq", "block_processors"))
 			break
 		}
