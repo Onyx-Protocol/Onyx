@@ -89,11 +89,11 @@ Cryptographic proofs for blinded asset IDs and blinded amounts require relativel
 
 Present scheme is *perfectly binding*, but only *computationally hiding*. (In fact, [it is impossible](http://crypto.stackexchange.com/questions/41822/why-cant-the-commitment-schemes-have-both-information-theoretic-hiding-and-bind) for a commitment scheme to be both perfectly binding and perfectly hiding at the same time.) This means that breaking elliptic curve discrete logarithm problem (ECDLP) will not compromise the integrity of the commitments, that bind the value perfectly and do not allow manipulations using any amount of computational resources. However, breaking ECDLP can compromise commitments’ hiding property, which rests on discovery of the blinding factor being computationally hard (which is the case only until a powerful quantum computer is made or there is a breakthrough in solving ECDLP with classical computers).
 
-## Usage
+## Usage WIP
 
 In this section we will provide a brief overview of various ways to use confidential assets.
 
-### Confidential issuance
+### Confidential issuance WIP
 
 1. Issuer chooses asset ID and an amount to issue.
 2. Issuer generates issuance [REK](#record-encryption-key) unique for this issuance.
@@ -105,7 +105,7 @@ In this section we will provide a brief overview of various ways to use confiden
 8. Issuer remembers values `(H,c,f)` to help complete the transaction. Once outputs are fully or partially specified, these values can be discarded.
 9. Issuer proceeds with the rest of the transaction creation. See [simple transfer](#simple-transfer) and [multi-party transaction](#multi-party-transaction) for details.
 
-### Simple transfer
+### Simple transfer WIP
 
 1. Recipient generates the following parameters and sends them privately to the sender:
     * amount and asset ID to be sent,
@@ -136,7 +136,7 @@ In this section we will provide a brief overview of various ways to use confiden
 11. Recipient separately stores decrypted plaintext payload with the rest of the reference data. It is not necessary for spending.
 
 
-### Multi-party transaction
+### Multi-party transaction WIP
 
 1. All parties communicate out-of-band payment details (how much is being paid for what), but not cryptographic material or control programs.
 2. Each party:
@@ -1035,7 +1035,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 
 
-### Create Value Range Proof
+### Create Value Range Proof WIP
 
 **Inputs:**
 
@@ -1098,7 +1098,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-### Verify Value Range Proof
+### Verify Value Range Proof WIP
 
 **Inputs:**
 
@@ -1141,7 +1141,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-### Recover Payload From Value Range Proof
+### Recover Payload From Value Range Proof WIP
 
 **Inputs:**
 
@@ -1281,7 +1281,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-### Create Issuance Asset Range Proof
+### Create Issuance Asset Range Proof WIP
 
 When creating a confidential issuance, the first step is to construct the rest of the input commitment and input witness, including an asset issuance choice for each asset that one wants to include in the anonymity set. The issuance key for each asset should be extracted from the issuance programs. (Issuance programs that support confidential issuance should have a branch that uses `CHECKISSUANCE` to check for a confidential issuance key.)
 
@@ -1322,7 +1322,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 
 
-### Verify Issuance Asset Range Proof
+### Verify Issuance Asset Range Proof WIP
 
 **Inputs:**
 
@@ -1351,7 +1351,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 ## High-level procedures
 
-### Verify Output
+### Verify Output WIP
 
 **Inputs:**
 
@@ -1365,13 +1365,14 @@ When creating a confidential issuance, the first step is to construct the rest o
 **Algorithm:**
 
 1. If `ARP` is not empty and `AD` is blinded:
-    1. [Verify asset range proof](#verify-asset-range-proof) using `(AD.H,AD.(ea,ec),ARP)`. If verification failed, halt and return `false`.
-2. If `VRP` is not empty and `VD` is blinded:
-    1. [Verify value range proof](#verify-value-range-proof) using `(AD.H,VD.V,VD.(ev,ef),VRP)`. If verification failed, halt and return `false`.
+    1. [Verify asset range proof](#verify-asset-range-proof) using `(AD.H,AD.(ea,ec),ARP)`.
+2. If `VD` is blinded:
+    1. Verify `VRP` is non-empty.
+    2. [Verify value range proof](#verify-value-range-proof) using `(AD.H,VD.V,VD.(ev,ef),VRP)`.
 3. Return `true`.
 
 
-### Verify Issuance
+### Verify Issuance WIP
 
 **Inputs:**
 
@@ -1387,14 +1388,15 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 1. If `IARP` is not empty and `AD` is blinded:
     1. [Verify issuance asset range proof](#verify-issuance-asset-range-proof) using `(IARP,AD.H,{a[i]})`. If verification failed, halt and return `false`.
-2. If `VRP` is not empty and `VD` is blinded:
-    1. [Verify value range proof](#verify-value-range-proof) using `(AD.H, VD.V, evef=(0x00...,0x00...),VRP)`. If verification failed, halt and return `false`.
+2. If `VD` is blinded:
+    1. Verify `VRP` is not empty.
+    2. [Verify value range proof](#verify-value-range-proof) using `(AD.H, VD.V, evef=(0x00...,0x00...),VRP)`. If verification failed, halt and return `false`.
 3. Return `true`.
 
 
 
 
-### Verify Confidential Assets
+### Verify Confidential Assets WIP
 
 **Inputs:**
 
@@ -1431,7 +1433,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 
 
-### Encrypt Issuance
+### Encrypt Issuance WIP
 
 **Inputs:**
 
@@ -1471,7 +1473,7 @@ In case of failure, returns `nil` instead of the items listed above.
 
 
 
-### Encrypt Output
+### Encrypt Output WIP
 
 This algorithm encrypts the amount and asset ID of a given output and creates [value range proof](#value-range-proof) with encrypted payload.
 If the excess factor is provided, it is used to compute a matching blinding factor to cancel it out.
@@ -1522,7 +1524,7 @@ In case of failure, returns `nil` instead of the items listed above.
 
 
 
-### Decrypt Output
+### Decrypt Output WIP
 
 This algorithm decrypts fully encrypted amount and asset ID for a given output.
 
