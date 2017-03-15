@@ -11,7 +11,7 @@ import (
 )
 
 func TestLoadAccountInfo(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	db := pgtest.NewTx(t)
 	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 
@@ -40,7 +40,7 @@ func TestLoadAccountInfo(t *testing.T) {
 }
 
 func TestDeleteUTXOs(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	db := pgtest.NewTx(t)
 	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 

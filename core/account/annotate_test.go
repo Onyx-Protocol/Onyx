@@ -13,14 +13,14 @@ import (
 
 func TestAnnotateTxs(t *testing.T) {
 	var (
-		_, db = pgtest.NewDB(t, pgtest.SchemaPath)
-		m     = NewManager(db, prottest.NewChain(t), nil)
-		ctx   = context.Background()
-		acc1  = m.createTestAccount(ctx, t, "", nil)
-		acc2  = m.createTestAccount(ctx, t, "", map[string]interface{}{"one": "foo", "two": "bar"})
-		u1    = m.createTestUTXO(ctx, t, acc1.ID)
-		u2    = m.createTestUTXO(ctx, t, acc2.ID)
-		u3    = m.createTestUTXO(ctx, t, acc2.ID)
+		db   = pgtest.NewTx(t)
+		m    = NewManager(db, prottest.NewChain(t), nil)
+		ctx  = context.Background()
+		acc1 = m.createTestAccount(ctx, t, "", nil)
+		acc2 = m.createTestAccount(ctx, t, "", map[string]interface{}{"one": "foo", "two": "bar"})
+		u1   = m.createTestUTXO(ctx, t, acc1.ID)
+		u2   = m.createTestUTXO(ctx, t, acc2.ID)
+		u3   = m.createTestUTXO(ctx, t, acc2.ID)
 	)
 
 	txs := []*query.AnnotatedTx{

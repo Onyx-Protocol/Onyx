@@ -17,7 +17,7 @@ import (
 )
 
 func TestCreateAccount(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	db := pgtest.NewTx(t)
 	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 
@@ -39,7 +39,7 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestCreateAccountIdempotency(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	db := pgtest.NewTx(t)
 	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 	var clientToken = "a-unique-client-token"
@@ -58,7 +58,7 @@ func TestCreateAccountIdempotency(t *testing.T) {
 }
 
 func TestCreateAccountReusedAlias(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	db := pgtest.NewTx(t)
 	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 	m.createTestAccount(ctx, t, "some-account", nil)
@@ -150,7 +150,7 @@ func (m *Manager) createTestUTXO(ctx context.Context, t testing.TB, accountID st
 }
 
 func TestFindByID(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	db := pgtest.NewTx(t)
 	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 	account := m.createTestAccount(ctx, t, "", nil)
@@ -166,7 +166,7 @@ func TestFindByID(t *testing.T) {
 }
 
 func TestFindByAlias(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	db := pgtest.NewTx(t)
 	m := NewManager(db, prottest.NewChain(t), nil)
 	ctx := context.Background()
 	account := m.createTestAccount(ctx, t, "some-alias", nil)
