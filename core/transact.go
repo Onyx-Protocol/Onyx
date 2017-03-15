@@ -23,19 +23,19 @@ func (a *API) actionDecoder(action string) (func([]byte) (txbuilder.Action, erro
 	var decoder func([]byte) (txbuilder.Action, error)
 	switch action {
 	case "control_account":
-		decoder = a.Accounts.DecodeControlAction
+		decoder = a.accounts.DecodeControlAction
 	case "control_program":
 		decoder = txbuilder.DecodeControlProgramAction
 	case "control_receiver":
 		decoder = txbuilder.DecodeControlReceiverAction
 	case "issue":
-		decoder = a.Assets.DecodeIssueAction
+		decoder = a.assets.DecodeIssueAction
 	case "retire":
 		decoder = txbuilder.DecodeRetireAction
 	case "spend_account":
-		decoder = a.Accounts.DecodeSpendAction
+		decoder = a.accounts.DecodeSpendAction
 	case "spend_account_unspent_output":
-		decoder = a.Accounts.DecodeSpendUTXOAction
+		decoder = a.accounts.DecodeSpendUTXOAction
 	case "set_transaction_reference_data":
 		decoder = txbuilder.DecodeSetTxRefDataAction
 	default:
@@ -174,13 +174,10 @@ func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHei
 	return height, err
 }
 
-// CleanupSubmittedTxs will periodically delete records of submitted txs
+// cleanupSubmittedTxs will periodically delete records of submitted txs
 // older than a day. This function blocks and only exits when its context
 // is cancelled.
-//
-// TODO(jackson): unexport this and start it in a goroutine in a core.New()
-// function?
-func CleanupSubmittedTxs(ctx context.Context, db pg.DB) {
+func cleanupSubmittedTxs(ctx context.Context, db pg.DB) {
 	ticker := time.NewTicker(15 * time.Minute)
 	for {
 		select {
@@ -210,18 +207,18 @@ func (a *API) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template
 	// Use the current generator height as the lower bound of the block height
 	// that the transaction may appear in.
 	generatorHeight, _ := fetch.GeneratorHeight()
-	localHeight := a.Chain.Height()
+	localHeight := a.chain.Height()
 	if localHeight > generatorHeight {
 		generatorHeight = localHeight
 	}
 
 	// Remember this height in case we retry this submit call.
-	height, err := recordSubmittedTx(ctx, a.DB, txTemplate.Transaction.ID, generatorHeight)
+	height, err := recordSubmittedTx(ctx, a.db, txTemplate.Transaction.ID, generatorHeight)
 	if err != nil {
 		return errors.Wrap(err, "saving tx submitted height")
 	}
 
-	err = txbuilder.FinalizeTx(ctx, a.Chain, a.Submitter, txTemplate.Transaction)
+	err = txbuilder.FinalizeTx(ctx, a.chain, a.submitter, txTemplate.Transaction)
 	if err != nil {
 		return err
 	}
@@ -240,7 +237,7 @@ func (a *API) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-a.PinStore.AllWaiter(height):
+	case <-a.pinStore.AllWaiter(height):
 	}
 
 	return nil
@@ -253,8 +250,8 @@ func (a *API) waitForTxInBlock(ctx context.Context, tx *bc.Tx, height uint64) (u
 		case <-ctx.Done():
 			return 0, ctx.Err()
 
-		case <-a.Chain.BlockWaiter(height):
-			b, err := a.Chain.GetBlock(ctx, height)
+		case <-a.chain.BlockWaiter(height):
+			b, err := a.chain.GetBlock(ctx, height)
 			if err != nil {
 				return 0, errors.Wrap(err, "getting block that just landed")
 			}
@@ -273,7 +270,7 @@ func (a *API) waitForTxInBlock(ctx context.Context, tx *bc.Tx, height uint64) (u
 			// tell definitively until its max time elapses.
 
 			// Re-insert into the pool in case it was dropped.
-			err = txbuilder.FinalizeTx(ctx, a.Chain, a.Submitter, tx)
+			err = txbuilder.FinalizeTx(ctx, a.chain, a.submitter, tx)
 			if err != nil {
 				return 0, err
 			}

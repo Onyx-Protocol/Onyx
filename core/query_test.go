@@ -30,7 +30,7 @@ func TestQueryWithClockSkew(t *testing.T) {
 	}
 
 	indexer := query.NewIndexer(db, c, pinStore)
-	api := &API{DB: db, Chain: c, Indexer: indexer}
+	api := &API{db: db, chain: c, indexer: indexer}
 
 	tx := bc.NewTx(bc.TxData{})
 	block := &bc.Block{

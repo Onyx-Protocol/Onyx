@@ -22,8 +22,8 @@ func (a *API) createTxFeed(ctx context.Context, in struct {
 	// with the same client_token will only create one txfeed.
 	ClientToken string `json:"client_token"`
 }) (*txfeed.TxFeed, error) {
-	after := fmt.Sprintf("%d:%d-%d", a.Chain.Height(), math.MaxInt32, uint64(math.MaxInt64))
-	return a.TxFeeds.Create(ctx, in.Alias, in.Filter, after, in.ClientToken)
+	after := fmt.Sprintf("%d:%d-%d", a.chain.Height(), math.MaxInt32, uint64(math.MaxInt64))
+	return a.txFeeds.Create(ctx, in.Alias, in.Filter, after, in.ClientToken)
 }
 
 // POST /get-transaction-feed
@@ -31,7 +31,7 @@ func (a *API) getTxFeed(ctx context.Context, in struct {
 	ID    string `json:"id,omitempty"`
 	Alias string `json:"alias,omitempty"`
 }) (*txfeed.TxFeed, error) {
-	return a.TxFeeds.Find(ctx, in.ID, in.Alias)
+	return a.txFeeds.Find(ctx, in.ID, in.Alias)
 }
 
 // POST /delete-transaction-feed
@@ -39,7 +39,7 @@ func (a *API) deleteTxFeed(ctx context.Context, in struct {
 	ID    string `json:"id,omitempty"`
 	Alias string `json:"alias,omitempty"`
 }) error {
-	return a.TxFeeds.Delete(ctx, in.ID, in.Alias)
+	return a.txFeeds.Delete(ctx, in.ID, in.Alias)
 }
 
 // POST /update-transaction-feed
@@ -61,7 +61,7 @@ func (a *API) updateTxFeed(ctx context.Context, in struct {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "new After cannot be before Prev")
 	}
 
-	return a.TxFeeds.Update(ctx, in.ID, in.Alias, in.After, in.Prev)
+	return a.txFeeds.Update(ctx, in.ID, in.Alias, in.After, in.Prev)
 }
 
 // txAfterIsBefore returns true if a is before b. It returns an error if either

@@ -16,12 +16,12 @@ import (
 // waiting if necessary until one is created.
 // It is an error to request blocks very far in the future.
 func (a *API) getBlockRPC(ctx context.Context, height uint64) (chainjson.HexBytes, error) {
-	err := <-a.Chain.BlockSoonWaiter(ctx, height)
+	err := <-a.chain.BlockSoonWaiter(ctx, height)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", height)
 	}
 
-	rawBlock, err := a.Store.GetRawBlock(ctx, height)
+	rawBlock, err := a.store.GetRawBlock(ctx, height)
 	if err != nil {
 		return nil, err
 	}
@@ -47,8 +47,8 @@ type snapshotInfoResp struct {
 
 func (a *API) getSnapshotInfoRPC(ctx context.Context) (resp snapshotInfoResp, err error) {
 	// TODO(jackson): cache latest snapshot and its height & size in-memory.
-	resp.Height, resp.Size, err = a.Store.LatestSnapshotInfo(ctx)
-	resp.BlockchainID = a.Config.BlockchainID
+	resp.Height, resp.Size, err = a.store.LatestSnapshotInfo(ctx)
+	resp.BlockchainID = a.config.BlockchainID
 	return resp, err
 }
 
@@ -59,7 +59,7 @@ func (a *API) getSnapshotInfoRPC(ctx context.Context) (resp snapshotInfoResp, er
 // This handler doesn't use the httpjson.Handler format so that it can return
 // raw protobuf bytes on the wire.
 func (a *API) getSnapshotRPC(rw http.ResponseWriter, req *http.Request) {
-	if a.Config == nil {
+	if a.config == nil {
 		alwaysError(errUnconfigured).ServeHTTP(rw, req)
 		return
 	}
@@ -71,7 +71,7 @@ func (a *API) getSnapshotRPC(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	data, err := a.Store.GetSnapshot(req.Context(), height)
+	data, err := a.store.GetSnapshot(req.Context(), height)
 	if err != nil {
 		WriteHTTPError(req.Context(), rw, err)
 		return

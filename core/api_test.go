@@ -195,7 +195,8 @@ func TestMux(t *testing.T) {
 		}
 	}()
 	m := &MockHSMHandler{}
-	Handler(&API{Config: &config.Config{}}, m.Register)
+	api := &API{config: &config.Config{}}
+	api.Handler(m.Register)
 }
 
 func TestTransfer(t *testing.T) {
@@ -206,18 +207,18 @@ func TestTransfer(t *testing.T) {
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	api := &API{
-		Chain:     c,
-		Submitter: g,
-		Assets:    asset.NewRegistry(db, c, pinStore),
-		Accounts:  account.NewManager(db, c, pinStore),
-		Indexer:   query.NewIndexer(db, c, pinStore),
-		DB:        db,
+		chain:     c,
+		submitter: g,
+		assets:    asset.NewRegistry(db, c, pinStore),
+		accounts:  account.NewManager(db, c, pinStore),
+		indexer:   query.NewIndexer(db, c, pinStore),
+		db:        db,
 	}
-	api.Assets.IndexAssets(api.Indexer)
-	api.Accounts.IndexAccounts(api.Indexer)
-	go api.Accounts.ProcessBlocks(ctx)
-	api.Indexer.RegisterAnnotator(api.Accounts.AnnotateTxs)
-	api.Indexer.RegisterAnnotator(api.Assets.AnnotateTxs)
+	api.assets.IndexAssets(api.indexer)
+	api.accounts.IndexAccounts(api.indexer)
+	go api.accounts.ProcessBlocks(ctx)
+	api.indexer.RegisterAnnotator(api.accounts.AnnotateTxs)
+	api.indexer.RegisterAnnotator(api.assets.AnnotateTxs)
 
 	// TODO(jackson): Replace this with a mock leader.
 	var wg sync.WaitGroup
@@ -231,9 +232,9 @@ func TestTransfer(t *testing.T) {
 	account1Alias := "first-account"
 	account2Alias := "second-account"
 
-	assetID := coretest.CreateAsset(ctx, t, api.Assets, nil, assetAlias, nil)
-	account1ID := coretest.CreateAccount(ctx, t, api.Accounts, account1Alias, nil)
-	account2ID := coretest.CreateAccount(ctx, t, api.Accounts, account2Alias, nil)
+	assetID := coretest.CreateAsset(ctx, t, api.assets, nil, assetAlias, nil)
+	account1ID := coretest.CreateAccount(ctx, t, api.accounts, account1Alias, nil)
+	account2ID := coretest.CreateAccount(ctx, t, api.accounts, account2Alias, nil)
 
 	assetIDStr := assetID.String()
 
@@ -243,8 +244,8 @@ func TestTransfer(t *testing.T) {
 		Amount:  100,
 	}
 	txTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
-		api.Assets.NewIssueAction(issueAssetAmount, nil),
-		api.Accounts.NewControlAction(issueAssetAmount, account1ID, nil),
+		api.assets.NewIssueAction(issueAssetAmount, nil),
+		api.accounts.NewControlAction(issueAssetAmount, account1ID, nil),
 	}, time.Now().Add(time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)

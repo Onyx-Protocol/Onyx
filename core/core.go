@@ -40,7 +40,7 @@ func (a *API) reset(ctx context.Context, req struct {
 }
 
 func (a *API) info(ctx context.Context) (map[string]interface{}, error) {
-	if a.Config == nil {
+	if a.config == nil {
 		// never configured
 		return map[string]interface{}{
 			"is_configured": false,
@@ -63,9 +63,9 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		generatorHeight  uint64
 		generatorFetched time.Time
 		snapshot         = fetch.SnapshotProgress()
-		localHeight      = a.Chain.Height()
+		localHeight      = a.chain.Height()
 	)
-	if a.Config.IsGenerator {
+	if a.config.IsGenerator {
 		now := time.Now()
 		generatorHeight = localHeight
 		generatorFetched = now
@@ -88,18 +88,18 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 
 	m := map[string]interface{}{
 		"is_configured":                     true,
-		"configured_at":                     a.Config.ConfiguredAt,
-		"is_signer":                         a.Config.IsSigner,
-		"is_generator":                      a.Config.IsGenerator,
-		"generator_url":                     a.Config.GeneratorURL,
-		"generator_access_token":            obfuscateTokenSecret(a.Config.GeneratorAccessToken),
-		"blockchain_id":                     a.Config.BlockchainID,
+		"configured_at":                     a.config.ConfiguredAt,
+		"is_signer":                         a.config.IsSigner,
+		"is_generator":                      a.config.IsGenerator,
+		"generator_url":                     a.config.GeneratorURL,
+		"generator_access_token":            obfuscateTokenSecret(a.config.GeneratorAccessToken),
+		"blockchain_id":                     a.config.BlockchainID,
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
 		"is_production":                     config.Production,
 		"network_rpc_version":               networkRPCVersion,
-		"core_id":                           a.Config.ID,
+		"core_id":                           a.config.ID,
 		"version":                           config.Version,
 		"build_commit":                      config.BuildCommit,
 		"build_date":                        config.BuildDate,
@@ -120,7 +120,7 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 }
 
 func (a *API) configure(ctx context.Context, x *config.Config) error {
-	if a.Config != nil {
+	if a.config != nil {
 		return errAlreadyConfigured
 	}
 
@@ -128,7 +128,7 @@ func (a *API) configure(ctx context.Context, x *config.Config) error {
 		x.MaxIssuanceWindow.Duration = 24 * time.Hour
 	}
 
-	err := config.Configure(ctx, a.DB, x)
+	err := config.Configure(ctx, a.db, x)
 	if err != nil {
 		return err
 	}

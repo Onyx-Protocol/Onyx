@@ -24,7 +24,7 @@ func (a *API) createAccountReceiver(ctx context.Context, ins []struct {
 			defer wg.Done()
 			defer batchRecover(subctx, &responses[i])
 
-			receiver, err := a.Accounts.CreateReceiver(subctx, ins[i].AccountID, ins[i].AccountAlias, ins[i].ExpiresAt)
+			receiver, err := a.accounts.CreateReceiver(subctx, ins[i].AccountID, ins[i].AccountAlias, ins[i].ExpiresAt)
 			if err != nil {
 				responses[i] = err
 			} else {

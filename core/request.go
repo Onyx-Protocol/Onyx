@@ -25,7 +25,7 @@ func (a *API) filterAliases(ctx context.Context, br *buildRequest) error {
 		id, _ := m["assset_id"].(string)
 		alias, _ := m["asset_alias"].(string)
 		if id == "" && alias != "" {
-			asset, err := a.Assets.FindByAlias(ctx, alias)
+			asset, err := a.assets.FindByAlias(ctx, alias)
 			if err != nil {
 				return errors.WithDetailf(err, "invalid asset alias %s on action %d", alias, i)
 			}
@@ -35,7 +35,7 @@ func (a *API) filterAliases(ctx context.Context, br *buildRequest) error {
 		id, _ = m["account_id"].(string)
 		alias, _ = m["account_alias"].(string)
 		if id == "" && alias != "" {
-			acc, err := a.Accounts.FindByAlias(ctx, alias)
+			acc, err := a.accounts.FindByAlias(ctx, alias)
 			if err != nil {
 				return errors.WithDetailf(err, "invalid account alias %s on action %d", alias, i)
 			}
