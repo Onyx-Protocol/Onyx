@@ -86,9 +86,10 @@ var (
 func init() {
 	var version string
 	if buildTag != "?" {
+		// build tag with chain-core-server- prefix indicates official release
 		version = strings.TrimPrefix(buildTag, "chain-core-server-")
 	} else {
-		// +changes suffix indicates non-release build
+		// version of the form rev123 indicates non-release build
 		version = rev.ID
 	}
 
