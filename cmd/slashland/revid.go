@@ -14,8 +14,7 @@ var revIDLang = map[string]*template.Template{
 	"generated/rev/revid.rb":   template.Must(template.New("").Parse(revIDRuby)),
 }
 
-const revIDGo = `
-package rev
+const revIDGo = `package rev
 
 const ID string = "{{.}}"
 `
