@@ -274,6 +274,13 @@ func commitRevIDs(landdir, baseBranch string) error {
 		}
 	}
 
+	if isClean(landdir) {
+		// Avoid adding empty commits here if the revid hasn't
+		// changed since the last rebase. This way we don't
+		// have to wait on CI to run, we can land immediately.
+		return nil
+	}
+
 	cmd := dirCmd(landdir, "git", "commit", "--allow-empty", "-m", "auto rev id", "generated")
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
@@ -403,4 +410,12 @@ func clone(dir, ref, repo string) {
 	if err := c.Run(); err != nil {
 		panic(fmt.Errorf("%s: %v", strings.Join(c.Args, " "), err))
 	}
+}
+
+func isClean(dir string) bool {
+	cmd := exec.Command("git", "diff-index", "--quiet", "HEAD")
+	cmd.Dir = dir
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	return err == nil
 }
