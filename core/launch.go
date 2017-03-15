@@ -67,6 +67,9 @@ func RateLimit(keyFn func(*http.Request) string, burst, perSecond int) LaunchOpt
 // LocalGenerator configures the launched Core to run as a Generator.
 func LocalGenerator(gen *generator.Generator) LaunchOption {
 	return func(a *API) {
+		if a.remoteGenerator != nil {
+			panic("core configured with local and remote generator")
+		}
 		a.generator = gen
 		a.submitter = gen
 	}
@@ -76,6 +79,9 @@ func LocalGenerator(gen *generator.Generator) LaunchOption {
 // the provided remote generator.
 func RemoteGenerator(client *rpc.Client) LaunchOption {
 	return func(a *API) {
+		if a.generator != nil {
+			panic("core configured with local and remote generator")
+		}
 		a.remoteGenerator = client
 		a.submitter = &txbuilder.RemoteGenerator{Peer: client}
 	}
