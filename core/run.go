@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -149,9 +150,12 @@ func Run(
 	for _, opt := range opts {
 		opt(a)
 	}
+	if a.remoteGenerator == nil && a.generator == nil {
+		return nil, errors.New("no generator configured")
+	}
+
 	a.fetchhealth = a.HealthSetter("fetch")
 	a.genhealth = a.HealthSetter("generator")
-
 	if a.indexTxs {
 		go pinStore.Listen(ctx, query.TxPinName, dbURL)
 		a.indexer.RegisterAnnotator(a.assets.AnnotateTxs)
