@@ -286,7 +286,7 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 
 	// Launch the Core. This will startup the various Core subsystems,
 	// and begin leader election.
-	api, err := core.Launch(ctx, conf, db, *dbURL, c, *listenAddr, opts...)
+	api, err := core.Launch(ctx, conf, db, *dbURL, c, store, *listenAddr, opts...)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}

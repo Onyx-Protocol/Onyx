@@ -107,6 +107,7 @@ func Launch(
 	db pg.DB,
 	dbURL string,
 	c *protocol.Chain,
+	store *txdb.Store,
 	routableAddress string,
 	opts ...LaunchOption,
 ) (*API, error) {
@@ -128,7 +129,7 @@ func Launch(
 
 	a := &API{
 		chain:        c,
-		store:        txdb.NewStore(db),
+		store:        store,
 		pinStore:     pinStore,
 		assets:       assets,
 		accounts:     accounts,
