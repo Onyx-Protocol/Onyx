@@ -46,6 +46,29 @@ func BlockSigner(signFn func(context.Context, *bc.Block) ([]byte, error)) RunOpt
 	return func(a *API) { a.signer = signFn }
 }
 
+// GeneratorLocal configures the launched Core to run as a Generator.
+func GeneratorLocal(gen *generator.Generator) RunOption {
+	return func(a *API) {
+		if a.remoteGenerator != nil {
+			panic("core configured with local and remote generator")
+		}
+		a.generator = gen
+		a.submitter = gen
+	}
+}
+
+// GeneratorRemote configures the launched Core to fetch blocks from
+// the provided remote generator.
+func GeneratorRemote(client *rpc.Client) RunOption {
+	return func(a *API) {
+		if a.generator != nil {
+			panic("core configured with local and remote generator")
+		}
+		a.remoteGenerator = client
+		a.submitter = &txbuilder.RemoteGenerator{Peer: client}
+	}
+}
+
 // IndexTransactions configures whether or not transactions should be
 // annotated and indexed for the query engine.
 func IndexTransactions(b bool) RunOption {
@@ -62,29 +85,6 @@ func RateLimit(keyFn func(*http.Request) string, burst, perSecond int) RunOption
 			burst:     burst,
 			perSecond: perSecond,
 		})
-	}
-}
-
-// LocalGenerator configures the launched Core to run as a Generator.
-func LocalGenerator(gen *generator.Generator) RunOption {
-	return func(a *API) {
-		if a.remoteGenerator != nil {
-			panic("core configured with local and remote generator")
-		}
-		a.generator = gen
-		a.submitter = gen
-	}
-}
-
-// RemoteGenerator configures the launched Core to fetch blocks from
-// the provided remote generator.
-func RemoteGenerator(client *rpc.Client) RunOption {
-	return func(a *API) {
-		if a.generator != nil {
-			panic("core configured with local and remote generator")
-		}
-		a.remoteGenerator = client
-		a.submitter = &txbuilder.RemoteGenerator{Peer: client}
 	}
 }
 
@@ -108,6 +108,9 @@ func RunUnconfigured(ctx context.Context, db pg.DB, opts ...RunOption) *API {
 // start listening for HTTP requests. To begin serving HTTP requests, use
 // API.Handler to retrieve an http.Handler that can be used in a call to
 // http.ListenAndServe.
+//
+// Either the GeneratorLocal or the GeneratorRemote RunOption is
+// required.
 func Run(
 	ctx context.Context,
 	conf *config.Config,

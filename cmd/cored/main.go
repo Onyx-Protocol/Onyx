@@ -269,9 +269,9 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 		c.MaxIssuanceWindow = conf.MaxIssuanceWindow.Duration
 
 		gen := generator.New(c, signers, db)
-		opts = append(opts, core.LocalGenerator(gen))
+		opts = append(opts, core.GeneratorLocal(gen))
 	} else {
-		opts = append(opts, core.RemoteGenerator(&rpc.Client{
+		opts = append(opts, core.GeneratorRemote(&rpc.Client{
 			BaseURL:      conf.GeneratorURL,
 			AccessToken:  conf.GeneratorAccessToken,
 			Username:     processID,
