@@ -243,8 +243,6 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 		opts = append(opts, core.RateLimit(limit.RemoteAddrID, 2*(*rpsRemoteAddr), *rpsRemoteAddr))
 	}
 	// If the Core is configured as a block signer, add the sign-block RPC handler.
-	// TODO(jackson): Should this be handled using the callback passed to
-	// API.Handler like how we add the mockHSM routes?
 	if conf.IsSigner {
 		localSigner, err = initializeLocalSigner(ctx, conf, db, c, processID)
 		if err != nil {
