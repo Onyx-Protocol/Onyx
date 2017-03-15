@@ -174,7 +174,7 @@ func TestRecovery(t *testing.T) {
 
 		// We crashed at some point during block generation. Do it again,
 		// without crashing.
-		err = generateBlock(context.Background(), t, wrappedDB, timestamp, poolTxs)
+		err = generateBlock(ctx, t, wrappedDB, timestamp, poolTxs)
 		if err != nil {
 			t.Fatal(err)
 		}
