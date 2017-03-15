@@ -158,7 +158,7 @@ func Launch(
 	go accounts.ExpireReservations(ctx, expireReservationsPeriod)
 
 	// GC old submitted txs periodically.
-	go cleanupSubmittedTxs(ctx, a.db)
+	go cleanUpSubmittedTxs(ctx, a.db)
 
 	// When this cored becomes leader, run a.lead to perform
 	// leader-only Core duties.

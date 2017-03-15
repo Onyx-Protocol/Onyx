@@ -174,10 +174,10 @@ func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHei
 	return height, err
 }
 
-// cleanupSubmittedTxs will periodically delete records of submitted txs
+// cleanUpSubmittedTxs will periodically delete records of submitted txs
 // older than a day. This function blocks and only exits when its context
 // is cancelled.
-func cleanupSubmittedTxs(ctx context.Context, db pg.DB) {
+func cleanUpSubmittedTxs(ctx context.Context, db pg.DB) {
 	ticker := time.NewTicker(15 * time.Minute)
 	for {
 		select {
