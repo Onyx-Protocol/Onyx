@@ -62,6 +62,8 @@ type API struct {
 	config          *config.Config
 	submitter       txbuilder.Submitter
 	db              pg.DB
+	mux             *http.ServeMux
+	handler         http.Handler
 	addr            string
 	altAuth         func(*http.Request) bool
 	signer          func(context.Context, *bc.Block) ([]byte, error)
@@ -74,6 +76,10 @@ type API struct {
 
 	healthMu     sync.Mutex
 	healthErrors map[string]interface{}
+}
+
+func (a *API) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	a.handler.ServeHTTP(rw, req)
 }
 
 type requestLimit struct {
@@ -103,7 +109,7 @@ func (a *API) needConfig() func(f interface{}) http.Handler {
 	return jsonHandler
 }
 
-func (a *API) Handler(register func(*http.ServeMux, *API)) http.Handler {
+func (a *API) buildHandler() {
 	// Setup the muxer.
 	needConfig := a.needConfig()
 
@@ -112,7 +118,7 @@ func (a *API) Handler(register func(*http.ServeMux, *API)) http.Handler {
 		devOnly = func(h http.Handler) http.Handler { return alwaysError(errProduction) }
 	}
 
-	m := http.NewServeMux()
+	m := a.mux
 	m.Handle("/", alwaysError(errNotFound))
 
 	m.Handle("/create-account", needConfig(a.createAccount))
@@ -161,10 +167,6 @@ func (a *API) Handler(register func(*http.ServeMux, *API)) http.Handler {
 	m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
-	if register != nil {
-		register(m, a)
-	}
-
 	latencyHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if l := latency(m, req); l != nil {
 			defer l.RecordSince(time.Now())
@@ -187,8 +189,10 @@ func (a *API) Handler(register func(*http.ServeMux, *API)) http.Handler {
 	handler = coreCounter(handler)
 	handler = reqid.Handler(handler)
 	handler = timeoutContextHandler(handler)
-
-	return handler
+	if a.config != nil {
+		handler = blockchainIDHandler(handler, a.config.BlockchainID.String())
+	}
+	a.handler = handler
 }
 
 // Used as a request object for api queries
@@ -245,6 +249,15 @@ func timeoutContextHandler(handler http.Handler) http.Handler {
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		handler.ServeHTTP(w, req.WithContext(ctx))
+	})
+}
+
+// blockchainIDHandler adds the Blockchain-ID HTTP header to all
+// requests.
+func blockchainIDHandler(handler http.Handler, blockchainID string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set(rpc.HeaderBlockchainID, blockchainID)
+		handler.ServeHTTP(w, req)
 	})
 }
 

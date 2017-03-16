@@ -49,10 +49,8 @@ func authLoopbackInDev(req *http.Request) bool {
 	return err == nil && a.IP.IsLoopback()
 }
 
-func hsmRegister(db pg.DB) func(*http.ServeMux, *core.API) {
-	hsm := mockhsm.New(db)
-	handler := &core.MockHSMHandler{MockHSM: hsm}
-	return handler.Register
+func devEnableMockHSM(db pg.DB) []core.RunOption {
+	return []core.RunOption{core.MockHSM(mockhsm.New(db))}
 }
 
 func devHSM(db pg.DB) (blocksigner.Signer, error) {

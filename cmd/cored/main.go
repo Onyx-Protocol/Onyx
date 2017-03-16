@@ -171,8 +171,7 @@ func runServer() {
 		h = launchConfiguredCore(ctx, db, conf, processID)
 	} else {
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		api := core.RunUnconfigured(ctx, db, core.AlternateAuth(authLoopbackInDev))
-		h = api.Handler(nil)
+		h = core.RunUnconfigured(ctx, db, core.AlternateAuth(authLoopbackInDev))
 	}
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
@@ -235,6 +234,7 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 	// Allow loopback/localhost requests in Developer Edition.
 	opts = append(opts, core.AlternateAuth(authLoopbackInDev))
 	opts = append(opts, core.IndexTransactions(*indexTxs))
+	opts = append(opts, devEnableMockHSM(db)...)
 	// Add any configured API request rate limits.
 	if *rpsToken > 0 {
 		opts = append(opts, core.RateLimit(limit.AuthUserID, 2*(*rpsToken), *rpsToken))
@@ -287,14 +287,7 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-
-	// Return the API's HTTP Handler.
-	handler := api.Handler(hsmRegister(db))
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		// TODO(jackson): Move this middleware into core.API.Handler?
-		w.Header().Set(rpc.HeaderBlockchainID, conf.BlockchainID.String())
-		handler.ServeHTTP(w, req)
-	})
+	return api
 }
 
 func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c *protocol.Chain, processID string) (*blocksigner.BlockSigner, error) {

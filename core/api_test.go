@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sync"
 	"testing"
 	"time"
@@ -194,9 +195,8 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	m := &MockHSMHandler{}
-	api := &API{config: &config.Config{}}
-	api.Handler(m.Register)
+	api := &API{config: &config.Config{}, mux: http.NewServeMux()}
+	api.buildHandler()
 }
 
 func TestTransfer(t *testing.T) {
