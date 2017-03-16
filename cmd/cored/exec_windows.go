@@ -9,7 +9,6 @@ import (
 	"syscall"
 
 	"chain/core"
-	"chain/os/program"
 )
 
 // We have to do some tricks here because we can't use exec.
@@ -27,7 +26,7 @@ func inChild() bool {
 }
 
 func monitor() {
-	self, err := program.Path()
+	self, err := os.Executable()
 	if err != nil {
 		panic(err)
 	}
