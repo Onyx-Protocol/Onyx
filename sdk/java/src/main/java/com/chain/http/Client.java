@@ -22,6 +22,8 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
+import javax.net.ssl.SSLSocketFactory;
+
 /**
  * The Client object contains all information necessary to
  * perform an HTTP request against a remote API. Typically,
@@ -346,6 +348,9 @@ public class Client {
 
     httpClient.setConnectionPool(builder.pool);
 
+    if (builder.sslSocketFactory != null) {
+      httpClient.setSslSocketFactory(builder.sslSocketFactory);
+    }
     if (builder.proxy != null) {
       httpClient.setProxy(builder.proxy);
     }
@@ -476,6 +481,7 @@ public class Client {
   public static class Builder {
     private URL url;
     private String accessToken;
+    private SSLSocketFactory sslSocketFactory;
     private CertificatePinner cp;
     private long connectTimeout;
     private TimeUnit connectTimeoutUnit;
@@ -530,6 +536,16 @@ public class Client {
      */
     public Builder setAccessToken(String accessToken) {
       this.accessToken = accessToken;
+      return this;
+    }
+
+    /**
+     * Sets the SslSocketFactory for the client
+     * @param sslSocketFactory custom SslSocketFactory
+     * @return
+     */
+    public Builder setSslSocketFactory(SSLSocketFactory sslSocketFactory) {
+      this.sslSocketFactory = sslSocketFactory;
       return this;
     }
 
