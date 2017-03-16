@@ -172,13 +172,13 @@ _Zero point_ `O` is a representation of the _point at infinity_, identity elemen
 
 ### Generators
 
-**Primary generator point** (`G`) is the elliptic curve specified as "B" in Section 5.1 of [[RFC8032](https://tools.ietf.org/html/rfc8032)].
+**Primary generator point** (`G`) is the elliptic curve point specified as "B" in Section 5.1 of [[RFC8032](https://tools.ietf.org/html/rfc8032)].
 
 Generator `G` has the following 32-byte encoding:
 
     G = 0x5866666666666666666666666666666666666666666666666666666666666666
 
-**Secondary generator point** (`J`) is the elliptic curve defined as decoded hash of the primary generator `G`:
+**Secondary generator point** (`J`) is the elliptic curve point defined as decoded hash of the primary generator `G`:
 
     J = 8·Decode(SHA3-256(Encode(G)))
 
@@ -186,6 +186,9 @@ Generator `J` has the following 32-byte encoding:
 
     J = 0x00c774b875ed4e395ebb0782b4d93db838d3c4c0840bc970570517555ca71b77
 
+**Tertiary generator points** (`G[i]`) are 31 elliptic curve points defined as decoded hash of the primary generator `G`:
+
+    G[i] = 8·Decode(SHA3-256(i || Encode(G)))
 
 ### Scalar
 
@@ -1038,14 +1041,13 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 **Inputs:**
 
-1. `H’`: the [asset ID commitment](#asset-id-commitment).
-2. `V`: the [value commitment](#value-commitment).
-3. `(ev,ef)`: the [encrypted value](#encrypted-value) including its blinding factor.
-4. `N`: the number of bits to be blinded.
-5. `value`: the 64-bit amount being encrypted and blinded.
-6. `{pt[i]}`: plaintext payload string consisting of `2·N - 1` 32-byte elements.
-7. `f`: the [value blinding factor](#value-blinding-factor).
-8. `rek`: the [record encryption key](#record-encryption-key).
+1. `AC’`: the [asset ID commitment](#asset-id-commitment).
+2. `VC`: the [value commitment](#value-commitment).
+3. `N`: the number of bits to be blinded.
+4. `value`: the 64-bit amount being encrypted and blinded.
+5. `{pt[i]}`: plaintext payload string consisting of `2·N - 1` 32-byte elements.
+6. `f`: the [value blinding factor](#value-blinding-factor).
+7. `rek`: the [record encryption key](#record-encryption-key).
 
 Note: this version of the signing algorithm does not use decimal exponent or minimum value and sets them both to zero.
 
