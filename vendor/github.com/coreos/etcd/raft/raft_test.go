@@ -1856,6 +1856,81 @@ func TestReadOnlyOptionLeaseWithoutCheckQuorum(t *testing.T) {
 	}
 }
 
+// TestReadOnlyForNewLeader ensures that a leader only accepts MsgReadIndex message
+// when it commits at least one log entry at it term.
+func TestReadOnlyForNewLeader(t *testing.T) {
+	nodeConfigs := []struct {
+		id            uint64
+		committed     uint64
+		applied       uint64
+		compact_index uint64
+	}{
+		{1, 1, 1, 0},
+		{2, 2, 2, 2},
+		{3, 2, 2, 2},
+	}
+	peers := make([]stateMachine, 0)
+	for _, c := range nodeConfigs {
+		storage := NewMemoryStorage()
+		storage.Append([]pb.Entry{{Index: 1, Term: 1}, {Index: 2, Term: 1}})
+		storage.SetHardState(pb.HardState{Term: 1, Commit: c.committed})
+		if c.compact_index != 0 {
+			storage.Compact(c.compact_index)
+		}
+		cfg := newTestConfig(c.id, []uint64{1, 2, 3}, 10, 1, storage)
+		cfg.Applied = c.applied
+		raft := newRaft(cfg)
+		peers = append(peers, raft)
+	}
+	nt := newNetwork(peers...)
+
+	// Drop MsgApp to forbid peer a to commit any log entry at its term after it becomes leader.
+	nt.ignore(pb.MsgApp)
+	// Force peer a to become leader.
+	nt.send(pb.Message{From: 1, To: 1, Type: pb.MsgHup})
+
+	sm := nt.peers[1].(*raft)
+	if sm.state != StateLeader {
+		t.Fatalf("state = %s, want %s", sm.state, StateLeader)
+	}
+
+	// Ensure peer a drops read only request.
+	var windex uint64 = 4
+	wctx := []byte("ctx")
+	nt.send(pb.Message{From: 1, To: 1, Type: pb.MsgReadIndex, Entries: []pb.Entry{{Data: wctx}}})
+	if len(sm.readStates) != 0 {
+		t.Fatalf("len(readStates) = %d, want zero", len(sm.readStates))
+	}
+
+	nt.recover()
+
+	// Force peer a to commit a log entry at its term
+	for i := 0; i < sm.heartbeatTimeout; i++ {
+		sm.tick()
+	}
+	nt.send(pb.Message{From: 1, To: 1, Type: pb.MsgProp, Entries: []pb.Entry{{}}})
+	if sm.raftLog.committed != 4 {
+		t.Fatalf("committed = %d, want 4", sm.raftLog.committed)
+	}
+	lastLogTerm := sm.raftLog.zeroTermOnErrCompacted(sm.raftLog.term(sm.raftLog.committed))
+	if lastLogTerm != sm.Term {
+		t.Fatalf("last log term = %d, want %d", lastLogTerm, sm.Term)
+	}
+
+	// Ensure peer a accepts read only request after it commits a entry at its term.
+	nt.send(pb.Message{From: 1, To: 1, Type: pb.MsgReadIndex, Entries: []pb.Entry{{Data: wctx}}})
+	if len(sm.readStates) != 1 {
+		t.Fatalf("len(readStates) = %d, want 1", len(sm.readStates))
+	}
+	rs := sm.readStates[0]
+	if rs.Index != windex {
+		t.Fatalf("readIndex = %d, want %d", rs.Index, windex)
+	}
+	if !bytes.Equal(rs.RequestCtx, wctx) {
+		t.Fatalf("requestCtx = %v, want %v", rs.RequestCtx, wctx)
+	}
+}
+
 func TestLeaderAppResp(t *testing.T) {
 	// initial progress: match = 0; next = 3
 	tests := []struct {

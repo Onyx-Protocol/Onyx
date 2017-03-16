@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"sort"
@@ -518,9 +517,6 @@ func (r *raft) appendEntry(es ...pb.Entry) {
 		es[i].Index = li + 1 + uint64(i)
 	}
 	r.raftLog.append(es...)
-	log.Println("RAFT r.prs", r.prs)
-	log.Println("RAFT r.id", r.id)
-	log.Println("RAFT r.prs[r.id]", r.prs[r.id])
 	r.prs[r.id].maybeUpdate(r.raftLog.lastIndex())
 	// Regardless of maybeCommit's return, our caller will call bcastAppend.
 	r.maybeCommit()
@@ -779,7 +775,6 @@ func (r *raft) Step(m pb.Message) error {
 		}
 
 	default:
-		// log.Printf("about to %s step with msg %s", r.state, m.Type)
 		r.step(r, m)
 	}
 	return nil
@@ -828,6 +823,11 @@ func stepLeader(r *raft, m pb.Message) {
 		return
 	case pb.MsgReadIndex:
 		if r.quorum() > 1 {
+			if r.raftLog.zeroTermOnErrCompacted(r.raftLog.term(r.raftLog.committed)) != r.Term {
+				// Reject read only request when this leader has not committed any log entry at its term.
+				return
+			}
+
 			// thinking: use an interally defined context instead of the user given context.
 			// We can express this in terms of the term and index instead of a user-supplied value.
 			// This would allow multiple reads to piggyback on the same message.
