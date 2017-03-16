@@ -884,7 +884,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 4. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
     
-        P[i] = h·(AC’.H - AC[i].H) + AC’.Ba + AC[i].Ba
+        P[i] = h·(AC’.H - AC[i].H) + AC’.Ba - AC[i].Ba
 
 5. Calculate the private key: `p = c’ - c mod L`.
 6. [Create a ring signature](#create-ring-signature) using `msghash`, `B`, `{P[i]}`, `j`, and `p`.
@@ -927,9 +927,8 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
     4. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
 
-            P[i] = h·(AC’.H - AC[i].H) + AC’.Ba + AC[i].Ba
+            P[i] = h·(AC’.H - AC[i].H) + AC’.Ba - AC[i].Ba
 
-    
     4. [Verify the ring signature](#verify-ring-signature) `e[0], s[0], ... s[n-1]` with `msg` and `{P[i]}`.
 4. Return true if verification was successful, and false otherwise.
 
