@@ -19,7 +19,7 @@ func authLoopbackInDev(req *http.Request) bool {
 	return false
 }
 
-func hsmRegister(_ pg.DB) func(*http.ServeMux, *core.API) {
+func devEnableMockHSM(_ pg.DB) []core.RunOption {
 	return nil
 }
 

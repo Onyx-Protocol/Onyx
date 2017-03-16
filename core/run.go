@@ -96,10 +96,13 @@ func RunUnconfigured(ctx context.Context, db pg.DB, opts ...RunOption) *API {
 	a := &API{
 		db:           db,
 		accessTokens: &accesstoken.CredentialStore{DB: db},
+		mux:          http.NewServeMux(),
 	}
 	for _, opt := range opts {
 		opt(a)
 	}
+	// Construct the complete http.Handler once.
+	a.buildHandler()
 	return a
 }
 
@@ -148,6 +151,7 @@ func Run(
 		accessTokens: &accesstoken.CredentialStore{DB: db},
 		config:       conf,
 		db:           db,
+		mux:          http.NewServeMux(),
 		addr:         routableAddress,
 	}
 	for _, opt := range opts {
@@ -176,6 +180,9 @@ func Run(
 	// When this cored becomes leader, run a.lead to perform
 	// leader-only Core duties.
 	go leader.Run(db, routableAddress, a.lead)
+
+	// Construct the complete http.Handler once.
+	a.buildHandler()
 
 	return a, nil
 }
