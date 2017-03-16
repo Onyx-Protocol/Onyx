@@ -21,25 +21,23 @@ func (r *Retirement) Body() interface{} { return r.body }
 
 func (r Retirement) Ordinal() int { return r.ordinal }
 
-// NewRetirement creates a new Retirement. Once created, its source
-// should be set with setSource or setSourceID.
-func NewRetirement(data Hash, ordinal int) *Retirement {
+func (r *Retirement) AssetID() AssetID {
+	return r.body.Source.Value.AssetID
+}
+
+func (r *Retirement) Amount() uint64 {
+	return r.body.Source.Value.Amount
+}
+
+func (r *Retirement) Data() Hash {
+	return r.body.Data
+}
+
+// NewRetirement creates a new Retirement.
+func NewRetirement(source valueSource, data Hash, ordinal int) *Retirement {
 	r := new(Retirement)
+	r.body.Source = source
 	r.body.Data = data
 	r.ordinal = ordinal
 	return r
-}
-
-func (r *Retirement) setSource(e Entry, value AssetAmount, position uint64) {
-	r.setSourceID(EntryID(e), value, position)
-	r.Source = e
-}
-
-func (r *Retirement) setSourceID(sourceID Hash, value AssetAmount, position uint64) {
-	r.body.Source = valueSource{
-		Ref:      sourceID,
-		Value:    value,
-		Position: position,
-	}
-	r.Source = nil
 }

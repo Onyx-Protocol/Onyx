@@ -400,14 +400,14 @@ func TestCryptoOps(t *testing.T) {
 	}, {
 		op: OP_TXSIGHASH,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			tx:        tx,
-			txContext: txContext(&tx.TxData, 0),
+			runLimit:   50000,
+			tx:         tx.TxEntries,
+			inputIndex: 0,
 		},
 		wantVM: &virtualMachine{
-			runLimit:  49704,
-			tx:        tx,
-			txContext: txContext(&tx.TxData, 0),
+			runLimit:   49704,
+			tx:         tx.TxEntries,
+			inputIndex: 0,
 			dataStack: [][]byte{{
 				47, 0, 60, 221, 100, 66, 123, 94,
 				237, 214, 204, 181, 133, 71, 2, 11,
@@ -418,9 +418,9 @@ func TestCryptoOps(t *testing.T) {
 	}, {
 		op: OP_TXSIGHASH,
 		startVM: &virtualMachine{
-			runLimit:  0,
-			tx:        tx,
-			txContext: txContext(&tx.TxData, 0),
+			runLimit:   0,
+			tx:         tx.TxEntries,
+			inputIndex: 0,
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
@@ -434,7 +434,7 @@ func TestCryptoOps(t *testing.T) {
 		op: OP_BLOCKHASH,
 		startVM: &virtualMachine{
 			runLimit: 50000,
-			block:    &bc.Block{},
+			block:    bc.MapBlock(&bc.Block{}),
 		},
 		wantVM: &virtualMachine{
 			runLimit: 49832,
@@ -444,13 +444,13 @@ func TestCryptoOps(t *testing.T) {
 				157, 235, 138, 214, 147, 207, 55, 17,
 				254, 131, 9, 179, 144, 106, 90, 134,
 			}},
-			block: &bc.Block{},
+			block: bc.MapBlock(&bc.Block{}),
 		},
 	}, {
 		op: OP_BLOCKHASH,
 		startVM: &virtualMachine{
 			runLimit: 0,
-			block:    &bc.Block{},
+			block:    bc.MapBlock(&bc.Block{}),
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
@@ -504,16 +504,4 @@ func mustDecodeHex(h string) []byte {
 		panic(err)
 	}
 	return bits
-}
-
-func txContext(txData *bc.TxData, inputIndex int) (c bc.VMContext) {
-	// special case: no inputs, just use zero value for vm context
-	if len(txData.Inputs) == 0 {
-		return
-	}
-	hashes, err := bc.ComputeTxHashes(txData)
-	if err != nil {
-		panic(err)
-	}
-	return *hashes.VMContexts[inputIndex]
 }

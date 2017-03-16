@@ -45,7 +45,7 @@ func materializeWitnesses(txTemplate *Template) error {
 			}
 		}
 
-		msg.Inputs[sigInst.Position].SetArguments(witness)
+		msg.SetInputArguments(sigInst.Position, witness)
 	}
 
 	return nil
@@ -151,9 +151,8 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 		minTimeMS: tpl.Transaction.MinTime,
 		maxTimeMS: tpl.Transaction.MaxTime,
 	})
-	inp := tpl.Transaction.Inputs[index]
-	if !inp.IsIssuance() {
-		constraints = append(constraints, outputIDConstraint(tpl.Transaction.SpentOutputIDs[index]))
+	if sp, ok := tpl.Transaction.TxEntries.TxInputs[index].(*bc.Spend); ok {
+		constraints = append(constraints, outputIDConstraint(sp.SpentOutputID()))
 	}
 
 	// Commitment to the tx-level refdata is conditional on it being
@@ -164,7 +163,7 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 	if len(tpl.Transaction.ReferenceData) > 0 {
 		constraints = append(constraints, refdataConstraint{tpl.Transaction.ReferenceData, true})
 	}
-	constraints = append(constraints, refdataConstraint{inp.ReferenceData, false})
+	constraints = append(constraints, refdataConstraint{tpl.Transaction.Inputs[index].ReferenceData, false})
 
 	for i, out := range tpl.Transaction.Outputs {
 		c := &payConstraint{

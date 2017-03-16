@@ -107,7 +107,7 @@ func (g *Generator) Generate(
 	}
 	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
 		s := state.Copy(g.latestSnapshot)
-		err := validation.ApplyBlock(s, b)
+		err := validation.ApplyBlock(s, bc.MapBlock(b))
 		if err != nil {
 			log.Fatalkv(ctx, log.KeyError, err)
 		}

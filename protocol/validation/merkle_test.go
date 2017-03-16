@@ -49,7 +49,7 @@ func TestCalcMerkleRoot(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		var txs []*bc.Tx
+		var txs []*bc.TxEntries
 		for _, wit := range c.witnesses {
 			txs = append(txs, bc.NewTx(bc.TxData{
 				Inputs: []*bc.TxInput{
@@ -60,7 +60,7 @@ func TestCalcMerkleRoot(t *testing.T) {
 						},
 					},
 				},
-			}))
+			}).TxEntries)
 		}
 		got, err := CalcMerkleRoot(txs)
 		if err != nil {
@@ -77,25 +77,25 @@ func TestDuplicateLeaves(t *testing.T) {
 	var initialBlockHash bc.Hash
 	trueProg := []byte{byte(vm.OP_TRUE)}
 	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyStringHash)
-	txs := make([]*bc.Tx, 6)
+	txs := make([]*bc.TxEntries, 6)
 	for i := uint64(0); i < 6; i++ {
 		now := []byte(time.Now().String())
 		txs[i] = bc.NewTx(bc.TxData{
 			Version: 1,
 			Inputs:  []*bc.TxInput{bc.NewIssuanceInput(now, i, nil, initialBlockHash, trueProg, nil, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, i, trueProg, nil)},
-		})
+		}).TxEntries
 	}
 
 	// first, get the root of an unbalanced tree
-	txns := []*bc.Tx{txs[5], txs[4], txs[3], txs[2], txs[1], txs[0]}
+	txns := []*bc.TxEntries{txs[5], txs[4], txs[3], txs[2], txs[1], txs[0]}
 	root1, err := CalcMerkleRoot(txns)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 
 	// now, get the root of a balanced tree that repeats leaves 0 and 1
-	txns = []*bc.Tx{txs[5], txs[4], txs[3], txs[2], txs[1], txs[0], txs[1], txs[0]}
+	txns = []*bc.TxEntries{txs[5], txs[4], txs[3], txs[2], txs[1], txs[0], txs[1], txs[0]}
 	root2, err := CalcMerkleRoot(txns)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
@@ -117,18 +117,18 @@ func TestAllDuplicateLeaves(t *testing.T) {
 		Version: 1,
 		Inputs:  []*bc.TxInput{issuanceInp},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
-	})
+	}).TxEntries
 	tx1, tx2, tx3, tx4, tx5, tx6 := tx, tx, tx, tx, tx, tx
 
 	// first, get the root of an unbalanced tree
-	txs := []*bc.Tx{tx6, tx5, tx4, tx3, tx2, tx1}
+	txs := []*bc.TxEntries{tx6, tx5, tx4, tx3, tx2, tx1}
 	root1, err := CalcMerkleRoot(txs)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 
 	// now, get the root of a balanced tree that repeats leaves 5 and 6
-	txs = []*bc.Tx{tx6, tx5, tx6, tx5, tx4, tx3, tx2, tx1}
+	txs = []*bc.TxEntries{tx6, tx5, tx6, tx5, tx4, tx3, tx2, tx1}
 	root2, err := CalcMerkleRoot(txs)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)

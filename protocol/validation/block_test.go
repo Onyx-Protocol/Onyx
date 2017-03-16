@@ -15,14 +15,13 @@ var emptyMerkleRoot = mustParseHash("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43
 
 func TestValidateBlockHeader(t *testing.T) {
 	ctx := context.Background()
-	prev := &bc.Block{BlockHeader: bc.BlockHeader{
+	prev := bc.MapBlock(&bc.Block{BlockHeader: bc.BlockHeader{
 		Height:      1,
 		TimestampMS: 5,
 		BlockCommitment: bc.BlockCommitment{
 			ConsensusProgram: []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
 		},
-	}}
-	prevHash := prev.Hash()
+	}})
 	cases := []struct {
 		desc   string
 		header bc.BlockHeader
@@ -43,7 +42,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}, {
 		desc: "bad block height",
 		header: bc.BlockHeader{
-			PreviousBlockHash: prevHash,
+			PreviousBlockHash: prev.ID,
 			Height:            3,
 			BlockCommitment: bc.BlockCommitment{
 				TransactionsMerkleRoot: emptyMerkleRoot,
@@ -56,7 +55,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}, {
 		desc: "bad block timestamp",
 		header: bc.BlockHeader{
-			PreviousBlockHash: prevHash,
+			PreviousBlockHash: prev.ID,
 			Height:            2,
 			TimestampMS:       3,
 			BlockCommitment: bc.BlockCommitment{
@@ -70,7 +69,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}, {
 		desc: "fake initial block",
 		header: bc.BlockHeader{
-			PreviousBlockHash: prevHash,
+			PreviousBlockHash: prev.ID,
 			Height:            1,
 			TimestampMS:       6,
 			BlockCommitment: bc.BlockCommitment{
@@ -85,7 +84,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}, {
 		desc: "bad block output script",
 		header: bc.BlockHeader{
-			PreviousBlockHash: prevHash,
+			PreviousBlockHash: prev.ID,
 			Height:            2,
 			TimestampMS:       6,
 			BlockCommitment: bc.BlockCommitment{
@@ -100,7 +99,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}, {
 		desc: "bad block signature script",
 		header: bc.BlockHeader{
-			PreviousBlockHash: prevHash,
+			PreviousBlockHash: prev.ID,
 			Height:            2,
 			TimestampMS:       6,
 			BlockCommitment: bc.BlockCommitment{
@@ -115,7 +114,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}, {
 		desc: "valid header",
 		header: bc.BlockHeader{
-			PreviousBlockHash: prevHash,
+			PreviousBlockHash: prev.ID,
 			Height:            2,
 			TimestampMS:       6,
 			BlockCommitment: bc.BlockCommitment{
@@ -129,9 +128,9 @@ func TestValidateBlockHeader(t *testing.T) {
 		want: nil,
 	}}
 	for i, c := range cases {
-		block := &bc.Block{BlockHeader: c.header}
+		block := bc.MapBlock(&bc.Block{BlockHeader: c.header})
 		snap := state.Empty()
-		got := ValidateBlockForAccept(ctx, snap, prevHash, prev, block, nil) // nil b/c no txs to validate
+		got := ValidateBlockForAccept(ctx, snap, prev.ID, prev, block, nil) // nil b/c no txs to validate
 		if errors.Root(got) != c.want {
 			t.Errorf("%d", i)
 			t.Errorf("%s: got %q want %q", c.desc, got, c.want)

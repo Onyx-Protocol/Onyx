@@ -15,7 +15,7 @@ func BenchmarkValidateTx(b *testing.B) {
 	c := prottest.NewChain(b)
 	tx := prottest.NewIssuanceTx(b, c)
 	for i := 0; i < b.N; i++ {
-		err := validation.CheckTxWellFormed(tx)
+		err := validation.CheckTxWellFormed(tx.TxEntries)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -40,10 +40,13 @@ func BenchmarkValidateBlock(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	b1Entries := bc.MapBlock(b1)
+	nextBlockEntries := bc.MapBlock(nextBlock)
+
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		st := state.Copy(s)
-		err := validation.ValidateBlockForAccept(ctx, st, b1.Hash(), b1, nextBlock, validation.CheckTxWellFormed)
+		err := validation.ValidateBlockForAccept(ctx, st, b1Entries.ID, b1Entries, nextBlockEntries, validation.CheckTxWellFormed)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -53,9 +56,9 @@ func BenchmarkValidateBlock(b *testing.B) {
 func BenchmarkCalcMerkleRoot(b *testing.B) {
 	b.StopTimer()
 	c := prottest.NewChain(b)
-	var txs []*bc.Tx
+	var txs []*bc.TxEntries
 	for i := 0; i < 5000; i++ {
-		txs = append(txs, prottest.NewIssuanceTx(b, c))
+		txs = append(txs, prottest.NewIssuanceTx(b, c).TxEntries)
 	}
 	b.StartTimer()
 

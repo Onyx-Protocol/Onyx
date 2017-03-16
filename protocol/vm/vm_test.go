@@ -233,7 +233,7 @@ func TestVerifyTxInput(t *testing.T) {
 			Inputs: []*bc.TxInput{c.input},
 		})
 
-		gotErr := VerifyTxInput(tx, 0)
+		gotErr := VerifyTxInput(tx.TxEntries, 0)
 
 		if errors.Root(gotErr) != c.wantErr {
 			t.Errorf("VerifyTxInput(%d) err = %v want %v", i, gotErr, c.wantErr)
@@ -242,35 +242,35 @@ func TestVerifyTxInput(t *testing.T) {
 }
 
 func TestVerifyBlockHeader(t *testing.T) {
-	block := &bc.Block{
+	block := bc.MapBlock(&bc.Block{
 		BlockHeader: bc.BlockHeader{
 			BlockWitness: bc.BlockWitness{
 				Witness: [][]byte{{2}, {3}},
 			},
 		},
-	}
-	prevBlock := &bc.Block{
+	})
+	prevBlock := bc.MapBlock(&bc.Block{
 		BlockHeader: bc.BlockHeader{
 			BlockCommitment: bc.BlockCommitment{
 				ConsensusProgram: []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			},
 		},
-	}
+	})
 
-	gotErr := VerifyBlockHeader(&prevBlock.BlockHeader, block)
+	gotErr := VerifyBlockHeader(prevBlock.BlockHeaderEntry, block)
 	if gotErr != nil {
 		t.Errorf("unexpected error: %v", gotErr)
 	}
 
-	block = &bc.Block{
+	block = bc.MapBlock(&bc.Block{
 		BlockHeader: bc.BlockHeader{
 			BlockWitness: bc.BlockWitness{
 				Witness: [][]byte{make([]byte, 50000)},
 			},
 		},
-	}
+	})
 
-	gotErr = VerifyBlockHeader(&prevBlock.BlockHeader, block)
+	gotErr = VerifyBlockHeader(prevBlock.BlockHeaderEntry, block)
 	if errors.Root(gotErr) != ErrRunLimitExceeded {
 		t.Error("expected block to exceed run limit")
 	}
@@ -390,7 +390,7 @@ func TestStep(t *testing.T) {
 		startVM: &virtualMachine{
 			program:  []byte{byte(OP_INDEX)},
 			runLimit: 1,
-			tx:       &bc.Tx{},
+			tx:       bc.NewTx(bc.TxData{}).TxEntries,
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
@@ -467,7 +467,7 @@ func TestVerifyTxInputQuickCheck(t *testing.T) {
 		tx := bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{bc.NewSpendInput(witnesses, bc.Hash{}, bc.AssetID{}, 10, 0, program, bc.Hash{}, nil)},
 		})
-		verifyTxInput(tx, 0)
+		verifyTxInput(tx.TxEntries, 0)
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -487,17 +487,19 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 				ok = false
 			}
 		}()
-		prev := &bc.BlockHeader{
-			BlockCommitment: bc.BlockCommitment{
-				ConsensusProgram: program,
+		prev := bc.MapBlock(&bc.Block{
+			BlockHeader: bc.BlockHeader{
+				BlockCommitment: bc.BlockCommitment{
+					ConsensusProgram: program,
+				},
 			},
-		}
-		block := &bc.Block{BlockHeader: bc.BlockHeader{
+		})
+		block := bc.MapBlock(&bc.Block{BlockHeader: bc.BlockHeader{
 			BlockWitness: bc.BlockWitness{
 				Witness: witnesses,
 			},
-		}}
-		verifyBlockHeader(prev, block)
+		}})
+		verifyBlockHeader(prev.BlockHeaderEntry, block)
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {

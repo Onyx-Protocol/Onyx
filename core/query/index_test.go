@@ -5,19 +5,20 @@ import (
 	"testing"
 
 	"chain/database/pg/pgtest"
-	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 )
 
 func TestAnnotatedTxs(t *testing.T) {
 	ctx := context.Background()
 	db := pgtest.NewTx(t)
 
-	indexer := NewIndexer(db, &protocol.Chain{}, nil)
+	c := prottest.NewChain(t)
+	indexer := NewIndexer(db, c, nil)
 	b := &bc.Block{
 		Transactions: []*bc.Tx{
-			{TxHashes: bc.TxHashes{ID: bc.Hash{0: 0x01}}},
-			{TxHashes: bc.TxHashes{ID: bc.Hash{0: 0x02}}},
+			prottest.NewIssuanceTx(t, c),
+			prottest.NewIssuanceTx(t, c),
 		},
 	}
 	txs, err := indexer.insertAnnotatedTxs(ctx, b)

@@ -134,7 +134,8 @@ func opTxSigHash(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	h := vm.txContext.TxSigHash
+
+	h := vm.tx.SigHash(vm.inputIndex)
 	return vm.push(h[:], false)
 }
 
@@ -142,10 +143,9 @@ func opBlockHash(vm *virtualMachine) error {
 	if vm.block == nil {
 		return ErrContext
 	}
-	h := vm.block.Hash()
-	err := vm.applyCost(4 * int64(len(h)))
+	err := vm.applyCost(4 * int64(len(vm.block.ID)))
 	if err != nil {
 		return err
 	}
-	return vm.push(h[:], false)
+	return vm.push(vm.block.ID[:], false)
 }

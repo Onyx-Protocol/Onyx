@@ -18,15 +18,15 @@ func TestTxHashes(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		hashes, err := ComputeTxHashes(c.txdata)
+		txEntries, err := ComputeTxEntries(c.txdata)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(hashes.VMContexts) != len(c.txdata.Inputs) {
-			t.Errorf("case %d: len(hashes.VMContexts) = %d, want %d", i, len(hashes.VMContexts), len(c.txdata.Inputs))
+		if len(txEntries.TxInputs) != len(c.txdata.Inputs) {
+			t.Errorf("case %d: len(txEntries.TxInputs) = %d, want %d", i, len(txEntries.TxInputs), len(c.txdata.Inputs))
 		}
-		if c.hash != hashes.ID {
-			t.Errorf("case %d: got txid %x, want %x", i, hashes.ID[:], c.hash[:])
+		if c.hash != txEntries.ID {
+			t.Errorf("case %d: got txid %x, want %x", i, txEntries.ID[:], c.hash[:])
 		}
 	}
 }
@@ -34,7 +34,7 @@ func TestTxHashes(t *testing.T) {
 func BenchmarkHashEmptyTx(b *testing.B) {
 	tx := &TxData{}
 	for i := 0; i < b.N; i++ {
-		_, err := ComputeTxHashes(tx)
+		_, err := ComputeTxEntries(tx)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -44,7 +44,7 @@ func BenchmarkHashEmptyTx(b *testing.B) {
 func BenchmarkHashNonemptyTx(b *testing.B) {
 	tx := sampleTx()
 	for i := 0; i < b.N; i++ {
-		_, err := ComputeTxHashes(tx)
+		_, err := ComputeTxEntries(tx)
 		if err != nil {
 			b.Fatal(err)
 		}

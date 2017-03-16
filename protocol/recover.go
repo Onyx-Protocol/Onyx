@@ -47,7 +47,7 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "getting block")
 		}
-		err = validation.ApplyBlock(snapshot, b)
+		err = validation.ApplyBlock(snapshot, bc.MapBlock(b))
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "applying block")
 		}
