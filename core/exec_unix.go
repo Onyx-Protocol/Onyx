@@ -4,7 +4,6 @@ package core
 
 import (
 	"os"
-	"os/exec"
 	"strings"
 	"syscall"
 )
@@ -15,10 +14,7 @@ import (
 // dataToReset should be "blockchain" or "everything" or "".
 // (Any other value is treated like "").
 func execSelf(dataToReset string) {
-	// TODO(kr): use a more reliable way of finding the current program
-	// e.g. 'readlink /proc/self/exe' on linux, or the "apple" argument to main.
-	// See https://unixjunkie.blogspot.com/2006/02/char-apple-argument-vector.html.
-	binpath, err := exec.LookPath(os.Args[0])
+	binpath, err := os.Executable()
 	if err != nil {
 		panic(err)
 	}
