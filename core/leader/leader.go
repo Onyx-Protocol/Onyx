@@ -110,8 +110,6 @@ func Run(ctx context.Context, db pg.DB, addr string, lead func(context.Context))
 				cancel()
 			}
 		}
-		// If leadershipChanges was closed because ctx was cancelled,
-		// cancel leadCtx too on the way out.
 		cancel()
 	}()
 	return l
