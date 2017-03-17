@@ -4,6 +4,7 @@ package leader
 
 import (
 	"context"
+	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -12,16 +13,40 @@ import (
 	"chain/log"
 )
 
-var isLeading atomic.Value
+// ProcessState is an enum describing the current state of the
+// process. A recovering process has become leader but is still
+// recovering the blockchain state. Some functionality is not
+// available until the process enters the Leading state.
+type ProcessState int
 
-// IsLeading returns true if this process is
-// the core leader.
-func IsLeading() bool {
-	v := isLeading.Load()
-	if v == nil {
-		return false
+const (
+	Following ProcessState = iota
+	Recovering
+	Leading
+)
+
+func (ps ProcessState) String() string {
+	switch ps {
+	case Following:
+		return "following"
+	case Recovering:
+		return "recovering"
+	case Leading:
+		return "leading"
+	default:
+		panic(fmt.Errorf("unknown process state %d", ps))
 	}
-	return v.(bool)
+}
+
+var leadingState atomic.Value
+
+// State returns the current state of this process.
+func State() ProcessState {
+	v := leadingState.Load()
+	if v == nil {
+		return Following
+	}
+	return v.(ProcessState)
 }
 
 // Run runs as a goroutine, trying once every five seconds to become
@@ -52,14 +77,15 @@ func Run(db pg.DB, addr string, lead func(context.Context)) {
 	for leader := range leadershipChanges(ctx, l) {
 		if leader {
 			log.Printf(ctx, "I am the core leader")
+			leadingState.Store(Recovering)
 			leadCtx, cancel = context.WithCancel(ctx)
 			l.lead(leadCtx)
+			leadingState.Store(Leading)
 		} else {
 			log.Printf(ctx, "No longer core leader")
+			leadingState.Store(Following)
 			cancel()
 		}
-
-		isLeading.Store(leader)
 	}
 	panic("unreachable")
 }
