@@ -28,11 +28,11 @@ const (
 func (ps ProcessState) String() string {
 	switch ps {
 	case Following:
-		return "FOLLOWING"
+		return "following"
 	case Recovering:
-		return "RECOVERING"
+		return "recovering"
 	case Leading:
-		return "LEADING"
+		return "leading"
 	default:
 		panic(fmt.Errorf("unknown process state %d", ps))
 	}
