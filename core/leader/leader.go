@@ -38,18 +38,41 @@ func (ps ProcessState) String() string {
 	}
 }
 
-var leadingState atomic.Value
+// Leader provides access to the Core leader process.
+type Leader struct {
+	state atomic.Value
+
+	// config
+	db      pg.DB
+	key     string
+	lead    func(context.Context)
+	address string
+}
+
+// Address retrieves a routable address of the current
+// Core leader.
+func (l *Leader) Address(ctx context.Context) (string, error) {
+	const q = `SELECT address FROM leader`
+
+	var addr string
+	err := l.db.QueryRow(ctx, q).Scan(&addr)
+	if err != nil {
+		return "", errors.Wrap(err, "could not fetch leader address")
+	}
+
+	return addr, nil
+}
 
 // State returns the current state of this process.
-func State() ProcessState {
-	v := leadingState.Load()
+func (l *Leader) State() ProcessState {
+	v := l.state.Load()
 	if v == nil {
 		return Following
 	}
 	return v.(ProcessState)
 }
 
-// Run runs as a goroutine, trying once every five seconds to become
+// Run starts a goroutine, trying once every five seconds to become
 // the leader for the core.  If it succeeds, then it calls the
 // function lead (for generating or fetching blocks, and for
 // expiring reservations) and enters a leadership-keepalive loop.
@@ -57,14 +80,17 @@ func State() ProcessState {
 // Function lead is called when the local process becomes the leader.
 // Its context is canceled when the process is deposed as leader.
 //
+// Run returns a pointer to a Leader struct that can be queried to
+// check the state of the process or find the current leader.
+//
 // The Chain Core has up to a 1.5-second refractory period after
 // shutdown, during which no process may be leader.
-func Run(db pg.DB, addr string, lead func(context.Context)) {
+func Run(db pg.DB, addr string, lead func(context.Context)) *Leader {
 	ctx := context.Background()
 	// We use our process's address as the key, because it's unique
 	// among all processes within a Core and it allows a restarted
 	// leader to immediately return to its leadership.
-	l := &leader{
+	l := &Leader{
 		db:      db,
 		key:     addr,
 		lead:    lead,
@@ -72,22 +98,24 @@ func Run(db pg.DB, addr string, lead func(context.Context)) {
 	}
 	log.Printf(ctx, "Using leaderKey: %q", l.key)
 
-	var leadCtx context.Context
-	var cancel func()
-	for leader := range leadershipChanges(ctx, l) {
-		if leader {
-			log.Printf(ctx, "I am the core leader")
-			leadingState.Store(Recovering)
-			leadCtx, cancel = context.WithCancel(ctx)
-			l.lead(leadCtx)
-			leadingState.Store(Leading)
-		} else {
-			log.Printf(ctx, "No longer core leader")
-			leadingState.Store(Following)
-			cancel()
+	go func() {
+		var leadCtx context.Context
+		var cancel func()
+		for leader := range leadershipChanges(ctx, l) {
+			if leader {
+				log.Printf(ctx, "I am the core leader")
+				l.state.Store(Recovering)
+				leadCtx, cancel = context.WithCancel(ctx)
+				l.lead(leadCtx)
+				l.state.Store(Leading)
+			} else {
+				log.Printf(ctx, "No longer core leader")
+				l.state.Store(Following)
+				cancel()
+			}
 		}
-	}
-	panic("unreachable")
+	}()
+	return l
 }
 
 // leadershipChanges spawns a goroutine to check if this process
@@ -100,7 +128,7 @@ func Run(db pg.DB, addr string, lead func(context.Context)) {
 //   happen at the time the process is first elected leader.)
 // * Every value sent on the channel is the opposite of the
 //   previous value.
-func leadershipChanges(ctx context.Context, l *leader) chan bool {
+func leadershipChanges(ctx context.Context, l *Leader) chan bool {
 	ch := make(chan bool)
 	go func() {
 		ticks := time.Tick(500 * time.Millisecond)
@@ -120,15 +148,7 @@ func leadershipChanges(ctx context.Context, l *leader) chan bool {
 	return ch
 }
 
-type leader struct {
-	// config
-	db      pg.DB
-	key     string
-	lead    func(context.Context)
-	address string
-}
-
-func tryForLeadership(ctx context.Context, l *leader) bool {
+func tryForLeadership(ctx context.Context, l *Leader) bool {
 	const insertQ = `
 		INSERT INTO leader (leader_key, address, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '1 second')
 		ON CONFLICT (singleton) DO UPDATE SET leader_key = $1, address = $2, expiry = CURRENT_TIMESTAMP + INTERVAL '1 second'
@@ -155,7 +175,7 @@ func tryForLeadership(ctx context.Context, l *leader) bool {
 	return rowsAffected > 0
 }
 
-func maintainLeadership(ctx context.Context, l *leader) bool {
+func maintainLeadership(ctx context.Context, l *Leader) bool {
 	const updateQ = `
 		UPDATE leader SET expiry = CURRENT_TIMESTAMP + INTERVAL '1 second'
 		WHERE leader_key = $1
@@ -172,18 +192,4 @@ func maintainLeadership(ctx context.Context, l *leader) bool {
 		return false
 	}
 	return rowsAffected > 0
-}
-
-// Address retrieves the IP address of the current
-// core leader.
-func Address(ctx context.Context, db pg.DB) (string, error) {
-	const q = `SELECT address FROM leader`
-
-	var addr string
-	err := db.QueryRow(ctx, q).Scan(&addr)
-	if err != nil {
-		return "", errors.Wrap(err, "could not fetch leader address")
-	}
-
-	return addr, nil
 }

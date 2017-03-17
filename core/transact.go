@@ -98,7 +98,7 @@ func (a *API) build(ctx context.Context, buildReqs []*buildRequest) (interface{}
 	// If we're not the leader, we don't have access to the current
 	// reservations. Forward the build call to the leader process.
 	// TODO(jackson): Distribute reservations across cored processes.
-	if leader.State() != leader.Leading {
+	if a.leader.State() != leader.Leading {
 		var resp interface{}
 		err := a.forwardToLeader(ctx, "/build-transaction", buildReqs, &resp)
 		return resp, err
@@ -289,7 +289,7 @@ type submitArg struct {
 
 // POST /submit-transaction
 func (a *API) submit(ctx context.Context, x submitArg) (interface{}, error) {
-	if leader.State() != leader.Leading {
+	if a.leader.State() != leader.Leading {
 		var resp json.RawMessage
 		err := a.forwardToLeader(ctx, "/submit-transaction", x, &resp)
 		return resp, err

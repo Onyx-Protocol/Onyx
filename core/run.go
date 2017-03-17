@@ -179,7 +179,7 @@ func Run(
 
 	// When this cored becomes leader, run a.lead to perform
 	// leader-only Core duties.
-	go leader.Run(db, routableAddress, a.lead)
+	a.leader = leader.Run(db, routableAddress, a.lead)
 
 	// Construct the complete http.Handler once.
 	a.buildHandler()
