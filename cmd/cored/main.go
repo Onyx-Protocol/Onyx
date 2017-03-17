@@ -37,6 +37,7 @@ import (
 	"chain/log/rotation"
 	"chain/log/splunk"
 	"chain/net/http/limit"
+	"chain/net/http/reqid"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
@@ -128,6 +129,61 @@ func runServer() {
 	ctx := context.Background()
 	env.Parse()
 
+	// We need to be able to add handlers to our serve mux in two phases.
+	// In the first phase, we will start
+	// listening on the raft routes (`/raft`). This allows us to do things like
+	// read the config value stored in raft storage. (A new node in a raft cluster
+	// can't read values without kicking off a consensus round, which in turn
+	// requires this node to be listening for raft requests.)
+	//
+	// Once this node is able to read the config value, it can set up the remaining
+	// cored functionality, and add the rest of the core routes to the serve mux.
+	// That is the second phase.
+	mux := http.NewServeMux()
+
+	var handler http.Handler = mux
+	handler = reqid.Handler(handler)
+
+	secureheader.DefaultConfig.PermitClearLoopback = true
+	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
+	secureheader.DefaultConfig.Next = handler
+
+	server := &http.Server{
+		Addr:         *listenAddr,
+		Handler:      secureheader.DefaultConfig,
+		ReadTimeout:  httpReadTimeout,
+		WriteTimeout: httpWriteTimeout,
+		// Disable HTTP/2 for now until the Go implementation is more stable.
+		// https://github.com/golang/go/issues/16450
+		// https://github.com/golang/go/issues/17071
+		TLSNextProto: map[string]func(*http.Server, *tls.Conn, http.Handler){},
+	}
+
+	// The `ListenAndServe` call has to happen in its own goroutine because
+	// it's blocking and we need to proceed to the rest of the core setup after
+	// we call it.
+	go func() {
+		if *tlsCrt != "" {
+			cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
+			if err != nil {
+				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
+			}
+
+			server.TLSConfig = &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			}
+			err = server.ListenAndServeTLS("", "") // uses TLS certs from above
+			if err != nil {
+				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
+			}
+		} else {
+			err := server.ListenAndServe()
+			if err != nil {
+				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
+			}
+		}
+	}()
+
 	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("hapg", *dbURL)
 	if err != nil {
@@ -171,46 +227,12 @@ func runServer() {
 		h = core.RunUnconfigured(ctx, db, core.AlternateAuth(authLoopbackInDev))
 	}
 
-	secureheader.DefaultConfig.PermitClearLoopback = true
-	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
-	secureheader.DefaultConfig.Next = h
+	mux.Handle("/", h)
+	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
 
-	// Give the remainder of this function a second to reach the
-	// ListenAndServe call, then log a welcome message.
-	go func() {
-		time.Sleep(time.Second)
-		chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
-	}()
-
-	server := &http.Server{
-		Addr:         *listenAddr,
-		Handler:      secureheader.DefaultConfig,
-		ReadTimeout:  httpReadTimeout,
-		WriteTimeout: httpWriteTimeout,
-		// Disable HTTP/2 for now until the Go implementation is more stable.
-		// https://github.com/golang/go/issues/16450
-		// https://github.com/golang/go/issues/17071
-		TLSNextProto: map[string]func(*http.Server, *tls.Conn, http.Handler){},
-	}
-	if *tlsCrt != "" {
-		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
-		}
-
-		server.TLSConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		}
-		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
-		}
-	} else {
-		err = server.ListenAndServe()
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
-		}
-	}
+	// block forever without using any resources so this process won't quit while
+	// the goroutine containing ListenAndServe is still working
+	select {}
 }
 
 func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, processID string) http.Handler {
