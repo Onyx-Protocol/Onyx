@@ -159,7 +159,11 @@ A new node starts here when joining a running network (with height > 1). In that
 
 **Algorithm:**
 
-1. [Validate transaction header](blockchain.md#transaction-header-validation) with the timestamp and block version of the input block header; if it is not valid, halt and return the input blockchain state unchanged.
+1. Validate transaction using the checks below. If any check fails, halt and return the input blockchain state unchanged.
+    1. If the block header version is 1, verify that transaction version is equal to 1.
+    2. If the `Mintime` is greater than zero: verify that it is less than or equal to the block header timestamp.
+    3. If the `Maxtime` is greater than zero: verify that it is greater than or equal to the block header timestamp.
+    4. [Validate transaction header](blockchain.md#transaction-header-validation).
 2. Let `S` be the input blockchain state.
 3. For each visited [nonce entry](blockchain.md#nonce) in the transaction:
     1. If [nonce ID](blockchain.md#entry-id) is already stored in the nonce set of the blockchain state, halt and return the input blockchain state unchanged.
