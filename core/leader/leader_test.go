@@ -9,13 +9,13 @@ import (
 )
 
 func TestFailover(t *testing.T) {
+	ctx := context.Background()
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+
 	var l1, l2 *Leader
 	var wg1, wg2 sync.WaitGroup
 	wg1.Add(1)
 	wg2.Add(1)
-
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := context.Background()
 	ctx1, cancel1 := context.WithCancel(ctx)
 	ctx2, cancel2 := context.WithCancel(ctx)
 	defer cancel1()
