@@ -296,7 +296,7 @@ func writeCode(w io.Writer, path, snippet string) {
 func readSnippet(path, snippet string) (string, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return "", fmt.Errorf("Unable to read source file: %s\n", path)
+		return "", fmt.Errorf("Unable to read source file: %s", path)
 	}
 
 	src := string(b)
