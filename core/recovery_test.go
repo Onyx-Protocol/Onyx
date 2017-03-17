@@ -22,6 +22,7 @@ import (
 	"chain/core/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
@@ -227,6 +228,9 @@ func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.T
 	}
 
 	c, err := protocol.NewChain(ctx, b1.Hash(), store, nil)
+	if err != nil {
+		return errors.Wrap(err)
+	}
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)

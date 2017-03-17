@@ -69,9 +69,6 @@ var (
 
 	race          []interface{} // initialized in race.go
 	httpsRedirect = true        // initialized in insecure.go
-
-	blockPeriod              = time.Second
-	expireReservationsPeriod = time.Second
 )
 
 func init() {
@@ -318,13 +315,6 @@ func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c
 	return s, nil
 }
 
-// remoteSigner defines the address and public key of another Core
-// that may sign blocks produced by this generator.
-type remoteSigner struct {
-	Client *rpc.Client
-	Key    ed25519.PublicKey
-}
-
 // remoteHSM is a client wrapper for an hsm that is used as a blocksigner.Signer
 type remoteHSM struct {
 	Client *rpc.Client
@@ -359,6 +349,13 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 		a = append(a, &remoteSigner{Client: client, Key: ed25519.PublicKey(signer.Pubkey)})
 	}
 	return a
+}
+
+// remoteSigner defines the address and public key of another Core
+// that may sign blocks produced by this generator.
+type remoteSigner struct {
+	Client *rpc.Client
+	Key    ed25519.PublicKey
 }
 
 func (s *remoteSigner) SignBlock(ctx context.Context, b *bc.Block) (signature []byte, err error) {

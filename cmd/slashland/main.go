@@ -159,7 +159,7 @@ func land(req *landReq) {
 		)
 		return
 	}
-	if prState.Mergeable != nil && *prState.Mergeable == false {
+	if prState.Mergeable != nil && !*prState.Mergeable {
 		sayf("<@%s|%s> failed to land %s: branch has conflicts",
 			req.userID,
 			req.userName,

@@ -22,7 +22,7 @@ func ComputeOutputID(sc *SpendCommitment) (h Hash, err error) {
 	return h, nil
 }
 
-// TxHashes returns all hashes needed for validation and state updates.
+// ComputeTxHashes returns all hashes needed for validation and state updates.
 func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 	defer func() {
 		if r, ok := recover().(error); ok {
@@ -74,12 +74,12 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 
 		case *Issuance:
 			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
-			vmc.NonceID = (*Hash)(&ent.body.Anchor)
+			vmc.NonceID = &ent.body.Anchor
 			hashes.VMContexts[ent.Ordinal()] = vmc
 
 		case *Spend:
 			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
-			vmc.OutputID = (*Hash)(&ent.body.SpentOutput)
+			vmc.OutputID = &ent.body.SpentOutput
 			hashes.VMContexts[ent.Ordinal()] = vmc
 			hashes.SpentOutputIDs[ent.Ordinal()] = ent.body.SpentOutput
 		}
