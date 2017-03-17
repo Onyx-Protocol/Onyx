@@ -488,6 +488,8 @@ AnchoredEntry       | Pointer                      | Optional pointer to a singl
 4. [Validate](#value-destination-1-validation) `Destination`.
 5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
+Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
+
 ### Issuance 1
 
 Field               | Type                 | Description
@@ -528,6 +530,7 @@ AnchoredEntry       | Pointer                                   | Optional point
 7. [Validate](#value-destination-1-validation) `Destination`.
 8. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
+Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
 
 ### Mux 1
 
@@ -560,6 +563,7 @@ Arguments           | String                     | Arguments for the program con
 5. Verify that for every asset ID among `Destinations`, there is at least one `Source` with such asset ID. (This prevents creating zero units of an asset not present among the valid sources.)
 6. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
+Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
 
 
 ### Nonce
