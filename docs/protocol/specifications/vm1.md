@@ -1121,7 +1121,9 @@ Code  | Stack Diagram                                        | Cost
     2. If the entry satisfies all of the following conditions pushes [true](#vm-boolean) on the data stack; otherwise pushes [false](#vm-boolean):
         1. the destination entry is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1),
         2. if the destination is an output: control program equals `prog` and VM version equals `version`,
-        3. if the destination is a retirement: `prog` is an empty string and `version` is zero,
+        3. if the destination is a retirement:
+            * `version` must be zero,
+            * if [expansion flag](#vm-sate) is `false`, `prog` must be an empty string.
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
         6. `datahash` is an empty string or it matches the [SHA3-256](blockchain.md#sha3) hash of the data.
