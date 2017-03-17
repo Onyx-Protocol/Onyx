@@ -22,7 +22,7 @@ func TestFailover(t *testing.T) {
 
 	// Start up the first leader process. It should immediately become
 	// leader.
-	l1 := Run(ctx1, db, ":1999", func(_ context.Context) {
+	l1 := Run(ctx1, db, ":1999", func(context.Context) {
 		t.Log("first process is now leader")
 		wg1.Done()
 	})
@@ -42,7 +42,7 @@ func TestFailover(t *testing.T) {
 	}
 
 	// Start up the second leader process. It should be following.
-	l2 := Run(ctx2, db, ":2000", func(_ context.Context) {
+	l2 := Run(ctx2, db, ":2000", func(context.Context) {
 		t.Log("second process is now leader")
 		wg2.Done()
 	})
