@@ -568,18 +568,17 @@ Program             | Program              | A program that protects the nonce a
 Time Range          | Pointer<TimeRange>   | Reference to a TimeRange entry.
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
-Witness field       | Type                         | Description
---------------------|------------------------------|----------------
-Arguments           | List<String>                 | Arguments for the program contained in the Nonce.
-AnchoredEntry       | Pointer                      | Optional pointer to a single entry of any type, which uniquely identifies that entry as one that can use this one as an `Anchor`.
+Witness field       | Type                 | Description
+--------------------|----------------------|----------------
+Arguments           | List<String>         | Arguments for the program contained in the Nonce.
+AnchoredEntry       | Pointer              | Optional pointer to a single entry of any type, which uniquely identifies that entry as one that can use this one as an `Anchor`.
 
 
 #### Nonce Validation
 
 1. [Validate](#program-validation) `Program` with the given `Arguments`.
-2. Verify that `Issuance` points to an issuance that is present in the transaction (meaning visitable by traversing `Results` and `Sources` from the transaction header) and whose `Anchor` is equal to this nonce's ID.
-3. Verify that both mintime and maxtime in the `TimeRange` are not zero.
-4. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
+2. Verify that both mintime and maxtime in the `TimeRange` are not zero.
+3. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Time Range
 
