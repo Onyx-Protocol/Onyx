@@ -363,7 +363,11 @@ Program Arguments        | List\<String\>    | List of [signatures](#signature) 
 2. Verify that `Height` is equal to `PrevBlockHeader.Height + 1`.
 4. Verify that `PreviousBlockID` is equal to the entry ID of `PrevBlockHeader`.
 5. Verify that `Timestamp` is strictly greater than `PrevBlockHeader.Timestamp`.
-6. Evaluate program `PreviousBlockID.NextConsensusProgram` with [VM version 1](vm1.md) and expansion flag set to `false`. If program execution failed, fail validation.
+6. Evaluate the consensus program:
+    1. [Create a VM 1](vm1.md#vm-state) with initial state and expansion flag set to `false`.
+    2. [Prepare VM](vm1.md#prepare-vm) with program arguments from the block witness.
+    3. Set the VM’s program to the `PrevBlockHeader.NextConsensusProgramBytecode`.
+    4. Execute [Verify Predicate](vm1.md#verify-predicate) operation. If it fails, halt and return false.
 7. For each transaction in the block:
     1. [Validate transaction](#transaction-header-validation) with the timestamp and block version of the input block header.
 8. Compute the [transactions merkle root](#transactions-merkle-root) for the block.

@@ -131,20 +131,15 @@ A new node starts here when joining a running network (with height > 1). In that
 
 **Algorithm:**
 
-1. Evaluate the [consensus program](blockchain.md#block-header):
-    1. [Create a VM 1](vm1.md#vm-state) with initial state and expansion flag set to `false`.
-    2. [Prepare VM](vm1.md#prepare-vm) with program arguments from the block witness.
-    4. Set the VM’s program to the consensus program as specified by the blockchain state’s block header.
-    5. Execute [Verify Predicate](vm1.md#verify-predicate) operation. If it fails, halt and return false.
-2. [Validate the block](blockchain.md#block-header-validation) with “previous block header” set to the block header in the current blockchain state; if invalid, halt and return blockchain state unchanged.
-3. Let `S` be the input blockchain state.
-4. For each transaction in the block, in order:
+1. [Validate the block header](blockchain.md#block-header-validation) with “previous block header” set to the block header in the current blockchain state; if invalid, halt and return blockchain state unchanged.
+2. Let `S` be the input blockchain state.
+3. For each transaction in the block, in order:
     1. [Apply the transaction](#apply-transaction) using the input block’s header to blockchain state `S`, yielding a new state `S′`.
     2. If transaction failed to be applied (did not change blockchain state), halt and return the input blockchain state unchanged.
     3. Test that [assets merkle root](blockchain.md#assets-merkle-root) of `S′` is equal to the assets merkle root declared in the block commitment; if not, halt and return blockchain state unchanged.
     4. Replace `S` with `S′`.
-5. Remove elements of the nonce set in `S` where the expiration timestamp is less than the block’s timestamp, yielding a new state `S′`.
-6. Return the state `S’`.
+4. Remove elements of the nonce set in `S` where the expiration timestamp is less than the block’s timestamp, yielding a new state `S′`.
+5. Return the state `S’`.
 
 
 ### Apply transaction
