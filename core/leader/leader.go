@@ -99,8 +99,8 @@ func Run(db pg.DB, addr string, lead func(context.Context)) *Leader {
 	log.Printf(ctx, "Using leaderKey: %q", l.key)
 
 	go func() {
+		cancel := func() {}
 		var leadCtx context.Context
-		var cancel func()
 		for leader := range leadershipChanges(ctx, l) {
 			if leader {
 				log.Printf(ctx, "I am the core leader")
@@ -114,6 +114,7 @@ func Run(db pg.DB, addr string, lead func(context.Context)) *Leader {
 				cancel()
 			}
 		}
+		cancel()
 	}()
 	return l
 }
