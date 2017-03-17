@@ -52,14 +52,11 @@ type Leader struct {
 // Address retrieves a routable address of the current
 // Core leader.
 func (l *Leader) Address(ctx context.Context) (string, error) {
-	const q = `SELECT address FROM leader`
-
 	var addr string
-	err := l.db.QueryRow(ctx, q).Scan(&addr)
+	err := l.db.QueryRow(ctx, `SELECT address FROM leader`).Scan(&addr)
 	if err != nil {
 		return "", errors.Wrap(err, "could not fetch leader address")
 	}
-
 	return addr, nil
 }
 
