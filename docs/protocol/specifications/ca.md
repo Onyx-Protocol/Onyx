@@ -1091,20 +1091,23 @@ Note: this version of the signing algorithm does not use decimal exponent or min
 * `N`: number of blinded bits (equals to `2·n`),
 * `exp`: exponent (zero),
 * `vmin`: minimum value (zero),
-* `{D[t]}`: `n-1` digit commitments encoded as [public keys](data.md#public-key) (excluding last digit commitment),
+* `{D[t]}`: `n-1` digit commitments encoded as [points](#point) (excluding the last digit commitment),
 * `{e,s[t,j]}`: `1 + 4·n` 32-byte elements representing a [borromean ring signature](#borromean-ring-signature),
 
 In case of failure, returns `nil` instead of the range proof.
 
 **Algorithm:**
 
+TBD: reuse `VC.Ba` for each digit point (same `f`) by using [tertiary generators](#generators). The last digit uses `G - Sum[G[i]]` to add to `G` in the `VC.V`.
+
+
 1. Check that `N` belongs to the set `{8,16,32,48,64}`; if not, halt and return nil.
 2. Check that `value` is less than `2^N`; if not, halt and return nil.
 3. Define `vmin = 0`.
 4. Define `exp = 0`.
 5. Define `base = 4`.
-6. Calculate payload encryption key unique to this payload and the value: `pek = SHA3-256(0xec || rek || f || V)`.
-7. Calculate the message to sign: `msg = SHA3-256(H’ || V || N || exp || vmin || ev || ef)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+6. Calculate payload encryption key unique to this payload and the value: `pek = Hash256(0xec || rek || f || V)`.
+7. Calculate the message to sign: `msg = Hash256(H’ || V || N || exp || vmin)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-payload) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPayload({pt[i]}, pek)`.
 10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash(0xbf || msg || f, 64·(n-1))`.
