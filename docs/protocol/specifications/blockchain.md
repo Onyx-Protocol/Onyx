@@ -398,22 +398,10 @@ Transaction ID is defined as an [Entry ID](#entry-id) of the [transaction header
 
 #### Transaction Header Validation
 
-**Inputs:**
-
-1. TxHeader entry,
-2. timestamp,
-3. block version.
-
-**Algorithm:**
-
-1. If the block version is 1, verify that version is equal to 1.
-2. If the `Mintime` is greater than zero:
-    1. Verify that it is less or equal to the input timestamp.
-3. If the `Maxtime` is greater than zero:
+1. If the `Maxtime` is greater than zero:
     1. Verify that it is greater than or equal to the `Mintime`.
-    2. Verify that it is greater than or equal to the input timestamp.
-4. Validate each of the `Results`.
-5. If the transaction version is 1:
+2. Validate each entry in the `Results`.
+3. If the transaction version is 1:
     1. Verify that `Results` is not empty.
     2. Verify that the `ExtHash` is the all-zero hash.
 
