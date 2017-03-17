@@ -67,7 +67,7 @@ func TestFailover(t *testing.T) {
 	// second process to take over leadership.
 	cancel1()
 	wg2.Wait()
-	if s := l1.State(); s != Leading {
+	if s := l2.State(); s != Leading {
 		t.Errorf("the second process state, got %s want %s", s, Leading)
 	}
 	addr, err = l2.Address(ctx)
