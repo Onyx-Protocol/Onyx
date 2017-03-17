@@ -407,13 +407,13 @@ Transaction ID is defined as an [Entry ID](#entry-id) of the [transaction header
 **Algorithm:**
 
 1. If the block version is 1, verify that version is equal to 1.
-2. If the `Maxtime` is greater than zero, verify that it is greater than or equal to the `Mintime`.
-3. If the `Mintime` is greater than zero:
-    1. Verify that the input timestamp is greater than or equal to the `Mintime`.
-4. If the transaction maxtime is greater than zero:
-    1. Verify that the input timestamp is less than or equal to the `Maxtime`.
-5. Validate each of the `Results`.
-6. If the transaction version is 1:
+2. If the `Mintime` is greater than zero:
+    1. Verify that it is less or equal to the input timestamp.
+3. If the `Maxtime` is greater than zero:
+    1. Verify that it is greater than or equal to the `Mintime`.
+    2. Verify that it is greater than or equal to the input timestamp.
+4. Validate each of the `Results`.
+5. If the transaction version is 1:
     1. Verify that `Results` is not empty.
     2. Verify that the `ExtHash` is the all-zero hash.
 
