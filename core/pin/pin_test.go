@@ -95,9 +95,10 @@ func TestWaitForPin(t *testing.T) {
 
 func TestProcessBlocks(t *testing.T) {
 	db := pgtest.NewTx(t)
-	ctx := context.Background()
 	store := NewStore(db)
 	c := prottest.NewChain(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	err := store.CreatePin(ctx, "example", 0)
 	if err != nil {
