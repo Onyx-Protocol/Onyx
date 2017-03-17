@@ -70,7 +70,7 @@ type Action interface {
 	Build(context.Context, *TemplateBuilder) error
 }
 
-// Reciever encapsulates information about where to send assets.
+// Receiver encapsulates information about where to send assets.
 type Receiver struct {
 	ControlProgram chainjson.HexBytes `json:"control_program"`
 	ExpiresAt      time.Time          `json:"expires_at"`
