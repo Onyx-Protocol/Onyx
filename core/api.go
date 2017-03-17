@@ -288,7 +288,7 @@ func (a *API) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, erro
 		if f == nil {
 			return nil, errNotFound // TODO(kr): is this really the right error here?
 		}
-		if leader.IsLeading() {
+		if leader.State() == leader.Leading {
 			return f(ctx, b)
 		}
 		var resp []byte
