@@ -87,10 +87,7 @@ A fixed-length 32-byte string.
 
 ### List
 
-A `List` is encoded as a [Varstring31](#string) containing the serialized items, one by one, as defined by the schema. 
-
-Note: since the `List` is encoded as a variable-length string, its length prefix indicates not the number of _items_,
-but the number of _bytes_ of all the items in their serialized form.
+A `List` is encoded as a [Integer](#string)-prefixed list of serialized items, one by one, as defined by the schema. The length prefix indicates the number of items that follow.
 
 ### Struct
 
