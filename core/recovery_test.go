@@ -227,6 +227,9 @@ func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.T
 	}
 
 	c, err := protocol.NewChain(ctx, b1.Hash(), store, nil)
+	if err != nil {
+		return err
+	}
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
 	indexer := query.NewIndexer(db, c, pinStore)
