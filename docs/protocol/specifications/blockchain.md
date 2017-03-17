@@ -484,7 +484,7 @@ AnchoredEntry       | Pointer                      | Optional pointer to a singl
 
 1. Verify that `SpentOutput` is present in the transaction, but do not validate it.
 2. [Validate program](#program-validation) `SpentOutput.ControlProgram` with the given `Arguments` and the transaction version.
-3. Verify that `SpentOutput.Value` is equal to `Destination.Value`.
+3. Verify that `SpentOutput.Source.Value` is equal to `Destination.Value`.
 4. [Validate](#value-destination-1-validation) `Destination`.
 5. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
