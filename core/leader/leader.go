@@ -132,7 +132,7 @@ func leadershipChanges(ctx context.Context, l *Leader) chan bool {
 
 		for {
 			for !tryForLeadership(ctx, l) {
-				// Wait for a tick of the ticker, or the context
+				// Wait for a tick of the ticker or the context
 				// to be cancelled.
 				select {
 				case <-ctx.Done():
@@ -144,7 +144,7 @@ func leadershipChanges(ctx context.Context, l *Leader) chan bool {
 			ch <- true // elected leader
 
 			for maintainLeadership(ctx, l) {
-				// Wait for a tick of the ticker, or the context
+				// Wait for a tick of the ticker or the context
 				// to be cancelled.
 				select {
 				case <-ctx.Done():
