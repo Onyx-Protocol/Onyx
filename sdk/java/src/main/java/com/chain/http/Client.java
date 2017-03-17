@@ -314,7 +314,6 @@ public class Client {
 
     ChainException exception = null;
     for (int attempt = 1; attempt - 1 <= MAX_RETRIES; attempt++) {
-
       int idx = this.urlIndex.get();
       URL endpointURL;
       try {
