@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sync"
 	"testing"
 	"time"
 
@@ -219,14 +218,7 @@ func TestTransfer(t *testing.T) {
 	go api.accounts.ProcessBlocks(ctx)
 	api.indexer.RegisterAnnotator(api.accounts.AnnotateTxs)
 	api.indexer.RegisterAnnotator(api.assets.AnnotateTxs)
-
-	// TODO(jackson): Replace this with a mock leader.
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go leader.Run(db, ":1999", func(ctx context.Context) {
-		wg.Done()
-	})
-	wg.Wait()
+	api.leader = alwaysLeader{}
 
 	assetAlias := "some-asset"
 	account1Alias := "first-account"
@@ -370,4 +362,14 @@ func toTxTemplate(ctx context.Context, inp map[string]interface{}) (*txbuilder.T
 	tpl := new(txbuilder.Template)
 	err = json.Unmarshal(jsonInp, tpl)
 	return tpl, err
+}
+
+type alwaysLeader struct{}
+
+func (al alwaysLeader) Address(context.Context) (string, error) {
+	return ":1999", nil
+}
+
+func (al alwaysLeader) State() leader.ProcessState {
+	return leader.Leading
 }

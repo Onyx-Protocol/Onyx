@@ -51,7 +51,7 @@ func (a *API) info(ctx context.Context) (map[string]interface{}, error) {
 		}, nil
 	}
 	// If we're not the leader, forward to the leader.
-	if leader.State() == leader.Following {
+	if a.leader.State() == leader.Following {
 		var resp map[string]interface{}
 		err := a.forwardToLeader(ctx, "/info", nil, &resp)
 		return resp, err
@@ -88,7 +88,7 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	}
 
 	m := map[string]interface{}{
-		"state":                             leader.State().String(),
+		"state":                             a.leader.State().String(),
 		"is_configured":                     true,
 		"configured_at":                     a.config.ConfiguredAt,
 		"is_signer":                         a.config.IsSigner,

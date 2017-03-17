@@ -64,6 +64,7 @@ type API struct {
 	db              pg.DB
 	mux             *http.ServeMux
 	handler         http.Handler
+	leader          leaderProcess
 	addr            string
 	altAuth         func(*http.Request) bool
 	signer          func(context.Context, *bc.Block) ([]byte, error)
@@ -80,6 +81,11 @@ type API struct {
 
 func (a *API) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	a.handler.ServeHTTP(rw, req)
+}
+
+type leaderProcess interface {
+	State() leader.ProcessState
+	Address(context.Context) (string, error)
 }
 
 type requestLimit struct {
@@ -288,7 +294,7 @@ func (a *API) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, erro
 		if f == nil {
 			return nil, errNotFound // TODO(kr): is this really the right error here?
 		}
-		if leader.State() == leader.Leading {
+		if a.leader.State() == leader.Leading {
 			return f(ctx, b)
 		}
 		var resp []byte
@@ -302,7 +308,7 @@ func (a *API) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, erro
 // request. For that reason, it cannot be used outside of a request-
 // handling context.
 func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
-	addr, err := leader.Address(ctx, a.db)
+	addr, err := a.leader.Address(ctx)
 	if err != nil {
 		return errors.Wrap(err)
 	}
