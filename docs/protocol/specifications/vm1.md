@@ -57,9 +57,9 @@ All other instructions are encoded simply by a single-byte opcode. The protocol 
 
 A program executes in a context, either a *block* or a *transaction*. Some instructions have different meaning based on the context.
 
-Transactions use [control programs](blockchain.md#output-1) to define predicates governing spending of an asset in the next transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
+Transactions use [control programs](blockchain.md#output-1) to define predicates governing spending of an asset in a later transaction, *issuance programs* for predicates authenticating issuance of an asset, and *program arguments* to provide input data for the predicates in output and issuance programs.
 
-Blocks use [consensus programs](blockchain.md#block-header) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within a context of signing a block are disabled and cause an immediate validation failure.
+Blocks use [consensus programs](blockchain.md#block-header) to define predicates for signing the next block and *program arguments* to provide input data for the predicate in the previous block. Consensus programs have restricted functionality and do not use version tags. Some instructions (such as [ASSET](#asset) or [CHECKOUTPUT](#checkoutput)) that do not make sense within the context of signing a block are disabled and cause an immediate validation failure.
 
 ### Block context
 
@@ -245,6 +245,12 @@ When the instruction cost is specified as a single value, it is applied to the r
 Execution immediately halts if the run limit is insufficient to apply the cost of the instruction. In such case, the run limit is left unchanged (instead of becoming negative) and the execution halts. If the instruction defines two cost values (before and after the execution), and the first one did not cause the VM to halt, then its effects are not reversed. E.g. if the instruction cost is defined as `2;6` and the run limit is 5, then the first cost (2) is applied successfully (run limit becomes 3) and the second cost (6) halts execution leaving the run limit at 3. This value then can be refunded to the parent VM of a [CHECKPREDICATE](#checkpredicate) instruction.
 
 Stack diagrams tell how top items of the data stack are replaced with new items. E.g. a stack diagram `(a b → c d)` says that the topmost item `b` and preceding item `a` are removed from the data stack and items `c` and `d` are pushed one after another.
+
+
+### Non-executed instructions
+
+Typically, all instructions must be executed in order for the execution to succeed. However, [JUMP](#jump) and [JUMPIF](#jumpif) instructions may cause the program to skip some of the instructions by “jumping over” them. If that happens, those instructions are not executed. This also means, that if those instructions are unassigned and [reserved for future expansion](#expansion-opcodes), they do not cause the execution to fail even if [expansion flag](#vm-state) is off.
+
 
 ### Instructions pushing data on stack
 
