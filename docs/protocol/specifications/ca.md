@@ -1072,7 +1072,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 
 
-### Create Value Range Proof WIP
+### Create Value Range Proof
 
 **Inputs:**
 
@@ -1098,34 +1098,43 @@ In case of failure, returns `nil` instead of the range proof.
 
 **Algorithm:**
 
-TBD: reuse `VC.Ba` for each digit point (same `f`) by using [tertiary generators](#generators). The last digit uses `G - Sum[G[i]]` to add to `G` in the `VC.V`.
-
-
 1. Check that `N` belongs to the set `{8,16,32,48,64}`; if not, halt and return nil.
 2. Check that `value` is less than `2^N`; if not, halt and return nil.
 3. Define `vmin = 0`.
 4. Define `exp = 0`.
 5. Define `base = 4`.
-6. Calculate payload encryption key unique to this payload and the value: `pek = Hash256(0xec || rek || f || V)`.
-7. Calculate the message to sign: `msg = Hash256(H’ || V || N || exp || vmin)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+6. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("VRP.pek" || rek || f || VC)`.
+7. Calculate the message to sign: `msg = Hash256(AC’ || VC || N || exp || vmin)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-payload) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPayload({pt[i]}, pek)`.
-10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash(0xbf || msg || f, 64·(n-1))`.
-11. Interpret each 64-byte `b[t]` (`t` from 0 to `n-2`) is interpreted as a little-endian integer and reduce modulo `L` to a 32-byte scalar.
-12. Calculate the last digit blinding factor: `b[n-1] = f - ∑b[t] mod L`, where `t` is from 0 to `n-2`.
-13. For `t` from `0` to `n-1` (each digit):
+10. For `t` from `0` to `n-1` (each digit):
     1. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
-    2. Calculate `D[t] = digit[t]·H + b[t]·G`.
-    3. Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
-    4. For `i` from `0` to `base-1` (each digit’s value):
-        1. Calculate point `P[t,i] = D[t] - i·(base^t)·H’`.
+    2. Calculate generator `G’[t]`:
+        1. If `t` is less than `n-1`: set `G’[t] = G[t]`, where `G[t]` is a [tertiary generator](#generators) at index `t`.
+        2. If `t` equals `n-1`: set `G’[t] = G - ∑G[i]` for all `i` from `0` to `n-2`.
+    3. Calculate `D[t] = digit[t]·H + f·G’[t]`.
+    4. Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
+11. Calculate the Fiat-Shamir factor:
+
+        h = ScalarHash("VRP.h" || msg || D[0] || ... || D[n-1])
+        
+12. Precompute reusable points across all digit commitments:
+
+        X1 = h·Bv
+        X2 = AC’.H + h·Ba
+
+13. For `t` from `0` to `n-1` (each digit):
+    1. Calculate base point: `B[t] = G’[t] + h·J`.
+    2. For `i` from `0` to `base-1` (each digit’s value):
+        1. Calculate point `P[t,i] = D[t] + X1 - i·(base^t)·X2`.
 14. [Create Borromean Ring Signature](#create-borromean-ring-signature) `brs` with the following inputs:
     1. `msg` as the message to sign.
     2. `n`: number of rings.
     3. `m = base`: number of signatures per ring.
-    4. `{P[i,j]}`: `n·m` public keys, [points](data.md#public-key) on the elliptic curve.
-    5. `{b[i]}`: the list of `n` blinding factors as private keys.
-    6. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == b[i]·G`.
+    4. `{B[i]}`: `n` base points.
+    4. `{P[i,j]}`: `n·m` [points](data.md#public-key).
+    5. `{f}`: the blinding factor `f` repeated `n` times.
+    6. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == f·G`.
     7. `{r[i]} = {ct[i]}`: random string consisting of `n·m` 32-byte ciphertext elements.
 15. If failed to create borromean ring signature `brs`, return nil. The chance of this happening is below 1 in 2<sup>124</sup>. In case of failure, retry [creating blinded value commitments](#create-blinded-value-commitments) with incremented counter. This would yield a new blinding factor `f` that will produce different digit blinding keys in this algorithm.
 16. Return the [value range proof](#value-range-proof):
