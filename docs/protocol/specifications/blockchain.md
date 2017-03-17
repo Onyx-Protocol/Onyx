@@ -577,7 +577,8 @@ AnchoredEntry       | Pointer              | Optional pointer to a single entry 
 #### Nonce Validation
 
 1. [Validate](#program-validation) `Program` with the given `Arguments`.
-2. Verify that both mintime and maxtime in the `TimeRange` are not zero.
+2. [Validate TimeRange entry](#time-range-validation).
+3. Verify that both mintime and maxtime in the `TimeRange` are not zero.
 3. If the transaction version is 1: verify that the `ExtHash` is the all-zero hash.
 
 ### Time Range
