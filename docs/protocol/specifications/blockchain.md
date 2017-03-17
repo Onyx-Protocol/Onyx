@@ -362,7 +362,7 @@ Program Arguments        | List\<String\>    | List of [signatures](#signature) 
 1. Verify that the block’s version is greater or equal the block version in the previous block header.
 2. Verify that `Height` is equal to `PrevBlockHeader.Height + 1`.
 4. Verify that `PreviousBlockID` is equal to the entry ID of `PrevBlockHeader`.
-5. Verify that `Timestamp` is greater than `PrevBlockHeader.Timestamp`.
+5. Verify that `Timestamp` is strictly greater than `PrevBlockHeader.Timestamp`.
 6. Evaluate program `PreviousBlockID.NextConsensusProgram` with [VM version 1](vm1.md) and expansion flag set to `false`. If program execution failed, fail validation.
 7. For each transaction in the block:
     1. [Validate transaction](#transaction-header-validation) with the timestamp and block version of the input block header.
