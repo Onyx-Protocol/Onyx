@@ -1126,7 +1126,7 @@ Code  | Stack Diagram                                        | Cost
             * if [expansion flag](#vm-sate) is `false`, `prog` must be an empty string.
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
-        6. `datahash` is an empty string or it matches the [SHA3-256](blockchain.md#sha3) hash of the data.
+        6. `datahash` is an empty string or it matches the data hash in the destination entry.
 5. If the entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1):
     1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](blockchain.md#mux-1), performs checks as described in the step 5.
     2. If the [destination entry](blockchain.md#value-destination-1) is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1):
