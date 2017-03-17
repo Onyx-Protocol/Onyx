@@ -1,10 +1,11 @@
 package leader
 
 import (
-	"chain/database/pg/pgtest"
 	"context"
 	"sync"
 	"testing"
+
+	"chain/database/pg/pgtest"
 )
 
 func TestFailover(t *testing.T) {
