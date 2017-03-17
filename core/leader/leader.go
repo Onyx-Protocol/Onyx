@@ -85,8 +85,7 @@ func (l *Leader) State() ProcessState {
 //
 // The Chain Core has up to a 1.5-second refractory period after
 // shutdown, during which no process may be leader.
-func Run(db pg.DB, addr string, lead func(context.Context)) *Leader {
-	ctx := context.Background()
+func Run(ctx context.Context, db pg.DB, addr string, lead func(context.Context)) *Leader {
 	// We use our process's address as the key, because it's unique
 	// among all processes within a Core and it allows a restarted
 	// leader to immediately return to its leadership.
@@ -114,6 +113,8 @@ func Run(db pg.DB, addr string, lead func(context.Context)) *Leader {
 				cancel()
 			}
 		}
+		// If leadershipChanges was closed because ctx was cancelled,
+		// cancel leadCtx too on the way out.
 		cancel()
 	}()
 	return l
@@ -136,12 +137,26 @@ func leadershipChanges(ctx context.Context, l *Leader) chan bool {
 
 		for {
 			for !tryForLeadership(ctx, l) {
-				<-ticks
+				// Wait for a tick of the ticker, or the context
+				// to be cancelled.
+				select {
+				case <-ctx.Done():
+					close(ch)
+					return
+				case <-ticks:
+				}
 			}
 			ch <- true // elected leader
 
 			for maintainLeadership(ctx, l) {
-				<-ticks
+				// Wait for a tick of the ticker, or the context
+				// to be cancelled.
+				select {
+				case <-ctx.Done():
+					close(ch)
+					return
+				case <-ticks:
+				}
 			}
 			ch <- false // demoted
 		}
