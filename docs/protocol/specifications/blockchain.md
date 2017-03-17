@@ -79,7 +79,7 @@ The empty string is encoded as a single byte 0x00, a one-byte string is encoded 
 *SHA3* refers to the SHA3-256 function as defined in [FIPS202](https://dx.doi.org/10.6028/NIST.FIPS.202) with a fixed-length 32-byte output.
 
 This hash function is used throughout all data structures and algorithms in this spec,
-with the exception of SHA-512 (see [FIPS180](http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf)) used internally as function H inside Ed25519 (see [CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05)).
+with the exception of SHA-512 (see [FIPS180](http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf)) used internally as function H inside Ed25519 (see [RFC8032](https://tools.ietf.org/html/rfc8032)).
 
 ### Hash
 
@@ -96,12 +96,12 @@ A `Struct` is encoded as a concatenation of all its serialized fields.
 ### Public Key
 
 In this document, a *public key* is the 32-byte binary encoding
-of an Ed25519 (EdDSA) public key, as defined in [CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05).
+of an Ed25519 (EdDSA) public key, as defined in [RFC8032](https://tools.ietf.org/html/rfc8032).
 
 ### Signature
 
 In this document, a *signature* is the 64-byte binary encoding
-of an Ed25519 (EdDSA) signature, as defined in [CFRG1](https://tools.ietf.org/html/draft-irtf-cfrg-eddsa-05).
+of an Ed25519 (EdDSA) signature, as defined in [RFC8032](https://tools.ietf.org/html/rfc8032).
 
 
 ## Auxiliary data structures
