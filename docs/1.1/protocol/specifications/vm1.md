@@ -1308,7 +1308,7 @@ Code  | Stack Diagram   | Cost
 
 The unassigned codes are reserved for future expansion.
 
-If the [expansion flag](#vm-state) is set, these opcodes have no effect on the state of the VM apart from reducing run limit by 1.
+If the [expansion flag](#vm-state) is set, these opcodes have no effect on the state of the VM except from reducing run limit by 1 and incrementing the program counter.
 
 If the [expansion flag](#vm-state) is not set, execution fails immediately.
 
