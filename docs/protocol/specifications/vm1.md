@@ -1128,10 +1128,10 @@ Code  | Stack Diagram                                        | Cost
         5. amount equals `amount`,
         6. `datahash` is an empty string or it matches the data hash in the destination entry.
 5. If the entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1):
-    1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](blockchain.md#mux-1), performs checks as described in the step 5.
+    1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](blockchain.md#mux-1), performs checks as described in step 5.
     2. If the [destination entry](blockchain.md#value-destination-1) is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1):
         1. If `index` is not zero, pushes [false](#vm-boolean) on the data stack.
-        2. Otherwise, performs checks as described in the step 5.2.
+        2. Otherwise, performs checks as described in step 5.2.
 
 Fails if executed in the [block context](#block-context).
 
@@ -1209,7 +1209,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc7  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the transaction's reference data as specified in the Data field of the [transaction header](blockchain.md#transaction-header).
+Pushes the transaction's reference data hash as specified in the Data field of the [transaction header](blockchain.md#transaction-header).
 
 Fails if executed in the [block context](#block-context).
 
@@ -1220,7 +1220,7 @@ Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
 0xc8  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the SHA3-256 hash of the reference data as specified in the Data field of the current [entry](blockchain.md#entry).
+Pushes the data hash as specified in the Data field of the current [entry](blockchain.md#entry).
 
 Fails if executed in the [block context](#block-context).
 
