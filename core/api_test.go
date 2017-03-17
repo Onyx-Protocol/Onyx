@@ -366,7 +366,7 @@ func toTxTemplate(ctx context.Context, inp map[string]interface{}) (*txbuilder.T
 
 type alwaysLeader struct{}
 
-func (al alwaysLeader) Address(_ context.Context) (string, error) {
+func (al alwaysLeader) Address(context.Context) (string, error) {
 	return ":1999", nil
 }
 
