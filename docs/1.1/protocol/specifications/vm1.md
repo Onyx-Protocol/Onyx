@@ -1145,7 +1145,7 @@ Code  | Stack Diagram  | Cost
 
 If the current entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1) entry, pushes the `Value.AssetID` of that entry.
 
-If the current entry is a [nonce](blockchain.md#nonce) entry, verifies that the `AnchoredEntry` field is an [issuance](blockchain.md#issuance-1) entry, and pushes the `Value.AssetID` of that issuance entry.
+If the current entry is a [nonce](blockchain.md#nonce) entry, verifies that the `AnchoredEntry` field is an [issuance](blockchain.md#issuance-1) entry, and pushes the `Value.AssetID` of that issuance entry. Fails if `AnchoredEntry` is not an issuance version 1.
 
 Fails if executed in the [block context](#block-context).
 
@@ -1159,7 +1159,7 @@ Code  | Stack Diagram  | Cost
 
 If the current entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1) entry, pushes the `Value.Amount` of that entry.
 
-If the current entry is a [nonce](blockchain.md#nonce) entry, verifies that the `AnchoredEntry` field is an [issuance](blockchain.md#issuance-1) entry, and pushes the `Value.Amount` of that issuance entry.
+If the current entry is a [nonce](blockchain.md#nonce) entry, verifies that the `AnchoredEntry` field is an [issuance](blockchain.md#issuance-1) entry, and pushes the `Value.Amount` of that issuance entry. Fails if `AnchoredEntry` is not an issuance version 1.
 
 Fails if executed in the [block context](#block-context).
 
