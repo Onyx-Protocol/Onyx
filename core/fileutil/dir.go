@@ -7,6 +7,6 @@ import (
 	"path/filepath"
 )
 
-func DefaultDir() string {
-	return filepath.Join(os.Getenv("HOME"), ".cored")
+func defaultDir() string {
+	return filepath.Join(os.Getenv("HOME"), ".chaincore")
 }

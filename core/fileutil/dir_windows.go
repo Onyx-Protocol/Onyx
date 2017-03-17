@@ -5,6 +5,6 @@ import (
 	"path/filepath"
 )
 
-func DefaultDir() string {
-	return filepath.Join(os.Getenv("LOCALAPPDATA"), "Chain")
+func defaultDir() string {
+	return filepath.Join(os.Getenv("LOCALAPPDATA"), `Chain Core`)
 }
