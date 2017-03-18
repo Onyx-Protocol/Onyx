@@ -28,6 +28,10 @@ func TestQueryWithClockSkew(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	err = pinStore.CreatePin(ctx, query.TxPinName, 99)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	indexer := query.NewIndexer(db, c, pinStore)
 	api := &API{db: db, chain: c, indexer: indexer}
