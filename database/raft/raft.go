@@ -373,7 +373,7 @@ func (sv *Service) exec(ctx context.Context, instruction []byte) error {
 	if err != nil {
 		return errors.Wrap(err)
 	}
-	req := wctxReq{wctx: prop.Wctx, satisfied: make(chan bool, 1)} //buffered channel
+	req := wctxReq{wctx: prop.Wctx, satisfied: make(chan bool, 1)}
 	select {
 	case sv.wctxReq <- req:
 	case <-sv.donec:
@@ -387,7 +387,7 @@ func (sv *Service) exec(ctx context.Context, instruction []byte) error {
 		}
 		return errors.Wrap(err)
 	}
-	ctx, cancel := context.WithTimeout(ctx, time.Minute) //TODO realistic timeout
+	ctx, cancel := context.WithTimeout(ctx, time.Minute) //TODO(tessr): realistic timeout
 	defer cancel()
 
 	select {
@@ -429,7 +429,6 @@ func (sv *Service) Delete(ctx context.Context, key string) error {
 }
 
 func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
-	// encode w/ json for now: b with a wctx rand id
 	// lock state via mutex to pull nextID val, then call increment
 	err := ErrUnsatisfied
 	var nextID, index uint64

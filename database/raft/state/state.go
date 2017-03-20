@@ -177,7 +177,6 @@ func Insert(key string, value []byte) (instruction []byte) {
 }
 
 // Delete encodes a delete operation for a given key.
-// TODO (ameets):further commentary (?)
 func Delete(key string) (instruction []byte) {
 	b, _ := proto.Marshal(&statepb.Instruction{
 		Operations: []*statepb.Op{{
@@ -194,7 +193,7 @@ func (s *State) AppliedIndex() uint64 {
 	return s.appliedIndex
 }
 
-// IDCounter
+// NextNodeID generates an ID for the next node to join the cluster.
 func (s *State) NextNodeID() (id, version uint64) {
 	id, n := proto.DecodeVarint(s.state[nextNodeID])
 	if n == 0 {
