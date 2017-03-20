@@ -1022,11 +1022,11 @@ Code  | Stack Diagram                  | Cost
 Replaces top stack item with its [SHA-256](https://en.wikipedia.org/wiki/SHA-2) hash value.
 
 
-#### SHA3 Instruction
+#### SHA3
 
 Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
-0xaa  | (a → SHA3-256(a))              | max(64, 4·L<sub>x</sub>) + [standard memory cost](#standard-memory-cost)
+0xaa  | (a → SHA3-256(a))              | max(64, 4·L<sub>a</sub>) + [standard memory cost](#standard-memory-cost)
 
 Replaces top stack item with its [SHA3-256](blockchain.md#sha3) hash value.
 
