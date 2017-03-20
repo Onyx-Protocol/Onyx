@@ -90,7 +90,7 @@ func (ind *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {
 func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*AnnotatedTx, error) {
 	var (
 		hashes           = pq.ByteaArray(make([][]byte, 0, len(b.Transactions)))
-		positions        = pg.Uint32s(make([]uint32, 0, len(b.Transactions)))
+		positions        = make([]uint32, 0, len(b.Transactions))
 		annotatedTxBlobs = pq.StringArray(make([]string, 0, len(b.Transactions)))
 		annotatedTxs     = make([]*AnnotatedTx, 0, len(b.Transactions))
 		locals           = pq.BoolArray(make([]bool, 0, len(b.Transactions)))
@@ -130,8 +130,8 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*Ann
 			unnest($6::jsonb[]), unnest($7::boolean[]), unnest($8::jsonb[])
 		ON CONFLICT (block_height, tx_pos) DO NOTHING;
 	`
-	_, err := ind.db.Exec(ctx, insertQ, b.Height, b.Hash(), b.Time(), positions,
-		hashes, annotatedTxBlobs, locals, referenceDatas)
+	_, err := ind.db.Exec(ctx, insertQ, b.Height, b.Hash(), b.Time(),
+		pq.Array(positions), hashes, annotatedTxBlobs, locals, referenceDatas)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting annotated_txs to db")
 	}
@@ -207,8 +207,8 @@ func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *bc.Block, anno
 func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annotatedTxs []*AnnotatedTx) error {
 	var (
 		outputIDs              pq.ByteaArray
-		outputTxPositions      pg.Uint32s
-		outputIndexes          pg.Uint32s
+		outputTxPositions      []uint32
+		outputIndexes          []uint32
 		outputTxHashes         pq.ByteaArray
 		outputTypes            pq.StringArray
 		outputPurposes         pq.StringArray
@@ -281,8 +281,8 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		FROM utxos
 		ON CONFLICT (block_height, tx_pos, output_index) DO NOTHING;
 	`
-	_, err := ind.db.Exec(ctx, insertQ, b.Height, outputTxPositions,
-		outputIndexes, outputTxHashes, b.TimestampMS, outputIDs, outputTypes,
+	_, err := ind.db.Exec(ctx, insertQ, b.Height, pq.Array(outputTxPositions),
+		pq.Array(outputIndexes), outputTxHashes, b.TimestampMS, outputIDs, outputTypes,
 		outputPurposes, outputAssetIDs, outputAssetAliases,
 		outputAssetDefinitions, outputAssetTags, outputAssetLocals,
 		outputAmounts, pq.Array(outputAccountIDs), pq.Array(outputAccountAliases),
