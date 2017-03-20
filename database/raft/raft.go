@@ -83,10 +83,12 @@ type Service struct {
 	state     *state.State
 	done      bool
 
-	// Current log position.
-	// access only from runUpdates goroutine
+	// Current log position, accessed only from runUpdates goroutine
 	snapIndex uint64
 	confState raftpb.ConfState
+
+	// Hack until everything requires TLS.
+	tls bool
 }
 
 // rctxReq is a "read context" request.
@@ -144,7 +146,7 @@ type Getter interface {
 // for the whole cluster, if one exists.
 // An empty bootURL means to start a fresh empty cluster.
 // It is ignored when recovering from existing state in dir.
-func Start(laddr, dir, bootURL string) (*Service, error) {
+func Start(laddr, dir, bootURL string, requireTLS bool) (*Service, error) {
 	ctx := context.Background()
 
 	sv := &Service{
@@ -155,6 +157,7 @@ func Start(laddr, dir, bootURL string) (*Service, error) {
 		donec:       make(chan struct{}),
 		rctxReq:     make(chan rctxReq),
 		wctxReq:     make(chan wctxReq),
+		tls:         requireTLS,
 	}
 	sv.stateCond.L = &sv.stateMu
 
@@ -749,13 +752,17 @@ func (sv *Service) send(msgs []raftpb.Message) {
 			log.Printkv(context.Background(), "no-addr-for-peer", msg.To)
 			continue
 		}
-		sendmsg(addr, data)
+		sendmsg(addr, data, sv.tls)
 	}
 }
 
 // best effort. if it fails, oh well -- that's why we're using raft.
-func sendmsg(addr string, data []byte) {
-	resp, err := http.Post("http://"+addr+"/raft/msg", contentType, bytes.NewReader(data))
+func sendmsg(addr string, data []byte, tls bool) {
+	url := "http://" + addr + "/raft/msg"
+	if tls {
+		url = "https://" + addr + "/raft/msg"
+	}
+	resp, err := http.Post(url, contentType, bytes.NewReader(data))
 	if err != nil {
 		log.Printkv(context.Background(), "warning", err)
 		return
