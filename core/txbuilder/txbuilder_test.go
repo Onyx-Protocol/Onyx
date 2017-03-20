@@ -104,7 +104,10 @@ func TestMaterializeWitnesses(t *testing.T) {
 		t.Fatal(err)
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	assetID, err := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	if err != nil {
+		t.Fatal(err)
+	}
 	nonce := []byte{1}
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := bc.NewTx(bc.TxData{
@@ -173,7 +176,10 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		t.Fatal(err)
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	assetID, err := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	if err != nil {
+		t.Fatal(err)
+	}
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := bc.NewTx(bc.TxData{
 		Version: 1,
@@ -262,7 +268,10 @@ func TestTxSighashCommitment(t *testing.T) {
 	var initialBlockHash bc.Hash
 
 	issuanceProg := []byte{byte(vm.OP_TRUE)}
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	assetID, err := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// all-issuance input tx should fail if none of the inputs commit to the tx signature
 	tx := bc.NewTx(bc.TxData{
@@ -309,7 +318,7 @@ func TestTxSighashCommitment(t *testing.T) {
 		MinTime: bc.Millis(time.Now()),
 		MaxTime: bc.Millis(time.Now().Add(time.Hour)),
 	})
-	err := checkTxSighashCommitment(tx)
+	err = checkTxSighashCommitment(tx)
 	if err != ErrNoTxSighashAttempt {
 		t.Errorf("no issuance inputs committing to txsighash: got error %s, want ErrNoTxSighashAttempt", err)
 	}

@@ -91,8 +91,14 @@ func TestIndexNonLocalAssets(t *testing.T) {
 			},
 		},
 	}
-	remoteAssetID1 := b.Transactions[0].Inputs[0].AssetID()
-	remoteAssetID2 := b.Transactions[0].Inputs[1].AssetID()
+	remoteAssetID1, err := b.Transactions[0].Inputs[0].AssetID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	remoteAssetID2, err := b.Transactions[0].Inputs[1].AssetID()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	assetsSaved := make(map[bc.AssetID]bool)
 	r.indexer = fakeSaver(func(ctx context.Context, aa *query.AnnotatedAsset, sortID string) error {

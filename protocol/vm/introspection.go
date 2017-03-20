@@ -90,7 +90,10 @@ func opAsset(vm *virtualMachine) error {
 		return err
 	}
 
-	assetID := vm.tx.Inputs[vm.inputIndex].AssetID()
+	assetID, err := vm.tx.Inputs[vm.inputIndex].AssetID()
+	if err != nil {
+		return err
+	}
 	return vm.push(assetID[:], true)
 }
 

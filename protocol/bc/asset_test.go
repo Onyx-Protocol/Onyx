@@ -9,7 +9,10 @@ import (
 func TestComputeAssetID(t *testing.T) {
 	issuanceScript := []byte{1}
 	initialBlockHash := mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5")
-	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
+	assetID, err := ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	unhashed := append([]byte{}, initialBlockHash[:]...)
 	unhashed = append(unhashed, 0x01) // vmVersion
@@ -32,6 +35,10 @@ func BenchmarkComputeAssetID(b *testing.B) {
 	)
 
 	for i := 0; i < b.N; i++ {
-		assetIDSink = ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
+		var err error
+		assetIDSink, err = ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }

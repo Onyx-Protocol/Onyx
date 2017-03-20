@@ -12,7 +12,7 @@ func TestTxHashes(t *testing.T) {
 			hash:   mustDecodeHash("e367a95b0f1dafdedd86f633456c81ef6bd4f2623f0890d56417f73a18a67297"),
 		},
 		{
-			txdata: sampleTx(),
+			txdata: sampleTx(t),
 			hash:   mustDecodeHash("9fad4f5024412d99d17508ef3cc66f81f1e09914a71b2641683acca87081c098"), // todo: verify this value,
 		},
 	}
@@ -42,7 +42,7 @@ func BenchmarkHashEmptyTx(b *testing.B) {
 }
 
 func BenchmarkHashNonemptyTx(b *testing.B) {
-	tx := sampleTx()
+	tx := sampleTx(b)
 	for i := 0; i < b.N; i++ {
 		_, err := ComputeTxHashes(tx)
 		if err != nil {
@@ -51,8 +51,11 @@ func BenchmarkHashNonemptyTx(b *testing.B) {
 	}
 }
 
-func sampleTx() *TxData {
-	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1, EmptyStringHash)
+func sampleTx(tb testing.TB) *TxData {
+	assetID, err := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1, EmptyStringHash)
+	if err != nil {
+		tb.Fatal(err)
+	}
 	return &TxData{
 		Version: 1,
 		Inputs: []*TxInput{

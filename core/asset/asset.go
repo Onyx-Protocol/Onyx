@@ -119,13 +119,17 @@ func (reg *Registry) Define(ctx context.Context, xpubs []chainkd.XPub, quorum in
 	}
 
 	defhash := sha3.Sum256(rawDefinition)
+	assetID, err := bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, vmver, defhash)
+	if err != nil {
+		return nil, err
+	}
 	asset := &Asset{
 		definition:       definition,
 		rawDefinition:    rawDefinition,
 		VMVersion:        vmver,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: reg.initialBlockHash,
-		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, vmver, defhash),
+		AssetID:          assetID,
 		Signer:           assetSigner,
 		Tags:             tags,
 	}

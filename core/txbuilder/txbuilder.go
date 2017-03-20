@@ -81,7 +81,10 @@ func checkBlankCheck(tx *bc.TxData) error {
 	assetMap := make(map[bc.AssetID]int64)
 	var ok bool
 	for _, in := range tx.Inputs {
-		asset := in.AssetID() // AssetID() is calculated for IssuanceInputs, so grab once
+		asset, err := in.AssetID() // AssetID() is calculated for IssuanceInputs, so grab once
+		if err != nil {
+			return err
+		}
 		assetMap[asset], ok = checked.AddInt64(assetMap[asset], int64(in.Amount()))
 		if !ok {
 			return errors.WithDetailf(ErrBadAmount, "cumulative amounts for asset %s overflow the allowed asset amount 2^63", asset)

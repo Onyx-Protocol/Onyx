@@ -110,17 +110,20 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 	)
 	for _, tx := range b.Transactions {
 		for _, in := range tx.Inputs {
+			assetID, err := in.AssetID()
+			if err != nil {
+				return err
+			}
 			if !in.IsIssuance() {
 				continue
 			}
-			if seen[in.AssetID()] {
+			if seen[assetID] {
 				continue
 			}
 			if ii, ok := in.TypedInput.(*bc.IssuanceInput); ok {
-				id := in.AssetID()
 				definition := ii.AssetDefinition
-				seen[id] = true
-				assetIDs = append(assetIDs, id[:])
+				seen[assetID] = true
+				assetIDs = append(assetIDs, assetID[:])
 				definitions = append(definitions, string(definition))
 				vmVersions = append(vmVersions, int64(ii.VMVersion))
 				issuancePrograms = append(issuancePrograms, in.IssuanceProgram())

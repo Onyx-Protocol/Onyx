@@ -206,7 +206,10 @@ func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 	if err != nil {
 		return h, err
 	}
-	assetID := ii.AssetID()
+	assetID, err := ii.AssetID()
+	if err != nil {
+		return h, err
+	}
 	buf.Write(assetID[:])
 	_, err = blockchain.WriteVarint63(buf, tx.MinTime)
 	if err != nil {

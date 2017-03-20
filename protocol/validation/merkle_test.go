@@ -76,7 +76,10 @@ func TestCalcMerkleRoot(t *testing.T) {
 func TestDuplicateLeaves(t *testing.T) {
 	var initialBlockHash bc.Hash
 	trueProg := []byte{byte(vm.OP_TRUE)}
-	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyStringHash)
+	assetID, err := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyStringHash)
+	if err != nil {
+		t.Fatal(err)
+	}
 	txs := make([]*bc.Tx, 6)
 	for i := uint64(0); i < 6; i++ {
 		now := []byte(time.Now().String())
@@ -109,7 +112,10 @@ func TestDuplicateLeaves(t *testing.T) {
 func TestAllDuplicateLeaves(t *testing.T) {
 	var initialBlockHash bc.Hash
 	trueProg := []byte{byte(vm.OP_TRUE)}
-	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyStringHash)
+	assetID, err := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyStringHash)
+	if err != nil {
+		t.Fatal(err)
+	}
 	now := []byte(time.Now().String())
 	issuanceInp := bc.NewIssuanceInput(now, 1, nil, initialBlockHash, trueProg, nil, nil)
 

@@ -18,7 +18,10 @@ func TestTransaction(t *testing.T) {
 	initialBlockHashHex := "03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"
 	initialBlockHash := mustDecodeHash(initialBlockHashHex)
 
-	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
+	assetID, err := ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	cases := []struct {
 		tx   *Tx
@@ -101,8 +104,8 @@ func TestTransaction(t *testing.T) {
 					NewSpendInput(nil, mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), AssetID{}, 1000000000000, 1, []byte{1}, Hash{}, []byte("input")),
 				},
 				Outputs: []*TxOutput{
-					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash), 600000000000, []byte{1}, nil),
-					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash), 400000000000, []byte{2}, nil),
+					NewTxOutput(assetID, 600000000000, []byte{1}, nil),
+					NewTxOutput(assetID, 400000000000, []byte{2}, nil),
 				},
 				MinTime:       1492590000,
 				MaxTime:       1492590591,

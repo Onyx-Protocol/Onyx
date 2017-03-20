@@ -13,7 +13,7 @@ func TestMapTx(t *testing.T) {
 	// sample data copied from transaction_test.go
 	// TODO(bobg): factor out into reusable test utility
 
-	oldTx := sampleTx()
+	oldTx := sampleTx(t)
 	oldOuts := oldTx.Outputs
 
 	_, header, entryMap, err := mapTx(oldTx)

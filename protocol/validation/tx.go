@@ -171,7 +171,10 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 			return badTxErrf(errAssetVersion, "unknown asset version %d in input %d for transaction version %d", txin.AssetVersion, i, tx.Version)
 		}
 
-		assetID := txin.AssetID()
+		assetID, err := txin.AssetID()
+		if err != nil {
+			return badTxErrf(err, "cannot compute asset ID for input %d", i)
+		}
 
 		if txin.Amount() > math.MaxInt64 {
 			return badTxErr(errInputTooBig)

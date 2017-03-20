@@ -129,7 +129,10 @@ func TestGenerateBlock(t *testing.T) {
 	c, b1 := newTestChain(t, now)
 
 	initialBlockHash := b1.Hash()
-	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1, bc.EmptyStringHash)
+	assetID, err := bc.ComputeAssetID(nil, initialBlockHash, 1, bc.EmptyStringHash)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{

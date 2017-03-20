@@ -182,7 +182,10 @@ func assetid(args []string) {
 	if len(assetdefInp) > 0 {
 		assetdefHash = mustDecodeHash(assetdefInp)
 	}
-	assetID := bc.ComputeAssetID(issuance, initialBlock, 1, assetdefHash)
+	assetID, err := bc.ComputeAssetID(issuance, initialBlock, 1, assetdefHash)
+	if err != nil {
+		errorf("error computing asset ID: %s", err)
+	}
 	fmt.Println(assetID.String())
 }
 
