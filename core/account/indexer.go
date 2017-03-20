@@ -103,7 +103,6 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 	}
 	go m.pinStore.ProcessBlocks(ctx, m.chain, ExpirePinName, func(ctx context.Context, b *bc.Block) error {
 		<-m.pinStore.PinWaiter(PinName, b.Height)
-		<-m.pinStore.PinWaiter(query.TxPinName, b.Height)
 		return m.expireControlPrograms(ctx, b)
 	})
 	go m.pinStore.ProcessBlocks(ctx, m.chain, DeleteSpentsPinName, func(ctx context.Context, b *bc.Block) error {
