@@ -48,7 +48,7 @@ Blocks do not specify VM version explicitly. [Consensus programs](blockchain.md#
 
 A program comprises a sequence of zero or more **instructions**. Each instruction contains a one-byte **opcode** followed by zero or more **continuation bytes**, determined by the operation. Data in this format is informally known as **bytecode**.
 
-Instructions that push arbitrary data onto the stack use one of the [PUSHDATA](#pushdata) opcode followed by a variable-length binary string to be placed on stack. The length of the string is either encoded within the opcode itself, or prepended to the string. 
+Instructions that push arbitrary data onto the stack use one of the [PUSHDATA](#pushdata) opcode followed by a variable-length binary string to be placed on stack. The length of the string is either encoded within the opcode itself, or prepended to the string.
 
 All other instructions are encoded simply by a single-byte opcode. The protocol reserves unassigned opcodes for future extensions.
 
@@ -260,7 +260,7 @@ Alias: `OP_0`.
 
 Code  | Stack Diagram     | Cost
 ------|-------------------|-----------------------------------------------------
-0x00  | (∅ → 0)           | 1 + [standard memory cost](#standard-memory-cost)
+0x00  | (∅ → 0)           | 1; [standard memory cost](#standard-memory-cost)
 
 Pushes an empty string (the [VM number](#vm-number) 0) to the data stack.
 
@@ -1087,7 +1087,7 @@ Fails if executed in the [block context](#block-context).
 
 Code  | Stack Diagram                  | Cost
 ------|--------------------------------|-----------------------------------------------------
-0xaf  | (∅ → hash)                     | 4·L<sub>hashed data</sub> + [standard memory cost](#standard-memory-cost)
+0xaf  | (∅ → hash)                     | 1 + [standard memory cost](#standard-memory-cost)
 
 Returns the [block ID](blockchain.md#block-id).
 
