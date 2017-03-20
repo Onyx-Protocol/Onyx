@@ -39,6 +39,7 @@ func (ind *Indexer) ProcessBlocks(ctx context.Context) {
 // saves all annotated transactions to the database.
 func (ind *Indexer) IndexTransactions(ctx context.Context, b *bc.Block) error {
 	<-ind.pinStore.PinWaiter("asset", b.Height)
+	<-ind.pinStore.PinWaiter(TxPinName, b.Height-1)
 
 	err := ind.insertBlock(ctx, b)
 	if err != nil {

@@ -97,14 +97,18 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 	if m.pinStore == nil {
 		return
 	}
-	go m.pinStore.ProcessBlocks(ctx, m.chain, ExpirePinName, m.expireControlPrograms)
-	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, m.indexAccountUTXOs)
+	go m.pinStore.ProcessBlocks(ctx, m.chain, ExpirePinName, func(ctx context.Context, b *bc.Block) error {
+		<-m.pinStore.PinWaiter(PinName, b.Height)
+		<-m.pinStore.PinWaiter(query.TxPinName, b.Height)
+		return m.expireControlPrograms(ctx, b)
+	})
+	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, func(ctx context.Context, b *bc.Block) error {
+		<-m.pinStore.PinWaiter(PinName, b.Height-1)
+		return m.indexAccountUTXOs(ctx, b)
+	})
 }
 
 func (m *Manager) expireControlPrograms(ctx context.Context, b *bc.Block) error {
-	<-m.pinStore.PinWaiter(PinName, b.Height)
-	<-m.pinStore.PinWaiter(query.TxPinName, b.Height)
-
 	// Delete expired account control programs.
 	const deleteQ = `
 		DELETE FROM account_control_programs acp

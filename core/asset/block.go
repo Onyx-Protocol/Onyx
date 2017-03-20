@@ -145,7 +145,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 		WITH new_assets AS (
 			INSERT INTO assets (id, vm_version, issuance_program, definition, created_at, initial_block_hash, first_block_height)
 			VALUES(unnest($1::bytea[]), unnest($2::bigint[]), unnest($3::bytea[]), unnest($4::bytea[]), $5, $6, $7)
-			ON CONFLICT (id) DO NOTHING
+			ON CONFLICT (id) DO UPDATE SET first_block_height = $7 WHERE assets.first_block_height > $7
 			RETURNING id
 		)
 		SELECT id FROM new_assets

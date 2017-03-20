@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"chain/core/pin"
-	"chain/core/query"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
@@ -42,18 +41,6 @@ func TestUsedExpiredAccountControlPrograms(t *testing.T) {
 		}},
 	}
 	err = m.indexAccountUTXOs(ctx, b)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	// The expire control programs routine requires that the account
-	// and query tx processors to run first. Create fake pins indiciating
-	// that they've already run.
-	err = pins.CreatePin(ctx, PinName, 2)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	err = pins.CreatePin(ctx, query.TxPinName, 2)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
