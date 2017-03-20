@@ -24,7 +24,7 @@ type State struct {
 	version      map[string]uint64 //key -> value index
 }
 
-// New returns a new State
+// New returns a new State.
 func New() *State {
 	return &State{
 		state:   map[string][]byte{nextNodeID: []byte("2")},
@@ -63,8 +63,7 @@ func (s *State) RestoreSnapshot(data []byte, index uint64) error {
 	return errors.Wrap(err)
 }
 
-// Snapshot returns an encoded copy of s
-// suitable for RestoreSnapshot.
+// Snapshot returns an encoded copy of s suitable for RestoreSnapshot.
 func (s *State) Snapshot() ([]byte, uint64, error) {
 	log.Printf(context.Background(), "encoding snapshot %#v", s)
 	data, err := proto.Marshal(&statepb.Snapshot{
@@ -74,9 +73,8 @@ func (s *State) Snapshot() ([]byte, uint64, error) {
 	return data, s.appliedIndex, errors.Wrap(err)
 }
 
-// Apply applies a raft log entry payload to s.
-// For conditional operations returns whether codition was satisfied
-// in addition to any errors.
+// Apply applies a raft log entry payload to s. For conditional operations, it
+// returns whether the condition was satisfied.
 func (s *State) Apply(data []byte, index uint64) (satisfied bool, err error) {
 	if index < s.appliedIndex {
 		return false, ErrAlreadyApplied

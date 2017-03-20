@@ -367,7 +367,6 @@ func runTicks(rn raft.Node) {
 	}
 }
 
-//
 func (sv *Service) exec(ctx context.Context, instruction []byte) error {
 	prop := proposal{Wctx: randID(), Instruction: instruction}
 	data, err := json.Marshal(prop)
@@ -409,7 +408,6 @@ func (sv *Service) exec(ctx context.Context, instruction []byte) error {
 // the raft log.
 // TODO (ameets): possibly RawNode in future to know whether Proposal worked or not
 func (sv *Service) Set(ctx context.Context, key string, val []byte) error {
-	// encode w/ json for now: b with a wctx rand id
 	b := state.Set(key, val)
 	return sv.exec(ctx, b)
 }
@@ -760,7 +758,7 @@ func (sv *Service) send(msgs []raftpb.Message) {
 func sendmsg(addr string, data []byte) {
 	resp, err := http.Post("http://"+addr+"/raft/msg", contentType, bytes.NewReader(data))
 	if err != nil {
-		log.Printkv(context.Background(), log.KeyWarning, err)
+		log.Printkv(context.Background(), "warning", err)
 		return
 	}
 	defer resp.Body.Close()
