@@ -1,6 +1,7 @@
 package main
 
 import (
+	"chain/core/fileutil"
 	"chain/errors"
 	"chain/log"
 	"context"
@@ -22,7 +23,8 @@ import (
 )
 
 var (
-	certsDir            = filepath.Join(os.Getenv("HOME"), ".cored", "certs") + "/"
+	certsDir            = filepath.Join(fileutil.DefaultDir(), "certs") + string(filepath.Separator)
+	certFileExt         = getCertFileExt()
 	defaultCertDuration = 10 * 365 * 24 * time.Hour
 	defaultCATemplate   = &x509.Certificate{
 		BasicConstraintsValid: true,
@@ -62,15 +64,16 @@ var (
 // generatePKIX checks if a development pkix
 // exists on the host and generates one if necessary.
 func generatePKIX(ctx context.Context, serverCertPath, serverKeyPath, caPath *string) error {
-	*caPath = certsDir + "ca.pem"
+	*caPath = certsDir + "ca" + certFileExt
+	fmt.Println(*caPath)
 	exists, err := exist(*caPath)
 	if err != nil {
 		return err
 	}
 
-	*serverCertPath = certsDir + "server.pem"
-	*serverKeyPath = certsDir + "server-key.pem"
-	*caPath = certsDir + "ca.pem"
+	*serverCertPath = certsDir + "server" + certFileExt
+	*serverKeyPath = certsDir + "server.key"
+	*caPath = certsDir + "ca" + certFileExt
 	if exists {
 		return warn()
 	}
@@ -129,7 +132,7 @@ func generatePEMKeyPair(dir, prefix string, req, ca *x509.Certificate, keySize i
 		Bytes: certBytes,
 	})
 
-	err = writeKeyPair(certBytes, keyBytes, dir+prefix+".pem", dir+prefix+"-key.pem")
+	err = writeKeyPair(certBytes, keyBytes, dir+prefix+certFileExt, dir+prefix+".key")
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "writing keypair")
 	}
@@ -208,11 +211,13 @@ func exist(path string) (bool, error) {
 
 func warn() error {
 	fmt.Println("WARNING: Chain Core requires mutual TLS authentication. Development certs and keys have been generated in", certsDir)
-	switch os := runtime.GOOS; os {
+	switch runtime.GOOS {
 	case "darwin":
 		return warnDarwin()
 	case "linux":
 		return warnLinux()
+	case "windows":
+		return warnWindows()
 	}
 	return nil
 }
@@ -228,9 +233,9 @@ func warnDarwin() error {
 	loginChain = strings.Replace(loginChain, "\"", "", -1)
 	sysChain := "/Library/Keychains/System.keychain"
 
-	installRoot := fmt.Sprintln("sudo", "security", "add-trusted-cert", "-d", "-r", "trustRoot -k", sysChain, certsDir+"ca.pem")
-	installCert := fmt.Sprintln("security", "import", certsDir+"client.pem", "-k", loginChain)
-	installKey := fmt.Sprintln("security", "import", certsDir+"client-key.pem", "-k", loginChain)
+	installRoot := fmt.Sprintln("sudo", "security", "add-trusted-cert", "-d", "-r", "trustRoot -k", sysChain, certsDir+"ca"+certFileExt)
+	installCert := fmt.Sprintln("security", "import", certsDir+"client"+certFileExt, "-k", loginChain)
+	installKey := fmt.Sprintln("security", "import", certsDir+"client.key", "-k", loginChain)
 	fmt.Println("\nTo install the root CA into the System Keychain run:\n\n\t" + installRoot)
 	fmt.Printf("\nTo import the client keypair into your login keychain run the following commands:\n\n\t%s\n\t%s\n\n", installCert, installKey)
 	return nil
@@ -266,4 +271,11 @@ func warnLinux() (err error) {
 func warnWindows() error {
 	// TODO(boymanjor): print instructions to install root ca and client certs
 	return nil
+}
+
+func getCertFileExt() string {
+	if runtime.GOOS == "windows" {
+		return ".cer"
+	}
+	return ".pem"
 }

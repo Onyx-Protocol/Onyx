@@ -173,7 +173,7 @@ func runServer() {
 				chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 			}
 		}
-		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
+		cert, err := loadX509KeyPair(*tlsCrt, *tlsKey)
 		if err != nil {
 			chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
 		}
