@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -96,4 +97,86 @@ func TestRecordSubmittedTxs(t *testing.T) {
 			t.Errorf("%d: got %d want %d for hash %s", i, got, tc.want, tc.hash)
 		}
 	}
+}
+
+type submitterFunc func(context.Context, *bc.Tx) error
+
+func (f submitterFunc) Submit(ctx context.Context, tx *bc.Tx) error {
+	return f(ctx, tx)
+}
+
+func TestWaitForTxInBlock(t *testing.T) {
+	c := prottest.NewChain(t)
+	submittedTx := prottest.NewIssuanceTx(t, c)
+	a := &API{
+		chain: c,
+		submitter: submitterFunc(func(context.Context, *bc.Tx) error {
+			return nil
+		}),
+	}
+
+	// Start a goroutine waiting for submittedTx to appear in a block.
+	heightFound := make(chan uint64)
+	go func() {
+		h, err := a.waitForTxInBlock(context.Background(), submittedTx, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		heightFound <- h
+		close(heightFound)
+	}()
+
+	// Make a block with some transactions but not the transaction
+	// that we're looking for.
+	_ = prottest.MakeBlock(t, c, []*bc.Tx{
+		prottest.NewIssuanceTx(t, c),
+		prottest.NewIssuanceTx(t, c),
+	})
+	// Make a block with a few transactions, including the one
+	// we're waiting for.
+	b := prottest.MakeBlock(t, c, []*bc.Tx{
+		prottest.NewIssuanceTx(t, c),
+		submittedTx, // bingo
+		prottest.NewIssuanceTx(t, c),
+	})
+
+	// Make sure that the goroutine found the tx and at the right height.
+	h := <-heightFound
+	if h != b.Height {
+		t.Errorf("got height %d, wanted height %d", h, b.Height)
+	}
+}
+
+func TestWaitForTxInBlockResubmits(t *testing.T) {
+	const timesToResubmit = 5
+
+	c := prottest.NewChain(t)
+	orig := prottest.NewIssuanceTx(t, c)
+	a := &API{chain: c}
+
+	// Record every time the Submit function is called.
+	var wg sync.WaitGroup
+	wg.Add(timesToResubmit)
+	a.submitter = submitterFunc(func(_ context.Context, tx *bc.Tx) error {
+		if orig.ID == tx.ID {
+			wg.Done()
+		}
+		return nil
+	})
+
+	// Start a goroutine waiting for orig to appear in a block.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go a.waitForTxInBlock(ctx, orig, 1)
+
+	// Make n blocks but never include the transaction
+	// that we're looking for. The tx should be resubmitted
+	// to the generator each time.
+	for i := 0; i < timesToResubmit; i++ {
+		prottest.MakeBlock(t, c, []*bc.Tx{})
+	}
+
+	// Wait until the submitter records that the transaction has been
+	// re-submitted to the generator all n times.
+	wg.Wait()
 }
