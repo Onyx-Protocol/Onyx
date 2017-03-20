@@ -161,8 +161,6 @@ func Run(
 		return nil, errors.New("no generator configured")
 	}
 
-	a.fetchhealth = a.HealthSetter("fetch")
-	a.genhealth = a.HealthSetter("generator")
 	if a.indexTxs {
 		go pinStore.Listen(ctx, query.TxPinName, dbURL)
 		a.indexer.RegisterAnnotator(a.assets.AnnotateTxs)
@@ -195,7 +193,7 @@ func (a *API) lead(ctx context.Context) {
 		// If don't have any blocks, bootstrap from the generator's
 		// latest snapshot.
 		if a.chain.Height() == 0 {
-			fetch.BootstrapSnapshot(ctx, a.chain, a.store, a.remoteGenerator, a.fetchhealth)
+			fetch.BootstrapSnapshot(ctx, a.chain, a.store, a.remoteGenerator, a.healthSetter("fetch"))
 		}
 	}
 
@@ -220,9 +218,9 @@ func (a *API) lead(ctx context.Context) {
 	}
 
 	if a.config.IsGenerator {
-		go a.generator.Generate(ctx, blockPeriod, a.genhealth, recoveredBlock, recoveredSnapshot)
+		go a.generator.Generate(ctx, blockPeriod, a.healthSetter("generator"), recoveredBlock, recoveredSnapshot)
 	} else {
-		go fetch.Fetch(ctx, a.chain, a.remoteGenerator, a.fetchhealth, recoveredBlock, recoveredSnapshot)
+		go fetch.Fetch(ctx, a.chain, a.remoteGenerator, a.healthSetter("fetch"), recoveredBlock, recoveredSnapshot)
 	}
 	go a.accounts.ProcessBlocks(ctx)
 	go a.assets.ProcessBlocks(ctx)

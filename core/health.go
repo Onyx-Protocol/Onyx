@@ -1,9 +1,9 @@
 package core
 
-// HealthSetter returns a function that, when called,
+// healthSetter returns a function that, when called,
 // sets the named health status in the map returned by "/health".
 // The returned function is safe to call concurrently with ServeHTTP.
-func (a *API) HealthSetter(name string) func(error) {
+func (a *API) healthSetter(name string) func(error) {
 	return func(err error) { a.setHealth(name, err) }
 }
 
