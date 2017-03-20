@@ -19,6 +19,14 @@ Version branches act as the merge base for point release updates across all pack
 
 Updates to the version branches should be as conservative as possible. We should ensure that the tip of each version branch maintains cross-compatibility across packages, per our [versioning scheme](../core/reference/versioning.md).
 
+The standards for including a bug fix in a point release of Chain Core Server are:
+
+- the bug has no workaround
+- the bug is likely to be hit (e.g. >1% probability)
+- the bug compromises important functionality (i.e. not cosmetic, not minor)
+
+If a bug meets all three of those standards, it is a good candidate to fix in a point release. Different products might decide to apply different standards for their point releases.
+
 <sup>1</sup> Version 1.0 predates this scheme, so there is no `1.0-stable` branch. To make updates to 1.0, please use the 1.0 package-specific release tags.
 
 ## Release tags
