@@ -1528,7 +1528,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 **Algorithm:**
 
-1. [Verify issuance range proof](#verify-issuance-range-proof) to make sure tracing and marker points are correct.
+1. [Verify issuance asset range proof](#verify-issuance-asset-range-proof) to make sure tracing and marker points are correct.
 2. Calculate the blinding key `x`:
 
         x = ScalarHash("x" || AC || T || y || nonce || message)
