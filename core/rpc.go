@@ -29,16 +29,6 @@ func (a *API) getBlockRPC(ctx context.Context, height uint64) (chainjson.HexByte
 	return rawBlock, nil
 }
 
-// getBlocksRPC -- DEPRECATED: use getBlock instead
-func (a *API) getBlocksRPC(ctx context.Context, afterHeight uint64) ([]chainjson.HexBytes, error) {
-	block, err := a.getBlockRPC(ctx, afterHeight+1)
-	if err != nil {
-		return nil, err
-	}
-
-	return []chainjson.HexBytes{block}, nil
-}
-
 type snapshotInfoResp struct {
 	Height       uint64  `json:"height"`
 	Size         uint64  `json:"size"`

@@ -147,7 +147,6 @@ func (a *API) buildHandler() {
 	m.Handle(networkRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *bc.Tx) error {
 		return a.submitter.Submit(ctx, tx)
 	}))
-	m.Handle(networkRPCPrefix+"get-blocks", needConfig(a.getBlocksRPC)) // DEPRECATED: use get-block instead
 	m.Handle(networkRPCPrefix+"get-block", needConfig(a.getBlockRPC))
 	m.Handle(networkRPCPrefix+"get-snapshot-info", needConfig(a.getSnapshotInfoRPC))
 	m.Handle(networkRPCPrefix+"get-snapshot", http.HandlerFunc(a.getSnapshotRPC))
