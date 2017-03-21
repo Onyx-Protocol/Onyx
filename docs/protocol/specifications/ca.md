@@ -19,6 +19,7 @@
   * [Borromean Ring Signature](#borromean-ring-signature)
   * [Asset ID Commitment](#asset-id-commitment)
   * [Asset Range Proof](#asset-range-proof)
+  * [Issuance Asset Range Proof](#issuance-asset-range-proof)
   * [Value Commitment](#value-commitment)
   * [Excess Factor](#excess-factor)
   * [Excess Commitment](#excess-commitment)
@@ -31,7 +32,6 @@
   * [Value Encryption Key](#value-encryption-key)
   * [Asset ID Blinding Factor](#asset-id-blinding-factor)
   * [Value Blinding Factor](#value-blinding-factor)
-  * [Issuance Asset Range Proof](#issuance-asset-range-proof)
 * [Core algorithms](#core-algorithms)
   * [Create Ring Signature](#create-ring-signature)
   * [Verify Ring Signature](#verify-ring-signature)
@@ -396,6 +396,45 @@ See:
 * [Verify Asset Range Proof](#verify-asset-range-proof)
 
 
+
+### Issuance Asset Range Proof
+
+The issuance asset range proof demonstrates that a given [confidential issuance](asset-version-2-confidential-issuance-witness) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [verification procedure](#verify-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [validation procedure](#validate-transaction-input).
+
+The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`) are derived from `n` [asset issuance choices](blockchain.md#asset-issuance-choice) specified outside the range proof.
+
+The proof also contains a _tracing point_ that that lets any issuer to prove or disprove whether the issuance is performed by their issuance key.
+
+#### Non-Confidential Issuance Asset Range Proof
+
+Field                        | Type      | Description
+-----------------------------|-----------|------------------
+Type                         | byte      | Contains value 0x00 to indicate the commitment is not blinded.
+Asset ID                     | [AssetID](blockchain.md#asset-id)   | 32-byte asset identifier.
+
+#### Confidential Issuance Asset Range Proof
+
+Field                           | Type             | Description
+--------------------------------|------------------|------------------
+Type                            | byte             | Contains value 0x01 to indicate the commitment is blinded.
+Issuance Ring Signature         | [Ring Signature](#ring-signature)   | A ring signature proving that the issuer of an encrypted asset ID approved the issuance.
+Marker Signature                | 64 bytes         | A pair of [scalars](#scalar) representing a single Schnorr signature for the marker and tracing points.
+Tracing Point                   | [Point](#point)  | A point that lets any issuer to prove or disprove if this issuance is done by them.
+Blinded Marker Point            | [Point](#point)  | A blinding factor commitment using a marker point (used together with the tracing point).
+Issuance Keys                   | [List](blockchain.md#list)\<[Point](#point)\> | Keys to be used to calculate the public key for the corresponding index in the ring signature.
+Issuance Program                | [Program](blockchain.md#program)  | [Version of the VM](#vm-version) that executes the issuance signature program.
+Delegate Issuance Program       | [String](blockchain.md#string) | Predicate committed to by the issuance asset range proof, which is evaluated to ensure that the transaction is authorized.
+
+TBD: modify the confidential proof to allow "watch keys" (will require change of `{Y}` to `{(Y,W)}` and a pair of tracing points).
+
+See:
+
+* [Create Issuance Asset Range Proof](#create-issuance-asset-range-proof)
+* [Verify Issuance Asset Range Proof](#verify-issuance-asset-range-proof)
+
+
+
+
 ### Value Commitment
 
 A value commitment `VC` is an ElGamal commitment represented by a [point pair](#point-pair):
@@ -560,36 +599,6 @@ An [scalar](#scalar) `f` used to produce a [value commitment](#value-commitment)
 
 The value blinding factors are created by [Create Blinded Value Commitment](#create-blinded-value-commitment) algorithm.
 
-
-### Issuance Asset Range Proof
-
-The issuance asset range proof demonstrates that a given [confidential issuance](asset-version-2-confidential-issuance-witness) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [verification procedure](#verify-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [validation procedure](#validate-transaction-input).
-
-The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`) are derived from `n` [asset issuance choices](blockchain.md#asset-issuance-choice) specified outside the range proof.
-
-The proof also contains a _tracing point_ that that lets any issuer to prove or disprove whether the issuance is performed by their issuance key.
-
-#### Non-Confidential Issuance Asset Range Proof
-
-Field                        | Type      | Description
------------------------------|-----------|------------------
-Type                         | byte      | Contains value 0x00 to indicate the commitment is not blinded.
-Asset ID                     | [AssetID](blockchain.md#asset-id)   | 32-byte asset identifier.
-
-#### Confidential Issuance Asset Range Proof
-
-Field                           | Type             | Description
---------------------------------|------------------|------------------
-Type                            | byte             | Contains value 0x01 to indicate the commitment is blinded.
-Issuance Ring Signature         | [Ring Signature](#ring-signature)   | A ring signature proving that the issuer of an encrypted asset ID approved the issuance.
-Marker Signature                | 64 bytes         | A pair of [scalars](#scalar) representing a single Schnorr signature for the marker and tracing points.
-Tracing Point                   | [Point](#point)  | A point that lets any issuer to prove or disprove if this issuance is done by them.
-Blinded Marker Point            | [Point](#point)  | A blinding factor commitment using a marker point (used together with the tracing point).
-Issuance Keys                   | [List](blockchain.md#list)\<[Point](#point)\> | Keys to be used to calculate the public key for the corresponding index in the ring signature.
-Issuance Program                | [Program](blockchain.md#program)  | [Version of the VM](#vm-version) that executes the issuance signature program.
-Delegate Issuance Program       | [String](blockchain.md#string) | Predicate committed to by the issuance asset range proof, which is evaluated to ensure that the transaction is authorized.
-
-TBD: modify the confidential proof to allow "watch keys" (will require change of `{Y}` to `{(Y,W)}` and a pair of tracing points).
 
 
 
