@@ -532,7 +532,7 @@ EKP is encoded as a 128-byte concatenation of the corresponding extended public 
 
     EKP = xpub1 || xpub2
 
-EKPs allows “two-dimensional” key derivation by deriving from one key and leaving the other one unchanged, therefore allowing “vertical” derivation from [Record Encryption Keys](#record-encryption-keys) to [Intermediate Encryption Keys](#intermediate-encryption-keys), [Asset ID Encryption Keys](#asset-id-encryption-keys) and [Value Encryption Keys](#value-encryption-keys) and “horizontal” derivation from a root key pair associated with a user’s account to per-transaction and per-output key pairs.
+EKPs allows “two-dimensional” key derivation by deriving from one key and leaving the other one unchanged, therefore allowing “vertical” derivation from [Record Encryption Keys](#record-encryption-key) to [Intermediate Encryption Keys](#intermediate-encryption-key), [Asset ID Encryption Keys](#asset-id-encryption-key) and [Value Encryption Keys](#value-encryption-key) and “horizontal” derivation from a root key pair associated with a user’s account to per-transaction and per-output key pairs.
 
 
 ### Record Encryption Key
@@ -1787,15 +1787,15 @@ In case of failure, returns `nil` instead of the items listed above.
 
 
 
-### Decrypt Output WIP
+### Decrypt Output
 
 This algorithm decrypts fully encrypted amount and asset ID for a given output.
 
 **Inputs:**
 
 1. `rek`: the [record encryption key](#record-encryption-key).
-2. `AD`: the [asset ID descriptor](#asset-id-descriptor).
-3. `VD`: the [value descriptor](#value-descriptor).
+2. `AC`: the [asset ID commitment](#asset-id-commitment).
+3. `VC`: the [value commitment](#value-commitment).
 4. `VRP`: the [value range proof](#value-range-proof) or an empty string.
 
 **Outputs:**
@@ -1814,7 +1814,6 @@ In case of failure, returns `nil` instead of the items listed above.
 2. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
 3. Decrypt asset ID:
     1. If `AD` is [nonblinded](#nonblinded-asset-id-descriptor): set `assetID` to the one stored in `AD`, set `c` to zero.
-    2. If `AD` is [blinded and not encrypted](#blinded-asset-id-descriptor), halt and return nil.
     3. If `AD` is [encrypted](#encrypted-asset-id-descriptor), [Decrypt Asset ID](#decrypt-asset-id): compute `(assetID,c)` from `(H,(ea,ec),aek)`. If verification failed, halt and return `nil`.
 4. Decrypt value:
     1. If `VD` is [nonblinded](#nonblinded-value-descriptor): set `value` to the one stored in `VD`, set `f` to zero.
