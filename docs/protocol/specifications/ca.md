@@ -621,7 +621,7 @@ The value blinding factors are created by [Create Blinded Value Commitment](#cre
 **Inputs:**
 
 1. `msg`: the string to be signed.
-2. `B`: base [point](#point) to verify the signature (not necessarily a [generator](#generator) point).
+2. `B`: base [point](#point) to verify the signature (not necessarily a [generator](#generators) point).
 3. `{P[i]}`: `n` [points](#point) representing the public keys.
 4. `j`: the index of the designated public key, so that `P[j] == p·B`.
 5. `p`: the secret [scalar](#scalar) representing a private key for the public key `P[j]`.
@@ -660,7 +660,7 @@ The value blinding factors are created by [Create Blinded Value Commitment](#cre
 **Inputs:**
 
 1. `msg`: the string being signed.
-2. `B`: base [point](#point) to verify the signature (not necessarily a [generator](#generator) point).
+2. `B`: base [point](#point) to verify the signature (not necessarily a [generator](#generators) point).
 3. `{P[i]}`: `n` [points](#point) representing the public keys.
 4. `e[0], s[0], ... s[n-1]`: ring signature consisting of `n+1` 32-byte elements.
 
@@ -689,7 +689,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generator) points).
+4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generators) points).
 5. `{P[i,j]}`: `n·m` [points](#point) representing public keys.
 6. `{p[i]}`: the list of `n` [scalars](#scalar) representing private keys.
 7. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·B[i]`.
@@ -754,7 +754,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generator) points).
+4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generators) points).
 5. `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
 6. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
@@ -787,7 +787,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generator) points).
+4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generators) points).
 5. `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
 6. `{p[i]}`: the list of `n` scalars representing private keys.
 7. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·G`.
@@ -1376,7 +1376,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 ### Create Issuance Asset Range Proof
 
-When creating a confidential issuance, the first step is to construct the rest of the input commitment and input witness, including an asset issuance choice for each asset that one wants to include in the anonymity set. The issuance key for each asset should be extracted from the [issuance programs](blockhain.md#program). (Issuance programs that support confidential issuance should have a branch that checks use of the correct issuance key using `ISSUANCEKEY` instruction.)
+When creating a confidential issuance, the first step is to construct the rest of the input commitment and input witness, including an asset issuance choice for each asset that one wants to include in the anonymity set. The issuance key for each asset should be extracted from the [issuance programs](blockchain.md#program). (Issuance programs that support confidential issuance should have a branch that checks use of the correct issuance key using `ISSUANCEKEY` instruction.)
 
 **Inputs:**
 
