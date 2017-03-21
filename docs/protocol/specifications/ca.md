@@ -14,9 +14,11 @@
   * [Point Pair](#point-pair)
   * [Point operations](#point-operations)
   * [Hash256](#hash256)
+  * [StreamHash](#streamhash)
   * [ScalarHash](#scalarhash)
   * [Ring Signature](#ring-signature)
   * [Borromean Ring Signature](#borromean-ring-signature)
+  * [Asset ID Point](#asset-id-point)
   * [Asset ID Commitment](#asset-id-commitment)
   * [Asset Range Proof](#asset-range-proof)
   * [Issuance Asset Range Proof](#issuance-asset-range-proof)
@@ -67,7 +69,7 @@
   * [Encrypt Issuance](#encrypt-issuance)
   * [Encrypt Output](#encrypt-output)
   * [Decrypt Output](#decrypt-output)
-* [Test vectors](#test-vectors)  
+* [Test vectors](#test-vectors)
   
 
 
