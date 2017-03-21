@@ -1,4 +1,4 @@
-package protocol
+package protocol_test
 
 import (
 	"context"
@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
+	. "chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/memstore"
+	"chain/protocol/prottest"
 	"chain/protocol/state"
 	"chain/testutil"
 )
@@ -16,8 +17,8 @@ func TestGetBlock(t *testing.T) {
 	ctx := context.Background()
 
 	b1 := &bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
-	noBlocks := memstore.New()
-	oneBlock := memstore.New()
+	noBlocks := prottest.NewMemStore()
+	oneBlock := prottest.NewMemStore()
 	oneBlock.SaveBlock(ctx, b1)
 	oneBlock.SaveSnapshot(ctx, 1, state.Empty())
 
@@ -47,17 +48,17 @@ func TestGetBlock(t *testing.T) {
 
 func TestNoTimeTravel(t *testing.T) {
 	ctx := context.Background()
-	c, err := NewChain(ctx, bc.Hash{}, memstore.New(), nil)
+	c, err := NewChain(ctx, bc.Hash{}, prottest.NewMemStore(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	c.setHeight(1)
-	c.setHeight(2)
+	SetChainHeight(c, 1)
+	SetChainHeight(c, 2)
 
-	c.setHeight(1) // don't go backward
-	if c.state.height != 2 {
-		t.Fatalf("c.state.height = %d want 2", c.state.height)
+	SetChainHeight(c, 1) // don't go backward
+	if GetChainHeight(c) != 2 {
+		t.Fatalf("c.state.height = %d want 2", GetChainHeight(c))
 	}
 }
 
@@ -200,7 +201,7 @@ func TestValidateBlockForSig(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	c, err := NewChain(ctx, initialBlock.Hash(), memstore.New(), nil)
+	c, err := NewChain(ctx, initialBlock.Hash(), prottest.NewMemStore(), nil)
 	if err != nil {
 		t.Fatal("unexpected error ", err)
 	}
@@ -223,7 +224,7 @@ func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	c, err = NewChain(ctx, b1.Hash(), memstore.New(), nil)
+	c, err = NewChain(ctx, b1.Hash(), prottest.NewMemStore(), nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
