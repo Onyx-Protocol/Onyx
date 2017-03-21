@@ -1474,7 +1474,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 
 
-### Create Issuance Proof WIP
+### Create Issuance Proof
 
 Issuance proof allows an issuer to prove whether a given confidential issuance is performed with their key or not.
 
@@ -1500,7 +1500,33 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 **Algorithm:**
 
-1. TBD.
+1. [Verify issuance range proof](#verify-issuance-range-proof) to make sure tracing and marker points are correct.
+2. Calculate the blinding key `x`:
+
+        x = ScalarHash("x" || AC || nonce || T || y)
+
+3. Blind the tracing point being tested: `Z = x·T`.
+4. Calculate commitment to the blinding key: `X = x·(J+M)`.
+5. Calculate and blind a tracing point corresponding to the issuance key pair `y,Y`: `Z’ = x·y·(J+M)`.
+6. Calculate a 32-byte message hash and two 64-byte Fiat-Shamir challenges for all the signatures (total 160 bytes):
+
+        (msghash, h1, h2) = StreamHash("IP" || AC || T || X || Z || Z’, 32 + 2·64)
+
+7. Interpret `h1` and `h2` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
+8. Create a proof that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/(J+M)` is equal to the discrete log `Z/T`):
+    1. Calculate base point `B1 = h1·(J+M) + T`.
+    2. Calculate the nonce `k1 = ScalarHash("k1" || msghash || y || x)`.
+    3. Calculate point `R1 = k1·B1`.
+    4. Calculate scalar `e1 = ScalarHash("e1" || msghash || R1)`.
+    5. Calculate scalar `s1 = k1 + x·e1 mod L`.
+9. Create a proof that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
+    1. Calculate base point `B2 = h2·X + G`.
+    2. Calculate the nonce `k2 = ScalarHash("k2" || msghash || y || x)`.
+    3. Calculate point `R2 = k2·B2`.
+    4. Calculate scalar `e2 = ScalarHash("e2" || msghash || R2)`.
+    5. Calculate scalar `s2 = k2 + y·e2 mod L`.
+5. Return points `(X, Z, Z’)`, signature `(e1,s1)` and signature `(e2,s2)`.
+
 
 
 ### Verify Issuance Proof
@@ -1536,15 +1562,15 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 2. Interpret `h1` and `h2` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
 3. Verify that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/(J+M)` is equal to the discrete log `Z/T`):
-    1. Compute base point `B = h1·(J+M) + T`.
-    2. Compute public key `P = h1·X + Z`.
-    3. Calculate point `R1 = s1·B - e1·P`.
+    1. Calculate base point `B1 = h1·(J+M) + T`.
+    2. Calculate public key `P1 = h1·X + Z`.
+    3. Calculate point `R1 = s1·B1 - e1·P1`.
     4. Calculate scalar `e’ = ScalarHash("e1" || msghash || R1)`.
     5. Verify that `e’` is equal to `e1`. If validation fails, halt and return `nil`.
 4. Verify that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
-    1. Compute base point `B = h1·X + G`.
-    2. Compute public key `P = h1·Z’ + Y`.
-    3. Calculate point `R2 = s2·B - e2·P`.
+    1. Calculate base point `B2 = h2·X + G`.
+    2. Calculate public key `P2 = h2·Z’ + Y[j]`.
+    3. Calculate point `R2 = s2·B2 - e2·P2`.
     4. Calculate scalar `e” = ScalarHash("e2" || msghash || R2)`.
     5. Verify that `e”` is equal to `e2`. If validation fails, halt and return `nil`.
 5. If `Z` is equal to `Z’` return `“yes”`. Otherwise, return `“no”`.
