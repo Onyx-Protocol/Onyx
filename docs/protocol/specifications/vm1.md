@@ -1123,7 +1123,7 @@ Code  | Stack Diagram                                        | Cost
         2. if the destination is an output: control program equals `prog` and VM version equals `version`,
         3. if the destination is a retirement:
             * `version` must be zero,
-            * if [expansion flag](#vm-sate) is `false`, `prog` must be an empty string.
+            * if [expansion flag](#vm-state) is `false`, `prog` must be an empty string.
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
         6. `datahash` is an empty string or it matches the data hash in the destination entry.
