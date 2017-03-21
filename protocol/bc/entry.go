@@ -66,6 +66,13 @@ func EntryID(e Entry) (hash Hash) {
 	return hash
 }
 
+// writeForHash serializes the object c to the writer w, from which
+// presumably a hash can be extracted.
+//
+// This function may propagate an error from the underlying writer,
+// and may produce errors of its own if passed objects whose
+// hash-serialization formats are not specified. It MUST NOT produce
+// errors in other cases.
 func writeForHash(w io.Writer, c interface{}) error {
 	switch v := c.(type) {
 	case byte:
