@@ -565,24 +565,31 @@ The value blinding factors are created by [Create Blinded Value Commitment](#cre
 
 The issuance asset range proof demonstrates that a given [confidential issuance](asset-version-2-confidential-issuance-witness) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [verification procedure](#verify-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [validation procedure](#validate-transaction-input).
 
-The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`) are derived from `n` [asset issuance choices](data.md#asset-issuance-choice) specified outside the range proof.
+The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`) are derived from `n` [asset issuance choices](blockchain.md#asset-issuance-choice) specified outside the range proof.
 
 The proof also contains a _tracing point_ that that lets any issuer to prove or disprove whether the issuance is performed by their issuance key.
 
-TBD: extend this to allow "watch keys" (will require change of `{Y}` to `{(Y,W)}` and maybe a pair of tracing points).
+#### Non-Confidential Issuance Asset Range Proof
+
+Field                        | Type      | Description
+-----------------------------|-----------|------------------
+Type                         | byte      | Contains value 0x00 to indicate the commitment is not blinded.
+Asset ID                     | [AssetID](blockchain.md#asset-id)   | 32-byte asset identifier.
+
+#### Confidential Issuance Asset Range Proof
 
 Field                           | Type             | Description
 --------------------------------|------------------|------------------
+Type                            | byte             | Contains value 0x01 to indicate the commitment is blinded.
 Issuance Ring Signature         | [Ring Signature](#ring-signature)   | A ring signature proving that the issuer of an encrypted asset ID approved the issuance.
 Marker Signature                | 64 bytes         | A pair of [scalars](#scalar) representing a single Schnorr signature for the marker and tracing points.
 Tracing Point                   | [Point](#point)  | A point that lets any issuer to prove or disprove if this issuance is done by them.
 Blinded Marker Point            | [Point](#point)  | A blinding factor commitment using a marker point (used together with the tracing point).
 Issuance Keys                   | [List](blockchain.md#list)\<[Point](#point)\> | Keys to be used to calculate the public key for the corresponding index in the ring signature.
 Issuance Program                | [Program](blockchain.md#program)  | [Version of the VM](#vm-version) that executes the issuance signature program.
-Issuance Signature Program      | varstring31      | Predicate committed to by the issuance asset range proof, which is evaluated to ensure that the transaction is authorized.
-Program Arguments Count         | varint31         | Number of [program arguments](#program-arguments) that follow.
-Program Arguments               | [varstring31]    | Data passed to the issuance signature program.
+Delegate Issuance Program       | [String](blockchain.md#string) | Predicate committed to by the issuance asset range proof, which is evaluated to ensure that the transaction is authorized.
 
+TBD: modify the confidential proof to allow "watch keys" (will require change of `{Y}` to `{(Y,W)}` and a pair of tracing points).
 
 
 
@@ -741,7 +748,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
 4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generator) points).
-5. `{P[i,j]}`: `n·m` public keys, [points](data.md#public-key) on the elliptic curve.
+5. `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
 6. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
@@ -774,7 +781,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
 4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generator) points).
-5. `{P[i,j]}`: `n·m` public keys, [points](data.md#public-key) on the elliptic curve.
+5. `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
 6. `{p[i]}`: the list of `n` scalars representing private keys.
 7. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·G`.
 8. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
@@ -804,7 +811,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
         4. If `i` is not equal to `j[t]`:
             1. Set `payload[m·t + i] = o[m·t + i] XOR s[t,i]`.
         5. Let `i’ = i+1 mod m`.
-        6. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](data.md#public-key). Use `e0` instead of `e[t,0]` in each ring.
+        6. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](#point). Use `e0` instead of `e[t,0]` in each ring.
         7. Calculate `e[t,i’] = ScalarHash(byte(cnt) || R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 8. Calculate `e’ = ScalarHash(E)`.
@@ -1135,7 +1142,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `n`: number of rings.
     * `m = base`: number of signatures per ring.
     * `{B[i]}`: `n` base points.
-    * `{P[i,j]}`: `n·m` [points](data.md#public-key).
+    * `{P[i,j]}`: `n·m` [points](#point).
     * `{f}`: the blinding factor `f` repeated `n` times.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G’[t]`.
     * `{r[i]} = {ct[i]}`: random string consisting of `n·m` 32-byte ciphertext elements.
@@ -1144,7 +1151,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `N`:  number of blinded bits (equals to `2·n`),
     * `exp`: exponent (zero),
     * `vmin`: minimum value (zero),
-    * `{D[t]}`: `n-1` digit commitments encoded as [public keys](data.md#public-key) (excluding the last digit commitment),
+    * `{D[t]}`: `n-1` digit commitments encoded as [public keys](#point) (excluding the last digit commitment),
     * `{e,s[t,j]}`: `1 + n·4` 32-byte elements representing a [borromean ring signature](#borromean-ring-signature),
 
 
@@ -1199,7 +1206,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `n`: number of rings.
     * `m=base`: number of signatures in each ring.
     * `{B[i]}`: `n` base points.
-    * `{P[i,j]}`: `n·m` public keys, [points](data.md#public-key) on the elliptic curve.
+    * `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
     * `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 9. Return `true` if verification succeeded, or `false` otherwise.
 
@@ -1359,7 +1366,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 1. `AC`: the [asset ID commitment](#asset-id-commitment).
 2. `c`: the [blinding factor](#asset-id-blinding-factor) for commitment `AC` such that: `AC.H == A[j] + c·G`, `AC.Ba == c·J`.
-3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](data.md#asset-id).
+3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](blockchain.md#asset-id).
 4. `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
 5. `program`: delegate issuance [program](blockchain.md#program),
 6. `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
@@ -1370,7 +1377,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
 * `ms = (e’,s’)`: the marker signature,
-* `{a[i]}`: `n` [asset IDs](data.md#asset-id),
+* `{a[i]}`: `n` [asset IDs](blockchain.md#asset-id),
 * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
 * `program`: delegate issuance [program](blockchain.md#program),
 * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
@@ -1428,48 +1435,54 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 1. `AC`: the [asset ID commitment](#asset-id-commitment).
 2. `IARP`: the to-be-verified [issuance asset range proof](#issuance-asset-range-proof) consisting of:
-    * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
-    * `ms = (e’,s’)`: the marker signature,
-    * `{a[i]}`: `n` [asset IDs](data.md#asset-id),
-    * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
-    * `program`: delegate issuance [program](blockchain.md#program),
-    * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
-    * `T`: tracing [point](#point),
-    * `Bm`: blinded marker [point](#point),
+    1. If the `IARP` is non-confidential: only `assetid`.
+    2. If the `IARP` is confidential:
+        * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
+        * `ms = (e’,s’)`: the marker signature,
+        * `{a[i]}`: `n` [asset IDs](blockchain.md#asset-id),
+        * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
+        * `program`: delegate issuance [program](blockchain.md#program),
+        * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
+        * `T`: tracing [point](#point),
+        * `Bm`: blinded marker [point](#point),
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. Calculate the base hash: `basehash = Hash256("IARP" || AC || uint64le(n) || a[0] || ... || a[n-1] || Y[0] || ... || Y[n-1] || nonce || program)` where `n` is encoded as a 64-bit unsigned little-endian integer.
-2. Calculate marker point `M`:
-    1. Let `counter = 0`.
-    2. Calculate `Hash256("M" || basehash || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
-    3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
-    4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
-    5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
-3. Calculate a 32-byte message hash and three 64-byte Fiat-Shamir challenges for all the signatures (total 224 bytes):
+1. If the range proof is non-confidential:
+    1. Compute [asset ID point](#asset-id-point): `A’ = 8·Decode(Hash256(assetID...))`.
+    2. Verify that [point pair](#point-pair) `(A’,O)` equals `AC`.
+2. If the range proof is confidential:
+    1. Calculate the base hash: `basehash = Hash256("IARP" || AC || uint64le(n) || a[0] || ... || a[n-1] || Y[0] || ... || Y[n-1] || nonce || program)` where `n` is encoded as a 64-bit unsigned little-endian integer.
+    2. Calculate marker point `M`:
+        1. Let `counter = 0`.
+        2. Calculate `Hash256("M" || basehash || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
+        3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
+        4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
+        5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
+    3. Calculate a 32-byte message hash and three 64-byte Fiat-Shamir challenges for all the signatures (total 224 bytes):
 
-        (msghash, h1, h2, h3) = StreamHash("h" || basehash || M || T || Bm, 32 + 3·64)
+            (msghash, h1, h2, h3) = StreamHash("h" || basehash || M || T || Bm, 32 + 3·64)
 
-4. Interpret `h1`, `h2`, `h3` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
-5. Verify proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
-    1. Compute base point `B = h1·M + J`.
-    2. Compute public key `P = h1·Bm + AC.Ba`.
-    3. Calculate point `R = s’·B - e’·P`.
-    4. Calculate scalar `e” = ScalarHash("e" || msghash || R)`.
-    5. Verify that `e”` is equal to `e’`.
-6. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
-7. Calculate point `Q = Ba + Bm + h2·T`.
-8. Calculate points `{P[i]}` for `n` pairs of asset ID points and corresponding issuance keys `A[i], Y[i]`:
+    4. Interpret `h1`, `h2`, `h3` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
+    5. Verify proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
+        1. Compute base point `B = h1·M + J`.
+        2. Compute public key `P = h1·Bm + AC.Ba`.
+        3. Calculate point `R = s’·B - e’·P`.
+        4. Calculate scalar `e” = ScalarHash("e" || msghash || R)`.
+        5. Verify that `e”` is equal to `e’`.
+    6. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
+    7. Calculate point `Q = Ba + Bm + h2·T`.
+    8. Calculate points `{P[i]}` for `n` pairs of asset ID points and corresponding issuance keys `A[i], Y[i]`:
     
-        P[i] = AC.H — A[i] + h2·Y[i]
+            P[i] = AC.H — A[i] + h2·Y[i]
 
-9. Verify ring proof of discrete log equality for one of the pairs `P[i]/G` and `Q/(J+M)`:
-    1. Calculate base point `B = G + h3·(J+M)`.
-    2. Precompute point `Q’ = h3·Q`.
-    3. For each `P[i]` compute `P’[i] = P[i] + Q’`.
-    4. [Verify the ring signature](#verify-ring-signature) `e[0], s[0], ... s[n-1]` with message `msghash` and public keys `{P’[i]}`.
+    9. Verify ring proof of discrete log equality for one of the pairs `P[i]/G` and `Q/(J+M)`:
+        1. Calculate base point `B = G + h3·(J+M)`.
+        2. Precompute point `Q’ = h3·Q`.
+        3. For each `P[i]` compute `P’[i] = P[i] + Q’`.
+        4. [Verify the ring signature](#verify-ring-signature) `e[0], s[0], ... s[n-1]` with message `msghash` and public keys `{P’[i]}`.
 
 
 
@@ -1483,7 +1496,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 2. `IARP`: the to-be-verified [issuance asset range proof](#issuance-asset-range-proof) consisting of:
     * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
     * `ms = (e’,s’)`: the marker signature,
-    * `{a[i]}`: `n` [asset IDs](data.md#asset-id),
+    * `{a[i]}`: `n` [asset IDs](blockchain.md#asset-id),
     * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
     * `program`: delegate issuance [program](blockchain.md#program),
     * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
@@ -1536,7 +1549,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 2. `IARP`: the to-be-verified [issuance asset range proof](#issuance-asset-range-proof) consisting of:
     * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
     * `ms = (e’,s’)`: the marker signature,
-    * `{a[i]}`: `n` [asset IDs](data.md#asset-id),
+    * `{a[i]}`: `n` [asset IDs](blockchain.md#asset-id),
     * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
     * `program`: delegate issuance [program](blockchain.md#program),
     * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
@@ -1563,7 +1576,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 3. Verify that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/(J+M)` is equal to the discrete log `Z/T`):
     1. Calculate base point `B1 = h1·(J+M) + T`.
     2. Calculate public key `P1 = h1·X + Z`.
-    3. Calculate point `R1 = s1·B1 - e1·P1`.
+    3. Calculate point `R1 = s1·B1 - e1·P1`.ruined
     4. Calculate scalar `e’ = ScalarHash("e1" || msghash || R1)`.
     5. Verify that `e’` is equal to `e1`. If validation fails, halt and return `nil`.
 4. Verify that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
@@ -1595,48 +1608,40 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 ## High-level procedures
 
-### Verify Output WIP
+### Verify Output
 
 **Inputs:**
 
-1. `AD`: the [asset ID descriptor](#asset-id-descriptor).
-2. `VD`: the [value commitment](#value-descriptor).
-3. `ARP`: the [asset range proof](#asset-range-proof) or an empty string.
-4. `VRP`: the [value range proof](#value-range-proof) or an empty string.
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
+2. `VC`: the [value commitment](#value-commitment).
+3. `ARP`: the [asset range proof](#asset-range-proof).
+4. `VRP`: the [value range proof](#value-range-proof).
 
 **Output:** `true` if verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. If `ARP` is not empty and `AD` is blinded:
-    1. [Verify asset range proof](#verify-asset-range-proof) using `(AD.H,AD.(ea,ec),ARP)`.
-2. If `VD` is blinded:
-    1. Verify `VRP` is non-empty.
-    2. [Verify value range proof](#verify-value-range-proof) using `(AD.H,VD.V,VD.(ev,ef),VRP)`.
+1. [Verify asset range proof](#verify-asset-range-proof) using `AC` and `ARP`.
+2. [Verify value range proof](#verify-value-range-proof) using `AC`, `VC` and `VRP`.
 3. Return `true`.
 
 
-### Verify Issuance WIP
+### Verify Issuance
 
 **Inputs:**
 
-1. `AD`: the [asset ID descriptor](#asset-id-descriptor).
-2. `VD`: the [value descriptor](#value-descriptor).
-3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](data.md#asset-id).
-4. `IARP`: the [issuance asset ID range proof](#issuance-asset-range-proof).
-5. `VRP`: the [value range proof](#value-range-proof).
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
+2. `VC`: the [value commitment](#value-commitment).
+3. `IARP`: the [issuance asset ID range proof](#issuance-asset-range-proof).
+4. `VRP`: the [value range proof](#value-range-proof).
 
 **Output:** `true` if verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. If `IARP` is not empty and `AD` is blinded:
-    1. [Verify issuance asset range proof](#verify-issuance-asset-range-proof) using `(IARP,AD.H,{a[i]})`. If verification failed, halt and return `false`.
-2. If `VD` is blinded:
-    1. Verify `VRP` is not empty.
-    2. [Verify value range proof](#verify-value-range-proof) using `(AD.H, VD.V, evef=(0x00...,0x00...),VRP)`. If verification failed, halt and return `false`.
+1. [Verify issuance asset range proof](#verify-issuance-asset-range-proof) using `(IARP,AC)`.
+2. [Verify value range proof](#verify-value-range-proof) using `AC`, `VC` and `VRP`.
 3. Return `true`.
-
 
 
 
@@ -1647,7 +1652,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 1. List of issuances, each input consisting of:
     * `AD`: the [asset ID descriptor](#asset-id-descriptor).
     * `VD`: the [value descriptor](#value-descriptor).
-    * `{a[i]}`: `n` 32-byte unencrypted [asset IDs](data.md#asset-id).
+    * `{a[i]}`: `n` 32-byte unencrypted [asset IDs](blockchain.md#asset-id).
     * `IARP`: the [issuance asset ID range proof](#issuance-asset-range-proof).
     * `VRP`: the [value range proof](#value-range-proof).
 2. List of inputs, each input consisting of:
@@ -1731,7 +1736,7 @@ ARP can be added separately using [Create Asset Range Proof](#create-asset-range
 2. `assetID`: the output asset ID.
 3. `value`: the output amount.
 4. `N`: number of bits to encrypt (`value` must fit within `N` bits).
-5. `plaintext`: binary string that has length of less than `32·(2·N-1)` bytes when encoded as [varstring31](data.md#varstring31).
+5. `plaintext`: binary string that has length of less than `32·(2·N-1)` bytes when encoded as [varstring31](blockchain.md#varstring31).
 6. Optional `q`: the [excess factor](#excess-factor) to have this output balance with the transaction. If omitted, blinding factor is generated at random.
 
 **Outputs:**
@@ -1746,7 +1751,7 @@ In case of failure, returns `nil` instead of the items listed above.
 
 **Algorithm:**
 
-1. Encode `plaintext` using [varstring31](data.md#varstring31) encoding and split the string in 32-byte chunks `{pt[i]}` (last chunk padded with zero bytes if needed).
+1. Encode `plaintext` using [varstring31](block.md#varstring31) encoding and split the string in 32-byte chunks `{pt[i]}` (last chunk padded with zero bytes if needed).
 2. If the number of chunks `{pt[i]}` exceeds `2·N-1`, halt and return `nil`.
 3. If the number of chunks `{pt[i]}` is less than `2·N-1`, pad the array with all-zero 32-byte chunks.
 4. If `value ≥ 2^N`, halt and return `nil`.
@@ -1785,7 +1790,7 @@ This algorithm decrypts fully encrypted amount and asset ID for a given output.
 2. `value`: the output amount.
 3. `c`: the output [asset ID blinding factor](#asset-id-blinding-factor) for the asset ID commitment `H`.
 4. `f`: the output [value blinding factor](#value-blinding-factor).
-5. `plaintext`: the binary string that has length of less than `32·(2·N-1)` bytes when encoded as [varstring31](data.md#varstring31).
+5. `plaintext`: the binary string that has length of less than `32·(2·N-1)` bytes when encoded as [varstring31](blockchain.md#string).
 
 In case of failure, returns `nil` instead of the items listed above.
 
@@ -1803,7 +1808,7 @@ In case of failure, returns `nil` instead of the items listed above.
     3. If `VD` is [encrypted](#encrypted-value-descriptor), [Decrypt Value](#decrypt-value): compute `(value, f)` from `(H,V,(ev,ef),vek)`. If verification failed, halt and return `nil`.
 5. If value range proof `VRP` is not empty:
     1. [Recover payload from Value Range Proof](#recover-payload-from-value-range-proof): compute a list of 32-byte chunks `{pt[i]}` from `(H,V,(ev,ef),VRP,value,f,rek)`. If verification failed, halt and return `nil`.
-    2. Flatten the array `{pt[i]}` in a binary string and decode it using [varstring31](data.md#varstring31) encoding. If decoding fails, halt and return `nil`.
+    2. Flatten the array `{pt[i]}` in a binary string and decode it using [varstring31](blockchain.md#string) encoding. If decoding fails, halt and return `nil`.
 6. If value range proof `VRP` is empty, set `plaintext` to an empty string.
 7. Return `(assetID, value, c, f, plaintext)`.
 
