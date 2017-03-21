@@ -340,7 +340,7 @@ See:
 _Asset ID point_ is a [point](#point) representing an asset ID. It is defined as follows:
 
 1. Let `counter = 0`.
-2. Calculate `Hash256("AssetID" || assetID || counter)` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
+2. Calculate `Hash256("AssetID" || assetID || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
 3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
 4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
 5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
@@ -615,7 +615,7 @@ Program Arguments               | [varstring31]    | Data passed to the issuance
 
 1. Let `counter = 0`.
 2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256(B || P[0] || ... || P[n-1] || msg)`.
-3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash(counter || msghash || p || j, 32·(n-1) + 64 + 1)`, where:
+3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash(uint64le(counter) || msghash || p || uint64le(j), 32·(n-1) + 64 + 1)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * `p` is encoded as a 256-bit little-endian integer,
     * `j` is encoded as a 64-bit little-endian integer.
@@ -623,7 +623,7 @@ Program Arguments               | [varstring31]    | Data passed to the issuance
 5. Calculate the initial e-value, let `i = j+1 mod n`:
     1. Calculate `R[i]` as the [point](#point) `k·B`.
     2. Define `w[j]` as `mask` with lower 4 bits set to zero: `w[j] = mask & 0xf0`.
-    3. Calculate `e[i] = ScalarHash(R[i] || msghash || i || w[j])` where `i` is encoded as a 64-bit little-endian integer.
+    3. Calculate `e[i] = ScalarHash(R[i] || msghash || uint64le(i) || w[j])` where `i` is encoded as a 64-bit little-endian integer.
 6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (j + step) mod n`.
     2. Calculate the forged s-value `s[i] = r[step-1]`.
@@ -631,7 +631,7 @@ Program Arguments               | [varstring31]    | Data passed to the issuance
     4. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     5. Let `i’ = i+1 mod n`.
     6. Calculate point `R[i’] = z[i]·B - e[i]·P[i]`.
-    7. Calculate `e[i’] = ScalarHash(R[i’] || msghash || i’ || w[i])` where `i’` is encoded as a 64-bit little-endian integer.
+    7. Calculate `e[i’] = ScalarHash(R[i’] || msghash || uint64le(i’) || w[i])` where `i’` is encoded as a 64-bit little-endian integer.
 7. Calculate the non-forged `z[j] = k + p·e[j] mod L` and encode it as a 32-byte little-endian integer.
 8. If `z[j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
 9. Define `s[j]` as `z[j]` with 4 high bits set to high 4 bits of the `mask`.
@@ -682,10 +682,10 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256(n || m || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256(uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Let `counter = 0`.
 3. Let `cnt` byte contain lower 4 bits of `counter`: `cnt = counter & 0x0f`.
-4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(counter || msghash || {p[i]} || {j[i]}, 32·n·m)`, where:
+4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(uint64le(counter) || msghash || {p[i]} || {uint64le(j[i])}, 32·n·m)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
     * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers.
@@ -699,14 +699,14 @@ Note: when the s-values are decoded as little-endian integers we must set their 
     6. Calculate the initial e-value for the ring:
         1. Let `j’ = j+1 mod m`.
         2. Calculate `R[t,j’]` as the point `k[t]·B[t]`.
-        3. Calculate `e[t,j’] = ScalarHash(cnt, R[t, j’] || msghash || t || j’ || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
+        3. Calculate `e[t,j’] = ScalarHash(byte(cnt), R[t, j’] || msghash || uint64le(t) || uint64le(j’) || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
     7. If `j ≠ m-1`, then for `i` from `j+1` to `m-1`:
         1. Calculate the forged s-value: `s[t,i] = r[m·t + i]`.
         2. Define `z[t,i]` as `s[t,i]` with 4 most significant bits set to zero.
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
         5. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`.
-        6. Calculate `e[t,i’] = ScalarHash(cnt, R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. Calculate `e[t,i’] = ScalarHash(byte(cnt), R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
 7. Calculate the shared e-value `e0` for all the rings:
     1. Calculate `E` as concatenation of all `e[t,0]` values encoded as 32-byte little-endian integers: `E = e[0,0] || ... || e[n-1,0]`.
     2. Calculate `e0 = ScalarHash(E)`.
@@ -720,7 +720,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
         5. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`. If `i` is zero, use `e0` in place of `e[t,0]`.
-        6. Calculate `e[t,i’] = ScalarHash(cnt, R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. Calculate `e[t,i’] = ScalarHash(byte(cnt), R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     4. Calculate the non-forged `z[t,j] = k[t] + p[t]·e[t,j] mod L` and encode it as a 32-byte little-endian integer.
     5. If `z[t,j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
     6. Define `s[t,j]` as `z[t,j]` with 4 high bits set to `mask[t]` bits.
@@ -745,7 +745,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(n || m || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Define `E` to be an empty binary string.
 3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 4. Set top 4 bits of `e0` to zero.
@@ -756,7 +756,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
         2. Calculate `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         3. Let `i’ = i+1 mod m`.
         4. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`. Use `e0` instead of `e[t,0]` in each ring.
-        5. Calculate `e[t,i’] = ScalarHash(cnt || R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        5. Calculate `e[t,i’] = ScalarHash(byte(cnt) || R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 6. Calculate `e’ = ScalarHash(E)`.
 7. Return `true` if `e’` equals to `e0`. Otherwise, return `false`.
@@ -784,7 +784,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 2. Define `E` to be an empty binary string.
 3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 4. Let `counter` integer equal `cnt`.
-5. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(counter || msghash || {p[i]} || {j[i]}, 32·n·m)`, where:
+5. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(uint64le(counter) || msghash || {p[i]} || {uint64le(j[i])}, 32·n·m)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
     * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers.
@@ -802,7 +802,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
             1. Set `payload[m·t + i] = o[m·t + i] XOR s[t,i]`.
         5. Let `i’ = i+1 mod m`.
         6. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](data.md#public-key). Use `e0` instead of `e[t,0]` in each ring.
-        7. Calculate `e[t,i’] = ScalarHash(cnt || R[t,i’] || msghash || t || i’ || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        7. Calculate `e[t,i’] = ScalarHash(byte(cnt) || R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 8. Calculate `e’ = ScalarHash(E)`.
 9. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
@@ -1103,8 +1103,8 @@ In case of failure, returns `nil` instead of the range proof.
 3. Define `vmin = 0`.
 4. Define `exp = 0`.
 5. Define `base = 4`.
-6. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("VRP.pek" || rek || f || VC)`.
-7. Calculate the message to sign: `msg = Hash256(AC’ || VC || N || exp || vmin)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+6. Calculate the message to sign: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin))` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("pek" || msghash || rek || f)`.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-payload) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPayload({pt[i]}, pek)`.
 10. For `t` from `0` to `n-1` (each digit):
@@ -1116,7 +1116,7 @@ In case of failure, returns `nil` instead of the range proof.
     4. Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
 11. Calculate the Fiat-Shamir factor:
 
-        h = ScalarHash("VRP.h" || msg || D[0] || ... || D[n-2])
+        h = ScalarHash("h" || msghash || D[0] || ... || D[n-2])
         
 12. Precompute reusable points across all digit commitments:
 
@@ -1128,7 +1128,7 @@ In case of failure, returns `nil` instead of the range proof.
     2. For `i` from `0` to `base-1` (each digit’s value):
         1. Calculate point `P[t,i] = D[t] + X1 - i·(base^t)·X2`.
 14. [Create Borromean Ring Signature](#create-borromean-ring-signature) `brs` with the following inputs:
-    * `msg` as the message to sign.
+    * `msghash` as the message to sign.
     * `n`: number of rings.
     * `m = base`: number of signatures per ring.
     * `{B[i]}`: `n` base points.
@@ -1172,11 +1172,11 @@ In case of failure, returns `nil` instead of the range proof.
     6. Check that `(10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
-3. Calculate the message to verify: `msg = Hash256(AC’ || VC || N || exp || vmin)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+3. Calculate the message to verify: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin))` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC’.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 5. Calculate the Fiat-Shamir factor:
 
-        h = ScalarHash("VRP.h" || msg || D[0] || ... || D[n-2])
+        h = ScalarHash("h" || msghash || D[0] || ... || D[n-2])
 
 6. Precompute reusable points across all digit commitments:
 
@@ -1192,7 +1192,7 @@ In case of failure, returns `nil` instead of the range proof.
     4. For `i` from `0` to `base-1` (each digit’s value):
         1. Calculate point `P[t,i] = D[t] + X1 - i·(base^t)·X2`. For efficiency perform recursive point addition of `-(base^t)·X2` instead of scalar multiplication.
 8. [Verify Borromean Ring Signature](#verify-borromean-ring-signature) with the following inputs:
-    * `msg`: the 32-byte string being verified.
+    * `msghash`: the 32-byte string being verified.
     * `n`: number of rings.
     * `m=base`: number of signatures in each ring.
     * `{B[i]}`: `n` base points.
@@ -1232,11 +1232,11 @@ In case of failure, returns `nil` instead of the range proof.
     6. Check that `(10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
-3. Calculate the message to verify: `msg = Hash256(AC’ || VC || N || exp || vmin)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+3. Calculate the message to verify: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin))` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC’.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 5. Calculate the Fiat-Shamir factor:
 
-        h = ScalarHash("VRP.h" || msg || D[0] || ... || D[n-2])
+        h = ScalarHash("h" || msghash || D[0] || ... || D[n-2])
 
 6. For `t` from `0` to `n-1` (each digit):
     1. Calculate generator `G’[t]`:
@@ -1250,7 +1250,7 @@ In case of failure, returns `nil` instead of the range proof.
         1. Calculate point `P[t,i] = D[t] + X1 - i·(base^t)·X2`. For efficiency perform recursive point addition of `-(base^t)·X2` instead of scalar multiplication.
 
 7. [Recover Payload From Borromean Ring Signature](#recover-payload-from-borromean-ring-signature): compute an array of `2·N` 32-byte chunks `{ct[i]}` using the following inputs (halt and return `nil` if decryption fails):
-    * `msg`: the 32-byte string to be signed.
+    * `msghash`: the 32-byte string to be signed.
     * `n=N/2`: number of rings.
     * `m=base`: number of signatures in each ring.
     * `{B[i]}`: `n` base points.
@@ -1280,11 +1280,11 @@ In case of failure, returns `nil` instead of the range proof.
 **Algorithm:**
 
 1. Calculate a [point pair](#point-pair) `QG = q·G, QJ = q·J`.
-2. Calculate Fiat-Shamir factor `h = ScalarHash("h" || G || J || QG || QJ)`.
+2. Calculate Fiat-Shamir factor `h = ScalarHash("EC.h" || G || J || QG || QJ)`.
 3. Calculate the base point `B = h·G + J`.
 4. Calculate the nonce `k = ScalarHash(h || q)`.
 5. Calculate point `R = k·B`.
-6. Calculate scalar `e = ScalarHash("e" || QG || QJ || R)`.
+6. Calculate scalar `e = ScalarHash("e" || h || R)`.
 7. Calculate scalar `s = k + q·e mod L`.
 8. Return `(s,e)`.
 
@@ -1300,11 +1300,11 @@ In case of failure, returns `nil` instead of the range proof.
 
 **Algorithm:**
 
-1. Calculate Fiat-Shamir factor `h = ScalarHash("h" || G || J || QG || QJ)`.
+1. Calculate Fiat-Shamir factor `h = ScalarHash("EC.h" || G || J || QG || QJ)`.
 2. Calculate the base point `B = h·G + J`.
 3. Calculate combined public key point `Q = h·QG + QJ`.
 4. Calculate point `R = s·B - e·Q`.
-5. Calculate scalar `e’ = ScalarHash("e" || QG || QJ || R)`.
+5. Calculate scalar `e’ = ScalarHash("e" || h || R)`.
 6. Return `true` if `e’ == e`, otherwise return `false`.
 
 
@@ -1354,8 +1354,8 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 **Inputs:**
 
-1. `H`: the [asset ID commitment](#asset-id-commitment).
-2. `c`: the [blinding factor](#asset-id-blinding-factor) for commitment `H` such that: `H = A + c·G`.
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
+2. `c`: the [blinding factor](#asset-id-blinding-factor) for commitment `AC` such that: `AC.H == A + c·G`, `AC.Ba == c·J`.
 3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](data.md#asset-id).
 4. `{Y[i]}`: `n` issuance keys (each a 32-byte [public key](data.md#public-key).
 5. `vmver`: VM version for the issuance signature program.
@@ -1374,7 +1374,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 **Algorithm:**
 
 1. Calculate nonblinded asset commitments for the values in `a`: `A[i] = 8·Decode(SHA3(a[i]))`.
-2. Calculate a 96-byte commitment string: `commit = StreamHash(0x66 || H || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || vmver || program, 8·96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
+2. Calculate a 96-byte commitment string: `commit = StreamHash(0x66 || H || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || program, 8·96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
 3. Calculate message to sign as first 32 bytes of the commitment string: `msg = commit[0:32]`.
 4. Calculate the coefficient `h` from the remaining 64 bytes of the commitment string: `h = commit[32:96]`. Interpret `h` as a 64-byte little-endian integer and reduce modulo subgroup order `L`.
 5. Calculate `n` public keys `{P[i]}`: `P[i] = H - A[i] + h·Y[i]`.
@@ -1398,15 +1398,38 @@ When creating a confidential issuance, the first step is to construct the rest o
     * `ms = {e’,s’}`: the marker signature,
     * `{Y[i]}`: `n` issuance keys encoded as [points](#point),
     * `program`: delegate issuance [program](blockchain.md#program),
-    * `nonce`: unique [string](blockchain.md#string) that defines the tracing point,
+    * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
     * `T`: tracing [point](#point),
-    * `BM`: blinded marker [point](#point),
+    * `Bm`: blinded marker [point](#point),
 2. `AC`: the [asset ID commitment](#asset-id-commitment).
 3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](data.md#asset-id).
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
+TBD:
+
+    1. M  = HashToPoint(AC||nonce||program)
+    2. DLEQ(Ba/J == Bm/M)
+    3. RingDLEQ(Pi/G == Q/(J+M)):
+           Pi = H — Ai + h·Yi
+           Q  = Ba + Bm + h·T
+
+
+
 **Algorithm:**
+
+1. Calculate message hash: `msghash = Hash256("IARP" || AC || uint64le(n) || a[0] || ... || a[n-1] || Y[0] || ... || Y[n-1] || nonce || program || T)` where `n` is encoded as a 64-bit unsigned little-endian integer.
+    
+
+1. Calculate marker point `M`:
+    1. Let `counter = 0`.
+    2. Calculate `Hash256("IARP.Marker" || AC || nonce || program || counter)` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
+    3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
+    4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
+    5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
+    6. Return `A`.
+    
+1. Verify proof that `BM`
 
 1. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`:
 
@@ -1417,6 +1440,29 @@ When creating a confidential issuance, the first step is to construct the rest o
 4. Calculate the coefficient `h` from the remaining 64 bytes of the commitment string: `h = commit[32:96]`. Interpret `h` as a 64-byte little-endian integer and reduce modulo subgroup order `L`.
 5. Calculate the `n` public keys `{P[i]}`: `P[i] = H - A[i] + h·Y[i]`.
 6. [Verify the ring signature](#verify-ring-signature) `e[0], s[0], ... s[n-1]` with message `msg` and public keys `{P[i]}`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
