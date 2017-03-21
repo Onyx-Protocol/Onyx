@@ -1741,12 +1741,13 @@ In case of failure, returns `nil` instead of the items listed above.
 
 
 
-### Encrypt Output WIP
+### Encrypt Output
 
 This algorithm encrypts the amount and asset ID of a given output and creates [value range proof](#value-range-proof) with encrypted payload.
 If the excess factor is provided, it is used to compute a matching blinding factor to cancel it out.
 
 This algorithm _does not_ create [asset range proof](#asset-range-proof) (ARP), since it requires knowledge about the input descriptors and one of their blinding factors.
+
 ARP can be added separately using [Create Asset Range Proof](#create-asset-range-proof).
 
 **Inputs:**
@@ -1760,8 +1761,8 @@ ARP can be added separately using [Create Asset Range Proof](#create-asset-range
 
 **Outputs:**
 
-1. `AD`: the [asset ID descriptor](#asset-id-descriptor).
-2. `VD`: the [value descriptor](#value-descriptor).
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
+2. `VC`: the [value commitment](#value-commitment).
 3. `VRP`: the [value range proof](#value-range-proof).
 4. `c’`: the output [asset ID blinding factor](#asset-id-blinding-factor) for the asset ID commitment `H’`.
 5. `f’`: the output [value blinding factor](#value-blinding-factor).
@@ -1776,19 +1777,15 @@ In case of failure, returns `nil` instead of the items listed above.
 4. If `value ≥ 2^N`, halt and return `nil`.
 5. [Derive asset ID encryption key](#asset-id-encryption-key) `aek` from `rek`.
 6. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
-7. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(H’,c’)` from `(assetID, aek)`.
-8. [Encrypt asset ID](#encrypt-asset-id): compute `(ea,ec)` from `(assetID, H’, c’, aek)`.
+7. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(AC’,c’)` from `(assetID, aek)`.
 9. [Create blinded value commitment](#create-blinded-value-commitment): compute `(V’,f’)` from `(vek, value, H’)`.
 10. If `q` is provided:
     1. Compute `extra` scalar: `extra = q - f’ - value·c’`.
     2. Add `extra` to the value blinding factor: `f’ = f’ + extra`.
-    3. Adjust the value commitment too: `V = V + extra·G`.
+    3. Adjust the value commitment too: `VC = VC + extra·(G,J)`.
     4. Note: as a result, the total blinding factor of the output will be equal to `q`.
-11. [Encrypt Value](#encrypt-value): compute `(ev,ef)` from `(V’, value, f’, vek)`.
-12. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(H’, V’, (ev,ef), N, value, {pt[i]}, f’, rek)`.
-13. Create [encrypted asset ID descriptor](#encrypted-asset-id-descriptor) `AD` containing `H’` and `(ea,ec)`.
-14. Create [encrypted value descriptor](#encrypted-value-descriptor) `VD` containing `V’` and `(ev,ef)`.
-15. Return `(AD, VD, VRP, c’, f’)`.
+11. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(AC’, VC’, N, value, {pt[i]}, f’, rek)`.
+12. Return `(AC, VC, VRP, c’, f’)`.
 
 
 
