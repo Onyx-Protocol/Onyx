@@ -1689,7 +1689,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
     * `VD`: the [value descriptor](#value-descriptor).
     * `ARP`: the [asset range proof](#asset-range-proof) or an empty string.
     * `VRP`: the [value range proof](#value-range-proof).
-4. List of [excess commitments](#excess-commitment): `{(QC[i], s[i], e[i])}`.
+4. List of [excess commitments](#excess-commitment): `{(QC[i], s[i], e[i], message[i])}`.
 
 **Output:** `true` if verification succeeded, `false` otherwise.
 
@@ -1717,16 +1717,16 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 4. `N`: number of bits to encrypt (`value` must fit within `N` bits).
 5. `{(assetIDs[i], Y[i])}`: `n` input asset IDs and corresponding issuance public keys.
 6. `y`: issuance key for `assetID` such that `Y[j] = y·G` where `j` is the index of the issued asset: `assetIDs[j] == assetID`.
-7. `(vmver’,program’)`: the signature program and its VM version to be signed by the issuance proof.
+7. `message`: a variable-length string to be signed.
 
 **Outputs:**
 
-1. `AD`: the [asset ID descriptor](#asset-id-descriptor).
-2. `VD`: the [value descriptor](#value-descriptor).
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
+2. `VC`: the [value commitment](#value-commitment).
 3. `IARP`: the [issuance asset ID range proof](#issuance-asset-range-proof).
 4. `VRP`: the [value range proof](#value-range-proof).
-5. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) for the asset ID commitment `AD.H`.
-6. `f`: the [value blinding factor](#value-blinding-factor).
+5. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) for the asset ID commitment `AC`.
+6. `f`: the [value blinding factor](#value-blinding-factor) for the value commitment `VC`.
 
 In case of failure, returns `nil` instead of the items listed above.
 
