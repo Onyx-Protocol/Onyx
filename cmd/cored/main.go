@@ -182,6 +182,8 @@ func runServer() {
 		}
 
 		server.TLSConfig = &tls.Config{
+			ClientAuth:   tls.VerifyClientCertIfGiven,
+			ClientCAs:    loadRootCAs(*rootCAs),
 			Certificates: []tls.Certificate{cert},
 		}
 		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
