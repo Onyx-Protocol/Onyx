@@ -9,7 +9,6 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
-	. "chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 	"chain/protocol/vm"
