@@ -34,36 +34,36 @@
   * [Value Blinding Factor](#value-blinding-factor)
 * [Core algorithms](#core-algorithms)
   * [Create Ring Signature](#create-ring-signature)
-  * [Verify Ring Signature](#verify-ring-signature)
+  * [Validate Ring Signature](#validate-ring-signature)
   * [Create Borromean Ring Signature](#create-borromean-ring-signature)
-  * [Verify Borromean Ring Signature](#verify-borromean-ring-signature)
+  * [Validate Borromean Ring Signature](#validate-borromean-ring-signature)
   * [Recover Payload From Borromean Ring Signature](#recover-payload-from-borromean-ring-signature)
   * [Encrypt Payload](#encrypt-payload)
   * [Decrypt Payload](#decrypt-payload)
   * [Create Nonblinded Asset ID Commitment](#create-nonblinded-asset-id-commitment)
   * [Create Blinded Asset ID Commitment](#create-blinded-asset-id-commitment)
   * [Create Asset Range Proof](#create-asset-range-proof)
-  * [Verify Asset Range Proof](#verify-asset-range-proof)
+  * [Validate Asset Range Proof](#validate-asset-range-proof)
   * [Create Nonblinded Value Commitment](#create-nonblinded-value-commitment)
   * [Create Blinded Value Commitment](#create-blinded-value-commitment)
   * [Balance Blinding Factors](#balance-blinding-factors)
   * [Create Value Proof](#create-value-proof)
-  * [Verify Value Proof](#verify-value-proof)
+  * [Validate Value Proof](#validate-value-proof)
   * [Create Value Range Proof](#create-value-range-proof)
-  * [Verify Value Range Proof](#verify-value-range-proof)
+  * [Validate Value Range Proof](#validate-value-range-proof)
   * [Recover Payload From Value Range Proof](#recover-payload-from-value-range-proof)
   * [Create Excess Commitment](#create-excess-commitment)
-  * [Verify Excess Commitment](#verify-excess-commitment)
-  * [Verify Value Commitments Balance](#verify-value-commitments-balance)
+  * [Validate Excess Commitment](#validate-excess-commitment)
+  * [Validate Value Commitments Balance](#validate-value-commitments-balance)
   * [Create Transient Issuance Key](#create-transient-issuance-key)
   * [Create Issuance Asset Range Proof](#create-issuance-asset-range-proof)
-  * [Verify Issuance Asset Range Proof](#verify-issuance-asset-range-proof)
+  * [Validate Issuance Asset Range Proof](#validate-issuance-asset-range-proof)
   * [Create Issuance Proof](#create-issuance-proof)
-  * [Verify Issuance Proof](#verify-issuance-proof)
+  * [Validate Issuance Proof](#validate-issuance-proof)
 * [High-level procedures](#high-level-procedures)
-  * [Verify Output](#verify-output)
-  * [Verify Issuance](#verify-issuance)
-  * [Verify Confidential Assets](#verify-confidential-assets)
+  * [Validate Output](#validate-output)
+  * [Validate Issuance](#validate-issuance)
+  * [Validate Confidential Assets](#validate-confidential-assets)
   * [Encrypt Issuance](#encrypt-issuance)
   * [Encrypt Output](#encrypt-output)
   * [Decrypt Output](#decrypt-output)
@@ -300,7 +300,7 @@ Each 32-byte element is an integer coded using little endian convention. I.e., a
 See:
 
 * [Create Ring Signature](#create-ring-signature)
-* [Verify Ring Signature](#verify-ring-signature)
+* [Validate Ring Signature](#validate-ring-signature)
 
 
 ### Borromean Ring Signature
@@ -327,7 +327,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 See:
 
 * [Create Borromean Ring Signature](#create-borromean-ring-signature)
-* [Verify Borromean Ring Signature](#verify-borromean-ring-signature)
+* [Validate Borromean Ring Signature](#validate-borromean-ring-signature)
 
 
 ### Asset ID Point
@@ -365,7 +365,7 @@ The asset ID commitment can either be nonblinded or blinded:
 
 ### Asset Range Proof
 
-The asset range proof demonstrates that a given [asset ID commitment](#asset-id-commitment) commits to one of the asset IDs specified in the transaction inputs. A [whole-transaction validation procedure](#verify-confidential-assets) makes sure that all of the declared asset ID commitments in fact belong to the transaction inputs.
+The asset range proof demonstrates that a given [asset ID commitment](#asset-id-commitment) commits to one of the asset IDs specified in the transaction inputs. A [whole-transaction validation procedure](#validate-confidential-assets) makes sure that all of the declared asset ID commitments in fact belong to the transaction inputs.
 
 Asset range proof can be [non-confidential](#non-confidential-asset-range-proof) or [confidential](#confidential-asset-range-proof).
 
@@ -387,13 +387,13 @@ Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signat
 See:
 
 * [Create Asset Range Proof](#create-asset-range-proof)
-* [Verify Asset Range Proof](#verify-asset-range-proof)
+* [Validate Asset Range Proof](#validate-asset-range-proof)
 
 
 
 ### Issuance Asset Range Proof
 
-The issuance asset range proof demonstrates that a given [confidential issuance](#confidential-issuance) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [verification procedure](#verify-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [validation procedure](#validate-transaction-input).
+The issuance asset range proof demonstrates that a given [confidential issuance](#confidential-issuance) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [verification procedure](#validate-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [validation procedure](#validate-transaction-input).
 
 The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`) are derived from `n` [asset issuance choices](blockchain.md#asset-issuance-choice) specified outside the range proof.
 
@@ -422,7 +422,7 @@ TBD: modify the confidential proof to allow "watch keys" (will require change of
 See:
 
 * [Create Issuance Asset Range Proof](#create-issuance-asset-range-proof)
-* [Verify Issuance Asset Range Proof](#verify-issuance-asset-range-proof)
+* [Validate Issuance Asset Range Proof](#validate-issuance-asset-range-proof)
 
 
 
@@ -460,12 +460,12 @@ An excess commitment `QC` is an ElGamal commitment to an [excess factor](#excess
 
     QC = (q·G, q·J, e, s)
 
-Excess pair `(q·G, q·J)` is used to [verify balance of value commitments](#verify-value-commitments-balance) while the associated signature proves that the points do not contain a factor affecting the amount of any asset.
+Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#validate-value-commitments-balance) while the associated signature proves that the points do not contain a factor affecting the amount of any asset.
 
 See: 
 
 * [Create Excess Commitment](#create-excess-commitment))
-* [Verify Excess Commitment](#verify-excess-commitment))
+* [Validate Excess Commitment](#validate-excess-commitment))
 
 
 ### Value Proof
@@ -475,7 +475,7 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 See:
 
 * [Create Value Proof](#create-value-proof)
-* [Verify Value Proof](#verify-value-proof)
+* [Validate Value Proof](#validate-value-proof)
 
 
 ### Value Range Proof
@@ -519,7 +519,7 @@ The total number of elements in the [Borromean Ring Signature](#borromean-ring-s
 See:
 
 * [Create Value Range Proof](#create-value-range-proof)
-* [Verify Value Range Proof](#verify-value-range-proof)
+* [Validate Value Range Proof](#validate-value-range-proof)
 
 
 ### Extended Key Pair
@@ -615,7 +615,7 @@ The value blinding factors are created by [Create Blinded Value Commitment](#cre
 **Inputs:**
 
 1. `msg`: the string to be signed.
-2. `B`: base [point](#point) to verify the signature (not necessarily a [generator](#generators) point).
+2. `B`: base [point](#point) to validate the signature (not necessarily a [generator](#generators) point).
 3. `{P[i]}`: `n` [points](#point) representing the public keys.
 4. `j`: the index of the designated public key, so that `P[j] == p·B`.
 5. `p`: the secret [scalar](#scalar) representing a private key for the public key `P[j]`.
@@ -649,12 +649,12 @@ The value blinding factors are created by [Create Blinded Value Commitment](#cre
 10. Return the ring signature `{e[0], s[0], ..., s[n-1]}`, total `n+1` 32-byte elements.
 
 
-### Verify Ring Signature
+### Validate Ring Signature
 
 **Inputs:**
 
 1. `msg`: the string being signed.
-2. `B`: base [point](#point) to verify the signature (not necessarily a [generator](#generators) point).
+2. `B`: base [point](#point) to validate the signature (not necessarily a [generator](#generators) point).
 3. `{P[i]}`: `n` [points](#point) representing the public keys.
 4. `e[0], s[0], ... s[n-1]`: ring signature consisting of `n+1` 32-byte elements.
 
@@ -683,7 +683,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generators) points).
+4. `{B[i]}`: `n` base [points](#point) to validate the signature (not necessarily [generator](#generators) points).
 5. `{P[i,j]}`: `n·m` [points](#point) representing public keys.
 6. `{p[i]}`: the list of `n` [scalars](#scalar) representing private keys.
 7. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·B[i]`.
@@ -741,14 +741,14 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 
 
-### Verify Borromean Ring Signature
+### Validate Borromean Ring Signature
 
 **Inputs:**
 
 1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generators) points).
+4. `{B[i]}`: `n` base [points](#point) to validate the signature (not necessarily [generator](#generators) points).
 5. `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
 6. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
@@ -781,7 +781,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{B[i]}`: `n` base [points](#point) to verify the signature (not necessarily [generator](#generators) points).
+4. `{B[i]}`: `n` base [points](#point) to validate the signature (not necessarily [generator](#generators) points).
 5. `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
 6. `{p[i]}`: the list of `n` scalars representing private keys.
 7. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·G`.
@@ -943,7 +943,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 Note: unlike the [value range proof](#value-range-proof), this ring signature is not used to store encrypted payload data because decrypting it would reveal the asset ID of one of the inputs to the recipient.
 
 
-### Verify Asset Range Proof
+### Validate Asset Range Proof
 
 **Inputs:**
 
@@ -981,7 +981,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
             P[i] = h·(AC’.H - AC[i].H) + AC’.Ba - AC[i].Ba
 
-    4. [Verify the ring signature](#verify-ring-signature) `e[0], s[0], ... s[n-1]` with `msg` and `{P[i]}`.
+    4. [Validate the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with `msg` and `{P[i]}`.
 4. Return true if verification was successful, and false otherwise.
 
 
@@ -1066,7 +1066,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 
 
-### Verify Value Proof
+### Validate Value Proof
 
 **Inputs:**
 
@@ -1081,7 +1081,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 **Algorithm:**
 
-1. [Verify excess commitment](#verify-excess-commitment) `(QG,QJ),e,s,message`.
+1. [Validate excess commitment](#validate-excess-commitment) `(QG,QJ),e,s,message`.
 2. Compute [asset ID point](#asset-id-point): `A’ = 8·Hash256(assetID || counter)`.
 4. [Create nonblinded value commitment](#create-nonblinded-value-commitment): `V’ = value·A’`.
 5. Verify that [point pair](#point-pair) `(QG + V’, QJ)` equals `VC`.
@@ -1163,7 +1163,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-### Verify Value Range Proof
+### Validate Value Range Proof
 
 **Inputs:**
 
@@ -1190,7 +1190,7 @@ In case of failure, returns `nil` instead of the range proof.
     6. Check that `(10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
-3. Calculate the message to verify: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+3. Calculate the message to validate: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC’.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 5. Calculate the Fiat-Shamir factor:
 
@@ -1209,7 +1209,7 @@ In case of failure, returns `nil` instead of the range proof.
     3. Define `base = 4`.
     4. For `i` from `0` to `base-1` (each digit’s value):
         1. Calculate point `P[t,i] = D[t] + X1 - i·(base^t)·X2`. For efficiency perform recursive point addition of `-(base^t)·X2` instead of scalar multiplication.
-8. [Verify Borromean Ring Signature](#verify-borromean-ring-signature) with the following inputs:
+8. [Validate Borromean Ring Signature](#validate-borromean-ring-signature) with the following inputs:
     * `msghash`: the 32-byte string being verified.
     * `n`: number of rings.
     * `m=base`: number of signatures in each ring.
@@ -1250,7 +1250,7 @@ In case of failure, returns `nil` instead of the range proof.
     6. Check that `(10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
-3. Calculate the message to verify: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+3. Calculate the message to validate: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC’.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 5. Calculate the Fiat-Shamir factor:
 
@@ -1308,7 +1308,7 @@ In case of failure, returns `nil` instead of the range proof.
 8. Return `(s,e)`.
 
 
-### Verify Excess Commitment
+### Validate Excess Commitment
 
 **Inputs:**
 
@@ -1330,7 +1330,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-### Verify Value Commitments Balance
+### Validate Value Commitments Balance
 
 **Inputs:**
 
@@ -1342,7 +1342,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 **Algorithm:**
 
-1. [Verify](#verify-excess-commitment) each of `k` [excess commitments](#excess-commitment); if any is not valid, halt and return `false`.
+1. [Validate](#validate-excess-commitment) each of `k` [excess commitments](#excess-commitment); if any is not valid, halt and return `false`.
 2. Calculate the sum of input value commitments: `Ti = ∑(VC[i], j from 0 to n-1)`.
 3. Calculate the sum of output value commitments: `To = ∑(VC’[i], i from 0 to m-1)`.
 4. Calculate the sum of excess commitments: `Tq = ∑[(QG[i], QJ[i]), i from 0 to k-1]`.
@@ -1440,7 +1440,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 
 
-### Verify Issuance Asset Range Proof
+### Validate Issuance Asset Range Proof
 
 **Inputs:**
 
@@ -1479,7 +1479,7 @@ When creating a confidential issuance, the first step is to construct the rest o
             (msghash, h1, h2, h3) = StreamHash("h" || basehash || M || T || Bm, 32 + 3·64)
 
     4. Interpret `h1`, `h2`, `h3` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
-    5. Verify proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
+    5. Validate proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
         1. Compute base point `B = h1·M + J`.
         2. Compute public key `P = h1·Bm + AC.Ba`.
         3. Calculate point `R = s’·B - e’·P`.
@@ -1491,11 +1491,11 @@ When creating a confidential issuance, the first step is to construct the rest o
     
             P[i] = AC.H — A[i] + h2·Y[i]
 
-    9. Verify ring proof of discrete log equality for one of the pairs `P[i]/G` and `Q/(J+M)`:
+    9. Validate ring proof of discrete log equality for one of the pairs `P[i]/G` and `Q/(J+M)`:
         1. Calculate base point `B = G + h3·(J+M)`.
         2. Precompute point `Q’ = h3·Q`.
         3. For each `P[i]` compute `P’[i] = P[i] + Q’`.
-        4. [Verify the ring signature](#verify-ring-signature) `e[0], s[0], ... s[n-1]` with message `msghash` and public keys `{P’[i]}`.
+        4. [Validate the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with message `msghash` and public keys `{P’[i]}`.
 
 
 
@@ -1526,7 +1526,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 **Algorithm:**
 
-1. [Verify issuance asset range proof](#verify-issuance-asset-range-proof) to make sure tracing and marker points are correct.
+1. [Validate issuance asset range proof](#validate-issuance-asset-range-proof) to make sure tracing and marker points are correct.
 2. Calculate the blinding key `x`:
 
         x = ScalarHash("x" || AC || T || y || nonce || message)
@@ -1555,7 +1555,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 
 
-### Verify Issuance Proof
+### Validate Issuance Proof
 
 **Inputs:**
 
@@ -1623,7 +1623,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 ## High-level procedures
 
-### Verify Output
+### Validate Output
 
 **Inputs:**
 
@@ -1636,12 +1636,12 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 **Algorithm:**
 
-1. [Verify asset range proof](#verify-asset-range-proof) using `AC` and `ARP`.
-2. [Verify value range proof](#verify-value-range-proof) using `AC`, `VC` and `VRP`.
+1. [Validate asset range proof](#validate-asset-range-proof) using `AC` and `ARP`.
+2. [Validate value range proof](#validate-value-range-proof) using `AC`, `VC` and `VRP`.
 3. Return `true`.
 
 
-### Verify Issuance
+### Validate Issuance
 
 **Inputs:**
 
@@ -1657,13 +1657,13 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 **Algorithm:**
 
-1. [Verify issuance asset range proof](#verify-issuance-asset-range-proof) using `(AC,IARP,{a[i]},message,nonce)`.
-2. [Verify value range proof](#verify-value-range-proof) using `AC`, `VC` and `VRP`.
+1. [Validate issuance asset range proof](#validate-issuance-asset-range-proof) using `(AC,IARP,{a[i]},message,nonce)`.
+2. [Validate value range proof](#validate-value-range-proof) using `AC`, `VC` and `VRP`.
 3. Return `true`.
 
 
 
-### Verify Confidential Assets
+### Validate Confidential Assets
 
 **Inputs:**
 
@@ -1689,12 +1689,12 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 **Algorithm:**
 
-1. [Verify each issuance](#verify-issuance).
+1. [Validate each issuance](#validate-issuance).
 2. For each output:
     1. If `ARP` is empty has zero keys, verify that the output `AC` equals one of the asset ID commitments in the inputs or issuances.
     2. If `ARP` is confidential, verify that each asset ID commitment candidate belongs to the set of the asset ID commitments on the inputs and issuances.
-    3. [Verify output](#verify-output).
-3. [Verify value commitments balance](#verify-value-commitments-balance) using a union of issuance and input value commitments as input commitments.
+    3. [Validate output](#validate-output).
+3. [Validate value commitments balance](#validate-value-commitments-balance) using a union of issuance and input value commitments as input commitments.
 4. Return `true`.
 
 
