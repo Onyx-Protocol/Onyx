@@ -1394,19 +1394,25 @@ When creating a confidential issuance, the first step is to construct the rest o
 **Inputs:**
 
 1. `IARP`: the to-be-verified [issuance asset range proof](#issuance-asset-range-proof) consisting of:
-    * `e[0], s[0], ... s[n-1]`: the issuance ring signature,
-    * `{Y[i]}`: `n` issuance keys,
-    * `vmver`: VM version for the issuance signature program,
-    * `program`: issuance signature program,
-2. `H`: the [asset ID commitment](#asset-id-commitment).
+    * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
+    * `ms = {e’,s’}`: the marker signature,
+    * `{Y[i]}`: `n` issuance keys encoded as [points](#point),
+    * `program`: delegate issuance [program](blockchain.md#program),
+    * `nonce`: unique [string](blockchain.md#string) that defines the tracing point,
+    * `T`: tracing [point](#point),
+    * `BM`: blinded marker [point](#point),
+2. `AC`: the [asset ID commitment](#asset-id-commitment).
 3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](data.md#asset-id).
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. Calculate nonblinded asset commitments for the values in `a`: `A[i] = 8·Decode(SHA3(a[i]))`.
-2. Calculate a 96-byte commitment string: `commit = StreamHash(0x66 || H || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || vmver || program, 96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
+1. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`:
+
+        A[i] = 8·Decode(SHA3(a[i]))
+
+2. Calculate a 96-byte commitment string: `commit = StreamHash(0x66 || AC || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || program, 96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
 3. Calculate message to sign as first 32 bytes of the commitment string: `msg = commit[0:32]`.
 4. Calculate the coefficient `h` from the remaining 64 bytes of the commitment string: `h = commit[32:96]`. Interpret `h` as a 64-byte little-endian integer and reduce modulo subgroup order `L`.
 5. Calculate the `n` public keys `{P[i]}`: `P[i] = H - A[i] + h·Y[i]`.
