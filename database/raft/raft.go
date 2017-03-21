@@ -81,11 +81,11 @@ type Service struct {
 	stateMu   sync.Mutex
 	stateCond sync.Cond
 	state     *state.State
+	confState raftpb.ConfState
 	done      bool
 
 	// Current log position, accessed only from runUpdates goroutine
 	snapIndex uint64
-	confState raftpb.ConfState
 
 	// Hack until everything requires TLS.
 	tls bool
@@ -647,9 +647,7 @@ func (sv *Service) join(addr, baseURL string) error {
 		if err != nil {
 			return errors.Wrap(err)
 		}
-		sv.stateMu.Lock()
 		sv.confState = raftSnap.Metadata.ConfState
-		sv.stateMu.Unlock()
 		sv.snapIndex = raftSnap.Metadata.Index
 		log.Printkv(ctx, "at", "joined", "appliedindex", raftSnap.Metadata.Index)
 	}
