@@ -47,8 +47,6 @@
   * [Create Nonblinded Value Commitment](#create-nonblinded-value-commitment)
   * [Create Blinded Value Commitment](#create-blinded-value-commitment)
   * [Balance Blinding Factors](#balance-blinding-factors)
-  * [Encrypt Value](#encrypt-value)
-  * [Decrypt Value](#encrypt-value)
   * [Create Value Proof](#create-value-proof)
   * [Verify Value Proof](#verify-value-proof)
   * [Create Value Range Proof](#create-value-range-proof)
@@ -113,7 +111,7 @@ In this section we will provide a brief overview of various ways to use confiden
 3. Sender adds necessary amount of inputs to satisfy the output:
     1. For each unspent output, sender pulls values `(assetid,value,AC,c,f)` from its DB.
     2. If the unspent output is not confidential, then:
-        * `AC=(A,O)`, [nonblinded asset ID commitment](#nonblinded-asset-id-commitment)
+        * `AC=(A,O)`, [nonblinded asset ID commitment](#asset-id-commitment)
         * `c=0`
         * `f=0`
 4. If sender needs to add a change output:
