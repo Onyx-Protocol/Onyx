@@ -1,7 +1,3 @@
-// MemStore is a Store implementation that
-// keeps all blockchain state in memory.
-//
-// It is used in tests to avoid needing a database.
 package prottest
 
 import (
@@ -13,7 +9,8 @@ import (
 	"chain/protocol/state"
 )
 
-// MemStore satisfies the Store interface.
+// MemStore is a Store implementation that keeps all blockchain state
+// in memory.  It is used in tests to avoid needing a database.
 type MemStore struct {
 	mu          sync.Mutex
 	Blocks      map[uint64]*bc.Block
