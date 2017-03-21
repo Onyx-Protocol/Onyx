@@ -819,9 +819,7 @@ func (sv *Service) recover() (*wal.WAL, error) {
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-		sv.stateMu.Lock()
 		sv.confState = raftSnap.Metadata.ConfState
-		sv.stateMu.Unlock()
 		sv.snapIndex = raftSnap.Metadata.Index
 	}
 
