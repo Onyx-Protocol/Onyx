@@ -210,7 +210,7 @@ func exist(path string) (bool, error) {
 }
 
 func warn() error {
-	fmt.Println("WARNING: Chain Core requires mutual TLS authentication. Development certs and keys have been generated in", certsDir)
+	fmt.Println("\nWARNING: Chain Core requires mutual TLS authentication. Development certs and keys have been generated in", certsDir)
 	switch runtime.GOOS {
 	case "darwin":
 		return warnDarwin()
