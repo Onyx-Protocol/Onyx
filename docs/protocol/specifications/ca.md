@@ -1059,6 +1059,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 4. `value`: the amount to be proven.
 5. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) used in `AC`.
 6. `f`: the [value blinding factor](#value-blinding-factor).
+7. `message`: a variable-length string.
 
 **Output:**
 
@@ -1067,7 +1068,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 **Algorithm:**
 
 1. Compute [scalar](#scalar) `q = value*c + f`.
-2. [Create excess commitment](#create-excess-commitment) `(QG,QJ),e,s` using `q`.
+2. [Create excess commitment](#create-excess-commitment) `(QG,QJ),e,s` using `q` and `message`.
 
 
 
@@ -1080,12 +1081,13 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 3. `assetid`: the [asset ID](blockchain.md#asset-id) to be proven used in `AC`.
 4. `value`: the amount to be proven.
 5. `(QG,QJ),e,s`: the [excess commitment](#excess-commitment) with its signature that proves that `assetid` and `value` are committed to `AC` and `VC`.
+6. `message`: a variable-length string.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. [Verify excess commitment](#verify-excess-commitment) `(QG,QJ),e,s`.
+1. [Verify excess commitment](#verify-excess-commitment) `(QG,QJ),e,s,message`.
 2. Compute [asset ID point](#asset-id-point): `A’ = 8·Hash256(assetID || counter)`.
 4. [Create nonblinded value commitment](#create-nonblinded-value-commitment): `V’ = value·A’`.
 5. Verify that [point pair](#point-pair) `(QG + V’, QJ)` equals `VC`.
@@ -1293,6 +1295,7 @@ In case of failure, returns `nil` instead of the range proof.
 **Inputs:**
 
 1. `q`: the [excess blinding factor](#excess-factor)
+2. `message`: a variable-length string.
 
 **Output:**
 
@@ -1302,7 +1305,7 @@ In case of failure, returns `nil` instead of the range proof.
 **Algorithm:**
 
 1. Calculate a [point pair](#point-pair) `QG = q·G, QJ = q·J`.
-2. Calculate Fiat-Shamir factor `h = ScalarHash("EC.h" || G || J || QG || QJ)`.
+2. Calculate Fiat-Shamir factor `h = ScalarHash("EC" || G || J || QG || QJ || message)`.
 3. Calculate the base point `B = h·G + J`.
 4. Calculate the nonce `k = ScalarHash(h || q)`.
 5. Calculate point `R = k·B`.
@@ -1317,12 +1320,13 @@ In case of failure, returns `nil` instead of the range proof.
 
 1. `(QG,QJ)`: the [point pair](#point-pair) representing an ElGamal commitment to secret blinding factor `q` using [generators](#generators) `G` and `J`.
 2. `(e,s)`: the Schnorr signature proving that `(QG,QJ)` does not affect asset amounts.
+3. `message`: a variable-length string.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. Calculate Fiat-Shamir factor `h = ScalarHash("EC.h" || G || J || QG || QJ)`.
+1. Calculate Fiat-Shamir factor `h = ScalarHash("EC" || G || J || QG || QJ || message)`.
 2. Calculate the base point `B = h·G + J`.
 3. Calculate combined public key point `Q = h·QG + QJ`.
 4. Calculate point `R = s·B - e·Q`.
