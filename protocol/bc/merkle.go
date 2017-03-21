@@ -1,10 +1,9 @@
-package validation
+package bc
 
 import (
 	"math"
 
 	"chain/crypto/sha3pool"
-	"chain/protocol/bc"
 )
 
 var (
@@ -14,7 +13,7 @@ var (
 
 // CalcMerkleRoot creates a merkle tree from a slice of transactions
 // and returns the root hash of the tree.
-func CalcMerkleRoot(transactions []*bc.Tx) (root bc.Hash, err error) {
+func CalcMerkleRoot(transactions []*Tx) (root Hash, err error) {
 	switch {
 	case len(transactions) == 0:
 		sha3pool.Sum256(root[:], nil)
