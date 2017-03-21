@@ -1791,6 +1791,8 @@ In case of failure, returns `nil` instead of the items listed above.
 
 This algorithm decrypts fully encrypted amount and asset ID for a given output.
 
+TBD: introduce encrypted `value,assetid,f,c` to decrypt output.
+
 **Inputs:**
 
 1. `rek`: the [record encryption key](#record-encryption-key).
