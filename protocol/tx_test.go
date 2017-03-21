@@ -10,7 +10,6 @@ import (
 
 	"chain/crypto/ed25519"
 	"chain/protocol/bc"
-	"chain/protocol/prottest"
 	"chain/protocol/state"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
@@ -19,8 +18,7 @@ import (
 
 func TestBadMaxIssuanceWindow(t *testing.T) {
 	ctx := context.Background()
-	c := prottest.NewChain(t)
-	b1, _ := c.State()
+	c, b1 := newTestChain(t, time.Now())
 	c.MaxIssuanceWindow = time.Second
 
 	issueTx, _, _ := issue(t, nil, nil, 1)

@@ -24,20 +24,12 @@ func NewChain(tb testing.TB) *protocol.Chain {
 	return NewChainWithStorage(tb, NewMemStore())
 }
 
-func NewChainWithTime(tb testing.TB, timestamp time.Time) *protocol.Chain {
-	return NewChainWithStorageAndTime(tb, NewMemStore(), timestamp)
-}
-
 // NewChainWithStorage makes a new Chain using store for storage, along
 // with an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
 func NewChainWithStorage(tb testing.TB, store protocol.Store, outputIDs ...bc.Hash) *protocol.Chain {
-	return NewChainWithStorageAndTime(tb, store, time.Now(), outputIDs...)
-}
-
-func NewChainWithStorageAndTime(tb testing.TB, store protocol.Store, timestamp time.Time, outputIDs ...bc.Hash) *protocol.Chain {
 	ctx := context.Background()
-	b1, err := protocol.NewInitialBlock(nil, 0, timestamp)
+	b1, err := protocol.NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
