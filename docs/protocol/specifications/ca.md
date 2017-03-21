@@ -91,11 +91,11 @@ Cryptographic proofs for blinded asset IDs and blinded amounts require relativel
 
 Present scheme is *perfectly binding*, but only *computationally hiding*. (In fact, [it is impossible](http://crypto.stackexchange.com/questions/41822/why-cant-the-commitment-schemes-have-both-information-theoretic-hiding-and-bind) for a commitment scheme to be both perfectly binding and perfectly hiding at the same time.) This means that breaking elliptic curve discrete logarithm problem (ECDLP) will not compromise the integrity of the commitments, that bind the value perfectly and do not allow manipulations using any amount of computational resources. However, breaking ECDLP can compromise commitments’ hiding property, which rests on discovery of the blinding factor being computationally hard (which is the case only until a powerful quantum computer is made or there is a breakthrough in solving ECDLP with classical computers).
 
-## Usage WIP
+## Usage
 
 In this section we will provide a brief overview of various ways to use confidential assets.
 
-### Confidential issuance WIP
+### Confidential issuance
 
 1. Issuer chooses asset ID and an amount to issue.
 2. Issuer generates issuance [REK](#record-encryption-key) unique for this issuance.
@@ -104,10 +104,10 @@ In this section we will provide a brief overview of various ways to use confiden
 5. For each asset ID, where issuance program does not check an issuance key, issuer [creates a transient issuance key](#create-transient-issuance-key).
 6. Issuer provides arguments for each issuance program of each asset ID.
 7. Issuer [encrypts issuance](#encrypt-issuance): generates asset ID and value commitments and provides necessary range proofs.
-8. Issuer remembers values `(H,c,f)` to help complete the transaction. Once outputs are fully or partially specified, these values can be discarded.
+8. Issuer remembers values `(AC,c,f)` to help complete the transaction. Once outputs are fully or partially specified, these values can be discarded.
 9. Issuer proceeds with the rest of the transaction creation. See [simple transfer](#simple-transfer) and [multi-party transaction](#multi-party-transaction) for details.
 
-### Simple transfer WIP
+### Simple transfer
 
 1. Recipient generates the following parameters and sends them privately to the sender:
     * amount and asset ID to be sent,
@@ -115,12 +115,11 @@ In this section we will provide a brief overview of various ways to use confiden
     * [REK1](#record-encryption-key).
 2. Sender composes a transaction with an unencrypted output with a given control program.
 3. Sender adds necessary amount of inputs to satisfy the output:
-    1. For each unspent output, sender pulls values `(assetid,value,H,c,f)` from its DB.
+    1. For each unspent output, sender pulls values `(assetid,value,AC,c,f)` from its DB.
     2. If the unspent output is not confidential, then:
-        * `H=8*Decode(SHA3(assetid))`, [unblinded asset id commitment](#unblinded-asset-id-commitment)
+        * `AC=(A,O)`, [nonblinded asset ID commitment](#nonblinded-asset-id-commitment)
         * `c=0`
         * `f=0`
-    3. Values `(aek,vek)` can be discarded once the output is spent on the blockchain. These are kept for PQ event in case the spender will have to prove hash-based commitments to `c` and `f` blinding factors.
 4. If sender needs to add a change output:
     1. Sender [encrypts](#encrypt-output) the first output.
     2. Sender [balances blinding factors](#balance-blinding-factors) to create an excess factor `q`.
@@ -130,11 +129,11 @@ In this section we will provide a brief overview of various ways to use confiden
 5. If sender does not need a change output:
     1. Sender [balances blinding factors](#balance-blinding-factors) of the inputs to create an excess factor `q`.
     2. Sender [encrypts](#encrypt-output) the first output with an additional excess factor `q`.
-6. Sender stores values `(assetid,value,H,c,f,aek,vek)` in its DB with its change output for later spending.
+6. Sender stores values `(assetid,value,AC,c,f)` in its DB with its change output for later spending.
 7. Sender publishes the transaction.
 8. Recipient receives the transaction and identifies its output via its control program.
 9. Recipient uses its [REK1](#record-encryption-key) to [decrypt output](#decrypt-output).
-10. Recipient stores resulting `(assetid,value,H,c,f,aek,vek)` in its DB with its change output for later spending.
+10. Recipient stores resulting `(assetid,value,H,c,f)` in its DB with its change output for later spending.
 11. Recipient separately stores decrypted plaintext payload with the rest of the reference data. It is not necessary for spending.
 
 
