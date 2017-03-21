@@ -286,7 +286,9 @@ func (sv *Service) runUpdatesReady(rd raft.Ready, wal *wal.WAL, writers map[stri
 			panic(err)
 		}
 		sv.snapIndex = rd.Snapshot.Metadata.Index
+		sv.stateMu.Lock()
 		sv.confState = rd.Snapshot.Metadata.ConfState
+		sv.stateMu.Unlock()
 	}
 	sv.raftStorage.Append(rd.Entries)
 	var lastEntryIndex uint64
@@ -645,7 +647,9 @@ func (sv *Service) join(addr, baseURL string) error {
 		if err != nil {
 			return errors.Wrap(err)
 		}
+		sv.stateMu.Lock()
 		sv.confState = raftSnap.Metadata.ConfState
+		sv.stateMu.Unlock()
 		sv.snapIndex = raftSnap.Metadata.Index
 		log.Printkv(ctx, "at", "joined", "appliedindex", raftSnap.Metadata.Index)
 	}
@@ -687,7 +691,9 @@ func (sv *Service) applyEntry(ent raftpb.Entry, writers map[string]chan bool) {
 		if err != nil {
 			panic(err)
 		}
+		sv.stateMu.Lock()
 		sv.confState = *sv.raftNode.ApplyConfChange(cc)
+		sv.stateMu.Unlock()
 		switch cc.Type {
 		case raftpb.ConfChangeAddNode, raftpb.ConfChangeUpdateNode:
 			log.Printkv(context.Background(),
@@ -815,7 +821,9 @@ func (sv *Service) recover() (*wal.WAL, error) {
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
+		sv.stateMu.Lock()
 		sv.confState = raftSnap.Metadata.ConfState
+		sv.stateMu.Unlock()
 		sv.snapIndex = raftSnap.Metadata.Index
 	}
 
@@ -826,8 +834,8 @@ func (sv *Service) recover() (*wal.WAL, error) {
 
 func (sv *Service) getSnapshot() *raftpb.Snapshot {
 	sv.stateMu.Lock()
+	defer sv.stateMu.Unlock()
 	data, index, err := sv.state.Snapshot()
-	sv.stateMu.Unlock()
 	if err != nil {
 		panic(err)
 	}
