@@ -12,6 +12,7 @@ Chain, Inc. provides production-grade software called [Chain Core](https://chain
 
 * [Blockchain Data Model Specification](blockchain.md)
 * [Validation Protocol](validation.md)
+* [Confidential Assets Specification](ca.md)
 * [Consensus Protocol](consensus.md)
 * [Virtual Machine Specification](vm1.md)
 * [ChainKD](chainkd.md) (key derivation scheme)
