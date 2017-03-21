@@ -110,13 +110,10 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 	)
 	for _, tx := range b.Transactions {
 		for _, in := range tx.Inputs {
-			assetID, err := in.AssetID()
-			if err != nil {
-				return err
-			}
 			if !in.IsIssuance() {
 				continue
 			}
+			assetID := in.AssetID()
 			if seen[assetID] {
 				continue
 			}

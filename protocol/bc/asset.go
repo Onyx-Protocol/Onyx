@@ -25,18 +25,15 @@ type AssetDefinition struct {
 	Data            Hash
 }
 
-func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID, err error) {
+func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
-	err = writeForHash(h, *ad)
-	if err != nil {
-		return assetID, err
-	}
+	writeForHash(h, *ad) // error is impossible
 	h.Read(assetID[:])
-	return assetID, nil
+	return assetID
 }
 
-func ComputeAssetID(prog []byte, initialBlockID Hash, vmVersion uint64, data Hash) (AssetID, error) {
+func ComputeAssetID(prog []byte, initialBlockID Hash, vmVersion uint64, data Hash) AssetID {
 	def := &AssetDefinition{
 		InitialBlockID: initialBlockID,
 		IssuanceProgram: Program{

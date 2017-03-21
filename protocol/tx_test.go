@@ -67,10 +67,7 @@ type testAsset struct {
 func newAsset(t testing.TB) *testAsset {
 	dest := newDest(t)
 	cp, _ := dest.controlProgram()
-	assetID, err := bc.ComputeAssetID(cp, bc.Hash{}, 1, bc.EmptyStringHash)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assetID := bc.ComputeAssetID(cp, bc.Hash{}, 1, bc.EmptyStringHash)
 
 	return &testAsset{
 		AssetID:  assetID,

@@ -112,7 +112,7 @@ func (b *Bool) UnmarshalJSON(raw []byte) error {
 
 var emptyJSONObject = json.RawMessage(`{}`)
 
-func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) (*AnnotatedTx, error) {
+func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *AnnotatedTx {
 	tx := &AnnotatedTx{
 		ID:            orig.ID,
 		Timestamp:     b.Time(),
@@ -129,26 +129,18 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) (*
 	}
 
 	for i := range orig.Inputs {
-		annInp, err := buildAnnotatedInput(orig, uint32(i))
-		if err != nil {
-			return nil, err
-		}
-		tx.Inputs = append(tx.Inputs, annInp)
+		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(orig, uint32(i)))
 	}
 	for i := range orig.Outputs {
 		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(orig, uint32(i)))
 	}
-	return tx, nil
+	return tx
 }
 
-func buildAnnotatedInput(tx *bc.Tx, i uint32) (*AnnotatedInput, error) {
+func buildAnnotatedInput(tx *bc.Tx, i uint32) *AnnotatedInput {
 	orig := tx.Inputs[i]
-	assetID, err := orig.AssetID()
-	if err != nil {
-		return nil, err
-	}
 	in := &AnnotatedInput{
-		AssetID:         assetID,
+		AssetID:         orig.AssetID(),
 		Amount:          orig.Amount(),
 		AssetDefinition: &emptyJSONObject,
 		AssetTags:       &emptyJSONObject,
@@ -170,7 +162,7 @@ func buildAnnotatedInput(tx *bc.Tx, i uint32) (*AnnotatedInput, error) {
 		in.ControlProgram = orig.ControlProgram()
 		in.SpentOutputID = &prevoutID
 	}
-	return in, nil
+	return in
 }
 
 func buildAnnotatedOutput(tx *bc.Tx, idx uint32) *AnnotatedOutput {

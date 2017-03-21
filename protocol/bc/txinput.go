@@ -27,27 +27,23 @@ type (
 
 var errBadAssetID = errors.New("asset ID does not match other issuance parameters")
 
-func (t *TxInput) AssetAmount() (AssetAmount, error) {
+func (t *TxInput) AssetAmount() AssetAmount {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
-		assetID, err := ii.AssetID()
-		if err != nil {
-			return AssetAmount{}, err
-		}
 		return AssetAmount{
-			AssetID: assetID,
+			AssetID: ii.AssetID(),
 			Amount:  ii.Amount,
-		}, nil
+		}
 	}
 	si := t.TypedInput.(*SpendInput)
-	return si.AssetAmount, nil
+	return si.AssetAmount
 }
 
-func (t *TxInput) AssetID() (AssetID, error) {
+func (t *TxInput) AssetID() AssetID {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
 		return ii.AssetID()
 	}
 	si := t.TypedInput.(*SpendInput)
-	return si.AssetID, nil
+	return si.AssetID
 }
 
 func (t *TxInput) Amount() uint64 {
@@ -173,10 +169,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 				return err
 			}
 
-			computedAssetID, err := ii.AssetID()
-			if err != nil {
-				return err
-			}
+			computedAssetID := ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion, ii.AssetDefinitionHash())
 			if computedAssetID != assetID {
 				return errBadAssetID
 			}
@@ -244,10 +237,7 @@ func (t *TxInput) WriteInputCommitment(w io.Writer, serflags uint8) error {
 			if err != nil {
 				return err
 			}
-			assetID, err := t.AssetID()
-			if err != nil {
-				return err
-			}
+			assetID := t.AssetID()
 			_, err = w.Write(assetID[:])
 			if err != nil {
 				return err

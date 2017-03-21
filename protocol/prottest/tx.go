@@ -54,17 +54,13 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 	assetdef := []byte(`{"type": "prottest issuance"}`)
 	txin := bc.NewIssuanceInput(nonce[:], 100, nil, b1.Hash(), issuanceProgram, nil, assetdef)
 
-	assetID, err := txin.AssetID()
-	if err != nil {
-		tb.Fatal(err)
-	}
 	tx := bc.NewTx(bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		MinTime: bc.Millis(time.Now().Add(-5 * time.Minute)),
 		MaxTime: bc.Millis(time.Now().Add(5 * time.Minute)),
 		Inputs:  []*bc.TxInput{txin},
 		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(assetID, 100, []byte{0xbe, 0xef}, nil),
+			bc.NewTxOutput(txin.AssetID(), 100, []byte{0xbe, 0xef}, nil),
 		},
 	})
 

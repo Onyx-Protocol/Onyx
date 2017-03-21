@@ -15,16 +15,13 @@ import (
 func TestUniqueIssuance(t *testing.T) {
 	var initialBlockHash bc.Hash
 	trueProg := []byte{byte(vm.OP_TRUE)}
-	assetID, err := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyStringHash)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyStringHash)
 	now := time.Now()
 	nowMS := bc.Millis(now)
 	issuanceInp := bc.NewIssuanceInput(nil, 1, nil, initialBlockHash, trueProg, nil, nil)
 
 	// Transaction with empty nonce (and no other inputs) is invalid
-	_, err = bc.ComputeTxHashes(&bc.TxData{
+	_, err := bc.ComputeTxHashes(&bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{issuanceInp},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
@@ -92,10 +89,7 @@ func TestUniqueIssuance(t *testing.T) {
 	}
 
 	true2Prog := []byte{byte(vm.OP_TRUE), byte(vm.OP_TRUE)}
-	asset2ID, err := bc.ComputeAssetID(true2Prog, initialBlockHash, 1, bc.EmptyStringHash)
-	if err != nil {
-		t.Fatal(err)
-	}
+	asset2ID := bc.ComputeAssetID(true2Prog, initialBlockHash, 1, bc.EmptyStringHash)
 	issuance2Inp := bc.NewIssuanceInput(nil, 1, nil, initialBlockHash, true2Prog, nil, nil)
 
 	// Transaction with empty nonce does not get added to issuance memory
@@ -170,10 +164,7 @@ func TestTxWellFormed(t *testing.T) {
 	var initialBlockHash bc.Hash
 	trueProg := []byte{byte(vm.OP_TRUE)}
 	issuanceProg := trueProg
-	aid1, err := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
-	if err != nil {
-		t.Fatal(err)
-	}
+	aid1 := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
 	aid2 := bc.AssetID([32]byte{2})
 
 	tx1 := bc.NewTx(bc.TxData{
@@ -851,10 +842,7 @@ func TestTxRangeErrs(t *testing.T) {
 func TestValidateInvalidIssuances(t *testing.T) {
 	var initialBlockHash bc.Hash
 	issuanceProg := []byte{1}
-	aid, err := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
-	if err != nil {
-		t.Fatal(err)
-	}
+	aid := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
 	now := time.Now()
 
 	wrongInitialBlockHash := initialBlockHash

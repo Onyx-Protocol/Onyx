@@ -18,10 +18,7 @@ func TestTransaction(t *testing.T) {
 	initialBlockHashHex := "03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"
 	initialBlockHash := mustDecodeHash(initialBlockHashHex)
 
-	assetID, err := ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
 
 	cases := []struct {
 		tx   *Tx
