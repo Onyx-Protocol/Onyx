@@ -65,7 +65,6 @@ var (
 // exists on the host and generates one if necessary.
 func generatePKIX(ctx context.Context, serverCertPath, serverKeyPath, caPath *string) error {
 	*caPath = certsDir + "ca" + certFileExt
-	fmt.Println(*caPath)
 	exists, err := exist(*caPath)
 	if err != nil {
 		return err
@@ -210,7 +209,7 @@ func exist(path string) (bool, error) {
 }
 
 func warn() error {
-	fmt.Println("\nWARNING: Chain Core requires mutual TLS authentication. Development certs and keys have been generated in", certsDir)
+	fmt.Printf("\nWARNING: Chain Core requires mutual TLS authentication. Development certs and keys have been generated in %s\n\n", certsDir)
 	switch runtime.GOOS {
 	case "darwin":
 		return warnDarwin()
