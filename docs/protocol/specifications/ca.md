@@ -1355,25 +1355,54 @@ When creating a confidential issuance, the first step is to construct the rest o
 **Inputs:**
 
 1. `AC`: the [asset ID commitment](#asset-id-commitment).
-2. `c`: the [blinding factor](#asset-id-blinding-factor) for commitment `AC` such that: `AC.H == A + c·G`, `AC.Ba == c·J`.
+2. `c`: the [blinding factor](#asset-id-blinding-factor) for commitment `AC` such that: `AC.H == A[j] + c·G`, `AC.Ba == c·J`.
 3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](data.md#asset-id).
-4. `{Y[i]}`: `n` issuance keys (each a 32-byte [public key](data.md#public-key).
-5. `vmver`: VM version for the issuance signature program.
-6. `program`: issuance signature program.
-7. `j`: the index of the asset being issued.
+4. `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
+5. `program`: delegate issuance [program](blockchain.md#program),
+6. `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
+7. `j`: the index of the asset being issued (such that `AC.H == A[j] + c·G`).
 8. `y`: the private key for the issuance key corresponding to the asset being issued: `Y[j] = y·G`.
 
 **Output:** an [issuance asset range proof](#issuance-asset-range-proof) consisting of:
 
-* `e[0], s[0], ... s[n-1]`: the issuance ring signature,
-* `{Y[i]}`: `n` issuance keys,
-* `vmver`: VM version for the issuance signature program,
-* `program`: issuance signature program,
-* `[]`: empty list of program arguments (to be filled in by the issuer).
+* `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
+* `ms = {e’,s’}`: the marker signature,
+* `{a[i]}`: `n` [asset IDs](data.md#asset-id),
+* `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
+* `program`: delegate issuance [program](blockchain.md#program),
+* `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
+* `T`: tracing [point](#point),
+* `Bm`: blinded marker [point](#point),
+
 
 **Algorithm:**
 
-1. Calculate nonblinded asset commitments for the values in `a`: `A[i] = 8·Decode(SHA3(a[i]))`.
+1. Calculate the base hash: `basehash = Hash256("IARP" || AC || uint64le(n) || a[0] || ... || a[n-1] || Y[0] || ... || Y[n-1] || nonce || program)` where `n` is encoded as a 64-bit unsigned little-endian integer.
+2. Calculate marker point `M`:
+    1. Let `counter = 0`.
+    2. Calculate `Hash256("M" || basehash || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
+    3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
+    4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
+    5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
+2. Calculate the tracing point: `T = y·(J + M)`.
+3. Calculate the blinded marker using the blinding factor used by commitment `AC`: `Bm = c·M`.
+4. Calculate a 32-byte message hash and three 64-byte Fiat-Shamir challenges for all the signatures (total 224 bytes):
+
+        (msghash, h1, h2, h3) = StreamHash("h" || basehash || M || T || Bm, 32 + 3·64)
+
+4. Interpret `h1`, `h2`, `h3` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
+5. Create proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
+    1. Compute base point `B = h1·M + J`.
+    2. Compute public key `P = h1·Bm + AC.Ba`.
+    3. Calculate point `R = s’·B - e’·P`.
+    4. Calculate scalar `e” = ScalarHash("e" || msghash || R)`.
+    5. Verify that `e”` is equal to `e’`.
+
+
+
+* * *
+
+1. Calculate nonblinded asset commitments for the values in `a`: `A[i] = 8·Decode(Hash256(a[i]...))`.
 2. Calculate a 96-byte commitment string: `commit = StreamHash(0x66 || H || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || program, 8·96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
 3. Calculate message to sign as first 32 bytes of the commitment string: `msg = commit[0:32]`.
 4. Calculate the coefficient `h` from the remaining 64 bytes of the commitment string: `h = commit[32:96]`. Interpret `h` as a 64-byte little-endian integer and reduce modulo subgroup order `L`.
@@ -1389,57 +1418,54 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 
 
-### Verify Issuance Asset Range Proof WIP
+### Verify Issuance Asset Range Proof
 
 **Inputs:**
 
-1. `IARP`: the to-be-verified [issuance asset range proof](#issuance-asset-range-proof) consisting of:
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
+2. `IARP`: the to-be-verified [issuance asset range proof](#issuance-asset-range-proof) consisting of:
     * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
     * `ms = {e’,s’}`: the marker signature,
-    * `{Y[i]}`: `n` issuance keys encoded as [points](#point),
+    * `{a[i]}`: `n` [asset IDs](data.md#asset-id),
+    * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
     * `program`: delegate issuance [program](blockchain.md#program),
     * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
     * `T`: tracing [point](#point),
     * `Bm`: blinded marker [point](#point),
-2. `AC`: the [asset ID commitment](#asset-id-commitment).
-3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](data.md#asset-id).
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
-TBD:
-
-    1. M  = HashToPoint(AC||nonce||program)
-    2. DLEQ(Ba/J == Bm/M)
-    3. RingDLEQ(Pi/G == Q/(J+M)):
-           Pi = H — Ai + h·Yi
-           Q  = Ba + Bm + h·T
-
-
-
 **Algorithm:**
 
-1. Calculate message hash: `msghash = Hash256("IARP" || AC || uint64le(n) || a[0] || ... || a[n-1] || Y[0] || ... || Y[n-1] || nonce || program || T)` where `n` is encoded as a 64-bit unsigned little-endian integer.
-    
-
-1. Calculate marker point `M`:
+1. Calculate the base hash: `basehash = Hash256("IARP" || AC || uint64le(n) || a[0] || ... || a[n-1] || Y[0] || ... || Y[n-1] || nonce || program)` where `n` is encoded as a 64-bit unsigned little-endian integer.
+2. Calculate marker point `M`:
     1. Let `counter = 0`.
-    2. Calculate `Hash256("IARP.Marker" || AC || nonce || program || counter)` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
+    2. Calculate `Hash256("M" || basehash || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
     3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
     4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
-    5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
-    6. Return `A`.
+    5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
+3. Calculate a 32-byte message hash and three 64-byte Fiat-Shamir challenges for all the signatures (total 224 bytes):
+
+        (msghash, h1, h2, h3) = StreamHash("h" || basehash || M || T || Bm, 32 + 3·64)
+
+4. Interpret `h1`, `h2`, `h3` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
+5. Verify proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
+    1. Compute base point `B = h1·M + J`.
+    2. Compute public key `P = h1·Bm + AC.Ba`.
+    3. Calculate point `R = s’·B - e’·P`.
+    4. Calculate scalar `e” = ScalarHash("e" || msghash || R)`.
+    5. Verify that `e”` is equal to `e’`.
+6. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
+7. Calculate point `Q = Ba + Bm + h2·T`.
+8. Calculate points `{P[i]}` for `n` pairs of asset ID points and corresponding issuance keys `A[i], Y[i]`:
     
-1. Verify proof that `BM`
+        P[i] = AC.H — A[i] + h2·Y[i]
 
-1. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`:
-
-        A[i] = 8·Decode(SHA3(a[i]))
-
-2. Calculate a 96-byte commitment string: `commit = StreamHash(0x66 || AC || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || program, 96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
-3. Calculate message to sign as first 32 bytes of the commitment string: `msg = commit[0:32]`.
-4. Calculate the coefficient `h` from the remaining 64 bytes of the commitment string: `h = commit[32:96]`. Interpret `h` as a 64-byte little-endian integer and reduce modulo subgroup order `L`.
-5. Calculate the `n` public keys `{P[i]}`: `P[i] = H - A[i] + h·Y[i]`.
-6. [Verify the ring signature](#verify-ring-signature) `e[0], s[0], ... s[n-1]` with message `msg` and public keys `{P[i]}`.
+9. Verify ring proof of discrete log equality for one of the pairs `P[i]/G` and `Q/(J+M)`:
+    1. Calculate base point `B = G + h3·(J+M)`.
+    2. Precompute point `Q’ = h3·Q`.
+    3. For each `P[i]` compute `P’[i] = P[i] + Q’`.
+    4. [Verify the ring signature](#verify-ring-signature) `e[0], s[0], ... s[n-1]` with message `msghash` and public keys `{P’[i]}`.
 
 
 
@@ -1579,7 +1605,7 @@ In case of failure, returns `nil` instead of the items listed above.
 
 1. [Derive asset encryption key](#asset-id-encryption-key) `aek` from `rek`.
 2. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
-3. [Create nonblinded asset ID commitment](#create-nonblinded-asset-id-commitment) for all values in `{assetIDs[i]}`: `A[i] = 8·Decode(SHA3(assetIDs[i]))`.
+3. [Create nonblinded asset ID commitment](#create-nonblinded-asset-id-commitment) for all values in `{assetIDs[i]}`: `A[i] = 8·Decode(Hash256(assetIDs[i]...))`.
 4. Find `j` index of the `assetID` among `{assetIDs[i]}`. If not found, halt and return `nil`.
 5. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(H,c)` from `(A, 0, aek)`.
 6. [Create blinded value commitment](#create-blinded-value-commitment): compute `(V,f)` from `(vek, value, H, c)`.
