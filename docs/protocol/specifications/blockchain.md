@@ -189,7 +189,13 @@ Field            | Type                                        | Description
 Asset ID         | [AssetCommitment](ca.md#point-pair)         | Encrypted asset ID.
 Value            | [ValueCommitment](ca.md#value-commitment)   | Encrypted value commitment.
 
+### Convert AssetAmount
 
+To convert an [AssetAmount1](#asset-amount-1) `OldAssetAmount` to an AssetAmount2(#asset-amount-2):
+
+1. Define `NewAssetID` as a [nonblinded asset ID commitment](ca.md#create-nonblinded-asset-id-commitment) created with `OldAssetAmount.AssetID`.
+2. Define `NewValue` as a [nonblinded value commitment](ca.md#create-nonblinded-value-commitment) created with `NewAssetID` and `OldAssetAmount.Value`.
+3. Return a new `AssetAmount2` with `AssetID` set to `NewAssetID` and `Value` set to `NewValue`.
 
 ### Value Source 1
 
@@ -693,7 +699,7 @@ Destination         | ValueDestination2          | The destination for the value
 
 #### Upgrade Validation
 
-1. [Convert](ca.md#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
+1. [Convert](#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
 2. [Validate](#value-destination-2) `Destination`.
 3. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
@@ -718,7 +724,7 @@ Destination         | ValueDestination2          | The destination for the value
 
 #### Upgrade Validation
 
-1. [Convert](ca.md#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
+1. [Convert](#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
 2. [Validate](#value-destination-2) `Destination`.
 3. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
