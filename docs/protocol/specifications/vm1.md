@@ -106,6 +106,7 @@ Execution of any of the following instructions results in immediate failure:
 7. Execution Context:
     a. Block
     b. (Transaction, Input Index)
+8. Confidential Assets Flag
 
 **Initial State** has empty stacks, uninitialized program, PC set to zero, and *run limit* set to 10,000.
 
@@ -120,6 +121,8 @@ Execution of any of the following instructions results in immediate failure:
 **Expansion Flag** indicates whether the [expansion opcodes](#expansion-opcodes) are allowed in the program or not. If the flag is off, these opcodes immediately fail the program execution.
 
 **Execution Context** is either a [block context](#block-context) or [transaction context](#transaction-context).
+
+**Confidential Assets Flag** indicates whether certain [expansion opcodes](#expansion-opcodes) are defined to support instructions for [Confidential Assets](ca.md).
 
 
 ## Operations
@@ -1300,11 +1303,51 @@ Fails if executed in the [transaction context](#transaction-context).
 
 
 
+
+#### ASSETCOMMITMENT
+
+Code  | Stack Diagram           | Cost
+------|-------------------------|-----------------------------------------------------
+0xd0  | (∅ → assetcommitment)   | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes the [asset ID commitment](ca.md#asset-id-commitment) encoded as a 64-byte string on the data stack.
+
+This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
+
+Fails if executed in the [block context](#block-context).
+
+
+#### VALUECOMMITMENT
+
+Code  | Stack Diagram             | Cost
+------|---------------------------|-----------------------------------------------------
+0xd1  | (∅ → valuecommitment)     | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes the [value commitment](ca.md#value-commitment) encoded as a 64-byte string on the data stack.
+
+This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
+
+Fails if executed in the [block context](#block-context).
+
+
+#### ISSUANCEKEY
+
+Code  | Stack Diagram             | Cost
+------|---------------------------|-----------------------------------------------------
+0xd2  | (∅ → issuancekey)         | 1; [standard memory cost](#standard-memory-cost)
+
+Pushes the issuance public key from the [issuance asset range proof](ca.md#issuance-asset-range-proof) at the index corresponding to the current asset ID in the [asset issuance choice](blockchain.md#asset-issuance-choice).
+
+This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
+
+Fails if executed outside [Asset Issuance Choice](#asset-issuance-choice) context.
+
+
 ### Expansion opcodes
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xcd..0xcf, 0xd0..0xff  | (∅ → ∅)     | 1
+0x50, 0x61, 0x62, 0x65, 0x66, 0x67, 0x68, 0x8a, 0x8d, 0x8e, 0xa6, 0xa7, 0xa9, 0xab, 0xb0..0xbf, 0xcd..0xcf, 0xd3..0xff  | (∅ → ∅)     | 1
 
 The unassigned codes are reserved for future expansion.
 
