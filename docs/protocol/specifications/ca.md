@@ -60,6 +60,8 @@
   * [Create Transient Issuance Key](#create-transient-issuance-key)
   * [Create Issuance Asset Range Proof](#create-issuance-asset-range-proof)
   * [Verify Issuance Asset Range Proof](#verify-issuance-asset-range-proof)
+  * [Create Issuance Proof](#create-issuance-proof)
+  * [Verify Issuance Proof](#verify-issuance-proof)
 * [High-level procedures](#high-level-procedures)
   * [Verify Output](#verify-output)
   * [Verify Issuance](#verify-issuance)
@@ -573,7 +575,9 @@ TBD: extend this to allow "watch keys" (will require change of `{Y}` to `{(Y,W)}
 Field                           | Type             | Description
 --------------------------------|------------------|------------------
 Issuance Ring Signature         | [Ring Signature](#ring-signature)   | A ring signature proving that the issuer of an encrypted asset ID approved the issuance.
+Marker Signature                | 64 bytes         | A pair of [scalars](#scalar) representing a single Schnorr signature for the marker and tracing points.
 Tracing Point                   | [Point](#point)  | A point that lets any issuer to prove or disprove if this issuance is done by them.
+Blinded Marker Point            | [Point](#point)  | A blinding factor commitment using a marker point (used together with the tracing point).
 Issuance Keys                   | [List](blockchain.md#list)\<[Point](#point)\> | Keys to be used to calculate the public key for the corresponding index in the ring signature.
 Issuance Program                | [Program](blockchain.md#program)  | [Version of the VM](#vm-version) that executes the issuance signature program.
 Issuance Signature Program      | varstring31      | Predicate committed to by the issuance asset range proof, which is evaluated to ensure that the transaction is authorized.
@@ -1348,7 +1352,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-### Create Issuance Asset Range Proof WIP
+### Create Issuance Asset Range Proof
 
 When creating a confidential issuance, the first step is to construct the rest of the input commitment and input witness, including an asset issuance choice for each asset that one wants to include in the anonymity set. The issuance key for each asset should be extracted from the issuance programs. (Issuance programs that support confidential issuance should have a branch that uses `CHECKISSUANCE` to check for a confidential issuance key.)
 
@@ -1366,7 +1370,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 **Output:** an [issuance asset range proof](#issuance-asset-range-proof) consisting of:
 
 * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
-* `ms = {e’,s’}`: the marker signature,
+* `ms = (e’,s’)`: the marker signature,
 * `{a[i]}`: `n` [asset IDs](data.md#asset-id),
 * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
 * `program`: delegate issuance [program](blockchain.md#program),
@@ -1384,36 +1388,37 @@ When creating a confidential issuance, the first step is to construct the rest o
     3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
     4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
     5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
-2. Calculate the tracing point: `T = y·(J + M)`.
-3. Calculate the blinded marker using the blinding factor used by commitment `AC`: `Bm = c·M`.
-4. Calculate a 32-byte message hash and three 64-byte Fiat-Shamir challenges for all the signatures (total 224 bytes):
+3. Calculate the tracing point: `T = y·(J + M)`.
+4. Calculate the blinded marker using the blinding factor used by commitment `AC`: `Bm = c·M`.
+5. Calculate a 32-byte message hash and three 64-byte Fiat-Shamir challenges for all the signatures (total 224 bytes):
 
         (msghash, h1, h2, h3) = StreamHash("h" || basehash || M || T || Bm, 32 + 3·64)
 
-4. Interpret `h1`, `h2`, `h3` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
-5. Create proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
+6. Interpret `h1`, `h2`, `h3` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
+7. Create proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
     1. Compute base point `B = h1·M + J`.
-    2. Compute public key `P = h1·Bm + AC.Ba`.
-    3. Calculate point `R = s’·B - e’·P`.
-    4. Calculate scalar `e” = ScalarHash("e" || msghash || R)`.
-    5. Verify that `e”` is equal to `e’`.
+    2. Calculate the nonce `k = ScalarHash("k" || msghash || c)`.
+    3. Calculate point `R = k·B`.
+    4. Calculate scalar `e’ = ScalarHash("e" || msghash || R)`.
+    5. Calculate scalar `s’ = k + c·e mod L`.
+    6. Let the marker signature `ms = (e’,s’)`.
+8. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
+9. Calculate point `Q = Ba + Bm + h2·T`.
+10. Calculate points `{P[i]}` for `n` pairs of asset ID points and corresponding issuance keys `A[i], Y[i]`:
 
+        P[i] = AC.H — A[i] + h2·Y[i]
 
-
-* * *
-
-1. Calculate nonblinded asset commitments for the values in `a`: `A[i] = 8·Decode(Hash256(a[i]...))`.
-2. Calculate a 96-byte commitment string: `commit = StreamHash(0x66 || H || A[0] || ... || A[n-1] || Y[0] || ... || Y[n-1] || program, 8·96)`, where `vmver` is encoded as a 64-bit unsigned little-endian integer.
-3. Calculate message to sign as first 32 bytes of the commitment string: `msg = commit[0:32]`.
-4. Calculate the coefficient `h` from the remaining 64 bytes of the commitment string: `h = commit[32:96]`. Interpret `h` as a 64-byte little-endian integer and reduce modulo subgroup order `L`.
-5. Calculate `n` public keys `{P[i]}`: `P[i] = H - A[i] + h·Y[i]`.
-6. Calculate private key `p = c + h·y`.
-7. [Create a ring signature](#verify-ring-signature) with:
-    * message `msg`,
-    * `n` public keys `{P[i]}`,
-    * index `j`,
-    * private key `p`.
-8. Return an issuance range proof consisting of `(e0,{s[i]}, {Y[i]}, vmver, program, [])`.
+11. Create ring proof of discrete log equality for the pair `P[j]/G` and `Q/(J+M)`:
+    1. Calculate base point `B = G + h3·(J+M)`.
+    2. For each `P[i]` compute `P’[i] = P[i] + h3·Q`.
+    3. Calculate the signing key `x = c + h2·y`.
+    4. [Create a ring signature](#create-ring-signature) `rs` using:
+        * message `msghash`,
+        * base point `B`, 
+        * public keys `{P’[i]}`, 
+        * secret index `j`, 
+        * private key `x`.
+12. Return [issuance asset range proof](#issuance-asset-range-proof) consisting of marker signature `ms`, ring signature `rs`, tracing point `T` and blinded marker point `Bm`.
 
 
 
@@ -1425,7 +1430,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 1. `AC`: the [asset ID commitment](#asset-id-commitment).
 2. `IARP`: the to-be-verified [issuance asset range proof](#issuance-asset-range-proof) consisting of:
     * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
-    * `ms = {e’,s’}`: the marker signature,
+    * `ms = (e’,s’)`: the marker signature,
     * `{a[i]}`: `n` [asset IDs](data.md#asset-id),
     * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
     * `program`: delegate issuance [program](blockchain.md#program),
@@ -1469,14 +1474,56 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 
 
+### Create Issuance Proof WIP
+
+Issuance proof allows an issuer to prove whether a given confidential issuance is performed with their key or not.
+
+**Inputs:**
+
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
+2. `IARP`: the to-be-verified [issuance asset range proof](#issuance-asset-range-proof) consisting of:
+    * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
+    * `ms = (e’,s’)`: the marker signature,
+    * `{a[i]}`: `n` [asset IDs](data.md#asset-id),
+    * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
+    * `program`: delegate issuance [program](blockchain.md#program),
+    * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
+    * `T`: tracing [point](#point),
+    * `Bm`: blinded marker [point](#point),
+3. Issuance key pair `y, Y` (where `Y = y·G`).
+
+**Output:** triplet of points `(X, Z, Z’)`.
+
+**Algorithm:**
+
+1. TBD.
 
 
+### Verify Issuance Proof
 
+**Inputs:**
 
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
+2. `IARP`: the to-be-verified [issuance asset range proof](#issuance-asset-range-proof) consisting of:
+    * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
+    * `ms = (e’,s’)`: the marker signature,
+    * `{a[i]}`: `n` [asset IDs](data.md#asset-id),
+    * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
+    * `program`: delegate issuance [program](blockchain.md#program),
+    * `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
+    * `T`: tracing [point](#point),
+    * `Bm`: blinded marker [point](#point),
+3. Index `j` of the issuance key `Y[j]` being verified to be used (or not) in the given issuance range proof.
+4. Triplet of points `(X, Z, Z’)`. 
 
+**Output:** 
 
+* If the proof is valid: “yes” or “no” indicating whether the key `Y[j]` was used or not to issue asset ID in the commitment `AC`.
+* If the proof is invalid: `nil`.
 
+**Algorithm:**
 
+1. TBD.
 
 
 
