@@ -1703,7 +1703,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 
 
-### Encrypt Issuance WIP
+### Encrypt Issuance
 
 **Inputs:**
 
@@ -1714,6 +1714,7 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 5. `{(assetIDs[i], Y[i])}`: `n` input asset IDs and corresponding issuance public keys.
 6. `y`: issuance key for `assetID` such that `Y[j] = y·G` where `j` is the index of the issued asset: `assetIDs[j] == assetID`.
 7. `message`: a variable-length string to be signed.
+8. `nonce`: a unique 32-byte string.
 
 **Outputs:**
 
@@ -1728,17 +1729,14 @@ In case of failure, returns `nil` instead of the items listed above.
 
 **Algorithm:**
 
-1. [Derive asset encryption key](#asset-id-encryption-key) `aek` from `rek`.
+1. [Derive asset ID encryption key](#asset-id-encryption-key) `aek` from `rek`.
 2. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
-3. [Create nonblinded asset ID commitment](#create-nonblinded-asset-id-commitment) for all values in `{assetIDs[i]}`: `A[i] = 8·Decode(Hash256(assetIDs[i]...))`.
-4. Find `j` index of the `assetID` among `{assetIDs[i]}`. If not found, halt and return `nil`.
-5. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(H,c)` from `(A, 0, aek)`.
-6. [Create blinded value commitment](#create-blinded-value-commitment): compute `(V,f)` from `(vek, value, H, c)`.
-7. [Create issuance asset range proof](#create-issuance-asset-range-proof): compute `IARP` from `(H, c, {A[i]}, {Y[i]}, vmver’, program’, j, y)`.
-8. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(H, V, (0x00...,0x00...), N, value, {0x00...}, f, rek)`.
-9. Create [blinded asset ID descriptor](#blinded-asset-id-descriptor) `AD` containing `H` and all-zero [encrypted asset ID](#encrypted-asset-id).
-10. Create [blinded value descriptor](#blinded-value-descriptor) `VD` containing `V` and all-zero [encrypted value](#encrypted-value).
-11. Return `(AD, VD, IARP, VRP, c, f)`.
+3. Find `j` index of the `assetID` among `{assetIDs[i]}`. If not found, halt and return `nil`.
+5. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(AC,c)` from `(assetid, aek)`.
+6. [Create blinded value commitment](#create-blinded-value-commitment): compute `(VC,f)` from `(value, vek, AC)`.
+7. [Create issuance asset range proof](#create-issuance-asset-range-proof): compute `IARP` from `(AC, c, {assetIDs[i]}, {Y[i]}, message, nonce, j, y)`.
+8. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(AC, VC, N, value, f, rek)` and all-zeroes payload.
+9. Return `(AC, VC, IARP, VRP, c, f)`.
 
 
 
@@ -1776,7 +1774,7 @@ In case of failure, returns `nil` instead of the items listed above.
 2. If the number of chunks `{pt[i]}` exceeds `2·N-1`, halt and return `nil`.
 3. If the number of chunks `{pt[i]}` is less than `2·N-1`, pad the array with all-zero 32-byte chunks.
 4. If `value ≥ 2^N`, halt and return `nil`.
-5. [Derive asset encryption key](#asset-id-encryption-key) `aek` from `rek`.
+5. [Derive asset ID encryption key](#asset-id-encryption-key) `aek` from `rek`.
 6. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
 7. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(H’,c’)` from `(assetID, aek)`.
 8. [Encrypt asset ID](#encrypt-asset-id): compute `(ea,ec)` from `(assetID, H’, c’, aek)`.
