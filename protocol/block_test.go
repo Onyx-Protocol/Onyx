@@ -63,7 +63,7 @@ func TestNoTimeTravel(t *testing.T) {
 }
 
 func TestWaitForBlockSoonAlreadyExists(t *testing.T) {
-	c, _ := newTestChain(t, time.Now())
+	c := prottest.NewChain(t)
 	makeEmptyBlock(t, c) // height=2
 	makeEmptyBlock(t, c) // height=3
 
@@ -74,7 +74,7 @@ func TestWaitForBlockSoonAlreadyExists(t *testing.T) {
 }
 
 func TestWaitForBlockSoonDistantFuture(t *testing.T) {
-	c, _ := newTestChain(t, time.Now())
+	c := prottest.NewChain(t)
 
 	got := <-c.BlockSoonWaiter(context.Background(), 100) // distant future
 	want := ErrTheDistantFuture
@@ -92,7 +92,7 @@ func TestWaitForBlockSoonWaits(t *testing.T) {
 	//
 	// It's the best we can do.
 
-	c, _ := newTestChain(t, time.Now())
+	c := prottest.NewChain(t)
 	makeEmptyBlock(t, c) // height=2
 
 	go func() {
@@ -110,7 +110,7 @@ func TestWaitForBlockSoonWaits(t *testing.T) {
 }
 
 func TestWaitForBlockSoonTimesout(t *testing.T) {
-	c, _ := newTestChain(t, time.Now())
+	c := prottest.NewChain(t)
 	go func() {
 		makeEmptyBlock(t, c) // height=2
 	}()
@@ -127,7 +127,8 @@ func TestWaitForBlockSoonTimesout(t *testing.T) {
 func TestGenerateBlock(t *testing.T) {
 	ctx := context.Background()
 	now := time.Unix(233400000, 0)
-	c, b1 := newTestChain(t, now)
+	c := prottest.NewChainWithTime(t, now)
+	b1, _ := c.State()
 
 	initialBlockHash := b1.Hash()
 	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1, bc.EmptyStringHash)
@@ -166,7 +167,7 @@ func TestGenerateBlock(t *testing.T) {
 
 	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now, txs)
 	if err != nil {
-		t.Fatalf("err got = %v want nil", err)
+		t.Fatal(err)
 	}
 
 	// TODO(bobg): verify these hashes are correct
@@ -210,31 +211,6 @@ func TestValidateBlockForSig(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error ", err)
 	}
-}
-
-// newTestChain returns a new Chain using memstore for storage,
-// along with an initial block b1 (with a 0/0 multisig program).
-// It commits b1 before returning.
-func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
-	ctx := context.Background()
-
-	var err error
-
-	b1, err = NewInitialBlock(nil, 0, ts)
-	if err != nil {
-		testutil.FatalErr(tb, err)
-	}
-	c, err = NewChain(ctx, b1.Hash(), prottest.NewMemStore(), nil)
-	if err != nil {
-		testutil.FatalErr(tb, err)
-	}
-	// TODO(tessr): consider adding MaxIssuanceWindow to NewChain
-	c.MaxIssuanceWindow = 48 * time.Hour
-	err = c.CommitBlock(ctx, b1, state.Empty())
-	if err != nil {
-		testutil.FatalErr(tb, err)
-	}
-	return c, b1
 }
 
 func makeEmptyBlock(tb testing.TB, c *Chain) {
