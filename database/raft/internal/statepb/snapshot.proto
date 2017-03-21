@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package statepb;
+
+message Snapshot {
+	map<string, uint64> version = 1;
+	map<string, bytes> state = 2;
+	map<uint64, string> peers = 3;
+}

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package statepb;
+
+message Op {
+	enum Type {
+		SET = 0;
+		DELETE = 1;
+	}
+	Type type = 1;
+	string key = 2;
+	bytes value = 3;
+}
+
+message Cond {
+	enum Type {
+		KEY_EXISTS = 0;
+		NOT_KEY_EXISTS = 1;
+		VALUE_EQUAL = 2;
+		NOT_VALUE_EQUAL = 3;
+		INDEX_EQUAL = 4;
+		NOT_INDEX_EQUAL = 5;
+	}
+	Type type = 1;
+	string key = 2;
+	bytes value = 3;
+	uint64 index = 4;
+}
+
+message Instruction {
+	repeated Cond conditions = 1;
+	repeated Op operations = 2;
+}
