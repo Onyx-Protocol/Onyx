@@ -137,20 +137,20 @@ In this section we will provide a brief overview of various ways to use confiden
 11. Recipient separately stores decrypted plaintext payload with the rest of the reference data. It is not necessary for spending.
 
 
-### Multi-party transaction WIP
+### Multi-party transaction
 
 1. All parties communicate out-of-band payment details (how much is being paid for what), but not cryptographic material or control programs.
 2. Each party:
     1. Generates cleartext outputs: (amount, asset ID, control program, [REK](#record-encryption-key)). These include both requested payment ("I want to receive €10") and the change ("I send back to myself $142").
     2. [Encrypts](#encrypt-output) each output.
     3. [Balances blinding factors](#balance-blinding-factors) to create an excess factor `q[i]`.
-    4. For each output, stores values `(assetid,value,H,c,f,aek,vek)` associated with that output in its DB for later spending.
+    4. For each output, stores values `(assetid,value,AC,c,f)` associated with that output in its DB for later spending.
     5. Sends `q[i]` to the party that finalizes transaction.
 3. Party that finalizes transaction:
     1. Receives `{q[i]}` values from all other parties (including itself).
     2. Sums all excess factors: `qsum = ∑q[i]`
-    3. [Creates excess commitment](#create-excess-commitment) out of `qsum`: `Q = qsum·G` and signs it.
-    4. Finalizes transaction by placing the excess commitment to the Common Fields.
+    3. [Creates excess commitment](#create-excess-commitment) out of `qsum`: `QG=qsum·G, QJ=qsum·J` and signs it.
+    4. Finalizes transaction by placing the [excess commitment](#excess-commitment) in the transaction.
     5. Publishes the transaction.
 4. If the amounts and blinding factors are balanced, transaction is valid and included in the blockchain. Parties can not see each other’s outputs, but only their own.
 
