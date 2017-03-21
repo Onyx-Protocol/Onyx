@@ -920,6 +920,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 3. `j`: the index of the designated commitment among the input asset ID commitments, so that `AC’ == AC[j] + (c’ - c)·(G,J)`.
 4. `c’`: the [blinding factor](#asset-id-blinding-factor) for the commitment `AC’`.
 5. `c`: the [blinding factor](#asset-id-blinding-factor) for the candidate commitment `AC[j]`.
+6. `message`: a variable-length string.
 
 **Output:** an [asset range proof](#asset-range-proof) consisting of a list of input asset ID commitments and a ring signature.
 
@@ -927,7 +928,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 1. Calculate the message hash to sign:
 
-        msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1])
+        msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1] || message)
 
 2. Calculate the Fiat-Shamir factor (note that it commits to all input non-secret data via `msghash` as necessary):
 
@@ -959,6 +960,8 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
     2. A confidential asset range proof consisting of:
         1. `{AC[i]}`: `n` input [asset ID commitments](#asset-id-commitment).
         2. `e[0], s[0], ... s[n-1]`: the ring signature.
+        3. Provided separately: 
+            * `message`: a variable-length string.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
@@ -970,7 +973,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 2. If the asset range proof is confidential:
     1. Calculate the message hash to sign:
 
-            msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1])
+            msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1] || message)
     
     2. Calculate the Fiat-Shamir factor (note that it commits to all input non-secret data via `msghash` as necessary):
 
@@ -1100,6 +1103,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 5. `{pt[i]}`: plaintext payload string consisting of `2·N - 1` 32-byte elements.
 6. `f`: the [value blinding factor](#value-blinding-factor).
 7. `rek`: the [record encryption key](#record-encryption-key).
+8. `message`: a variable-length string.
 
 Note: this version of the signing algorithm does not use decimal exponent or minimum value and sets them both to zero.
 
@@ -1120,7 +1124,7 @@ In case of failure, returns `nil` instead of the range proof.
 3. Define `vmin = 0`.
 4. Define `exp = 0`.
 5. Define `base = 4`.
-6. Calculate the message to sign: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin))` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+6. Calculate the message to sign: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("pek" || msghash || rek || f)`.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-payload) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPayload({pt[i]}, pek)`.
@@ -1175,6 +1179,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `vmin`: the minimum amount (64-bit integer).
     * `{D[t]}`: the list of `n-1` digit commitments encoded as [points](#point) (excluding the last digit commitment).
     * `{e0, s[i,j]...}`: the [borromean ring signature](#borromean-ring-signature) encoded as a sequence of `1 + 4·n` 32-byte integers.
+4. `message`: a variable-length string.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
@@ -1189,7 +1194,7 @@ In case of failure, returns `nil` instead of the range proof.
     6. Check that `(10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
-3. Calculate the message to verify: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin))` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+3. Calculate the message to verify: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC’.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 5. Calculate the Fiat-Shamir factor:
 
@@ -1234,7 +1239,7 @@ In case of failure, returns `nil` instead of the range proof.
 4. `value`: the 64-bit amount being encrypted and blinded.
 5. `f`: the [value blinding factor](#value-blinding-factor).
 6. `rek`: the [record encryption key](#record-encryption-key).
-
+7. `message`: a variable-length string.
 
 **Output:** `{pt[i]}`: an array of 32-bytes of plaintext data if recovery succeeded, `nil` otherwise.
 
@@ -1249,7 +1254,7 @@ In case of failure, returns `nil` instead of the range proof.
     6. Check that `(10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
-3. Calculate the message to verify: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin))` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+3. Calculate the message to verify: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC’.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 5. Calculate the Fiat-Shamir factor:
 
