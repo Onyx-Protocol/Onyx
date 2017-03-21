@@ -258,7 +258,7 @@ A `ValueDestination2` has the same data structure and validation rules as a `Val
 
 ### Asset Issuance Choice
 
-An Asset Issuance Choice struct represents a candidate asset that might be issued as part of an [Issuance2](#isssuance2).
+An Asset Issuance Choice struct represents a candidate asset that might be issued as part of an [Issuance2](#issuance-2).
 
 Field                   | Type                    | Description
 ------------------------|-------------------------|----------------------------------------------------------
@@ -427,7 +427,7 @@ Witness    | Struct               | Empty struct.
 Body Field | Type                                         | Description
 -----------|----------------------------------------------|-------------------------
 Version    | Integer                                      | Transaction version.
-Results    | List\<Pointer\<Output 1\|Retirement 1\>\>    | A list of pointers to [Output 1s](#output-1) or [Retirements](#retirement-1). This list must contain at least one item.
+Results    | List\<Pointer\<Output 1\|Retirement 1\>\>    | A list of pointers to [Output 1s](#output-1) or [Retirement 1s](#retirement-1). This list must contain at least one item.
 Data       | String32                                     | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
 Mintime    | Integer                                      | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
 Maxtime    | Integer                                      | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
@@ -553,7 +553,7 @@ ExtHash             | [ExtStruct](#extension-struct) | If the transaction versio
 
 #### Retirement 2 Validation
 
-1. [Validate](#value-source-2-validation) `Source`.
+1. [Validate](#value-source-2) `Source`.
 2. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
 
@@ -665,11 +665,11 @@ Arguments                  | List<String>                                       
 **Algorithm:**
 
 1. Validate `Anchor`.
-2. [Validate](#value-destination-2-validation) `Destination`.
+2. [Validate](#value-destination-2) `Destination`.
 3. Verify that the length of `AssetIssuanceChoices` and `IssuanceAssetRangeProof.IssuanceKeys` are the same.
 4. For each `AssetIssuanceChoice` in `AssetIssuanceChoices`, [validate](#asset-issuance-choice-validation) that asset issuance choice, and verify that `AssetIssuanceChoice.IssuanceKey` matches the `IssuanceKey` at the same index in `IssuanceAssetRangeProof.IssuanceKeys`.
 5. Define `AssetIDChoices` as the list composed by calculating the `AssetID` from the `AssetDefinition` in each of the `AssetIssuanceChoices`.
-6. [Validate](ca.md#validate-issuance-ring-signature) the issuance ring signature using `AssetIDChoices` as the asset ID choice and `IssuanceDelegateProgram` as the message.
+6. [Validate](ca.md#validate-issuance-asset-range-proof) the issuance asset range proof using `AssetIDChoices` as the asset ID choice and `IssuanceDelegateProgram` as the message.
 7. [Validate](#program-validation) `IssuanceDelegateProgram` with `Arguments` as the arguments.
 
 
@@ -694,7 +694,7 @@ Destination         | ValueDestination2          | The destination for the value
 #### Upgrade Validation
 
 1. [Convert](ca.md#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
-2. [Validate](#validate-value-destination-2) `Destination`.
+2. [Validate](#value-destination-2) `Destination`.
 3. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
 
@@ -719,7 +719,7 @@ Destination         | ValueDestination2          | The destination for the value
 #### Upgrade Validation
 
 1. [Convert](ca.md#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
-2. [Validate](#validate-value-destination-2) `Destination`.
+2. [Validate](#value-destination-2) `Destination`.
 3. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
 Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
@@ -783,8 +783,8 @@ Value Range Proofs  | List<ValueRangeProof>      | Value range proofs for `Desti
 #### Mux 2 Validation
 
 1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
-2. For each `Source` in `Sources`, [validate](#value-source-2-validation) `Source`.
-3. For each `Destination` in `Destinations`, [validate](#value-destination-2-validation) `Destination`.
+2. For each `Source` in `Sources`, [validate](#value-source-2) `Source`.
+3. For each `Destination` in `Destinations`, [validate](#value-destination-2) `Destination`.
 4. For each `AssetID` represented in `Sources` and `Destinations`:
     1. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Sources` with that asset ID.
     2. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Destinations` with that asset ID.
@@ -816,17 +816,17 @@ Destinations        | List<ValueDestination2>    | The Destinations ("forward po
 Arguments           | String                     | Arguments for the program contained in the Nonce.
 Asset Range Proofs  | List<AssetRangeProof>      | [Asset range proofs](ca.md#asset-range-proof) for `Destinations`.
 Value Range Proofs  | List<ValueRangeProof>      | [Value range proofs](ca.md#value-range-proof) for `Destinations`.
-Balancing Commitments | List<BalancingCommitment>| [Commitments](ca.md#balancing-commitment) with no value; used to balance any excess
+Excess Commitments | List<ExcessCommitment>| [Commitments](ca.md#excess-commitment) with no value; used to balance any excess
 
 #### Mux 2 Validation
 
 1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
-2. [Validate](#value-source-2-validation) each `Source` in `Sources`.
-3. [Validate](#value-destination-2-validation) each `Destination` in `Destinations`.
-4. [Validate](ca.md#validate-balancing-commitment) each `BalancingCommitment` in `BalancingCommitments`.
+2. [Validate](#value-source-2) each `Source` in `Sources`.
+3. [Validate](#value-destination-2) each `Destination` in `Destinations`.
+4. [Validate](ca.md#validate-excess-commitment) each `ExcessCommitment` in `ExcessCommitments`.
 4. For each `AssetID` represented in `Sources` and `Destinations`:
     1. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Sources` with that asset ID.
-    2. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Destinations` with that asset ID, plus the sum of the `BalancingCommitments`.
+    2. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Destinations` with that asset ID, plus the sum of the `ExcessCommitments`.
 5. Define `SourceAssetIDs` as the list composed by taking the `Value.AssetID` for each `Source`.
 6. Verify that the respective lengths of `Destinations`, `AssetRangeProofs`, and `ValueRangeProofs` are the same.
 7. For each `Destination` in `Destinations` (at index `index`):
