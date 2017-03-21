@@ -17,8 +17,8 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/memstore"
 	"chain/protocol/prottest"
+	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
 )

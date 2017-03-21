@@ -7,8 +7,8 @@ import (
 
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
-	"chain/protocol/memstore"
 	"chain/protocol/prottest"
+	"chain/protocol/prottest/memstore"
 )
 
 const sampleAccountUTXOs = `

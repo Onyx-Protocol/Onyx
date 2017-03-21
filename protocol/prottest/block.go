@@ -8,7 +8,7 @@ import (
 
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/memstore"
+	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
 )

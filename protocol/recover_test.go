@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"chain/protocol/bc"
-	"chain/protocol/memstore"
+	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
 	"chain/protocol/validation"
 	"chain/testutil"
