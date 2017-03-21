@@ -1492,7 +1492,11 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
     * `Bm`: blinded marker [point](#point),
 3. Issuance key pair `y, Y` (where `Y = y·G`).
 
-**Output:** triplet of points `(X, Z, Z’)`.
+**Output:** an issuance proof consisting of:
+
+* triplet of points `(X, Z, Z’)`,
+* pair of scalars `(e1,s1)`,
+* pair of scalars `(e2,s2)`.
 
 **Algorithm:**
 
@@ -1514,16 +1518,39 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
     * `T`: tracing [point](#point),
     * `Bm`: blinded marker [point](#point),
 3. Index `j` of the issuance key `Y[j]` being verified to be used (or not) in the given issuance range proof.
-4. Triplet of points `(X, Z, Z’)`. 
+4. Issuance proof consisting of:
+    * triplet of points `(X, Z, Z’)`,
+    * pair of scalars `(e1,s1)`,
+    * pair of scalars `(e2,s2)`.
 
 **Output:** 
 
-* If the proof is valid: “yes” or “no” indicating whether the key `Y[j]` was used or not to issue asset ID in the commitment `AC`.
+* If the proof is valid: `“yes”` or `“no”` indicating whether the key `Y[j]` was used or not to issue asset ID in the commitment `AC`.
 * If the proof is invalid: `nil`.
 
 **Algorithm:**
 
-1. TBD.
+1. Calculate a 32-byte message hash and two 64-byte Fiat-Shamir challenges for all the signatures (total 160 bytes):
+
+        (msghash, h1, h2) = StreamHash("IP" || AC || T || X || Z || Z’, 32 + 2·64)
+
+2. Interpret `h1` and `h2` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
+3. Verify that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/(J+M)` is equal to the discrete log `Z/T`):
+    1. Compute base point `B = h1·(J+M) + T`.
+    2. Compute public key `P = h1·X + Z`.
+    3. Calculate point `R1 = s1·B - e1·P`.
+    4. Calculate scalar `e’ = ScalarHash("e1" || msghash || R1)`.
+    5. Verify that `e’` is equal to `e1`. If validation fails, halt and return `nil`.
+4. Verify that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
+    1. Compute base point `B = h1·X + G`.
+    2. Compute public key `P = h1·Z’ + Y`.
+    3. Calculate point `R2 = s2·B - e2·P`.
+    4. Calculate scalar `e” = ScalarHash("e2" || msghash || R2)`.
+    5. Verify that `e”` is equal to `e2`. If validation fails, halt and return `nil`.
+5. If `Z` is equal to `Z’` return `“yes”`. Otherwise, return `“no”`.
+
+
+
 
 
 
