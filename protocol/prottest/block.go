@@ -8,6 +8,7 @@ import (
 
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
 )
@@ -21,7 +22,7 @@ var (
 // along with an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
 func NewChain(tb testing.TB) *protocol.Chain {
-	return NewChainWithStorage(tb, NewMemStore())
+	return NewChainWithStorage(tb, memstore.New())
 }
 
 // NewChainWithStorage makes a new Chain using store for storage, along

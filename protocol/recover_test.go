@@ -1,4 +1,4 @@
-package protocol_test
+package protocol
 
 import (
 	"context"
@@ -6,16 +6,15 @@ import (
 	"testing"
 	"time"
 
-	. "chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/prottest"
+	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
 	"chain/protocol/validation"
 	"chain/testutil"
 )
 
 func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
-	store := prottest.NewMemStore()
+	store := memstore.New()
 	b, err := NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)

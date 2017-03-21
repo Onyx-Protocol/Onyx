@@ -1,4 +1,4 @@
-package prottest
+package memstore
 
 import (
 	"context"
@@ -19,7 +19,7 @@ type MemStore struct {
 }
 
 // New returns a new MemStore
-func NewMemStore() *MemStore {
+func New() *MemStore {
 	return &MemStore{Blocks: make(map[uint64]*bc.Block)}
 }
 
