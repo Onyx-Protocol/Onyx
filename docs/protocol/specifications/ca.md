@@ -69,10 +69,6 @@
   * [Encrypt Issuance](#encrypt-issuance)
   * [Encrypt Output](#encrypt-output)
   * [Decrypt Output](#decrypt-output)
-* [Integration](#integration)
-  * [VM1](#vm1)
-  * [Blockchain data structures](#blockchain-data-structures)
-  * [Blockchain validation](#blockchain-validation)
 * [Test vectors](#test-vectors)  
   
 
@@ -399,7 +395,7 @@ See:
 
 ### Issuance Asset Range Proof
 
-The issuance asset range proof demonstrates that a given [confidential issuance](asset-version-2-confidential-issuance-witness) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [verification procedure](#verify-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [validation procedure](#validate-transaction-input).
+The issuance asset range proof demonstrates that a given [confidential issuance](#confidential-issuance) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [verification procedure](#verify-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [validation procedure](#validate-transaction-input).
 
 The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`) are derived from `n` [asset issuance choices](blockchain.md#asset-issuance-choice) specified outside the range proof.
 
@@ -1685,8 +1681,8 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
     * `AC`: the [asset ID commitment](#asset-id-commitment).
     * `VC`: the [value commitment](#value-commitment).
 3. List of outputs, each output consisting of:
-    * `AD`: the [asset ID descriptor](#asset-id-descriptor).
-    * `VD`: the [value descriptor](#value-descriptor).
+    * `AD`: the [asset ID commitment](#asset-id-commitment).
+    * `VD`: the [value commitment](#value-commitment).
     * `ARP`: the [asset range proof](#asset-range-proof) or an empty string.
     * `VRP`: the [value range proof](#value-range-proof).
 4. List of [excess commitments](#excess-commitment): `{(QC[i], s[i], e[i], message[i])}`.
@@ -1761,7 +1757,7 @@ ARP can be added separately using [Create Asset Range Proof](#create-asset-range
 2. `assetID`: the output asset ID.
 3. `value`: the output amount.
 4. `N`: number of bits to encrypt (`value` must fit within `N` bits).
-5. `plaintext`: binary string that has length of less than `32·(2·N-1)` bytes when encoded as [varstring31](blockchain.md#varstring31).
+5. `plaintext`: binary string that has length of less than `32·(2·N-1)` bytes when encoded as [varstring31](blockchain.md#string).
 6. Optional `q`: the [excess factor](#excess-factor) to have this output balance with the transaction. If omitted, blinding factor is generated at random.
 
 **Outputs:**
@@ -1776,7 +1772,7 @@ In case of failure, returns `nil` instead of the items listed above.
 
 **Algorithm:**
 
-1. Encode `plaintext` using [varstring31](block.md#varstring31) encoding and split the string in 32-byte chunks `{pt[i]}` (last chunk padded with zero bytes if needed).
+1. Encode `plaintext` using [varstring31](blockchain.md#string) encoding and split the string in 32-byte chunks `{pt[i]}` (last chunk padded with zero bytes if needed).
 2. If the number of chunks `{pt[i]}` exceeds `2·N-1`, halt and return `nil`.
 3. If the number of chunks `{pt[i]}` is less than `2·N-1`, pad the array with all-zero 32-byte chunks.
 4. If `value ≥ 2^N`, halt and return `nil`.
