@@ -1344,7 +1344,7 @@ In case of failure, returns `nil` instead of the range proof.
 1. [Verify](#verify-excess-commitment) each of `k` [excess commitments](#excess-commitment); if any is not valid, halt and return `false`.
 2. Calculate the sum of input value commitments: `Ti = ∑(VC[i], j from 0 to n-1)`.
 3. Calculate the sum of output value commitments: `To = ∑(VC’[i], i from 0 to m-1)`.
-4. Calculate the sum of excess commitments: `Tq = ∑(QC[i], i from 0 to k-1)`.
+4. Calculate the sum of excess commitments: `Tq = ∑[(QG[i], QJ[i]), i from 0 to k-1]`.
 5. Return `true` if `Ti == To + Tq`, otherwise return `false`.
 
 
@@ -1654,39 +1654,37 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 
 
-### Verify Confidential Assets WIP
+### Verify Confidential Assets
 
 **Inputs:**
 
 1. List of issuances, each input consisting of:
-    * `AD`: the [asset ID descriptor](#asset-id-descriptor).
-    * `VD`: the [value descriptor](#value-descriptor).
-    * `{a[i]}`: `n` 32-byte unencrypted [asset IDs](blockchain.md#asset-id).
+    * `AC`: the [asset ID commitment](#asset-id-commitment).
+    * `VC`: the [value commitment](#value-commitment).
     * `IARP`: the [issuance asset ID range proof](#issuance-asset-range-proof).
     * `VRP`: the [value range proof](#value-range-proof).
-2. List of inputs, each input consisting of:
-    * `AD`: the [asset ID descriptor](#asset-id-descriptor).
-    * `VD`: the [value descriptor](#value-descriptor).
+2. List of spends, each spend consisting of:
+    * `AC`: the [asset ID commitment](#asset-id-commitment).
+    * `VC`: the [value commitment](#value-commitment).
 3. List of outputs, each output consisting of:
     * `AD`: the [asset ID descriptor](#asset-id-descriptor).
     * `VD`: the [value descriptor](#value-descriptor).
-    * `ARP`: the [asset range proof](#asset-range-proof) or empty string.
-    * `VRP`: the [value range proof](#value-range-proof) or empty string.
-4. The list of [excess commitments](#excess-commitment): `{(Q[i], s[i], e[i])}`.
+    * `ARP`: the [asset range proof](#asset-range-proof) or an empty string.
+    * `VRP`: the [value range proof](#value-range-proof).
+4. List of [excess commitments](#excess-commitment): `{(QC[i], s[i], e[i])}`.
 
 **Output:** `true` if verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. [Verify each issuance](#verify-issuance). If verification failed, halt and return `false`.
+1. [Verify each issuance](#verify-issuance).
 2. For each output:
-    1. If `AD` is blinded and `ARP` is an empty string, or an ARP with zero keys, verify that `AD.H` equals one of the asset ID commitments in the inputs or issuances. If not, halt and return `false`.
-    2. If `AD` is blinded and `ARP` is not empty, verify that each asset ID commitment in the `ARP` belongs to the set of the asset ID commitments on the inputs and issuances. If not, halt and return `false`.
-    3. If there are more than one output and the output’s value descriptor is blinded:
-        1. Verify that the value range proof is not empty. Otherwise, halt and return `false`.
-    4. [Verify output](#verify-output). If verification failed, halt and return `false`.
-3. [Verify value commitments balance](#verify-value-commitments-balance) using a union of issuance and input value commitments as input commitments. If verification failed, halt and return `false`.
+    1. If `ARP` is empty has zero keys, verify that the output `AC` equals one of the asset ID commitments in the inputs or issuances.
+    2. If `ARP` is confidential, verify that each asset ID commitment candidate belongs to the set of the asset ID commitments on the inputs and issuances.
+    3. [Verify output](#verify-output).
+3. [Verify value commitments balance](#verify-value-commitments-balance) using a union of issuance and input value commitments as input commitments.
 4. Return `true`.
+
 
 
 
