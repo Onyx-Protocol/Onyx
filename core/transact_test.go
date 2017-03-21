@@ -158,9 +158,10 @@ func TestWaitForTxInBlockResubmits(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(timesToResubmit)
 	a.submitter = submitterFunc(func(_ context.Context, tx *bc.Tx) error {
-		if orig.ID == tx.ID {
-			wg.Done()
+		if orig.ID != tx.ID {
+			t.Errorf("got tx %s, want tx %s", tx.ID, orig.ID)
 		}
+		wg.Done()
 		return nil
 	})
 
@@ -176,7 +177,18 @@ func TestWaitForTxInBlockResubmits(t *testing.T) {
 		prottest.MakeBlock(t, c, []*bc.Tx{})
 	}
 
-	// Wait until the submitter records that the transaction has been
-	// re-submitted to the generator all n times.
-	wg.Wait()
+	done := make(chan struct{})
+	go func() {
+		// Wait until the submitter records that the transaction has been
+		// re-submitted to the generator all n times.
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-time.After(2 * time.Second):
+		t.Error("timed out waiting for tx to be resubmitted")
+	case <-done:
+		return
+	}
 }
