@@ -393,7 +393,7 @@ See:
 
 ### Issuance Asset Range Proof
 
-The issuance asset range proof demonstrates that a given [confidential issuance](#confidential-issuance) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [verification procedure](#validate-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [validation procedure](#validate-transaction-input).
+The issuance asset range proof demonstrates that a given [confidential issuance](#confidential-issuance) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [validation procedure](#validate-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [issuance validation procedure](blockchain.md#issuance-2-validation).
 
 The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`) are derived from `n` [asset issuance choices](blockchain.md#asset-issuance-choice) specified outside the range proof.
 
@@ -1153,7 +1153,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `{f}`: the blinding factor `f` repeated `n` times.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G’[t]`.
     * `{r[i]} = {ct[i]}`: random string consisting of `n·m` 32-byte ciphertext elements.
-15. If failed to create borromean ring signature `brs`, return nil. The chance of this happening is below 1 in 2<sup>124</sup>. In case of failure, retry [creating blinded value commitments](#create-blinded-value-commitments) with incremented counter. This would yield a new blinding factor `f` that will produce different digit blinding keys in this algorithm.
+15. If failed to create borromean ring signature `brs`, return nil. The chance of this happening is below 1 in 2<sup>124</sup>. In case of failure, retry [creating blinded value commitment](#create-blinded-value-commitment) with incremented counter. This would yield a new blinding factor `f` that will produce different digit blinding keys in this algorithm.
 16. Return the [value range proof](#value-range-proof):
     * `N`:  number of blinded bits (equals to `2·n`),
     * `exp`: exponent (zero),
