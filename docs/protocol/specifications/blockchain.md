@@ -777,42 +777,7 @@ Arguments           | String                     | Arguments for the program con
 
 Note: validating the `Destination` structure _does not_ recur into the the referenced entry that would lead to an infinite loop. It only verifies that `Source` and `Destination` reference each other consistently.
 
-### Mux 2
 
-Field               | Type                 | Description
---------------------|----------------------|----------------
-Type                | String               | "mux2"
-Body                | Struct               | See below.
-Witness             | Struct               | See below.
-
-Body field          | Type                 | Description
---------------------|----------------------|----------------
-Sources             | List<ValueSource2>   | The source of the units to be included in this Mux.
-Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
-ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
-
-Witness field       | Type                       | Description
---------------------|----------------------------|----------------
-Destinations        | List<ValueDestination2>    | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
-Arguments           | String                     | Arguments for the program contained in the Nonce.
-Asset Range Proofs  | List<AssetRangeProof>      | Asset range proofs for `Destinations`.
-Value Range Proofs  | List<ValueRangeProof>      | Value range proofs for `Destinations`.
-
-#### Mux 2 Validation
-
-1. [Validate](#program-validation) `Program` with the given `Arguments` and the transaction version.
-2. For each `Source` in `Sources`, [validate](#value-source-2) `Source`.
-3. For each `Destination` in `Destinations`, [validate](#value-destination-2) `Destination`.
-4. For each `AssetID` represented in `Sources` and `Destinations`:
-    1. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Sources` with that asset ID.
-    2. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Destinations` with that asset ID.
-5. Define `SourceAssetIDs` as the list composed of taking the `Value.AssetID` for each `Source`.
-6. Verify that the respective lengths of `Destinations`, `AssetRangeProofs`, and `ValueRangeProofs` are the same.
-7. For each `Destination` in `Destinations` (at index `index`):
-  1. Define `AssetRangeProof` as `AssetRangeProof[index]`, and `ValueRangeProof` as `ValueRangeProofs[index]`.
-  2. [Validate](ca.md#validate-asset-range-proof) `AssetRangeProof` with `Destination.Value.AssetID` and `SourceAssetIDs` as the `asset ID commitment` and `source asset IDs`, respectively.
-  3. [Validate](ca.md#validate-value-range-proof) `ValueRangeProof` with `Destination.Value.Amount` as the `value commitment`.
-8. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
 ### Mux 2
 
@@ -824,17 +789,17 @@ Witness             | Struct               | See below.
 
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
-Sources             | List<ValueSource2>   | The source of the units to be included in this Mux.
+Sources             | List\<ValueSource2\> | The source of the units to be included in this Mux.
 Program             | Program              | A program that controls the value in the Mux and must evaluate to true.
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                       | Description
 --------------------|----------------------------|----------------
-Destinations        | List<ValueDestination2>    | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
+Destinations        | List\<ValueDestination2\>  | The Destinations ("forward pointers") for the value contained in this Mux. This can point directly to Output entries, or to other Muxes, which point to Output entries via their own Destinations.
 Arguments           | String                     | Arguments for the program contained in the Nonce.
-Asset Range Proofs  | List<AssetRangeProof>      | [Asset range proofs](ca.md#asset-range-proof) for `Destinations`.
-Value Range Proofs  | List<ValueRangeProof>      | [Value range proofs](ca.md#value-range-proof) for `Destinations`.
-Excess Commitments | List<ExcessCommitment>| [Commitments](ca.md#excess-commitment) with no value; used to balance any excess
+Asset Range Proofs  | List\<AssetRangeProof\>    | [Asset range proofs](ca.md#asset-range-proof) for `Destinations`.
+Value Range Proofs  | List\<ValueRangeProof\>    | [Value range proofs](ca.md#value-range-proof) for `Destinations`.
+Excess Commitments  | List\<ExcessCommitment\>   | [Commitments](ca.md#excess-commitment) with no value; used to balance any excess
 
 #### Mux 2 Validation
 
@@ -842,16 +807,17 @@ Excess Commitments | List<ExcessCommitment>| [Commitments](ca.md#excess-commitme
 2. [Validate](#value-source-2) each `Source` in `Sources`.
 3. [Validate](#value-destination-2) each `Destination` in `Destinations`.
 4. [Validate](ca.md#validate-excess-commitment) each `ExcessCommitment` in `ExcessCommitments`.
-4. For each `AssetID` represented in `Sources` and `Destinations`:
+5. For each `AssetID` represented in `Sources` and `Destinations`:
     1. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Sources` with that asset ID.
     2. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Destinations` with that asset ID, plus the sum of the `ExcessCommitments`.
-5. Define `SourceAssetIDs` as the list composed by taking the `Value.AssetID` for each `Source`.
-6. Verify that the respective lengths of `Destinations`, `AssetRangeProofs`, and `ValueRangeProofs` are the same.
-7. For each `Destination` in `Destinations` (at index `index`):
+6. Define `SourceAssetIDs` as the list composed by taking the `Value.AssetID` for each `Source`.
+7. Verify that the respective lengths of `Destinations`, `AssetRangeProofs`, and `ValueRangeProofs` are the same.
+8. For each `Destination` in `Destinations` (at index `index`):
   1. Define `AssetRangeProof` as `AssetRangeProof[index]`, and `ValueRangeProof` as `ValueRangeProofs[index]`.
   2. [Validate](ca.md#validate-asset-range-proof) `AssetRangeProof` with `Destination.Value.AssetID` and `SourceAssetIDs` as the `asset ID commitment` and `source asset IDs`, respectively.
   3. [Validate](ca.md#validate-value-range-proof) `ValueRangeProof` with `Destination.Value.Amount` as the `value commitment`.
-8. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
+9. [Validate each excess commitment](ca.md#validate-excess-commitment).
+10. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
 ### Nonce
 
