@@ -72,8 +72,6 @@ type API struct {
 	generator       *generator.Generator
 	remoteGenerator *rpc.Client
 	indexTxs        bool
-	genhealth       func(error)
-	fetchhealth     func(error)
 
 	healthMu     sync.Mutex
 	healthErrors map[string]interface{}
