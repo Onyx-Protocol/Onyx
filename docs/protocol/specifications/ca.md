@@ -185,9 +185,9 @@ Generator `J` has the following 32-byte encoding:
 
 **Tertiary generator points** (`G[i]`) are 31 elliptic curve points defined as decoded hash of the primary generator `G`:
 
-    G[i] = 8·Decode(SHA3-256(byte(i) || Encode(G) || int64le(cnt)))
+    G[i] = 8·Decode(SHA3-256(byte(i) || Encode(G) || int64le(cnt[i])))
 
-Counter `cnt` is chosen to be the smallest positive integer starting with 0 that yields a valid edwards25519 point for a given index `i`.
+Counter `cnt[i]` is chosen to be the smallest positive integer starting with 0 that yields a valid edwards25519 point for a given index `i`.
 
     G[0]  = 0xe68528ab16b201331fc980c33eef08f7d114554715d370a2c614182ef296dab3   cnt = 0
     G[1]  = 0x32011e4f5c29bbc20d5c96500e87e2303a004687895b2d6d944ff687d0dbefad   cnt = 3
