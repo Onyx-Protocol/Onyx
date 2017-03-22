@@ -18,6 +18,7 @@
   * [Logical and numeric operators](#logical-and-numeric-operators)
   * [Cryptographic instructions](#cryptographic-instructions)
   * [Introspection instructions](#introspection-instructions)
+  * [Confidential computation instructions](#confidential-computation-instructions)
   * [Expansion opcodes](#expansion-opcodes)
 * [References](#references)
 
@@ -1304,6 +1305,9 @@ Fails if executed in the [transaction context](#transaction-context).
 
 
 
+### Confidential computation instructions
+
+
 #### ASSETCOMMITMENT
 
 Code  | Stack Diagram           | Cost
@@ -1391,6 +1395,9 @@ Pops two [point pairs](ca.md#point-pair) from the data stack, computes discrete 
 Fails if `A` or `B` is not a valid [point pair](ca.md#point-pair).
 
 Fails if `A` is a [zero point](ca.md#zero-point).
+
+
+
 
 
 ### Expansion opcodes
