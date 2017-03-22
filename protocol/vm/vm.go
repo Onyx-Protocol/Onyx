@@ -6,16 +6,15 @@ import (
 	"io"
 	"strings"
 
-	// TODO(bobg): very little of this package depends on bc, consider trying to remove the dependency
 	"chain/errors"
-	"chain/protocol/bc"
 )
 
 const initialRunLimit = 10000
 
 type virtualMachine struct {
+	vmContext VMContext
+
 	program      []byte // the program currently executing
-	mainprog     []byte // the outermost program, returned by OP_PROGRAM
 	pc, nextPC   uint32
 	runLimit     int64
 	deferredCost int64
@@ -32,12 +31,6 @@ type virtualMachine struct {
 	// In each of these stacks, stack[len(stack)-1] is the top element.
 	dataStack [][]byte
 	altStack  [][]byte
-
-	tx         *bc.Tx
-	txContext  bc.VMContext
-	inputIndex uint32
-
-	block *bc.Block
 }
 
 // ErrFalseVMResult is one of the ways for a transaction to fail validation
@@ -47,94 +40,45 @@ var ErrFalseVMResult = errors.New("false VM result")
 // execution.
 var TraceOut io.Writer
 
-func VerifyTxInput(tx *bc.Tx, inputIndex uint32) (err error) {
+func Verify(vmContext VMContext) (err error) {
 	defer func() {
-		if panErr := recover(); panErr != nil {
-			err = ErrUnexpected
-		}
-	}()
-	return verifyTxInput(tx, inputIndex)
-}
-
-func verifyTxInput(tx *bc.Tx, inputIndex uint32) error {
-	if inputIndex < 0 || inputIndex >= uint32(len(tx.Inputs)) {
-		return ErrBadValue
-	}
-
-	txinput := tx.Inputs[inputIndex]
-
-	expansionReserved := tx.Version == 1
-
-	f := func(vmversion uint64, prog []byte, args [][]byte) error {
-		if vmversion != 1 {
-			return ErrUnsupportedVM
-		}
-
-		vm := virtualMachine{
-			tx:         tx,
-			txContext:  *tx.VMContexts[inputIndex],
-			inputIndex: inputIndex,
-
-			expansionReserved: expansionReserved,
-
-			mainprog: prog,
-			program:  prog,
-			runLimit: initialRunLimit,
-		}
-		for _, arg := range args {
-			err := vm.push(arg, false)
-			if err != nil {
-				return err
+		if r := recover(); r != nil {
+			if rErr, ok := r.(error); ok {
+				err = errors.Sub(ErrUnexpected, rErr)
+			} else {
+				err = ErrUnexpected
 			}
 		}
-		err := vm.run()
-		if err == nil && vm.falseResult() {
-			err = ErrFalseVMResult
-		}
-		return wrapErr(err, &vm, args)
-	}
-
-	switch inp := txinput.TypedInput.(type) {
-	case *bc.IssuanceInput:
-		return f(inp.VMVersion, inp.IssuanceProgram, inp.Arguments)
-	case *bc.SpendInput:
-		return f(inp.VMVersion, inp.ControlProgram, inp.Arguments)
-	}
-	return errors.WithDetailf(ErrUnsupportedTx, "transaction input %d has unknown type %T", inputIndex, txinput.TypedInput)
-}
-
-func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (err error) {
-	defer func() {
-		if panErr := recover(); panErr != nil {
-			err = ErrUnexpected
-		}
 	}()
-	return verifyBlockHeader(prev, block)
-}
 
-func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
-	vm := virtualMachine{
-		block: block,
-
-		expansionReserved: true,
-
-		mainprog: prev.ConsensusProgram,
-		program:  prev.ConsensusProgram,
-		runLimit: initialRunLimit,
+	if vmContext.VMVersion() != 1 {
+		return ErrUnsupportedVM
 	}
 
-	for _, arg := range block.Witness {
-		err := vm.push(arg, false)
+	txVersion, ok := vmContext.TxVersion()
+
+	code := vmContext.Code()
+	vm := &virtualMachine{
+		expansionReserved: ok && (txVersion == 1),
+		program:           code,
+		runLimit:          initialRunLimit,
+		vmContext:         vmContext,
+	}
+
+	args := vmContext.Arguments()
+	for i, arg := range args {
+		err = vm.push(arg, false)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "pushing initial argument %d", i)
 		}
 	}
 
-	err := vm.run()
+	err = vm.run()
 	if err == nil && vm.falseResult() {
 		err = ErrFalseVMResult
 	}
-	return wrapErr(err, &vm, block.Witness)
+
+	return wrapErr(err, vm, args)
 }
 
 // falseResult returns true iff the stack is empty or the top

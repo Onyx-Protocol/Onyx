@@ -83,7 +83,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	err = vm.VerifyBlockHeader(&tip.BlockHeader, block)
+	err = vm.Verify(bc.NewBlockVMContext(block, tip.ConsensusProgram, block.Witness))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
