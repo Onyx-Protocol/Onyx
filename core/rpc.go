@@ -57,13 +57,13 @@ func (a *API) getSnapshotRPC(rw http.ResponseWriter, req *http.Request) {
 	var height uint64
 	err := json.NewDecoder(req.Body).Decode(&height)
 	if err != nil {
-		WriteHTTPError(req.Context(), rw, httpjson.ErrBadRequest)
+		errorFormatter.Write(req.Context(), rw, httpjson.ErrBadRequest)
 		return
 	}
 
 	data, err := a.store.GetSnapshot(req.Context(), height)
 	if err != nil {
-		WriteHTTPError(req.Context(), rw, err)
+		errorFormatter.Write(req.Context(), rw, err)
 		return
 	}
 	rw.Header().Set("Content-Type", "application/x-protobuf")

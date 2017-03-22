@@ -8,13 +8,14 @@ import (
 	"chain/core/mockhsm"
 	"chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
+	"chain/net/http/httperror"
 	"chain/net/http/httpjson"
 )
 
 func init() {
-	errorInfoTab[mockhsm.ErrDuplicateKeyAlias] = errorInfo{400, "CH050", "Alias already exists"}
-	errorInfoTab[mockhsm.ErrInvalidAfter] = errorInfo{400, "CH801", "Invalid `after` in query"}
-	errorInfoTab[mockhsm.ErrTooManyAliasesToList] = errorInfo{400, "CH802", "Too many aliases to list"}
+	errorFormatter.Errors[mockhsm.ErrDuplicateKeyAlias] = httperror.Info{400, "CH050", "Alias already exists"}
+	errorFormatter.Errors[mockhsm.ErrInvalidAfter] = httperror.Info{400, "CH801", "Invalid `after` in query"}
+	errorFormatter.Errors[mockhsm.ErrTooManyAliasesToList] = httperror.Info{400, "CH802", "Too many aliases to list"}
 }
 
 // MockHSM configures the Core to expose the MockHSM endpoints. It
@@ -76,7 +77,7 @@ func (h *mockHSMHandler) mockhsmSignTemplates(ctx context.Context, x struct {
 	for _, tx := range x.Txs {
 		err := txbuilder.Sign(ctx, tx, x.XPubs, h.mockhsmSignTemplate)
 		if err != nil {
-			info, _ := errInfo(err)
+			info, _ := errorFormatter.Format(err)
 			resp = append(resp, info)
 		} else {
 			resp = append(resp, tx)

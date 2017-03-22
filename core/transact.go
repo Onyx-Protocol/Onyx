@@ -13,6 +13,7 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
+	"chain/net/http/httperror"
 	"chain/net/http/reqid"
 	"chain/protocol/bc"
 )
@@ -80,7 +81,13 @@ func (a *API) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Te
 	maxTime := time.Now().Add(ttl)
 	tpl, err := txbuilder.Build(ctx, req.Tx, actions, maxTime)
 	if errors.Root(err) == txbuilder.ErrAction {
-		err = errors.WithData(err, "actions", errInfoBodyList(errors.Data(err)["actions"].([]error)))
+		// Format each of the inner errors contained in the data.
+		var formattedErrs []httperror.Response
+		for _, innerErr := range errors.Data(err)["actions"].([]error) {
+			resp, _ := errorFormatter.Format(innerErr)
+			formattedErrs = append(formattedErrs, resp)
+		}
+		err = errors.WithData(err, "actions", formattedErrs)
 	}
 	if err != nil {
 		return nil, err

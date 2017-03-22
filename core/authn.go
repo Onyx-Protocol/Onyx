@@ -36,7 +36,7 @@ func (a *apiAuthn) handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		err := a.auth(req)
 		if err != nil {
-			WriteHTTPError(req.Context(), rw, err)
+			errorFormatter.Write(req.Context(), rw, err)
 			return
 		}
 		next.ServeHTTP(rw, req)

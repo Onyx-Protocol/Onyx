@@ -21,7 +21,7 @@ func TestErrInfo(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		_, info := errInfo(test.err)
+		_, info := errorFormatter.Format(test.err)
 		got := info.HTTPStatus
 		if got != test.want {
 			t.Errorf("errInfo(%#v) = %d want %d", test.err, got, test.want)
@@ -29,7 +29,7 @@ func TestErrInfo(t *testing.T) {
 	}
 }
 
-// Dummy error type, to test that errInfo
+// Dummy error type, to test that Format
 // doesn't panic when it's used as a map key.
 type sliceError []int
 
