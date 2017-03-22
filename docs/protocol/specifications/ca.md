@@ -536,6 +536,8 @@ EKP is encoded as a 128-byte concatenation of the corresponding extended public 
 
 EKPs allows “two-dimensional” key derivation by deriving from one key and leaving the other one unchanged, therefore allowing “vertical” derivation from [Record Encryption Keys](#record-encryption-key) to [Intermediate Encryption Keys](#intermediate-encryption-key), [Asset ID Encryption Keys](#asset-id-encryption-key) and [Value Encryption Keys](#value-encryption-key) and “horizontal” derivation from a root key pair associated with a user’s account to per-transaction and per-output key pairs.
 
+Note that EKPs use extended _public_ keys to enable selective “read access” to authorized parties by sharing keys in certain points in the hierarchy, not to actually make them widely public.
+
 
 ### Record Encryption Key
 
