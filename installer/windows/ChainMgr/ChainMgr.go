@@ -133,7 +133,7 @@ func main() {
 	// wait a second for chain core to start,
 	// and then navigate to localhost:1999 in the user's browser of choice
 	time.Sleep(time.Second)
-	cmd = exec.Command("cmd", "/c", "start", "http://localhost:1999")
+	cmd = exec.Command("cmd", "/c", "start", "https://localhost:1999")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
