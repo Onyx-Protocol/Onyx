@@ -38,8 +38,9 @@
   * [Validate Destination](#validate-destination)
   * [Validate Assets Flow](#validate-assets-flow)
 * [Encryption](#encryption)
-  * [Encrypt Payload](#encrypt-payload)
-  * [Decrypt Payload](#decrypt-payload)
+  * [Encrypted Payload](#encrypted-payload)
+  * [Encrypted Value](#encrypted-value)
+  * [Encrypted Asset ID](#encrypted-asset-id)
   * [Encrypt Issuance](#encrypt-issuance)
   * [Encrypt Output](#encrypt-output)
   * [Decrypt Output](#decrypt-output)
@@ -676,7 +677,7 @@ The asset ID commitment can either be nonblinded or blinded.
 
 2. Compute [asset ID blinding factor](#asset-id-blinding-factor):
 
-        s = ScalarHash(assetID || aek)
+        c = ScalarHash("AC.c" || assetID || aek)
 
 3. Compute an [asset ID commitment](#asset-id-commitment):
 
@@ -1582,10 +1583,14 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 
 
 
+
+
 ## Encryption
 
 
-### Encrypt Payload
+### Encrypted Payload
+
+#### Encrypt Payload
 
 **Inputs:**
 
@@ -1597,13 +1602,12 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 
 **Algorithm:**
 
-1. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash(ek, 32·n)`.
+1. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash("EP" || ek, 32·n)`.
 2. Encrypt the plaintext payload: `{ct[i]} = {pt[i] XOR keystream[i]}`.
 3. Calculate MAC: `mac = Hash256(ek || ct[0] || ... || ct[n-1])`.
 4. Return a sequence of `n+1` 32-byte elements: `{ct[0], ..., ct[n-1], mac}`.
 
-
-### Decrypt Payload
+#### Decrypt Payload
 
 **Inputs:**
 
@@ -1618,14 +1622,99 @@ Value proof demonstrates that a given [value commitment](#value-commitment) enco
 1. Calculate MAC’: `mac’ = Hash256(ek || ct[0] || ... || ct[n-1])`.
 2. Extract the transmitted MAC: `mac = ct[n]`.
 3. Compare calculated  `mac’` with the received `mac`. If they are not equal, return `nil`.
-4. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash(ek, 32·n)`.
+4. Calculate a keystream, a sequence of 32-byte random values: `{keystream[i]} = StreamHash("EP" || ek, 32·n)`.
 5. Decrypt the plaintext payload: `{pt[i]} = {ct[i] XOR keystream[i]}`.
 5. Return `{pt[i]}`.
 
 
+### Encrypted Value
+
+Encrypted value is a 40-byte string representing a simple encryption of the numeric amount and its blinding factor as used in a [value commitment](#value-commitment). The encrypted value is authenticated by the corresponding _value commitment_.
+
+#### Encrypt Value
+
+**Inputs:**
+
+1. `VC`: the [value commitment](#value-commitment).
+2. `value`: the 64-bit amount being encrypted and blinded.
+3. `f`: the [value blinding factor](#value-blinding-factor).
+4. `vek`: the [value encryption key](#value-encryption-key).
+
+**Output:** `(ev||ef)`, the [encrypted value](#encrypted-value) including its blinding factor.
+
+**Algorithm:**
+
+1. Expand the encryption key: `ek = StreamHash("EV" || vek || VC, 40)`.
+2. Encrypt the value using the first 8 bytes: `ev = value XOR ek[0,8]`.
+3. Encrypt the value blinding factor using the last 32 bytes: `ef = f XOR ek[8,32]` where `f` is encoded as 256-bit little-endian integer.
+4. Return `(ev||ef)`.
+
+#### Decrypt Value
+
+**Inputs:**
+
+1. `VC`: the full [value commitment](#value-commitment).
+2. `AC`: the target [asset ID commitment](#asset-id-commitment) that obfuscates the asset ID.
+3. `(ev||ef)`: the [encrypted value](#encrypted-value).
+4. `vek`: the [value encryption key](#value-encryption-key).
+
+Value and asset ID commitments must be [proven to be valid](#validate-assets-flow).
+
+**Output:** `(value, f)`: decrypted and verified amount and the [value blinding factor](#value-blinding-factor); or `nil` if verification did not succeed.
+
+**Algorithm:**
+
+1. Expand the encryption key: `ek = StreamHash("EV" || vek || VC, 40)`.
+2. Decrypt the value using the first 8 bytes: `value = ev XOR ek[0,8]`.
+3. Decrypt the value blinding factor using the last 32 bytes: `f = ef XOR ek[8,32]` where `f` is encoded as 256-bit little-endian integer.
+4. [Create blinded value commitment](#create-blinded-value-commitment) `VC’` using `AC`, `value` and raw blinding factor `f` (instead of `vek`).
+5. Verify that `VC’` equals `VC`. If not, halt and return `nil`.
+6. Return `(value, f)`.
 
 
+### Encrypted Asset ID
 
+Encrypted value is a 64-byte string representing a simple encryption of the [asset ID](blockchain.md#asset-id) and its blinding factor as used in a [asset ID commitment](#asset-id-commitment). The encrypted asset ID is authenticated by the corresponding _asset ID commitment_.
+
+#### Encrypt Asset ID
+
+**Inputs:**
+
+1. `assetID`: the [asset ID](blockchain.md#asset-id).
+2. `AC`: the [asset ID commitment](#asset-id-commitment) hiding the `assetID`.
+3. `c`: the [asset ID blinding factor](#asset-id-blinding-factor) for the commitment `AC` such that `AC == (8·Hash256(assetID...) + c·G, c·J)`.
+4. `aek`: the [asset ID encryption key](#asset-id-encryption-key).
+
+**Output:** `(ea||ec)`, the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `AC`.
+
+**Algorithm:**
+
+1. Expand the encryption key: `ek = StreamHash("EA" || aek || AC, 40)`.
+2. Encrypt the asset ID using the first 32 bytes: `ea = assetID XOR ek[0,32]`.
+3. Encrypt the blinding factor using the second 32 bytes: `ec = c XOR ek[32,32]` where `c` is encoded as a 256-bit little-endian integer.
+4. Return `(ea||ec)`.
+
+
+#### Decrypt Asset ID
+
+**Inputs:**
+
+1. `AC`: the [asset ID commitment](#asset-id-commitment) that obfuscates the asset ID.
+2. `(ea||ec)`: the [encrypted asset ID](#encrypted-asset-id) including the encrypted blinding factor for `H`.
+3. `aek`: the [asset ID encryption key](#asset-id-encryption-key).
+
+Asset ID commitment must be [proven to be valid](#validate-assets-flow).
+
+**Outputs:** `(assetID,c)`: decrypted and verified [asset ID](blockchain.md#asset-id) with its blinding factor, or `nil` if verification failed.
+
+**Algorithm:**
+
+1. Expand the decryption key: `ek = StreamHash("EA" || aek || AC, 40)`.
+2. Decrypt the asset ID using the first 32 bytes: `assetID = ea XOR ek[0,32]`.
+3. Decrypt the blinding factor using the second 32 bytes: `c = ec XOR ek[32,32]`.
+4. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment) `AC’` using `AC`, `assetID` and raw blinding factor `c` (instead of `aek`).
+5. Verify that `AC’` equals `AC`. If not, halt and return `nil`.
+6. Return `(assetID, c)`.
 
 
 
@@ -1721,8 +1810,6 @@ In case of failure, returns `nil` instead of the items listed above.
 ### Decrypt Output
 
 This algorithm decrypts fully encrypted amount and asset ID for a given output.
-
-TBD: introduce encrypted `value,assetid,f,c` to decrypt output.
 
 **Inputs:**
 
