@@ -77,7 +77,7 @@ func generatePKIX(ctx context.Context, serverCertPath, serverKeyPath, caPath *st
 		return warn()
 	}
 
-	err = os.MkdirAll(certsDir, 0777)
+	err = os.MkdirAll(certsDir, 0755)
 	if err != nil {
 		return errors.Wrap(err, "generating development pkix directory")
 	}
@@ -208,6 +208,10 @@ func exist(path string) (bool, error) {
 	return true, nil
 }
 
+func wrapQuotes(str string) string {
+	return "\"" + str + "\""
+}
+
 func warn() error {
 	fmt.Printf("\nWARNING: Chain Core requires mutual TLS authentication. Development certs and keys have been generated in %s\n\n", certsDir)
 	switch runtime.GOOS {
@@ -229,12 +233,11 @@ func warnDarwin() error {
 		return errors.Wrap(err, "finding login keychain")
 	}
 	loginChain := strings.TrimSpace(string(out))
-	loginChain = strings.Replace(loginChain, "\"", "", -1)
 	sysChain := "/Library/Keychains/System.keychain"
 
-	installRoot := fmt.Sprintln("sudo", "security", "add-trusted-cert", "-d", "-r", "trustRoot -k", sysChain, certsDir+"ca"+certFileExt)
-	installCert := fmt.Sprintln("security", "import", certsDir+"client"+certFileExt, "-k", loginChain)
-	installKey := fmt.Sprintln("security", "import", certsDir+"client.key", "-k", loginChain)
+	installRoot := fmt.Sprintln("sudo", "security", "add-trusted-cert", "-d", "-r", "trustRoot -k", sysChain, wrapQuotes(certsDir+"ca"+certFileExt))
+	installCert := fmt.Sprintln("security", "import", wrapQuotes(certsDir+"client"+certFileExt), "-k", loginChain)
+	installKey := fmt.Sprintln("security", "import", wrapQuotes(certsDir+"client.key"), "-k", loginChain)
 	fmt.Println("\nTo install the root CA into the System Keychain run:\n\n\t" + installRoot)
 	fmt.Printf("\nTo import the client keypair into your login keychain run the following commands:\n\n\t%s\n\t%s\n\n", installCert, installKey)
 	return nil
@@ -268,8 +271,9 @@ func warnLinux() (err error) {
 }
 
 func warnWindows() error {
-	installRoot := fmt.Sprintln("\tcertutil", "-user", "-addstore", "TrustedPublisher", certsDir+"ca"+certFileExt)
-	installRoot += fmt.Sprintln("\tcertutil", "-user", "-addstore", "Root", certsDir+"ca"+certFileExt)
+	certFile := wrapQuotes(certsDir + "ca" + certFileExt)
+	installRoot := fmt.Sprintln("\tcertutil", "-user", "-addstore", "TrustedPublisher", certFile)
+	installRoot += fmt.Sprintln("\tcertutil", "-user", "-addstore", "Root", certFile)
 	fmt.Println("\nTo install the root CA into your user trust store run the following commands:\n\n" + installRoot)
 	return nil
 }
