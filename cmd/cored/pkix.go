@@ -32,7 +32,7 @@ var (
 		KeyUsage:           x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
 		SignatureAlgorithm: x509.SHA256WithRSA,
 		Subject: pkix.Name{
-			CommonName:         "Chain Engineering Mock CA",
+			CommonName:         "Chain Core Developer Edition Mock CA",
 			Organization:       []string{"Chain"},
 			OrganizationalUnit: []string{"Engineering"},
 			Locality:           []string{"San Francisco"},
