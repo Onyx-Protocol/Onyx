@@ -902,7 +902,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 1. Compute an [asset ID point](#asset-id-point): 
         
-        A = 8·Hash256(assetID || counter)
+        A = 8·Decode(Hash256(assetID...))
 
 2. Compute [asset ID blinding factor](#asset-id-blinding-factor):
 
@@ -1024,7 +1024,7 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 **Algorithm:**
 
-1. Calculate `f = ScalarHash(0xbf || vek)`.
+1. Calculate `f = ScalarHash("VC.f" || uint64le(value) || vek)`.
 2. Calculate point `V = value·H + f·G`.
 3. Calculate point `Bv = value·Ba + f·J`.
 4. Create a [point pair](#point-pair): `VC = (V, Bv)`.
