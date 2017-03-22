@@ -1367,6 +1367,8 @@ Code  | Stack Diagram   | Cost
 
 Pops two [point pairs](ca.md#point-pair) from the data stack, adds them, and pushes the result to the data stack.
 
+This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
+
 Fails if `A` or `B` is not a valid [point pair](ca.md#point-pair).
 
 
@@ -1377,6 +1379,8 @@ Code  | Stack Diagram   | Cost
 0xd4  | (A B → A–B)     | 16; [standard memory cost](#standard-memory-cost)
 
 Pops two [point pairs](ca.md#point-pair) from the data stack, subtracts them, and pushes the result to the data stack.
+
+This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
 
 Fails if `A` or `B` is not a valid [point pair](ca.md#point-pair).
 
@@ -1391,6 +1395,8 @@ Code  | Stack Diagram   | Cost
 2. Pops a [point pair](ca.md#point-pair) from the data stack.
 3. [Multiplies](ca.md#point-operations) the point pair `A` with a number `b` and pushes the resulting point pair to the data stack.
 
+This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
+
 Fails if `A` is not a valid [point pair](ca.md#point-pair).
 
 Fails if `b` is not a valid [VM number](#vm-number).
@@ -1403,6 +1409,8 @@ Code  | Stack Diagram   | Cost
 0xd6  | (A B → B/A)     | 2<sup>252</sup>+27742317777372353535851937790883648493; [standard memory cost](#standard-memory-cost)
 
 Pops two [point pairs](ca.md#point-pair) from the data stack, computes discrete log of `B` in respect to `A` and pushes the resulting [scalar](#scalar) to the data stack.
+
+This instruction is treated as [expansion](#expansion-opcodes) if [confidential assets flag](#vm-state) is off.
 
 Fails if `A` or `B` is not a valid [point pair](ca.md#point-pair).
 
