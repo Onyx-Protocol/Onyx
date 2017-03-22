@@ -10,7 +10,7 @@ import (
 	"chain/errors"
 )
 
-func TestWriteHTTPError(t *testing.T) {
+func TestErrorMapping(t *testing.T) {
 	cases := []struct {
 		err  error
 		json string
