@@ -1373,7 +1373,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 **Algorithm:**
 
-1. Calculate scalar `y = ScalarHash(0xa1 || assetid || aek)`.
+1. Calculate scalar `y = ScalarHash("IARP.y" || assetid || aek)`.
 2. Calculate point `Y` by multiplying base point by `y`: `Y = y·G`.
 3. Return key pair `(y,Y)`.
 
