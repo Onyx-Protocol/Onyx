@@ -637,7 +637,7 @@ The value blinding factors are created by [Create Blinded Value Commitment](#cre
 **Algorithm:**
 
 1. Let `counter = 0`.
-2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256(B || P[0] || ... || P[n-1] || msg)`.
+2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS" || B || P[0] || ... || P[n-1] || msg)`.
 3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash(uint64le(counter) || msghash || p || uint64le(j), 32·(n-1) + 64 + 1)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * `p` is encoded as a 256-bit little-endian integer,
@@ -646,7 +646,7 @@ The value blinding factors are created by [Create Blinded Value Commitment](#cre
 5. Calculate the initial e-value, let `i = j+1 mod n`:
     1. Calculate `R[i]` as the [point](#point) `k·B`.
     2. Define `w[j]` as `mask` with lower 4 bits set to zero: `w[j] = mask & 0xf0`.
-    3. Calculate `e[i] = ScalarHash(R[i] || msghash || uint64le(i) || w[j])` where `i` is encoded as a 64-bit little-endian integer.
+    3. Calculate `e[i] = ScalarHash("e" || R[i] || msghash || uint64le(i) || w[j])` where `i` is encoded as a 64-bit little-endian integer.
 6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (j + step) mod n`.
     2. Calculate the forged s-value `s[i] = r[step-1]`.
@@ -654,7 +654,7 @@ The value blinding factors are created by [Create Blinded Value Commitment](#cre
     4. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     5. Let `i’ = i+1 mod n`.
     6. Calculate point `R[i’] = z[i]·B - e[i]·P[i]`.
-    7. Calculate `e[i’] = ScalarHash(R[i’] || msghash || uint64le(i’) || w[i])` where `i’` is encoded as a 64-bit little-endian integer.
+    7. Calculate `e[i’] = ScalarHash("e" || R[i’] || msghash || uint64le(i’) || w[i])` where `i’` is encoded as a 64-bit little-endian integer.
 7. Calculate the non-forged `z[j] = k + p·e[j] mod L` and encode it as a 32-byte little-endian integer.
 8. If `z[j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
 9. Define `s[j]` as `z[j]` with 4 high bits set to high 4 bits of the `mask`.
@@ -675,12 +675,12 @@ The value blinding factors are created by [Create Blinded Value Commitment](#cre
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256(B || P[0] || ... || P[n-1] || msg)`.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS" || B || P[0] || ... || P[n-1] || msg)`.
 2. For each `i` from `0` to `n-1`:
     1. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero (see note below).
     2. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     3. Calculate point `R[i+1] = z[i]·B - e[i]·P[i]`.
-    4. Calculate `e[i+1] = ScalarHash(R[i+1] || msghash || i+1 || w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
+    4. Calculate `e[i+1] = ScalarHash("e" || R[i+1] || msghash || i+1 || w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
 3. Return true if `e[0]` equals `e[n]`, otherwise return false.
 
 Note: when the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.
@@ -705,10 +705,10 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256(uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("BRS" || uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Let `counter = 0`.
 3. Let `cnt` byte contain lower 4 bits of `counter`: `cnt = counter & 0x0f`.
-4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(uint64le(counter) || msghash || {p[i]} || {uint64le(j[i])}, 32·n·m)`, where:
+4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash("O" || uint64le(counter) || msghash || {p[i]} || {uint64le(j[i])}, 32·n·m)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
     * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers.
@@ -722,14 +722,14 @@ Note: when the s-values are decoded as little-endian integers we must set their 
     6. Calculate the initial e-value for the ring:
         1. Let `j’ = j+1 mod m`.
         2. Calculate `R[t,j’]` as the point `k[t]·B[t]`.
-        3. Calculate `e[t,j’] = ScalarHash(byte(cnt), R[t, j’] || msghash || uint64le(t) || uint64le(j’) || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
+        3. Calculate `e[t,j’] = ScalarHash("e" || byte(cnt), R[t, j’] || msghash || uint64le(t) || uint64le(j’) || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
     7. If `j ≠ m-1`, then for `i` from `j+1` to `m-1`:
         1. Calculate the forged s-value: `s[t,i] = r[m·t + i]`.
         2. Define `z[t,i]` as `s[t,i]` with 4 most significant bits set to zero.
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
         5. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`.
-        6. Calculate `e[t,i’] = ScalarHash(byte(cnt), R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt), R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
 7. Calculate the shared e-value `e0` for all the rings:
     1. Calculate `E` as concatenation of all `e[t,0]` values encoded as 32-byte little-endian integers: `E = e[0,0] || ... || e[n-1,0]`.
     2. Calculate `e0 = ScalarHash(E)`.
@@ -743,7 +743,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
         5. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`. If `i` is zero, use `e0` in place of `e[t,0]`.
-        6. Calculate `e[t,i’] = ScalarHash(byte(cnt), R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt), R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     4. Calculate the non-forged `z[t,j] = k[t] + p[t]·e[t,j] mod L` and encode it as a 32-byte little-endian integer.
     5. If `z[t,j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
     6. Define `s[t,j]` as `z[t,j]` with 4 high bits set to `mask[t]` bits.
@@ -768,7 +768,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256("BRS" || uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Define `E` to be an empty binary string.
 3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 4. Set top 4 bits of `e0` to zero.
@@ -779,7 +779,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
         2. Calculate `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         3. Let `i’ = i+1 mod m`.
         4. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`. Use `e0` instead of `e[t,0]` in each ring.
-        5. Calculate `e[t,i’] = ScalarHash(byte(cnt) || R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        5. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt) || R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 6. Calculate `e’ = ScalarHash(E)`.
 7. Return `true` if `e’` equals to `e0`. Otherwise, return `false`.
@@ -803,14 +803,14 @@ Note: when the s-values are decoded as little-endian integers we must set their 
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256(n || m || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256("BRS" || n || m || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Define `E` to be an empty binary string.
 3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 4. Let `counter` integer equal `cnt`.
-5. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash(uint64le(counter) || msghash || {p[i]} || {uint64le(j[i])}, 32·n·m)`, where:
-    * `counter` is encoded as a 64-bit little-endian integer,
-    * private keys `{p[i]}` are encoded as concatenation of 256-bit little-endian integers,
-    * secret indexes `{j[i]}` are encoded as concatenation of 64-bit little-endian integers.
+5. Calculate a sequence of `n·m` 32-byte random overlay values:
+
+        `{o[i]} = StreamHash("O" || uint64le(counter) || msghash || {p[i]} || {uint64le(j[i])}, 32·n·m)`, where:
+
 6. Set top 4 bits of `e0` to zero.
 7. For `t` from `0` to `n-1` (each ring):
     1. Let `e[t,0] = e0`.
@@ -825,7 +825,7 @@ Note: when the s-values are decoded as little-endian integers we must set their 
             1. Set `payload[m·t + i] = o[m·t + i] XOR s[t,i]`.
         5. Let `i’ = i+1 mod m`.
         6. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](#point). Use `e0` instead of `e[t,0]` in each ring.
-        7. Calculate `e[t,i’] = ScalarHash(byte(cnt) || R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        7. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt) || R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 8. Calculate `e’ = ScalarHash(E)`.
 9. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
