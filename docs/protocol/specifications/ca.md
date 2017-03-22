@@ -263,7 +263,7 @@ These operations are defined as in \[[RFC8032](https://tools.ietf.org/html/rfc80
 
 `Hash256` is a secure hash function that takes a variable-length binary string `x` as input and outputs a 256-bit string.
 
-    Hash256(x) = SHA3-256("ChainCA-256" || x)
+    Hash256(x) = SHAKE128("ChainCA-256" || x, 32)
 
 
 ### StreamHash
@@ -271,7 +271,7 @@ These operations are defined as in \[[RFC8032](https://tools.ietf.org/html/rfc80
 `StreamHash` is a secure extendable-output hash function that takes a variable-length binary string `x` as input
 and outputs a variable-length hash string depending on a number of bytes (`n`) requested.
 
-    StreamHash(x, n) = SHAKE256("ChainCA-stream" || x, n)
+    StreamHash(x, n) = SHAKE128("ChainCA-stream" || x, n)
 
 
 ### ScalarHash
@@ -280,7 +280,7 @@ and outputs a variable-length hash string depending on a number of bytes (`n`) r
 
 1. For the input string `x` compute a 512-bit hash `h`:
 
-        h = SHA3-512("ChainCA-scalar" || x)
+        h = SHAKE128("ChainCA-scalar" || x, 64)
 
 2. Interpret `h` as a little-endian integer and reduce modulo subgroup [order](#elliptic-curve-parameters) `L`:
 
