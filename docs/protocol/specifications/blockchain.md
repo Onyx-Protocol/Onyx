@@ -687,7 +687,10 @@ Arguments                  | List<String>                                       
 3. Verify that the length of `AssetIssuanceChoices` and `IssuanceAssetRangeProof.IssuanceKeys` are the same.
 4. For each `AssetIssuanceChoice` in `AssetIssuanceChoices`, [validate](#asset-issuance-choice-validation) that asset issuance choice, and verify that `AssetIssuanceChoice.IssuanceKey` matches the `IssuanceKey` at the same index in `IssuanceAssetRangeProof.IssuanceKeys`.
 5. Define `AssetIDChoices` as the list composed by calculating the `AssetID` from the `AssetDefinition` in each of the `AssetIssuanceChoices`.
-6. [Validate](ca.md#validate-issuance-asset-range-proof) the issuance asset range proof using `AssetIDChoices` as the asset ID choice and `IssuanceDelegateProgram` as the message.
+6. [Validate](ca.md#validate-issuance-asset-range-proof) the issuance asset range proof using:
+    * `AssetIDChoices` as the asset ID choices, 
+    * `IssuanceDelegateProgram` as `message`,
+    * `Anchor` reference as `nonce`.
 7. [Validate](#program-validation) `IssuanceDelegateProgram` with `Arguments` as the arguments.
 
 
