@@ -268,7 +268,9 @@ func warnLinux() (err error) {
 }
 
 func warnWindows() error {
-	// TODO(boymanjor): print instructions to install root ca and client certs
+	installRoot := fmt.Sprintln("\tcertutil", "-user", "-addstore", "TrustedPublisher", certsDir+"ca"+certFileExt)
+	installRoot += fmt.Sprintln("\tcertutil", "-user", "-addstore", "Root", certsDir+"ca"+certFileExt)
+	fmt.Println("\nTo install the root CA into your user trust store run the following commands:\n\n" + installRoot)
 	return nil
 }
 
