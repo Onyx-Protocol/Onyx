@@ -344,3 +344,38 @@ func healthHandler(handler http.Handler) http.Handler {
 		handler.ServeHTTP(w, req)
 	})
 }
+
+func jsonHandler(f interface{}) http.Handler {
+	h, err := httpjson.Handler(f, errorFormatter.Write)
+	if err != nil {
+		panic(err)
+	}
+	return h
+}
+
+func alwaysError(err error) http.Handler {
+	return jsonHandler(func() error { return err })
+}
+
+func batchRecover(ctx context.Context, v *interface{}) {
+	if r := recover(); r != nil {
+		var err error
+		if recoveredErr, ok := r.(error); ok {
+			err = recoveredErr
+		} else {
+			err = fmt.Errorf("panic with %T", r)
+		}
+		err = errors.Wrap(err)
+		*v = err
+	}
+
+	if *v == nil {
+		return
+	}
+	// Convert errors into error responses (including errors
+	// from recovered panics above).
+	if err, ok := (*v).(error); ok {
+		errorFormatter.Log(ctx, err)
+		*v, _ = errorFormatter.Format(err)
+	}
+}

@@ -52,7 +52,6 @@ var errorFormatter = httperror.Formatter{
 		context.DeadlineExceeded:   {408, "CH001", "Request timed out"},
 		pg.ErrUserInputNotFound:    {400, "CH002", "Not found"},
 		httpjson.ErrBadRequest:     {400, "CH003", "Invalid request body"},
-		errBadReqHeader:            {400, "CH004", "Invalid request header"},
 		errNotFound:                {404, "CH006", "Not found"},
 		errRateLimited:             {429, "CH007", "Request limit exceeded"},
 		errLeaderElection:          {503, "CH008", "Electing a new leader for the core; try again soon"},
