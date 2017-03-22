@@ -1268,7 +1268,7 @@ The total number of elements in the [Borromean Ring Signature](#borromean-ring-s
 
 **Inputs:**
 
-1. `AC’`: the [asset ID commitment](#asset-id-commitment).
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
 2. `VC`: the [value commitment](#value-commitment).
 3. `N`: the number of bits to be blinded.
 4. `value`: the 64-bit amount being encrypted and blinded.
@@ -1296,7 +1296,7 @@ In case of failure, returns `nil` instead of the range proof.
 3. Define `vmin = 0`.
 4. Define `exp = 0`.
 5. Define `base = 4`.
-6. Calculate the message to sign: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+6. Calculate the message to sign: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("pek" || msghash || rek || f)`.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-payload) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPayload({pt[i]}, pek)`.
@@ -1314,7 +1314,7 @@ In case of failure, returns `nil` instead of the range proof.
 12. Precompute reusable points across all digit commitments:
 
         X1 = h·Bv
-        X2 = AC’.H + h·Ba
+        X2 = AC.H + h·Ba
 
 13. For `t` from `0` to `n-1` (each digit):
     1. Calculate base point: `B[t] = G’[t] + h·J`.
@@ -1343,7 +1343,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 **Inputs:**
 
-1. `AC’`: the [asset ID commitment](#asset-id-commitment).
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
 2. `VC`: the [value commitment](#value-commitment).
 3. `VRP`: the [value range proof](#value-range-proof) consisting of:
     * `N`: the number of bits in blinded mantissa (8-bit integer, `N = 2·n`).
@@ -1366,8 +1366,8 @@ In case of failure, returns `nil` instead of the range proof.
     6. Check that `(10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
-3. Calculate the message to validate: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
-4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC’.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
+3. Calculate the message to validate: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 5. Calculate the Fiat-Shamir factor:
 
         h = ScalarHash("h" || msghash || D[0] || ... || D[n-2])
@@ -1375,7 +1375,7 @@ In case of failure, returns `nil` instead of the range proof.
 6. Precompute reusable points across all digit commitments:
 
         X1 = h·Bv
-        X2 = AC’.H + h·Ba
+        X2 = AC.H + h·Ba
 
 7. For `t` from `0` to `n-1` (each digit):
     1. Calculate generator `G’[t]`:
@@ -1400,7 +1400,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 **Inputs:**
 
-1. `AC’`: the [asset ID commitment](#asset-id-commitment).
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
 2. `VC`: the [value commitment](#value-commitment).
 3. `VRP`: the [value range proof](#value-range-proof) consisting of:
     * `N`: the number of bits in blinded mantissa (8-bit integer, `N = 2·n`).
@@ -1426,8 +1426,8 @@ In case of failure, returns `nil` instead of the range proof.
     6. Check that `(10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
-3. Calculate the message to validate: `msghash = Hash256("VRP" || AC’ || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
-4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC’.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
+3. Calculate the message to validate: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 5. Calculate the Fiat-Shamir factor:
 
         h = ScalarHash("h" || msghash || D[0] || ... || D[n-2])
@@ -1667,7 +1667,7 @@ Value and asset ID commitments must be [proven to be valid](#validate-assets-flo
 1. Expand the encryption key: `ek = StreamHash("EV" || vek || VC, 40)`.
 2. Decrypt the value using the first 8 bytes: `value = ev XOR ek[0,8]`.
 3. Decrypt the value blinding factor using the last 32 bytes: `f = ef XOR ek[8,32]` where `f` is encoded as 256-bit little-endian integer.
-4. [Create blinded value commitment](#create-blinded-value-commitment) `VC’` using `AC`, `value` and raw blinding factor `f` (instead of `vek`).
+4. [Create blinded value commitment](#create-blinded-value-commitment) `VC’` using `AC`, `value` and the raw blinding factor `f` (instead of `vek`).
 5. Verify that `VC’` equals `VC`. If not, halt and return `nil`.
 6. Return `(value, f)`.
 
@@ -1712,7 +1712,7 @@ Asset ID commitment must be [proven to be valid](#validate-assets-flow).
 1. Expand the decryption key: `ek = StreamHash("EA" || aek || AC, 40)`.
 2. Decrypt the asset ID using the first 32 bytes: `assetID = ea XOR ek[0,32]`.
 3. Decrypt the blinding factor using the second 32 bytes: `c = ec XOR ek[32,32]`.
-4. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment) `AC’` using `AC`, `assetID` and raw blinding factor `c` (instead of `aek`).
+4. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment) `AC’` using `assetID` and the raw blinding factor `c` (instead of `aek`).
 5. Verify that `AC’` equals `AC`. If not, halt and return `nil`.
 6. Return `(assetID, c)`.
 
@@ -1795,15 +1795,15 @@ In case of failure, returns `nil` instead of the items listed above.
 4. If `value ≥ 2^N`, halt and return `nil`.
 5. [Derive asset ID encryption key](#asset-id-encryption-key) `aek` from `rek`.
 6. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
-7. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(AC’,c’)` from `(assetID, aek)`.
-9. [Create blinded value commitment](#create-blinded-value-commitment): compute `(V’,f’)` from `(vek, value, H’)`.
+7. [Create blinded asset ID commitment](#create-blinded-asset-id-commitment): compute `(AC,c)` from `(assetID, aek)`.
+9. [Create blinded value commitment](#create-blinded-value-commitment): compute `(V,f)` from `(vek, value, AC.H)`.
 10. If `q` is provided:
-    1. Compute `extra` scalar: `extra = q - f’ - value·c’`.
-    2. Add `extra` to the value blinding factor: `f’ = f’ + extra`.
+    1. Compute `extra` scalar: `extra = q - f - value·c`.
+    2. Add `extra` to the value blinding factor: `f = f + extra`.
     3. Adjust the value commitment too: `VC = VC + extra·(G,J)`.
     4. Note: as a result, the total blinding factor of the output will be equal to `q`.
-11. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(AC’, VC’, N, value, {pt[i]}, f’, rek)`.
-12. Return `(AC, VC, VRP, c’, f’)`.
+11. [Create Value Range Proof](#create-value-range-proof): compute `VRP` from `(AC, VC, N, value, {pt[i]}, f, rek)`.
+12. Return `(AC, VC, VRP, c, f)`.
 
 
 
