@@ -343,6 +343,14 @@ _Asset ID point_ is a [point](#point) representing an asset ID. It is defined as
 5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
 6. Return `A`.
 
+#### Denial of service considerations
+
+Since the amount of computations it takes to compute an Asset ID point is variable, malicious prover may find an `assetID` by brute force that would require the verifier to perform arbitrary amount of computations.
+
+However, mounting an attack to force a non-negligible amount of work on a verifier is computationally infeasible. For `N` hash computations to be performed by a verifier, a malicious prover would have to perform an order of `2^N` hash computations.
+
+The alternative solution is to have creators of asset identifiers to choose an issuance program (that defines the asset ID) so that their asset ID always hashes to a valid point. Unfortunately, this approach rejects roughly half of existing asset IDs created on the blockchains deployed before the extension to _Confidential Assets_. We assume that it is a reasonable tradeoff to preserve asset ID compatibility and allow an infeasible denial of service attack.
+
 
 ### Asset ID Commitment
 
