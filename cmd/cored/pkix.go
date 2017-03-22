@@ -213,7 +213,7 @@ func wrapQuotes(str string) string {
 }
 
 func warn() error {
-	fmt.Printf("\nWARNING: Chain Core requires mutual TLS authentication. Development certs and keys have been generated in %s\n\n", certsDir)
+	fmt.Printf("\nWARNING: Chain Core requires mutual TLS authentication. Development certs and keys have been generated in %s\n\n", wrapQuotes(certsDir))
 	switch runtime.GOOS {
 	case "darwin":
 		return warnDarwin()
