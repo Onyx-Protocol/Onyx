@@ -46,7 +46,6 @@
   * [Issuance 1](#issuance-1)
   * [Issuance 2](#issuance-2)
   * [Upgrade 1](#upgrade-1)
-  * [Upgrade 1](#upgrade-1)
   * [Mux 1](#mux-1)
   * [Mux 2](#mux-2)
   * [Nonce](#nonce)
@@ -712,32 +711,7 @@ Witness field       | Type                       | Description
 Destination         | ValueDestination2          | The destination for the value contained in this `Upgrade`.
 
 
-#### Upgrade Validation
-
-1. [Convert](#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
-2. [Validate](#value-destination-2) `Destination`.
-3. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
-
-
-### Upgrade 1
-
-Field               | Type                 | Description
---------------------|----------------------|----------------
-Type                | String               | "upgrade1"
-Body                | Struct               | See below.
-Witness             | Struct               | See below.
-
-Body field          | Type                           | Description
---------------------|--------------------------------|----------------
-Source              | Pointer<Retirement>            | The source of the value being upgraded.
-ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
-
-Witness field       | Type                       | Description
---------------------|----------------------------|----------------
-Destination         | ValueDestination2          | The destination for the value contained in this `Upgrade`.
-
-
-#### Upgrade Validation
+#### Upgrade 1 Validation
 
 1. [Convert](#convert-assetamount) `Source.Value` to an `AssetAmount2`, and verify that it is equal to `Destination.Value`.
 2. [Validate](#value-destination-2) `Destination`.
