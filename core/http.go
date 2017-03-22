@@ -40,7 +40,7 @@ func batchRecover(ctx context.Context, v *interface{}) {
 	if *v == nil {
 		return
 	}
-	// Convert errors into errorInfo responses (including errors
+	// Convert errors into error responses (including errors
 	// from recovered panics above).
 	if err, ok := (*v).(error); ok {
 		errorFormatter.Log(ctx, err)
