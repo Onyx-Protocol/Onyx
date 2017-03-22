@@ -1816,7 +1816,10 @@ This algorithm decrypts fully encrypted amount and asset ID for a given output.
 1. `rek`: the [record encryption key](#record-encryption-key).
 2. `AC`: the [asset ID commitment](#asset-id-commitment).
 3. `VC`: the [value commitment](#value-commitment).
-4. `VRP`: the [value range proof](#value-range-proof) or an empty string.
+4. `ARP`: the [asset range proof](#asset-range-proof).
+5. `VRP`: the [value range proof](#value-range-proof).
+6. `(ev||ef)`: the [encrypted value](#encrypted-value).
+7. `(ea||ec)`: the [encrypted asset ID](#encrypted-asset-id).
 
 **Outputs:**
 
@@ -1833,17 +1836,17 @@ In case of failure, returns `nil` instead of the items listed above.
 1. [Derive asset encryption key](#asset-id-encryption-key) `aek` from `rek`.
 2. [Derive value encryption key](#value-encryption-key) `vek` from `rek`.
 3. Decrypt asset ID:
-    1. If `AD` is [nonblinded](#nonblinded-asset-id-descriptor): set `assetID` to the one stored in `AD`, set `c` to zero.
-    3. If `AD` is [encrypted](#encrypted-asset-id-descriptor), [Decrypt Asset ID](#decrypt-asset-id): compute `(assetID,c)` from `(H,(ea,ec),aek)`. If verification failed, halt and return `nil`.
-4. Decrypt value:
-    1. If `VD` is [nonblinded](#nonblinded-value-descriptor): set `value` to the one stored in `VD`, set `f` to zero.
-    2. If `VD` is [blinded and not encrypted](#blinded-value-descriptor), halt and return nil.
-    3. If `VD` is [encrypted](#encrypted-value-descriptor), [Decrypt Value](#decrypt-value): compute `(value, f)` from `(H,V,(ev,ef),vek)`. If verification failed, halt and return `nil`.
-5. If value range proof `VRP` is not empty:
-    1. [Recover payload from Value Range Proof](#recover-payload-from-value-range-proof): compute a list of 32-byte chunks `{pt[i]}` from `(H,V,(ev,ef),VRP,value,f,rek)`. If verification failed, halt and return `nil`.
-    2. Flatten the array `{pt[i]}` in a binary string and decode it using [varstring31](blockchain.md#string) encoding. If decoding fails, halt and return `nil`.
-6. If value range proof `VRP` is empty, set `plaintext` to an empty string.
-7. Return `(assetID, value, c, f, plaintext)`.
+    1. If `ARP` is [non-confidential](#non-confidential-asset-range-proof): set `assetID` to the one stored in `ARP`, set `c` to zero.
+    2. If `ARP` is [confidential](#confidential-asset-range-proof), [decrypt asset ID](#decrypt-asset-id): compute `(assetID,c)` from `((ea||ec),AC,aek)`. If verification failed, halt and return `nil`.
+4. Decrypt value and recover payload:
+    1. If `VRP` is [non-confidential](#non-confidential-value-range-proof): 
+        1. Set `value` to the one stored in `VRP`, set `f` to zero.
+        2. Set `plaintext` to an empty string.
+    2. If `VRP` is [confidential](#confidential-value-range-proof):
+        1. [Decrypt value](#decrypt-value): compute `(value, f)` from `((ev||ef),AC,VC,vek)`. If verification failed, halt and return `nil`.
+        2. [Recover payload from the range proof](#recover-payload-from-value-range-proof): compute a list of 32-byte chunks `{pt[i]}` from `(AC,VC,VRP,value,f,rek)`. If verification failed, halt and return `nil`.
+        3. Flatten the array `{pt[i]}` in a binary string and decode it using [varstring31](blockchain.md#string) encoding. If decoding fails, halt and return `nil`.
+5. Return `(assetID, value, c, f, plaintext)`.
 
 
 
