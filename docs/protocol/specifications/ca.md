@@ -63,9 +63,9 @@
   * [Create Issuance Proof](#create-issuance-proof)
   * [Validate Issuance Proof](#validate-issuance-proof)
 * [High-level procedures](#high-level-procedures)
-  * [Validate Output](#validate-output)
   * [Validate Issuance](#validate-issuance)
-  * [Validate Confidential Assets](#validate-confidential-assets)
+  * [Validate Destination](#validate-destination)
+  * [Validate Assets Flow](#validate-assets-flow)
   * [Encrypt Issuance](#encrypt-issuance)
   * [Encrypt Output](#encrypt-output)
   * [Decrypt Output](#decrypt-output)
@@ -1625,23 +1625,6 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 ## High-level procedures
 
-### Validate Output
-
-**Inputs:**
-
-1. `AC`: the [asset ID commitment](#asset-id-commitment).
-2. `VC`: the [value commitment](#value-commitment).
-3. `ARP`: the [asset range proof](#asset-range-proof).
-4. `VRP`: the [value range proof](#value-range-proof).
-
-**Output:** `true` if verification succeeded, `false` otherwise.
-
-**Algorithm:**
-
-1. [Validate asset range proof](#validate-asset-range-proof) using `AC` and `ARP`.
-2. [Validate value range proof](#validate-value-range-proof) using `AC`, `VC` and `VRP`.
-3. Return `true`.
-
 
 ### Validate Issuance
 
@@ -1665,39 +1648,49 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 
 
-### Validate Confidential Assets
+### Validate Destination
 
 **Inputs:**
 
-1. List of issuances, each input consisting of:
-    * `AC`: the [asset ID commitment](#asset-id-commitment).
-    * `VC`: the [value commitment](#value-commitment).
-    * `IARP`: the [issuance asset ID range proof](#issuance-asset-range-proof) together with:
-        * `{a[i]}`: [asset identifiers](blockchain.md#asset-id), one for each issuance key in the range proof.
-        * `message`: a variable-length string.
-        * `nonce`: a unique 32-byte string.
-    * `VRP`: the [value range proof](#value-range-proof).
-2. List of spends, each spend consisting of:
-    * `AC`: the [asset ID commitment](#asset-id-commitment).
-    * `VC`: the [value commitment](#value-commitment).
-3. List of outputs, each output consisting of:
-    * `AD`: the [asset ID commitment](#asset-id-commitment).
-    * `VD`: the [value commitment](#value-commitment).
-    * `ARP`: the [asset range proof](#asset-range-proof) or an empty string.
-    * `VRP`: the [value range proof](#value-range-proof).
-4. List of [excess commitments](#excess-commitment): `{(QC[i], s[i], e[i], message[i])}`.
+1. `AC`: the [asset ID commitment](#asset-id-commitment).
+2. `VC`: the [value commitment](#value-commitment).
+3. `ARP`: the [asset range proof](#asset-range-proof).
+4. `VRP`: the [value range proof](#value-range-proof).
 
 **Output:** `true` if verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. [Validate each issuance](#validate-issuance).
-2. For each output:
-    1. If `ARP` is empty has zero keys, verify that the output `AC` equals one of the asset ID commitments in the inputs or issuances.
-    2. If `ARP` is confidential, verify that each asset ID commitment candidate belongs to the set of the asset ID commitments on the inputs and issuances.
-    3. [Validate output](#validate-output).
-3. [Validate value commitments balance](#validate-value-commitments-balance) using a union of issuance and input value commitments as input commitments.
-4. Return `true`.
+1. [Validate asset range proof](#validate-asset-range-proof) using `AC` and `ARP`.
+2. [Validate value range proof](#validate-value-range-proof) using `AC`, `VC` and `VRP`.
+3. Return `true`.
+
+
+
+### Validate Assets Flow
+
+**Inputs:**
+
+1. List of sources (validated spends and issuances), each source consisting of:
+    * `AC`: the [asset ID commitment](#asset-id-commitment).
+    * `VC`: the [value commitment](#value-commitment).
+2. List of destinations, each destination consisting of:
+    * `AD`: the [asset ID commitment](#asset-id-commitment).
+    * `VD`: the [value commitment](#value-commitment).
+    * `ARP`: the [asset range proof](#asset-range-proof) or an empty string.
+    * `VRP`: the [value range proof](#value-range-proof).
+3. List of [excess commitments](#excess-commitment): `{(QC[i], s[i], e[i], message[i])}`.
+
+**Output:** `true` if verification succeeded, `false` otherwise.
+
+**Algorithm:**
+
+1. For each destination:
+    1. If `ARP` is empty has zero keys, verify that the destination `AC` equals one of the asset ID commitments among the sources.
+    2. If `ARP` is confidential, verify that each asset ID commitment candidate belongs to the set of the source asset ID commitments.
+    3. [Validate destination](#validate-destination).
+2. [Validate value commitments balance](#validate-value-commitments-balance) using source, destination and excess commitments.
+3. Return `true`.
 
 
 

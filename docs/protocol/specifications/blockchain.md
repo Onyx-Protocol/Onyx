@@ -807,17 +807,9 @@ Excess Commitments  | List\<ExcessCommitment\>   | [Commitments](ca.md#excess-co
 2. [Validate](#value-source-2) each `Source` in `Sources`.
 3. [Validate](#value-destination-2) each `Destination` in `Destinations`.
 4. [Validate](ca.md#validate-excess-commitment) each `ExcessCommitment` in `ExcessCommitments`.
-5. For each `AssetID` represented in `Sources` and `Destinations`:
-    1. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Sources` with that asset ID.
-    2. Sum (using [point addition](ca.md#point-operations) the total `Amounts` of the `Destinations` with that asset ID, plus the sum of the `ExcessCommitments`.
-6. Define `SourceAssetIDs` as the list composed by taking the `Value.AssetID` for each `Source`.
-7. Verify that the respective lengths of `Destinations`, `AssetRangeProofs`, and `ValueRangeProofs` are the same.
-8. For each `Destination` in `Destinations` (at index `index`):
-  1. Define `AssetRangeProof` as `AssetRangeProof[index]`, and `ValueRangeProof` as `ValueRangeProofs[index]`.
-  2. [Validate](ca.md#validate-asset-range-proof) `AssetRangeProof` with `Destination.Value.AssetID` and `SourceAssetIDs` as the `asset ID commitment` and `source asset IDs`, respectively.
-  3. [Validate](ca.md#validate-value-range-proof) `ValueRangeProof` with `Destination.Value.Amount` as the `value commitment`.
-9. [Validate each excess commitment](ca.md#validate-excess-commitment).
-10. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
+5. Verify that the respective lengths of `Destinations`, `AssetRangeProofs`, and `ValueRangeProofs` are the same.
+6. [Validate Assets Flow](ca.md#validate-assets-flow) using source, destination and excess commitments.
+7. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
 ### Nonce
 
