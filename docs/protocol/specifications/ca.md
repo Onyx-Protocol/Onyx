@@ -6,16 +6,10 @@
   * [Simple transfer](#simple-transfer)
   * [Multi-party transaction](#multi-party-transaction)
 * [Cryptographic primitives](#cryptographic-primitives)
-  * [Elliptic Curve Parameters](#elliptic-curve-parameters)
-  * [Zero point](#zero-point)
-  * [Generators](#generators)
+  * [Elliptic curve](#elliptic-curve)
   * [Scalar](#scalar)
-  * [Point](#point)
-  * [Point Pair](#point-pair)
-  * [Point operations](#point-operations)
-  * [Hash256](#hash256)
-  * [StreamHash](#streamhash)
-  * [ScalarHash](#scalarhash)
+  * [Points](#points)
+  * [Hash functions](#hash-functions)
   * [Ring Signature](#ring-signature)
   * [Borromean Ring Signature](#borromean-ring-signature)
 * [Keys](#keys)
@@ -133,21 +127,55 @@ In this section we will provide a brief overview of various ways to use confiden
 
 ## Cryptographic primitives
 
-### Elliptic Curve Parameters
+### Elliptic curve
 
 **The elliptic curve** is edwards25519 as defined by [[RFC7748](https://tools.ietf.org/html/rfc7748)].
 
 `L` is the **order of edwards25519** as defined by \[[RFC8032](https://tools.ietf.org/html/rfc8032)\] (i.e. 2<sup>252</sup>+27742317777372353535851937790883648493).
 
+### Scalar
 
-### Zero point
+A _scalar_ is an integer in the range from `0` to `L-1` where `L` is the order of [edwards25519](#elliptic-curve) subgroup.
+Scalars are encoded as little-endian 32-byte integers.
 
-_Zero point_ `O` is a representation of the _point at infinity_, identity element in the [edwards25519](#elliptic-curve-parameters) subgroup. It is encoded as follows:
+### Points
+
+#### Point
+
+A point is a two-dimensional point on [edwards25519](#elliptic-curve).
+Points are encoded according to [RFC8032](https://tools.ietf.org/html/rfc8032).
+
+#### Point Pair
+
+A vector of two elliptic curve [points](#point). Point pair is encoded as 64-byte string composed of 32-byte encodings of each point.
+
+#### Point operations
+
+Elliptic curve *points* support two operations:
+
+1. Addition/subtraction of points (`A+B`, `A-B`)
+2. Scalar multiplication (`a·B`).
+
+These operations are defined as in \[[RFC8032](https://tools.ietf.org/html/rfc8032)\].
+
+*Point pairs* support the same operations defined as:
+
+1. Sum of two pairs is a pair of sums:
+
+        (A,B) + (C,D) == (A+C, B+D)
+
+2. Multiplication of a pair by a [scalar](#scalar) is a pair of scalar multiplications of each point:
+
+        x·(A,B) == (x·A,x·B)
+
+
+#### Zero point
+
+_Zero point_ `O` is a representation of the _point at infinity_, identity element in the [edwards25519](#elliptic-curve) subgroup. It is encoded as follows:
 
     O = 0x0100000000000000000000000000000000000000000000000000000000000000
 
-
-### Generators
+#### Generators
 
 **Primary generator point** (`G`) is the elliptic curve point specified as "B" in Section 5.1 of [[RFC8032](https://tools.ietf.org/html/rfc8032)].
 
@@ -202,59 +230,22 @@ Counter `cnt[i]` is chosen to be the smallest positive integer starting with 0 t
     G[30] = 0x7ee2183153687344e093278bc692c4915761ada87a51a778b605e88078d9902a   cnt = 1
 
 
-### Scalar
+### Hash functions
 
-A _scalar_ is an integer in the range from `0` to `L-1` where `L` is the order of [edwards25519](#elliptic-curve-parameters) subgroup.
-Scalars are encoded as little-endian 32-byte integers.
-
-
-### Point
-
-A point is a two-dimensional point on [edwards25519](#elliptic-curve-parameters).
-Points are encoded according to [RFC8032](https://tools.ietf.org/html/rfc8032).
-
-
-### Point Pair
-
-A vector of two elliptic curve [points](#point). Point pair is encoded as 64-byte string composed of 32-byte encodings of each point.
-
-
-### Point operations
-
-Elliptic curve *points* support two operations:
-
-1. Addition/subtraction of points (`A+B`, `A-B`)
-2. Scalar multiplication (`a·B`).
-
-These operations are defined as in \[[RFC8032](https://tools.ietf.org/html/rfc8032)\].
-
-*Point pairs* support the same operations defined as:
-
-1. Sum of two pairs is a pair of sums:
-
-        (A,B) + (C,D) == (A+C, B+D)
-
-2. Multiplication of a pair by a [scalar](#scalar) is a pair of scalar multiplications of each point:
-
-        x·(A,B) == (x·A,x·B)
-
-
-### Hash256
+#### Hash256
 
 `Hash256` is a secure hash function that takes a variable-length binary string `x` as input and outputs a 256-bit string.
 
     Hash256(x) = SHAKE128("ChainCA-256" || x, 32)
 
-
-### StreamHash
+#### StreamHash
 
 `StreamHash` is a secure extendable-output hash function that takes a variable-length binary string `x` as input
 and outputs a variable-length hash string depending on a number of bytes (`n`) requested.
 
     StreamHash(x, n) = SHAKE128("ChainCA-stream" || x, n)
 
-
-### ScalarHash
+#### ScalarHash
 
 `ScalarHash` is a secure hash function that takes a variable-length binary string `x` as input and outputs a [scalar](#scalar):
 
@@ -262,7 +253,7 @@ and outputs a variable-length hash string depending on a number of bytes (`n`) r
 
         h = SHAKE128("ChainCA-scalar" || x, 64)
 
-2. Interpret `h` as a little-endian integer and reduce modulo subgroup [order](#elliptic-curve-parameters) `L`:
+2. Interpret `h` as a little-endian integer and reduce modulo subgroup [order](#elliptic-curve) `L`:
 
         s = h mod L
 
@@ -621,7 +612,7 @@ It is defined as follows:
 2. Calculate `Hash256("AssetID" || assetID || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
 3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
 4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
-5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
+5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
 6. Return `A`.
 
 #### Denial of service risks
@@ -1019,7 +1010,7 @@ When creating a confidential issuance, the first step is to construct the rest o
     2. Calculate `Hash256("M" || basehash || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
     3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
     4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
-    5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
+    5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
 3. Calculate the tracing point: `T = y·(J + M)`.
 4. Calculate the blinded marker using the blinding factor used by commitment `AC`: `Bm = c·M`.
 5. Calculate a 32-byte message hash and three 64-byte Fiat-Shamir challenges for all the signatures (total 224 bytes):
@@ -1092,7 +1083,7 @@ When creating a confidential issuance, the first step is to construct the rest o
         2. Calculate `Hash256("M" || basehash || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
         3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
         4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
-        5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve-parameters) `L`.
+        5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
     3. Calculate a 32-byte message hash and three 64-byte Fiat-Shamir challenges for all the signatures (total 224 bytes):
 
             (msghash, h1, h2, h3) = StreamHash("h" || basehash || M || T || Bm, 32 + 3·64)
