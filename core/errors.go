@@ -44,6 +44,9 @@ func isTemporary(info httperror.Info, err error) bool {
 // Map error values to standard chain error codes. Missing entries
 // will map to internalErrInfo.
 // See chain.com/docs.
+//
+// TODO(jackson): Share one error table across Chain
+// products/services so that errors are consistent.
 var errorFormatter = httperror.Formatter{
 	Default:     httperror.Info{500, "CH000", "Chain API Error"},
 	IsTemporary: isTemporary,
