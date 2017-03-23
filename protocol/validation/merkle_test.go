@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"chain/protocol/bc"
-	"chain/protocol/vm"
 )
 
 func TestCalcMerkleRoot(t *testing.T) {
@@ -16,7 +15,7 @@ func TestCalcMerkleRoot(t *testing.T) {
 	}{{
 		witnesses: [][][]byte{
 			[][]byte{
-				vm.Int64Bytes(1),
+				{1, 0, 0, 0, 0, 0, 0, 0},
 				[]byte("00000"),
 			},
 		},
@@ -24,11 +23,11 @@ func TestCalcMerkleRoot(t *testing.T) {
 	}, {
 		witnesses: [][][]byte{
 			[][]byte{
-				vm.Int64Bytes(1),
+				{1, 0, 0, 0, 0, 0, 0, 0},
 				[]byte("000000"),
 			},
 			[][]byte{
-				vm.Int64Bytes(1),
+				{1, 0, 0, 0, 0, 0, 0, 0},
 				[]byte("111111"),
 			},
 		},
@@ -36,11 +35,11 @@ func TestCalcMerkleRoot(t *testing.T) {
 	}, {
 		witnesses: [][][]byte{
 			[][]byte{
-				vm.Int64Bytes(1),
+				{1, 0, 0, 0, 0, 0, 0, 0},
 				[]byte("000000"),
 			},
 			[][]byte{
-				vm.Int64Bytes(2),
+				{2, 0, 0, 0, 0, 0, 0, 0},
 				[]byte("111111"),
 				[]byte("222222"),
 			},
@@ -75,7 +74,7 @@ func TestCalcMerkleRoot(t *testing.T) {
 
 func TestDuplicateLeaves(t *testing.T) {
 	var initialBlockHash bc.Hash
-	trueProg := []byte{byte(vm.OP_TRUE)}
+	trueProg := []byte{0x51}
 	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyStringHash)
 	txs := make([]*bc.Tx, 6)
 	for i := uint64(0); i < 6; i++ {
@@ -108,7 +107,7 @@ func TestDuplicateLeaves(t *testing.T) {
 
 func TestAllDuplicateLeaves(t *testing.T) {
 	var initialBlockHash bc.Hash
-	trueProg := []byte{byte(vm.OP_TRUE)}
+	trueProg := []byte{0x51}
 	assetID := bc.ComputeAssetID(trueProg, initialBlockHash, 1, bc.EmptyStringHash)
 	now := []byte(time.Now().String())
 	issuanceInp := bc.NewIssuanceInput(now, 1, nil, initialBlockHash, trueProg, nil, nil)
