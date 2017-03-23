@@ -3,7 +3,8 @@ import styles from './Flash.scss'
 
 class Flash extends React.Component {
   componentWillReceiveProps(nextProps) {
-    nextProps.messages.forEach((item, key) => {
+    Object.keys(nextProps.messages).forEach(key => {
+      const item = nextProps.messages[key]
       if (!item.displayed) {
         this.props.markFlashDisplayed(key)
       }
@@ -16,7 +17,8 @@ class Flash extends React.Component {
     }
 
     const messages = []
-    this.props.messages.forEach((item, key) => {
+    Object.keys(this.props.messages).forEach(key => {
+      const item = this.props.messages[key]
       messages.push(
         <div className={`${styles.alert} ${styles[item.type]} ${styles.main}`} key={key}>
           <div className={styles.content}>
