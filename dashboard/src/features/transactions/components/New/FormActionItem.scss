@@ -12,6 +12,7 @@
   display: flex;
   display: -webkit-flex;
   justify-content: space-between;
+  -webkit-justify-content: space-between;
   margin-bottom: $gutter-size;
 }
 

@@ -11,6 +11,7 @@
   display: -webkit-flex;
   flex-wrap: wrap;
   justify-content: space-between;
+  -webkit-justify-content: space-between;
 
   > div {
     width: 30%;
