@@ -17,6 +17,10 @@ class Flash extends React.Component {
     }
 
     const messages = []
+    // Flash messages are stored in an objecty key with a random UUID. If
+    // multiple messages are displayed, we rely on the browser maintaining
+    // object inerstion order of keys to display messages in the order they
+    // were created.
     Object.keys(this.props.messages).forEach(key => {
       const item = this.props.messages[key]
       messages.push(
