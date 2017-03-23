@@ -3,7 +3,7 @@ package bc
 // BlockHeaderEntry contains the header information for a blockchain
 // block. It satisfies the Entry interface.
 type BlockHeaderEntry struct {
-	body struct {
+	Body struct {
 		Version              uint64
 		Height               uint64
 		PreviousBlockID      Hash
@@ -16,7 +16,7 @@ type BlockHeaderEntry struct {
 }
 
 func (BlockHeaderEntry) Type() string          { return "blockheader" }
-func (bh *BlockHeaderEntry) Body() interface{} { return bh.body }
+func (bh *BlockHeaderEntry) body() interface{} { return bh.Body }
 
 func (BlockHeaderEntry) Ordinal() int { return -1 }
 
@@ -24,12 +24,12 @@ func (BlockHeaderEntry) Ordinal() int { return -1 }
 // its body.
 func NewBlockHeaderEntry(version, height uint64, previousBlockID Hash, timestampMS uint64, transactionsRoot, assetsRoot Hash, nextConsensusProgram []byte) *BlockHeaderEntry {
 	bh := new(BlockHeaderEntry)
-	bh.body.Version = version
-	bh.body.Height = height
-	bh.body.PreviousBlockID = previousBlockID
-	bh.body.TimestampMS = timestampMS
-	bh.body.TransactionsRoot = transactionsRoot
-	bh.body.AssetsRoot = assetsRoot
-	bh.body.NextConsensusProgram = nextConsensusProgram
+	bh.Body.Version = version
+	bh.Body.Height = height
+	bh.Body.PreviousBlockID = previousBlockID
+	bh.Body.TimestampMS = timestampMS
+	bh.Body.TransactionsRoot = transactionsRoot
+	bh.Body.AssetsRoot = assetsRoot
+	bh.Body.NextConsensusProgram = nextConsensusProgram
 	return bh
 }

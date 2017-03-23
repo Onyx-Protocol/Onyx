@@ -20,7 +20,7 @@ type Entry interface {
 
 	// Body produces the entry's body, which is used as input to
 	// EntryID.
-	Body() interface{}
+	body() interface{}
 
 	// Ordinal reports the position of the TxInput or TxOutput within
 	// its transaction, when this entry was created from such an
@@ -54,7 +54,7 @@ func EntryID(e Entry) (hash Hash) {
 
 	bh := sha3pool.Get256()
 	defer sha3pool.Put256(bh)
-	err := writeForHash(bh, e.Body())
+	err := writeForHash(bh, e.body())
 	if err != nil {
 		panic(err)
 	}
@@ -87,10 +87,6 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
 		return errors.Wrapf(err, "writing string (len %d) for hash", len(v))
-
-		// TODO: The rest of these are all aliases for [32]byte. Do we
-		// really need them all?
-
 	case Hash:
 		_, err := w.Write(v[:])
 		return errors.Wrap(err, "writing Hash for hash")

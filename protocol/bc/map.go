@@ -27,7 +27,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 	// available in case an issuance needs it for its anchor.
 
 	var firstSpend *Spend
-	muxSources := make([]valueSource, len(tx.Inputs))
+	muxSources := make([]ValueSource, len(tx.Inputs))
 
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*SpendInput); ok {
@@ -41,7 +41,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				err = errors.Wrapf(err, "adding spend entry for input %d", i)
 				return
 			}
-			muxSources[i] = valueSource{
+			muxSources[i] = ValueSource{
 				Ref:   id,
 				Value: oldSp.AssetAmount,
 			}
@@ -121,7 +121,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				return
 			}
 
-			muxSources[i] = valueSource{
+			muxSources[i] = ValueSource{
 				Ref:   issID,
 				Value: val,
 			}
