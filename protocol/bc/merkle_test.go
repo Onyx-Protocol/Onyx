@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestCalcMerkleRoot(t *testing.T) {
+func TestMerkleRoot(t *testing.T) {
 	cases := []struct {
 		witnesses [][][]byte
 		want      Hash

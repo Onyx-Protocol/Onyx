@@ -11,7 +11,7 @@ var (
 	interiorPrefix = []byte{0x01}
 )
 
-// CalcMerkleRoot creates a merkle tree from a slice of transactions
+// MerkleRoot creates a merkle tree from a slice of transactions
 // and returns the root hash of the tree.
 func MerkleRoot(transactions []*Tx) (root Hash, err error) {
 	switch {
