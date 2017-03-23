@@ -46,7 +46,7 @@ func Verify(context *Context) (err error) {
 			if rErr, ok := r.(error); ok {
 				err = errors.Sub(ErrUnexpected, rErr)
 			} else {
-				err = ErrUnexpected
+				err = errors.Wrap(ErrUnexpected, r)
 			}
 		}
 	}()
