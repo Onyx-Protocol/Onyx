@@ -4,9 +4,9 @@ import { combineReducers } from 'redux'
 import uuid from 'uuid'
 
 const flash = (message, title, type) => ({ message, title, type, displayed: false })
-const addFlash = (state, f) => ({...state, [uuid.v4()]: f})
-const addSuccess = (state, message, title) => ({...state, [uuid.v4()]: flash(message, title, 'success')})
-const addError = (state, message, title) => ({...state, [uuid.v4()]: flash(message, title, 'danger')})
+const newFlash = (state, f) => ({...state, [uuid.v4()]: f})
+const newSuccess = (state, message, title) => ({...state, [uuid.v4()]: flash(message, title, 'success')})
+const newError = (state, message, title) => ({...state, [uuid.v4()]: flash(message, title, 'danger')})
 
 export const flashMessages = (state = {}, action) => {
   switch (action.type) {
@@ -25,31 +25,31 @@ export const flashMessages = (state = {}, action) => {
     }
 
     case 'CREATED_ACCOUNT': {
-      return addSuccess(state, <p>
+      return newSuccess(state, <p>
           Created account. <Link to='accounts/create'>Create another?</Link>
         </p>)
     }
 
     case 'CREATED_ASSET': {
-      return addSuccess(state, <p>
+      return newSuccess(state, <p>
         Created asset. <Link to='assets/create'>Create another?</Link>
       </p>)
     }
 
     case 'CREATED_TRANSACTION': {
-      return addSuccess(state, <p>
+      return newSuccess(state, <p>
         Submitted transaction. <Link to='transactions/create'>Create another?</Link>
       </p>)
     }
 
     case 'CREATED_MOCKHSM': {
-      return addSuccess(state, <p>
+      return newSuccess(state, <p>
         Created key. <Link to='mockhsms/create'>Create another?</Link>
       </p>)
     }
 
     case 'CREATED_TRANSACTIONFEED': {
-      return addSuccess(state, <p>
+      return newSuccess(state, <p>
         Created transaction feed. <Link to='transaction-feeds/create'>Create another?</Link>
       </p>)
     }
@@ -57,7 +57,7 @@ export const flashMessages = (state = {}, action) => {
     case 'DELETE_CLIENT_ACCESS_TOKEN':
     case 'DELETE_NETWORK_ACCESS_TOKEN':
     case 'DELETE_TRANSACTIONFEED': {
-      return addFlash(state, flash(action.message, null, 'info'))
+      return newFlash(state, flash(action.message, null, 'info'))
     }
 
     case 'DISMISS_FLASH': {
@@ -77,7 +77,7 @@ export const flashMessages = (state = {}, action) => {
     }
 
     case 'ERROR': {
-      return addError(state, action.payload.message)
+      return newError(state, action.payload.message)
     }
 
     case 'USER_LOG_IN': {
