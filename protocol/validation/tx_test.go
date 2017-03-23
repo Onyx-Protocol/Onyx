@@ -21,7 +21,7 @@ func TestUniqueIssuance(t *testing.T) {
 	issuanceInp := bc.NewIssuanceInput(nil, 1, nil, initialBlockHash, trueProg, nil, nil)
 
 	// Transaction with empty nonce (and no other inputs) is invalid
-	_, err := bc.ComputeTxHashes(&bc.TxData{
+	_, err := bc.ComputeTxEntries(&bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{issuanceInp},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
@@ -96,7 +96,7 @@ func TestUniqueIssuance(t *testing.T) {
 	tx = bc.NewTx(bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(nil, tx.Results[0].SourceID, assetID, 1, tx.Results[0].SourcePos, trueProg, tx.Results[0].RefDataHash, nil),
+			bc.NewSpendInput(nil, tx.Results[0].(*bc.Output).Body.Source.Ref, assetID, 1, tx.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx.Results[0].(*bc.Output).Body.Data, nil),
 			issuance2Inp,
 		},
 		Outputs: []*bc.TxOutput{
@@ -113,10 +113,7 @@ func TestUniqueIssuance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	iHash, err := tx.IssuanceHash(1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	iHash := tx.IssuanceHash(1)
 	if _, ok := snapshot.Issuances[iHash]; ok {
 		t.Errorf("expected input with empty nonce to be omitted from issuance memory")
 	}
@@ -147,10 +144,7 @@ func TestUniqueIssuance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	iHash, err = tx.IssuanceHash(0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	iHash = tx.IssuanceHash(0)
 	if _, ok := snapshot.Issuances[iHash]; !ok {
 		t.Errorf("expected input with non-empty nonce to be added to issuance memory")
 	}
@@ -194,8 +188,6 @@ func TestTxWellFormed(t *testing.T) {
 			},
 		},
 	})
-	t.Log(tx1.Results[0].SourceID, tx1.Results[0].SourcePos, tx1.Results[0].RefDataHash)
-	t.Log(tx2.Results[0].SourceID, tx2.Results[0].SourcePos, tx2.Results[0].RefDataHash)
 
 	testCases := []struct {
 		suberr error
@@ -212,7 +204,7 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 1000, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].(*bc.Output).Body.Source.Ref, aid1, 1000, tx1.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx1.Results[0].(*bc.Output).Body.Data, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 999, nil, nil),
@@ -224,8 +216,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 500, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
-					bc.NewSpendInput(nil, tx2.Results[0].SourceID, aid2, 500, tx2.Results[0].SourcePos, trueProg, tx2.Results[0].RefDataHash, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].(*bc.Output).Body.Source.Ref, aid1, 500, tx1.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx1.Results[0].(*bc.Output).Body.Data, nil),
+					bc.NewSpendInput(nil, tx2.Results[0].(*bc.Output).Body.Source.Ref, aid2, 500, tx2.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx2.Results[0].(*bc.Output).Body.Data, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 500, nil, nil),
@@ -239,7 +231,7 @@ func TestTxWellFormed(t *testing.T) {
 				Version: 1,
 				Inputs: []*bc.TxInput{
 					bc.NewIssuanceInput(nil, 0, nil, initialBlockHash, issuanceProg, nil, nil),
-					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid2, 0, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].(*bc.Output).Body.Source.Ref, aid2, 0, tx1.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx1.Results[0].(*bc.Output).Body.Data, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 0, nil, nil),
@@ -251,7 +243,7 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 1000, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].(*bc.Output).Body.Source.Ref, aid1, 1000, tx1.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx1.Results[0].(*bc.Output).Body.Data, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -262,8 +254,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 500, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
-					bc.NewSpendInput(nil, tx2.Results[0].SourceID, aid2, 500, tx2.Results[0].SourcePos, trueProg, tx2.Results[0].RefDataHash, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].(*bc.Output).Body.Source.Ref, aid1, 500, tx1.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx1.Results[0].(*bc.Output).Body.Data, nil),
+					bc.NewSpendInput(nil, tx2.Results[0].(*bc.Output).Body.Source.Ref, aid2, 500, tx2.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx2.Results[0].(*bc.Output).Body.Data, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 500, nil, nil),
@@ -277,8 +269,8 @@ func TestTxWellFormed(t *testing.T) {
 			tx: bc.TxData{
 				Version: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 500, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
-					bc.NewSpendInput(nil, tx2.Results[0].SourceID, aid1, 500, tx2.Results[0].SourcePos, trueProg, tx2.Results[0].RefDataHash, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].(*bc.Output).Body.Source.Ref, aid1, 500, tx1.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx1.Results[0].(*bc.Output).Body.Data, nil),
+					bc.NewSpendInput(nil, tx2.Results[0].(*bc.Output).Body.Source.Ref, aid1, 500, tx2.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx2.Results[0].(*bc.Output).Body.Data, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -292,7 +284,7 @@ func TestTxWellFormed(t *testing.T) {
 				MinTime: 2,
 				MaxTime: 1,
 				Inputs: []*bc.TxInput{
-					bc.NewSpendInput(nil, tx1.Results[0].SourceID, aid1, 1000, tx1.Results[0].SourcePos, trueProg, tx1.Results[0].RefDataHash, nil),
+					bc.NewSpendInput(nil, tx1.Results[0].(*bc.Output).Body.Source.Ref, aid1, 1000, tx1.Results[0].(*bc.Output).Body.Source.Position, trueProg, tx1.Results[0].(*bc.Output).Body.Data, nil),
 				},
 				Outputs: []*bc.TxOutput{
 					bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -827,7 +819,7 @@ func TestTxRangeErrs(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		_, err := bc.ComputeTxHashes(c)
+		_, err := bc.ComputeTxEntries(c)
 		switch errors.Root(err) {
 		case nil:
 			t.Errorf("got no error, want blockchain.ErrRange")
@@ -1049,9 +1041,9 @@ func TestConfirmTx(t *testing.T) {
 								AssetAmount:    out1.AssetAmount,
 								VMVersion:      out1.VMVersion,
 								ControlProgram: out1.ControlProgram,
-								SourceID:       outres.SourceID,
-								SourcePosition: outres.SourcePos,
-								RefDataHash:    outres.RefDataHash,
+								SourceID:       outres.(*bc.Output).Body.Source.Ref,
+								SourcePosition: outres.(*bc.Output).Body.Source.Position,
+								RefDataHash:    outres.(*bc.Output).Body.Data,
 							},
 						},
 					},

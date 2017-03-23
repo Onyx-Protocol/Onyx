@@ -31,9 +31,9 @@ func TestAccountSourceReserve(t *testing.T) {
 		assets   = asset.NewRegistry(db, c, pinStore)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
-		accID           = coretest.CreateAccount(ctx, t, accounts, "", nil)
-		asset           = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		txOut, txRes, _ = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
+		accID              = coretest.CreateAccount(ctx, t, accounts, "", nil)
+		asset              = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
+		txOut, outEntry, _ = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
 	)
 
 	coretest.CreatePins(ctx, t, pinStore)
@@ -60,7 +60,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(nil, txRes.SourceID, txOut.AssetID, txOut.Amount, txRes.SourcePos, txOut.ControlProgram, txRes.RefDataHash, nil)}
+	wantTxIns := []*bc.TxInput{bc.NewSpendInput(nil, outEntry.Body.Source.Ref, txOut.AssetID, txOut.Amount, outEntry.Body.Source.Position, txOut.ControlProgram, outEntry.Body.Data, nil)}
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
@@ -86,9 +86,9 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		assets   = asset.NewRegistry(db, c, pinStore)
 		indexer  = query.NewIndexer(db, c, pinStore)
 
-		accID                  = coretest.CreateAccount(ctx, t, accounts, "", nil)
-		asset                  = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		txOut, txRes, outputID = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
+		accID                     = coretest.CreateAccount(ctx, t, accounts, "", nil)
+		asset                     = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
+		txOut, outEntry, outputID = coretest.IssueAssets(ctx, t, c, g, assets, accounts, asset, 2, accID)
 	)
 
 	coretest.CreatePins(ctx, t, pinStore)
@@ -111,7 +111,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(nil, txRes.SourceID, txOut.AssetID, txOut.Amount, txRes.SourcePos, txOut.ControlProgram, txRes.RefDataHash, nil)}
+	wantTxIns := []*bc.TxInput{bc.NewSpendInput(nil, outEntry.Body.Source.Ref, txOut.AssetID, txOut.Amount, outEntry.Body.Source.Position, txOut.ControlProgram, outEntry.Body.Data, nil)}
 
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
