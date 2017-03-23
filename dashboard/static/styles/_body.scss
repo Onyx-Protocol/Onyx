@@ -29,6 +29,7 @@ body {
   display: flex;
   display: -webkit-flex;
   flex-direction: column;
+  -webkit-flex-direction: column;
   position: relative;
   margin: 0 auto;
   min-height: 100%;
@@ -40,12 +41,14 @@ body {
   display: flex;
   display: -webkit-flex;
   flex-direction: column;
+  -webkit-flex-direction: column;
   flex: 1;
 
   > div {
     display: flex;
     display: -webkit-flex;
     flex-direction: column;
+    -webkit-flex-direction: column;
     flex: 1;
   }
 }
@@ -68,6 +71,7 @@ p {
   display: flex;
   display: -webkit-flex;
   flex-direction: column;
+  -webkit-flex-direction: column;
   flex: 1;
 }
 
