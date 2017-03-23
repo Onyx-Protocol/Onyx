@@ -395,9 +395,9 @@ func TestStep(t *testing.T) {
 		wantErr: ErrDataStackUnderflow,
 	}, {
 		startVM: &VirtualMachine{
-			Program:   []byte{byte(OP_INDEX)},
-			RunLimit:  1,
-			VMContext: bc.NewTxVMContext(tx, 0, bc.Program{}, nil),
+			Program:  []byte{byte(OP_INDEX)},
+			RunLimit: 1,
+			Context:  bc.NewTxVMContext(tx, 0, bc.Program{}, nil),
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {

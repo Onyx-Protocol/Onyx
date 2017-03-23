@@ -7,7 +7,6 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
-	"chain/errors"
 	"chain/math/checked"
 )
 
@@ -132,13 +131,10 @@ func opTxSigHash(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-
-	h, err := vm.vmContext.TxSigHash()
-	if err != nil {
-		return errors.Wrap(err, "computing txsighash")
+	if vm.context.TxSigHash == nil {
+		return ErrContext
 	}
-
-	return vm.push(h, false)
+	return vm.push(*vm.context.TxSigHash, false)
 }
 
 func opBlockHash(vm *virtualMachine) error {
@@ -146,10 +142,8 @@ func opBlockHash(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	h, err := vm.vmContext.BlockHash()
-	if err != nil {
-		return errors.Wrap(err, "computing blockhash")
+	if vm.context.BlockHash == nil {
+		return ErrContext
 	}
-
-	return vm.push(h, false)
+	return vm.push(*vm.context.BlockHash, false)
 }
