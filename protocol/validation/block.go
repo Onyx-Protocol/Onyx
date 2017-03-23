@@ -138,7 +138,7 @@ func validateBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
 		}
 	}
 
-	txMerkleRoot, err := bc.CalcMerkleRoot(block.Transactions)
+	txMerkleRoot, err := bc.MerkleRoot(block.Transactions)
 	if err != nil {
 		return errors.Wrap(err, "calculating tx merkle root")
 	}

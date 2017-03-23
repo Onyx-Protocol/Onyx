@@ -55,7 +55,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 }
 
 func createEmptyBlock(block *bc.Block, snapshot *state.Snapshot) *bc.Block {
-	root, err := bc.CalcMerkleRoot(nil)
+	root, err := bc.MerkleRoot(nil)
 	if err != nil {
 		log.Fatalf("calculating empty merkle root: %s", err)
 	}

@@ -13,7 +13,7 @@ var (
 
 // CalcMerkleRoot creates a merkle tree from a slice of transactions
 // and returns the root hash of the tree.
-func CalcMerkleRoot(transactions []*Tx) (root Hash, err error) {
+func MerkleRoot(transactions []*Tx) (root Hash, err error) {
 	switch {
 	case len(transactions) == 0:
 		sha3pool.Sum256(root[:], nil)
@@ -30,12 +30,12 @@ func CalcMerkleRoot(transactions []*Tx) (root Hash, err error) {
 
 	default:
 		k := prevPowerOfTwo(len(transactions))
-		left, err := CalcMerkleRoot(transactions[:k])
+		left, err := MerkleRoot(transactions[:k])
 		if err != nil {
 			return root, err
 		}
 
-		right, err := CalcMerkleRoot(transactions[k:])
+		right, err := MerkleRoot(transactions[k:])
 		if err != nil {
 			return root, err
 		}
