@@ -39,14 +39,14 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 	hashes.ID = txid
 
 	// Results
-	hashes.Results = make([]ResultInfo, len(header.body.Results))
-	for i, resultHash := range header.body.Results {
+	hashes.Results = make([]ResultInfo, len(header.Body.Results))
+	for i, resultHash := range header.Body.Results {
 		hashes.Results[i].ID = resultHash
 		entry := entries[resultHash]
 		if out, ok := entry.(*Output); ok {
-			hashes.Results[i].SourceID = out.body.Source.Ref
-			hashes.Results[i].SourcePos = out.body.Source.Position
-			hashes.Results[i].RefDataHash = out.body.Data
+			hashes.Results[i].SourceID = out.Body.Source.Ref
+			hashes.Results[i].SourcePos = out.Body.Source.Position
+			hashes.Results[i].RefDataHash = out.Body.Data
 		}
 	}
 
@@ -57,7 +57,7 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 		switch ent := ent.(type) {
 		case *Nonce:
 			// TODO: check time range is within network-defined limits
-			trID := ent.body.TimeRange
+			trID := ent.Body.TimeRange
 			trEntry, ok := entries[trID]
 			if !ok {
 				return nil, fmt.Errorf("nonce entry refers to nonexistent timerange entry")
@@ -69,7 +69,7 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 			iss := struct {
 				ID           Hash
 				ExpirationMS uint64
-			}{entryID, tr.body.MaxTimeMS}
+			}{entryID, tr.Body.MaxTimeMS}
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *Issuance:
@@ -77,7 +77,7 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 
 		case *Spend:
 			hashes.SigHashes[ent.Ordinal()] = makeSigHash(entryID, hashes.ID)
-			hashes.SpentOutputIDs[ent.Ordinal()] = ent.body.SpentOutput
+			hashes.SpentOutputIDs[ent.Ordinal()] = ent.Body.SpentOutput
 		}
 	}
 

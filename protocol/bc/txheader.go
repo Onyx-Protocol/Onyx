@@ -5,7 +5,7 @@ package bc
 // of the TxHeader is the ID of the transaction. TxHeader satisfies
 // the Entry interface.
 type TxHeader struct {
-	body struct {
+	Body struct {
 		Version              uint64
 		Results              []Hash
 		Data                 Hash
@@ -14,26 +14,26 @@ type TxHeader struct {
 	}
 
 	// Results contains (pointers to) the manifested entries for the
-	// items in body.Results.
+	// items in Body.Results.
 	Results []Entry // each entry is *output or *retirement
 }
 
 func (TxHeader) Type() string         { return "txheader" }
-func (h *TxHeader) Body() interface{} { return h.body }
+func (h *TxHeader) body() interface{} { return h.Body }
 
 func (TxHeader) Ordinal() int { return -1 }
 
 // NewTxHeader creates an new TxHeader.
 func NewTxHeader(version uint64, results []Entry, data Hash, minTimeMS, maxTimeMS uint64) *TxHeader {
 	h := new(TxHeader)
-	h.body.Version = version
-	h.body.Data = data
-	h.body.MinTimeMS = minTimeMS
-	h.body.MaxTimeMS = maxTimeMS
+	h.Body.Version = version
+	h.Body.Data = data
+	h.Body.MinTimeMS = minTimeMS
+	h.Body.MaxTimeMS = maxTimeMS
 
 	h.Results = results
 	for _, r := range results {
-		h.body.Results = append(h.body.Results, EntryID(r))
+		h.Body.Results = append(h.Body.Results, EntryID(r))
 	}
 
 	return h

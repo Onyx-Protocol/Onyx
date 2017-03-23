@@ -6,7 +6,7 @@ package bc
 //
 // (Not to be confused with the deprecated type TxOutput.)
 type Output struct {
-	body struct {
+	Body struct {
 		Source         valueSource
 		ControlProgram Program
 		Data           Hash
@@ -15,12 +15,12 @@ type Output struct {
 	ordinal int
 
 	// Source contains (a pointer to) the manifested entry corresponding
-	// to body.Source.
+	// to Body.Source.
 	Source Entry // *issuance, *spend, or *mux
 }
 
 func (Output) Type() string         { return "output1" }
-func (o *Output) Body() interface{} { return o.body }
+func (o *Output) body() interface{} { return o.Body }
 
 func (o Output) Ordinal() int { return o.ordinal }
 
@@ -28,8 +28,8 @@ func (o Output) Ordinal() int { return o.ordinal }
 // set with setSource or setSourceID.
 func NewOutput(controlProgram Program, data Hash, ordinal int) *Output {
 	out := new(Output)
-	out.body.ControlProgram = controlProgram
-	out.body.Data = data
+	out.Body.ControlProgram = controlProgram
+	out.Body.Data = data
 	out.ordinal = ordinal
 	return out
 }
@@ -43,7 +43,7 @@ func (o *Output) setSource(e Entry, value AssetAmount, position uint64) {
 }
 
 func (o *Output) setSourceID(sourceID Hash, value AssetAmount, position uint64) {
-	o.body.Source = valueSource{
+	o.Body.Source = valueSource{
 		Ref:      sourceID,
 		Value:    value,
 		Position: position,

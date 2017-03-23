@@ -2,21 +2,21 @@ package bc
 
 // TimeRange denotes a time range. It satisfies the Entry interface.
 type TimeRange struct {
-	body struct {
+	Body struct {
 		MinTimeMS, MaxTimeMS uint64
 		ExtHash              Hash
 	}
 }
 
 func (TimeRange) Type() string          { return "timerange1" }
-func (tr *TimeRange) Body() interface{} { return tr.body }
+func (tr *TimeRange) body() interface{} { return tr.Body }
 
 func (TimeRange) Ordinal() int { return -1 }
 
 // NewTimeRange creates a new TimeRange.
 func NewTimeRange(minTimeMS, maxTimeMS uint64) *TimeRange {
 	tr := new(TimeRange)
-	tr.body.MinTimeMS = minTimeMS
-	tr.body.MaxTimeMS = maxTimeMS
+	tr.Body.MinTimeMS = minTimeMS
+	tr.Body.MaxTimeMS = maxTimeMS
 	return tr
 }

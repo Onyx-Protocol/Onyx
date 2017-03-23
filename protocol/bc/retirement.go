@@ -4,7 +4,7 @@ package bc
 // blockchain. The value it contains can never be obtained by later
 // entries. Retirement satisfies the Entry interface.
 type Retirement struct {
-	body struct {
+	Body struct {
 		Source  valueSource
 		Data    Hash
 		ExtHash Hash
@@ -12,12 +12,12 @@ type Retirement struct {
 	ordinal int
 
 	// Source contains (a pointer to) the manifested entry corresponding
-	// to body.Source.
+	// to Body.Source.
 	Source Entry // *issuance, *spend, or *mux
 }
 
 func (Retirement) Type() string         { return "retirement1" }
-func (r *Retirement) Body() interface{} { return r.body }
+func (r *Retirement) body() interface{} { return r.Body }
 
 func (r Retirement) Ordinal() int { return r.ordinal }
 
@@ -25,7 +25,7 @@ func (r Retirement) Ordinal() int { return r.ordinal }
 // should be set with setSource or setSourceID.
 func NewRetirement(data Hash, ordinal int) *Retirement {
 	r := new(Retirement)
-	r.body.Data = data
+	r.Body.Data = data
 	r.ordinal = ordinal
 	return r
 }
@@ -36,7 +36,7 @@ func (r *Retirement) setSource(e Entry, value AssetAmount, position uint64) {
 }
 
 func (r *Retirement) setSourceID(sourceID Hash, value AssetAmount, position uint64) {
-	r.body.Source = valueSource{
+	r.Body.Source = valueSource{
 		Ref:      sourceID,
 		Value:    value,
 		Position: position,

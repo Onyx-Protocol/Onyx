@@ -4,19 +4,19 @@ package bc
 // making it available to one or more destination entries. It
 // satisfies the Entry interface.
 type Mux struct {
-	body struct {
+	Body struct {
 		Sources []valueSource
 		Program Program
 		ExtHash Hash
 	}
 
 	// Sources contains (pointers to) the manifested entries for each
-	// body.Sources[i].Ref.
+	// Body.Sources[i].Ref.
 	Sources []Entry // each entry is *issuance, *spend, or *mux
 }
 
 func (Mux) Type() string         { return "mux1" }
-func (m *Mux) Body() interface{} { return m.body }
+func (m *Mux) body() interface{} { return m.Body }
 
 func (Mux) Ordinal() int { return -1 }
 
@@ -24,7 +24,7 @@ func (Mux) Ordinal() int { return -1 }
 // with addSource or addSourceID.
 func NewMux(program Program) *Mux {
 	m := new(Mux)
-	m.body.Program = program
+	m.Body.Program = program
 	return m
 }
 
@@ -39,6 +39,6 @@ func (m *Mux) addSourceID(sourceID Hash, value AssetAmount, position uint64) {
 		Value:    value,
 		Position: position,
 	}
-	m.body.Sources = append(m.body.Sources, src)
+	m.Body.Sources = append(m.Body.Sources, src)
 	m.Sources = append(m.Sources, nil)
 }
