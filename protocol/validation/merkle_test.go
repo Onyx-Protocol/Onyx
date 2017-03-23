@@ -15,7 +15,7 @@ func TestCalcMerkleRoot(t *testing.T) {
 	}{{
 		witnesses: [][][]byte{
 			[][]byte{
-				{1, 0, 0, 0, 0, 0, 0, 0},
+				{1},
 				[]byte("00000"),
 			},
 		},
@@ -23,11 +23,11 @@ func TestCalcMerkleRoot(t *testing.T) {
 	}, {
 		witnesses: [][][]byte{
 			[][]byte{
-				{1, 0, 0, 0, 0, 0, 0, 0},
+				{1},
 				[]byte("000000"),
 			},
 			[][]byte{
-				{1, 0, 0, 0, 0, 0, 0, 0},
+				{1},
 				[]byte("111111"),
 			},
 		},
@@ -35,11 +35,11 @@ func TestCalcMerkleRoot(t *testing.T) {
 	}, {
 		witnesses: [][][]byte{
 			[][]byte{
-				{1, 0, 0, 0, 0, 0, 0, 0},
+				{1},
 				[]byte("000000"),
 			},
 			[][]byte{
-				{2, 0, 0, 0, 0, 0, 0, 0},
+				{2},
 				[]byte("111111"),
 				[]byte("222222"),
 			},
