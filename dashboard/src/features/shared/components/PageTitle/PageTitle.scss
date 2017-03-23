@@ -5,6 +5,8 @@
   height: $title-height;
   display: flex;
   align-items: center;
+
+  -webkit-align-items: center;
   code {
     display: inline-block;
     font-size: $font-size-code;
