@@ -4,8 +4,8 @@
   border-bottom: 1px solid $border-color;
   height: $title-height;
   display: flex;
+  display: -webkit-flex;
   align-items: center;
-
   -webkit-align-items: center;
   code {
     display: inline-block;
@@ -33,6 +33,7 @@
 
 .crumbs {
   display: flex;
+  display: -webkit-flex;
   font-size: $font-size-page-title;
   list-style-type: none;
   margin: 0;
@@ -56,6 +57,7 @@
 .actions {
   list-style-type: none;
   display: flex;
+  display: -webkit-flex;
   margin: 0;
   padding: 0;
 }

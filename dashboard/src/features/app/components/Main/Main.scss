@@ -1,5 +1,6 @@
 .main {
   display: flex;
+  display: -webkit-flex;
   flex-direction: column;
   flex: 1;
 }
@@ -32,8 +33,8 @@
   height: $title-height;
   padding-left: $gutter-size;
   display: flex;
+  display: -webkit-flex;
   align-items: center;
-
   -webkit-align-items: center;
 
   img {

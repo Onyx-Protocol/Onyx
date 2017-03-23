@@ -27,6 +27,7 @@ html {
 
 body {
   display: flex;
+  display: -webkit-flex;
   flex-direction: column;
   position: relative;
   margin: 0 auto;
@@ -37,11 +38,13 @@ body {
 
 #root {
   display: flex;
+  display: -webkit-flex;
   flex-direction: column;
   flex: 1;
 
   > div {
     display: flex;
+    display: -webkit-flex;
     flex-direction: column;
     flex: 1;
   }
@@ -63,6 +66,7 @@ p {
 
 .flex-container {
   display: flex;
+  display: -webkit-flex;
   flex-direction: column;
   flex: 1;
 }

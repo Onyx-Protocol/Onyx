@@ -3,6 +3,7 @@
   background-color: $background-emphasis-color;
   padding: 25px $gutter-size;
   display: flex;
+  display: -webkit-flex;
   align-items: center;
 
   -webkit-align-items: center;

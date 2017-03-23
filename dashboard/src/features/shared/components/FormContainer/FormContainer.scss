@@ -2,6 +2,7 @@
   background: $background-color;
   padding: 0;
   display: flex;
+  display: -webkit-flex;
   flex-direction: row;
   padding: 0 $gutter-size;
 }

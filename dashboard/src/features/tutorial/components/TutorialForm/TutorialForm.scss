@@ -21,6 +21,7 @@
       padding: 0 $gutter-size;
       height: $title-height;
       display: flex;
+      display: -webkit-flex;
       align-items: center;
 
       -webkit-align-items: center;
