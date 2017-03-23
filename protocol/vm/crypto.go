@@ -7,7 +7,6 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
-	"chain/errors"
 	"chain/math/checked"
 )
 
