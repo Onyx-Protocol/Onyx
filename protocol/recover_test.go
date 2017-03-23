@@ -9,7 +9,6 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
-	"chain/protocol/validation"
 	"chain/testutil"
 )
 
@@ -56,7 +55,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 }
 
 func createEmptyBlock(block *bc.Block, snapshot *state.Snapshot) *bc.Block {
-	root, err := validation.CalcMerkleRoot(nil)
+	root, err := bc.MerkleRoot(nil)
 	if err != nil {
 		log.Fatalf("calculating empty merkle root: %s", err)
 	}

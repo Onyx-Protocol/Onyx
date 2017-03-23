@@ -138,3 +138,11 @@ func TestValidateBlockHeader(t *testing.T) {
 		}
 	}
 }
+
+func mustParseHash(s string) bc.Hash {
+	h, err := bc.ParseHash(s)
+	if err != nil {
+		panic(err)
+	}
+	return h
+}
