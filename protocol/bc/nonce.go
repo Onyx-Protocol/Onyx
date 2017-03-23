@@ -5,13 +5,13 @@ package bc
 // "anchors"). It satisfies the Entry interface.
 type Nonce struct {
 	Body struct {
-		Program   Program
-		TimeRange Hash
-		ExtHash   Hash
+		Program     Program
+		TimeRangeID Hash
+		ExtHash     Hash
 	}
 
 	// TimeRange contains (a pointer to) the manifested entry
-	// corresponding to Body.TimeRange.
+	// corresponding to Body.TimeRangeID.
 	TimeRange *TimeRange
 }
 
@@ -24,7 +24,7 @@ func (Nonce) Ordinal() int { return -1 }
 func NewNonce(p Program, tr *TimeRange) *Nonce {
 	n := new(Nonce)
 	n.Body.Program = p
-	n.Body.TimeRange = EntryID(tr)
+	n.Body.TimeRangeID = EntryID(tr)
 	n.TimeRange = tr
 	return n
 }

@@ -6,15 +6,15 @@ package bc
 // (Not to be confused with the deprecated type IssuanceInput.)
 type Issuance struct {
 	Body struct {
-		Anchor  Hash
-		Value   AssetAmount
-		Data    Hash
-		ExtHash Hash
+		AnchorID Hash
+		Value    AssetAmount
+		Data     Hash
+		ExtHash  Hash
 	}
 	ordinal int
 
 	// Anchor is a pointer to the manifested entry corresponding to
-	// Body.Anchor.
+	// Body.AnchorID.
 	Anchor Entry // *nonce or *spend
 }
 
@@ -26,7 +26,7 @@ func (iss Issuance) Ordinal() int { return iss.ordinal }
 // NewIssuance creates a new Issuance.
 func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issuance {
 	iss := new(Issuance)
-	iss.Body.Anchor = EntryID(anchor)
+	iss.Body.AnchorID = EntryID(anchor)
 	iss.Anchor = anchor
 	iss.Body.Value = value
 	iss.Body.Data = data

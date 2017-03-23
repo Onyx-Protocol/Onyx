@@ -7,14 +7,14 @@ package bc
 type TxHeader struct {
 	Body struct {
 		Version              uint64
-		Results              []Hash
+		ResultIDs            []Hash
 		Data                 Hash
 		MinTimeMS, MaxTimeMS uint64
 		ExtHash              Hash
 	}
 
 	// Results contains (pointers to) the manifested entries for the
-	// items in Body.Results.
+	// items in Body.ResultIDs.
 	Results []Entry // each entry is *output or *retirement
 }
 
@@ -33,7 +33,7 @@ func NewTxHeader(version uint64, results []Entry, data Hash, minTimeMS, maxTimeM
 
 	h.Results = results
 	for _, r := range results {
-		h.Body.Results = append(h.Body.Results, EntryID(r))
+		h.Body.ResultIDs = append(h.Body.ResultIDs, EntryID(r))
 	}
 
 	return h
