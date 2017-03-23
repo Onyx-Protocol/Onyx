@@ -5,7 +5,7 @@ package bc
 // entries. Retirement satisfies the Entry interface.
 type Retirement struct {
 	Body struct {
-		Source  valueSource
+		Source  ValueSource
 		Data    Hash
 		ExtHash Hash
 	}
@@ -36,7 +36,7 @@ func (r *Retirement) setSource(e Entry, value AssetAmount, position uint64) {
 }
 
 func (r *Retirement) setSourceID(sourceID Hash, value AssetAmount, position uint64) {
-	r.Body.Source = valueSource{
+	r.Body.Source = ValueSource{
 		Ref:      sourceID,
 		Value:    value,
 		Position: position,

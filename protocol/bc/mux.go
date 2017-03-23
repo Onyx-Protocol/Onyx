@@ -5,7 +5,7 @@ package bc
 // satisfies the Entry interface.
 type Mux struct {
 	Body struct {
-		Sources []valueSource
+		Sources []ValueSource
 		Program Program
 		ExtHash Hash
 	}
@@ -34,7 +34,7 @@ func (m *Mux) addSource(e Entry, value AssetAmount, position uint64) {
 }
 
 func (m *Mux) addSourceID(sourceID Hash, value AssetAmount, position uint64) {
-	src := valueSource{
+	src := ValueSource{
 		Ref:      sourceID,
 		Value:    value,
 		Position: position,

@@ -7,7 +7,7 @@ package bc
 // (Not to be confused with the deprecated type TxOutput.)
 type Output struct {
 	Body struct {
-		Source         valueSource
+		Source         ValueSource
 		ControlProgram Program
 		Data           Hash
 		ExtHash        Hash
@@ -43,7 +43,7 @@ func (o *Output) setSource(e Entry, value AssetAmount, position uint64) {
 }
 
 func (o *Output) setSourceID(sourceID Hash, value AssetAmount, position uint64) {
-	o.Body.Source = valueSource{
+	o.Body.Source = ValueSource{
 		Ref:      sourceID,
 		Value:    value,
 		Position: position,
