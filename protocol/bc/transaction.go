@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 
-	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
@@ -19,7 +18,7 @@ const CurrentTransactionVersion = 1
 // Tx holds a transaction along with its hash.
 type Tx struct {
 	TxData
-	TxHashes `json:"-"`
+	*TxEntries `json:"-"`
 }
 
 func (tx *Tx) UnmarshalText(p []byte) error {
@@ -27,27 +26,35 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 		return err
 	}
 
-	hashes, err := ComputeTxHashes(&tx.TxData)
+	txEntries, err := ComputeTxEntries(&tx.TxData)
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
-	tx.TxHashes = *hashes
+	tx.TxEntries = txEntries
 	return nil
+}
+
+func (tx *Tx) IssuanceHash(n uint32) Hash {
+	return tx.TxEntries.TxInputIDs[n]
+}
+
+func (tx *Tx) OutputID(outputIndex uint32) Hash {
+	return tx.Body.ResultIDs[outputIndex]
 }
 
 // NewTx returns a new Tx containing data and its hash.
 // If you have already computed the hash, use struct literal
 // notation to make a Tx object directly.
 func NewTx(data TxData) *Tx {
-	hashes, err := ComputeTxHashes(&data)
+	txEntries, err := ComputeTxEntries(&data)
 	if err != nil {
 		panic(err)
 	}
 
 	return &Tx{
-		TxData:   data,
-		TxHashes: *hashes,
+		TxData:    data,
+		TxEntries: txEntries,
 	}
 }
 
@@ -189,39 +196,6 @@ func (tx *TxData) readFrom(r io.Reader) error {
 // does not read the enclosing extensible string
 func (tx *TxData) readCommonWitness(r io.Reader) error {
 	return nil
-}
-
-func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
-	if n < 0 || n >= len(tx.Inputs) {
-		return h, fmt.Errorf("no input %d", n)
-	}
-	ii, ok := tx.Inputs[n].TypedInput.(*IssuanceInput)
-	if !ok {
-		return h, fmt.Errorf("not an issuance input")
-	}
-	buf := sha3pool.Get256()
-	defer sha3pool.Put256(buf)
-
-	_, err = blockchain.WriteVarstr31(buf, ii.Nonce)
-	if err != nil {
-		return h, err
-	}
-	assetID := ii.AssetID()
-	buf.Write(assetID[:])
-	_, err = blockchain.WriteVarint63(buf, tx.MinTime)
-	if err != nil {
-		return h, err
-	}
-	_, err = blockchain.WriteVarint63(buf, tx.MaxTime)
-	if err != nil {
-		return h, err
-	}
-	buf.Read(h[:])
-	return h, nil
-}
-
-func (tx *Tx) OutputID(outputIndex uint32) Hash {
-	return tx.Results[outputIndex].ID
 }
 
 func (tx *TxData) MarshalText() ([]byte, error) {

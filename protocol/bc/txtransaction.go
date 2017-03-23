@@ -7,6 +7,29 @@ import (
 	"chain/errors"
 )
 
+type TxEntries struct {
+	*TxHeader
+	ID         Hash
+	TxInputs   []Entry // 1:1 correspondence with TxData.Inputs
+	TxInputIDs []Hash  // 1:1 correspondence with TxData.Inputs
+
+	// IDs of reachable entries of various kinds to speed up Apply
+	NonceIDs       []Hash
+	SpentOutputIDs []Hash
+	OutputIDs      []Hash
+}
+
+func (tx *TxEntries) SigHash(n uint32) (hash Hash) {
+	hasher := sha3pool.Get256()
+	defer sha3pool.Put256(hasher)
+
+	hasher.Write(tx.TxInputIDs[n][:])
+	hasher.Write(tx.ID[:])
+
+	hasher.Read(hash[:])
+	return hash
+}
+
 // ComputeOutputID assembles an output entry given a spend commitment
 // and computes and returns its corresponding entry ID.
 func ComputeOutputID(sc *SpendCommitment) (h Hash, err error) {
@@ -26,8 +49,8 @@ func ComputeOutputID(sc *SpendCommitment) (h Hash, err error) {
 	return h, nil
 }
 
-// ComputeTxHashes returns all hashes needed for validation and state updates.
-func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
+// TxHashes returns all hashes needed for validation and state updates.
+func ComputeTxEntries(oldTx *TxData) (txEntries *TxEntries, err error) {
 	defer func() {
 		if r, ok := recover().(error); ok {
 			err = r
@@ -39,60 +62,55 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 		return nil, errors.Wrap(err, "mapping old transaction to new")
 	}
 
-	hashes = new(TxHashes)
-	hashes.ID = txid
-
-	// Results
-	hashes.Results = make([]ResultInfo, len(header.Body.ResultIDs))
-	for i, resultHash := range header.Body.ResultIDs {
-		hashes.Results[i].ID = resultHash
-		entry := entries[resultHash]
-		if out, ok := entry.(*Output); ok {
-			hashes.Results[i].SourceID = out.Body.Source.Ref
-			hashes.Results[i].SourcePos = out.Body.Source.Position
-			hashes.Results[i].RefDataHash = out.Body.Data
-		}
+	txEntries = &TxEntries{
+		TxHeader:   header,
+		ID:         txid,
+		TxInputs:   make([]Entry, len(oldTx.Inputs)),
+		TxInputIDs: make([]Hash, len(oldTx.Inputs)),
 	}
 
-	hashes.SpentOutputIDs = make([]Hash, len(oldTx.Inputs))
-	hashes.SigHashes = make([]Hash, len(oldTx.Inputs))
+	var (
+		nonceIDs       = make(map[Hash]bool)
+		spentOutputIDs = make(map[Hash]bool)
+		outputIDs      = make(map[Hash]bool)
+	)
 
-	for entryID, ent := range entries {
-		switch ent := ent.(type) {
-		case *Nonce:
-			// TODO: check time range is within network-defined limits
-			trID := ent.Body.TimeRangeID
-			trEntry, ok := entries[trID]
-			if !ok {
-				return nil, fmt.Errorf("nonce entry refers to nonexistent timerange entry")
-			}
-			tr, ok := trEntry.(*TimeRange)
-			if !ok {
-				return nil, fmt.Errorf("nonce entry refers to %s entry, should be timerange", trEntry.Type())
-			}
-			iss := struct {
-				ID           Hash
-				ExpirationMS uint64
-			}{entryID, tr.Body.MaxTimeMS}
-			hashes.Issuances = append(hashes.Issuances, iss)
-
+	for id, e := range entries {
+		switch e := e.(type) {
 		case *Issuance:
-			hashes.SigHashes[ent.Ordinal()] = makeSigHash(entryID, hashes.ID)
+			if _, ok := e.Anchor.(*Nonce); ok {
+				nonceIDs[e.Body.AnchorID] = true
+			}
+			// resume below after the switch
 
 		case *Spend:
-			hashes.SigHashes[ent.Ordinal()] = makeSigHash(entryID, hashes.ID)
-			hashes.SpentOutputIDs[ent.Ordinal()] = ent.Body.SpentOutputID
+			spentOutputIDs[e.Body.SpentOutputID] = true
+			// resume below after the switch
+
+		case *Output:
+			outputIDs[id] = true
+			continue
+
+		default:
+			continue
 		}
+		ord := e.Ordinal()
+		if ord < 0 || ord >= len(oldTx.Inputs) {
+			return nil, fmt.Errorf("%T entry has out-of-range ordinal %d", e, ord)
+		}
+		txEntries.TxInputs[ord] = e
+		txEntries.TxInputIDs[ord] = id
 	}
 
-	return hashes, nil
-}
+	for id := range nonceIDs {
+		txEntries.NonceIDs = append(txEntries.NonceIDs, id)
+	}
+	for id := range spentOutputIDs {
+		txEntries.SpentOutputIDs = append(txEntries.SpentOutputIDs, id)
+	}
+	for id := range outputIDs {
+		txEntries.OutputIDs = append(txEntries.OutputIDs, id)
+	}
 
-func makeSigHash(entryID, txID Hash) (hash Hash) {
-	hasher := sha3pool.Get256()
-	defer sha3pool.Put256(hasher)
-	hasher.Write(entryID[:])
-	hasher.Write(txID[:])
-	hasher.Read(hash[:])
-	return hash
+	return txEntries, nil
 }
