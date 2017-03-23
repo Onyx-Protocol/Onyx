@@ -26,14 +26,22 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 	// issuances.  Do spends first so the entry ID of the first spend is
 	// available in case an issuance needs it for its anchor.
 
-	var firstSpend *Spend
-	muxSources := make([]ValueSource, len(tx.Inputs))
+	var (
+		firstSpend *Spend
+		spends     []*Spend
+		issuances  []*Issuance
+		muxSources = make([]ValueSource, len(tx.Inputs))
+	)
 
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*SpendInput); ok {
 			prog := Program{VMVersion: oldSp.VMVersion, Code: oldSp.ControlProgram}
-			out := NewOutput(prog, oldSp.RefDataHash, 0) // ordinal doesn't matter for prevouts, only for result outputs
-			out.setSourceID(oldSp.SourceID, oldSp.AssetAmount, oldSp.SourcePosition)
+			src := ValueSource{
+				Ref:      oldSp.SourceID,
+				Value:    oldSp.AssetAmount,
+				Position: oldSp.SourcePosition,
+			}
+			out := NewOutput(src, prog, oldSp.RefDataHash, 0) // ordinal doesn't matter for prevouts, only for result outputs
 			sp := NewSpend(out, hashData(inp.ReferenceData), i)
 			var id Hash
 			id, err = addEntry(sp)
@@ -44,10 +52,12 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 			muxSources[i] = ValueSource{
 				Ref:   id,
 				Value: oldSp.AssetAmount,
+				Entry: sp,
 			}
 			if firstSpend == nil {
 				firstSpend = sp
 			}
+			spends = append(spends, sp)
 		}
 	}
 
@@ -99,7 +109,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 					code = append([]byte{0x4e}, b[:]...)
 				}
 				code = append(code, oldIss.Nonce...)
-				code = append(code, []byte{0x75, 0xc2, 0x20}...)
+				code = append(code, 0x75, 0xc2, 0x20)
 				code = append(code, assetID[:]...)
 				code = append(code, 0x87)
 
@@ -124,18 +134,15 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 			muxSources[i] = ValueSource{
 				Ref:   issID,
 				Value: val,
+				Entry: iss,
 			}
+			issuances = append(issuances, iss)
 		}
 	}
 
-	mux := NewMux(Program{VMVersion: 1, Code: []byte{0x51}}) // 0x51 == vm.OP_TRUE, minus a circular dependency on protocol/vm
-	for _, src := range muxSources {
-		// TODO(bobg): addSource will recompute the hash of
-		// entryMap[src.Ref], which is already available as src.Ref - fix
-		// this (and a number of other such places)
-		mux.addSource(entryMap[src.Ref], src.Value, src.Position)
-	}
-	_, err = addEntry(mux)
+	mux := NewMux(muxSources, Program{VMVersion: 1, Code: []byte{0x51}}) // 0x51 == vm.OP_TRUE, minus a circular dependency on protocol/vm
+	var muxID Hash
+	muxID, err = addEntry(mux)
 	if err != nil {
 		err = errors.Wrap(err, "adding mux entry")
 		return
@@ -144,10 +151,15 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 	var results []Entry
 
 	for i, out := range tx.Outputs {
+		src := ValueSource{
+			Ref:      muxID,
+			Value:    out.AssetAmount,
+			Position: uint64(i),
+			Entry:    mux,
+		}
 		if isUnspendable(out.ControlProgram) {
 			// retirement
-			r := NewRetirement(hashData(out.ReferenceData), i)
-			r.setSource(mux, out.AssetAmount, uint64(i))
+			r := NewRetirement(src, hashData(out.ReferenceData), i)
 			_, err = addEntry(r)
 			if err != nil {
 				err = errors.Wrapf(err, "adding retirement entry for output %d", i)
@@ -157,8 +169,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 		} else {
 			// non-retirement
 			prog := Program{out.VMVersion, out.ControlProgram}
-			o := NewOutput(prog, hashData(out.ReferenceData), i)
-			o.setSource(mux, out.AssetAmount, uint64(i))
+			o := NewOutput(src, prog, hashData(out.ReferenceData), i)
 			_, err = addEntry(o)
 			if err != nil {
 				err = errors.Wrapf(err, "adding output entry for output %d", i)
