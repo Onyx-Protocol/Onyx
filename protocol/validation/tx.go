@@ -249,8 +249,20 @@ func CheckTxWellFormed(tx *bc.Tx) error {
 		}
 	}
 
-	for i := range tx.Inputs {
-		err := vm.VerifyTxInput(tx, uint32(i))
+	for i, inp := range tx.Inputs {
+		var (
+			prog bc.Program
+			args [][]byte
+		)
+		switch inp := inp.TypedInput.(type) {
+		case *bc.IssuanceInput:
+			prog = bc.Program{VMVersion: inp.VMVersion, Code: inp.IssuanceProgram}
+			args = inp.Arguments
+		case *bc.SpendInput:
+			prog = bc.Program{VMVersion: inp.VMVersion, Code: inp.ControlProgram}
+			args = inp.Arguments
+		}
+		err := vm.Verify(bc.NewTxVMContext(tx, uint32(i), prog, args))
 		if err != nil {
 			return badTxErrf(err, "validation failed in script execution, input %d", i)
 		}

@@ -50,8 +50,8 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 		}
 	}
 
-	hashes.VMContexts = make([]*VMContext, len(oldTx.Inputs))
 	hashes.SpentOutputIDs = make([]Hash, len(oldTx.Inputs))
+	hashes.SigHashes = make([]Hash, len(oldTx.Inputs))
 
 	for entryID, ent := range entries {
 		switch ent := ent.(type) {
@@ -73,14 +73,10 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 			hashes.Issuances = append(hashes.Issuances, iss)
 
 		case *Issuance:
-			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
-			vmc.NonceID = &ent.body.Anchor
-			hashes.VMContexts[ent.Ordinal()] = vmc
+			hashes.SigHashes[ent.Ordinal()] = makeSigHash(entryID, hashes.ID)
 
 		case *Spend:
-			vmc := newVMContext(entryID, hashes.ID, header.body.Data, ent.body.Data)
-			vmc.OutputID = &ent.body.SpentOutput
-			hashes.VMContexts[ent.Ordinal()] = vmc
+			hashes.SigHashes[ent.Ordinal()] = makeSigHash(entryID, hashes.ID)
 			hashes.SpentOutputIDs[ent.Ordinal()] = ent.body.SpentOutput
 		}
 	}
@@ -88,26 +84,11 @@ func ComputeTxHashes(oldTx *TxData) (hashes *TxHashes, err error) {
 	return hashes, nil
 }
 
-// populates the common fields of a VMContext for an Entry, regardless of whether
-// that Entry is a Spend or an Issuance
-func newVMContext(entryID, txid, txData, inpData Hash) *VMContext {
-	vmc := new(VMContext)
-
-	// TxRefDataHash
-	vmc.TxRefDataHash = txData
-
-	// RefDataHash (input-specific)
-	vmc.RefDataHash = inpData
-
-	// EntryID
-	vmc.EntryID = entryID
-
-	// TxSigHash
+func makeSigHash(entryID, txID Hash) (hash Hash) {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 	hasher.Write(entryID[:])
-	hasher.Write(txid[:])
-	hasher.Read(vmc.TxSigHash[:])
-
-	return vmc
+	hasher.Write(txID[:])
+	hasher.Read(hash[:])
+	return hash
 }

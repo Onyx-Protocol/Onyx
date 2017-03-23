@@ -11,8 +11,8 @@ type (
 			ID           Hash
 			ExpirationMS uint64
 		}
-		SpentOutputIDs []Hash       // one per old-style Input. Non-spend inputs are blank hashes.
-		VMContexts     []*VMContext // one per old-style Input
+		SpentOutputIDs []Hash // one per old-style Input. Non-spend inputs are blank hashes.
+		SigHashes      []Hash // one per old-style Input.
 	}
 
 	// ResultInfo contains information about each result in a transaction header.
@@ -24,17 +24,8 @@ type (
 		SourcePos   uint64 // the position within the source entry of this output's value
 		RefDataHash Hash   // contents of the result entry's data field (which is a hash of the source refdata, when converting from old-style transactions)
 	}
-
-	VMContext struct {
-		TxRefDataHash Hash
-		RefDataHash   Hash
-		TxSigHash     Hash
-		OutputID      *Hash
-		EntryID       Hash
-		NonceID       *Hash
-	}
 )
 
 func (t TxHashes) SigHash(n uint32) Hash {
-	return t.VMContexts[n].TxSigHash
+	return t.SigHashes[n]
 }

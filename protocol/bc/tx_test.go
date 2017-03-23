@@ -22,8 +22,8 @@ func TestTxHashes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(hashes.VMContexts) != len(c.txdata.Inputs) {
-			t.Errorf("case %d: len(hashes.VMContexts) = %d, want %d", i, len(hashes.VMContexts), len(c.txdata.Inputs))
+		if len(hashes.SpentOutputIDs) != len(c.txdata.Inputs) {
+			t.Errorf("case %d: len(hashes.SpentOutputIDs) = %d, want %d", i, len(hashes.SpentOutputIDs), len(c.txdata.Inputs))
 		}
 		if c.hash != hashes.ID {
 			t.Errorf("case %d: got txid %x, want %x", i, hashes.ID[:], c.hash[:])

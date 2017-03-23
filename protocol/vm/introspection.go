@@ -1,26 +1,14 @@
 package vm
 
-import (
-	"bytes"
-	"fmt"
-	"math"
-
-	"golang.org/x/crypto/sha3"
-
-	"chain/protocol/bc"
-)
+import "math"
 
 func opCheckOutput(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
 	err := vm.applyCost(16)
 	if err != nil {
 		return err
 	}
 
-	prog, err := vm.pop(true)
+	code, err := vm.pop(true)
 	if err != nil {
 		return err
 	}
@@ -50,207 +38,163 @@ func opCheckOutput(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if index < 0 || int64(len(vm.tx.Outputs)) <= index {
+	if index < 0 {
 		return ErrBadValue
 	}
 
-	o := vm.tx.Outputs[index]
+	if vm.context.CheckOutput == nil {
+		return ErrContext
+	}
 
-	if o.AssetVersion != 1 {
-		return vm.pushBool(false, true)
+	ok, err := vm.context.CheckOutput(uint64(index), refdatahash, uint64(amount), assetID, uint64(vmVersion), code)
+	if err != nil {
+		return err
 	}
-	if o.Amount != uint64(amount) {
-		return vm.pushBool(false, true)
-	}
-	if o.VMVersion != uint64(vmVersion) {
-		return vm.pushBool(false, true)
-	}
-	if !bytes.Equal(o.ControlProgram, prog) {
-		return vm.pushBool(false, true)
-	}
-	if !bytes.Equal(o.AssetID[:], assetID) {
-		return vm.pushBool(false, true)
-	}
-	if len(refdatahash) > 0 {
-		h := sha3.Sum256(o.ReferenceData)
-		if !bytes.Equal(h[:], refdatahash) {
-			return vm.pushBool(false, true)
-		}
-	}
-	return vm.pushBool(true, true)
+	return vm.pushBool(ok, true)
 }
 
 func opAsset(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	assetID := vm.tx.Inputs[vm.inputIndex].AssetID()
-	return vm.push(assetID[:], true)
+	if vm.context.AssetID == nil {
+		return ErrContext
+	}
+	return vm.push(*vm.context.AssetID, true)
 }
 
 func opAmount(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	amount := vm.tx.Inputs[vm.inputIndex].Amount()
-	return vm.pushInt64(int64(amount), true)
+	if vm.context.Amount == nil {
+		return ErrContext
+	}
+	return vm.pushInt64(int64(*vm.context.Amount), true)
 }
 
 func opProgram(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	return vm.push(vm.mainprog, true)
+	return vm.push(vm.context.Code, true)
 }
 
 func opMinTime(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	return vm.pushInt64(int64(vm.tx.MinTime), true)
+	if vm.context.MinTimeMS == nil {
+		return ErrContext
+	}
+	return vm.pushInt64(int64(*vm.context.MinTimeMS), true)
 }
 
 func opMaxTime(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	maxTime := vm.tx.MaxTime
-	if maxTime == 0 || maxTime > math.MaxInt64 {
-		maxTime = uint64(math.MaxInt64)
+	if vm.context.MaxTimeMS == nil {
+		return ErrContext
+	}
+	maxTimeMS := *vm.context.MaxTimeMS
+	if maxTimeMS == 0 || maxTimeMS > math.MaxInt64 {
+		maxTimeMS = uint64(math.MaxInt64)
 	}
 
-	return vm.pushInt64(int64(maxTime), true)
+	return vm.pushInt64(int64(maxTimeMS), true)
 }
 
 func opRefDataHash(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	h := sha3.Sum256(vm.tx.Inputs[vm.inputIndex].ReferenceData)
-	return vm.push(h[:], true)
+	if vm.context.InputRefDataHash == nil {
+		return ErrContext
+	}
+	return vm.push(*vm.context.InputRefDataHash, true)
 }
 
 func opTxRefDataHash(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	h := sha3.Sum256(vm.tx.ReferenceData)
-	return vm.push(h[:], true)
+	if vm.context.TxRefDataHash == nil {
+		return ErrContext
+	}
+	return vm.push(*vm.context.TxRefDataHash, true)
 }
 
 func opIndex(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	return vm.pushInt64(int64(vm.inputIndex), true)
+	if vm.context.InputIndex == nil {
+		return ErrContext
+	}
+	return vm.pushInt64(int64(*vm.context.InputIndex), true)
 }
 
 func opOutputID(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
-	outid := vm.txContext.OutputID
-	if outid == nil {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	return vm.push(outid[:], true)
+	if vm.context.SpentOutputID == nil {
+		return ErrContext
+	}
+	return vm.push(*vm.context.SpentOutputID, true)
 }
 
 func opNonce(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
-
-	txin := vm.tx.Inputs[vm.inputIndex]
-	ii, ok := txin.TypedInput.(*bc.IssuanceInput)
-	if !ok {
-		return ErrContext
-	}
-
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	return vm.push(ii.Nonce, true)
+	if vm.context.Nonce == nil {
+		return ErrContext
+	}
+	return vm.push(*vm.context.Nonce, true)
 }
 
 func opNextProgram(vm *virtualMachine) error {
-	if vm.block == nil {
-		return ErrContext
-	}
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
-	return vm.push(vm.block.ConsensusProgram, true)
+
+	if vm.context.NextConsensusProgram == nil {
+		return ErrContext
+	}
+	return vm.push(*vm.context.NextConsensusProgram, true)
 }
 
 func opBlockTime(vm *virtualMachine) error {
-	if vm.block == nil {
-		return ErrContext
-	}
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
-	if vm.block.TimestampMS > math.MaxInt64 {
-		return fmt.Errorf("block timestamp out of range")
+
+	if vm.context.BlockTimeMS == nil {
+		return ErrContext
 	}
-	return vm.pushInt64(int64(vm.block.TimestampMS), true)
+	return vm.pushInt64(int64(*vm.context.BlockTimeMS), true)
 }

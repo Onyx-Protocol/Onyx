@@ -72,3 +72,11 @@ func TestDisassemble(t *testing.T) {
 		}
 	}
 }
+
+func mustDecodeHex(h string) []byte {
+	bits, err := hex.DecodeString(h)
+	if err != nil {
+		panic(err)
+	}
+	return bits
+}

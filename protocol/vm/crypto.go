@@ -127,25 +127,23 @@ func opCheckMultiSig(vm *virtualMachine) error {
 }
 
 func opTxSigHash(vm *virtualMachine) error {
-	if vm.tx == nil {
-		return ErrContext
-	}
 	err := vm.applyCost(256)
 	if err != nil {
 		return err
 	}
-	h := vm.txContext.TxSigHash
-	return vm.push(h[:], false)
+	if vm.context.TxSigHash == nil {
+		return ErrContext
+	}
+	return vm.push(*vm.context.TxSigHash, false)
 }
 
 func opBlockHash(vm *virtualMachine) error {
-	if vm.block == nil {
-		return ErrContext
-	}
-	h := vm.block.Hash()
-	err := vm.applyCost(4 * int64(len(h)))
+	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
-	return vm.push(h[:], false)
+	if vm.context.BlockHash == nil {
+		return ErrContext
+	}
+	return vm.push(*vm.context.BlockHash, false)
 }
