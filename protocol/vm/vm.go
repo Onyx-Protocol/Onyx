@@ -42,12 +42,8 @@ var TraceOut io.Writer
 
 func Verify(context *Context) (err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			if rErr, ok := r.(error); ok {
-				err = errors.Sub(ErrUnexpected, rErr)
-			} else {
-				err = ErrUnexpected
-			}
+		if panErr := recover(); panErr != nil {
+			err = ErrUnexpected
 		}
 	}()
 
