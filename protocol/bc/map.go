@@ -27,8 +27,12 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 	// issuances.  Do spends first so the entry ID of the first spend is
 	// available in case an issuance needs it for its anchor.
 
-	var firstSpend *Spend
-	muxSources := make([]ValueSource, len(tx.Inputs))
+	var (
+		firstSpend *Spend
+		spends     []*Spend
+		issuances  []*Issuance
+		muxSources = make([]ValueSource, len(tx.Inputs))
+	)
 
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*SpendInput); ok {
@@ -54,6 +58,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 			if firstSpend == nil {
 				firstSpend = sp
 			}
+			spends = append(spends, sp)
 		}
 	}
 
@@ -108,6 +113,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				Value: val,
 				Entry: iss,
 			}
+			issuances = append(issuances, iss)
 		}
 	}
 
