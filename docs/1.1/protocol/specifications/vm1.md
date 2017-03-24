@@ -1406,7 +1406,7 @@ Fails if `b` is not a valid [VM number](#vm-number).
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|----------------------------
-0xd6  | (A B → B/A)     | 2<sup>252</sup>+27742317777372353535851937790883648493; [standard memory cost](#standard-memory-cost)
+0xd6  | (A B → B/A)     | 2<sup>126</sup>; [standard memory cost](#standard-memory-cost)
 
 Pops two [point pairs](ca.md#point-pair) from the data stack, computes discrete log of `B` in respect to `A` and pushes the resulting [scalar](#scalar) to the data stack.
 
