@@ -4,82 +4,84 @@ import { combineReducers } from 'redux'
 import uuid from 'uuid'
 
 const flash = (message, title, type) => ({ message, title, type, displayed: false })
-const success = (message, title) => flash(message, title, 'success')
-const error = (message, title) => flash(message, title, 'danger')
+const newFlash = (state, f) => ({...state, [uuid.v4()]: f})
+const newSuccess = (state, message, title) => ({...state, [uuid.v4()]: flash(message, title, 'success')})
+const newError = (state, message, title) => ({...state, [uuid.v4()]: flash(message, title, 'danger')})
 
-export const flashMessages = (state = new Map(), action) => {
+export const flashMessages = (state = {}, action) => {
   switch (action.type) {
     case '@@router/LOCATION_CHANGE': {
       if (action.payload.state && action.payload.state.preserveFlash) {
         return state
       } else {
-        state.forEach((item, key) => {
+        Object.keys(state).forEach(key => {
+          const item = state[key]
           if (item.displayed) {
-            state.delete(key)
+            delete state[key]
           }
         })
-        return new Map(state)
+        return {...state}
       }
     }
 
     case 'CREATED_ACCOUNT': {
-      return new Map(state).set(uuid.v4(), success(<p>
-        Created account. <Link to='accounts/create'>Create another?</Link>
-      </p>))
+      return newSuccess(state, <p>
+          Created account. <Link to='accounts/create'>Create another?</Link>
+        </p>)
     }
 
     case 'CREATED_ASSET': {
-      return new Map(state).set(uuid.v4(), success(<p>
+      return newSuccess(state, <p>
         Created asset. <Link to='assets/create'>Create another?</Link>
-      </p>))
+      </p>)
     }
 
     case 'CREATED_TRANSACTION': {
-      return new Map(state).set(uuid.v4(), success(<p>
+      return newSuccess(state, <p>
         Submitted transaction. <Link to='transactions/create'>Create another?</Link>
-      </p>))
+      </p>)
     }
 
     case 'CREATED_MOCKHSM': {
-      return new Map(state).set(uuid.v4(), success(<p>
+      return newSuccess(state, <p>
         Created key. <Link to='mockhsms/create'>Create another?</Link>
-      </p>))
+      </p>)
     }
 
     case 'CREATED_TRANSACTIONFEED': {
-      return new Map(state).set(uuid.v4(), success(<p>
+      return newSuccess(state, <p>
         Created transaction feed. <Link to='transaction-feeds/create'>Create another?</Link>
-      </p>))
+      </p>)
     }
 
     case 'DELETE_CLIENT_ACCESS_TOKEN':
     case 'DELETE_NETWORK_ACCESS_TOKEN':
     case 'DELETE_TRANSACTIONFEED': {
-      return new Map(state).set(uuid.v4(), flash(action.message, null, 'info'))
+      return newFlash(state, flash(action.message, null, 'info'))
     }
 
     case 'DISMISS_FLASH': {
-      state.delete(action.param)
-      return new Map(state)
+      delete state[action.param]
+      return {...state}
     }
 
     case 'DISPLAYED_FLASH': {
-      const existing = state.get(action.param)
+      const existing = state[action.param]
       if (existing && !existing.displayed) {
-        const newState = new Map(state)
+        const newState = {...state}
         existing.displayed = true
-        newState.set(action.param, existing)
+        newState[action.param] = existing
         return newState
       }
       return state
     }
 
     case 'ERROR': {
-      return new Map(state).set(uuid.v4(), error(action.payload.message))
+      return newError(state, action.payload.message)
     }
 
     case 'USER_LOG_IN': {
-      return new Map()
+      return {}
     }
 
     default: {
