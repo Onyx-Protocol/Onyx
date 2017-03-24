@@ -80,7 +80,10 @@ func Verify(context *Context) (err error) {
 
 	err = vm.run()
 	if err == nil && vm.falseResult() {
-		err = errors.Wrap(ErrFalseVMResult, b.String())
+		err = ErrFalseVMResult
+	}
+	if err != nil && b != nil {
+		err = errors.Wrap(err, b.String())
 	}
 
 	return wrapErr(err, vm, args)
