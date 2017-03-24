@@ -236,7 +236,7 @@ Position         | [Integer](#integer)         | Iff this source refers to a [Mu
 
 ### Value Source 2
 
-A `ValueSource2` has the same data structure and validation rules as a `ValueSource1`, except that all pointers and references to [Issuance1](#issuance-1), [Spend1](#spend-1), [Mux1](#mux-1), [Output1](#output-1), [Retirement1](#retirement-1), and [AssetAmount1](#asset-amount-1) must instead be references to [Issuance2](#issuance-2), [Spend2](#spend-2), [Mux2](#mux-2), [Output2](#output-2), [Retirement2](#retirement-2), and , and [AssetAmount2](#asset-amount-2) respectively.
+A `ValueSource2` has the same data structure and validation rules as a `ValueSource1`, except that all pointers and references to [Issuance1](#issuance-1), [Spend1](#spend-1), [Mux1](#mux-1), [Output1](#output-1), [Retirement1](#retirement-1), and [AssetAmount1](#asset-amount-1) must instead be references to [Issuance2](#issuance-2), [Spend2](#spend-2), [Mux2](#mux-2), [Output2](#output-2), [Retirement2](#retirement-2), and [AssetAmount2](#asset-amount-2) respectively.
 
 Additionally, the `Ref` pointer can additionally be a pointer to an `Upgrade` entry, in which case the validation logic is similar to the logic for `Ref` being an `Issuance` or `Spend` (i.e., `Position` must be 0).
 
