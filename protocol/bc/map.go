@@ -1,11 +1,12 @@
 package bc
 
 import (
-	"encoding/binary"
 	"fmt"
 
 	"chain/crypto/sha3pool"
 	"chain/errors"
+	"chain/protocol/vm"
+	"chain/protocol/vmutil"
 )
 
 func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, err error) {
@@ -32,8 +33,12 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*SpendInput); ok {
 			prog := Program{VMVersion: oldSp.VMVersion, Code: oldSp.ControlProgram}
-			out := NewOutput(prog, oldSp.RefDataHash, 0) // ordinal doesn't matter for prevouts, only for result outputs
-			out.setSourceID(oldSp.SourceID, oldSp.AssetAmount, oldSp.SourcePosition)
+			src := ValueSource{
+				Ref:      oldSp.SourceID,
+				Value:    oldSp.AssetAmount,
+				Position: oldSp.SourcePosition,
+			}
+			out := NewOutput(src, prog, oldSp.RefDataHash, 0) // ordinal doesn't matter for prevouts, only for result outputs
 			sp := NewSpend(out, hashData(inp.ReferenceData), i)
 			var id Hash
 			id, err = addEntry(sp)
@@ -44,6 +49,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 			muxSources[i] = ValueSource{
 				Ref:   id,
 				Value: oldSp.AssetAmount,
+				Entry: sp,
 			}
 			if firstSpend == nil {
 				firstSpend = sp
@@ -75,35 +81,11 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 
 				assetID := oldIss.AssetID()
 
-				// This is the program
-				//   [PUSHDATA(oldIss.Nonce) DROP ASSET PUSHDATA(assetID) EQUAL]
-				// minus a circular dependency on protocol/vm.
-				// This code, partly duplicated from vm.PushdataBytes, will go
-				// away when we're no longer mapping old txs to txentries.
-				nonceLen := len(oldIss.Nonce)
-				var code []byte
-				switch {
-				case nonceLen == 0:
-					code = []byte{0}
-				case nonceLen <= 75:
-					code = []byte{byte(nonceLen)}
-				case nonceLen < 1<<8:
-					code = append([]byte{0x4c}, byte(nonceLen)) // PUSHDATA1
-				case nonceLen < 1<<16:
-					var b [2]byte
-					binary.LittleEndian.PutUint16(b[:], uint16(nonceLen))
-					code = append([]byte{0x4d}, b[:]...)
-				default:
-					var b [4]byte
-					binary.LittleEndian.PutUint32(b[:], uint32(nonceLen))
-					code = append([]byte{0x4e}, b[:]...)
-				}
-				code = append(code, oldIss.Nonce...)
-				code = append(code, []byte{0x75, 0xc2, 0x20}...)
-				code = append(code, assetID[:]...)
-				code = append(code, 0x87)
+				builder := vmutil.NewBuilder()
+				builder.AddData(oldIss.Nonce).AddOp(vm.OP_DROP)
+				builder.AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
 
-				nonce = NewNonce(Program{VMVersion: 1, Code: code}, tr)
+				nonce = NewNonce(Program{VMVersion: 1, Code: builder.Program}, tr)
 				_, err = addEntry(nonce)
 				if err != nil {
 					err = errors.Wrapf(err, "adding nonce entry for input %d", i)
@@ -124,18 +106,14 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 			muxSources[i] = ValueSource{
 				Ref:   issID,
 				Value: val,
+				Entry: iss,
 			}
 		}
 	}
 
-	mux := NewMux(Program{VMVersion: 1, Code: []byte{0x51}}) // 0x51 == vm.OP_TRUE, minus a circular dependency on protocol/vm
-	for _, src := range muxSources {
-		// TODO(bobg): addSource will recompute the hash of
-		// entryMap[src.Ref], which is already available as src.Ref - fix
-		// this (and a number of other such places)
-		mux.addSource(entryMap[src.Ref], src.Value, src.Position)
-	}
-	_, err = addEntry(mux)
+	mux := NewMux(muxSources, Program{VMVersion: 1, Code: []byte{byte(vm.OP_TRUE)}})
+	var muxID Hash
+	muxID, err = addEntry(mux)
 	if err != nil {
 		err = errors.Wrap(err, "adding mux entry")
 		return
@@ -144,10 +122,15 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 	var results []Entry
 
 	for i, out := range tx.Outputs {
-		if isUnspendable(out.ControlProgram) {
+		src := ValueSource{
+			Ref:      muxID,
+			Value:    out.AssetAmount,
+			Position: uint64(i),
+			Entry:    mux,
+		}
+		if vmutil.IsUnspendable(out.ControlProgram) {
 			// retirement
-			r := NewRetirement(hashData(out.ReferenceData), i)
-			r.setSource(mux, out.AssetAmount, uint64(i))
+			r := NewRetirement(src, hashData(out.ReferenceData), i)
 			_, err = addEntry(r)
 			if err != nil {
 				err = errors.Wrapf(err, "adding retirement entry for output %d", i)
@@ -157,8 +140,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 		} else {
 			// non-retirement
 			prog := Program{out.VMVersion, out.ControlProgram}
-			o := NewOutput(prog, hashData(out.ReferenceData), i)
-			o.setSource(mux, out.AssetAmount, uint64(i))
+			o := NewOutput(src, prog, hashData(out.ReferenceData), i)
 			_, err = addEntry(o)
 			if err != nil {
 				err = errors.Wrapf(err, "adding output entry for output %d", i)
@@ -187,11 +169,4 @@ func mapBlockHeader(old *BlockHeader) (bhID Hash, bh *BlockHeaderEntry) {
 func hashData(data []byte) (h Hash) {
 	sha3pool.Sum256(h[:], data)
 	return
-}
-
-// Duplicated from vmutil.IsUnspendable to remove a circular
-// dependency. Will no longer be needed when we stop mapping old txs
-// to txentries.
-func isUnspendable(prog []byte) bool {
-	return len(prog) > 0 && prog[0] == 0x6a
 }
