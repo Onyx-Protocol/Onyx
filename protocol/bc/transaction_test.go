@@ -208,8 +208,8 @@ func TestTransaction(t *testing.T) {
 		if err := json.Unmarshal(txJSON, &txFromJSON); err != nil {
 			t.Errorf("test %d: error unmarshaling tx from json: %s", i, err)
 		}
-		if !testutil.DeepEqual(test.tx, &txFromJSON) {
-			t.Errorf("test %d: bc.Tx -> json -> bc.Tx: got:\n%s\nwant:\n%s", i, spew.Sdump(&txFromJSON), spew.Sdump(test.tx))
+		if !testutil.DeepEqual(test.tx.TxData, txFromJSON.TxData) {
+			t.Errorf("test %d: bc.TxData -> json -> bc.TxData: got:\n%s\nwant:\n%s", i, spew.Sdump(txFromJSON.TxData), spew.Sdump(test.tx.TxData))
 		}
 
 		tx1 := new(TxData)
