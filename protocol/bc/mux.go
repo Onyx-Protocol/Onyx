@@ -9,6 +9,11 @@ type Mux struct {
 		Program Program
 		ExtHash Hash
 	}
+
+	Witness struct {
+		Destinations []ValueDestination // outputs, retirements, and muxes
+		Arguments    [][]byte
+	}
 }
 
 func (Mux) Type() string         { return "mux1" }
