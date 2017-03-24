@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -71,16 +70,9 @@ func Verify(context *Context) (err error) {
 		}
 	}
 
-	// REMOVE ME
-	var b *bytes.Buffer
-	if TraceOut == nil {
-		b = new(bytes.Buffer)
-		TraceOut = b
-	}
-
 	err = vm.run()
 	if err == nil && vm.falseResult() {
-		err = errors.Wrap(ErrFalseVMResult, b.String())
+		err = ErrFalseVMResult
 	}
 
 	return wrapErr(err, vm, args)
