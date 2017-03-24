@@ -21,7 +21,7 @@ func TestUniqueIssuance(t *testing.T) {
 	issuanceInp := bc.NewIssuanceInput(nil, 1, nil, initialBlockHash, trueProg, nil, nil)
 
 	// Transaction with empty nonce (and no other inputs) is invalid
-	_, err := bc.ComputeTxEntries(&bc.TxData{
+	_, err := bc.MapTx(&bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{issuanceInp},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
@@ -819,7 +819,7 @@ func TestTxRangeErrs(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		_, err := bc.ComputeTxEntries(c)
+		_, err := bc.MapTx(c)
 		switch errors.Root(err) {
 		case nil:
 			t.Errorf("got no error, want blockchain.ErrRange")

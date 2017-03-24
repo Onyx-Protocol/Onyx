@@ -91,7 +91,7 @@ func ConfirmTx(snapshot *state.Snapshot, initialBlockHash bc.Hash, blockVersion,
 			if blockTimestampMS < tx.MinTime || blockTimestampMS > tx.MaxTime {
 				return badTxErr(errIssuanceTime)
 			}
-			iHash := tx.IssuanceHash(uint32(i))
+			iHash := tx.IssuanceHash(i)
 			if _, ok2 := snapshot.Issuances[iHash]; ok2 {
 				return badTxErr(errDuplicateIssuance)
 			}
@@ -273,7 +273,7 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 	for i, in := range tx.Inputs {
 		if ii, ok := in.TypedInput.(*bc.IssuanceInput); ok {
 			if len(ii.Nonce) > 0 {
-				iHash := tx.IssuanceHash(uint32(i))
+				iHash := tx.IssuanceHash(i)
 				snapshot.Issuances[iHash] = tx.MaxTime
 			}
 			continue

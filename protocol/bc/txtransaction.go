@@ -7,6 +7,9 @@ import (
 	"chain/errors"
 )
 
+// TxEntries is a wrapper for the entries-based representation of a
+// transaction.  When we no longer need the legacy Tx and TxData
+// types, this will be renamed Tx.
 type TxEntries struct {
 	*TxHeader
 	ID         Hash
@@ -49,8 +52,9 @@ func ComputeOutputID(sc *SpendCommitment) (h Hash, err error) {
 	return h, nil
 }
 
-// TxHashes returns all hashes needed for validation and state updates.
-func ComputeTxEntries(oldTx *TxData) (txEntries *TxEntries, err error) {
+// MapTx converts a legacy TxData object into its entries-based
+// representation.
+func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 	defer func() {
 		if r, ok := recover().(error); ok {
 			err = r
