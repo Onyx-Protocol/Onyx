@@ -96,7 +96,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				builder.AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
 
 				nonce := NewNonce(Program{VMVersion: 1, Code: builder.Program}, tr)
-				_, err = addEntry(anchor)
+				_, err = addEntry(nonce)
 				if err != nil {
 					err = errors.Wrapf(err, "adding nonce entry for input %d", i)
 					return
