@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
@@ -72,10 +74,8 @@ func TestBuild(t *testing.T) {
 		}},
 	}
 
-	if !testutil.DeepEqual(got.Transaction, want.Transaction) {
-		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", got.Transaction, want.Transaction)
-		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", got.Transaction.Inputs, want.Transaction.Inputs)
-		t.Errorf("got tx outputs:\n\t%#v\nwant tx outputs:\n\t%#v", got.Transaction.Outputs, want.Transaction.Outputs)
+	if !testutil.DeepEqual(got.Transaction.TxData, want.Transaction.TxData) {
+		t.Errorf("got tx:\n%s\nwant tx:\n%s", spew.Sdump(got.Transaction.TxData), spew.Sdump(want.Transaction.TxData))
 	}
 
 	if !testutil.DeepEqual(got.SigningInstructions, want.SigningInstructions) {

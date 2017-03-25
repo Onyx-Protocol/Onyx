@@ -81,7 +81,7 @@ func NewTxVMContext(tx *Tx, index uint32, prog Program, args [][]byte) *vm.Conte
 	case *IssuanceInput:
 		result.Nonce = &inp.Nonce
 	case *SpendInput:
-		spentOutputID := tx.TxHashes.SpentOutputIDs[index][:]
+		spentOutputID := tx.SpentOutputIDs[index][:]
 		result.SpentOutputID = &spentOutputID
 	}
 
