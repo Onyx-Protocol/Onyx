@@ -70,7 +70,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 			// the body hash of an issuance.
 
 			var (
-				nonce       Entry
+				anchor      Entry
 				setAnchored func(Hash, *Issuance)
 			)
 
@@ -79,7 +79,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 					err = fmt.Errorf("nonce-less issuance in transaction with no spends")
 					return
 				}
-				nonce = firstSpend
+				anchor = firstSpend
 				setAnchored = func(id Hash, iss *Issuance) {
 					firstSpend.SetAnchored(id, iss)
 				}
@@ -97,23 +97,23 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				builder.AddData(oldIss.Nonce).AddOp(vm.OP_DROP)
 				builder.AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
 
-				n := NewNonce(Program{VMVersion: 1, Code: builder.Program}, tr)
-				_, err = addEntry(nonce)
+				nonce := NewNonce(Program{VMVersion: 1, Code: builder.Program}, tr)
+				_, err = addEntry(anchor)
 				if err != nil {
 					err = errors.Wrapf(err, "adding nonce entry for input %d", i)
 					return
 				}
 
 				setAnchored = func(id Hash, iss *Issuance) {
-					n.SetAnchored(id, iss)
+					nonce.SetAnchored(id, iss)
 				}
 
-				nonce = n
+				anchor = nonce
 			}
 
 			val := inp.AssetAmount()
 
-			iss := NewIssuance(nonce, val, hashData(inp.ReferenceData), i)
+			iss := NewIssuance(anchor, val, hashData(inp.ReferenceData), i)
 			iss.Witness.AssetDefinition.InitialBlockID = oldIss.InitialBlock
 			iss.Witness.AssetDefinition.Data = hashData(oldIss.AssetDefinition)
 			iss.Witness.AssetDefinition.IssuanceProgram = Program{
