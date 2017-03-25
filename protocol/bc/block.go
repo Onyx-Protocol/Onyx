@@ -97,7 +97,7 @@ func ValidateBlock(b, prev *BlockEntries, initialBlockID Hash, runProg bool) err
 		}
 	}
 
-	txRoot, err := CalcMerkleRoot(b.Transactions)
+	txRoot, err := MerkleRoot(b.Transactions)
 	if err != nil {
 		return errors.Wrap(err, "computing transaction merkle root")
 	}

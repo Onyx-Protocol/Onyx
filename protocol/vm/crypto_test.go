@@ -421,6 +421,7 @@ func TestCryptoOps(t *testing.T) {
 			Context:  bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1}, nil),
 		},
 		wantErr: ErrRunLimitExceeded,
+	}, {
 		op: OP_BLOCKHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 50000,

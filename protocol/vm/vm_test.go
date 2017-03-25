@@ -505,10 +505,10 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 func verifyTx(tx *bc.Tx, index uint32) error {
 	var (
 		prog bc.Program
-		args  [][]byte
+		args [][]byte
 	)
 	inp := tx.TxInputs[index]
-	switch inp.(type) {
+	switch inp := inp.(type) {
 	case *bc.Issuance:
 		prog = inp.Witness.AssetDefinition.IssuanceProgram
 		args = inp.Witness.Arguments
@@ -516,5 +516,5 @@ func verifyTx(tx *bc.Tx, index uint32) error {
 		prog = inp.SpentOutput.Body.ControlProgram
 		args = inp.Witness.Arguments
 	}
-	return Verify(bc.NewTxVMContext(tx, inp, prog, args))
+	return Verify(bc.NewTxVMContext(tx.TxEntries, inp, prog, args))
 }

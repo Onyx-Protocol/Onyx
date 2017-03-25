@@ -29,7 +29,6 @@ type Context struct {
 	// Fields below this point are required by particular opcodes when
 	// verifying transaction components.
 
-	TxSigHash     *[]byte
 	NumResults    *uint64
 	AssetID       *[]byte
 	Amount        *uint64
@@ -37,7 +36,7 @@ type Context struct {
 	MaxTimeMS     *uint64
 	EntryData     *[]byte
 	TxData        *[]byte
-	DestPos       *uint32
+	DestPos       *uint64
 	AnchorID      *[]byte
 	SpentOutputID *[]byte
 

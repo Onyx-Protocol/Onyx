@@ -5,6 +5,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
+	"chain/crypto/sha3pool"
 	"chain/errors"
 	"chain/protocol/bc"
 	. "chain/protocol/vm"

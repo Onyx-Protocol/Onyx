@@ -92,7 +92,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 
 	var err error
 
-	b.TransactionsMerkleRoot, err = bc.CalcMerkleRoot(txEntries)
+	b.TransactionsMerkleRoot, err = bc.MerkleRoot(txEntries)
 	if err != nil {
 		return nil, nil, err
 	}
