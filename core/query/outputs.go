@@ -16,13 +16,13 @@ import (
 var defaultOutputsAfter = OutputsAfter{
 	lastBlockHeight: math.MaxInt64,
 	lastTxPos:       math.MaxUint32,
-	lastIndex:       math.MaxUint32,
+	lastIndex:       math.MaxInt32,
 }
 
 type OutputsAfter struct {
 	lastBlockHeight uint64
 	lastTxPos       uint32
-	lastIndex       uint32
+	lastIndex       int
 }
 
 func (cur OutputsAfter) String() string {
@@ -37,13 +37,13 @@ func DecodeOutputsAfter(str string) (c *OutputsAfter, err error) {
 	}
 	if lastBlockHeight > math.MaxInt64 ||
 		lastTxPos > math.MaxUint32 ||
-		lastIndex > math.MaxUint32 {
+		lastIndex > math.MaxInt32 {
 		return nil, errors.Wrap(ErrBadAfter)
 	}
 	return &OutputsAfter{
 		lastBlockHeight: lastBlockHeight,
 		lastTxPos:       uint32(lastTxPos),
-		lastIndex:       uint32(lastIndex),
+		lastIndex:       int(lastIndex),
 	}, nil
 }
 

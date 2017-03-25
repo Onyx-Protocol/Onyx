@@ -292,7 +292,7 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 			continue
 		}
 		// Insert new outputs into the state tree.
-		outputID := tx.OutputID(uint32(i))
+		outputID := tx.OutputID(i)
 		err := snapshot.Tree.Insert(outputID[:])
 		if err != nil {
 			return err

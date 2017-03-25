@@ -143,7 +143,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 				continue
 			}
 			out := &rawOutput{
-				OutputID:       tx.OutputID(uint32(j)),
+				OutputID:       tx.OutputID(j),
 				AssetAmount:    out.AssetAmount,
 				ControlProgram: out.ControlProgram,
 				txHash:         tx.ID,

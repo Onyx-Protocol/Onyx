@@ -47,7 +47,7 @@ type AnnotatedOutput struct {
 	Purpose         string             `json:"purpose,omitempty"`
 	OutputID        bc.Hash            `json:"id"`
 	TransactionID   *bc.Hash           `json:"transaction_id,omitempty"`
-	Position        uint32             `json:"position"`
+	Position        int                `json:"position"`
 	AssetID         bc.AssetID         `json:"asset_id"`
 	AssetAlias      string             `json:"asset_alias,omitempty"`
 	AssetDefinition *json.RawMessage   `json:"asset_definition"`
@@ -132,7 +132,7 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *A
 		tx.Inputs = append(tx.Inputs, buildAnnotatedInput(orig, uint32(i)))
 	}
 	for i := range orig.Outputs {
-		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(orig, uint32(i)))
+		tx.Outputs = append(tx.Outputs, buildAnnotatedOutput(orig, i))
 	}
 	return tx
 }
@@ -163,7 +163,7 @@ func buildAnnotatedInput(tx *bc.Tx, i uint32) *AnnotatedInput {
 	return in
 }
 
-func buildAnnotatedOutput(tx *bc.Tx, idx uint32) *AnnotatedOutput {
+func buildAnnotatedOutput(tx *bc.Tx, idx int) *AnnotatedOutput {
 	orig := tx.Outputs[idx]
 	outid := tx.OutputID(idx)
 	out := &AnnotatedOutput{

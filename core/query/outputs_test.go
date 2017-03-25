@@ -22,7 +22,7 @@ func TestDecodeOutputsAfter(t *testing.T) {
 		{str: "10:1:0", cur: OutputsAfter{lastBlockHeight: 10, lastTxPos: 1}},
 		{str: "15:15:15", cur: OutputsAfter{lastBlockHeight: 15, lastTxPos: 15, lastIndex: 15}},
 		{str: "49153:51966:51829", cur: OutputsAfter{lastBlockHeight: 49153, lastTxPos: 51966, lastIndex: 51829}},
-		{str: "9223372036854775807:4294967295:4294967295", cur: defaultOutputsAfter},
+		{str: "9223372036854775807:4294967295:2147483647", cur: defaultOutputsAfter},
 	}
 
 	for _, tc := range testCases {
@@ -111,7 +111,7 @@ func TestConstructOutputsQuery(t *testing.T) {
 				lastIndex:       19,
 			},
 			wantQuery:  `SELECT block_height, tx_pos, output_index, tx_hash, output_id, type, purpose, asset_id, asset_alias, asset_definition, asset_tags, asset_local, amount, account_id, account_alias, account_tags, control_program, reference_data, local FROM "annotated_outputs" AS out WHERE (encode(out."asset_id", 'hex') = $1 AND out."account_id" = 'abc') AND timespan @> $2::int8 AND (block_height, tx_pos, output_index) < ($3, $4, $5) ORDER BY block_height DESC, tx_pos DESC, output_index DESC LIMIT 10`,
-			wantValues: []interface{}{`foo`, nowMillis, uint64(15), uint32(17), uint32(19)},
+			wantValues: []interface{}{`foo`, nowMillis, uint64(15), uint32(17), 19},
 		},
 	}
 

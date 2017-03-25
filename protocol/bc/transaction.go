@@ -39,7 +39,7 @@ func (tx *Tx) IssuanceHash(n int) Hash {
 	return tx.TxEntries.TxInputIDs[n]
 }
 
-func (tx *Tx) OutputID(outputIndex uint32) Hash {
+func (tx *Tx) OutputID(outputIndex int) Hash {
 	return tx.Body.ResultIDs[outputIndex]
 }
 
