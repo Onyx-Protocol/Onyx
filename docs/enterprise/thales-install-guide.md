@@ -44,7 +44,8 @@ You must also perform the following steps:
    the SEE machine. **Important**: this hash is of a _development key_ and
    should not be trusted for production.
    
--  On the client host, copy the signed firmware and userdata files to the custom-seemachines directory. 
+-  On the client host (RFS server), copy the signed firmware and userdata files to the custom-seemachines directory. 
+   Here, `a` and `b` have been chosen to simplify entering the file names on the HSM front panel. 
    This command must be run on each module.
    - `cp xprvseemodule.sar /opt/nfast/custom-seemachines/a`
    - `cp userdata.sar /opt/nfast/custom-seemachines/b`
