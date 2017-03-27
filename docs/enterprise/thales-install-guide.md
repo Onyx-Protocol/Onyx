@@ -38,15 +38,24 @@ You must also perform the following steps:
 -  On the client host, use the “nfast” utilities from Thales to create
    a _user-data signing key_ and a signed copy of the userdata file.
    - `generatekey --batch seeinteg plainname=xprvseemoduledevusk`
-   - `tct2 --sign-and-pack -k xprvseemoduledevusk --machine-key=68bcec164114318f31b2e353bef9e8b1ce67872e -o userdata.sar -i userdata.bin`
+   - `tct2 --sign-and-pack -k xprvseemoduledevusk --machine-key=02cf0cd76a8e726ffba2e4a1d2648b447d505aaa -o userdata.sar -i userdata.bin`
    
    The hex value here is the hash of the key that Chain used to sign
    the SEE machine. **Important**: this hash is of a _development key_ and
    should not be trusted for production.
    
--  On the client host, use the “nfast” utilities from Thales to
-   install the signed firmware and userdata files. This command must be run on each module. The `-m` flag specifies the module.
-   - `loadsee-setup -s -m 1 -M xprvseemodule.sar`
+-  On the client host, copy the signed firmware and userdata files to the custom-seemachines directory. 
+   This command must be run on each module.
+   - `cp xprvseemodule.sar /opt/nfast/custom-seemachines/a`
+   - `cp userdata.sar /opt/nfast/custom-seemachines/b`
+
+-  On the HSM, use the front panel to load the machine image and userdata file. 
+   This must be done for each HSM.
+   - Choose `CodeSafe` on the front panel 
+   - Enter`a` for the machine image 
+   - Enter`b` for the userdata file
+   - Choose`SEElib` for the world type
+   - Enter`chainenclave` for the name
 
 -  On the client host, use the `xprvseetool` binary from Chain to
    create a private key in the HSM.
