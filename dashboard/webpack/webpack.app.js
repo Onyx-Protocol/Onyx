@@ -52,7 +52,6 @@ var config = getConfig({
 
   // Proxy API requests to local core server
   devServer: {
-    hostname: '0.0.0.0',
     proxy: {
       context: '/api',
       options: {
