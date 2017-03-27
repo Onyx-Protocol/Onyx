@@ -52,6 +52,10 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
 	}
 
+	// Make a copy of the snapshot that we can apply our changes to.
+	newSnapshot := c.state.snapshot.Copy()
+	newSnapshot.PruneNonces(timestampMS)
+
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version:           bc.NewBlockVersion,
@@ -66,20 +70,19 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 
 	var txEntries []*bc.TxEntries
 
-	newSnapshot := c.state.snapshot.Copy()
-	newSnapshot.PruneNonces(timestampMS)
-
 	for _, tx := range txs {
 		if len(b.Transactions) >= maxBlockTxs {
 			break
 		}
 
+		// Filter out transactions that are not well-formed.
 		err := c.ValidateTx(tx.TxEntries)
 		if err != nil {
 			// TODO(bobg): log this?
 			continue
 		}
 
+		// Filter out double-spends etc.
 		err = tx.TxEntries.Apply(newSnapshot)
 		if err != nil {
 			// TODO(bobg): log this?
@@ -94,7 +97,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 
 	b.TransactionsMerkleRoot, err = bc.MerkleRoot(txEntries)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err, "calculating tx merkle root")
 	}
 
 	b.AssetsMerkleRoot = newSnapshot.Tree.RootHash()
@@ -102,27 +105,11 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 	return b, newSnapshot, nil
 }
 
+// ValidateBlock validates an incoming block in advance of applying it
+// to a snapshot (with ApplyValidBlock) and committing it to the
+// blockchain (with CommitAppliedBlock).
 func (c *Chain) ValidateBlock(block, prev *bc.Block) error {
 	return c.validateBlock(block, prev, true)
-}
-
-func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
-	var prev *bc.Block
-
-	if block.Height > 1 {
-		var err error
-		prev, err = c.store.GetBlock(ctx, block.Height-1)
-		if err != nil {
-			return errors.Wrap(err, "getting previous block")
-		}
-
-		prev, _ = c.State()
-		if prev == nil || prev.Height != block.Height-1 {
-			return ErrStaleState
-		}
-	}
-
-	return c.validateBlock(block, prev, false)
 }
 
 func (c *Chain) validateBlock(block, prev *bc.Block, runProg bool) error {
@@ -160,7 +147,7 @@ func (c *Chain) ApplyValidBlock(block *bc.Block) (*state.Snapshot, error) {
 //   * saves the block to the store.
 //   * sometimes saves the state tree to the store.
 //   * executes all new-block callbacks.
-func (c *Chain) CommitAppliedBlock(ctx context.Context, block *bc.Block, newSnapshot *state.Snapshot) error {
+func (c *Chain) CommitAppliedBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
 	// else can be derived from that block.
@@ -169,8 +156,9 @@ func (c *Chain) CommitAppliedBlock(ctx context.Context, block *bc.Block, newSnap
 		return errors.Wrap(err, "storing block")
 	}
 	if block.Time().After(c.lastQueuedSnapshot.Add(saveSnapshotFrequency)) {
-		c.queueSnapshot(ctx, block.Height, block.Time(), newSnapshot)
+		c.queueSnapshot(ctx, block.Height, block.Time(), snapshot)
 	}
+
 	err = c.store.FinalizeBlock(ctx, block.Height)
 	if err != nil {
 		return errors.Wrap(err, "finalizing block")
@@ -184,8 +172,7 @@ func (c *Chain) CommitAppliedBlock(ctx context.Context, block *bc.Block, newSnap
 	// setHeight.  But duplicate calls with the same blockheight are
 	// harmless; and the following call is required in the cases where
 	// it's not redundant.
-	c.setState(block, newSnapshot)
-
+	c.setState(block, snapshot)
 	return nil
 }
 
@@ -218,6 +205,23 @@ func (c *Chain) setHeight(h uint64) {
 	}
 	c.state.height = h
 	c.state.cond.Broadcast()
+}
+
+// ValidateBlockForSig performs validation on an incoming _unsigned_
+// block in preparation for signing it. By definition it does not
+// execute the consensus program.
+func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
+	var prev *bc.Block
+
+	if block.Height > 1 {
+		var err error
+		prev, err = c.GetBlock(ctx, block.Height-1)
+		if err != nil {
+			return errors.Wrap(err, "getting previous block")
+		}
+	}
+
+	return c.validateBlock(block, prev, false)
 }
 
 func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {

@@ -86,7 +86,7 @@ func (s *BlockSigner) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]
 	if !bytes.Equal(b.ConsensusProgram, prev.ConsensusProgram) {
 		return nil, errors.Wrap(ErrConsensusChange)
 	}
-	err = s.c.ValidateBlock(b, prev)
+	err = s.c.ValidateBlockForSig(ctx, b)
 	if err != nil {
 		return nil, errors.Wrap(err, "validating block for signature")
 	}
