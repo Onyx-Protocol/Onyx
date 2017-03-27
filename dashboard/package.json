@@ -16,7 +16,8 @@
   "license": "",
   "browserslist": [
     "> 1%",
-    "last 5 versions"
+    "last 3 versions",
+    "Safari >= 8"
   ],
   "dependencies": {
     "babel-polyfill": "~6.16.0",
