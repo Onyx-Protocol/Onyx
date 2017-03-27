@@ -71,7 +71,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 
 			var (
 				anchor      Entry
-				setAnchored func(Hash, *Issuance)
+				setAnchored func(Hash, Entry)
 			)
 
 			if len(oldIss.Nonce) == 0 {
@@ -80,9 +80,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 					return
 				}
 				anchor = firstSpend
-				setAnchored = func(id Hash, iss *Issuance) {
-					firstSpend.SetAnchored(id, iss)
-				}
+				setAnchored = firstSpend.SetAnchored
 			} else {
 				tr := NewTimeRange(tx.MinTime, tx.MaxTime)
 				_, err = addEntry(tr)
@@ -103,12 +101,8 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 					err = errors.Wrapf(err, "adding nonce entry for input %d", i)
 					return
 				}
-
-				setAnchored = func(id Hash, iss *Issuance) {
-					nonce.SetAnchored(id, iss)
-				}
-
 				anchor = nonce
+				setAnchored = nonce.SetAnchored
 			}
 
 			val := inp.AssetAmount()
