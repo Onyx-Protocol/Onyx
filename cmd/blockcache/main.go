@@ -19,12 +19,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/lib/pq"
 
-	"chain/core"
 	"chain/core/fetch"
 	"chain/core/rpc"
 	"chain/env"
 	"chain/errors"
 	"chain/log"
+	"chain/net/http/httperror"
 	"chain/net/http/httpjson"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -58,6 +58,15 @@ func main() {
 	db, err := sql.Open("postgres", *dbURL)
 	if err != nil {
 		log.Fatalkv(context.Background(), log.KeyError, err)
+	}
+
+	var errorFormatter = httperror.Formatter{
+		Default:     httperror.Info{500, "CH000", "Chain API Error"},
+		IsTemporary: func(httperror.Info, error) bool { return false },
+		Errors: map[error]httperror.Info{
+			context.DeadlineExceeded: {408, "CH001", "Request timed out"},
+			httpjson.ErrBadRequest:   {400, "CH003", "Invalid request body"},
+		},
 	}
 
 	peer := &rpc.Client{
@@ -98,7 +107,7 @@ func main() {
 		err := json.NewDecoder(r.Body).Decode(&height)
 		r.Body.Close()
 		if err != nil {
-			core.WriteHTTPError(r.Context(), w, errors.WithDetail(httpjson.ErrBadRequest, err.Error()))
+			errorFormatter.Write(r.Context(), w, errors.WithDetail(httpjson.ErrBadRequest, err.Error()))
 			return
 		}
 
@@ -111,7 +120,7 @@ func main() {
 
 		err = cache.after(ctx, height)
 		if err != nil {
-			core.WriteHTTPError(ctx, w, err)
+			errorFormatter.Write(ctx, w, err)
 			return
 		}
 
