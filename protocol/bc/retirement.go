@@ -28,7 +28,7 @@ func NewRetirement(source ValueSource, data Hash, ordinal int) *Retirement {
 	return r
 }
 
-func (r *Retirement) CheckValid(vs *validationState) error {
+func (r *Retirement) checkValid(vs *validationState) error {
 	vs2 := *vs
 	vs2.sourcePos = 0
 	err := r.Body.Source.CheckValid(&vs2)

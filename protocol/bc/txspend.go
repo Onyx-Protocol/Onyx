@@ -61,7 +61,7 @@ func (s *Spend) SetAnchored(id Hash, entry Entry) {
 	s.Anchored = entry
 }
 
-func (s *Spend) CheckValid(vs *validationState) error {
+func (s *Spend) checkValid(vs *validationState) error {
 	err := vm.Verify(NewTxVMContext(vs.tx, s, s.SpentOutput.Body.ControlProgram, s.Witness.Arguments))
 	if err != nil {
 		return errors.Wrap(err, "checking control program")

@@ -42,7 +42,7 @@ func NewTxHeader(version uint64, results []Entry, data Hash, minTimeMS, maxTimeM
 }
 
 // CheckValid does only part of the work of validating a tx header. The block-related parts of tx validation are in ValidateBlock.
-func (tx *TxHeader) CheckValid(vs *validationState) error {
+func (tx *TxHeader) checkValid(vs *validationState) error {
 	if tx.Body.MaxTimeMS > 0 {
 		if tx.Body.MaxTimeMS < tx.Body.MinTimeMS {
 			return errors.WithDetailf(errBadTimeRange, "min time %d, max time %d", tx.Body.MinTimeMS, tx.Body.MaxTimeMS)
@@ -53,7 +53,7 @@ func (tx *TxHeader) CheckValid(vs *validationState) error {
 		res := tx.Results[i]
 		vs2 := *vs
 		vs2.entryID = resID
-		err := res.CheckValid(&vs2)
+		err := res.checkValid(&vs2)
 		if err != nil {
 			return errors.Wrapf(err, "checking result %d", i)
 		}

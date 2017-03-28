@@ -21,7 +21,7 @@ func NewTimeRange(minTimeMS, maxTimeMS uint64) *TimeRange {
 	return tr
 }
 
-func (tr *TimeRange) CheckValid(vs *validationState) error {
+func (tr *TimeRange) checkValid(vs *validationState) error {
 	if tr.Body.MinTimeMS > vs.tx.Body.MinTimeMS {
 		return errBadTimeRange
 	}

@@ -71,7 +71,7 @@ func ValidateBlock(b, prev *BlockEntries, initialBlockID Hash, runProg bool) err
 		blockchainID: initialBlockID,
 		entryID:      b.ID,
 	}
-	err := b.BlockHeaderEntry.CheckValid(vs)
+	err := b.BlockHeaderEntry.checkValid(vs)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func ValidateBlock(b, prev *BlockEntries, initialBlockID Hash, runProg bool) err
 		vs2.tx = tx
 		vs2.entryID = tx.ID
 
-		err := tx.CheckValid(&vs2)
+		err := tx.checkValid(&vs2)
 		if err != nil {
 			return errors.Wrapf(err, "checking validity of transaction %d of %d", i, len(b.Transactions))
 		}

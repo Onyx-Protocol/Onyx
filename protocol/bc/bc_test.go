@@ -32,6 +32,10 @@ func mustDecodeHash(hash string) (h [32]byte) {
 	return h
 }
 
+// A txFixture is returned by sample (below) to produce a sample
+// transaction, which takes a separate, optional _input_ txFixture to
+// affect the transaction that's built. The components of the
+// transaction are the fields of txFixture.
 type txFixture struct {
 	initialBlockID       Hash
 	issuanceProg         Program
@@ -46,6 +50,25 @@ type txFixture struct {
 	tx                   *TxData
 }
 
+// Produces a sample transaction in a txFixture object (see above). A
+// separate input txFixture can be used to alter the transaction
+// that's created.
+//
+// The output of this function can be used as the input to a
+// subsequent call to make iterative refinements to a test object.
+//
+// The default transaction produced is valid and has three inputs:
+//  - an issuance of 10 units
+//  - a spend of 20 units
+//  - a spend of 40 units
+// and two outputs, one of 25 units and one of 45 units.
+// All amounts are denominated in the same asset.
+//
+// The issuance program for the asset requires two numbers as
+// arguments that add up to 5. The prevout control programs require
+// two numbers each, adding to 9 and 13, respectively.
+//
+// The min and max times for the transaction are now +/- one minute.
 func sample(tb testing.TB, in *txFixture) *txFixture {
 	var result txFixture
 	if in != nil {
@@ -56,14 +79,14 @@ func sample(tb testing.TB, in *txFixture) *txFixture {
 		result.initialBlockID = Hash{1}
 	}
 	if testutil.DeepEqual(result.issuanceProg, Program{}) {
-		prog, err := vm.Assemble("2 3 ADD NUMEQUAL")
+		prog, err := vm.Assemble("ADD 5 NUMEQUAL")
 		if err != nil {
 			tb.Fatal(err)
 		}
 		result.issuanceProg = Program{VMVersion: 1, Code: prog}
 	}
 	if len(result.issuanceArgs) == 0 {
-		result.issuanceArgs = [][]byte{[]byte{5}}
+		result.issuanceArgs = [][]byte{[]byte{2}, []byte{3}}
 	}
 	if len(result.assetDef) == 0 {
 		result.assetDef = []byte{2}
@@ -76,17 +99,17 @@ func sample(tb testing.TB, in *txFixture) *txFixture {
 		result.txVersion = 1
 	}
 	if len(result.txInputs) == 0 {
-		cp1, err := vm.Assemble("4 5 ADD NUMEQUAL")
+		cp1, err := vm.Assemble("ADD 9 NUMEQUAL")
 		if err != nil {
 			tb.Fatal(err)
 		}
-		args1 := [][]byte{[]byte{9}}
+		args1 := [][]byte{[]byte{4}, []byte{5}}
 
-		cp2, err := vm.Assemble("6 7 ADD NUMEQUAL")
+		cp2, err := vm.Assemble("ADD 13 NUMEQUAL")
 		if err != nil {
 			tb.Fatal(err)
 		}
-		args2 := [][]byte{[]byte{13}}
+		args2 := [][]byte{[]byte{6}, []byte{7}}
 
 		result.txInputs = []*TxInput{
 			NewIssuanceInput([]byte{3}, 10, []byte{4}, result.initialBlockID, result.issuanceProg.Code, result.issuanceArgs, result.assetDef),
@@ -95,11 +118,11 @@ func sample(tb testing.TB, in *txFixture) *txFixture {
 		}
 	}
 	if len(result.txOutputs) == 0 {
-		cp1, err := vm.Assemble("8 9 ADD NUMEQUAL")
+		cp1, err := vm.Assemble("ADD 17 NUMEQUAL")
 		if err != nil {
 			tb.Fatal(err)
 		}
-		cp2, err := vm.Assemble("10 11 ADD NUMEQUAL")
+		cp2, err := vm.Assemble("ADD 21 NUMEQUAL")
 		if err != nil {
 			tb.Fatal(err)
 		}

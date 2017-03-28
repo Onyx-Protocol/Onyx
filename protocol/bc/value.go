@@ -22,7 +22,7 @@ type ValueSource struct {
 func (vs *ValueSource) CheckValid(vstate *validationState) error {
 	vstate2 := *vstate
 	vstate2.entryID = vs.Ref
-	err := vs.Entry.CheckValid(&vstate2)
+	err := vs.Entry.checkValid(&vstate2)
 	if err != nil {
 		return errors.Wrap(err, "checking value source")
 	}

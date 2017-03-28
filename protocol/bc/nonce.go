@@ -48,7 +48,7 @@ func (n *Nonce) SetAnchored(id Hash, entry Entry) {
 	n.Anchored = entry
 }
 
-func (n *Nonce) CheckValid(vs *validationState) error {
+func (n *Nonce) checkValid(vs *validationState) error {
 	err := vm.Verify(NewTxVMContext(vs.tx, n, n.Body.Program, n.Witness.Arguments))
 	if err != nil {
 		return errors.Wrap(err, "checking nonce program")
@@ -56,7 +56,7 @@ func (n *Nonce) CheckValid(vs *validationState) error {
 
 	vs2 := *vs
 	vs2.entryID = n.Body.TimeRangeID
-	err = n.TimeRange.CheckValid(&vs2)
+	err = n.TimeRange.checkValid(&vs2)
 	if err != nil {
 		return errors.Wrap(err, "checking nonce timerange")
 	}

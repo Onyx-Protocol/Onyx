@@ -59,7 +59,7 @@ func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issua
 	return iss
 }
 
-func (iss *Issuance) CheckValid(vs *validationState) error {
+func (iss *Issuance) checkValid(vs *validationState) error {
 	if iss.Witness.AssetDefinition.InitialBlockID != vs.blockchainID {
 		return errors.WithDetailf(errWrongBlockchain, "current blockchain %x, asset defined on blockchain %x", vs.blockchainID[:], iss.Witness.AssetDefinition.InitialBlockID[:])
 	}
@@ -95,7 +95,7 @@ func (iss *Issuance) CheckValid(vs *validationState) error {
 
 	anchorVS := *vs
 	anchorVS.entryID = iss.Body.AnchorID
-	err = iss.Anchor.CheckValid(&anchorVS)
+	err = iss.Anchor.checkValid(&anchorVS)
 	if err != nil {
 		return errors.Wrap(err, "checking issuance anchor")
 	}

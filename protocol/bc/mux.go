@@ -35,7 +35,7 @@ func NewMux(sources []ValueSource, program Program) *Mux {
 	return m
 }
 
-func (mux *Mux) CheckValid(vs *validationState) error {
+func (mux *Mux) checkValid(vs *validationState) error {
 	err := vm.Verify(NewTxVMContext(vs.tx, mux, mux.Body.Program, mux.Witness.Arguments))
 	if err != nil {
 		return errors.Wrap(err, "checking mux program")

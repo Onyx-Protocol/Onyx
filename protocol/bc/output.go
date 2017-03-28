@@ -32,7 +32,7 @@ func NewOutput(source ValueSource, controlProgram Program, data Hash, ordinal in
 	return out
 }
 
-func (o *Output) CheckValid(vs *validationState) error {
+func (o *Output) checkValid(vs *validationState) error {
 	vs2 := *vs
 	vs2.sourcePos = 0
 	err := o.Body.Source.CheckValid(&vs2)
