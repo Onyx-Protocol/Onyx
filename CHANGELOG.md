@@ -10,6 +10,11 @@ For updates to subpackages, see below:
 - [Node.js SDK](./sdk/node/CHANGELOG.md)
 - [Ruby SDK](./sdk/ruby/CHANGELOG.md)
 
+<a name="1.1.4"></a>
+## 1.1.4 (March 27, 2017)
+
+* Expand Dashboard support to Safari 8 on OS X Yosemite systems.
+
 <a name="1.1.3"></a>
 ## 1.1.3 (March 7, 2017)
 
