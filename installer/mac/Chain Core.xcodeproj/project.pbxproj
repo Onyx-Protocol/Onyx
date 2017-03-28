@@ -437,7 +437,7 @@
 		83FB57281D1B05F000A903A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				APP_VERSION = "1.1.1-glitchfix1";
+				APP_VERSION = 1.1.1;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Developer ID Application: Chain Inc. (ZA97W57QRY)";
@@ -464,7 +464,7 @@
 		83FB57291D1B05F000A903A3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				APP_VERSION = "1.1.1-glitchfix1";
+				APP_VERSION = 1.1.1;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Developer ID Application: Chain Inc. (ZA97W57QRY)";
