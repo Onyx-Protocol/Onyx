@@ -376,6 +376,6 @@ func batchRecover(ctx context.Context, v *interface{}) {
 	// from recovered panics above).
 	if err, ok := (*v).(error); ok {
 		errorFormatter.Log(ctx, err)
-		*v, _ = errorFormatter.Format(err)
+		*v = errorFormatter.Format(err)
 	}
 }

@@ -84,7 +84,7 @@ func (a *API) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Te
 		// Format each of the inner errors contained in the data.
 		var formattedErrs []httperror.Response
 		for _, innerErr := range errors.Data(err)["actions"].([]error) {
-			resp, _ := errorFormatter.Format(innerErr)
+			resp := errorFormatter.Format(innerErr)
 			formattedErrs = append(formattedErrs, resp)
 		}
 		err = errors.WithData(err, "actions", formattedErrs)

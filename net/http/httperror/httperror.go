@@ -42,15 +42,14 @@ type Formatter struct {
 
 // Format builds an error Response body describing err by consulting
 // the f.Errors lookup table. If no entry is found, it returns f.Default.
-func (f Formatter) Format(err error) (body Response, info Info) {
+func (f Formatter) Format(err error) (body Response) {
 	root := errors.Root(err)
 	// Some types cannot be used as map keys, for example slices.
 	// If an error's underlying type is one of these, don't panic.
 	// Just treat it like any other missing entry.
 	defer func() {
 		if err := recover(); err != nil {
-			info = f.Default
-			body = Response{info, "", nil, true}
+			body = Response{f.Default, "", nil, true}
 		}
 	}()
 	info, ok := f.Errors[root]
@@ -64,7 +63,7 @@ func (f Formatter) Format(err error) (body Response, info Info) {
 		Data:      errors.Data(err),
 		Temporary: f.IsTemporary(info, err),
 	}
-	return body, info
+	return body
 }
 
 // Write writes a json encoded Response to the ResponseWriter.
@@ -73,8 +72,8 @@ func (f Formatter) Format(err error) (body Response, info Info) {
 // Write may be used as an ErrorWriter in the httpjson package.
 func (f Formatter) Write(ctx context.Context, w http.ResponseWriter, err error) {
 	f.Log(ctx, err)
-	resp, info := f.Format(err)
-	httpjson.Write(ctx, w, info.HTTPStatus, resp)
+	resp := f.Format(err)
+	httpjson.Write(ctx, w, resp.HTTPStatus, resp)
 }
 
 // Log writes a structured log entry to the chain/log logger with
@@ -86,15 +85,14 @@ func (f Formatter) Log(ctx context.Context, err error) {
 		errorMessage = err.Error()
 	}
 
-	info, _ := f.Format(err)
-
+	resp := f.Format(err)
 	keyvals := []interface{}{
-		"status", info.HTTPStatus,
-		"chaincode", info.ChainCode,
+		"status", resp.HTTPStatus,
+		"chaincode", resp.ChainCode,
 		"path", reqid.PathFromContext(ctx),
 		log.KeyError, errorMessage,
 	}
-	if info.HTTPStatus == 500 {
+	if resp.HTTPStatus == 500 {
 		keyvals = append(keyvals, log.KeyStack, errors.Stack(err))
 	}
 	log.Printkv(ctx, keyvals...)

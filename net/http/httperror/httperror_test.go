@@ -42,8 +42,8 @@ func TestInfo(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		_, info := testFormatter.Format(test.err)
-		got := info.HTTPStatus
+		resp := testFormatter.Format(test.err)
+		got := resp.HTTPStatus
 		if got != test.want {
 			t.Errorf("errInfo(%#v) = %d want %d", test.err, got, test.want)
 		}

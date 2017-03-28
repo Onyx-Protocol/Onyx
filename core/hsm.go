@@ -77,7 +77,7 @@ func (h *mockHSMHandler) mockhsmSignTemplates(ctx context.Context, x struct {
 	for _, tx := range x.Txs {
 		err := txbuilder.Sign(ctx, tx, x.XPubs, h.mockhsmSignTemplate)
 		if err != nil {
-			info, _ := errorFormatter.Format(err)
+			info := errorFormatter.Format(err)
 			resp = append(resp, info)
 		} else {
 			resp = append(resp, tx)
