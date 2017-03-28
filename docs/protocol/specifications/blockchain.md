@@ -407,9 +407,15 @@ Height                   | Integer                 | Block serial number.
 Previous Block ID        | String32                | [Hash](#block-id) of the previous block or all-zero string.
 Timestamp                | Integer                 | Time of the block in milliseconds since 00:00:00 UTC Jan 1, 1970.
 Transactions Merkle Root | MerkleRoot<TxHeader>    | Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
-Assets Merkle Root       | PatriciaRoot<Output1>   | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent outputs version 1 after applying the block. See [Assets Merkle Root](#assets-merkle-root) for details.
+Assets Merkle Root       | PatriciaRoot<Output1>   | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent outputs version 1 after applying the block. See [Assets Merkle Root 1](#assets-merkle-root-1) for details.
 Next Consensus Program Bytecode | String | Authentication predicate for adding a new block after this one.
-ExtHash                  | [ExtStruct](#extension-struct)  | Extension fields.
+ExtHash                  | [ExtStruct](#extension-struct) | See below. If `Version` is 1, this must be 32 zero-bytes. Otherwise, this must be the hash of the extension struct defined below.
+
+Extension Struct 1 | Type                                    | Description
+-------------------|-----------------------------------------|-------------------------
+Assets Merkle Root | PatriciaRoot\<Output1\>                 | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent outputs version 2 after applying the block. See [Assets Merkle Root 2](#assets-merkle-root-2) for details.
+ExtHash2           | [ExtStruct](#extension-struct)          | Hash of next extension struct. (See [ExtStruct](#extension-struct).) If `Version` is 2, this must be 32 zero-bytes.
+
 
 Witness field            | Type              | Description
 -------------------------|-------------------|----------------------------------------------------------
@@ -439,6 +445,10 @@ Program Arguments        | List\<String\>    | List of [signatures](#signature) 
 8. Compute the [transactions merkle root](#transactions-merkle-root) for the block.
 9. Verify that the computed merkle tree hash is equal to `TransactionsMerkleRoot`.
 10. If the block version is 1: verify that the `ExtHash` is the all-zero hash.
+11. If the block version is greater than 1:
+  1. Verify that the `ExtHash` is the hash of the Block Header Extension Struct 1.
+  2. If the block version is 2: verify that the `ExtHash2` is the all-zero hash.
+
 
 ### Block ID
 
@@ -463,8 +473,9 @@ ExtHash1   | [ExtStruct](#extension-struct)               | See below. If `Versi
 
 Extension Struct 1 | Type                                     | Description
 -------------------|------------------------------------------|-------------------------
-Output2 Results    | List\<Pointer\<Output 2\|Retirement\>\>  | A list of pointers to [Output 2s](#output-2).
-ExtHash2           | [ExtStruct](#extension-struct)           | Hash of next extension struct. (See [Extstruct](#extension-struct).) If `Version` is 2, this must be 32 zero-bytes.
+Output2 Results    | List\<Pointer\<Output 2\|Retirement 2\>\>  | A list of pointers to [Output 2s](#output-2).
+ExtHash2           | [ExtStruct](#extension-struct)           | Hash of next extension struct. (See [ExtStruct](#extension-struct).) If `Version` is 2, this must be 32 zero-bytes.
+
 
 ### Transaction ID
 
@@ -472,13 +483,6 @@ Transaction ID is defined as an [Entry ID](#entry-id) of the [transaction header
 
 
 #### Transaction Header Validation
-
-1. If the `Maxtime` is greater than zero:
-    1. Verify that it is greater than or equal to the `Mintime`.
-2. Validate each entry in the `Results`.
-3. If the transaction version is 1:
-    1. Verify that `Results` is not empty.
-    2. Verify that the `ExtHash` is the all-zero hash.
 
 **Inputs:**
 
@@ -502,8 +506,7 @@ Transaction ID is defined as an [Entry ID](#entry-id) of the [transaction header
   1. Verify that the `ExtHash` is the hash of the Transaction Header Extension Struct 1.
   2. Verify that `Results` and `Output2 Results` are not both empty.
   3. Validate each of the `Output2 Results`.
-  4. If the transaction version is 2:
-    1. Verify that the `ExtHash2` is the all-zero hash.
+  4. If the transaction version is 2: verify that the `ExtHash2` is the all-zero hash.
 
 ### Output 1
 
@@ -710,7 +713,7 @@ Arguments                  | List<String>                                       
 4. For each `AssetIssuanceChoice` in `AssetIssuanceChoices`, [validate](#asset-issuance-choice-validation) that asset issuance choice, and verify that `AssetIssuanceChoice.IssuanceKey` matches the `IssuanceKey` at the same index in `IssuanceAssetRangeProof.IssuanceKeys`.
 5. Define `AssetIDChoices` as the list composed by calculating the `AssetID` from the `AssetDefinition` in each of the `AssetIssuanceChoices`.
 6. [Validate](ca.md#validate-issuance-asset-range-proof) the issuance asset range proof using:
-    * `AssetIDChoices` as the asset ID choices, 
+    * `AssetIDChoices` as the asset ID choices,
     * `IssuanceDelegateProgram` as `message`,
     * `Anchor` reference as `nonce`.
 7. [Validate](#program-validation) `IssuanceDelegateProgram` with `Arguments` as the arguments.
