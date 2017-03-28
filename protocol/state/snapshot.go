@@ -13,8 +13,6 @@ import (
 //
 // Nonces maps a nonce entry's ID to the time (in Unix millis)
 // at which it should expire from the nonce set.
-//
-// Snapshot satisfies the bc.BlockchainState interface.
 type Snapshot struct {
 	Tree   *patricia.Tree
 	Nonces map[bc.Hash]uint64
@@ -80,9 +78,32 @@ func Empty() *Snapshot {
 func (s *Snapshot) ApplyBlock(block *bc.BlockEntries) error {
 	s.PruneNonces(block.Body.TimestampMS)
 	for i, tx := range block.Transactions {
-		err := tx.Apply(s)
+		err := s.ApplyTx(tx)
 		if err != nil {
 			return errors.Wrapf(err, "applying block transaction %d", i)
+		}
+	}
+	return nil
+}
+
+// ApplyTx updates s in place.
+func (s *Snapshot) ApplyTx(tx *bc.TxEntries) error {
+	for _, n := range tx.NonceIDs {
+		err := s.AddNonce(n, tx.Body.MaxTimeMS)
+		if err != nil {
+			return err
+		}
+	}
+	for _, prevout := range tx.SpentOutputIDs {
+		err := s.DeleteSpentOutput(prevout)
+		if err != nil {
+			return err
+		}
+	}
+	for _, o := range tx.OutputIDs {
+		err := s.AddOutput(o)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

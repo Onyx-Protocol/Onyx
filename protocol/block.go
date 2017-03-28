@@ -83,7 +83,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 		}
 
 		// Filter out double-spends etc.
-		err = tx.TxEntries.Apply(newSnapshot)
+		err = newSnapshot.ApplyTx(tx.TxEntries)
 		if err != nil {
 			// TODO(bobg): log this?
 			continue

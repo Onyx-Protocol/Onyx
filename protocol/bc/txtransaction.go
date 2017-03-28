@@ -29,44 +29,6 @@ func (tx *TxEntries) checkValid(vs *validationState) error {
 	return tx.TxHeader.checkValid(&vs2)
 }
 
-type BlockchainState interface {
-	// AddNonce adds a nonce entry's ID and its expiration time T to the
-	// state's nonce set.  It is an error for the nonce ID (with an
-	// expiry >= T) to already be present.
-	AddNonce(Hash, uint64) error
-
-	// DeleteSpentOutput removes an output ID from the utxo set. It is
-	// an error for the ID not to be present.
-	DeleteSpentOutput(Hash) error
-
-	// AddOutput adds an output ID to the utxo set.
-	AddOutput(Hash) error
-}
-
-// Apply updates the blockchain state with the result of adding the
-// transaction.
-func (tx *TxEntries) Apply(state BlockchainState) error {
-	for _, n := range tx.NonceIDs {
-		err := state.AddNonce(n, tx.Body.MaxTimeMS)
-		if err != nil {
-			return err
-		}
-	}
-	for _, s := range tx.SpentOutputIDs {
-		err := state.DeleteSpentOutput(s)
-		if err != nil {
-			return err
-		}
-	}
-	for _, o := range tx.OutputIDs {
-		err := state.AddOutput(o)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (tx *TxEntries) SigHash(n uint32) (hash Hash) {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
