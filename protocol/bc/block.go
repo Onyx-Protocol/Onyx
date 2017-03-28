@@ -11,7 +11,6 @@ import (
 	"chain/encoding/blockchain"
 	"chain/encoding/bufpool"
 	"chain/errors"
-	"chain/protocol/vm"
 )
 
 const (

@@ -1,6 +1,9 @@
 package bc
 
-import "chain/errors"
+import (
+	"chain/errors"
+	"chain/protocol/vm"
+)
 
 type (
 	// ValidChecker can check its validity with respect to a given
@@ -36,6 +39,7 @@ var (
 	errMismatchedAssetID     = errors.New("mismatched asset id")
 	errMismatchedBlock       = errors.New("mismatched block")
 	errMismatchedMerkleRoot  = errors.New("mismatched merkle root")
+	errMismatchedPosition    = errors.New("mismatched value source/dest positions")
 	errMismatchedReference   = errors.New("mismatched reference")
 	errMismatchedValue       = errors.New("mismatched value")
 	errMisorderedBlockHeight = errors.New("misordered block height")
