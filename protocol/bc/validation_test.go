@@ -248,7 +248,49 @@ func TestTxValidation(t *testing.T) {
 			},
 			err: vm.ErrFalseVMResult,
 		},
-		// TODO(bobg): more validation tests
+		{
+			desc: "issuance exthash nonempty",
+			f: func() {
+				tx.TxInputs[0].(*Issuance).Body.ExtHash = Hash{1}
+			},
+			err: errNonemptyExtHash,
+		},
+		{
+			desc: "issuance exthash nonempty, but that's OK",
+			f: func() {
+				tx.Body.Version = 2
+				tx.TxInputs[0].(*Issuance).Body.ExtHash = Hash{1}
+			},
+		},
+		{
+			desc: "spend control program failure",
+			f: func() {
+				tx.TxInputs[1].(*Spend).Witness.Arguments[0] = []byte{}
+			},
+			err: vm.ErrFalseVMResult,
+		},
+		{
+			desc: "mismatched spent source/witness value",
+			f: func() {
+				spend := tx.TxInputs[1].(*Spend)
+				spend.SpentOutput.Body.Source.Value.Amount = spend.Witness.Destination.Value.Amount + 1
+			},
+			err: errMismatchedValue,
+		},
+		{
+			desc: "spend exthash nonempty",
+			f: func() {
+				tx.TxInputs[1].(*Spend).Body.ExtHash = Hash{1}
+			},
+			err: errNonemptyExtHash,
+		},
+		{
+			desc: "spend exthash nonempty, but that's OK",
+			f: func() {
+				tx.Body.Version = 2
+				tx.TxInputs[1].(*Spend).Body.ExtHash = Hash{1}
+			},
+		},
 	}
 
 	for i, c := range cases {
