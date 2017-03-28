@@ -13,15 +13,35 @@ type Issuance struct {
 	}
 	ordinal int
 
+	Witness struct {
+		Destination     ValueDestination
+		AssetDefinition AssetDefinition
+		Arguments       [][]byte
+		AnchoredID      Hash
+	}
+
 	// Anchor is a pointer to the manifested entry corresponding to
 	// Body.AnchorID.
-	Anchor Entry // *nonce or *spend
+	Anchor Entry // *nonce, *spend, or *issuance
+
+	// Anchored is a pointer to the manifested entry corresponding to
+	// witness.AnchoredID.
+	Anchored Entry
 }
 
 func (Issuance) Type() string           { return "issuance1" }
 func (iss *Issuance) body() interface{} { return iss.Body }
 
 func (iss Issuance) Ordinal() int { return iss.ordinal }
+
+func (iss *Issuance) SetDestination(id Hash, val AssetAmount, pos uint64, e Entry) {
+	iss.Witness.Destination = ValueDestination{
+		Ref:      id,
+		Value:    val,
+		Position: pos,
+		Entry:    e,
+	}
+}
 
 // NewIssuance creates a new Issuance.
 func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issuance {

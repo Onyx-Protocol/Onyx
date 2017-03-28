@@ -13,6 +13,9 @@ type BlockHeaderEntry struct {
 		NextConsensusProgram []byte
 		ExtHash              Hash
 	}
+	Witness struct {
+		Arguments [][]byte
+	}
 }
 
 func (BlockHeaderEntry) Type() string          { return "blockheader" }
