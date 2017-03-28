@@ -16,7 +16,7 @@
     }
   },
 
-  styleLoaders: ['style', 'css', 'sass'],
+  styleLoaders: ['style', 'css', 'postcss', 'sass'],
 
   // Bootstrap styles
   styles: {
