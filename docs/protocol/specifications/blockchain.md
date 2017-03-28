@@ -653,11 +653,15 @@ AnchoredEntry       | Pointer                                   | Optional point
 1. Verify that `AssetDefinition.InitialBlockID` is equal to the given initial block ID.
 2. Verify that the SHA3-256 hash of `AssetDefinition` is equal to `Value.AssetID`.
 3. [Validate issuance program](#program-validation) `AssetDefinition.Program` with the given `Arguments` and the transaction version.
-4. Verify that `Anchor` entry is present and is either a [Nonce](#nonce), a [Spend 1](#spend-1), or an [Issuance 1](#issuance-1) entry.
-5. Verify that `Anchor.AnchoredEntry` points to this entry.
-6. Validate the `Anchor` entry.
-7. [Validate](#value-destination-1-validation) `Destination`.
-8. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
+4. Validate `Anchor`:
+    1. Verify that `Anchor` entry is present and it’s type is one of the following: 
+        * [Nonce](#nonce)
+        * [Spend 1](#spend-1)
+        * [Issuance 1](#issuance-1)
+    2. Verify that `Anchor.AnchoredEntry` points to this issuance entry.
+    3. Validate the `Anchor` entry.
+5. [Validate](#value-destination-1-validation) `Destination`.
+6. If the transaction version is known: verify that the `ExtHash` is the all-zero hash.
 
 ### Issuance 2
 
@@ -692,7 +696,15 @@ Arguments                  | List<String>                                       
 
 **Algorithm:**
 
-1. Validate `Anchor`.
+1. Validate `Anchor`:
+    1. Verify that `Anchor` entry is present and it’s type is one of the following: 
+        * [Nonce](#nonce)
+        * [Spend 1](#spend-1)
+        * [Issuance 1](#issuance-1)
+        * [Spend 2](#spend-2)
+        * [Issuance 2](#issuance-2)
+    2. Verify that `Anchor.AnchoredEntry` points to this issuance entry.
+    3. Validate the `Anchor` entry.
 2. [Validate](#value-destination-2) `Destination`.
 3. Verify that the length of `AssetIssuanceChoices` and `IssuanceAssetRangeProof.IssuanceKeys` are the same.
 4. For each `AssetIssuanceChoice` in `AssetIssuanceChoices`, [validate](#asset-issuance-choice-validation) that asset issuance choice, and verify that `AssetIssuanceChoice.IssuanceKey` matches the `IssuanceKey` at the same index in `IssuanceAssetRangeProof.IssuanceKeys`.
