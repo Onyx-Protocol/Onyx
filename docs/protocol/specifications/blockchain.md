@@ -345,14 +345,25 @@ Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the [t
 
 ### Assets Merkle Root
 
-Root hash of the [merkle patricia tree](#merkle-patricia-tree) formed by [unspent outputs version 1](#output-1) after applying the [block](#block-header). Allows bootstrapping nodes from recent blocks and an archived copy of the corresponding merkle patricia tree without processing all historical transactions.
+Root hash of the [merkle patricia tree](#merkle-patricia-tree) formed by unspent outputs [version 1](#output-1) or [2](#output-2) after applying the [block](#block-header). Allows bootstrapping nodes from recent blocks and an archived copy of the corresponding merkle patricia tree without processing all historical transactions.
 
-The tree contains unspent [outputs version 1](#output-1) (one or more per [asset ID](#asset-id)) where both key and value are the same value — the [Output ID](#output-1) of the unspent output.
+The tree contains unspent outputs (one or more per [asset ID](#asset-id)) where both key and value are the same value — the _Output ID_ of the unspent output.
+
+#### Assets Merkle Root 1
+
+The root of all unspent [outputs version 1](#output-1):
 
 Key                     | Value
 ------------------------|------------------------------
-[Output ID](#output-1)  | [Output ID](#output-1)
+[Output ID1](#output-1) | [Output ID1](#output-1)
 
+#### Assets Merkle Root 2
+
+The root of all unspent [outputs version 2](#output-2):
+
+Key                     | Value
+------------------------|------------------------------
+[Output ID2](#output-2) | [Output ID2](#output-2)
 
 
 
@@ -391,12 +402,12 @@ Witness    | Struct               | See below.
 
 Body field               | Type                    | Description
 -------------------------|-------------------------|----------------------------------------------------------
-Version                  | Integer                 | Block version, equals 1.
+Version                  | Integer                 | Block version, equals 1 or 2.
 Height                   | Integer                 | Block serial number.
 Previous Block ID        | String32                | [Hash](#block-id) of the previous block or all-zero string.
 Timestamp                | Integer                 | Time of the block in milliseconds since 00:00:00 UTC Jan 1, 1970.
 Transactions Merkle Root | MerkleRoot<TxHeader>    | Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
-Assets Merkle Root       | PatriciaRoot<Output1>   | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](#assets-merkle-root) for details.
+Assets Merkle Root       | PatriciaRoot<Output1>   | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent outputs version 1 after applying the block. See [Assets Merkle Root](#assets-merkle-root) for details.
 Next Consensus Program Bytecode | String | Authentication predicate for adding a new block after this one.
 ExtHash                  | [ExtStruct](#extension-struct)  | Extension fields.
 
