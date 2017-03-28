@@ -1,5 +1,10 @@
 # Chain Core Mac Installer changelog
 
+## 1.1.2 (March 28, 2017)
+
+* Updated to Chain Core [1.1.4](https://github.com/chain/chain/blob/1.1-stable/CHANGELOG.md#1.1.4),
+which brings improved support for Macs running Yosemite.
+
 ## 1.1.1 (March 8, 2017)
 
 * Updated to Chain Core [1.1.3](https://github.com/chain/chain/blob/1.1-stable/CHANGELOG.md#1.1.3)

@@ -6,15 +6,15 @@
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
       <item>
-        <title>Chain Core Developer Edition 1.1.1</title>
+        <title>Chain Core Developer Edition 1.1.2</title>
         <description>
           <![CDATA[
             <p><b>NOTE:</b> This update will create a fresh blockchain if you were previously
               using versions 1.0.x or 1.1.0; please backup any blockchain data you wish to preserve.
             </p>
             <ul>
-              <li>Update the Chain Core server package to version 1.1.3</li>
-              <li>Improved startup detection of other Chain Cores</li>
+              <li>Update the Chain Core server package to version 1.1.4</li>
+              <li>Improved OS X Yosemite support</li>
             </ul>
           ]]>
         </description>
