@@ -27,12 +27,15 @@ module Chain
 
     class ClientModule < Chain::ClientModule
 
+      # Create client/network access token.
+      # @param [Hash] opts
+      # @option params [String] :type Type specifiying the type of access token to be created.
+      #                                   You must specify either 'client' or 'network'.
+      # @option params [String] :id ID specifying the ID of newly created access token.
+      #                                   You must specify a unique ID for access token.
       # @return [AccessToken]
-      def create(type:, id:)
-        AccessToken.new(client.conn.request(
-          'create-access-token',
-          {type: type, id: id}
-        ))
+      def create(opts = {})
+        AccessToken.new(client.conn.request('create-access-token', opts))
       end
 
       # @param [Hash] opts

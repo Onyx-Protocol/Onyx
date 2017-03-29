@@ -84,7 +84,7 @@ context 'Chain SDK integration test' do
       chain.assets.create(alias: :unobtanium)
     }.to raise_error(Chain::APIError)
 
-    # Batch account creation
+    # Batch asset creation
 
     asset_batch = chain.assets.create_batch([
       {alias: :bronze, root_xpubs: [chain.mock_hsm.keys.create.xpub], quorum: 1}, # success
