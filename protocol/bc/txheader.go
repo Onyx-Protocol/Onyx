@@ -41,7 +41,7 @@ func NewTxHeader(version uint64, results []Entry, data Hash, minTimeMS, maxTimeM
 	return h
 }
 
-// CheckValid does only part of the work of validating a tx header. The block-related parts of tx validation are in ValidateBlock.
+// checkValid does only part of the work of validating a tx header. The block-related parts of tx validation are in ValidateBlock.
 func (tx *TxHeader) checkValid(vs *validationState) error {
 	if tx.Body.MaxTimeMS > 0 {
 		if tx.Body.MaxTimeMS < tx.Body.MinTimeMS {

@@ -44,7 +44,7 @@ func (mux *Mux) checkValid(vs *validationState) error {
 	for i, src := range mux.Body.Sources {
 		vs2 := *vs
 		vs2.sourcePos = uint64(i)
-		err := src.CheckValid(&vs2)
+		err := src.checkValid(&vs2)
 		if err != nil {
 			return errors.Wrapf(err, "checking mux source %d", i)
 		}
@@ -53,7 +53,7 @@ func (mux *Mux) checkValid(vs *validationState) error {
 	for i, dest := range mux.Witness.Destinations {
 		vs2 := *vs
 		vs2.destPos = uint64(i)
-		err := dest.CheckValid(&vs2)
+		err := dest.checkValid(&vs2)
 		if err != nil {
 			return errors.Wrapf(err, "checking mux destination %d", i)
 		}

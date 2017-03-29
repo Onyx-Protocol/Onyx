@@ -31,7 +31,7 @@ func NewRetirement(source ValueSource, data Hash, ordinal int) *Retirement {
 func (r *Retirement) checkValid(vs *validationState) error {
 	vs2 := *vs
 	vs2.sourcePos = 0
-	err := r.Body.Source.CheckValid(&vs2)
+	err := r.Body.Source.checkValid(&vs2)
 	if err != nil {
 		return errors.Wrap(err, "checking retirement source")
 	}

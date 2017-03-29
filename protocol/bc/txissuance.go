@@ -102,7 +102,7 @@ func (iss *Issuance) checkValid(vs *validationState) error {
 
 	destVS := *vs
 	destVS.destPos = 0
-	err = iss.Witness.Destination.CheckValid(&destVS)
+	err = iss.Witness.Destination.checkValid(&destVS)
 	if err != nil {
 		return errors.Wrap(err, "checking issuance destination")
 	}

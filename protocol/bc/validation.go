@@ -8,7 +8,7 @@ import (
 // validChecker can check its validity with respect to a given
 // validation state.
 type validChecker interface {
-	// CheckValid checks the entry for validity w.r.t. the given
+	// checkValid checks the entry for validity w.r.t. the given
 	// validation state.
 	checkValid(*validationState) error
 }

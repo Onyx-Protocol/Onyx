@@ -80,7 +80,7 @@ func (s *Spend) checkValid(vs *validationState) error {
 
 	vs2 := *vs
 	vs2.destPos = 0
-	err = s.Witness.Destination.CheckValid(&vs2)
+	err = s.Witness.Destination.checkValid(&vs2)
 	if err != nil {
 		return errors.Wrap(err, "checking spend destination")
 	}

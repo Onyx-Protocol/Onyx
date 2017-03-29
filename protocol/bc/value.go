@@ -15,7 +15,7 @@ type ValueSource struct {
 	Entry `entry:"-"`
 }
 
-func (vs *ValueSource) CheckValid(vstate *validationState) error {
+func (vs *ValueSource) checkValid(vstate *validationState) error {
 	vstate2 := *vstate
 	vstate2.entryID = vs.Ref
 	err := vs.Entry.checkValid(&vstate2)
@@ -73,7 +73,7 @@ type ValueDestination struct {
 	Entry
 }
 
-func (vd *ValueDestination) CheckValid(vs *validationState) error {
+func (vd *ValueDestination) checkValid(vs *validationState) error {
 	var src ValueSource
 	switch ref := vd.Entry.(type) {
 	case *Output:

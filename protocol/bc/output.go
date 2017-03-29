@@ -35,7 +35,7 @@ func NewOutput(source ValueSource, controlProgram Program, data Hash, ordinal in
 func (o *Output) checkValid(vs *validationState) error {
 	vs2 := *vs
 	vs2.sourcePos = 0
-	err := o.Body.Source.CheckValid(&vs2)
+	err := o.Body.Source.checkValid(&vs2)
 	if err != nil {
 		return errors.Wrap(err, "checking output source")
 	}
