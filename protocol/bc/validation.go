@@ -67,15 +67,33 @@ func ValidateTx(tx *TxEntries, initialBlockID Hash) error {
 	return tx.TxHeader.checkValid(vs)
 }
 
-// ValidateBlock validates a block and the transactions within.
-// The consensus program is executed only if prev is non-nil and
-// runProg is true.
-func ValidateBlock(b, prev *BlockEntries, initialBlockID Hash, runProg bool) error {
+// ValidateBlock validates a block and the transactions within. It is
+// the same as ValidateUnsignedBlock but also executes the previous
+// block's NextConsensusProgram (when applicable).
+func ValidateBlock(b, prev *BlockEntries, initialBlockID Hash) error {
+	err := ValidateUnsignedBlock(b, prev, initialBlockID)
+	if err != nil {
+		return err
+	}
+	if b.Body.Height > 1 {
+		vmContext := NewBlockVMContext(b, prev.Body.NextConsensusProgram, b.Witness.Arguments)
+		err := vm.Verify(vmContext)
+		if err != nil {
+			return errors.Wrap(err, "evaluating previous block's next consensus program")
+		}
+	}
+	return nil
+}
+
+// ValidateUnsignedBlock validates an unsigned block and the
+// transactions within in preparation for signing the block. By
+// definition it does not execute the consensus program.
+func ValidateUnsignedBlock(b, prev *BlockEntries, initialBlockID Hash) error {
 	if b.Body.Height > 1 {
 		if prev == nil {
 			return errors.WithDetailf(errNoPrevBlock, "height %d", b.Body.Height)
 		}
-		err := validateBlockAgainstPrev(b, prev, runProg)
+		err := validateBlockAgainstPrev(b, prev)
 		if err != nil {
 			return err
 		}
@@ -123,7 +141,7 @@ func ValidateBlock(b, prev *BlockEntries, initialBlockID Hash, runProg bool) err
 	return nil
 }
 
-func validateBlockAgainstPrev(b, prev *BlockEntries, runProg bool) error {
+func validateBlockAgainstPrev(b, prev *BlockEntries) error {
 	if b.Body.Version < prev.Body.Version {
 		return errors.WithDetailf(errVersionRegression, "previous block verson %d, current block version %d", prev.Body.Version, b.Body.Version)
 	}
@@ -135,13 +153,6 @@ func validateBlockAgainstPrev(b, prev *BlockEntries, runProg bool) error {
 	}
 	if b.Body.TimestampMS <= prev.Body.TimestampMS {
 		return errors.WithDetailf(errMisorderedBlockTime, "previous block time %d, current block time %d", prev.Body.TimestampMS, b.Body.TimestampMS)
-	}
-	if runProg {
-		vmContext := NewBlockVMContext(b, prev.Body.NextConsensusProgram, b.Witness.Arguments)
-		err := vm.Verify(vmContext)
-		if err != nil {
-			return errors.Wrap(err, "evaluating previous block's next consensus program")
-		}
 	}
 	return nil
 }
