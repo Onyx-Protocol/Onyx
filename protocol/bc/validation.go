@@ -61,8 +61,10 @@ var (
 func ValidateTx(tx *TxEntries, initialBlockID Hash) error {
 	vs := &validationState{
 		blockchainID: initialBlockID,
+		tx:           tx,
+		entryID:      tx.ID,
 	}
-	return tx.checkValid(vs)
+	return tx.TxHeader.checkValid(vs)
 }
 
 // ValidateBlock validates a block and the transactions within.

@@ -22,13 +22,6 @@ type TxEntries struct {
 	OutputIDs      []Hash
 }
 
-func (tx *TxEntries) checkValid(vs *validationState) error {
-	vs2 := *vs
-	vs2.tx = tx
-	vs2.entryID = tx.ID
-	return tx.TxHeader.checkValid(&vs2)
-}
-
 func (tx *TxEntries) SigHash(n uint32) (hash Hash) {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
