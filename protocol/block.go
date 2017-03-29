@@ -230,7 +230,7 @@ func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 		return nil, err
 	}
 
-	root, err := bc.MerkleRoot([]*bc.TxEntries{}) // calculate the zero value of the tx merkle root
+	root, err := bc.MerkleRoot(nil) // calculate the zero value of the tx merkle root
 	if err != nil {
 		return nil, errors.Wrap(err, "calculating zero value of tx merkle root")
 	}
