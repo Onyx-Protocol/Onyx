@@ -5,32 +5,32 @@ import (
 	"chain/protocol/vm"
 )
 
-type (
-	// ValidChecker can check its validity with respect to a given
+// validChecker can check its validity with respect to a given
+// validation state.
+type validChecker interface {
+	// CheckValid checks the entry for validity w.r.t. the given
 	// validation state.
-	validChecker interface {
-		// CheckValid checks the entry for validity w.r.t. the given
-		// validation state.
-		checkValid(*validationState) error
-	}
+	checkValid(*validationState) error
+}
 
-	validationState struct {
-		// The ID of the blockchain
-		blockchainID Hash
+// validationState contains the context that must propagate through
+// the transaction graph when validating entries.
+type validationState struct {
+	// The ID of the blockchain
+	blockchainID Hash
 
-		// The enclosing transaction object
-		tx *TxEntries
+	// The enclosing transaction object
+	tx *TxEntries
 
-		// The ID of the nearest enclosing entry
-		entryID Hash
+	// The ID of the nearest enclosing entry
+	entryID Hash
 
-		// The source position, for validating ValueSources
-		sourcePos uint64
+	// The source position, for validating ValueSources
+	sourcePos uint64
 
-		// The destination position, for validating ValueDestinations
-		destPos uint64
-	}
-)
+	// The destination position, for validating ValueDestinations
+	destPos uint64
+}
 
 var (
 	errBadTimeRange          = errors.New("bad time range")
