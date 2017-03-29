@@ -144,7 +144,7 @@ func (c *Chain) ApplyValidBlock(block *bc.Block) (*state.Snapshot, error) {
 	return newSnapshot, nil
 }
 
-// CommitAppliedBlock commits a block to the blockchain. The block
+// CommitBlock commits a block to the blockchain. The block
 // must already have been applied with ApplyValidBlock or
 // ApplyNewBlock, which will have produced the new snapshot that's
 // required here.
@@ -153,7 +153,8 @@ func (c *Chain) ApplyValidBlock(block *bc.Block) (*state.Snapshot, error) {
 //   * saves the block to the store.
 //   * sometimes saves the state tree to the store.
 //   * executes all new-block callbacks.
-func (c *Chain) CommitAppliedBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
+// TODO(bobg): rename to CommitAppliedBlock for clarity (deferred from https://github.com/chain/chain/pull/788)
+func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
 	// else can be derived from that block.

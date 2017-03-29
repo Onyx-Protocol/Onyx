@@ -22,7 +22,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = c1.CommitAppliedBlock(context.Background(), b, state.Empty())
+	err = c1.CommitBlock(context.Background(), b, state.Empty())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

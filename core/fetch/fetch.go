@@ -205,7 +205,7 @@ func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot
 	if err != nil {
 		return prevSnap, prev, err
 	}
-	err = c.CommitAppliedBlock(ctx, block, snap)
+	err = c.CommitBlock(ctx, block, snap)
 	if err != nil {
 		return prevSnap, prev, err
 	}
