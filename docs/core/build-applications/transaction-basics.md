@@ -42,6 +42,7 @@ If you haven't already, you should first check out the [5-Minute Guide](../get-s
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/TransactionBasics.java)
+- [Node](../examples/node/transactionBasics.js)
 - [Ruby](../examples/ruby/transaction_basics.rb)
 
 ## Creating transactions
@@ -96,17 +97,17 @@ Issue 1000 units of gold to Alice.
 
 #### Within a Chain Core
 
-$code issue-within-core ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb
+$code issue-within-core ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 #### Between two Chain Cores
 
 First, Bob creates a control program in his account, which he can send to the issuer of gold.
 
-$code create-bob-issue-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb
+$code create-bob-issue-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 The issuer then builds, signs, and submits a transaction, sending gold to Bob's control program.
 
-$code issue-to-bob-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb
+$code issue-to-bob-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 ### Simple payment
 
@@ -114,17 +115,17 @@ Alice pays 10 units of gold to Bob.
 
 #### Within a Chain Core
 
-$code pay-within-core ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb
+$code pay-within-core ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 #### Between two Chain Cores
 
 First, Bob creates a control program in his account, which he can send to Alice.
 
-$code create-bob-payment-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb
+$code create-bob-payment-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 Alice then builds, signs, and submits a transaction, sending gold to Bob's control program.
 
-$code pay-between-cores ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb
+$code pay-between-cores ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 ### Multi-asset payment
 
@@ -132,23 +133,23 @@ Alice pays 10 units of gold and 20 units of silver to Bob.
 
 #### Within a Chain Core
 
-$code multiasset-within-core ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb
+$code multiasset-within-core ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 #### Between two Chain Cores
 
 First Bob creates a control program in his account, which he can send to Alice.
 
-$code create-bob-multiasset-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb
+$code create-bob-multiasset-program ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 Alice then builds, signs, and submits a transaction, sending gold and silver to Bob's control program.
 
-$code multiasset-between-cores ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb
+$code multiasset-between-cores ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 ### Asset retirement
 
 Alice retires 50 units of gold from her account.
 
-$code retire ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb
+$code retire ../examples/java/TransactionBasics.java ../examples/ruby/transaction_basics.rb ../examples/node/transactionBasics.js
 
 ### Multiparty trades
 

@@ -23,6 +23,7 @@ This guide will walk you through a few basic balance queries:
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/Balances.java)
+- [Node](../examples/node/balances.js)
 - [Ruby](../examples/ruby/balances.rb)
 
 ## List account balances

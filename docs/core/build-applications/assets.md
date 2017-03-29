@@ -29,6 +29,7 @@ This guide assumes you know the basic functions presented in the [5-Minute Guide
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/Assets.java)
+- [Node](../examples/node/assets.js)
 - [Ruby](../examples/ruby/assets.rb)
 
 ## Create asset
@@ -42,11 +43,11 @@ Creating an asset defines the asset object locally in the Chain Core. It does no
 
 Create an asset for Acme Common stock:
 
-$code create-asset-acme-common ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code create-asset-acme-common ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 Create an asset for Acme Preferred stock:
 
-$code create-asset-acme-preferred ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code create-asset-acme-preferred ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 ## List assets
 
@@ -54,11 +55,11 @@ Chain Core keeps a list of all assets in the blockchain, whether or not they wer
 
 To list all assets created in the local Core, we build an assets query, filtering on the `is_local` tag.
 
-$code list-local-assets ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code list-local-assets ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 To list all assets defined as preferred stock of a private security, we build an assets query, filtering on several tags.
 
-$code list-private-preferred-securities ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code list-private-preferred-securities ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 ## Issue asset units to a local account
 
@@ -66,15 +67,15 @@ To issue units of an asset into an account within the Chain Core, we can build a
 
 We first build a transaction issuing 1000 units of Acme Common stock to the Acme treasury account.
 
-$code build-issue ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code build-issue ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 Once we have built the transaction, we need to sign it with the key used to create the Acme Common stock asset.
 
-$code sign-issue ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code sign-issue ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 Once we have signed the transaction, we can submit it for inclusion in the blockchain.
 
-$code submit-issue ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code submit-issue ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 ## Issue asset units to an external party
 
@@ -82,7 +83,7 @@ If you wish to issue asset units to an external party, you must first request a 
 
 We will issue 2000 units of Acme Common stock to an external party.
 
-$code external-issue ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code external-issue ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 ## Retire asset units
 
@@ -90,15 +91,15 @@ To retire units of an asset from an account, we can build a transaction using an
 
 We first build a transaction retiring 50 units of Acme Common stock from Acme’s treasury account.
 
-$code build-retire ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code build-retire ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 Once we have built the transaction, we need to sign it with the key used to create Acme’s treasury account.
 
-$code sign-retire ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code sign-retire ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 Once we have signed the transaction, we can submit it for inclusion in the blockchain. The asset units in this transaction become permanently unavailable for further spending.
 
-$code submit-retire ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code submit-retire ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 ## List asset transactions
 
@@ -108,19 +109,19 @@ Chain Core keeps a time-ordered list of all transactions in the blockchain. Thes
 
 To list transactions where Acme Common stock was issued, we build an assets query, filtering on inputs with the `issue` action and the Acme Common stock `asset_alias`.
 
-$code list-issuances ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code list-issuances ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 ### Transfer transactions
 
 To list transactions where Acme Common stock was transferred, we build an assets query, filtering on inputs with the `spend` action and the Acme Common stock `asset_alias`.
 
-$code list-transfers ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code list-transfers ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 ### Retirement transactions
 
 To list transactions where Acme Common stock was retired, we build an assets query, filtering on outputs with the `retire` action and the Acme Common stock `asset_alias`.
 
-$code list-retirements ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code list-retirements ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 ## Get asset circulation
 
@@ -128,12 +129,12 @@ The circulation of an asset is the sum of all non-retired units of that asset ex
 
 To list the circulation of Acme Common stock, we build a balance query, filtering on the Acme Common stock `asset_alias`.
 
-$code list-acme-common-balance ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code list-acme-common-balance ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 To list the circulation of all classes of Acme stock, we build a balance query, filtering on the `issuer` field in the `definition`.
 
-$code list-acme-balance ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code list-acme-balance ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
 To list all the control programs that hold a portion of the circulation of Acme Common stock, we build an unspent outputs query, filtering on the Acme Common stock `asset_alias`.
 
-$code list-acme-common-unspents ../examples/java/Assets.java ../examples/ruby/assets.rb
+$code list-acme-common-unspents ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
