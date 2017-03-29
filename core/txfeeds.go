@@ -50,7 +50,7 @@ func (a *API) updateTxFeed(ctx context.Context, in struct {
 	After string `json:"after"`
 }) (*txfeed.TxFeed, error) {
 	// TODO(tessr): Consider moving this function into the txfeed package.
-	// (It's currently outside the txfeed package to avoid a dependecy cycle
+	// (It's currently outside the txfeed package to avoid a dependency cycle
 	// between txfeed and query.)
 	bad, err := txAfterIsBefore(in.After, in.Prev)
 	if err != nil {

@@ -27,7 +27,7 @@ var (
 	logWriter   io.Writer  = os.Stdout
 	procPrefix  []byte     // process-global prefix; see SetPrefix vs AddPrefixkv
 
-	// pairDelims contains a list of characters that may be used as delimeters
+	// pairDelims contains a list of characters that may be used as delimiters
 	// between key-value pairs in a log entry. Keys and values will be quoted or
 	// otherwise formatted to ensure that key-value extraction is unambiguous.
 	//
@@ -206,7 +206,7 @@ func Error(ctx context.Context, err error, a ...interface{}) {
 }
 
 // formatKey ensures that the stringified key is valid for use in a
-// Splunk-style K=V format. It stubs out delimeter and quoter characters in
+// Splunk-style K=V format. It stubs out delimiter and quoter characters in
 // the key string with hyphens.
 func formatKey(k interface{}) string {
 	s := fmt.Sprint(k)
@@ -222,7 +222,7 @@ func formatKey(k interface{}) string {
 }
 
 // formatValue ensures that the stringified value is valid for use in a
-// Splunk-style K=V format. It quotes the string value if delimeter or quoter
+// Splunk-style K=V format. It quotes the string value if delimiter or quoter
 // characters are present in the value string.
 func formatValue(v interface{}) string {
 	s := fmt.Sprint(v)
