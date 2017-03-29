@@ -29,18 +29,18 @@ func (s *Snapshot) PruneNonces(timestampMS uint64) {
 }
 
 // Copy makes a copy of provided snapshot. Copying a snapshot is an
-// O(n) operation where n is the number of nonces in the snapshot's
-// nonce set.
-func (s *Snapshot) Copy() *Snapshot {
+// O(n) operation where n is the number of nonces in the
+// snapshot's nonce set.
+func Copy(original *Snapshot) *Snapshot {
 	// TODO(kr): consider making type Snapshot truly immutable.
 	// We already handle it that way in many places (with explicit
 	// calls to Copy to get the right behavior).
 	c := &Snapshot{
 		Tree:   new(patricia.Tree),
-		Nonces: make(map[bc.Hash]uint64, len(s.Nonces)),
+		Nonces: make(map[bc.Hash]uint64, len(original.Nonces)),
 	}
-	*c.Tree = *s.Tree
-	for k, v := range s.Nonces {
+	*c.Tree = *original.Tree
+	for k, v := range original.Nonces {
 		c.Nonces[k] = v
 	}
 	return c

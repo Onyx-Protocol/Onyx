@@ -49,7 +49,7 @@ func (m *MemStore) SaveSnapshot(ctx context.Context, height uint64, snapshot *st
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.State = snapshot.Copy()
+	m.State = state.Copy(snapshot)
 	m.StateHeight = height
 	return nil
 }
@@ -71,7 +71,7 @@ func (m *MemStore) LatestSnapshot(context.Context) (*state.Snapshot, uint64, err
 	if m.State == nil {
 		m.State = state.Empty()
 	}
-	return m.State.Copy(), m.StateHeight, nil
+	return state.Copy(m.State), m.StateHeight, nil
 }
 
 func (m *MemStore) FinalizeBlock(context.Context, uint64) error { return nil }

@@ -53,7 +53,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 	}
 
 	// Make a copy of the snapshot that we can apply our changes to.
-	newSnapshot := c.state.snapshot.Copy()
+	newSnapshot := state.Copy(c.state.snapshot)
 	newSnapshot.PruneNonces(timestampMS)
 
 	b := &bc.Block{
@@ -127,7 +127,7 @@ func (c *Chain) validateBlock(block, prev *bc.Block, runProg bool) error {
 // ApplyValidBlock creates an updated snapshot without validating the
 // block.
 func (c *Chain) ApplyValidBlock(block *bc.Block) (*state.Snapshot, error) {
-	newSnapshot := c.state.snapshot.Copy()
+	newSnapshot := state.Copy(c.state.snapshot)
 	err := newSnapshot.ApplyBlock(bc.MapBlock(block))
 	if err != nil {
 		return nil, err

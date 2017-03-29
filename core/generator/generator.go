@@ -105,7 +105,7 @@ func (g *Generator) Generate(
 		log.Fatalkv(ctx, log.KeyError, err)
 	}
 	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
-		s := g.latestSnapshot.Copy()
+		s := state.Copy(g.latestSnapshot)
 		err := s.ApplyBlock(bc.MapBlock(b))
 		if err != nil {
 			log.Fatalkv(ctx, log.KeyError, err)
