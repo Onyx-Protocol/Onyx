@@ -40,7 +40,7 @@ func (o *Output) checkValid(vs *validationState) error {
 		return errors.Wrap(err, "checking output source")
 	}
 
-	if vs.tx.Body.Version == 1 && (o.Body.ExtHash != Hash{}) {
+	if vs.tx.Body.Version == 1 && o.Body.ExtHash != (Hash{}) {
 		return errNonemptyExtHash
 	}
 

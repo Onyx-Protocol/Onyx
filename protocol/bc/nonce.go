@@ -65,7 +65,7 @@ func (n *Nonce) checkValid(vs *validationState) error {
 		return errZeroTime
 	}
 
-	if vs.tx.Body.Version == 1 && (n.Body.ExtHash != Hash{}) {
+	if vs.tx.Body.Version == 1 && n.Body.ExtHash != (Hash{}) {
 		return errNonemptyExtHash
 	}
 

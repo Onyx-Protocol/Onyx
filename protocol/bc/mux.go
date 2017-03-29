@@ -87,7 +87,7 @@ func (mux *Mux) checkValid(vs *validationState) error {
 		}
 	}
 
-	if vs.tx.Body.Version == 1 && (mux.Body.ExtHash != Hash{}) {
+	if vs.tx.Body.Version == 1 && mux.Body.ExtHash != (Hash{}) {
 		return errNonemptyExtHash
 	}
 

@@ -64,7 +64,7 @@ func (tx *TxHeader) checkValid(vs *validationState) error {
 			return errEmptyResults
 		}
 
-		if (tx.Body.ExtHash != Hash{}) {
+		if tx.Body.ExtHash != (Hash{}) {
 			return errNonemptyExtHash
 		}
 	}

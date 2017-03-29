@@ -85,7 +85,7 @@ func (s *Spend) checkValid(vs *validationState) error {
 		return errors.Wrap(err, "checking spend destination")
 	}
 
-	if vs.tx.Body.Version == 1 && (s.Body.ExtHash != Hash{}) {
+	if vs.tx.Body.Version == 1 && s.Body.ExtHash != (Hash{}) {
 		return errNonemptyExtHash
 	}
 

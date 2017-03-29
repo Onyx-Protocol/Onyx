@@ -36,7 +36,7 @@ func (r *Retirement) checkValid(vs *validationState) error {
 		return errors.Wrap(err, "checking retirement source")
 	}
 
-	if vs.tx.Body.Version == 1 && (r.Body.ExtHash != Hash{}) {
+	if vs.tx.Body.Version == 1 && r.Body.ExtHash != (Hash{}) {
 		return errNonemptyExtHash
 	}
 

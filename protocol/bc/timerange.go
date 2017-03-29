@@ -28,7 +28,7 @@ func (tr *TimeRange) checkValid(vs *validationState) error {
 	if tr.Body.MaxTimeMS > 0 && tr.Body.MaxTimeMS < vs.tx.Body.MaxTimeMS {
 		return errBadTimeRange
 	}
-	if vs.tx.Body.Version == 1 && (tr.Body.ExtHash != Hash{}) {
+	if vs.tx.Body.Version == 1 && tr.Body.ExtHash != (Hash{}) {
 		return errNonemptyExtHash
 	}
 	return nil

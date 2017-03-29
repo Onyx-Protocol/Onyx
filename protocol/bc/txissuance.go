@@ -107,7 +107,7 @@ func (iss *Issuance) checkValid(vs *validationState) error {
 		return errors.Wrap(err, "checking issuance destination")
 	}
 
-	if vs.tx.Body.Version == 1 && (iss.Body.ExtHash != Hash{}) {
+	if vs.tx.Body.Version == 1 && iss.Body.ExtHash != (Hash{}) {
 		return errNonemptyExtHash
 	}
 
