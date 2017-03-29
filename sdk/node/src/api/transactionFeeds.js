@@ -50,7 +50,7 @@ class TransactionFeed {
    */
   constructor(feed, client) {
     this.id = feed['id']
-    this.alias = feed['aias']
+    this.alias = feed['alias']
     this.after = feed['after']
     this.filter = feed['filter']
 
