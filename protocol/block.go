@@ -117,13 +117,7 @@ func (c *Chain) validateBlock(block, prev *bc.Block, runProg bool) error {
 	if prev != nil {
 		prevEntries = bc.MapBlock(prev)
 	}
-	blockEntries := bc.MapBlock(block)
-	var err error
-	if runProg {
-		err = bc.ValidateBlock(blockEntries, prevEntries, c.InitialBlockHash)
-	} else {
-		err = bc.ValidateUnsignedBlock(blockEntries, prevEntries, c.InitialBlockHash)
-	}
+	err := bc.ValidateBlock(bc.MapBlock(block), prevEntries, c.InitialBlockHash, runProg)
 	if err != nil {
 		return errors.Sub(ErrBadBlock, err)
 	}
