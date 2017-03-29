@@ -10,6 +10,7 @@ import (
 
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/validation"
 	. "chain/protocol/vm"
 	"chain/testutil"
 )
@@ -252,7 +253,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 	})
 	consensusProg := []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}
 
-	gotErr := Verify(bc.NewBlockVMContext(block, consensusProg, block.Witness.Arguments))
+	gotErr := Verify(validation.NewBlockVMContext(block, consensusProg, block.Witness.Arguments))
 	if gotErr != nil {
 		t.Errorf("unexpected error: %v", gotErr)
 	}
@@ -265,7 +266,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 		},
 	})
 
-	gotErr = Verify(bc.NewBlockVMContext(block, consensusProg, block.Witness.Arguments))
+	gotErr = Verify(validation.NewBlockVMContext(block, consensusProg, block.Witness.Arguments))
 	if errors.Root(gotErr) != ErrRunLimitExceeded {
 		t.Error("expected block to exceed run limit")
 	}
@@ -303,7 +304,7 @@ func TestStep(t *testing.T) {
 			bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 1, 0, nil, bc.Hash{}, nil),
 		},
 	})
-	txVMContext := bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{}, nil)
+	txVMContext := validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{}, nil)
 	cases := []struct {
 		startVM *VirtualMachine
 		wantVM  *VirtualMachine
@@ -494,7 +495,7 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 				Witness: witnesses,
 			},
 		}})
-		Verify(bc.NewBlockVMContext(block, program, witnesses))
+		Verify(validation.NewBlockVMContext(block, program, witnesses))
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -516,5 +517,5 @@ func verifyTx(tx *bc.Tx, index uint32) error {
 		prog = inp.SpentOutput.Body.ControlProgram
 		args = inp.Witness.Arguments
 	}
-	return Verify(bc.NewTxVMContext(tx.TxEntries, inp, prog, args))
+	return Verify(validation.NewTxVMContext(tx.TxEntries, inp, prog, args))
 }

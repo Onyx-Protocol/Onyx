@@ -1,14 +1,15 @@
-package bc
+package validation
 
 import (
 	"bytes"
 
 	"chain/crypto/sha3pool"
 	"chain/errors"
+	"chain/protocol/bc"
 	"chain/protocol/vm"
 )
 
-func NewBlockVMContext(block *BlockEntries, prog []byte, args [][]byte) *vm.Context {
+func NewBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *vm.Context {
 	blockHash := block.ID[:]
 	return &vm.Context{
 		VMVersion: 1,
@@ -21,11 +22,11 @@ func NewBlockVMContext(block *BlockEntries, prog []byte, args [][]byte) *vm.Cont
 	}
 }
 
-func NewTxVMContext(tx *TxEntries, entry Entry, prog Program, args [][]byte) *vm.Context {
+func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]byte) *vm.Context {
 	var (
 		numResults = uint64(len(tx.Results))
 		txData     = tx.Body.Data[:]
-		entryID    = EntryID(entry) // TODO(bobg): pass this in, don't recompute it
+		entryID    = bc.EntryID(entry) // TODO(bobg): pass this in, don't recompute it
 
 		assetID       *[]byte
 		amount        *uint64
@@ -36,14 +37,14 @@ func NewTxVMContext(tx *TxEntries, entry Entry, prog Program, args [][]byte) *vm
 	)
 
 	switch e := entry.(type) {
-	case *Nonce:
-		if iss, ok := e.Anchored.(*Issuance); ok {
+	case *bc.Nonce:
+		if iss, ok := e.Anchored.(*bc.Issuance); ok {
 			a1 := iss.Body.Value.AssetID[:]
 			assetID = &a1
 			amount = &iss.Body.Value.Amount
 		}
 
-	case *Issuance:
+	case *bc.Issuance:
 		a1 := e.Body.Value.AssetID[:]
 		assetID = &a1
 		amount = &e.Body.Value.Amount
@@ -53,7 +54,7 @@ func NewTxVMContext(tx *TxEntries, entry Entry, prog Program, args [][]byte) *vm
 		a2 := e.Body.AnchorID[:]
 		anchorID = &a2
 
-	case *Spend:
+	case *bc.Spend:
 		a1 := e.SpentOutput.Body.Source.Value.AssetID[:]
 		assetID = &a1
 		amount = &e.SpentOutput.Body.Source.Value.Amount
@@ -63,11 +64,11 @@ func NewTxVMContext(tx *TxEntries, entry Entry, prog Program, args [][]byte) *vm
 		s := e.Body.SpentOutputID[:]
 		spentOutputID = &s
 
-	case *Output:
+	case *bc.Output:
 		d := e.Body.Data[:]
 		entryData = &d
 
-	case *Retirement:
+	case *bc.Retirement:
 		d := e.Body.Data[:]
 		entryData = &d
 	}
@@ -81,7 +82,7 @@ func NewTxVMContext(tx *TxEntries, entry Entry, prog Program, args [][]byte) *vm
 			hasher.Write(entryID[:])
 			hasher.Write(tx.ID[:])
 
-			var hash Hash
+			var hash bc.Hash
 			hasher.Read(hash[:])
 			hashBytes := hash.Bytes()
 			txSigHash = &hashBytes
@@ -90,8 +91,8 @@ func NewTxVMContext(tx *TxEntries, entry Entry, prog Program, args [][]byte) *vm
 	}
 
 	checkOutput := func(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte) (bool, error) {
-		checkEntry := func(e Entry) (bool, error) {
-			check := func(prog Program, value AssetAmount, dataHash Hash) bool {
+		checkEntry := func(e bc.Entry) (bool, error) {
+			check := func(prog bc.Program, value bc.AssetAmount, dataHash bc.Hash) bool {
 				return (prog.VMVersion == vmVersion &&
 					bytes.Equal(prog.Code, code) &&
 					bytes.Equal(value.AssetID[:], assetID) &&
@@ -100,17 +101,17 @@ func NewTxVMContext(tx *TxEntries, entry Entry, prog Program, args [][]byte) *vm
 			}
 
 			switch e := e.(type) {
-			case *Output:
+			case *bc.Output:
 				return check(e.Body.ControlProgram, e.Body.Source.Value, e.Body.Data), nil
 
-			case *Retirement:
-				return check(Program{}, e.Body.Source.Value, e.Body.Data), nil
+			case *bc.Retirement:
+				return check(bc.Program{}, e.Body.Source.Value, e.Body.Data), nil
 			}
 
 			return false, vm.ErrContext
 		}
 
-		checkMux := func(m *Mux) (bool, error) {
+		checkMux := func(m *bc.Mux) (bool, error) {
 			if index >= uint64(len(m.Witness.Destinations)) {
 				return false, errors.Wrapf(vm.ErrBadValue, "index %d >= %d", index, len(m.Witness.Destinations))
 			}
@@ -118,11 +119,11 @@ func NewTxVMContext(tx *TxEntries, entry Entry, prog Program, args [][]byte) *vm
 		}
 
 		switch e := entry.(type) {
-		case *Mux:
+		case *bc.Mux:
 			return checkMux(e)
 
-		case *Issuance:
-			if m, ok := e.Witness.Destination.Entry.(*Mux); ok {
+		case *bc.Issuance:
+			if m, ok := e.Witness.Destination.Entry.(*bc.Mux); ok {
 				return checkMux(m)
 			}
 			if index != 0 {
@@ -130,8 +131,8 @@ func NewTxVMContext(tx *TxEntries, entry Entry, prog Program, args [][]byte) *vm
 			}
 			return checkEntry(e.Witness.Destination.Entry)
 
-		case *Spend:
-			if m, ok := e.Witness.Destination.Entry.(*Mux); ok {
+		case *bc.Spend:
+			if m, ok := e.Witness.Destination.Entry.(*bc.Mux); ok {
 				return checkMux(m)
 			}
 			if index != 0 {

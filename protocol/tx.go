@@ -3,6 +3,7 @@ package protocol
 import (
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/validation"
 )
 
 // ErrBadTx is returned for transactions failing validation
@@ -33,7 +34,7 @@ func (c *Chain) ValidateTx(tx *bc.TxEntries) error {
 	var ok bool
 	err, ok = c.prevalidated.lookup(tx.ID)
 	if !ok {
-		err = bc.ValidateTx(tx, c.InitialBlockHash)
+		err = validation.ValidateTx(tx, c.InitialBlockHash)
 		c.prevalidated.cache(tx.ID, err)
 	}
 	return err

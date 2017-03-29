@@ -8,6 +8,7 @@ import (
 	"chain/crypto/sha3pool"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/validation"
 	. "chain/protocol/vm"
 	"chain/testutil"
 )
@@ -27,7 +28,7 @@ func TestNextProgram(t *testing.T) {
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  bc.NewBlockVMContext(block, prog, nil),
+		Context:  validation.NewBlockVMContext(block, prog, nil),
 	}
 	_, err = vm.Run()
 	if err != nil {
@@ -41,7 +42,7 @@ func TestNextProgram(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  bc.NewBlockVMContext(block, prog, nil),
+		Context:  validation.NewBlockVMContext(block, prog, nil),
 	}
 	_, err = vm.Run()
 	if err == nil && vm.FalseResult() {
@@ -70,7 +71,7 @@ func TestBlockTime(t *testing.T) {
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  bc.NewBlockVMContext(block, prog, nil),
+		Context:  validation.NewBlockVMContext(block, prog, nil),
 	}
 	_, err = vm.Run()
 	if err != nil {
@@ -84,7 +85,7 @@ func TestBlockTime(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  bc.NewBlockVMContext(block, prog, nil),
+		Context:  validation.NewBlockVMContext(block, prog, nil),
 	}
 	_, err = vm.Run()
 	if err == nil && vm.FalseResult() {
@@ -121,7 +122,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1, Code: prog}, nil),
+		Context:  validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1, Code: prog}, nil),
 	}
 	gotVM, err := vm.Step()
 	if err != nil {
@@ -137,7 +138,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1, Code: prog}, nil),
+		Context:  validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1, Code: prog}, nil),
 	}
 	_, err = vm.Step()
 	if err != ErrContext {
@@ -148,7 +149,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1, Code: prog}, nil),
+		Context:  validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1, Code: prog}, nil),
 	}
 	_, err = vm.Step()
 	if err != ErrContext {
@@ -159,7 +160,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1, Code: prog}, nil),
+		Context:  validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1, Code: prog}, nil),
 	}
 	gotVM, err = vm.Step()
 	if err != nil {
@@ -203,7 +204,7 @@ func TestIntrospectionOps(t *testing.T) {
 		MaxTime: 20,
 	})
 
-	context0 := bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1}, nil)
+	context0 := validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1}, nil)
 
 	type testStruct struct {
 		op      Op
@@ -416,26 +417,26 @@ func TestIntrospectionOps(t *testing.T) {
 		op: OP_PROGRAM,
 		startVM: &VirtualMachine{
 			Program: []byte("spendprog"),
-			Context: bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1, Code: []byte("spendprog")}, nil),
+			Context: validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1, Code: []byte("spendprog")}, nil),
 		},
 		wantVM: &VirtualMachine{
 			RunLimit:     49982,
 			DeferredCost: 17,
 			DataStack:    [][]byte{[]byte("spendprog")},
-			Context:      bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1, Code: []byte("spendprog")}, nil),
+			Context:      validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{VMVersion: 1, Code: []byte("spendprog")}, nil),
 		},
 	}, {
 		op: OP_PROGRAM,
 		startVM: &VirtualMachine{
 			Program:  []byte("issueprog"),
 			RunLimit: 50000,
-			Context:  bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1, Code: []byte("issueprog")}, nil),
+			Context:  validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1, Code: []byte("issueprog")}, nil),
 		},
 		wantVM: &VirtualMachine{
 			RunLimit:     49982,
 			DeferredCost: 17,
 			DataStack:    [][]byte{[]byte("issueprog")},
-			Context:      bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1, Code: []byte("issueprog")}, nil),
+			Context:      validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1, Code: []byte("issueprog")}, nil),
 		},
 	}, {
 		op: OP_MINTIME,
@@ -514,25 +515,25 @@ func TestIntrospectionOps(t *testing.T) {
 		// The current entry is input 1
 		op: OP_ENTRYID,
 		startVM: &VirtualMachine{
-			Context: bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1}, nil),
+			Context: validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1}, nil),
 		},
 		wantVM: &VirtualMachine{
 			RunLimit:     49959,
 			DeferredCost: 40,
 			DataStack:    [][]byte{tx.TxEntries.TxInputIDs[1][:]},
-			Context:      bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1}, nil),
+			Context:      validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1}, nil),
 		},
 	}, {
 		// The current entry is the internal mux node
 		op: OP_ENTRYID,
 		startVM: &VirtualMachine{
-			Context: bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0].(*bc.Spend).Witness.Destination.Entry, bc.Program{VMVersion: 1}, nil),
+			Context: validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0].(*bc.Spend).Witness.Destination.Entry, bc.Program{VMVersion: 1}, nil),
 		},
 		wantVM: &VirtualMachine{
 			RunLimit:     49959,
 			DeferredCost: 40,
 			DataStack:    [][]byte{tx.TxEntries.TxInputs[0].(*bc.Spend).Witness.Destination.Ref[:]},
-			Context:      bc.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0].(*bc.Spend).Witness.Destination.Entry, bc.Program{VMVersion: 1}, nil),
+			Context:      validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0].(*bc.Spend).Witness.Destination.Entry, bc.Program{VMVersion: 1}, nil),
 		},
 	}}
 

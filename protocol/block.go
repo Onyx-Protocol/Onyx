@@ -10,6 +10,7 @@ import (
 	"chain/log"
 	"chain/protocol/bc"
 	"chain/protocol/state"
+	"chain/protocol/validation"
 	"chain/protocol/vmutil"
 )
 
@@ -117,7 +118,7 @@ func (c *Chain) validateBlock(block, prev *bc.Block, runProg bool) error {
 	if prev != nil {
 		prevEntries = bc.MapBlock(prev)
 	}
-	err := bc.ValidateBlock(bc.MapBlock(block), prevEntries, c.InitialBlockHash, runProg)
+	err := validation.ValidateBlock(bc.MapBlock(block), prevEntries, c.InitialBlockHash, runProg)
 	if err != nil {
 		return errors.Sub(ErrBadBlock, err)
 	}
