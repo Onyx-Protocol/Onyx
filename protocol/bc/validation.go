@@ -71,33 +71,13 @@ func ValidateTx(tx *TxEntries, initialBlockID Hash) error {
 // The consensus program is executed only if prev is non-nil and
 // runProg is true.
 func ValidateBlock(b, prev *BlockEntries, initialBlockID Hash, runProg bool) error {
-	if prev == nil {
-		if b.Body.Height != 1 {
+	if b.Body.Height > 1 {
+		if prev == nil {
 			return errors.WithDetailf(errNoPrevBlock, "height %d", b.Body.Height)
 		}
-	} else {
-		if b.Body.Version < prev.Body.Version {
-			return errors.WithDetailf(errVersionRegression, "previous block verson %d, current block version %d", prev.Body.Version, b.Body.Version)
-		}
-
-		if b.Body.Height != prev.Body.Height+1 {
-			return errors.WithDetailf(errMisorderedBlockHeight, "previous block height %d, current block height %d", prev.Body.Height, b.Body.Height)
-		}
-
-		if prev.ID != b.Body.PreviousBlockID {
-			return errors.WithDetailf(errMismatchedBlock, "previous block ID %x, current block wants %x", prev.ID[:], b.Body.PreviousBlockID[:])
-		}
-
-		if b.Body.TimestampMS <= prev.Body.TimestampMS {
-			return errors.WithDetailf(errMisorderedBlockTime, "previous block time %d, current block time %d", prev.Body.TimestampMS, b.Body.TimestampMS)
-		}
-
-		if runProg {
-			vmContext := NewBlockVMContext(b, prev.Body.NextConsensusProgram, b.Witness.Arguments)
-			err := vm.Verify(vmContext)
-			if err != nil {
-				return errors.Wrap(err, "evaluating previous block's next consensus program")
-			}
+		err := validateBlockAgainstPrev(b, prev, runProg)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -140,5 +120,28 @@ func ValidateBlock(b, prev *BlockEntries, initialBlockID Hash, runProg bool) err
 		return errors.WithDetailf(errMismatchedMerkleRoot, "computed %x, current block wants %x", txRoot[:], b.Body.TransactionsRoot[:])
 	}
 
+	return nil
+}
+
+func validateBlockAgainstPrev(b, prev *BlockEntries, runProg bool) error {
+	if b.Body.Version < prev.Body.Version {
+		return errors.WithDetailf(errVersionRegression, "previous block verson %d, current block version %d", prev.Body.Version, b.Body.Version)
+	}
+	if b.Body.Height != prev.Body.Height+1 {
+		return errors.WithDetailf(errMisorderedBlockHeight, "previous block height %d, current block height %d", prev.Body.Height, b.Body.Height)
+	}
+	if prev.ID != b.Body.PreviousBlockID {
+		return errors.WithDetailf(errMismatchedBlock, "previous block ID %x, current block wants %x", prev.ID[:], b.Body.PreviousBlockID[:])
+	}
+	if b.Body.TimestampMS <= prev.Body.TimestampMS {
+		return errors.WithDetailf(errMisorderedBlockTime, "previous block time %d, current block time %d", prev.Body.TimestampMS, b.Body.TimestampMS)
+	}
+	if runProg {
+		vmContext := NewBlockVMContext(b, prev.Body.NextConsensusProgram, b.Witness.Arguments)
+		err := vm.Verify(vmContext)
+		if err != nil {
+			return errors.Wrap(err, "evaluating previous block's next consensus program")
+		}
+	}
 	return nil
 }
