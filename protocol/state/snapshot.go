@@ -18,26 +18,6 @@ type Snapshot struct {
 	Nonces map[bc.Hash]uint64
 }
 
-func (s *Snapshot) AddNonce(id bc.Hash, expiryMS uint64) error {
-	if s.Nonces[id] >= expiryMS {
-		return fmt.Errorf("conflicting nonce %x", id[:])
-	}
-	s.Nonces[id] = expiryMS
-	return nil
-}
-
-func (s *Snapshot) DeleteSpentOutput(id bc.Hash) error {
-	if !s.Tree.Contains(id[:]) {
-		return fmt.Errorf("invalid prevout %x", id[:])
-	}
-	s.Tree.Delete(id[:])
-	return nil
-}
-
-func (s *Snapshot) AddOutput(id bc.Hash) error {
-	return s.Tree.Insert(id[:])
-}
-
 // PruneNonces modifies a Snapshot, removing all nonce IDs
 // with expiration times earlier than the provided timestamp.
 func (s *Snapshot) PruneNonces(timestampMS uint64) {
@@ -89,19 +69,25 @@ func (s *Snapshot) ApplyBlock(block *bc.BlockEntries) error {
 // ApplyTx updates s in place.
 func (s *Snapshot) ApplyTx(tx *bc.TxEntries) error {
 	for _, n := range tx.NonceIDs {
-		err := s.AddNonce(n, tx.Body.MaxTimeMS)
-		if err != nil {
-			return err
+		// Add new nonces. They must not conflict with nonces already
+		// present.
+		if s.Nonces[n] >= tx.Body.MaxTimeMS {
+			return fmt.Errorf("conflicting nonce %x", n[:])
 		}
+		s.Nonces[n] = tx.Body.MaxTimeMS
 	}
+
+	// Remove spent outputs. Each output must be present.
 	for _, prevout := range tx.SpentOutputIDs {
-		err := s.DeleteSpentOutput(prevout)
-		if err != nil {
-			return err
+		if !s.Tree.Contains(prevout[:]) {
+			return fmt.Errorf("invalid prevout %x", prevout[:])
 		}
+		s.Tree.Delete(prevout[:])
 	}
+
+	// Add new outputs. They must not yet be present.
 	for _, o := range tx.OutputIDs {
-		err := s.AddOutput(o)
+		err := s.Tree.Insert(o[:])
 		if err != nil {
 			return err
 		}
