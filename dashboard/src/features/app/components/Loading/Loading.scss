@@ -6,8 +6,11 @@
 
 .main {
   display: flex;
+  display: -webkit-flex;
   align-items: center;
+  -webkit-align-items: center;
   justify-content: center;
+  -webkit-justify-content: center;
   color: $text-color;
   font-size: 24px;
   margin-top: -75px;

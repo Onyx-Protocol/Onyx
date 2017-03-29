@@ -16,7 +16,9 @@
   padding: 0 $gutter-size;
   height: $title-height;
   display: flex;
+  display: -webkit-flex;
   align-items: center;
+  -webkit-align-items: center;
   font-size: 16px;
   font-weight: bold;
   width: 100%;
@@ -24,6 +26,7 @@
 
 .skip {
   flex: 1;
+  -webkit-flex: 1;
   text-align: right;
 
   a {

@@ -27,7 +27,9 @@ html {
 
 body {
   display: flex;
+  display: -webkit-flex;
   flex-direction: column;
+  -webkit-flex-direction: column;
   position: relative;
   margin: 0 auto;
   min-height: 100%;
@@ -37,13 +39,19 @@ body {
 
 #root {
   display: flex;
+  display: -webkit-flex;
   flex-direction: column;
+  -webkit-flex-direction: column;
   flex: 1;
+  -webkit-flex: 1;
 
   > div {
     display: flex;
+    display: -webkit-flex;
     flex-direction: column;
+    -webkit-flex-direction: column;
     flex: 1;
+    -webkit-flex: 1;
   }
 }
 
@@ -63,8 +71,11 @@ p {
 
 .flex-container {
   display: flex;
+  display: -webkit-flex;
   flex-direction: column;
+  -webkit-flex-direction: column;
   flex: 1;
+  -webkit-flex: 1;
 }
 
 .btn-primary,

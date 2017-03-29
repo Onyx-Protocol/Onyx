@@ -29,11 +29,13 @@
 
 .flex {
   display: flex;
+  display: -webkit-flex;
   overflow:hidden;
 }
 
 .col {
   display: flex;
+  display: -webkit-flex;
   width: 50%;
   padding: $grid-gutter-width;
   h4 {

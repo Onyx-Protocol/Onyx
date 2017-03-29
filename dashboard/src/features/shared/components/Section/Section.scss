@@ -4,6 +4,7 @@
 
 .title {
   display: flex;
+  display: -webkit-flex;
 
   h5 {
     flex-grow: 1;

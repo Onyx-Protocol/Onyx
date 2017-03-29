@@ -8,8 +8,10 @@
 
 .choices {
   display: flex;
+  display: -webkit-flex;
   flex-wrap: wrap;
   justify-content: space-between;
+  -webkit-justify-content: space-between;
 
   > div {
     width: 30%;
@@ -19,10 +21,12 @@
 
 .choice_wrapper {
   display: flex;
+  display: -webkit-flex;
   min-height: 100%;
 
   > label {
     display: flex;
+    display: -webkit-flex;
     min-height:100%;
     font-weight: normal;
   }

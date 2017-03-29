@@ -1,5 +1,6 @@
 .main {
   display: flex;
+  display: -webkit-flex;
 }
 
 .alert {
@@ -28,6 +29,7 @@
 .content {
   width: 100%;
   flex: 1;
+  -webkit-flex: 1;
 
   p {
     margin: 0;

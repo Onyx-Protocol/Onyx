@@ -1,8 +1,11 @@
 .empty {
   text-align: center;
   display: flex;
+  display: -webkit-flex;
   flex-direction: column;
+  -webkit-flex-direction: column;
   justify-content: flex-start;
+  -webkit-justify-content: flex-start;
   padding-top: 100px;
 }
 
