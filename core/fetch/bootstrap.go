@@ -32,12 +32,16 @@ type SnapshotProgress struct {
 // or encounters any kind of validation error, it'll re-attempt the
 // snapshot download a few times.
 func (s *SnapshotProgress) Attempt() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.attempt
 }
 
 // Height returns the blockchain height of the snapshot being
 // downloaded.
 func (s *SnapshotProgress) Height() uint64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.height
 }
 
