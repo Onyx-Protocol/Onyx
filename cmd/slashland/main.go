@@ -297,7 +297,7 @@ func commitRevIDs(landdir, baseBranch string) error {
 		return nil
 	}
 
-	cmd := dirCmd(landdir, "git", "commit", "-m", "auto rev id")
+	cmd = dirCmd(landdir, "git", "commit", "-m", "auto rev id")
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
