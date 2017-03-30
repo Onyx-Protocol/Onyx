@@ -66,11 +66,11 @@ Limitations:
 **Output:** `xprv`, a root extended private key.
 
 1. Compute `K = Hash("ChainKD seed" || seed, 64)`.
-2. Split `K` in two parts: 32-byte `buf` and 32-byte `salt`.
+2. Split `K` in two parts: 32-byte `buf` and 32-byte `spice`.
 3. Clear the third highest bit of the last byte of `buf`.
 4. [Generate scalar](#generate-scalar) `s` from buffer `buf`.
 5. Let `privkey` be a 32-byte string encoding scalar `s` using little-endian convention.
-6. Return `xprv = privkey || salt` (64 bytes).
+6. Return `xprv = privkey || spice` (64 bytes).
 
 
 
@@ -80,11 +80,12 @@ Limitations:
 
 **Output:** `xpub`, an extended public key.
 
-1. Split `xprv` in two parts: 32-byte `privkey` and 32-byte `salt`.
+1. Split `xprv` in two parts: 32-byte `privkey` and 32-byte `spice`.
 2. Interpret `privkey` as a little-endian 256-bit integer `s`.
 3. Perform a fixed-base scalar multiplication `P = s·B` where `B` is a base point of Ed25519.
 4. [Encode](#encode-public-key) point `P` as `pubkey`.
-5. Return extended public key `xpub = pubkey || salt` (64 bytes).
+5. Compute `salt` as `spice` with the first byte set to zero.
+6. Return extended public key `xpub = pubkey || salt` (64 bytes).
 
 
 ### Derive hardened extended private key
@@ -96,13 +97,13 @@ Limitations:
 
 **Output:** `xprv’`, the derived extended public key.
 
-1. Split `xprv` in two parts: 32-byte `privkey` and 32-byte `salt`.
-2. Compute `K = Hash(0x00 || privkey || salt || selector, 64)`.
-3. Split `K` in two parts: 32-byte `buf` and 32-byte `salt’`.
+1. Split `xprv` in two parts: 32-byte `privkey` and 32-byte `spice`.
+2. Compute `K = Hash(0x00 || privkey || spice || selector, 64)`.
+3. Split `K` in two parts: 32-byte `buf` and 32-byte `spice’`.
 4. Clear the third highest bit of the last byte of `buf`.
 5. [Generate scalar](#generate-scalar) `s’` from buffer `buf`.
 6. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
-7. Return `xprv’ = privkey’ || salt’`.
+7. Return `xprv’ = privkey’ || spice’`.
 
 
 ### Derive non-hardened extended private key
@@ -114,16 +115,19 @@ Limitations:
 
 **Output:** `xprv’`, the derived extended public key.
 
-1. Split `xprv` in two parts: 32-byte `privkey` and 32-byte `salt`.
+1. Split `xprv` in two parts: 32-byte `privkey` and 32-byte `spice`.
 2. Let `s` be the scalar decoded from `privkey` using little-endian notation.
 3. Perform a fixed-base scalar multiplication `P = s·B` where `B` is a base point of Ed25519.
 4. [Encode](#encode-public-key) point `P` as `pubkey`.
-5. Compute `F = Hash(0x01 || pubkey || salt || selector, 61)`.
-6. Split `F` in two parts: 29-byte `fbuffer` and 32-byte `salt’`.
-7. Clear top 2 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
-8. Compute derived secret scalar `s’ = (s + 8·f) mod L` (where `L` is the group order of base point `B`).
-9. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
-10. Return `xprv’ = privkey’ || salt’`.
+5. Compute `salt` as `spice` with the first byte set to zero.
+6. Compute `F = Hash(0x01 || pubkey || salt || selector, 61)`.
+7. Split `F` in two parts: 29-byte `fbuffer` and 32-byte `salt’`.
+8. Clear top 2 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
+9. Compute derived secret scalar `s’ = (s + 8·f) mod L` (where `L` is the group order of base point `B`).
+10. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
+11. Compute `pepper’ = Hash(0x02 || xprv || selector, 1)`.
+12. Compute `spice’` as `salt’` with the first byte set to `pepper’`.
+13. Return `xprv’ = privkey’ || spice’`.
 
 
 ### Derive non-hardened extended public key
@@ -163,7 +167,7 @@ Resulting 32-byte public key can be used to verify EdDSA signature created by a 
 
 **Output:** `secretkey`, a 64-byte [EdDSA](https://tools.ietf.org/html/rfc8032) secret key.
 
-1. Compute 32-byte hash `ext = Hash(0x02 || xprv, 32)`.
+1. Compute 32-byte hash `ext = Hash(0x03 || xprv, 32)`.
 2. Extract `privkey` as first 32 bytes of `xprv`.
 3. Return `secretkey = privkey || ext`.
 
