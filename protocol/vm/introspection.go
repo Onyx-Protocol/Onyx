@@ -30,7 +30,7 @@ func opCheckOutput(vm *virtualMachine) error {
 	if amount < 0 {
 		return ErrBadValue
 	}
-	refdatahash, err := vm.pop(true)
+	data, err := vm.pop(true)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func opCheckOutput(vm *virtualMachine) error {
 		return ErrContext
 	}
 
-	ok, err := vm.context.CheckOutput(uint64(index), refdatahash, uint64(amount), assetID, uint64(vmVersion), code)
+	ok, err := vm.context.CheckOutput(uint64(index), data, uint64(amount), assetID, uint64(vmVersion), code)
 	if err != nil {
 		return err
 	}
@@ -115,28 +115,29 @@ func opMaxTime(vm *virtualMachine) error {
 	return vm.pushInt64(int64(maxTimeMS), true)
 }
 
-func opRefDataHash(vm *virtualMachine) error {
+func opDataHash(vm *virtualMachine) error {
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	if vm.context.InputRefDataHash == nil {
+	if vm.context.EntryData == nil {
 		return ErrContext
 	}
-	return vm.push(*vm.context.InputRefDataHash, true)
+
+	return vm.push(*vm.context.EntryData, true)
 }
 
-func opTxRefDataHash(vm *virtualMachine) error {
+func opTxDataHash(vm *virtualMachine) error {
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
 
-	if vm.context.TxRefDataHash == nil {
+	if vm.context.TxData == nil {
 		return ErrContext
 	}
-	return vm.push(*vm.context.TxRefDataHash, true)
+	return vm.push(*vm.context.TxData, true)
 }
 
 func opIndex(vm *virtualMachine) error {
@@ -145,10 +146,18 @@ func opIndex(vm *virtualMachine) error {
 		return err
 	}
 
-	if vm.context.InputIndex == nil {
+	if vm.context.DestPos == nil {
 		return ErrContext
 	}
-	return vm.pushInt64(int64(*vm.context.InputIndex), true)
+	return vm.pushInt64(int64(*vm.context.DestPos), true)
+}
+
+func opEntryID(vm *virtualMachine) error {
+	err := vm.applyCost(1)
+	if err != nil {
+		return err
+	}
+	return vm.push(vm.context.EntryID, true)
 }
 
 func opOutputID(vm *virtualMachine) error {
@@ -169,10 +178,10 @@ func opNonce(vm *virtualMachine) error {
 		return err
 	}
 
-	if vm.context.Nonce == nil {
+	if vm.context.AnchorID == nil {
 		return ErrContext
 	}
-	return vm.push(*vm.context.Nonce, true)
+	return vm.push(*vm.context.AnchorID, true)
 }
 
 func opNextProgram(vm *virtualMachine) error {

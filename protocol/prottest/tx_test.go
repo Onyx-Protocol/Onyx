@@ -7,7 +7,9 @@ import (
 )
 
 func TestNewIssuance(t *testing.T) {
-	err := validation.CheckTxWellFormed(NewIssuanceTx(t, NewChain(t)))
+	c := NewChain(t)
+	iss := NewIssuanceTx(t, c)
+	err := validation.ValidateTx(iss.TxEntries, c.InitialBlockHash)
 	if err != nil {
 		t.Error(err)
 	}

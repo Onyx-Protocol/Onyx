@@ -52,7 +52,7 @@ func TestMapTx(t *testing.T) {
 					want := hashData(oldOut.ReferenceData)
 					t.Errorf("header.Body.ResultIDs[%d].(*output).Body.Data is %x, expected %x", i, newOut.Body.Data[:], want[:])
 				}
-				if (newOut.Body.ExtHash != Hash{}) {
+				if newOut.Body.ExtHash != (Hash{}) {
 					t.Errorf("header.Body.ResultIDs[%d].(*output).Body.ExtHash is %x, expected zero", i, newOut.Body.ExtHash[:])
 				}
 			} else {

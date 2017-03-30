@@ -29,6 +29,12 @@ type Block struct {
 	Transactions []*Tx
 }
 
+type BlockEntries struct {
+	*BlockHeaderEntry
+	ID           Hash
+	Transactions []*TxEntries
+}
+
 // MarshalText fulfills the json.Marshaler interface.
 // This guarantees that blocks will get deserialized correctly
 // when being parsed from HTTP requests.

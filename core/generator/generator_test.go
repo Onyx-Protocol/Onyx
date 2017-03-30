@@ -11,7 +11,6 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/protocol/state"
-	"chain/protocol/vm"
 	"chain/testutil"
 )
 
@@ -73,7 +72,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	block, _, err := c.GenerateBlock(ctx, tip, snapshot, time.Now(), nil)
+	block, _, err := c.GenerateBlock(ctx, tip, snapshot, time.Now().Add(time.Minute), nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -83,7 +82,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	err = vm.Verify(bc.NewBlockVMContext(block, tip.ConsensusProgram, block.Witness))
+	err = c.ValidateBlock(block, tip)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

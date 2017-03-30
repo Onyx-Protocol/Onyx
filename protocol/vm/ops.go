@@ -201,19 +201,20 @@ const (
 	OP_TXSIGHASH     Op = 0xae
 	OP_BLOCKHASH     Op = 0xaf
 
-	OP_CHECKOUTPUT   Op = 0xc1
-	OP_ASSET         Op = 0xc2
-	OP_AMOUNT        Op = 0xc3
-	OP_PROGRAM       Op = 0xc4
-	OP_MINTIME       Op = 0xc5
-	OP_MAXTIME       Op = 0xc6
-	OP_TXREFDATAHASH Op = 0xc7
-	OP_REFDATAHASH   Op = 0xc8
-	OP_INDEX         Op = 0xc9
-	OP_OUTPUTID      Op = 0xcb
-	OP_NONCE         Op = 0xcc
-	OP_NEXTPROGRAM   Op = 0xcd
-	OP_BLOCKTIME     Op = 0xce
+	OP_CHECKOUTPUT Op = 0xc1
+	OP_ASSET       Op = 0xc2
+	OP_AMOUNT      Op = 0xc3
+	OP_PROGRAM     Op = 0xc4
+	OP_MINTIME     Op = 0xc5
+	OP_MAXTIME     Op = 0xc6
+	OP_TXDATAHASH  Op = 0xc7
+	OP_DATAHASH    Op = 0xc8
+	OP_INDEX       Op = 0xc9
+	OP_ENTRYID     Op = 0xca
+	OP_OUTPUTID    Op = 0xcb
+	OP_NONCE       Op = 0xcc
+	OP_NEXTPROGRAM Op = 0xcd
+	OP_BLOCKTIME   Op = 0xce
 )
 
 type opInfo struct {
@@ -312,19 +313,20 @@ var (
 		OP_TXSIGHASH:     {OP_TXSIGHASH, "TXSIGHASH", opTxSigHash},
 		OP_BLOCKHASH:     {OP_BLOCKHASH, "BLOCKHASH", opBlockHash},
 
-		OP_CHECKOUTPUT:   {OP_CHECKOUTPUT, "CHECKOUTPUT", opCheckOutput},
-		OP_ASSET:         {OP_ASSET, "ASSET", opAsset},
-		OP_AMOUNT:        {OP_AMOUNT, "AMOUNT", opAmount},
-		OP_PROGRAM:       {OP_PROGRAM, "PROGRAM", opProgram},
-		OP_MINTIME:       {OP_MINTIME, "MINTIME", opMinTime},
-		OP_MAXTIME:       {OP_MAXTIME, "MAXTIME", opMaxTime},
-		OP_TXREFDATAHASH: {OP_TXREFDATAHASH, "TXREFDATAHASH", opTxRefDataHash},
-		OP_REFDATAHASH:   {OP_REFDATAHASH, "REFDATAHASH", opRefDataHash},
-		OP_INDEX:         {OP_INDEX, "INDEX", opIndex},
-		OP_OUTPUTID:      {OP_OUTPUTID, "OUTPUTID", opOutputID},
-		OP_NONCE:         {OP_NONCE, "NONCE", opNonce},
-		OP_NEXTPROGRAM:   {OP_NEXTPROGRAM, "NEXTPROGRAM", opNextProgram},
-		OP_BLOCKTIME:     {OP_BLOCKTIME, "BLOCKTIME", opBlockTime},
+		OP_CHECKOUTPUT: {OP_CHECKOUTPUT, "CHECKOUTPUT", opCheckOutput},
+		OP_ASSET:       {OP_ASSET, "ASSET", opAsset},
+		OP_AMOUNT:      {OP_AMOUNT, "AMOUNT", opAmount},
+		OP_PROGRAM:     {OP_PROGRAM, "PROGRAM", opProgram},
+		OP_MINTIME:     {OP_MINTIME, "MINTIME", opMinTime},
+		OP_MAXTIME:     {OP_MAXTIME, "MAXTIME", opMaxTime},
+		OP_TXDATAHASH:  {OP_TXDATAHASH, "TXDATAHASH", opTxDataHash},
+		OP_DATAHASH:    {OP_DATAHASH, "DATAHASH", opDataHash},
+		OP_INDEX:       {OP_INDEX, "INDEX", opIndex},
+		OP_ENTRYID:     {OP_ENTRYID, "ENTRYID", opEntryID},
+		OP_OUTPUTID:    {OP_OUTPUTID, "OUTPUTID", opOutputID},
+		OP_NONCE:       {OP_NONCE, "NONCE", opNonce},
+		OP_NEXTPROGRAM: {OP_NEXTPROGRAM, "NEXTPROGRAM", opNextProgram},
+		OP_BLOCKTIME:   {OP_BLOCKTIME, "BLOCKTIME", opBlockTime},
 	}
 
 	opsByName map[string]opInfo

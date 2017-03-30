@@ -22,12 +22,18 @@ const maxBlockTxs = 10000
 // snapshot to the Store.
 const saveSnapshotFrequency = time.Hour
 
-// ErrBadBlock is returned when a block is invalid.
-var ErrBadBlock = errors.New("invalid block")
+var (
+	// ErrBadBlock is returned when a block is invalid.
+	ErrBadBlock = errors.New("invalid block")
 
-// ErrStaleState is returned when the Chain does not have a current
-// blockchain state.
-var ErrStaleState = errors.New("stale blockchain state")
+	// ErrStaleState is returned when the Chain does not have a current
+	// blockchain state.
+	ErrStaleState = errors.New("stale blockchain state")
+
+	// ErrBadStateRoot is returned when the computed assets merkle root
+	// disagrees with the one declared in a block header.
+	ErrBadStateRoot = errors.New("invalid state merkle root")
+)
 
 // GetBlock returns the block at the given height, if there is one,
 // otherwise it returns an error.
@@ -41,17 +47,17 @@ func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) 
 //
 // After generating the block, the pending transaction pool will be
 // empty.
-func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time, txs []*bc.Tx) (b *bc.Block, result *state.Snapshot, err error) {
+func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time, txs []*bc.Tx) (*bc.Block, *state.Snapshot, error) {
 	timestampMS := bc.Millis(now)
 	if timestampMS < prev.TimestampMS {
 		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
 	}
 
-	// Make a copy of the state that we can apply our changes to.
-	result = state.Copy(snapshot)
-	result.PruneIssuances(timestampMS)
+	// Make a copy of the snapshot that we can apply our changes to.
+	newSnapshot := state.Copy(c.state.snapshot)
+	newSnapshot.PruneIssuances(timestampMS)
 
-	b = &bc.Block{
+	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version:           bc.NewBlockVersion,
 			Height:            prev.Height + 1,
@@ -63,58 +69,87 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 		},
 	}
 
+	var txEntries []*bc.TxEntries
+
 	for _, tx := range txs {
 		if len(b.Transactions) >= maxBlockTxs {
 			break
 		}
 
-		// TODO(jackson): Should this go in ConfirmTx too?
-		err = c.checkIssuanceWindow(tx)
+		// Filter out transactions that are not well-formed.
+		err := c.ValidateTx(tx.TxEntries)
 		if err != nil {
+			// TODO(bobg): log this?
 			continue
 		}
 
-		if validation.ConfirmTx(result, c.InitialBlockHash, bc.NewBlockVersion, timestampMS, tx) == nil {
-			err = validation.ApplyTx(result, tx)
-			if err != nil {
-				return nil, nil, err
-			}
-			b.Transactions = append(b.Transactions, tx)
+		// Filter out double-spends etc.
+		err = newSnapshot.ApplyTx(tx.TxEntries)
+		if err != nil {
+			// TODO(bobg): log this?
+			continue
 		}
+
+		b.Transactions = append(b.Transactions, tx)
+		txEntries = append(txEntries, tx.TxEntries)
 	}
-	b.TransactionsMerkleRoot, err = bc.MerkleRoot(b.Transactions)
+
+	var err error
+
+	b.TransactionsMerkleRoot, err = bc.MerkleRoot(txEntries)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "calculating tx merkle root")
 	}
-	b.AssetsMerkleRoot = result.Tree.RootHash()
-	return b, result, nil
+
+	b.AssetsMerkleRoot = newSnapshot.Tree.RootHash()
+
+	return b, newSnapshot, nil
 }
 
-// ValidateBlock performs validation on an incoming block, in advance
-// of committing the block. ValidateBlock returns the state after
-// the block has been applied.
-func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev, block *bc.Block) (*state.Snapshot, error) {
-	newState := state.Copy(prevState)
-	err := validation.ValidateBlockForAccept(ctx, newState, c.InitialBlockHash, prev, block, c.ValidateTxCached)
-	if err != nil {
-		return nil, errors.Sub(ErrBadBlock, err)
+// ValidateBlock validates an incoming block in advance of applying it
+// to a snapshot (with ApplyValidBlock) and committing it to the
+// blockchain (with CommitAppliedBlock).
+func (c *Chain) ValidateBlock(block, prev *bc.Block) error {
+	return validateBlock(block, prev, c.InitialBlockHash, c.ValidateTx, true)
+}
+
+func validateBlock(block, prev *bc.Block, initialBlockHash bc.Hash, validateTx func(*bc.TxEntries) error, runProg bool) error {
+	var prevEntries *bc.BlockEntries
+	if prev != nil {
+		prevEntries = bc.MapBlock(prev)
 	}
-	// TODO(kr): consider calling CommitBlock here and
-	// renaming this function to AcceptBlock.
-	// See $CHAIN/protocol/doc/spec/validation.md#accept-block
-	// and the comment in validation/block.go:/ValidateBlock.
-	return newState, nil
+	err := validation.ValidateBlock(bc.MapBlock(block), prevEntries, initialBlockHash, validateTx, runProg)
+	if err != nil {
+		return errors.Sub(ErrBadBlock, err)
+	}
+	return nil
 }
 
-// CommitBlock commits the block to the blockchain.
+// ApplyValidBlock creates an updated snapshot without validating the
+// block.
+func (c *Chain) ApplyValidBlock(block *bc.Block) (*state.Snapshot, error) {
+	newSnapshot := state.Copy(c.state.snapshot)
+	err := newSnapshot.ApplyBlock(bc.MapBlock(block))
+	if err != nil {
+		return nil, err
+	}
+	if block.AssetsMerkleRoot != newSnapshot.Tree.RootHash() {
+		return nil, ErrBadStateRoot
+	}
+	return newSnapshot, nil
+}
+
+// CommitBlock commits a block to the blockchain. The block
+// must already have been applied with ApplyValidBlock or
+// ApplyNewBlock, which will have produced the new snapshot that's
+// required here.
 //
-// This function:
-//   * saves the block to the store.
-//   * saves the state tree to the store (optionally).
-//   * executes all new-block callbacks.
+// This function saves the block to the store and sometimes (not more
+// often than saveSnapshotFrequency) saves the state tree to the
+// store. New-block callbacks (via asynchronous block-processor pins)
+// are triggered.
 //
-// The block parameter must have already been validated before
-// being committed.
+// TODO(bobg): rename to CommitAppliedBlock for clarity (deferred from https://github.com/chain/chain/pull/788)
 func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
@@ -177,31 +212,19 @@ func (c *Chain) setHeight(h uint64) {
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_
 // block in preparation for signing it. By definition it does not
-// execute the sigscript.
+// execute the consensus program.
 func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
-	var (
-		prev     *bc.Block
-		snapshot = state.Empty()
-	)
+	var prev *bc.Block
 
 	if block.Height > 1 {
 		var err error
-		prev, err = c.store.GetBlock(ctx, block.Height-1)
+		prev, err = c.GetBlock(ctx, block.Height-1)
 		if err != nil {
 			return errors.Wrap(err, "getting previous block")
 		}
-
-		prev, snapshot = c.State()
-		if prev == nil || prev.Height != block.Height-1 {
-			return ErrStaleState
-		}
 	}
 
-	// TODO(kr): cache the applied snapshot, and maybe
-	// we can skip re-applying it later
-	snapshot = state.Copy(snapshot)
-	err := validation.ValidateBlock(ctx, snapshot, c.InitialBlockHash, prev, block, validation.CheckTxWellFormed)
-	return errors.Wrap(err, "validation")
+	return validateBlock(block, prev, c.InitialBlockHash, c.ValidateTx, false)
 }
 
 func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
@@ -210,7 +233,7 @@ func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 		return nil, err
 	}
 
-	root, err := bc.MerkleRoot([]*bc.Tx{}) // calculate the zero value of the tx merkle root
+	root, err := bc.MerkleRoot(nil) // calculate the zero value of the tx merkle root
 	if err != nil {
 		return nil, errors.Wrap(err, "calculating zero value of tx merkle root")
 	}

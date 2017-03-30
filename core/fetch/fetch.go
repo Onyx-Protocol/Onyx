@@ -197,16 +197,18 @@ func updateGeneratorHeight(ctx context.Context, peer *rpc.Client) {
 }
 
 func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot, prev *bc.Block, block *bc.Block) (*state.Snapshot, *bc.Block, error) {
-	snap, err := c.ValidateBlock(ctx, prevSnap, prev, block)
+	err := c.ValidateBlock(block, prev)
 	if err != nil {
 		return prevSnap, prev, err
 	}
-
+	snap, err := c.ApplyValidBlock(block)
+	if err != nil {
+		return prevSnap, prev, err
+	}
 	err = c.CommitBlock(ctx, block, snap)
 	if err != nil {
 		return prevSnap, prev, err
 	}
-
 	return snap, block, nil
 }
 

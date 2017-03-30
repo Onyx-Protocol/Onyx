@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"testing"
 	"time"
+
+	"chain/protocol/vm"
 )
 
 func TestMerkleRoot(t *testing.T) {
@@ -46,7 +48,7 @@ func TestMerkleRoot(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		var txs []*Tx
+		var txs []*TxEntries
 		for _, wit := range c.witnesses {
 			txs = append(txs, NewTx(TxData{
 				Inputs: []*TxInput{
@@ -57,7 +59,7 @@ func TestMerkleRoot(t *testing.T) {
 						},
 					},
 				},
-			}))
+			}).TxEntries)
 		}
 		got, err := MerkleRoot(txs)
 		if err != nil {
@@ -72,27 +74,27 @@ func TestMerkleRoot(t *testing.T) {
 
 func TestDuplicateLeaves(t *testing.T) {
 	var initialBlockHash Hash
-	trueProg := []byte{0x51}
+	trueProg := []byte{byte(vm.OP_TRUE)}
 	assetID := ComputeAssetID(trueProg, initialBlockHash, 1, EmptyStringHash)
-	txs := make([]*Tx, 6)
+	txs := make([]*TxEntries, 6)
 	for i := uint64(0); i < 6; i++ {
 		now := []byte(time.Now().String())
 		txs[i] = NewTx(TxData{
 			Version: 1,
 			Inputs:  []*TxInput{NewIssuanceInput(now, i, nil, initialBlockHash, trueProg, nil, nil)},
 			Outputs: []*TxOutput{NewTxOutput(assetID, i, trueProg, nil)},
-		})
+		}).TxEntries
 	}
 
 	// first, get the root of an unbalanced tree
-	txns := []*Tx{txs[5], txs[4], txs[3], txs[2], txs[1], txs[0]}
+	txns := []*TxEntries{txs[5], txs[4], txs[3], txs[2], txs[1], txs[0]}
 	root1, err := MerkleRoot(txns)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 
 	// now, get the root of a balanced tree that repeats leaves 0 and 1
-	txns = []*Tx{txs[5], txs[4], txs[3], txs[2], txs[1], txs[0], txs[1], txs[0]}
+	txns = []*TxEntries{txs[5], txs[4], txs[3], txs[2], txs[1], txs[0], txs[1], txs[0]}
 	root2, err := MerkleRoot(txns)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
@@ -105,7 +107,7 @@ func TestDuplicateLeaves(t *testing.T) {
 
 func TestAllDuplicateLeaves(t *testing.T) {
 	var initialBlockHash Hash
-	trueProg := []byte{0x51}
+	trueProg := []byte{byte(vm.OP_TRUE)}
 	assetID := ComputeAssetID(trueProg, initialBlockHash, 1, EmptyStringHash)
 	now := []byte(time.Now().String())
 	issuanceInp := NewIssuanceInput(now, 1, nil, initialBlockHash, trueProg, nil, nil)
@@ -114,18 +116,18 @@ func TestAllDuplicateLeaves(t *testing.T) {
 		Version: 1,
 		Inputs:  []*TxInput{issuanceInp},
 		Outputs: []*TxOutput{NewTxOutput(assetID, 1, trueProg, nil)},
-	})
+	}).TxEntries
 	tx1, tx2, tx3, tx4, tx5, tx6 := tx, tx, tx, tx, tx, tx
 
 	// first, get the root of an unbalanced tree
-	txs := []*Tx{tx6, tx5, tx4, tx3, tx2, tx1}
+	txs := []*TxEntries{tx6, tx5, tx4, tx3, tx2, tx1}
 	root1, err := MerkleRoot(txs)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 
 	// now, get the root of a balanced tree that repeats leaves 5 and 6
-	txs = []*Tx{tx6, tx5, tx6, tx5, tx4, tx3, tx2, tx1}
+	txs = []*TxEntries{tx6, tx5, tx6, tx5, tx4, tx3, tx2, tx1}
 	root2, err := MerkleRoot(txs)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)

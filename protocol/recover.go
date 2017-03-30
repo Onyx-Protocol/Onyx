@@ -7,7 +7,6 @@ import (
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/state"
-	"chain/protocol/validation"
 )
 
 // Recover performs crash recovery, restoring the blockchain
@@ -47,7 +46,7 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "getting block")
 		}
-		err = validation.ApplyBlock(snapshot, b)
+		err = snapshot.ApplyBlock(bc.MapBlock(b))
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "applying block")
 		}

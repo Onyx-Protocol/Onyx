@@ -84,6 +84,9 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case []byte:
 		_, err := blockchain.WriteVarstr31(w, v)
 		return errors.Wrapf(err, "writing []byte (len %d) for hash", len(v))
+	case [][]byte:
+		_, err := blockchain.WriteVarstrList(w, v)
+		return errors.Wrapf(err, "writing [][]byte (len %d) for hash", len(v))
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
 		return errors.Wrapf(err, "writing string (len %d) for hash", len(v))

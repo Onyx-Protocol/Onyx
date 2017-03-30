@@ -108,7 +108,7 @@ func TestBuildFinal(t *testing.T) {
 			t.Fatalf("sigwitness program 1 opcode %d is %02x, expected %02x", i+5, insts1[i+5].Op, op)
 		}
 	}
-	for i, op := range []vm.Op{vm.OP_REFDATAHASH, vm.OP_EQUAL, vm.OP_VERIFY, vm.OP_FALSE, vm.OP_FALSE} {
+	for i, op := range []vm.Op{vm.OP_DATAHASH, vm.OP_EQUAL, vm.OP_VERIFY, vm.OP_FALSE, vm.OP_FALSE} {
 		if insts1[i+9].Op != op {
 			t.Fatalf("sigwitness program 1 opcode %d is %02x, expected %02x", i+9, insts1[i+9].Op, op)
 		}

@@ -96,7 +96,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				builder.AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
 
 				nonce := NewNonce(Program{VMVersion: 1, Code: builder.Program}, tr)
-				_, err = addEntry(anchor)
+				_, err = addEntry(nonce)
 				if err != nil {
 					err = errors.Wrapf(err, "adding nonce entry for input %d", i)
 					return
@@ -209,6 +209,15 @@ func mapBlockHeader(old *BlockHeader) (bhID Hash, bh *BlockHeaderEntry) {
 	bh.Witness.Arguments = old.Witness
 	bhID = EntryID(bh)
 	return
+}
+
+func MapBlock(old *Block) *BlockEntries {
+	b := new(BlockEntries)
+	b.ID, b.BlockHeaderEntry = mapBlockHeader(&old.BlockHeader)
+	for _, oldTx := range old.Transactions {
+		b.Transactions = append(b.Transactions, oldTx.TxEntries)
+	}
+	return b
 }
 
 func hashData(data []byte) (h Hash) {

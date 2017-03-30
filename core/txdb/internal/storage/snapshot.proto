@@ -11,6 +11,8 @@ message Snapshot {
 
   // Issuances contains the record of recent issuances for ensuring uniqueness
   // of issuances.
+  // TODO(bobg): replace this with a nonce set per the new spec
+  // (deferred from https://github.com/chain/chain/pull/788).
   repeated Issuance issuances = 2;
 
   message Issuance {
