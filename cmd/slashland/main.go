@@ -274,6 +274,22 @@ func commitRevIDs(landdir, baseBranch string) error {
 		}
 	}
 
+	// We have to add the files here for a weird reason:
+	// Running 'git commit' (without --allow-empty) will fail when
+	// the file contents haven't changed, regardless of the files'
+	// time stamps. We want to detect this situation ahead of time
+	// and skip committing when the tree is clean.
+	// Unfortunately, diff-index *does* consider timestamps when
+	// computing the diff; fortunately, running 'git add' fixes this
+	// and causes the behavior of diff-index to match what commit
+	// looks for in its "nothing to commit" error message.
+	cmd := dirCmd(landdir, "git", "add", "generated")
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+
 	if isClean(landdir) {
 		// Avoid adding empty commits here if the revid hasn't
 		// changed since the last rebase. This way we don't
@@ -281,7 +297,7 @@ func commitRevIDs(landdir, baseBranch string) error {
 		return nil
 	}
 
-	cmd := dirCmd(landdir, "git", "commit", "--allow-empty", "-m", "auto rev id", "generated")
+	cmd := dirCmd(landdir, "git", "commit", "-m", "auto rev id")
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
