@@ -2,18 +2,18 @@
 
 * [Introduction](#introduction)
 * [Definitions](#definitions)
-* [Security](#security)
 * [Algorithms](#algorithms)
   * [Generate root key](#generate-root-key)
   * [Generate extended public key](#generate-extended-public-key)
   * [Derive hardened extended private key](#derive-hardened-extended-private-key)
   * [Derive non-hardened extended private key](#derive-non-hardened-extended-private-key)
   * [Derive non-hardened extended public key](#derive-non-hardened-extended-public-key)
-  * [Sign](#sign)
-  * [Verify signature](#verify-signature)
+  * [Derive EdDSA public key](#derive-eddsa-public-key)
+  * [Derive EdDSA secret key](#derive-eddsa-secret-key)
   * [Generate scalar](#generate-scalar)
   * [Encode public key](#encode-public-key)
 * [FAQ](#faq)
+* [Security](#security)
 * [Test vectors](#test-vectors)
 * [References](#references)
 
@@ -35,7 +35,9 @@ Features:
 Limitations:
 
 1. Depth of non-hardened derivation is limited to 2<sup>20</sup>.
-2. Number of distinct non-hardened public keys is 2<sup>230</sup>, while the number of distinct hardened public keys is 2<sup>251</sup> as in EdDSA.
+2. Number of distinct root keys or hardened public keys is 2<sup>250</sup>, half of the keyspace allowed in EdDSA.
+3. Number of distinct non-hardened public keys is 2<sup>230</sup>.
+
 
 ## Definitions
 
@@ -50,35 +52,6 @@ Limitations:
 **Extended private key** (aka “xprv”) is a 64-byte string representing a key that can be used for deriving *child extended private and public keys*.
 
 **Extended public key** (aka “xpub”) is a 64-byte string representing a key that can be used for deriving *child extended public keys*.
-
-
-## Security
-
-Knowledge of the seed or the root extended private key:
-
-1. Allows deriving hardened extended private key.
-2. Allows deriving non-hardened extended private key.
-3. Allows signing messages with the root key.
-
-Knowledge of an extended private key:
-
-1. Allows deriving hardened extended private key.
-2. Allows deriving non-hardened extended private key.
-3. Allows signing messages with that key.
-
-Knowledge of an extended public key:
-
-1. Allows deriving non-hardened public keys.
-2. Does not allow determining if it is derived in a hardened or non-hardened way.
-3. Does not allow determining if another extended public key is a sibling of the key.
-4. Does not allow signing
-5. Does not allow deriving private keys.
-6. Does not allow deriving hardened public keys.
-
-Knowledge of a parent extended public key and one of non-hardened derived extended private keys:
-
-1. Allows extracting parent private key: `s = (s’ - f) mod L` where `f` is derived from the parent `xpub` and `s’` is extracted from the child `xprv’`.
-
 
 
 ## Algorithms
@@ -235,8 +208,36 @@ We believe the scheme is equivalent to RFC6979 that derives the nonce by hashing
 
 ## Security
 
+### Capabilities
 
-TBD: Collisions
+Knowledge of the seed or the root extended private key:
+
+1. Allows deriving hardened extended private key.
+2. Allows deriving non-hardened extended private key.
+3. Allows signing messages with the root key.
+
+Knowledge of an extended private key:
+
+1. Allows deriving hardened extended private key.
+2. Allows deriving non-hardened extended private key.
+3. Allows signing messages with that key.
+
+Knowledge of an extended public key:
+
+1. Allows deriving non-hardened public keys.
+2. Does not allow determining if it is derived in a hardened or non-hardened way.
+3. Does not allow determining if another extended public key is a sibling of the key.
+4. Does not allow signing
+5. Does not allow deriving private keys.
+6. Does not allow deriving hardened public keys.
+
+Knowledge of a parent extended public key and one of non-hardened derived extended private keys:
+
+1. Allows extracting parent private key: `s = (s’ - f) mod L` where `f` is derived from the parent `xpub` and `s’` is extracted from the child `xprv’`.
+
+### Child key collisions
+
+
 
 TBD: High bits as per EdDSA
 
