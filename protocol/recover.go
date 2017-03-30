@@ -61,7 +61,7 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 		// been too, but make sure just in case. Also "finalize" the last
 		// block (notifying other processes of the latest block height)
 		// and maybe persist the snapshot.
-		err = c.CommitBlock(ctx, b, snapshot)
+		err = c.CommitAppliedBlock(ctx, b, snapshot)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "committing block")
 		}

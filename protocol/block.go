@@ -151,7 +151,7 @@ func (c *Chain) ApplyValidBlock(block *bc.Block) (*state.Snapshot, error) {
 // are triggered.
 //
 // TODO(bobg): rename to CommitAppliedBlock for clarity (deferred from https://github.com/chain/chain/pull/788)
-func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
+func (c *Chain) CommitAppliedBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
 	// else can be derived from that block.

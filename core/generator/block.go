@@ -69,7 +69,7 @@ func (g *Generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snaps
 		return errors.Wrap(err, "sign")
 	}
 
-	err = g.chain.CommitBlock(ctx, b, s)
+	err = g.chain.CommitAppliedBlock(ctx, b, s)
 	if err != nil {
 		return errors.Wrap(err, "commit")
 	}
