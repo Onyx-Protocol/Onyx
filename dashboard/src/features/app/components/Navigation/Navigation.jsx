@@ -74,7 +74,7 @@ class Navigation extends React.Component {
         <ul className={styles.navigation}>
           <li className={styles.navigationTitle}>developers</li>
           <li>
-            <a href='/docs' target='_blank'>
+            <a href='https://chain.com/docs' target='_blank'>
               {navIcon('docs', styles)}
               Documentation
             </a>
