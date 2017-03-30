@@ -79,20 +79,21 @@ Asset tags are a local-only supplement to the asset definition and can be used t
 All code samples in this guide can be viewed in a single, runnable script. Available languages:
 
 - [Java](../examples/java/GlobalVsLocalData.java)
+- [Node](../examples/node/globalVsLocalData.js)
 - [Ruby](../examples/ruby/global_vs_local_data.rb)
 
 ### Create accounts with tags
 
-$code create-accounts-with-tags ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb
+$code create-accounts-with-tags ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb ../examples/node/globalVsLocalData.js
 
 ### Create assets with tags and definition
 
-$code create-asset-with-tags-and-definition ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb
+$code create-asset-with-tags-and-definition ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb ../examples/node/globalVsLocalData.js
 
 ### Create transaction with transaction-level reference data
 
-$code build-tx-with-tx-ref-data ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb
+$code build-tx-with-tx-ref-data ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb ../examples/node/globalVsLocalData.js
 
 ### Create transaction with action-level reference data
 
-$code build-tx-with-action-ref-data ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb
+$code build-tx-with-action-ref-data ../examples/java/GlobalVsLocalData.java ../examples/ruby/global_vs_local_data.rb ../examples/node/globalVsLocalData.js
