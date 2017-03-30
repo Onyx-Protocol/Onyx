@@ -15,9 +15,9 @@ cleanup() {(
 	done
 	wait
 	rm -rf $CHAIN/sdk/java/target
-	rm -rf $GOPATH/bin/cored
-	rm -rf $GOPATH/bin/corectl
-	rm -rf $GOPATH/bin/migratedb
+	rm -rf $(go env GOPATH)/bin/cored
+	rm -rf $(go env GOPATH)/bin/corectl
+	rm -rf $(go env GOPATH)/bin/migratedb
 	dropdb it-core
 )}
 trap cleanup EXIT
