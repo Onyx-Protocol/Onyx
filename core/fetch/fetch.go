@@ -331,11 +331,11 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 	if err != nil {
 		return err
 	}
-	// Delete the snapshot issuances because we don't have any commitment
+	// Delete the snapshot nonces because we don't have any commitment
 	// to them in the block. This means that Cores bootstrapping from a
 	// snapshot cannot guarantee uniqueness of issuances until the max
 	// issuance window has elapsed.
-	snapshot.PruneIssuances(math.MaxUint64)
+	snapshot.PruneNonces(math.MaxUint64)
 
 	// Next, get the initial block.
 	initialBlock, err := getBlock(ctx, peer, 1, getBlockTimeout)

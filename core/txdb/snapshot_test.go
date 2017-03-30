@@ -11,13 +11,13 @@ import (
 	"chain/testutil"
 )
 
-func TestReadWriteStateSnapshotIssuanceMemory(t *testing.T) {
+func TestReadWriteStateSnapshotNonceSet(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 	snapshot := state.Empty()
-	snapshot.Issuances[bc.Hash{0x01}] = 10
-	snapshot.Issuances[bc.Hash{0x02}] = 10
-	snapshot.Issuances[bc.Hash{0x03}] = 45
+	snapshot.Nonces[bc.Hash{0x01}] = 10
+	snapshot.Nonces[bc.Hash{0x02}] = 10
+	snapshot.Nonces[bc.Hash{0x03}] = 45
 	err := storeStateSnapshot(ctx, dbtx, snapshot, 200)
 	if err != nil {
 		t.Fatalf("Error writing state snapshot to db: %s\n", err)
@@ -31,8 +31,8 @@ func TestReadWriteStateSnapshotIssuanceMemory(t *testing.T) {
 		bc.Hash{0x02}: 10,
 		bc.Hash{0x03}: 45,
 	}
-	if !testutil.DeepEqual(got.Issuances, want) {
-		t.Errorf("storing and loading snapshot nonce memory, got %#v, want %#v", got.Issuances, want)
+	if !testutil.DeepEqual(got.Nonces, want) {
+		t.Errorf("storing and loading snapshot nonce memory, got %#v, want %#v", got.Nonces, want)
 	}
 }
 
@@ -115,8 +115,8 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		if loadedSnapshot.Tree.RootHash() != snapshot.Tree.RootHash() {
 			t.Fatalf("%d: Wrote %s to db, read %s from db\n", i, snapshot.Tree.RootHash(), loadedSnapshot.Tree.RootHash())
 		}
-		if !testutil.DeepEqual(loadedSnapshot.Issuances, snapshot.Issuances) {
-			t.Fatalf("%d: Wrote %#v nonces to db, read %#v from db\n", i, snapshot.Issuances, loadedSnapshot.Issuances)
+		if !testutil.DeepEqual(loadedSnapshot.Nonces, snapshot.Nonces) {
+			t.Fatalf("%d: Wrote %#v nonces to db, read %#v from db\n", i, snapshot.Nonces, loadedSnapshot.Nonces)
 		}
 		snapshot = loadedSnapshot
 	}
@@ -164,7 +164,7 @@ func benchmarkStoreSnapshot(nodes, nonces int, b *testing.B) {
 			b.Fatal(err)
 		}
 
-		snapshot.Issuances[h] = uint64(r.Int63())
+		snapshot.Nonces[h] = uint64(r.Int63())
 	}
 
 	b.StartTimer()

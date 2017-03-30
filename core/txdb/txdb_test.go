@@ -17,7 +17,7 @@ func TestLatestSnapshot(t *testing.T) {
 	store := NewStore(dbtx)
 
 	snap := state.Empty()
-	snap.Issuances[bc.Hash{0xc0, 0x01}] = 12345678
+	snap.Nonces[bc.Hash{0xc0, 0x01}] = 12345678
 	err := snap.Tree.Insert([]byte{0x01, 0x02, 0x03, 0x04})
 	if err != nil {
 		t.Fatal(err)
