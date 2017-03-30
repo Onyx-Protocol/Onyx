@@ -9,13 +9,11 @@ message Snapshot {
   // The nodes are ordered according to a pre-order traversal.
   repeated StateTreeNode nodes = 1;
 
-  // Issuances contains the record of recent issuances for ensuring uniqueness
-  // of issuances.
-  // TODO(bobg): replace this with a nonce set per the new spec
-  // (deferred from https://github.com/chain/chain/pull/788).
-  repeated Issuance issuances = 2;
+  // Nonces contains the record of recent nonces for ensuring
+  // uniqueness of issuances.
+  repeated Nonce nonces = 2;
 
-  message Issuance {
+  message Nonce {
     bytes  hash      = 1;
     uint64 expiry_ms = 2;
   }
