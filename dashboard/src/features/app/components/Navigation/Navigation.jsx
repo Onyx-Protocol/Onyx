@@ -74,7 +74,7 @@ class Navigation extends React.Component {
         <ul className={styles.navigation}>
           <li className={styles.navigationTitle}>developers</li>
           <li>
-            <a href='/docs' target='_blank'>
+            <a href={`https://chain.com/docs/${this.props.docVersion}`} target='_blank'>
               {navIcon('docs', styles)}
               Documentation
             </a>
@@ -100,11 +100,21 @@ class Navigation extends React.Component {
 }
 
 export default connect(
-  state => ({
-    routing: state.routing, // required for <Link>s to update active state on navigation
-    showSync: state.core.configured && !state.core.generator,
-    production: state.core.production,
-  }),
+  state => {
+    let docVersion = ''
+
+    const versionComponents = state.core.version.match('^([0-9]\\.[0-9])\\.')
+    if (versionComponents != null) {
+      docVersion = versionComponents[1]
+    }
+
+    return {
+      routing: state.routing, // required for <Link>s to update active state on navigation
+      showSync: state.core.configured && !state.core.generator,
+      production: state.core.production,
+      docVersion
+    }
+  },
   (dispatch) => ({
     openTutorial: () => dispatch({ type: 'OPEN_TUTORIAL' })
   })
