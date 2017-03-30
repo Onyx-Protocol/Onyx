@@ -14,7 +14,7 @@
             </p>
             <ul>
               <li>Update the Chain Core server package to version 1.1.4</li>
-              <li>Improved OS X Yosemite support</li>
+              <li>Improved Safari 8 and legacy mac support</li>
             </ul>
           ]]>
         </description>
