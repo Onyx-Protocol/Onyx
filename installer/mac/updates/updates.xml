@@ -6,23 +6,23 @@
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
       <item>
-        <title>Chain Core Developer Edition 1.1.1</title>
+        <title>Chain Core Developer Edition 1.1.2</title>
         <description>
           <![CDATA[
             <p><b>NOTE:</b> This update will create a fresh blockchain if you were previously
               using versions 1.0.x or 1.1.0; please backup any blockchain data you wish to preserve.
             </p>
             <ul>
-              <li>Update the Chain Core server package to version 1.1.3</li>
-              <li>Improved startup detection of other Chain Cores</li>
+              <li>Update the Chain Core server package to version 1.1.4</li>
+              <li>Improved Safari 8 and legacy mac support</li>
             </ul>
           ]]>
         </description>
-        <pubDate>Wed, 08 Mar 2017 17:02:30 -0800</pubDate>
+        <pubDate>Thu, 30 Mar 2017 12:28:15 -0700</pubDate>
         <enclosure
-        	url="https://download.chain.com/mac/Chain_Core_1.1.1.zip"
-        	sparkle:version="1.1.1"
-        	length="54200125"
+        	url="https://download.chain.com/mac/Chain_Core_1.1.2.zip"
+        	sparkle:version="1.1.2"
+        	length="54279963"
         	type="application/octet-stream"
         	sparkle:dsaSignature=""
         	/>
