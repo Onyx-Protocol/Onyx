@@ -11,6 +11,7 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/protocol/state"
+	"chain/protocol/validation"
 	"chain/testutil"
 )
 
@@ -82,7 +83,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	err = c.ValidateBlock(block, tip)
+	err = validation.ValidateBlock(bc.MapBlock(block), bc.MapBlock(tip), c.InitialBlockHash, c.ValidateTx, true)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

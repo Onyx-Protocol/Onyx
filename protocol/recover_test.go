@@ -50,7 +50,7 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 		t.Fatalf("block.Height = %d, want %d", block.Height, 1)
 	}
 
-	err = c2.ValidateBlockForSig(ctx, createEmptyBlock(block, snapshot))
+	err = validateBlockForSig(ctx, c2, createEmptyBlock(block, snapshot))
 	if err != nil {
 		t.Fatal(err)
 	}

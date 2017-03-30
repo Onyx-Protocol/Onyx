@@ -10,7 +10,6 @@ import (
 	"chain/log"
 	"chain/protocol/bc"
 	"chain/protocol/state"
-	"chain/protocol/validation"
 	"chain/protocol/vmutil"
 )
 
@@ -106,25 +105,6 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 	return b, newSnapshot, nil
 }
 
-// ValidateBlock validates an incoming block in advance of applying it
-// to a snapshot (with ApplyValidBlock) and committing it to the
-// blockchain (with CommitAppliedBlock).
-func (c *Chain) ValidateBlock(block, prev *bc.Block) error {
-	return validateBlock(block, prev, c.InitialBlockHash, c.ValidateTx, true)
-}
-
-func validateBlock(block, prev *bc.Block, initialBlockHash bc.Hash, validateTx func(*bc.TxEntries) error, runProg bool) error {
-	var prevEntries *bc.BlockEntries
-	if prev != nil {
-		prevEntries = bc.MapBlock(prev)
-	}
-	err := validation.ValidateBlock(bc.MapBlock(block), prevEntries, initialBlockHash, validateTx, runProg)
-	if err != nil {
-		return errors.Sub(ErrBadBlock, err)
-	}
-	return nil
-}
-
 // ApplyValidBlock creates an updated snapshot without validating the
 // block.
 func (c *Chain) ApplyValidBlock(block *bc.Block) (*state.Snapshot, error) {
@@ -208,23 +188,6 @@ func (c *Chain) setHeight(h uint64) {
 	}
 	c.state.height = h
 	c.state.cond.Broadcast()
-}
-
-// ValidateBlockForSig performs validation on an incoming _unsigned_
-// block in preparation for signing it. By definition it does not
-// execute the consensus program.
-func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
-	var prev *bc.Block
-
-	if block.Height > 1 {
-		var err error
-		prev, err = c.GetBlock(ctx, block.Height-1)
-		if err != nil {
-			return errors.Wrap(err, "getting previous block")
-		}
-	}
-
-	return validateBlock(block, prev, c.InitialBlockHash, c.ValidateTx, false)
 }
 
 func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {

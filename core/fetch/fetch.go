@@ -20,6 +20,7 @@ import (
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
+	"chain/protocol/validation"
 )
 
 const heightPollingPeriod = 3 * time.Second
@@ -197,9 +198,13 @@ func updateGeneratorHeight(ctx context.Context, peer *rpc.Client) {
 }
 
 func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot, prev *bc.Block, block *bc.Block) (*state.Snapshot, *bc.Block, error) {
-	err := c.ValidateBlock(block, prev)
+	var prevEntries *bc.BlockEntries
+	if prev != nil {
+		prevEntries = bc.MapBlock(prev)
+	}
+	err := validation.ValidateBlock(bc.MapBlock(block), prevEntries, c.InitialBlockHash, c.ValidateTx, true)
 	if err != nil {
-		return prevSnap, prev, err
+		return prevSnap, prev, errors.Sub(protocol.ErrBadBlock, err)
 	}
 	snap, err := c.ApplyValidBlock(block)
 	if err != nil {
