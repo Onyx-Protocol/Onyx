@@ -19,14 +19,14 @@
 
 ## Introduction
 
-This is a simple deterministic key derivation scheme useful for digital signatures (such as EdDSA) and Diffie-Hellman key exchange via Montogmery Ladder.
+This is a simple deterministic key derivation scheme useful for digital signatures and Diffie-Hellman key exchange.
 
 Features:
 
 1. Scheme is fully deterministic and allows producing complex hierarchies of keys from a single high-entropy seed.
 2. Derive private keys from extended private keys using “hardened derivation”.
 3. Derive public keys independently from private keys using “non-hardened derivation”.
-4. Hardened and non-hardened public keys and signatures are compatible with [EdDSA][RFC 8032] specification.
+4. Hardened and non-hardened public keys and signatures are compatible with [EdDSA](https://tools.ietf.org/html/rfc8032) specification. Specifically, private keys are 64-byte raw secret keys used in [NaCl](https://nacl.cr.yp.to/sign.html) function `crypto_sign`.
 5. Variable-length string selectors instead of fixed-length integer indexes.
 6. Short 64-byte extended public and private keys without special encoding.
 7. No metadata: an extended key carries only an additional 32-byte salt to avoid having the derivation function depend only on the key itself.
@@ -45,7 +45,7 @@ Limitations:
 
 **Secret scalar** is 32-byte string representing a 256-bit integer using little-endian convention.
 
-**Public key** is a 32-byte string representing a point on elliptic curve Ed25519 [RFC 8032].
+**Public key** is a 32-byte string representing a point on elliptic curve Ed25519 ([RFC 8032](https://tools.ietf.org/html/rfc8032)).
 
 **Extended private key** (aka “xprv”) is a 64-byte string representing a key that can be used for deriving *child extended private and public keys*.
 
@@ -89,8 +89,8 @@ Knowledge of a parent extended public key and one of non-hardened derived extend
 
 **Output:** `xprv`, a root extended private key.
 
-1. Calculate `I = Hash("ChainKD seed" || seed, 64)`.
-2. Split `I` in two parts: 32-byte `buf` and 32-byte `salt`.
+1. Compute `K = Hash("ChainKD seed" || seed, 64)`.
+2. Split `K` in two parts: 32-byte `buf` and 32-byte `salt`.
 3. Clear the third highest bit of the last byte of `buf`.
 4. [Generate scalar](#generate-scalar) `s` from buffer `buf`.
 5. Let `privkey` be a 32-byte string encoding scalar `s` using little-endian convention.
@@ -121,8 +121,8 @@ Knowledge of a parent extended public key and one of non-hardened derived extend
 **Output:** `xprv’`, the derived extended public key.
 
 1. Split `xprv` in two parts: 32-byte `privkey` and 32-byte `salt`.
-2. Let `I = Hash(0x00 || privkey || salt || selector, 64)`.
-3. Split `I` in two parts: 32-byte `buf` and 32-byte `salt’`.
+2. Compute `K = Hash(0x00 || privkey || salt || selector, 64)`.
+3. Split `K` in two parts: 32-byte `buf` and 32-byte `salt’`.
 4. Clear the third highest bit of the last byte of `buf`.
 5. [Generate scalar](#generate-scalar) `s’` from buffer `buf`.
 6. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
@@ -142,8 +142,8 @@ Knowledge of a parent extended public key and one of non-hardened derived extend
 2. Let `s` be the scalar decoded from `privkey` using little-endian notation.
 3. Perform a fixed-base scalar multiplication `P = s·B` where `B` is a base point of Ed25519.
 4. [Encode](#encode-public-key) point `P` as `pubkey`.
-5. Let `I = Hash(0x01 || pubkey || salt || selector, 61)`.
-6. Split `I` in two parts: 29-byte `fbuffer` and 32-byte `salt’`.
+5. Compute `F = Hash(0x01 || pubkey || salt || selector, 61)`.
+6. Split `F` in two parts: 29-byte `fbuffer` and 32-byte `salt’`.
 7. Clear top 2 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
 8. Compute derived secret scalar `s’ = (s + 8·f) mod L` (where `L` is the group order of base point `B`).
 9. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
@@ -160,62 +160,38 @@ Knowledge of a parent extended public key and one of non-hardened derived extend
 **Output:** `xpub’`, the derived extended public key.
 
 1. Split `xpub` in two parts: 32-byte `pubkey` and 32-byte `salt`.
-2. Let `len` be the length of `selector` in bytes.
-3. Let `I = Hash(0x01 || pubkey || salt || selector, 61)`.
-4. Split `I` in two parts: 29-byte `fbuffer` and 32-byte `salt’`.
-5. Clear top 2 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
-6. Perform a fixed-base scalar multiplication `F = f·B` where `B` is a base point of Ed25519.
-7. Decode point `P` from `pubkey` according to EdDSA.
-8. Perform point addition `P’ = P + 8·F`.
-9. [Encode](#encode-public-key) point `P’` as `pubkey’`.
-10. Return `xpub’ = pubkey’ || salt’`.
+2. Compute `F = Hash(0x01 || pubkey || salt || selector, 61)`.
+3. Split `F` in two parts: 29-byte `fbuffer` and 32-byte `salt’`.
+4. Clear top 2 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
+5. Perform a fixed-base scalar multiplication `F = f·B` where `B` is a base point of Ed25519.
+6. Decode point `P` from `pubkey` according to EdDSA.
+7. Perform point addition `P’ = P + 8·F`.
+8. [Encode](#encode-public-key) point `P’` as `pubkey’`.
+9. Return `xpub’ = pubkey’ || salt’`.
 
 
-### Expand signing key
+### Derive EdDSA public key
+
+**Input:** `xpub`, an extended public key.
+
+**Output:** `pubkey`, a 32-byte [EdDSA](https://tools.ietf.org/html/rfc8032) public key.
+
+1. Return first 32 bytes of `xpub` as encoded `pubkey` suitable for ECDH key exchange or EdDSA signatures.
+
+Resulting 32-byte public key can be used to verify EdDSA signature created by a corresponding [EdDSA secret key](#derive-eddsa-secret-key).
+
+
+### Derive EdDSA secret key
 
 **Input:** `xprv`, an extended private key.
 
-**Output:** `privkey`, an 64-byte key as used by EdDSA.
+**Output:** `secretkey`, a 64-byte [EdDSA](https://tools.ietf.org/html/rfc8032) secret key.
 
-TBD.
+1. Compute 32-byte hash `ext = Hash(0x02 || xprv, 32)`.
+2. Extract `privkey` as first 32 bytes of `xprv`.
+3. Return `secretkey = privkey || ext`.
 
-
-### Sign
-
-**Inputs:**
-
-1. `xprv`, an extended private key.
-2. `message`, a variable-length byte sequence representing a message to be signed.
-
-**Output:** `(R,S)`, 64-byte string representing an EdDSA signature.
-
-1. Split `xprv` in two parts: 32-byte `privkey` and 32-byte `salt`.
-2. Let `s` be the scalar decoded from `privkey` using little-endian notation.
-3. Let `h = Hash512(0x02 || privkey || salt)`.
-4. Let `prefix` be the first half of `h`: `prefix = h[0:32]`.
-5. Perform a fixed-base scalar multiplication `P = s·B` where `B` is a base point of Ed25519.
-6. [Encode](#encode-public-key) point `P` as `pubkey`.
-7. Compute `Hash512(prefix || message)`. Interpret the 64-byte digest as a little-endian integer `r`.
-8. Compute the point `r·B`.  For efficiency, do this by first reducing `r` modulo `L`, the group order of `B`. 
-9. Let the string `R` be the encoding of the point `r·B`.
-10. Compute `Hash512(R || pubkey || message)`, and interpret the 64-byte digest as a little-endian integer `k`.
-11. Compute `S = (r + k * s) mod L`. For efficiency, again reduce `k` modulo `L` first.
-12. Concatenate `R` (32 bytes) and the little-endian encoding of `S` (32 bytes, three most significant bits of the final byte are always zero).
-13. Return `(R,S)` (64 bytes).
-
-
-### Verify signature
-
-**Inputs:**
-
-1. `xpub`, an extended public key.
-2. `message`, a variable-length byte sequence representing a signed message.
-3. `(R,S)`, a 64-byte signature.
-
-**Output:** boolean value indicating if the signature is valid or not.
-
-1. Extract public key `pubkey` as first 32 bytes of `xpub`.
-2. Verify the EdDSA signature `(R,S)` over `message` using `pubkey` per [RFC 8032] substituting SHA512 hash function with Hash512 (which equals SHA512 in ChainKD-SHA2 instance thus retaining full compatibility with EdDSA verification procedure).
+Resulting 64-byte secret key can be used to create EdDSA signature verifiable by a corresponding [EdDSA public key](#derive-eddsa-public-key).
 
 
 ### Generate scalar
@@ -250,13 +226,23 @@ TBD.
 Yes. The derivation method only affects relationship between the key and its parent, but does not affect how other keys are derived from that key.
 Note that secrecy of all derived private keys (both hardened and non-hardened, at all levels) from a non-hardened key depends on keeping either the parent extended public key secret, or all non-hardened sibling keys secret.
 
-**BIP32 is fully compatible with ECDSA. Why this scheme does not follow standard EdDSA?**
+**Is it safe to derive secret key from the scalar instead of raw 256 bits of entropy?**
 
-EdDSA treats private key not as a raw scalar (which is what ECDSA does), but as a buffer being hashed and then split into a scalar and a `prefix` material for the nonce. This hashing creates a non-linear relationship that is impossible to map to curve points that only support linear operations for non-hardened derivation. This scheme therefore deviates from EdDSA and encodes a non-hardened private key as a scalar directly, without its hash preimage. For consistency, the hardened key also stores only the scalar, not its preimage. At the same time, signature verification is fully compatible with EdDSA for both hardened and non-hardened public keys.
-
-**Is it safe to derive signature nonce directly from the secret scalar?**
+EdDSA defines private key as raw 256 bits of entropy that are expanded using a hash function to a 512 bits: half of them are pruned to form a secret scalar that defines public key, another half is used to generate the nonce for the Schnorr signature. Unfortunately, 
 
 We believe the scheme is equivalent to RFC6979 that derives the nonce by hashing the secret scalar. As an extra safety measure, the secret scalar is concatenated with the `salt` (which is not considered secret in this scheme) in order to make derivation function not dependent solely on the key.
+
+
+## Security
+
+
+TBD: Collisions
+
+TBD: High bits as per EdDSA
+
+TBD: Hardened derivation resets depth limit
+
+TBD: 
 
 
 
@@ -332,7 +318,7 @@ All values use hexadecimal encoding.
 
 ## Acknowledgements
 
-We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous version of this scheme and their proposal [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA) which also takes into account use in ECDH.
+We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous version of this scheme and their proposal [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA) which also takes into account safe use of derived keys in ECDH.
 
 
 ## References
