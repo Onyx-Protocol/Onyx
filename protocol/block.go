@@ -144,10 +144,11 @@ func (c *Chain) ApplyValidBlock(block *bc.Block) (*state.Snapshot, error) {
 // ApplyNewBlock, which will have produced the new snapshot that's
 // required here.
 //
-// This function:
-//   * saves the block to the store.
-//   * sometimes saves the state tree to the store.
-//   * executes all new-block callbacks.
+// This function saves the block to the store and sometimes (not more
+// often than saveSnapshotFrequency) saves the state tree to the
+// store. New-block callbacks (via asynchronous block-processor pins)
+// are triggered.
+//
 // TODO(bobg): rename to CommitAppliedBlock for clarity (deferred from https://github.com/chain/chain/pull/788)
 func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
 	// SaveBlock is the linearization point. Once the block is committed
