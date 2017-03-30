@@ -103,7 +103,7 @@ export default connect(
   state => {
     let docVersion = ''
 
-    const versionComponents = state.core.version.match('^([0-9]\\.[0-9])\\.(.*)')
+    const versionComponents = state.core.version.match('^([0-9]\\.[0-9])\\..*')
     if (versionComponents != null) {
       docVersion = versionComponents[1]
     }
