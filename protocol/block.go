@@ -48,6 +48,10 @@ func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) 
 // After generating the block, the pending transaction pool will be
 // empty.
 func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time, txs []*bc.Tx) (*bc.Block, *state.Snapshot, error) {
+	// TODO(kr): move this into a lower-level package (e.g. chain/protocol/bc)
+	// so that other packages (e.g. chain/protocol/validation) unit tests can
+	// call this function.
+
 	timestampMS := bc.Millis(now)
 	if timestampMS < prev.TimestampMS {
 		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
@@ -224,6 +228,10 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 }
 
 func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
+	// TODO(kr): move this into a lower-level package (e.g. chain/protocol/bc)
+	// so that other packages (e.g. chain/protocol/validation) unit tests can
+	// call this function.
+
 	script, err := vmutil.BlockMultiSigProgram(pubkeys, nSigs)
 	if err != nil {
 		return nil, err
