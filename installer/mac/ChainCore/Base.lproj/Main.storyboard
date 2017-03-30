@@ -23,7 +23,7 @@
                 </windowController>
                 <customObject id="irj-fp-CtB" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="731" y="-294"/>
+            <point key="canvasLocation" x="701" y="-302"/>
         </scene>
         <!--Window Controller-->
         <scene sceneID="dfz-VO-LQk">
@@ -182,16 +182,16 @@
         <!--View Controller-->
         <scene sceneID="qij-K2-cCG">
             <objects>
-                <customObject id="PPT-qH-eGw" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
                 <userDefaultsController id="KVx-oV-dzR"/>
+                <customObject id="PPT-qH-eGw" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
                 <viewController id="F90-nP-753" sceneMemberID="viewController">
                     <view key="view" id="yPx-aT-K8a">
-                        <rect key="frame" x="0.0" y="0.0" width="300" height="61"/>
+                        <rect key="frame" x="0.0" y="0.0" width="300" height="46"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </view>
                 </viewController>
             </objects>
-            <point key="canvasLocation" x="1236" y="-302"/>
+            <point key="canvasLocation" x="1275" y="-308"/>
         </scene>
         <!--Application-->
         <scene sceneID="JPo-4y-FX3">
@@ -216,11 +216,6 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="VOq-y0-SEH"/>
-                                        <menuItem title="Preferences…" keyEquivalent="," id="BOF-NM-1cW">
-                                            <connections>
-                                                <segue destination="0CQ-HC-63t" kind="show" id="PFZ-iz-T8N"/>
-                                            </connections>
-                                        </menuItem>
                                         <menuItem title="Check for Updates…" id="jgT-3h-PCr">
                                             <modifierMask key="keyEquivalentModifierMask"/>
                                             <connections>
