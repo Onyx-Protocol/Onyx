@@ -327,7 +327,7 @@ func wrapMessage(msg string, limit int) string {
 func waitForSuccessfulStatus(req *landReq, repo, commitSHA string) bool {
 	start := time.Now()
 	for {
-		if time.Since(start) > 3*time.Minute {
+		if time.Since(start) > 4*time.Minute {
 			sayf("<@%s|%s> failed to land %s: timed out waiting for build status",
 				req.userID,
 				req.userName,
