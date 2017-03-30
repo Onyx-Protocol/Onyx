@@ -13,6 +13,12 @@ import (
 //
 // Nonces maps a nonce entry's ID to the time (in Unix millis)
 // at which it should expire from the nonce set.
+//
+// TODO: consider making type Snapshot truly immutable.  We already
+// handle it that way in many places (with explicit calls to Copy to
+// get the right behavior).  PruneNonces and the Apply functions would
+// have to produce new Snapshots rather than updating Snapshots in
+// place.
 type Snapshot struct {
 	Tree   *patricia.Tree
 	Nonces map[bc.Hash]uint64
@@ -32,9 +38,6 @@ func (s *Snapshot) PruneNonces(timestampMS uint64) {
 // O(n) operation where n is the number of nonces in the
 // snapshot's nonce set.
 func Copy(original *Snapshot) *Snapshot {
-	// TODO(kr): consider making type Snapshot truly immutable.
-	// We already handle it that way in many places (with explicit
-	// calls to Copy to get the right behavior).
 	c := &Snapshot{
 		Tree:   new(patricia.Tree),
 		Nonces: make(map[bc.Hash]uint64, len(original.Nonces)),
