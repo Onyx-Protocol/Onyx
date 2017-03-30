@@ -335,7 +335,7 @@ func fetchSnapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, atte
 	// to them in the block. This means that Cores bootstrapping from a
 	// snapshot cannot guarantee uniqueness of issuances until the max
 	// issuance window has elapsed.
-	snapshot.PruneNonces(math.MaxUint64)
+	snapshot.PruneIssuances(math.MaxUint64)
 
 	// Next, get the initial block.
 	initialBlock, err := getBlock(ctx, peer, 1, getBlockTimeout)

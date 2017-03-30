@@ -9,10 +9,14 @@ import (
 )
 
 // Snapshot encompasses a snapshot of entire blockchain state. It
-// consists of a patricia state tree and the nonce set.
+// consists of a patricia state tree and the issuances memory.
 //
-// Nonces maps a nonce entry's ID to the time (in Unix millis)
-// at which it should expire from the nonce set.
+// Issuances maps an "issuance hash" to the time (in Unix millis)
+// at which it should expire from the issuance memory.
+//
+// TODO(bobg): replace the issuances memory with a nonce set per the
+// latest spec (deferred from
+// https://github.com/chain/chain/pull/788).
 //
 // TODO: consider making type Snapshot truly immutable.  We already
 // handle it that way in many places (with explicit calls to Copy to
@@ -20,31 +24,31 @@ import (
 // have to produce new Snapshots rather than updating Snapshots in
 // place.
 type Snapshot struct {
-	Tree   *patricia.Tree
-	Nonces map[bc.Hash]uint64
+	Tree      *patricia.Tree
+	Issuances map[bc.Hash]uint64
 }
 
-// PruneNonces modifies a Snapshot, removing all nonce IDs
+// PruneIssuances modifies a Snapshot, removing all issuance hashes
 // with expiration times earlier than the provided timestamp.
-func (s *Snapshot) PruneNonces(timestampMS uint64) {
-	for hash, expiryMS := range s.Nonces {
+func (s *Snapshot) PruneIssuances(timestampMS uint64) {
+	for hash, expiryMS := range s.Issuances {
 		if timestampMS > expiryMS {
-			delete(s.Nonces, hash)
+			delete(s.Issuances, hash)
 		}
 	}
 }
 
 // Copy makes a copy of provided snapshot. Copying a snapshot is an
-// O(n) operation where n is the number of nonces in the
-// snapshot's nonce set.
+// O(n) operation where n is the number of issuance hashes in the
+// snapshot's issuance memory.
 func Copy(original *Snapshot) *Snapshot {
 	c := &Snapshot{
-		Tree:   new(patricia.Tree),
-		Nonces: make(map[bc.Hash]uint64, len(original.Nonces)),
+		Tree:      new(patricia.Tree),
+		Issuances: make(map[bc.Hash]uint64, len(original.Issuances)),
 	}
 	*c.Tree = *original.Tree
-	for k, v := range original.Nonces {
-		c.Nonces[k] = v
+	for k, v := range original.Issuances {
+		c.Issuances[k] = v
 	}
 	return c
 }
@@ -52,14 +56,14 @@ func Copy(original *Snapshot) *Snapshot {
 // Empty returns an empty state snapshot.
 func Empty() *Snapshot {
 	return &Snapshot{
-		Tree:   new(patricia.Tree),
-		Nonces: make(map[bc.Hash]uint64),
+		Tree:      new(patricia.Tree),
+		Issuances: make(map[bc.Hash]uint64),
 	}
 }
 
 // ApplyBlock updates s in place.
 func (s *Snapshot) ApplyBlock(block *bc.BlockEntries) error {
-	s.PruneNonces(block.Body.TimestampMS)
+	s.PruneIssuances(block.Body.TimestampMS)
 	for i, tx := range block.Transactions {
 		err := s.ApplyTx(tx)
 		if err != nil {
@@ -71,13 +75,13 @@ func (s *Snapshot) ApplyBlock(block *bc.BlockEntries) error {
 
 // ApplyTx updates s in place.
 func (s *Snapshot) ApplyTx(tx *bc.TxEntries) error {
-	for _, n := range tx.NonceIDs {
-		// Add new nonces. They must not conflict with nonces already
+	for _, issID := range tx.IssuanceIDs {
+		// Add new issuances. They must not conflict with issuances already
 		// present.
-		if s.Nonces[n] >= tx.Body.MaxTimeMS {
-			return fmt.Errorf("conflicting nonce %x", n[:])
+		if s.Issuances[issID] >= tx.Body.MaxTimeMS {
+			return fmt.Errorf("conflicting issuance %x", issID[:])
 		}
-		s.Nonces[n] = tx.Body.MaxTimeMS
+		s.Issuances[issID] = tx.Body.MaxTimeMS
 	}
 
 	// Remove spent outputs. Each output must be present.

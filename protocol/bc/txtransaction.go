@@ -17,7 +17,7 @@ type TxEntries struct {
 	TxInputIDs []Hash  // 1:1 correspondence with TxData.Inputs
 
 	// IDs of reachable entries of various kinds to speed up Apply
-	NonceIDs       []Hash
+	IssuanceIDs    []Hash
 	SpentOutputIDs []Hash
 	OutputIDs      []Hash
 }
@@ -74,7 +74,7 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 	}
 
 	var (
-		nonceIDs       = make(map[Hash]bool)
+		issuanceIDs    = make(map[Hash]bool)
 		spentOutputIDs = make(map[Hash]bool)
 		outputIDs      = make(map[Hash]bool)
 	)
@@ -82,9 +82,7 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 	for id, e := range entries {
 		switch e := e.(type) {
 		case *Issuance:
-			if _, ok := e.Anchor.(*Nonce); ok {
-				nonceIDs[e.Body.AnchorID] = true
-			}
+			issuanceIDs[id] = true
 			// resume below after the switch
 
 		case *Spend:
@@ -106,8 +104,8 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 		txEntries.TxInputIDs[ord] = id
 	}
 
-	for id := range nonceIDs {
-		txEntries.NonceIDs = append(txEntries.NonceIDs, id)
+	for id := range issuanceIDs {
+		txEntries.IssuanceIDs = append(txEntries.IssuanceIDs, id)
 	}
 	for id := range spentOutputIDs {
 		txEntries.SpentOutputIDs = append(txEntries.SpentOutputIDs, id)
