@@ -114,11 +114,7 @@ func (c *Chain) ValidateBlock(block, prev *bc.Block) error {
 }
 
 func validateBlock(block, prev *bc.Block, initialBlockHash bc.Hash, validateTx func(*bc.TxEntries) error, runProg bool) error {
-	var prevEntries *bc.BlockEntries
-	if prev != nil {
-		prevEntries = bc.MapBlock(prev)
-	}
-	err := validation.ValidateBlock(bc.MapBlock(block), prevEntries, initialBlockHash, validateTx, runProg)
+	err := validation.ValidateBlock(bc.MapBlock(block), bc.MapBlock(prev), initialBlockHash, validateTx, runProg)
 	if err != nil {
 		return errors.Sub(ErrBadBlock, err)
 	}
