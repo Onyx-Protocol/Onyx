@@ -9,7 +9,6 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
-	"chain/protocol/validation"
 	"chain/testutil"
 )
 
@@ -206,25 +205,10 @@ func TestValidateBlockForSig(t *testing.T) {
 		t.Fatal("unexpected error ", err)
 	}
 
-	err = validateBlockForSig(ctx, c, initialBlock)
+	err = c.ValidateBlockForSig(ctx, initialBlock)
 	if err != nil {
 		t.Error("unexpected error ", err)
 	}
-}
-
-func validateBlockForSig(ctx context.Context, c *Chain, b *bc.Block) (err error) {
-	var prev *bc.Block
-	if b.Height > 1 {
-		prev, err = c.GetBlock(ctx, b.Height-1)
-		if err != nil {
-			return err
-		}
-	}
-	var prevEntries *bc.BlockEntries
-	if prev != nil {
-		prevEntries = bc.MapBlock(prev)
-	}
-	return validation.ValidateBlock(bc.MapBlock(b), prevEntries, c.InitialBlockHash, c.ValidateTx, false)
 }
 
 // newTestChain returns a new Chain using memstore for storage,

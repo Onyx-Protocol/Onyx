@@ -11,7 +11,6 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/validation"
 )
 
 // ErrConsensusChange is returned from ValidateAndSignBlock
@@ -87,11 +86,9 @@ func (s *BlockSigner) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]
 	if !bytes.Equal(b.ConsensusProgram, prev.ConsensusProgram) {
 		return nil, errors.Wrap(ErrConsensusChange)
 	}
-	prevEntries := bc.MapBlock(prev)
-	err = validation.ValidateBlock(bc.MapBlock(b), prevEntries, s.c.InitialBlockHash, s.c.ValidateTx, false)
+	err = s.c.ValidateBlockForSig(ctx, b)
 	if err != nil {
-		err = errors.Wrap(err, "validating block for signature")
-		return nil, errors.Sub(protocol.ErrBadBlock, err)
+		return nil, errors.Wrap(err, "validating block for signature")
 	}
 	err = lockBlockHeight(ctx, s.db, b)
 	if err != nil {
