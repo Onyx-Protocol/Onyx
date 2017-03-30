@@ -38,11 +38,11 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *bc.Tx) 
 	// finalize a tx before the initial block has landed
 	<-c.BlockWaiter(1)
 
-	// If this transaction is valid, ValidateTxCached will store it in the cache.
 	err = c.ValidateTx(tx.TxEntries)
 	if errors.Root(err) == protocol.ErrBadTx {
 		return errors.Sub(ErrRejected, err)
-	} else if err != nil {
+	}
+	if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}
 
