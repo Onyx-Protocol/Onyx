@@ -43,7 +43,7 @@ $ aws configure
 
 #### Checking out the right version of docs
 
-Before uploading documentation, make sure your local state reflects the correct documentation. The `main` branch is generally not safe for this purpose, since it may contain documentation updates that reflect changes that have yet to make it into an official relase.
+Before uploading documentation, make sure your local state reflects the correct documentation. The `main` branch is generally not safe for this purpose, since it may contain documentation updates that reflect changes that have yet to make it into an official release.
 
 The state of production documentation is tracked in the `<major>.<minor>-stable` family of release branches. Each such branch reflects the last known safe version of the documentation for the corresponding major/minor version pair.
 
@@ -56,7 +56,7 @@ Staging:
 ```
 cd $CHAIN
 git checkout <major>.<minor>-stable
-./bin/upload-docs
+./bin/upload-docs <major>.<minor>
 ```
 
 Production:
@@ -64,5 +64,5 @@ Production:
 ```
 cd $CHAIN
 git checkout <major>.<minor>-stable
-./bin/upload-docs prod
+./bin/upload-docs <major>.<minor> prod
 ```
