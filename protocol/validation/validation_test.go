@@ -349,7 +349,7 @@ func TestBlockHeaderValid(t *testing.T) {
 		if c.f != nil {
 			c.f()
 		}
-		err := checkValid(nil, &bh)
+		err := checkValidBlockHeader(&bh)
 		if err != c.err {
 			t.Errorf("case %d: got error %s, want %s; bh is:\n%s", i, err, c.err, spew.Sdump(bh))
 		}

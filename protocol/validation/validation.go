@@ -55,13 +55,6 @@ var (
 
 func checkValid(vs *validationState, e bc.Entry) error {
 	switch e := e.(type) {
-	case *bc.BlockHeaderEntry:
-		// This does only part of the work of validating a block. The rest
-		// is handled in ValidateBlock, which calls this.
-		if e.Body.Version == 1 && e.Body.ExtHash != (bc.Hash{}) {
-			return errNonemptyExtHash
-		}
-
 	case *bc.TxHeader:
 		// This does only part of the work of validating a tx header. The
 		// block-related parts of tx validation are in ValidateBlock.
@@ -289,6 +282,13 @@ func checkValid(vs *validationState, e bc.Entry) error {
 	return nil
 }
 
+func checkValidBlockHeader(bh *bc.BlockHeaderEntry) error {
+	if bh.Body.Version == 1 && bh.Body.ExtHash != (bc.Hash{}) {
+		return errNonemptyExtHash
+	}
+	return nil
+}
+
 func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 	vstate2 := *vstate
 	vstate2.entryID = vs.Ref
@@ -379,7 +379,7 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 // ValidateBlock validates a block and the transactions within.
 // The consensus program is executed only if prev is non-nil and
 // runProg is true.
-func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, runProg bool) error {
+func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, validateTx func(*bc.TxEntries) error, runProg bool) error {
 	if b.Body.Height > 1 {
 		if prev == nil {
 			return errors.WithDetailf(errNoPrevBlock, "height %d", b.Body.Height)
@@ -390,13 +390,9 @@ func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, runProg boo
 		}
 	}
 
-	vs := &validationState{
-		blockchainID: initialBlockID,
-		entryID:      b.ID,
-	}
-	err := checkValid(vs, b.BlockHeaderEntry)
+	err := checkValidBlockHeader(b.BlockHeaderEntry)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "checking block header")
 	}
 
 	for i, tx := range b.Transactions {
@@ -410,11 +406,7 @@ func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, runProg boo
 			return errors.WithDetailf(errUntimelyTransaction, "block timestamp %d, transaction time range %d-%d", b.Body.TimestampMS, tx.Body.MinTimeMS, tx.Body.MaxTimeMS)
 		}
 
-		vs2 := *vs
-		vs2.tx = tx
-		vs2.entryID = tx.ID
-
-		err := checkValid(&vs2, tx.TxHeader)
+		err = validateTx(tx)
 		if err != nil {
 			return errors.Wrapf(err, "checking validity of transaction %d of %d", i, len(b.Transactions))
 		}
