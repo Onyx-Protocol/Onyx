@@ -5,13 +5,18 @@ import (
 	"os"
 )
 
+var (
+	chain    = &repo{dir: os.Getenv("CHAIN")}
+	chainprv = &repo{dir: os.Getenv("CHAIN") + "prv"}
+)
+
 type product struct {
 	name string // e.g. chain-core-server, sdk-java, chain-enclave
 	prv  bool   // whether it's built from chainprv
 
-	// build builds and packages the release, leaving the
-	// results in files on disk. It returns a slice of filepaths
-	// for whatever it built.
+	// Build builds and packages the release, leaving the
+	// results in one or more files on disk.
+	// It returns a slice of file names for whatever it built.
 	// e.g. chain-core-server-1.1-linux-amd64.tar.gz
 	build func(p product, version, tagName string) ([]string, error)
 }
@@ -23,59 +28,97 @@ var products = []product{
 // Exit status 2 means usage error.
 // Exit status 1 means something else went wrong.
 
+type config struct {
+	product string
+	version string
+	branch  string
+	pubid   string
+	prvid   string
+	doPrv   bool
+}
+
 func main() {
 	if len(os.Args) != 5 && len(os.Args) != 6 {
 		usage()
 	}
-	name := os.Args[1]
-	version := os.Args[2]
-	branch := os.Args[3]
-	commit := os.Args[4]
-	var prvCommit string
+	c := &config{
+		product: os.Args[1],
+		version: os.Args[2],
+		branch:  os.Args[3],
+		pubid:   os.Args[4],
+	}
 	if len(os.Args) == 6 {
-		prvCommit = os.Args[5]
+		c.doPrv = true
+		c.prvid = os.Args[5]
+		detectRepoCommits(c) // swap pub and prv if necessary
 	}
 
-	fmt.Println("release", name, version, branch, commit, prvCommit)
+	fmt.Println("release", c)
 
 	for _, p := range products {
-		if p.name == name {
-			release(p, version, branch, commit, prvCommit)
+		if p.name == c.product {
+			release(p, c)
 			return
 		}
 	}
-	fmt.Fprintf(os.Stderr, "unknown product %s\n", name)
+	fmt.Fprintf(os.Stderr, "unknown product %s\n", c.product)
 	os.Exit(1)
 }
 
-func release(p product, version, branch, commit, prvCommit string) {
-	validate(p, version, branch, commit, prvCommit)
-	tagName := tag(p, version, branch, commit, prvCommit)
-	files, err := p.build(p, version, tagName)
+func release(p product, c *config) {
+	validate(p, c)
+	tagName := tag(p, c)
+	files, err := p.build(p, c.version, tagName)
 	if err != nil {
-		untag()
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
-		os.Exit(1)
+		untag(c, tagName)
+		fatalf("error: %s\n", err)
 	}
 	upload(files)
 }
 
-// validate checks that the inputs are consistent with
+// Validate checks that the inputs are consistent with
 // each other and with the files in $CHAIN and ${CHAIN}prv.
 // If it finds a problem, it prints an error message and
 // exits with a nonzero status.
-func validate(p product, version, branch, commit, prvCommit string) {
+func validate(p product, c *config) {
 	// tktk write this
 }
 
-func tag(p product, version, branch, commit, prvCommit string) string {
-	return p.name + "-" + version
+func tag(p product, c *config) string {
+	name := p.name + "-" + c.version
+	_, err := chain.git("tag", name, c.pubid)
+	if err != nil {
+		fatalf("error: %s\n", err)
+	}
+	if c.doPrv {
+		_, err := chainprv.git("tag", name, c.prvid)
+		if err != nil {
+			untag(c, name)
+			fatalf("error: %s\n", err)
+		}
+	}
+	return name
 }
 
-func untag() {
+func untag(c *config, name string) {
+	chain.git("tag", "-d", name)
+	if c.doPrv {
+		chain.git("tag", "-d", name)
+	}
 }
 
 func upload(files []string) {
+}
+
+func detectRepoCommits(c *config) {
+	if chain.hasCommit(c.prvid) && chainprv.hasCommit(c.pubid) {
+		c.pubid, c.prvid = c.prvid, c.pubid
+	}
+}
+
+func fatalf(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, args...)
+	os.Exit(1)
 }
 
 func usage() {
