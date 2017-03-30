@@ -77,14 +77,20 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
         })
     }
 
-    func doLoadDashboard() {
-        if #available(OSX 10.11, *) {
+    func userAgent() -> String {
+        return "ChainCore.app/\(Bundle.main.infoDictionary![kCFBundleVersionKey as String])"
+    }
+
+    func doLoadModernDashboard() {
+        if #available(OSX 10.10, *) {
             if webView != nil {
                 return
             }
             let config = WKWebViewConfiguration()
-            config.websiteDataStore = WKWebsiteDataStore.default()
-            config.applicationNameForUserAgent = "ChainCore.app/\(Bundle.main.infoDictionary![kCFBundleVersionKey as String])"
+            if #available(OSX 10.11, *) {
+                config.websiteDataStore = WKWebsiteDataStore.default()
+                config.applicationNameForUserAgent = userAgent()
+            }
             let ctrl = WKUserContentController()
 
             let consoleOverride = "window.console = { }"
@@ -107,31 +113,47 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
             self.view.addSubview(wv)
             self.preloadView.isHidden = true
             wv.uiDelegate = self
-            wv.load(URLRequest(url: ChainCore.shared.dashboardURL))
 
-//            // Debug:
-//            DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: { 
-//                wv.evaluateJavaScript("console.error('test from js bridge')", completionHandler: { (result, err) in
-//                    //                    NSLog("Executed JS: %@ %@", "\(result)", "\(err)")
-//                })
-//            })
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
+                wv.load(URLRequest(url: ChainCore.shared.dashboardURL))
+            })
+
+            //            // Debug:
+            //            DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: {
+            //                wv.evaluateJavaScript("console.error('test from js bridge')", completionHandler: { (result, err) in
+            //                    //                    NSLog("Executed JS: %@ %@", "\(result)", "\(err)")
+            //                })
+            //            })
 
             webView = wv
-        } else {
-            if webViewOld != nil {
-                return
-            }
-            let wv = WebView(frame: self.view.bounds)
-            wv.autoresizingMask = [.viewWidthSizable, .viewHeightSizable]
-            wv.translatesAutoresizingMaskIntoConstraints = true
-            self.view.addSubview(wv)
-            self.preloadView.isHidden = true
+        }
+    }
 
+    func doLoadLegacyDashboard() {
+        if webViewOld != nil {
+            return
+        }
+        let wv = WebView(frame: self.view.bounds)
+        wv.autoresizingMask = [.viewWidthSizable, .viewHeightSizable]
+        wv.translatesAutoresizingMaskIntoConstraints = true
+        self.view.addSubview(wv)
+        self.preloadView.isHidden = true
+
+        wv.uiDelegate = self
+        wv.customUserAgent = userAgent()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
             wv.mainFrame.load(URLRequest(url: ChainCore.shared.dashboardURL))
-            wv.uiDelegate = self
-            wv.customUserAgent = "ChainCore.app/\(Bundle.main.infoDictionary![kCFBundleVersionKey as String])"
+        })
 
-            webViewOld = wv
+        webViewOld = wv
+    }
+
+    func doLoadDashboard() {
+        if #available(OSX 10.10, *) {
+            doLoadModernDashboard()
+        } else {
+            doLoadLegacyDashboard()
         }
     }
 
@@ -169,8 +191,13 @@ class DashboardViewController: NSViewController, WebUIDelegate, WKUIDelegate, WK
         return nil
     }
 
-    public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         NSLog("Chain Core js.console.%@: %@", "\(message.name)","\(message.body)")
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        self.view.setNeedsDisplay(self.view.bounds)
+        webView.setNeedsDisplay(webView.bounds)
     }
 
 
