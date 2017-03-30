@@ -36,7 +36,8 @@ Limitations:
 
 1. Depth of non-hardened derivation is limited to 2<sup>20</sup>.
 2. Number of distinct root keys or hardened public keys is 2<sup>250</sup>, half of the keyspace allowed in EdDSA.
-3. Number of distinct non-hardened public keys is 2<sup>230</sup>.
+3. Number of distinct non-hardened public keys is 2<sup>230</sup> (reduced to keep compatibility with ECDH use and allow a comfortably large number of derivation levels).
+4. Entropy of the nonce for any derived key is at least 2<sup>250</sup> which is 4 times lower than nonce in EdDSA.
 
 
 ## Definitions
@@ -47,11 +48,13 @@ Limitations:
 
 **Secret scalar** is 32-byte string representing a 256-bit integer using little-endian convention.
 
-**Public key** is a 32-byte string representing a point on elliptic curve Ed25519 ([RFC 8032](https://tools.ietf.org/html/rfc8032)).
-
 **Extended private key** (aka “xprv”) is a 64-byte string representing a key that can be used for deriving *child extended private and public keys*.
 
 **Extended public key** (aka “xpub”) is a 64-byte string representing a key that can be used for deriving *child extended public keys*.
+
+**EdDSA secret key** (aka “sk”) is a 64-byte string representing a raw secret key used for creating EdDSA signatures (consists of 32-byte scalar and 32-byte “prefix”).
+
+**EdDSA public key** (aka “pk”) is a 32-byte string representing encoding of an elliptic curve point on Ed25519 as defined in EdDSA ([RFC 8032](https://tools.ietf.org/html/rfc8032)).
 
 
 ## Algorithms
@@ -205,6 +208,10 @@ EdDSA defines private key as raw 256 bits of entropy that are expanded using a h
 
 We believe the scheme is equivalent to RFC6979 that derives the nonce by hashing the secret scalar. As an extra safety measure, the secret scalar is concatenated with the `salt` (which is not considered secret in this scheme) in order to make derivation function not dependent solely on the key.
 
+**Why this scheme uses variable-length selectors instead of 31-bit indices as in BIP32?**
+
+In our experience index-based derivation is not always convenient and can be extended to longer selectors only through additional derivation levels which is less efficient (e.g. 128-bit selectors would require 5 scalar multiplications in BIP32). However, users are free to use integer selectors by simply encoding them as 32-bit or 64-bit integers and passing to ChainKD. If you need to mix integer- and string-based indexing, you could prepend a type byte or use a standard encoding such as [Protocol Buffers](https://developers.google.com/protocol-buffers/) or [JSON](http://www.json.org).
+
 
 ## Security
 
@@ -235,9 +242,17 @@ Knowledge of a parent extended public key and one of non-hardened derived extend
 
 1. Allows extracting parent private key: `s = (s’ - f) mod L` where `f` is derived from the parent `xpub` and `s’` is extracted from the child `xprv’`.
 
+### Root key security
+
+We set 6 bits in the secret 256 bits of a 512-bit root extended key. Therefore, the root key requires an order of 2<sup>250</sup> attempts by brute-force.
+
+### Hardened derivation security
+
+Private keys derived using hardened derivation have 6 bits set. Therefore, the extended private key requires an order of 2<sup>250</sup> attempts by brute-force.
+
 ### Child key collisions
 
-
+TBD: collisions require order of 2<sup>115</sup> derived keys
 
 TBD: High bits as per EdDSA
 
