@@ -110,15 +110,15 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 // to a snapshot (with ApplyValidBlock) and committing it to the
 // blockchain (with CommitAppliedBlock).
 func (c *Chain) ValidateBlock(block, prev *bc.Block) error {
-	return c.validateBlock(block, prev, true)
+	return validateBlock(block, prev, c.InitialBlockHash, true)
 }
 
-func (c *Chain) validateBlock(block, prev *bc.Block, runProg bool) error {
+func validateBlock(block, prev *bc.Block, initialBlockHash bc.Hash, runProg bool) error {
 	var prevEntries *bc.BlockEntries
 	if prev != nil {
 		prevEntries = bc.MapBlock(prev)
 	}
-	err := validation.ValidateBlock(bc.MapBlock(block), prevEntries, c.InitialBlockHash, runProg)
+	err := validation.ValidateBlock(bc.MapBlock(block), prevEntries, initialBlockHash, runProg)
 	if err != nil {
 		return errors.Sub(ErrBadBlock, err)
 	}
@@ -224,7 +224,7 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 		}
 	}
 
-	return c.validateBlock(block, prev, false)
+	return validateBlock(block, prev, c.InitialBlockHash, false)
 }
 
 func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
