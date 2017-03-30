@@ -17,15 +17,6 @@ The converted documentation is served at [http://localhost:8080/docs](http://loc
 
 ## Deployment
 
-### Chain Core
-
-Documentation is bundled into Chain Core inside the `$CHAIN/generated` folder. To bundle the latest docs, run:
-
-```sh
-$ cd $CHAIN
-$ ./bin/bundle-docs
-```
-
 ### Web
 
 #### Prerequisites
