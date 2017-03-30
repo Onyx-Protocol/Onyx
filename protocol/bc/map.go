@@ -212,6 +212,9 @@ func mapBlockHeader(old *BlockHeader) (bhID Hash, bh *BlockHeaderEntry) {
 }
 
 func MapBlock(old *Block) *BlockEntries {
+	if old == nil {
+		return nil // if old is nil, so should new be
+	}
 	b := new(BlockEntries)
 	b.ID, b.BlockHeaderEntry = mapBlockHeader(&old.BlockHeader)
 	for _, oldTx := range old.Transactions {
