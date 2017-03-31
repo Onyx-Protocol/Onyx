@@ -1382,3 +1382,20 @@ and (-webkit-min-device-pixel-ratio: 2) {
     margin-left: 3px;
     margin-right: 3px;
 }
+
+#version-select {
+  background: white;
+  border: 1px solid #ddd;
+  color: #00BFAA;
+  font-size: 15px;
+  padding: 6px 10px;
+  width: 180px;
+  background-image: url(../images/down-triangle.png);
+  background-repeat: no-repeat;
+  background-position: center right 10px;
+  background-size: 10px 7px;
+
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
