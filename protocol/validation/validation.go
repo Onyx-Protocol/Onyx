@@ -111,7 +111,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		for i, src := range e.Body.Sources {
 			sum, ok := checked.AddInt64(parity[src.Value.AssetID], int64(src.Value.Amount))
 			if !ok {
-				return errors.WithDetailf(errOverflow, "adding %d units of asset %x from mux source %d to total %d overflows int64", src.Value.Amount, src.Value.AssetID[:], i, parity[src.Value.AssetID])
+				return errors.WithDetailf(errOverflow, "adding %d units of asset %x from mux source %d to total %d overflows int64", src.Value.Amount, src.Value.AssetID.Bytes(), i, parity[src.Value.AssetID])
 			}
 			parity[src.Value.AssetID] = sum
 		}
@@ -119,19 +119,19 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		for i, dest := range e.Witness.Destinations {
 			sum, ok := parity[dest.Value.AssetID]
 			if !ok {
-				return errors.WithDetailf(errNoSource, "mux destination %d, asset %x, has no corresponding source", i, dest.Value.AssetID[:])
+				return errors.WithDetailf(errNoSource, "mux destination %d, asset %x, has no corresponding source", i, dest.Value.AssetID.Bytes())
 			}
 
 			diff, ok := checked.SubInt64(sum, int64(dest.Value.Amount))
 			if !ok {
-				return errors.WithDetailf(errOverflow, "subtracting %d units of asset %x from mux destination %d from total %d underflows int64", dest.Value.Amount, dest.Value.AssetID[:], i, sum)
+				return errors.WithDetailf(errOverflow, "subtracting %d units of asset %x from mux destination %d from total %d underflows int64", dest.Value.Amount, dest.Value.AssetID.Bytes(), i, sum)
 			}
 			parity[dest.Value.AssetID] = diff
 		}
 
 		for assetID, amount := range parity {
 			if amount != 0 {
-				return errors.WithDetailf(errUnbalanced, "asset %x sources - destinations = %d (should be 0)", assetID[:], amount)
+				return errors.WithDetailf(errUnbalanced, "asset %x sources - destinations = %d (should be 0)", assetID.Bytes(), amount)
 			}
 		}
 
@@ -202,7 +202,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 
 		computedAssetID := e.Witness.AssetDefinition.ComputeAssetID()
 		if computedAssetID != e.Body.Value.AssetID {
-			return errors.WithDetailf(errMismatchedAssetID, "asset ID is %x, issuance wants %x", computedAssetID[:], e.Body.Value.AssetID[:])
+			return errors.WithDetailf(errMismatchedAssetID, "asset ID is %x, issuance wants %x", computedAssetID.Bytes(), e.Body.Value.AssetID.Bytes())
 		}
 
 		err := vm.Verify(NewTxVMContext(vs.tx, e, e.Witness.AssetDefinition.IssuanceProgram, e.Witness.Arguments))
@@ -258,9 +258,9 @@ func checkValid(vs *validationState, e bc.Entry) error {
 				errMismatchedValue,
 				"previous output is for %d unit(s) of %x, spend wants %d unit(s) of %x",
 				e.SpentOutput.Body.Source.Value.Amount,
-				e.SpentOutput.Body.Source.Value.AssetID[:],
+				e.SpentOutput.Body.Source.Value.AssetID.Bytes(),
 				e.Witness.Destination.Value.Amount,
-				e.Witness.Destination.Value.AssetID[:],
+				e.Witness.Destination.Value.AssetID.Bytes(),
 			)
 		}
 

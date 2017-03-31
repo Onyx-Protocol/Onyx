@@ -120,7 +120,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 			if ii, ok := in.TypedInput.(*bc.IssuanceInput); ok {
 				definition := ii.AssetDefinition
 				seen[assetID] = true
-				assetIDs = append(assetIDs, assetID[:])
+				assetIDs = append(assetIDs, assetID.Bytes())
 				definitions = append(definitions, string(definition))
 				vmVersions = append(vmVersions, int64(ii.VMVersion))
 				issuancePrograms = append(issuancePrograms, in.IssuanceProgram())

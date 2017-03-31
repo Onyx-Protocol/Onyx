@@ -95,7 +95,7 @@ func writeForHash(w io.Writer, c interface{}) error {
 		_, err := v.WriteTo(w)
 		return errors.Wrap(err, "writing Hash for hash")
 	case AssetID:
-		_, err := w.Write(v[:])
+		_, err := v.WriteTo(w)
 		return errors.Wrap(err, "writing AssetID for hash")
 	}
 

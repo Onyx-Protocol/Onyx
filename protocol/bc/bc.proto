@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package bc;
+
+message Hash {
+  fixed64 v0 = 1;
+  fixed64 v1 = 2;
+  fixed64 v2 = 3;
+  fixed64 v3 = 4;
+}
+
+// This message type duplicates Hash, above. One alternative is to
+// embed a Hash inside an AssetID. But it's useful for AssetID to be
+// plain old data (without pointers). Another alternative is use Hash
+// in any protobuf types where an AssetID is called for, but it's
+// preferable to have type safety.
+message AssetID {
+  fixed64 v0 = 1;
+  fixed64 v1 = 2;
+  fixed64 v2 = 3;
+  fixed64 v3 = 4;
+}

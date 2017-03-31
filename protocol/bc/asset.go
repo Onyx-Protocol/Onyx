@@ -8,31 +8,22 @@ import (
 	"chain/encoding/blockchain"
 )
 
-// AssetID is the Hash256 of the issuance script for the asset and the
-// initial block of the chain where it appears.
-type AssetID [32]byte
+// AssetID is the Hash256 of the asset definition.
 
-func (a AssetID) String() string               { h := NewHash(a); return h.String() }
-func (a AssetID) MarshalText() ([]byte, error) { return NewHash(a).MarshalText() }
-func (a AssetID) Value() (driver.Value, error) { return NewHash(a).Value() }
-func (a *AssetID) UnmarshalText(b []byte) error {
-	var h Hash
-	err := h.UnmarshalText(b)
-	*a = h.Byte32()
-	return err
+func NewAssetID(b [32]byte) (a AssetID) {
+	return AssetID(NewHash(b))
 }
-func (a *AssetID) UnmarshalJSON(b []byte) error {
-	var h Hash
-	err := h.UnmarshalJSON(b)
-	*a = h.Byte32()
-	return err
-}
-func (a *AssetID) Scan(v interface{}) error {
-	var h Hash
-	err := h.Scan(v)
-	*a = h.Byte32()
-	return err
-}
+
+func (a AssetID) Byte32() (b32 [32]byte)               { return Hash(a).Byte32() }
+func (a AssetID) MarshalText() ([]byte, error)         { return Hash(a).MarshalText() }
+func (a *AssetID) UnmarshalText(b []byte) error        { return (*Hash)(a).UnmarshalText(b) }
+func (a *AssetID) UnmarshalJSON(b []byte) error        { return (*Hash)(a).UnmarshalJSON(b) }
+func (a AssetID) Bytes() []byte                        { return Hash(a).Bytes() }
+func (a AssetID) Value() (driver.Value, error)         { return Hash(a).Value() }
+func (a *AssetID) Scan(val interface{}) error          { return (*Hash)(a).Scan(val) }
+func (a AssetID) WriteTo(w io.Writer) (int64, error)   { return Hash(a).WriteTo(w) }
+func (a *AssetID) ReadFrom(r io.Reader) (int64, error) { return (*Hash)(a).ReadFrom(r) }
+func (a *AssetID) IsZero() bool                        { return (*Hash)(a).IsZero() }
 
 type AssetDefinition struct {
 	InitialBlockID  Hash
@@ -44,7 +35,7 @@ func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 	writeForHash(h, *ad) // error is impossible
-	h.Read(assetID[:])
+	assetID.ReadFrom(h)
 	return assetID
 }
 
@@ -66,17 +57,17 @@ type AssetAmount struct {
 }
 
 func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
-	n1, err := io.ReadFull(r, a.AssetID[:])
+	n1, err := a.AssetID.ReadFrom(r)
 	if err != nil {
-		return n1, err
+		return int(n1), err
 	}
 	var n2 int
 	a.Amount, n2, err = blockchain.ReadVarint63(r)
-	return n1 + n2, err
+	return int(n1) + n2, err
 }
 
 func (a *AssetAmount) writeTo(w io.Writer) error {
-	_, err := w.Write(a.AssetID[:])
+	_, err := a.AssetID.WriteTo(w)
 	if err != nil {
 		return err
 	}

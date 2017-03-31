@@ -114,7 +114,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 				if err != nil {
 					return err
 				}
-				_, err = io.ReadFull(r, assetID[:])
+				_, err = assetID.ReadFrom(r)
 				if err != nil {
 					return err
 				}
@@ -237,7 +237,7 @@ func (t *TxInput) WriteInputCommitment(w io.Writer, serflags uint8) error {
 				return err
 			}
 			assetID := t.AssetID()
-			_, err = w.Write(assetID[:])
+			_, err = assetID.WriteTo(w)
 			if err != nil {
 				return err
 			}

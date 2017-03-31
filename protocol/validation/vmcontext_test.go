@@ -14,15 +14,15 @@ func TestCheckOutput(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
 		ReferenceData: []byte("txref"),
 		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{1}, 5, 1, []byte("spendprog"), bc.Hash{}, []byte("ref")),
+			bc.NewSpendInput(nil, bc.Hash{}, bc.NewAssetID([32]byte{1}), 5, 1, []byte("spendprog"), bc.Hash{}, []byte("ref")),
 			bc.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(bc.AssetID{3}, 8, []byte("wrongprog"), nil),
-			bc.NewTxOutput(bc.AssetID{3}, 8, []byte("controlprog"), nil),
-			bc.NewTxOutput(bc.AssetID{2}, 8, []byte("controlprog"), nil),
-			bc.NewTxOutput(bc.AssetID{2}, 7, []byte("controlprog"), nil),
-			bc.NewTxOutput(bc.AssetID{2}, 7, []byte("controlprog"), []byte("outref")),
+			bc.NewTxOutput(bc.NewAssetID([32]byte{3}), 8, []byte("wrongprog"), nil),
+			bc.NewTxOutput(bc.NewAssetID([32]byte{3}), 8, []byte("controlprog"), nil),
+			bc.NewTxOutput(bc.NewAssetID([32]byte{2}), 8, []byte("controlprog"), nil),
+			bc.NewTxOutput(bc.NewAssetID([32]byte{2}), 7, []byte("controlprog"), nil),
+			bc.NewTxOutput(bc.NewAssetID([32]byte{2}), 7, []byte("controlprog"), []byte("outref")),
 		},
 		MinTime: 0,
 		MaxTime: 20,

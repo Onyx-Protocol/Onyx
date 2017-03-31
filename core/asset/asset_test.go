@@ -1,7 +1,6 @@
 package asset
 
 import (
-	"bytes"
 	"context"
 	"testing"
 
@@ -34,8 +33,8 @@ func TestDefineAsset(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
-	if !bytes.Equal(id[:], asset.AssetID[:]) {
-		t.Errorf("expected new asset %s to be recorded as %s", asset.AssetID, id)
+	if id != asset.AssetID {
+		t.Errorf("expected new asset %x to be recorded as %x", asset.AssetID.Bytes(), id.Bytes())
 	}
 }
 
@@ -93,6 +92,6 @@ func TestAssetByClientToken(t *testing.T) {
 	}
 
 	if found.AssetID != asset.AssetID {
-		t.Fatalf("assetByClientToken(\"test_token\")=%x, want %x", found.AssetID[:], asset.AssetID[:])
+		t.Fatalf("assetByClientToken(\"test_token\")=%x, want %x", found.AssetID.Bytes(), asset.AssetID.Bytes())
 	}
 }

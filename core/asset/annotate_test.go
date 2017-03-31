@@ -42,12 +42,12 @@ func TestAnnotateTxs(t *testing.T) {
 			Inputs: []*query.AnnotatedInput{
 				{AssetID: asset1.AssetID},
 				{AssetID: asset2.AssetID},
-				{AssetID: bc.AssetID{0xba, 0xd0}},
+				{AssetID: bc.NewAssetID([32]byte{0xba, 0xd0})},
 			},
 			Outputs: []*query.AnnotatedOutput{
 				{AssetID: asset1.AssetID},
 				{AssetID: asset2.AssetID},
-				{AssetID: bc.AssetID{0xba, 0xd0}},
+				{AssetID: bc.NewAssetID([32]byte{0xba, 0xd0})},
 			},
 		},
 	}
@@ -58,12 +58,12 @@ func TestAnnotateTxs(t *testing.T) {
 			Inputs: []*query.AnnotatedInput{
 				{AssetID: asset1.AssetID, AssetTags: &rawtags1, AssetIsLocal: true, AssetDefinition: &rawdef1},
 				{AssetID: asset2.AssetID, AssetTags: &rawtags2, AssetIsLocal: true, AssetDefinition: &empty},
-				{AssetID: bc.AssetID{0xba, 0xd0}, AssetTags: &empty, AssetDefinition: &empty},
+				{AssetID: bc.NewAssetID([32]byte{0xba, 0xd0}), AssetTags: &empty, AssetDefinition: &empty},
 			},
 			Outputs: []*query.AnnotatedOutput{
 				{AssetID: asset1.AssetID, AssetTags: &rawtags1, AssetIsLocal: true, AssetDefinition: &rawdef1},
 				{AssetID: asset2.AssetID, AssetTags: &rawtags2, AssetIsLocal: true, AssetDefinition: &empty},
-				{AssetID: bc.AssetID{0xba, 0xd0}, AssetTags: &empty, AssetDefinition: &empty},
+				{AssetID: bc.NewAssetID([32]byte{0xba, 0xd0}), AssetTags: &empty, AssetDefinition: &empty},
 			},
 		},
 	}

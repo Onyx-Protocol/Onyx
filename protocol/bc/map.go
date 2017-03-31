@@ -93,7 +93,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 
 				builder := vmutil.NewBuilder()
 				builder.AddData(oldIss.Nonce).AddOp(vm.OP_DROP)
-				builder.AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
+				builder.AddOp(vm.OP_ASSET).AddData(assetID.Bytes()).AddOp(vm.OP_EQUAL)
 
 				nonce := NewNonce(Program{VMVersion: 1, Code: builder.Program}, tr)
 				_, err = addEntry(nonce)

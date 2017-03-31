@@ -46,8 +46,8 @@ func TestBuild(t *testing.T) {
 	ctx := context.Background()
 
 	actions := []Action{
-		newControlProgramAction(bc.AssetAmount{AssetID: [32]byte{2}, Amount: 6}, []byte("dest")),
-		testAction(bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5}),
+		newControlProgramAction(bc.AssetAmount{AssetID: bc.NewAssetID([32]byte{2}), Amount: 6}, []byte("dest")),
+		testAction(bc.AssetAmount{AssetID: bc.NewAssetID([32]byte{1}), Amount: 5}),
 		&setTxRefDataAction{Data: []byte("xyz")},
 	}
 	expiryTime := time.Now().Add(time.Minute)
@@ -61,11 +61,11 @@ func TestBuild(t *testing.T) {
 			Version: 1,
 			MaxTime: bc.Millis(expiryTime),
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), [32]byte{1}, 5, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.NewAssetID([32]byte{1}), 5, 0, nil, bc.Hash{}, nil),
 			},
 			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput([32]byte{2}, 6, []byte("dest"), nil),
-				bc.NewTxOutput([32]byte{1}, 5, []byte("change"), nil),
+				bc.NewTxOutput(bc.NewAssetID([32]byte{2}), 6, []byte("dest"), nil),
+				bc.NewTxOutput(bc.NewAssetID([32]byte{1}), 5, []byte("change"), nil),
 			},
 			ReferenceData: []byte("xyz"),
 		}),
@@ -117,7 +117,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 		},
 	})
 
-	prog, err := vm.Assemble(fmt.Sprintf("MAXTIME 0x804cf05736 LESSTHAN VERIFY 0 0 5 0x%x 1 0x76a914c5d128911c28776f56baaac550963f7b88501dc388c0 CHECKOUTPUT", assetID[:]))
+	prog, err := vm.Assemble(fmt.Sprintf("MAXTIME 0x804cf05736 LESSTHAN VERIFY 0 0 5 0x%x 1 0x76a914c5d128911c28776f56baaac550963f7b88501dc388c0 CHECKOUTPUT", assetID.Bytes()))
 	h := sha3.Sum256(prog)
 	sig := privkey.Sign(h[:])
 	if err != nil {
@@ -428,56 +428,56 @@ func TestCheckBlankCheck(t *testing.T) {
 		want error
 	}{{
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 3, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{}, 3, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil),
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{1}, 5, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.NewAssetID([32]byte{1}), 5, 0, nil, bc.Hash{}, nil),
 			},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
 			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(bc.AssetID{0}, math.MaxInt64, nil, nil),
-				bc.NewTxOutput(bc.AssetID{0}, 7, nil, nil),
+				bc.NewTxOutput(bc.AssetID{}, math.MaxInt64, nil, nil),
+				bc.NewTxOutput(bc.AssetID{}, 7, nil, nil),
 			},
 		},
 		want: ErrBadAmount,
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil),
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{0}, math.MaxInt64, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, math.MaxInt64, 0, nil, bc.Hash{}, nil),
 			},
 		},
 		want: ErrBadAmount,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{}, 5, nil, nil)},
 		},
 		want: nil,
 	}, {
 		tx: &bc.TxData{
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{}, 5, nil, nil)},
 		},
 		want: nil,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{1}, 5, nil, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
+			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.NewAssetID([32]byte{1}), 5, nil, nil)},
 		},
 		want: nil,
 	}}
