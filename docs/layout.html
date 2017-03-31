@@ -101,6 +101,15 @@
   </div>
   <div id="doc-wrapper" tabindex="0">
     <article id="doc-content" class="{{.Filename}}">
+      <div id='version-alert' class='alert'>
+        <p>
+          <strong>Legacy documentation</strong>:
+          You are viewing version <span class='current'>CURRENT</span>;
+          the latest available is <strong class='latest'>LATEST</strong>.
+        </p>
+        <a href='' class='latest-link'>Go to latest →</a>
+      </div>
+
       {{.Body}}
 
       <footer>

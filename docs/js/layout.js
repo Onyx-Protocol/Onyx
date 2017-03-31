@@ -184,6 +184,14 @@ function loadVersionOptions() {
 			}
 			$('#version-select').append('<option ' + attributes + '>v' + version + '</option>')
 		})
+
+		if (resp[0] != currentVersion) {
+			var alert = $('#version-alert')
+			$('.current', alert).text(currentVersion)
+			$('.latest', alert).text(resp[0])
+			$('.latest-link', alert).attr('href', window.location.href.replace(currentVersion, resp[0]))
+			$('#version-alert').show()
+		}
 	})
 
 	$('#version-select').on('change', function(e) {

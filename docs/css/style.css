@@ -1399,3 +1399,8 @@ and (-webkit-min-device-pixel-ratio: 2) {
   -webkit-appearance: none;
   -moz-appearance: none;
 }
+
+#version-alert {
+  display: none;
+  margin-bottom: 30px;
+}
