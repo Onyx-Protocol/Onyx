@@ -5,12 +5,13 @@ import (
 	"time"
 
 	"chain/protocol/bc"
+	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 )
 
 func TestValidateBlock1(t *testing.T) {
 	b1 := newInitialBlock(t)
-	err := ValidateBlock(b1, nil, b1.ID, dummyValidateTx, false)
+	err := ValidateBlock(b1, nil, b1.ID, dummyValidateTx)
 	if err != nil {
 		t.Errorf("ValidateBlock(%v, nil) = %v, want nil", b1, err)
 	}
@@ -19,7 +20,7 @@ func TestValidateBlock1(t *testing.T) {
 func TestValidateBlock1Err(t *testing.T) {
 	b1 := newInitialBlock(t)
 	b1.Body.TransactionsRoot = bc.Hash{1} // make b1 be invalid
-	err := ValidateBlock(b1, nil, b1.ID, dummyValidateTx, false)
+	err := ValidateBlock(b1, nil, b1.ID, dummyValidateTx)
 	if err == nil {
 		t.Errorf("ValidateBlock(%v, nil) = nil, want error", b1)
 	}
@@ -28,7 +29,7 @@ func TestValidateBlock1Err(t *testing.T) {
 func TestValidateBlock2(t *testing.T) {
 	b1 := newInitialBlock(t)
 	b2 := generate(t, b1)
-	err := ValidateBlock(b2, b1, b2.ID, dummyValidateTx, false)
+	err := ValidateBlock(b2, b1, b2.ID, dummyValidateTx)
 	if err != nil {
 		t.Errorf("ValidateBlock(%v, %v) = %v, want nil", b2, b1, err)
 	}
@@ -38,9 +39,28 @@ func TestValidateBlock2Err(t *testing.T) {
 	b1 := newInitialBlock(t)
 	b2 := generate(t, b1)
 	b2.Body.TransactionsRoot = bc.Hash{1} // make b2 be invalid
-	err := ValidateBlock(b2, b1, b2.ID, dummyValidateTx, false)
+	err := ValidateBlock(b2, b1, b2.ID, dummyValidateTx)
 	if err == nil {
 		t.Errorf("ValidateBlock(%v, %v) = nil, want error", b2, b1)
+	}
+}
+
+func TestValidateBlockSig2(t *testing.T) {
+	b1 := newInitialBlock(t)
+	b2 := generate(t, b1)
+	err := ValidateBlockSig(b2, b1)
+	if err != nil {
+		t.Errorf("ValidateBlockSig(%v, %v) = %v, want nil", b2, b1, err)
+	}
+}
+
+func TestValidateBlockSig2Err(t *testing.T) {
+	b1 := newInitialBlock(t)
+	b1.Body.NextConsensusProgram = []byte{byte(vm.OP_FALSE)} // make b1 be invalid
+	b2 := generate(t, b1)
+	err := ValidateBlockSig(b2, b1)
+	if err == nil {
+		t.Errorf("ValidateBlockSig(%v, %v) = nil, want error", b2, b1)
 	}
 }
 
