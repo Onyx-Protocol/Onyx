@@ -121,7 +121,7 @@ func (c *Chain) ValidateBlock(block, prev *bc.Block) error {
 		return errors.Sub(ErrBadBlock, err)
 	}
 	if block.Height > 1 {
-		err = validation.ValidateBlockSig(blockEnts, prevEnts)
+		err = validation.ValidateBlockSig(blockEnts, prevEnts.Body.NextConsensusProgram)
 	}
 	return errors.Sub(ErrBadBlock, err)
 }

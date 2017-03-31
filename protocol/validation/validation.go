@@ -376,9 +376,9 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 	return nil
 }
 
-// ValidateBlockSig runs the consensus program from prev on b.
-func ValidateBlockSig(b, prev *bc.BlockEntries) error {
-	vmContext := NewBlockVMContext(b, prev.Body.NextConsensusProgram, b.Witness.Arguments)
+// ValidateBlockSig runs the consensus program prog on b.
+func ValidateBlockSig(b *bc.BlockEntries, prog []byte) error {
+	vmContext := NewBlockVMContext(b, prog, b.Witness.Arguments)
 	err := vm.Verify(vmContext)
 	return errors.Wrap(err, "evaluating previous block's next consensus program")
 }

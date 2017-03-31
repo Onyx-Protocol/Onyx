@@ -48,7 +48,7 @@ func TestValidateBlock2Err(t *testing.T) {
 func TestValidateBlockSig2(t *testing.T) {
 	b1 := newInitialBlock(t)
 	b2 := generate(t, b1)
-	err := ValidateBlockSig(b2, b1)
+	err := ValidateBlockSig(b2, b1.Body.NextConsensusProgram)
 	if err != nil {
 		t.Errorf("ValidateBlockSig(%v, %v) = %v, want nil", b2, b1, err)
 	}
@@ -56,9 +56,9 @@ func TestValidateBlockSig2(t *testing.T) {
 
 func TestValidateBlockSig2Err(t *testing.T) {
 	b1 := newInitialBlock(t)
-	b1.Body.NextConsensusProgram = []byte{byte(vm.OP_FALSE)} // make b2 be invalid
 	b2 := generate(t, b1)
-	err := ValidateBlockSig(b2, b1)
+	prog := []byte{byte(vm.OP_FALSE)} // make b2 be invalid
+	err := ValidateBlockSig(b2, prog)
 	if err == nil {
 		t.Errorf("ValidateBlockSig(%v, %v) = nil, want error", b2, b1)
 	}
