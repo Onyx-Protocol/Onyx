@@ -20,9 +20,9 @@ func (a AssetID) Value() (driver.Value, error)  { return Hash(a).Value() }
 func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 
 type AssetDefinition struct {
-	InitialBlockID  Hash
+	InitialBlockID  *Hash
 	IssuanceProgram Program
-	Data            Hash
+	Data            *Hash
 }
 
 func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
@@ -33,7 +33,7 @@ func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
 	return assetID
 }
 
-func ComputeAssetID(prog []byte, initialBlockID Hash, vmVersion uint64, data Hash) AssetID {
+func ComputeAssetID(prog []byte, initialBlockID *Hash, vmVersion uint64, data *Hash) AssetID {
 	def := &AssetDefinition{
 		InitialBlockID: initialBlockID,
 		IssuanceProgram: Program{

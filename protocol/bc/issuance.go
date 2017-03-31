@@ -22,19 +22,22 @@ func (ii *IssuanceInput) AssetID() AssetID {
 	return ComputeAssetID(ii.IssuanceProgram, ii.InitialBlock, ii.VMVersion, ii.AssetDefinitionHash())
 }
 
-func (ii *IssuanceInput) AssetDefinitionHash() (defhash Hash) {
+func (ii *IssuanceInput) AssetDefinitionHash() *Hash {
 	sha := sha3pool.Get256()
 	defer sha3pool.Put256(sha)
+	var b32 [32]byte
 	sha.Write(ii.AssetDefinition)
-	sha.Read(defhash[:])
-	return
+	sha.Read(b32[:])
+	defhash = new(Hash)
+	defhash.FromByte32(b32)
+	return defhash
 }
 
 func NewIssuanceInput(
 	nonce []byte,
 	amount uint64,
 	referenceData []byte,
-	initialBlock Hash,
+	initialBlock *Hash,
 	issuanceProgram []byte,
 	arguments [][]byte,
 	assetDefinition []byte,

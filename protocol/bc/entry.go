@@ -34,7 +34,7 @@ var errInvalidValue = errors.New("invalid value")
 
 // EntryID computes the identifier of an entry, as the hash of its
 // body plus some metadata.
-func EntryID(e Entry) (hash Hash) {
+func EntryID(e Entry) (hash *Hash) {
 	if e == nil {
 		return hash
 	}
@@ -58,12 +58,17 @@ func EntryID(e Entry) (hash Hash) {
 	if err != nil {
 		panic(err)
 	}
-	var innerHash Hash
+	var innerHash [32]byte
 	bh.Read(innerHash[:])
 	hasher.Write(innerHash[:])
 
-	hasher.Read(hash[:])
-	return hash
+	var (
+		hash Hash
+		b32 [32]byte
+	)
+	hasher.Read(b32[:])
+	hash.FromByte32(b32)
+	return &hash
 }
 
 // writeForHash serializes the object c to the writer w, from which
@@ -90,8 +95,13 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
 		return errors.Wrapf(err, "writing string (len %d) for hash", len(v))
-	case Hash:
-		_, err := w.Write(v[:])
+	case *Hash:
+		var b32 [32]byte
+		// Treat nil as the zero hash.
+		if v != nil {
+			b32 = v.Byte32()
+		}
+		_, err := w.Write(b32[:])
 		return errors.Wrap(err, "writing Hash for hash")
 	case AssetID:
 		_, err := w.Write(v[:])

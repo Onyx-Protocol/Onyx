@@ -27,7 +27,7 @@ var assetIDSink AssetID
 
 func BenchmarkComputeAssetID(b *testing.B) {
 	var (
-		initialBlockHash [32]byte
+		initialBlockHash = new(Hash)
 		issuanceScript   = []byte{5}
 	)
 

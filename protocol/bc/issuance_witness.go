@@ -1,7 +1,7 @@
 package bc
 
 type IssuanceWitness struct {
-	InitialBlock    Hash
+	InitialBlock    *Hash
 	AssetDefinition []byte
 	VMVersion       uint64
 	IssuanceProgram []byte

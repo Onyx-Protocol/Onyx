@@ -6,10 +6,10 @@ package bc
 // (Not to be confused with the deprecated type IssuanceInput.)
 type Issuance struct {
 	Body struct {
-		AnchorID Hash
+		AnchorID *Hash
 		Value    AssetAmount
-		Data     Hash
-		ExtHash  Hash
+		Data     *Hash
+		ExtHash  *Hash
 	}
 	ordinal int
 
@@ -17,7 +17,7 @@ type Issuance struct {
 		Destination     ValueDestination
 		AssetDefinition AssetDefinition
 		Arguments       [][]byte
-		AnchoredID      Hash
+		AnchoredID      *Hash
 	}
 
 	// Anchor is a pointer to the manifested entry corresponding to
@@ -34,7 +34,7 @@ func (iss *Issuance) body() interface{} { return iss.Body }
 
 func (iss Issuance) Ordinal() int { return iss.ordinal }
 
-func (iss *Issuance) SetDestination(id Hash, val AssetAmount, pos uint64, e Entry) {
+func (iss *Issuance) SetDestination(id *Hash, val AssetAmount, pos uint64, e Entry) {
 	iss.Witness.Destination = ValueDestination{
 		Ref:      id,
 		Value:    val,
@@ -44,7 +44,7 @@ func (iss *Issuance) SetDestination(id Hash, val AssetAmount, pos uint64, e Entr
 }
 
 // NewIssuance creates a new Issuance.
-func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issuance {
+func NewIssuance(anchor Entry, value AssetAmount, data *Hash, ordinal int) *Issuance {
 	iss := new(Issuance)
 	iss.Body.AnchorID = EntryID(anchor)
 	iss.Anchor = anchor

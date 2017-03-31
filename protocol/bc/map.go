@@ -9,7 +9,7 @@ import (
 	"chain/protocol/vmutil"
 )
 
-func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, err error) {
+func mapTx(tx *TxData) (headerID *Hash, hdr *TxHeader, entryMap map[Hash]Entry, err error) {
 	entryMap = make(map[Hash]Entry)
 
 	addEntry := func(e Entry) (id Hash, err error) {
@@ -204,7 +204,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 	return headerID, h, entryMap, nil
 }
 
-func mapBlockHeader(old *BlockHeader) (bhID Hash, bh *BlockHeaderEntry) {
+func mapBlockHeader(old *BlockHeader) (bhID *Hash, bh *BlockHeaderEntry) {
 	bh = NewBlockHeaderEntry(old.Version, old.Height, old.PreviousBlockHash, old.TimestampMS, old.TransactionsMerkleRoot, old.AssetsMerkleRoot, old.ConsensusProgram)
 	bh.Witness.Arguments = old.Witness
 	bhID = EntryID(bh)
