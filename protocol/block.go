@@ -114,15 +114,16 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 // to a snapshot (with ApplyValidBlock) and committing it to the
 // blockchain (with CommitAppliedBlock).
 func (c *Chain) ValidateBlock(block, prev *bc.Block) error {
-	return validateBlock(block, prev, c.InitialBlockHash, c.ValidateTx, true)
-}
-
-func validateBlock(block, prev *bc.Block, initialBlockHash bc.Hash, validateTx func(*bc.TxEntries) error, runProg bool) error {
-	err := validation.ValidateBlock(bc.MapBlock(block), bc.MapBlock(prev), initialBlockHash, validateTx, runProg)
+	blockEnts := bc.MapBlock(block)
+	prevEnts := bc.MapBlock(prev)
+	err := validation.ValidateBlock(blockEnts, prevEnts, c.InitialBlockHash, c.ValidateTx)
 	if err != nil {
 		return errors.Sub(ErrBadBlock, err)
 	}
-	return nil
+	if block.Height > 1 {
+		err = validation.ValidateBlockSig(blockEnts, prevEnts.Body.NextConsensusProgram)
+	}
+	return errors.Sub(ErrBadBlock, err)
 }
 
 // ApplyValidBlock creates an updated snapshot without validating the
@@ -224,7 +225,8 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 		}
 	}
 
-	return validateBlock(block, prev, c.InitialBlockHash, c.ValidateTx, false)
+	err := validation.ValidateBlock(bc.MapBlock(block), bc.MapBlock(prev), c.InitialBlockHash, c.ValidateTx)
+	return errors.Sub(ErrBadBlock, err)
 }
 
 func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {

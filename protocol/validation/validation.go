@@ -376,15 +376,21 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 	return nil
 }
 
+// ValidateBlockSig runs the consensus program prog on b.
+func ValidateBlockSig(b *bc.BlockEntries, prog []byte) error {
+	vmContext := NewBlockVMContext(b, prog, b.Witness.Arguments)
+	err := vm.Verify(vmContext)
+	return errors.Wrap(err, "evaluating previous block's next consensus program")
+}
+
 // ValidateBlock validates a block and the transactions within.
-// The consensus program is executed only if prev is non-nil and
-// runProg is true.
-func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, validateTx func(*bc.TxEntries) error, runProg bool) error {
+// It does not run the consensus program; for that, see ValidateBlockSig.
+func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, validateTx func(*bc.TxEntries) error) error {
 	if b.Body.Height > 1 {
 		if prev == nil {
 			return errors.WithDetailf(errNoPrevBlock, "height %d", b.Body.Height)
 		}
-		err := validateBlockAgainstPrev(b, prev, runProg)
+		err := validateBlockAgainstPrev(b, prev)
 		if err != nil {
 			return err
 		}
@@ -424,7 +430,7 @@ func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, validateTx 
 	return nil
 }
 
-func validateBlockAgainstPrev(b, prev *bc.BlockEntries, runProg bool) error {
+func validateBlockAgainstPrev(b, prev *bc.BlockEntries) error {
 	if b.Body.Version < prev.Body.Version {
 		return errors.WithDetailf(errVersionRegression, "previous block verson %d, current block version %d", prev.Body.Version, b.Body.Version)
 	}
@@ -436,13 +442,6 @@ func validateBlockAgainstPrev(b, prev *bc.BlockEntries, runProg bool) error {
 	}
 	if b.Body.TimestampMS <= prev.Body.TimestampMS {
 		return errors.WithDetailf(errMisorderedBlockTime, "previous block time %d, current block time %d", prev.Body.TimestampMS, b.Body.TimestampMS)
-	}
-	if runProg {
-		vmContext := NewBlockVMContext(b, prev.Body.NextConsensusProgram, b.Witness.Arguments)
-		err := vm.Verify(vmContext)
-		if err != nil {
-			return errors.Wrap(err, "evaluating previous block's next consensus program")
-		}
 	}
 	return nil
 }
