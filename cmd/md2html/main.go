@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/russross/blackfriday"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,12 +15,12 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/russross/blackfriday"
+	"text/template"
 )
 
-var layoutPlaceholder = []byte("{{Body}}")
-var documentNamePlaceholder = []byte("{{Filename}}")
+var layoutPlaceholder = []byte("{{.Body}}")
+
+// var documentNamePlaceholder = []byte("{{Filename}}")
 
 var extToLang = map[string]string{
 	"java": "Java",
@@ -66,13 +67,7 @@ func serve(addr string) {
 			err error
 		)
 		for _, p := range paths {
-			if strings.HasSuffix(p, ".md") {
-				b, err = renderMarkdown(p)
-			} else if strings.HasSuffix(p, ".partial.html") {
-				b, err = renderHTML(p)
-			} else {
-				b, err = ioutil.ReadFile(p)
-			}
+			b, err = renderFile(p)
 
 			if err == nil {
 				break
@@ -112,17 +107,13 @@ func convert(dest string) error {
 
 		if strings.HasSuffix(f.Name(), ".md") {
 			destFile = strings.TrimSuffix(destFile, ".md")
-			output, err = renderMarkdown(path)
 		} else if strings.HasSuffix(f.Name(), ".partial.html") {
 			destFile = strings.TrimSuffix(destFile, ".partial.html")
-			output, err = renderHTML(path)
 		} else if strings.HasSuffix(f.Name(), ".html") {
 			destFile = strings.TrimSuffix(destFile, ".html")
-			output, err = ioutil.ReadFile(path)
-		} else {
-			output, err = ioutil.ReadFile(path)
 		}
 
+		output, err = renderFile(path)
 		if err != nil {
 			return err
 		}
@@ -147,47 +138,61 @@ func convert(dest string) error {
 	})
 }
 
-func renderHTML(path string) ([]byte, error) {
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	html, err := layout(path)
-	if err != nil {
-		return nil, err
-	}
-
-	html = bytes.Replace(html, layoutPlaceholder, content, 1)
-	return html, nil
-}
-
 func printe(err error) {
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func renderMarkdown(f string) ([]byte, error) {
-	src, err := ioutil.ReadFile(f)
+func renderFile(p string) ([]byte, error) {
+	content, err := ioutil.ReadFile(p)
 	if err != nil {
 		return nil, err
 	}
 
-	src = interpolateCode(src, path.Dir(f))
+	if strings.HasSuffix(p, ".md") {
+		content, err = renderMarkdown(p, content)
+	} else if strings.HasSuffix(p, ".partial.html") {
+		content, err = renderLayout(p, content)
+	} else if strings.HasSuffix(p, ".html") {
+		content, err = renderTemplate(p, []byte{}, content)
+	}
 
-	html, err := layout(f)
+	return content, nil
+}
+
+func renderTemplate(p string, content []byte, layout []byte) ([]byte, error) {
+	pathClass := strings.Replace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(p, "./"), "../"), ".md"), "/", "_", -1)
+	substitution := struct {
+		Body        string
+		Filename    string
+		Version     string
+		VersionPath string
+	}{string(content), pathClass, "1.1", "1.1/"}
+
+	layoutTemplate, err := template.New(p).Parse(string(layout))
+	if err != nil {
+		return nil, err
+	}
+	var x bytes.Buffer
+	err = layoutTemplate.Execute(&x, substitution)
 	if err != nil {
 		return nil, err
 	}
 
+	return x.Bytes(), nil
+}
+
+func renderMarkdown(p string, src []byte) ([]byte, error) {
+	src = interpolateCode(src, path.Dir(p))
 	src = preprocessLocalLinks(src)
 	src = markdown(src)
 	src = formatSidenotes(src)
 
-	html = bytes.Replace(html, layoutPlaceholder, src, 1)
-	pathClass := strings.Replace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(f, "./"), "../"), ".md"), "/", "_", -1)
-	html = bytes.Replace(html, documentNamePlaceholder, []byte(pathClass), -1)
+	html, err := renderLayout(p, src)
+	if err != nil {
+		return nil, err
+	}
 
 	return html, nil
 }
@@ -197,18 +202,21 @@ func renderMarkdown(f string) ([]byte, error) {
 // working directory.
 // If no layout.html file is found layoutPlaceholder is returned
 // as a default layout.
-func layout(p string) ([]byte, error) {
+func renderLayout(p string, content []byte) ([]byte, error) {
 	// Don't search for layouts beyond the working dir
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 
+	layout := layoutPlaceholder
+
 	for {
 		p = path.Dir(p)
 		l, err := ioutil.ReadFile(p + "/layout.html")
 		if err == nil {
-			return l, nil
+			layout = l
+			break
 		}
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -219,7 +227,7 @@ func layout(p string) ([]byte, error) {
 		}
 	}
 
-	return layoutPlaceholder, nil
+	return renderTemplate(p, content, layout)
 }
 
 func interpolateCode(md []byte, hostPath string) []byte {
