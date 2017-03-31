@@ -19,7 +19,7 @@
 
 ## Introduction
 
-This is a simple deterministic key derivation scheme useful for digital signatures and Diffie-Hellman key exchange.
+ChainKD is a deterministic key derivation scheme useful for digital signatures and Diffie-Hellman key exchange.
 
 Features:
 
@@ -216,6 +216,19 @@ We believe the scheme is equivalent to RFC6979 that derives the nonce by hashing
 
 In our experience index-based derivation is not always convenient and can be extended to longer selectors only through additional derivation levels which is less efficient (e.g. 128-bit selectors would require 5 scalar multiplications in BIP32). However, users are free to use integer selectors by simply encoding them as 32-bit or 64-bit integers and passing to ChainKD. If you need to mix integer- and string-based indexing, you could prepend a type byte or use a standard encoding such as [Protocol Buffers](https://developers.google.com/protocol-buffers/) or [JSON](http://www.json.org).
 
+**What is spice?**
+
+**Spice** is a combination of **salt** and **pepper**: right 32 bytes of the extended private key consist of the 1 byte of pepper and 31 bytes of salt.
+
+**What is salt?**
+
+**Salt** is non-secret additional entropy stored in extended private and public keys that ensures that a derived key does not depend solely on the parent key.
+
+**What is pepper?**
+
+In ChainKD **pepper** is additional secret 8 bits of entropy (as opposed to non-secret **salt** which is part of the extended public key). Pepper is used to improve entropy of the nonce derived from the private key to match security guarantee of EdDSA.
+
+
 
 ## Security
 
@@ -252,17 +265,27 @@ We set 6 bits in the secret 256 bits of a 512-bit root extended key. Therefore, 
 
 ### Hardened derivation security
 
-Private keys derived using hardened derivation have 6 bits set. Therefore, the extended private key requires an order of 2<sup>250</sup> attempts by brute-force.
+Private keys derived using hardened derivation have 6 bits set, just like the root key. Therefore, an extended private key requires an order of 2<sup>250</sup> attempts by brute-force.
 
-### Child key collisions
+### Non-hardened derivation security
 
-TBD: collisions require order of 2<sup>115</sup> derived keys
+Non-hardened derivation consist of adding scalars less that 2<sup>230</sup> (multiplied by 8) to a root private key. The resulting keys have the entropy of the root key (250 bits), but the number of possible public keys is reduced to 2<sup>230</sup> to allow large number of derivation levels. This means collisions of public keys are expected after deriving 2<sup>115</sup> keys.
 
-TBD: High bits as per EdDSA
+### Secret scalar compatibility
 
-TBD: Hardened derivation resets depth limit
+EdDSA requires specific values for 5 bits of the secret scalar: lower 3 bits must be zero, higher 2 bits must be 1 and 0.
 
-TBD: 
+By setting high three bits of a root key (or hardened private key) to `010` and low three bits to `000`, that key has form `r = 2^254 + 8·k`, where `k < 2^250`. Each derived key `f` is generated from 230 bits and therefore less than `2^230`. Non-hardened scalar at level `i` is less than `2^254 + 2^253 + i·8·2^230`. Since the maximum depth is 2<sup>20</sup>, `i ≤ 2^20`, secret scalars at all levels are less than `2^254 + 2^253 + 2^252` and at the same divisible by 8. 
+
+TBD: i think we need to shave off 1 more bit from 29-byte fbuffer to avoid overflow at level 2^20.
+
+We will note that the depth limit is effectively reset at each level where hardened derivation is used.
+
+### Nonce entropy
+
+EdDSA derives a 64-byte private key (consisting of a secret scalar and a prefix used to generate a nonce) from 256 bits of entropy. In ChainKD extended private key carries the secret scalar as-is, together with 1 byte of _pepper_ (secret entropy) and 31 bytes of _salt_ (non-secret entropy). The 64-byte private key as required by EdDSA consists of a secret scalar (unmodified) and additional 32 bytes of _prefix_ used to generate nonce for the signature. 
+
+In ChainKD that prefix is derived non-linearly from the extended private key, having combined entropy of both the secret scalar (250 bits) and pepper (8 bits). Additional bits of pepper therefore ensure that the nonce has at least 256 bits of randomness. While the prefix is not derived in parallel to secret scalar, the construction is similar to the one in [RFC6979](https://tools.ietf.org/html/rfc6979) where nonce is also computed from a secret scalar and a message.
 
 
 
@@ -338,7 +361,7 @@ All values use hexadecimal encoding.
 
 ## Acknowledgements
 
-We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous version of this scheme and their proposal [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA) which also takes into account safe use of derived keys in ECDH.
+We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous version of this scheme and their proposal [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA) where derived keys are also safe to use in ECDH implementations using Montgomery Ladder.
 
 
 ## References
