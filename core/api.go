@@ -14,6 +14,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/config"
+	"chain/core/fetch"
 	"chain/core/generator"
 	"chain/core/leader"
 	"chain/core/pin"
@@ -72,6 +73,9 @@ type API struct {
 	generator       *generator.Generator
 	remoteGenerator *rpc.Client
 	indexTxs        bool
+
+	downloadingSnapshotMu sync.Mutex
+	downloadingSnapshot   *fetch.SnapshotProgress
 
 	healthMu     sync.Mutex
 	healthErrors map[string]interface{}

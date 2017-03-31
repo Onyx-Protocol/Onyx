@@ -193,7 +193,15 @@ func (a *API) lead(ctx context.Context) {
 		// If don't have any blocks, bootstrap from the generator's
 		// latest snapshot.
 		if a.chain.Height() == 0 {
-			fetch.BootstrapSnapshot(ctx, a.chain, a.store, a.remoteGenerator, a.healthSetter("fetch"))
+			sp := fetch.BootstrapSnapshot(ctx, a.chain, a.store, a.remoteGenerator, a.healthSetter("fetch"))
+
+			// Save the downloading snapshot to the api so that /info can
+			// return its current status.
+			a.downloadingSnapshotMu.Lock()
+			a.downloadingSnapshot = sp
+			a.downloadingSnapshotMu.Unlock()
+			// Wait for the snapshot download to finish before continuing.
+			sp.Wait()
 		}
 	}
 
@@ -220,6 +228,12 @@ func (a *API) lead(ctx context.Context) {
 	if a.config.IsGenerator {
 		go a.generator.Generate(ctx, blockPeriod, a.healthSetter("generator"), recoveredBlock, recoveredSnapshot)
 	} else {
+		// Remove the downloading snapshot if there was one. The core
+		// has recovered and will now start syncing blocks.
+		a.downloadingSnapshotMu.Lock()
+		a.downloadingSnapshot = nil
+		a.downloadingSnapshotMu.Unlock()
+
 		go fetch.Fetch(ctx, a.chain, a.remoteGenerator, a.healthSetter("fetch"), recoveredBlock, recoveredSnapshot)
 	}
 	go a.accounts.ProcessBlocks(ctx)
