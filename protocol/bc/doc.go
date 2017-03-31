@@ -11,12 +11,12 @@ rationale for this change is that it is considerably more extensible,
 and it allows future scripting tools to traverse and access
 transaction data by making all components hash-addressable.
 
-Hashing (of the old types) is redefined to mean "convert to the new
-data structures and hash that."
+Hashing and validation (of the old types) are redefined to mean
+"convert to the new data structures and hash/validate that."
 
-Shortly, validation will happen on the new data structures too, and
-soon after that, the old structures will be retired entirely. These
-changes will be made in a compatible way; in particular, block and
-transaction hashes will not change.
+Soon the old structures will be retired entirely.
+
+These changes will be made in a compatible way; in particular, block
+and transaction hashes will not change.
 */
 package bc
