@@ -291,7 +291,7 @@ In ChainKD that prefix is derived non-linearly from the extended private key, ha
 
 All values use hexadecimal encoding.
 
-### ChainKD2 test vector 1
+### ChainKD test vector 1
 
     Master:
         seed:     010203
@@ -324,7 +324,7 @@ All values use hexadecimal encoding.
         xpub:     TBD
 
 
-### ChainKD2 test vector 2
+### ChainKD test vector 2
 
     Master:
         seed:     fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542
@@ -359,7 +359,7 @@ All values use hexadecimal encoding.
 
 ## Acknowledgements
 
-We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous version of this scheme and their proposal [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA) where derived keys are also safe to use in ECDH implementations using Montgomery Ladder.
+We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous version of this scheme and their proposal [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA) where derived keys are also safe to use in ECDH implementations using Montgomery Ladder. We improve on their proposal further by slighly reducing collision probability of child keys, reducing size of xprv from 96 to 64 bytes and using extensible output hash function SHAKE128 instead of HMAC-SHA512.
 
 
 ## References
