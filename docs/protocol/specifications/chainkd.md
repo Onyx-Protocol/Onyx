@@ -19,25 +19,24 @@
 
 ## Introduction
 
-ChainKD is a deterministic key derivation scheme useful for digital signatures and Diffie-Hellman key exchange.
+**ChainKD** is a deterministic key derivation scheme. Generated keys are compatible with EdDSA signature scheme and Diffie-Hellman key exchange.
 
 Features:
 
 1. Scheme is fully deterministic and allows producing complex hierarchies of keys from a single high-entropy seed.
 2. Derive private keys from extended private keys using “hardened derivation”.
 3. Derive public keys independently from private keys using “non-hardened derivation”.
-4. Hardened and non-hardened public keys and signatures are compatible with [EdDSA](https://tools.ietf.org/html/rfc8032) specification. Specifically, private keys are 64-byte raw secret keys used in [NaCl](https://nacl.cr.yp.to/sign.html) function `crypto_sign`.
-5. Variable-length string selectors instead of fixed-length integer indexes.
+4. Hardened and non-hardened public keys and signatures are compatible with [EdDSA](https://tools.ietf.org/html/rfc8032) specification. Private keys are 64-byte raw secret keys, the format used in [NaCl](https://nacl.cr.yp.to/sign.html) function `crypto_sign`.
+5. Variable-length string selectors instead of fixed-length 31-bit integer indices.
 6. Short 64-byte extended public and private keys without special encoding.
-7. No metadata: an extended key carries only an additional 32-byte salt to avoid having the derivation function depend only on the key itself.
+7. No metadata: an extended key carries only an additional 32-byte salt that allows sharing public key without revealing child public keys.
 8. Privacy: extended key does not reveal neither its place in the hierarchy, nor the manner of derivation (hardened or non-hardened).
 
 Limitations:
 
-1. Depth of non-hardened derivation is limited to 2<sup>20</sup>.
+1. Depth of non-hardened derivation is limited to 2<sup>20</sup> (more than million levels).
 2. Number of distinct root keys or hardened public keys is 2<sup>250</sup>, half of the keyspace allowed in EdDSA.
-3. Number of distinct non-hardened public keys is 2<sup>230</sup> (reduced to keep compatibility with ECDH use and allow a comfortably large number of derivation levels).
-4. Entropy of the nonce for any derived key is at least 2<sup>250</sup> which is 4 times lower than nonce in EdDSA.
+3. Number of distinct non-hardened public keys is 2<sup>230</sup> (reduced to allow a comfortably large number of derivation levels while keeping strict compatibility with EdDSA and ECDH).
 
 
 ## Definitions
@@ -52,7 +51,7 @@ Limitations:
 
 **Extended public key** (aka “xpub”) is a 64-byte string representing a key that can be used for deriving *child extended public keys*.
 
-**EdDSA secret key** (aka “sk”) is a 64-byte string representing a raw secret key used for creating EdDSA signatures (consists of 32-byte scalar and 32-byte “prefix”).
+**EdDSA secret key** (aka “sk”) is a 64-byte string representing a raw secret key used for creating EdDSA signatures (consists of 32-byte scalar and 32-byte “prefix”). This is the format used by `crypto_sign` function in [NaCl](https://nacl.cr.yp.to/sign.html) library.
 
 **EdDSA public key** (aka “pk”) is a 32-byte string representing encoding of an elliptic curve point on Ed25519 as defined in EdDSA ([RFC 8032](https://tools.ietf.org/html/rfc8032)).
 
@@ -98,7 +97,7 @@ Limitations:
 **Output:** `xprv’`, the derived extended public key.
 
 1. Split `xprv` in two parts: 32-byte `privkey` and 32-byte `spice`.
-2. Compute `K = Hash(0x00 || privkey || spice || selector, 64)`.
+2. Compute `K = Hash("H" || privkey || spice || selector, 64)`.
 3. Split `K` in two parts: 32-byte `buf` and 32-byte `spice’`.
 4. Clear the third highest bit of the last byte of `buf`.
 5. [Generate scalar](#generate-scalar) `s’` from buffer `buf`.
@@ -120,12 +119,12 @@ Limitations:
 3. Perform a fixed-base scalar multiplication `P = s·B` where `B` is a base point of Ed25519.
 4. [Encode](#encode-public-key) point `P` as `pubkey`.
 5. Compute `salt` as `spice` with the first byte set to zero.
-6. Compute `F = Hash(0x01 || pubkey || salt || selector, 61)`.
+6. Compute `F = Hash("N" || pubkey || salt || selector, 61)`.
 7. Split `F` in two parts: 29-byte `fbuffer` and 32-byte `salt’`.
 8. Clear top 2 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
 9. Compute derived secret scalar `s’ = (s + 8·f) mod L` (where `L` is the group order of base point `B`).
 10. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
-11. Compute `pepper’ = Hash(0x02 || xprv || selector, 1)`.
+11. Compute `pepper’ = Hash("P" || xprv || selector, 1)`.
 12. Compute `spice’` as `salt’` with the first byte set to `pepper’`.
 13. Return `xprv’ = privkey’ || spice’`.
 
@@ -140,7 +139,7 @@ Limitations:
 **Output:** `xpub’`, the derived extended public key.
 
 1. Split `xpub` in two parts: 32-byte `pubkey` and 32-byte `salt`.
-2. Compute `F = Hash(0x01 || pubkey || salt || selector, 61)`.
+2. Compute `F = Hash("N" || pubkey || salt || selector, 61)`.
 3. Split `F` in two parts: 29-byte `fbuffer` and 32-byte `salt’`.
 4. Clear top 2 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
 5. Perform a fixed-base scalar multiplication `F = f·B` where `B` is a base point of Ed25519.
@@ -167,7 +166,7 @@ Resulting 32-byte public key can be used to verify EdDSA signature created by a 
 
 **Output:** `secretkey`, a 64-byte [EdDSA](https://tools.ietf.org/html/rfc8032) secret key.
 
-1. Compute 32-byte hash `ext = Hash(0x03 || xprv, 32)`.
+1. Compute 32-byte hash `ext = Hash("X" || xprv, 32)`.
 2. Extract `privkey` as first 32 bytes of `xprv`.
 3. Return `secretkey = privkey || ext`.
 
@@ -222,11 +221,11 @@ In our experience index-based derivation is not always convenient and can be ext
 
 **What is salt?**
 
-**Salt** is non-secret additional entropy stored in extended private and public keys that ensures that a derived key does not depend solely on the parent key.
+**Salt** is an additional entropy stored in extended private and public keys that allows sharing public key without giving access to the child keys. Salt effectively is an access key to derivation.
 
 **What is pepper?**
 
-In ChainKD **pepper** is additional secret 8 bits of entropy (as opposed to non-secret **salt** which is part of the extended public key). Pepper is used to improve entropy of the nonce derived from the private key to match security guarantee of EdDSA.
+In present scheme **pepper** is a secret byte stored only in xprv and erased from the xpub. Pepper is used to improve entropy of the nonce derived from the private key to match security guarantee of EdDSA.
 
 
 
@@ -269,17 +268,16 @@ Private keys derived using hardened derivation have 6 bits set, just like the ro
 
 ### Non-hardened derivation security
 
-Non-hardened derivation consist of adding scalars less that 2<sup>230</sup> (multiplied by 8) to a root private key. The resulting keys have the entropy of the root key (250 bits), but the number of possible public keys is reduced to 2<sup>230</sup> to allow large number of derivation levels. This means collisions of public keys are expected after deriving 2<sup>115</sup> keys.
+Non-hardened derivation consist of adding scalars less that 2<sup>230</sup> (multiplied by 8) to a root private key. The resulting keys have the entropy of the root key (250 bits), but the number of possible public keys is reduced to 2<sup>230</sup> to allow large number of derivation levels. This means collisions of public keys are expected after deriving 2<sup>115</sup> keys. We note that increased probability of collisions does not reduce security of EdDSA signatures or ECDH key exchange; it only marginally reduces unlinkability safety in privacy schemes based on one-time keys.
+
 
 ### Secret scalar compatibility
 
 EdDSA requires specific values for 5 bits of the secret scalar: lower 3 bits must be zero, higher 2 bits must be 1 and 0.
 
-By setting high three bits of a root key (or hardened private key) to `010` and low three bits to `000`, that key has form `r = 2^254 + 8·k`, where `k < 2^250`. Each derived key `f` is generated from 230 bits and therefore less than `2^230`. Non-hardened scalar at level `i` is less than `2^254 + 2^253 + i·8·2^230`. Since the maximum depth is 2<sup>20</sup>, `i ≤ 2^20`, secret scalars at all levels are less than `2^254 + 2^253 + 2^252` and at the same divisible by 8. 
+By setting high three bits of a root key (or hardened private key) to `010` and low three bits to `000`, that key has form `r = 2^254 + 8·k`, where maximum value  of `k` is `2^250 - 1`. Each non-hardened derived scalar `f` is generated from 230 bits and has maximum value `2^230 - 1`. Therefore a key at level `i` has maximum value `2^254 + 2^253 - 8 + i·8·(2^230 - 1)`. Since the maximum `i` equals `2^20`, maximum value of any key is `2^255 - 2^23 - 8`. Overally, any key is less than `2^255`, larger than `2^254` and divisible by 8 as required by EdDSA. 
 
-TBD: i think we need to shave off 1 more bit from 29-byte fbuffer to avoid overflow at level 2^20.
-
-We will note that the depth limit is effectively reset at each level where hardened derivation is used.
+The depth limit is reset at each level where hardened derivation is used.
 
 ### Nonce entropy
 
