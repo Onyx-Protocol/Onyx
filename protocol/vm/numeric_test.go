@@ -446,13 +446,6 @@ func TestNumericOps(t *testing.T) {
 			deferredCost: -18,
 			dataStack:    [][]byte{{1}},
 		},
-	}, {
-		op: OP_WITHIN,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{1}, {2}},
-		},
-		wantErr: ErrDataStackUnderflow,
 	}}
 
 	numops := []Op{
@@ -461,34 +454,15 @@ func TestNumericOps(t *testing.T) {
 		OP_BOOLOR, OP_NUMEQUAL, OP_NUMEQUALVERIFY, OP_NUMNOTEQUAL, OP_LESSTHAN,
 		OP_LESSTHANOREQUAL, OP_GREATERTHAN, OP_GREATERTHANOREQUAL, OP_MIN, OP_MAX, OP_WITHIN,
 	}
-	twopop := numops[8:]
 
 	for _, op := range numops {
 		cases = append(cases, testStruct{
-			op: op,
-			startVM: &virtualMachine{
-				runLimit:  50000,
-				dataStack: [][]byte{},
-			},
-			wantErr: ErrDataStackUnderflow,
-		}, testStruct{
 			op: op,
 			startVM: &virtualMachine{
 				runLimit:  0,
 				dataStack: [][]byte{{2}, {2}, {2}},
 			},
 			wantErr: ErrRunLimitExceeded,
-		})
-	}
-
-	for _, op := range twopop {
-		cases = append(cases, testStruct{
-			op: op,
-			startVM: &virtualMachine{
-				runLimit:  50000,
-				dataStack: [][]byte{{2}},
-			},
-			wantErr: ErrDataStackUnderflow,
 		})
 	}
 

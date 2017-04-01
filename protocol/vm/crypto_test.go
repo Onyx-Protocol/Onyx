@@ -219,32 +219,6 @@ func TestCryptoOps(t *testing.T) {
 	}, {
 		op: OP_CHECKSIG,
 		startVM: &VirtualMachine{
-			RunLimit:  50000,
-			DataStack: [][]byte{},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKSIG,
-		startVM: &VirtualMachine{
-			RunLimit: 50000,
-			DataStack: [][]byte{
-				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
-			},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKSIG,
-		startVM: &VirtualMachine{
-			RunLimit: 50000,
-			DataStack: [][]byte{
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
-				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
-			},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKSIG,
-		startVM: &VirtualMachine{
 			RunLimit: 50000,
 			DataStack: [][]byte{
 				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851" +
@@ -456,13 +430,6 @@ func TestCryptoOps(t *testing.T) {
 				DataStack: [][]byte{{1}},
 			},
 			wantErr: ErrRunLimitExceeded,
-		}, testStruct{
-			op: op,
-			startVM: &VirtualMachine{
-				RunLimit:  50000,
-				DataStack: [][]byte{},
-			},
-			wantErr: ErrDataStackUnderflow,
 		})
 	}
 

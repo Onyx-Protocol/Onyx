@@ -196,13 +196,6 @@ func TestStackOps(t *testing.T) {
 			dataStack: [][]byte{{1}},
 		},
 	}, {
-		op: OP_NIP,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{1}},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
 		op: OP_OVER,
 		startVM: &virtualMachine{
 			runLimit:  50000,
@@ -232,13 +225,6 @@ func TestStackOps(t *testing.T) {
 	}, {
 		op: OP_PICK,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{3}, {2}, {1}, {3}},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_PICK,
-		startVM: &virtualMachine{
 			runLimit:  2,
 			dataStack: [][]byte{{0xff, 0xff}, {2}, {1}, {2}},
 		},
@@ -253,13 +239,6 @@ func TestStackOps(t *testing.T) {
 			runLimit:  50007,
 			dataStack: [][]byte{{2}, {1}, {3}},
 		},
-	}, {
-		op: OP_ROLL,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{3}, {2}, {1}, {3}},
-		},
-		wantErr: ErrDataStackUnderflow,
 	}, {
 		op: OP_ROT,
 		startVM: &virtualMachine{
@@ -310,13 +289,6 @@ func TestStackOps(t *testing.T) {
 			wantErr: ErrRunLimitExceeded,
 		})
 	}
-	for _, op := range stackops[2:] {
-		cases = append(cases, testStruct{
-			op:      op,
-			startVM: &virtualMachine{runLimit: 50000, dataStack: [][]byte{}},
-			wantErr: ErrDataStackUnderflow,
-		})
-	}
 
 	for i, c := range cases {
 		err := ops[c.op].fn(c.startVM)
@@ -357,7 +329,7 @@ func TestStackUnderflow(t *testing.T) {
 		{1, opSha256},
 		{1, opSha3},
 		{3, opCheckSig},
-		{3, opCheckMultiSig}, // TODO(kr): special; check data-dependent # of pops
+		{3, opCheckMultiSig}, // special, see also TestCryptoOps
 
 		// introspection
 		{6, opCheckOutput},
@@ -395,10 +367,12 @@ func TestStackUnderflow(t *testing.T) {
 		{2, opCat},
 		{3, opSubstr},
 		{2, opLeft},
+		{2, opRight},
 		{1, opSize},
 		{2, opCatpushdata},
 
 		// stack
+		{1, opToAltStack},
 		{2, op2Drop},
 		{2, op2Dup},
 		{3, op3Dup},

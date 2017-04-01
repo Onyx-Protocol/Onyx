@@ -27,13 +27,6 @@ func TestSpliceOps(t *testing.T) {
 	}, {
 		op: OP_CAT,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{[]byte("world")},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CAT,
-		startVM: &virtualMachine{
 			runLimit:  4,
 			dataStack: [][]byte{[]byte("hello"), []byte("world")},
 		},
@@ -73,20 +66,6 @@ func TestSpliceOps(t *testing.T) {
 	}, {
 		op: OP_SUBSTR,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{5}},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_SUBSTR,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{3}, {5}},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_SUBSTR,
-		startVM: &virtualMachine{
 			runLimit:  4,
 			dataStack: [][]byte{[]byte("helloworld"), {3}, {5}},
 		},
@@ -116,13 +95,6 @@ func TestSpliceOps(t *testing.T) {
 			dataStack: [][]byte{[]byte("helloworld"), {11}},
 		},
 		wantErr: ErrBadValue,
-	}, {
-		op: OP_LEFT,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{5}},
-		},
-		wantErr: ErrDataStackUnderflow,
 	}, {
 		op: OP_LEFT,
 		startVM: &virtualMachine{
@@ -158,13 +130,6 @@ func TestSpliceOps(t *testing.T) {
 	}, {
 		op: OP_RIGHT,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{5}},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_RIGHT,
-		startVM: &virtualMachine{
 			runLimit:  4,
 			dataStack: [][]byte{[]byte("helloworld"), {5}},
 		},
@@ -194,13 +159,6 @@ func TestSpliceOps(t *testing.T) {
 	}, {
 		op: OP_CATPUSHDATA,
 		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{0xab, 0xcd}},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CATPUSHDATA,
-		startVM: &virtualMachine{
 			runLimit:  4,
 			dataStack: [][]byte{{0xff}, {0xab, 0xcd}},
 		},
@@ -213,10 +171,6 @@ func TestSpliceOps(t *testing.T) {
 			op:      op,
 			startVM: &virtualMachine{runLimit: 0},
 			wantErr: ErrRunLimitExceeded,
-		}, testStruct{
-			op:      op,
-			startVM: &virtualMachine{runLimit: 50000, dataStack: [][]byte{}},
-			wantErr: ErrDataStackUnderflow,
 		})
 	}
 

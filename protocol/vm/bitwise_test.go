@@ -237,13 +237,6 @@ func TestBitwiseOps(t *testing.T) {
 		cases = append(cases, testStruct{
 			op: op,
 			startVM: &virtualMachine{
-				runLimit:  50000,
-				dataStack: [][]byte{},
-			},
-			wantErr: ErrDataStackUnderflow,
-		}, testStruct{
-			op: op,
-			startVM: &virtualMachine{
 				runLimit:  0,
 				dataStack: [][]byte{{0xff}, {0xff}},
 			},
@@ -255,18 +248,6 @@ func TestBitwiseOps(t *testing.T) {
 				dataStack: [][]byte{{0xff}, {0xff}},
 			},
 			wantErr: ErrRunLimitExceeded,
-		})
-	}
-
-	twoops := []Op{OP_AND, OP_OR, OP_XOR, OP_EQUAL, OP_EQUALVERIFY}
-	for _, op := range twoops {
-		cases = append(cases, testStruct{
-			op: op,
-			startVM: &virtualMachine{
-				runLimit:  50000,
-				dataStack: [][]byte{{0xff}},
-			},
-			wantErr: ErrDataStackUnderflow,
 		})
 	}
 

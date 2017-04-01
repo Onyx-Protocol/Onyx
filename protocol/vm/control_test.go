@@ -117,13 +117,6 @@ func TestControlOps(t *testing.T) {
 		},
 		wantErr: ErrVerifyFailed,
 	}, {
-		op: OP_VERIFY,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
 		startVM: &virtualMachine{runLimit: 50000},
 		op:      OP_FAIL,
 		wantErr: ErrReturn,
@@ -160,26 +153,6 @@ func TestControlOps(t *testing.T) {
 			deferredCost: -49952,
 			dataStack:    [][]byte{{}},
 		},
-	}, {
-		op: OP_CHECKPREDICATE,
-		startVM: &virtualMachine{
-			runLimit: 50000,
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKPREDICATE,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{}},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKPREDICATE,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{}, {}},
-		},
-		wantErr: ErrDataStackUnderflow,
 	}, {
 		op: OP_CHECKPREDICATE,
 		startVM: &virtualMachine{
