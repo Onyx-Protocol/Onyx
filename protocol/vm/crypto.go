@@ -48,19 +48,19 @@ func opCheckSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if len(pubkeyBytes) != ed25519.PublicKeySize {
-		return vm.pushBool(false, true)
-	}
 	msg, err := vm.pop(true)
+	if err != nil {
+		return err
+	}
+	sig, err := vm.pop(true)
 	if err != nil {
 		return err
 	}
 	if len(msg) != 32 {
 		return ErrBadValue
 	}
-	sig, err := vm.pop(true)
-	if err != nil {
-		return err
+	if len(pubkeyBytes) != ed25519.PublicKeySize {
+		return vm.pushBool(false, true)
 	}
 	return vm.pushBool(ed25519.Verify(ed25519.PublicKey(pubkeyBytes), msg, sig), true)
 }
