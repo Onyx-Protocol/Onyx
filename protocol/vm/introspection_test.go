@@ -272,57 +272,6 @@ func TestIntrospectionOps(t *testing.T) {
 	}, {
 		op: OP_CHECKOUTPUT,
 		startVM: &VirtualMachine{
-			Context: context0,
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
-			DataStack: [][]byte{
-				[]byte("controlprog"),
-			},
-			Context: context0,
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
-			DataStack: [][]byte{
-				append([]byte{2}, make([]byte, 31)...),
-				{1},
-				[]byte("controlprog"),
-			},
-			Context: context0,
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
-			DataStack: [][]byte{
-				{7},
-				append([]byte{2}, make([]byte, 31)...),
-				{1},
-				[]byte("controlprog"),
-			},
-			Context: context0,
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
-			DataStack: [][]byte{
-				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
-				{7},
-				append([]byte{2}, make([]byte, 31)...),
-				{1},
-				[]byte("controlprog"),
-			},
-			Context: context0,
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
 			DataStack: [][]byte{
 				{4},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
