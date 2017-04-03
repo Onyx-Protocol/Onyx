@@ -233,29 +233,79 @@ func warnDarwin() error {
 
 func warnLinux() (err error) {
 	cat := exec.Command("/bin/sh", "-c", `cat /etc/*-release`)
-	grep := exec.Command("grep", "-e", "^NAME=")
-	grep.Stdin, err = cat.StdoutPipe()
+	out, err := cat.Output()
 	if err != nil {
-		return errors.Wrap(err, "creating command pipe")
-	}
-	err = cat.Start()
-	if err != nil {
+		if _, ok := err.(*exec.ExitError); ok || os.IsPermission(err) || os.IsNotExist(err) {
+			fmt.Println("Unable to detect the host OS. You will need to install the generated root CA into your local certficate store for encrypted communications.")
+			return nil
+		}
 		return errors.Wrap(err, strings.Join(cat.Args, " "))
 	}
-	out, err := grep.Output()
-	if err != nil {
-		return errors.Wrap(err, strings.Join(grep.Args, " "))
+	distro := strings.ToLower(string(out))
+	if strings.Contains(distro, "alpine") {
+		if _, err = os.Stat("/.dockerenv"); os.IsNotExist(err) {
+			fmt.Println("\nRunning Alpine\n")
+			return nil
+		}
+		fmt.Println("\nRunning docker container\n")
+		return nil
 	}
-	err = cat.Wait()
-	if err != nil {
-		return errors.Wrap(err, "waiting for command exit")
+	if strings.Contains(distro, "centos") {
+		if strings.Contains(distro, "centos_mantisbt_project_version=\"7\"") {
+			fmt.Println("\nRunning Centos 7\n")
+		}
+		if strings.Contains(distro, "centos release 6") {
+			fmt.Println("\nRunning Centos 6\n")
+		}
+		if strings.Contains(distro, "centos release 5") {
+			fmt.Println("\nRunning Centos 5\n")
+		}
+		return nil
 	}
-
-	os := strings.ToLower(string(out))
-	if strings.Contains(os, "alpine") {
-		fmt.Println("\nIf running docker, install certs in your host machine's key store.\n")
+	if strings.Contains(distro, "ubuntu") {
+		if strings.Contains(distro, "jessie") {
+			fmt.Println("\nRunning Ubuntu 14.04\n")
+		}
+		if strings.Contains(distro, "wheezy") {
+			fmt.Println("\nRunning Ubuntu 12.04\n")
+		}
+		return nil
 	}
-	return
+	if strings.Contains(distro, "debian") {
+		cat = exec.Command("/bin/sh", "-c", `cat /etc/debian_version`)
+		out, err = cat.Output()
+		if err != nil {
+			if os.IsPermission(err) || os.IsNotExist(err) {
+				fmt.Println("Unable to detect the host OS. You will need to install the generated root CA into your local certficate store for encrypted communications.")
+				return nil
+			}
+			return errors.Wrap(err, strings.Join(cat.Args, " "))
+		}
+		version := string(out)
+		if strings.HasPrefix(version, "8.") {
+			fmt.Println("\nRunning Debian 8\n")
+		}
+		if strings.HasPrefix(version, "7.") {
+			fmt.Println("\nRunning Debian 7\n")
+		}
+		if strings.HasPrefix(version, "6.") {
+			fmt.Println("\nRunning Debian 6\n")
+		}
+		return nil
+	}
+	if strings.Contains(distro, "fedora") {
+		fmt.Println("\nRunning Fedora\n")
+		return nil
+	}
+	if strings.Contains(distro, "opensuse") {
+		fmt.Println("\nRunning openSUSE\n")
+		return nil
+	}
+	if strings.Contains(distro, "mint") {
+		fmt.Println("\nRunning Linux Mint\n")
+		return nil
+	}
+	return nil
 }
 
 func warnWindows() error {

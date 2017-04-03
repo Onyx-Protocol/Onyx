@@ -23,6 +23,10 @@ var (
 	prod  = false
 )
 
+func init() {
+	httpsRedirect = false
+}
+
 func resetInDevIfRequested(db pg.DB) {
 	if *reset != "" {
 		os.Setenv("RESET", "")
