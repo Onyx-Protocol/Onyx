@@ -24,7 +24,7 @@ func MerkleRoot(transactions []*TxEntries) (root Hash, err error) {
 
 		h.Write(leafPrefix)
 		transactions[0].ID.WriteTo(h)
-		root.FromHasher(h)
+		root.ReadFrom(h)
 		return root, nil
 
 	default:
@@ -44,7 +44,7 @@ func MerkleRoot(transactions []*TxEntries) (root Hash, err error) {
 		h.Write(interiorPrefix)
 		left.WriteTo(h)
 		right.WriteTo(h)
-		root.FromHasher(h)
+		root.ReadFrom(h)
 		return root, nil
 	}
 }

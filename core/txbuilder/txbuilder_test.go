@@ -25,7 +25,7 @@ import (
 type testAction bc.AssetAmount
 
 func (t testAction) Build(ctx context.Context, b *TemplateBuilder) error {
-	in := bc.NewSpendInput(nil, bc.Hash{255}, t.AssetID, t.Amount, 0, nil, bc.Hash{}, nil)
+	in := bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, t.AssetID, t.Amount, 0, nil, bc.Hash{}, nil)
 	tplIn := &SigningInstruction{}
 
 	err := b.AddInput(in, tplIn)
@@ -61,7 +61,7 @@ func TestBuild(t *testing.T) {
 			Version: 1,
 			MaxTime: bc.Millis(expiryTime),
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.Hash{255}, [32]byte{1}, 5, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, [32]byte{1}, 5, 0, nil, bc.Hash{}, nil),
 			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput([32]byte{2}, 6, []byte("dest"), nil),
@@ -190,7 +190,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	}
 	h := tpl.Hash(0)
 	builder := vmutil.NewBuilder()
-	builder.AddData(h[:])
+	builder.AddData(h.Bytes())
 	builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
 	prog := builder.Program
 	msg := sha3.Sum256(prog)
@@ -382,7 +382,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	tx = bc.NewTx(tx.TxData) // recompute the tx hash
 	spendInput.Arguments = make([][]byte, 3)
 	h := tx.SigHash(4)
-	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h[:]))
+	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h.Bytes()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -411,7 +411,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	tx = bc.NewTx(tx.TxData) // recompute the tx hash
 	spendInput.Arguments = make([][]byte, 2)
 	h = tx.SigHash(5)
-	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h[:]))
+	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h.Bytes()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -428,27 +428,27 @@ func TestCheckBlankCheck(t *testing.T) {
 		want error
 	}{{
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{255}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{255}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 3, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.Hash{255}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil),
-				bc.NewSpendInput(nil, bc.Hash{255}, bc.AssetID{1}, 5, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, bc.AssetID{1}, 5, 0, nil, bc.Hash{}, nil),
 			},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
 		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{255}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
+			Inputs: []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(bc.AssetID{0}, math.MaxInt64, nil, nil),
 				bc.NewTxOutput(bc.AssetID{0}, 7, nil, nil),
@@ -458,14 +458,14 @@ func TestCheckBlankCheck(t *testing.T) {
 	}, {
 		tx: &bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.Hash{255}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil),
-				bc.NewSpendInput(nil, bc.Hash{255}, bc.AssetID{0}, math.MaxInt64, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, bc.AssetID{0}, math.MaxInt64, 0, nil, bc.Hash{}, nil),
 			},
 		},
 		want: ErrBadAmount,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{255}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{0}, 5, nil, nil)},
 		},
 		want: nil,
@@ -476,7 +476,7 @@ func TestCheckBlankCheck(t *testing.T) {
 		want: nil,
 	}, {
 		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{255}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
+			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{0xff00000000000000, 0, 0, 0}, bc.AssetID{0}, 5, 0, nil, bc.Hash{}, nil)},
 			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{1}, 5, nil, nil)},
 		},
 		want: nil,

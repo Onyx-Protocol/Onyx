@@ -17,7 +17,7 @@ func TestLatestSnapshot(t *testing.T) {
 	store := NewStore(dbtx)
 
 	snap := state.Empty()
-	snap.Nonces[bc.Hash{0xc0, 0x01}] = 12345678
+	snap.Nonces[bc.Hash{0xc001000000000000, 0, 0, 0}] = 12345678
 	err := snap.Tree.Insert([]byte{0x01, 0x02, 0x03, 0x04})
 	if err != nil {
 		t.Fatal(err)
@@ -71,11 +71,11 @@ func TestGetRawBlock(t *testing.T) {
 		BlockHeader: bc.BlockHeader{
 			Version:           1,
 			Height:            10,
-			PreviousBlockHash: bc.Hash{0x09},
+			PreviousBlockHash: bc.Hash{0x0900000000000000, 0, 0, 0},
 			TimestampMS:       123456,
 			BlockCommitment: bc.BlockCommitment{
-				TransactionsMerkleRoot: bc.Hash{0x01},
-				AssetsMerkleRoot:       bc.Hash{0x02},
+				TransactionsMerkleRoot: bc.Hash{0x0100000000000000, 0, 0, 0},
+				AssetsMerkleRoot:       bc.Hash{0x0200000000000000, 0, 0, 0},
 				ConsensusProgram:       []byte{0xc0, 0x01},
 			},
 			BlockWitness: bc.BlockWitness{
@@ -148,18 +148,12 @@ func TestGetBlock(t *testing.T) {
 		BlockHeader: bc.BlockHeader{
 			Version:           1,
 			Height:            1,
-			PreviousBlockHash: [32]byte{'1', '2', '3'},
+			PreviousBlockHash: bc.Hash{0x3132330000000000, 0, 0, 0},
 			TimestampMS:       100,
 			BlockCommitment: bc.BlockCommitment{
-				TransactionsMerkleRoot: bc.Hash{
-					'A', 'B', 'C', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				},
-				AssetsMerkleRoot: bc.Hash{
-					'X', 'Y', 'Z', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				},
-				ConsensusProgram: []byte("test-output-script"),
+				TransactionsMerkleRoot: bc.Hash{0x4142430000000000, 0, 0, 0},
+				AssetsMerkleRoot:       bc.Hash{0x58595a0000000000, 0, 0, 0},
+				ConsensusProgram:       []byte("test-output-script"),
 			},
 			BlockWitness: bc.BlockWitness{
 				Witness: [][]byte{[]byte("test-sig-script")},

@@ -28,7 +28,7 @@ func (tx *TxEntries) SigHash(n uint32) (hash Hash) {
 
 	tx.TxInputIDs[n].WriteTo(hasher)
 	tx.ID.WriteTo(hasher)
-	hash.FromHasher(hasher)
+	hash.ReadFrom(hasher)
 	return hash
 }
 

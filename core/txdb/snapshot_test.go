@@ -15,9 +15,9 @@ func TestReadWriteStateSnapshotNonceSet(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 	snapshot := state.Empty()
-	snapshot.Nonces[bc.Hash{0x01}] = 10
-	snapshot.Nonces[bc.Hash{0x02}] = 10
-	snapshot.Nonces[bc.Hash{0x03}] = 45
+	snapshot.Nonces[bc.Hash{0x0100000000000000, 0, 0, 0}] = 10
+	snapshot.Nonces[bc.Hash{0x0200000000000000, 0, 0, 0}] = 10
+	snapshot.Nonces[bc.Hash{0x0300000000000000, 0, 0, 0}] = 45
 	err := storeStateSnapshot(ctx, dbtx, snapshot, 200)
 	if err != nil {
 		t.Fatalf("Error writing state snapshot to db: %s\n", err)
@@ -27,9 +27,9 @@ func TestReadWriteStateSnapshotNonceSet(t *testing.T) {
 		t.Fatalf("Error reading state snapshot from db: %s\n", err)
 	}
 	want := map[bc.Hash]uint64{
-		bc.Hash{0x01}: 10,
-		bc.Hash{0x02}: 10,
-		bc.Hash{0x03}: 45,
+		bc.Hash{0x0100000000000000, 0, 0, 0}: 10,
+		bc.Hash{0x0200000000000000, 0, 0, 0}: 10,
+		bc.Hash{0x0300000000000000, 0, 0, 0}: 45,
 	}
 	if !testutil.DeepEqual(got.Nonces, want) {
 		t.Errorf("storing and loading snapshot nonce memory, got %#v, want %#v", got.Nonces, want)
@@ -49,34 +49,34 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		deletedNonces []bc.Hash
 	}{
 		{ // add a single hash
-			inserts: []bc.Hash{{0x01}},
+			inserts: []bc.Hash{{0x0100000000000000, 0, 0, 0}},
 			newNonces: map[bc.Hash]uint64{
-				bc.Hash{0x01}: 1000,
+				bc.Hash{0x0100000000000000, 0, 0, 0}: 1000,
 			},
 		},
 		{ // empty changeset
-			lookups: []bc.Hash{{0x01}},
+			lookups: []bc.Hash{{0x0100000000000000, 0, 0, 0}},
 		},
 		{ // add two new hashes
 			inserts: []bc.Hash{
-				{0x02},
-				{0x03},
+				{0x0200000000000000, 0, 0, 0},
+				{0x0300000000000000, 0, 0, 0},
 			},
 			lookups: []bc.Hash{
-				{0x02},
-				{0x03},
+				{0x0200000000000000, 0, 0, 0},
+				{0x0300000000000000, 0, 0, 0},
 			},
 			newNonces: map[bc.Hash]uint64{
-				bc.Hash{0x02}: 2000,
+				bc.Hash{0x0200000000000000, 0, 0, 0}: 2000,
 			},
 		},
 		{ // delete one hash
-			deletes:       []bc.Hash{{0x01}},
-			deletedNonces: []bc.Hash{{0x02}},
+			deletes:       []bc.Hash{{0x0100000000000000, 0, 0, 0}},
+			deletedNonces: []bc.Hash{{0x0200000000000000, 0, 0, 0}},
 		},
 		{ // insert and delete at the same time
-			inserts: []bc.Hash{{0x04}},
-			deletes: []bc.Hash{{0x04}},
+			inserts: []bc.Hash{{0x0400000000000000, 0, 0, 0}},
+			deletes: []bc.Hash{{0x0400000000000000, 0, 0, 0}},
 		},
 	}
 
@@ -84,13 +84,13 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		t.Logf("Applying changeset %d\n", i)
 
 		for _, insert := range changeset.inserts {
-			err := snapshot.Tree.Insert(insert[:])
+			err := snapshot.Tree.Insert(insert.Bytes())
 			if err != nil {
 				t.Fatal(err)
 			}
 		}
 		for _, key := range changeset.deletes {
-			snapshot.Tree.Delete(key[:])
+			snapshot.Tree.Delete(key.Bytes())
 		}
 
 		err := storeStateSnapshot(ctx, dbtx, snapshot, uint64(i))
@@ -104,7 +104,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		}
 
 		for _, lookup := range changeset.lookups {
-			if !snapshot.Tree.Contains(lookup[:]) {
+			if !snapshot.Tree.Contains(lookup.Bytes()) {
 				t.Errorf("Lookup(%s, %s) = false, want true", lookup, lookup)
 			}
 		}
@@ -159,7 +159,7 @@ func benchmarkStoreSnapshot(nodes, nonces int, b *testing.B) {
 
 	for i := 0; i < nonces; i++ {
 		var h bc.Hash
-		_, err := r.Read(h[:])
+		_, err := h.ReadFrom(r)
 		if err != nil {
 			b.Fatal(err)
 		}

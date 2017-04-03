@@ -159,7 +159,7 @@ func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHei
 		INSERT INTO submitted_txs (tx_hash, height) VALUES($1, $2)
 		ON CONFLICT DO NOTHING
 	`
-	res, err := db.Exec(ctx, insertQ, txHash[:], currentHeight)
+	res, err := db.Exec(ctx, insertQ, txHash.Bytes(), currentHeight)
 	if err != nil {
 		return 0, err
 	}
@@ -177,7 +177,7 @@ func recordSubmittedTx(ctx context.Context, db pg.DB, txHash bc.Hash, currentHei
 		SELECT height FROM submitted_txs WHERE tx_hash = $1
 	`
 	var height uint64
-	err = db.QueryRow(ctx, selectQ, txHash[:]).Scan(&height)
+	err = db.QueryRow(ctx, selectQ, txHash.Bytes()).Scan(&height)
 	return height, err
 }
 

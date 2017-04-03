@@ -106,7 +106,7 @@ func (sc *SpendCommitment) writeContents(w io.Writer, suffix []byte, assetVersio
 func (sc *SpendCommitment) readFrom(r io.Reader, assetVersion uint64) (suffix []byte, n int, err error) {
 	return blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		if assetVersion == 1 {
-			_, err := sc.SourceID.readFrom(r)
+			_, err := sc.SourceID.ReadFrom(r)
 			if err != nil {
 				return errors.Wrap(err, "reading source id")
 			}
@@ -129,7 +129,7 @@ func (sc *SpendCommitment) readFrom(r io.Reader, assetVersion uint64) (suffix []
 			if err != nil {
 				return errors.Wrap(err, "reading control program")
 			}
-			_, err = sc.RefDataHash.readFrom(r)
+			_, err = sc.RefDataHash.ReadFrom(r)
 			if err != nil {
 				return errors.Wrap(err, "reading reference data hash")
 			}
@@ -143,6 +143,6 @@ func (sc *SpendCommitment) Hash(suffix []byte, assetVersion uint64) (spendhash H
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 	sc.writeExtensibleString(h, suffix, assetVersion) // TODO(oleg): get rid of this assetVersion parameter to actually write all the bytes
-	spendhash.FromHasher(h)
+	spendhash.ReadFrom(h)
 	return spendhash
 }

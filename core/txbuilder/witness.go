@@ -142,7 +142,7 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 	if !tpl.AllowAdditional {
 		h := tpl.Hash(index)
 		builder := vmutil.NewBuilder()
-		builder.AddData(h[:])
+		builder.AddData(h.Bytes())
 		builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
 		return builder.Program
 	}
@@ -172,9 +172,11 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 			Program:     out.ControlProgram,
 		}
 		if len(out.ReferenceData) > 0 {
-			var h [32]byte
-			sha3pool.Sum256(h[:], out.ReferenceData)
-			c.RefDataHash = (*bc.Hash)(&h)
+			var b32 bc.Byte32
+			sha3pool.Sum256(b32[:], out.ReferenceData)
+			var h bc.Hash
+			h.FromByte32(b32)
+			c.RefDataHash = &h
 		}
 		constraints = append(constraints, c)
 	}

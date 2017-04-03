@@ -74,10 +74,10 @@ func TestMockHSMEd25519Keys(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !ed25519.Verify(pub.Pub, msg[:], sig) {
+	if !ed25519.Verify(pub.Pub, msg.Bytes(), sig) {
 		t.Error("expected verify to succeed")
 	}
-	if ed25519.Verify(pub2.Pub, msg[:], sig) {
+	if ed25519.Verify(pub2.Pub, msg.Bytes(), sig) {
 		t.Error("expected verify with wrong pubkey to fail")
 	}
 

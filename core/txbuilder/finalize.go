@@ -104,7 +104,7 @@ func checkTxSighashCommitment(tx *bc.Tx) error {
 			continue
 		}
 		h := tx.SigHash(uint32(i))
-		if !bytes.Equal(h[:], prog[1:33]) {
+		if !bytes.Equal(h.Bytes(), prog[1:33]) {
 			continue
 		}
 		// At least one input passes commitment checks

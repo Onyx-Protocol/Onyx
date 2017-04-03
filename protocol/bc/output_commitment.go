@@ -73,6 +73,6 @@ func (oc *OutputCommitment) Hash(suffix []byte, assetVersion uint64) (outputhash
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 	oc.writeExtensibleString(h, suffix, assetVersion) // TODO(oleg): get rid of this assetVersion parameter to actually write all the bytes
-	outputhash.FromHasher(h)
+	outputhash.ReadFrom(h)
 	return outputhash
 }

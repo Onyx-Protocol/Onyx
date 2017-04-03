@@ -169,9 +169,8 @@ func TestGenerateBlock(t *testing.T) {
 	}
 
 	// TODO(bobg): verify these hashes are correct
-	var wantTxRoot, wantAssetsRoot bc.Hash
-	copy(wantTxRoot[:], mustDecodeHex("ab5f5f111beb1e6b49da8334360589c7da3aac1cdd61067ea9a55bec47cb745c"))
-	copy(wantAssetsRoot[:], mustDecodeHex("a31a9b5f71a6d6fa0c87361db4a98c9a82f603f9d9ff584f6613b9d56ccf5ebd"))
+	wantTxRoot := mustDecodeHash("ab5f5f111beb1e6b49da8334360589c7da3aac1cdd61067ea9a55bec47cb745c")
+	wantAssetsRoot := mustDecodeHash("a31a9b5f71a6d6fa0c87361db4a98c9a82f603f9d9ff584f6613b9d56ccf5ebd")
 
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{
@@ -266,4 +265,11 @@ func mustDecodeHex(s string) []byte {
 		panic(err)
 	}
 	return data
+}
+
+func mustDecodeHash(s string) (h bc.Hash) {
+	var b32 bc.Byte32
+	copy(b32[:], mustDecodeHex(s))
+	h.FromByte32(b32)
+	return h
 }

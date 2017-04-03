@@ -35,12 +35,6 @@ func (h *Hash) FromByte32(b32 Byte32) {
 	h.V3 = binary.BigEndian.Uint64(b32[24:32])
 }
 
-func (h *Hash) FromHasher(hasher sha3.ShakeHash) {
-	var b32 Byte32
-	hasher.Read(b32[:])
-	h.FromByte32(b32)
-}
-
 // MarshalText satisfies the TextMarshaler interface.
 // It returns the bytes of h encoded in hex,
 // for formats that can't hold arbitrary binary data.
@@ -106,17 +100,18 @@ func writeFastHash(w io.Writer, d []byte) error {
 	return err
 }
 
-// WriteTo writes p to w.
+// WriteTo satisfies the io.WriterTo interface.
 func (h *Hash) WriteTo(w io.Writer) (int64, error) {
 	return h.Byte32().WriteTo(w)
 }
 
-func (h *Hash) readFrom(r io.Reader) (int, error) {
+// WriteTo satisfies the io.ReaderFrom interface.
+func (h *Hash) ReadFrom(r io.Reader) (int64, error) {
 	var b32 Byte32
 	n, err := b32.ReadFrom(r)
 	if err != nil {
-		return int(n), err
+		return n, err
 	}
 	h.FromByte32(b32)
-	return int(n), nil
+	return n, nil
 }

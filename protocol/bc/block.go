@@ -227,7 +227,7 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 		return 0, err
 	}
 
-	_, err = bh.PreviousBlockHash.readFrom(r)
+	_, err = bh.PreviousBlockHash.ReadFrom(r)
 	if err != nil {
 		return 0, err
 	}

@@ -75,22 +75,22 @@ func (s *Snapshot) ApplyTx(tx *bc.TxEntries) error {
 		// Add new nonces. They must not conflict with nonces already
 		// present.
 		if s.Nonces[n] >= tx.Body.MaxTimeMS {
-			return fmt.Errorf("conflicting nonce %x", n[:])
+			return fmt.Errorf("conflicting nonce %x", n.Bytes())
 		}
 		s.Nonces[n] = tx.Body.MaxTimeMS
 	}
 
 	// Remove spent outputs. Each output must be present.
 	for _, prevout := range tx.SpentOutputIDs {
-		if !s.Tree.Contains(prevout[:]) {
-			return fmt.Errorf("invalid prevout %x", prevout[:])
+		if !s.Tree.Contains(prevout.Bytes()) {
+			return fmt.Errorf("invalid prevout %x", prevout.Bytes())
 		}
-		s.Tree.Delete(prevout[:])
+		s.Tree.Delete(prevout.Bytes())
 	}
 
 	// Add new outputs. They must not yet be present.
 	for _, o := range tx.OutputIDs {
-		err := s.Tree.Insert(o[:])
+		err := s.Tree.Insert(o.Bytes())
 		if err != nil {
 			return err
 		}

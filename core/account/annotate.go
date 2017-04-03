@@ -30,7 +30,7 @@ func (m *Manager) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) err
 			}
 
 			inputs[*in.SpentOutputID] = in
-			outputIDs = append(outputIDs, in.SpentOutputID[:])
+			outputIDs = append(outputIDs, in.SpentOutputID.Bytes())
 		}
 		for _, out := range tx.Outputs {
 			if out.Type == "retire" {
@@ -38,7 +38,7 @@ func (m *Manager) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) err
 			}
 
 			outputs[out.OutputID] = out
-			outputIDs = append(outputIDs, out.OutputID[:])
+			outputIDs = append(outputIDs, out.OutputID.Bytes())
 		}
 	}
 

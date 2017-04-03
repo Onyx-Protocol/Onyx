@@ -149,7 +149,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 		// TODO(bobg): test that serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
 		if ii != nil {
 			// read IssuanceInput witness
-			_, err = ii.InitialBlock.readFrom(r)
+			_, err = ii.InitialBlock.ReadFrom(r)
 			if err != nil {
 				return err
 			}

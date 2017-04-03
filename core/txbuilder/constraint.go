@@ -50,7 +50,7 @@ type outputIDConstraint bc.Hash
 
 func (o outputIDConstraint) code() []byte {
 	builder := vmutil.NewBuilder()
-	builder.AddData(o[:])
+	builder.AddData(bc.Hash(o).Bytes())
 	builder.AddOp(vm.OP_OUTPUTID)
 	builder.AddOp(vm.OP_EQUAL)
 	return builder.Program
@@ -93,7 +93,7 @@ func (p payConstraint) code() []byte {
 	if p.RefDataHash == nil {
 		builder.AddData([]byte{})
 	} else {
-		builder.AddData((*p.RefDataHash)[:])
+		builder.AddData(p.RefDataHash.Bytes())
 	}
 	builder.AddInt64(int64(p.Amount)).AddData(p.AssetID[:]).AddInt64(1).AddData(p.Program)
 	builder.AddOp(vm.OP_CHECKOUTPUT)

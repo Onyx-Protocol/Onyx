@@ -25,10 +25,8 @@ func (ii *IssuanceInput) AssetID() AssetID {
 func (ii *IssuanceInput) AssetDefinitionHash() (defhash Hash) {
 	sha := sha3pool.Get256()
 	defer sha3pool.Put256(sha)
-	var b32 [32]byte
 	sha.Write(ii.AssetDefinition)
-	sha.Read(b32[:])
-	defhash.FromByte32(b32)
+	defhash.ReadFrom(sha)
 	return defhash
 }
 

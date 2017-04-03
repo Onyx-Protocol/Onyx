@@ -22,11 +22,11 @@ type BlockCommitment struct {
 }
 
 func (bc *BlockCommitment) readFrom(r io.Reader) error {
-	_, err := bc.TransactionsMerkleRoot.readFrom(r)
+	_, err := bc.TransactionsMerkleRoot.ReadFrom(r)
 	if err != nil {
 		return err
 	}
-	_, err = bc.AssetsMerkleRoot.readFrom(r)
+	_, err = bc.AssetsMerkleRoot.ReadFrom(r)
 	if err != nil {
 		return err
 	}

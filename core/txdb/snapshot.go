@@ -33,8 +33,10 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 
 	nonces := make(map[bc.Hash]uint64, len(storedSnapshot.Nonces))
 	for _, nonce := range storedSnapshot.Nonces {
+		var b32 bc.Byte32
+		copy(b32[:], nonce.Hash)
 		var hash bc.Hash
-		copy(hash[:], nonce.Hash)
+		hash.FromByte32(b32)
 		nonces[hash] = nonce.ExpiryMs
 	}
 
@@ -59,7 +61,7 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 	for k, v := range snapshot.Nonces {
 		hash := k
 		storedSnapshot.Nonces = append(storedSnapshot.Nonces, &storage.Snapshot_Nonce{
-			Hash:     hash[:],
+			Hash:     hash.Bytes(),
 			ExpiryMs: v,
 		})
 	}

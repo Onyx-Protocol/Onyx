@@ -75,7 +75,7 @@ func TestTxValidation(t *testing.T) {
 		{
 			desc: "nonempty mux exthash",
 			f: func() {
-				mux.Body.ExtHash = bc.Hash{1}
+				mux.Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 			err: errNonemptyExtHash,
 		},
@@ -83,7 +83,7 @@ func TestTxValidation(t *testing.T) {
 			desc: "nonempty mux exthash, but that's OK",
 			f: func() {
 				tx.Body.Version = 2
-				mux.Body.ExtHash = bc.Hash{1}
+				mux.Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 		},
 		{
@@ -100,7 +100,7 @@ func TestTxValidation(t *testing.T) {
 			f: func() {
 				iss := tx.TxInputs[0].(*bc.Issuance)
 				nonce := iss.Anchor.(*bc.Nonce)
-				nonce.Body.ExtHash = bc.Hash{1}
+				nonce.Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 			err: errNonemptyExtHash,
 		},
@@ -110,7 +110,7 @@ func TestTxValidation(t *testing.T) {
 				tx.Body.Version = 2
 				iss := tx.TxInputs[0].(*bc.Issuance)
 				nonce := iss.Anchor.(*bc.Nonce)
-				nonce.Body.ExtHash = bc.Hash{1}
+				nonce.Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 		},
 		{
@@ -139,7 +139,7 @@ func TestTxValidation(t *testing.T) {
 				iss := tx.TxInputs[0].(*bc.Issuance)
 				nonce := iss.Anchor.(*bc.Nonce)
 				tr := nonce.TimeRange
-				tr.Body.ExtHash = bc.Hash{1}
+				tr.Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 			err: errNonemptyExtHash,
 		},
@@ -150,7 +150,7 @@ func TestTxValidation(t *testing.T) {
 				iss := tx.TxInputs[0].(*bc.Issuance)
 				nonce := iss.Anchor.(*bc.Nonce)
 				tr := nonce.TimeRange
-				tr.Body.ExtHash = bc.Hash{1}
+				tr.Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 		},
 		{
@@ -163,7 +163,7 @@ func TestTxValidation(t *testing.T) {
 		{
 			desc: "mismatched output source and mux dest",
 			f: func() {
-				mux.Witness.Destinations[0].Ref = bc.Hash{1}
+				mux.Witness.Destinations[0].Ref = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 			err: errMismatchedReference,
 		},
@@ -184,7 +184,7 @@ func TestTxValidation(t *testing.T) {
 		{
 			desc: "output exthash nonempty",
 			f: func() {
-				tx.Results[0].(*bc.Output).Body.ExtHash = bc.Hash{1}
+				tx.Results[0].(*bc.Output).Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 			err: errNonemptyExtHash,
 		},
@@ -192,7 +192,7 @@ func TestTxValidation(t *testing.T) {
 			desc: "output exthash nonempty, but that's OK",
 			f: func() {
 				tx.Body.Version = 2
-				tx.Results[0].(*bc.Output).Body.ExtHash = bc.Hash{1}
+				tx.Results[0].(*bc.Output).Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 		},
 		{
@@ -219,7 +219,7 @@ func TestTxValidation(t *testing.T) {
 		{
 			desc: "tx header exthash nonempty",
 			f: func() {
-				tx.Body.ExtHash = bc.Hash{1}
+				tx.Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 			err: errNonemptyExtHash,
 		},
@@ -227,13 +227,13 @@ func TestTxValidation(t *testing.T) {
 			desc: "tx header exthash nonempty, but that's OK",
 			f: func() {
 				tx.Body.Version = 2
-				tx.Body.ExtHash = bc.Hash{1}
+				tx.Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 		},
 		{
 			desc: "wrong blockchain",
 			f: func() {
-				vs.blockchainID = bc.Hash{2}
+				vs.blockchainID = bc.Hash{0x0200000000000000, 0, 0, 0}
 			},
 			err: errWrongBlockchain,
 		},
@@ -256,7 +256,7 @@ func TestTxValidation(t *testing.T) {
 		{
 			desc: "issuance exthash nonempty",
 			f: func() {
-				tx.TxInputs[0].(*bc.Issuance).Body.ExtHash = bc.Hash{1}
+				tx.TxInputs[0].(*bc.Issuance).Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 			err: errNonemptyExtHash,
 		},
@@ -264,7 +264,7 @@ func TestTxValidation(t *testing.T) {
 			desc: "issuance exthash nonempty, but that's OK",
 			f: func() {
 				tx.Body.Version = 2
-				tx.TxInputs[0].(*bc.Issuance).Body.ExtHash = bc.Hash{1}
+				tx.TxInputs[0].(*bc.Issuance).Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 		},
 		{
@@ -285,7 +285,7 @@ func TestTxValidation(t *testing.T) {
 		{
 			desc: "spend exthash nonempty",
 			f: func() {
-				tx.TxInputs[1].(*bc.Spend).Body.ExtHash = bc.Hash{1}
+				tx.TxInputs[1].(*bc.Spend).Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 			err: errNonemptyExtHash,
 		},
@@ -293,7 +293,7 @@ func TestTxValidation(t *testing.T) {
 			desc: "spend exthash nonempty, but that's OK",
 			f: func() {
 				tx.Body.Version = 2
-				tx.TxInputs[1].(*bc.Spend).Body.ExtHash = bc.Hash{1}
+				tx.TxInputs[1].(*bc.Spend).Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 		},
 	}
@@ -337,7 +337,7 @@ func TestBlockHeaderValid(t *testing.T) {
 		},
 		{
 			f: func() {
-				bh.Body.ExtHash = bc.Hash{1}
+				bh.Body.ExtHash = bc.Hash{0x0100000000000000, 0, 0, 0}
 			},
 			err: errNonemptyExtHash,
 		},
@@ -400,7 +400,7 @@ func sample(tb testing.TB, in *txFixture) *txFixture {
 	}
 
 	if (result.initialBlockID == bc.Hash{}) {
-		result.initialBlockID = bc.Hash{1}
+		result.initialBlockID = bc.Hash{0x0100000000000000, 0, 0, 0}
 	}
 	if testutil.DeepEqual(result.issuanceProg, bc.Program{}) {
 		prog, err := vm.Assemble("ADD 5 NUMEQUAL")
@@ -437,8 +437,8 @@ func sample(tb testing.TB, in *txFixture) *txFixture {
 
 		result.txInputs = []*bc.TxInput{
 			bc.NewIssuanceInput([]byte{3}, 10, []byte{4}, result.initialBlockID, result.issuanceProg.Code, result.issuanceArgs, result.assetDef),
-			bc.NewSpendInput(args1, bc.Hash{5}, result.assetID, 20, 0, cp1, bc.Hash{6}, []byte{7}),
-			bc.NewSpendInput(args2, bc.Hash{8}, result.assetID, 40, 0, cp2, bc.Hash{9}, []byte{10}),
+			bc.NewSpendInput(args1, bc.Hash{0x0500000000000000, 0, 0, 0}, result.assetID, 20, 0, cp1, bc.Hash{0x0600000000000000, 0, 0, 0}, []byte{7}),
+			bc.NewSpendInput(args2, bc.Hash{0x0800000000000000, 0, 0, 0}, result.assetID, 40, 0, cp2, bc.Hash{0x900000000000000, 0, 0, 0}, []byte{10}),
 		}
 	}
 	if len(result.txOutputs) == 0 {
@@ -491,6 +491,8 @@ func rootErr(e error) error {
 }
 
 func hashData(data []byte) (h bc.Hash) {
-	sha3pool.Sum256(h[:], data)
-	return
+	var b32 bc.Byte32
+	sha3pool.Sum256(b32[:], data)
+	h.FromByte32(b32)
+	return h
 }

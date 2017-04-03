@@ -113,7 +113,7 @@ type testSigner struct {
 
 func (s testSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	hash := b.Hash()
-	return ed25519.Sign(s.privKey, hash[:]), nil
+	return ed25519.Sign(s.privKey, hash.Bytes()), nil
 }
 
 func (s testSigner) String() string {

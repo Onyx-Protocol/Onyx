@@ -63,7 +63,7 @@ func EntryID(e Entry) (hash Hash) {
 	bh.Read(innerHash[:])
 	hasher.Write(innerHash[:])
 
-	hash.FromHasher(hasher)
+	hash.ReadFrom(hasher)
 	return hash
 }
 
