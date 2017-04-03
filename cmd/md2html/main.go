@@ -35,7 +35,7 @@ var commands = map[string]*command{
 	"build": {convert},
 }
 
-var version = ""
+var version = "x.y"
 
 func main() {
 	if len(os.Args) < 2 {
