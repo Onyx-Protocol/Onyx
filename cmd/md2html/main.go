@@ -99,6 +99,11 @@ func serve(args []string) {
 	fmt.Printf("serving at: http://localhost%s\n", addr)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := "." + r.URL.Path
+
+		if version != "" {
+			path = strings.Replace(path, version+"/", "", 1)
+		}
+
 		if filepath.Ext(path) != "" {
 			http.ServeFile(w, r, path)
 			return
