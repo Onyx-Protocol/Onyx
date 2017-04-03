@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 )
@@ -42,36 +43,38 @@ func main() {
 		os.Exit(0)
 	}
 
-	var flags flag.FlagSet
-	flagVersionPrefix := flags.String("-prefix", "", "specify version prefix of docs (e.g. '1.1')")
-	flags.Usage = func() {
-		flags.PrintDefaults()
+	flagVersionPrefix := flag.String("prefix", "", "specify version prefix of docs (e.g. '1.1')")
+	flag.Usage = func() {
+		help(os.Stdout)
 		os.Exit(1)
 	}
 
-	flags.Parse(os.Args)
-	fmt.Println(flags.Args())
-
-	fmt.Println(*flagVersionPrefix)
+	flag.Parse()
 	if *flagVersionPrefix != "" {
 		version = *flagVersionPrefix
 	}
 
-	cmd := commands[os.Args[1]]
-	if cmd == nil {
-		fmt.Fprintln(os.Stderr, "unknown command:", os.Args[1])
+	if len(flag.Args()) < 1 {
+		fmt.Fprintln(os.Stderr, "You must specify a command to run")
 		help(os.Stderr)
 		os.Exit(1)
 	}
 
-	cmd.f(os.Args[2:])
+	cmd := commands[flag.Args()[0]]
+	if cmd == nil {
+		fmt.Fprintln(os.Stderr, "unknown command:", flag.Args()[0])
+		help(os.Stderr)
+		os.Exit(1)
+	}
+
+	cmd.f(flag.Args()[1:])
 }
 
 func help(w io.Writer) {
-	fmt.Fprintln(w, "usage: md2html [command] [-prefix PREFIX] [arguments]")
-	fmt.Fprint(w, "\nFlags:\n")
+	fmt.Fprintln(w, "usage: md2html [-prefix PREFIX] [command] [command-arguments]")
+	fmt.Fprintln(w, "\nFlags:")
 	fmt.Fprintln(w, "\t-prefix   specify version prefix of docs (e.g. '1.1')")
-	fmt.Fprint(w, "\nThe commands are:\n\n")
+	fmt.Fprintln(w, "\nThe commands are:\n")
 	for name := range commands {
 		fmt.Fprintln(w, "\t", name)
 	}
@@ -79,8 +82,19 @@ func help(w io.Writer) {
 }
 
 func serve(args []string) {
-	fmt.Println(args)
-	addr := ":8080"
+	addr := "8080"
+	if len(args) >= 1 {
+		if _, err := strconv.Atoi(args[0]); err != nil {
+			fmt.Fprintln(os.Stderr, "You must specify a numeric port for serving content\n")
+			fmt.Fprintln(os.Stderr, "usage: md2html [-prefix X.Y] serve PORT")
+			fmt.Fprintln(os.Stderr)
+			os.Exit(1)
+
+		}
+		addr = args[0]
+	}
+
+	addr = ":" + addr
 
 	fmt.Printf("serving at: http://localhost%s\n", addr)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -125,7 +139,13 @@ func serve(args []string) {
 }
 
 func convert(args []string) {
-	fmt.Println(args)
+	if len(args) < 1 {
+		fmt.Fprintln(os.Stderr, "You must specify an destination path for built docs\n")
+		fmt.Fprintln(os.Stderr, "usage: md2html [-prefix X.Y] build DEST_PATH")
+		fmt.Fprintln(os.Stderr)
+		os.Exit(1)
+	}
+
 	dest := args[0]
 
 	fmt.Printf("Converting markdown to: %s\n", dest)

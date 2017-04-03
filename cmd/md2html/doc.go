@@ -11,7 +11,7 @@ of the converted markdown.
 
 Usage
 
-	md2html [destination]
+	md2html build [-prefix <major>.<minor>] [destination]
 
 
 	destination - address or directory
@@ -30,12 +30,12 @@ Example
 
 Start a server in the current directory:
 
-	$ md2html
+	$ md2html serve [-prefix <major>.<minor>]
 
 Copy all files --and convert .md to HTML-- in the current directory and
 write them to ~/site:
 
-	$ md2html ~/site
+	$ md2html serve ~/site
 
 Code Interpolation
 
