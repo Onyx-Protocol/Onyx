@@ -5,13 +5,13 @@ For each markdown file in the current directory, md2html will convert
 the markdown to html and write the resulting html to a file of
 the same name in the destination directory.
 
-If there is a file named layout.html which contains `{{Body}}`
+If there is a file named layout.html which contains `{{.Body}}`
 in the current directory, md2html use that data to wrap the html output
 of the converted markdown.
 
 Usage
 
-	md2html build [-prefix <major>.<minor>] [destination]
+	md2html [-prefix <major>.<minor>] build DEST_PATH
 
 
 	destination - address or directory
@@ -30,12 +30,7 @@ Example
 
 Start a server in the current directory:
 
-	$ md2html serve [-prefix <major>.<minor>]
-
-Copy all files --and convert .md to HTML-- in the current directory and
-write them to ~/site:
-
-	$ md2html serve ~/site
+	$ md2html [-prefix <major>.<minor>] serve [port]
 
 Code Interpolation
 
