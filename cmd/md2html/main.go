@@ -74,7 +74,7 @@ func help(w io.Writer) {
 	fmt.Fprintln(w, "usage: md2html [-prefix PREFIX] [command] [command-arguments]")
 	fmt.Fprintln(w, "\nFlags:")
 	fmt.Fprintln(w, "\t-prefix   specify version prefix of docs (e.g. '1.1')")
-	fmt.Fprintln(w, "\nThe commands are:\n")
+	fmt.Fprint(w, "\nThe commands are:\n\n")
 	for name := range commands {
 		fmt.Fprintln(w, "\t", name)
 	}
@@ -85,7 +85,7 @@ func serve(args []string) {
 	addr := "8080"
 	if len(args) >= 1 {
 		if _, err := strconv.Atoi(args[0]); err != nil {
-			fmt.Fprintln(os.Stderr, "You must specify a numeric port for serving content\n")
+			fmt.Fprint(os.Stderr, "You must specify a numeric port for serving content\n\n")
 			fmt.Fprintln(os.Stderr, "usage: md2html [-prefix X.Y] serve PORT")
 			fmt.Fprintln(os.Stderr)
 			os.Exit(1)
@@ -145,7 +145,7 @@ func serve(args []string) {
 
 func convert(args []string) {
 	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "You must specify an destination path for built docs\n")
+		fmt.Fprint(os.Stderr, "You must specify an destination path for built docs\n\n")
 		fmt.Fprintln(os.Stderr, "usage: md2html [-prefix X.Y] build DEST_PATH")
 		fmt.Fprintln(os.Stderr)
 		os.Exit(1)
