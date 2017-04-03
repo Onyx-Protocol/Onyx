@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"flag"
 	"fmt"
 	"github.com/russross/blackfriday"
 	"io"
@@ -18,35 +19,69 @@ import (
 	"text/template"
 )
 
-var layoutPlaceholder = []byte("{{.Body}}")
-
-// var documentNamePlaceholder = []byte("{{Filename}}")
-
 var extToLang = map[string]string{
 	"java": "Java",
 	"rb":   "Ruby",
 	"js":   "Node",
 }
 
+type command struct {
+	f func([]string)
+}
+
+var commands = map[string]*command{
+	"serve": {serve},
+	"build": {convert},
+}
+
+var version = ""
+
 func main() {
-	var dest = ":8080"
-
-	if len(os.Args) > 2 {
-		log.Fatal("usage: md2html [dest]")
-	}
-	if len(os.Args) == 2 {
-		dest = os.Args[1]
-	}
-
-	if !strings.Contains(dest, ":") {
-		printe(convert(dest))
+	if len(os.Args) < 2 {
+		help(os.Stdout)
 		os.Exit(0)
 	}
 
-	serve(dest)
+	var flags flag.FlagSet
+	flagVersionPrefix := flags.String("-prefix", "", "specify version prefix of docs (e.g. '1.1')")
+	flags.Usage = func() {
+		flags.PrintDefaults()
+		os.Exit(1)
+	}
+
+	flags.Parse(os.Args)
+	fmt.Println(flags.Args())
+
+	fmt.Println(*flagVersionPrefix)
+	if *flagVersionPrefix != "" {
+		version = *flagVersionPrefix
+	}
+
+	cmd := commands[os.Args[1]]
+	if cmd == nil {
+		fmt.Fprintln(os.Stderr, "unknown command:", os.Args[1])
+		help(os.Stderr)
+		os.Exit(1)
+	}
+
+	cmd.f(os.Args[2:])
 }
 
-func serve(addr string) {
+func help(w io.Writer) {
+	fmt.Fprintln(w, "usage: md2html [command] [-prefix PREFIX] [arguments]")
+	fmt.Fprint(w, "\nFlags:\n")
+	fmt.Fprintln(w, "\t-prefix   specify version prefix of docs (e.g. '1.1')")
+	fmt.Fprint(w, "\nThe commands are:\n\n")
+	for name := range commands {
+		fmt.Fprintln(w, "\t", name)
+	}
+	fmt.Fprintln(w)
+}
+
+func serve(args []string) {
+	fmt.Println(args)
+	addr := ":8080"
+
 	fmt.Printf("serving at: http://localhost%s\n", addr)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := "." + r.URL.Path
@@ -89,9 +124,12 @@ func serve(addr string) {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-func convert(dest string) error {
+func convert(args []string) {
+	fmt.Println(args)
+	dest := args[0]
+
 	fmt.Printf("Converting markdown to: %s\n", dest)
-	return filepath.Walk(".", func(path string, f os.FileInfo, err error) error {
+	convertErr := filepath.Walk(".", func(path string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -136,6 +174,10 @@ func convert(dest string) error {
 		fmt.Printf("converted: %s\n", path)
 		return nil
 	})
+
+	if convertErr != nil {
+		os.Exit(1)
+	}
 }
 
 func printe(err error) {
@@ -168,7 +210,7 @@ func renderTemplate(p string, content []byte, layout []byte) ([]byte, error) {
 		Filename    string
 		Version     string
 		VersionPath string
-	}{string(content), pathClass, "1.1", "1.1/"}
+	}{string(content), pathClass, version, version + "/"}
 
 	layoutTemplate, err := template.New(p).Parse(string(layout))
 	if err != nil {
@@ -200,8 +242,8 @@ func renderMarkdown(p string, src []byte) ([]byte, error) {
 // Returns the contents of a layout.html file
 // starting in the directory of p and ending at the command's
 // working directory.
-// If no layout.html file is found layoutPlaceholder is returned
-// as a default layout.
+// If no layout.html file is found, a default layout that renders .Body
+// is returned.
 func renderLayout(p string, content []byte) ([]byte, error) {
 	// Don't search for layouts beyond the working dir
 	wd, err := os.Getwd()
@@ -209,7 +251,8 @@ func renderLayout(p string, content []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	layout := layoutPlaceholder
+	originalPath := p
+	layout := []byte("{{.Body}}")
 
 	for {
 		p = path.Dir(p)
@@ -227,7 +270,7 @@ func renderLayout(p string, content []byte) ([]byte, error) {
 		}
 	}
 
-	return renderTemplate(p, content, layout)
+	return renderTemplate(originalPath, content, layout)
 }
 
 func interpolateCode(md []byte, hostPath string) []byte {
