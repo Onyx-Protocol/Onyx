@@ -90,7 +90,6 @@ func serve(args []string) {
 			fmt.Fprintln(os.Stderr, "usage: md2html [-prefix X.Y] serve PORT")
 			fmt.Fprintln(os.Stderr)
 			os.Exit(1)
-
 		}
 		addr = args[0]
 	}
