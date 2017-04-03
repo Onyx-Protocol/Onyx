@@ -61,7 +61,7 @@ func sampleTx() *TxData {
 		Version: 1,
 		Inputs: []*TxInput{
 			NewSpendInput(nil, mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), assetID, 1000000000000, 1, []byte{1}, Hash{}, []byte("input")),
-			NewSpendInput(nil, Hash{17, 0, 0, 0}, assetID, 1, 1, []byte{2}, Hash{}, []byte("input2")),
+			NewSpendInput(nil, Hash{0x1100000000000000, 0, 0, 0}, assetID, 1, 1, []byte{2}, Hash{}, []byte("input2")),
 		},
 		Outputs: []*TxOutput{
 			NewTxOutput(assetID, 600000000000, []byte{1}, nil),
