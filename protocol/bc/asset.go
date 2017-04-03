@@ -19,13 +19,7 @@ func (a *AssetID) UnmarshalJSON(b []byte) error { return (*Hash)(a).UnmarshalJSO
 func (a AssetID) Value() (driver.Value, error)  { return Hash(a).Value() }
 func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 
-type AssetDefinition struct {
-	InitialBlockID  Hash
-	IssuanceProgram Program
-	Data            Hash
-}
-
-func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
+func (ad AssetDefinition) ComputeAssetID() (assetID AssetID) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 	writeForHash(h, *ad) // error is impossible

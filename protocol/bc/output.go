@@ -5,15 +5,6 @@ package bc
 // the Output's ControlProgram). Output satisfies the Entry interface.
 //
 // (Not to be confused with the deprecated type TxOutput.)
-type Output struct {
-	Body struct {
-		Source         ValueSource
-		ControlProgram Program
-		Data           Hash
-		ExtHash        Hash
-	}
-	ordinal int
-}
 
 func (Output) Type() string         { return "output1" }
 func (o *Output) body() interface{} { return o.Body }

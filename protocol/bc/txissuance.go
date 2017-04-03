@@ -4,30 +4,6 @@ package bc
 // Entry interface.
 //
 // (Not to be confused with the deprecated type IssuanceInput.)
-type Issuance struct {
-	Body struct {
-		AnchorID Hash
-		Value    AssetAmount
-		Data     Hash
-		ExtHash  Hash
-	}
-	ordinal int
-
-	Witness struct {
-		Destination     ValueDestination
-		AssetDefinition AssetDefinition
-		Arguments       [][]byte
-		AnchoredID      Hash
-	}
-
-	// Anchor is a pointer to the manifested entry corresponding to
-	// Body.AnchorID.
-	Anchor Entry // *nonce, *spend, or *issuance
-
-	// Anchored is a pointer to the manifested entry corresponding to
-	// witness.AnchoredID.
-	Anchored Entry
-}
 
 func (Issuance) Type() string           { return "issuance1" }
 func (iss *Issuance) body() interface{} { return iss.Body }

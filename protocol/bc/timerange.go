@@ -1,12 +1,6 @@
 package bc
 
 // TimeRange denotes a time range. It satisfies the Entry interface.
-type TimeRange struct {
-	Body struct {
-		MinTimeMS, MaxTimeMS uint64
-		ExtHash              Hash
-	}
-}
 
 func (TimeRange) Type() string          { return "timerange1" }
 func (tr *TimeRange) body() interface{} { return tr.Body }

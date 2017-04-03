@@ -4,28 +4,6 @@ package bc
 // elsewhere. It satisfies the Entry interface.
 //
 // (Not to be confused with the deprecated type SpendInput.)
-type Spend struct {
-	Body struct {
-		SpentOutputID Hash // the hash of an output entry
-		Data          Hash
-		ExtHash       Hash
-	}
-	ordinal int
-
-	Witness struct {
-		Destination ValueDestination
-		Arguments   [][]byte
-		AnchoredID  Hash
-	}
-
-	// SpentOutput contains (a pointer to) the manifested entry
-	// corresponding to Body.SpentOutputID.
-	SpentOutput *Output
-
-	// Anchored contains a pointer to the manifested entry corresponding
-	// to witness.AnchoredID.
-	Anchored Entry
-}
 
 func (Spend) Type() string         { return "spend1" }
 func (s *Spend) body() interface{} { return s.Body }

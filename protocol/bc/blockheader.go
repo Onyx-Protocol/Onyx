@@ -2,21 +2,6 @@ package bc
 
 // BlockHeaderEntry contains the header information for a blockchain
 // block. It satisfies the Entry interface.
-type BlockHeaderEntry struct {
-	Body struct {
-		Version              uint64
-		Height               uint64
-		PreviousBlockID      Hash
-		TimestampMS          uint64
-		TransactionsRoot     Hash
-		AssetsRoot           Hash
-		NextConsensusProgram []byte
-		ExtHash              Hash
-	}
-	Witness struct {
-		Arguments [][]byte
-	}
-}
 
 func (BlockHeaderEntry) Type() string          { return "blockheader" }
 func (bh *BlockHeaderEntry) body() interface{} { return bh.Body }
