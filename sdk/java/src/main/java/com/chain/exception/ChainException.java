@@ -18,4 +18,13 @@ public class ChainException extends Exception {
   public ChainException(String message) {
     super(message);
   }
+
+  /**
+   * Initializes a new exception while storing the original cause.
+   * @param message the error message
+   * @param cause the cause of the exception
+   */
+  public ChainException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }
