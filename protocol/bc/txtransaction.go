@@ -26,10 +26,9 @@ func (tx *TxEntries) SigHash(n uint32) (hash Hash) {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 
-	hasher.Write(tx.TxInputIDs[n][:])
-	hasher.Write(tx.ID[:])
-
-	hasher.Read(hash[:])
+	tx.TxInputIDs[n].WriteTo(hasher)
+	tx.ID.WriteTo(hasher)
+	hash.FromHasher(hasher)
 	return hash
 }
 

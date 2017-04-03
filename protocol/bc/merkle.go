@@ -16,16 +16,15 @@ var (
 func MerkleRoot(transactions []*TxEntries) (root Hash, err error) {
 	switch {
 	case len(transactions) == 0:
-		sha3pool.Sum256(root[:], nil)
-		return root, nil
+		return EmptyStringHash, nil
 
 	case len(transactions) == 1:
 		h := sha3pool.Get256()
 		defer sha3pool.Put256(h)
 
 		h.Write(leafPrefix)
-		h.Write(transactions[0].ID[:])
-		h.Read(root[:])
+		transactions[0].ID.WriteTo(h)
+		root.FromHasher(h)
 		return root, nil
 
 	default:
@@ -43,9 +42,9 @@ func MerkleRoot(transactions []*TxEntries) (root Hash, err error) {
 		h := sha3pool.Get256()
 		defer sha3pool.Put256(h)
 		h.Write(interiorPrefix)
-		h.Write(left[:])
-		h.Write(right[:])
-		h.Read(root[:])
+		left.WriteTo(h)
+		right.WriteTo(h)
+		root.FromHasher(h)
 		return root, nil
 	}
 }

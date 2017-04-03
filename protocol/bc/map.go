@@ -9,7 +9,7 @@ import (
 	"chain/protocol/vmutil"
 )
 
-func mapTx(tx *TxData) (headerID *Hash, hdr *TxHeader, entryMap map[Hash]Entry, err error) {
+func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, err error) {
 	entryMap = make(map[Hash]Entry)
 
 	addEntry := func(e Entry) (id Hash, err error) {
@@ -204,7 +204,7 @@ func mapTx(tx *TxData) (headerID *Hash, hdr *TxHeader, entryMap map[Hash]Entry, 
 	return headerID, h, entryMap, nil
 }
 
-func mapBlockHeader(old *BlockHeader) (bhID *Hash, bh *BlockHeaderEntry) {
+func mapBlockHeader(old *BlockHeader) (bhID Hash, bh *BlockHeaderEntry) {
 	bh = NewBlockHeaderEntry(old.Version, old.Height, old.PreviousBlockHash, old.TimestampMS, old.TransactionsMerkleRoot, old.AssetsMerkleRoot, old.ConsensusProgram)
 	bh.Witness.Arguments = old.Witness
 	bhID = EntryID(bh)
@@ -224,6 +224,8 @@ func MapBlock(old *Block) *BlockEntries {
 }
 
 func hashData(data []byte) (h Hash) {
-	sha3pool.Sum256(h[:], data)
+	var b32 Byte32
+	sha3pool.Sum256(b32[:], data)
+	h.FromByte32(b32)
 	return
 }

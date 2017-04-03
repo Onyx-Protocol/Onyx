@@ -131,7 +131,7 @@ func TestEmptyBlock(t *testing.T) {
 
 	wantHash := mustDecodeHash("6a73cbca99e33c8403d589664623c74df34dd6d7328ab6e7f27dd3e60d959850")
 	if h := block.Hash(); h != wantHash {
-		t.Errorf("got block hash %x, want %x", h[:], wantHash[:])
+		t.Errorf("got block hash %x, want %x", h.Bytes(), wantHash.Bytes())
 	}
 
 	wTime := time.Unix(0, 0).UTC()

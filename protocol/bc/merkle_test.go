@@ -1,7 +1,6 @@
 package bc
 
 import (
-	"bytes"
 	"testing"
 	"time"
 
@@ -65,9 +64,9 @@ func TestMerkleRoot(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error %s", err)
 		}
-		if !bytes.Equal(got[:], c.want[:]) {
+		if got != c.want {
 			t.Log("witnesses", c.witnesses)
-			t.Errorf("got merkle root = %s want %s", got, c.want)
+			t.Errorf("got merkle root = %x want %x", got.Bytes(), c.want.Bytes())
 		}
 	}
 }
@@ -138,8 +137,8 @@ func TestAllDuplicateLeaves(t *testing.T) {
 	}
 }
 
-func mustParseHash(s string) Hash {
-	h, err := ParseHash(s)
+func mustParseHash(s string) (h Hash) {
+	err := h.UnmarshalText([]byte(s))
 	if err != nil {
 		panic(err)
 	}

@@ -143,6 +143,6 @@ func (sc *SpendCommitment) Hash(suffix []byte, assetVersion uint64) (spendhash H
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 	sc.writeExtensibleString(h, suffix, assetVersion) // TODO(oleg): get rid of this assetVersion parameter to actually write all the bytes
-	h.Read(spendhash[:])
+	spendhash.FromHasher(h)
 	return spendhash
 }

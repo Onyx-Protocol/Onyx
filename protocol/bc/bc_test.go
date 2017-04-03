@@ -16,13 +16,15 @@ func serialize(t *testing.T, wt io.WriterTo) []byte {
 	return b.Bytes()
 }
 
-func mustDecodeHash(hash string) (h [32]byte) {
-	if len(hash) != hex.EncodedLen(len(h)) {
+func mustDecodeHash(s string) (h Hash) {
+	var b32 Byte32
+	if len(s) != hex.EncodedLen(len(b32)) {
 		panic("wrong length hash")
 	}
-	_, err := hex.Decode(h[:], []byte(hash))
+	_, err := hex.Decode(b32[:], []byte(s))
 	if err != nil {
 		panic(err)
 	}
+	h.FromByte32(b32)
 	return h
 }

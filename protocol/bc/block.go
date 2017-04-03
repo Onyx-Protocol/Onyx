@@ -31,7 +31,7 @@ type Block struct {
 
 type BlockEntries struct {
 	*BlockHeaderEntry
-	ID           *Hash
+	ID           Hash
 	Transactions []*TxEntries
 }
 
@@ -135,7 +135,7 @@ type BlockHeader struct {
 	Height uint64
 
 	// Hash of the previous block in the block chain.
-	PreviousBlockHash *Hash
+	PreviousBlockHash Hash
 
 	// Time of the block in milliseconds.
 	// Must grow monotonically and can be equal
@@ -174,7 +174,7 @@ func (bh *BlockHeader) Value() (driver.Value, error) {
 }
 
 // Hash returns complete hash of the block header.
-func (bh *BlockHeader) Hash() *Hash {
+func (bh *BlockHeader) Hash() Hash {
 	h, _ := mapBlockHeader(bh)
 	return h
 }
@@ -227,7 +227,6 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 		return 0, err
 	}
 
-	bh.PreviousBlockHash = new(Hash)
 	_, err = bh.PreviousBlockHash.readFrom(r)
 	if err != nil {
 		return 0, err

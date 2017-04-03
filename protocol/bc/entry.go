@@ -34,7 +34,7 @@ var errInvalidValue = errors.New("invalid value")
 
 // EntryID computes the identifier of an entry, as the hash of its
 // body plus some metadata.
-func EntryID(e Entry) (hash *Hash) {
+func EntryID(e Entry) (hash Hash) {
 	if e == nil {
 		return hash
 	}
@@ -62,13 +62,11 @@ func EntryID(e Entry) (hash *Hash) {
 	bh.Read(innerHash[:])
 	hasher.Write(innerHash[:])
 
-	var (
-		hash Hash
-		b32 [32]byte
-	)
+	var b32 Byte32
+
 	hasher.Read(b32[:])
 	hash.FromByte32(b32)
-	return &hash
+	return hash
 }
 
 // writeForHash serializes the object c to the writer w, from which
@@ -102,6 +100,9 @@ func writeForHash(w io.Writer, c interface{}) error {
 			b32 = v.Byte32()
 		}
 		_, err := w.Write(b32[:])
+		return errors.Wrap(err, "writing Hash for hash")
+	case Hash:
+		_, err := v.WriteTo(w)
 		return errors.Wrap(err, "writing Hash for hash")
 	case AssetID:
 		_, err := w.Write(v[:])

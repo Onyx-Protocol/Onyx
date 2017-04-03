@@ -149,7 +149,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 		// TODO(bobg): test that serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
 		if ii != nil {
 			// read IssuanceInput witness
-			_, err = io.ReadFull(r, ii.InitialBlock[:])
+			_, err = ii.InitialBlock.readFrom(r)
 			if err != nil {
 				return err
 			}
@@ -253,7 +253,7 @@ func (t *TxInput) WriteInputCommitment(w io.Writer, serflags uint8) error {
 				err = inp.SpendCommitment.writeExtensibleString(w, inp.SpendCommitmentSuffix, t.AssetVersion)
 			} else {
 				prevouthash := inp.SpendCommitment.Hash(inp.SpendCommitmentSuffix, t.AssetVersion)
-				_, err = w.Write(prevouthash[:])
+				_, err = prevouthash.WriteTo(w)
 			}
 			return err
 		}
@@ -265,7 +265,7 @@ func (t *TxInput) writeInputWitness(w io.Writer) error {
 	if t.AssetVersion == 1 {
 		switch inp := t.TypedInput.(type) {
 		case *IssuanceInput:
-			_, err := w.Write(inp.InitialBlock[:])
+			_, err := inp.InitialBlock.WriteTo(w)
 			if err != nil {
 				return err
 			}

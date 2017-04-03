@@ -1,6 +1,10 @@
 package bc
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/davecgh/go-spew/spew"
+)
 
 func TestTxHashes(t *testing.T) {
 	cases := []struct {
@@ -26,7 +30,7 @@ func TestTxHashes(t *testing.T) {
 			t.Errorf("case %d: len(txEntries.TxInputs) = %d, want %d", i, len(txEntries.TxInputs), len(c.txdata.Inputs))
 		}
 		if c.hash != txEntries.ID {
-			t.Errorf("case %d: got txid %x, want %x", i, txEntries.ID[:], c.hash[:])
+			t.Errorf("case %d: got txid %x, want %x. txEntries is:\n%s", i, txEntries.ID.Bytes(), c.hash.Bytes(), spew.Sdump(txEntries))
 		}
 	}
 }
@@ -57,7 +61,7 @@ func sampleTx() *TxData {
 		Version: 1,
 		Inputs: []*TxInput{
 			NewSpendInput(nil, mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), assetID, 1000000000000, 1, []byte{1}, Hash{}, []byte("input")),
-			NewSpendInput(nil, Hash{17}, assetID, 1, 1, []byte{2}, Hash{}, []byte("input2")),
+			NewSpendInput(nil, Hash{17, 0, 0, 0}, assetID, 1, 1, []byte{2}, Hash{}, []byte("input2")),
 		},
 		Outputs: []*TxOutput{
 			NewTxOutput(assetID, 600000000000, []byte{1}, nil),

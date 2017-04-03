@@ -1,31 +1,26 @@
 package bc
 
 import (
-	"bytes"
 	"database/sql/driver"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
+	"encoding/binary"
 	"io"
 
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
-	"chain/errors"
 )
 
-var EmptyStringHash *Hash
+var EmptyStringHash Hash
 
 func init() {
-	EmptyStringHash = new(Hash)
 	EmptyStringHash.FromByte32(sha3.Sum256(nil))
 }
 
 // Hash represents a 256-bit hash.  Data structure defined in
 // hash.proto.
 
-func (h *Hash) Byte32() (b32 [32]byte) {
+func (h Hash) Byte32() (b32 Byte32) {
 	binary.BigEndian.PutUint64(b32[0:8], h.V0)
 	binary.BigEndian.PutUint64(b32[8:16], h.V1)
 	binary.BigEndian.PutUint64(b32[16:24], h.V2)
@@ -33,43 +28,32 @@ func (h *Hash) Byte32() (b32 [32]byte) {
 	return b32
 }
 
-func (h *Hash) FromByte32(b32 [32]byte) {
+func (h *Hash) FromByte32(b32 Byte32) {
 	h.V0 = binary.BigEndian.Uint64(b32[0:8])
 	h.V1 = binary.BigEndian.Uint64(b32[8:16])
 	h.V2 = binary.BigEndian.Uint64(b32[16:24])
 	h.V3 = binary.BigEndian.Uint64(b32[24:32])
 }
 
-// String returns the bytes of h encoded in hex.
-func (h *Hash) String() string {
-	b, _ := h.MarshalText() // #nosec
-	return string(b)
+func (h *Hash) FromHasher(hasher sha3.ShakeHash) {
+	var b32 Byte32
+	hasher.Read(b32[:])
+	h.FromByte32(b32)
 }
 
 // MarshalText satisfies the TextMarshaler interface.
 // It returns the bytes of h encoded in hex,
 // for formats that can't hold arbitrary binary data.
 // It never returns an error.
-func (h *Hash) MarshalText() ([]byte, error) {
-	b32 := h.Byte32()
-	b := make([]byte, hex.EncodedLen(len(b32)))
-	hex.Encode(b, b32[:])
-	return b, nil
+func (h Hash) MarshalText() ([]byte, error) {
+	return h.Byte32().MarshalText()
 }
 
 // UnmarshalText satisfies the TextUnmarshaler interface.
 // It decodes hex data from b into h.
 func (h *Hash) UnmarshalText(b []byte) error {
-	var b32 [32]byte
-	if len(b) != hex.EncodedLen(len(b32)) {
-		return errors.WithDetailf(
-			fmt.Errorf("bad hash hex length %d", len(b)),
-			"expected hex string of length %d, but got `%s`",
-			hex.EncodedLen(len(b32)),
-			b,
-		)
-	}
-	_, err := hex.Decode(b32[:], b)
+	var b32 Byte32
+	err := b32.UnmarshalText(b)
 	if err != nil {
 		return err
 	}
@@ -81,18 +65,13 @@ func (h *Hash) UnmarshalText(b []byte) error {
 // If b is a JSON-encoded null, it copies the zero-value into h. Othwerwise, it
 // decodes hex data from b into h.
 func (h *Hash) UnmarshalJSON(b []byte) error {
-	if bytes.Equal(b, []byte("null")) {
-		*h = Hash{}
-		return nil
-	}
-
-	s := new(string)
-	err := json.Unmarshal(b, s)
+	var b32 Byte32
+	err := b32.UnmarshalJSON(b)
 	if err != nil {
 		return err
 	}
-
-	return h.UnmarshalText([]byte(*s))
+	h.FromByte32(b32)
+	return nil
 }
 
 func (h Hash) Bytes() []byte {
@@ -107,28 +86,13 @@ func (h Hash) Value() (driver.Value, error) {
 
 // Scan satisfies the driver.Scanner interface
 func (h *Hash) Scan(val interface{}) error {
-	switch v := val.(type) {
-	case []byte:
-		var b32 [32]byte
-		copy(b32[:], v)
-		h.FromByte32(b32)
-		return nil
-	default:
-		return fmt.Errorf("Hash.Scan received unsupported type %T", val)
+	var b32 Byte32
+	err := b32.Scan(val)
+	if err != nil {
+		return err
 	}
-}
-
-// ParseHash takes a hex-encoded hash and returns
-// a 32 byte array.
-func ParseHash(s string) (h *Hash, err error) {
-	var b32 [32]byte
-	if len(s) != hex.EncodedLen(len(b32)) {
-		return h, errors.New("wrong hex length")
-	}
-	_, err = hex.Decode(b32[:], []byte(s))
-	h = new(Hash)
 	h.FromByte32(b32)
-	return h, errors.Wrap(err, "decode hex")
+	return nil
 }
 
 func writeFastHash(w io.Writer, d []byte) error {
@@ -144,17 +108,15 @@ func writeFastHash(w io.Writer, d []byte) error {
 
 // WriteTo writes p to w.
 func (h *Hash) WriteTo(w io.Writer) (int64, error) {
-	b32 := h.Byte32()
-	n, err := w.Write(b32[:])
-	return int64(n), err
+	return h.Byte32().WriteTo(w)
 }
 
 func (h *Hash) readFrom(r io.Reader) (int, error) {
-	var b32 [32]byte
-	n, err := io.ReadFull(r, b32[:])
+	var b32 Byte32
+	n, err := b32.ReadFrom(r)
 	if err != nil {
-		return n, err
+		return int(n), err
 	}
 	h.FromByte32(b32)
-	return n, nil
+	return int(n), nil
 }

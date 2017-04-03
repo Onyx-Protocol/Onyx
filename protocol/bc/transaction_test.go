@@ -23,7 +23,7 @@ func TestTransaction(t *testing.T) {
 	cases := []struct {
 		tx   *Tx
 		hex  string
-		hash [32]byte
+		hash Hash
 	}{
 		{
 			tx: NewTx(TxData{

@@ -10,19 +10,19 @@ import (
 
 // AssetID is the Hash256 of the issuance script for the asset and the
 // initial block of the chain where it appears.
-type AssetID [32]byte
+type AssetID Byte32
 
-func (a AssetID) String() string                { return Hash(a).String() }
-func (a AssetID) MarshalText() ([]byte, error)  { return Hash(a).MarshalText() }
-func (a *AssetID) UnmarshalText(b []byte) error { return (*Hash)(a).UnmarshalText(b) }
-func (a *AssetID) UnmarshalJSON(b []byte) error { return (*Hash)(a).UnmarshalJSON(b) }
-func (a AssetID) Value() (driver.Value, error)  { return Hash(a).Value() }
-func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
+func (a AssetID) String() string                { return Byte32(a).String() }
+func (a AssetID) MarshalText() ([]byte, error)  { return Byte32(a).MarshalText() }
+func (a *AssetID) UnmarshalText(b []byte) error { return (*Byte32)(a).UnmarshalText(b) }
+func (a *AssetID) UnmarshalJSON(b []byte) error { return (*Byte32)(a).UnmarshalJSON(b) }
+func (a AssetID) Value() (driver.Value, error)  { return Byte32(a).Value() }
+func (a *AssetID) Scan(b interface{}) error     { return (*Byte32)(a).Scan(b) }
 
 type AssetDefinition struct {
-	InitialBlockID  *Hash
+	InitialBlockID  Hash
 	IssuanceProgram Program
-	Data            *Hash
+	Data            Hash
 }
 
 func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
@@ -33,7 +33,7 @@ func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
 	return assetID
 }
 
-func ComputeAssetID(prog []byte, initialBlockID *Hash, vmVersion uint64, data *Hash) AssetID {
+func ComputeAssetID(prog []byte, initialBlockID Hash, vmVersion uint64, data Hash) AssetID {
 	def := &AssetDefinition{
 		InitialBlockID: initialBlockID,
 		IssuanceProgram: Program{
