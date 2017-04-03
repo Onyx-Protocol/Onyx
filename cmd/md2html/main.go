@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/russross/blackfriday"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/russross/blackfriday"
 )
 
 var extToLang = map[string]string{
