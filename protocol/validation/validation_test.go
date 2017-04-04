@@ -12,12 +12,18 @@ import (
 	"chain/testutil"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/golang/protobuf/proto"
 )
+
+func init() {
+	spew.Config.DisableMethods = true
+}
 
 func TestTxValidation(t *testing.T) {
 	var (
-		tx *bc.TxEntries
-		vs *validationState
+		tx      *bc.TxEntries
+		vs      *validationState
+		fixture *txFixture
 
 		// the mux from tx, pulled out for convenience
 		mux *bc.Mux
@@ -168,7 +174,17 @@ func TestTxValidation(t *testing.T) {
 		{
 			desc: "mismatched output source and mux dest",
 			f: func() {
-				mux.Witness.Destinations[0].Ref = bc.Hash{1}.Proto()
+				// For this test, it's necessary to construct a mostly
+				// identical second transaction in order to get a similar but
+				// not equal output entry for the mux to falsely point
+				// to. That entry must be added to the first tx's Entries map.
+				fixture.txOutputs[0].ReferenceData = []byte{1}
+				fixture2 := sample(t, fixture)
+				tx2 := bc.NewTx(*fixture2.tx).TxEntries
+				out2ID := tx2.Body.ResultIds[0].Hash()
+				out2 := tx2.Entries[out2ID].(*bc.Output)
+				tx.Entries[out2ID] = out2
+				mux.Witness.Destinations[0].Ref = out2ID.Proto()
 			},
 			err: errMismatchedReference,
 		},
@@ -182,7 +198,10 @@ func TestTxValidation(t *testing.T) {
 		{
 			desc: "mismatched mux dest value / output source value",
 			f: func() {
-				mux.Witness.Destinations[0].Value.Amount = tx.Entries[tx.Body.ResultIds[0].Hash()].(*bc.Output).Body.Source.Value.Amount + 1
+				outID := tx.Body.ResultIds[0].Hash()
+				out := tx.Entries[outID].(*bc.Output)
+				mux.Body.Sources[0].Value.Amount++
+				mux.Witness.Destinations[0].Value.Amount = out.Body.Source.Value.Amount + 1
 			},
 			err: errMismatchedValue,
 		},
@@ -307,7 +326,7 @@ func TestTxValidation(t *testing.T) {
 	for i, c := range cases {
 		t.Logf("case %d", i)
 
-		fixture := sample(t, nil)
+		fixture = sample(t, nil)
 		tx = bc.NewTx(*fixture.tx).TxEntries
 		vs = &validationState{
 			blockchainID: fixture.initialBlockID,
@@ -330,6 +349,7 @@ func TestTxValidation(t *testing.T) {
 
 func TestBlockHeaderValid(t *testing.T) {
 	base := bc.NewBlockHeaderEntry(1, 1, bc.Hash{}, 1, bc.Hash{}, bc.Hash{}, nil)
+	baseBytes, _ := proto.Marshal(base)
 
 	var bh bc.BlockHeaderEntry
 
@@ -353,7 +373,7 @@ func TestBlockHeaderValid(t *testing.T) {
 
 	for i, c := range cases {
 		t.Logf("case %d", i)
-		bh = *base
+		proto.Unmarshal(baseBytes, &bh)
 		if c.f != nil {
 			c.f()
 		}

@@ -258,7 +258,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.Wrap(err, "checking control program")
 		}
 
-		if spentOutput.Body.Source.Value != e.Witness.Destination.Value {
+		if spentOutput.Body.Source.Value.AssetAmount() != e.Witness.Destination.Value.AssetAmount() {
 			return errors.WithDetailf(
 				errMismatchedValue,
 				"previous output is for %d unit(s) of %x, spend wants %d unit(s) of %x",
@@ -335,7 +335,7 @@ func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 		return errors.Wrapf(errMismatchedPosition, "value source position %d disagrees with %d", dest.Position, vstate.sourcePos)
 	}
 
-	if dest.Value != vs.Value {
+	if dest.Value.AssetAmount() != vs.Value.AssetAmount() {
 		return errors.Wrapf(errMismatchedValue, "source value %v disagrees with %v", dest.Value, vs.Value)
 	}
 
@@ -376,7 +376,7 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 		return errors.Wrapf(errMismatchedPosition, "value destination position %d disagrees with %d", src.Position, vs.destPos)
 	}
 
-	if src.Value != vd.Value {
+	if src.Value.AssetAmount() != vd.Value.AssetAmount() {
 		return errors.Wrapf(errMismatchedValue, "destination value %v disagrees with %v", src.Value, vd.Value)
 	}
 

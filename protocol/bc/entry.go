@@ -1,7 +1,6 @@
 package bc
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"reflect"
@@ -72,12 +71,6 @@ func EntryID(e Entry) (hash Hash) {
 // hash-serialization formats are not specified. It MUST NOT produce
 // errors in other cases.
 func writeForHash(w io.Writer, c interface{}) error {
-	ww := newWrappedWriter(w)
-	defer func() {
-		fmt.Printf("writeForHash(%T) wrote %x\n", c, ww.b.Bytes())
-	}()
-	w = ww
-
 	switch v := c.(type) {
 	case byte:
 		_, err := w.Write([]byte{v})
@@ -168,22 +161,4 @@ func writeForHash(w io.Writer, c interface{}) error {
 	}
 
 	return errors.Wrap(fmt.Errorf("bad type %T", c))
-}
-
-// xxx
-type wrappedWriter struct {
-	b *bytes.Buffer
-	w io.Writer
-}
-
-func newWrappedWriter(w io.Writer) *wrappedWriter {
-	return &wrappedWriter{
-		b: new(bytes.Buffer),
-		w: w,
-	}
-}
-
-func (ww *wrappedWriter) Write(b []byte) (int, error) {
-	ww.b.Write(b)
-	return ww.w.Write(b)
 }
