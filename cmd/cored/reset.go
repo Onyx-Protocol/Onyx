@@ -1,27 +1,25 @@
-//+build !prod
+//+build !disable_reset
 
 package main
 
 import (
-	"context"
-	"fmt"
-	"net"
-	"net/http"
-	"os"
-
-	"chain/core"
-	"chain/core/blocksigner"
+	"chain/core/config"
 	"chain/core/coreunsafe"
-	"chain/core/mockhsm"
 	"chain/database/pg"
 	"chain/env"
 	"chain/log"
+	"context"
+	"fmt"
+	"os"
 )
 
 var (
 	reset = env.String("RESET", "")
-	prod  = false
 )
+
+func init() {
+	config.Reset = true
+}
 
 func resetInDevIfRequested(db pg.DB) {
 	if *reset != "" {
@@ -41,18 +39,4 @@ func resetInDevIfRequested(db pg.DB) {
 			log.Fatalkv(ctx, log.KeyError, err)
 		}
 	}
-}
-
-func authLoopbackInDev(req *http.Request) bool {
-	// Allow connections from the local host.
-	a, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)
-	return err == nil && a.IP.IsLoopback()
-}
-
-func devEnableMockHSM(db pg.DB) []core.RunOption {
-	return []core.RunOption{core.MockHSM(mockhsm.New(db))}
-}
-
-func devHSM(db pg.DB) (blocksigner.Signer, error) {
-	return mockhsm.New(db), nil
 }

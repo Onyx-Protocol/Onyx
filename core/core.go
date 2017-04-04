@@ -17,7 +17,7 @@ import (
 var (
 	errAlreadyConfigured = errors.New("core is already configured; must reset first")
 	errUnconfigured      = errors.New("core is not configured")
-	errProduction        = errors.New("core is configured for production, not development")
+	errDisabled          = errors.New("this functionality is disabled")
 	errBadBlockPub       = errors.New("supplied block pub key is invalid")
 	errNoClientTokens    = errors.New("cannot enable client auth without client access tokens")
 )
@@ -44,7 +44,6 @@ func (a *API) info(ctx context.Context) (map[string]interface{}, error) {
 		// never configured
 		return map[string]interface{}{
 			"is_configured": false,
-			"is_production": config.Production,
 			"version":       config.Version,
 			"build_commit":  config.BuildCommit,
 			"build_date":    config.BuildDate,
@@ -102,13 +101,21 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
-		"is_production":                     config.Production,
 		"network_rpc_version":               networkRPCVersion,
 		"core_id":                           a.config.ID,
 		"version":                           config.Version,
 		"build_commit":                      config.BuildCommit,
 		"build_date":                        config.BuildDate,
 		"health":                            a.health(),
+		"config": struct {
+			AccessTokens bool `json:"access_tokens"`
+			MockHSM      bool
+			Reset        bool
+		}{
+			AccessTokens: config.AccessTokens,
+			MockHSM:      config.MockHSM,
+			Reset:        config.Reset,
+		},
 	}
 
 	// Add in snapshot information if we're downloading a snapshot.

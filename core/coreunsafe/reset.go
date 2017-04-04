@@ -12,7 +12,6 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/core/config"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -26,12 +25,6 @@ var (
 // unconfigured core. It does not delete access tokens or mockhsm
 // keys.
 func ResetBlockchain(ctx context.Context, db pg.DB) error {
-	if config.Production {
-		// Shouldn't ever happen; This package shouldn't even be
-		// included in a production binary.
-		panic("reset called on production")
-	}
-
 	var skip []string
 	skip = append(skip, persistBlockchainReset...)
 	skip = append(skip, neverReset...)
@@ -56,12 +49,6 @@ func ResetBlockchain(ctx context.Context, db pg.DB) error {
 
 // ResetEverything deletes all of a Core's data.
 func ResetEverything(ctx context.Context, db pg.DB) error {
-	if config.Production {
-		// Shouldn't ever happen; This package shouldn't even be
-		// included in a production binary.
-		panic("reset called on production")
-	}
-
 	err := ResetBlockchain(ctx, db)
 	if err != nil {
 		return errors.Wrap(err)

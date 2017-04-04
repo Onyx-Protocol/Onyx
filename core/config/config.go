@@ -35,7 +35,9 @@ var (
 	ErrNoProdBlockHSMURL = errors.New("block hsm URL cannot be empty in production")
 
 	Version, BuildCommit, BuildDate string
-	Production                      bool
+	AccessTokens                    bool
+	MockHSM                         bool
+	Reset                           bool
 )
 
 // Config encapsulates Core-level, persistent configuration options.
