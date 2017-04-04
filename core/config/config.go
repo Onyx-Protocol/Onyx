@@ -36,6 +36,12 @@ var (
 
 	Version, BuildCommit, BuildDate string
 	Production                      bool
+
+	BuildConfig = struct {
+		MockHSM bool `json:"mockhsm"`
+	}{
+		MockHSM: true,
+	}
 )
 
 // Config encapsulates Core-level, persistent configuration options.

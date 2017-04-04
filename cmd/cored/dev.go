@@ -9,10 +9,7 @@ import (
 	"net/http"
 	"os"
 
-	"chain/core"
-	"chain/core/blocksigner"
 	"chain/core/coreunsafe"
-	"chain/core/mockhsm"
 	"chain/database/pg"
 	"chain/env"
 	"chain/log"
@@ -47,12 +44,4 @@ func authLoopbackInDev(req *http.Request) bool {
 	// Allow connections from the local host.
 	a, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)
 	return err == nil && a.IP.IsLoopback()
-}
-
-func devEnableMockHSM(db pg.DB) []core.RunOption {
-	return []core.RunOption{core.MockHSM(mockhsm.New(db))}
-}
-
-func devHSM(db pg.DB) (blocksigner.Signer, error) {
-	return mockhsm.New(db), nil
 }
