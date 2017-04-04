@@ -106,7 +106,8 @@ message Output {
     ProtoHash   data            = 3;
     ProtoHash   ext_hash        = 4;
   }
-  Body body = 1;
+  Body   body    = 1;
+  uint64 ordinal = 2;
 }
 
 message Retirement {
@@ -115,7 +116,8 @@ message Retirement {
     ProtoHash   data     = 2;
     ProtoHash   ext_hash = 3;
   }
-  Body body = 1;
+  Body   body    = 1;
+  uint64 ordinal = 2;
 }
 
 message TimeRange {
@@ -142,6 +144,7 @@ message Issuance {
   }
   Body    body    = 1;
   Witness witness = 2;
+  uint64  ordinal = 3;
 }
 
 message Spend {
@@ -157,4 +160,5 @@ message Spend {
   }
   Body    body    = 1;
   Witness witness = 2;
+  uint64  ordinal = 3;
 }

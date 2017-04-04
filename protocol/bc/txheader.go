@@ -8,19 +8,16 @@ package bc
 func (TxHeader) Type() string         { return "txheader" }
 func (h *TxHeader) body() interface{} { return h.Body }
 
-func (TxHeader) Ordinal() int { return -1 }
-
 // NewTxHeader creates an new TxHeader.
 func NewTxHeader(version uint64, results []Entry, data Hash, minTimeMS, maxTimeMS uint64) *TxHeader {
 	h := new(TxHeader)
 	h.Body.Version = version
-	h.Body.Data = data
-	h.Body.MinTimeMS = minTimeMS
-	h.Body.MaxTimeMS = maxTimeMS
+	h.Body.Data = data.Proto()
+	h.Body.MinTimeMs = minTimeMS
+	h.Body.MaxTimeMs = maxTimeMS
 
-	h.Results = results
 	for _, r := range results {
-		h.Body.ResultIDs = append(h.Body.ResultIDs, EntryID(r))
+		h.Body.ResultIds = append(h.Body.ResultIds, EntryID(r).Proto())
 	}
 
 	return h

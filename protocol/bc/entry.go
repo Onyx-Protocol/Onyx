@@ -25,13 +25,6 @@ type Entry interface {
 	// Body produces the entry's body, which is used as input to
 	// EntryID.
 	body() interface{}
-
-	// Ordinal reports the position of the TxInput or TxOutput within
-	// its transaction, when this entry was created from such an
-	// object. (See mapTx.) Both inputs (spends and issuances) and
-	// outputs (including retirements) are numbered beginning at
-	// zero. Entries not originating in this way report -1.
-	Ordinal() int
 }
 
 var errInvalidValue = errors.New("invalid value")

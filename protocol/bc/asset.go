@@ -22,19 +22,19 @@ func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 func (ad AssetDefinition) ComputeAssetID() (assetID AssetID) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
-	writeForHash(h, *ad) // error is impossible
+	writeForHash(h, ad) // error is impossible
 	h.Read(assetID[:])
 	return assetID
 }
 
 func ComputeAssetID(prog []byte, initialBlockID Hash, vmVersion uint64, data Hash) AssetID {
 	def := &AssetDefinition{
-		InitialBlockID: initialBlockID,
-		IssuanceProgram: Program{
-			VMVersion: vmVersion,
+		InitialBlockId: initialBlockID.Proto(),
+		IssuanceProgram: &Program{
+			VmVersion: vmVersion,
 			Code:      prog,
 		},
-		Data: data,
+		Data: data.Proto(),
 	}
 	return def.ComputeAssetID()
 }
@@ -61,4 +61,29 @@ func (a *AssetAmount) writeTo(w io.Writer) error {
 	}
 	_, err = blockchain.WriteVarint63(w, a.Amount)
 	return err
+}
+
+func (pa ProtoAssetID) AssetID() AssetID {
+	h := pa.Hash.Hash()
+	return AssetID(h)
+}
+
+func (a AssetID) Proto() *ProtoAssetID {
+	return &ProtoAssetID{
+		Hash: Hash(a).Proto(),
+	}
+}
+
+func (paa ProtoAssetAmount) AssetAmount() AssetAmount {
+	return AssetAmount{
+		AssetID: paa.AssetId.AssetID(),
+		Amount:  paa.Amount,
+	}
+}
+
+func (aa AssetAmount) Proto() *ProtoAssetAmount {
+	return &ProtoAssetAmount{
+		AssetId: aa.AssetID.Proto(),
+		Amount:  aa.Amount,
+	}
 }

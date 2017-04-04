@@ -8,24 +8,20 @@ package bc
 func (Issuance) Type() string           { return "issuance1" }
 func (iss *Issuance) body() interface{} { return iss.Body }
 
-func (iss Issuance) Ordinal() int { return iss.ordinal }
-
 func (iss *Issuance) SetDestination(id Hash, val AssetAmount, pos uint64, e Entry) {
-	iss.Witness.Destination = ValueDestination{
-		Ref:      id,
-		Value:    val,
+	iss.Witness.Destination = &ValueDestination{
+		Ref:      id.Proto(),
+		Value:    val.Proto(),
 		Position: pos,
-		Entry:    e,
 	}
 }
 
 // NewIssuance creates a new Issuance.
-func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal int) *Issuance {
+func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal uint64) *Issuance {
 	iss := new(Issuance)
-	iss.Body.AnchorID = EntryID(anchor)
-	iss.Anchor = anchor
-	iss.Body.Value = value
-	iss.Body.Data = data
-	iss.ordinal = ordinal
+	iss.Body.AnchorId = EntryID(anchor).Proto()
+	iss.Body.Value = value.Proto()
+	iss.Body.Data = data.Proto()
+	iss.Ordinal = ordinal
 	return iss
 }

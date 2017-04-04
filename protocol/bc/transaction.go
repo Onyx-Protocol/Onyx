@@ -51,7 +51,7 @@ func (tx *Tx) IssuanceHash(n int) Hash {
 }
 
 func (tx *Tx) OutputID(outputIndex int) Hash {
-	return tx.Body.ResultIDs[outputIndex]
+	return tx.Body.ResultIds[outputIndex].Hash()
 }
 
 // NewTx returns a new Tx containing data and its hash.

@@ -7,13 +7,11 @@ package bc
 func (Retirement) Type() string         { return "retirement1" }
 func (r *Retirement) body() interface{} { return r.Body }
 
-func (r Retirement) Ordinal() int { return r.ordinal }
-
 // NewRetirement creates a new Retirement.
-func NewRetirement(source ValueSource, data Hash, ordinal int) *Retirement {
+func NewRetirement(source *ValueSource, data Hash, ordinal uint64) *Retirement {
 	r := new(Retirement)
 	r.Body.Source = source
-	r.Body.Data = data
-	r.ordinal = ordinal
+	r.Body.Data = data.Proto()
+	r.Ordinal = ordinal
 	return r
 }

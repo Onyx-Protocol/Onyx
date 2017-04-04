@@ -41,12 +41,12 @@ func ComputeOutputID(sc *SpendCommitment) (h Hash, err error) {
 			err = r
 		}
 	}()
-	src := ValueSource{
-		Ref:      sc.SourceID,
-		Value:    sc.AssetAmount,
+	src := &ValueSource{
+		Ref:      sc.SourceID.Proto(),
+		Value:    sc.AssetAmount.Proto(),
 		Position: sc.SourcePosition,
 	}
-	o := NewOutput(src, Program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
+	o := NewOutput(src, &Program{VmVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
 
 	h = EntryID(o)
 	return h, nil
@@ -80,15 +80,18 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 	)
 
 	for id, e := range entries {
+		var ord uint64
 		switch e := e.(type) {
 		case *Issuance:
 			if _, ok := e.Anchor.(*Nonce); ok {
 				nonceIDs[e.Body.AnchorID] = true
 			}
+			ord = e.Ordinal
 			// resume below after the switch
 
 		case *Spend:
 			spentOutputIDs[e.Body.SpentOutputID] = true
+			ord = e.Ordinal
 			// resume below after the switch
 
 		case *Output:
@@ -98,8 +101,7 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 		default:
 			continue
 		}
-		ord := e.Ordinal()
-		if ord < 0 || ord >= len(oldTx.Inputs) {
+		if ord >= len(oldTx.Inputs) {
 			return nil, fmt.Errorf("%T entry has out-of-range ordinal %d", e, ord)
 		}
 		txEntries.TxInputs[ord] = e

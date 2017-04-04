@@ -31,19 +31,19 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 		firstSpend *Spend
 		spends     []*Spend
 		issuances  []*Issuance
-		muxSources = make([]ValueSource, len(tx.Inputs))
+		muxSources = make([]*ValueSource, len(tx.Inputs))
 	)
 
 	for i, inp := range tx.Inputs {
 		if oldSp, ok := inp.TypedInput.(*SpendInput); ok {
-			prog := Program{VMVersion: oldSp.VMVersion, Code: oldSp.ControlProgram}
-			src := ValueSource{
-				Ref:      oldSp.SourceID,
-				Value:    oldSp.AssetAmount,
+			prog := &Program{VmVersion: oldSp.VMVersion, Code: oldSp.ControlProgram}
+			src := &ValueSource{
+				Ref:      oldSp.SourceID.Proto(),
+				Value:    oldSp.AssetAmount.Proto(),
 				Position: oldSp.SourcePosition,
 			}
 			out := NewOutput(src, prog, oldSp.RefDataHash, 0) // ordinal doesn't matter for prevouts, only for result outputs
-			sp := NewSpend(out, hashData(inp.ReferenceData), i)
+			sp := NewSpend(out, hashData(inp.ReferenceData), uint64(i))
 			sp.Witness.Arguments = oldSp.Arguments
 			var id Hash
 			id, err = addEntry(sp)
@@ -51,10 +51,9 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				err = errors.Wrapf(err, "adding spend entry for input %d", i)
 				return
 			}
-			muxSources[i] = ValueSource{
-				Ref:   id,
-				Value: oldSp.AssetAmount,
-				Entry: sp,
+			muxSources[i] = &ValueSource{
+				Ref:   id.Proto(),
+				Value: oldSp.AssetAmount.Proto(),
 			}
 			if firstSpend == nil {
 				firstSpend = sp
@@ -71,7 +70,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 
 			var (
 				anchor      Entry
-				setAnchored func(Hash, Entry)
+				setAnchored func(Hash)
 			)
 
 			if len(oldIss.Nonce) == 0 {
@@ -95,7 +94,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				builder.AddData(oldIss.Nonce).AddOp(vm.OP_DROP)
 				builder.AddOp(vm.OP_ASSET).AddData(assetID[:]).AddOp(vm.OP_EQUAL)
 
-				nonce := NewNonce(Program{VMVersion: 1, Code: builder.Program}, tr)
+				nonce := NewNonce(&Program{VmVersion: 1, Code: builder.Program}, tr)
 				_, err = addEntry(nonce)
 				if err != nil {
 					err = errors.Wrapf(err, "adding nonce entry for input %d", i)
@@ -107,11 +106,11 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 
 			val := inp.AssetAmount()
 
-			iss := NewIssuance(anchor, val, hashData(inp.ReferenceData), i)
-			iss.Witness.AssetDefinition.InitialBlockID = oldIss.InitialBlock
-			iss.Witness.AssetDefinition.Data = hashData(oldIss.AssetDefinition)
-			iss.Witness.AssetDefinition.IssuanceProgram = Program{
-				VMVersion: oldIss.VMVersion,
+			iss := NewIssuance(anchor, val, hashData(inp.ReferenceData), uint64(i))
+			iss.Witness.AssetDefinition.InitialBlockId = oldIss.InitialBlock.Proto()
+			iss.Witness.AssetDefinition.Data = hashData(oldIss.AssetDefinition).Proto()
+			iss.Witness.AssetDefinition.IssuanceProgram = &Program{
+				VmVersion: oldIss.VMVersion,
 				Code:      oldIss.IssuanceProgram,
 			}
 			iss.Witness.Arguments = oldIss.Arguments
@@ -122,18 +121,17 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				return
 			}
 
-			setAnchored(issID, iss)
+			setAnchored(issID)
 
-			muxSources[i] = ValueSource{
-				Ref:   issID,
-				Value: val,
-				Entry: iss,
+			muxSources[i] = &ValueSource{
+				Ref:   issID.Proto(),
+				Value: val.Proto(),
 			}
 			issuances = append(issuances, iss)
 		}
 	}
 
-	mux := NewMux(muxSources, Program{VMVersion: 1, Code: []byte{byte(vm.OP_TRUE)}})
+	mux := NewMux(muxSources, &Program{VmVersion: 1, Code: []byte{byte(vm.OP_TRUE)}})
 	var muxID Hash
 	muxID, err = addEntry(mux)
 	if err != nil {
@@ -142,25 +140,25 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 	}
 
 	for _, sp := range spends {
-		sp.SetDestination(muxID, sp.SpentOutput.Body.Source.Value, uint64(sp.Ordinal()), mux)
+		spentOutput := entryMap[sp.Body.SpentOutputId.Hash()].(*Output)
+		sp.SetDestination(muxID, spentOutput.Body.Source.Value.AssetAmount(), sp.Ordinal)
 	}
 	for _, iss := range issuances {
-		iss.SetDestination(muxID, iss.Body.Value, uint64(iss.Ordinal()), mux)
+		iss.SetDestination(muxID, iss.Body.Value.AssetAmount(), iss.Ordinal, mux)
 	}
 
 	var results []Entry
 
 	for i, out := range tx.Outputs {
-		src := ValueSource{
-			Ref:      muxID,
-			Value:    out.AssetAmount,
+		src := &ValueSource{
+			Ref:      muxID.Proto(),
+			Value:    out.AssetAmount.Proto(),
 			Position: uint64(i),
-			Entry:    mux,
 		}
-		var dest ValueDestination
+		var dest *ValueDestination
 		if vmutil.IsUnspendable(out.ControlProgram) {
 			// retirement
-			r := NewRetirement(src, hashData(out.ReferenceData), i)
+			r := NewRetirement(src, hashData(out.ReferenceData), uint64(i))
 			var rID Hash
 			rID, err = addEntry(r)
 			if err != nil {
@@ -168,15 +166,14 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				return
 			}
 			results = append(results, r)
-			dest = ValueDestination{
-				Ref:      rID,
+			dest = &ValueDestination{
+				Ref:      rID.Proto(),
 				Position: 0,
-				Entry:    r,
 			}
 		} else {
 			// non-retirement
-			prog := Program{out.VMVersion, out.ControlProgram}
-			o := NewOutput(src, prog, hashData(out.ReferenceData), i)
+			prog := &Program{out.VMVersion, out.ControlProgram}
+			o := NewOutput(src, prog, hashData(out.ReferenceData), uint64(i))
 			var oID Hash
 			oID, err = addEntry(o)
 			if err != nil {
@@ -184,10 +181,9 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				return
 			}
 			results = append(results, o)
-			dest = ValueDestination{
-				Ref:      oID,
+			dest = &ValueDestination{
+				Ref:      oID.Proto(),
 				Position: 0,
-				Entry:    o,
 			}
 		}
 		dest.Value = src.Value

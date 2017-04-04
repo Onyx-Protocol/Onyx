@@ -7,10 +7,8 @@ package bc
 func (Mux) Type() string         { return "mux1" }
 func (m *Mux) body() interface{} { return m.Body }
 
-func (Mux) Ordinal() int { return -1 }
-
 // NewMux creates a new Mux.
-func NewMux(sources []ValueSource, program Program) *Mux {
+func NewMux(sources []*ValueSource, program *Program) *Mux {
 	m := new(Mux)
 	m.Body.Sources = sources
 	m.Body.Program = program
