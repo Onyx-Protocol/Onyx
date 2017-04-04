@@ -48,9 +48,11 @@ var (
 	BuildConfig = struct {
 		LoopbackAuth bool `json:"is_loopback_auth"`
 		MockHSM      bool `json:"is_mockhsm"`
+		ProtectedDB  bool `json:"protected_db"`
 	}{
 		LoopbackAuth: false,
 		MockHSM:      true,
+		ProtectedDB:  false,
 	}
 )
 

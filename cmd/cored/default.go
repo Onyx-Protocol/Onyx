@@ -1,25 +1,27 @@
-//+build !prod
+//+build !protected_db
 
 package main
 
 import (
+	"chain/core/config"
+	"chain/core/coreunsafe"
+	"chain/database/pg"
+	"chain/env"
+	"chain/log"
 	"context"
 	"fmt"
 	"os"
-
-	"chain/core/coreunsafe"
-	"chain/database/pg"
-	"chain/database/raft"
-	"chain/env"
-	"chain/log"
 )
 
 var (
 	reset = env.String("RESET", "")
-	prod  = false
 )
 
-func resetInDevIfRequested(db pg.DB, rDB *raft.Service) {
+func init() {
+	config.BuildConfig.ProtectedDB = false
+}
+
+func resetInDevIfRequested(db pg.DB) {
 	if *reset != "" {
 		os.Setenv("RESET", "")
 
@@ -27,9 +29,9 @@ func resetInDevIfRequested(db pg.DB, rDB *raft.Service) {
 		ctx := context.Background()
 		switch *reset {
 		case "blockchain":
-			err = coreunsafe.ResetBlockchain(ctx, db, rDB)
+			err = coreunsafe.ResetBlockchain(ctx, db)
 		case "everything":
-			err = coreunsafe.ResetEverything(ctx, db, rDB)
+			err = coreunsafe.ResetEverything(ctx, db)
 		default:
 			log.Fatalkv(ctx, log.KeyError, fmt.Errorf("unrecognized argument to reset: %s", *reset))
 		}

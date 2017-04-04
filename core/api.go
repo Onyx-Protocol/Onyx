@@ -121,9 +121,9 @@ func (a *API) needConfig() func(f interface{}) http.Handler {
 func (a *API) buildHandler() {
 	needConfig := a.needConfig()
 
-	devOnly := func(h http.Handler) http.Handler { return h }
-	if config.Production {
-		devOnly = func(h http.Handler) http.Handler { return alwaysError(errProduction) }
+	allowReset := func(h http.Handler) http.Handler { return h }
+	if config.BuildConfig.ProtectedDB {
+		allowReset = func(h http.Handler) http.Handler { return alwaysError(errProduction) }
 	}
 
 	m := a.mux
@@ -147,7 +147,7 @@ func (a *API) buildHandler() {
 	m.Handle("/list-transactions", needConfig(a.listTransactions))
 	m.Handle("/list-balances", needConfig(a.listBalances))
 	m.Handle("/list-unspent-outputs", needConfig(a.listUnspentOutputs))
-	m.Handle("/reset", devOnly(needConfig(a.reset)))
+	m.Handle("/reset", allowReset(needConfig(a.reset)))
 
 	m.Handle(networkRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *bc.Tx) error {
 		return a.submitter.Submit(ctx, tx)
