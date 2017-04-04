@@ -216,6 +216,25 @@ func TestIntrospectionOps(t *testing.T) {
 		op: OP_CHECKOUTPUT,
 		startVM: &VirtualMachine{
 			DataStack: [][]byte{
+				{0},
+				[]byte{},
+				{1},
+				append([]byte{9}, make([]byte, 31)...),
+				{1},
+				[]byte("missingprog"),
+			},
+			Context: context0,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:     50070,
+			DeferredCost: -86,
+			DataStack:    [][]byte{{}},
+			Context:      context0,
+		},
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
 				{4},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				{7},
@@ -245,6 +264,20 @@ func TestIntrospectionOps(t *testing.T) {
 		startVM: &VirtualMachine{
 			DataStack: [][]byte{
 				Int64Bytes(-1),
+				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
+				{7},
+				append([]byte{2}, make([]byte, 31)...),
+				{1},
+				[]byte("controlprog"),
+			},
+			Context: context0,
+		},
+		wantErr: ErrBadValue,
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{5},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				{7},
 				append([]byte{2}, make([]byte, 31)...),
