@@ -1014,32 +1014,32 @@ When creating a confidential issuance, the first step is to construct the rest o
     5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
 3. Calculate the tracing point: `T = y·(J + M)`.
 4. Calculate the blinded marker using the blinding factor used by commitment `AC`: `Bm = c·M`.
-5. Calculate a 32-byte message hash and three 64-byte Fiat-Shamir challenges for all the signatures (total 224 bytes):
+5. Calculate a 32-byte message hash to sign:
 
-        (msghash, h1, h2, h3) = StreamHash("h" || basehash || M || T || Bm, 32 + 3·64)
+        msghash = StreamHash("msg" || basehash || M || T || Bm, 32)
 
-6. Interpret `h1`, `h2`, `h3` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
-7. Create proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
-    1. Compute base point `B = h1·M + J`.
-    2. Calculate the nonce `k = ScalarHash("k" || msghash || c)`.
-    3. Calculate point `R = k·B`.
-    4. Calculate scalar `e’ = ScalarHash("e" || msghash || R)`.
-    5. Calculate scalar `s’ = k + c·e mod L`.
-    6. Let the marker signature `ms = (e’,s’)`.
-8. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
-9. Calculate point `Q = Ba + Bm + h2·T`.
+6. Create proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
+    1. Calculate the nonce `k = ScalarHash("k" || msghash || c)`.
+    2. Calculate points `R1 = k·M` and `R2 = k·J`.
+    3. Calculate scalar `e’ = ScalarHash("e" || msghash || R1 || R2)`.
+    4. Calculate scalar `s’ = k + c·e mod L`.
+    5. Let the marker signature `ms = (e’,s’)`.
+7. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
+8. Calculate Fiat-Shamir challenge `h` for the issuance key:
+
+        h = ScalarHash("h" || msghash)
+
+9. Calculate point `Q = Ba + Bm + h·T`.
 10. Calculate points `{P[i]}` for `n` pairs of asset ID points and corresponding issuance keys `A[i], Y[i]`:
 
-        P[i] = AC.H — A[i] + h2·Y[i]
+        P[i] = AC.H — A[i] + h·Y[i]
 
 11. Create ring proof of discrete log equality for the pair `P[j]/G` and `Q/(J+M)`:
-    1. Calculate base point `B = G + h3·(J+M)`.
-    2. For each `P[i]` compute `P’[i] = P[i] + h3·Q`.
-    3. Calculate the signing key `x = c + h2·y`.
-    4. [Create a ring signature](#create-ring-signature) `rs` using:
+    1. Calculate the signing key `x = c + h2·y`.
+    2. [Create a ring signature](#create-ring-signature) `rs` using:
         * message `msghash`,
-        * base point `B`,
-        * public keys `{P’[i]}`,
+        * base points `G, J+M`,
+        * public keys `{(P[i], Q)}`,
         * secret index `j`,
         * private key `x`.
 12. Return [issuance asset range proof](#issuance-asset-range-proof) consisting of:
@@ -1085,30 +1085,29 @@ When creating a confidential issuance, the first step is to construct the rest o
         3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
         4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
         5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
-    3. Calculate a 32-byte message hash and three 64-byte Fiat-Shamir challenges for all the signatures (total 224 bytes):
+    3. Calculate a 32-byte message hash to sign:
 
-            (msghash, h1, h2, h3) = StreamHash("h" || basehash || M || T || Bm, 32 + 3·64)
+            msghash = StreamHash("msg" || basehash || M || T || Bm, 32)
 
-    4. Interpret `h1`, `h2`, `h3` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
-    5. Validate proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
-        1. Compute base point `B = h1·M + J`.
-        2. Compute public key `P = h1·Bm + AC.Ba`.
-        3. Calculate point `R = s’·B - e’·P`.
-        4. Calculate scalar `e” = ScalarHash("e" || msghash || R)`.
-        5. Verify that `e”` is equal to `e’`.
-    6. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
-    7. Calculate point `Q = Ba + Bm + h2·T`.
+    4. Validate proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
+        1. Calculate point `R1 = s’·M - e’·Bm`.
+        2. Calculate point `R2 = s’·J - e’·AC.Ba`.
+        3. Calculate scalar `e” = ScalarHash("e" || msghash || R1 || R2)`.
+        4. Verify that `e”` is equal to `e’`.
+    5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
+    6. Calculate Fiat-Shamir challenge `h` for the issuance key:
+
+            h = ScalarHash("h" || msghash)
+
+    7. Calculate point `Q = Ba + Bm + h·T`.
     8. Calculate points `{P[i]}` for `n` pairs of asset ID points and corresponding issuance keys `A[i], Y[i]`:
 
-            P[i] = AC.H — A[i] + h2·Y[i]
+            P[i] = AC.H — A[i] + h·Y[i]
 
-    9. Validate ring proof of discrete log equality for one of the pairs `P[i]/G` and `Q/(J+M)`:
-        1. Calculate base point `B = G + h3·(J+M)`.
-        2. Precompute point `Q’ = h3·Q`.
-        3. For each `P[i]` compute `P’[i] = P[i] + Q’`.
-        4. [Validate the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with message `msghash` and public keys `{P’[i]}`.
-
-
+    9. Validate ring proof of discrete log equality for one of the pairs `P[i]/G` and `Q/(J+M)` by [validating the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with:
+        * message `msghash`,
+        * base points `G, J+M`,
+        * public keys `{(P[i], Q)}`.
 
 ### Issuance Proof
 
@@ -1820,7 +1819,7 @@ In case of failure, returns `nil` instead of the items listed above.
     1. If `ARP` is [non-confidential](#non-confidential-asset-range-proof): set `assetID` to the one stored in `ARP`, set `c` to zero.
     2. If `ARP` is [confidential](#confidential-asset-range-proof), [decrypt asset ID](#decrypt-asset-id): compute `(assetID,c)` from `((ea||ec),AC,aek)`. If verification failed, halt and return `nil`.
 4. Decrypt value and recover payload:
-    1. If `VRP` is [non-confidential](#non-confidential-value-range-proof): 
+    1. If `VRP` is [non-confidential](#non-confidential-value-range-proof):
         1. Set `value` to the one stored in `VRP`, set `f` to zero.
         2. Set `plaintext` to an empty string.
     2. If `VRP` is [confidential](#confidential-value-range-proof):
