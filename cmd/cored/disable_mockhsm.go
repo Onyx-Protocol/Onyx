@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	config.MockHSM = false
+	config.BuildConfig.MockHSM = false
 }
 
 func devEnableMockHSM(_ pg.DB) []core.RunOption {

@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	config.Reset = false
+	config.BuildConfig.Reset = false
 }
 
 func resetInDevIfRequested(db pg.DB) {}

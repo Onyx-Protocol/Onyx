@@ -2,6 +2,8 @@
 
 package main
 
+import "chain/core/config"
+
 func init() {
-	tlsOnly = false
+	config.BuildConfig.TLSOnly = false
 }

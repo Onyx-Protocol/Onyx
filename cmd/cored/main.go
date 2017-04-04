@@ -68,8 +68,7 @@ var (
 	buildCommit = "?"
 	buildDate   = "?"
 
-	race    []interface{} // initialized in race.go
-	tlsOnly = true        // updated with disable_tls_only build tag
+	race []interface{} // initialized in race.go
 )
 
 func init() {
@@ -137,7 +136,7 @@ func runServer() {
 	handler = reqid.Handler(handler)
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
-	secureheader.DefaultConfig.HTTPSRedirect = tlsOnly
+	secureheader.DefaultConfig.HTTPSRedirect = config.BuildConfig.TLSOnly
 	secureheader.DefaultConfig.Next = handler
 
 	server := &http.Server{
