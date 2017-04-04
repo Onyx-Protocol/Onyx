@@ -48,7 +48,7 @@ DATE=${DATE:-`date +%s`} # date can be set via envvar
 ldflags="-X main.buildTag=$releaseRef -X main.buildCommit=$commit -X main.buildDate=$DATE"
 
 go build\
-  -tags 'plain_http'\
+  -tags 'plain_http unauthn_loopback'\
   -ldflags "$ldflags"\
   -o $outputDir/cored\
   chain/cmd/cored

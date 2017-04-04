@@ -245,7 +245,7 @@ func runServer() {
 		h = launchConfiguredCore(ctx, raftDB, db, conf, processID)
 	} else {
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		h = core.RunUnconfigured(ctx, db, raftDB, core.AlternateAuth(authLoopbackInDev))
+		h = core.RunUnconfigured(ctx, db, core.AlternateAuth(unauthnLoopback))
 	}
 	mux.Handle("/", h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
@@ -271,7 +271,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 	var opts []core.RunOption
 
 	// Allow loopback/localhost requests in Developer Edition.
-	opts = append(opts, core.AlternateAuth(authLoopbackInDev))
+	opts = append(opts, core.AlternateAuth(unauthnLoopback))
 	opts = append(opts, core.IndexTransactions(*indexTxs))
 	opts = append(opts, enableMockHSM(db)...)
 	// Add any configured API request rate limits.

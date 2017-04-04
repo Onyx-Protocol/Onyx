@@ -5,8 +5,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/http"
 	"os"
 
 	"chain/core/coreunsafe"
@@ -41,8 +39,10 @@ func resetInDevIfRequested(db pg.DB, rDB *raft.Service) {
 	}
 }
 
-func authLoopbackInDev(req *http.Request) bool {
-	// Allow connections from the local host.
-	a, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)
-	return err == nil && a.IP.IsLoopback()
+func devEnableMockHSM(db pg.DB) []core.RunOption {
+	return []core.RunOption{core.MockHSM(mockhsm.New(db))}
+}
+
+func devHSM(db pg.DB) (blocksigner.Signer, error) {
+	return mockhsm.New(db), nil
 }
