@@ -110,17 +110,17 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 		DestPos:       destPos,
 		AnchorID:      anchorID,
 		SpentOutputID: spentOutputID,
-		CheckOutput:   (&txContext{entry: entry}).checkOutput,
+		CheckOutput:   (&entryContext{entry: entry}).checkOutput,
 	}
 
 	return result
 }
 
-type txContext struct {
+type entryContext struct {
 	entry bc.Entry
 }
 
-func (tc *txContext) checkOutput(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte) (bool, error) {
+func (tc *entryContext) checkOutput(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte) (bool, error) {
 	checkEntry := func(e bc.Entry) (bool, error) {
 		check := func(prog bc.Program, value bc.AssetAmount, dataHash bc.Hash) bool {
 			return (prog.VMVersion == vmVersion &&

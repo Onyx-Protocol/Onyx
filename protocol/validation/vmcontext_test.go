@@ -28,7 +28,7 @@ func TestCheckOutput(t *testing.T) {
 		MaxTime: 20,
 	})
 
-	txCtx := &txContext{entry: tx.TxEntries.TxInputs[0]}
+	txCtx := &entryContext{entry: tx.TxEntries.TxInputs[0]}
 
 	cases := []struct {
 		// args to CheckOutput
