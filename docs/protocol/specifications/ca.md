@@ -271,39 +271,43 @@ The ring signature is encoded as a string of `n+1` 32-byte elements where `n` is
 
 Each 32-byte element is an integer coded using little endian convention. I.e., a 32-byte string `x` `x[0],...,x[31]` represents the integer `x[0] + 2^8 · x[1] + ... + 2^248 · x[31]`.
 
+Ring signature described below supports proving knowledge of multiple discrete logarithms at once.
+
 #### Create Ring Signature
 
 **Inputs:**
 
 1. `msg`: the string to be signed.
-2. `B`: base [point](#point) to validate the signature (not necessarily a [generator](#generators) point).
-3. `{P[i]}`: `n` [points](#point) representing the public keys.
-4. `j`: the index of the designated public key, so that `P[j] == p·B`.
-5. `p`: the secret [scalar](#scalar) representing a private key for the public key `P[j]`.
+2. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
+3. `{B[u]}`: `M` base [points](#point) to validate the signature.
+4. `{P[i,u]}`: `n·M` [points](#point) representing the public keys.
+5. `j`: the index of the designated public key, so that `P[j] == p·B`.
+6. `p`: the secret [scalar](#scalar) representing a private key for the public keys `P[u,j]`.
 
 **Output:** `{e0, s[0], ..., s[n-1]}`: the ring signature, `n+1` 32-byte elements.
 
 **Algorithm:**
 
 1. Let `counter = 0`.
-2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS" || B || P[0] || ... || P[n-1] || msg)`.
+2. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS" || byte(48+M) || B || P[0] || ... || P[n-1] || msg)`.
 3. Calculate a sequence of: `n-1` 32-byte random values, 64-byte `nonce` and 1-byte `mask`: `{r[i], nonce, mask} = StreamHash(uint64le(counter) || msghash || p || uint64le(j), 32·(n-1) + 64 + 1)`, where:
     * `counter` is encoded as a 64-bit little-endian integer,
     * `p` is encoded as a 256-bit little-endian integer,
     * `j` is encoded as a 64-bit little-endian integer.
 4. Calculate `k = nonce mod L`, where `nonce` is interpreted as a 64-byte little-endian integer and reduced modulo subgroup order `L`.
 5. Calculate the initial e-value, let `i = j+1 mod n`:
-    1. Calculate `R[i]` as the [point](#point) `k·B`.
+    1. For each `u` from 0 to `M-1`: calculate `R[u,i]` as the [point](#point) `k·B[u]`.
     2. Define `w[j]` as `mask` with lower 4 bits set to zero: `w[j] = mask & 0xf0`.
-    3. Calculate `e[i] = ScalarHash("e" || R[i] || msghash || uint64le(i) || w[j])` where `i` is encoded as a 64-bit little-endian integer.
+    3. Calculate `e[i] = ScalarHash("e" || R[0,i] || ... || R[M-1,i] || msghash || uint64le(i) || w[j])` where `i` is encoded as a 64-bit little-endian integer.
 6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
     1. Let `i = (j + step) mod n`.
     2. Calculate the forged s-value `s[i] = r[step-1]`.
     3. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero.
     4. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
     5. Let `i’ = i+1 mod n`.
-    6. Calculate point `R[i’] = z[i]·B - e[i]·P[i]`.
-    7. Calculate `e[i’] = ScalarHash("e" || R[i’] || msghash || uint64le(i’) || w[i])` where `i’` is encoded as a 64-bit little-endian integer.
+    6. For each `u` from 0 to `M-1`:
+        1. Calculate point `R[u,i’] = z[i]·B[u] - e[i]·P[i,u]`.
+    7. Calculate `e[i’] = ScalarHash("e" || R[0,i’] || ... || R[M-1,i’] || msghash || uint64le(i’) || w[i])` where `i’` is encoded as a 64-bit little-endian integer.
 7. Calculate the non-forged `z[j] = k + p·e[j] mod L` and encode it as a 32-byte little-endian integer.
 8. If `z[j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
 9. Define `s[j]` as `z[j]` with 4 high bits set to high 4 bits of the `mask`.
@@ -315,21 +319,23 @@ Each 32-byte element is an integer coded using little endian convention. I.e., a
 **Inputs:**
 
 1. `msg`: the string being signed.
-2. `B`: base [point](#point) to validate the signature (not necessarily a [generator](#generators) point).
-3. `{P[i]}`: `n` [points](#point) representing the public keys.
-4. `e[0], s[0], ... s[n-1]`: ring signature consisting of `n+1` 32-byte elements.
+2. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
+3. `{B[u]}`: `M` base [points](#point) to validate the signature.
+4. `{P[i,u]}`: `n·M` [points](#point) representing the public keys.
+5. `e[0], s[0], ... s[n-1]`: ring signature consisting of `n+1` 32-byte elements.
 
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS" || B || P[0] || ... || P[n-1] || msg)`.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("RS" || byte(48+M) || B || P[0] || ... || P[n-1] || msg)`.
 2. For each `i` from `0` to `n-1`:
     1. Define `z[i]` as `s[i]` with the most significant 4 bits set to zero (see note below).
     2. Define `w[i]` as a most significant byte of `s[i]` with lower 4 bits set to zero: `w[i] = s[i][31] & 0xf0`.
-    3. Calculate point `R[i+1] = z[i]·B - e[i]·P[i]`.
-    4. Calculate `e[i+1] = ScalarHash("e" || R[i+1] || msghash || i+1 || w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
+    3. For each `u` from 0 to `M-1`:
+        1. Calculate point `R[u,i+1] = z[i]·B[u] - e[i]·P[u,i]`.
+    4. Calculate `e[i+1] = ScalarHash("e" || R[0,i+1] || ... || R[M-1,i+1] || msghash || i+1 || w[i])` where `i+1` is encoded as a 64-bit little-endian integer.
 3. Return true if `e[0]` equals `e[n]`, otherwise return false.
 
 Note: when the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.
@@ -366,17 +372,18 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{B[i]}`: `n` base [points](#point) to validate the signature (not necessarily [generator](#generators) points).
-5. `{P[i,j]}`: `n·m` [points](#point) representing public keys.
-6. `{p[i]}`: the list of `n` [scalars](#scalar) representing private keys.
-7. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·B[i]`.
-8. `{payload[i]}`: sequence of `n·m` random 32-byte elements.
+4. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
+5. `{B[i,u]}`: `n·M` base [points](#point) to validate the signature.
+6. `{P[i,j,u]}`: `n·m·M` [points](#point) representing public keys.
+7. `{p[i]}`: the list of `n` [scalars](#scalar) representing private keys.
+8. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·B[i]`.
+9. `{payload[i]}`: sequence of `n·m` random 32-byte elements.
 
 **Output:** `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("BRS" || uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = Hash256("BRS" || byte(48+M) || uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Let `counter = 0`.
 3. Let `cnt` byte contain lower 4 bits of `counter`: `cnt = counter & 0x0f`.
 4. Calculate a sequence of `n·m` 32-byte random overlay values: `{o[i]} = StreamHash("O" || uint64le(counter) || msghash || {p[i]} || {uint64le(j[i])}, 32·n·m)`, where:
@@ -392,15 +399,17 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
     5. Define `w[t,j]` as a byte with lower 4 bits set to zero and higher 4 bits equal `mask[t]`.
     6. Calculate the initial e-value for the ring:
         1. Let `j’ = j+1 mod m`.
-        2. Calculate `R[t,j’]` as the point `k[t]·B[t]`.
-        3. Calculate `e[t,j’] = ScalarHash("e" || byte(cnt), R[t, j’] || msghash || uint64le(t) || uint64le(j’) || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
+        2. For each `u` from 0 to `M-1`:
+            1. Calculate `R[t,j’,u]` as the point `k[t]·B[t,u]`.
+        3. Calculate `e[t,j’] = ScalarHash("e" || byte(cnt), R[t,j’,0] || ... || R[t,j’,M-1] || msghash || uint64le(t) || uint64le(j’) || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
     7. If `j ≠ m-1`, then for `i` from `j+1` to `m-1`:
         1. Calculate the forged s-value: `s[t,i] = r[m·t + i]`.
         2. Define `z[t,i]` as `s[t,i]` with 4 most significant bits set to zero.
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
-        5. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`.
-        6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt), R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        5. For each `u` from 0 to `M-1`:
+            1. Calculate point `R[t,i’,u] = z[t,i]·B[t,u] - e[t,i]·P[t,i,u]`.
+        6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt), R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
 7. Calculate the shared e-value `e0` for all the rings:
     1. Calculate `E` as concatenation of all `e[t,0]` values encoded as 32-byte little-endian integers: `E = e[0,0] || ... || e[n-1,0]`.
     2. Calculate `e0 = ScalarHash(E)`.
@@ -413,8 +422,9 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         2. Define `z[t,i]` as `s[t,i]` with 4 most significant bits set to zero.
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
-        5. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`. If `i` is zero, use `e0` in place of `e[t,0]`.
-        6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt), R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        5. For each `u` from 0 to `M-1`:
+            1. Calculate point `R[t,i’,u] = z[t,i]·B[t,u] - e[t,i]·P[t,i,u]`. If `i` is zero, use `e0` in place of `e[t,0]`.
+        6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt), R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     4. Calculate the non-forged `z[t,j] = k[t] + p[t]·e[t,j] mod L` and encode it as a 32-byte little-endian integer.
     5. If `z[t,j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
     6. Define `s[t,j]` as `z[t,j]` with 4 high bits set to `mask[t]` bits.
@@ -431,15 +441,16 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{B[i]}`: `n` base [points](#point) to validate the signature (not necessarily [generator](#generators) points).
-5. `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
-6. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
+4. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
+5. `{B[i,u]}`: `n·M` base [points](#point) to validate the signature.
+6. `{P[i,j,u]}`: `n·m·M` [points](#point) representing public keys.
+7. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256("BRS" || uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256("BRS" || byte(48+M) || uint64le(n) || uint64le(m) || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Define `E` to be an empty binary string.
 3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 4. Set top 4 bits of `e0` to zero.
@@ -449,8 +460,9 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         1. Calculate `z[t,i]` as `s[t,i]` with the most significant 4 bits set to zero.
         2. Calculate `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         3. Let `i’ = i+1 mod m`.
-        4. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]`. Use `e0` instead of `e[t,0]` in each ring.
-        5. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt) || R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        5. For each `u` from 0 to `M-1`:
+            1. Calculate point `R[t,i’,u] = z[t,i]·B[t,u] - e[t,i]·P[t,i,u]`. Use `e0` instead of `e[t,0]` in each ring.
+        6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt) || R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 6. Calculate `e’ = ScalarHash(E)`.
 7. Return `true` if `e’` equals to `e0`. Otherwise, return `false`.
@@ -464,17 +476,18 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 1. `msg`: the string to be signed.
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
-4. `{B[i]}`: `n` base [points](#point) to validate the signature (not necessarily [generator](#generators) points).
-5. `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
-6. `{p[i]}`: the list of `n` scalars representing private keys.
-7. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·G`.
-8. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
+4. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
+5. `{B[i,u]}`: `n·M` base [points](#point) to validate the signature.
+6. `{P[i,j,u]}`: `n·m·M` [points](#point) representing public keys.
+7. `{p[i]}`: the list of `n` scalars representing private keys.
+8. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·G`.
+9. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
 **Output:** `{payload[i]}` list of `n·m` random 32-byte elements or `nil` if signature verification failed.
 
 **Algorithm:**
 
-1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256("BRS" || n || m || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
+1. Let the `msghash` be a hash of the input non-secret data: `msghash = SHA3-256("BRS" || byte(48+M) || n || m || {B[i]} || {P[i,j]} || msg)` where `n` and `m` are encoded as 64-bit little-endian integers.
 2. Define `E` to be an empty binary string.
 3. Set `cnt` byte to the value of top 4 bits of `e0`: `cnt = e0[31] >> 4`.
 4. Let `counter` integer equal `cnt`.
@@ -495,8 +508,9 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         4. If `i` is not equal to `j[t]`:
             1. Set `payload[m·t + i] = o[m·t + i] XOR s[t,i]`.
         5. Let `i’ = i+1 mod m`.
-        6. Calculate point `R[t,i’] = z[t,i]·B[t] - e[t,i]·P[t,i]` and encode it as a 32-byte [public key](#point). Use `e0` instead of `e[t,0]` in each ring.
-        7. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt) || R[t,i’] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
+        6. For each `u` from 0 to `M-1`:
+            1. Calculate point `R[t,i’,u] = z[t,i]·B[t,u] - e[t,i]·P[t,i,u]` and encode it as a 32-byte [public key](#point). Use `e0` instead of `e[t,0]` in each ring.
+        7. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt) || R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 8. Calculate `e’ = ScalarHash(E)`.
 9. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
@@ -887,21 +901,14 @@ Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signat
 
         msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1] || message)
 
-2. Calculate the Fiat-Shamir factor (note that it commits to all input non-secret data via `msghash` as necessary):
+2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
 
-        h = ScalarHash("h" || msghash)
+        P[i] = AC’.H - AC[i].H
+        Q[i] = AC’.Ba - AC[i].Ba
 
-3. Calculate the base point by applying `h` to [both generators](#generators):
-
-        B = h·G + J
-
-4. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
-
-        P[i] = h·(AC’.H - AC[i].H) + AC’.Ba - AC[i].Ba
-
-5. Calculate the private key: `p = c’ - c mod L`.
-6. [Create a ring signature](#create-ring-signature) using `msghash`, `B`, `{P[i]}`, `j`, and `p`.
-7. Return the list of asset ID commitments `{AC[i]}` and the ring signature `e[0], s[0], ... s[n-1]`.
+3. Calculate the private key: `p = c’ - c mod L`.
+4. [Create a ring signature](#create-ring-signature) using `msghash`, [generators](#generators) `(G,J)`, `{(P[i], Q[i])}`, `j`, and `p`.
+5. Return the list of asset ID commitments `{AC[i]}` and the ring signature `e[0], s[0], ... s[n-1]`.
 
 Note: unlike the [value range proof](#value-range-proof), this ring signature is not used to store encrypted payload data because decrypting it would reveal the asset ID of one of the inputs to the recipient.
 
@@ -931,19 +938,12 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
             msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1] || message)
 
-    2. Calculate the Fiat-Shamir factor (note that it commits to all input non-secret data via `msghash` as necessary):
+    2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
 
-            h = ScalarHash("h" || msghash)
+            P[i] = AC’.H - AC[i].H
+            Q[i] = AC’.Ba - AC[i].Ba
 
-    3. Calculate the base point by applying `h` to [both generators](#generators):
-
-            B = h·G + J
-
-    4. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
-
-            P[i] = h·(AC’.H - AC[i].H) + AC’.Ba - AC[i].Ba
-
-    5. [Validate the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with `msg` and `{P[i]}`.
+    3. [Validate the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with `msg`, [generators](#generators) `(G,J)` and `{(P[i],Q[i])}`.
 3. Return true if verification was successful, and false otherwise.
 
 
@@ -1307,30 +1307,23 @@ In case of failure, returns `nil` instead of the range proof.
     2. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
     3. Calculate `D[t] = digit[t]·H + f·G’[t]`.
     4. Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
-11. Calculate the Fiat-Shamir factor:
-
-        h = ScalarHash("h" || msghash || D[0] || ... || D[n-2])
-
-12. Precompute reusable points across all digit commitments:
-
-        X1 = h·Bv
-        X2 = AC.H + h·Ba
-
-13. For `t` from `0` to `n-1` (each digit):
-    1. Calculate base point: `B[t] = G’[t] + h·J`.
+11. For `t` from `0` to `n-1` (each digit):
+    1. Calculate base points: `Bs[t] = (G’[t], J)`.
     2. For `i` from `0` to `base-1` (each digit’s value):
-        1. Calculate point `P[t,i] = D[t] + X1 - i·(base^t)·X2`.
-14. [Create Borromean Ring Signature](#create-borromean-ring-signature) `brs` with the following inputs:
+        1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`.
+        2. Calculate point `Q[t,i] = Bv[t] - i·(base^t)·Ba`.
+12. [Create Borromean Ring Signature](#create-borromean-ring-signature) `brs` with the following inputs:
     * `msghash` as the message to sign.
     * `n`: number of rings.
     * `m = base`: number of signatures per ring.
-    * `{B[i]}`: `n` base points.
-    * `{P[i,j]}`: `n·m` [points](#point).
+    * `M = 2`
+    * `{Bs[i]}`: `2·n` base points.
+    * `{(P[i,j], Q[i,j])}`: `2·n·m` [points](#point).
     * `{f}`: the blinding factor `f` repeated `n` times.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G’[t]`.
     * `{r[i]} = {ct[i]}`: random string consisting of `n·m` 32-byte ciphertext elements.
-15. If failed to create borromean ring signature `brs`, return nil. The chance of this happening is below 1 in 2<sup>124</sup>. In case of failure, retry [creating blinded value commitment](#create-blinded-value-commitment) with incremented counter. This would yield a new blinding factor `f` that will produce different digit blinding keys in this algorithm.
-16. Return the [value range proof](#value-range-proof):
+13. If failed to create borromean ring signature `brs`, return nil. The chance of this happening is below 1 in 2<sup>124</sup>. In case of failure, retry [creating blinded value commitment](#create-blinded-value-commitment) with incremented counter. This would yield a new blinding factor `f` that will produce different digit blinding keys in this algorithm.
+14. Return the [value range proof](#value-range-proof):
     * `N`:  number of blinded bits (equals to `2·n`),
     * `exp`: exponent (zero),
     * `vmin`: minimum value (zero),
@@ -1339,7 +1332,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-#### Validate Value Range Proof
+#### Validate Value Range Proof WIP
 
 **Inputs:**
 
@@ -1396,7 +1389,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-#### Recover Payload From Value Range Proof
+#### Recover Payload From Value Range Proof WIP
 
 **Inputs:**
 
