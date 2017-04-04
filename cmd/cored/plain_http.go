@@ -1,4 +1,4 @@
-//+build insecure_disable_https_redirect
+//+build plain_http
 
 package main
 

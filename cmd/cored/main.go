@@ -72,7 +72,7 @@ var (
 	buildDate   = "?"
 
 	race          []interface{} // initialized in race.go
-	httpsRedirect = true        // initialized in insecure.go
+	httpsRedirect = true        // initialized in plain_http.go
 )
 
 func init() {
