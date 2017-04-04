@@ -805,13 +805,11 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 **Algorithm:**
 
 1. Calculate a [point pair](#point-pair) `QG = q·G, QJ = q·J`.
-2. Calculate Fiat-Shamir factor `h = ScalarHash("EC" || G || J || QG || QJ || message)`.
-3. Calculate the base point `B = h·G + J`.
-4. Calculate the nonce `k = ScalarHash(h || q)`.
-5. Calculate point `R = k·B`.
-6. Calculate scalar `e = ScalarHash("e" || h || R)`.
-7. Calculate scalar `s = k + q·e mod L`.
-8. Return `(s,e)`.
+2. Calculate the nonce `k = ScalarHash("k" || G || J || QG || QJ || q || message)`.
+3. Calculate points `R1 = k·G`, `R2 = k·J`.
+4. Calculate scalar `e = ScalarHash("EC" || G || J || QG || QJ || R1 || R2 || message)`.
+5. Calculate scalar `s = k + q·e mod L`.
+6. Return `(s,e)`.
 
 
 #### Validate Excess Commitment
@@ -826,12 +824,10 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 **Algorithm:**
 
-1. Calculate Fiat-Shamir factor `h = ScalarHash("EC" || G || J || QG || QJ || message)`.
-2. Calculate the base point `B = h·G + J`.
-3. Calculate combined public key point `Q = h·QG + QJ`.
-4. Calculate point `R = s·B - e·Q`.
-5. Calculate scalar `e’ = ScalarHash("e" || h || R)`.
-6. Return `true` if `e’ == e`, otherwise return `false`.
+1. Calculate point `R1 = s·G - e·QG`.
+2. Calculate point `R2 = s·J - e·QJ`.
+3. Calculate scalar `e’ = ScalarHash("EC" || G || J || QG || QJ || R1 || R2 || message)`.
+4. Return `true` if `e’ == e`, otherwise return `false`.
 
 ### Validate Value Commitments Balance
 
