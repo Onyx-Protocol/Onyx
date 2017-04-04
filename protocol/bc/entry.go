@@ -1,6 +1,7 @@
 package bc
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"reflect"
@@ -32,6 +33,10 @@ var errInvalidValue = errors.New("invalid value")
 // EntryID computes the identifier of an entry, as the hash of its
 // body plus some metadata.
 func EntryID(e Entry) (hash Hash) {
+	defer func() {
+		fmt.Printf("* EntryID(%T): %x\n", e, hash[:])
+	}()
+
 	if e == nil {
 		return hash
 	}
@@ -71,6 +76,12 @@ func EntryID(e Entry) (hash Hash) {
 // hash-serialization formats are not specified. It MUST NOT produce
 // errors in other cases.
 func writeForHash(w io.Writer, c interface{}) error {
+	ww := newWrappedWriter(w)
+	defer func() {
+		fmt.Printf("writeForHash(%T) wrote %x\n", c, ww.b.Bytes())
+	}()
+	w = ww
+
 	switch v := c.(type) {
 	case byte:
 		_, err := w.Write([]byte{v})
@@ -87,6 +98,21 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
 		return errors.Wrapf(err, "writing string (len %d) for hash", len(v))
+	case *ProtoHash:
+		if v == nil {
+			return writeForHash(w, Hash{})
+		}
+		return writeForHash(w, v.Hash())
+	case *ProtoAssetID:
+		if v == nil {
+			return writeForHash(w, AssetID{})
+		}
+		return writeForHash(w, v.AssetID())
+	case *ProtoAssetAmount:
+		if v == nil {
+			return writeForHash(w, AssetAmount{})
+		}
+		return writeForHash(w, v.AssetAmount())
 	case Hash:
 		_, err := w.Write(v[:])
 		return errors.Wrap(err, "writing Hash for hash")
@@ -99,6 +125,12 @@ func writeForHash(w io.Writer, c interface{}) error {
 	// correspond to slices and structs in Go. They can't be
 	// handled with type assertions, so we must use reflect.
 	switch v := reflect.ValueOf(c); v.Kind() {
+	case reflect.Ptr:
+		if v.IsNil() {
+			return nil
+		}
+		elem := v.Elem()
+		return writeForHash(w, elem.Interface())
 	case reflect.Slice:
 		l := v.Len()
 		_, err := blockchain.WriteVarint31(w, uint64(l))
@@ -129,10 +161,11 @@ func writeForHash(w io.Writer, c interface{}) error {
 			if !c.CanInterface() {
 				return errInvalidValue
 			}
+			t := v.Type()
+			f := t.Field(i)
+			fmt.Printf("* writing struct field %s\n", f.Name)
 			err := writeForHash(w, c.Interface())
 			if err != nil {
-				t := v.Type()
-				f := t.Field(i)
 				return errors.Wrapf(err, "writing struct field %d (%s.%s) for hash", i, t.Name(), f.Name)
 			}
 		}
@@ -140,4 +173,22 @@ func writeForHash(w io.Writer, c interface{}) error {
 	}
 
 	return errors.Wrap(fmt.Errorf("bad type %T", c))
+}
+
+// xxx
+type wrappedWriter struct {
+	b *bytes.Buffer
+	w io.Writer
+}
+
+func newWrappedWriter(w io.Writer) *wrappedWriter {
+	return &wrappedWriter{
+		b: new(bytes.Buffer),
+		w: w,
+	}
+}
+
+func (ww *wrappedWriter) Write(b []byte) (int, error) {
+	ww.b.Write(b)
+	return ww.w.Write(b)
 }

@@ -7,8 +7,10 @@ func (tr *TimeRange) body() interface{} { return tr.Body }
 
 // NewTimeRange creates a new TimeRange.
 func NewTimeRange(minTimeMS, maxTimeMS uint64) *TimeRange {
-	tr := new(TimeRange)
-	tr.Body.MinTimeMs = minTimeMS
-	tr.Body.MaxTimeMs = maxTimeMS
-	return tr
+	return &TimeRange{
+		Body: &TimeRange_Body{
+			MinTimeMs: minTimeMS,
+			MaxTimeMs: maxTimeMS,
+		},
+	}
 }

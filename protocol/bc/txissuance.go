@@ -18,10 +18,13 @@ func (iss *Issuance) SetDestination(id Hash, val AssetAmount, pos uint64, e Entr
 
 // NewIssuance creates a new Issuance.
 func NewIssuance(anchor Entry, value AssetAmount, data Hash, ordinal uint64) *Issuance {
-	iss := new(Issuance)
-	iss.Body.AnchorId = EntryID(anchor).Proto()
-	iss.Body.Value = value.Proto()
-	iss.Body.Data = data.Proto()
-	iss.Ordinal = ordinal
-	return iss
+	return &Issuance{
+		Body: &Issuance_Body{
+			AnchorId: EntryID(anchor).Proto(),
+			Value:    value.Proto(),
+			Data:     data.Proto(),
+		},
+		Witness: &Issuance_Witness{},
+		Ordinal: ordinal,
+	}
 }

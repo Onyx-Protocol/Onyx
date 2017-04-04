@@ -9,8 +9,11 @@ func (m *Mux) body() interface{} { return m.Body }
 
 // NewMux creates a new Mux.
 func NewMux(sources []*ValueSource, program *Program) *Mux {
-	m := new(Mux)
-	m.Body.Sources = sources
-	m.Body.Program = program
-	return m
+	return &Mux{
+		Body: &Mux_Body{
+			Sources: sources,
+			Program: program,
+		},
+		Witness: &Mux_Witness{},
+	}
 }

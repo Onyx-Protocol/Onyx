@@ -43,6 +43,12 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				Position: oldSp.SourcePosition,
 			}
 			out := NewOutput(src, prog, oldSp.RefDataHash, 0) // ordinal doesn't matter for prevouts, only for result outputs
+			_, err = addEntry(out)
+			if err != nil {
+				err = errors.Wrapf(err, "adding spent output for input %d", i)
+				return
+			}
+
 			sp := NewSpend(out, hashData(inp.ReferenceData), uint64(i))
 			sp.Witness.Arguments = oldSp.Arguments
 			var id Hash
@@ -107,11 +113,13 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 			val := inp.AssetAmount()
 
 			iss := NewIssuance(anchor, val, hashData(inp.ReferenceData), uint64(i))
-			iss.Witness.AssetDefinition.InitialBlockId = oldIss.InitialBlock.Proto()
-			iss.Witness.AssetDefinition.Data = hashData(oldIss.AssetDefinition).Proto()
-			iss.Witness.AssetDefinition.IssuanceProgram = &Program{
-				VmVersion: oldIss.VMVersion,
-				Code:      oldIss.IssuanceProgram,
+			iss.Witness.AssetDefinition = &AssetDefinition{
+				InitialBlockId: oldIss.InitialBlock.Proto(),
+				Data:           hashData(oldIss.AssetDefinition).Proto(),
+				IssuanceProgram: &Program{
+					VmVersion: oldIss.VMVersion,
+					Code:      oldIss.IssuanceProgram,
+				},
 			}
 			iss.Witness.Arguments = oldIss.Arguments
 			var issID Hash
@@ -147,7 +155,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 		iss.SetDestination(muxID, iss.Body.Value.AssetAmount(), iss.Ordinal, mux)
 	}
 
-	var results []Entry
+	var resultIDs []Hash
 
 	for i, out := range tx.Outputs {
 		src := &ValueSource{
@@ -165,7 +173,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				err = errors.Wrapf(err, "adding retirement entry for output %d", i)
 				return
 			}
-			results = append(results, r)
+			resultIDs = append(resultIDs, rID)
 			dest = &ValueDestination{
 				Ref:      rID.Proto(),
 				Position: 0,
@@ -180,7 +188,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 				err = errors.Wrapf(err, "adding output entry for output %d", i)
 				return
 			}
-			results = append(results, o)
+			resultIDs = append(resultIDs, oID)
 			dest = &ValueDestination{
 				Ref:      oID.Proto(),
 				Position: 0,
@@ -190,7 +198,7 @@ func mapTx(tx *TxData) (headerID Hash, hdr *TxHeader, entryMap map[Hash]Entry, e
 		mux.Witness.Destinations = append(mux.Witness.Destinations, dest)
 	}
 
-	h := NewTxHeader(tx.Version, results, hashData(tx.ReferenceData), tx.MinTime, tx.MaxTime)
+	h := NewTxHeader(tx.Version, resultIDs, hashData(tx.ReferenceData), tx.MinTime, tx.MaxTime)
 	headerID, err = addEntry(h)
 	if err != nil {
 		err = errors.Wrap(err, "adding header entry")

@@ -63,7 +63,10 @@ func (a *AssetAmount) writeTo(w io.Writer) error {
 	return err
 }
 
-func (pa ProtoAssetID) AssetID() AssetID {
+func (pa *ProtoAssetID) AssetID() AssetID {
+	if pa == nil {
+		return AssetID{}
+	}
 	h := pa.Hash.Hash()
 	return AssetID(h)
 }
@@ -74,7 +77,11 @@ func (a AssetID) Proto() *ProtoAssetID {
 	}
 }
 
-func (paa ProtoAssetAmount) AssetAmount() AssetAmount {
+func (paa *ProtoAssetAmount) AssetAmount() AssetAmount {
+	if paa == nil {
+		return AssetAmount{}
+	}
+
 	return AssetAmount{
 		AssetID: paa.AssetId.AssetID(),
 		Amount:  paa.Amount,

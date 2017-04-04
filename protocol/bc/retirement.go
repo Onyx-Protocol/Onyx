@@ -9,9 +9,11 @@ func (r *Retirement) body() interface{} { return r.Body }
 
 // NewRetirement creates a new Retirement.
 func NewRetirement(source *ValueSource, data Hash, ordinal uint64) *Retirement {
-	r := new(Retirement)
-	r.Body.Source = source
-	r.Body.Data = data.Proto()
-	r.Ordinal = ordinal
-	return r
+	return &Retirement{
+		Body: &Retirement_Body{
+			Source: source,
+			Data:   data.Proto(),
+		},
+		Ordinal: ordinal,
+	}
 }

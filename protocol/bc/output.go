@@ -11,10 +11,12 @@ func (o *Output) body() interface{} { return o.Body }
 
 // NewOutput creates a new Output.
 func NewOutput(source *ValueSource, controlProgram *Program, data Hash, ordinal uint64) *Output {
-	out := new(Output)
-	out.Body.Source = source
-	out.Body.ControlProgram = controlProgram
-	out.Body.Data = data.Proto()
-	out.Ordinal = ordinal
-	return out
+	return &Output{
+		Body: &Output_Body{
+			Source:         source,
+			ControlProgram: controlProgram,
+			Data:           data.Proto(),
+		},
+		Ordinal: ordinal,
+	}
 }

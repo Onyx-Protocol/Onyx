@@ -83,14 +83,15 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 		var ord uint64
 		switch e := e.(type) {
 		case *Issuance:
-			if _, ok := e.Anchor.(*Nonce); ok {
-				nonceIDs[e.Body.AnchorID] = true
+			anchor := entries[e.Body.AnchorId.Hash()]
+			if _, ok := anchor.(*Nonce); ok {
+				nonceIDs[e.Body.AnchorId.Hash()] = true
 			}
 			ord = e.Ordinal
 			// resume below after the switch
 
 		case *Spend:
-			spentOutputIDs[e.Body.SpentOutputID] = true
+			spentOutputIDs[e.Body.SpentOutputId.Hash()] = true
 			ord = e.Ordinal
 			// resume below after the switch
 
@@ -101,7 +102,7 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 		default:
 			continue
 		}
-		if ord >= len(oldTx.Inputs) {
+		if ord >= uint64(len(oldTx.Inputs)) {
 			return nil, fmt.Errorf("%T entry has out-of-range ordinal %d", e, ord)
 		}
 		txEntries.TxInputs[ord] = e

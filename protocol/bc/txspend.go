@@ -18,11 +18,14 @@ func (s *Spend) SetDestination(id Hash, val AssetAmount, pos uint64) {
 
 // NewSpend creates a new Spend.
 func NewSpend(out *Output, data Hash, ordinal uint64) *Spend {
-	s := new(Spend)
-	s.Body.SpentOutputId = EntryID(out).Proto()
-	s.Body.Data = data.Proto()
-	s.Ordinal = ordinal
-	return s
+	return &Spend{
+		Body: &Spend_Body{
+			SpentOutputId: EntryID(out).Proto(),
+			Data:          data.Proto(),
+		},
+		Witness: &Spend_Witness{},
+		Ordinal: ordinal,
+	}
 }
 
 func (s *Spend) SetAnchored(id Hash) {
