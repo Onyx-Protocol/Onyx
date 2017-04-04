@@ -1317,7 +1317,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `n`: number of rings.
     * `m = base`: number of signatures per ring.
     * `M = 2`
-    * `{Bs[i]}`: `2·n` base points.
+    * `{(G’[t], J)}`: `2·n` base points where `J` is reused for each `G’[t]`.
     * `{(P[i,j], Q[i,j])}`: `2·n·m` [points](#point).
     * `{f}`: the blinding factor `f` repeated `n` times.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G’[t]`.
@@ -1332,7 +1332,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-#### Validate Value Range Proof WIP
+#### Validate Value Range Proof
 
 **Inputs:**
 
@@ -1359,37 +1359,29 @@ In case of failure, returns `nil` instead of the range proof.
     6. Check that `(10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
-3. Calculate the message to validate: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
-4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
-5. Calculate the Fiat-Shamir factor:
-
-        h = ScalarHash("h" || msghash || D[0] || ... || D[n-2])
-
-6. Precompute reusable points across all digit commitments:
-
-        X1 = h·Bv
-        X2 = AC.H + h·Ba
-
-7. For `t` from `0` to `n-1` (each digit):
+3. Let `base = 4`.
+4. Calculate the message to validate: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+5. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
+6. For `t` from `0` to `n-1` (each digit):
     1. Calculate generator `G’[t]`:
         1. If `t` is less than `n-1`: set `G’[t] = G[t]`, where `G[t]` is a [tertiary generator](#generators) at index `t`.
         2. If `t` equals `n-1`: set `G’[t] = G - ∑G[i]` for all `i` from `0` to `n-2`.
-    2. Calculate base point: `B[t] = G’[t] + h·J`.
-    3. Define `base = 4`.
-    4. For `i` from `0` to `base-1` (each digit’s value):
-        1. Calculate point `P[t,i] = D[t] + X1 - i·(base^t)·X2`. For efficiency perform recursive point addition of `-(base^t)·X2` instead of scalar multiplication.
-8. [Validate Borromean Ring Signature](#validate-borromean-ring-signature) with the following inputs:
+    2. For `i` from `0` to `base-1` (each digit’s value):
+        1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`. For efficiency perform recursive point addition of `-(base^t)·H` instead of scalar multiplication.
+        2. Calculate point `Q[t,i] = Bv[t] - i·(base^t)·Ba`. For efficiency perform iterative point addition of `-(base^t)·Ba` instead of scalar multiplication.
+7. [Validate Borromean Ring Signature](#validate-borromean-ring-signature) with the following inputs:
     * `msghash`: the 32-byte string being verified.
     * `n`: number of rings.
     * `m=base`: number of signatures in each ring.
-    * `{B[i]}`: `n` base points.
-    * `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
+    * `M = 2`
+    * `{(G’[t], J)}`: `2·n` base points.
+    * `{(P[i,j], Q[i,j])}`: `2·n·m` public keys, [points](#point) on the elliptic curve.
     * `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
-9. Return `true` if verification succeeded, or `false` otherwise.
+8. Return `true` if verification succeeded, or `false` otherwise.
 
 
 
-#### Recover Payload From Value Range Proof WIP
+#### Recover Payload From Value Range Proof
 
 **Inputs:**
 
@@ -1419,29 +1411,25 @@ In case of failure, returns `nil` instead of the range proof.
     6. Check that `(10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
     7. Check that `vmin + (10^exp)·(2^N - 1)` is less than 2<sup>63</sup>.
 2. Let `n = N/2`.
-3. Calculate the message to validate: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
-4. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
-5. Calculate the Fiat-Shamir factor:
-
-        h = ScalarHash("h" || msghash || D[0] || ... || D[n-2])
-
+3. Let `base = 4`.
+4. Calculate the message to validate: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
+5. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 6. For `t` from `0` to `n-1` (each digit):
     1. Calculate generator `G’[t]`:
         1. If `t` is less than `n-1`: set `G’[t] = G[t]`, where `G[t]` is a [tertiary generator](#generators) at index `t`.
         2. If `t` equals `n-1`: set `G’[t] = G - ∑G[i]` for all `i` from `0` to `n-2`.
     2. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
     3. Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
-    4. Calculate base point: `B[t] = G’[t] + h·J`.
-    5. Define `base = 4`.
-    6. For `i` from `0` to `base-1` (each digit’s value):
-        1. Calculate point `P[t,i] = D[t] + X1 - i·(base^t)·X2`. For efficiency perform recursive point addition of `-(base^t)·X2` instead of scalar multiplication.
-
+    4. For `i` from `0` to `base-1` (each digit’s value):
+        1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`. For efficiency perform recursive point addition of `-(base^t)·H` instead of scalar multiplication.
+        2. Calculate point `Q[t,i] = Bv[t] - i·(base^t)·Ba`. For efficiency perform iterative point addition of `-(base^t)·Ba` instead of scalar multiplication.
 7. [Recover Payload From Borromean Ring Signature](#recover-payload-from-borromean-ring-signature): compute an array of `2·N` 32-byte chunks `{ct[i]}` using the following inputs (halt and return `nil` if decryption fails):
     * `msghash`: the 32-byte string to be signed.
     * `n=N/2`: number of rings.
     * `m=base`: number of signatures in each ring.
-    * `{B[i]}`: `n` base points.
-    * `{P[i,j]}`: `n·m` public keys, [points](#point) on the elliptic curve.
+    * `M = 2`
+    * `{(G’[t], J)}`: `2·n` base points.
+    * `{(P[i,j], Q[i,j])}`: `2·n·m` public keys, [points](#point) on the elliptic curve.
     * `{f}`: the blinding factor `f` repeated `n` times.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G’[t]`.
     * `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
