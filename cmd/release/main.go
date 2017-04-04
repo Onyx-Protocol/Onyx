@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -81,7 +85,145 @@ func release(p product, c *config) {
 // If it finds a problem, it prints an error message and
 // exits with a nonzero status.
 func validate(p product, c *config) {
-	// tktk write this
+	stableBranch, err := regexp.MatchString("^\\d+\\.\\d+-stable$", c.branch)
+	if err != nil {
+		fatalf("error: %s\n", err)
+	}
+	if c.branch != "main" && !stableBranch {
+		fatalf("error: invalid branch %s\n", c.branch)
+	}
+
+	_, err = chain.git("fetch")
+	if err != nil {
+		fatalf("error: %s\n", err)
+	}
+
+	_, err = chainprv.git("fetch")
+	if err != nil {
+		fatalf("error: %s\n", err)
+	}
+
+	_, err = chain.git("checkout", c.branch)
+	if err != nil {
+		fatalf("error: %s\n", err)
+	}
+
+	commitBytes, err := chain.git("rev-parse", "HEAD")
+	if err != nil {
+		fatalf("error: %s\n", err)
+	}
+	commit := string(bytes.TrimSpace(commitBytes))
+	if commit != c.pubid {
+		fatalf("error: got commit %s expected %s on chain\n", commit, c.pubid)
+	}
+
+	if c.doPrv {
+		_, err = chainprv.git("checkout", c.branch)
+		if err != nil {
+			fatalf("error: %s\n", err)
+		}
+
+		commitBytes, err := chain.git("rev-parse", "HEAD")
+		if err != nil {
+			fatalf("error: %s\n", err)
+		}
+		commit := string(bytes.TrimSpace(commitBytes))
+		if commit != c.pubid {
+			fatalf("error: got commit %s expected %s on chainprv\n", commit, c.pubid)
+		}
+	}
+
+	var versionPrefix string
+	if stableBranch {
+		versionPrefix = strings.Split(c.branch, "-")[0]
+	}
+
+	if c.doPrv {
+		checkTag(chainprv, c, versionPrefix)
+	} else {
+		checkTag(chain, c, versionPrefix)
+	}
+}
+
+func checkTag(r *repo, c *config, versionPrefix string) {
+	proposedVersion := stringToVersion(c.version)
+	if proposedVersion[2] == 0 && c.branch != "main" {
+		fatalf("error: %s can only be released from main\n", c.version)
+	} else if proposedVersion[2] != 0 && c.branch == "main" {
+		fatalf("error: %s can only be released from a stable branch\n", c.version)
+	}
+
+	search := c.product + "-"
+	if versionPrefix != "" {
+		search += versionPrefix + "*"
+	} else {
+		search += "*.*.0"
+	}
+	tagBytes, err := r.git("tag", "-l", search)
+	if err != nil {
+		fatalf("error: %s\n", err)
+	}
+
+	tags := bytes.Split(tagBytes, []byte("\n"))
+	var checkVersion [3]int
+	for _, tag := range tags {
+		if len(tag) == 0 {
+			continue
+		}
+		tag = bytes.TrimPrefix(tag, []byte(c.product+"-"))
+		tagVersion := stringToVersion(string(tag))
+		if cmpVersions(tagVersion, checkVersion) == 1 {
+			checkVersion = tagVersion
+		}
+	}
+
+	if cmpVersions(proposedVersion, checkVersion) == 0 {
+		return
+	}
+
+	if versionPrefix != "" {
+		checkVersion[2]++
+		if cmpVersions(proposedVersion, checkVersion) == 0 {
+			return
+		}
+	} else {
+		check2 := checkVersion
+		check3 := checkVersion
+
+		check2[1]++
+		check3[0]++
+		check3[1] = 0
+
+		if cmpVersions(proposedVersion, check2) == 0 || cmpVersions(proposedVersion, check3) == 0 {
+			return
+		}
+	}
+
+	fatalf("error: %s is not the current or next version and is not releasable\n", c.version)
+}
+
+func stringToVersion(str string) [3]int {
+	versionParts := strings.Split(str, ".")
+	var tagVersion [3]int
+	for i, versionPart := range versionParts {
+		versionNum, err := strconv.Atoi(versionPart)
+		if err != nil {
+			fatalf("error: %s\n", err)
+		}
+		tagVersion[i] = versionNum
+	}
+	return tagVersion
+}
+
+func cmpVersions(a, b [3]int) int {
+	for i := 0; i < 3; i++ {
+		if a[i] > b[i] {
+			return 1
+		} else if a[i] < b[i] {
+			return -1
+		}
+	}
+	return 0
 }
 
 func tag(p product, c *config) string {
