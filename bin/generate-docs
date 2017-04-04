@@ -8,7 +8,13 @@ echo "Generating documentation..."
 
 go install chain/cmd/md2html
 cd $CHAIN/docs
-md2html $compile_dest_path
+
+if [[ ( $# == 0 ) ]];
+then
+  md2html build $compile_dest_path
+else
+  md2html -prefix $1 build $compile_dest_path
+fi
 
 javadoc_dest_path=$compile_dest_path/java/javadoc
 

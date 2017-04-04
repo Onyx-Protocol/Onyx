@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ef -o pipefail
 
-if [[ $1 && ("$1" != "prod") ]];
+if [[ ( $# != 0 ) && ( "$1" != "prod" ) ]];
 then
   tempChainPath=`mktemp -d`
   trap "rm -rf $tempChainPath" EXIT
@@ -41,4 +41,6 @@ then
       --copy-source $bucket/docs/$1/{} \
       --key docs/$1/{} \
       --metadata-directive "REPLACE" > /dev/null
+else
+  echo "usage: upload-docs version-prefix [prod]"
 fi
