@@ -18,7 +18,7 @@ func TestTxHashes(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		if i != 1 {									// xxx
+		if i != 1 { // xxx
 			continue
 		}
 

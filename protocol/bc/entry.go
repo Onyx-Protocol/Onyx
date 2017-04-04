@@ -33,10 +33,6 @@ var errInvalidValue = errors.New("invalid value")
 // EntryID computes the identifier of an entry, as the hash of its
 // body plus some metadata.
 func EntryID(e Entry) (hash Hash) {
-	defer func() {
-		fmt.Printf("* EntryID(%T): %x\n", e, hash[:])
-	}()
-
 	if e == nil {
 		return hash
 	}
@@ -161,11 +157,10 @@ func writeForHash(w io.Writer, c interface{}) error {
 			if !c.CanInterface() {
 				return errInvalidValue
 			}
-			t := v.Type()
-			f := t.Field(i)
-			fmt.Printf("* writing struct field %s\n", f.Name)
 			err := writeForHash(w, c.Interface())
 			if err != nil {
+				t := v.Type()
+				f := t.Field(i)
 				return errors.Wrapf(err, "writing struct field %d (%s.%s) for hash", i, t.Name(), f.Name)
 			}
 		}

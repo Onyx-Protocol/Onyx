@@ -75,7 +75,7 @@ message Mux {
   message Body {
     repeated ValueSource sources  = 1; // issuances, spends, and muxes
     Program              program  = 2;
-    bytes                ext_hash = 3;
+    ProtoHash            ext_hash = 3;
   }
   message Witness {
     repeated ValueDestination destinations = 1; // outputs, retirements, and muxes

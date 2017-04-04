@@ -12,8 +12,8 @@ func (h *TxHeader) body() interface{} { return h.Body }
 func NewTxHeader(version uint64, resultIDs []Hash, data Hash, minTimeMS, maxTimeMS uint64) *TxHeader {
 	result := &TxHeader{
 		Body: &TxHeader_Body{
-			Version: version,
-			Data: data.Proto(),
+			Version:   version,
+			Data:      data.Proto(),
 			MinTimeMs: minTimeMS,
 			MaxTimeMs: maxTimeMS,
 		},
