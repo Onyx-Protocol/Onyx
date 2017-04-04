@@ -10,7 +10,7 @@ import (
 	"chain/protocol/vm"
 )
 
-func TestIntrospectionOps(t *testing.T) {
+func TestCheckOutput(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
 		ReferenceData: []byte("txref"),
 		Inputs: []*bc.TxInput{
@@ -84,10 +84,15 @@ func TestIntrospectionOps(t *testing.T) {
 		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
 			gotOk, err := txCtx.checkOutput(test.index, test.data, test.amount, test.assetID, test.vmVersion, test.code)
 			if g := errors.Root(err); g != test.wantErr {
-				t.Fatalf("err = %v, want %v", g, test.wantErr)
+				t.Errorf("checkOutput(%v, %v, %v, %x, %v, %x) err = %v, want %v",
+					test.index, test.data, test.amount, test.assetID, test.vmVersion, test.code,
+					g, test.wantErr)
+				return
 			}
 			if gotOk != test.wantOk {
-				t.Errorf("ok = %v, want %v", gotOk, test.wantOk)
+				t.Errorf("checkOutput(%v, %v, %v, %x, %v, %x) ok = %v, want %v",
+					test.index, test.data, test.amount, test.assetID, test.vmVersion, test.code,
+					gotOk, test.wantOk)
 			}
 
 		})
