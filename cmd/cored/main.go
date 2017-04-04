@@ -69,7 +69,7 @@ var (
 	buildDate   = "?"
 
 	race    []interface{} // initialized in race.go
-	tlsOnly = true        // initialized in disable_tls_only.go
+	tlsOnly = true        // updated with disable_tls_only build tag
 )
 
 func init() {

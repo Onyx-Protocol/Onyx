@@ -2,7 +2,10 @@
 
 package main
 
-import "net/http"
+import (
+	"chain/core/config"
+	"net/http"
+)
 
 func init() {
 	config.AccessTokens = true
