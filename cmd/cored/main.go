@@ -439,12 +439,12 @@ func (w *errlog) Write(p []byte) (int, error) {
 func loadRootCAs(name string) *x509.CertPool {
 	pem, err := ioutil.ReadFile(name)
 	if err != nil {
-		chainlog.Fatal(context.Background(), chainlog.KeyError, err)
+		chainlog.Fatalkv(context.Background(), chainlog.KeyError, err)
 	}
 	pool := x509.NewCertPool()
 	ok := pool.AppendCertsFromPEM(pem)
 	if !ok {
-		chainlog.Fatal(context.Background(), chainlog.KeyError, "no certs found in "+name)
+		chainlog.Fatalkv(context.Background(), chainlog.KeyError, "no certs found in "+name)
 	}
 	return pool
 }
