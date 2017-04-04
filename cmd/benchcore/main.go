@@ -333,7 +333,7 @@ func mustBuildCored() []byte {
 
 	date := time.Now().UTC().Format(time.RFC3339)
 	cmd := exec.Command("go", "build",
-		"-tags", "insecure_disable_https_redirect",
+		"-tags", "plain_http",
 		"-ldflags", "-X main.buildDate="+date,
 		"-o", "/dev/stdout",
 		"chain/cmd/cored",
