@@ -141,11 +141,6 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case reflect.Struct:
 		typ := v.Type()
 		for i := 0; i < typ.NumField(); i++ {
-			sf := typ.Field(i)
-			if sf.Tag.Get("entry") == "-" {
-				// exclude this field from hashing
-				continue
-			}
 			c := v.Field(i)
 			if !c.CanInterface() {
 				return errInvalidValue
