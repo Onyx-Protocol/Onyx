@@ -90,60 +90,6 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 		return *txSigHash
 	}
 
-	checkOutput := func(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte) (bool, error) {
-		checkEntry := func(e bc.Entry) (bool, error) {
-			check := func(prog bc.Program, value bc.AssetAmount, dataHash bc.Hash) bool {
-				return (prog.VMVersion == vmVersion &&
-					bytes.Equal(prog.Code, code) &&
-					bytes.Equal(value.AssetID[:], assetID) &&
-					value.Amount == amount &&
-					(len(data) == 0 || bytes.Equal(dataHash[:], data)))
-			}
-
-			switch e := e.(type) {
-			case *bc.Output:
-				return check(e.Body.ControlProgram, e.Body.Source.Value, e.Body.Data), nil
-
-			case *bc.Retirement:
-				return check(bc.Program{}, e.Body.Source.Value, e.Body.Data), nil
-			}
-
-			return false, vm.ErrContext
-		}
-
-		checkMux := func(m *bc.Mux) (bool, error) {
-			if index >= uint64(len(m.Witness.Destinations)) {
-				return false, errors.Wrapf(vm.ErrBadValue, "index %d >= %d", index, len(m.Witness.Destinations))
-			}
-			return checkEntry(m.Witness.Destinations[index].Entry)
-		}
-
-		switch e := entry.(type) {
-		case *bc.Mux:
-			return checkMux(e)
-
-		case *bc.Issuance:
-			if m, ok := e.Witness.Destination.Entry.(*bc.Mux); ok {
-				return checkMux(m)
-			}
-			if index != 0 {
-				return false, errors.Wrapf(vm.ErrBadValue, "index %d >= 1", index)
-			}
-			return checkEntry(e.Witness.Destination.Entry)
-
-		case *bc.Spend:
-			if m, ok := e.Witness.Destination.Entry.(*bc.Mux); ok {
-				return checkMux(m)
-			}
-			if index != 0 {
-				return false, errors.Wrapf(vm.ErrBadValue, "index %d >= 1", index)
-			}
-			return checkEntry(e.Witness.Destination.Entry)
-		}
-
-		return false, vm.ErrContext
-	}
-
 	result := &vm.Context{
 		VMVersion: prog.VMVersion,
 		Code:      prog.Code,
@@ -164,8 +110,66 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 		DestPos:       destPos,
 		AnchorID:      anchorID,
 		SpentOutputID: spentOutputID,
-		CheckOutput:   checkOutput,
+		CheckOutput:   (&entryContext{entry: entry}).checkOutput,
 	}
 
 	return result
+}
+
+type entryContext struct {
+	entry bc.Entry
+}
+
+func (tc *entryContext) checkOutput(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte) (bool, error) {
+	checkEntry := func(e bc.Entry) (bool, error) {
+		check := func(prog bc.Program, value bc.AssetAmount, dataHash bc.Hash) bool {
+			return (prog.VMVersion == vmVersion &&
+				bytes.Equal(prog.Code, code) &&
+				bytes.Equal(value.AssetID[:], assetID) &&
+				value.Amount == amount &&
+				(len(data) == 0 || bytes.Equal(dataHash[:], data)))
+		}
+
+		switch e := e.(type) {
+		case *bc.Output:
+			return check(e.Body.ControlProgram, e.Body.Source.Value, e.Body.Data), nil
+
+		case *bc.Retirement:
+			return check(bc.Program{}, e.Body.Source.Value, e.Body.Data), nil
+		}
+
+		return false, vm.ErrContext
+	}
+
+	checkMux := func(m *bc.Mux) (bool, error) {
+		if index >= uint64(len(m.Witness.Destinations)) {
+			return false, errors.Wrapf(vm.ErrBadValue, "index %d >= %d", index, len(m.Witness.Destinations))
+		}
+		return checkEntry(m.Witness.Destinations[index].Entry)
+	}
+
+	switch e := tc.entry.(type) {
+	case *bc.Mux:
+		return checkMux(e)
+
+	case *bc.Issuance:
+		if m, ok := e.Witness.Destination.Entry.(*bc.Mux); ok {
+			return checkMux(m)
+		}
+		if index != 0 {
+			return false, errors.Wrapf(vm.ErrBadValue, "index %d >= 1", index)
+		}
+		return checkEntry(e.Witness.Destination.Entry)
+
+	case *bc.Spend:
+		if m, ok := e.Witness.Destination.Entry.(*bc.Mux); ok {
+			return checkMux(m)
+		}
+		if index != 0 {
+			return false, errors.Wrapf(vm.ErrBadValue, "index %d >= 1", index)
+		}
+		return checkEntry(e.Witness.Destination.Entry)
+	}
+
+	return false, vm.ErrContext
 }
