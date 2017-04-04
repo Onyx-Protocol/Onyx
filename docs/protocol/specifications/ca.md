@@ -1010,10 +1010,7 @@ When creating a confidential issuance, the first step is to construct the rest o
     5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
 3. Calculate the tracing point: `T = y·(J + M)`.
 4. Calculate the blinded marker using the blinding factor used by commitment `AC`: `Bm = c·M`.
-5. Calculate a 32-byte message hash to sign:
-
-        msghash = StreamHash("msg" || basehash || M || T || Bm, 32)
-
+5. Calculate a 32-byte message hash to sign: `msghash = Hash256("msg" || basehash || M || T || Bm)`.
 6. Create proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
     1. Calculate the nonce `k = ScalarHash("k" || msghash || c)`.
     2. Calculate points `R1 = k·M` and `R2 = k·J`.
@@ -1081,10 +1078,7 @@ When creating a confidential issuance, the first step is to construct the rest o
         3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
         4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
         5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
-    3. Calculate a 32-byte message hash to sign:
-
-            msghash = StreamHash("msg" || basehash || M || T || Bm, 32)
-
+    3. Calculate a 32-byte message hash to sign: `msghash = Hash256("msg" || basehash || M || T || Bm)`.
     4. Validate proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
         1. Calculate point `R1 = s’·M - e’·Bm`.
         2. Calculate point `R2 = s’·J - e’·AC.Ba`.
@@ -1151,24 +1145,20 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 3. Blind the tracing point being tested: `Z = x·T`.
 4. Calculate commitment to the blinding key: `X = x·(J+M)`.
 5. Calculate and blind a tracing point corresponding to the issuance key pair `y,Y`: `Z’ = x·y·(J+M)`.
-6. Calculate a 32-byte message hash and two 64-byte Fiat-Shamir challenges for all the signatures (total 160 bytes):
-
-        (msghash, h1, h2) = StreamHash("IP" || AC || T || X || Z || Z’, 32 + 2·64)
-
-7. Interpret `h1` and `h2` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
-8. Create a proof that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/(J+M)` is equal to the discrete log `Z/T`):
-    1. Calculate base point `B1 = h1·(J+M) + T`.
-    2. Calculate the nonce `k1 = ScalarHash("k1" || msghash || y || x)`.
-    3. Calculate point `R1 = k1·B1`.
-    4. Calculate scalar `e1 = ScalarHash("e1" || msghash || R1)`.
+6. Calculate a message hash: `msghash = Hash32("IP" || AC || T || X || Z || Z’)`.
+7. Create a proof that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/(J+M)` is equal to the discrete log `Z/T`):
+    1. Calculate the nonce `k1 = ScalarHash("k1" || msghash || y || x)`.
+    2. Calculate point `R1 = k1·(J+M)`.
+    3. Calculate point `R2 = k1·T`.
+    4. Calculate scalar `e1 = ScalarHash("e1" || msghash || R1 || R2)`.
     5. Calculate scalar `s1 = k1 + x·e1 mod L`.
-9. Create a proof that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
-    1. Calculate base point `B2 = h2·X + G`.
-    2. Calculate the nonce `k2 = ScalarHash("k2" || msghash || y || x)`.
-    3. Calculate point `R2 = k2·B2`.
-    4. Calculate scalar `e2 = ScalarHash("e2" || msghash || R2)`.
+8. Create a proof that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
+    1. Calculate the nonce `k2 = ScalarHash("k2" || msghash || y || x)`.
+    2. Calculate point `R3 = k2·X`.
+    3. Calculate point `R4 = k2·G`.
+    4. Calculate scalar `e2 = ScalarHash("e2" || msghash || R3 || R4)`.
     5. Calculate scalar `s2 = k2 + y·e2 mod L`.
-5. Return points `(X, Z, Z’)`, signature `(e1,s1)` and signature `(e2,s2)`.
+9. Return points `(X, Z, Z’)`, signature `(e1,s1)` and signature `(e2,s2)`.
 
 
 #### Validate Issuance Proof
@@ -1199,24 +1189,18 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 
 **Algorithm:**
 
-1. Calculate a 32-byte message hash and two 64-byte Fiat-Shamir challenges for all the signatures (total 160 bytes):
-
-        (msghash, h1, h2) = StreamHash("IP" || AC || T || X || Z || Z’, 32 + 2·64)
-
-2. Interpret `h1` and `h2` as 64-byte little-endian integers and reduce each of them modulo subgroup order `L`.
-3. Verify that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/(J+M)` is equal to the discrete log `Z/T`):
-    1. Calculate base point `B1 = h1·(J+M) + T`.
-    2. Calculate public key `P1 = h1·X + Z`.
-    3. Calculate point `R1 = s1·B1 - e1·P1`.ruined
-    4. Calculate scalar `e’ = ScalarHash("e1" || msghash || R1)`.
-    5. Verify that `e’` is equal to `e1`. If validation fails, halt and return `nil`.
-4. Verify that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
-    1. Calculate base point `B2 = h2·X + G`.
-    2. Calculate public key `P2 = h2·Z’ + Y[j]`.
-    3. Calculate point `R2 = s2·B2 - e2·P2`.
-    4. Calculate scalar `e” = ScalarHash("e2" || msghash || R2)`.
-    5. Verify that `e”` is equal to `e2`. If validation fails, halt and return `nil`.
-5. If `Z` is equal to `Z’` return `“yes”`. Otherwise, return `“no”`.
+1. Calculate a message hash: `msghash = Hash32("IP" || AC || T || X || Z || Z’)`.
+2. Verify that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/(J+M)` is equal to the discrete log `Z/T`):
+    1. Calculate point `R1 = s1·(J+M) - e1·X`.
+    2. Calculate point `R2 = s1·T - e1·Z`.
+    3. Calculate scalar `e’ = ScalarHash("e1" || msghash || R1 || R2)`.
+    4. Verify that `e’` is equal to `e1`. If validation fails, halt and return `nil`.
+3. Verify that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
+    1. Calculate point `R3 = s2·X - e2·Z’`.
+    2. Calculate point `R4 = s2·G - e2·Y[j]`.
+    3. Calculate scalar `e” = ScalarHash("e2" || msghash || R3 || R4)`.
+    4. Verify that `e”` is equal to `e2`. If validation fails, halt and return `nil`.
+4. If `Z` is equal to `Z’` return `“yes”`. Otherwise, return `“no”`.
 
 
 
