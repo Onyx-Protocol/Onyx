@@ -45,7 +45,7 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store, outputIDs ...bc.Ha
 		s.Tree.Insert(outputID[:])
 	}
 
-	err = c.CommitBlock(ctx, b1, s)
+	err = c.CommitAppliedBlock(ctx, b1, s)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -77,7 +77,7 @@ func MakeBlock(tb testing.TB, c *protocol.Chain, txs []*bc.Tx) *bc.Block {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	err = c.CommitBlock(ctx, nextBlock, nextState)
+	err = c.CommitAppliedBlock(ctx, nextBlock, nextState)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

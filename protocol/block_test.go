@@ -229,7 +229,7 @@ func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	}
 	// TODO(tessr): consider adding MaxIssuanceWindow to NewChain
 	c.MaxIssuanceWindow = 48 * time.Hour
-	err = c.CommitBlock(ctx, b1, state.Empty())
+	err = c.CommitAppliedBlock(ctx, b1, state.Empty())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -254,7 +254,7 @@ func makeEmptyBlock(tb testing.TB, c *Chain) {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	err = c.CommitBlock(ctx, nextBlock, nextState)
+	err = c.CommitAppliedBlock(ctx, nextBlock, nextState)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

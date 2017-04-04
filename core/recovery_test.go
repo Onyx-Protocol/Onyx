@@ -262,7 +262,7 @@ func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.T
 	if len(b.Transactions) == 0 {
 		return nil
 	}
-	err = c.CommitBlock(ctx, b, s)
+	err = c.CommitAppliedBlock(ctx, b, s)
 	if err != nil {
 		return err
 	}
