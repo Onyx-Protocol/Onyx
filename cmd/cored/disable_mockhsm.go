@@ -1,22 +1,17 @@
-//+build prod
+//+build disable_mockhsm
 
 package main
 
 import (
-	"errors"
-	"net/http"
-
 	"chain/core"
 	"chain/core/blocksigner"
+	"chain/core/config"
 	"chain/database/pg"
+	"errors"
 )
 
-var prod = true
-
-func resetInDevIfRequested(db pg.DB) {}
-
-func authLoopbackInDev(req *http.Request) bool {
-	return false
+func init() {
+	config.BuildConfig.MockHSM = false
 }
 
 func devEnableMockHSM(_ pg.DB) []core.RunOption {

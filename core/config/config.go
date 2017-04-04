@@ -35,7 +35,20 @@ var (
 	ErrNoProdBlockHSMURL = errors.New("block hsm URL cannot be empty in production")
 
 	Version, BuildCommit, BuildDate string
-	Production                      bool
+
+	// This is the default, Chain development configuration.
+	// These options can be updated with build tags.
+	BuildConfig = struct {
+		AccessTokens bool `json:"access_tokens"`
+		MockHSM      bool `json:"mockhsm"`
+		Reset        bool `json:"reset"`
+		TLSOnly      bool `json:"tls_only"`
+	}{
+		AccessTokens: false,
+		MockHSM:      true,
+		Reset:        true,
+		TLSOnly:      true,
+	}
 )
 
 // Config encapsulates Core-level, persistent configuration options.

@@ -32,7 +32,7 @@ cleanup() {
 trap "cleanup" EXIT
 
 GOOS=linux GOARCH=amd64 go build\
-  -tags 'insecure_disable_https_redirect'\
+  -tags 'disable_tls_only'\
   -ldflags "$ldflags"\
   -o $CHAIN/docker/centos-rpm/cored\
   chain/cmd/cored

@@ -71,8 +71,7 @@ var (
 	buildCommit = "?"
 	buildDate   = "?"
 
-	race          []interface{} // initialized in race.go
-	httpsRedirect = true        // initialized in insecure.go
+	race []interface{} // initialized in race.go
 )
 
 func init() {
@@ -85,12 +84,6 @@ func init() {
 		version = rev.ID
 	}
 
-	prodStr := "no"
-	if prod {
-		prodStr = "yes"
-	}
-
-	expvar.NewString("prod").Set(prodStr)
 	expvar.NewString("version").Set(version)
 	expvar.NewString("build_tag").Set(buildTag)
 	expvar.NewString("build_date").Set(buildDate)
@@ -102,7 +95,6 @@ func init() {
 	config.Version = version
 	config.BuildCommit = buildCommit
 	config.BuildDate = buildDate
-	config.Production = prod
 }
 
 func main() {
@@ -114,7 +106,6 @@ func main() {
 	}
 
 	fmt.Printf("cored (Chain Core) %s\n", config.Version)
-	fmt.Printf("production: %t\n", config.Production)
 	fmt.Printf("build-commit: %v\n", config.BuildCommit)
 	fmt.Printf("build-date: %v\n", config.BuildDate)
 
@@ -148,7 +139,7 @@ func runServer() {
 	handler = reqid.Handler(handler)
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
-	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
+	secureheader.DefaultConfig.HTTPSRedirect = config.BuildConfig.TLSOnly
 	secureheader.DefaultConfig.Next = handler
 
 	server := &http.Server{

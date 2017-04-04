@@ -26,10 +26,10 @@ var (
 // unconfigured core. It does not delete access tokens or mockhsm
 // keys.
 func ResetBlockchain(ctx context.Context, db pg.DB) error {
-	if config.Production {
+	if !config.BuildConfig.Reset {
 		// Shouldn't ever happen; This package shouldn't even be
-		// included in a production binary.
-		panic("reset called on production")
+		// included in a reset disabled binary.
+		panic("reset called on production intended build")
 	}
 
 	var skip []string
@@ -56,10 +56,10 @@ func ResetBlockchain(ctx context.Context, db pg.DB) error {
 
 // ResetEverything deletes all of a Core's data.
 func ResetEverything(ctx context.Context, db pg.DB) error {
-	if config.Production {
+	if !config.BuildConfig.Reset {
 		// Shouldn't ever happen; This package shouldn't even be
-		// included in a production binary.
-		panic("reset called on production")
+		// included in a reset disabled binary.
+		panic("reset called on production intended build")
 	}
 
 	err := ResetBlockchain(ctx, db)
