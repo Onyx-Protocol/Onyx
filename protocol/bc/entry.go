@@ -5,6 +5,8 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/golang/protobuf/proto"
+
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
@@ -14,6 +16,8 @@ import (
 // blockchain: transaction components such as spends, issuances,
 // outputs, and retirements (among others), plus blockheaders.
 type Entry interface {
+	proto.Message
+
 	// Type produces a short human-readable string uniquely identifying
 	// the type of this entry.
 	Type() string
@@ -21,13 +25,6 @@ type Entry interface {
 	// Body produces the entry's body, which is used as input to
 	// EntryID.
 	body() interface{}
-
-	// Ordinal reports the position of the TxInput or TxOutput within
-	// its transaction, when this entry was created from such an
-	// object. (See mapTx.) Both inputs (spends and issuances) and
-	// outputs (including retirements) are numbered beginning at
-	// zero. Entries not originating in this way report -1.
-	Ordinal() int
 }
 
 var errInvalidValue = errors.New("invalid value")
@@ -90,6 +87,21 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
 		return errors.Wrapf(err, "writing string (len %d) for hash", len(v))
+	case *ProtoHash:
+		if v == nil {
+			return writeForHash(w, Hash{})
+		}
+		return writeForHash(w, v.Hash())
+	case *ProtoAssetID:
+		if v == nil {
+			return writeForHash(w, AssetID{})
+		}
+		return writeForHash(w, v.AssetID())
+	case *ProtoAssetAmount:
+		if v == nil {
+			return writeForHash(w, AssetAmount{})
+		}
+		return writeForHash(w, v.AssetAmount())
 	case Hash:
 		_, err := w.Write(v[:])
 		return errors.Wrap(err, "writing Hash for hash")
@@ -102,6 +114,12 @@ func writeForHash(w io.Writer, c interface{}) error {
 	// correspond to slices and structs in Go. They can't be
 	// handled with type assertions, so we must use reflect.
 	switch v := reflect.ValueOf(c); v.Kind() {
+	case reflect.Ptr:
+		if v.IsNil() {
+			return nil
+		}
+		elem := v.Elem()
+		return writeForHash(w, elem.Interface())
 	case reflect.Slice:
 		l := v.Len()
 		_, err := blockchain.WriteVarint31(w, uint64(l))
@@ -123,11 +141,6 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case reflect.Struct:
 		typ := v.Type()
 		for i := 0; i < typ.NumField(); i++ {
-			sf := typ.Field(i)
-			if sf.Tag.Get("entry") == "-" {
-				// exclude this field from hashing
-				continue
-			}
 			c := v.Field(i)
 			if !c.CanInterface() {
 				return errInvalidValue

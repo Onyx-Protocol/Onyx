@@ -69,7 +69,9 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 		testutil.FatalErr(t, err)
 	}
 
-	return tpl.Transaction.Outputs[0], tpl.Transaction.Results[0].(*bc.Output), tpl.Transaction.OutputID(0)
+	outID0 := tpl.Transaction.OutputID(0)
+	out0 := tpl.Transaction.Entries[outID0].(*bc.Output)
+	return tpl.Transaction.Outputs[0], out0, outID0
 }
 
 func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, actions []txbuilder.Action) *bc.Tx {

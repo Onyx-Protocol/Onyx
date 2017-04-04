@@ -58,27 +58,28 @@ func checkValid(vs *validationState, e bc.Entry) error {
 	case *bc.TxHeader:
 		// This does only part of the work of validating a tx header. The
 		// block-related parts of tx validation are in ValidateBlock.
-		if e.Body.MaxTimeMS > 0 {
-			if e.Body.MaxTimeMS < e.Body.MinTimeMS {
-				return errors.WithDetailf(errBadTimeRange, "min time %d, max time %d", e.Body.MinTimeMS, e.Body.MaxTimeMS)
+		if e.Body.MaxTimeMs > 0 {
+			if e.Body.MaxTimeMs < e.Body.MinTimeMs {
+				return errors.WithDetailf(errBadTimeRange, "min time %d, max time %d", e.Body.MinTimeMs, e.Body.MaxTimeMs)
 			}
 		}
 
-		for i, resID := range e.Body.ResultIDs {
+		for i, resID := range e.Body.ResultIds {
+			resultEntry := vs.tx.Entries[resID.Hash()]
 			vs2 := *vs
-			vs2.entryID = resID
-			err := checkValid(&vs2, e.Results[i])
+			vs2.entryID = resID.Hash()
+			err := checkValid(&vs2, resultEntry)
 			if err != nil {
 				return errors.Wrapf(err, "checking result %d", i)
 			}
 		}
 
 		if e.Body.Version == 1 {
-			if len(e.Body.ResultIDs) == 0 {
+			if len(e.Body.ResultIds) == 0 {
 				return errEmptyResults
 			}
 
-			if e.Body.ExtHash != (bc.Hash{}) {
+			if !e.Body.ExtHash.IsZero() {
 				return errNonemptyExtHash
 			}
 		}
@@ -92,7 +93,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		for i, src := range e.Body.Sources {
 			vs2 := *vs
 			vs2.sourcePos = uint64(i)
-			err := checkValidSrc(&vs2, &src)
+			err := checkValidSrc(&vs2, src)
 			if err != nil {
 				return errors.Wrapf(err, "checking mux source %d", i)
 			}
@@ -101,7 +102,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		for i, dest := range e.Witness.Destinations {
 			vs2 := *vs
 			vs2.destPos = uint64(i)
-			err := checkValidDest(&vs2, &dest)
+			err := checkValidDest(&vs2, dest)
 			if err != nil {
 				return errors.Wrapf(err, "checking mux destination %d", i)
 			}
@@ -109,24 +110,24 @@ func checkValid(vs *validationState, e bc.Entry) error {
 
 		parity := make(map[bc.AssetID]int64)
 		for i, src := range e.Body.Sources {
-			sum, ok := checked.AddInt64(parity[src.Value.AssetID], int64(src.Value.Amount))
+			sum, ok := checked.AddInt64(parity[src.Value.AssetId.AssetID()], int64(src.Value.Amount))
 			if !ok {
-				return errors.WithDetailf(errOverflow, "adding %d units of asset %x from mux source %d to total %d overflows int64", src.Value.Amount, src.Value.AssetID[:], i, parity[src.Value.AssetID])
+				return errors.WithDetailf(errOverflow, "adding %d units of asset %x from mux source %d to total %d overflows int64", src.Value.Amount, src.Value.AssetId.AssetID().Bytes(), i, parity[src.Value.AssetId.AssetID()])
 			}
-			parity[src.Value.AssetID] = sum
+			parity[src.Value.AssetId.AssetID()] = sum
 		}
 
 		for i, dest := range e.Witness.Destinations {
-			sum, ok := parity[dest.Value.AssetID]
+			sum, ok := parity[dest.Value.AssetId.AssetID()]
 			if !ok {
-				return errors.WithDetailf(errNoSource, "mux destination %d, asset %x, has no corresponding source", i, dest.Value.AssetID[:])
+				return errors.WithDetailf(errNoSource, "mux destination %d, asset %x, has no corresponding source", i, dest.Value.AssetId.AssetID().Bytes())
 			}
 
 			diff, ok := checked.SubInt64(sum, int64(dest.Value.Amount))
 			if !ok {
-				return errors.WithDetailf(errOverflow, "subtracting %d units of asset %x from mux destination %d from total %d underflows int64", dest.Value.Amount, dest.Value.AssetID[:], i, sum)
+				return errors.WithDetailf(errOverflow, "subtracting %d units of asset %x from mux destination %d from total %d underflows int64", dest.Value.Amount, dest.Value.AssetId.AssetID().Bytes(), i, sum)
 			}
-			parity[dest.Value.AssetID] = diff
+			parity[dest.Value.AssetId.AssetID()] = diff
 		}
 
 		for assetID, amount := range parity {
@@ -135,7 +136,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			}
 		}
 
-		if vs.tx.Body.Version == 1 && e.Body.ExtHash != (bc.Hash{}) {
+		if vs.tx.Body.Version == 1 && !e.Body.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
@@ -145,64 +146,65 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.Wrap(err, "checking nonce program")
 		}
 
+		tr := vs.tx.Entries[e.Body.TimeRangeId.Hash()].(*bc.TimeRange) // xxx check?
 		vs2 := *vs
-		vs2.entryID = e.Body.TimeRangeID
-		err = checkValid(&vs2, e.TimeRange)
+		vs2.entryID = e.Body.TimeRangeId.Hash()
+		err = checkValid(&vs2, tr)
 		if err != nil {
 			return errors.Wrap(err, "checking nonce timerange")
 		}
 
-		if e.TimeRange.Body.MinTimeMS == 0 || e.TimeRange.Body.MaxTimeMS == 0 {
+		if tr.Body.MinTimeMs == 0 || tr.Body.MaxTimeMs == 0 {
 			return errZeroTime
 		}
 
-		if vs.tx.Body.Version == 1 && e.Body.ExtHash != (bc.Hash{}) {
+		if vs.tx.Body.Version == 1 && !e.Body.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
 	case *bc.Output:
 		vs2 := *vs
 		vs2.sourcePos = 0
-		err := checkValidSrc(&vs2, &e.Body.Source)
+		err := checkValidSrc(&vs2, e.Body.Source)
 		if err != nil {
 			return errors.Wrap(err, "checking output source")
 		}
 
-		if vs.tx.Body.Version == 1 && e.Body.ExtHash != (bc.Hash{}) {
+		if vs.tx.Body.Version == 1 && !e.Body.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
 	case *bc.Retirement:
 		vs2 := *vs
 		vs2.sourcePos = 0
-		err := checkValidSrc(&vs2, &e.Body.Source)
+		err := checkValidSrc(&vs2, e.Body.Source)
 		if err != nil {
 			return errors.Wrap(err, "checking retirement source")
 		}
 
-		if vs.tx.Body.Version == 1 && e.Body.ExtHash != (bc.Hash{}) {
+		if vs.tx.Body.Version == 1 && !e.Body.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
 	case *bc.TimeRange:
-		if e.Body.MinTimeMS > vs.tx.Body.MinTimeMS {
+		if e.Body.MinTimeMs > vs.tx.Body.MinTimeMs {
 			return errBadTimeRange
 		}
-		if e.Body.MaxTimeMS > 0 && e.Body.MaxTimeMS < vs.tx.Body.MaxTimeMS {
+		if e.Body.MaxTimeMs > 0 && e.Body.MaxTimeMs < vs.tx.Body.MaxTimeMs {
 			return errBadTimeRange
 		}
-		if vs.tx.Body.Version == 1 && e.Body.ExtHash != (bc.Hash{}) {
+		if vs.tx.Body.Version == 1 && !e.Body.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
 	case *bc.Issuance:
-		if e.Witness.AssetDefinition.InitialBlockID != vs.blockchainID {
-			return errors.WithDetailf(errWrongBlockchain, "current blockchain %x, asset defined on blockchain %x", vs.blockchainID[:], e.Witness.AssetDefinition.InitialBlockID[:])
+		if e.Witness.AssetDefinition.InitialBlockId.Hash() != vs.blockchainID {
+			return errors.WithDetailf(errWrongBlockchain, "current blockchain %x, asset defined on blockchain %x", vs.blockchainID[:], e.Witness.AssetDefinition.InitialBlockId.Hash().Bytes())
 		}
 
 		computedAssetID := e.Witness.AssetDefinition.ComputeAssetID()
-		if computedAssetID != e.Body.Value.AssetID {
-			return errors.WithDetailf(errMismatchedAssetID, "asset ID is %x, issuance wants %x", computedAssetID[:], e.Body.Value.AssetID[:])
+		if computedAssetID != e.Body.Value.AssetId.AssetID() {
+			return errors.WithDetailf(errMismatchedAssetID, "asset ID is %x, issuance wants %x", computedAssetID[:], e.Body.Value.AssetId.AssetID().Bytes())
 		}
 
 		err := vm.Verify(NewTxVMContext(vs.tx, e, e.Witness.AssetDefinition.IssuanceProgram, e.Witness.Arguments))
@@ -210,19 +212,21 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.Wrap(err, "checking issuance program")
 		}
 
+		anchor := vs.tx.Entries[e.Body.AnchorId.Hash()] // xxx check?
+
 		var anchored bc.Hash
-		switch a := e.Anchor.(type) {
+		switch a := anchor.(type) {
 		case *bc.Nonce:
-			anchored = a.Witness.AnchoredID
+			anchored = a.Witness.AnchoredId.Hash()
 
 		case *bc.Spend:
-			anchored = a.Witness.AnchoredID
+			anchored = a.Witness.AnchoredId.Hash()
 
 		case *bc.Issuance:
-			anchored = a.Witness.AnchoredID
+			anchored = a.Witness.AnchoredId.Hash()
 
 		default:
-			return errors.WithDetailf(errEntryType, "issuance anchor has type %T, should be nonce, spend, or issuance", e.Anchor)
+			return errors.WithDetailf(errEntryType, "issuance anchor has type %T, should be nonce, spend, or issuance", anchor)
 		}
 
 		if anchored != vs.entryID {
@@ -230,48 +234,49 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		}
 
 		anchorVS := *vs
-		anchorVS.entryID = e.Body.AnchorID
-		err = checkValid(&anchorVS, e.Anchor)
+		anchorVS.entryID = e.Body.AnchorId.Hash()
+		err = checkValid(&anchorVS, anchor)
 		if err != nil {
 			return errors.Wrap(err, "checking issuance anchor")
 		}
 
 		destVS := *vs
 		destVS.destPos = 0
-		err = checkValidDest(&destVS, &e.Witness.Destination)
+		err = checkValidDest(&destVS, e.Witness.Destination)
 		if err != nil {
 			return errors.Wrap(err, "checking issuance destination")
 		}
 
-		if vs.tx.Body.Version == 1 && e.Body.ExtHash != (bc.Hash{}) {
+		if vs.tx.Body.Version == 1 && !e.Body.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
 	case *bc.Spend:
-		err := vm.Verify(NewTxVMContext(vs.tx, e, e.SpentOutput.Body.ControlProgram, e.Witness.Arguments))
+		spentOutput := vs.tx.Entries[e.Body.SpentOutputId.Hash()].(*bc.Output) // xxx check
+		err := vm.Verify(NewTxVMContext(vs.tx, e, spentOutput.Body.ControlProgram, e.Witness.Arguments))
 		if err != nil {
 			return errors.Wrap(err, "checking control program")
 		}
 
-		if e.SpentOutput.Body.Source.Value != e.Witness.Destination.Value {
+		if spentOutput.Body.Source.Value.AssetAmount() != e.Witness.Destination.Value.AssetAmount() {
 			return errors.WithDetailf(
 				errMismatchedValue,
 				"previous output is for %d unit(s) of %x, spend wants %d unit(s) of %x",
-				e.SpentOutput.Body.Source.Value.Amount,
-				e.SpentOutput.Body.Source.Value.AssetID[:],
+				spentOutput.Body.Source.Value.Amount,
+				spentOutput.Body.Source.Value.AssetId.AssetID().Bytes(),
 				e.Witness.Destination.Value.Amount,
-				e.Witness.Destination.Value.AssetID[:],
+				e.Witness.Destination.Value.AssetId.AssetID().Bytes(),
 			)
 		}
 
 		vs2 := *vs
 		vs2.destPos = 0
-		err = checkValidDest(&vs2, &e.Witness.Destination)
+		err = checkValidDest(&vs2, e.Witness.Destination)
 		if err != nil {
 			return errors.Wrap(err, "checking spend destination")
 		}
 
-		if vs.tx.Body.Version == 1 && e.Body.ExtHash != (bc.Hash{}) {
+		if vs.tx.Body.Version == 1 && !e.Body.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
@@ -283,22 +288,23 @@ func checkValid(vs *validationState, e bc.Entry) error {
 }
 
 func checkValidBlockHeader(bh *bc.BlockHeaderEntry) error {
-	if bh.Body.Version == 1 && bh.Body.ExtHash != (bc.Hash{}) {
+	if bh.Body.Version == 1 && !bh.Body.ExtHash.IsZero() {
 		return errNonemptyExtHash
 	}
 	return nil
 }
 
 func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
+	e := vstate.tx.Entries[vs.Ref.Hash()] // xxx check
 	vstate2 := *vstate
-	vstate2.entryID = vs.Ref
-	err := checkValid(&vstate2, vs.Entry)
+	vstate2.entryID = vs.Ref.Hash()
+	err := checkValid(&vstate2, e)
 	if err != nil {
 		return errors.Wrap(err, "checking value source")
 	}
 
-	var dest bc.ValueDestination
-	switch ref := vs.Entry.(type) {
+	var dest *bc.ValueDestination
+	switch ref := e.(type) {
 	case *bc.Issuance:
 		if vs.Position != 0 {
 			return errors.Wrapf(errPosition, "invalid position %d for issuance source", vs.Position)
@@ -318,18 +324,18 @@ func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 		dest = ref.Witness.Destinations[vs.Position]
 
 	default:
-		return errors.Wrapf(errEntryType, "value source is %T, should be issuance, spend, or mux", vs.Entry)
+		return errors.Wrapf(errEntryType, "value source is %T, should be issuance, spend, or mux", e)
 	}
 
-	if dest.Ref != vstate.entryID {
-		return errors.Wrapf(errMismatchedReference, "value source for %x has disagreeing destination %x", vstate.entryID[:], dest.Ref[:])
+	if dest.Ref.Hash() != vstate.entryID {
+		return errors.Wrapf(errMismatchedReference, "value source for %x has disagreeing destination %x", vstate.entryID[:], dest.Ref.Hash().Bytes())
 	}
 
 	if dest.Position != vstate.sourcePos {
 		return errors.Wrapf(errMismatchedPosition, "value source position %d disagrees with %d", dest.Position, vstate.sourcePos)
 	}
 
-	if dest.Value != vs.Value {
+	if dest.Value.AssetAmount() != vs.Value.AssetAmount() {
 		return errors.Wrapf(errMismatchedValue, "source value %v disagrees with %v", dest.Value, vs.Value)
 	}
 
@@ -337,8 +343,9 @@ func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 }
 
 func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
-	var src bc.ValueSource
-	switch ref := vd.Entry.(type) {
+	e := vs.tx.Entries[vd.Ref.Hash()] // xxx check
+	var src *bc.ValueSource
+	switch ref := e.(type) {
 	case *bc.Output:
 		if vd.Position != 0 {
 			return errors.Wrapf(errPosition, "invalid position %d for output destination", vd.Position)
@@ -358,18 +365,18 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 		src = ref.Body.Sources[vd.Position]
 
 	default:
-		return errors.Wrapf(errEntryType, "value destination is %T, should be output, retirement, or mux", vd.Entry)
+		return errors.Wrapf(errEntryType, "value destination is %T, should be output, retirement, or mux", e)
 	}
 
-	if src.Ref != vs.entryID {
-		return errors.Wrapf(errMismatchedReference, "value destination for %x has disagreeing source %x", vs.entryID[:], src.Ref[:])
+	if src.Ref.Hash() != vs.entryID {
+		return errors.Wrapf(errMismatchedReference, "value destination for %x has disagreeing source %x", vs.entryID[:], src.Ref.Hash().Bytes())
 	}
 
 	if src.Position != vs.destPos {
 		return errors.Wrapf(errMismatchedPosition, "value destination position %d disagrees with %d", src.Position, vs.destPos)
 	}
 
-	if src.Value != vd.Value {
+	if src.Value.AssetAmount() != vd.Value.AssetAmount() {
 		return errors.Wrapf(errMismatchedValue, "destination value %v disagrees with %v", src.Value, vd.Value)
 	}
 
@@ -405,11 +412,11 @@ func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, validateTx 
 		if b.Body.Version == 1 && tx.Body.Version != 1 {
 			return errors.WithDetailf(errTxVersion, "block version %d, transaction version %d", b.Body.Version, tx.Body.Version)
 		}
-		if tx.Body.MaxTimeMS > 0 && b.Body.TimestampMS > tx.Body.MaxTimeMS {
-			return errors.WithDetailf(errUntimelyTransaction, "block timestamp %d, transaction time range %d-%d", b.Body.TimestampMS, tx.Body.MinTimeMS, tx.Body.MaxTimeMS)
+		if tx.Body.MaxTimeMs > 0 && b.Body.TimestampMs > tx.Body.MaxTimeMs {
+			return errors.WithDetailf(errUntimelyTransaction, "block timestamp %d, transaction time range %d-%d", b.Body.TimestampMs, tx.Body.MinTimeMs, tx.Body.MaxTimeMs)
 		}
-		if tx.Body.MinTimeMS > 0 && b.Body.TimestampMS > 0 && b.Body.TimestampMS < tx.Body.MinTimeMS {
-			return errors.WithDetailf(errUntimelyTransaction, "block timestamp %d, transaction time range %d-%d", b.Body.TimestampMS, tx.Body.MinTimeMS, tx.Body.MaxTimeMS)
+		if tx.Body.MinTimeMs > 0 && b.Body.TimestampMs > 0 && b.Body.TimestampMs < tx.Body.MinTimeMs {
+			return errors.WithDetailf(errUntimelyTransaction, "block timestamp %d, transaction time range %d-%d", b.Body.TimestampMs, tx.Body.MinTimeMs, tx.Body.MaxTimeMs)
 		}
 
 		err = validateTx(tx)
@@ -423,8 +430,8 @@ func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, validateTx 
 		return errors.Wrap(err, "computing transaction merkle root")
 	}
 
-	if txRoot != b.Body.TransactionsRoot {
-		return errors.WithDetailf(errMismatchedMerkleRoot, "computed %x, current block wants %x", txRoot[:], b.Body.TransactionsRoot[:])
+	if txRoot != b.Body.TransactionsRoot.Hash() {
+		return errors.WithDetailf(errMismatchedMerkleRoot, "computed %x, current block wants %x", txRoot[:], b.Body.TransactionsRoot.Hash().Bytes())
 	}
 
 	return nil
@@ -437,11 +444,11 @@ func validateBlockAgainstPrev(b, prev *bc.BlockEntries) error {
 	if b.Body.Height != prev.Body.Height+1 {
 		return errors.WithDetailf(errMisorderedBlockHeight, "previous block height %d, current block height %d", prev.Body.Height, b.Body.Height)
 	}
-	if prev.ID != b.Body.PreviousBlockID {
-		return errors.WithDetailf(errMismatchedBlock, "previous block ID %x, current block wants %x", prev.ID[:], b.Body.PreviousBlockID[:])
+	if prev.ID != b.Body.PreviousBlockId.Hash() {
+		return errors.WithDetailf(errMismatchedBlock, "previous block ID %x, current block wants %x", prev.ID[:], b.Body.PreviousBlockId.Hash().Bytes())
 	}
-	if b.Body.TimestampMS <= prev.Body.TimestampMS {
-		return errors.WithDetailf(errMisorderedBlockTime, "previous block time %d, current block time %d", prev.Body.TimestampMS, b.Body.TimestampMS)
+	if b.Body.TimestampMs <= prev.Body.TimestampMs {
+		return errors.WithDetailf(errMisorderedBlockTime, "previous block time %d, current block time %d", prev.Body.TimestampMs, b.Body.TimestampMs)
 	}
 	return nil
 }

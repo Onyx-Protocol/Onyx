@@ -17,15 +17,15 @@ func NewBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *vm.C
 		Arguments: args,
 
 		BlockHash:            &blockHash,
-		BlockTimeMS:          &block.Body.TimestampMS,
+		BlockTimeMS:          &block.Body.TimestampMs,
 		NextConsensusProgram: &block.Body.NextConsensusProgram,
 	}
 }
 
-func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]byte) *vm.Context {
+func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog *bc.Program, args [][]byte) *vm.Context {
 	var (
-		numResults = uint64(len(tx.Results))
-		txData     = tx.Body.Data[:]
+		numResults = uint64(len(tx.Body.ResultIds))
+		txData     = tx.Body.Data.Hash().Bytes()
 		entryID    = bc.EntryID(entry) // TODO(bobg): pass this in, don't recompute it
 
 		assetID       *[]byte
@@ -38,38 +38,40 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 
 	switch e := entry.(type) {
 	case *bc.Nonce:
-		if iss, ok := e.Anchored.(*bc.Issuance); ok {
-			a1 := iss.Body.Value.AssetID[:]
+		anchored := tx.Entries[e.Witness.AnchoredId.Hash()] // xxx check
+		if iss, ok := anchored.(*bc.Issuance); ok {
+			a1 := iss.Body.Value.AssetId.AssetID().Bytes()
 			assetID = &a1
 			amount = &iss.Body.Value.Amount
 		}
 
 	case *bc.Issuance:
-		a1 := e.Body.Value.AssetID[:]
+		a1 := e.Body.Value.AssetId.AssetID().Bytes()
 		assetID = &a1
 		amount = &e.Body.Value.Amount
 		destPos = &e.Witness.Destination.Position
-		d := e.Body.Data[:]
+		d := e.Body.Data.Hash().Bytes()
 		entryData = &d
-		a2 := e.Body.AnchorID[:]
+		a2 := e.Body.AnchorId.Hash().Bytes()
 		anchorID = &a2
 
 	case *bc.Spend:
-		a1 := e.SpentOutput.Body.Source.Value.AssetID[:]
+		spentOutput := tx.Entries[e.Body.SpentOutputId.Hash()].(*bc.Output) // xxx check
+		a1 := spentOutput.Body.Source.Value.AssetId.AssetID().Bytes()
 		assetID = &a1
-		amount = &e.SpentOutput.Body.Source.Value.Amount
+		amount = &spentOutput.Body.Source.Value.Amount
 		destPos = &e.Witness.Destination.Position
-		d := e.Body.Data[:]
+		d := e.Body.Data.Hash().Bytes()
 		entryData = &d
-		s := e.Body.SpentOutputID[:]
+		s := e.Body.SpentOutputId.Hash().Bytes()
 		spentOutputID = &s
 
 	case *bc.Output:
-		d := e.Body.Data[:]
+		d := e.Body.Data.Hash().Bytes()
 		entryData = &d
 
 	case *bc.Retirement:
-		d := e.Body.Data[:]
+		d := e.Body.Data.Hash().Bytes()
 		entryData = &d
 	}
 
@@ -92,8 +94,8 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 
 	checkOutput := func(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte) (bool, error) {
 		checkEntry := func(e bc.Entry) (bool, error) {
-			check := func(prog bc.Program, value bc.AssetAmount, dataHash bc.Hash) bool {
-				return (prog.VMVersion == vmVersion &&
+			check := func(prog *bc.Program, value bc.AssetAmount, dataHash bc.Hash) bool {
+				return (prog.VmVersion == vmVersion &&
 					bytes.Equal(prog.Code, code) &&
 					bytes.Equal(value.AssetID[:], assetID) &&
 					value.Amount == amount &&
@@ -102,10 +104,10 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 
 			switch e := e.(type) {
 			case *bc.Output:
-				return check(e.Body.ControlProgram, e.Body.Source.Value, e.Body.Data), nil
+				return check(e.Body.ControlProgram, e.Body.Source.Value.AssetAmount(), e.Body.Data.Hash()), nil
 
 			case *bc.Retirement:
-				return check(bc.Program{}, e.Body.Source.Value, e.Body.Data), nil
+				return check(&bc.Program{}, e.Body.Source.Value.AssetAmount(), e.Body.Data.Hash()), nil
 			}
 
 			return false, vm.ErrContext
@@ -115,7 +117,8 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 			if index >= uint64(len(m.Witness.Destinations)) {
 				return false, errors.Wrapf(vm.ErrBadValue, "index %d >= %d", index, len(m.Witness.Destinations))
 			}
-			return checkEntry(m.Witness.Destinations[index].Entry)
+			e := tx.Entries[m.Witness.Destinations[index].Ref.Hash()] // xxx check
+			return checkEntry(e)
 		}
 
 		switch e := entry.(type) {
@@ -123,29 +126,31 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 			return checkMux(e)
 
 		case *bc.Issuance:
-			if m, ok := e.Witness.Destination.Entry.(*bc.Mux); ok {
+			d := tx.Entries[e.Witness.Destination.Ref.Hash()] // xxx check
+			if m, ok := d.(*bc.Mux); ok {
 				return checkMux(m)
 			}
 			if index != 0 {
 				return false, errors.Wrapf(vm.ErrBadValue, "index %d >= 1", index)
 			}
-			return checkEntry(e.Witness.Destination.Entry)
+			return checkEntry(d)
 
 		case *bc.Spend:
-			if m, ok := e.Witness.Destination.Entry.(*bc.Mux); ok {
+			d := tx.Entries[e.Witness.Destination.Ref.Hash()] // xxx check
+			if m, ok := d.(*bc.Mux); ok {
 				return checkMux(m)
 			}
 			if index != 0 {
 				return false, errors.Wrapf(vm.ErrBadValue, "index %d >= 1", index)
 			}
-			return checkEntry(e.Witness.Destination.Entry)
+			return checkEntry(d)
 		}
 
 		return false, vm.ErrContext
 	}
 
 	result := &vm.Context{
-		VMVersion: prog.VMVersion,
+		VMVersion: prog.VmVersion,
 		Code:      prog.Code,
 		Arguments: args,
 
@@ -157,8 +162,8 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 		NumResults:    &numResults,
 		AssetID:       assetID,
 		Amount:        amount,
-		MinTimeMS:     &tx.Body.MinTimeMS,
-		MaxTimeMS:     &tx.Body.MaxTimeMS,
+		MinTimeMS:     &tx.Body.MinTimeMs,
+		MaxTimeMS:     &tx.Body.MaxTimeMs,
 		EntryData:     entryData,
 		TxData:        &txData,
 		DestPos:       destPos,

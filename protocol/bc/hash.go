@@ -3,6 +3,7 @@ package bc
 import (
 	"bytes"
 	"database/sql/driver"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -119,4 +120,35 @@ func (h *Hash) WriteTo(w io.Writer) (int64, error) {
 
 func (h *Hash) readFrom(r io.Reader) (int, error) {
 	return io.ReadFull(r, h[:])
+}
+
+func (ph *ProtoHash) Hash() (h Hash) {
+	if ph == nil {
+		return h
+	}
+
+	binary.BigEndian.PutUint64(h[0:8], ph.V0)
+	binary.BigEndian.PutUint64(h[8:16], ph.V1)
+	binary.BigEndian.PutUint64(h[16:24], ph.V2)
+	binary.BigEndian.PutUint64(h[24:32], ph.V3)
+
+	return h
+}
+
+func (ph *ProtoHash) IsZero() bool {
+	if ph == nil {
+		return true
+	}
+	return ph.V0 == 0 && ph.V1 == 0 && ph.V2 == 0 && ph.V3 == 0
+}
+
+func (h Hash) Proto() (ph *ProtoHash) {
+	ph = new(ProtoHash)
+
+	ph.V0 = binary.BigEndian.Uint64(h[0:8])
+	ph.V1 = binary.BigEndian.Uint64(h[8:16])
+	ph.V2 = binary.BigEndian.Uint64(h[16:24])
+	ph.V3 = binary.BigEndian.Uint64(h[24:32])
+
+	return ph
 }

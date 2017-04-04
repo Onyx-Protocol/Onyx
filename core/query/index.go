@@ -229,7 +229,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 	for pos, tx := range b.Transactions {
 		for _, inp := range tx.TxEntries.TxInputs {
 			if sp, ok := inp.(*bc.Spend); ok {
-				prevoutIDs = append(prevoutIDs, sp.Body.SpentOutputID.Bytes())
+				prevoutIDs = append(prevoutIDs, sp.Body.SpentOutputId.Hash().Bytes())
 			}
 		}
 

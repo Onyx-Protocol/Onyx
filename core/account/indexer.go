@@ -138,7 +138,8 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	for i, tx := range b.Transactions {
 		blockPositions[tx.ID] = uint32(i)
 		for j, out := range tx.Outputs {
-			resOut, ok := tx.Results[j].(*bc.Output)
+			resOutID := tx.Body.ResultIds[j].Hash()
+			resOut, ok := tx.Entries[resOutID].(*bc.Output)
 			if !ok {
 				continue
 			}
@@ -148,9 +149,9 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 				ControlProgram: out.ControlProgram,
 				txHash:         tx.ID,
 				outputIndex:    uint32(j),
-				sourceID:       resOut.Body.Source.Ref,
+				sourceID:       resOut.Body.Source.Ref.Hash(),
 				sourcePos:      resOut.Body.Source.Position,
-				refData:        resOut.Body.Data,
+				refData:        resOut.Body.Data.Hash(),
 			}
 			outs = append(outs, out)
 		}
@@ -168,7 +169,7 @@ func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
 	for _, tx := range txs {
 		for _, inp := range tx.TxEntries.TxInputs {
 			if sp, ok := inp.(*bc.Spend); ok {
-				outputIDs = append(outputIDs, sp.Body.SpentOutputID.Bytes())
+				outputIDs = append(outputIDs, sp.Body.SpentOutputId.Hash().Bytes())
 			}
 		}
 	}

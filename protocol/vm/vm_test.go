@@ -304,7 +304,7 @@ func TestStep(t *testing.T) {
 			bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 1, 0, nil, bc.Hash{}, nil),
 		},
 	})
-	txVMContext := validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{}, nil)
+	txVMContext := validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], &bc.Program{}, nil)
 	cases := []struct {
 		startVM *VirtualMachine
 		wantVM  *VirtualMachine
@@ -505,7 +505,7 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 
 func verifyTx(tx *bc.Tx, index uint32) error {
 	var (
-		prog bc.Program
+		prog *bc.Program
 		args [][]byte
 	)
 	inp := tx.TxInputs[index]
@@ -514,7 +514,8 @@ func verifyTx(tx *bc.Tx, index uint32) error {
 		prog = inp.Witness.AssetDefinition.IssuanceProgram
 		args = inp.Witness.Arguments
 	case *bc.Spend:
-		prog = inp.SpentOutput.Body.ControlProgram
+		spentOutput := tx.TxEntries.Entries[inp.Body.SpentOutputId.Hash()].(*bc.Output) // xxx check
+		prog = spentOutput.Body.ControlProgram
 		args = inp.Witness.Arguments
 	}
 	return Verify(validation.NewTxVMContext(tx.TxEntries, inp, prog, args))

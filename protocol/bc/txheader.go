@@ -4,37 +4,22 @@ package bc
 // transaction on a blockchain contains exactly one TxHeader. The ID
 // of the TxHeader is the ID of the transaction. TxHeader satisfies
 // the Entry interface.
-type TxHeader struct {
-	Body struct {
-		Version              uint64
-		ResultIDs            []Hash
-		Data                 Hash
-		MinTimeMS, MaxTimeMS uint64
-		ExtHash              Hash
-	}
-
-	// Results contains (pointers to) the manifested entries for the
-	// items in Body.ResultIDs.
-	Results []Entry // each entry is *output or *retirement
-}
 
 func (TxHeader) Type() string         { return "txheader" }
 func (h *TxHeader) body() interface{} { return h.Body }
 
-func (TxHeader) Ordinal() int { return -1 }
-
 // NewTxHeader creates an new TxHeader.
-func NewTxHeader(version uint64, results []Entry, data Hash, minTimeMS, maxTimeMS uint64) *TxHeader {
-	h := new(TxHeader)
-	h.Body.Version = version
-	h.Body.Data = data
-	h.Body.MinTimeMS = minTimeMS
-	h.Body.MaxTimeMS = maxTimeMS
-
-	h.Results = results
-	for _, r := range results {
-		h.Body.ResultIDs = append(h.Body.ResultIDs, EntryID(r))
+func NewTxHeader(version uint64, resultIDs []Hash, data Hash, minTimeMS, maxTimeMS uint64) *TxHeader {
+	result := &TxHeader{
+		Body: &TxHeader_Body{
+			Version:   version,
+			Data:      data.Proto(),
+			MinTimeMs: minTimeMS,
+			MaxTimeMs: maxTimeMS,
+		},
 	}
-
-	return h
+	for _, id := range resultIDs {
+		result.Body.ResultIds = append(result.Body.ResultIds, id.Proto())
+	}
+	return result
 }
