@@ -26,6 +26,12 @@ const (
 	networkRPCVersion = 3
 )
 
+type buildConfig struct {
+	AccessTokens bool `json:"access_tokens"`
+	MockHSM      bool `json:"mockhsm"`
+	Reset        bool `json:"reset"`
+}
+
 func (a *API) reset(ctx context.Context, req struct {
 	Everything bool `json:"everything"`
 }) error {
@@ -47,6 +53,11 @@ func (a *API) info(ctx context.Context) (map[string]interface{}, error) {
 			"version":       config.Version,
 			"build_commit":  config.BuildCommit,
 			"build_date":    config.BuildDate,
+			"build_config": buildConfig{
+				AccessTokens: config.AccessTokens,
+				MockHSM:      config.MockHSM,
+				Reset:        config.Reset,
+			},
 		}, nil
 	}
 	// If we're not the leader, forward to the leader.
@@ -107,11 +118,7 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"build_commit":                      config.BuildCommit,
 		"build_date":                        config.BuildDate,
 		"health":                            a.health(),
-		"config": struct {
-			AccessTokens bool `json:"access_tokens"`
-			MockHSM      bool
-			Reset        bool
-		}{
+		"build_config": buildConfig{
 			AccessTokens: config.AccessTokens,
 			MockHSM:      config.MockHSM,
 			Reset:        config.Reset,
