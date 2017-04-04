@@ -12,6 +12,7 @@ import (
 
 	"github.com/lib/pq"
 
+	"chain/core/config"
 	"chain/database/pg"
 	"chain/errors"
 )
