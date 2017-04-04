@@ -618,7 +618,7 @@ public class Client {
       try (InputStream pemStream = new FileInputStream(path)) {
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
         Collection<? extends Certificate> certificates =
-                certificateFactory.generateCertificates(pemStream);
+            certificateFactory.generateCertificates(pemStream);
         if (certificates.isEmpty()) {
           throw new IllegalArgumentException("expected non-empty set of trusted certificates");
         }
@@ -626,7 +626,8 @@ public class Client {
         // Create empty key store.
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         char[] password =
-                "password".toCharArray(); // The password is unimportant as long as it used consistently.
+            "password"
+                .toCharArray(); // The password is unimportant as long as it used consistently.
         keyStore.load(null, password);
 
         // Load certs into key store.
@@ -638,15 +639,15 @@ public class Client {
 
         // Use key store to build an X509 trust manager.
         KeyManagerFactory keyManagerFactory =
-                KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         keyManagerFactory.init(keyStore, password);
         TrustManagerFactory trustManagerFactory =
-                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keyStore);
         TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
         if (trustManagers.length != 1 || !(trustManagers[0] instanceof X509TrustManager)) {
           throw new IllegalStateException(
-                  "Unexpected default trust managers:" + Arrays.toString(trustManagers));
+              "Unexpected default trust managers:" + Arrays.toString(trustManagers));
         }
 
         // Finally, configure the socket factory.
