@@ -13,6 +13,7 @@ import (
 type TxEntries struct {
 	*TxHeader
 	ID         Hash
+	Entries    map[Hash]Entry
 	TxInputs   []Entry // 1:1 correspondence with TxData.Inputs
 	TxInputIDs []Hash  // 1:1 correspondence with TxData.Inputs
 
@@ -69,6 +70,7 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 	txEntries = &TxEntries{
 		TxHeader:   header,
 		ID:         txid,
+		Entries:    entries,
 		TxInputs:   make([]Entry, len(oldTx.Inputs)),
 		TxInputIDs: make([]Hash, len(oldTx.Inputs)),
 	}

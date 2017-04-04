@@ -12,6 +12,8 @@ import (
 // initial block of the chain where it appears.
 type AssetID [32]byte
 
+func (a AssetID) Bytes() []byte { return a[:] }
+
 func (a AssetID) String() string                { return Hash(a).String() }
 func (a AssetID) MarshalText() ([]byte, error)  { return Hash(a).MarshalText() }
 func (a *AssetID) UnmarshalText(b []byte) error { return (*Hash)(a).UnmarshalText(b) }

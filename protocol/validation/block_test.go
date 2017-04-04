@@ -19,7 +19,7 @@ func TestValidateBlock1(t *testing.T) {
 
 func TestValidateBlock1Err(t *testing.T) {
 	b1 := newInitialBlock(t)
-	b1.Body.TransactionsRoot = bc.Hash{1} // make b1 be invalid
+	b1.Body.TransactionsRoot = bc.Hash{1}.Proto() // make b1 be invalid
 	err := ValidateBlock(b1, nil, b1.ID, dummyValidateTx)
 	if err == nil {
 		t.Errorf("ValidateBlock(%v, nil) = nil, want error", b1)
@@ -38,7 +38,7 @@ func TestValidateBlock2(t *testing.T) {
 func TestValidateBlock2Err(t *testing.T) {
 	b1 := newInitialBlock(t)
 	b2 := generate(t, b1)
-	b2.Body.TransactionsRoot = bc.Hash{1} // make b2 be invalid
+	b2.Body.TransactionsRoot = bc.Hash{1}.Proto() // make b2 be invalid
 	err := ValidateBlock(b2, b1, b2.ID, dummyValidateTx)
 	if err == nil {
 		t.Errorf("ValidateBlock(%v, %v) = nil, want error", b2, b1)
@@ -99,7 +99,7 @@ func generate(tb testing.TB, prev *bc.BlockEntries) *bc.BlockEntries {
 			Version:           bc.NewBlockVersion,
 			Height:            prev.Body.Height + 1,
 			PreviousBlockHash: prev.ID,
-			TimestampMS:       prev.Body.TimestampMS + 1,
+			TimestampMS:       prev.Body.TimestampMs + 1,
 			BlockCommitment: bc.BlockCommitment{
 				ConsensusProgram: prev.Body.NextConsensusProgram,
 			},
