@@ -1,5 +1,6 @@
 //+build !protected_db
 
+// This configuration includes access to the reset endpoint.
 package main
 
 import (
