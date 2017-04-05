@@ -71,11 +71,11 @@ func TestGetRawBlock(t *testing.T) {
 		BlockHeader: bc.BlockHeader{
 			Version:           1,
 			Height:            10,
-			PreviousBlockHash: bc.Hash{0x0900000000000000, 0, 0, 0},
+			PreviousBlockHash: bc.NewHash([32]byte{0x09}),
 			TimestampMS:       123456,
 			BlockCommitment: bc.BlockCommitment{
-				TransactionsMerkleRoot: bc.Hash{0x0100000000000000, 0, 0, 0},
-				AssetsMerkleRoot:       bc.Hash{0x0200000000000000, 0, 0, 0},
+				TransactionsMerkleRoot: bc.NewHash([32]byte{0x01}),
+				AssetsMerkleRoot:       bc.NewHash([32]byte{0x02}),
 				ConsensusProgram:       []byte{0xc0, 0x01},
 			},
 			BlockWitness: bc.BlockWitness{

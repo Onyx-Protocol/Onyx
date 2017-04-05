@@ -19,7 +19,7 @@ func TestValidateBlock1(t *testing.T) {
 
 func TestValidateBlock1Err(t *testing.T) {
 	b1 := newInitialBlock(t)
-	b1.Body.TransactionsRoot = bc.Hash{0x0100000000000000, 0, 0, 0} // make b1 be invalid
+	b1.Body.TransactionsRoot = bc.NewHash([32]byte{0x01}) // make b1 be invalid
 	err := ValidateBlock(b1, nil, b1.ID, dummyValidateTx)
 	if err == nil {
 		t.Errorf("ValidateBlock(%v, nil) = nil, want error", b1)
@@ -38,7 +38,7 @@ func TestValidateBlock2(t *testing.T) {
 func TestValidateBlock2Err(t *testing.T) {
 	b1 := newInitialBlock(t)
 	b2 := generate(t, b1)
-	b2.Body.TransactionsRoot = bc.Hash{0x0100000000000000, 0, 0, 0} // make b2 be invalid
+	b2.Body.TransactionsRoot = bc.NewHash([32]byte{0x01}) // make b2 be invalid
 	err := ValidateBlock(b2, b1, b2.ID, dummyValidateTx)
 	if err == nil {
 		t.Errorf("ValidateBlock(%v, %v) = nil, want error", b2, b1)

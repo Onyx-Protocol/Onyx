@@ -224,7 +224,7 @@ func MapBlock(old *Block) *BlockEntries {
 }
 
 func hashData(data []byte) (h Hash) {
-	var b32 Byte32
+	var b32 byte32
 	sha3pool.Sum256(b32[:], data)
 	h.FromByte32(b32)
 	return

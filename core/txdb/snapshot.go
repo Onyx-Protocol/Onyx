@@ -33,10 +33,9 @@ func DecodeSnapshot(data []byte) (*state.Snapshot, error) {
 
 	nonces := make(map[bc.Hash]uint64, len(storedSnapshot.Nonces))
 	for _, nonce := range storedSnapshot.Nonces {
-		var b32 bc.Byte32
+		var b32 [32]byte
 		copy(b32[:], nonce.Hash)
-		var hash bc.Hash
-		hash.FromByte32(b32)
+		hash := bc.NewHash(b32)
 		nonces[hash] = nonce.ExpiryMs
 	}
 

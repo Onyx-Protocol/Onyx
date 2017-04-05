@@ -118,8 +118,7 @@ func (reg *Registry) Define(ctx context.Context, xpubs []chainkd.XPub, quorum in
 		return nil, err
 	}
 
-	var defhash bc.Hash
-	defhash.FromByte32(sha3.Sum256(rawDefinition))
+	defhash := bc.NewHash(sha3.Sum256(rawDefinition))
 	asset := &Asset{
 		definition:       definition,
 		rawDefinition:    rawDefinition,

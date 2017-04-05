@@ -172,10 +172,9 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 			Program:     out.ControlProgram,
 		}
 		if len(out.ReferenceData) > 0 {
-			var b32 bc.Byte32
+			var b32 [32]byte
 			sha3pool.Sum256(b32[:], out.ReferenceData)
-			var h bc.Hash
-			h.FromByte32(b32)
+			h := bc.NewHash(b32)
 			c.RefDataHash = &h
 		}
 		constraints = append(constraints, c)

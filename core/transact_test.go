@@ -79,18 +79,17 @@ func TestRecordSubmittedTxs(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 
 	testCases := []struct {
-		hash   bc.Byte32
+		hash   [32]byte
 		height uint64
 		want   uint64
 	}{
-		{hash: bc.Byte32{0x01}, height: 2, want: 2},
-		{hash: bc.Byte32{0x02}, height: 3, want: 3},
-		{hash: bc.Byte32{0x01}, height: 3, want: 2},
+		{hash: [32]byte{0x01}, height: 2, want: 2},
+		{hash: [32]byte{0x02}, height: 3, want: 3},
+		{hash: [32]byte{0x01}, height: 3, want: 2},
 	}
 
 	for i, tc := range testCases {
-		var h bc.Hash
-		h.FromByte32(tc.hash)
+		h := bc.NewHash(tc.hash)
 		got, err := recordSubmittedTx(ctx, dbtx, h, tc.height)
 		if err != nil {
 			t.Fatal(err)

@@ -15,9 +15,9 @@ func TestReadWriteStateSnapshotNonceSet(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 	snapshot := state.Empty()
-	snapshot.Nonces[bc.Hash{0x0100000000000000, 0, 0, 0}] = 10
-	snapshot.Nonces[bc.Hash{0x0200000000000000, 0, 0, 0}] = 10
-	snapshot.Nonces[bc.Hash{0x0300000000000000, 0, 0, 0}] = 45
+	snapshot.Nonces[bc.NewHash([32]byte{0x01})] = 10
+	snapshot.Nonces[bc.NewHash([32]byte{0x02})] = 10
+	snapshot.Nonces[bc.NewHash([32]byte{0x03})] = 45
 	err := storeStateSnapshot(ctx, dbtx, snapshot, 200)
 	if err != nil {
 		t.Fatalf("Error writing state snapshot to db: %s\n", err)
@@ -27,9 +27,9 @@ func TestReadWriteStateSnapshotNonceSet(t *testing.T) {
 		t.Fatalf("Error reading state snapshot from db: %s\n", err)
 	}
 	want := map[bc.Hash]uint64{
-		bc.Hash{0x0100000000000000, 0, 0, 0}: 10,
-		bc.Hash{0x0200000000000000, 0, 0, 0}: 10,
-		bc.Hash{0x0300000000000000, 0, 0, 0}: 45,
+		bc.NewHash([32]byte{0x01}): 10,
+		bc.NewHash([32]byte{0x02}): 10,
+		bc.NewHash([32]byte{0x03}): 45,
 	}
 	if !testutil.DeepEqual(got.Nonces, want) {
 		t.Errorf("storing and loading snapshot nonce memory, got %#v, want %#v", got.Nonces, want)
@@ -51,7 +51,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		{ // add a single hash
 			inserts: []bc.Hash{{0x0100000000000000, 0, 0, 0}},
 			newNonces: map[bc.Hash]uint64{
-				bc.Hash{0x0100000000000000, 0, 0, 0}: 1000,
+				bc.NewHash([32]byte{0x01}): 1000,
 			},
 		},
 		{ // empty changeset
@@ -67,7 +67,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 				{0x0300000000000000, 0, 0, 0},
 			},
 			newNonces: map[bc.Hash]uint64{
-				bc.Hash{0x0200000000000000, 0, 0, 0}: 2000,
+				bc.NewHash([32]byte{0x02}): 2000,
 			},
 		},
 		{ // delete one hash
