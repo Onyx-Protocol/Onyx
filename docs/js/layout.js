@@ -170,29 +170,27 @@ function loadVersionOptions() {
 	var currentVersion
 	var matchedVersion = location.pathname.match('/docs/([0-9].*)/core')
 	if (matchedVersion) {
-		currentVersion = currentVersion[1]
+		currentVersion = matchedVersion[1]
 	} else {
-		// TODO: remove hardcoded fallback
-		currentVersion = "1.1"
+		currentVersion = "x.y"
 	}
 
-	$.getJSON('/docs/versions.json', function(resp) {
-		resp.sort().reverse().forEach(function(version) {
-			var attributes = 'value = "' + version + '"'
-			if (currentVersion == version) {
-				attributes = attributes + ' selected'
-			}
-			$('#version-select').append('<option ' + attributes + '>v' + version + '</option>')
-		})
-
-		if (resp[0] != currentVersion) {
-			var alert = $('#version-alert')
-			$('.current', alert).text(currentVersion)
-			$('.latest', alert).text(resp[0])
-			$('.latest-link', alert).attr('href', window.location.href.replace(currentVersion, resp[0]))
-			$('#version-alert').show()
+	var versions = window.documentationVersions
+	versions.sort().reverse().forEach(function(version) {
+		var attributes = 'value = "' + version + '"'
+		if (currentVersion == version) {
+			attributes = attributes + ' selected'
 		}
+		$('#version-select').append('<option ' + attributes + '>v' + version + '</option>')
 	})
+
+	if (versions[0] != currentVersion) {
+		var alert = $('#version-alert')
+		$('.current', alert).text(currentVersion)
+		$('.latest', alert).text(versions[0])
+		$('.latest-link', alert).attr('href', window.location.href.replace(currentVersion, versions[0]))
+		$('#version-alert').show()
+	}
 
 	$('#version-select').on('change', function(e) {
 		window.location = window.location.href.replace(currentVersion, $('#version-select')[0].value)
