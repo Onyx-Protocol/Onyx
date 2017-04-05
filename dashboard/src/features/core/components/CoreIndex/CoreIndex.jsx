@@ -193,7 +193,6 @@ class CoreIndex extends React.Component {
            :
             <p>
               This core is not configured with reset capabilities.
-			  The blockchain cannot be reset.
             </p>}
         </div>
       </div>
