@@ -24,6 +24,7 @@ import (
 	"chain/core"
 	"chain/core/blocksigner"
 	"chain/core/config"
+	"chain/core/coreunsafe"
 	"chain/core/fileutil"
 	"chain/core/generator"
 	"chain/core/migrate"
@@ -225,7 +226,7 @@ func runServer() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	resetInDevIfRequested(db, raftDB)
+	resetIfAllowedAndRequested(db, raftDB)
 
 	conf, err := config.Load(ctx, db, raftDB)
 	if err != nil {

@@ -9,6 +9,5 @@ import (
 
 func init() {
 	config.BuildConfig.ProtectedDB = true
+	resetIfAllowedAndRequested = func(pg.DB) {}
 }
-
-func resetInDevIfRequested(pg.DB) {}
