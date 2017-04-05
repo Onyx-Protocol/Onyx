@@ -27,9 +27,15 @@ You must also perform the following steps:
    - Install CodeSafe software on client host(s)
    - Initialize the Remote File System
    - Configure host(s) and HSM(s) with each other’s IP addresses
+        - If running multiple hosts, the module numbers will be configured at this time.
    - Create the “Security World” with the Secure Execution Engine
      (SEE) enabled, along with SEE debugging
    - Create an administrator cardset and an operator cardset
+
+- Thales configuration involves many policy choices related to SEE Activation. To check which SEE features have been enabled, on the client host:
+   - `fet` 
+   - If `SEE Activation (Restricted)` is configured, Thales may need to assist with additional certifcations or licenses prior to proceeding. Refer to the Thales documentation or contact your Thales representative for details.
+    
 
    These steps are complex and involve policy decisions and other
    choices.  Refer to the Thales documentation for details.  Note:
@@ -44,23 +50,30 @@ You must also perform the following steps:
    the SEE machine. **Important**: this hash is of a _development key_ and
    should not be trusted for production.
    
--  On the client host (RFS server), copy the signed firmware and userdata files to the custom-seemachines directory. 
-   Here, `a` and `b` have been chosen to simplify entering the file names on the HSM front panel. 
-   This command must be run on each module.
+-  On the client host (RFS server), copy the signed firmware and userdata files to the custom-seemachines directory. These commands must be run on each module.
+-  Here, `a` and `b` have been chosen to simplify entering the file names on the HSM front panel. These names can be changed if desired.
    - `cp xprvseemodule.sar /opt/nfast/custom-seemachines/a`
    - `cp userdata.sar /opt/nfast/custom-seemachines/b`
 
 -  On the HSM, use the front panel to load the machine image and userdata file. 
-   This must be done for each HSM.
+   This must be done for each HSM. Note: there is no need to reboot the modules.
    - Choose `CodeSafe` on the front panel 
-   - Enter`a` for the machine image 
-   - Enter`b` for the userdata file
-   - Choose`SEElib` for the world type
-   - Enter`chainenclave` for the name
+   - Enter `a` (or name of choice) for the machine image 
+   - Enter `b` (or name of choice) for the userdata file
+   - Choose `SEElib` for the world type
+   - Enter `chainenclave` for the name
+
+-  On the client host, check that the SEE world is running on each module using stattree.
+   - `stattree PerModule 1 ModuleEnvStats`
+   - The `MemAllocUser` value in the output should be nonzero
+
+-  On the client host, use the `xprvseetool` binary from Chain to check that the client can access the SEE world on each module (update the module number in the command for each host).
+   - `xprvseetool -m 1 seeversion`
 
 -  On the client host, use the `xprvseetool` binary from Chain to
-   create a private key in the HSM.
-   - `xprvseetool gen xprvseemoduledevusk`
+   create an `xprv` (for transactions) and a `prv` (for blocks) in the HSM.
+   - `xprvseetool -i xprv0 genx xprvseemoduledevusk`
+   - `xprvseetool -i prv0 gen xprvseemoduledevusk`
 
    The output of this tool is the hex-encoded public key corresponding
    to the new private key. Save it for use in asset issuance programs
@@ -71,8 +84,8 @@ You must also perform the following steps:
    Enterprise Edition will permit the creation, storage, and use of
    arbitrarily many keys.
 
--  On the client host, run the `signerd` binary from Chain.
-   - `signerd`
+-  On the client host, run the `signerd` binary from Chain (update the module number in the command for each host).  
+   - `MODULE=1 KEY_IDENT=prv0 XPRV_KEY_IDENT=xprv0 signerd`
    
    This launches an HTTP+JSON server listening for `/sign-transaction`
    requests on port 8080. The request and response formats for this
