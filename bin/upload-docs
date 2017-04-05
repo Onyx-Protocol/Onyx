@@ -23,7 +23,7 @@ then
   # Print output from generate-docs to stdout, but capture last line (the actual
   # output directory) in a variable.
   exec 3>&1
-  generate_dest_path=$($CHAIN/bin/generate-docs $1 $newChain | tee /dev/fd/3 | tail -n1)
+  generate_dest_path=$($CHAIN/bin/generate-docs $1 | tee /dev/fd/3 | tail -n1)
   trap "rm -rf $generate_dest_path" EXIT
 
   echo

@@ -6,11 +6,7 @@ trap "echo 'Error generating docs, cleaning up temp files...'; rm -rf $compile_d
 
 echo "Generating documentation..."
 
-sourcePath=$CHAIN
-if [[ ( $# == 2 ) ]];
-then
-  sourcePath=$2
-fi
+sourcePath=${PWD}
 
 go install chain/cmd/md2html
 cd $sourcePath/docs
