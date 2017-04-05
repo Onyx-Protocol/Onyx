@@ -3,7 +3,7 @@
 
 @font-face {
     font-family: 'Nitti-Normal';
-    src: url('/docs/{{.VersionPath}}{{.VersionPath}}fonts/Nitti-Normal.eot?#iefix') format('embedded-opentype'),  url('/docs/{{.VersionPath}}fonts/Nitti-Normal.otf')  format('opentype'),
+    src: url('/docs/{{.VersionPath}}fonts/Nitti-Normal.eot?#iefix') format('embedded-opentype'),  url('/docs/{{.VersionPath}}fonts/Nitti-Normal.otf')  format('opentype'),
     url('/docs/{{.VersionPath}}fonts/Nitti-Normal.woff') format('woff'), url('/docs/{{.VersionPath}}fonts/Nitti-Normal.ttf')  format('truetype'), url('/docs/{{.VersionPath}}fonts/Nitti-Normal.svg#Nitti-Normal') format('svg');
     font-weight: normal;
     font-style: normal;

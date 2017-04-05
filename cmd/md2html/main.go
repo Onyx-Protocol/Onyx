@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/russross/blackfriday"
 )
@@ -104,12 +105,8 @@ func serve(args []string) {
 			path = strings.Replace(path, version+"/", "", 1)
 		}
 
-		if filepath.Ext(path) != "" {
-			http.ServeFile(w, r, path)
-			return
-		}
-
 		paths := []string{
+			path,
 			path + ".md",
 			path + ".partial.html",
 			strings.TrimSuffix(path, "/") + "/index.html",
@@ -127,7 +124,7 @@ func serve(args []string) {
 				break
 			}
 
-			if err != nil && !os.IsNotExist(err) {
+			if err != nil && !os.IsNotExist(err) && !strings.HasSuffix(err.Error(), "is a directory") {
 				http.Error(w, err.Error(), 500)
 				return
 			}
@@ -138,7 +135,7 @@ func serve(args []string) {
 			return
 		}
 
-		w.Write(b)
+		http.ServeContent(w, r, path, time.Unix(0, 0), bytes.NewReader(b))
 	})
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
@@ -217,12 +214,21 @@ func renderFile(p string) ([]byte, error) {
 		return nil, err
 	}
 
+	skipExtensions := make(map[string]bool)
+	for _, v := range []string{".ttf", ".otf", ".woff", ".eot", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".mov"} {
+		skipExtensions[v] = true
+	}
+
 	if strings.HasSuffix(p, ".md") {
 		content, err = renderMarkdown(p, content)
 	} else if strings.HasSuffix(p, ".partial.html") {
 		content, err = renderLayout(p, content)
-	} else if strings.HasSuffix(p, ".html") {
+	} else if !skipExtensions[filepath.Ext(p)] {
 		content, err = renderTemplate(p, []byte{}, content)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	return content, nil
@@ -278,6 +284,12 @@ func renderLayout(p string, content []byte) ([]byte, error) {
 
 	originalPath := p
 	layout := []byte("{{.Body}}")
+
+	// Render any variables
+	content, err = renderTemplate(originalPath, []byte{}, content)
+	if err != nil {
+		return nil, err
+	}
 
 	for {
 		p = path.Dir(p)
