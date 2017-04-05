@@ -56,15 +56,15 @@ func TestNextProgram(t *testing.T) {
 }
 
 func TestBlockTime(t *testing.T) {
-	prog, err := Assemble("BLOCKTIME 3263827 NUMEQUAL")
-	if err != nil {
-		t.Fatal(err)
-	}
 	var blockTimeMS uint64 = 3263826
 	context := &Context{
 		BlockTimeMS: &blockTimeMS,
 	}
 
+	prog, err := Assemble("BLOCKTIME 3263827 NUMEQUAL")
+	if err != nil {
+		t.Fatal(err)
+	}
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
