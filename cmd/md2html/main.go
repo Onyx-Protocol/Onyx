@@ -219,16 +219,16 @@ func renderFile(p string) ([]byte, error) {
 		return nil, err
 	}
 
-	skipExtensions := make(map[string]bool)
-	for _, v := range []string{".ttf", ".otf", ".woff", ".eot", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".mov"} {
-		skipExtensions[v] = true
+	templateExtensions := make(map[string]bool)
+	for _, v := range []string{".md", ".html", ".js", ".css"} {
+		templateExtensions[v] = true
 	}
 
 	if strings.HasSuffix(p, ".md") {
 		content, err = renderMarkdown(p, content)
 	} else if strings.HasSuffix(p, ".partial.html") {
 		content, err = renderLayout(p, content)
-	} else if !skipExtensions[filepath.Ext(p)] {
+	} else if templateExtensions[filepath.Ext(p)] {
 		content, err = renderTemplate(p, []byte{}, content)
 	}
 
