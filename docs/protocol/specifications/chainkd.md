@@ -249,7 +249,7 @@ Non-hardened derivation consist of adding scalars less that 2<sup>230</sup> (mul
 
 EdDSA requires specific values for 5 bits of the secret scalar: lower 3 bits must be zero, higher 2 bits must be 1 and 0.
 
-By setting high three bits of a root key (or hardened private key) to `010` and low three bits to `000`, that key has form `r = 2^254 + 8·k`, where maximum value  of `k` is `2^250 - 1`. Each non-hardened derived scalar `f` is generated from 230 bits and has maximum value `2^230 - 1`. Therefore a key at level `i` has maximum value `2^254 + 2^253 - 8 + i·8·(2^230 - 1)`. Since the maximum `i` equals `2^20`, maximum value of any key is `2^255 - 2^23 - 8`. Overally, any key is less than `2^255`, larger than `2^254` and divisible by 8 as required by EdDSA.
+By setting high three bits of a root key (or hardened private key) to `010` and low three bits to `000`, that key has form `r = 2^254 + 8·k`, where maximum value  of `k` is `2^250 - 1`. Each non-hardened derived scalar `f` is generated from 230 bits and has maximum value `2^230 - 1`. Therefore a key at level `i` has maximum value `2^254 + 2^253 - 8 + i·8·(2^230 - 1)`. Since the maximum `i` equals `2^20`, maximum value of any key is `2^255 - 2^23 - 8`. As a result, all deriveable keys are less than `2^255`, larger than `2^254` and divisible by 8 as required by EdDSA.
 
 The depth limit is reset at each level where hardened derivation is used.
 
