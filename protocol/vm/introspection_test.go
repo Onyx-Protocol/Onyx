@@ -28,7 +28,7 @@ func TestNextProgram(t *testing.T) {
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  validation.NewBlockVMContext(block, prog, nil),
+		Context:  newBlockVMContext(block, prog, nil),
 	}
 	_, err = vm.Run()
 	if err != nil {
@@ -42,7 +42,7 @@ func TestNextProgram(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  validation.NewBlockVMContext(block, prog, nil),
+		Context:  newBlockVMContext(block, prog, nil),
 	}
 	_, err = vm.Run()
 	if err == nil && vm.FalseResult() {
@@ -71,7 +71,7 @@ func TestBlockTime(t *testing.T) {
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  validation.NewBlockVMContext(block, prog, nil),
+		Context:  newBlockVMContext(block, prog, nil),
 	}
 	_, err = vm.Run()
 	if err != nil {
@@ -85,7 +85,7 @@ func TestBlockTime(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  validation.NewBlockVMContext(block, prog, nil),
+		Context:  newBlockVMContext(block, prog, nil),
 	}
 	_, err = vm.Run()
 	if err == nil && vm.FalseResult() {

@@ -253,7 +253,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 	})
 	consensusProg := []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}
 
-	gotErr := Verify(validation.NewBlockVMContext(block, consensusProg, block.Witness.Arguments))
+	gotErr := Verify(newBlockVMContext(block, consensusProg, block.Witness.Arguments))
 	if gotErr != nil {
 		t.Errorf("unexpected error: %v", gotErr)
 	}
@@ -266,7 +266,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 		},
 	})
 
-	gotErr = Verify(validation.NewBlockVMContext(block, consensusProg, block.Witness.Arguments))
+	gotErr = Verify(newBlockVMContext(block, consensusProg, block.Witness.Arguments))
 	if errors.Root(gotErr) != ErrRunLimitExceeded {
 		t.Error("expected block to exceed run limit")
 	}
@@ -495,7 +495,7 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 				Witness: witnesses,
 			},
 		}})
-		Verify(validation.NewBlockVMContext(block, program, witnesses))
+		Verify(newBlockVMContext(block, program, witnesses))
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -518,4 +518,18 @@ func verifyTx(tx *bc.Tx, index uint32) error {
 		args = inp.Witness.Arguments
 	}
 	return Verify(validation.NewTxVMContext(tx.TxEntries, inp, prog, args))
+}
+
+// TODO(kr): inline this function and avoid constructing BlockEntries objects entirely
+func newBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *Context {
+	blockHash := block.ID[:]
+	return &Context{
+		VMVersion: 1,
+		Code:      prog,
+		Arguments: args,
+
+		BlockHash:            &blockHash,
+		BlockTimeMS:          &block.Body.TimestampMS,
+		NextConsensusProgram: &block.Body.NextConsensusProgram,
+	}
 }

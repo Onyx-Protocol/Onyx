@@ -9,7 +9,7 @@ import (
 	"chain/protocol/vm"
 )
 
-func NewBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *vm.Context {
+func newBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *vm.Context {
 	blockHash := block.ID[:]
 	return &vm.Context{
 		VMVersion: 1,

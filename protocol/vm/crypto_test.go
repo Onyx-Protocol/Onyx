@@ -400,7 +400,7 @@ func TestCryptoOps(t *testing.T) {
 		op: OP_BLOCKHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 50000,
-			Context:  validation.NewBlockVMContext(bc.MapBlock(&bc.Block{}), nil, nil),
+			Context:  newBlockVMContext(bc.MapBlock(&bc.Block{}), nil, nil),
 		},
 		wantVM: &VirtualMachine{
 			RunLimit: 49959,
@@ -410,13 +410,13 @@ func TestCryptoOps(t *testing.T) {
 				157, 235, 138, 214, 147, 207, 55, 17,
 				254, 131, 9, 179, 144, 106, 90, 134,
 			}},
-			Context: validation.NewBlockVMContext(bc.MapBlock(&bc.Block{}), nil, nil),
+			Context: newBlockVMContext(bc.MapBlock(&bc.Block{}), nil, nil),
 		},
 	}, {
 		op: OP_BLOCKHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 0,
-			Context:  validation.NewBlockVMContext(bc.MapBlock(&bc.Block{}), nil, nil),
+			Context:  newBlockVMContext(bc.MapBlock(&bc.Block{}), nil, nil),
 		},
 		wantErr: ErrRunLimitExceeded,
 	}}
