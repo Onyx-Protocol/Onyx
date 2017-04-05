@@ -6,8 +6,14 @@ trap "echo 'Error generating docs, cleaning up temp files...'; rm -rf $compile_d
 
 echo "Generating documentation..."
 
+sourcePath=$CHAIN
+if [[ ( $# == 2 ) ]];
+then
+  sourcePath=$2
+fi
+
 go install chain/cmd/md2html
-cd $CHAIN/docs
+cd $sourcePath/docs
 
 if [[ ( $# == 0 ) ]];
 then
@@ -21,7 +27,7 @@ javadoc_dest_path=$compile_dest_path/java/javadoc
 echo
 echo "Building Java SDK documentation..."
 
-cd $CHAIN/sdk/java
+cd $sourcePath/sdk/java
 mvn javadoc:javadoc
 mkdir -p $javadoc_dest_path
 cp -R target/site/apidocs/* $javadoc_dest_path
@@ -32,7 +38,7 @@ ruby_yardoc_dest_path=$ruby_dest_path/doc
 echo
 echo "Building Ruby SDK documentation..."
 
-cd $CHAIN/sdk/ruby
+cd $sourcePath/sdk/ruby
 bundle
 bundle exec yardoc 'lib/**/*.rb'
 mkdir -p $ruby_yardoc_dest_path
@@ -44,7 +50,7 @@ echo "Building Node.js SDK documentation..."
 node_dest_path=$compile_dest_path/node
 node_yardoc_dest_path=$node_dest_path/doc
 
-cd $CHAIN/sdk/node
+cd $sourcePath/sdk/node
 npm install
 npm run docs
 mkdir -p $node_yardoc_dest_path
