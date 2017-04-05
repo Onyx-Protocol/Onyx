@@ -9,7 +9,6 @@ function activateCurrentSidebarItem() {
 }
 
 function prepareSidebarMenu() {
-
 	$(".docs-nav").addClass("folded-by-default")
 
 	activateCurrentSidebarItem()
