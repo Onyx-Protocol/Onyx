@@ -335,6 +335,8 @@ All values use hexadecimal encoding.
 
 We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous version of this scheme and their proposal [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA) where derived keys are also safe to use in ECDH implementations using Montgomery Ladder. We improve on their proposal further by slighly reducing collision probability of child keys, reducing size of xprv from 96 to 64 bytes and using extensible output hash function SHAKE128 instead of HMAC-SHA512.
 
+We also thank Gregory Maxwell and Pieter Wuille for clarifying design decisions behind [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) and capability of selectively proving linkage between arbitrary child keys.
+
 
 ## References
 
