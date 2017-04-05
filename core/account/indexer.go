@@ -138,19 +138,20 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	for i, tx := range b.Transactions {
 		blockPositions[tx.ID] = uint32(i)
 		for j, out := range tx.Outputs {
-			resOut, ok := tx.Results[j].(*bc.Output)
+			resOutID := tx.Body.ResultIds[j]
+			resOut, ok := tx.Entries[*resOutID].(*bc.Output)
 			if !ok {
 				continue
 			}
 			out := &rawOutput{
-				OutputID:       tx.OutputID(j),
+				OutputID:       *tx.OutputID(j),
 				AssetAmount:    out.AssetAmount,
 				ControlProgram: out.ControlProgram,
 				txHash:         tx.ID,
 				outputIndex:    uint32(j),
-				sourceID:       resOut.Body.Source.Ref,
+				sourceID:       *resOut.Body.Source.Ref,
 				sourcePos:      resOut.Body.Source.Position,
-				refData:        resOut.Body.Data,
+				refData:        *resOut.Body.Data,
 			}
 			outs = append(outs, out)
 		}
@@ -168,7 +169,7 @@ func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
 	for _, tx := range txs {
 		for _, inp := range tx.TxEntries.TxInputs {
 			if sp, ok := inp.(*bc.Spend); ok {
-				outputIDs = append(outputIDs, sp.Body.SpentOutputID.Bytes())
+				outputIDs = append(outputIDs, sp.Body.SpentOutputId.Bytes())
 			}
 		}
 	}
@@ -233,7 +234,7 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 	)
 	for _, out := range outs {
 		outputID = append(outputID, out.OutputID.Bytes())
-		assetID = append(assetID, out.AssetID.Bytes())
+		assetID = append(assetID, out.AssetId.Bytes())
 		amount = append(amount, int64(out.Amount))
 		accountID = append(accountID, out.AccountID)
 		cpIndex = append(cpIndex, int64(out.keyIndex))

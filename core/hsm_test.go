@@ -57,10 +57,10 @@ func TestMockHSM(t *testing.T) {
 	asset1ID := coretest.CreateAsset(ctx, t, assets, assetDef1, "", nil)
 	asset2ID := coretest.CreateAsset(ctx, t, assets, assetDef2, "", nil)
 
-	issueSrc1 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, nil))
-	issueSrc2 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, nil))
-	issueDest1 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, acct1.ID, nil)
-	issueDest2 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, acct2.ID, nil)
+	issueSrc1 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetId: &asset1ID, Amount: 100}, nil))
+	issueSrc2 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetId: &asset2ID, Amount: 200}, nil))
+	issueDest1 := accounts.NewControlAction(bc.AssetAmount{AssetId: &asset1ID, Amount: 100}, acct1.ID, nil)
+	issueDest2 := accounts.NewControlAction(bc.AssetAmount{AssetId: &asset2ID, Amount: 200}, acct2.ID, nil)
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{issueSrc1, issueSrc2, issueDest1, issueDest2}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
@@ -75,10 +75,10 @@ func TestMockHSM(t *testing.T) {
 	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
-	xferSrc1 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil)
-	xferSrc2 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct2.ID, nil, nil)
-	xferDest1 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct1.ID, nil)
-	xferDest2 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct2.ID, nil)
+	xferSrc1 := accounts.NewSpendAction(bc.AssetAmount{AssetId: &asset1ID, Amount: 10}, acct1.ID, nil, nil)
+	xferSrc2 := accounts.NewSpendAction(bc.AssetAmount{AssetId: &asset2ID, Amount: 20}, acct2.ID, nil, nil)
+	xferDest1 := accounts.NewControlAction(bc.AssetAmount{AssetId: &asset2ID, Amount: 20}, acct1.ID, nil)
+	xferDest2 := accounts.NewControlAction(bc.AssetAmount{AssetId: &asset1ID, Amount: 10}, acct2.ID, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{xferSrc1, xferSrc2, xferDest1, xferDest2}, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)

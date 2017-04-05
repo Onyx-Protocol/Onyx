@@ -95,7 +95,7 @@ func (p payConstraint) code() []byte {
 	} else {
 		builder.AddData(p.RefDataHash.Bytes())
 	}
-	builder.AddInt64(int64(p.Amount)).AddData(p.AssetID.Bytes()).AddInt64(1).AddData(p.Program)
+	builder.AddInt64(int64(p.Amount)).AddData(p.AssetId.Bytes()).AddInt64(1).AddData(p.Program)
 	builder.AddOp(vm.OP_CHECKOUTPUT)
 	return builder.Program
 }

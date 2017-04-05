@@ -36,7 +36,12 @@ var (
 type utxo struct {
 	OutputID bc.Hash
 	SourceID bc.Hash
-	bc.AssetAmount
+
+	// Avoiding AssetAmount here so that new(utxo) doesn't produce an
+	// AssetAmount with a nil AssetId.
+	AssetID bc.AssetID
+	Amount  uint64
+
 	SourcePos      uint64
 	ControlProgram []byte
 	RefDataHash    bc.Hash
@@ -392,12 +397,10 @@ func findMatchingUTXOs(ctx context.Context, db pg.DB, src source, height uint64)
 	err := pg.ForQueryRows(ctx, db, q, src.AccountID, src.AssetID, height,
 		func(oid bc.Hash, amount uint64, cpIndex uint64, controlProg []byte, sourceID bc.Hash, sourcePos uint64, refData bc.Hash) {
 			utxos = append(utxos, &utxo{
-				OutputID: oid,
-				SourceID: sourceID,
-				AssetAmount: bc.AssetAmount{
-					Amount:  amount,
-					AssetID: src.AssetID,
-				},
+				OutputID:            oid,
+				SourceID:            sourceID,
+				AssetID:             src.AssetID,
+				Amount:              amount,
 				SourcePos:           sourcePos,
 				ControlProgram:      controlProg,
 				RefDataHash:         refData,

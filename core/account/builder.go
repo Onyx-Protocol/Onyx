@@ -41,7 +41,7 @@ func (a *spendAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) e
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")
 	}
-	if a.AssetID == (bc.AssetID{}) {
+	if a.AssetId.IsZero() {
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {
@@ -54,7 +54,7 @@ func (a *spendAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) e
 	}
 
 	src := source{
-		AssetID:   a.AssetID,
+		AssetID:   *a.AssetId,
 		AccountID: a.AccountID,
 	}
 	res, err := a.accounts.utxoDB.Reserve(ctx, src, a.Amount, a.ClientToken, b.MaxTime())
@@ -85,7 +85,7 @@ func (a *spendAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) e
 		// Don't insert the control program until callbacks are executed.
 		a.accounts.insertControlProgramDelayed(ctx, b, acp)
 
-		err = b.AddOutput(bc.NewTxOutput(a.AssetID, res.Change, acp.controlProgram, nil))
+		err = b.AddOutput(bc.NewTxOutput(*a.AssetId, res.Change, acp.controlProgram, nil))
 		if err != nil {
 			return errors.Wrap(err, "adding change output")
 		}
@@ -154,7 +154,10 @@ func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData
 	txInput := bc.NewSpendInput(nil, u.SourceID, u.AssetID, u.Amount, u.SourcePos, u.ControlProgram, u.RefDataHash, refData)
 
 	sigInst := &txbuilder.SigningInstruction{
-		AssetAmount: u.AssetAmount,
+		AssetAmount: bc.AssetAmount{
+			AssetId: &u.AssetID,
+			Amount:  u.Amount,
+		},
 	}
 
 	path := signers.Path(account, signers.AccountKeySpace, u.ControlProgramIndex)
@@ -190,7 +193,7 @@ func (a *controlAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder)
 	if a.AccountID == "" {
 		missing = append(missing, "account_id")
 	}
-	if a.AssetID == (bc.AssetID{}) {
+	if a.AssetId.IsZero() {
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {
@@ -204,7 +207,7 @@ func (a *controlAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder)
 	}
 	a.accounts.insertControlProgramDelayed(ctx, b, acp)
 
-	return b.AddOutput(bc.NewTxOutput(a.AssetID, a.Amount, acp.controlProgram, a.ReferenceData))
+	return b.AddOutput(bc.NewTxOutput(*a.AssetId, a.Amount, acp.controlProgram, a.ReferenceData))
 }
 
 // insertControlProgramDelayed takes a template builder and an account

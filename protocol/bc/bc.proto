@@ -9,6 +9,11 @@ message Hash {
   fixed64 v3 = 4;
 }
 
+message Program {
+  uint64 vm_version = 1;
+  bytes  code       = 2;
+}
+
 // This message type duplicates Hash, above. One alternative is to
 // embed a Hash inside an AssetID. But it's useful for AssetID to be
 // plain old data (without pointers). Another alternative is use Hash
@@ -19,4 +24,149 @@ message AssetID {
   fixed64 v1 = 2;
   fixed64 v2 = 3;
   fixed64 v3 = 4;
+}
+
+message AssetAmount {
+  AssetID asset_id = 1;
+  uint64  amount   = 2;
+}
+
+message AssetDefinition {
+  Hash    initial_block_id = 1;
+  Program issuance_program = 2;
+  Hash    data             = 3;
+}
+
+message ValueSource {
+  Hash        ref      = 1;
+  AssetAmount value    = 2;
+  uint64      position = 3;
+}
+
+message ValueDestination {
+  Hash        ref      = 1;
+  AssetAmount value    = 2;
+  uint64      position = 3;
+}
+
+message BlockHeaderEntry {
+  message Body {
+    uint64 version                = 1;
+    uint64 height                 = 2;
+    Hash   previous_block_id      = 3;
+    uint64 timestamp_ms           = 4;
+    Hash   transactions_root      = 5;
+    Hash   assets_root            = 6;
+    bytes  next_consensus_program = 7;
+    Hash   ext_hash               = 8;
+  }
+  message Witness {
+    repeated bytes arguments = 1;
+  }
+  Body    body    = 1;
+  Witness witness = 2;
+}
+
+message TxHeader {
+  message Body {
+    uint64        version     = 1;
+    repeated Hash result_ids  = 2;
+    Hash          data        = 3;
+    uint64        min_time_ms = 4;
+    uint64        max_time_ms = 5;
+    Hash          ext_hash    = 6;
+  }
+  Body body = 1;
+}
+
+message Mux {
+  message Body {
+    repeated ValueSource sources  = 1; // issuances, spends, and muxes
+    Program              program  = 2;
+    Hash                 ext_hash = 3;
+  }
+  message Witness {
+    repeated ValueDestination destinations = 1; // outputs, retirements, and muxes
+    repeated bytes            arguments    = 2;
+  }
+  Body    body    = 1;
+  Witness witness = 2;
+}
+
+message Nonce {
+  message Body {
+    Program program       = 1;
+    Hash    time_range_id = 2;
+    Hash    ext_hash      = 3;
+  }
+  message Witness {
+    repeated bytes arguments   = 1;
+    Hash           anchored_id = 2;
+  }
+  Body    body    = 1;
+  Witness witness = 2;
+}
+
+message Output {
+  message Body {
+    ValueSource source          = 1;
+    Program     control_program = 2;
+    Hash        data            = 3;
+    Hash        ext_hash        = 4;
+  }
+  Body   body    = 1;
+  uint64 ordinal = 2;
+}
+
+message Retirement {
+  message Body {
+    ValueSource source   = 1;
+    Hash        data     = 2;
+    Hash        ext_hash = 3;
+  }
+  Body   body    = 1;
+  uint64 ordinal = 2;
+}
+
+message TimeRange {
+  message Body {
+    uint64    min_time_ms = 1;
+    uint64    max_time_ms = 2;
+    Hash      ext_hash    = 3;
+  }
+  Body body = 1;
+}
+
+message Issuance {
+  message Body {
+    Hash        anchor_id = 1;
+    AssetAmount value     = 2;
+    Hash        data      = 3;
+    Hash        ext_hash  = 4;
+  }
+  message Witness {
+    ValueDestination destination      = 1;
+    AssetDefinition  asset_definition = 2;
+    repeated bytes   arguments        = 3;
+    Hash             anchored_id      = 4;
+  }
+  Body    body    = 1;
+  Witness witness = 2;
+  uint64  ordinal = 3;
+}
+
+message Spend {
+  message Body {
+    Hash spent_output_id = 1;
+    Hash data            = 2;
+    Hash ext_hash        = 3;
+  }
+  message Witness {
+    ValueDestination destination = 1;
+    repeated bytes   arguments   = 2;
+    Hash             anchored_id = 3;
+  }
+  Body    body    = 1;
+  Witness witness = 2;
+  uint64  ordinal = 3;
 }

@@ -26,7 +26,7 @@ func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData [
 		AssetVersion: 1,
 		OutputCommitment: OutputCommitment{
 			AssetAmount: AssetAmount{
-				AssetID: assetID,
+				AssetId: &assetID,
 				Amount:  amount,
 			},
 			VMVersion:      1,

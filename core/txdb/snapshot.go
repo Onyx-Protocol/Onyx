@@ -60,7 +60,7 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 	for k, v := range snapshot.Nonces {
 		hash := k
 		storedSnapshot.Nonces = append(storedSnapshot.Nonces, &storage.Snapshot_Nonce{
-			Hash:     hash.Bytes(),
+			Hash:     hash.Bytes(), // TODO(bobg): now that hash is a protobuf, use it directly in the snapshot protobuf?
 			ExpiryMs: v,
 		})
 	}

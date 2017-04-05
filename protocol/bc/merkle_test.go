@@ -18,7 +18,7 @@ func TestMerkleRoot(t *testing.T) {
 				[]byte("00000"),
 			},
 		},
-		want: mustParseHash("77eae4222f60bfd74c07994d700161d0b831ed723037952b9c7ee98ed8766977"),
+		want: mustDecodeHash("77eae4222f60bfd74c07994d700161d0b831ed723037952b9c7ee98ed8766977"),
 	}, {
 		witnesses: [][][]byte{
 			[][]byte{
@@ -30,7 +30,7 @@ func TestMerkleRoot(t *testing.T) {
 				[]byte("111111"),
 			},
 		},
-		want: mustParseHash("526737fcca853f5ad352081c5a7341aca4ee05b09a002c8600e26a06df02aa3b"),
+		want: mustDecodeHash("526737fcca853f5ad352081c5a7341aca4ee05b09a002c8600e26a06df02aa3b"),
 	}, {
 		witnesses: [][][]byte{
 			[][]byte{
@@ -43,7 +43,7 @@ func TestMerkleRoot(t *testing.T) {
 				[]byte("222222"),
 			},
 		},
-		want: mustParseHash("526737fcca853f5ad352081c5a7341aca4ee05b09a002c8600e26a06df02aa3b"),
+		want: mustDecodeHash("526737fcca853f5ad352081c5a7341aca4ee05b09a002c8600e26a06df02aa3b"),
 	}}
 
 	for _, c := range cases {
@@ -74,7 +74,7 @@ func TestMerkleRoot(t *testing.T) {
 func TestDuplicateLeaves(t *testing.T) {
 	var initialBlockHash Hash
 	trueProg := []byte{byte(vm.OP_TRUE)}
-	assetID := ComputeAssetID(trueProg, initialBlockHash, 1, EmptyStringHash)
+	assetID := ComputeAssetID(trueProg, &initialBlockHash, 1, &EmptyStringHash)
 	txs := make([]*TxEntries, 6)
 	for i := uint64(0); i < 6; i++ {
 		now := []byte(time.Now().String())
@@ -107,7 +107,7 @@ func TestDuplicateLeaves(t *testing.T) {
 func TestAllDuplicateLeaves(t *testing.T) {
 	var initialBlockHash Hash
 	trueProg := []byte{byte(vm.OP_TRUE)}
-	assetID := ComputeAssetID(trueProg, initialBlockHash, 1, EmptyStringHash)
+	assetID := ComputeAssetID(trueProg, &initialBlockHash, 1, &EmptyStringHash)
 	now := []byte(time.Now().String())
 	issuanceInp := NewIssuanceInput(now, 1, nil, initialBlockHash, trueProg, nil, nil)
 
@@ -135,12 +135,4 @@ func TestAllDuplicateLeaves(t *testing.T) {
 	if root1 == root2 {
 		t.Error("forged merkle tree with all duplicate leaves")
 	}
-}
-
-func mustParseHash(s string) (h Hash) {
-	err := h.UnmarshalText([]byte(s))
-	if err != nil {
-		panic(err)
-	}
-	return h
 }

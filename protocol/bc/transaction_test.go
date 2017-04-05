@@ -18,7 +18,7 @@ func TestTransaction(t *testing.T) {
 	initialBlockHashHex := "03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"
 	initialBlockHash := mustDecodeHash(initialBlockHashHex)
 
-	assetID := ComputeAssetID(issuanceScript, initialBlockHash, 1, EmptyStringHash)
+	assetID := ComputeAssetID(issuanceScript, &initialBlockHash, 1, &EmptyStringHash)
 
 	cases := []struct {
 		tx   *Tx
@@ -372,6 +372,6 @@ func BenchmarkTxOutputWriteToFalse(b *testing.B) {
 func BenchmarkAssetAmountWriteTo(b *testing.B) {
 	aa := AssetAmount{}
 	for i := 0; i < b.N; i++ {
-		aa.writeTo(ioutil.Discard)
+		aa.WriteTo(ioutil.Discard)
 	}
 }

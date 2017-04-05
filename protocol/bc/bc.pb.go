@@ -10,7 +10,21 @@ It is generated from these files:
 
 It has these top-level messages:
 	Hash
+	Program
 	AssetID
+	AssetAmount
+	AssetDefinition
+	ValueSource
+	ValueDestination
+	BlockHeaderEntry
+	TxHeader
+	Mux
+	Nonce
+	Output
+	Retirement
+	TimeRange
+	Issuance
+	Spend
 */
 package bc
 
@@ -69,6 +83,30 @@ func (m *Hash) GetV3() uint64 {
 	return 0
 }
 
+type Program struct {
+	VmVersion uint64 `protobuf:"varint,1,opt,name=vm_version,json=vmVersion" json:"vm_version,omitempty"`
+	Code      []byte `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+}
+
+func (m *Program) Reset()                    { *m = Program{} }
+func (m *Program) String() string            { return proto.CompactTextString(m) }
+func (*Program) ProtoMessage()               {}
+func (*Program) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *Program) GetVmVersion() uint64 {
+	if m != nil {
+		return m.VmVersion
+	}
+	return 0
+}
+
+func (m *Program) GetCode() []byte {
+	if m != nil {
+		return m.Code
+	}
+	return nil
+}
+
 // This message type duplicates Hash, above. One alternative is to
 // embed a Hash inside an AssetID. But it's useful for AssetID to be
 // plain old data (without pointers). Another alternative is use Hash
@@ -84,7 +122,7 @@ type AssetID struct {
 func (m *AssetID) Reset()                    { *m = AssetID{} }
 func (m *AssetID) String() string            { return proto.CompactTextString(m) }
 func (*AssetID) ProtoMessage()               {}
-func (*AssetID) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*AssetID) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 func (m *AssetID) GetV0() uint64 {
 	if m != nil {
@@ -114,20 +152,951 @@ func (m *AssetID) GetV3() uint64 {
 	return 0
 }
 
+type AssetAmount struct {
+	AssetId *AssetID `protobuf:"bytes,1,opt,name=asset_id,json=assetId" json:"asset_id,omitempty"`
+	Amount  uint64   `protobuf:"varint,2,opt,name=amount" json:"amount,omitempty"`
+}
+
+func (m *AssetAmount) Reset()                    { *m = AssetAmount{} }
+func (m *AssetAmount) String() string            { return proto.CompactTextString(m) }
+func (*AssetAmount) ProtoMessage()               {}
+func (*AssetAmount) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *AssetAmount) GetAssetId() *AssetID {
+	if m != nil {
+		return m.AssetId
+	}
+	return nil
+}
+
+func (m *AssetAmount) GetAmount() uint64 {
+	if m != nil {
+		return m.Amount
+	}
+	return 0
+}
+
+type AssetDefinition struct {
+	InitialBlockId  *Hash    `protobuf:"bytes,1,opt,name=initial_block_id,json=initialBlockId" json:"initial_block_id,omitempty"`
+	IssuanceProgram *Program `protobuf:"bytes,2,opt,name=issuance_program,json=issuanceProgram" json:"issuance_program,omitempty"`
+	Data            *Hash    `protobuf:"bytes,3,opt,name=data" json:"data,omitempty"`
+}
+
+func (m *AssetDefinition) Reset()                    { *m = AssetDefinition{} }
+func (m *AssetDefinition) String() string            { return proto.CompactTextString(m) }
+func (*AssetDefinition) ProtoMessage()               {}
+func (*AssetDefinition) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+func (m *AssetDefinition) GetInitialBlockId() *Hash {
+	if m != nil {
+		return m.InitialBlockId
+	}
+	return nil
+}
+
+func (m *AssetDefinition) GetIssuanceProgram() *Program {
+	if m != nil {
+		return m.IssuanceProgram
+	}
+	return nil
+}
+
+func (m *AssetDefinition) GetData() *Hash {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+type ValueSource struct {
+	Ref      *Hash        `protobuf:"bytes,1,opt,name=ref" json:"ref,omitempty"`
+	Value    *AssetAmount `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	Position uint64       `protobuf:"varint,3,opt,name=position" json:"position,omitempty"`
+}
+
+func (m *ValueSource) Reset()                    { *m = ValueSource{} }
+func (m *ValueSource) String() string            { return proto.CompactTextString(m) }
+func (*ValueSource) ProtoMessage()               {}
+func (*ValueSource) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+
+func (m *ValueSource) GetRef() *Hash {
+	if m != nil {
+		return m.Ref
+	}
+	return nil
+}
+
+func (m *ValueSource) GetValue() *AssetAmount {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+func (m *ValueSource) GetPosition() uint64 {
+	if m != nil {
+		return m.Position
+	}
+	return 0
+}
+
+type ValueDestination struct {
+	Ref      *Hash        `protobuf:"bytes,1,opt,name=ref" json:"ref,omitempty"`
+	Value    *AssetAmount `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	Position uint64       `protobuf:"varint,3,opt,name=position" json:"position,omitempty"`
+}
+
+func (m *ValueDestination) Reset()                    { *m = ValueDestination{} }
+func (m *ValueDestination) String() string            { return proto.CompactTextString(m) }
+func (*ValueDestination) ProtoMessage()               {}
+func (*ValueDestination) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+
+func (m *ValueDestination) GetRef() *Hash {
+	if m != nil {
+		return m.Ref
+	}
+	return nil
+}
+
+func (m *ValueDestination) GetValue() *AssetAmount {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+func (m *ValueDestination) GetPosition() uint64 {
+	if m != nil {
+		return m.Position
+	}
+	return 0
+}
+
+type BlockHeaderEntry struct {
+	Body    *BlockHeaderEntry_Body    `protobuf:"bytes,1,opt,name=body" json:"body,omitempty"`
+	Witness *BlockHeaderEntry_Witness `protobuf:"bytes,2,opt,name=witness" json:"witness,omitempty"`
+}
+
+func (m *BlockHeaderEntry) Reset()                    { *m = BlockHeaderEntry{} }
+func (m *BlockHeaderEntry) String() string            { return proto.CompactTextString(m) }
+func (*BlockHeaderEntry) ProtoMessage()               {}
+func (*BlockHeaderEntry) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+func (m *BlockHeaderEntry) GetBody() *BlockHeaderEntry_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+func (m *BlockHeaderEntry) GetWitness() *BlockHeaderEntry_Witness {
+	if m != nil {
+		return m.Witness
+	}
+	return nil
+}
+
+type BlockHeaderEntry_Body struct {
+	Version              uint64 `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
+	Height               uint64 `protobuf:"varint,2,opt,name=height" json:"height,omitempty"`
+	PreviousBlockId      *Hash  `protobuf:"bytes,3,opt,name=previous_block_id,json=previousBlockId" json:"previous_block_id,omitempty"`
+	TimestampMs          uint64 `protobuf:"varint,4,opt,name=timestamp_ms,json=timestampMs" json:"timestamp_ms,omitempty"`
+	TransactionsRoot     *Hash  `protobuf:"bytes,5,opt,name=transactions_root,json=transactionsRoot" json:"transactions_root,omitempty"`
+	AssetsRoot           *Hash  `protobuf:"bytes,6,opt,name=assets_root,json=assetsRoot" json:"assets_root,omitempty"`
+	NextConsensusProgram []byte `protobuf:"bytes,7,opt,name=next_consensus_program,json=nextConsensusProgram,proto3" json:"next_consensus_program,omitempty"`
+	ExtHash              *Hash  `protobuf:"bytes,8,opt,name=ext_hash,json=extHash" json:"ext_hash,omitempty"`
+}
+
+func (m *BlockHeaderEntry_Body) Reset()                    { *m = BlockHeaderEntry_Body{} }
+func (m *BlockHeaderEntry_Body) String() string            { return proto.CompactTextString(m) }
+func (*BlockHeaderEntry_Body) ProtoMessage()               {}
+func (*BlockHeaderEntry_Body) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7, 0} }
+
+func (m *BlockHeaderEntry_Body) GetVersion() uint64 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *BlockHeaderEntry_Body) GetHeight() uint64 {
+	if m != nil {
+		return m.Height
+	}
+	return 0
+}
+
+func (m *BlockHeaderEntry_Body) GetPreviousBlockId() *Hash {
+	if m != nil {
+		return m.PreviousBlockId
+	}
+	return nil
+}
+
+func (m *BlockHeaderEntry_Body) GetTimestampMs() uint64 {
+	if m != nil {
+		return m.TimestampMs
+	}
+	return 0
+}
+
+func (m *BlockHeaderEntry_Body) GetTransactionsRoot() *Hash {
+	if m != nil {
+		return m.TransactionsRoot
+	}
+	return nil
+}
+
+func (m *BlockHeaderEntry_Body) GetAssetsRoot() *Hash {
+	if m != nil {
+		return m.AssetsRoot
+	}
+	return nil
+}
+
+func (m *BlockHeaderEntry_Body) GetNextConsensusProgram() []byte {
+	if m != nil {
+		return m.NextConsensusProgram
+	}
+	return nil
+}
+
+func (m *BlockHeaderEntry_Body) GetExtHash() *Hash {
+	if m != nil {
+		return m.ExtHash
+	}
+	return nil
+}
+
+type BlockHeaderEntry_Witness struct {
+	Arguments [][]byte `protobuf:"bytes,1,rep,name=arguments,proto3" json:"arguments,omitempty"`
+}
+
+func (m *BlockHeaderEntry_Witness) Reset()                    { *m = BlockHeaderEntry_Witness{} }
+func (m *BlockHeaderEntry_Witness) String() string            { return proto.CompactTextString(m) }
+func (*BlockHeaderEntry_Witness) ProtoMessage()               {}
+func (*BlockHeaderEntry_Witness) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7, 1} }
+
+func (m *BlockHeaderEntry_Witness) GetArguments() [][]byte {
+	if m != nil {
+		return m.Arguments
+	}
+	return nil
+}
+
+type TxHeader struct {
+	Body *TxHeader_Body `protobuf:"bytes,1,opt,name=body" json:"body,omitempty"`
+}
+
+func (m *TxHeader) Reset()                    { *m = TxHeader{} }
+func (m *TxHeader) String() string            { return proto.CompactTextString(m) }
+func (*TxHeader) ProtoMessage()               {}
+func (*TxHeader) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+
+func (m *TxHeader) GetBody() *TxHeader_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+type TxHeader_Body struct {
+	Version   uint64  `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
+	ResultIds []*Hash `protobuf:"bytes,2,rep,name=result_ids,json=resultIds" json:"result_ids,omitempty"`
+	Data      *Hash   `protobuf:"bytes,3,opt,name=data" json:"data,omitempty"`
+	MinTimeMs uint64  `protobuf:"varint,4,opt,name=min_time_ms,json=minTimeMs" json:"min_time_ms,omitempty"`
+	MaxTimeMs uint64  `protobuf:"varint,5,opt,name=max_time_ms,json=maxTimeMs" json:"max_time_ms,omitempty"`
+	ExtHash   *Hash   `protobuf:"bytes,6,opt,name=ext_hash,json=extHash" json:"ext_hash,omitempty"`
+}
+
+func (m *TxHeader_Body) Reset()                    { *m = TxHeader_Body{} }
+func (m *TxHeader_Body) String() string            { return proto.CompactTextString(m) }
+func (*TxHeader_Body) ProtoMessage()               {}
+func (*TxHeader_Body) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8, 0} }
+
+func (m *TxHeader_Body) GetVersion() uint64 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *TxHeader_Body) GetResultIds() []*Hash {
+	if m != nil {
+		return m.ResultIds
+	}
+	return nil
+}
+
+func (m *TxHeader_Body) GetData() *Hash {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *TxHeader_Body) GetMinTimeMs() uint64 {
+	if m != nil {
+		return m.MinTimeMs
+	}
+	return 0
+}
+
+func (m *TxHeader_Body) GetMaxTimeMs() uint64 {
+	if m != nil {
+		return m.MaxTimeMs
+	}
+	return 0
+}
+
+func (m *TxHeader_Body) GetExtHash() *Hash {
+	if m != nil {
+		return m.ExtHash
+	}
+	return nil
+}
+
+type Mux struct {
+	Body    *Mux_Body    `protobuf:"bytes,1,opt,name=body" json:"body,omitempty"`
+	Witness *Mux_Witness `protobuf:"bytes,2,opt,name=witness" json:"witness,omitempty"`
+}
+
+func (m *Mux) Reset()                    { *m = Mux{} }
+func (m *Mux) String() string            { return proto.CompactTextString(m) }
+func (*Mux) ProtoMessage()               {}
+func (*Mux) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+
+func (m *Mux) GetBody() *Mux_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+func (m *Mux) GetWitness() *Mux_Witness {
+	if m != nil {
+		return m.Witness
+	}
+	return nil
+}
+
+type Mux_Body struct {
+	Sources []*ValueSource `protobuf:"bytes,1,rep,name=sources" json:"sources,omitempty"`
+	Program *Program       `protobuf:"bytes,2,opt,name=program" json:"program,omitempty"`
+	ExtHash *Hash          `protobuf:"bytes,3,opt,name=ext_hash,json=extHash" json:"ext_hash,omitempty"`
+}
+
+func (m *Mux_Body) Reset()                    { *m = Mux_Body{} }
+func (m *Mux_Body) String() string            { return proto.CompactTextString(m) }
+func (*Mux_Body) ProtoMessage()               {}
+func (*Mux_Body) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9, 0} }
+
+func (m *Mux_Body) GetSources() []*ValueSource {
+	if m != nil {
+		return m.Sources
+	}
+	return nil
+}
+
+func (m *Mux_Body) GetProgram() *Program {
+	if m != nil {
+		return m.Program
+	}
+	return nil
+}
+
+func (m *Mux_Body) GetExtHash() *Hash {
+	if m != nil {
+		return m.ExtHash
+	}
+	return nil
+}
+
+type Mux_Witness struct {
+	Destinations []*ValueDestination `protobuf:"bytes,1,rep,name=destinations" json:"destinations,omitempty"`
+	Arguments    [][]byte            `protobuf:"bytes,2,rep,name=arguments,proto3" json:"arguments,omitempty"`
+}
+
+func (m *Mux_Witness) Reset()                    { *m = Mux_Witness{} }
+func (m *Mux_Witness) String() string            { return proto.CompactTextString(m) }
+func (*Mux_Witness) ProtoMessage()               {}
+func (*Mux_Witness) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9, 1} }
+
+func (m *Mux_Witness) GetDestinations() []*ValueDestination {
+	if m != nil {
+		return m.Destinations
+	}
+	return nil
+}
+
+func (m *Mux_Witness) GetArguments() [][]byte {
+	if m != nil {
+		return m.Arguments
+	}
+	return nil
+}
+
+type Nonce struct {
+	Body    *Nonce_Body    `protobuf:"bytes,1,opt,name=body" json:"body,omitempty"`
+	Witness *Nonce_Witness `protobuf:"bytes,2,opt,name=witness" json:"witness,omitempty"`
+}
+
+func (m *Nonce) Reset()                    { *m = Nonce{} }
+func (m *Nonce) String() string            { return proto.CompactTextString(m) }
+func (*Nonce) ProtoMessage()               {}
+func (*Nonce) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+
+func (m *Nonce) GetBody() *Nonce_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+func (m *Nonce) GetWitness() *Nonce_Witness {
+	if m != nil {
+		return m.Witness
+	}
+	return nil
+}
+
+type Nonce_Body struct {
+	Program     *Program `protobuf:"bytes,1,opt,name=program" json:"program,omitempty"`
+	TimeRangeId *Hash    `protobuf:"bytes,2,opt,name=time_range_id,json=timeRangeId" json:"time_range_id,omitempty"`
+	ExtHash     *Hash    `protobuf:"bytes,3,opt,name=ext_hash,json=extHash" json:"ext_hash,omitempty"`
+}
+
+func (m *Nonce_Body) Reset()                    { *m = Nonce_Body{} }
+func (m *Nonce_Body) String() string            { return proto.CompactTextString(m) }
+func (*Nonce_Body) ProtoMessage()               {}
+func (*Nonce_Body) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10, 0} }
+
+func (m *Nonce_Body) GetProgram() *Program {
+	if m != nil {
+		return m.Program
+	}
+	return nil
+}
+
+func (m *Nonce_Body) GetTimeRangeId() *Hash {
+	if m != nil {
+		return m.TimeRangeId
+	}
+	return nil
+}
+
+func (m *Nonce_Body) GetExtHash() *Hash {
+	if m != nil {
+		return m.ExtHash
+	}
+	return nil
+}
+
+type Nonce_Witness struct {
+	Arguments  [][]byte `protobuf:"bytes,1,rep,name=arguments,proto3" json:"arguments,omitempty"`
+	AnchoredId *Hash    `protobuf:"bytes,2,opt,name=anchored_id,json=anchoredId" json:"anchored_id,omitempty"`
+}
+
+func (m *Nonce_Witness) Reset()                    { *m = Nonce_Witness{} }
+func (m *Nonce_Witness) String() string            { return proto.CompactTextString(m) }
+func (*Nonce_Witness) ProtoMessage()               {}
+func (*Nonce_Witness) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10, 1} }
+
+func (m *Nonce_Witness) GetArguments() [][]byte {
+	if m != nil {
+		return m.Arguments
+	}
+	return nil
+}
+
+func (m *Nonce_Witness) GetAnchoredId() *Hash {
+	if m != nil {
+		return m.AnchoredId
+	}
+	return nil
+}
+
+type Output struct {
+	Body    *Output_Body `protobuf:"bytes,1,opt,name=body" json:"body,omitempty"`
+	Ordinal uint64       `protobuf:"varint,2,opt,name=ordinal" json:"ordinal,omitempty"`
+}
+
+func (m *Output) Reset()                    { *m = Output{} }
+func (m *Output) String() string            { return proto.CompactTextString(m) }
+func (*Output) ProtoMessage()               {}
+func (*Output) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
+
+func (m *Output) GetBody() *Output_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+func (m *Output) GetOrdinal() uint64 {
+	if m != nil {
+		return m.Ordinal
+	}
+	return 0
+}
+
+type Output_Body struct {
+	Source         *ValueSource `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
+	ControlProgram *Program     `protobuf:"bytes,2,opt,name=control_program,json=controlProgram" json:"control_program,omitempty"`
+	Data           *Hash        `protobuf:"bytes,3,opt,name=data" json:"data,omitempty"`
+	ExtHash        *Hash        `protobuf:"bytes,4,opt,name=ext_hash,json=extHash" json:"ext_hash,omitempty"`
+}
+
+func (m *Output_Body) Reset()                    { *m = Output_Body{} }
+func (m *Output_Body) String() string            { return proto.CompactTextString(m) }
+func (*Output_Body) ProtoMessage()               {}
+func (*Output_Body) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11, 0} }
+
+func (m *Output_Body) GetSource() *ValueSource {
+	if m != nil {
+		return m.Source
+	}
+	return nil
+}
+
+func (m *Output_Body) GetControlProgram() *Program {
+	if m != nil {
+		return m.ControlProgram
+	}
+	return nil
+}
+
+func (m *Output_Body) GetData() *Hash {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *Output_Body) GetExtHash() *Hash {
+	if m != nil {
+		return m.ExtHash
+	}
+	return nil
+}
+
+type Retirement struct {
+	Body    *Retirement_Body `protobuf:"bytes,1,opt,name=body" json:"body,omitempty"`
+	Ordinal uint64           `protobuf:"varint,2,opt,name=ordinal" json:"ordinal,omitempty"`
+}
+
+func (m *Retirement) Reset()                    { *m = Retirement{} }
+func (m *Retirement) String() string            { return proto.CompactTextString(m) }
+func (*Retirement) ProtoMessage()               {}
+func (*Retirement) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
+
+func (m *Retirement) GetBody() *Retirement_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+func (m *Retirement) GetOrdinal() uint64 {
+	if m != nil {
+		return m.Ordinal
+	}
+	return 0
+}
+
+type Retirement_Body struct {
+	Source  *ValueSource `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
+	Data    *Hash        `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
+	ExtHash *Hash        `protobuf:"bytes,3,opt,name=ext_hash,json=extHash" json:"ext_hash,omitempty"`
+}
+
+func (m *Retirement_Body) Reset()                    { *m = Retirement_Body{} }
+func (m *Retirement_Body) String() string            { return proto.CompactTextString(m) }
+func (*Retirement_Body) ProtoMessage()               {}
+func (*Retirement_Body) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12, 0} }
+
+func (m *Retirement_Body) GetSource() *ValueSource {
+	if m != nil {
+		return m.Source
+	}
+	return nil
+}
+
+func (m *Retirement_Body) GetData() *Hash {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *Retirement_Body) GetExtHash() *Hash {
+	if m != nil {
+		return m.ExtHash
+	}
+	return nil
+}
+
+type TimeRange struct {
+	Body *TimeRange_Body `protobuf:"bytes,1,opt,name=body" json:"body,omitempty"`
+}
+
+func (m *TimeRange) Reset()                    { *m = TimeRange{} }
+func (m *TimeRange) String() string            { return proto.CompactTextString(m) }
+func (*TimeRange) ProtoMessage()               {}
+func (*TimeRange) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
+
+func (m *TimeRange) GetBody() *TimeRange_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+type TimeRange_Body struct {
+	MinTimeMs uint64 `protobuf:"varint,1,opt,name=min_time_ms,json=minTimeMs" json:"min_time_ms,omitempty"`
+	MaxTimeMs uint64 `protobuf:"varint,2,opt,name=max_time_ms,json=maxTimeMs" json:"max_time_ms,omitempty"`
+	ExtHash   *Hash  `protobuf:"bytes,3,opt,name=ext_hash,json=extHash" json:"ext_hash,omitempty"`
+}
+
+func (m *TimeRange_Body) Reset()                    { *m = TimeRange_Body{} }
+func (m *TimeRange_Body) String() string            { return proto.CompactTextString(m) }
+func (*TimeRange_Body) ProtoMessage()               {}
+func (*TimeRange_Body) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13, 0} }
+
+func (m *TimeRange_Body) GetMinTimeMs() uint64 {
+	if m != nil {
+		return m.MinTimeMs
+	}
+	return 0
+}
+
+func (m *TimeRange_Body) GetMaxTimeMs() uint64 {
+	if m != nil {
+		return m.MaxTimeMs
+	}
+	return 0
+}
+
+func (m *TimeRange_Body) GetExtHash() *Hash {
+	if m != nil {
+		return m.ExtHash
+	}
+	return nil
+}
+
+type Issuance struct {
+	Body    *Issuance_Body    `protobuf:"bytes,1,opt,name=body" json:"body,omitempty"`
+	Witness *Issuance_Witness `protobuf:"bytes,2,opt,name=witness" json:"witness,omitempty"`
+	Ordinal uint64            `protobuf:"varint,3,opt,name=ordinal" json:"ordinal,omitempty"`
+}
+
+func (m *Issuance) Reset()                    { *m = Issuance{} }
+func (m *Issuance) String() string            { return proto.CompactTextString(m) }
+func (*Issuance) ProtoMessage()               {}
+func (*Issuance) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
+
+func (m *Issuance) GetBody() *Issuance_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+func (m *Issuance) GetWitness() *Issuance_Witness {
+	if m != nil {
+		return m.Witness
+	}
+	return nil
+}
+
+func (m *Issuance) GetOrdinal() uint64 {
+	if m != nil {
+		return m.Ordinal
+	}
+	return 0
+}
+
+type Issuance_Body struct {
+	AnchorId *Hash        `protobuf:"bytes,1,opt,name=anchor_id,json=anchorId" json:"anchor_id,omitempty"`
+	Value    *AssetAmount `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	Data     *Hash        `protobuf:"bytes,3,opt,name=data" json:"data,omitempty"`
+	ExtHash  *Hash        `protobuf:"bytes,4,opt,name=ext_hash,json=extHash" json:"ext_hash,omitempty"`
+}
+
+func (m *Issuance_Body) Reset()                    { *m = Issuance_Body{} }
+func (m *Issuance_Body) String() string            { return proto.CompactTextString(m) }
+func (*Issuance_Body) ProtoMessage()               {}
+func (*Issuance_Body) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14, 0} }
+
+func (m *Issuance_Body) GetAnchorId() *Hash {
+	if m != nil {
+		return m.AnchorId
+	}
+	return nil
+}
+
+func (m *Issuance_Body) GetValue() *AssetAmount {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+func (m *Issuance_Body) GetData() *Hash {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *Issuance_Body) GetExtHash() *Hash {
+	if m != nil {
+		return m.ExtHash
+	}
+	return nil
+}
+
+type Issuance_Witness struct {
+	Destination     *ValueDestination `protobuf:"bytes,1,opt,name=destination" json:"destination,omitempty"`
+	AssetDefinition *AssetDefinition  `protobuf:"bytes,2,opt,name=asset_definition,json=assetDefinition" json:"asset_definition,omitempty"`
+	Arguments       [][]byte          `protobuf:"bytes,3,rep,name=arguments,proto3" json:"arguments,omitempty"`
+	AnchoredId      *Hash             `protobuf:"bytes,4,opt,name=anchored_id,json=anchoredId" json:"anchored_id,omitempty"`
+}
+
+func (m *Issuance_Witness) Reset()                    { *m = Issuance_Witness{} }
+func (m *Issuance_Witness) String() string            { return proto.CompactTextString(m) }
+func (*Issuance_Witness) ProtoMessage()               {}
+func (*Issuance_Witness) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14, 1} }
+
+func (m *Issuance_Witness) GetDestination() *ValueDestination {
+	if m != nil {
+		return m.Destination
+	}
+	return nil
+}
+
+func (m *Issuance_Witness) GetAssetDefinition() *AssetDefinition {
+	if m != nil {
+		return m.AssetDefinition
+	}
+	return nil
+}
+
+func (m *Issuance_Witness) GetArguments() [][]byte {
+	if m != nil {
+		return m.Arguments
+	}
+	return nil
+}
+
+func (m *Issuance_Witness) GetAnchoredId() *Hash {
+	if m != nil {
+		return m.AnchoredId
+	}
+	return nil
+}
+
+type Spend struct {
+	Body    *Spend_Body    `protobuf:"bytes,1,opt,name=body" json:"body,omitempty"`
+	Witness *Spend_Witness `protobuf:"bytes,2,opt,name=witness" json:"witness,omitempty"`
+	Ordinal uint64         `protobuf:"varint,3,opt,name=ordinal" json:"ordinal,omitempty"`
+}
+
+func (m *Spend) Reset()                    { *m = Spend{} }
+func (m *Spend) String() string            { return proto.CompactTextString(m) }
+func (*Spend) ProtoMessage()               {}
+func (*Spend) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
+
+func (m *Spend) GetBody() *Spend_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+func (m *Spend) GetWitness() *Spend_Witness {
+	if m != nil {
+		return m.Witness
+	}
+	return nil
+}
+
+func (m *Spend) GetOrdinal() uint64 {
+	if m != nil {
+		return m.Ordinal
+	}
+	return 0
+}
+
+type Spend_Body struct {
+	SpentOutputId *Hash `protobuf:"bytes,1,opt,name=spent_output_id,json=spentOutputId" json:"spent_output_id,omitempty"`
+	Data          *Hash `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
+	ExtHash       *Hash `protobuf:"bytes,3,opt,name=ext_hash,json=extHash" json:"ext_hash,omitempty"`
+}
+
+func (m *Spend_Body) Reset()                    { *m = Spend_Body{} }
+func (m *Spend_Body) String() string            { return proto.CompactTextString(m) }
+func (*Spend_Body) ProtoMessage()               {}
+func (*Spend_Body) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15, 0} }
+
+func (m *Spend_Body) GetSpentOutputId() *Hash {
+	if m != nil {
+		return m.SpentOutputId
+	}
+	return nil
+}
+
+func (m *Spend_Body) GetData() *Hash {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *Spend_Body) GetExtHash() *Hash {
+	if m != nil {
+		return m.ExtHash
+	}
+	return nil
+}
+
+type Spend_Witness struct {
+	Destination *ValueDestination `protobuf:"bytes,1,opt,name=destination" json:"destination,omitempty"`
+	Arguments   [][]byte          `protobuf:"bytes,2,rep,name=arguments,proto3" json:"arguments,omitempty"`
+	AnchoredId  *Hash             `protobuf:"bytes,3,opt,name=anchored_id,json=anchoredId" json:"anchored_id,omitempty"`
+}
+
+func (m *Spend_Witness) Reset()                    { *m = Spend_Witness{} }
+func (m *Spend_Witness) String() string            { return proto.CompactTextString(m) }
+func (*Spend_Witness) ProtoMessage()               {}
+func (*Spend_Witness) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15, 1} }
+
+func (m *Spend_Witness) GetDestination() *ValueDestination {
+	if m != nil {
+		return m.Destination
+	}
+	return nil
+}
+
+func (m *Spend_Witness) GetArguments() [][]byte {
+	if m != nil {
+		return m.Arguments
+	}
+	return nil
+}
+
+func (m *Spend_Witness) GetAnchoredId() *Hash {
+	if m != nil {
+		return m.AnchoredId
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Hash)(nil), "bc.Hash")
+	proto.RegisterType((*Program)(nil), "bc.Program")
 	proto.RegisterType((*AssetID)(nil), "bc.AssetID")
+	proto.RegisterType((*AssetAmount)(nil), "bc.AssetAmount")
+	proto.RegisterType((*AssetDefinition)(nil), "bc.AssetDefinition")
+	proto.RegisterType((*ValueSource)(nil), "bc.ValueSource")
+	proto.RegisterType((*ValueDestination)(nil), "bc.ValueDestination")
+	proto.RegisterType((*BlockHeaderEntry)(nil), "bc.BlockHeaderEntry")
+	proto.RegisterType((*BlockHeaderEntry_Body)(nil), "bc.BlockHeaderEntry.Body")
+	proto.RegisterType((*BlockHeaderEntry_Witness)(nil), "bc.BlockHeaderEntry.Witness")
+	proto.RegisterType((*TxHeader)(nil), "bc.TxHeader")
+	proto.RegisterType((*TxHeader_Body)(nil), "bc.TxHeader.Body")
+	proto.RegisterType((*Mux)(nil), "bc.Mux")
+	proto.RegisterType((*Mux_Body)(nil), "bc.Mux.Body")
+	proto.RegisterType((*Mux_Witness)(nil), "bc.Mux.Witness")
+	proto.RegisterType((*Nonce)(nil), "bc.Nonce")
+	proto.RegisterType((*Nonce_Body)(nil), "bc.Nonce.Body")
+	proto.RegisterType((*Nonce_Witness)(nil), "bc.Nonce.Witness")
+	proto.RegisterType((*Output)(nil), "bc.Output")
+	proto.RegisterType((*Output_Body)(nil), "bc.Output.Body")
+	proto.RegisterType((*Retirement)(nil), "bc.Retirement")
+	proto.RegisterType((*Retirement_Body)(nil), "bc.Retirement.Body")
+	proto.RegisterType((*TimeRange)(nil), "bc.TimeRange")
+	proto.RegisterType((*TimeRange_Body)(nil), "bc.TimeRange.Body")
+	proto.RegisterType((*Issuance)(nil), "bc.Issuance")
+	proto.RegisterType((*Issuance_Body)(nil), "bc.Issuance.Body")
+	proto.RegisterType((*Issuance_Witness)(nil), "bc.Issuance.Witness")
+	proto.RegisterType((*Spend)(nil), "bc.Spend")
+	proto.RegisterType((*Spend_Body)(nil), "bc.Spend.Body")
+	proto.RegisterType((*Spend_Witness)(nil), "bc.Spend.Witness")
 }
 
 func init() { proto.RegisterFile("bc.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 103 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x48, 0x4a, 0xd6, 0x2b,
-	0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x4a, 0x4a, 0x56, 0x72, 0xe3, 0x62, 0xf1, 0x48, 0x2c, 0xce,
-	0x10, 0xe2, 0xe3, 0x62, 0x2a, 0x33, 0x90, 0x60, 0x54, 0x60, 0xd4, 0x60, 0x0b, 0x62, 0x2a, 0x33,
-	0x00, 0xf3, 0x0d, 0x25, 0x98, 0xa0, 0x7c, 0x43, 0x30, 0xdf, 0x48, 0x82, 0x19, 0xca, 0x37, 0x02,
-	0xf3, 0x8d, 0x25, 0x58, 0xa0, 0x7c, 0x63, 0x25, 0x4f, 0x2e, 0x76, 0xc7, 0xe2, 0xe2, 0xd4, 0x12,
-	0x4f, 0x17, 0x4a, 0x8d, 0x4a, 0x62, 0x03, 0xbb, 0xce, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0xc1,
-	0x8b, 0x2f, 0x42, 0xa9, 0x00, 0x00, 0x00,
+	// 1120 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x57, 0x4f, 0x6f, 0x1b, 0x45,
+	0x14, 0xd7, 0xfe, 0x89, 0xd7, 0x7e, 0x4e, 0x63, 0x67, 0x1a, 0x55, 0xc6, 0x0a, 0x28, 0x6c, 0x95,
+	0xa6, 0x11, 0x10, 0xa5, 0x49, 0x88, 0x38, 0x20, 0xa4, 0x96, 0x80, 0xea, 0x43, 0x00, 0x6d, 0xa3,
+	0x72, 0xb4, 0xc6, 0xbb, 0xd3, 0x78, 0x55, 0xef, 0x8e, 0xd9, 0x99, 0x35, 0x8e, 0x10, 0x52, 0xcf,
+	0x7c, 0x01, 0x0e, 0x5c, 0x38, 0x72, 0xe3, 0xc2, 0x37, 0xe0, 0x86, 0x10, 0x1f, 0x82, 0x8f, 0x00,
+	0x57, 0x0e, 0x68, 0x66, 0x67, 0xbc, 0x7f, 0x62, 0x3b, 0xae, 0xda, 0xde, 0xfc, 0xf6, 0xf7, 0xf6,
+	0xcd, 0x7b, 0xbf, 0xf7, 0x7b, 0x6f, 0xc7, 0x50, 0x1f, 0xf8, 0x07, 0xe3, 0x84, 0x72, 0x8a, 0xcc,
+	0x81, 0xef, 0x7e, 0x0e, 0xf6, 0x63, 0xcc, 0x86, 0x68, 0x03, 0xcc, 0xc9, 0x61, 0xc7, 0xd8, 0x31,
+	0xee, 0xd7, 0x3c, 0x73, 0x72, 0x28, 0xed, 0x07, 0x1d, 0x53, 0xd9, 0x0f, 0xa4, 0x7d, 0xd4, 0xb1,
+	0x94, 0x7d, 0x24, 0xed, 0xe3, 0x8e, 0xad, 0xec, 0x63, 0xf7, 0x63, 0x70, 0xbe, 0x4a, 0xe8, 0x65,
+	0x82, 0x23, 0xf4, 0x36, 0xc0, 0x24, 0xea, 0x4f, 0x48, 0xc2, 0x42, 0x1a, 0xcb, 0x90, 0xb6, 0xd7,
+	0x98, 0x44, 0x4f, 0xb3, 0x07, 0x08, 0x81, 0xed, 0xd3, 0x80, 0xc8, 0xd8, 0xeb, 0x9e, 0xfc, 0xed,
+	0xf6, 0xc0, 0x79, 0xc8, 0x18, 0xe1, 0xbd, 0xb3, 0x57, 0x4e, 0xe4, 0x1c, 0x9a, 0x32, 0xd4, 0xc3,
+	0x88, 0xa6, 0x31, 0x47, 0xf7, 0xa0, 0x8e, 0x85, 0xd9, 0x0f, 0x03, 0x19, 0xb4, 0x79, 0xd4, 0x3c,
+	0x18, 0xf8, 0x07, 0xea, 0x34, 0xcf, 0x91, 0x60, 0x2f, 0x40, 0x77, 0xa0, 0x86, 0xe5, 0x1b, 0xf2,
+	0x28, 0xdb, 0x53, 0x96, 0xfb, 0x93, 0x01, 0x2d, 0xe9, 0x7c, 0x46, 0x9e, 0x85, 0x71, 0xc8, 0x45,
+	0x05, 0x47, 0xd0, 0x96, 0x3f, 0xf1, 0xa8, 0x3f, 0x18, 0x51, 0xff, 0x79, 0x1e, 0xbb, 0x2e, 0x62,
+	0x0b, 0x3e, 0xbd, 0x0d, 0xe5, 0xf1, 0x48, 0x38, 0xf4, 0x02, 0x74, 0x0a, 0xed, 0x90, 0xb1, 0x14,
+	0xc7, 0x3e, 0xe9, 0x8f, 0x33, 0xa2, 0xe4, 0x49, 0x2a, 0x1f, 0xc5, 0x9d, 0xd7, 0xd2, 0x4e, 0x9a,
+	0xcc, 0x6d, 0xb0, 0x03, 0xcc, 0xb1, 0x2c, 0xb8, 0x18, 0x5f, 0x3e, 0x75, 0x47, 0xd0, 0x7c, 0x8a,
+	0x47, 0x29, 0x79, 0x42, 0xd3, 0xc4, 0x27, 0xa8, 0x0b, 0x56, 0x42, 0x9e, 0x5d, 0xcb, 0x45, 0x3c,
+	0x44, 0xbb, 0xb0, 0x36, 0x11, 0xae, 0xea, 0xd4, 0xd6, 0x8c, 0x85, 0x8c, 0x28, 0x2f, 0x43, 0x51,
+	0x17, 0xea, 0x63, 0xca, 0x64, 0x9d, 0xf2, 0x4c, 0xdb, 0x9b, 0xd9, 0xee, 0x37, 0xd0, 0x96, 0xa7,
+	0x9d, 0x11, 0xc6, 0xc3, 0x18, 0x4b, 0x2e, 0xde, 0xf0, 0x91, 0xff, 0x5a, 0xd0, 0x96, 0x14, 0x3e,
+	0x26, 0x38, 0x20, 0xc9, 0x67, 0x31, 0x4f, 0xae, 0xd0, 0x07, 0x60, 0x0f, 0x68, 0x70, 0xa5, 0x0e,
+	0x7d, 0x4b, 0x84, 0xad, 0xfa, 0x1c, 0x3c, 0xa2, 0xc1, 0x95, 0x27, 0xdd, 0xd0, 0x29, 0x38, 0xdf,
+	0x86, 0x3c, 0x26, 0x8c, 0xa9, 0x44, 0xb6, 0xe7, 0xbe, 0xf1, 0x75, 0xe6, 0xe3, 0x69, 0xe7, 0xee,
+	0x5f, 0x26, 0xd8, 0x22, 0x0c, 0xea, 0x80, 0x53, 0x56, 0xb3, 0x36, 0x85, 0x6a, 0x86, 0x24, 0xbc,
+	0x1c, 0xce, 0x54, 0x93, 0x59, 0xe8, 0x04, 0x36, 0xc7, 0x09, 0x99, 0x84, 0x34, 0x65, 0xb9, 0x44,
+	0xaa, 0x2d, 0x6c, 0x69, 0x17, 0xad, 0x91, 0x77, 0x61, 0x9d, 0x87, 0x11, 0x61, 0x1c, 0x47, 0xe3,
+	0x7e, 0xc4, 0xa4, 0xa8, 0x6d, 0xaf, 0x39, 0x7b, 0x76, 0xce, 0xd0, 0x87, 0xb0, 0xc9, 0x13, 0x1c,
+	0x33, 0xec, 0x0b, 0x7a, 0x58, 0x3f, 0xa1, 0x94, 0x77, 0xd6, 0x2a, 0x81, 0xdb, 0x45, 0x17, 0x8f,
+	0x52, 0x8e, 0xf6, 0xa1, 0x29, 0x85, 0xae, 0x5e, 0xa8, 0x55, 0x5e, 0x80, 0x0c, 0x94, 0xae, 0x27,
+	0x70, 0x27, 0x26, 0x53, 0xde, 0xf7, 0x69, 0xcc, 0x48, 0xcc, 0x52, 0x36, 0x93, 0xab, 0x23, 0x07,
+	0x76, 0x4b, 0xa0, 0x9f, 0x6a, 0x50, 0xcb, 0xf4, 0x2e, 0xd4, 0xc5, 0x4b, 0x43, 0xcc, 0x86, 0x9d,
+	0x7a, 0x25, 0xba, 0x43, 0xa6, 0x5c, 0xfc, 0xe8, 0xee, 0x81, 0xa3, 0x48, 0x46, 0xdb, 0xd0, 0xc0,
+	0xc9, 0x65, 0x1a, 0x91, 0x98, 0xb3, 0x8e, 0xb1, 0x63, 0xdd, 0x5f, 0xf7, 0xf2, 0x07, 0xee, 0x0b,
+	0x13, 0xea, 0x17, 0xd3, 0xac, 0x39, 0x68, 0xb7, 0xd4, 0xed, 0x4d, 0x11, 0x56, 0x63, 0x85, 0x2e,
+	0x77, 0xff, 0x34, 0x6e, 0xec, 0xd6, 0x1e, 0x40, 0x42, 0x58, 0x3a, 0x12, 0xcb, 0x40, 0x68, 0xc1,
+	0x2a, 0xa5, 0xd9, 0xc8, 0xb0, 0x5e, 0xc0, 0x96, 0x0f, 0x1d, 0x7a, 0x07, 0x9a, 0x51, 0x18, 0xf7,
+	0x45, 0x5b, 0xf2, 0x2e, 0x35, 0xa2, 0x30, 0xbe, 0x08, 0x23, 0x72, 0xce, 0x24, 0x8e, 0xa7, 0x33,
+	0x7c, 0x4d, 0xe1, 0x78, 0xaa, 0xf0, 0x22, 0x57, 0xb5, 0x05, 0x5c, 0xb9, 0xbf, 0x99, 0x60, 0x9d,
+	0xa7, 0x53, 0xb4, 0x53, 0xaa, 0x7e, 0x5d, 0x38, 0x9e, 0xa7, 0xd3, 0xa2, 0xbc, 0xf7, 0xab, 0xf2,
+	0x6e, 0x69, 0xa7, 0x6b, 0x8a, 0xfe, 0x5e, 0x51, 0xb4, 0x0f, 0x0e, 0x93, 0x1b, 0x23, 0xe3, 0x5e,
+	0xbd, 0x52, 0xd8, 0x24, 0x9e, 0xc6, 0xd1, 0x2e, 0x38, 0x4b, 0xd6, 0x95, 0xc6, 0x4a, 0x35, 0x59,
+	0x8b, 0xfa, 0x8f, 0xf3, 0xfe, 0x7f, 0x04, 0xeb, 0x41, 0xbe, 0x45, 0x74, 0x1a, 0x5b, 0xb3, 0x34,
+	0x0a, 0x2b, 0xc6, 0x2b, 0x79, 0x96, 0x95, 0x63, 0x56, 0x95, 0xf3, 0xab, 0x09, 0x6b, 0x5f, 0xd0,
+	0xd8, 0x27, 0xc8, 0x2d, 0x11, 0xb7, 0x21, 0x22, 0x4b, 0xa0, 0x48, 0xdd, 0x7b, 0x55, 0xea, 0x36,
+	0x73, 0xb7, 0x6b, 0xe4, 0xbd, 0xd0, 0x02, 0x2b, 0x50, 0x62, 0x2c, 0xa1, 0xe4, 0x7d, 0xb8, 0x25,
+	0x25, 0x90, 0xe0, 0xf8, 0x92, 0x88, 0xf9, 0x37, 0x2b, 0xbc, 0xc8, 0xc1, 0xf6, 0x04, 0xda, 0x0b,
+	0x56, 0x23, 0xd0, 0x5b, 0x71, 0x80, 0xe4, 0xbc, 0xc7, 0xfe, 0x90, 0x26, 0x24, 0x98, 0x77, 0x32,
+	0x68, 0xb0, 0x17, 0xb8, 0xff, 0x18, 0x50, 0xfb, 0x32, 0xe5, 0xe3, 0x94, 0xa3, 0xbb, 0x25, 0xca,
+	0xa4, 0x26, 0x32, 0xa4, 0xc8, 0x59, 0x07, 0x1c, 0x9a, 0x04, 0x61, 0x8c, 0x47, 0x6a, 0xe7, 0x69,
+	0xb3, 0xfb, 0x8b, 0x26, 0x68, 0x0f, 0x6a, 0x99, 0x7c, 0x8a, 0x91, 0x8a, 0xea, 0x52, 0x30, 0x3a,
+	0x81, 0x96, 0x4f, 0x63, 0x9e, 0xd0, 0xd1, 0xb2, 0x6f, 0xe2, 0x86, 0xf2, 0x59, 0xe9, 0x93, 0x58,
+	0x22, 0xd2, 0x5e, 0x34, 0x5d, 0xbf, 0x1b, 0x00, 0x1e, 0xe1, 0x61, 0x42, 0x04, 0x5f, 0x68, 0xaf,
+	0x54, 0xf8, 0x6d, 0xe1, 0x9f, 0xa3, 0xab, 0x15, 0x9f, 0xbc, 0x6c, 0xed, 0xba, 0x0a, 0xf3, 0xc6,
+	0x2a, 0x16, 0xc9, 0xc1, 0xfd, 0xd9, 0x80, 0xc6, 0x85, 0xd6, 0x10, 0xba, 0x57, 0x2a, 0x02, 0xc9,
+	0x3d, 0xa9, 0xc1, 0xe2, 0xa2, 0x7c, 0xae, 0x32, 0xad, 0xac, 0x31, 0xe3, 0x86, 0x35, 0x66, 0x2e,
+	0x5b, 0x63, 0x0b, 0x53, 0xfc, 0xdb, 0x82, 0x7a, 0x4f, 0x5d, 0x69, 0xe6, 0x6d, 0x72, 0x8d, 0x15,
+	0x49, 0x3e, 0xa8, 0x4e, 0xe5, 0x56, 0xc9, 0xb3, 0x3a, 0x98, 0xc5, 0xa6, 0x58, 0xe5, 0xa6, 0xfc,
+	0x98, 0x8f, 0x6c, 0x23, 0x93, 0xfc, 0xbc, 0xab, 0x5a, 0x3d, 0x83, 0x7a, 0xc1, 0xaa, 0x17, 0x96,
+	0x57, 0x17, 0x60, 0xf7, 0x0f, 0x23, 0x1f, 0xe5, 0x53, 0x68, 0x16, 0x36, 0x9c, 0x4a, 0x6f, 0xfe,
+	0x2a, 0x2c, 0x3a, 0xa2, 0x4f, 0xa0, 0x9d, 0x5d, 0x6d, 0x83, 0xd9, 0xd5, 0x54, 0x25, 0x7e, 0x7b,
+	0x96, 0x78, 0x7e, 0x6b, 0xf5, 0x5a, 0xb8, 0x72, 0x8d, 0x2d, 0xad, 0x10, 0xeb, 0x86, 0x15, 0x62,
+	0x2f, 0x59, 0x21, 0xff, 0x99, 0xb0, 0xf6, 0x64, 0x4c, 0xe2, 0x60, 0xde, 0xd2, 0x95, 0xc0, 0xcd,
+	0x4b, 0x37, 0x73, 0x7b, 0x89, 0xde, 0x7e, 0xa7, 0x5a, 0x7b, 0x08, 0x2d, 0x36, 0x26, 0x31, 0xef,
+	0x53, 0xb9, 0xaa, 0xe6, 0x35, 0xf8, 0x96, 0x74, 0xc8, 0x56, 0x59, 0x2f, 0x78, 0x0d, 0x93, 0xd7,
+	0xfd, 0xe1, 0x35, 0xb4, 0x6f, 0xe9, 0x87, 0xac, 0x4a, 0xbf, 0xb5, 0x98, 0xfe, 0x41, 0x4d, 0xfe,
+	0x9b, 0x3b, 0xfe, 0x3f, 0x00, 0x00, 0xff, 0xff, 0x01, 0xab, 0x29, 0x95, 0xd9, 0x0d, 0x00, 0x00,
 }

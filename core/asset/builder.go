@@ -35,13 +35,13 @@ type issueAction struct {
 }
 
 func (a *issueAction) Build(ctx context.Context, builder *txbuilder.TemplateBuilder) error {
-	if a.AssetID == (bc.AssetID{}) {
+	if a.AssetId.IsZero() {
 		return txbuilder.MissingFieldsError("asset_id")
 	}
 
-	asset, err := a.assets.findByID(ctx, a.AssetID)
+	asset, err := a.assets.findByID(ctx, *a.AssetId)
 	if errors.Root(err) == pg.ErrUserInputNotFound {
-		err = errors.WithDetailf(err, "missing asset with ID %q", a.AssetID)
+		err = errors.WithDetailf(err, "missing asset with ID %x", a.AssetId.Bytes())
 	}
 	if err != nil {
 		return err

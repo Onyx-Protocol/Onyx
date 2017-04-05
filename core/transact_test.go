@@ -35,7 +35,7 @@ func TestAccountTransferSpendChange(t *testing.T) {
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
-		AssetID: assetID,
+		AssetId: &assetID,
 		Amount:  100,
 	}
 
@@ -83,14 +83,13 @@ func TestRecordSubmittedTxs(t *testing.T) {
 		height uint64
 		want   uint64
 	}{
-		{hash: [32]byte{0x01}, height: 2, want: 2},
-		{hash: [32]byte{0x02}, height: 3, want: 3},
-		{hash: [32]byte{0x01}, height: 3, want: 2},
+		{hash: bc.NewHash([32]byte{0x01}), height: 2, want: 2},
+		{hash: bc.NewHash([32]byte{0x02}), height: 3, want: 3},
+		{hash: bc.NewHash([32]byte{0x01}), height: 3, want: 2},
 	}
 
 	for i, tc := range testCases {
-		h := bc.NewHash(tc.hash)
-		got, err := recordSubmittedTx(ctx, dbtx, h, tc.height)
+		got, err := recordSubmittedTx(ctx, dbtx, tc.hash, tc.height)
 		if err != nil {
 			t.Fatal(err)
 		}

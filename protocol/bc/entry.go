@@ -5,6 +5,8 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/golang/protobuf/proto"
+
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
@@ -14,6 +16,8 @@ import (
 // blockchain: transaction components such as spends, issuances,
 // outputs, and retirements (among others), plus blockheaders.
 type Entry interface {
+	proto.Message
+
 	// Type produces a short human-readable string uniquely identifying
 	// the type of this entry.
 	Type() string
@@ -21,13 +25,6 @@ type Entry interface {
 	// Body produces the entry's body, which is used as input to
 	// EntryID.
 	body() interface{}
-
-	// Ordinal reports the position of the TxInput or TxOutput within
-	// its transaction, when this entry was created from such an
-	// object. (See mapTx.) Both inputs (spends and issuances) and
-	// outputs (including retirements) are numbered beginning at
-	// zero. Entries not originating in this way report -1.
-	Ordinal() int
 }
 
 var errInvalidValue = errors.New("invalid value")
@@ -54,6 +51,7 @@ func EntryID(e Entry) (hash Hash) {
 
 	bh := sha3pool.Get256()
 	defer sha3pool.Put256(bh)
+
 	err := writeForHash(bh, e.body())
 	if err != nil {
 		panic(err)
@@ -61,11 +59,14 @@ func EntryID(e Entry) (hash Hash) {
 
 	var innerHash [32]byte
 	bh.Read(innerHash[:])
+
 	hasher.Write(innerHash[:])
 
 	hash.ReadFrom(hasher)
 	return hash
 }
+
+var byte32zero [32]byte
 
 // writeForHash serializes the object c to the writer w, from which
 // presumably a hash can be extracted.
@@ -91,6 +92,20 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case string:
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
 		return errors.Wrapf(err, "writing string (len %d) for hash", len(v))
+	case *Hash:
+		if v == nil {
+			_, err := w.Write(byte32zero[:])
+			return errors.Wrap(err, "writing nil *Hash for hash")
+		}
+		_, err := w.Write(v.Bytes())
+		return errors.Wrap(err, "writing *Hash for hash")
+	case *AssetID:
+		if v == nil {
+			_, err := w.Write(byte32zero[:])
+			return errors.Wrap(err, "writing nil *AssetID for hash")
+		}
+		_, err := w.Write(v.Bytes())
+		return errors.Wrap(err, "writing *AssetID for hash")
 	case Hash:
 		_, err := v.WriteTo(w)
 		return errors.Wrap(err, "writing Hash for hash")
@@ -103,6 +118,12 @@ func writeForHash(w io.Writer, c interface{}) error {
 	// correspond to slices and structs in Go. They can't be
 	// handled with type assertions, so we must use reflect.
 	switch v := reflect.ValueOf(c); v.Kind() {
+	case reflect.Ptr:
+		if v.IsNil() {
+			return nil
+		}
+		elem := v.Elem()
+		return writeForHash(w, elem.Interface())
 	case reflect.Slice:
 		l := v.Len()
 		_, err := blockchain.WriteVarint31(w, uint64(l))
@@ -124,11 +145,6 @@ func writeForHash(w io.Writer, c interface{}) error {
 	case reflect.Struct:
 		typ := v.Type()
 		for i := 0; i < typ.NumField(); i++ {
-			sf := typ.Field(i)
-			if sf.Tag.Get("entry") == "-" {
-				// exclude this field from hashing
-				continue
-			}
 			c := v.Field(i)
 			if !c.CanInterface() {
 				return errInvalidValue

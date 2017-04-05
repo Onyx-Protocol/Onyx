@@ -152,7 +152,7 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 		maxTimeMS: tpl.Transaction.MaxTime,
 	})
 	if sp, ok := tpl.Transaction.TxEntries.TxInputs[index].(*bc.Spend); ok {
-		constraints = append(constraints, outputIDConstraint(sp.Body.SpentOutputID))
+		constraints = append(constraints, outputIDConstraint(*sp.Body.SpentOutputId))
 	}
 
 	// Commitment to the tx-level refdata is conditional on it being

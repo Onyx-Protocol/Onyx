@@ -16,6 +16,7 @@ import (
 )
 
 // Hash represents a 256-bit hash.
+
 var EmptyStringHash = NewHash(sha3.Sum256(nil))
 
 func NewHash(b32 [32]byte) (h Hash) {
@@ -32,6 +33,13 @@ func (h Hash) Byte32() (b32 [32]byte) {
 	binary.BigEndian.PutUint64(b32[16:24], h.V2)
 	binary.BigEndian.PutUint64(b32[24:32], h.V3)
 	return b32
+}
+
+// HexString is a reader-friendlier alternative to the
+// protoc-generated String method.
+func (h Hash) HexString() string {
+	b, _ := h.MarshalText()
+	return string(b)
 }
 
 // MarshalText satisfies the TextMarshaler interface.

@@ -129,7 +129,7 @@ func TestGenerateBlock(t *testing.T) {
 	c, b1 := newTestChain(t, now)
 
 	initialBlockHash := b1.Hash()
-	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1, bc.EmptyStringHash)
+	assetID := bc.ComputeAssetID(nil, &initialBlockHash, 1, &bc.EmptyStringHash)
 
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
@@ -267,8 +267,10 @@ func mustDecodeHex(s string) []byte {
 	return data
 }
 
-func mustDecodeHash(s string) bc.Hash {
-	var b32 [32]byte
-	copy(b32[:], mustDecodeHex(s))
-	return bc.NewHash(b32)
+func mustDecodeHash(s string) (h bc.Hash) {
+	err := h.UnmarshalText([]byte(s))
+	if err != nil {
+		panic(err)
+	}
+	return h
 }

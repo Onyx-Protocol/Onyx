@@ -41,7 +41,7 @@ func TestBuildFinal(t *testing.T) {
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
-		AssetID: assetID,
+		AssetId: &assetID,
 		Amount:  100,
 	}
 
@@ -149,7 +149,7 @@ func TestAccountTransfer(t *testing.T) {
 
 	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
-		AssetID: assetID,
+		AssetId: &assetID,
 		Amount:  100,
 	}
 
@@ -232,7 +232,7 @@ func TestTransfer(t *testing.T) {
 
 	// Preface: issue some asset for account1ID to transfer to account2ID
 	issueAssetAmount := bc.AssetAmount{
-		AssetID: assetID,
+		AssetId: &assetID,
 		Amount:  100,
 	}
 	txTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{

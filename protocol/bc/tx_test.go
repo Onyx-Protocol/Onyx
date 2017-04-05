@@ -56,7 +56,8 @@ func BenchmarkHashNonemptyTx(b *testing.B) {
 }
 
 func sampleTx() *TxData {
-	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1, EmptyStringHash)
+	initialBlockHash := mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d")
+	assetID := ComputeAssetID([]byte{1}, &initialBlockHash, 1, &EmptyStringHash)
 	return &TxData{
 		Version: 1,
 		Inputs: []*TxInput{

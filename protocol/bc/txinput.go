@@ -29,8 +29,9 @@ var errBadAssetID = errors.New("asset ID does not match other issuance parameter
 
 func (t *TxInput) AssetAmount() AssetAmount {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
+		assetID := ii.AssetID()
 		return AssetAmount{
-			AssetID: ii.AssetID(),
+			AssetId: &assetID,
 			Amount:  ii.Amount,
 		}
 	}
@@ -43,7 +44,7 @@ func (t *TxInput) AssetID() AssetID {
 		return ii.AssetID()
 	}
 	si := t.TypedInput.(*SpendInput)
-	return si.AssetID
+	return *si.AssetId
 }
 
 func (t *TxInput) Amount() uint64 {

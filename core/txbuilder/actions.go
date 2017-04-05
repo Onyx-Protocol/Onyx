@@ -36,7 +36,7 @@ func (a *controlReceiverAction) Build(ctx context.Context, b *TemplateBuilder) e
 			missing = append(missing, "receiver.expires_at")
 		}
 	}
-	if a.AssetID == (bc.AssetID{}) {
+	if a.AssetId.IsZero() {
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {
@@ -44,7 +44,7 @@ func (a *controlReceiverAction) Build(ctx context.Context, b *TemplateBuilder) e
 	}
 
 	b.RestrictMaxTime(a.Receiver.ExpiresAt)
-	out := bc.NewTxOutput(a.AssetID, a.Amount, a.Receiver.ControlProgram, a.ReferenceData)
+	out := bc.NewTxOutput(*a.AssetId, a.Amount, a.Receiver.ControlProgram, a.ReferenceData)
 	return b.AddOutput(out)
 }
 
@@ -65,14 +65,14 @@ func (a *controlProgramAction) Build(ctx context.Context, b *TemplateBuilder) er
 	if len(a.Program) == 0 {
 		missing = append(missing, "control_program")
 	}
-	if a.AssetID == (bc.AssetID{}) {
+	if a.AssetId.IsZero() {
 		missing = append(missing, "asset_id")
 	}
 	if len(missing) > 0 {
 		return MissingFieldsError(missing...)
 	}
 
-	out := bc.NewTxOutput(a.AssetID, a.Amount, a.Program, a.ReferenceData)
+	out := bc.NewTxOutput(*a.AssetId, a.Amount, a.Program, a.ReferenceData)
 	return b.AddOutput(out)
 }
 
@@ -106,7 +106,7 @@ type retireAction struct {
 
 func (a *retireAction) Build(ctx context.Context, b *TemplateBuilder) error {
 	var missing []string
-	if a.AssetID == (bc.AssetID{}) {
+	if a.AssetId.IsZero() {
 		missing = append(missing, "asset_id")
 	}
 	if a.Amount == 0 {
@@ -116,6 +116,6 @@ func (a *retireAction) Build(ctx context.Context, b *TemplateBuilder) error {
 		return MissingFieldsError(missing...)
 	}
 
-	out := bc.NewTxOutput(a.AssetID, a.Amount, retirementProgram, a.ReferenceData)
+	out := bc.NewTxOutput(*a.AssetId, a.Amount, retirementProgram, a.ReferenceData)
 	return b.AddOutput(out)
 }
