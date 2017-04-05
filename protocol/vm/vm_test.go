@@ -244,29 +244,22 @@ func TestVerifyTxInput(t *testing.T) {
 }
 
 func TestVerifyBlockHeader(t *testing.T) {
-	block := bc.MapBlock(&bc.Block{
-		BlockHeader: bc.BlockHeader{
-			BlockWitness: bc.BlockWitness{
-				Witness: [][]byte{{2}, {3}},
-			},
-		},
-	})
 	consensusProg := []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}
-
-	gotErr := Verify(validation.NewBlockVMContext(block, consensusProg, block.Witness.Arguments))
+	context := &Context{
+		VMVersion: 1,
+		Code:      consensusProg,
+		Arguments: [][]byte{{2}, {3}},
+	}
+	gotErr := Verify(context)
 	if gotErr != nil {
 		t.Errorf("unexpected error: %v", gotErr)
 	}
 
-	block = bc.MapBlock(&bc.Block{
-		BlockHeader: bc.BlockHeader{
-			BlockWitness: bc.BlockWitness{
-				Witness: [][]byte{make([]byte, 50000)},
-			},
-		},
-	})
-
-	gotErr = Verify(validation.NewBlockVMContext(block, consensusProg, block.Witness.Arguments))
+	context = &Context{
+		VMVersion: 1,
+		Arguments: [][]byte{make([]byte, 50000)},
+	}
+	gotErr = Verify(context)
 	if errors.Root(gotErr) != ErrRunLimitExceeded {
 		t.Error("expected block to exceed run limit")
 	}
@@ -490,12 +483,15 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 				ok = false
 			}
 		}()
-		block := bc.MapBlock(&bc.Block{BlockHeader: bc.BlockHeader{
-			BlockWitness: bc.BlockWitness{
-				Witness: witnesses,
-			},
-		}})
-		Verify(validation.NewBlockVMContext(block, program, witnesses))
+		context := &Context{
+			VMVersion:            1,
+			Code:                 program,
+			Arguments:            witnesses,
+			BlockHash:            new([]byte),
+			BlockTimeMS:          new(uint64),
+			NextConsensusProgram: &[]byte{},
+		}
+		Verify(context)
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {

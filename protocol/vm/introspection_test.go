@@ -14,13 +14,10 @@ import (
 )
 
 func TestNextProgram(t *testing.T) {
-	block := bc.MapBlock(&bc.Block{
-		BlockHeader: bc.BlockHeader{
-			BlockCommitment: bc.BlockCommitment{
-				ConsensusProgram: []byte{0x1, 0x2, 0x3},
-			},
-		},
-	})
+	context := &Context{
+		NextConsensusProgram: &[]byte{1, 2, 3},
+	}
+
 	prog, err := Assemble("NEXTPROGRAM 0x010203 EQUAL")
 	if err != nil {
 		t.Fatal(err)
@@ -28,7 +25,7 @@ func TestNextProgram(t *testing.T) {
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  validation.NewBlockVMContext(block, prog, nil),
+		Context:  context,
 	}
 	_, err = vm.Run()
 	if err != nil {
@@ -42,7 +39,7 @@ func TestNextProgram(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  validation.NewBlockVMContext(block, prog, nil),
+		Context:  context,
 	}
 	_, err = vm.Run()
 	if err == nil && vm.FalseResult() {
@@ -59,11 +56,11 @@ func TestNextProgram(t *testing.T) {
 }
 
 func TestBlockTime(t *testing.T) {
-	block := bc.MapBlock(&bc.Block{
-		BlockHeader: bc.BlockHeader{
-			TimestampMS: 3263827,
-		},
-	})
+	var blockTimeMS uint64 = 3263826
+	context := &Context{
+		BlockTimeMS: &blockTimeMS,
+	}
+
 	prog, err := Assemble("BLOCKTIME 3263827 NUMEQUAL")
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +68,7 @@ func TestBlockTime(t *testing.T) {
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  validation.NewBlockVMContext(block, prog, nil),
+		Context:  context,
 	}
 	_, err = vm.Run()
 	if err != nil {
@@ -85,7 +82,7 @@ func TestBlockTime(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  validation.NewBlockVMContext(block, prog, nil),
+		Context:  context,
 	}
 	_, err = vm.Run()
 	if err == nil && vm.FalseResult() {
