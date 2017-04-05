@@ -1,7 +1,12 @@
 const shared = require('../shared')
 
 const uuid = require('uuid')
-const MAX_BLOCK_HEIGHT = (2 * 63) - 1
+
+/**
+ * Hardcoding value of (2 ** 63) - 1 since JavaScript rounds this value up,
+ * which causes issues when attempting to query TransactionFeed.
+ */
+const MAX_BLOCK_HEIGHT = '9223372036854775807'
 
 /**
  * @class
