@@ -10,7 +10,7 @@ import (
 
 // AssetID is the Hash256 of the issuance script for the asset and the
 // initial block of the chain where it appears.
-type AssetID byte32
+type AssetID [32]byte
 
 func (a AssetID) String() string                { return byte32(a).String() }
 func (a AssetID) MarshalText() ([]byte, error)  { return byte32(a).MarshalText() }
