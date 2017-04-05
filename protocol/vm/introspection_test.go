@@ -14,14 +14,14 @@ import (
 )
 
 func TestNextProgram(t *testing.T) {
-	prog, err := Assemble("NEXTPROGRAM 0x010203 EQUAL")
-	if err != nil {
-		t.Fatal(err)
-	}
 	context := &Context{
 		NextConsensusProgram: &[]byte{1, 2, 3},
 	}
 
+	prog, err := Assemble("NEXTPROGRAM 0x010203 EQUAL")
+	if err != nil {
+		t.Fatal(err)
+	}
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
