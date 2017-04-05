@@ -33,7 +33,6 @@ You must also perform the following steps:
    - Create an administrator cardset and an operator cardset
 
 - Thales configuration involves many policy choices related to SEE Activation. To check which SEE features have been enabled, on the client host:
-   - `cd /opt/nfast/femcerts`
    - `fet` 
    - If `SEE Activation (Restricted)` is configured, Thales may need to assist with additional certifcations or licenses prior to proceeding. Refer to the Thales documentation or contact your Thales representative for details.
     
@@ -66,6 +65,7 @@ You must also perform the following steps:
 
 -  On the client host, check that the SEE world is running on each module using stattree.
    - `stattree PerModule 1 ModuleEnvStats`
+   - The `MemAllocUser` value in the output should be nonzero
 
 -  On the client host, use the `xprvseetool` binary from Chain to check that the client can access the SEE world on each module (update the module number in the command for each host).
    - `xprvseetool -m 1 seeversion`
