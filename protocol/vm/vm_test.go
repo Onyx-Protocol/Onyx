@@ -244,9 +244,11 @@ func TestVerifyTxInput(t *testing.T) {
 }
 
 func TestVerifyBlockHeader(t *testing.T) {
+	consensusProg := []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}
 	context := &Context{
 		VMVersion: 1,
-		Arguments: [][]byte{{0x2}, {0x3}},
+		Code:      consensusProg,
+		Arguments: [][]byte{{2}, {3}},
 	}
 	gotErr := Verify(context)
 	if gotErr != nil {
