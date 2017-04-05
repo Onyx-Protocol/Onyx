@@ -84,7 +84,7 @@ You must also perform the following steps:
    Enterprise Edition will permit the creation, storage, and use of
    arbitrarily many keys.
 
--  On the client host, run the `signerd` binary from Chain, updating the module number in the command for each host.  
+-  On the client host, run the `signerd` binary from Chain (update the module number in the command for each host).  
    - `MODULE=1 KEY_IDENT=prv0 XPRV_KEY_IDENT=xprv0 signerd`
    
    This launches an HTTP+JSON server listening for `/sign-transaction`
