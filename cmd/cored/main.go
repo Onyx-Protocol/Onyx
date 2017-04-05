@@ -131,6 +131,7 @@ func main() {
 	fmt.Printf("build-date: %v\n", config.BuildDate)
 	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
 	fmt.Printf("loopback-auth: %t\n", config.BuildConfig.LoopbackAuth)
+	fmt.Printf("protected-db: %t\n", config.BuildConfig.ProtectedDB)
 
 	if *v {
 		return

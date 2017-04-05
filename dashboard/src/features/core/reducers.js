@@ -15,7 +15,7 @@ const coreConfigReducer = (key, state, defaultState, action) => {
 
 const buildConfigReducer = (key, state, defaultState, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    return action.param.buildConfig[key] || defaultState
+	return action.param.buildConfig[key] || defaultState
   }
 
   return state || defaultState
@@ -44,6 +44,8 @@ export const mockhsm = (state, action) =>
   buildConfigReducer('isMockhsm', state, false, action)
 export const loopback = (state, action) =>
   buildConfigReducer('isLoopbackAuth', state, false, action)
+export const protectedDb = (state, action) =>
+  buildConfigReducer('isProtectedDb', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
@@ -222,6 +224,7 @@ export default combineReducers({
   networkRpcVersion,
   onTestnet,
   production,
+  protectedDb,
   replicationLag,
   replicationLagClass,
   requireClientToken,
