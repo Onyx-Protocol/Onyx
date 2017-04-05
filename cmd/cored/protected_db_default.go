@@ -4,7 +4,6 @@
 package main
 
 import (
-	"chain/core/config"
 	"chain/core/coreunsafe"
 	"chain/database/pg"
 	"chain/env"
@@ -17,10 +16,6 @@ import (
 var (
 	reset = env.String("RESET", "")
 )
-
-func init() {
-	config.BuildConfig.ProtectedDB = false
-}
 
 func resetInDevIfRequested(db pg.DB) {
 	if *reset != "" {

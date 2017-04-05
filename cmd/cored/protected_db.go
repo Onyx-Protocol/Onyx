@@ -11,4 +11,4 @@ func init() {
 	config.BuildConfig.ProtectedDB = true
 }
 
-func resetInDevIfRequested(_ pg.DB) {}
+func resetInDevIfRequested(pg.DB) {}
