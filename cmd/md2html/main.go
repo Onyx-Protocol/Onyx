@@ -151,7 +151,11 @@ func convert(args []string) {
 	dest := args[0]
 
 	fmt.Printf("Converting markdown to: %s\n", dest)
-	convertErr := filepath.Walk(".", func(path string, f os.FileInfo, err error) error {
+	convertErr := filepath.Walk(".", func(p string, f os.FileInfo, err error) error {
+		if strings.HasPrefix(path.Base(p), ".") {
+			return nil
+		}
+
 		if err != nil {
 			return err
 		}
@@ -161,7 +165,7 @@ func convert(args []string) {
 		}
 
 		var (
-			destFile = filepath.Join(dest, path)
+			destFile = filepath.Join(dest, p)
 			output   []byte
 		)
 
@@ -173,7 +177,7 @@ func convert(args []string) {
 			destFile = strings.TrimSuffix(destFile, ".html")
 		}
 
-		output, err = renderFile(path)
+		output, err = renderFile(p)
 		if err != nil {
 			return err
 		}
@@ -193,11 +197,12 @@ func convert(args []string) {
 			return err
 		}
 
-		fmt.Printf("converted: %s\n", path)
+		fmt.Printf("converted: %s\n", p)
 		return nil
 	})
 
 	if convertErr != nil {
+		fmt.Println(convertErr)
 		os.Exit(1)
 	}
 }
