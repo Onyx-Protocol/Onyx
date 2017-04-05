@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"chain/core/coreunsafe"
 	"chain/core/mockhsm"
 	"chain/core/rpc"
 	"chain/database/sql"
