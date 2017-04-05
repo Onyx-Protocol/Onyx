@@ -244,29 +244,28 @@ func TestVerifyTxInput(t *testing.T) {
 }
 
 func TestVerifyBlockHeader(t *testing.T) {
-	block := bc.MapBlock(&bc.Block{
-		BlockHeader: bc.BlockHeader{
-			BlockWitness: bc.BlockWitness{
-				Witness: [][]byte{{2}, {3}},
-			},
-		},
-	})
-	consensusProg := []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}
-
-	gotErr := Verify(newBlockVMContext(block, consensusProg, block.Witness.Arguments))
+	context := &Context{
+		VMVersion:            1,
+		Code:                 []byte{0x93, 0x55, 0x9c},
+		Arguments:            [][]byte{{0x2}, {0x3}},
+		BlockHash:            &[]byte{0xf0, 0x85, 0x4f, 0x88, 0xb4, 0x89, 0x0, 0x99, 0x2f, 0xec, 0x40, 0x43, 0xf9, 0x65, 0xfa, 0x2, 0x9d, 0xeb, 0x8a, 0xd6, 0x93, 0xcf, 0x37, 0x11, 0xfe, 0x83, 0x9, 0xb3, 0x90, 0x6a, 0x5a, 0x86},
+		BlockTimeMS:          new(uint64),
+		NextConsensusProgram: &[]byte{},
+	}
+	gotErr := Verify(context)
 	if gotErr != nil {
 		t.Errorf("unexpected error: %v", gotErr)
 	}
 
-	block = bc.MapBlock(&bc.Block{
-		BlockHeader: bc.BlockHeader{
-			BlockWitness: bc.BlockWitness{
-				Witness: [][]byte{make([]byte, 50000)},
-			},
-		},
-	})
-
-	gotErr = Verify(newBlockVMContext(block, consensusProg, block.Witness.Arguments))
+	context = &Context{
+		VMVersion:            1,
+		Code:                 []byte{0x93, 0x55, 0x9c},
+		Arguments:            [][]byte{make([]byte, 50000)},
+		BlockHash:            &[]byte{0xf0, 0x85, 0x4f, 0x88, 0xb4, 0x89, 0x0, 0x99, 0x2f, 0xec, 0x40, 0x43, 0xf9, 0x65, 0xfa, 0x2, 0x9d, 0xeb, 0x8a, 0xd6, 0x93, 0xcf, 0x37, 0x11, 0xfe, 0x83, 0x9, 0xb3, 0x90, 0x6a, 0x5a, 0x86},
+		BlockTimeMS:          new(uint64),
+		NextConsensusProgram: &[]byte{},
+	}
+	gotErr = Verify(context)
 	if errors.Root(gotErr) != ErrRunLimitExceeded {
 		t.Error("expected block to exceed run limit")
 	}
@@ -490,12 +489,15 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 				ok = false
 			}
 		}()
-		block := bc.MapBlock(&bc.Block{BlockHeader: bc.BlockHeader{
-			BlockWitness: bc.BlockWitness{
-				Witness: witnesses,
-			},
-		}})
-		Verify(newBlockVMContext(block, program, witnesses))
+		context := &Context{
+			VMVersion:            1,
+			Code:                 program,
+			Arguments:            witnesses,
+			BlockHash:            new([]byte),
+			BlockTimeMS:          new(uint64),
+			NextConsensusProgram: &[]byte{},
+		}
+		Verify(context)
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -518,18 +520,4 @@ func verifyTx(tx *bc.Tx, index uint32) error {
 		args = inp.Witness.Arguments
 	}
 	return Verify(validation.NewTxVMContext(tx.TxEntries, inp, prog, args))
-}
-
-// TODO(kr): inline this function and avoid constructing BlockEntries objects entirely
-func newBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *Context {
-	blockHash := block.ID[:]
-	return &Context{
-		VMVersion: 1,
-		Code:      prog,
-		Arguments: args,
-
-		BlockHash:            &blockHash,
-		BlockTimeMS:          &block.Body.TimestampMS,
-		NextConsensusProgram: &block.Body.NextConsensusProgram,
-	}
 }

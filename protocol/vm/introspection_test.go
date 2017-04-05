@@ -14,21 +14,23 @@ import (
 )
 
 func TestNextProgram(t *testing.T) {
-	block := bc.MapBlock(&bc.Block{
-		BlockHeader: bc.BlockHeader{
-			BlockCommitment: bc.BlockCommitment{
-				ConsensusProgram: []byte{0x1, 0x2, 0x3},
-			},
-		},
-	})
 	prog, err := Assemble("NEXTPROGRAM 0x010203 EQUAL")
 	if err != nil {
 		t.Fatal(err)
 	}
+	context := &Context{
+		VMVersion:            1,
+		Code:                 []byte{0xcd, 0x3, 0x1, 0x2, 0x3, 0x87},
+		Arguments:            nil,
+		BlockHash:            &[]byte{0x90, 0xf6, 0x1f, 0xd7, 0x35, 0xcd, 0x28, 0x7c, 0x78, 0xf, 0x43, 0xdc, 0xa7, 0xe7, 0xaf, 0x63, 0xad, 0x83, 0xa, 0x63, 0xcf, 0x56, 0x65, 0x7, 0x21, 0xcd, 0xb4, 0x54, 0xa3, 0xee, 0xf9, 0x2f},
+		BlockTimeMS:          new(uint64),
+		NextConsensusProgram: &[]byte{1, 2, 3},
+	}
+
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  newBlockVMContext(block, prog, nil),
+		Context:  context,
 	}
 	_, err = vm.Run()
 	if err != nil {
@@ -42,7 +44,7 @@ func TestNextProgram(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  newBlockVMContext(block, prog, nil),
+		Context:  context,
 	}
 	_, err = vm.Run()
 	if err == nil && vm.FalseResult() {
@@ -59,19 +61,24 @@ func TestNextProgram(t *testing.T) {
 }
 
 func TestBlockTime(t *testing.T) {
-	block := bc.MapBlock(&bc.Block{
-		BlockHeader: bc.BlockHeader{
-			TimestampMS: 3263827,
-		},
-	})
 	prog, err := Assemble("BLOCKTIME 3263827 NUMEQUAL")
 	if err != nil {
 		t.Fatal(err)
 	}
+	var blockTimeMS uint64 = 3263826
+	context := &Context{
+		VMVersion:            1,
+		Code:                 []byte{0xce, 0x3, 0x53, 0xcd, 0x31, 0x9c},
+		Arguments:            nil,
+		BlockHash:            &[]byte{0xc5, 0x5d, 0x64, 0xec, 0x18, 0xec, 0x3e, 0xb6, 0x30, 0xb5, 0x69, 0xd4, 0xb1, 0x23, 0xb9, 0x2c, 0x80, 0x64, 0xce, 0x8d, 0x7d, 0x7c, 0xc0, 0xbf, 0xaf, 0x57, 0x8, 0xb0, 0x62, 0x71, 0xa3, 0xed},
+		BlockTimeMS:          &blockTimeMS,
+		NextConsensusProgram: &[]byte{},
+	}
+
 	vm := &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  newBlockVMContext(block, prog, nil),
+		Context:  context,
 	}
 	_, err = vm.Run()
 	if err != nil {
@@ -85,7 +92,7 @@ func TestBlockTime(t *testing.T) {
 	vm = &VirtualMachine{
 		RunLimit: 50000,
 		Program:  prog,
-		Context:  newBlockVMContext(block, prog, nil),
+		Context:  context,
 	}
 	_, err = vm.Run()
 	if err == nil && vm.FalseResult() {
