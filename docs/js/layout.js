@@ -180,7 +180,9 @@ function loadVersionOptions() {
 		if (currentVersion == version) {
 			attributes = attributes + ' selected'
 		}
-		$('#version-select').append('<option ' + attributes + '>v' + version + '</option>')
+		var latest = version == versions[0] ? ' (latest)' : ''
+
+		$('#version-select').append('<option ' + attributes + '>v' + version + latest + '</option>')
 	})
 
 	if (versions[0] != currentVersion) {
