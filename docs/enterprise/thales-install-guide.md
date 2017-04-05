@@ -51,9 +51,8 @@ You must also perform the following steps:
    the SEE machine. **Important**: this hash is of a _development key_ and
    should not be trusted for production.
    
--  On the client host (RFS server), copy the signed firmware and userdata files to the custom-seemachines directory. 
-   Here, `a` and `b` have been chosen to simplify entering the file names on the HSM front panel. These names can be changed if desired. 
-   This command must be run on each module. 
+-  On the client host (RFS server), copy the signed firmware and userdata files to the custom-seemachines directory. These commands must be run on each module.
+-  Here, `a` and `b` have been chosen to simplify entering the file names on the HSM front panel. These names can be changed if desired.
    - `cp xprvseemodule.sar /opt/nfast/custom-seemachines/a`
    - `cp userdata.sar /opt/nfast/custom-seemachines/b`
 
@@ -68,11 +67,11 @@ You must also perform the following steps:
 -  On the client host, check that the SEE world is running on each module using stattree.
    - `stattree PerModule 1 ModuleEnvStats`
 
--  On the client host, check that the client can access the SEE world on each module, updating the module number in the command for each host.
+-  On the client host, use the `xprvseetool` binary from Chain to check that the client can access the SEE world on each module (update the module number in the command for each host).
    - `xprvseetool -m 1 seeversion`
 
 -  On the client host, use the `xprvseetool` binary from Chain to
-   create a private key in the HSM.
+   create an `xprv` (for transactions) and a `prv` (for blocks) in the HSM.
    - `xprvseetool -i xprv0 genx xprvseemoduledevusk`
    - `xprvseetool -i prv0 gen xprvseemoduledevusk`
 
