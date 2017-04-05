@@ -25,7 +25,7 @@ Features:
 1. Scheme is fully deterministic and allows producing complex hierarchies of keys from a single high-entropy seed.
 2. Derive private keys from extended private keys using “hardened derivation”.
 3. Derive public keys independently from private keys using “non-hardened derivation”.
-4. Hardened and non-hardened public keys and signatures are compatible with [EdDSA](https://tools.ietf.org/html/rfc8032) specification. Private keys are 64-byte raw secret keys, the format used in [NaCl](https://nacl.cr.yp.to/sign.html) function `crypto_sign`.
+4. Hardened and non-hardened public keys and signatures are compatible with [EdDSA](https://tools.ietf.org/html/rfc8032) specification. Signing keys are 64-byte strings, the format used in [NaCl](https://nacl.cr.yp.to/sign.html) function `crypto_sign`.
 5. Variable-length string selectors instead of fixed-length 31-bit integer indices.
 6. Short 64-byte extended public and private keys without special encoding.
 7. No metadata: an extended key carries only an additional 32-byte salt that allows sharing public key without revealing child public keys.
@@ -156,14 +156,14 @@ Limitations:
 
 1. Return first 32 bytes of `xpub` as encoded `pubkey` suitable for ECDH key exchange or EdDSA signatures.
 
-Resulting 32-byte public key can be used to verify EdDSA signature created by a corresponding [EdDSA secret key](#extract-signing-key).
+Resulting 32-byte public key can be used to verify EdDSA signature created by a corresponding [EdDSA signing key](#extract-signing-key).
 
 
 ### Extract signing key
 
 **Input:** `xprv`, an extended private key.
 
-**Output:** `secretkey`, a 64-byte [EdDSA](https://tools.ietf.org/html/rfc8032) secret key.
+**Output:** `sk`, a 64-byte [EdDSA](https://tools.ietf.org/html/rfc8032) signing key.
 
 1. Compute 32-byte hash `ext = Hash("X" || xprv, 32)`.
 2. Extract `privkey` as first 32 bytes of `xprv`.
@@ -173,7 +173,7 @@ Resulting 32-byte public key can be used to verify EdDSA signature created by a 
     3. the second highest bit of the last byte is set.
 4. Return 64-byte signing key `sk = privkey || ext`.
 
-Resulting 64-byte secret key can be used to create EdDSA signature verifiable by a corresponding [EdDSA public key](#extract-public-key).
+Resulting 64-byte signing key can be used to create EdDSA signature verifiable by a corresponding [EdDSA public key](#extract-public-key).
 
 
 ### Encode public key
