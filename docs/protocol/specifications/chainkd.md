@@ -257,7 +257,7 @@ The depth limit is reset at each level where hardened derivation is used.
 
 EdDSA derives a 64-byte signing key from 256 bits of entropy. In ChainKD the extended private key carries the secret scalar as-is, packed with 5 bits of _pepper_ (additional secret entropy) and 32 bytes of _derivation key_. The 64-byte signing key as required by EdDSA consists of a secret scalar (unmodified) and additional 32 bytes of _prefix_ used to generate nonce for the signature.
 
-In ChainKD that prefix is derived non-linearly from the extended private key, having combined entropy of both the secret scalar (250 bits) and 5 bits of _pepper_. Additional bits ensure that the nonce has at least 255 bits of randomness, sacrificing only 1 bit as compared to standard EdDSA. The prefix is not derived in parallel to secret scalar, but from it, making the construction similar to the one in [RFC6979](https://tools.ietf.org/html/rfc6979) where nonce is also computed from a secret scalar and a message. Security reduction from removing one bit on entropy from the nonce is considered negligible.
+In ChainKD that prefix is derived non-linearly from the extended private key, having combined entropy of both the secret scalar (250 bits) and 5 bits of _pepper_. Additional bits ensure that the nonce has at least 255 bits of randomness, sacrificing at most 1 bit as compared to standard EdDSA. The prefix is not derived in parallel to secret scalar, but from it, making the construction similar to the one in [RFC6979](https://tools.ietf.org/html/rfc6979) where nonce is also computed from a secret scalar and a message. Security reduction from removing one bit on entropy from the nonce is considered negligible.
 
 
 
