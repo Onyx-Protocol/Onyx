@@ -7,6 +7,7 @@
   <title>Chain Documentation</title>
   <link rel="stylesheet" href="/docs/{{.VersionPath}}css/style.css">
   <link rel="stylesheet" href="/docs/{{.VersionPath}}css/prettify.css">
+  <script src="https://chain.com/docs/versions.js"></script>
   <script src="/docs/{{.VersionPath}}js/jquery.min.js"></script>
   <script src="/docs/{{.VersionPath}}js/layout.js"></script>
   <script src="/docs/{{.VersionPath}}js/init.js"></script>
@@ -24,6 +25,8 @@
     </div>
 
     <div class="docs-nav">
+      <select id="version-select"></select>
+
       <ul class="accordion">
         <li class="nav-header">Chain Core</li>
         <li>
@@ -98,6 +101,15 @@
   </div>
   <div id="doc-wrapper" tabindex="0">
     <article id="doc-content" class="{{.Filename}}">
+      <div id='version-alert' class='alert'>
+        <p>
+          <strong>Legacy documentation</strong>:
+          You are viewing version <span class='current'>CURRENT</span>;
+          the latest available is <strong class='latest'>LATEST</strong>.
+        </p>
+        <a href='' class='latest-link'>Go to latest →</a>
+      </div>
+
       {{.Body}}
 
       <footer>

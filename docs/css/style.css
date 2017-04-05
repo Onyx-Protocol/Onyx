@@ -228,7 +228,7 @@ a {
 }
 .docs-nav {
     position: absolute;
-    top: 115px;
+    top: 90px;
     bottom: 0;
     right: 0;
     left: calc(100% - 452px);
@@ -1390,4 +1390,31 @@ and (-webkit-min-device-pixel-ratio: 2) {
     content: "•";
     margin-left: 3px;
     margin-right: 3px;
+}
+
+#version-select {
+  background: white;
+  border: 1px solid #ddd;
+  color: #00BFAA;
+  font-size: 15px;
+  padding: 6px 10px;
+  width: 155px;
+  margin-bottom: 30px;
+  background-image: url(../images/down-triangle.png);
+  background-repeat: no-repeat;
+  background-position: center right 10px;
+  background-size: 10px 7px;
+
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+#version-select:focus {
+  outline: none;
+}
+
+#version-alert {
+  display: none;
+  margin-bottom: 30px;
 }
