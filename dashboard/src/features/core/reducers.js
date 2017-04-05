@@ -46,6 +46,8 @@ export const loopback = (state, action) =>
   buildConfigReducer('isLoopbackAuth', state, false, action)
 export const protectedDb = (state, action) =>
   buildConfigReducer('isProtectedDb', state, false, action)
+export const resetAllowed = (state, action) =>
+  buildConfigReducer('isResetAllowed', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
@@ -224,10 +226,10 @@ export default combineReducers({
   networkRpcVersion,
   onTestnet,
   production,
-  protectedDb,
   replicationLag,
   replicationLagClass,
   requireClientToken,
+  resetAllowed,
   signer,
   snapshot,
   syncEstimates,

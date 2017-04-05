@@ -91,6 +91,10 @@ class CoreIndex extends React.Component {
                 <td><code>{this.props.core.protectedDb.toString()}</code></td>
               </tr>
               <tr>
+                <td className={styles.row_label}>Reset allowed:</td>
+                <td><code>{this.props.core.resetAllowed.toString()}</code></td>
+              </tr>
+              <tr>
                 <td colSpan={2}><hr /></td>
               </tr>
               <tr>
@@ -165,12 +169,7 @@ class CoreIndex extends React.Component {
               This core is configured to run in production. Production
               blockchains cannot be reset.
             </p>
-           : this.props.core.protectedDb ?
-            <p>
-              This core is configured with a protected database.
-              Resetting the blockchain is not allowed.
-            </p>
-           :
+           : this.props.core.resetAllowed ?
             <div>
               <p>
                 This will permanently delete all data stored in this core,
@@ -190,7 +189,12 @@ class CoreIndex extends React.Component {
               >
                 Delete all data
               </button>
-            </div>}
+            </div>
+           :
+            <p>
+              This core is not configured with reset capabilities.
+			  The blockchain cannot be reset.
+            </p>}
         </div>
       </div>
     )

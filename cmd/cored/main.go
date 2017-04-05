@@ -24,7 +24,6 @@ import (
 	"chain/core"
 	"chain/core/blocksigner"
 	"chain/core/config"
-	"chain/core/coreunsafe"
 	"chain/core/fileutil"
 	"chain/core/generator"
 	"chain/core/migrate"
@@ -85,6 +84,10 @@ var (
 	loopbackAuth = func(req *http.Request) bool {
 		return false
 	}
+
+	// By default, a core is not able to reset its data.
+	// This feature can be turned on with the unprotected_db build tag.
+	resetIfAllowedAndRequested = func(pg.DB) {}
 )
 
 func init() {
@@ -132,6 +135,7 @@ func main() {
 	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
 	fmt.Printf("loopback-auth: %t\n", config.BuildConfig.LoopbackAuth)
 	fmt.Printf("protected-db: %t\n", config.BuildConfig.ProtectedDB)
+	fmt.Printf("reset-allowed: %t\n", config.BuildConfig.ResetAllowed)
 
 	if *v {
 		return
