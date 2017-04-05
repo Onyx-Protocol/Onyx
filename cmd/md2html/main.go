@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/russross/blackfriday"
 )
@@ -104,12 +105,8 @@ func serve(args []string) {
 			path = strings.Replace(path, version+"/", "", 1)
 		}
 
-		if filepath.Ext(path) != "" {
-			http.ServeFile(w, r, path)
-			return
-		}
-
 		paths := []string{
+			path,
 			path + ".md",
 			path + ".partial.html",
 			strings.TrimSuffix(path, "/") + "/index.html",
@@ -127,7 +124,7 @@ func serve(args []string) {
 				break
 			}
 
-			if err != nil && !os.IsNotExist(err) {
+			if err != nil && !os.IsNotExist(err) && !strings.HasSuffix(err.Error(), "is a directory") {
 				http.Error(w, err.Error(), 500)
 				return
 			}
@@ -138,7 +135,7 @@ func serve(args []string) {
 			return
 		}
 
-		w.Write(b)
+		http.ServeContent(w, r, path, time.Unix(0, 0), bytes.NewReader(b))
 	})
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
@@ -154,7 +151,11 @@ func convert(args []string) {
 	dest := args[0]
 
 	fmt.Printf("Converting markdown to: %s\n", dest)
-	convertErr := filepath.Walk(".", func(path string, f os.FileInfo, err error) error {
+	convertErr := filepath.Walk(".", func(p string, f os.FileInfo, err error) error {
+		if strings.HasPrefix(path.Base(p), ".") {
+			return nil
+		}
+
 		if err != nil {
 			return err
 		}
@@ -164,7 +165,7 @@ func convert(args []string) {
 		}
 
 		var (
-			destFile = filepath.Join(dest, path)
+			destFile = filepath.Join(dest, p)
 			output   []byte
 		)
 
@@ -176,7 +177,7 @@ func convert(args []string) {
 			destFile = strings.TrimSuffix(destFile, ".html")
 		}
 
-		output, err = renderFile(path)
+		output, err = renderFile(p)
 		if err != nil {
 			return err
 		}
@@ -196,11 +197,12 @@ func convert(args []string) {
 			return err
 		}
 
-		fmt.Printf("converted: %s\n", path)
+		fmt.Printf("converted: %s\n", p)
 		return nil
 	})
 
 	if convertErr != nil {
+		fmt.Println(convertErr)
 		os.Exit(1)
 	}
 }
@@ -217,12 +219,21 @@ func renderFile(p string) ([]byte, error) {
 		return nil, err
 	}
 
+	templateExtensions := make(map[string]bool)
+	for _, v := range []string{".md", ".html", ".js", ".css"} {
+		templateExtensions[v] = true
+	}
+
 	if strings.HasSuffix(p, ".md") {
 		content, err = renderMarkdown(p, content)
 	} else if strings.HasSuffix(p, ".partial.html") {
 		content, err = renderLayout(p, content)
-	} else if strings.HasSuffix(p, ".html") {
+	} else if templateExtensions[filepath.Ext(p)] {
 		content, err = renderTemplate(p, []byte{}, content)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	return content, nil
@@ -278,6 +289,12 @@ func renderLayout(p string, content []byte) ([]byte, error) {
 
 	originalPath := p
 	layout := []byte("{{.Body}}")
+
+	// Render any variables
+	content, err = renderTemplate(originalPath, []byte{}, content)
+	if err != nil {
+		return nil, err
+	}
 
 	for {
 		p = path.Dir(p)

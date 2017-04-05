@@ -5,12 +5,12 @@
   <meta name="description" content="">
   <meta name="viewport" content ="width=device-width,initial-scale=1,user-scalable=yes" />
   <title>Chain Documentation</title>
-  <link rel="stylesheet" href="/docs/css/style.css">
-  <link rel="stylesheet" href="/docs/css/prettify.css">
-  <script src="/docs/js/jquery.min.js"></script>
-  <script src="/docs/js/layout.js"></script>
-  <script src="/docs/js/init.js"></script>
-  <script src="/docs/js/codeSelector.js"></script>
+  <link rel="stylesheet" href="/docs/{{.VersionPath}}css/style.css">
+  <link rel="stylesheet" href="/docs/{{.VersionPath}}css/prettify.css">
+  <script src="/docs/{{.VersionPath}}js/jquery.min.js"></script>
+  <script src="/docs/{{.VersionPath}}js/layout.js"></script>
+  <script src="/docs/{{.VersionPath}}js/init.js"></script>
+  <script src="/docs/{{.VersionPath}}js/codeSelector.js"></script>
   <meta name="viewport" content="width=1060">
 </head>
 <body>
@@ -18,7 +18,7 @@
   <div id="side-nav">
     <div class="row">
       <div class="brand">
-        <a class="mainsite" href="https://chain.com" title="Chain"><img src="/docs/images/chain-brand.png"> </a>
+        <a class="mainsite" href="https://chain.com" title="Chain"><img src="/docs/{{.VersionPath}}images/chain-brand.png"> </a>
         <a class="subsite" href="/docs">Docs</a>
       </div>
     </div>
@@ -63,9 +63,9 @@
         <li>
           <a class="toggle" href="javascript:void(0);">Reference</a>
           <ul class="inner">
-            <li><a href="/docs/java/javadoc/index.html" target="_blank" class="skip-next-up">Java SDK</a></li>
-            <li><a href="/docs/node/doc/index.html" target="_blank" class="skip-next-up">Node SDK</a></li>
-            <li><a href="/docs/ruby/doc/index.html" target="_blank" class="skip-next-up">Ruby SDK</a></li>
+            <li><a href="/docs/{{.VersionPath}}java/javadoc/index.html" target="_blank" class="skip-next-up">Java SDK</a></li>
+            <li><a href="/docs/{{.VersionPath}}node/doc/index.html" target="_blank" class="skip-next-up">Node SDK</a></li>
+            <li><a href="/docs/{{.VersionPath}}ruby/doc/index.html" target="_blank" class="skip-next-up">Ruby SDK</a></li>
             <li><a href="/docs/{{.VersionPath}}core/reference/versioning">Versioning</a></li>
             <li><a href="/docs/{{.VersionPath}}core/reference/api-objects">API Objects</a></li>
             <li><a href="/docs/{{.VersionPath}}core/reference/license" class="skip-next-up">License</a></li>
@@ -105,7 +105,7 @@
           <h2 data-backtitle="Back to">Up next</h2>
 
           <a href="" class="next-step"><span>Placeholder</span>
-            <img src="/docs/images/arrow-right.png" class="btn-icon icon-next">
+            <img src="/docs/{{.VersionPath}}images/arrow-right.png" class="btn-icon icon-next">
           </a>
 
         </div>
