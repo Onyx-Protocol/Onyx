@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,13 +14,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
+	"text/template"
+	"time"
 
 	"github.com/russross/blackfriday"
 )
-
-var layoutPlaceholder = []byte("{{Body}}")
-var documentNamePlaceholder = []byte("{{Filename}}")
 
 var extToLang = map[string]string{
 	"java": "Java",
@@ -27,34 +28,85 @@ var extToLang = map[string]string{
 	"js":   "Node",
 }
 
+type command struct {
+	f func([]string)
+}
+
+var commands = map[string]*command{
+	"serve": {serve},
+	"build": {convert},
+}
+
+var version = "x.y"
+
 func main() {
-	var dest = ":8080"
-
-	if len(os.Args) > 2 {
-		log.Fatal("usage: md2html [dest]")
-	}
-	if len(os.Args) == 2 {
-		dest = os.Args[1]
-	}
-
-	if !strings.Contains(dest, ":") {
-		printe(convert(dest))
+	if len(os.Args) < 2 {
+		help(os.Stdout)
 		os.Exit(0)
 	}
 
-	serve(dest)
+	flagVersionPrefix := flag.String("prefix", "", "specify version prefix of docs (e.g. '1.1')")
+	flag.Usage = func() {
+		help(os.Stdout)
+		os.Exit(1)
+	}
+
+	flag.Parse()
+	if *flagVersionPrefix != "" {
+		version = *flagVersionPrefix
+	}
+
+	if len(flag.Args()) < 1 {
+		fmt.Fprintln(os.Stderr, "You must specify a command to run")
+		help(os.Stderr)
+		os.Exit(1)
+	}
+
+	cmd := commands[flag.Args()[0]]
+	if cmd == nil {
+		fmt.Fprintln(os.Stderr, "unknown command:", flag.Args()[0])
+		help(os.Stderr)
+		os.Exit(1)
+	}
+
+	cmd.f(flag.Args()[1:])
 }
 
-func serve(addr string) {
+func help(w io.Writer) {
+	fmt.Fprintln(w, "usage: md2html [-prefix PREFIX] [command] [command-arguments]")
+	fmt.Fprintln(w, "\nFlags:")
+	fmt.Fprintln(w, "\t-prefix   specify version prefix of docs (e.g. '1.1')")
+	fmt.Fprint(w, "\nThe commands are:\n\n")
+	for name := range commands {
+		fmt.Fprintln(w, "\t", name)
+	}
+	fmt.Fprintln(w)
+}
+
+func serve(args []string) {
+	addr := "8080"
+	if len(args) >= 1 {
+		if _, err := strconv.Atoi(args[0]); err != nil {
+			fmt.Fprint(os.Stderr, "You must specify a numeric port for serving content\n\n")
+			fmt.Fprintln(os.Stderr, "usage: md2html [-prefix X.Y] serve PORT")
+			fmt.Fprintln(os.Stderr)
+			os.Exit(1)
+		}
+		addr = args[0]
+	}
+
+	addr = ":" + addr
+
 	fmt.Printf("serving at: http://localhost%s\n", addr)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := "." + r.URL.Path
-		if filepath.Ext(path) != "" {
-			http.ServeFile(w, r, path)
-			return
+
+		if version != "" {
+			path = strings.Replace(path, version+"/", "", 1)
 		}
 
 		paths := []string{
+			path,
 			path + ".md",
 			path + ".partial.html",
 			strings.TrimSuffix(path, "/") + "/index.html",
@@ -66,19 +118,13 @@ func serve(addr string) {
 			err error
 		)
 		for _, p := range paths {
-			if strings.HasSuffix(p, ".md") {
-				b, err = renderMarkdown(p)
-			} else if strings.HasSuffix(p, ".partial.html") {
-				b, err = renderHTML(p)
-			} else {
-				b, err = ioutil.ReadFile(p)
-			}
+			b, err = renderFile(p)
 
 			if err == nil {
 				break
 			}
 
-			if err != nil && !os.IsNotExist(err) {
+			if err != nil && !os.IsNotExist(err) && !strings.HasSuffix(err.Error(), "is a directory") {
 				http.Error(w, err.Error(), 500)
 				return
 			}
@@ -89,14 +135,27 @@ func serve(addr string) {
 			return
 		}
 
-		w.Write(b)
+		http.ServeContent(w, r, path, time.Unix(0, 0), bytes.NewReader(b))
 	})
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-func convert(dest string) error {
+func convert(args []string) {
+	if len(args) < 1 {
+		fmt.Fprint(os.Stderr, "You must specify an destination path for built docs\n\n")
+		fmt.Fprintln(os.Stderr, "usage: md2html [-prefix X.Y] build DEST_PATH")
+		fmt.Fprintln(os.Stderr)
+		os.Exit(1)
+	}
+
+	dest := args[0]
+
 	fmt.Printf("Converting markdown to: %s\n", dest)
-	return filepath.Walk(".", func(path string, f os.FileInfo, err error) error {
+	convertErr := filepath.Walk(".", func(p string, f os.FileInfo, err error) error {
+		if strings.HasPrefix(path.Base(p), ".") {
+			return nil
+		}
+
 		if err != nil {
 			return err
 		}
@@ -106,23 +165,19 @@ func convert(dest string) error {
 		}
 
 		var (
-			destFile = filepath.Join(dest, path)
+			destFile = filepath.Join(dest, p)
 			output   []byte
 		)
 
 		if strings.HasSuffix(f.Name(), ".md") {
 			destFile = strings.TrimSuffix(destFile, ".md")
-			output, err = renderMarkdown(path)
 		} else if strings.HasSuffix(f.Name(), ".partial.html") {
 			destFile = strings.TrimSuffix(destFile, ".partial.html")
-			output, err = renderHTML(path)
 		} else if strings.HasSuffix(f.Name(), ".html") {
 			destFile = strings.TrimSuffix(destFile, ".html")
-			output, err = ioutil.ReadFile(path)
-		} else {
-			output, err = ioutil.ReadFile(path)
 		}
 
+		output, err = renderFile(p)
 		if err != nil {
 			return err
 		}
@@ -142,24 +197,14 @@ func convert(dest string) error {
 			return err
 		}
 
-		fmt.Printf("converted: %s\n", path)
+		fmt.Printf("converted: %s\n", p)
 		return nil
 	})
-}
 
-func renderHTML(path string) ([]byte, error) {
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
+	if convertErr != nil {
+		fmt.Println(convertErr)
+		os.Exit(1)
 	}
-
-	html, err := layout(path)
-	if err != nil {
-		return nil, err
-	}
-
-	html = bytes.Replace(html, layoutPlaceholder, content, 1)
-	return html, nil
 }
 
 func printe(err error) {
@@ -168,26 +213,64 @@ func printe(err error) {
 	}
 }
 
-func renderMarkdown(f string) ([]byte, error) {
-	src, err := ioutil.ReadFile(f)
+func renderFile(p string) ([]byte, error) {
+	content, err := ioutil.ReadFile(p)
 	if err != nil {
 		return nil, err
 	}
 
-	src = interpolateCode(src, path.Dir(f))
+	templateExtensions := make(map[string]bool)
+	for _, v := range []string{".md", ".html", ".js", ".css"} {
+		templateExtensions[v] = true
+	}
 
-	html, err := layout(f)
+	if strings.HasSuffix(p, ".md") {
+		content, err = renderMarkdown(p, content)
+	} else if strings.HasSuffix(p, ".partial.html") {
+		content, err = renderLayout(p, content)
+	} else if templateExtensions[filepath.Ext(p)] {
+		content, err = renderTemplate(p, []byte{}, content)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
+	return content, nil
+}
+
+func renderTemplate(p string, content []byte, layout []byte) ([]byte, error) {
+	pathClass := strings.Replace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(p, "./"), "../"), ".md"), "/", "_", -1)
+	substitution := struct {
+		Body        string
+		Filename    string
+		Version     string
+		VersionPath string
+	}{string(content), pathClass, version, version + "/"}
+
+	layoutTemplate, err := template.New(p).Parse(string(layout))
+	if err != nil {
+		return nil, err
+	}
+	var x bytes.Buffer
+	err = layoutTemplate.Execute(&x, substitution)
+	if err != nil {
+		return nil, err
+	}
+
+	return x.Bytes(), nil
+}
+
+func renderMarkdown(p string, src []byte) ([]byte, error) {
+	src = interpolateCode(src, path.Dir(p))
 	src = preprocessLocalLinks(src)
 	src = markdown(src)
 	src = formatSidenotes(src)
 
-	html = bytes.Replace(html, layoutPlaceholder, src, 1)
-	pathClass := strings.Replace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(f, "./"), "../"), ".md"), "/", "_", -1)
-	html = bytes.Replace(html, documentNamePlaceholder, []byte(pathClass), -1)
+	html, err := renderLayout(p, src)
+	if err != nil {
+		return nil, err
+	}
 
 	return html, nil
 }
@@ -195,11 +278,20 @@ func renderMarkdown(f string) ([]byte, error) {
 // Returns the contents of a layout.html file
 // starting in the directory of p and ending at the command's
 // working directory.
-// If no layout.html file is found layoutPlaceholder is returned
-// as a default layout.
-func layout(p string) ([]byte, error) {
+// If no layout.html file is found, a default layout that renders .Body
+// is returned.
+func renderLayout(p string, content []byte) ([]byte, error) {
 	// Don't search for layouts beyond the working dir
 	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	originalPath := p
+	layout := []byte("{{.Body}}")
+
+	// Render any variables
+	content, err = renderTemplate(originalPath, []byte{}, content)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +300,8 @@ func layout(p string) ([]byte, error) {
 		p = path.Dir(p)
 		l, err := ioutil.ReadFile(p + "/layout.html")
 		if err == nil {
-			return l, nil
+			layout = l
+			break
 		}
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -219,7 +312,7 @@ func layout(p string) ([]byte, error) {
 		}
 	}
 
-	return layoutPlaceholder, nil
+	return renderTemplate(originalPath, content, layout)
 }
 
 func interpolateCode(md []byte, hostPath string) []byte {
