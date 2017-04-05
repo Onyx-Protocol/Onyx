@@ -13,6 +13,14 @@ const coreConfigReducer = (key, state, defaultState, action) => {
   return state || defaultState
 }
 
+const buildConfigReducer = (key, state, defaultState, action) => {
+  if (action.type == 'UPDATE_CORE_INFO') {
+    return action.param.buildConfig[key] || defaultState
+  }
+
+  return state || defaultState
+}
+
 const configKnown = (state = false, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
     return true
@@ -32,6 +40,8 @@ export const configuredAt = (state, action) => {
 
 export const production = (state, action) =>
   coreConfigReducer('isProduction', state, false, action)
+export const mockhsm = (state, action) =>
+  buildConfigReducer('isMockhsm', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
@@ -205,6 +215,7 @@ export default combineReducers({
   generatorAccessToken,
   generatorBlockHeight,
   generatorUrl,
+  mockhsm,
   networkRpcVersion,
   onTestnet,
   production,

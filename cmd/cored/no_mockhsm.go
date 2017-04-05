@@ -12,12 +12,10 @@ import (
 
 func init() {
 	config.BuildConfig.MockHSM = false
-}
-
-func devEnableMockHSM(pg.DB) []core.RunOption {
-	return nil
-}
-
-func devHSM(pg.DB) (blocksigner.Signer, error) {
-	return nil, errors.New("cannot use mockhsm in production, must configure block hsm url")
+	enableMockHSM = func(pg.DB) []core.RunOption {
+		return nil
+	}
+	mockHSM = func(pg.DB) (blocksigner.Signer, error) {
+		return nil, errors.New("this core is not configured to use mockhsm, must configure block hsm url")
+	}
 }

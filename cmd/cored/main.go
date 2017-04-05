@@ -26,6 +26,7 @@ import (
 	"chain/core/config"
 	"chain/core/generator"
 	"chain/core/migrate"
+	"chain/core/mockhsm"
 	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
@@ -73,6 +74,17 @@ var (
 
 	race          []interface{} // initialized in race.go
 	httpsRedirect = true        // initialized in plain_http.go
+
+	// By default, the mock HSM is enabled for use.
+	// This feature is turned off for production binaries
+	// with the no_mockshm build tag.
+	enableMockHSM = func(db pg.DB) []core.RunOption {
+		return []core.RunOption{core.MockHSM(mockhsm.New(db))}
+	}
+
+	mockHSM = func(db pg.DB) (blocksigner.Signer, error) {
+		return mockhsm.New(db), nil
+	}
 )
 
 func init() {
@@ -117,6 +129,7 @@ func main() {
 	fmt.Printf("production: %t\n", config.Production)
 	fmt.Printf("build-commit: %v\n", config.BuildCommit)
 	fmt.Printf("build-date: %v\n", config.BuildDate)
+	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
 
 	if *v {
 		return
@@ -262,7 +275,7 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 	// Allow loopback/localhost requests in Developer Edition.
 	opts = append(opts, core.AlternateAuth(authLoopbackInDev))
 	opts = append(opts, core.IndexTransactions(*indexTxs))
-	opts = append(opts, devEnableMockHSM(db)...)
+	opts = append(opts, enableMockHSM(db)...)
 	// Add any configured API request rate limits.
 	if *rpsToken > 0 {
 		opts = append(opts, core.RateLimit(limit.AuthUserID, 2*(*rpsToken), *rpsToken))
@@ -337,7 +350,7 @@ func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c
 			BlockchainID: conf.BlockchainID.String(),
 		}}
 	} else {
-		hsm, err = devHSM(db)
+		hsm, err = mockHSM(db)
 		if err != nil {
 			return nil, err
 		}

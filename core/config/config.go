@@ -37,8 +37,10 @@ var (
 	Version, BuildCommit, BuildDate string
 	Production                      bool
 
+	// This is the default, Chain development configuration.
+	// These options can be updated with build tags.
 	BuildConfig = struct {
-		MockHSM bool `json:"mockhsm"`
+		MockHSM bool `json:"is_mockhsm"`
 	}{
 		MockHSM: true,
 	}
