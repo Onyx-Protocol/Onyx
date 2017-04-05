@@ -168,7 +168,7 @@ domain separation, prob)
     1. Let `src` be `nextentry.sources[destination.position]`. Fail if not present.
 6. Validate next entry’s source `src`:
     1. Validate that `src.ref` == `self.id`.
-    2. Validate that `src.position` == `0` (this is value's position in the spend). 
+    2. Validate that `src.position` == `0` (this is value's position in the spend).
     3. Validate that `src.value` == `self.spent_output.source.value`.
 7. The `spent_output.program` must evaluate to `true` with given `arguments`.
 8. Remove `spent_output` from UTXO set.
@@ -206,7 +206,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
     1. Let `src` be `nextentry.sources[destination.position]`. Fail if not present.
 6. Validate next entry’s source `src`:
     1. Validate that `src.ref` == `self.id`.
-    2. Validate that `src.position` == `0` (this is value's position in the input). 
+    2. Validate that `src.position` == `0` (this is value's position in the input).
     3. Validate that `src.value` == `self.value`.
 
 
@@ -237,7 +237,7 @@ NB: `spent_output` is not validated, as it was already validated in the transact
         1. Let `src` be `nextentry.sources[dest.position]`. Fail if not present.
     4. Validate next entry’s source `src`:    
         1. Validate that `src.ref` == `self.id`.
-        2. Validate that `src.position` == `i` (this is value's position in this mux's destinations list). 
+        2. Validate that `src.position` == `i` (this is value's position in this mux's destinations list).
         3. Validate that `src.value` == `dest.value`.
         4. Pull the AssetAmount `a` from that `src` and assign it to the `dest`.
 4. For each asset ID in the `sources` and `destinations`:
@@ -579,7 +579,7 @@ TODO: ...
 
 ### 3. VM mapping
 
-This shows how the implementation of each of the VM instructions need to be changed. Ones that say "no change" will work as already implemented on the OLD data structure. 
+This shows how the implementation of each of the VM instructions need to be changed. Ones that say "no change" will work as already implemented on the OLD data structure.
 
 * CHECKOUTPUT:   no change
 * ASSET:         no change
@@ -605,7 +605,7 @@ New opcodes:
 
 For simplicity and flexibility, we are removing the commitments to both the transaction witnesses and the block witness.
 
-1. The [transactions Merkle root](https://chain.com/docs/protocol/specifications/data#transactions-merkle-root) should be calculated based on the transaction IDs, rather than the transaction witness hashes. The code for calculating the transaction witness hashes can be eliminated.
+1. The [transactions Merkle root](https://chain.com/docs/{{.VersionPath}}protocol/specifications/data#transactions-merkle-root) should be calculated based on the transaction IDs, rather than the transaction witness hashes. The code for calculating the transaction witness hashes can be eliminated.
 
 2. `Block ID` (which is the ID included in the next block, and which currently includes the hash of the block witness) should be computed instead to be identical to how the block signature hash is currently computed (i.e., it should use 0x00 serialization flags).
 
