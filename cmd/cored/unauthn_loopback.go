@@ -7,8 +7,10 @@ import (
 	"net/http"
 )
 
-func unauthnLoopback(req *http.Request) bool {
-	// Allow connections from the local host.
-	a, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)
-	return err == nil && a.IP.IsLoopback()
+func init() {
+	unauthnLoopback = func(req *http.Request) bool {
+		// Allow connections from the local host.
+		a, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)
+		return err == nil && a.IP.IsLoopback()
+	}
 }

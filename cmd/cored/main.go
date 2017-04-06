@@ -77,6 +77,13 @@ var (
 
 	race          []interface{} // initialized in race.go
 	httpsRedirect = true        // initialized in plain_http.go
+
+	// By default, requests made on the loopback interface
+	// are authenticated. To allow unauthenticated requests
+	// on this interface use the unauthn_loopback build tag.
+	unauthnLoopback = func(req *http.Request) bool {
+		return false
+	}
 )
 
 func init() {
