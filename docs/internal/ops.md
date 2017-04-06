@@ -189,7 +189,7 @@ $ curl --silent $GENERATOR_URL/configure --data '{
         "pubkey":"'$SIGNER1_PUBKEY'",   
         "url":"'$SIGNER1_URL'"        
     },{
-        "pubkey":"'$SIGNER2_PUBKEY'", 
+        "pubkey":"'$SIGNER2_PUBKEY'",
         "url":"'$SIGNER2_URL'"
     }]
 }'
@@ -276,7 +276,7 @@ $ curl --silent --user $GENERATOR_CLIENT_TOKEN $GENERATOR_URL/configure --data '
         "url":"'$SIGNER1_URL'",
         "access_token":"'$SIGNER1_NETWORK_TOKEN'"
     },{
-        "pubkey":"'$SIGNER2_PUBKEY'", 
+        "pubkey":"'$SIGNER2_PUBKEY'",
         "url":"'$SIGNER2_URL'",
         "access_token":"'$SIGNER2_NETWORK_TOKEN'"
     }]
@@ -317,18 +317,16 @@ $ curl --silent --user $SIGNER2_CLIENT_TOKEN $SIGNER2_PUBKEY/configure --data '{
    change.
 2. Build and bundle most recent dashboard:
    `bin/bundle-dashboard`
-3. Build and bundle most recent docs: `bin/bundle-docs`
-4. Commit bundle changes in `$CHAIN/generated` to `main`
-5. Prepare new installer apps based on `main`, using a
+3. Commit bundle changes in `$CHAIN/generated` to `main`
+4. Prepare new installer apps based on `main`, using a
    `latest` namescheme.
     - TODO: per-platform instructions
-6. Upload installer apps to s3://download.chain.com
+5. Upload installer apps to s3://download.chain.com
     - TODO: automate this uploader
-7. `bin/upload-docs` - This will build and upload the
-   docs (should be identical material to the
-`bin/bundle-docs` step above).
-    - TODO: Edit `bin/upload-docs` command to include a
-      production target. Currently only handles staging.
+6. `bin/upload-docs` - This will build and upload the
+   docs.
+    - By default, documentation is uploaded to http://chain-staging.chain.com. To
+      upload to the production site, run `bin/upload-docs prod`.
 
 TODO: Determine whether we should also use GitHub's
 releases feature.
