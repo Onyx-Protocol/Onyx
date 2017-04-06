@@ -66,7 +66,7 @@ public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
    * <strong>Note:</strong> any existing filter params will be replaced.
    * @param params list of parameters to be added
    */
-  public T setFilterParameters(List<Object> params) {
+  public T setFilterParameters(List<?> params) {
     this.next.filterParams = new ArrayList<>(params);
     return (T) this;
   }
