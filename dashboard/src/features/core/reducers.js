@@ -42,6 +42,8 @@ export const production = (state, action) =>
   coreConfigReducer('isProduction', state, false, action)
 export const mockhsm = (state, action) =>
   buildConfigReducer('isMockhsm', state, false, action)
+export const loopback = (state, action) =>
+  buildConfigReducer('isLoopbackAuthn', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
@@ -215,6 +217,7 @@ export default combineReducers({
   generatorAccessToken,
   generatorBlockHeight,
   generatorUrl,
+  loopback,
   mockhsm,
   networkRpcVersion,
   onTestnet,
