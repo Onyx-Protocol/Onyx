@@ -72,7 +72,7 @@ class Connection {
   constructor(baseUrl, token = '', agent = {}) {
     this.baseUrl = baseUrl
     this.token = token || ''
-	this.agent = agent || {}
+    this.agent = agent || {}
   }
 
   /**
@@ -115,9 +115,9 @@ class Connection {
       req.headers['Authorization'] = `Basic ${btoa(this.token)}`
     }
 
-	this(Object.keys(this.agent).length !== 0 {
-		req.agent = this.agent
-	}
+    if (Object.keys(this.agent).length !== 0) {
+      req.agent = this.agent
+    }
 
     return fetch(this.baseUrl + path, req).catch((err) => {
       throw errors.create(
