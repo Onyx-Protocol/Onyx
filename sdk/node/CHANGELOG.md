@@ -1,5 +1,9 @@
 # Chain Node.js SDK
 
+## 1.0.3 (April 5, 2017)
+
+* Resolved an issue where transaction feeds would halt processing unexpectedly
+
 ## 1.0.2 (January 25, 2017)
 
 * Use base URL and client token provided on initialization for MockHSM connection

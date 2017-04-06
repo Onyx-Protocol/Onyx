@@ -1,4 +1,4 @@
 
 public final class RevId {
-	public final String Id = "1.0-stable/rev2506";
+	public final String Id = "1.0-stable/rev2507";
 }
