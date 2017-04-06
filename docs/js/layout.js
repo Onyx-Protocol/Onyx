@@ -167,11 +167,12 @@ function fixupSidenotes() {
 
 function loadVersionOptions() {
 	var currentVersion
-	var matchedVersion = location.pathname.match('/docs/([0-9].*)/core')
+	var matchedVersion = location.pathname.match('/docs/([0-9]\\.[0-9])/')
 	if (matchedVersion) {
 		currentVersion = matchedVersion[1]
 	} else {
-		currentVersion = "x.y"
+		$('#version-select').remove()
+		return
 	}
 
 	var versions = window.documentationVersions
