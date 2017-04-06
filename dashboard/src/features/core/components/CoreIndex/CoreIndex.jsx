@@ -87,11 +87,7 @@ class CoreIndex extends React.Component {
                 <td><code>{this.props.core.loopback.toString()}</code></td>
               </tr>
               <tr>
-                <td className={styles.row_label}>Protected database:</td>
-                <td><code>{this.props.core.protectedDb.toString()}</code></td>
-              </tr>
-              <tr>
-                <td className={styles.row_label}>Reset allowed:</td>
+                <td className={styles.row_label}>Reset enabled:</td>
                 <td><code>{this.props.core.resetAllowed.toString()}</code></td>
               </tr>
               <tr>
