@@ -1,5 +1,9 @@
 # Chain Node.js SDK
 
+## 1.1.1 (April 5, 2017)
+
+* Resolved an issue where transaction feeds would halt processing unexpectedly.
+
 ## 1.1.0 (February 24, 2017)
 
 This release is a minor version update, and contains **new features** and **deprecations**. It is not compatible with cored 1.0.x; please upgrade cored before updating your SDKs.
@@ -144,16 +148,3 @@ client.transactions.queryAll({
   ...
 })
 ```
-
-## 1.0.2 (January 25, 2017)
-
-* Use base URL and client token provided on initialization for MockHSM connection
-* Allow users to instantiate `Connection` objects with `new chain.Connection()`
-
-## 1.0.1 (January 24, 2017)
-
-* README and documentation updates
-
-## 1.0.0 (January 20, 2017)
-
-* Initial release
