@@ -167,11 +167,14 @@ function fixupSidenotes() {
 
 function loadVersionOptions() {
 	var currentVersion
-	var matchedVersion = location.pathname.match('/docs/([0-9].*)/core')
+	var matchedVersion = location.pathname.match('/docs/(\\d+\\.\\d+)/')
 	if (matchedVersion) {
 		currentVersion = matchedVersion[1]
 	} else {
-		currentVersion = "x.y"
+		// When running docs without a numeric prefix (i.e. local development)
+		// hide the version selector and the legacy version alert.
+		$('#version-select').remove()
+		return
 	}
 
 	var versions = window.documentationVersions
