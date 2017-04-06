@@ -611,54 +611,53 @@ public class Client {
     /**
      * Trusts the given CA certs, and no others. Use this if you are running
      * your own CA, or are using a self-signed server certificate.
-     *
-     * @param path The path of a file containing certificates to trust, in PEM
-     *   format.
+     * @param path The path of a file containing certificates to trust, in PEM format.
      */
-    public Builder setTrustedCerts(String path)
-        throws GeneralSecurityException, IOException, IllegalArgumentException,
-            IllegalArgumentException {
+    public Builder setTrustedCerts(String path) throws HTTPException {
       // Extract certs from PEM-encoded input.
-      InputStream pemStream = new FileInputStream(path);
-      CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-      Collection<? extends Certificate> certificates =
-          certificateFactory.generateCertificates(pemStream);
-      if (certificates.isEmpty()) {
-        throw new IllegalArgumentException("expected non-empty set of trusted certificates");
+      try (InputStream pemStream = new FileInputStream(path)) {
+        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+        Collection<? extends Certificate> certificates =
+            certificateFactory.generateCertificates(pemStream);
+        if (certificates.isEmpty()) {
+          throw new IllegalArgumentException("expected non-empty set of trusted certificates");
+        }
+
+        // Create empty key store.
+        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        char[] password =
+            "password"
+                .toCharArray(); // The password is unimportant as long as it used consistently.
+        keyStore.load(null, password);
+
+        // Load certs into key store.
+        int index = 0;
+        for (Certificate certificate : certificates) {
+          String certificateAlias = Integer.toString(index++);
+          keyStore.setCertificateEntry(certificateAlias, certificate);
+        }
+
+        // Use key store to build an X509 trust manager.
+        KeyManagerFactory keyManagerFactory =
+            KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keyStore, password);
+        TrustManagerFactory trustManagerFactory =
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(keyStore);
+        TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+        if (trustManagers.length != 1 || !(trustManagers[0] instanceof X509TrustManager)) {
+          throw new IllegalStateException(
+              "Unexpected default trust managers:" + Arrays.toString(trustManagers));
+        }
+
+        // Finally, configure the socket factory.
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, trustManagers, null);
+        sslSocketFactory = sslContext.getSocketFactory();
+        return this;
+      } catch (GeneralSecurityException | IOException ex) {
+        throw new HTTPException("Unable to configure trusted CA certs", ex);
       }
-
-      // Create empty key store.
-      KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-      char[] password =
-          "password".toCharArray(); // The password is unimportant as long as it used consistently.
-      keyStore.load(null, password);
-
-      // Load certs into key store.
-      int index = 0;
-      for (Certificate certificate : certificates) {
-        String certificateAlias = Integer.toString(index++);
-        keyStore.setCertificateEntry(certificateAlias, certificate);
-      }
-
-      // Use key store to build an X509 trust manager.
-      KeyManagerFactory keyManagerFactory =
-          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-      keyManagerFactory.init(keyStore, password);
-      TrustManagerFactory trustManagerFactory =
-          TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      trustManagerFactory.init(keyStore);
-      TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-      if (trustManagers.length != 1 || !(trustManagers[0] instanceof X509TrustManager)) {
-        throw new IllegalStateException(
-            "Unexpected default trust managers:" + Arrays.toString(trustManagers));
-      }
-
-      // Finally, configure the socket factory.
-      SSLContext sslContext = SSLContext.getInstance("TLS");
-      sslContext.init(null, trustManagers, null);
-      sslSocketFactory = sslContext.getSocketFactory();
-
-      return this;
     }
 
     /**
