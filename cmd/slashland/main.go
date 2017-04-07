@@ -224,8 +224,8 @@ func land(req *landReq) {
 		CommitTitle   string `json:"commit_title"`
 		CommitMessage string `json:"commit_message"`
 		SHA           string `json:"sha"`
-		Squash        bool   `json:"squash"`
-	}{prState.Title, wrapMessage(body, 75), commit, true}
+		MergeMethod   string `json:"merge_method"`
+	}{prState.Title, wrapMessage(body, 75), commit, "squash"}
 	var mergeResp struct {
 		Merged  bool
 		Message string
