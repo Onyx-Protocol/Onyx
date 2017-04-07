@@ -12,7 +12,6 @@ import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
-import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -58,6 +57,8 @@ public class Client {
   private static final String PKCS1_FOOTER = "-----END RSA PRIVATE KEY-----\n";
   private static final String PKCS8_HEADER = "-----BEGIN PRIVATE KEY-----\n";
   private static final String PKCS8_FOOTER = "-----END PRIVATE KEY-----\n";
+  // Used to create empty, in-memory key stores.
+  private static final char[] DEFAULT_KEYSTORE_PASSWORD = "password".toCharArray();
   private static String version = "dev"; // updated in the static initializer
 
   private static class BuildProperties {
@@ -694,16 +695,16 @@ public class Client {
         // create a new key store including pair
         KeyFactory kf = KeyFactory.getInstance("RSA");
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keyStore.load(null, "password".toCharArray());
+        keyStore.load(null, DEFAULT_KEYSTORE_PASSWORD);
         keyStore.setCertificateEntry("cert", certificate);
         keyStore.setKeyEntry(
             "key",
             kf.generatePrivate(spec),
-            "password".toCharArray(),
+            DEFAULT_KEYSTORE_PASSWORD,
             new X509Certificate[] {certificate});
         KeyManagerFactory keyManagerFactory =
             KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keyStore, "password".toCharArray());
+        keyManagerFactory.init(keyStore, DEFAULT_KEYSTORE_PASSWORD);
         this.keyManagers = keyManagerFactory.getKeyManagers();
         return this;
       } catch (GeneralSecurityException | IOException ex) {
@@ -728,10 +729,7 @@ public class Client {
 
         // Create empty key store.
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        char[] password =
-            "password"
-                .toCharArray(); // The password is unimportant as long as it used consistently.
-        keyStore.load(null, password);
+        keyStore.load(null, DEFAULT_KEYSTORE_PASSWORD);
 
         // Load certs into key store.
         int index = 0;
@@ -743,7 +741,7 @@ public class Client {
         // Use key store to build an X509 trust manager.
         KeyManagerFactory keyManagerFactory =
             KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keyStore, password);
+        keyManagerFactory.init(keyStore, DEFAULT_KEYSTORE_PASSWORD);
         TrustManagerFactory trustManagerFactory =
             TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keyStore);
