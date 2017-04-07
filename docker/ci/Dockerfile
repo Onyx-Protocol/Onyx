@@ -10,7 +10,7 @@ ENV CHAIN="/go/src/chain" \
     MAVEN_HOME="/usr/share/maven" \
     PATH="$PATH:/go/src/chain/docker/ci/bin/:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin"
 
-ADD bin/install /usr/bin
+ADD install /usr/bin
 
 RUN yum -y update \
     && yum install -y autoconf automake bash curl gcc gcc-c++ git libtool make openssl-devel ruby wget unzip \
