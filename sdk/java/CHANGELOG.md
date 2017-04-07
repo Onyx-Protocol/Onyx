@@ -1,5 +1,9 @@
 # Chain Java SDK changelog
 
+## TBD VERSION (TBD DATE)
+
+- `setFilterParameters`, a method on various `QueryBuilder` classes, now accepts `List<?>` instead of `List<Object>`. This is a friendlier interface for using containers of various types.
+
 ## 1.1.3 (March 8, 2017)
 
 ### High availability improvements
