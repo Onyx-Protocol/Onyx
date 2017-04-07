@@ -1,4 +1,4 @@
-import { actions as accessToken } from 'features/accessTokens'
+import { actions as accessControl } from 'features/accessControl'
 import { actions as account } from 'features/accounts'
 import { actions as app } from 'features/app'
 import { actions as asset } from 'features/assets'
@@ -13,7 +13,7 @@ import { actions as tutorial } from 'features/tutorial'
 import { actions as unspent } from 'features/unspents'
 
 const actions = {
-  ...accessToken,
+  accessControl,
   account,
   app,
   asset,

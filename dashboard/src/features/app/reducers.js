@@ -54,6 +54,18 @@ export const flashMessages = (state = {}, action) => {
       </p>)
     }
 
+    case 'CREATED_ACCESSTOKEN': {
+      return newSuccess(state, <p>
+        Created access token. <Link to='access-control/create-token'>Create another?</Link>
+      </p>)
+    }
+
+    case 'CREATED_ACCESSX509': {
+      return newSuccess(state, <p>
+        Created X509 grant. <Link to='access-control/add-certificate'>Create another?</Link>
+      </p>)
+    }
+
     case 'DELETE_CLIENT_ACCESS_TOKEN':
     case 'DELETE_NETWORK_ACCESS_TOKEN':
     case 'DELETE_TRANSACTIONFEED': {

@@ -23,7 +23,7 @@ export default function(type, options = {}) {
       const promise = clientApi().query(params)
 
       promise.then(
-        (param) => dispatch(receive(param))
+        (resp) => dispatch(receive(resp))
       )
 
       return promise
