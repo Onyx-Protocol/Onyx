@@ -8,9 +8,9 @@ ENV CHAIN="/go/src/chain" \
     JAVA_HOME="/opt/jdk1.7.0_79" \
     JRE_HOME="/opt/jdk1.7.0_79/jre" \
     MAVEN_HOME="/usr/share/maven" \
-    PATH="$PATH:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin"
+    PATH="$PATH:/go/src/chain/docker/ci/bin/:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin"
 
-ADD bin /usr/bin
+ADD install /usr/bin
 
 RUN yum -y update \
     && yum install -y autoconf automake bash curl gcc gcc-c++ git libtool make openssl-devel ruby wget unzip \
