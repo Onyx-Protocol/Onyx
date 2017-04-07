@@ -4,6 +4,7 @@ This dockerfile produces the image used for continuous integration. Installed so
 - Java 1.7
 - Ruby 2.0.0
 - Node 4.8.0
+- CodeSafe 12.10.01
 - various build/test dependencies
 
 To update it, do:
