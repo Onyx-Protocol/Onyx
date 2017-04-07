@@ -136,6 +136,9 @@ func runServer() {
 	ctx := context.Background()
 	env.Parse()
 
+	// needs to happen after env.Parse()
+	config.TLS = *tlsCrt != "" && *tlsKey != "" && *rootCAs != ""
+
 	raftDir := filepath.Join(*dataDir, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
 	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, *tlsCrt != "")
@@ -177,7 +180,7 @@ func runServer() {
 	// it's blocking and we need to proceed to the rest of the core setup after
 	// we call it.
 	go func() {
-		if *tlsCrt != "" {
+		if config.TLS {
 			cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
 			if err != nil {
 				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
