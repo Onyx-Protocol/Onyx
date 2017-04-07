@@ -161,7 +161,7 @@ func runServer() {
 	var handler http.Handler = mux
 	handler = reqid.Handler(handler)
 
-	secureheader.DefaultConfig.PermitClearLoopback = true
+	secureheader.DefaultConfig.PermitClearLoopback = !httpsRedirect
 	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
 	secureheader.DefaultConfig.Next = handler
 
