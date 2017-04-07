@@ -214,104 +214,44 @@ func wrapQuotes(str string) string {
 }
 
 func warn() error {
-	fmt.Printf("\nWARNING: Chain Core requires TLS. A development pkix (certificates and keys) has been generated in %s\n\n", wrapQuotes(certsDir))
+	fmt.Printf("WARNING: This Chain Core is configured to require TLS. Development certificates and keys have been generated in %s\n\n", wrapQuotes(certsDir))
 	switch runtime.GOOS {
 	case "darwin":
 		return warnDarwin()
-	case "linux":
-		return warnLinux()
 	case "windows":
 		return warnWindows()
+	default:
+		return warnDefault()
 	}
 	return nil
 }
 
 func warnDarwin() error {
-	installRoot := fmt.Sprintln("sudo", "security", "add-trusted-cert", "-d", "-r", "trustRoot -k", "/Library/Keychains/System.keychain", wrapQuotes(certsDir+"ca"+certFileExt))
-	fmt.Printf("\nTo install the root CA certificate into the System Keychain run:\n\n\n\t" + installRoot)
-	return nil
-}
-
-func warnLinux() (err error) {
-	cat := exec.Command("/bin/sh", "-c", `cat /etc/*-release`)
-	out, err := cat.Output()
+	// retrieve user's login keychain
+	cmd := exec.Command("security", "login-keychain")
+	out, err := cmd.Output()
 	if err != nil {
-		if _, ok := err.(*exec.ExitError); ok || os.IsPermission(err) || os.IsNotExist(err) {
-			fmt.Printf("You will need to install the CA into your local certficate store to use the browser securely.")
-			return nil
-		}
-		return errors.Wrap(err, strings.Join(cat.Args, " "))
+		return errors.Wrap(err, "finding login keychain")
 	}
-	distro := strings.ToLower(string(out))
-	if strings.Contains(distro, "alpine") {
-		if _, err = os.Stat("/.dockerenv"); os.IsNotExist(err) {
-			fmt.Printf("\nRunning Alpine\n\n")
-			return nil
-		}
-		fmt.Printf("\nRunning docker container\n\n")
-		return nil
-	}
-	if strings.Contains(distro, "centos") {
-		if strings.Contains(distro, "centos_mantisbt_project_version=\"7\"") {
-			fmt.Printf("\nRunning Centos 7\n\n")
-		}
-		if strings.Contains(distro, "centos release 6") {
-			fmt.Printf("\nRunning Centos 6\n\n")
-		}
-		if strings.Contains(distro, "centos release 5") {
-			fmt.Printf("\nRunning Centos 5\n\n")
-		}
-		return nil
-	}
-	if strings.Contains(distro, "ubuntu") {
-		if strings.Contains(distro, "jessie") {
-			fmt.Printf("\nRunning Ubuntu 14.04\n\n")
-		}
-		if strings.Contains(distro, "wheezy") {
-			fmt.Printf("\nRunning Ubuntu 12.04\n\n")
-		}
-		return nil
-	}
-	if strings.Contains(distro, "debian") {
-		cat = exec.Command("/bin/sh", "-c", `cat /etc/debian_version`)
-		out, err = cat.Output()
-		if err != nil {
-			if os.IsPermission(err) || os.IsNotExist(err) {
-				fmt.Println("Unable to detect the host OS. You will need to install the generated root CA into your local certficate store for encrypted communications.")
-				return nil
-			}
-			return errors.Wrap(err, strings.Join(cat.Args, " "))
-		}
-		version := string(out)
-		if strings.HasPrefix(version, "8.") {
-			fmt.Printf("\nRunning Debian 8\n\n")
-		}
-		if strings.HasPrefix(version, "7.") {
-			fmt.Printf("\nRunning Debian 7\n\n")
-		}
-		if strings.HasPrefix(version, "6.") {
-			fmt.Printf("\nRunning Debian 6\n\n")
-		}
-		return nil
-	}
-	if strings.Contains(distro, "fedora") {
-		fmt.Printf("\nRunning Fedora\n\n")
-		return nil
-	}
-	if strings.Contains(distro, "opensuse") {
-		fmt.Printf("\nRunning openSUSE\n\n")
-		return nil
-	}
-	if strings.Contains(distro, "mint") {
-		fmt.Printf("\nRunning Linux Mint\n\n")
-		return nil
-	}
+
+	loginChain := strings.TrimSpace(string(out))
+	installRoot := fmt.Sprintln("sudo", "security", "add-trusted-cert", "-d", "-r", "trustRoot -k", "/Library/Keychains/System.keychain", wrapQuotes(certsDir+"ca"+certFileExt))
+	installCert := fmt.Sprintln("security", "import", wrapQuotes(certsDir+"client"+certFileExt), "-k", loginChain)
+	installKey := fmt.Sprintln("security", "import", wrapQuotes(certsDir+"client.key"), "-k", loginChain)
+	fmt.Printf("To install the root CA into the System Keychain run:\n\n\t%s\n", installRoot)
+	fmt.Printf("To import the client cert into your login keychain run the following commands:\n\n\t%s\n\t%s\n", installCert, installKey)
 	return nil
 }
 
 func warnWindows() error {
 	installRoot := fmt.Sprintln("certutil", "-f", "-user", "-addstore", "Root", wrapQuotes(certsDir+"ca"+certFileExt))
-	fmt.Printf("\nTo install the root CA certificate into your user certificate store run:\n\n\n\t", installRoot)
+	fmt.Printf("To install the root CA certificate into your user certificate store run:\n\n\t%s\n", installRoot)
+	return nil
+}
+
+func warnDefault() (err error) {
+	// TODO(boymanjor): detect OS and provide instructions on storing root CA
+	fmt.Printf("You will need to install the root CA into your local certficate store to use the browser securely.\n")
 	return nil
 }
 
