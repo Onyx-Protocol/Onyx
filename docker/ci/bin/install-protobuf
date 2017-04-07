@@ -2,15 +2,6 @@
 
 set -e
 
-mkdir -p /usr/src/protobuf
-git clone https://github.com/google/protobuf.git /usr/src/protobuf
-cd /usr/src/protobuf
-git checkout v3.1.0
-./autogen.sh
-./configure
-make
-make install
-ldconfig
-rm -rf /usr/src/protobuf && cd
+curl -Lo /usr/local/bin/protoc https://s3.amazonaws.com/chain-qa/protoc
 go get -u github.com/golang/protobuf/proto
 go get -u github.com/golang/protobuf/protoc-gen-go
