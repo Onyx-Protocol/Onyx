@@ -82,7 +82,7 @@ func generatePKIX(ctx context.Context, serverCertPath, serverKeyPath, caPath *st
 		return errors.Wrap(err, "generating development pkix directory")
 	}
 
-	ca, key, err := generatePEMKeyPair(certsDir, "ca", defaultCATemplate, nil, 2048, nil)
+	ca, key, err := generatePEMKeyPair("ca", defaultCATemplate, nil, 2048, nil)
 	if err != nil {
 		return errors.Wrap(err, "generating root ca keypair")
 	}
@@ -92,19 +92,19 @@ func generatePKIX(ctx context.Context, serverCertPath, serverKeyPath, caPath *st
 		return errors.Wrap(err, "parsing root ca keypair")
 	}
 
-	_, _, err = generatePEMKeyPair(certsDir, "server", defaultCertTemplate, caCert, 2048, caKey)
+	_, _, err = generatePEMKeyPair("server", defaultCertTemplate, caCert, 2048, caKey)
 	if err != nil {
 		return errors.Wrap(err, "generating server keypair")
 	}
 
-	_, _, err = generatePEMKeyPair(certsDir, "client", defaultCertTemplate, caCert, 2048, caKey)
+	_, _, err = generatePEMKeyPair("client", defaultCertTemplate, caCert, 2048, caKey)
 	if err != nil {
 		return errors.Wrap(err, "generating server keypair")
 	}
 	return warn()
 }
 
-func generatePEMKeyPair(dir, name string, req, ca *x509.Certificate, keySize int, priv *rsa.PrivateKey) ([]byte, []byte, error) {
+func generatePEMKeyPair(name string, req, ca *x509.Certificate, keySize int, priv *rsa.PrivateKey) ([]byte, []byte, error) {
 	key, err := rsa.GenerateKey(rand.Reader, keySize)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "generating private key")
@@ -131,7 +131,7 @@ func generatePEMKeyPair(dir, name string, req, ca *x509.Certificate, keySize int
 		Bytes: certBytes,
 	})
 
-	err = writeKeyPair(certBytes, keyBytes, dir+name+certFileExt, dir+name+".key")
+	err = writeKeyPair(certBytes, keyBytes, certsDir+name+certFileExt, certsDir+name+".key")
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "writing keypair")
 	}
