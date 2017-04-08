@@ -19,7 +19,7 @@ class JsonField extends React.Component {
     const displayProps = {
       mode: 'json',
       theme: 'github',
-      height: '80px',
+      height: this.props.height || '80px',
       width: '100%',
       tabSize: 2,
       showGutter: false,

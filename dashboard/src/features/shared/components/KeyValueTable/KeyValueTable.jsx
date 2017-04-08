@@ -45,19 +45,22 @@ class KeyValueTable extends React.Component {
   }
 
   render() {
-
     return(
       <Section
         title={this.props.title}
         actions={this.props.actions} >
         <table className={styles.table}>
           <tbody>
-            {this.props.items.map((item) =>
-              <tr key={`${item.label}`}>
+            {this.props.items.map((item) => {
+              return <tr key={item.label}>
                 <td className={styles.label}>{item.label}</td>
-                <td className={styles.value}>{this.renderValue(item)}</td>
+                <td className={styles.value}>{this.renderValue(item)}
+                  {item.editUrl && <Link to={item.editUrl} className={styles.edit}>
+                    <span className={`${styles.pencil} glyphicon glyphicon-pencil`}></span>Edit
+                  </Link>}
+                </td>
               </tr>
-            )}
+            })}
           </tbody>
         </table>
       </Section>

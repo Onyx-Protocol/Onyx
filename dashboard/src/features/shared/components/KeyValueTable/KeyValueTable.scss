@@ -24,6 +24,18 @@
   }
 }
 
+.edit {
+  float: right;
+  font-family: Nitti Grotesk;
+  font-size: $font-size-base;
+}
+
+.pencil {
+  padding-right: 5px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
 .label {
   background: $background-color;
   border-right: 1px solid $border-color;
@@ -45,10 +57,10 @@
 .value {
   word-wrap: break-word;
   font-family: Nitti;
-
 }
 
 .pre {
+  display: inline-block;
   padding: 0;
   margin: 0;
 
