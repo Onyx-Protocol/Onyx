@@ -1,8 +1,12 @@
 package bc
 
 import (
+	"bytes"
 	"database/sql/driver"
 	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"io"
 
 	"golang.org/x/crypto/sha3"
@@ -36,32 +40,38 @@ func (h Hash) Byte32() (b32 [32]byte) {
 // for formats that can't hold arbitrary binary data.
 // It never returns an error.
 func (h Hash) MarshalText() ([]byte, error) {
-	return byte32(h.Byte32()).MarshalText()
+	b := h.Byte32()
+	v := make([]byte, 64)
+	hex.Encode(v, b[:])
+	return v, nil
 }
 
 // UnmarshalText satisfies the TextUnmarshaler interface.
 // It decodes hex data from b into h.
-func (h *Hash) UnmarshalText(b []byte) error {
-	var b32 byte32
-	err := b32.UnmarshalText(b)
-	if err != nil {
-		return err
+func (h *Hash) UnmarshalText(v []byte) error {
+	var b [32]byte
+	if len(v) != 64 {
+		return fmt.Errorf("bad length hash string %d", len(v))
 	}
-	*h = NewHash(b32)
-	return nil
+	_, err := hex.Decode(b[:], v)
+	*h = NewHash(b)
+	return err
 }
 
 // UnmarshalJSON satisfies the json.Unmarshaler interface.
 // If b is a JSON-encoded null, it copies the zero-value into h. Othwerwise, it
 // decodes hex data from b into h.
 func (h *Hash) UnmarshalJSON(b []byte) error {
-	var b32 byte32
-	err := b32.UnmarshalJSON(b)
+	if bytes.Equal(b, []byte("null")) {
+		*h = Hash{}
+		return nil
+	}
+	var s string
+	err := json.Unmarshal(b, &s)
 	if err != nil {
 		return err
 	}
-	*h = NewHash(b32)
-	return nil
+	return h.UnmarshalText([]byte(s))
 }
 
 func (h Hash) Bytes() []byte {
@@ -75,13 +85,14 @@ func (h Hash) Value() (driver.Value, error) {
 }
 
 // Scan satisfies the driver.Scanner interface
-func (h *Hash) Scan(val interface{}) error {
-	var b32 byte32
-	err := b32.Scan(val)
-	if err != nil {
-		return err
+func (h *Hash) Scan(v interface{}) error {
+	var buf [32]byte
+	b, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("Hash.Scan received unsupported type %T", v)
 	}
-	*h = NewHash(b32)
+	copy(buf[:], b)
+	*h = NewHash(buf)
 	return nil
 }
 
@@ -98,16 +109,17 @@ func writeFastHash(w io.Writer, d []byte) error {
 
 // WriteTo satisfies the io.WriterTo interface.
 func (h *Hash) WriteTo(w io.Writer) (int64, error) {
-	return byte32(h.Byte32()).WriteTo(w)
+	n, err := w.Write(h.Bytes())
+	return int64(n), err
 }
 
 // WriteTo satisfies the io.ReaderFrom interface.
 func (h *Hash) ReadFrom(r io.Reader) (int64, error) {
-	var b32 byte32
-	n, err := b32.ReadFrom(r)
+	var b32 [32]byte
+	n, err := io.ReadFull(r, b32[:])
 	if err != nil {
-		return n, err
+		return int64(n), err
 	}
-	*h = NewHash(b32)
-	return n, nil
+	h.FromByte32(b32)
+	return int64(n), nil
 }
