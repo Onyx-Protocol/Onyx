@@ -44,6 +44,15 @@ func (a *apiAuthn) handler(next http.Handler) http.Handler {
 }
 
 func (a *apiAuthn) auth(req *http.Request) error {
+	if req.TLS != nil && req.TLS.HandshakeComplete && len(req.TLS.VerifiedChains) > 0 {
+		// A client certificate was received.
+		// No need to authenticate access token.
+		//
+		// TODO(boymanjor): use subject name
+		// from req.TLS.PeerCertificates for authz.
+		return nil
+	}
+
 	user, pw, ok := req.BasicAuth()
 	if !ok && a.alt != nil && a.alt(req) {
 		return nil
