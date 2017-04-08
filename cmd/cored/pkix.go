@@ -223,7 +223,6 @@ func warn() error {
 	default:
 		return warnDefault()
 	}
-	return nil
 }
 
 func warnDarwin() error {
