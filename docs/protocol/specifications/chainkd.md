@@ -40,8 +40,6 @@ Limitations:
 
 ## Definitions
 
-**Hash(X,N)** is SHAKE-128 as specified in [FIPS 202](http://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf) with input string `X` and output length `N` in bytes.
-
 **Selector** is a variable-length byte string indexing a child key during key derivation.
 
 **Secret scalar** is 32-byte string representing a 256-bit integer using little-endian convention.
@@ -67,8 +65,12 @@ Limitations:
 
 **Output:** `xprv`, a root extended private key.
 
-1. Compute 64-byte string `xprv = Hash("R" || seed, 64)`.
-2. Clear the third highest bit of the 32nd byte (last byte in the first half).
+1. Compute 64-byte string `xprv = HMAC-SHA512(key: "Root", data: seed)`.
+2. Prune the `xprv` to produce a valid scalar:
+    1. the lowest 3 bits of the first byte are cleared,
+    2. the highest bit of the last byte is cleared,
+    3. the second highest bit of the 32nd byte is set,
+    4. the third highest bit of the 32nd byte is cleared.
 3. Return `xprv`.
 
 
@@ -78,15 +80,10 @@ Limitations:
 
 **Output:** `xpub`, an extended public key.
 
-1. Split `xprv` in two parts: 32-byte `privkey` and 32-byte derivation key `dk`.
-2. Prune the private key to produce scalar `s`:
-    1. the lowest 3 bits of the first byte are cleared,
-    2. the highest bit of the last byte is cleared,
-    3. the second highest bit of the last byte is set.
-3. Interpret `privkey` as a little-endian 256-bit integer `s`.
-4. Perform a fixed-base scalar multiplication `P = s·B` where `B` is a base point of Ed25519.
-5. [Encode](#encode-public-key) point `P` as `pubkey`.
-6. Return extended public key `xpub = pubkey || dk` (64 bytes).
+1. Split `xprv` in two halves: 32-byte scalar `s` and 32-byte derivation key `dk`.
+2. Perform a fixed-base scalar multiplication `P = s·B` where `B` is a base point of Ed25519.
+3. [Encode](#encode-public-key) point `P` as `pubkey`.
+4. Return extended public key `xpub = pubkey || dk` (64 bytes).
 
 
 ### Derive hardened extended private key
@@ -98,9 +95,14 @@ Limitations:
 
 **Output:** `xprv’`, the derived extended public key.
 
-1. Compute `xprv’ = Hash("H" || xprv || selector, 64)`.
-2. Clear the third highest bit of the 32nd byte (last byte in the first half).
-3. Return `xprv’`.
+1. Split `xprv` in two halves: 32-byte scalar `s` and 32-byte derivation key `dk`.
+2. Compute `xprv’ = HMAC-SHA512(key: dk, data: "H" || s || selector)`.
+3. Prune the `xprv’` to produce a valid scalar:
+    1. the lowest 3 bits of the first byte are cleared,
+    2. the highest bit of the last byte is cleared,
+    3. the second highest bit of the 32nd byte is set,
+    4. the third highest bit of the 32nd byte is cleared.
+4. Return `xprv’`.
 
 
 ### Derive non-hardened extended private key
@@ -113,19 +115,12 @@ Limitations:
 **Output:** `xprv’`, the derived extended public key.
 
 1. [Generate extended public key](#generate-extended-public-key) `xpub` for a given `xprv`.
-2. Compute `F = Hash("N" || xpub || selector, 64)`.
-3. Split `F` in two parts: 32-byte `fbuffer` and 32-byte `dk’`.
-4. Clear lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
-5. Compute derived secret scalar `s’ = s + f` (without reducing the result modulo the subgroup order).
-6. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
-7. Add pepper:
-    1. Compute `p’ = Hash("P" || xprv || selector, 1)`.
-    2. Set the lowest 3 bits of `privkey’` to the lowest 3 bits of `p’`.
-    3. Set the highest 2 bits of `privkey’` to the highest 2 bits of `p’`, flipping the second-highest bit.
-
-            privkey’[0] ^= (p’ & 7)
-            privkey’[31] ^= (p’ & 192)
-
+2. Split `xpub` in two halves: 32-byte pubkey `P` and 32-byte derivation key `dk`.
+3. Compute `F = HMAC-SHA512(key: dk, data: "N" || P || selector)`.
+4. Split `F` in two halves: a 32-byte `fbuffer` and a 32-byte `dk’`.
+5. Clear lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
+6. Compute derived secret scalar `s’ = s + f` (without reducing the result modulo the subgroup order).
+7. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
 8. Return `xprv’ = privkey’ || dk’`.
 
 
@@ -138,14 +133,15 @@ Limitations:
 
 **Output:** `xpub’`, the derived extended public key.
 
-1. Compute `F = Hash("N" || xpub || selector, 64)`.
-2. Split `F` in two parts: 32-byte `fbuffer` and 32-byte `dk’`.
-3. Clear lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
-4. Perform a fixed-base scalar multiplication `F = f·B` where `B` is a base point of Ed25519.
-5. Decode point `P` from `pubkey` according to EdDSA.
-6. Perform point addition `P’ = P + 8·F`.
-7. [Encode](#encode-public-key) point `P’` as `pubkey’`.
-8. Return `xpub’ = pubkey’ || dk’`.
+1. Split `xpub` in two halves: 32-byte pubkey `P` and 32-byte derivation key `dk`.
+2. Compute `F = HMAC-SHA512(key: dk, data: "N" || P || selector)`.
+3. Split `F` in two halves: a 32-byte `fbuffer` and a 32-byte `dk’`.
+4. Clear lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
+5. Perform a fixed-base scalar multiplication `F = f·B` where `B` is a base point of Ed25519.
+6. Decode point `P` from `pubkey` according to EdDSA.
+7. Perform point addition `P’ = P + 8·F`.
+8. [Encode](#encode-public-key) point `P’` as `pubkey’`.
+9. Return `xpub’ = pubkey’ || dk’`.
 
 
 ### Extract public key
@@ -165,12 +161,9 @@ Resulting 32-byte public key can be used to verify EdDSA signature created by a 
 
 **Output:** `sk`, a 64-byte [EdDSA](https://tools.ietf.org/html/rfc8032) signing key.
 
-1. Compute 32-byte hash `ext = Hash("X" || xprv, 32)`.
+1. Compute hash `exthash = HMAC-SHA512(key: "Expand", data: xprv)`.
 2. Extract `privkey` as first 32 bytes of `xprv`.
-3. Prune the private key:
-    1. the lowest 3 bits of the first byte are cleared,
-    2. the highest bit of the last byte is cleared,
-    3. the second highest bit of the last byte is set.
+3. Extract `ext` as first 32 bytes of `exthash`.
 4. Return 64-byte signing key `sk = privkey || ext`.
 
 Resulting 64-byte signing key can be used to create EdDSA signature verifiable by a corresponding [EdDSA public key](#extract-public-key).
@@ -201,6 +194,8 @@ In our experience index-based derivation is not always convenient and can be ext
 **Why do you pack extra random bits in the private key?**
 
 These extra bits improve entropy of the nonce as [discussed below](#nonce-entropy). One of the design goals was to keep the size of the extended keys most compact (64 bytes for xprv and xpub). Alternative would be to reduce entropy of the _derivation key_ by storing extra random bits there, but the scalar has 5 bits pre-determined, so we can simply use them.
+
+
 
 
 ## Security
@@ -255,9 +250,9 @@ The depth limit is reset at each level where hardened derivation is used.
 
 ### Nonce entropy
 
-EdDSA derives a 64-byte signing key from 256 bits of entropy. In ChainKD the extended private key carries the secret scalar as-is, packed with 5 bits of _pepper_ (additional secret entropy) and 32 bytes of _derivation key_. The 64-byte signing key as required by EdDSA consists of a secret scalar (unmodified) and additional 32 bytes of _prefix_ used to generate nonce for the signature.
+EdDSA derives a 64-byte signing key from 256 bits of entropy. In ChainKD the extended private key carries the secret scalar as-is and 32 bytes of _derivation key_. The 64-byte signing key as required by EdDSA consists of a secret scalar (unmodified) and additional 32 bytes of _prefix_ used to generate nonce for the signature.
 
-In ChainKD that prefix is derived non-linearly from the extended private key, having combined entropy of both the secret scalar (250 bits) and 5 bits of _pepper_. Additional bits ensure that the nonce has at least 255 bits of randomness, sacrificing at most 1 bit as compared to standard EdDSA. The prefix is not derived in parallel to secret scalar, but from it, making the construction similar to the one in [RFC6979](https://tools.ietf.org/html/rfc6979) where nonce is also computed from a secret scalar and a message. Security reduction from removing one bit on entropy from the nonce is considered negligible.
+In ChainKD that prefix is derived non-linearly from the extended private key, having the entropy of the secret scalar (250 bits). The prefix is not derived in parallel to secret scalar, but from it, making the construction similar to the one in [RFC6979](https://tools.ietf.org/html/rfc6979) where nonce is also computed from a secret scalar and a message.
 
 
 
