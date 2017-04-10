@@ -115,7 +115,7 @@ func opMaxTime(vm *virtualMachine) error {
 	return vm.pushInt64(int64(maxTimeMS), true)
 }
 
-func opDataHash(vm *virtualMachine) error {
+func opEntryData(vm *virtualMachine) error {
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func opDataHash(vm *virtualMachine) error {
 	return vm.push(*vm.context.EntryData, true)
 }
 
-func opTxDataHash(vm *virtualMachine) error {
+func opTxData(vm *virtualMachine) error {
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
