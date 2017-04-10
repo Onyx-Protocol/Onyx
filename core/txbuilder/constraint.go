@@ -70,9 +70,9 @@ func (r refdataConstraint) code() []byte {
 	builder := vmutil.NewBuilder()
 	builder.AddData(h[:])
 	if r.tx {
-		builder.AddOp(vm.OP_TXDATAHASH)
+		builder.AddOp(vm.OP_TXDATA)
 	} else {
-		builder.AddOp(vm.OP_DATAHASH)
+		builder.AddOp(vm.OP_ENTRYDATA)
 	}
 	builder.AddOp(vm.OP_EQUAL)
 	return builder.Program

@@ -207,8 +207,8 @@ const (
 	OP_PROGRAM     Op = 0xc4
 	OP_MINTIME     Op = 0xc5
 	OP_MAXTIME     Op = 0xc6
-	OP_TXDATAHASH  Op = 0xc7
-	OP_DATAHASH    Op = 0xc8
+	OP_TXDATA      Op = 0xc7
+	OP_ENTRYDATA   Op = 0xc8
 	OP_INDEX       Op = 0xc9
 	OP_ENTRYID     Op = 0xca
 	OP_OUTPUTID    Op = 0xcb
@@ -319,8 +319,8 @@ var (
 		OP_PROGRAM:     {OP_PROGRAM, "PROGRAM", opProgram},
 		OP_MINTIME:     {OP_MINTIME, "MINTIME", opMinTime},
 		OP_MAXTIME:     {OP_MAXTIME, "MAXTIME", opMaxTime},
-		OP_TXDATAHASH:  {OP_TXDATAHASH, "TXDATAHASH", opTxDataHash},
-		OP_DATAHASH:    {OP_DATAHASH, "DATAHASH", opDataHash},
+		OP_TXDATA:      {OP_TXDATA, "TXDATA", opTxData},
+		OP_ENTRYDATA:   {OP_ENTRYDATA, "ENTRYDATA", opEntryData},
 		OP_INDEX:       {OP_INDEX, "INDEX", opIndex},
 		OP_ENTRYID:     {OP_ENTRYID, "ENTRYID", opEntryID},
 		OP_OUTPUTID:    {OP_OUTPUTID, "OUTPUTID", opOutputID},

@@ -366,7 +366,7 @@ func TestIntrospectionOps(t *testing.T) {
 			Context:      context0,
 		},
 	}, {
-		op: OP_TXDATAHASH,
+		op: OP_TXDATA,
 		startVM: &VirtualMachine{
 			Context: context0,
 		},
@@ -380,7 +380,7 @@ func TestIntrospectionOps(t *testing.T) {
 			Context: context0,
 		},
 	}, {
-		op: OP_DATAHASH,
+		op: OP_ENTRYDATA,
 		startVM: &VirtualMachine{
 			Context: context0,
 		},
@@ -444,7 +444,7 @@ func TestIntrospectionOps(t *testing.T) {
 
 	txops := []Op{
 		OP_CHECKOUTPUT, OP_ASSET, OP_AMOUNT, OP_PROGRAM,
-		OP_MINTIME, OP_MAXTIME, OP_TXDATAHASH, OP_DATAHASH,
+		OP_MINTIME, OP_MAXTIME, OP_TXDATA, OP_ENTRYDATA,
 		OP_INDEX, OP_OUTPUTID,
 	}
 
