@@ -56,7 +56,7 @@ class Navigation extends React.Component {
 
         <ul className={styles.navigation}>
           <li className={styles.navigationTitle}>services</li>
-          {!this.props.production && this.props.mockhsm &&
+          {this.props.mockhsm &&
             <li>
               <Link to='/mockhsms' activeClassName={styles.active}>
                 {navIcon('mockhsm', styles)}
