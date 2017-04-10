@@ -1,4 +1,4 @@
-//+build reset_allowed
+//+build reset
 
 package main
 
@@ -16,7 +16,7 @@ import (
 var reset = env.String("RESET", "")
 
 func init() {
-	config.BuildConfig.ResetAllowed = true
+	config.BuildConfig.Reset = true
 	resetIfAllowedAndRequested = func(db pg.DB) {
 		if *reset != "" {
 			os.Setenv("RESET", "")

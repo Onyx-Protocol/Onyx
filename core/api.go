@@ -122,7 +122,7 @@ func (a *API) buildHandler() {
 	needConfig := a.needConfig()
 
 	resetAllowed := func(h http.Handler) http.Handler { return alwaysError(errProduction) }
-	if config.BuildConfig.ResetAllowed {
+	if config.BuildConfig.Reset {
 		resetAllowed = func(h http.Handler) http.Handler { return h }
 	}
 

@@ -88,7 +88,7 @@ class CoreIndex extends React.Component {
               </tr>
               <tr>
                 <td className={styles.row_label}>Reset enabled:</td>
-                <td><code>{this.props.core.resetAllowed.toString()}</code></td>
+                <td><code>{this.props.core.reset.toString()}</code></td>
               </tr>
               <tr>
                 <td colSpan={2}><hr /></td>
@@ -165,7 +165,7 @@ class CoreIndex extends React.Component {
               This core is configured to run in production. Production
               blockchains cannot be reset.
             </p>
-           : this.props.core.resetAllowed ?
+           : this.props.core.reset ?
             <div>
               <p>
                 This will permanently delete all data stored in this core,

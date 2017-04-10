@@ -135,7 +135,7 @@ func main() {
 	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
 	fmt.Printf("loopback-auth: %t\n", config.BuildConfig.LoopbackAuth)
 	fmt.Printf("protected-db: %t\n", config.BuildConfig.ProtectedDB)
-	fmt.Printf("reset-allowed: %t\n", config.BuildConfig.ResetAllowed)
+	fmt.Printf("reset: %t\n", config.BuildConfig.Reset)
 
 	if *v {
 		return

@@ -44,10 +44,8 @@ export const mockhsm = (state, action) =>
   buildConfigReducer('isMockhsm', state, false, action)
 export const loopback = (state, action) =>
   buildConfigReducer('isLoopbackAuth', state, false, action)
-export const protectedDb = (state, action) =>
-  buildConfigReducer('isProtectedDb', state, false, action)
-export const resetAllowed = (state, action) =>
-  buildConfigReducer('isResetAllowed', state, false, action)
+export const reset = (state, action) =>
+  buildConfigReducer('isReset', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
@@ -229,7 +227,7 @@ export default combineReducers({
   replicationLag,
   replicationLagClass,
   requireClientToken,
-  resetAllowed,
+  reset,
   signer,
   snapshot,
   syncEstimates,
