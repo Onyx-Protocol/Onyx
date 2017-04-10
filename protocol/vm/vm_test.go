@@ -9,8 +9,6 @@ import (
 	"testing/quick"
 
 	"chain/errors"
-	"chain/protocol/bc"
-	"chain/protocol/validation"
 	. "chain/protocol/vm"
 	"chain/testutil"
 )
@@ -175,70 +173,34 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 
 func TestVerifyTxInput(t *testing.T) {
 	cases := []struct {
-		input   *bc.TxInput
+		vctx    *Context
 		wantErr error
-	}{{
-		input: bc.NewSpendInput(
-			[][]byte{{2}, {3}},
-			bc.Hash{},
-			bc.AssetID{},
-			1,
-			0,
-			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
-			bc.Hash{},
-			nil,
-		),
-	}, {
-		input: bc.NewIssuanceInput(
-			[]byte{12},
-			1,
-			nil,
-			bc.Hash{},
-			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
-			[][]byte{{2}, {3}},
-			nil,
-		),
-	}, {
-		input: &bc.TxInput{
-			TypedInput: &bc.IssuanceInput{
-				Nonce: []byte{34},
-				IssuanceWitness: bc.IssuanceWitness{
-					VMVersion: 2,
-				},
+	}{
+		{
+			vctx: &Context{
+				VMVersion: 1,
+				Code:      []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
+				Arguments: [][]byte{{2}, {3}},
 			},
 		},
-		wantErr: ErrUnsupportedVM,
-	}, {
-		input: &bc.TxInput{
-			TypedInput: &bc.SpendInput{
-				SpendCommitment: bc.SpendCommitment{
-					VMVersion: 2,
-				},
-			},
+		{
+			vctx:    &Context{VMVersion: 2},
+			wantErr: ErrUnsupportedVM,
 		},
-		wantErr: ErrUnsupportedVM,
-	}, {
-		input: bc.NewIssuanceInput(
-			[]byte{56},
-			1,
-			nil,
-			bc.Hash{},
-			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
-			[][]byte{make([]byte, 50001)},
-			nil,
-		),
-		wantErr: ErrRunLimitExceeded,
-	}}
+		{
+			vctx: &Context{
+				VMVersion: 1,
+				Code:      []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
+				Arguments: [][]byte{make([]byte, 50001)},
+			},
+			wantErr: ErrRunLimitExceeded,
+		},
+	}
 
-	for i, c := range cases {
-		tx := bc.NewTx(bc.TxData{
-			Inputs: []*bc.TxInput{c.input},
-		})
-
-		gotErr := verifyTx(tx, 0)
-
+	for _, c := range cases {
+		gotErr := Verify(c.vctx)
 		if errors.Root(gotErr) != c.wantErr {
-			t.Errorf("VerifyTxInput(%d) err = %v want %v", i, gotErr, c.wantErr)
+			t.Errorf("VerifyTxInput(%+v) err = %v want %v", c.vctx, gotErr, c.wantErr)
 		}
 	}
 }
@@ -291,13 +253,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestStep(t *testing.T) {
-	tx := bc.NewTx(bc.TxData{
-		Version: 1,
-		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 1, 0, nil, bc.Hash{}, nil),
-		},
-	})
-	txVMContext := validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], bc.Program{}, nil)
+	txVMContext := &Context{DestPos: new(uint64)}
 	cases := []struct {
 		startVM *VirtualMachine
 		wantVM  *VirtualMachine
@@ -460,10 +416,19 @@ func TestVerifyTxInputQuickCheck(t *testing.T) {
 				ok = false
 			}
 		}()
-		tx := bc.NewTx(bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(witnesses, bc.Hash{}, bc.AssetID{}, 10, 0, program, bc.Hash{}, nil)},
-		})
-		verifyTx(tx, 0)
+
+		vctx := &Context{
+			VMVersion: 1,
+			Code:      program,
+			Arguments: witnesses,
+
+			// Leaving this out reduces coverage.
+			// TODO(kr): figure out why and convert that
+			// to a normal unit test.
+			MaxTimeMS: new(uint64),
+		}
+		Verify(vctx)
+
 		return true
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -497,21 +462,4 @@ func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
 	if err := quick.Check(f, nil); err != nil {
 		t.Error(err)
 	}
-}
-
-func verifyTx(tx *bc.Tx, index uint32) error {
-	var (
-		prog bc.Program
-		args [][]byte
-	)
-	inp := tx.TxInputs[index]
-	switch inp := inp.(type) {
-	case *bc.Issuance:
-		prog = inp.Witness.AssetDefinition.IssuanceProgram
-		args = inp.Witness.Arguments
-	case *bc.Spend:
-		prog = inp.SpentOutput.Body.ControlProgram
-		args = inp.Witness.Arguments
-	}
-	return Verify(validation.NewTxVMContext(tx.TxEntries, inp, prog, args))
 }
