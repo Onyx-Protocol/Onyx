@@ -41,5 +41,5 @@ type Context struct {
 	SpentOutputID *[]byte
 
 	TxSigHash   func() []byte
-	CheckOutput func(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte) (bool, error)
+	CheckOutput func(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte, expansion bool) (bool, error)
 }

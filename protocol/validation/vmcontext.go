@@ -120,7 +120,7 @@ type entryContext struct {
 	entry bc.Entry
 }
 
-func (tc *entryContext) checkOutput(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte) (bool, error) {
+func (tc *entryContext) checkOutput(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte, expansion bool) (bool, error) {
 	checkEntry := func(e bc.Entry) (bool, error) {
 		check := func(prog bc.Program, value bc.AssetAmount, dataHash bc.Hash) bool {
 			return (prog.VMVersion == vmVersion &&
@@ -135,7 +135,16 @@ func (tc *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 			return check(e.Body.ControlProgram, e.Body.Source.Value, e.Body.Data), nil
 
 		case *bc.Retirement:
-			return check(bc.Program{}, e.Body.Source.Value, e.Body.Data), nil
+			var prog bc.Program
+			if expansion {
+				// The spec requires prog.Code to be the empty string only
+				// when !expansion. When expansion is true, we prepopulate
+				// prog.Code to give check() a freebie match.
+				//
+				// (The spec always requires prog.VmVersion to be zero.)
+				prog.Code = code
+			}
+			return check(prog, e.Body.Source.Value, e.Body.Data), nil
 		}
 
 		return false, vm.ErrContext
