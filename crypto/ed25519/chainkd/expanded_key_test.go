@@ -1,47 +1,58 @@
-package ed25519
+package chainkd
 
 import (
 	"bytes"
 	"crypto"
 	"testing"
+	
+	"chain/crypto/ed25519"
 )
 
 // Testing basic InnerSign+Verify and the invariants:
-// 1) PrivateKey.Expanded().Sign() == PrivateKey.Sign()
-// 2) InnerSign(PrivateKey.Expanded()) == Sign(PrivateKey)
+// 1) Expand(PrivateKey).Sign() == PrivateKey.Sign()
+// 2) InnerSign(Expand(PrivateKey)) == Sign(PrivateKey)
+
+type zeroReader struct{}
+
+func (zeroReader) Read(buf []byte) (int, error) {
+	for i := range buf {
+		buf[i] = 0
+	}
+	return len(buf), nil
+}
 
 func TestInnerSignVerify(t *testing.T) {
 	var zero zeroReader
-	public, private, _ := GenerateKey(zero)
-	expprivate := private.Expanded()
+	public, private, _ := ed25519.GenerateKey(zero)
+	expprivate := ExpandEd25519PrivateKey(private)
 
 	message := []byte("test message")
-	sig := InnerSign(expprivate, message)
-	if !Verify(public, message, sig) {
+	sig := Ed25519InnerSign(expprivate, message)
+	if !ed25519.Verify(public, message, sig) {
 		t.Errorf("valid signature rejected")
 	}
 
 	wrongMessage := []byte("wrong message")
-	if Verify(public, wrongMessage, sig) {
+	if ed25519.Verify(public, wrongMessage, sig) {
 		t.Errorf("signature of different message accepted")
 	}
 }
 
 func TestExpandedKeySignerInterfaceInvariant(t *testing.T) {
 	var zero zeroReader
-	public, private, _ := GenerateKey(zero)
-	expprivate := private.Expanded()
+	public, private, _ := ed25519.GenerateKey(zero)
+	expprivate := ExpandEd25519PrivateKey(private)
 
 	signer1 := crypto.Signer(private)
 	signer2 := crypto.Signer(expprivate)
 
 	publicInterface1 := signer1.Public()
 	publicInterface2 := signer2.Public()
-	public1, ok := publicInterface1.(PublicKey)
+	public1, ok := publicInterface1.(ed25519.PublicKey)
 	if !ok {
 		t.Fatalf("expected PublicKey from Public() but got %T", publicInterface1)
 	}
-	public2, ok := publicInterface2.(PublicKey)
+	public2, ok := publicInterface2.(ed25519.PublicKey)
 	if !ok {
 		t.Fatalf("expected PublicKey from Public() but got %T", publicInterface2)
 	}
@@ -64,23 +75,23 @@ func TestExpandedKeySignerInterfaceInvariant(t *testing.T) {
 		t.Fatalf("error from Sign(): %s", err)
 	}
 	if !bytes.Equal(signature1[:], signature2[:]) {
-		t.Errorf(".Sign() should return identical signatures for Signer(privkey) and Signer(privkey.Expanded())")
+		t.Errorf(".Sign() should return identical signatures for Signer(privkey) and Signer(Expand(privkey))")
 	}
-	if !Verify(public, message, signature1) {
+	if !ed25519.Verify(public, message, signature1) {
 		t.Errorf("Verify failed on signature from Sign()")
 	}
 }
 
 func TestInnerSignInvariant(t *testing.T) {
 	var zero zeroReader
-	_, private, _ := GenerateKey(zero)
-	expprivate := private.Expanded()
+	_, private, _ := ed25519.GenerateKey(zero)
+	expprivate := ExpandEd25519PrivateKey(private)
 
 	message := []byte("test message")
-	sig1 := Sign(private, message)
-	sig2 := InnerSign(expprivate, message)
+	sig1 := ed25519.Sign(private, message)
+	sig2 := Ed25519InnerSign(expprivate, message)
 
 	if !bytes.Equal(sig1[:], sig2[:]) {
-		t.Errorf("InnerSign(privkey.Expanded()) must return the same as Sign(privkey)")
+		t.Errorf("InnerSign(Expand(privkey)) must return the same as Sign(privkey)")
 	}
 }

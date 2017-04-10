@@ -3,9 +3,9 @@
 // scalar and the right part is "prefix" used for generating a nonce).
 //
 // Invariants:
-// 1) PrivateKey.Expanded().Sign() == PrivateKey.Sign()
-// 2) InnerSign(PrivateKey.Expanded()) == Sign(PrivateKey)
-package ed25519
+// 1) Expanded(PrivateKey).Sign() == PrivateKey.Sign()
+// 2) InnerSign(Expanded(PrivateKey)) == Sign(PrivateKey)
+package chainkd
 
 import (
 	"crypto"
@@ -13,7 +13,8 @@ import (
 	"errors"
 	"io"
 	"strconv"
-
+	
+	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/internal/edwards25519"
 )
 
@@ -33,10 +34,10 @@ func (priv ExpandedPrivateKey) Public() crypto.PublicKey {
 	edwards25519.GeScalarMultBase(&A, &scalar)
 	var publicKeyBytes [32]byte
 	A.ToBytes(&publicKeyBytes)
-	return PublicKey(publicKeyBytes[:])
+	return ed25519.PublicKey(publicKeyBytes[:])
 }
 
-func (priv PrivateKey) Expanded() ExpandedPrivateKey {
+func ExpandEd25519PrivateKey(priv ed25519.PrivateKey) ExpandedPrivateKey {
 	digest := sha512.Sum512(priv[:32])
 	digest[0] &= 248
 	digest[31] &= 127
@@ -54,12 +55,12 @@ func (priv ExpandedPrivateKey) Sign(rand io.Reader, message []byte, opts crypto.
 		return nil, errors.New("ed25519: cannot sign hashed message")
 	}
 
-	return InnerSign(priv, message), nil
+	return Ed25519InnerSign(priv, message), nil
 }
 
 // InnerSign signs the message with expanded private key and returns a signature.
 // It will panic if len(privateKey) is not ExpandedPrivateKeySize.
-func InnerSign(privateKey ExpandedPrivateKey, message []byte) []byte {
+func Ed25519InnerSign(privateKey ExpandedPrivateKey, message []byte) []byte {
 	if l := len(privateKey); l != ExpandedPrivateKeySize {
 		panic("ed25519: bad private key length: " + strconv.Itoa(l))
 	}
@@ -79,7 +80,7 @@ func InnerSign(privateKey ExpandedPrivateKey, message []byte) []byte {
 	var encodedR [32]byte
 	R.ToBytes(&encodedR)
 
-	publicKey := privateKey.Public().(PublicKey)
+	publicKey := privateKey.Public().(ed25519.PublicKey)
 	h.Reset()
 	h.Write(encodedR[:])
 	h.Write(publicKey[:])
@@ -93,7 +94,7 @@ func InnerSign(privateKey ExpandedPrivateKey, message []byte) []byte {
 	var s [32]byte
 	edwards25519.ScMulAdd(&s, &hramDigestReduced, &sk, &messageDigestReduced)
 
-	signature := make([]byte, SignatureSize)
+	signature := make([]byte, ed25519.SignatureSize)
 	copy(signature[:], encodedR[:])
 	copy(signature[32:], s[:])
 
