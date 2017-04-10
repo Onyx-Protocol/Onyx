@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"os"
 
+	"chain/core"
+	"chain/core/blocksigner"
 	"chain/core/coreunsafe"
+	"chain/core/mockhsm"
 	"chain/database/pg"
 	"chain/database/raft"
 	"chain/env"
