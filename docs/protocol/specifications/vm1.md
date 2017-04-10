@@ -41,7 +41,7 @@ Virtual machines for control and issuance programs inside transactions are versi
 
 Nodes ignore programs with unknown versions, treating them like “anyone can issue/spend.” To discourage use of unassigned versions, block signers refuse to include transactions that use unassigned VM versions.
 
-Blocks do not specify VM version explicitly. [Consensus programs](blockchain.md#output-1) use VM version 1 with additional [block-context restrictions](#block-context) applied to some instructions. Upgrades to block authentication can be made via additional fields in the block commitment string.
+Blocks do not specify VM version explicitly. [Consensus programs](blockchain.md#output-1) use VM version 1 with additional [block-context restrictions](#block-context) applied to some instructions. Upgrades to block authentication can be made via additional fields in the block header.
 
 
 ## Program format

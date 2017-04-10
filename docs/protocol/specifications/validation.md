@@ -91,7 +91,7 @@ A new node starts here when joining a running network (with height > 1). In that
 **Algorithm:**
 
 1. Compute the [assets merkle root](blockchain.md#assets-merkle-root) of the state.
-2. The block commitment in the input state must contain the computed assets merkle root; if not, halt and return false.
+2. The block header in the input state must contain the computed assets merkle root; if not, halt and return false.
 3. Assign the input state to the current blockchain state.
 4. Return true.
 
@@ -137,7 +137,7 @@ A new node starts here when joining a running network (with height > 1). In that
     1. [Apply the transaction](#apply-transaction) using the input block’s header to blockchain state `S`, yielding a new state `S′`.
     2. If transaction failed to be applied (did not change blockchain state), halt and return the input blockchain state unchanged.
     3. Replace `S` with `S′`.
-4. Test that [assets merkle root](blockchain.md#assets-merkle-root) of `S` is equal to the assets merkle root declared in the block commitment; if not, halt and return blockchain state unchanged.
+4. Test that [assets merkle root](blockchain.md#assets-merkle-root) of `S` is equal to the assets merkle root declared in the block header; if not, halt and return blockchain state unchanged.
 5. Remove elements of the nonce set in `S` where the expiration timestamp is less than the block’s timestamp, yielding a new state `S′`.
 6. Return the state `S’`.
 
