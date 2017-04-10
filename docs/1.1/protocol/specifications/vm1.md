@@ -327,6 +327,8 @@ Sets the PC to `address`.
 
 Fails if not followed by 4 bytes.
 
+Note: this opcode may cause some instructions [to not be executed](#non-executed-instructions).
+
 
 #### JUMPIF
 
@@ -339,6 +341,8 @@ Followed by a 4-byte unsigned integer `address`.
 Pops a [boolean](#vm-boolean) from the data stack. If it is `true`, sets the PC to `address`. If it is `false`, does nothing.
 
 Fails if not followed by 4 bytes.
+
+Note: this opcode may cause some instructions [to not be executed](#non-executed-instructions).
 
 
 #### VERIFY
@@ -1308,9 +1312,9 @@ Code  | Stack Diagram   | Cost
 
 The unassigned codes are reserved for future expansion.
 
-If the [expansion flag](#vm-state) is set, these opcodes have no effect on the state of the VM except from reducing run limit by 1 and incrementing the program counter.
+If the [expansion flag](#vm-state) is on, these opcodes have no effect on the state of the VM except from reducing run limit by 1 and incrementing the program counter.
 
-If the [expansion flag](#vm-state) is not set, execution fails immediately.
+If the [expansion flag](#vm-state) is off, these opcodes immediately fail the program when encountered during execution.
 
 
 
