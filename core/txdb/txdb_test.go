@@ -17,7 +17,7 @@ func TestLatestSnapshot(t *testing.T) {
 	store := NewStore(dbtx)
 
 	snap := state.Empty()
-	snap.Nonces[bc.Hash{0xc001000000000000, 0, 0, 0}] = 12345678
+	snap.Nonces[bc.NewHash([32]byte{0xc0, 0x01})] = 12345678
 	err := snap.Tree.Insert([]byte{0x01, 0x02, 0x03, 0x04})
 	if err != nil {
 		t.Fatal(err)
@@ -148,11 +148,11 @@ func TestGetBlock(t *testing.T) {
 		BlockHeader: bc.BlockHeader{
 			Version:           1,
 			Height:            1,
-			PreviousBlockHash: bc.Hash{0x3132330000000000, 0, 0, 0},
+			PreviousBlockHash: bc.NewHash([32]byte{'1', '2', '3'}),
 			TimestampMS:       100,
 			BlockCommitment: bc.BlockCommitment{
-				TransactionsMerkleRoot: bc.Hash{0x4142430000000000, 0, 0, 0},
-				AssetsMerkleRoot:       bc.Hash{0x58595a0000000000, 0, 0, 0},
+				TransactionsMerkleRoot: bc.NewHash([32]byte{'A', 'B', 'C'}),
+				AssetsMerkleRoot:       bc.NewHash([32]byte{'X', 'Y', 'Z'}),
 				ConsensusProgram:       []byte("test-output-script"),
 			},
 			BlockWitness: bc.BlockWitness{

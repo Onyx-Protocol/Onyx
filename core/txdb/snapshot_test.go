@@ -49,34 +49,34 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		deletedNonces []bc.Hash
 	}{
 		{ // add a single hash
-			inserts: []bc.Hash{{0x0100000000000000, 0, 0, 0}},
+			inserts: []bc.Hash{bc.NewHash([32]byte{0x01})},
 			newNonces: map[bc.Hash]uint64{
 				bc.NewHash([32]byte{0x01}): 1000,
 			},
 		},
 		{ // empty changeset
-			lookups: []bc.Hash{{0x0100000000000000, 0, 0, 0}},
+			lookups: []bc.Hash{bc.NewHash([32]byte{0x01})},
 		},
 		{ // add two new hashes
 			inserts: []bc.Hash{
-				{0x0200000000000000, 0, 0, 0},
-				{0x0300000000000000, 0, 0, 0},
+				bc.NewHash([32]byte{0x02}),
+				bc.NewHash([32]byte{0x03}),
 			},
 			lookups: []bc.Hash{
-				{0x0200000000000000, 0, 0, 0},
-				{0x0300000000000000, 0, 0, 0},
+				bc.NewHash([32]byte{0x02}),
+				bc.NewHash([32]byte{0x03}),
 			},
 			newNonces: map[bc.Hash]uint64{
 				bc.NewHash([32]byte{0x02}): 2000,
 			},
 		},
 		{ // delete one hash
-			deletes:       []bc.Hash{{0x0100000000000000, 0, 0, 0}},
-			deletedNonces: []bc.Hash{{0x0200000000000000, 0, 0, 0}},
+			deletes:       []bc.Hash{bc.NewHash([32]byte{0x01})},
+			deletedNonces: []bc.Hash{bc.NewHash([32]byte{0x02})},
 		},
 		{ // insert and delete at the same time
-			inserts: []bc.Hash{{0x0400000000000000, 0, 0, 0}},
-			deletes: []bc.Hash{{0x0400000000000000, 0, 0, 0}},
+			inserts: []bc.Hash{bc.NewHash([32]byte{0x04})},
+			deletes: []bc.Hash{bc.NewHash([32]byte{0x04})},
 		},
 	}
 
