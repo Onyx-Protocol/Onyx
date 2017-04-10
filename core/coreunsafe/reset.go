@@ -29,7 +29,7 @@ var (
 func ResetBlockchain(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 	if !config.BuildConfig.Reset {
 		// Shouldn't ever happen; This package shouldn't even be
-		// included in binaries built without the reset_allowed tag.
+		// included in binaries built without the reset tag.
 		panic("reset called on reset disabled binary")
 	}
 
@@ -65,7 +65,7 @@ func ResetBlockchain(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 func ResetEverything(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 	if !config.BuildConfig.Reset {
 		// Shouldn't ever happen; This package shouldn't even be
-		// included in binaries built without the reset_allowed tag.
+		// included in binaries built without the reset tag.
 		panic("reset called on reset disabled binary")
 	}
 

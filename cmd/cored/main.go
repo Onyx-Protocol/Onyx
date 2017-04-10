@@ -86,7 +86,7 @@ var (
 	}
 
 	// By default, a core is not able to reset its data.
-	// This feature can be turned on with the reset_allowed build tag.
+	// This feature can be turned on with the reset build tag.
 	resetIfAllowedAndRequested = func(pg.DB) {}
 )
 
