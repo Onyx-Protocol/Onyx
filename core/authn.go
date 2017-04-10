@@ -45,7 +45,7 @@ func (a *apiAuthn) handler(next http.Handler) http.Handler {
 
 func (a *apiAuthn) auth(req *http.Request) error {
 	if req.TLS != nil && req.TLS.HandshakeComplete && len(req.TLS.VerifiedChains) > 0 {
-		// A client certificate was received.
+		// A valid client certificate was received.
 		// No need to authenticate access token.
 		//
 		// TODO(boymanjor): use subject name
