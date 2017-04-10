@@ -66,11 +66,11 @@ Limitations:
 **Output:** `xprv`, a root extended private key.
 
 1. Compute 64-byte string `xprv = HMAC-SHA512(key: "Root", data: seed)`.
-2. Prune the `xprv` to produce a valid scalar:
+2. Prune the first 32 bytes of `xprv` to produce a valid scalar:
     1. the lowest 3 bits of the first byte are cleared,
     2. the highest bit of the last byte is cleared,
-    3. the second highest bit of the 32nd byte is set,
-    4. the third highest bit of the 32nd byte is cleared.
+    3. the second highest bit of the last byte is set,
+    4. the third highest bit of the last byte is cleared.
 3. Return `xprv`.
 
 
@@ -97,11 +97,11 @@ Limitations:
 
 1. Split `xprv` in two halves: 32-byte scalar `s` and 32-byte derivation key `dk`.
 2. Compute `xprv’ = HMAC-SHA512(key: dk, data: "H" || s || selector)`.
-3. Prune the `xprv’` to produce a valid scalar:
+3. Prune the first 32 bytes of `xprv’` to produce a valid scalar:
     1. the lowest 3 bits of the first byte are cleared,
     2. the highest bit of the last byte is cleared,
-    3. the second highest bit of the 32nd byte is set,
-    4. the third highest bit of the 32nd byte is cleared.
+    3. the second highest bit of the last byte is set,
+    4. the third highest bit of the last byte is cleared.
 4. Return `xprv’`.
 
 

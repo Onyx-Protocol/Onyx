@@ -3,6 +3,7 @@ package chainkd
 import (
 	"crypto/rand"
 	"crypto/sha512"
+	"crypto/hmac"
 	"encoding/binary"
 	"hash"
 	"io"
@@ -30,12 +31,16 @@ func NewXPrv(r io.Reader) (xprv XPrv, err error) {
 	if err != nil {
 		return xprv, err
 	}
-	hasher := sha512.New()
-	hasher.Write([]byte("Chain seed"))
-	hasher.Write(entropy[:])
-	hasher.Sum(xprv[:0])
+	return RootXPrv(entropy[:]), nil
+}
+
+// RootXPrv takes a seed binary string and produces a new XPrv.
+func RootXPrv(seed []byte) (xprv XPrv) {
+	h := hmac.New(sha512.New, []byte("Root"))
+	h.Write(seed)
+	h.Sum(xprv[:0])
 	modifyScalar(xprv[:32])
-	return xprv, nil
+	return
 }
 
 func (xprv XPrv) XPub() XPub {
@@ -206,9 +211,11 @@ func hashKeySaltHelper(version byte, key, salt []byte) hash.Hash {
 	return hasher
 }
 
-// s must be >= 32 bytes long and gets rewritten in place
+// s must be >= 32 bytes long and gets rewritten in place.
+// This is NOT the same pruning as in Ed25519: it additionally clears the third 
+// highest bit to ensure subkeys do not overflow the second highest bit.
 func modifyScalar(s []byte) {
 	s[0] &= 248
-	s[31] &= 127
-	s[31] |= 64
+	s[31] &= 31 // clear top 3 bits
+	s[31] |= 64 // set second highest bit
 }
