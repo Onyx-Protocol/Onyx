@@ -21,7 +21,6 @@ func (a *AssetID) UnmarshalText(b []byte) error {
 	*a = h.Byte32()
 	return err
 }
-
 func (a *AssetID) UnmarshalJSON(b []byte) error {
 	var h Hash
 	err := h.UnmarshalJSON(b)
@@ -69,11 +68,11 @@ type AssetAmount struct {
 func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
 	n1, err := io.ReadFull(r, a.AssetID[:])
 	if err != nil {
-		return int(n1), err
+		return n1, err
 	}
 	var n2 int
 	a.Amount, n2, err = blockchain.ReadVarint63(r)
-	return int(n1) + n2, err
+	return n1 + n2, err
 }
 
 func (a *AssetAmount) writeTo(w io.Writer) error {
