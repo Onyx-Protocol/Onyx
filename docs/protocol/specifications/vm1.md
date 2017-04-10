@@ -75,8 +75,8 @@ Execution of any of the following instructions results in immediate failure:
 * [AMOUNT](#amount)
 * [MINTIME](#mintime)
 * [MAXTIME](#maxtime)
-* [TXDATAHASH](#txdatahash)
-* [DATAHASH](#datahash)
+* [TXDATA](#txdata)
+* [ENTRYDATA](#entrydata)
 * [INDEX](#index)
 * [OUTPUTID](#outputid)
 * [NONCE](#nonce)
@@ -1114,9 +1114,9 @@ Note: [standard memory cost](#standard-memory-cost) is applied *after* the instr
 
 Code  | Stack Diagram                                        | Cost
 ------|------------------------------------------------------|-----------------------------------------------------
-0xc1  | (index datahash amount assetid version prog → q)     | 16; [standard memory cost](#standard-memory-cost)
+0xc1  | (index data amount assetid version prog → q)         | 16; [standard memory cost](#standard-memory-cost)
 
-1. Pops 6 items from the data stack: `index`, `datahash`, `amount`, `assetid`, `version`, `prog`.
+1. Pops 6 items from the data stack: `index`, `data`, `amount`, `assetid`, `version`, `prog`.
 2. Fails if `index` is negative or not a valid [number](#vm-number).
 3. Fails if the number of outputs is less or equal to `index`.
 4. Fails if `amount` and `version` are not non-negative [numbers](#vm-number).
@@ -1130,7 +1130,7 @@ Code  | Stack Diagram                                        | Cost
             * if [expansion flag](#vm-sate) is `false`, `prog` must be an empty string.
         4. asset ID equals `assetid`,
         5. amount equals `amount`,
-        6. `datahash` is an empty string or it matches the data hash in the destination entry.
+        6. `data` is an empty string or it matches the 32-byte data string in the destination entry.
 5. If the entry is an [issuance](blockchain.md#issuance-1) or a [spend](blockchain.md#spend-1):
     1. If the [destination entry](blockchain.md#value-destination-1) is a [Mux](blockchain.md#mux-1), performs checks as described in step 5.
     2. If the [destination entry](blockchain.md#value-destination-1) is an [output](blockchain.md#output-1) or a [retirement](blockchain.md#retirement-1):
@@ -1207,24 +1207,24 @@ If the value is zero or greater than 2<sup>63</sup>–1, pushes 2<sup>63</sup>�
 
 Fails if executed in the [block context](#block-context).
 
-#### TXDATAHASH
+#### TXDATA
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0xc7  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
+0xc7  | (∅ → string32)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the transaction's reference data hash as specified in the Data field of the [transaction header](blockchain.md#transaction-header).
+Pushes the transaction's data string as stored in the [transaction header](blockchain.md#transaction-header).
 
 Fails if executed in the [block context](#block-context).
 
 
-#### DATAHASH
+#### ENTRYDATA
 
 Code  | Stack Diagram   | Cost
 ------|-----------------|-----------------------------------------------------
-0xc8  | (∅ → hash)      | 1; [standard memory cost](#standard-memory-cost)
+0xc8  | (∅ → string32)  | 1; [standard memory cost](#standard-memory-cost)
 
-Pushes the data hash as specified in the Data field of the current [entry](blockchain.md#entry).
+Pushes the data string as stored in the current [entry](blockchain.md#entry).
 
 Fails if executed in the [block context](#block-context).
 
