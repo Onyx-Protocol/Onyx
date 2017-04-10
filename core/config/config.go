@@ -111,14 +111,13 @@ func loadFromPG(ctx context.Context, db pg.DB) (*Config, error) {
 	c := new(Config)
 	var (
 		blockSignerData []byte
-		blockchainID    bc.Hash
 		configuredAt    time.Time
 	)
 	err := db.QueryRow(ctx, q).Scan(
 		&c.Id,
 		&c.IsSigner,
 		&c.IsGenerator,
-		&blockchainID,
+		&c.BlockchainId,
 		&c.GeneratorUrl,
 		&c.GeneratorAccessToken,
 		&c.BlockPub,
@@ -133,8 +132,6 @@ func loadFromPG(ctx context.Context, db pg.DB) (*Config, error) {
 	} else if err != nil {
 		return nil, errors.Wrap(err, "fetching Core config")
 	}
-
-	c.BlockchainId = blockchainID.Proto()
 
 	if len(blockSignerData) > 0 {
 		err = json.Unmarshal(blockSignerData, &c.Signers)
@@ -172,11 +169,12 @@ func deleteFromPG(ctx context.Context, db pg.DB) error {
 func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, c *Config) error {
 	var err error
 	if !c.IsGenerator {
+		blockchainID, err := c.BlockchainId.MarshalText()
 		err = tryGenerator(
 			ctx,
 			c.GeneratorUrl,
 			c.GeneratorAccessToken,
-			c.BlockchainId.Hash().String(),
+			string(blockchainID),
 		)
 		if err != nil {
 			return err
@@ -235,7 +233,7 @@ func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, c *Config) erro
 			return err
 		}
 
-		c.BlockchainId = initialBlockHash.Proto()
+		c.BlockchainId = &initialBlockHash
 		chain.MaxIssuanceWindow = bc.MillisDuration(c.MaxIssuanceWindowMs)
 	}
 

@@ -8,7 +8,7 @@ message Config {
 	string id = 1;
 	bool is_signer = 2;
 	bool is_generator = 3;
-	bc.ProtoHash blockchain_id = 4;
+	bc.Hash blockchain_id = 4;
 	string generator_url = 5;
 	string generator_access_token = 6;
 	string block_hsm_url = 7;
