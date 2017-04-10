@@ -48,6 +48,7 @@ func (a *API) info(ctx context.Context) (map[string]interface{}, error) {
 			"version":       config.Version,
 			"build_commit":  config.BuildCommit,
 			"build_date":    config.BuildDate,
+			"build_config":  config.BuildConfig,
 		}, nil
 	}
 	// If we're not the leader, forward to the leader.
@@ -108,6 +109,7 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"version":                           config.Version,
 		"build_commit":                      config.BuildCommit,
 		"build_date":                        config.BuildDate,
+		"build_config":                      config.BuildConfig,
 		"health":                            a.health(),
 	}
 

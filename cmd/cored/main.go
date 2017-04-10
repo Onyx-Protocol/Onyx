@@ -117,6 +117,7 @@ func main() {
 	fmt.Printf("production: %t\n", config.Production)
 	fmt.Printf("build-commit: %v\n", config.BuildCommit)
 	fmt.Printf("build-date: %v\n", config.BuildDate)
+	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
 
 	if *v {
 		return
@@ -262,7 +263,7 @@ func launchConfiguredCore(ctx context.Context, db pg.DB, conf *config.Config, pr
 	// Allow loopback/localhost requests in Developer Edition.
 	opts = append(opts, core.AlternateAuth(authLoopbackInDev))
 	opts = append(opts, core.IndexTransactions(*indexTxs))
-	opts = append(opts, devEnableMockHSM(db)...)
+	opts = append(opts, enableMockHSM(db)...)
 	// Add any configured API request rate limits.
 	if *rpsToken > 0 {
 		opts = append(opts, core.RateLimit(limit.AuthUserID, 2*(*rpsToken), *rpsToken))
@@ -337,7 +338,7 @@ func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c
 			BlockchainID: conf.BlockchainID.String(),
 		}}
 	} else {
-		hsm, err = devHSM(db)
+		hsm, err = mockHSM(db)
 		if err != nil {
 			return nil, err
 		}
