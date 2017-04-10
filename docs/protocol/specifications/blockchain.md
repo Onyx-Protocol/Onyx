@@ -7,8 +7,8 @@
   * [LEB128](#leb128)
   * [Integer](#integer)
   * [String](#string)
+  * [String32](#string32)
   * [SHA3](#sha3)
-  * [Hash](#hash)
   * [List](#list)
   * [Struct](#struct)
   * [Public Key](#public-key)
@@ -74,16 +74,17 @@ The maximum allowed length of the underlying string is 0x7fffffff (2<sup>31</sup
 
 The empty string is encoded as a single byte 0x00, a one-byte string is encoded with two bytes 0x01 0xNN, a two-byte string is 0x02 0xNN 0xMM, etc. 
 
+### String32
+
+A fixed-length 32-byte string typically used to encode [hashes](#sha3).
+
+
 ### SHA3
 
 *SHA3* refers to the SHA3-256 function as defined in [FIPS202](https://dx.doi.org/10.6028/NIST.FIPS.202) with a fixed-length 32-byte output.
 
 This hash function is used throughout all data structures and algorithms in this spec,
 with the exception of SHA-512 (see [FIPS180](http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf)) used internally as function H inside Ed25519 (see [RFC8032](https://tools.ietf.org/html/rfc8032)).
-
-### Hash
-
-A fixed-length 32-byte string.
 
 ### List
 
@@ -110,12 +111,12 @@ Auxiliary data structures are [Structs](#struct) that are not [entries](#entries
 
 ### Extension Struct
 
-An `Extension Struct` is encoded as a single 32-byte hash. 
+An `Extension Struct` is encoded as a single [32-byte string](#string32). 
 Future versions of the protocol may add additional fields as `Extension Structs` that will be compressed in a single hash for backwards compatibility.
 
 ### Pointer
 
-A `Pointer` is encoded as a [Hash](#hash), and identifies another [entry](#entry) by its [ID](#entry-id). 
+A `Pointer` is encoded as a [String32](#string32), and identifies another [entry](#entry) by its [ID](#entry-id). 
 
 `Pointer` restricts the possible acceptable types: `Pointer<X>` must refer to an entry of type `X`.
 
@@ -153,11 +154,11 @@ Bytecode         | [String](#string)   | The program code to be executed.
 
 ### Asset Definition
 
-Field                 | Type                | Description
-----------------------|---------------------|----------------
-Initial Block ID      | [Hash](#hash)       | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
-Issuance Program      | [Program](#program) | Program that must be satisfied for this asset to be issued.
-Asset Reference Data  | [Hash](#hash)       | Hash of the reference data (formerly known as the “asset definition”) for this asset.
+Field                 | Type                  | Description
+----------------------|-----------------------|----------------
+Initial Block ID      | [String32](#string32) | [ID](#entry-id) of the genesis block for the blockchain in which this asset is defined.
+Issuance Program      | [Program](#program)   | Program that must be satisfied for this asset to be issued.
+Asset Reference Data  | [String32](#string32) | Hash of the reference data (formerly known as the “asset definition”) for this asset.
 
 
 ### Asset ID
@@ -175,7 +176,7 @@ AssetAmount1 struct encapsulates the number of units of an asset together with i
 
 Field            | Type                 | Description
 -----------------|----------------------|----------------
-AssetID          | [Hash](#hash)        | [Asset ID](#asset-id).
+AssetID          | [String32](#string32)| [Asset ID](#asset-id).
 Value            | [Integer](#integer)  | Number of units of the referenced asset.
 
 
@@ -334,11 +335,11 @@ Type       | String               | "blockheader"
 Body       | Struct               | See below.  
 Witness    | Struct               | See below.
 
-Body field               | Type              | Description
--------------------------|-------------------|----------------------------------------------------------
+Body field               | Type                    | Description
+-------------------------|-------------------------|----------------------------------------------------------
 Version                  | Integer                 | Block version, equals 1.
 Height                   | Integer                 | Block serial number.
-Previous Block ID        | Hash                    | [Hash](#block-id) of the previous block or all-zero string.
+Previous Block ID        | String32                | [Hash](#block-id) of the previous block or all-zero string.
 Timestamp                | Integer                 | Time of the block in milliseconds since 00:00:00 UTC Jan 1, 1970.
 Transactions Merkle Root | MerkleRoot<TxHeader>    | Root hash of the [merkle binary hash tree](#merkle-binary-tree) formed by the transaction IDs of all transactions included in the block.
 Assets Merkle Root       | PatriciaRoot<Output1>   | Root hash of the [merkle patricia tree](#merkle-patricia-tree) of the set of unspent outputs with asset version 1 after applying the block. See [Assets Merkle Root](#assets-merkle-root) for details.
@@ -390,10 +391,10 @@ Body Field | Type                                    | Description
 -----------|-----------------------------------------|-------------------------
 Version    | Integer                                 | Transaction version, equals 1.
 Results    | List\<Pointer\<Output 1\|Retirement 1\>\>   | A list of pointers to Outputs or Retirements. This list must contain at least one item.
-Data       | Hash                                    | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
+Data       | String32                                | Hash of the reference data for the transaction, or a string of 32 zero-bytes (representing no reference data).
 Mintime    | Integer                                 | Must be either zero or a timestamp lower than the timestamp of the block that includes the transaction
 Maxtime    | Integer                                 | Must be either zero or a timestamp higher than the timestamp of the block that includes the transaction.
-ExtHash    | [ExtStruct](#extension-struct)                 | Hash of all extension fields. (See [Extstruct](#extension-struct).) If `Version` is known, this must be 32 zero-bytes.
+ExtHash    | [ExtStruct](#extension-struct)          | Hash of all extension fields. (See [Extstruct](#extension-struct).) If `Version` is known, this must be 32 zero-bytes.
 
 ### Transaction ID
 
@@ -423,7 +424,7 @@ Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource1         | The source of the units to be included in this output.
 ControlProgram      | Program              | The program to control this output.
-Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+Data                | String32             | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
 
@@ -444,7 +445,7 @@ Witness             | Struct               | Empty struct.
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
 Source              | ValueSource1         | The source of the units that are being retired.
-Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+Data                | String32             | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
 #### Retirement Validation
@@ -462,8 +463,8 @@ Witness             | Struct               | See below.
 
 Body field          | Type                 | Description
 --------------------|----------------------|----------------
-SpentOutput         | Pointer<Output1>      | The Output entry consumed by this spend.
-Data                | Hash                 | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+SpentOutput         | Pointer<Output1>     | The Output entry consumed by this spend.
+Data                | String32             | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct) | If the transaction version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                 | Description
@@ -494,7 +495,7 @@ Body field          | Type                            | Description
 --------------------|---------------------------------|----------------
 Anchor              | Pointer<Nonce|Spend1|Issuance1> | Entry that this issuance is anchored to.
 Value               | AssetAmount1           | Asset ID and amount being issued.
-Data                | Hash                   | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
+Data                | String32               | Hash of the reference data for this entry, or a string of 32 zero-bytes (representing no reference data).
 ExtHash             | [ExtStruct](#extension-struct)| If the transaction version is known, this must be 32 zero-bytes.
 
 Witness field       | Type                                      | Description
