@@ -490,9 +490,8 @@ func rootErr(e error) error {
 	}
 }
 
-func hashData(data []byte) (h bc.Hash) {
+func hashData(data []byte) bc.Hash {
 	var b32 [32]byte
 	sha3pool.Sum256(b32[:], data)
-	h.FromByte32(b32)
-	return h
+	return bc.NewHash(b32)
 }

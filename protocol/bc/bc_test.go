@@ -16,7 +16,7 @@ func serialize(t *testing.T, wt io.WriterTo) []byte {
 	return b.Bytes()
 }
 
-func mustDecodeHash(s string) (h Hash) {
+func mustDecodeHash(s string) Hash {
 	var b32 [32]byte
 	if len(s) != hex.EncodedLen(len(b32)) {
 		panic("wrong length hash")
@@ -25,6 +25,5 @@ func mustDecodeHash(s string) (h Hash) {
 	if err != nil {
 		panic(err)
 	}
-	h.FromByte32(b32)
-	return h
+	return NewHash(b32)
 }

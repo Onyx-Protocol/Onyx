@@ -583,17 +583,15 @@ func bools(lit string) []uint8 {
 	return append(b[:31*8], b[32*8-len(lit):]...)
 }
 
-func hashForLeaf(item []byte) (h bc.Hash) {
-	h.FromByte32(sha3.Sum256(append([]byte{0x00}, item...)))
-	return h
+func hashForLeaf(item []byte) bc.Hash {
+	return bc.NewHash(sha3.Sum256(append([]byte{0x00}, item...)))
 }
 
-func hashForNonLeaf(a, b bc.Hash) (h bc.Hash) {
+func hashForNonLeaf(a, b bc.Hash) bc.Hash {
 	d := []byte{0x01}
 	d = append(d, a.Bytes()...)
 	d = append(d, b.Bytes()...)
-	h.FromByte32(sha3.Sum256(d))
-	return h
+	return bc.NewHash(sha3.Sum256(d))
 }
 
 func hashPtr(h bc.Hash) *bc.Hash {

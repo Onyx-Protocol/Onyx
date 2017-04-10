@@ -15,8 +15,11 @@ import (
 
 var EmptyStringHash = NewHash(sha3.Sum256(nil))
 
-func NewHash(b [32]byte) (h Hash) {
-	h.FromByte32(b)
+func NewHash(b32 [32]byte) (h Hash) {
+	h.V0 = binary.BigEndian.Uint64(b32[0:8])
+	h.V1 = binary.BigEndian.Uint64(b32[8:16])
+	h.V2 = binary.BigEndian.Uint64(b32[16:24])
+	h.V3 = binary.BigEndian.Uint64(b32[24:32])
 	return h
 }
 
@@ -26,13 +29,6 @@ func (h Hash) Byte32() (b32 [32]byte) {
 	binary.BigEndian.PutUint64(b32[16:24], h.V2)
 	binary.BigEndian.PutUint64(b32[24:32], h.V3)
 	return b32
-}
-
-func (h *Hash) FromByte32(b32 [32]byte) {
-	h.V0 = binary.BigEndian.Uint64(b32[0:8])
-	h.V1 = binary.BigEndian.Uint64(b32[8:16])
-	h.V2 = binary.BigEndian.Uint64(b32[16:24])
-	h.V3 = binary.BigEndian.Uint64(b32[24:32])
 }
 
 // MarshalText satisfies the TextMarshaler interface.
@@ -51,7 +47,7 @@ func (h *Hash) UnmarshalText(b []byte) error {
 	if err != nil {
 		return err
 	}
-	h.FromByte32(b32)
+	*h = NewHash(b32)
 	return nil
 }
 
@@ -64,7 +60,7 @@ func (h *Hash) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	h.FromByte32(b32)
+	*h = NewHash(b32)
 	return nil
 }
 
@@ -85,7 +81,7 @@ func (h *Hash) Scan(val interface{}) error {
 	if err != nil {
 		return err
 	}
-	h.FromByte32(b32)
+	*h = NewHash(b32)
 	return nil
 }
 
@@ -112,6 +108,6 @@ func (h *Hash) ReadFrom(r io.Reader) (int64, error) {
 	if err != nil {
 		return n, err
 	}
-	h.FromByte32(b32)
+	*h = NewHash(b32)
 	return n, nil
 }

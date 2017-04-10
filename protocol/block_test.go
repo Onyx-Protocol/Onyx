@@ -267,9 +267,8 @@ func mustDecodeHex(s string) []byte {
 	return data
 }
 
-func mustDecodeHash(s string) (h bc.Hash) {
+func mustDecodeHash(s string) bc.Hash {
 	var b32 [32]byte
 	copy(b32[:], mustDecodeHex(s))
-	h.FromByte32(b32)
-	return h
+	return bc.NewHash(b32)
 }
