@@ -35,7 +35,7 @@ Limitations:
 
 1. Depth of non-hardened derivation is limited to 2<sup>20</sup> (more than million levels).
 2. Number of distinct root keys or hardened public keys is 2<sup>250</sup>, half of the keyspace allowed in EdDSA.
-3. Number of distinct non-hardened public keys is 2<sup>230</sup> (reduced to allow a comfortably large number of derivation levels while keeping strict compatibility with EdDSA and ECDH).
+3. Number of distinct non-hardened public keys is 2<sup>230</sup>.
 
 
 ## Definitions
@@ -187,7 +187,7 @@ Resulting 64-byte signing key can be used to create EdDSA signature verifiable b
 Yes. The derivation method only affects relationship between the key and its parent, but does not affect how other keys are derived from that key.
 Note that secrecy of all derived private keys (both hardened and non-hardened, at all levels) from a non-hardened key depends on keeping either the parent extended public key secret, or all non-hardened sibling keys secret.
 
-**Why this scheme uses variable-length selectors instead of 31-bit indices as in BIP32?**
+**Why does this scheme use variable-length selectors instead of 31-bit indices as in BIP32?**
 
 In our experience index-based derivation is not always convenient and can be extended to longer selectors only through additional derivation levels which is less efficient (e.g. 128-bit selectors would require 5 scalar multiplications in BIP32). However, users are free to use integer selectors by simply encoding them as 32-bit or 64-bit integers and passing to ChainKD. If you need to mix integer- and string-based indexing, you could prepend a type byte or use a standard encoding such as [Protocol Buffers](https://developers.google.com/protocol-buffers/) or [JSON](http://www.json.org).
 
@@ -195,7 +195,12 @@ In our experience index-based derivation is not always convenient and can be ext
 
 These extra bits improve entropy of the nonce as [discussed below](#nonce-entropy). One of the design goals was to keep the size of the extended keys most compact (64 bytes for xprv and xpub). Alternative would be to reduce entropy of the _derivation key_ by storing extra random bits there, but the scalar has 5 bits pre-determined, so we can simply use them.
 
+TBD:
 
+* naming: xpub,xprv, dk vs chaincode, 
+* torsion-safe representative by HdV et al is not used to keep full compatibility with existing codebases that might rely on the high bit set
+* expanded privkey as in NaCl-2011 used for max compatibility with existing EdDSA codebases
+* 2^20 depth chosen for comfortable max depth while keeping prob of collisions negligibly low.  (reduced to allow a comfortably large number of derivation levels while keeping strict compatibility with EdDSA and ECDH).
 
 
 ## Security
@@ -252,7 +257,7 @@ The depth limit is reset at each level where hardened derivation is used.
 
 EdDSA derives a 64-byte signing key from 256 bits of entropy. In ChainKD the extended private key carries the secret scalar as-is and 32 bytes of _derivation key_. The 64-byte signing key as required by EdDSA consists of a secret scalar (unmodified) and additional 32 bytes of _prefix_ used to generate nonce for the signature.
 
-In ChainKD that prefix is derived non-linearly from the extended private key, having the entropy of the secret scalar (250 bits). The prefix is not derived in parallel to secret scalar, but from it, making the construction similar to the one in [RFC6979](https://tools.ietf.org/html/rfc6979) where nonce is also computed from a secret scalar and a message.
+In ChainKD that prefix is derived non-linearly from the extended private key, having the entropy of the secret scalar (250 bits). The prefix is not derived in parallel to secret scalar, but from it, making the construction similar to the one in [RFC6979](https://tools.ietf.org/html/rfc6979) where the nonce is also computed from a secret scalar and a message using an HKDF construction.
 
 
 
@@ -331,6 +336,8 @@ All values use hexadecimal encoding.
 We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous version of this scheme and their proposal [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA) where derived keys are also safe to use in ECDH implementations using Montgomery Ladder. We improve on their proposal further by slighly reducing collision probability of child keys, reducing size of xprv from 96 to 64 bytes and using extensible output hash function SHAKE128 instead of HMAC-SHA512.
 
 We also thank Gregory Maxwell and Pieter Wuille for clarifying design decisions behind [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) and capability of selectively proving linkage between arbitrary child keys.
+
+Finally, thanks to all participants on the [Curves](https://moderncrypto.org/mail-archive/curves/2017/000858.html) and [CFRG](https://www.ietf.org/mail-archive/web/cfrg/current/msg09077.html) mailing lists: Henry de Valence, Mike Hamburg, Trevor Perrin, Taylor R Campbell and others.
 
 
 ## References
