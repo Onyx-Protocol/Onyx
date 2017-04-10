@@ -84,7 +84,7 @@ Execution of any of the following instructions results in immediate failure:
 
 ### Transaction context
 
-Transaction context is defined by the pair of the entire transaction and the index of one of its inputs indicating the “current input”.
+Transaction context is defined by the pair of the entire transaction and a “current entry” that contains the evaluated predicate (e.g. a [spend](blockchain.md#spend-1), [issuance](blockchain.md#issuance-1) or [mux](blockchain.md#mux-1)).
 
 Execution of any of the following instructions results in immediate failure:
 
@@ -105,7 +105,7 @@ Execution of any of the following instructions results in immediate failure:
 6. Expansion Flag
 7. Execution Context:
     a. Block
-    b. (Transaction, Input Index)
+    b. (Transaction, Current Entry)
 
 **Initial State** has empty stacks, uninitialized program, PC set to zero, and *run limit* set to 10,000.
 
