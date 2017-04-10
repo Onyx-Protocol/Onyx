@@ -129,6 +129,7 @@ func main() {
 	fmt.Printf("build-commit: %v\n", config.BuildCommit)
 	fmt.Printf("build-date: %v\n", config.BuildDate)
 	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
+	fmt.Printf("loopback-authn: %t\n", config.BuildConfig.LoopbackAuthn)
 
 	if *v {
 		return
