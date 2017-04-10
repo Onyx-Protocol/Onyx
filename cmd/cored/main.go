@@ -80,7 +80,7 @@ var (
 
 	// By default, requests made on the loopback interface
 	// are authenticated. To allow unauthenticated requests
-	// on this interface use the unauthn_loopback build tag.
+	// on this interface use the no_loopback_authn build tag.
 	unauthnLoopback = func(req *http.Request) bool {
 		return false
 	}
