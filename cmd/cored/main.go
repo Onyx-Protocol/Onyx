@@ -26,7 +26,6 @@ import (
 	"chain/core/config"
 	"chain/core/generator"
 	"chain/core/migrate"
-	"chain/core/mockhsm"
 	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
@@ -74,17 +73,6 @@ var (
 
 	race          []interface{} // initialized in race.go
 	httpsRedirect = true        // initialized in plain_http.go
-
-	// By default, the mock HSM is enabled for use.
-	// This feature is turned off for production binaries
-	// with the no_mockshm build tag.
-	enableMockHSM = func(db pg.DB) []core.RunOption {
-		return []core.RunOption{core.MockHSM(mockhsm.New(db))}
-	}
-
-	mockHSM = func(db pg.DB) (blocksigner.Signer, error) {
-		return mockhsm.New(db), nil
-	}
 )
 
 func init() {
