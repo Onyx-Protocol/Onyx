@@ -238,9 +238,9 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 		accountID = append(accountID, out.AccountID)
 		cpIndex = append(cpIndex, int64(out.keyIndex))
 		program = append(program, out.ControlProgram)
-		sourceID = append(sourceID, out.sourceID[:])
+		sourceID = append(sourceID, out.sourceID.Bytes())
 		sourcePos = append(sourcePos, int64(out.sourcePos))
-		refData = append(refData, out.refData[:])
+		refData = append(refData, out.refData.Bytes())
 		change = append(change, out.change)
 	}
 

@@ -10,7 +10,7 @@ import (
 )
 
 func newBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *vm.Context {
-	blockHash := block.ID[:]
+	blockHash := block.ID.Bytes()
 	return &vm.Context{
 		VMVersion: 1,
 		Code:      prog,
@@ -25,7 +25,7 @@ func newBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *vm.C
 func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]byte) *vm.Context {
 	var (
 		numResults = uint64(len(tx.Results))
-		txData     = tx.Body.Data[:]
+		txData     = tx.Body.Data.Bytes()
 		entryID    = bc.EntryID(entry) // TODO(bobg): pass this in, don't recompute it
 
 		assetID       *[]byte
@@ -49,9 +49,9 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 		assetID = &a1
 		amount = &e.Body.Value.Amount
 		destPos = &e.Witness.Destination.Position
-		d := e.Body.Data[:]
+		d := e.Body.Data.Bytes()
 		entryData = &d
-		a2 := e.Body.AnchorID[:]
+		a2 := e.Body.AnchorID.Bytes()
 		anchorID = &a2
 
 	case *bc.Spend:
@@ -59,17 +59,17 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 		assetID = &a1
 		amount = &e.SpentOutput.Body.Source.Value.Amount
 		destPos = &e.Witness.Destination.Position
-		d := e.Body.Data[:]
+		d := e.Body.Data.Bytes()
 		entryData = &d
-		s := e.Body.SpentOutputID[:]
+		s := e.Body.SpentOutputID.Bytes()
 		spentOutputID = &s
 
 	case *bc.Output:
-		d := e.Body.Data[:]
+		d := e.Body.Data.Bytes()
 		entryData = &d
 
 	case *bc.Retirement:
-		d := e.Body.Data[:]
+		d := e.Body.Data.Bytes()
 		entryData = &d
 	}
 
@@ -79,11 +79,11 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 			hasher := sha3pool.Get256()
 			defer sha3pool.Put256(hasher)
 
-			hasher.Write(entryID[:])
-			hasher.Write(tx.ID[:])
+			hasher.Write(entryID.Bytes())
+			hasher.Write(tx.ID.Bytes())
 
 			var hash bc.Hash
-			hasher.Read(hash[:])
+			hash.ReadFrom(hasher)
 			hashBytes := hash.Bytes()
 			txSigHash = &hashBytes
 		}
@@ -95,7 +95,7 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 		Code:      prog.Code,
 		Arguments: args,
 
-		EntryID: entryID[:],
+		EntryID: entryID.Bytes(),
 
 		TxVersion: &tx.Body.Version,
 
@@ -127,7 +127,7 @@ func (tc *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 				bytes.Equal(prog.Code, code) &&
 				bytes.Equal(value.AssetID[:], assetID) &&
 				value.Amount == amount &&
-				(len(data) == 0 || bytes.Equal(dataHash[:], data)))
+				(len(data) == 0 || bytes.Equal(dataHash.Bytes(), data)))
 		}
 
 		switch e := e.(type) {

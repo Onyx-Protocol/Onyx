@@ -58,11 +58,12 @@ func EntryID(e Entry) (hash Hash) {
 	if err != nil {
 		panic(err)
 	}
-	var innerHash Hash
+
+	var innerHash [32]byte
 	bh.Read(innerHash[:])
 	hasher.Write(innerHash[:])
 
-	hasher.Read(hash[:])
+	hash.ReadFrom(hasher)
 	return hash
 }
 
@@ -91,7 +92,7 @@ func writeForHash(w io.Writer, c interface{}) error {
 		_, err := blockchain.WriteVarstr31(w, []byte(v))
 		return errors.Wrapf(err, "writing string (len %d) for hash", len(v))
 	case Hash:
-		_, err := w.Write(v[:])
+		_, err := v.WriteTo(w)
 		return errors.Wrap(err, "writing Hash for hash")
 	case AssetID:
 		_, err := w.Write(v[:])

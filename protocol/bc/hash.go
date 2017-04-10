@@ -3,6 +3,7 @@ package bc
 import (
 	"bytes"
 	"database/sql/driver"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -12,19 +13,26 @@ import (
 
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
-	"chain/errors"
 )
 
-// Hash represents a 256-bit hash.  By convention, Hash objects are
-// typically passed as values, not as pointers.
-type Hash [32]byte
+// Hash represents a 256-bit hash.
 
-var EmptyStringHash = sha3.Sum256(nil)
+var EmptyStringHash = NewHash(sha3.Sum256(nil))
 
-// String returns the bytes of h encoded in hex.
-func (h Hash) String() string {
-	b, _ := h.MarshalText() // #nosec
-	return string(b)
+func NewHash(b32 [32]byte) (h Hash) {
+	h.V0 = binary.BigEndian.Uint64(b32[0:8])
+	h.V1 = binary.BigEndian.Uint64(b32[8:16])
+	h.V2 = binary.BigEndian.Uint64(b32[16:24])
+	h.V3 = binary.BigEndian.Uint64(b32[24:32])
+	return h
+}
+
+func (h Hash) Byte32() (b32 [32]byte) {
+	binary.BigEndian.PutUint64(b32[0:8], h.V0)
+	binary.BigEndian.PutUint64(b32[8:16], h.V1)
+	binary.BigEndian.PutUint64(b32[16:24], h.V2)
+	binary.BigEndian.PutUint64(b32[24:32], h.V3)
+	return b32
 }
 
 // MarshalText satisfies the TextMarshaler interface.
@@ -32,23 +40,21 @@ func (h Hash) String() string {
 // for formats that can't hold arbitrary binary data.
 // It never returns an error.
 func (h Hash) MarshalText() ([]byte, error) {
-	b := make([]byte, hex.EncodedLen(len(h)))
-	hex.Encode(b, h[:])
-	return b, nil
+	b := h.Byte32()
+	v := make([]byte, 64)
+	hex.Encode(v, b[:])
+	return v, nil
 }
 
 // UnmarshalText satisfies the TextUnmarshaler interface.
 // It decodes hex data from b into h.
-func (h *Hash) UnmarshalText(b []byte) error {
-	if len(b) != hex.EncodedLen(len(h)) {
-		return errors.WithDetailf(
-			fmt.Errorf("bad hash hex length %d", len(b)),
-			"expected hex string of length %d, but got `%s`",
-			hex.EncodedLen(len(h)),
-			b,
-		)
+func (h *Hash) UnmarshalText(v []byte) error {
+	var b [32]byte
+	if len(v) != 64 {
+		return fmt.Errorf("bad length hash string %d", len(v))
 	}
-	_, err := hex.Decode(h[:], b)
+	_, err := hex.Decode(b[:], v)
+	*h = NewHash(b)
 	return err
 }
 
@@ -60,44 +66,34 @@ func (h *Hash) UnmarshalJSON(b []byte) error {
 		*h = Hash{}
 		return nil
 	}
-
-	s := new(string)
-	err := json.Unmarshal(b, s)
+	var s string
+	err := json.Unmarshal(b, &s)
 	if err != nil {
 		return err
 	}
-
-	return h.UnmarshalText([]byte(*s))
+	return h.UnmarshalText([]byte(s))
 }
 
 func (h Hash) Bytes() []byte {
-	return h[:]
+	b32 := h.Byte32()
+	return b32[:]
 }
 
 // Value satisfies the driver.Valuer interface
 func (h Hash) Value() (driver.Value, error) {
-	return h[:], nil
+	return h.Bytes(), nil
 }
 
 // Scan satisfies the driver.Scanner interface
-func (h *Hash) Scan(val interface{}) error {
-	switch v := val.(type) {
-	case []byte:
-		copy(h[:], v)
-		return nil
-	default:
-		return fmt.Errorf("Hash.Scan received unsupported type %T", val)
+func (h *Hash) Scan(v interface{}) error {
+	var buf [32]byte
+	b, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("Hash.Scan received unsupported type %T", v)
 	}
-}
-
-// ParseHash takes a hex-encoded hash and returns
-// a 32 byte array.
-func ParseHash(s string) (h Hash, err error) {
-	if len(s) != hex.EncodedLen(len(h)) {
-		return h, errors.New("wrong hex length")
-	}
-	_, err = hex.Decode(h[:], []byte(s))
-	return h, errors.Wrap(err, "decode hex")
+	copy(buf[:], b)
+	*h = NewHash(buf)
+	return nil
 }
 
 func writeFastHash(w io.Writer, d []byte) error {
@@ -111,12 +107,19 @@ func writeFastHash(w io.Writer, d []byte) error {
 	return err
 }
 
-// WriteTo writes p to w.
+// WriteTo satisfies the io.WriterTo interface.
 func (h *Hash) WriteTo(w io.Writer) (int64, error) {
-	n, err := w.Write(h[:])
+	n, err := w.Write(h.Bytes())
 	return int64(n), err
 }
 
-func (h *Hash) readFrom(r io.Reader) (int, error) {
-	return io.ReadFull(r, h[:])
+// WriteTo satisfies the io.ReaderFrom interface.
+func (h *Hash) ReadFrom(r io.Reader) (int64, error) {
+	var b32 [32]byte
+	n, err := io.ReadFull(r, b32[:])
+	if err != nil {
+		return int64(n), err
+	}
+	*h = NewHash(b32)
+	return int64(n), nil
 }

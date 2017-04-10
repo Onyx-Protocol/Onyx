@@ -197,7 +197,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 
 	case *bc.Issuance:
 		if e.Witness.AssetDefinition.InitialBlockID != vs.blockchainID {
-			return errors.WithDetailf(errWrongBlockchain, "current blockchain %x, asset defined on blockchain %x", vs.blockchainID[:], e.Witness.AssetDefinition.InitialBlockID[:])
+			return errors.WithDetailf(errWrongBlockchain, "current blockchain %x, asset defined on blockchain %x", vs.blockchainID.Bytes(), e.Witness.AssetDefinition.InitialBlockID.Bytes())
 		}
 
 		computedAssetID := e.Witness.AssetDefinition.ComputeAssetID()
@@ -226,7 +226,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		}
 
 		if anchored != vs.entryID {
-			return errors.WithDetailf(errMismatchedReference, "issuance %x anchor is for %x", vs.entryID[:], anchored[:])
+			return errors.WithDetailf(errMismatchedReference, "issuance %x anchor is for %x", vs.entryID.Bytes(), anchored.Bytes())
 		}
 
 		anchorVS := *vs
@@ -322,7 +322,7 @@ func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 	}
 
 	if dest.Ref != vstate.entryID {
-		return errors.Wrapf(errMismatchedReference, "value source for %x has disagreeing destination %x", vstate.entryID[:], dest.Ref[:])
+		return errors.Wrapf(errMismatchedReference, "value source for %x has disagreeing destination %x", vstate.entryID.Bytes(), dest.Ref.Bytes())
 	}
 
 	if dest.Position != vstate.sourcePos {
@@ -362,7 +362,7 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 	}
 
 	if src.Ref != vs.entryID {
-		return errors.Wrapf(errMismatchedReference, "value destination for %x has disagreeing source %x", vs.entryID[:], src.Ref[:])
+		return errors.Wrapf(errMismatchedReference, "value destination for %x has disagreeing source %x", vs.entryID.Bytes(), src.Ref.Bytes())
 	}
 
 	if src.Position != vs.destPos {
@@ -424,7 +424,7 @@ func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, validateTx 
 	}
 
 	if txRoot != b.Body.TransactionsRoot {
-		return errors.WithDetailf(errMismatchedMerkleRoot, "computed %x, current block wants %x", txRoot[:], b.Body.TransactionsRoot[:])
+		return errors.WithDetailf(errMismatchedMerkleRoot, "computed %x, current block wants %x", txRoot.Bytes(), b.Body.TransactionsRoot.Bytes())
 	}
 
 	return nil
@@ -438,7 +438,7 @@ func validateBlockAgainstPrev(b, prev *bc.BlockEntries) error {
 		return errors.WithDetailf(errMisorderedBlockHeight, "previous block height %d, current block height %d", prev.Body.Height, b.Body.Height)
 	}
 	if prev.ID != b.Body.PreviousBlockID {
-		return errors.WithDetailf(errMismatchedBlock, "previous block ID %x, current block wants %x", prev.ID[:], b.Body.PreviousBlockID[:])
+		return errors.WithDetailf(errMismatchedBlock, "previous block ID %x, current block wants %x", prev.ID.Bytes(), b.Body.PreviousBlockID.Bytes())
 	}
 	if b.Body.TimestampMS <= prev.Body.TimestampMS {
 		return errors.WithDetailf(errMisorderedBlockTime, "previous block time %d, current block time %d", prev.Body.TimestampMS, b.Body.TimestampMS)

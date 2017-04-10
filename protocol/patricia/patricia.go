@@ -78,7 +78,7 @@ func (t *Tree) Contains(item []byte) bool {
 	h := sha3pool.Get256()
 	h.Write(leafPrefix)
 	h.Write(item)
-	h.Read(hash[:])
+	hash.ReadFrom(h)
 	sha3pool.Put256(h)
 	return n != nil && n.Hash() == hash
 }
@@ -111,7 +111,7 @@ func (t *Tree) Insert(item []byte) error {
 	h := sha3pool.Get256()
 	h.Write(leafPrefix)
 	h.Write(item)
-	h.Read(hash[:])
+	hash.ReadFrom(h)
 	sha3pool.Put256(h)
 
 	if t.root == nil {
@@ -279,11 +279,11 @@ func (n *node) calcHash() {
 	h.Write(interiorPrefix)
 	for _, c := range n.children {
 		c.calcHash()
-		h.Write(c.hash[:])
+		c.hash.WriteTo(h)
 	}
 
 	var hash bc.Hash
-	h.Read(hash[:])
+	hash.ReadFrom(h)
 	n.hash = &hash
 	sha3pool.Put256(h)
 }

@@ -104,11 +104,11 @@ func TestLeafVsInternalNodes(t *testing.T) {
 
 	// Create a second tree using an internal node from tr1.
 	tr1 := new(Tree)
-	err = tr1.Insert(tr0.root.children[0].hash[:]) // internal node of tr0
+	err = tr1.Insert(tr0.root.children[0].hash.Bytes()) // internal node of tr0
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = tr1.Insert(tr0.root.children[1].hash[:]) // sibling leaf node of above node ^
+	err = tr1.Insert(tr0.root.children[1].hash.Bytes()) // sibling leaf node of above node ^
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -584,14 +584,14 @@ func bools(lit string) []uint8 {
 }
 
 func hashForLeaf(item []byte) bc.Hash {
-	return sha3.Sum256(append([]byte{0x00}, item...))
+	return bc.NewHash(sha3.Sum256(append([]byte{0x00}, item...)))
 }
 
 func hashForNonLeaf(a, b bc.Hash) bc.Hash {
 	d := []byte{0x01}
-	d = append(d, a[:]...)
-	d = append(d, b[:]...)
-	return sha3.Sum256(d)
+	d = append(d, a.Bytes()...)
+	d = append(d, b.Bytes()...)
+	return bc.NewHash(sha3.Sum256(d))
 }
 
 func hashPtr(h bc.Hash) *bc.Hash {

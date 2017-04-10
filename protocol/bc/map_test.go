@@ -50,16 +50,16 @@ func TestMapTx(t *testing.T) {
 				}
 				if newOut.Body.Data != hashData(oldOut.ReferenceData) {
 					want := hashData(oldOut.ReferenceData)
-					t.Errorf("header.Body.ResultIDs[%d].(*output).Body.Data is %x, expected %x", i, newOut.Body.Data[:], want[:])
+					t.Errorf("header.Body.ResultIDs[%d].(*output).Body.Data is %x, expected %x", i, newOut.Body.Data.Bytes(), want.Bytes())
 				}
 				if newOut.Body.ExtHash != (Hash{}) {
-					t.Errorf("header.Body.ResultIDs[%d].(*output).Body.ExtHash is %x, expected zero", i, newOut.Body.ExtHash[:])
+					t.Errorf("header.Body.ResultIDs[%d].(*output).Body.ExtHash is %x, expected zero", i, newOut.Body.ExtHash.Bytes())
 				}
 			} else {
 				t.Errorf("header.Body.ResultIDs[%d] has type %s, expected output1", i, resultEntry.Type())
 			}
 		} else {
-			t.Errorf("entryMap contains nothing for header.Body.ResultIDs[%d] (%x)", i, header.Body.ResultIDs[i][:])
+			t.Errorf("entryMap contains nothing for header.Body.ResultIDs[%d] (%x)", i, header.Body.ResultIDs[i].Bytes())
 		}
 	}
 }

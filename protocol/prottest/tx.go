@@ -67,7 +67,7 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 	// Sign with a simple TXSIGHASH signature.
 	builder = vmutil.NewBuilder()
 	h := tx.SigHash(0)
-	builder.AddData(h[:])
+	builder.AddData(h.Bytes())
 	builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
 	sigprog := builder.Program
 	sigproghash := sha3.Sum256(sigprog)

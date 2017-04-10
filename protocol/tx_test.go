@@ -48,7 +48,7 @@ func newDest(t testing.TB) *testDest {
 
 func (d *testDest) sign(t testing.TB, tx *bc.Tx, index uint32) {
 	txsighash := tx.SigHash(index)
-	prog, _ := vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", txsighash[:]))
+	prog, _ := vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", txsighash.Bytes()))
 	h := sha3.Sum256(prog)
 	sig := ed25519.Sign(d.privKey, h[:])
 	tx.Inputs[index].SetArguments([][]byte{vm.Int64Bytes(0), sig, prog})

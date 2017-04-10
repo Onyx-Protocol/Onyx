@@ -116,7 +116,7 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*Ann
 			return nil, err
 		}
 		annotatedTxBlobs = append(annotatedTxBlobs, string(b))
-		hashes = append(hashes, tx.ID[:])
+		hashes = append(hashes, tx.ID.Bytes())
 		positions = append(positions, uint32(pos))
 		locals = append(locals, bool(tx.IsLocal))
 		referenceDatas = append(referenceDatas, string(*tx.ReferenceData))
@@ -160,7 +160,7 @@ func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *bc.Block, anno
 
 	for _, annotatedTx := range annotatedTxs {
 		for i, in := range annotatedTx.Inputs {
-			inputTxHashes = append(inputTxHashes, annotatedTx.ID[:])
+			inputTxHashes = append(inputTxHashes, annotatedTx.ID.Bytes())
 			inputIndexes = append(inputIndexes, int64(i))
 			inputTypes = append(inputTypes, in.Type)
 			inputAssetIDs = append(inputAssetIDs, in.AssetID[:])
@@ -180,7 +180,7 @@ func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *bc.Block, anno
 			inputReferenceDatas = append(inputReferenceDatas, string(*in.ReferenceData))
 			inputLocals = append(inputLocals, bool(in.IsLocal))
 			if in.SpentOutputID != nil {
-				inputSpentOutputIDs = append(inputSpentOutputIDs, in.SpentOutputID[:])
+				inputSpentOutputIDs = append(inputSpentOutputIDs, in.SpentOutputID.Bytes())
 			} else {
 				inputSpentOutputIDs = append(inputSpentOutputIDs, nil)
 			}
@@ -234,10 +234,10 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 		}
 
 		for outIndex, out := range annotatedTxs[pos].Outputs {
-			outputIDs = append(outputIDs, out.OutputID[:])
+			outputIDs = append(outputIDs, out.OutputID.Bytes())
 			outputTxPositions = append(outputTxPositions, uint32(pos))
 			outputIndexes = append(outputIndexes, uint32(outIndex))
-			outputTxHashes = append(outputTxHashes, tx.ID[:])
+			outputTxHashes = append(outputTxHashes, tx.ID.Bytes())
 			outputTypes = append(outputTypes, out.Type)
 			outputPurposes = append(outputPurposes, out.Purpose)
 			outputAssetIDs = append(outputAssetIDs, out.AssetID[:])

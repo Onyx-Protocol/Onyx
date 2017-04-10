@@ -42,7 +42,7 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store, outputIDs ...bc.Ha
 
 	s := state.Empty()
 	for _, outputID := range outputIDs {
-		s.Tree.Insert(outputID[:])
+		s.Tree.Insert(outputID.Bytes())
 	}
 
 	err = c.CommitAppliedBlock(ctx, b1, s)

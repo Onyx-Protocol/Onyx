@@ -271,5 +271,5 @@ func (h *HSM) Sign(ctx context.Context, pub ed25519.PublicKey, bh *bc.BlockHeade
 		return nil, ErrInvalidKeySize
 	}
 	msg := bh.Hash()
-	return ed25519.Sign(prv, msg[:]), nil
+	return ed25519.Sign(prv, msg.Bytes()), nil
 }

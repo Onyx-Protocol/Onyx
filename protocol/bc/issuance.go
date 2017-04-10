@@ -26,8 +26,8 @@ func (ii *IssuanceInput) AssetDefinitionHash() (defhash Hash) {
 	sha := sha3pool.Get256()
 	defer sha3pool.Put256(sha)
 	sha.Write(ii.AssetDefinition)
-	sha.Read(defhash[:])
-	return
+	defhash.ReadFrom(sha)
+	return defhash
 }
 
 func NewIssuanceInput(

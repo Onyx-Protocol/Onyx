@@ -122,7 +122,7 @@ func (m *Manager) createTestControlProgram(ctx context.Context, t testing.TB, ac
 }
 
 func randHash() (h bc.Hash) {
-	rand.Read(h[:])
+	h.ReadFrom(rand.Reader)
 	return h
 }
 

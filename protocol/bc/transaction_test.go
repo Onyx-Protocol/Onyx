@@ -23,7 +23,7 @@ func TestTransaction(t *testing.T) {
 	cases := []struct {
 		tx   *Tx
 		hex  string
-		hash [32]byte
+		hash Hash
 	}{
 		{
 			tx: NewTx(TxData{
@@ -197,7 +197,7 @@ func TestTransaction(t *testing.T) {
 			t.Errorf("test %d: bytes = %x want %x", i, got, want)
 		}
 		if test.tx.ID != test.hash {
-			t.Errorf("test %d: hash = %s want %x", i, test.tx.ID, test.hash)
+			t.Errorf("test %d: hash = %x want %x", i, test.tx.ID.Bytes(), test.hash.Bytes())
 		}
 
 		txJSON, err := json.Marshal(test.tx)

@@ -227,7 +227,7 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 		return 0, err
 	}
 
-	_, err = io.ReadFull(r, bh.PreviousBlockHash[:])
+	_, err = bh.PreviousBlockHash.ReadFrom(r)
 	if err != nil {
 		return 0, err
 	}
@@ -275,7 +275,7 @@ func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(bh.PreviousBlockHash[:])
+	_, err = bh.PreviousBlockHash.WriteTo(w)
 	if err != nil {
 		return err
 	}

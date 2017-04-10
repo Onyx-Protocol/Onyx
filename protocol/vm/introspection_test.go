@@ -5,7 +5,6 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/crypto/sha3pool"
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/validation"
@@ -102,9 +101,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 	var zeroHash bc.Hash
 	nonceBytes := []byte{36, 37, 38}
 	issuanceProgram := []byte("issueprog")
-	var emptyHash bc.Hash
-	sha3pool.Sum256(emptyHash[:], nil)
-	assetID := bc.ComputeAssetID(issuanceProgram, zeroHash, 1, emptyHash)
+	assetID := bc.ComputeAssetID(issuanceProgram, zeroHash, 1, bc.EmptyStringHash)
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
 			bc.NewSpendInput(nil, bc.Hash{}, assetID, 5, 0, []byte("spendprog"), bc.Hash{}, []byte("ref")),
@@ -126,7 +123,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedStack := [][]byte{outputID[:]}
+	expectedStack := [][]byte{outputID.Bytes()}
 	if !testutil.DeepEqual(gotVM.DataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v; vm is:\n%s", expectedStack, gotVM.DataStack, spew.Sdump(vm))
 	}
@@ -177,7 +174,7 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 	expectedNonce := bc.NewNonce(expectedNonceProg, expectedNonceTimeRange)
 	expectedNonceID := bc.EntryID(expectedNonce)
 
-	expectedStack = [][]byte{expectedNonceID[:]}
+	expectedStack = [][]byte{expectedNonceID.Bytes()}
 	if !testutil.DeepEqual(gotVM.DataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v", expectedStack, gotVM.DataStack)
 	}
@@ -416,7 +413,7 @@ func TestIntrospectionOps(t *testing.T) {
 		wantVM: &VirtualMachine{
 			RunLimit:     49959,
 			DeferredCost: 40,
-			DataStack:    [][]byte{tx.TxEntries.TxInputIDs[0][:]},
+			DataStack:    [][]byte{tx.TxEntries.TxInputIDs[0].Bytes()},
 			Context:      context0,
 		},
 	}, {
@@ -428,7 +425,7 @@ func TestIntrospectionOps(t *testing.T) {
 		wantVM: &VirtualMachine{
 			RunLimit:     49959,
 			DeferredCost: 40,
-			DataStack:    [][]byte{tx.TxEntries.TxInputIDs[1][:]},
+			DataStack:    [][]byte{tx.TxEntries.TxInputIDs[1].Bytes()},
 			Context:      validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[1], bc.Program{VMVersion: 1}, nil),
 		},
 	}, {
@@ -440,7 +437,7 @@ func TestIntrospectionOps(t *testing.T) {
 		wantVM: &VirtualMachine{
 			RunLimit:     49959,
 			DeferredCost: 40,
-			DataStack:    [][]byte{tx.TxEntries.TxInputs[0].(*bc.Spend).Witness.Destination.Ref[:]},
+			DataStack:    [][]byte{tx.TxEntries.TxInputs[0].(*bc.Spend).Witness.Destination.Ref.Bytes()},
 			Context:      validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0].(*bc.Spend).Witness.Destination.Entry, bc.Program{VMVersion: 1}, nil),
 		},
 	}}

@@ -110,7 +110,7 @@ func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		if sig == nil {
 			continue
 		}
-		k := indexKey(pubkeys, hashForSig[:], sig)
+		k := indexKey(pubkeys, hashForSig.Bytes(), sig)
 		if k >= 0 && goodSigs[k] == nil {
 			goodSigs[k] = sig
 			nready++

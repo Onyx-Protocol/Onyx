@@ -22,11 +22,11 @@ type BlockCommitment struct {
 }
 
 func (bc *BlockCommitment) readFrom(r io.Reader) error {
-	_, err := io.ReadFull(r, bc.TransactionsMerkleRoot[:])
+	_, err := bc.TransactionsMerkleRoot.ReadFrom(r)
 	if err != nil {
 		return err
 	}
-	_, err = io.ReadFull(r, bc.AssetsMerkleRoot[:])
+	_, err = bc.AssetsMerkleRoot.ReadFrom(r)
 	if err != nil {
 		return err
 	}
@@ -35,11 +35,11 @@ func (bc *BlockCommitment) readFrom(r io.Reader) error {
 }
 
 func (bc *BlockCommitment) writeTo(w io.Writer) error {
-	_, err := w.Write(bc.TransactionsMerkleRoot[:])
+	_, err := bc.TransactionsMerkleRoot.WriteTo(w)
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(bc.AssetsMerkleRoot[:])
+	_, err = bc.AssetsMerkleRoot.WriteTo(w)
 	if err != nil {
 		return err
 	}
