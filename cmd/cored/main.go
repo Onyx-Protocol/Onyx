@@ -87,7 +87,7 @@ var (
 
 	// By default, a core is not able to reset its data.
 	// This feature can be turned on with the reset build tag.
-	resetIfAllowedAndRequested = func(pg.DB) {}
+	resetIfAllowedAndRequested = func(pg.DB, *raft.Service) {}
 )
 
 func init() {

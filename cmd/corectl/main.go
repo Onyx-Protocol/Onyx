@@ -69,6 +69,7 @@ func main() {
 		versionProdPrintln()
 		fmt.Printf("build-commit: %v\n", buildCommit)
 		fmt.Printf("build-date: %v\n", buildDate)
+		fmt.Printf("reset: %t\n", config.BuildConfig.Reset)
 		return
 	}
 
@@ -323,6 +324,29 @@ func migrateIfMissingSchema(ctx context.Context, db *sql.DB) {
 	err = migrate.Run(db)
 	if err != nil {
 		fatalln("initializing schema", err)
+	}
+}
+
+// reset will attempt a reset rpc call on a remote core. If the
+// core is not configured with reset capabilities an error is returned.
+func reset(db *sql.DB, args []string) {
+	if len(args) != 0 {
+		fatalln("error: reset takes no args")
+	}
+
+	// TODO(tessr): TLS everywhere?
+	client := &rpc.Client{
+		BaseURL: *coreURL,
+	}
+
+	req := map[string]bool{
+		"Everything": true,
+	}
+
+	ctx := context.Background()
+	err := client.Call(ctx, "/reset", req, nil)
+	if err != nil {
+		fatalln("rpc error:", err)
 	}
 }
 
