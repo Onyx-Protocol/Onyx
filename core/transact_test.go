@@ -79,7 +79,7 @@ func TestRecordSubmittedTxs(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 
 	testCases := []struct {
-		hash   [32]byte
+		hash   bc.Hash
 		height uint64
 		want   uint64
 	}{
@@ -94,7 +94,7 @@ func TestRecordSubmittedTxs(t *testing.T) {
 			t.Fatal(err)
 		}
 		if got != tc.want {
-			t.Errorf("%d: got %d want %d for hash %x", i, got, tc.want, h.Bytes())
+			t.Errorf("%d: got %d want %d for hash %x", i, got, tc.want, tc.hash.Bytes())
 		}
 	}
 }
