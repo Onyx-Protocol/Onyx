@@ -49,7 +49,7 @@ var (
 		LoopbackAuth bool `json:"is_loopback_auth"`
 		MockHSM      bool `json:"is_mockhsm"`
 	}{
-		LoopbackAuth: true,
+		LoopbackAuth: false,
 		MockHSM:      true,
 	}
 )

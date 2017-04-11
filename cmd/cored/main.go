@@ -79,9 +79,9 @@ var (
 	httpsRedirect = true        // initialized in plain_http.go
 
 	// By default, requests made on the loopback interface
-	// are authenticated. To allow unauthenticated requests
-	// on this interface use the no_loopback_auth build tag.
-	unauthnLoopback = func(req *http.Request) bool {
+	// must be authenticated. To permit requests on this
+	// interface use the loopback_auth build tag.
+	loopbackAuth = func(req *http.Request) bool {
 		return false
 	}
 )
@@ -253,7 +253,7 @@ func runServer() {
 		h = launchConfiguredCore(ctx, raftDB, db, conf, processID)
 	} else {
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		h = core.RunUnconfigured(ctx, db, core.AlternateAuth(unauthnLoopback))
+		h = core.RunUnconfigured(ctx, db, core.AlternateAuth(loopbackAuth))
 	}
 	mux.Handle("/", h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
@@ -279,7 +279,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 	var opts []core.RunOption
 
 	// Allow loopback/localhost requests in Developer Edition.
-	opts = append(opts, core.AlternateAuth(unauthnLoopback))
+	opts = append(opts, core.AlternateAuth(loopbackAuth))
 	opts = append(opts, core.IndexTransactions(*indexTxs))
 	opts = append(opts, enableMockHSM(db)...)
 	// Add any configured API request rate limits.
