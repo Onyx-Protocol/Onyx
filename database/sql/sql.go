@@ -204,14 +204,14 @@ func (db *DB) Begin(ctx context.Context) (*Tx, error) {
 // The args are for any placeholder parameters in the query.
 func (db *DB) Exec(ctx context.Context, query string, args ...interface{}) (Result, error) {
 	logQuery(ctx, query, args)
-	return db.db.Exec(query, args...)
+	return db.db.ExecContext(ctx, query, args...)
 }
 
 // Query executes a query that returns rows, typically a SELECT.
 // The args are for any placeholder parameters in the query.
 func (db *DB) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
 	logQuery(ctx, query, args)
-	rows, err := db.db.Query(query, args...)
+	rows, err := db.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -223,7 +223,7 @@ func (db *DB) Query(ctx context.Context, query string, args ...interface{}) (*Ro
 // Row's Scan method is called.
 func (db *DB) QueryRow(ctx context.Context, query string, args ...interface{}) *Row {
 	logQuery(ctx, query, args)
-	row := db.db.QueryRow(query, args...)
+	row := db.db.QueryRowContext(ctx, query, args...)
 	return &Row{row: row, ctx: ctx}
 }
 
@@ -241,14 +241,14 @@ func (tx *Tx) Rollback(ctx context.Context) error {
 // For example: an INSERT and UPDATE.
 func (tx *Tx) Exec(ctx context.Context, query string, args ...interface{}) (Result, error) {
 	logQuery(ctx, query, args)
-	return tx.tx.Exec(query, args...)
+	return tx.tx.ExecContext(ctx, query, args...)
 }
 
 // Query executes a query that returns rows, typically a SELECT.
 // The args are for any placeholder parameters in the query.
 func (tx *Tx) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
 	logQuery(ctx, query, args)
-	rows, err := tx.tx.Query(query, args...)
+	rows, err := tx.tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -260,7 +260,7 @@ func (tx *Tx) Query(ctx context.Context, query string, args ...interface{}) (*Ro
 // Row's Scan method is called.
 func (tx *Tx) QueryRow(ctx context.Context, query string, args ...interface{}) *Row {
 	logQuery(ctx, query, args)
-	row := tx.tx.QueryRow(query, args...)
+	row := tx.tx.QueryRowContext(ctx, query, args...)
 	return &Row{row: row, ctx: ctx}
 }
 
