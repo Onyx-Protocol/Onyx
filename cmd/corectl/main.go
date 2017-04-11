@@ -184,7 +184,7 @@ func configGenerator(db *sql.DB, args []string) {
 		Signers:             signers,
 		MaxIssuanceWindowMs: bc.DurationMillis(*maxIssuanceWindow),
 		IsSigner:            *flagK != "",
-		BlockPub:            *flagK,
+		BlockPub:            []byte(*flagK),
 		BlockHsmUrl:         *flagHSMURL,
 		BlockHsmAccessToken: *flagHSMToken,
 	}
@@ -272,7 +272,7 @@ func configNongenerator(db *sql.DB, args []string) {
 	conf.GeneratorUrl = args[1]
 	conf.GeneratorAccessToken = *flagT
 	conf.IsSigner = *flagK != ""
-	conf.BlockPub = *flagK
+	conf.BlockPub = []byte(*flagK)
 	conf.BlockHsmUrl = *flagHSMURL
 	conf.BlockHsmAccessToken = *flagHSMToken
 
