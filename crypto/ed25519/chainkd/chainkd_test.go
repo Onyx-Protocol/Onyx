@@ -85,26 +85,43 @@ func doverify(t *testing.T, xpub XPub, msg, sig []byte, xpubdesc, xprvdesc strin
 	}
 
 	for i := 0; i < 32; i++ {
-		xpub.data[i] ^= 0xff
-		if xpub.Verify(msg, sig) {
-			t.Fatalf("altered %s should not verify signature from %s", xpubdesc, xprvdesc)
+		for mask := byte(1); mask != 0; mask <<= 1 {
+			xpub.data[i] ^= mask
+			if xpub.Verify(msg, sig) {
+				t.Fatalf("altered %s should not verify signature from %s", xpubdesc, xprvdesc)
+			}
+			xpub.data[i] ^= mask
 		}
-		xpub.data[i] ^= 0xff
 	}
 
-	for i := 0; i < len(msg); i++ {
-		msg[i] ^= 0xff
-		if xpub.Verify(msg, sig) {
-			t.Fatalf("%s should not verify signature from %s against altered message", xpubdesc, xprvdesc)
+	// permute only 1/7th of the bits to make tests run faster
+	for i := 0; i < len(msg); i+=7 {
+		for mask := byte(1); mask != 0; mask <<= 1 {
+			msg[i] ^= mask
+			if xpub.Verify(msg, sig) {
+				t.Fatalf("%s should not verify signature from %s against altered message", xpubdesc, xprvdesc)
+			}
+			msg[i] ^= mask
 		}
-		msg[i] ^= 0xff
 	}
 
 	for i := 0; i < len(sig); i++ {
-		sig[i] ^= 0xff
-		if xpub.Verify(msg, sig) {
-			t.Fatalf("%s should not verify altered signature from %s", xpubdesc, xprvdesc)
+		for mask := byte(1); mask != 0; mask <<= 1 {
+			sig[i] ^= mask
+			if xpub.Verify(msg, sig) {
+				t.Fatalf("%s should not verify altered signature from %s", xpubdesc, xprvdesc)
+			}
+			sig[i] ^= mask
 		}
-		sig[i] ^= 0xff
 	}
 }
+
+func TestVectors(t *testing.T) {
+	// TBD: generate and verify test vectors
+	
+}
+
+func TestEdDSABits(t *testing.T) {
+	// TBD: make sure that even after 2^20 derivations the low 3 bits and the high 2 bits are stable.
+}
+
