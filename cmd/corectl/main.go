@@ -33,6 +33,9 @@ var (
 	buildTag    = "?"
 	buildCommit = "?"
 	buildDate   = "?"
+
+	// build config
+	mockHSM = true
 )
 
 // We collect log output in this buffer,
@@ -69,6 +72,7 @@ func main() {
 		versionProdPrintln()
 		fmt.Printf("build-commit: %v\n", buildCommit)
 		fmt.Printf("build-date: %v\n", buildDate)
+		fmt.Printf("mockhsm: %t\n", mockHSM)
 		return
 	}
 
