@@ -11,7 +11,7 @@
   * [Extract public key](#extract-public-key)
   * [Extract signing key](#extract-signing-key)
   * [Encode public key](#encode-public-key)
-* [FAQ](#faq)
+* [Design rationale](#design-rationale)
 * [Security](#security)
 * [Test vectors](#test-vectors)
 * [References](#references)
