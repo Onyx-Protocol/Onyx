@@ -182,17 +182,17 @@ Resulting 64-byte signing key can be used to create EdDSA signature verifiable b
 
 ## Design rationale
 
-TBD:
-
-* naming: xpub,xprv, dk vs chaincode, 
-* torsion-safe representative by HdV et al is not used to keep full compatibility with existing codebases that might rely on the high bit set
-* expanded privkey as in NaCl-2011 used for max compatibility with existing EdDSA codebases
-* 2^20 depth chosen for comfortable max depth while keeping prob of collisions negligibly low.  (reduced to allow a comfortably large number of derivation levels while keeping strict compatibility with EdDSA and ECDH).
-
-
 ### Names
 
-**ChainKD** stands for “”
+**ChainKD** stands for “Chain Key Derivation”.
+
+**Xpub** and **xprv** are terms adoped from the [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
+scheme where public and private keys are _extended_ with additional entropy (“derivation key”)
+
+**Derivation key** or **dk** is an additional 32-byte code stored within _xpub_ and _xprv_
+that allows deriving child keys and proving linkage between any pair of child keys.
+In BIP32 that code is called “chain code”. We chose not to reuse the term of BIP32 in order
+to make it more explicit that the derivation key is _semi-private_.
 
 ### Deriving hardened keys from non-hardened ones
 
@@ -216,6 +216,68 @@ them as 32-bit or 64-bit integers and passing to ChainKD. If you need to mix
 integer- and string-based indexing, you could prepend a type byte or use a standard 
 encoding such as [Protocol Buffers](https://developers.google.com/protocol-buffers/) 
 or [JSON](http://www.json.org).
+
+### Torsion point safety and compatibility
+
+Edwards curve 25519 allows small subgroup attacks when secret scalars are used for 
+Diffie-Hellman key exchange. To prevent leaking a few bits of the scalar, the Curve25519
+protocol and later EdDSA protocol require that the secret scalar is pre-multiplied by 8.
+That way, when the scalar is multiplied by a torsion point, the result is always point at infinity
+which leaks no information about the scalar.
+
+Alternative mechanism to provide safety against small subgroup attacks is using
+a _torsion-safe representative_ of a scalar: transformation `t(s)` that keeps 
+public key unmodified: `t(s)·B == s·B` while multiplication by a torsion point 
+always yields point at infinity: `t(s)·T == O`. In other words, `t(s) == s mod l` 
+and `t(s) == 0 mod 8`.
+
+That transformation was [proposed](https://moderncrypto.org/mail-archive/curves/2017/000866.html) 
+by Henry de Valence, Ian Goldberg, George Kadianakis and Isis Lovecruft on the “Curves” mailing list
+together with efficient time-constant implementation based on precomputed table of 8 scalars.
+
+The torsion-safe representative is indispensable when the keys are being blinded via multiplication 
+(such as in key blinding scheme in [Tor proposal 224](https://gitweb.torproject.org/torspec.git/tree/proposals/224-rend-spec-ng.txt#n1979)).
+
+Unfortunately, torsion-safe representation and blinding by multiplication affect
+the lower and higher bits  that are statically defined by Curve25519 and EdDSA: 
+3 lower bits must be zero and the highest bits must be 1 and 0 (assuming scalar
+is a 32-byte little-endian integer). Software that implements Montgomery ladder 
+or scalar multiplication may make assumptions about the value of these bits, 
+placing constraints on the schemes doing linear operation on the keys.
+
+As a result, to maintain compatibility with EdDSA requirements, ChainKD uses
+the trick described in [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA):
+child keys are blinded via addition of a base point multiple instead of 
+multiplying the parent key (like in BIP32), and the magnitute of the child scalar
+is computed to be a multiple of cofactor (8) and several bits smaller in order 
+to not affect the two highest bits even after deriving many levels deep.
+
+As a result, for all derived keys, low 3 bits remain zero and high 2 bits are
+set to 1 and 0 as required by EdDSA, but at the cost of a hard limit 
+on the derivation depth and a slightly increased (yet negligible) chance
+of child key collisions.
+
+Using derivation via addition of a blinding factor (`s’ = s + f` instead of `s’ = s·f`)
+also provides better performance: scalars are faster to add than multiply, and
+multiplying the factor `f` by a fixed base point can be made significantly faster
+than scalar multiplication by an arbitrary point.
+
+### Signing compatibility
+
+EdDSA defines the private key as a 32-byte random string. The signing procedure then expands 
+that private key into a 64-byte hash, where first half is pruned to be a valid scalar, and the 
+second half is used as a “prefix” to be mixed with the message to generate a secret nonce.
+
+Unofrtunately, such definition of a private key is not compatible with linear operations
+required for _non-hardened_ derivation.
+
+* TBD: expanded privkey as in NaCl-2011 used for max compatibility with existing EdDSA codebases
+
+
+### Depth limit
+
+* TBD: 2^20 depth chosen for comfortable max depth while keeping prob of collisions negligibly low.  (reduced to allow a comfortably large number of derivation levels while keeping strict compatibility with EdDSA and ECDH).
+
 
 
 
@@ -259,7 +321,6 @@ Private keys derived using hardened derivation have 6 bits set, just like the ro
 ### Non-hardened derivation security
 
 Non-hardened derivation consist of adding scalars less that 2<sup>230</sup> (multiplied by 8) to a root private key. The resulting keys have the entropy of the root key (250 bits), but the number of possible public keys is reduced to 2<sup>230</sup> to allow large number of derivation levels. This means collisions of public keys are expected after deriving 2<sup>115</sup> keys. We note that increased probability of collisions does not reduce security of EdDSA signatures or ECDH key exchange; it only marginally reduces unlinkability safety in privacy schemes based on one-time keys.
-
 
 ### Secret scalar compatibility
 
@@ -353,7 +414,7 @@ We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous
 
 We also thank Gregory Maxwell and Pieter Wuille for clarifying design decisions behind [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) and capability of selectively proving linkage between arbitrary child keys.
 
-Finally, thanks to all participants on the [Curves](https://moderncrypto.org/mail-archive/curves/2017/000858.html) and [CFRG](https://www.ietf.org/mail-archive/web/cfrg/current/msg09077.html) mailing lists: Henry de Valence, Mike Hamburg, Trevor Perrin, Taylor R Campbell and others.
+Finally, we thank all participants on the [Curves](https://moderncrypto.org/mail-archive/curves/2017/000858.html) and [CFRG](https://www.ietf.org/mail-archive/web/cfrg/current/msg09077.html) mailing lists: Henry de Valence, Mike Hamburg, Trevor Perrin, Taylor R. Campbell and others.
 
 
 ## References
@@ -361,5 +422,6 @@ Finally, thanks to all participants on the [Curves](https://moderncrypto.org/mai
 1. Hierarchical Deterministic Wallets, [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
 2. EdDSA, [RFC 8032](https://tools.ietf.org/html/rfc8032)
 3. HMAC-SHA512, [RFC 4231](http://tools.ietf.org/html/rfc4231)
+4. [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA)
 
 
