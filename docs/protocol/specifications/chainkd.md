@@ -268,17 +268,21 @@ EdDSA defines the private key as a 32-byte random string. The signing procedure 
 that private key into a 64-byte hash, where first half is pruned to be a valid scalar, and the 
 second half is used as a “prefix” to be mixed with the message to generate a secret nonce.
 
-Unofrtunately, such definition of a private key is not compatible with linear operations
-required for _non-hardened_ derivation.
+Unfortunately, such definition of a private key is not compatible with linear operations
+required for _non-hardened_ derivation. Which means, that no key derivation scheme that
+needs independent key derivation for secret and public keys, is able produce private keys
+fully compatible with EdDSA definition of the signing algorithm.
 
-* TBD: expanded privkey as in NaCl-2011 used for max compatibility with existing EdDSA codebases
+However, [NaCl library](http://nacl.cr.yp.to/sign.html) happens to decouple most of the 
+signing logic from the key representation and uses that 64-byte hash as its “secret key”
+representation for the `sign` function that we call an “expanded private key”.
 
-
-### Depth limit
-
-* TBD: 2^20 depth chosen for comfortable max depth while keeping prob of collisions negligibly low.  (reduced to allow a comfortably large number of derivation levels while keeping strict compatibility with EdDSA and ECDH).
-
-
+ChainKD and authors of [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA)
+proposal use that 64-byte representation to maximize compatibility with the existing EdDSA implementations.
+Our proposal differs slightly from BIP32-Ed25519 in that the private key does not carry additional 32 bytes
+secret entropy just to derive the “prefix” half of the expanded key. Instead, ChainKD
+derives second half of the 64-byte expanded key from the secret scalar itself, reusing its entropy
+and allowing the xprv to be of the same size as xpub — only 64 bytes (scalar + derivation key).
 
 
 ## Security
