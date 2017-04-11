@@ -2,12 +2,13 @@ package chainkd
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"reflect"
 	"testing"
 )
 
-func TestVectors(t *testing.T) {
+func TestVectors1(t *testing.T) {
 	root := RootXPrv([]byte{0x01, 0x02, 0x03})
 
 	verifyTestVector(t, "Root(010203).xprv", root.hex(),
@@ -46,10 +47,53 @@ func TestVectors(t *testing.T) {
 	verifyTestVector(t, "Root(010203)/010203(N)/“”(N).xpub", root.XPub().Child([]byte{0x01, 0x02, 0x03}).Child([]byte{}).hex(),
 		"5786f826e7e09d17d6c1928952653275d81ad5fba728a16b5d0b04bd1ed9ee35e70c8fb4062f4e8b4829ab1788d4a2ca71e056044503d6adfa75b229fb03d877")
 
+	verifyTestVector(t, "Root(010203)/010203(N)/“”(N).xprv", root.Derive([][]byte{[]byte{0x01, 0x02, 0x03}, []byte{}}).hex(),
+		"484148c20a28b663bc71d72e5f84df77e11ae9ac128d450b311635e6cd7c0748e70c8fb4062f4e8b4829ab1788d4a2ca71e056044503d6adfa75b229fb03d877")
+	verifyTestVector(t, "Root(010203)/010203(N)/“”(N).xprv", root.Derive([][]byte{[]byte{0x01, 0x02, 0x03}, []byte{}}).XPub().hex(),
+		"5786f826e7e09d17d6c1928952653275d81ad5fba728a16b5d0b04bd1ed9ee35e70c8fb4062f4e8b4829ab1788d4a2ca71e056044503d6adfa75b229fb03d877")
+	verifyTestVector(t, "Root(010203)/010203(N)/“”(N).xpub", root.XPub().Derive([][]byte{[]byte{0x01, 0x02, 0x03}, []byte{}}).hex(),
+		"5786f826e7e09d17d6c1928952653275d81ad5fba728a16b5d0b04bd1ed9ee35e70c8fb4062f4e8b4829ab1788d4a2ca71e056044503d6adfa75b229fb03d877")
+}
 
-	
+func TestVectors2(t *testing.T) {
+	seed, _ := hex.DecodeString("fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542")
+	root := RootXPrv(seed)
 
-	// TBD: more test vectors
+	verifyTestVector(t, "Root(fffcf9...).xprv", root.hex(),
+		"0031615bdf7906a19360f08029354d12eaaedc9046806aefd672e3b93b024e495a95ba63cf47903eb742cd1843a5252118f24c0c496e9213bd42de70f649a798")
+	verifyTestVector(t, "Root(fffcf9...).xpub", root.XPub().hex(),
+		"f153ef65bbfaec3c8fd4fceb0510529048094093cf7c14970013282973e117545a95ba63cf47903eb742cd1843a5252118f24c0c496e9213bd42de70f649a798")
+
+	verifyTestVector(t, "Root(fffcf9...)/0(N).xprv", root.Child([]byte{0x00}, false).hex(),
+		"b0d0dcae67caf04caca70eae5da892f862ffda71a12eeef0c857250c7e024e49ccb779405d72758d7fd6a562a221bdd30c430424d0b6871bbb54dd070fbbe477")
+	verifyTestVector(t, "Root(fffcf9...)/0(N).xpub", root.Child([]byte{0x00}, false).XPub().hex(),
+		"ef490a29370687a02e1915ddd583e13210b37882befb4381cc9dc14a488309acccb779405d72758d7fd6a562a221bdd30c430424d0b6871bbb54dd070fbbe477")
+	verifyTestVector(t, "Root(fffcf9...)/0(N).xpub", root.XPub().Child([]byte{0x00}).hex(),
+		"ef490a29370687a02e1915ddd583e13210b37882befb4381cc9dc14a488309acccb779405d72758d7fd6a562a221bdd30c430424d0b6871bbb54dd070fbbe477")
+
+	verifyTestVector(t, "Root(fffcf9...)/0(N)/2147483647(H).xprv", root.Child([]byte{0x00}, false).Child([]byte{0xff, 0xff, 0xff, 0x7f}, true).hex(),
+		"787b2712f7dc8674040b212d0ef171dd96aa5c0c3df0104cf2bae8b224d442541c19a82372e94016d103187267ce952a988f80a371b061e4493619a52025ff01")
+	verifyTestVector(t, "Root(fffcf9...)/0(N)/2147483647(H).xpub", root.Child([]byte{0x00}, false).Child([]byte{0xff, 0xff, 0xff, 0x7f}, true).XPub().hex(),
+		"d807d625e9b55c3c099a7d43853f80429146f6f02b53469c1182a6bd45836d021c19a82372e94016d103187267ce952a988f80a371b061e4493619a52025ff01")
+
+	verifyTestVector(t, "Root(fffcf9...)/0(N)/2147483647(H)/1(N).xprv", root.Child([]byte{0x00}, false).Child([]byte{0xff, 0xff, 0xff, 0x7f}, true).Child([]byte{0x01}, false).hex(),
+		"a87166b647dceaac5723eebfdb3fde90007b38a60fd9de3d771ba9ef9ed442542f1ad730181f2a2c1160437dfcd71004c1a8cced671e7c9b772e35e1d47e0ae0")
+	verifyTestVector(t, "Root(fffcf9...)/0(N)/2147483647(H)/1(N).xpub", root.Child([]byte{0x00}, false).Child([]byte{0xff, 0xff, 0xff, 0x7f}, true).Child([]byte{0x01}, false).XPub().hex(),
+		"794473aa11f7148b634e94444332f3ccafbfcb43617bd2751fc113218b1999af2f1ad730181f2a2c1160437dfcd71004c1a8cced671e7c9b772e35e1d47e0ae0")
+	verifyTestVector(t, "Root(fffcf9...)/0(N)/2147483647(H)/1(N).xpub", root.Child([]byte{0x00}, false).Child([]byte{0xff, 0xff, 0xff, 0x7f}, true).XPub().Child([]byte{0x01}).hex(),
+		"794473aa11f7148b634e94444332f3ccafbfcb43617bd2751fc113218b1999af2f1ad730181f2a2c1160437dfcd71004c1a8cced671e7c9b772e35e1d47e0ae0")
+
+	verifyTestVector(t, "Root(fffcf9...)/0(N)/2147483647(H)/1(N)/2147483646(H).xprv", root.Child([]byte{0x00}, false).Child([]byte{0xff, 0xff, 0xff, 0x7f}, true).Child([]byte{0x01}, false).Child([]byte{0xfe, 0xff, 0xff, 0x7f}, true).hex(),
+		"d8abfb1acd80058f7c2590d92b4a4fac6d031fc73ec0229e326921df97987644d246e0ccb91215621d68b74b418ebdaece8b52b0d13fb1e47922910d8c30493f")
+	verifyTestVector(t, "Root(fffcf9...)/0(N)/2147483647(H)/1(N)/2147483646(H).xpub", root.Child([]byte{0x00}, false).Child([]byte{0xff, 0xff, 0xff, 0x7f}, true).Child([]byte{0x01}, false).Child([]byte{0xfe, 0xff, 0xff, 0x7f}, true).XPub().hex(),
+		"11aa4807361528e2bca0f26914b570d84cee26f8603378aa4c36fd1b76ec78ead246e0ccb91215621d68b74b418ebdaece8b52b0d13fb1e47922910d8c30493f")
+
+	verifyTestVector(t, "Root(fffcf9...)/0(N)/2147483647(H)/1(N)/2147483646(H)/2(N).xprv", root.Child([]byte{0x00}, false).Child([]byte{0xff, 0xff, 0xff, 0x7f}, true).Child([]byte{0x01}, false).Child([]byte{0xfe, 0xff, 0xff, 0x7f}, true).Child([]byte{0x02}, false).hex(),
+		"281e8c4aff2fdeb0018ef283b64755f99baf993e3acccee4d87484f21f99764443388d06e53716a83060d4df1cdccfe8364029cfdb9422d5bffc31732fdca243")
+	verifyTestVector(t, "Root(fffcf9...)/0(N)/2147483647(H)/1(N)/2147483646(H)/2(N).xpub", root.Child([]byte{0x00}, false).Child([]byte{0xff, 0xff, 0xff, 0x7f}, true).Child([]byte{0x01}, false).Child([]byte{0xfe, 0xff, 0xff, 0x7f}, true).Child([]byte{0x02}, false).XPub().hex(),
+		"7d152694a55b166f7038aa4aee0f5865c8e777caec8778c41b95d8997754f80343388d06e53716a83060d4df1cdccfe8364029cfdb9422d5bffc31732fdca243")
+	verifyTestVector(t, "Root(fffcf9...)/0(N)/2147483647(H)/1(N)/2147483646(H)/2(N).xpub", root.Child([]byte{0x00}, false).Child([]byte{0xff, 0xff, 0xff, 0x7f}, true).Child([]byte{0x01}, false).Child([]byte{0xfe, 0xff, 0xff, 0x7f}, true).XPub().Child([]byte{0x02}).hex(),
+		"7d152694a55b166f7038aa4aee0f5865c8e777caec8778c41b95d8997754f80343388d06e53716a83060d4df1cdccfe8364029cfdb9422d5bffc31732fdca243")
 }
 
 func TestChildKeys(t *testing.T) {
@@ -178,7 +222,38 @@ func (xprv XPrv) hex() []byte {
 	return s
 }
 
-func TestEdDSABits(t *testing.T) {
-	// TBD: make sure that even after 2^20 derivations the low 3 bits and the high 2 bits are stable.
-	
+func TestBits(t *testing.T) {
+	for i := 0; i < 256; i++ {
+		root := RootXPrv([]byte{byte(i)})
+
+		rootbytes := root.Bytes()
+		if rootbytes[0]&7 != 0 {
+			t.Errorf("ChainKD root key must have low 3 bits set to '000'")
+		}
+		if (rootbytes[31] >> 5) != 2 {
+			t.Errorf("ChainKD root key must have high 3 bits set to '010'")
+		}
+
+		xprv := root
+		for d := 0; d < 1000; d++ { // at least after 1000 levels necessary bits are survived
+			xprv = xprv.Child([]byte("child"), false)
+			xprvbytes := xprv.Bytes()
+
+			if xprvbytes[0]&7 != 0 {
+				t.Errorf("ChainKD non-hardened child key must have low 3 bits set to '000'")
+			}
+			if xprvbytes[31]>>6 != 1 {
+				t.Errorf("ChainKD non-hardened child key must have high 2 bits set to '10' (LE)")
+			}
+
+			hchild := xprv.Child([]byte("hardened child"), true)
+			hchildbytes := hchild.Bytes()
+			if hchildbytes[0]&7 != 0 {
+				t.Errorf("ChainKD hardened key must have low 3 bits set to '000'")
+			}
+			if (hchildbytes[31] >> 5) != 2 {
+				t.Errorf("ChainKD hardened key must have high 3 bits set to '010'")
+			}
+		}
+	}
 }
