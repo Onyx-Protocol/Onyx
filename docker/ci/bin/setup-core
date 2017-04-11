@@ -4,11 +4,11 @@ set -veou pipefail
 
 : ${DATABASE_URL:?must be set}
 
-# waitForGenerator blocks the script and greps
+# waitForLeader blocks the script and greps
 # the generator's output for a log message signifying
 # the generator is fully initialized. It will timeout
 # after 5s.
-waitForGenerator() {(
+waitForLeader() {(
 	set +e
 	start=`date +%s`
 	while [ $(( `date +%s` - $start )) -lt 5 ]; do
@@ -21,8 +21,8 @@ waitForGenerator() {(
 
 PATH=$(go env GOPATH)/bin:$PATH:$CHAIN/bin
 go install -tags 'plain_http' chain/cmd/{cored,corectl}
-corectl migrate
-corectl config-generator
 initlog=`mktemp`
+corectl migrate
 cored 2>&1 | tee $initlog &
-waitForGenerator
+waitForLeader
+corectl config-generator

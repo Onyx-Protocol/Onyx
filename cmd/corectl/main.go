@@ -15,17 +15,19 @@ import (
 	"chain/core/accesstoken"
 	"chain/core/config"
 	"chain/core/migrate"
+	"chain/core/rpc"
 	"chain/crypto/ed25519"
 	"chain/database/sql"
-	chainjson "chain/encoding/json"
 	"chain/env"
 	"chain/generated/rev"
 	"chain/log"
+	"chain/protocol/bc"
 )
 
 // config vars
 var (
-	dbURL = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
+	dbURL   = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
+	coreURL = env.String("CORE_URL", "http://localhost:1999")
 
 	// build vars; initialized by the linker
 	buildTag    = "?"
@@ -118,8 +120,8 @@ func runMigrations(db *sql.DB, args []string) {
 func configGenerator(db *sql.DB, args []string) {
 	const usage = "usage: corectl config-generator [flags] [quorum] [pubkey url]..."
 	var (
-		quorum  int
-		signers []config.BlockSigner
+		quorum  uint32
+		signers []*config.BlockSigner
 		err     error
 	)
 
@@ -154,10 +156,11 @@ func configGenerator(db *sql.DB, args []string) {
 	} else if len(args)%2 != 1 {
 		fatalln(usage)
 	} else {
-		quorum, err = strconv.Atoi(args[0])
+		q64, err := strconv.ParseUint(args[0], 10, 32)
 		if err != nil {
 			fatalln(usage)
 		}
+		quorum = uint32(q64)
 
 		for i := 1; i < len(args); i += 2 {
 			pubkey, err := hex.DecodeString(args[i])
@@ -168,34 +171,39 @@ func configGenerator(db *sql.DB, args []string) {
 				fatalln("error:", "bad ed25519 public key length")
 			}
 			url := args[i+1]
-			signers = append(signers, config.BlockSigner{
+			signers = append(signers, &config.BlockSigner{
 				Pubkey: pubkey,
-				URL:    url,
+				Url:    url,
 			})
 		}
 	}
 
 	conf := &config.Config{
-		IsGenerator: true,
-		Quorum:      quorum,
-		Signers:     signers,
-		MaxIssuanceWindow: chainjson.Duration{
-			Duration: *maxIssuanceWindow,
-		},
+		IsGenerator:         true,
+		Quorum:              quorum,
+		Signers:             signers,
+		MaxIssuanceWindowMs: bc.DurationMillis(*maxIssuanceWindow),
 		IsSigner:            *flagK != "",
 		BlockPub:            *flagK,
-		BlockHSMURL:         *flagHSMURL,
-		BlockHSMAccessToken: *flagHSMToken,
+		BlockHsmUrl:         *flagHSMURL,
+		BlockHsmAccessToken: *flagHSMToken,
 	}
 
 	ctx := context.Background()
 	migrateIfMissingSchema(ctx, db)
-	err = config.Configure(ctx, db, conf)
-	if err != nil {
-		fatalln("error:", err)
+
+	// TODO(tessr): TLS everywhere?
+	client := &rpc.Client{
+		BaseURL: *coreURL,
 	}
 
-	fmt.Println("blockchain id", conf.BlockchainID)
+	err = client.Call(ctx, "/configure", conf, nil)
+	if err != nil {
+		fatalln("rpc error:", err)
+	}
+
+	// TODO(tessr): print blockchain id. This will require making the /configure
+	// endpoint return the BlockchainId before it execs itself.
 }
 
 func createToken(db *sql.DB, args []string) {
@@ -253,23 +261,33 @@ func configNongenerator(db *sql.DB, args []string) {
 		fatalln("error: flags -hsm-url and -hsm-token must be given together")
 	}
 
-	var conf config.Config
-	err := conf.BlockchainID.UnmarshalText([]byte(args[0]))
+	var blockchainID bc.Hash
+	err := blockchainID.UnmarshalText([]byte(args[0]))
 	if err != nil {
 		fatalln("error: invalid blockchain ID:", err)
 	}
-	conf.GeneratorURL = args[1]
+
+	var conf config.Config
+	conf.BlockchainId = &blockchainID
+	conf.GeneratorUrl = args[1]
 	conf.GeneratorAccessToken = *flagT
 	conf.IsSigner = *flagK != ""
 	conf.BlockPub = *flagK
-	conf.BlockHSMURL = *flagHSMURL
-	conf.BlockHSMAccessToken = *flagHSMToken
+	conf.BlockHsmUrl = *flagHSMURL
+	conf.BlockHsmAccessToken = *flagHSMToken
 
 	ctx := context.Background()
 	migrateIfMissingSchema(ctx, db)
-	err = config.Configure(ctx, db, &conf)
+
+	// TODO(tessr): TLS everywhere?
+	client := &rpc.Client{
+		BlockchainID: blockchainID.String(),
+		BaseURL:      *coreURL,
+	}
+
+	err = client.Call(ctx, "/configure", conf, nil)
 	if err != nil {
-		fatalln("error:", err)
+		fatalln("rpc error:", err)
 	}
 }
 

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package config;
+
+import "chain/protocol/bc/hash.proto";
+
+message Config {	
+	string id = 1;
+	bool is_signer = 2;
+	bool is_generator = 3;
+	bc.Hash blockchain_id = 4;
+	string generator_url = 5;
+	string generator_access_token = 6;
+	string block_hsm_url = 7;
+	string block_hsm_access_token = 8;
+	uint64 configured_at = 9;
+	string block_pub = 10;
+	repeated BlockSigner signers = 11;
+	uint32 quorum = 12;
+	uint64 max_issuance_window_ms = 13;
+}
+
+message BlockSigner {
+	string access_token = 1;
+	bytes pubkey = 2;
+	string url = 3;
+}
+
