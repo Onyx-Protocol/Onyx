@@ -6,29 +6,18 @@ import (
 	"strconv"
 )
 
-const (
-	extendedPublicKeySize  = 64
-	extendedPrivateKeySize = 64
-)
-
 var (
 	ErrBadKeyLen = errors.New("bad key length")
 	ErrBadKeyStr = errors.New("bad key string")
 )
 
 func XPrvFromBytes(data []byte) (res XPrv) {
-	if l := len(data); l != extendedPrivateKeySize {
-		panic("chainkd: bad xprv length: " + strconv.Itoa(l))
-	}
-	copy(res.data[:], data[:])
+	res.SetBytes(data)
 	return
 }
 
 func XPubFromBytes(data []byte) (res XPub) {
-	if l := len(data); l != extendedPublicKeySize {
-		panic("chainkd: bad xpub length: " + strconv.Itoa(l))
-	}
-	copy(res.data[:], data[:])
+	res.SetBytes(data)
 	return
 }
 
@@ -42,6 +31,13 @@ func (xpub XPub) Bytes() []byte {
 	return xpub.data[:]
 }
 
+func (xpub *XPub) SetBytes(data []byte) {
+	if l := len(data); l != XPubSize {
+		panic("chainkd: bad xpub length: " + strconv.Itoa(l))
+	}
+	copy(xpub.data[:], data[:])
+}
+
 func (xprv XPrv) MarshalText() ([]byte, error) {
 	hexBytes := make([]byte, hex.EncodedLen(len(xprv.Bytes())))
 	hex.Encode(hexBytes, xprv.Bytes())
@@ -52,8 +48,15 @@ func (xprv XPrv) Bytes() []byte {
 	return xprv.data[:]
 }
 
+func (xprv *XPrv) SetBytes(data []byte) {
+	if l := len(data); l != XPrvSize {
+		panic("chainkd: bad xprv length: " + strconv.Itoa(l))
+	}
+	copy(xprv.data[:], data[:])
+}
+
 func (xpub *XPub) UnmarshalText(inp []byte) error {
-	if len(inp) != 2*extendedPublicKeySize {
+	if len(inp) != 2*XPubSize {
 		return ErrBadKeyStr
 	}
 	_, err := hex.Decode(xpub.data[:], inp)
@@ -65,7 +68,7 @@ func (xpub XPub) String() string {
 }
 
 func (xprv *XPrv) UnmarshalText(inp []byte) error {
-	if len(inp) != 2*extendedPrivateKeySize {
+	if len(inp) != 2*XPrvSize {
 		return ErrBadKeyStr
 	}
 	_, err := hex.Decode(xprv.data[:], inp)

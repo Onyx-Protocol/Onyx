@@ -5,13 +5,18 @@ import (
 	"crypto/rand"
 	"crypto/sha512"
 	"io"
-	
+
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/internal/edwards25519"
 )
 
-type XPrv struct { data [64]byte }
-type XPub struct { data [64]byte }
+const (
+	XPubSize = 64
+	XPrvSize = 64
+)
+
+type XPrv struct{ data [64]byte }
+type XPub struct{ data [64]byte }
 
 // NewXPrv takes a source of random bytes and produces a new XPrv.
 // If r is nil, crypto/rand.Reader is used.

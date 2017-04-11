@@ -131,7 +131,7 @@ func (sw *signatureWitness) sign(ctx context.Context, tpl *Template, index uint3
 
 func contains(list []chainkd.XPub, key chainkd.XPub) bool {
 	for _, k := range list {
-		if bytes.Equal(k[:], key[:]) {
+		if bytes.Equal(k.Bytes(), key.Bytes()) {
 			return true
 		}
 	}

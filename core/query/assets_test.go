@@ -17,6 +17,8 @@ func TestQueryAssets(t *testing.T) {
 	ctx := context.Background()
 	indexer := NewIndexer(pgtest.NewTx(t), prottest.NewChain(t), nil)
 
+	xpub1 := chainkd.RootXPrv([]byte{1}).XPub()
+
 	// Save a bunch of annotated assets to the database.
 	seedAssets := map[string]*AnnotatedAsset{
 		"asset1": {
@@ -24,7 +26,7 @@ func TestQueryAssets(t *testing.T) {
 			Alias:           "dollars",
 			IssuanceProgram: []byte{0xde, 0xad, 0xbe, 0xef},
 			Keys: []*AssetKey{
-				{RootXPub: chainkd.XPub{1}, AssetPubkey: []byte{0x02}},
+				{RootXPub: xpub1, AssetPubkey: []byte{0x02}},
 			},
 			Quorum:     1,
 			Definition: raw(`{"currency_code": "USD"}`),
@@ -36,8 +38,8 @@ func TestQueryAssets(t *testing.T) {
 			Alias:           "gold",
 			IssuanceProgram: []byte{0xde, 0xad, 0xbe, 0xef},
 			Keys: []*AssetKey{
-				{RootXPub: chainkd.XPub{1}, AssetPubkey: []byte{0x03}},
-				{RootXPub: chainkd.XPub{1}, AssetPubkey: []byte{0x04}},
+				{RootXPub: xpub1, AssetPubkey: []byte{0x03}},
+				{RootXPub: xpub1, AssetPubkey: []byte{0x04}},
 			},
 			Quorum:     2,
 			Definition: raw(`{}`),
@@ -48,7 +50,7 @@ func TestQueryAssets(t *testing.T) {
 			ID:              bc.NewAssetID([32]byte{3}),
 			IssuanceProgram: []byte{0xc0, 0x01, 0xca, 0xfe},
 			Keys: []*AssetKey{
-				{RootXPub: chainkd.XPub{1}, AssetPubkey: []byte{0x05}},
+				{RootXPub: xpub1, AssetPubkey: []byte{0x05}},
 			},
 			Quorum:     1,
 			Definition: raw(`{}`),

@@ -95,7 +95,7 @@ func doverify(t *testing.T, xpub XPub, msg, sig []byte, xpubdesc, xprvdesc strin
 	}
 
 	// permute only 1/7th of the bits to make tests run faster
-	for i := 0; i < len(msg); i+=7 {
+	for i := 0; i < len(msg); i += 7 {
 		for mask := byte(1); mask != 0; mask <<= 1 {
 			msg[i] ^= mask
 			if xpub.Verify(msg, sig) {
@@ -118,10 +118,9 @@ func doverify(t *testing.T, xpub XPub, msg, sig []byte, xpubdesc, xprvdesc strin
 
 func TestVectors(t *testing.T) {
 	// TBD: generate and verify test vectors
-	
+
 }
 
 func TestEdDSABits(t *testing.T) {
 	// TBD: make sure that even after 2^20 derivations the low 3 bits and the high 2 bits are stable.
 }
-

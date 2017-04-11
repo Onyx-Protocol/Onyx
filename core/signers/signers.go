@@ -83,7 +83,7 @@ func Create(ctx context.Context, db pg.DB, typ string, xpubs []chainkd.XPub, quo
 
 	sort.Sort(sortKeys(xpubs)) // this transforms the input slice
 	for i := 1; i < len(xpubs); i++ {
-		if bytes.Equal(xpubs[i][:], xpubs[i-1][:]) {
+		if bytes.Equal(xpubs[i].Bytes(), xpubs[i-1].Bytes()) {
 			return nil, errors.WithDetailf(ErrDupeXPub, "duplicated key=%x", xpubs[i])
 		}
 	}
@@ -95,7 +95,7 @@ func Create(ctx context.Context, db pg.DB, typ string, xpubs []chainkd.XPub, quo
 	var xpubBytes [][]byte
 	for _, key := range xpubs {
 		key := key
-		xpubBytes = append(xpubBytes, key[:])
+		xpubBytes = append(xpubBytes, key.Bytes())
 	}
 
 	nullToken := sql.NullString{
@@ -255,10 +255,10 @@ func ConvertKeys(xpubs [][]byte) ([]chainkd.XPub, error) {
 	var xkeys []chainkd.XPub
 	for i, xpub := range xpubs {
 		var xkey chainkd.XPub
-		if len(xpub) != len(xkey) {
+		if len(xpub) != chainkd.XPubSize {
 			return nil, errors.WithDetailf(ErrBadXPub, "key %d: xpub is not valid", i)
 		}
-		copy(xkey[:], xpub)
+		xkey.SetBytes(xpub)
 		xkeys = append(xkeys, xkey)
 	}
 	return xkeys, nil
@@ -267,5 +267,5 @@ func ConvertKeys(xpubs [][]byte) ([]chainkd.XPub, error) {
 type sortKeys []chainkd.XPub
 
 func (s sortKeys) Len() int           { return len(s) }
-func (s sortKeys) Less(i, j int) bool { return bytes.Compare(s[i][:], s[j][:]) < 0 }
+func (s sortKeys) Less(i, j int) bool { return bytes.Compare(s[i].Bytes(), s[j].Bytes()) < 0 }
 func (s sortKeys) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
