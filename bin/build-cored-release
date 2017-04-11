@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Note: This script is intended for developer edition builds.
+# The build tags specified are not safe for production servers.
 set -e
 
 usage() {
