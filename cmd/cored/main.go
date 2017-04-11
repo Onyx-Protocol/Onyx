@@ -262,7 +262,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 	store := txdb.NewStore(db)
-	c, err := protocol.NewChain(ctx, conf.BlockchainId.Hash(), store, heights)
+	c, err := protocol.NewChain(ctx, *conf.BlockchainId, store, heights)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
@@ -302,7 +302,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 		if localSigner != nil {
 			signers = append(signers, localSigner)
 		}
-		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainId.Hash().String(), conf) {
+		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainId.String(), conf) {
 			signers = append(signers, signer)
 		}
 		c.MaxIssuanceWindow = bc.MillisDuration(conf.MaxIssuanceWindowMs)
@@ -316,7 +316,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 			Username:     processID,
 			CoreID:       conf.Id,
 			BuildTag:     buildTag,
-			BlockchainID: conf.BlockchainId.Hash().String(),
+			BlockchainID: conf.BlockchainId.String(),
 		}))
 	}
 
@@ -340,7 +340,7 @@ func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c
 			Username:     processID,
 			CoreID:       conf.Id,
 			BuildTag:     buildTag,
-			BlockchainID: conf.BlockchainId.Hash().String(),
+			BlockchainID: conf.BlockchainId.String(),
 		}}
 	} else {
 		var err error

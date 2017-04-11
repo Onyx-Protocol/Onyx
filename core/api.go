@@ -196,7 +196,7 @@ func (a *API) buildHandler() {
 	handler = coreCounter(handler)
 	handler = timeoutContextHandler(handler)
 	if a.config != nil && a.config.BlockchainId != nil {
-		handler = blockchainIDHandler(handler, a.config.BlockchainId.Hash().String())
+		handler = blockchainIDHandler(handler, a.config.BlockchainId.String())
 	}
 	a.handler = handler
 }

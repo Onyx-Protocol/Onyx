@@ -100,7 +100,7 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"is_generator":                      a.config.IsGenerator,
 		"generator_url":                     a.config.GeneratorUrl,
 		"generator_access_token":            obfuscateTokenSecret(a.config.GeneratorAccessToken),
-		"blockchain_id":                     a.config.BlockchainId.Hash(),
+		"blockchain_id":                     a.config.BlockchainId,
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,

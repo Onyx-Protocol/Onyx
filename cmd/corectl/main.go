@@ -268,7 +268,7 @@ func configNongenerator(db *sql.DB, args []string) {
 	}
 
 	var conf config.Config
-	conf.BlockchainId = blockchainID.Proto()
+	conf.BlockchainId = &blockchainID
 	conf.GeneratorUrl = args[1]
 	conf.GeneratorAccessToken = *flagT
 	conf.IsSigner = *flagK != ""
