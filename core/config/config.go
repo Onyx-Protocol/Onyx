@@ -136,11 +136,10 @@ func loadFromPG(ctx context.Context, db pg.DB) (*Config, error) {
 		return nil, errors.Wrap(err, "fetching Core config")
 	}
 
-	blockPub, err := hex.DecodeString(blockPubHex)
+	c.BlockPub, err = hex.DecodeString(blockPubHex)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	c.BlockPub = string(blockPub)
 
 	if len(blockSignerData) > 0 {
 		err = json.Unmarshal(blockSignerData, &c.Signers)
