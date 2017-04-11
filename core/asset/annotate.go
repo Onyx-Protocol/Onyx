@@ -30,7 +30,7 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []*query.AnnotatedTx) 
 	assetIDs := make([][]byte, 0, len(assetIDMap))
 	for assetID := range assetIDMap {
 		aid := assetID
-		assetIDs = append(assetIDs, aid[:])
+		assetIDs = append(assetIDs, aid.Bytes())
 	}
 	var (
 		tagsByAssetID    = make(map[bc.AssetID]*json.RawMessage, len(assetIDs))

@@ -20,7 +20,7 @@ func TestQueryAssets(t *testing.T) {
 	// Save a bunch of annotated assets to the database.
 	seedAssets := map[string]*AnnotatedAsset{
 		"asset1": {
-			ID:              bc.AssetID{1},
+			ID:              bc.NewAssetID([32]byte{1}),
 			Alias:           "dollars",
 			IssuanceProgram: []byte{0xde, 0xad, 0xbe, 0xef},
 			Keys: []*AssetKey{
@@ -32,7 +32,7 @@ func TestQueryAssets(t *testing.T) {
 			IsLocal:    true,
 		},
 		"asset2": {
-			ID:              bc.AssetID{2},
+			ID:              bc.NewAssetID([32]byte{2}),
 			Alias:           "gold",
 			IssuanceProgram: []byte{0xde, 0xad, 0xbe, 0xef},
 			Keys: []*AssetKey{
@@ -45,7 +45,7 @@ func TestQueryAssets(t *testing.T) {
 			IsLocal:    true,
 		},
 		"asset3": {
-			ID:              bc.AssetID{3},
+			ID:              bc.NewAssetID([32]byte{3}),
 			IssuanceProgram: []byte{0xc0, 0x01, 0xca, 0xfe},
 			Keys: []*AssetKey{
 				{RootXPub: chainkd.XPub{1}, AssetPubkey: []byte{0x05}},

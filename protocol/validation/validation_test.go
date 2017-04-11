@@ -67,8 +67,8 @@ func TestTxValidation(t *testing.T) {
 		{
 			desc: "unbalanced mux assets",
 			f: func() {
-				mux.Body.Sources[0].Value.AssetID = bc.AssetID{255}
-				mux.Body.Sources[0].Entry.(*bc.Issuance).Witness.Destination.Value.AssetID = bc.AssetID{255}
+				mux.Body.Sources[0].Value.AssetID = bc.NewAssetID([32]byte{255})
+				mux.Body.Sources[0].Entry.(*bc.Issuance).Witness.Destination.Value.AssetID = bc.NewAssetID([32]byte{255})
 			},
 			err: errUnbalanced,
 		},
@@ -241,7 +241,7 @@ func TestTxValidation(t *testing.T) {
 			desc: "issuance asset ID mismatch",
 			f: func() {
 				iss := tx.TxInputs[0].(*bc.Issuance)
-				iss.Body.Value.AssetID = bc.AssetID{1}
+				iss.Body.Value.AssetID = bc.NewAssetID([32]byte{1})
 			},
 			err: errMismatchedAssetID,
 		},

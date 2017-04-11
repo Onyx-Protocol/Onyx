@@ -16,10 +16,10 @@ func TestComputeAssetID(t *testing.T) {
 	unhashed = append(unhashed, 0x01) // length of issuanceScript
 	unhashed = append(unhashed, issuanceScript...)
 	unhashed = append(unhashed, EmptyStringHash.Bytes()...)
-	want := sha3.Sum256(unhashed)
+	want := NewAssetID(sha3.Sum256(unhashed))
 
 	if assetID != want {
-		t.Errorf("asset id = %x want %x", assetID[:], want[:])
+		t.Errorf("asset id = %x want %x", assetID.Bytes(), want.Bytes())
 	}
 }
 

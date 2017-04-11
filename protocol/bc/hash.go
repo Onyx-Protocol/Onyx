@@ -107,12 +107,12 @@ func writeFastHash(w io.Writer, d []byte) error {
 }
 
 // WriteTo satisfies the io.WriterTo interface.
-func (h *Hash) WriteTo(w io.Writer) (int64, error) {
+func (h Hash) WriteTo(w io.Writer) (int64, error) {
 	n, err := w.Write(h.Bytes())
 	return int64(n), err
 }
 
-// WriteTo satisfies the io.ReaderFrom interface.
+// ReadFrom satisfies the io.ReaderFrom interface.
 func (h *Hash) ReadFrom(r io.Reader) (int64, error) {
 	var b32 [32]byte
 	n, err := io.ReadFull(r, b32[:])
@@ -121,4 +121,13 @@ func (h *Hash) ReadFrom(r io.Reader) (int64, error) {
 	}
 	*h = NewHash(b32)
 	return int64(n), nil
+}
+
+// IsZero tells whether a Hash pointer is nil or points to an all-zero
+// hash.
+func (h *Hash) IsZero() bool {
+	if h == nil {
+		return true
+	}
+	return *h == Hash{}
 }

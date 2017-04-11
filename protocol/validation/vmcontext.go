@@ -39,13 +39,13 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 	switch e := entry.(type) {
 	case *bc.Nonce:
 		if iss, ok := e.Anchored.(*bc.Issuance); ok {
-			a1 := iss.Body.Value.AssetID[:]
+			a1 := iss.Body.Value.AssetID.Bytes()
 			assetID = &a1
 			amount = &iss.Body.Value.Amount
 		}
 
 	case *bc.Issuance:
-		a1 := e.Body.Value.AssetID[:]
+		a1 := e.Body.Value.AssetID.Bytes()
 		assetID = &a1
 		amount = &e.Body.Value.Amount
 		destPos = &e.Witness.Destination.Position
@@ -55,7 +55,7 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 		anchorID = &a2
 
 	case *bc.Spend:
-		a1 := e.SpentOutput.Body.Source.Value.AssetID[:]
+		a1 := e.SpentOutput.Body.Source.Value.AssetID.Bytes()
 		assetID = &a1
 		amount = &e.SpentOutput.Body.Source.Value.Amount
 		destPos = &e.Witness.Destination.Position
@@ -125,7 +125,7 @@ func (tc *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 		check := func(prog bc.Program, value bc.AssetAmount, dataHash bc.Hash) bool {
 			return (prog.VMVersion == vmVersion &&
 				bytes.Equal(prog.Code, code) &&
-				bytes.Equal(value.AssetID[:], assetID) &&
+				bytes.Equal(value.AssetID.Bytes(), assetID) &&
 				value.Amount == amount &&
 				(len(data) == 0 || bytes.Equal(dataHash.Bytes(), data)))
 		}

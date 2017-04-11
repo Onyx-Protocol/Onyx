@@ -233,7 +233,7 @@ func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*acc
 	)
 	for _, out := range outs {
 		outputID = append(outputID, out.OutputID.Bytes())
-		assetID = append(assetID, out.AssetID[:])
+		assetID = append(assetID, out.AssetID.Bytes())
 		amount = append(amount, int64(out.Amount))
 		accountID = append(accountID, out.AccountID)
 		cpIndex = append(cpIndex, int64(out.keyIndex))
