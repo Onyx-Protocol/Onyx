@@ -7,10 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"chain/core"
-	"chain/core/blocksigner"
 	"chain/core/coreunsafe"
-	"chain/core/mockhsm"
 	"chain/database/pg"
 	"chain/database/raft"
 	"chain/env"
@@ -40,12 +37,4 @@ func resetInDevIfRequested(db pg.DB, rDB *raft.Service) {
 			log.Fatalkv(ctx, log.KeyError, err)
 		}
 	}
-}
-
-func devEnableMockHSM(db pg.DB) []core.RunOption {
-	return []core.RunOption{core.MockHSM(mockhsm.New(db))}
-}
-
-func devHSM(db pg.DB) (blocksigner.Signer, error) {
-	return mockhsm.New(db), nil
 }
