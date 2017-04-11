@@ -138,15 +138,12 @@ func (m *Manager) UpdateTags(ctx context.Context, id, alias *string, tags map[st
 		return errors.Wrap(ErrBadIdentifier)
 	}
 
-	var (
-		signer *signers.Signer
-		err    error
-	)
-
 	tagsParam, err := tagsToNullString(tags)
 	if err != nil {
 		return errors.Wrap(err, "convert tags")
 	}
+
+	var signer *signers.Signer
 
 	if id != nil {
 		signer, err = m.findByID(ctx, *id)
@@ -169,10 +166,6 @@ func (m *Manager) UpdateTags(ctx context.Context, id, alias *string, tags map[st
 		if err != nil {
 			return errors.Wrap(err, "get account by alias")
 		}
-	}
-
-	if err != nil {
-		return err
 	}
 
 	const q = `
