@@ -87,7 +87,7 @@ func mustBuild(filename string) []byte {
 	commit = bytes.TrimSpace(commit)
 	date := time.Now().UTC().Format(time.RFC3339)
 	cmd = exec.Command("go", "build",
-		"-tags", "plain_http",
+		"-tags", "plain_http lookback_auth",
 		"-ldflags", "-X main.buildTag=dev -X main.buildDate="+date+" -X main.buildCommit="+string(commit),
 		"-o", "/dev/stdout",
 		"chain/cmd/"+filename,

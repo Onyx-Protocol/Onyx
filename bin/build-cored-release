@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Note: This script is intended for developer edition builds.
+# The build tags specified are not safe for production servers.
 set -e
 
 usage() {
@@ -48,7 +51,7 @@ DATE=${DATE:-`date +%s`} # date can be set via envvar
 ldflags="-X main.buildTag=$releaseRef -X main.buildCommit=$commit -X main.buildDate=$DATE"
 
 go build\
-  -tags 'plain_http'\
+  -tags 'plain_http loopback_auth'\
   -ldflags "$ldflags"\
   -o $outputDir/cored\
   chain/cmd/cored

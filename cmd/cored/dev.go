@@ -5,8 +5,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/http"
 	"os"
 
 	"chain/core/coreunsafe"
@@ -39,10 +37,4 @@ func resetInDevIfRequested(db pg.DB, rDB *raft.Service) {
 			log.Fatalkv(ctx, log.KeyError, err)
 		}
 	}
-}
-
-func authLoopbackInDev(req *http.Request) bool {
-	// Allow connections from the local host.
-	a, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)
-	return err == nil && a.IP.IsLoopback()
 }
