@@ -27,6 +27,28 @@ func TestVectors(t *testing.T) {
 	verifyTestVector(t, "Root(010203)/010203(N).xpub", root.XPub().Child([]byte{0x01, 0x02, 0x03}).hex(),
 		"2e457bd3bd135cbe5bd46821588ad82b74e8b9cb256e3a956d72322df61b51acd40ba49ebee85271fd1d53a45bfbb228623e98c43227fd1484f17139736f2f39")
 
+	verifyTestVector(t, "Root(010203)/010203(H)/“”(N).xprv", root.Child([]byte{0x01, 0x02, 0x03}, true).Child([]byte{}, false).hex(),
+		"0889925d37b9664af32c78cb8225022b5854586c08f8a9a7ed3a657279b2ab45ae8c6d29a2d80e7dc8a141058ff68c257e59c45daba3184b100456828ed9ade8")
+	verifyTestVector(t, "Root(010203)/010203(H)/“”(N).xpub", root.Child([]byte{0x01, 0x02, 0x03}, true).Child([]byte{}, false).XPub().hex(),
+		"6b45415a0638feb47a5eab07961883fafe476b637de7004111317a2454465ae2ae8c6d29a2d80e7dc8a141058ff68c257e59c45daba3184b100456828ed9ade8")
+	verifyTestVector(t, "Root(010203)/010203(H)/“”(N).xpub", root.Child([]byte{0x01, 0x02, 0x03}, true).XPub().Child([]byte{}).hex(),
+		"6b45415a0638feb47a5eab07961883fafe476b637de7004111317a2454465ae2ae8c6d29a2d80e7dc8a141058ff68c257e59c45daba3184b100456828ed9ade8")
+
+	verifyTestVector(t, "Root(010203)/010203(N)/“”(H).xprv", root.Child([]byte{0x01, 0x02, 0x03}, false).Child([]byte{}, true).hex(),
+		"b8b626e7ce7e86c7e673e5652de643b98631771bb1602136bdb154863e606e5c360b2aee72cb1b1d62eccba447c164629ea956758982ccbb0a1a26fc991b7fd2")
+	verifyTestVector(t, "Root(010203)/010203(N)/“”(H).xpub", root.Child([]byte{0x01, 0x02, 0x03}, false).Child([]byte{}, true).XPub().hex(),
+		"174eba73de14f9af2693c63c16e3466577ffc4e780846c8ff81f69fd0346af83360b2aee72cb1b1d62eccba447c164629ea956758982ccbb0a1a26fc991b7fd2")
+
+	verifyTestVector(t, "Root(010203)/010203(N)/“”(N).xprv", root.Child([]byte{0x01, 0x02, 0x03}, false).Child([]byte{}, false).hex(),
+		"484148c20a28b663bc71d72e5f84df77e11ae9ac128d450b311635e6cd7c0748e70c8fb4062f4e8b4829ab1788d4a2ca71e056044503d6adfa75b229fb03d877")
+	verifyTestVector(t, "Root(010203)/010203(N)/“”(N).xpub", root.Child([]byte{0x01, 0x02, 0x03}, false).Child([]byte{}, false).XPub().hex(),
+		"5786f826e7e09d17d6c1928952653275d81ad5fba728a16b5d0b04bd1ed9ee35e70c8fb4062f4e8b4829ab1788d4a2ca71e056044503d6adfa75b229fb03d877")
+	verifyTestVector(t, "Root(010203)/010203(N)/“”(N).xpub", root.XPub().Child([]byte{0x01, 0x02, 0x03}).Child([]byte{}).hex(),
+		"5786f826e7e09d17d6c1928952653275d81ad5fba728a16b5d0b04bd1ed9ee35e70c8fb4062f4e8b4829ab1788d4a2ca71e056044503d6adfa75b229fb03d877")
+
+
+	
+
 	// TBD: more test vectors
 }
 
