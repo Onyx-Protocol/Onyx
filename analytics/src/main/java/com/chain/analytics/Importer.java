@@ -35,7 +35,7 @@ public class Importer {
 
   private static final String TRUE = "1";
   private static final String FALSE = "0";
-  private static final long defaultTimeoutMillis = 30 * 1000; // 30 seconds
+  private static final long DEFAULT_TIMEOUT_MILLIS = 60 * 1000; // 60 seconds
 
   private static final Logger logger = LogManager.getLogger();
   private static final Gson gson = new Gson();
@@ -192,7 +192,7 @@ public class Importer {
             new QueryBuilder()
                 .setFilter(mFeed.filter)
                 .setAfter(mFeed.after)
-                .setTimeout(defaultTimeoutMillis)
+                .setTimeout(DEFAULT_TIMEOUT_MILLIS)
                 .setAscendingWithLongPoll()
                 .execute(mChain);
 

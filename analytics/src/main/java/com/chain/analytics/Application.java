@@ -39,12 +39,12 @@ public class Application {
   // importer uses.
   public static final String DEFAULT_FEED_ALIAS = "chain-analytics-importer";
 
-  private static Logger logger = LogManager.getLogger();
+  private static final Logger logger = LogManager.getLogger();
 
   public static void main(String args[]) {
-    String chainUrl = System.getenv(ENV_CHAIN_URL);
-    String chainToken = System.getenv(ENV_CHAIN_TOKEN);
-    String databaseUrl = System.getenv(ENV_DATABASE_URL);
+    final String chainUrl = System.getenv(ENV_CHAIN_URL);
+    final String chainToken = System.getenv(ENV_CHAIN_TOKEN);
+    final String databaseUrl = System.getenv(ENV_DATABASE_URL);
 
     if (chainUrl == null || "".equals(chainUrl)) {
       logger.fatal("missing {} environment variable", ENV_CHAIN_URL);
@@ -62,7 +62,7 @@ public class Application {
     Importer importer = null;
     try {
       Client.Builder clientBuilder =
-          new Client.Builder().addURL(chainUrl).setReadTimeout(60, TimeUnit.SECONDS);
+          new Client.Builder().addURL(chainUrl).setReadTimeout(120, TimeUnit.SECONDS);
       if (chainToken != null && chainToken.length() > 0) {
         clientBuilder.setAccessToken(chainToken);
       }
