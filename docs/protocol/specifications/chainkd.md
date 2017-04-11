@@ -267,32 +267,32 @@ All values use hexadecimal encoding.
 
 ### ChainKD test vector 1
 
-    Master:
+    Root:
         seed:     010203
         xprv:     TBD
         xpub:     TBD
 
-    Master/010203(H):
+    Root/010203(H):
         selector: 010203
         xprv:     TBD
         xpub:     TBD
 
-    Master/010203(N):
+    Root/010203(N):
         selector: 010203
         xprv:     TBD
         xpub:     TBD
 
-    Master/010203(H)/""(N):
+    Root/010203(H)/""(N):
         selector: (empty string)
         xprv:     TBD
         xpub:     TBD
 
-    Master/010203(N)/""(H):
+    Root/010203(N)/""(H):
         selector: (empty string)
         xprv:     TBD
         xpub:     TBD
 
-    Master/010203(N)/""(N):
+    Root/010203(N)/""(N):
         selector: (empty string)
         xprv:     TBD
         xpub:     TBD
@@ -300,32 +300,32 @@ All values use hexadecimal encoding.
 
 ### ChainKD test vector 2
 
-    Master:
+    Root:
         seed:     fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542
         xprv:     TBD
         xpub:     TBD
 
-    Master/0(N):
+    Root/0(N):
         selector: 00
         xprv:     TBD
         xpub:     TBD
 
-    Master/0(N)/2147483647(H):
+    Root/0(N)/2147483647(H):
         selector: ffffff7f
         xprv:     TBD
         xpub:     TBD
 
-    Master/0(N)/2147483647(H)/1(N):
+    Root/0(N)/2147483647(H)/1(N):
         selector: 01
         xprv:     TBD
         xpub:     TBD
 
-    Master/0(N)/2147483647(H)/1(N)/2147483646(H):
+    Root/0(N)/2147483647(H)/1(N)/2147483646(H):
         selector: feffff7f
         xprv:     TBD
         xpub:     TBD
 
-    Master/0(N)/2147483647(H)/1(N)/2147483646(H)/2(N):
+    Root/0(N)/2147483647(H)/1(N)/2147483646(H)/2(N):
         selector: 02
         xprv:     TBD
         xpub:     TBD

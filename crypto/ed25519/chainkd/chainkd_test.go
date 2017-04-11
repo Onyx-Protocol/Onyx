@@ -1,10 +1,34 @@
 package chainkd
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"testing"
 )
+
+func TestVectors(t *testing.T) {
+	root := RootXPrv([]byte{0x01, 0x02, 0x03})
+
+	verifyTestVector(t, "Root(010203).xprv", root.hex(),
+		"50f8c532ce6f088de65c2c1fbc27b491509373fab356eba300dfa7cc587b07483bc9e0d93228549c6888d3f68ad664b92c38f5ea8ca07181c1410949c02d3146")
+	verifyTestVector(t, "Root(010203).xpub", root.XPub().hex(),
+		"e11f321ffef364d01c2df2389e61091b15dab2e8eee87cb4c053fa65ed2812993bc9e0d93228549c6888d3f68ad664b92c38f5ea8ca07181c1410949c02d3146")
+
+	verifyTestVector(t, "Root(010203)/010203(H).xprv", root.Child([]byte{0x01, 0x02, 0x03}, true).hex(),
+		"98bd4126e9040d7dfcf6c4d1ceb674db0569e7f21266eebf3dc9a469bab1ab45200bd2d6a956e819c68134a40be13e2653ccdcbaab92f7fd492626886884f832")
+	verifyTestVector(t, "Root(010203)/010203(H).xpub", root.Child([]byte{0x01, 0x02, 0x03}, true).XPub().hex(),
+		"696809f6ac24c8b70dde8778a8a0db26f642388be12b6323f12a97fcc3cbccbb200bd2d6a956e819c68134a40be13e2653ccdcbaab92f7fd492626886884f832")
+
+	verifyTestVector(t, "Root(010203)/010203(N).xprv", root.Child([]byte{0x01, 0x02, 0x03}, false).hex(),
+		"30837f155673a659f5c659045b598b175ceea3724c07dc53910e8392df7b0748d40ba49ebee85271fd1d53a45bfbb228623e98c43227fd1484f17139736f2f39")
+	verifyTestVector(t, "Root(010203)/010203(N).xpub", root.Child([]byte{0x01, 0x02, 0x03}, false).XPub().hex(),
+		"2e457bd3bd135cbe5bd46821588ad82b74e8b9cb256e3a956d72322df61b51acd40ba49ebee85271fd1d53a45bfbb228623e98c43227fd1484f17139736f2f39")
+	verifyTestVector(t, "Root(010203)/010203(N).xpub", root.XPub().Child([]byte{0x01, 0x02, 0x03}).hex(),
+		"2e457bd3bd135cbe5bd46821588ad82b74e8b9cb256e3a956d72322df61b51acd40ba49ebee85271fd1d53a45bfbb228623e98c43227fd1484f17139736f2f39")
+
+	// TBD: more test vectors
+}
 
 func TestChildKeys(t *testing.T) {
 	rootXPrv, err := NewXPrv(nil)
@@ -116,11 +140,23 @@ func doverify(t *testing.T, xpub XPub, msg, sig []byte, xpubdesc, xprvdesc strin
 	}
 }
 
-func TestVectors(t *testing.T) {
-	// TBD: generate and verify test vectors
+func verifyTestVector(t *testing.T, message string, got []byte, want string) {
+	if !bytes.Equal(got, []byte(want)) {
+		t.Errorf("ChainKD Test Vector: %s:\n    got  = %s\n    want = %s", message, got, want)
+	}
+}
 
+func (xpub XPub) hex() []byte {
+	s, _ := xpub.MarshalText()
+	return s
+}
+
+func (xprv XPrv) hex() []byte {
+	s, _ := xprv.MarshalText()
+	return s
 }
 
 func TestEdDSABits(t *testing.T) {
 	// TBD: make sure that even after 2^20 derivations the low 3 bits and the high 2 bits are stable.
+	
 }
