@@ -1,4 +1,4 @@
-//+build no_loopback_authn
+//+build no_loopback_auth
 
 package main
 
@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	config.BuildConfig.LoopbackAuthn = false
+	config.BuildConfig.LoopbackAuth = false
 	unauthnLoopback = func(req *http.Request) bool {
 		// Allow connections from the local host.
 		a, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)

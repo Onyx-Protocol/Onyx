@@ -43,7 +43,7 @@ export const production = (state, action) =>
 export const mockhsm = (state, action) =>
   buildConfigReducer('isMockhsm', state, false, action)
 export const loopback = (state, action) =>
-  buildConfigReducer('isLoopbackAuthn', state, false, action)
+  buildConfigReducer('isLoopbackAuth', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {

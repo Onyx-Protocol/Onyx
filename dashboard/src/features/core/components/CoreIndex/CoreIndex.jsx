@@ -83,7 +83,7 @@ class CoreIndex extends React.Component {
                 <td><code>{this.props.core.mockhsm.toString()}</code></td>
               </tr>
               <tr>
-                <td className={styles.row_label}>Loopback authentication:</td>
+                <td className={styles.row_label}>Loopback auth:</td>
                 <td><code>{this.props.core.loopback.toString()}</code></td>
               </tr>
               <tr>

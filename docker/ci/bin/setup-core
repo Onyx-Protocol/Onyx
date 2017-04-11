@@ -20,7 +20,7 @@ waitForLeader() {(
 )}
 
 PATH=$(go env GOPATH)/bin:$PATH:$CHAIN/bin
-go install -tags 'plain_http no_loopback_authn' chain/cmd/{cored,corectl}
+go install -tags 'plain_http no_loopback_auth' chain/cmd/{cored,corectl}
 initlog=`mktemp`
 corectl migrate
 cored 2>&1 | tee $initlog &

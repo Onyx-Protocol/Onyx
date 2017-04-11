@@ -39,7 +39,7 @@ SDKTARGET=chain-test
 (
 	export DATABASE_URL="postgres:///it-core?sslmode=disable"
 	createdb it-core
-	go install -tags "plain_http no_loopback_authn" chain/cmd/cored chain/cmd/corectl
+	go install -tags "plain_http no_loopback_auth" chain/cmd/cored chain/cmd/corectl
 	corectl migrate
 	corectl config-generator
 	cored | tee $initlog &

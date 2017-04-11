@@ -80,7 +80,7 @@ var (
 
 	// By default, requests made on the loopback interface
 	// are authenticated. To allow unauthenticated requests
-	// on this interface use the no_loopback_authn build tag.
+	// on this interface use the no_loopback_auth build tag.
 	unauthnLoopback = func(req *http.Request) bool {
 		return false
 	}
@@ -129,7 +129,7 @@ func main() {
 	fmt.Printf("build-commit: %v\n", config.BuildCommit)
 	fmt.Printf("build-date: %v\n", config.BuildDate)
 	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
-	fmt.Printf("loopback-authn: %t\n", config.BuildConfig.LoopbackAuthn)
+	fmt.Printf("loopback-auth: %t\n", config.BuildConfig.LoopbackAuth)
 
 	if *v {
 		return
