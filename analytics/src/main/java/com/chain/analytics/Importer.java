@@ -124,6 +124,7 @@ public class Importer {
     mTransactionOutputsTbl =
         new Schema.Builder("transaction_outputs")
             .setPrimaryKey(Arrays.asList("output_id"))
+            .addUniqueConstraint(Arrays.asList("transaction_id", "index"))
             .addColumn("transaction_id", new Schema.Varchar2(64))
             .addColumn("index", new Schema.Integer())
             .addColumn("output_id", new Schema.Varchar2(64))
