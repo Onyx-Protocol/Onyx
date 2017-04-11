@@ -13,7 +13,7 @@ import (
 	"errors"
 	"io"
 	"strconv"
-	
+
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/internal/edwards25519"
 )

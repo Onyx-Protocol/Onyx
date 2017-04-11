@@ -139,7 +139,7 @@ Limitations:
 4. Clear lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
 5. Perform a fixed-base scalar multiplication `F = f·B` where `B` is a base point of Ed25519.
 6. Decode point `P` from `pubkey` according to EdDSA.
-7. Perform point addition `P’ = P + 8·F`.
+7. Perform point addition `P’ = P + F`.
 8. [Encode](#encode-public-key) point `P’` as `pubkey’`.
 9. Return `xpub’ = pubkey’ || dk’`.
 
@@ -163,7 +163,7 @@ Resulting 32-byte public key can be used to verify EdDSA signature created by a 
 
 1. Compute hash `exthash = HMAC-SHA512(key: "Expand", data: xprv)`.
 2. Extract `privkey` as first 32 bytes of `xprv`.
-3. Extract `ext` as first 32 bytes of `exthash`.
+3. Extract `ext` as last 32 bytes of `exthash`.
 4. Return 64-byte signing key `sk = privkey || ext`.
 
 Resulting 64-byte signing key can be used to create EdDSA signature verifiable by a corresponding [EdDSA public key](#extract-public-key).

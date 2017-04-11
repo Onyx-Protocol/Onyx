@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto"
 	"testing"
-	
+
 	"chain/crypto/ed25519"
 )
 

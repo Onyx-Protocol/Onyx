@@ -1,11 +1,9 @@
 package chainkd
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha512"
-	"crypto/hmac"
-	"encoding/binary"
-	"hash"
 	"io"
 
 	"chain/crypto/ed25519"
@@ -17,8 +15,6 @@ type (
 	XPrv [64]byte
 	XPub [64]byte
 )
-
-var one = [32]byte{1}
 
 // NewXPrv takes a source of random bytes and produces a new XPrv. If
 // r is nil, crypto/rand.Reader is used.
@@ -39,11 +35,11 @@ func RootXPrv(seed []byte) (xprv XPrv) {
 	h := hmac.New(sha512.New, []byte("Root"))
 	h.Write(seed)
 	h.Sum(xprv[:0])
-	modifyScalar(xprv[:32])
+	modifyRootScalar(xprv[:32])
 	return
 }
 
-func (xprv XPrv) XPub() XPub {
+func (xprv XPrv) XPub() (xpub XPub) {
 	var buf [32]byte
 	copy(buf[:], xprv[:32])
 
@@ -51,47 +47,66 @@ func (xprv XPrv) XPub() XPub {
 	edwards25519.GeScalarMultBase(&P, &buf)
 	P.ToBytes(&buf)
 
-	var xpub XPub
 	copy(xpub[:32], buf[:])
 	copy(xpub[32:], xprv[32:])
 
-	return xpub
+	return
 }
 
-func (xprv XPrv) Child(sel []byte, hardened bool) (res XPrv) {
+func (xprv XPrv) Child(sel []byte, hardened bool) XPrv {
 	if hardened {
-		hashKeySaltSelector(res[:], 0, xprv[:32], xprv[32:], sel)
-		return res
+		return xprv.HardenedChild(sel)
+	} else {
+		return xprv.NonhardenedChild(sel)
 	}
+}
 
-	var s [32]byte
-	copy(s[:], xprv[:32])
-	var P edwards25519.ExtendedGroupElement
-	edwards25519.GeScalarMultBase(&P, &s)
+func (xprv XPrv) HardenedChild(sel []byte) (res XPrv) {
+	h := hmac.New(sha512.New, xprv[:32])
+	h.Write([]byte("H"))
+	h.Write(xprv[32:])
+	h.Write(sel)
+	h.Sum(res[:0])
+	modifyRootScalar(res[:32])
+	return
+}
 
-	var pubkey [32]byte
-	P.ToBytes(&pubkey)
+func (xprv XPrv) NonhardenedChild(sel []byte) (res XPrv) {
+	xpub := xprv.XPub()
 
-	hashKeySaltSelector(res[:], 1, pubkey[:], xprv[32:], sel)
+	h := hmac.New(sha512.New, xpub[32:])
+	h.Write([]byte("N"))
+	h.Write(xpub[32:])
+	h.Write(sel)
+	h.Sum(res[:0])
 
-	var (
-		f  [32]byte
-		s2 [32]byte
-	)
-	copy(f[:], res[:32])
-	edwards25519.ScMulAdd(&s2, &one, &f, &s)
-	copy(res[:32], s2[:])
+	modifyFactorScalar(res[:32])
 
-	return res
+	var carry int
+	carry = 0
+	for i := 0; i < 32; i++ {
+		sum := int(xprv[i]) + int(res[i]) + carry
+		res[i] = byte(sum & 0xff)
+		carry = (sum >> 8)
+	}
+	if carry != 0 {
+		panic("sum does not fit in 256-bit int")
+	}
+	return
 }
 
 func (xpub XPub) Child(sel []byte) (res XPub) {
-	hashKeySaltSelector(res[:], 1, xpub[:32], xpub[32:], sel)
+	var f [32]byte
+	var F edwards25519.ExtendedGroupElement
 
-	var (
-		f [32]byte
-		F edwards25519.ExtendedGroupElement
-	)
+	h := hmac.New(sha512.New, xpub[32:])
+	h.Write([]byte("N"))
+	h.Write(xpub[32:])
+	h.Write(sel)
+	h.Sum(res[:0])
+
+	modifyFactorScalar(res[:32])
+
 	copy(f[:], res[:32])
 	edwards25519.GeScalarMultBase(&F, &f)
 
@@ -135,52 +150,20 @@ func (xpub XPub) Derive(path [][]byte) XPub {
 }
 
 func (xprv XPrv) Sign(msg []byte) []byte {
-	var s [32]byte
-	copy(s[:], xprv[:32])
-
-	var h [64]byte
-	hashKeySalt(h[:], 2, xprv[:32], xprv[32:])
-
-	var P edwards25519.ExtendedGroupElement
-	edwards25519.GeScalarMultBase(&P, &s)
-
-	var pubkey [32]byte
-	P.ToBytes(&pubkey)
-
-	var r [64]byte
-	hasher := sha512.New()
-	hasher.Write(h[:32])
-	hasher.Write(msg)
-	hasher.Sum(r[:0])
-
-	var rReduced [32]byte
-	edwards25519.ScReduce(&rReduced, &r)
-
-	var rPoint edwards25519.ExtendedGroupElement
-	edwards25519.GeScalarMultBase(&rPoint, &rReduced)
-
-	var R [32]byte
-	rPoint.ToBytes(&R)
-
-	hasher.Reset()
-	hasher.Write(R[:])
-	hasher.Write(pubkey[:])
-	hasher.Write(msg)
-
-	var k [64]byte
-	hasher.Sum(k[:0])
-
-	var kReduced [32]byte
-	edwards25519.ScReduce(&kReduced, &k)
-
-	var S [32]byte
-	edwards25519.ScMulAdd(&S, &kReduced, &s, &rReduced)
-
-	return append(R[:], S[:]...)
+	return Ed25519InnerSign(xprv.ExpandedPrivateKey(), msg)
 }
 
 func (xpub XPub) Verify(msg []byte, sig []byte) bool {
 	return ed25519.Verify(xpub.PublicKey(), msg, sig)
+}
+
+func (xprv XPrv) ExpandedPrivateKey() ExpandedPrivateKey {
+	var res [64]byte
+	h := hmac.New(sha512.New, []byte("Expand"))
+	h.Write(xprv[:])
+	h.Sum(res[:0])
+	copy(res[:32], xprv[:32])
+	return res[:]
 }
 
 // PublicKey extracts the ed25519 public key from an xpub.
@@ -188,34 +171,19 @@ func (xpub XPub) PublicKey() ed25519.PublicKey {
 	return ed25519.PublicKey(xpub[:32])
 }
 
-func hashKeySaltSelector(out []byte, version byte, key, salt, sel []byte) {
-	hasher := hashKeySaltHelper(version, key, salt)
-	var l [10]byte
-	n := binary.PutUvarint(l[:], uint64(len(sel)))
-	hasher.Write(l[:n])
-	hasher.Write(sel)
-	hasher.Sum(out[:0])
-	modifyScalar(out)
-}
-
-func hashKeySalt(out []byte, version byte, key, salt []byte) {
-	hasher := hashKeySaltHelper(version, key, salt)
-	hasher.Sum(out[:0])
-}
-
-func hashKeySaltHelper(version byte, key, salt []byte) hash.Hash {
-	hasher := sha512.New()
-	hasher.Write([]byte{version})
-	hasher.Write(key)
-	hasher.Write(salt)
-	return hasher
-}
-
 // s must be >= 32 bytes long and gets rewritten in place.
-// This is NOT the same pruning as in Ed25519: it additionally clears the third 
+// This is NOT the same pruning as in Ed25519: it additionally clears the third
 // highest bit to ensure subkeys do not overflow the second highest bit.
-func modifyScalar(s []byte) {
+func modifyRootScalar(s []byte) {
 	s[0] &= 248
 	s[31] &= 31 // clear top 3 bits
 	s[31] |= 64 // set second highest bit
+}
+
+// Clears lowest 3 bits and highest 23 bits of `f`.
+func modifyFactorScalar(f []byte) {
+	f[0] &= 248 // clear bottom 3 bits
+	f[29] &= 1  // clear 7 high bits
+	f[30] = 0   // clear 8 bits
+	f[31] = 0   // clear 8 bits
 }
