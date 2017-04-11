@@ -4,8 +4,6 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"chain/protocol/bc"
-	"chain/protocol/validation"
 	. "chain/protocol/vm"
 	"chain/testutil"
 )
@@ -93,11 +91,6 @@ func TestCheckSig(t *testing.T) {
 }
 
 func TestCryptoOps(t *testing.T) {
-	tx := bc.NewTx(bc.TxData{
-		Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
-		Outputs: []*bc.TxOutput{},
-	})
-
 	type testStruct struct {
 		op      Op
 		startVM *VirtualMachine
@@ -381,11 +374,19 @@ func TestCryptoOps(t *testing.T) {
 		op: OP_TXSIGHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 50000,
-			Context:  validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], &bc.Program{VmVersion: 1}, nil),
+			Context: &Context{
+				TxSigHash: func() []byte {
+					return []byte{
+						0x2f, 0x00, 0x3c, 0xdd, 0x64, 0x42, 0x7b, 0x5e,
+						0xed, 0xd6, 0xcc, 0xb5, 0x85, 0x47, 0x02, 0x0b,
+						0x02, 0xde, 0xf2, 0x2d, 0xc5, 0x99, 0x7e, 0x9d,
+						0xa9, 0xac, 0x40, 0x49, 0xc3, 0x4a, 0x58, 0xd8,
+					}
+				},
+			},
 		},
 		wantVM: &VirtualMachine{
 			RunLimit: 49704,
-			Context:  validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], &bc.Program{VmVersion: 1}, nil),
 			DataStack: [][]byte{{
 				47, 0, 60, 221, 100, 66, 123, 94,
 				237, 214, 204, 181, 133, 71, 2, 11,
@@ -397,7 +398,7 @@ func TestCryptoOps(t *testing.T) {
 		op: OP_TXSIGHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 0,
-			Context:  validation.NewTxVMContext(tx.TxEntries, tx.TxEntries.TxInputs[0], &bc.Program{VmVersion: 1}, nil),
+			Context:  &Context{},
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
