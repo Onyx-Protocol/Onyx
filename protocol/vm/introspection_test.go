@@ -193,6 +193,7 @@ func TestIntrospectionOps(t *testing.T) {
 			bc.NewTxOutput(bc.AssetID{2}, 8, []byte("controlprog"), nil),
 			bc.NewTxOutput(bc.AssetID{2}, 7, []byte("controlprog"), nil),
 			bc.NewTxOutput(bc.AssetID{2}, 7, []byte("controlprog"), []byte("outref")),
+			bc.NewTxOutput(bc.AssetID{4}, 1, []byte{byte(OP_FAIL)}, nil),
 		},
 		MinTime: 0,
 		MaxTime: 20,
@@ -271,7 +272,7 @@ func TestIntrospectionOps(t *testing.T) {
 		op: OP_CHECKOUTPUT,
 		startVM: &VirtualMachine{
 			DataStack: [][]byte{
-				{5},
+				{6},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				{7},
 				append([]byte{2}, make([]byte, 31)...),
@@ -296,6 +297,206 @@ func TestIntrospectionOps(t *testing.T) {
 			Context: context0,
 		},
 		wantErr: ErrRunLimitExceeded,
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{5},
+				{},
+				{1},
+				append([]byte{4}, make([]byte, 31)...),
+				{},
+				[]byte{},
+			},
+			Context: context0,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:     50057,
+			DeferredCost: -73,
+			DataStack:    [][]byte{{1}},
+			Context:      context0,
+		},
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{5},
+				{},
+				{1},
+				append([]byte{4}, make([]byte, 31)...),
+				{},
+				[]byte{},
+			},
+			Context:           context0,
+			ExpansionReserved: true,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:          50057,
+			DeferredCost:      -73,
+			DataStack:         [][]byte{{1}},
+			Context:           context0,
+			ExpansionReserved: true,
+		},
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{5},
+				{},
+				{1},
+				append([]byte{4}, make([]byte, 31)...),
+				{},
+				[]byte{1},
+			},
+			Context: context0,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:     50059,
+			DeferredCost: -75,
+			DataStack:    [][]byte{{}},
+			Context:      context0,
+		},
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{5},
+				{},
+				{1},
+				append([]byte{4}, make([]byte, 31)...),
+				{},
+				[]byte{1},
+			},
+			Context:           context0,
+			ExpansionReserved: true,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:          50058,
+			DeferredCost:      -74,
+			DataStack:         [][]byte{{1}},
+			Context:           context0,
+			ExpansionReserved: true,
+		},
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{4},
+				{},
+				{1},
+				append([]byte{4}, make([]byte, 31)...),
+				{},
+				[]byte{1},
+			},
+			Context: context0,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:     50059,
+			DeferredCost: -75,
+			DataStack:    [][]byte{{}},
+			Context:      context0,
+		},
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{4},
+				{},
+				{1},
+				append([]byte{4}, make([]byte, 31)...),
+				{},
+				[]byte{1},
+			},
+			Context:           context0,
+			ExpansionReserved: true,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:          50059,
+			DeferredCost:      -75,
+			DataStack:         [][]byte{{}},
+			Context:           context0,
+			ExpansionReserved: true,
+		},
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{5},
+				{},
+				{1},
+				append([]byte{5}, make([]byte, 31)...),
+				{},
+				[]byte{1},
+			},
+			Context: context0,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:     50059,
+			DeferredCost: -75,
+			DataStack:    [][]byte{{}},
+			Context:      context0,
+		},
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{5},
+				{},
+				{1},
+				append([]byte{5}, make([]byte, 31)...),
+				{},
+				[]byte{1},
+			},
+			Context:           context0,
+			ExpansionReserved: true,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:          50059,
+			DeferredCost:      -75,
+			DataStack:         [][]byte{{}},
+			Context:           context0,
+			ExpansionReserved: true,
+		},
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{5},
+				{},
+				{2},
+				append([]byte{5}, make([]byte, 31)...),
+				{},
+				[]byte{1},
+			},
+			Context: context0,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:     50059,
+			DeferredCost: -75,
+			DataStack:    [][]byte{{}},
+			Context:      context0,
+		},
+	}, {
+		op: OP_CHECKOUTPUT,
+		startVM: &VirtualMachine{
+			DataStack: [][]byte{
+				{5},
+				{},
+				{2},
+				append([]byte{5}, make([]byte, 31)...),
+				{},
+				[]byte{1},
+			},
+			Context:           context0,
+			ExpansionReserved: true,
+		},
+		wantVM: &VirtualMachine{
+			RunLimit:          50059,
+			DeferredCost:      -75,
+			DataStack:         [][]byte{{}},
+			Context:           context0,
+			ExpansionReserved: true,
+		},
 	}, {
 		op: OP_ASSET,
 		startVM: &VirtualMachine{
