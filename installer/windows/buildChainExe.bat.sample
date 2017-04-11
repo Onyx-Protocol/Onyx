@@ -1,0 +1,14 @@
+signtool sign -v -f Z:\PATH\TO\CERT -p CERT_PASSWORD cored.exe
+signtool sign -v -f Z:\PATH\TO\CERT -p CERT_PASSWORD ChainMgr/ChainMgr.exe
+cd ChainPackage
+candle -ext WixHttpExtension -ext WixUtilExtension ChainCoreInstaller.wxs
+light -ext WixHttpExtension -ext WixUtilExtension ChainCoreInstaller.wixobj
+signtool sign -v -f Z:\PATH\TO\CERT -p CERT_PASSWORD cab1.cab
+cd ../ChainBundle
+candle Bundle.wxs -arch x64 -ext WixBalExtension -dChainPackage.TargetPath=C:\code\src\chain\installer\windows\ChainPackage\ChainCoreInstaller.msi -dPostgresPackage.TargetPath=C:\code\src\chain\installer\windows\Postgres\postgresql-9.5.5-1-windows-x64.exe -dVCRPackage.TargetPath=C:\code\src\chain\installer\windows\Postgres\vcredist_x64.exe
+light Bundle.wixobj -ext WixBalExtension
+signtool sign -v -f Z:\PATH\TO\CERT
+insignia -ib Bundle.exe -o engine.exe
+signtool sign -v -f Z:\PATH\TO\CERT -p CERT_PASSWORD engine.exe
+insignia -ab engine.exe Bundle.exe -o Chain_Core_VERSION.exe -v
+signtool sign -v -f Z:\PATH\TO\CERT -p CERT_PASSWORD Chain_Core_VERSION.exe

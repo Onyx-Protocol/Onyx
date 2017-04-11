@@ -8,4 +8,4 @@ ChainBundle/bin/
 ChainBundle/obj/
 ChainPackage/bin/
 ChainBundle/obj/
-
+*.bat
