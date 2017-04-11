@@ -88,7 +88,7 @@ func TestUpdateTags(t *testing.T) {
 	}
 
 	if items[0].ID != id {
-		t.Fatalf("tags:\ngot:  %v\nwant: %v", items[0].ID, id)
+		t.Fatalf("id:\ngot:  %v\nwant: %v", items[0].ID, id)
 	}
 
 	// Update by alias
@@ -124,6 +124,6 @@ func TestUpdateTags(t *testing.T) {
 	}
 
 	if items[0].ID != id {
-		t.Fatalf("tags:\ngot:  %v\nwant: %v", items[0].ID, id)
+		t.Fatalf("id:\ngot:  %v\nwant: %v", items[0].ID, id)
 	}
 }
