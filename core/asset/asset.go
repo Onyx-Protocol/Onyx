@@ -161,6 +161,8 @@ func (reg *Registry) UpdateTags(ctx context.Context, id, alias *string, tags map
 		return errors.Wrap(ErrBadIdentifier)
 	}
 
+	// Fetch the existing asset
+
 	var (
 		asset *Asset
 		err   error
@@ -184,16 +186,29 @@ func (reg *Registry) UpdateTags(ctx context.Context, id, alias *string, tags map
 		}
 	}
 
-	err = insertAssetTags(ctx, reg.db, asset.AssetID, tags)
+	// Revise tags in-memory
+
+	asset.Tags = tags
+
+	// Perform persistent updates
+
+	err = insertAssetTags(ctx, reg.db, asset.AssetID, asset.Tags)
 	if err != nil {
 		return errors.Wrap(err, "inserting asset tags")
 	}
 
-	asset.Tags = tags
-	return errors.Wrap(
-		reg.indexAnnotatedAsset(ctx, asset),
-		"update asset index",
-	)
+	err = reg.indexAnnotatedAsset(ctx, asset)
+	if err != nil {
+		return errors.Wrap(err, "update asset index")
+	}
+
+	// Revise cache
+
+	reg.cacheMu.Lock()
+	reg.cache.Add(asset.AssetID, asset)
+	reg.cacheMu.Unlock()
+
+	return nil
 }
 
 // findByID retrieves an Asset record along with its signer, given an assetID.
