@@ -3,15 +3,16 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"os"
+
 	"chain/core/config"
 	"chain/core/coreunsafe"
 	"chain/database/pg"
 	"chain/database/raft"
 	"chain/env"
 	"chain/log"
-	"context"
-	"fmt"
-	"os"
 )
 
 var reset = env.String("RESET", "")
