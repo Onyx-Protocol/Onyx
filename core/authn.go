@@ -38,7 +38,7 @@ func (a *apiAuthn) handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		token, err0 := a.tokenAuth(req)
 		ctx := req.Context()
-		if err0 != nil {
+		if err0 == nil {
 			// if this request was successfully authenticated, pass the token along
 			if token != "" {
 				ctx = context.WithValue(ctx, "token", token)
@@ -53,6 +53,7 @@ func (a *apiAuthn) handler(next http.Handler) http.Handler {
 		// TODO(tessr): move this to authz as part of ACL work
 		if err0 != nil {
 			errorFormatter.Write(ctx, rw, err0)
+			return
 		}
 
 		next.ServeHTTP(rw, req.WithContext(ctx))

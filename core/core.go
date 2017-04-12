@@ -42,11 +42,6 @@ func (a *API) reset(ctx context.Context, req struct {
 }
 
 func (a *API) info(ctx context.Context) (map[string]interface{}, error) {
-	t, ok := ctx.Value("token").(string)
-	log.Printf(ctx, "%t", ok)
-	b, ok := ctx.Value("localhost").(bool)
-	log.Printf(ctx, "%t", ok)
-	log.Printf(ctx, "info request, with context %v %t", t, b)
 	if a.config == nil {
 		// never configured
 		return map[string]interface{}{
