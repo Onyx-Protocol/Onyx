@@ -49,6 +49,12 @@ You might want to open a new terminal window to pick up the change.
 
 Build and install from source:
 
+There are four build tags that change the behavior of the resulting binary:
+  - `reset`: allows the core database to be reset through the api
+  - `loopback_auth`: allows unauthenticated requests on the loopback device
+  - `no_mockhsm`: disables the MockHSM provided for development
+  - `plain_http`: allows plain HTTP requests (not yet implemented)
+
 ```
 $ git clone https://github.com/chain/chain $CHAIN
 $ cd $CHAIN

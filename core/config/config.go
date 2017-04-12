@@ -41,7 +41,6 @@ var (
 	ErrNoBlockHSMURL   = errors.New("block hsm URL cannot be empty in mockhsm disabled build")
 
 	Version, BuildCommit, BuildDate string
-	Production                      bool
 
 	// This is the default, Chain development configuration.
 	// These options can be updated with build tags.
