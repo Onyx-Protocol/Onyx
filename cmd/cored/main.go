@@ -84,6 +84,10 @@ var (
 	loopbackAuth = func(req *http.Request) bool {
 		return false
 	}
+
+	// By default, a core is not able to reset its data.
+	// This feature can be turned on with the reset build tag.
+	resetIfAllowedAndRequested = func(pg.DB, *raft.Service) {}
 )
 
 func init() {
@@ -96,12 +100,6 @@ func init() {
 		version = rev.ID
 	}
 
-	prodStr := "no"
-	if prod {
-		prodStr = "yes"
-	}
-
-	expvar.NewString("prod").Set(prodStr)
 	expvar.NewString("version").Set(version)
 	expvar.NewString("build_tag").Set(buildTag)
 	expvar.NewString("build_date").Set(buildDate)
@@ -113,7 +111,6 @@ func init() {
 	config.Version = version
 	config.BuildCommit = buildCommit
 	config.BuildDate = buildDate
-	config.Production = prod
 }
 
 func main() {
@@ -125,11 +122,11 @@ func main() {
 	}
 
 	fmt.Printf("cored (Chain Core) %s\n", config.Version)
-	fmt.Printf("production: %t\n", config.Production)
 	fmt.Printf("build-commit: %v\n", config.BuildCommit)
 	fmt.Printf("build-date: %v\n", config.BuildDate)
 	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
 	fmt.Printf("loopback-auth: %t\n", config.BuildConfig.LoopbackAuth)
+	fmt.Printf("reset: %t\n", config.BuildConfig.Reset)
 
 	if *v {
 		return
@@ -225,7 +222,7 @@ func runServer() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	resetInDevIfRequested(db, raftDB)
+	resetIfAllowedAndRequested(db, raftDB)
 
 	conf, err := config.Load(ctx, db, raftDB)
 	if err != nil {

@@ -75,16 +75,16 @@ class CoreIndex extends React.Component {
                 <td><code>{this.props.core.version}</code></td>
               </tr>
               <tr>
-                <td className={styles.row_label}>Production build:</td>
-                <td><code>{this.props.core.production.toString()}</code></td>
-              </tr>
-              <tr>
                 <td className={styles.row_label}>MockHSM enabled:</td>
                 <td><code>{this.props.core.mockhsm.toString()}</code></td>
               </tr>
               <tr>
                 <td className={styles.row_label}>Loopback auth:</td>
                 <td><code>{this.props.core.loopback.toString()}</code></td>
+              </tr>
+              <tr>
+                <td className={styles.row_label}>Reset enabled:</td>
+                <td><code>{this.props.core.reset.toString()}</code></td>
               </tr>
               <tr>
                 <td colSpan={2}><hr /></td>
@@ -156,11 +156,7 @@ class CoreIndex extends React.Component {
         <div className='col-sm-6'>
           <h4>Reset data</h4>
 
-          {this.props.core.production ?
-            <p>
-              This core is configured to run in production. Production
-              blockchains cannot be reset.
-            </p> :
+          {this.props.core.reset ?
             <div>
               <p>
                 This will permanently delete all data stored in this core,
@@ -180,7 +176,10 @@ class CoreIndex extends React.Component {
               >
                 Delete all data
               </button>
-            </div>}
+            </div> :
+            <p>
+              This core is not configured with reset capabilities.
+            </p>}
         </div>
       </div>
     )

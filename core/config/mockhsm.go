@@ -1,4 +1,4 @@
-//+build !prod
+//+build !no_mockhsm
 
 package config
 
@@ -28,6 +28,6 @@ func getOrCreateDevKey(ctx context.Context, db pg.DB, c *Config) (blockPub ed255
 
 }
 
-func checkProdBlockHSMURL(_ string) error {
+func checkBlockHSMURL(string) error {
 	return nil
 }

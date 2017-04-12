@@ -33,12 +33,12 @@ const (
 )
 
 var (
-	ErrBadGenerator      = errors.New("generator returned an unsuccessful response")
-	ErrBadSignerURL      = errors.New("block signer URL is invalid")
-	ErrBadSignerPubkey   = errors.New("block signer pubkey is invalid")
-	ErrBadQuorum         = errors.New("quorum must be greater than 0 if there are signers")
-	ErrNoProdBlockPub    = errors.New("blockpub cannot be empty in production")
-	ErrNoProdBlockHSMURL = errors.New("block hsm URL cannot be empty in production")
+	ErrBadGenerator    = errors.New("generator returned an unsuccessful response")
+	ErrBadSignerURL    = errors.New("block signer URL is invalid")
+	ErrBadSignerPubkey = errors.New("block signer pubkey is invalid")
+	ErrBadQuorum       = errors.New("quorum must be greater than 0 if there are signers")
+	ErrNoBlockPub      = errors.New("blockpub cannot be empty in mockhsm disabled build")
+	ErrNoBlockHSMURL   = errors.New("block hsm URL cannot be empty in mockhsm disabled build")
 
 	Version, BuildCommit, BuildDate string
 	Production                      bool
@@ -48,9 +48,11 @@ var (
 	BuildConfig = struct {
 		LoopbackAuth bool `json:"is_loopback_auth"`
 		MockHSM      bool `json:"is_mockhsm"`
+		Reset        bool `json:"is_reset"`
 	}{
 		LoopbackAuth: false,
 		MockHSM:      true,
+		Reset:        false,
 	}
 )
 
@@ -166,7 +168,7 @@ func deleteFromPG(ctx context.Context, db pg.DB) error {
 // the caller must ensure that the new configuration is properly reloaded,
 // for example by restarting the process.
 //
-// When running in non-production mode, if c.IsSigner is true and c.BlockPub is empty,
+// When running a mockhsm enabled server, if c.IsSigner is true and c.BlockPub is empty,
 // Configure generates a new mockhsm keypair
 // for signing blocks, and assigns it to c.BlockPub.
 //
@@ -192,7 +194,7 @@ func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, c *Config) erro
 	var signingKeys []ed25519.PublicKey
 	if c.IsSigner {
 		var blockPub ed25519.PublicKey
-		err = checkProdBlockHSMURL(c.BlockHsmUrl)
+		err = checkBlockHSMURL(c.BlockHsmUrl)
 		if err != nil {
 			return err
 		}

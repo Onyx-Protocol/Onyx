@@ -27,10 +27,10 @@ var (
 // unconfigured core. It does not delete access tokens or mockhsm
 // keys.
 func ResetBlockchain(ctx context.Context, db pg.DB, rDB *raft.Service) error {
-	if config.Production {
+	if !config.BuildConfig.Reset {
 		// Shouldn't ever happen; This package shouldn't even be
-		// included in a production binary.
-		panic("reset called on production")
+		// included in binaries built without the reset tag.
+		panic("reset called on reset disabled binary")
 	}
 
 	var skip []string
@@ -63,10 +63,10 @@ func ResetBlockchain(ctx context.Context, db pg.DB, rDB *raft.Service) error {
 
 // ResetEverything deletes all of a Core's data.
 func ResetEverything(ctx context.Context, db pg.DB, rDB *raft.Service) error {
-	if config.Production {
+	if !config.BuildConfig.Reset {
 		// Shouldn't ever happen; This package shouldn't even be
-		// included in a production binary.
-		panic("reset called on production")
+		// included in binaries built without the reset tag.
+		panic("reset called on reset disabled binary")
 	}
 
 	err := ResetBlockchain(ctx, db, rDB)

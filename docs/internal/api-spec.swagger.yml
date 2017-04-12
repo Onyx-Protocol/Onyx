@@ -1065,10 +1065,17 @@ definitions:
         type: string
         description: An RFC3339 timestamp indicating the last successful
           retrieval of the generator's block height.
-      is_production:
+      is_reset:
         type: boolean
-        description: Whether the core was compiled for production. Services such
-          as the MockHSM are not available in production mode.
+        description: Whether the core was compiled with the ability to reset
+          the database.
+      is_loopback_auth:
+        type: boolean
+        description: Whether the core was compiled with the ability to make
+          unauthenticated requests on the loopback interface.
+      is_mockhsm:
+        type: boolean
+        description: Whether the core was compiled with access to the MockHSM.
       network_rpc_version:
         type: integer
         description: A version number indicating core-to-core compatibility. If

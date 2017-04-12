@@ -121,9 +121,9 @@ func (a *API) needConfig() func(f interface{}) http.Handler {
 func (a *API) buildHandler() {
 	needConfig := a.needConfig()
 
-	devOnly := func(h http.Handler) http.Handler { return h }
-	if config.Production {
-		devOnly = func(h http.Handler) http.Handler { return alwaysError(errProduction) }
+	resetAllowed := func(h http.Handler) http.Handler { return alwaysError(errNoReset) }
+	if config.BuildConfig.Reset {
+		resetAllowed = func(h http.Handler) http.Handler { return h }
 	}
 
 	m := a.mux
@@ -140,14 +140,14 @@ func (a *API) buildHandler() {
 	m.Handle("/get-transaction-feed", needConfig(a.getTxFeed))
 	m.Handle("/update-transaction-feed", needConfig(a.updateTxFeed))
 	m.Handle("/delete-transaction-feed", needConfig(a.deleteTxFeed))
-	m.Handle("/mockhsm", alwaysError(errProduction))
+	m.Handle("/mockhsm", alwaysError(errNoMockHSM))
 	m.Handle("/list-accounts", needConfig(a.listAccounts))
 	m.Handle("/list-assets", needConfig(a.listAssets))
 	m.Handle("/list-transaction-feeds", needConfig(a.listTxFeeds))
 	m.Handle("/list-transactions", needConfig(a.listTransactions))
 	m.Handle("/list-balances", needConfig(a.listBalances))
 	m.Handle("/list-unspent-outputs", needConfig(a.listUnspentOutputs))
-	m.Handle("/reset", devOnly(needConfig(a.reset)))
+	m.Handle("/reset", resetAllowed(needConfig(a.reset)))
 
 	m.Handle(networkRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *bc.Tx) error {
 		return a.submitter.Submit(ctx, tx)

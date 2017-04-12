@@ -15,7 +15,7 @@ const coreConfigReducer = (key, state, defaultState, action) => {
 
 const buildConfigReducer = (key, state, defaultState, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
-    return action.param.buildConfig[key] || defaultState
+	return action.param.buildConfig[key] || defaultState
   }
 
   return state || defaultState
@@ -38,12 +38,12 @@ export const configuredAt = (state, action) => {
   return value
 }
 
-export const production = (state, action) =>
-  coreConfigReducer('isProduction', state, false, action)
 export const mockhsm = (state, action) =>
   buildConfigReducer('isMockhsm', state, false, action)
 export const loopback = (state, action) =>
   buildConfigReducer('isLoopbackAuth', state, false, action)
+export const reset = (state, action) =>
+  buildConfigReducer('isReset', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
@@ -221,10 +221,10 @@ export default combineReducers({
   mockhsm,
   networkRpcVersion,
   onTestnet,
-  production,
   replicationLag,
   replicationLagClass,
   requireClientToken,
+  reset,
   signer,
   snapshot,
   syncEstimates,
