@@ -194,7 +194,7 @@ func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, c *Config) erro
 	var signingKeys []ed25519.PublicKey
 	if c.IsSigner {
 		var blockPub ed25519.PublicKey
-		err = checkProdBlockHSMURL(c.BlockHsmUrl)
+		err = checkBlockHSMURL(c.BlockHsmUrl)
 		if err != nil {
 			return err
 		}

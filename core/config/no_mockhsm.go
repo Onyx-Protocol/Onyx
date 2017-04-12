@@ -12,7 +12,7 @@ func getOrCreateDevKey(_ context.Context, _ pg.DB, _ *Config) (blockpub []byte, 
 	return nil, ErrNoBlockPub
 }
 
-func checkProdBlockHSMURL(url string) error {
+func checkBlockHSMURL(url string) error {
 	if url == "" {
 		return ErrNoBlockHSMURL
 	}
