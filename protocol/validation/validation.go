@@ -31,7 +31,6 @@ type validationState struct {
 var (
 	errBadTimeRange          = errors.New("bad time range")
 	errEmptyResults          = errors.New("transaction has no results")
-	errEntryType             = errors.New("invalid entry type")
 	errMismatchedAssetID     = errors.New("mismatched asset id")
 	errMismatchedBlock       = errors.New("mismatched block")
 	errMismatchedMerkleRoot  = errors.New("mismatched merkle root")
@@ -40,7 +39,6 @@ var (
 	errMismatchedValue       = errors.New("mismatched value")
 	errMisorderedBlockHeight = errors.New("misordered block height")
 	errMisorderedBlockTime   = errors.New("misordered block time")
-	errMissingEntry          = errors.New("missing entry")
 	errNoPrevBlock           = errors.New("no previous block")
 	errNoSource              = errors.New("no source for value")
 	errNonemptyExtHash       = errors.New("non-empty extension hash")
@@ -217,7 +215,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 
 		anchor, ok := vs.tx.Entries[*e.Body.AnchorId]
 		if !ok {
-			return errors.Wrapf(errMissingEntry, "entry for issuance anchor %x not found", e.Body.AnchorId.Bytes())
+			return errors.Wrapf(bc.ErrMissingEntry, "entry for issuance anchor %x not found", e.Body.AnchorId.Bytes())
 		}
 
 		var anchored *bc.Hash
@@ -232,7 +230,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			anchored = a.Witness.AnchoredId
 
 		default:
-			return errors.WithDetailf(errEntryType, "issuance anchor has type %T, should be nonce, spend, or issuance", anchor)
+			return errors.WithDetailf(bc.ErrEntryType, "issuance anchor has type %T, should be nonce, spend, or issuance", anchor)
 		}
 
 		if *anchored != vs.entryID {
@@ -262,7 +260,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		if err != nil {
 			return errors.Wrap(err, "getting spend prevout")
 		}
-		err := vm.Verify(NewTxVMContext(vs.tx, e, spentOutput.Body.ControlProgram, e.Witness.Arguments))
+		err = vm.Verify(NewTxVMContext(vs.tx, e, spentOutput.Body.ControlProgram, e.Witness.Arguments))
 		if err != nil {
 			return errors.Wrap(err, "checking control program")
 		}
@@ -306,7 +304,7 @@ func checkValidBlockHeader(bh *bc.BlockHeaderEntry) error {
 func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 	e, ok := vstate.tx.Entries[*vs.Ref]
 	if !ok {
-		return errors.Wrapf(errMissingEntry, "entry for value source %x not found", vs.Ref.Bytes())
+		return errors.Wrapf(bc.ErrMissingEntry, "entry for value source %x not found", vs.Ref.Bytes())
 	}
 	vstate2 := *vstate
 	vstate2.entryID = *vs.Ref
@@ -336,7 +334,7 @@ func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 		dest = ref.Witness.Destinations[vs.Position]
 
 	default:
-		return errors.Wrapf(errEntryType, "value source is %T, should be issuance, spend, or mux", e)
+		return errors.Wrapf(bc.ErrEntryType, "value source is %T, should be issuance, spend, or mux", e)
 	}
 
 	if *dest.Ref != vstate.entryID {
@@ -357,7 +355,7 @@ func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 	e, ok := vs.tx.Entries[*vd.Ref]
 	if !ok {
-		return errors.Wrapf(errMissingEntry, "entry for value destination %x not found", vd.Ref.Bytes())
+		return errors.Wrapf(bc.ErrMissingEntry, "entry for value destination %x not found", vd.Ref.Bytes())
 	}
 	var src *bc.ValueSource
 	switch ref := e.(type) {
@@ -380,7 +378,7 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 		src = ref.Body.Sources[vd.Position]
 
 	default:
-		return errors.Wrapf(errEntryType, "value destination is %T, should be output, retirement, or mux", e)
+		return errors.Wrapf(bc.ErrEntryType, "value destination is %T, should be output, retirement, or mux", e)
 	}
 
 	if *src.Ref != vs.entryID {

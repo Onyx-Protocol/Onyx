@@ -128,6 +128,11 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 
 // Convenience routines for accessing entries of specific types by ID.
 
+var (
+	ErrEntryType    = errors.New("invalid entry type")
+	ErrMissingEntry = errors.New("missing entry")
+)
+
 func (tx *TxEntries) TimeRange(id Hash) (*TimeRange, error) {
 	e, ok := tx.Entries[id]
 	if !ok {

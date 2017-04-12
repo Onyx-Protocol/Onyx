@@ -165,7 +165,7 @@ func (ec *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 		eID := m.Witness.Destinations[index].Ref
 		e, ok := ec.entries[*eID]
 		if !ok {
-			return false, errors.Wrapf(errMissingEntry, "entry for mux destination %d, id %x, not found", index, eID.Bytes())
+			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for mux destination %d, id %x, not found", index, eID.Bytes())
 		}
 		return checkEntry(e)
 	}
@@ -177,7 +177,7 @@ func (ec *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 	case *bc.Issuance:
 		d, ok := ec.entries[*e.Witness.Destination.Ref]
 		if !ok {
-			return false, errors.Wrapf(errMissingEntry, "entry for issuance destination %x not found", e.Witness.Destination.Ref.Bytes())
+			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for issuance destination %x not found", e.Witness.Destination.Ref.Bytes())
 		}
 		if m, ok := d.(*bc.Mux); ok {
 			return checkMux(m)
@@ -190,7 +190,7 @@ func (ec *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 	case *bc.Spend:
 		d, ok := ec.entries[*e.Witness.Destination.Ref]
 		if !ok {
-			return false, errors.Wrapf(errMissingEntry, "entry for spend destination %x not found", e.Witness.Destination.Ref.Bytes())
+			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for spend destination %x not found", e.Witness.Destination.Ref.Bytes())
 		}
 		if m, ok := d.(*bc.Mux); ok {
 			return checkMux(m)
