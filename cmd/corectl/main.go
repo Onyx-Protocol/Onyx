@@ -178,13 +178,21 @@ func configGenerator(db *sql.DB, args []string) {
 		}
 	}
 
+	var blockPub []byte
+	if *flagK != "" {
+		blockPub, err = hex.DecodeString(*flagK)
+		if err != nil {
+			fatalln("error: unable to decode block pub")
+		}
+	}
+
 	conf := &config.Config{
 		IsGenerator:         true,
 		Quorum:              quorum,
 		Signers:             signers,
 		MaxIssuanceWindowMs: bc.DurationMillis(*maxIssuanceWindow),
 		IsSigner:            *flagK != "",
-		BlockPub:            []byte(*flagK),
+		BlockPub:            blockPub,
 		BlockHsmUrl:         *flagHSMURL,
 		BlockHsmAccessToken: *flagHSMToken,
 	}
@@ -267,12 +275,20 @@ func configNongenerator(db *sql.DB, args []string) {
 		fatalln("error: invalid blockchain ID:", err)
 	}
 
+	var blockPub []byte
+	if *flagK != "" {
+		blockPub, err = hex.DecodeString(*flagK)
+		if err != nil {
+			fatalln("error: unable to decode block pub")
+		}
+	}
+
 	var conf config.Config
 	conf.BlockchainId = &blockchainID
 	conf.GeneratorUrl = args[1]
 	conf.GeneratorAccessToken = *flagT
 	conf.IsSigner = *flagK != ""
-	conf.BlockPub = []byte(*flagK)
+	conf.BlockPub = blockPub
 	conf.BlockHsmUrl = *flagHSMURL
 	conf.BlockHsmAccessToken = *flagHSMToken
 
