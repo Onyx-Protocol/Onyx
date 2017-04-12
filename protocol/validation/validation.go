@@ -146,14 +146,9 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		if err != nil {
 			return errors.Wrap(err, "checking nonce program")
 		}
-
-		trEntry, ok := vs.tx.Entries[*e.Body.TimeRangeId]
-		if !ok {
-			return errors.Wrapf(errMissingEntry, "entry for nonce timerange %x not found", e.Body.TimeRangeId.Bytes())
-		}
-		tr, ok := trEntry.(*bc.TimeRange)
-		if !ok {
-			return errors.Wrapf(errEntryType, "entry for nonce timerange %x has type %T", trEntry)
+		tr, err := vs.tx.TimeRange(*e.Body.TimeRangeId)
+		if err != nil {
+			return errors.Wrap(err, "getting nonce timerange")
 		}
 		vs2 := *vs
 		vs2.entryID = *e.Body.TimeRangeId
@@ -263,13 +258,9 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		}
 
 	case *bc.Spend:
-		spentOutputEntry, ok := vs.tx.Entries[*e.Body.SpentOutputId]
-		if !ok {
-			return errors.Wrapf(errMissingEntry, "entry for prevout %x not found", e.Body.SpentOutputId.Bytes())
-		}
-		spentOutput, ok := spentOutputEntry.(*bc.Output)
-		if !ok {
-			return errors.Wrapf(errEntryType, "prevout %x has type %T", e.Body.SpentOutputId.Bytes(), spentOutputEntry)
+		spentOutput, err := vs.tx.Output(*e.Body.SpentOutputId)
+		if err != nil {
+			return errors.Wrap(err, "getting spend prevout")
 		}
 		err := vm.Verify(NewTxVMContext(vs.tx, e, spentOutput.Body.ControlProgram, e.Witness.Arguments))
 		if err != nil {

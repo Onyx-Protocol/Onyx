@@ -29,7 +29,6 @@ func (tx *TxEntries) SigHash(n uint32) (hash Hash) {
 
 	tx.TxInputIDs[n].WriteTo(hasher)
 	tx.ID.WriteTo(hasher)
-
 	hash.ReadFrom(hasher)
 	return hash
 }
@@ -125,4 +124,30 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 	}
 
 	return txEntries, nil
+}
+
+// Convenience routines for accessing entries of specific types by ID.
+
+func (tx *TxEntries) TimeRange(id Hash) (*TimeRange, error) {
+	e, ok := tx.Entries[id]
+	if !ok {
+		return nil, errors.Wrapf(ErrMissingEntry, "id %x", id.Bytes())
+	}
+	tr, ok := e.(*TimeRange)
+	if !ok {
+		return nil, errors.Wrapf(ErrEntryType, "entry %x has unexpected type %T", id.Bytes(), e)
+	}
+	return tr, nil
+}
+
+func (tx *TxEntries) Output(id Hash) (*Output, error) {
+	e, ok := tx.Entries[id]
+	if !ok {
+		return nil, errors.Wrapf(ErrMissingEntry, "id %x", id.Bytes())
+	}
+	o, ok := e.(*Output)
+	if !ok {
+		return nil, errors.Wrapf(ErrEntryType, "entry %x has unexpected type %T", id.Bytes(), e)
+	}
+	return o, nil
 }
