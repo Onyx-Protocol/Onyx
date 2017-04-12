@@ -64,6 +64,7 @@ var errorFormatter = httperror.Formatter{
 		account.ErrDuplicateAlias:  {400, "CH050", "Alias already exists"},
 		txfeed.ErrDuplicateAlias:   {400, "CH050", "Alias already exists"},
 		account.ErrBadIdentifier:   {40, "CH051", "Either an ID or alias must be provided, but not both"},
+		asset.ErrBadIdentifier:     {40, "CH051", "Either an ID or alias must be provided, but not both"},
 
 		// Core error namespace
 		errUnconfigured:                {400, "CH100", "This core still needs to be configured"},
