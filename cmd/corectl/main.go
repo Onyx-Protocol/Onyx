@@ -66,10 +66,8 @@ func main() {
 			version = rev.ID
 		}
 		fmt.Printf("corectl (Chain Core) %s\n", version)
-		versionProdPrintln()
 		fmt.Printf("build-commit: %v\n", buildCommit)
 		fmt.Printf("build-date: %v\n", buildDate)
-		fmt.Printf("reset: %t\n", config.BuildConfig.Reset)
 		return
 	}
 

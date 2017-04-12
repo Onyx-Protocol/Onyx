@@ -121,7 +121,7 @@ func (a *API) needConfig() func(f interface{}) http.Handler {
 func (a *API) buildHandler() {
 	needConfig := a.needConfig()
 
-	resetAllowed := func(h http.Handler) http.Handler { return alwaysError(errProduction) }
+	resetAllowed := func(h http.Handler) http.Handler { return alwaysError(errNoReset) }
 	if config.BuildConfig.Reset {
 		resetAllowed = func(h http.Handler) http.Handler { return h }
 	}
@@ -140,7 +140,7 @@ func (a *API) buildHandler() {
 	m.Handle("/get-transaction-feed", needConfig(a.getTxFeed))
 	m.Handle("/update-transaction-feed", needConfig(a.updateTxFeed))
 	m.Handle("/delete-transaction-feed", needConfig(a.deleteTxFeed))
-	m.Handle("/mockhsm", alwaysError(errProduction))
+	m.Handle("/mockhsm", alwaysError(errNoMockHSM))
 	m.Handle("/list-accounts", needConfig(a.listAccounts))
 	m.Handle("/list-assets", needConfig(a.listAssets))
 	m.Handle("/list-transaction-feeds", needConfig(a.listTxFeeds))

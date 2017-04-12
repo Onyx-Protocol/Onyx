@@ -38,8 +38,6 @@ export const configuredAt = (state, action) => {
   return value
 }
 
-export const production = (state, action) =>
-  coreConfigReducer('isProduction', state, false, action)
 export const mockhsm = (state, action) =>
   buildConfigReducer('isMockhsm', state, false, action)
 export const loopback = (state, action) =>
@@ -223,7 +221,6 @@ export default combineReducers({
   mockhsm,
   networkRpcVersion,
   onTestnet,
-  production,
   replicationLag,
   replicationLagClass,
   requireClientToken,

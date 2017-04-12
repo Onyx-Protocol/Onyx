@@ -100,12 +100,6 @@ func init() {
 		version = rev.ID
 	}
 
-	prodStr := "no"
-	if prod {
-		prodStr = "yes"
-	}
-
-	expvar.NewString("prod").Set(prodStr)
 	expvar.NewString("version").Set(version)
 	expvar.NewString("build_tag").Set(buildTag)
 	expvar.NewString("build_date").Set(buildDate)
@@ -117,7 +111,6 @@ func init() {
 	config.Version = version
 	config.BuildCommit = buildCommit
 	config.BuildDate = buildDate
-	config.Production = prod
 }
 
 func main() {
@@ -129,12 +122,10 @@ func main() {
 	}
 
 	fmt.Printf("cored (Chain Core) %s\n", config.Version)
-	fmt.Printf("production: %t\n", config.Production)
 	fmt.Printf("build-commit: %v\n", config.BuildCommit)
 	fmt.Printf("build-date: %v\n", config.BuildDate)
 	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
 	fmt.Printf("loopback-auth: %t\n", config.BuildConfig.LoopbackAuth)
-	fmt.Printf("protected-db: %t\n", config.BuildConfig.ProtectedDB)
 	fmt.Printf("reset: %t\n", config.BuildConfig.Reset)
 
 	if *v {

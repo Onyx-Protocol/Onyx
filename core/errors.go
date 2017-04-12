@@ -75,9 +75,10 @@ var errorFormatter = httperror.Formatter{
 		config.ErrBadSignerURL:         {400, "CH106", "Block signer URL is invalid"},
 		config.ErrBadSignerPubkey:      {400, "CH107", "Block signer pubkey is invalid"},
 		config.ErrBadQuorum:            {400, "CH108", "Quorum must be greater than 0 if there are signers"},
-		config.ErrNoProdBlockPub:       {400, "CH109", "Block Pub cannot be empty when configuring a production signer"},
-		errProduction:                  {400, "CH110", "This endpoint can only be called in a development system"},
-		config.ErrNoProdBlockHSMURL:    {400, "CH111", "Block HSM URL cannot be empty when configuring a signer in production"},
+		config.ErrNoBlockPub:           {400, "CH109", "Block Pub cannot be empty when configuring a mockhsm disabled signer"},
+		errNoMockHSM:                   {400, "CH110", "This endpoint is disabled for this server's configuration"},
+		errNoReset:                     {400, "CH110", "This endpoint is disabled for this server's configuration"},
+		config.ErrNoBlockHSMURL:        {400, "CH111", "Block HSM URL cannot be empty when configuring a non mockhsm signer"},
 		errNoClientTokens:              {400, "CH120", "Cannot enable client authentication with no client tokens"},
 		blocksigner.ErrConsensusChange: {400, "CH150", "Refuse to sign block with consensus change"},
 

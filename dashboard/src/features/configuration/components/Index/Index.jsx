@@ -96,15 +96,15 @@ class Index extends React.Component {
                     type='radio'
                     {...typeProps}
                     value='new'
-                    disabled={this.props.production} />
-              <div className={`${styles.choice} ${styles.new} ` + (this.props.production ? styles.disabled : '')}>
+                    disabled={!this.props.mockhsm} />
+              <div className={`${styles.choice} ${styles.new} ` + (this.props.mockhsm ? '' : styles.disabled)}>
                 <span className={styles.choice_title}>Create new blockchain network</span>
 
-                {this.props.production &&
-                  <p>This core is compiled for production. Use <code>corectl</code> to configure as a generator.</p>
-                }
-                {!this.props.production &&
+                {this.props.mockhsm &&
                   <p>Start a new blockchain network with this Chain Core as the block generator.</p>
+                }
+                {!this.props.mockhsm &&
+                  <p>This core is compiled without a MockHSM. Use <code>corectl</code> to configure as a generator.</p>
                 }
               </div>
             </label>
@@ -185,7 +185,7 @@ class Index extends React.Component {
 }
 
 const mapStateToProps = state => ({
-  production: state.core.production,
+  mockhsm: state.core.mockhsm,
 })
 
 const mapDispatchToProps = (dispatch) => ({

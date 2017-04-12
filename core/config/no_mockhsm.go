@@ -1,4 +1,4 @@
-//+build prod
+//+build no_mockhsm
 
 package config
 
@@ -9,12 +9,12 @@ import (
 )
 
 func getOrCreateDevKey(_ context.Context, _ pg.DB, _ *Config) (blockpub []byte, err error) {
-	return nil, ErrNoProdBlockPub
+	return nil, ErrNoBlockPub
 }
 
 func checkProdBlockHSMURL(url string) error {
 	if url == "" {
-		return ErrNoProdBlockHSMURL
+		return ErrNoBlockHSMURL
 	}
 
 	return nil

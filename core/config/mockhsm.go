@@ -1,4 +1,4 @@
-//+build !prod
+//+build !no_mockhsm
 
 package config
 

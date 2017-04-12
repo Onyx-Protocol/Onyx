@@ -1,4 +1,4 @@
-//+build !prod
+//+build !no_mockhsm
 
 package main
 
@@ -23,8 +23,4 @@ func createBlockKeyPair(db *sql.DB, args []string) {
 	}
 
 	fmt.Printf("%x\n", pub.Pub)
-}
-
-func versionProdPrintln() {
-	fmt.Println("production: false")
 }

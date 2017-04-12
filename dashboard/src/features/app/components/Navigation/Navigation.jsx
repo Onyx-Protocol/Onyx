@@ -111,7 +111,6 @@ export default connect(
     return {
       routing: state.routing, // required for <Link>s to update active state on navigation
       showSync: state.core.configured && !state.core.generator,
-      production: state.core.production,
       mockhsm: state.core.mockhsm,
       docVersion
     }
