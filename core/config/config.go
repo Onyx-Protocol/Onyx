@@ -113,6 +113,7 @@ func loadFromPG(ctx context.Context, db pg.DB) (*Config, error) {
 	c := new(Config)
 	var (
 		blockSignerData []byte
+		blockPubHex     string
 		configuredAt    time.Time
 	)
 	err := db.QueryRow(ctx, q).Scan(
@@ -122,7 +123,7 @@ func loadFromPG(ctx context.Context, db pg.DB) (*Config, error) {
 		&c.BlockchainId,
 		&c.GeneratorUrl,
 		&c.GeneratorAccessToken,
-		&c.BlockPub,
+		&blockPubHex,
 		&c.BlockHsmUrl,
 		&c.BlockHsmAccessToken,
 		&blockSignerData,
@@ -133,6 +134,11 @@ func loadFromPG(ctx context.Context, db pg.DB) (*Config, error) {
 		return nil, nil
 	} else if err != nil {
 		return nil, errors.Wrap(err, "fetching Core config")
+	}
+
+	c.BlockPub, err = hex.DecodeString(blockPubHex)
+	if err != nil {
+		return nil, errors.Wrap(err)
 	}
 
 	if len(blockSignerData) > 0 {
