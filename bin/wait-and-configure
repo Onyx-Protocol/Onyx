@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# TODO: move this wait functionality to corectl as a -wait flag.
 while ! `curl -s http://localhost:1999 | grep -q Found`
 do
   sleep 0.5
