@@ -24,7 +24,10 @@ import (
 
 const maxAccountCache = 1000
 
-var ErrDuplicateAlias = errors.New("duplicate account alias")
+var (
+	ErrDuplicateAlias = errors.New("duplicate account alias")
+	ErrBadIdentifier  = errors.New("either ID or alias must be specified, and not both")
+)
 
 func NewManager(db pg.DB, chain *protocol.Chain, pinStore *pin.Store) *Manager {
 	return &Manager{
@@ -126,6 +129,60 @@ func (m *Manager) Create(ctx context.Context, xpubs []chainkd.XPub, quorum int, 
 	}
 
 	return account, nil
+}
+
+// UpdateTags modifies the tags of the specified account. The account may be
+// identified either by ID or Alias, but not both.
+func (m *Manager) UpdateTags(ctx context.Context, id, alias *string, tags map[string]interface{}) error {
+	if (id == nil) == (alias == nil) {
+		return errors.Wrap(ErrBadIdentifier)
+	}
+
+	tagsParam, err := tagsToNullString(tags)
+	if err != nil {
+		return errors.Wrap(err, "convert tags")
+	}
+
+	var signer *signers.Signer
+
+	if id != nil {
+		signer, err = m.findByID(ctx, *id)
+		if err != nil {
+			return errors.Wrap(err, "get account by ID")
+		}
+
+		// An alias is required by indexAnnotatedAccount. The latter is a somewhat
+		// complex function, so in the interest of not making a near-duplicate,
+		// we'll satisfy its contract and provide an alias.
+		const q = `SELECT alias FROM accounts WHERE account_id = $1`
+		var a string
+		err := m.db.QueryRow(ctx, q, *id).Scan(&a)
+		if err != nil {
+			return errors.Wrap(err, "alias lookup")
+		}
+		alias = &a
+	} else {
+		signer, err = m.FindByAlias(ctx, *alias)
+		if err != nil {
+			return errors.Wrap(err, "get account by alias")
+		}
+	}
+
+	const q = `
+		UPDATE accounts
+		SET tags = $1
+		WHERE account_id = $2
+	`
+	_, err = m.db.Exec(ctx, q, tagsParam, signer.ID)
+	if err != nil {
+		return errors.Wrap(err, "update entry in accounts table")
+	}
+
+	return errors.Wrap(m.indexAnnotatedAccount(ctx, &Account{
+		Signer: signer,
+		Alias:  *alias,
+		Tags:   tags,
+	}), "update account index")
 }
 
 // FindByAlias retrieves an account's Signer record by its alias
