@@ -14,7 +14,7 @@ public class Schema {
   List<List<String>> mUniqueConstraints;
 
   /**
-   * Column represetns a single column in a table.
+   * Column represents a single column in a table.
    */
   public static class Column {
     String name;
