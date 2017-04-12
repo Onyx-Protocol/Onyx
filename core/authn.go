@@ -34,26 +34,35 @@ type tokenResult struct {
 
 func (a *apiAuthn) handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		err := a.auth(req)
+		token, err := a.auth(req)
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, err)
 			return
 		}
-		next.ServeHTTP(rw, req)
+
+		// if this request was successfully authenticated, pass the token along
+		ctx := req.Context()
+		if token != "" {
+			ctx = context.WithValue(ctx, "token", token)
+		}
+		next.ServeHTTP(rw, req.WithContext(ctx))
 	})
 }
 
-func (a *apiAuthn) auth(req *http.Request) error {
+func (a *apiAuthn) auth(req *http.Request) (string, error) {
 	user, pw, ok := req.BasicAuth()
 	if !ok && a.alt != nil && a.alt(req) {
-		return nil
+		return "", nil
 	}
 
+	// Is this the way we want to encode the token to be passed around? Or just user?
+	// Or something just like pulling the Authorization string out of the request header?
+	token := user + ":" + pw
 	typ := "client"
 	if strings.HasPrefix(req.URL.Path, networkRPCPrefix) {
 		typ = "network"
 	}
-	return a.cachedAuthCheck(req.Context(), typ, user, pw)
+	return token, a.cachedAuthCheck(req.Context(), typ, user, pw)
 }
 
 func (a *apiAuthn) authCheck(ctx context.Context, typ, user, pw string) (bool, error) {
