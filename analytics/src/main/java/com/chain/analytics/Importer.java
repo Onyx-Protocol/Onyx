@@ -186,7 +186,7 @@ public class Importer {
     ThreadContext.put("feed_id", mFeed.id);
     ThreadContext.put("feed_filter", mFeed.filter);
 
-    for (; ; ) {
+    while (true) {
       try {
         ThreadContext.put("feed_after", mFeed.after);
 
