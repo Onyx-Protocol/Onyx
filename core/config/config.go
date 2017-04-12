@@ -253,6 +253,7 @@ func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, c *Config) erro
 		return errors.Wrap(err)
 	}
 	c.Id = hex.EncodeToString(b)
+	c.ConfiguredAt = bc.Millis(time.Now())
 
 	val, err := proto.Marshal(c)
 	if err != nil {
