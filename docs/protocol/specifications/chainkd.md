@@ -18,22 +18,22 @@
 
 ## Introduction
 
-**ChainKD** is a deterministic key derivation scheme. Generated keys are compatible with EdDSA signature scheme and Diffie-Hellman key exchange.
+**ChainKD** is a deterministic key derivation scheme. Generated keys are compatible with the EdDSA signature scheme and with Diffie-Hellman key exchange.
 
 Features:
 
-1. Scheme is fully deterministic and allows producing complex hierarchies of keys from a single high-entropy seed.
-2. Derive private keys from extended private keys using “hardened derivation”.
-3. Derive public keys independently from private keys using “non-hardened derivation”.
-4. Hardened and non-hardened public keys and signatures are compatible with [EdDSA](https://tools.ietf.org/html/rfc8032) specification. Signing keys are 64-byte strings, the format used in [NaCl](https://nacl.cr.yp.to/sign.html) function `crypto_sign`.
-5. Variable-length string selectors instead of fixed-length 31-bit integer indices.
+1. Fully deterministic and allows producing complex hierarchies of keys from a single high-entropy seed.
+2. Can derive private keys from extended private keys using “hardened derivation.”
+3. Can derive public keys independently from private keys using “non-hardened derivation.”
+4. Hardened and non-hardened public keys and signatures are compatible with the [EdDSA](https://tools.ietf.org/html/rfc8032) specification. Signing keys are 64-byte strings, the format used in the [NaCl](https://nacl.cr.yp.to/sign.html) function `crypto_sign`.
+5. Derivation with variable-length string selectors instead of fixed-length 31-bit integer indices.
 6. Short 64-byte extended public and private keys without special encoding.
-7. No metadata: an extended key carries only an additional 32-byte salt that allows sharing public key without revealing child public keys.
+7. No metadata: an extended key carries only an additional 32-byte salt that allows sharing a public key without revealing its child public keys.
 8. Privacy: extended key does not reveal neither its place in the hierarchy, nor the manner of derivation (hardened or non-hardened).
 
 Limitations:
 
-1. Depth of non-hardened derivation is limited to 2<sup>20</sup> (more than million levels).
+1. Depth of non-hardened derivation is limited to 2<sup>20</sup> (more than a million levels).
 2. Number of distinct root keys or hardened public keys is 2<sup>250</sup>, half of the keyspace allowed in EdDSA.
 3. Number of distinct non-hardened public keys is 2<sup>230</sup>.
 
@@ -50,11 +50,11 @@ Limitations:
 
 **Derivation key** (aka “dk”) is the second half (32-byte string) of the extended private or public key that enables derivation of the child keys or proving linkability of the keys.
 
-**Signing key** (aka “sk”) is a 64-byte string representing a raw signing key used for creating EdDSA signatures (consists of 32-byte scalar and 32-byte “prefix”). This is the format used by `crypto_sign` function in [NaCl](https://nacl.cr.yp.to/sign.html) library.
+**Signing key** (aka “sk”) is a 64-byte string (consisting of a 32-byte scalar and a 32-byte “prefix”) representing a raw signing key used for creating EdDSA signatures. This is the format used by the `crypto_sign` function in the [NaCl](https://nacl.cr.yp.to/sign.html) library.
 
-**Private key** is a the first half of the _signing key_ representing a raw signing scalar usable for ECDH and generating a _public key_.
+**Private key** is the first half of the _signing key_ representing a raw signing scalar usable for ECDH and generating a _public key_.
 
-**Public key** (aka “pk”) is a 32-byte string representing encoding of an elliptic curve point on Ed25519 as defined in EdDSA ([RFC 8032](https://tools.ietf.org/html/rfc8032)).
+**Public key** (aka “pk”) is a 32-byte string encoding an elliptic curve point on Ed25519 as defined in EdDSA ([RFC 8032](https://tools.ietf.org/html/rfc8032)).
 
 
 ## Algorithms
@@ -65,7 +65,7 @@ Limitations:
 
 **Output:** `xprv`, a root extended private key.
 
-1. Compute 64-byte string `xprv = HMAC-SHA512(key: "Root", data: seed)`.
+1. Compute the 64-byte string `xprv = HMAC-SHA512(key: "Root", data: seed)`.
 2. Prune the first 32 bytes of `xprv` to produce a valid scalar:
     1. the lowest 3 bits of the first byte are cleared,
     2. the highest bit of the last byte is cleared,
@@ -80,10 +80,10 @@ Limitations:
 
 **Output:** `xpub`, an extended public key.
 
-1. Split `xprv` in two halves: 32-byte scalar `s` and 32-byte derivation key `dk`.
+1. Split `xprv` into two halves: a 32-byte scalar `s` and a 32-byte derivation key `dk`.
 2. Perform a fixed-base scalar multiplication `P = s·B` where `B` is a base point of Ed25519.
 3. [Encode](#encode-public-key) point `P` as `pubkey`.
-4. Return extended public key `xpub = pubkey || dk` (64 bytes).
+4. Return the extended public key `xpub = pubkey || dk` (64 bytes).
 
 
 ### Derive hardened extended private key
@@ -114,11 +114,11 @@ Limitations:
 
 **Output:** `xprv’`, the derived extended public key.
 
-1. [Generate extended public key](#generate-extended-public-key) `xpub` for a given `xprv`.
-2. Split `xpub` in two halves: 32-byte pubkey `P` and 32-byte derivation key `dk`.
+1. [Generate extended public key](#generate-extended-public-key) `xpub` for the given `xprv`.
+2. Split `xpub` into two halves: a 32-byte pubkey `P` and a 32-byte derivation key `dk`.
 3. Compute `F = HMAC-SHA512(key: dk, data: "N" || P || selector)`.
-4. Split `F` in two halves: a 32-byte `fbuffer` and a 32-byte `dk’`.
-5. Clear lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
+4. Split `F` into two halves: a 32-byte `fbuffer` and a 32-byte `dk’`.
+5. Clear the lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
 6. Compute derived secret scalar `s’ = s + f` (without reducing the result modulo the subgroup order).
 7. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
 8. Return `xprv’ = privkey’ || dk’`.
@@ -133,10 +133,10 @@ Limitations:
 
 **Output:** `xpub’`, the derived extended public key.
 
-1. Split `xpub` in two halves: 32-byte pubkey `P` and 32-byte derivation key `dk`.
+1. Split `xpub` into two halves: a 32-byte pubkey `P` and a 32-byte derivation key `dk`.
 2. Compute `F = HMAC-SHA512(key: dk, data: "N" || P || selector)`.
-3. Split `F` in two halves: a 32-byte `fbuffer` and a 32-byte `dk’`.
-4. Clear lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
+3. Split `F` into two halves: a 32-byte `fbuffer` and a 32-byte `dk’`.
+4. Clear the lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
 5. Perform a fixed-base scalar multiplication `F = f·B` where `B` is a base point of Ed25519.
 6. Decode point `P` from `pubkey` according to EdDSA.
 7. Perform point addition `P’ = P + F`.
@@ -150,9 +150,9 @@ Limitations:
 
 **Output:** `pubkey`, a 32-byte [EdDSA](https://tools.ietf.org/html/rfc8032) public key.
 
-1. Return first 32 bytes of `xpub` as encoded `pubkey` suitable for ECDH key exchange or EdDSA signatures.
+1. Return the first 32 bytes of `xpub` as encoded `pubkey` suitable for ECDH key exchange or EdDSA signatures.
 
-Resulting 32-byte public key can be used to verify EdDSA signature created by a corresponding [EdDSA signing key](#extract-signing-key).
+The resulting 32-byte public key can be used to verify an EdDSA signature created with the corresponding [EdDSA signing key](#extract-signing-key).
 
 
 ### Extract signing key
@@ -161,12 +161,12 @@ Resulting 32-byte public key can be used to verify EdDSA signature created by a 
 
 **Output:** `sk`, a 64-byte [EdDSA](https://tools.ietf.org/html/rfc8032) signing key.
 
-1. Compute hash `exthash = HMAC-SHA512(key: "Expand", data: xprv)`.
-2. Extract `privkey` as first 32 bytes of `xprv`.
-3. Extract `ext` as last 32 bytes of `exthash`.
-4. Return 64-byte signing key `sk = privkey || ext`.
+1. Compute the hash `exthash = HMAC-SHA512(key: "Expand", data: xprv)`.
+2. Extract `privkey` as the first 32 bytes of `xprv`.
+3. Extract `ext` as the last 32 bytes of `exthash`.
+4. Return the 64-byte signing key `sk = privkey || ext`.
 
-Resulting 64-byte signing key can be used to create EdDSA signature verifiable by a corresponding [EdDSA public key](#extract-public-key).
+The resulting 64-byte signing key can be used to create an EdDSA signature verifiable by the corresponding [EdDSA public key](#extract-public-key).
 
 
 ### Encode public key
@@ -184,20 +184,20 @@ Resulting 64-byte signing key can be used to create EdDSA signature verifiable b
 
 ### Names
 
-**ChainKD** stands for “Chain Key Derivation”.
+**ChainKD** stands for “Chain Key Derivation.”
 
-**Xpub** and **xprv** are terms adoped from the [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
-scheme where public and private keys are _extended_ with additional entropy (“derivation key”)
+**Xpub** and **xprv** are terms adopted from the [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
+scheme where public and private keys are _extended_ with additional entropy (“derivation key”).
 
 **Derivation key** or **dk** is an additional 32-byte code stored within _xpub_ and _xprv_
 that allows deriving child keys and proving linkage between any pair of child keys.
-In BIP32 that code is called “chain code”. We chose not to reuse the term of BIP32 in order
+In BIP32 that code is called the “chain code.” We chose not to reuse the term of BIP32 in order
 to make it more explicit that the derivation key is _semi-private_.
 
 ### Deriving hardened keys from non-hardened ones
 
-The derivation method only affects relationship between the key and its parent,
-but does not affect how other keys are derived from that key.
+The derivation method only affects the relationship between the key and its parent.
+It does not affect how other keys are derived from that key.
 Note that secrecy of all derived private keys (both hardened and non-hardened, 
 at all levels) from a non-hardened key depends on keeping either the parent 
 extended public key secret, or all non-hardened sibling keys secret.
@@ -206,7 +206,7 @@ extended public key secret, or all non-hardened sibling keys secret.
 
 [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) uses
 31-bit indices for derivation. ChainKD generalizes indices to arbitrary-length 
-binary strings called “selectors”.
+binary strings called “selectors.”
 
 In our experience index-based derivation is not always convenient and can be 
 extended to longer selectors only through additional derivation levels which 
@@ -219,40 +219,40 @@ or [JSON](http://www.json.org).
 
 ### Torsion point safety and compatibility
 
-Edwards curve 25519 allows small subgroup attacks when secret scalars are used for 
+The Edwards curve 25519 allows small-subgroup attacks when secret scalars are used for 
 Diffie-Hellman key exchange. To prevent leaking a few bits of the scalar, the Curve25519
 protocol and later EdDSA protocol require that the secret scalar is pre-multiplied by 8.
-That way, when the scalar is multiplied by a torsion point, the result is always point at infinity
+That way, when the scalar is multiplied by a torsion point, the result is always the point at infinity
 which leaks no information about the scalar.
 
-Alternative mechanism to provide safety against small subgroup attacks is using
-a _torsion-safe representative_ of a scalar: transformation `t(s)` that keeps 
-public key unmodified: `t(s)·B == s·B` while multiplication by a torsion point 
-always yields point at infinity: `t(s)·T == O`. In other words, `t(s) == s mod l` 
+An alternative mechanism for providing safety against small-subgroup attacks is using
+a _torsion-safe representative_ of a scalar: a transformation `t(s)` that keeps the
+public key unmodified (`t(s)·B == s·B`) but that always yields the point at infinity when
+multiplied by a torsion point (`t(s)·T == O`). In other words, `t(s) == s mod l` 
 and `t(s) == 0 mod 8`.
 
 That transformation was [proposed](https://moderncrypto.org/mail-archive/curves/2017/000866.html) 
 by Henry de Valence, Ian Goldberg, George Kadianakis and Isis Lovecruft on the “Curves” mailing list
-together with efficient time-constant implementation based on precomputed table of 8 scalars.
+together with an efficient time-constant implementation based on a precomputed table of 8 scalars.
 
 The torsion-safe representative is indispensable when the keys are being blinded via multiplication 
-(such as in key blinding scheme in [Tor proposal 224](https://gitweb.torproject.org/torspec.git/tree/proposals/224-rend-spec-ng.txt#n1979)).
+(such as in the key blinding scheme in [Tor proposal 224](https://gitweb.torproject.org/torspec.git/tree/proposals/224-rend-spec-ng.txt#n1979)).
 
 Unfortunately, torsion-safe representation and blinding by multiplication affect
-the lower and higher bits  that are statically defined by Curve25519 and EdDSA: 
-3 lower bits must be zero and the highest bits must be 1 and 0 (assuming scalar
-is a 32-byte little-endian integer). Software that implements Montgomery ladder 
-or scalar multiplication may make assumptions about the value of these bits, 
+the lower and higher bits that are statically defined by Curve25519 and EdDSA: 
+the 3 lower bits must be zero and the highest bits must be 1 and 0 (assuming the scalar
+is a 32-byte little-endian integer). Software that implements the Montgomery ladder
+or scalar multiplication may make assumptions about the value of these bits,
 placing constraints on the schemes doing linear operation on the keys.
 
 As a result, to maintain compatibility with EdDSA requirements, ChainKD uses
 the trick described in [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA):
 child keys are blinded via addition of a base point multiple instead of 
 multiplying the parent key (like in BIP32), and the magnitute of the child scalar
-is computed to be a multiple of cofactor (8) and several bits smaller in order 
+is computed to be a multiple of the cofactor (8) and several bits smaller in order 
 to not affect the two highest bits even after deriving many levels deep.
 
-As a result, for all derived keys, low 3 bits remain zero and high 2 bits are
+As a result, for all derived keys, the low 3 bits remain zero and the high 2 bits are
 set to 1 and 0 as required by EdDSA, but at the cost of a hard limit 
 on the derivation depth and a slightly increased (yet negligible) chance
 of child key collisions.
@@ -265,24 +265,24 @@ than scalar multiplication by an arbitrary point.
 ### Signing compatibility
 
 EdDSA defines the private key as a 32-byte random string. The signing procedure then expands 
-that private key into a 64-byte hash, where first half is pruned to be a valid scalar, and the 
+that private key into a 64-byte hash, where the first half is pruned to be a valid scalar, and the 
 second half is used as a “prefix” to be mixed with the message to generate a secret nonce.
 
-Unfortunately, such definition of a private key is not compatible with linear operations
-required for _non-hardened_ derivation. Which means, that no key derivation scheme that
-needs independent key derivation for secret and public keys, is able produce private keys
-fully compatible with EdDSA definition of the signing algorithm.
+Unfortunately, this definition of a private key is not compatible with linear operations
+required for _non-hardened_ derivation. This means that no key derivation scheme that
+needs independent key derivation for secret and public keys is able to produce private keys
+fully compatible with the EdDSA signing algorithm.
 
-However, [NaCl library](http://nacl.cr.yp.to/sign.html) happens to decouple most of the 
+However, the [NaCl library](http://nacl.cr.yp.to/sign.html) happens to decouple most of the
 signing logic from the key representation and uses that 64-byte hash as its “secret key”
-representation for the `sign` function that we call an “expanded private key”.
+representation for the `sign` function that we call an “expanded private key.”
 
-ChainKD and authors of [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA)
-proposal use that 64-byte representation to maximize compatibility with the existing EdDSA implementations.
+ChainKD and the [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA)
+proposal use that 64-byte representation to maximize compatibility with existing EdDSA implementations.
 Our proposal differs slightly from BIP32-Ed25519 in that the private key does not carry additional 32 bytes
-secret entropy just to derive the “prefix” half of the expanded key. Instead, ChainKD
-derives second half of the 64-byte expanded key from the secret scalar itself, reusing its entropy
-and allowing the xprv to be of the same size as xpub — only 64 bytes (scalar + derivation key).
+of secret entropy just to derive the “prefix” half of the expanded key. Instead, ChainKD
+derives the second half of the 64-byte expanded key from the secret scalar itself, reusing its entropy
+and allowing the xprv to be of the same size as the xpub — only 64 bytes (scalar + derivation key).
 
 
 ## Security
@@ -291,54 +291,54 @@ and allowing the xprv to be of the same size as xpub — only 64 bytes (scalar +
 
 Knowledge of the seed or the root extended private key:
 
-1. Allows deriving hardened extended private key.
-2. Allows deriving non-hardened extended private key.
+1. Allows deriving a hardened extended private key;
+2. Allows deriving a non-hardened extended private key;
 3. Allows signing messages with the root key.
 
 Knowledge of an extended private key:
 
-1. Allows deriving hardened extended private key.
-2. Allows deriving non-hardened extended private key.
+1. Allows deriving a hardened extended private key;
+2. Allows deriving a non-hardened extended private key;
 3. Allows signing messages with that key.
 
 Knowledge of an extended public key:
 
-1. Allows deriving non-hardened public keys.
-2. Does not allow determining if it is derived in a hardened or non-hardened way.
-3. Does not allow determining if another extended public key is a sibling of the key.
-4. Does not allow signing
-5. Does not allow deriving private keys.
+1. Allows deriving non-hardened public keys;
+2. Does not allow determining if it is derived in a hardened or non-hardened way;
+3. Does not allow determining if another extended public key is a sibling of the key;
+4. Does not allow signing;
+5. Does not allow deriving private keys;
 6. Does not allow deriving hardened public keys.
 
-Knowledge of a parent extended public key and one of non-hardened derived extended private keys:
+Knowledge of a parent extended public key and one of its non-hardened derived extended private keys:
 
-1. Allows extracting parent private key: `s = (s’ - f) mod L` where `f` is derived from the parent `xpub` and `s’` is extracted from the child `xprv’`.
+1. Allows extracting the parent private key: `s = (s’ - f) mod L` where `f` is derived from the parent `xpub` and `s’` is extracted from the child `xprv’`.
 
 ### Root key security
 
-We set 6 bits in the secret 256 bits of a 512-bit root extended key. Therefore, the root key requires an order of 2<sup>250</sup> attempts by brute-force.
+We set 6 bits in the secret 256 bits of a 512-bit root extended key. Therefore, cracking the root key requires on the order of 2<sup>250</sup> attempts by brute-force.
 
 ### Hardened derivation security
 
-Private keys derived using hardened derivation have 6 bits set, just like the root key. Therefore, an extended private key requires an order of 2<sup>250</sup> attempts by brute-force.
+Private keys derived using hardened derivation have 6 bits set, just like the root key. Therefore, cracking an extended private key requires on the order of 2<sup>250</sup> attempts by brute-force.
 
 ### Non-hardened derivation security
 
-Non-hardened derivation consist of adding scalars less that 2<sup>230</sup> (multiplied by 8) to a root private key. The resulting keys have the entropy of the root key (250 bits), but the number of possible public keys is reduced to 2<sup>230</sup> to allow large number of derivation levels. This means collisions of public keys are expected after deriving 2<sup>115</sup> keys. We note that increased probability of collisions does not reduce security of EdDSA signatures or ECDH key exchange; it only marginally reduces unlinkability safety in privacy schemes based on one-time keys.
+Non-hardened derivation consist of adding scalars less that 2<sup>230</sup> (multiplied by 8) to a root private key. The resulting keys have the entropy of the root key (250 bits), but the number of possible public keys is reduced to 2<sup>230</sup> to allow a large number of derivation levels. This means collisions of public keys are expected after deriving 2<sup>115</sup> keys. We note that the increased probability of collisions does not reduce the security of EdDSA signatures or ECDH key exchange; it only marginally reduces unlinkability safety in privacy schemes based on one-time keys.
 
 ### Secret scalar compatibility
 
 EdDSA requires specific values for 5 bits of the secret scalar: lower 3 bits must be zero, higher 2 bits must be 1 and 0.
 
-By setting high three bits of a root key (or hardened private key) to `010` and low three bits to `000`, that key has form `r = 2^254 + 8·k`, where maximum value  of `k` is `2^250 - 1`. Each non-hardened derived scalar `f` is generated from 230 bits and has maximum value `2^230 - 1`. Therefore a key at level `i` has maximum value `2^254 + 2^253 - 8 + i·8·(2^230 - 1)`. Since the maximum `i` equals `2^20`, maximum value of any key is `2^255 - 2^23 - 8`. As a result, all deriveable keys are less than `2^255`, larger than `2^254` and divisible by 8 as required by EdDSA.
+By setting the high three bits of a root key (or hardened private key) to `010` and the low three bits to `000`, that key has form `r = 2^254 + 8·k`, where the maximum value of `k` is `2^250 - 1`. Each non-hardened derived scalar `f` is generated from 230 bits and has maximum value `2^230 - 1`. Therefore a key at level `i` has maximum value `2^254 + 2^253 - 8 + i·8·(2^230 - 1)`. Since the maximum `i` equals `2^20`, the maximum value of any key is `2^255 - 2^23 - 8`. As a result, all deriveable keys are less than `2^255`, larger than `2^254` and divisible by 8 as required by EdDSA.
 
 The depth limit is reset at each level where hardened derivation is used.
 
 ### Nonce entropy
 
-EdDSA derives a 64-byte signing key from 256 bits of entropy. In ChainKD the extended private key carries the secret scalar as-is and 32 bytes of _derivation key_. The 64-byte signing key as required by EdDSA consists of a secret scalar (unmodified) and additional 32 bytes of _prefix_ used to generate nonce for the signature.
+EdDSA derives a 64-byte signing key from 256 bits of entropy. In ChainKD the extended private key carries the secret scalar as-is and 32 bytes of _derivation key_. The 64-byte signing key as required by EdDSA consists of a secret scalar (unmodified) and an additional 32 bytes of _prefix_ used to generate the nonce for the signature.
 
-In ChainKD that prefix is derived non-linearly from the extended private key, having the entropy of the secret scalar (250 bits). The prefix is not derived in parallel to secret scalar, but from it, making the construction similar to the one in [RFC6979](https://tools.ietf.org/html/rfc6979) where the nonce is also computed from a secret scalar and a message using an HKDF construction.
+In ChainKD that prefix is derived non-linearly from the extended private key, having the entropy of the secret scalar (250 bits). The prefix is not derived in parallel with the secret scalar, but from it, making the construction similar to the one in [RFC6979](https://tools.ietf.org/html/rfc6979) where the nonce is also computed from a secret scalar and a message using an HKDF construction.
 
 
 
@@ -414,9 +414,9 @@ All values use hexadecimal encoding.
 
 ## Acknowledgements
 
-We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous version of this scheme and their proposal [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA) where derived keys are also safe to use in ECDH implementations using Montgomery Ladder. We improve on their proposal further by slighly reducing collision probability of child keys, reducing size of xprv from 96 to 64 bytes and using extensible output hash function SHAKE128 instead of HMAC-SHA512.
+We thank Dmitry Khovratovich and Jason Law for thorough analysis of the previous version of this scheme and their proposal [BIP32-Ed25519](https://drive.google.com/open?id=0ByMtMw2hul0EMFJuNnZORDR2NDA) where derived keys are also safe to use in ECDH implementations using Montgomery Ladder. We improve on their proposal further by slighly reducing the collision probability of child keys, reducing the size of xprv from 96 to 64 bytes, and using the extensible output hash function SHAKE128 instead of HMAC-SHA512.
 
-We also thank Gregory Maxwell and Pieter Wuille for clarifying design decisions behind [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) and capability of selectively proving linkage between arbitrary child keys.
+We also thank Gregory Maxwell and Pieter Wuille for clarifying the design decisions behind [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) and the capability of selectively proving linkage between arbitrary child keys.
 
 Finally, we thank all participants on the [Curves](https://moderncrypto.org/mail-archive/curves/2017/000858.html) and [CFRG](https://www.ietf.org/mail-archive/web/cfrg/current/msg09077.html) mailing lists: Henry de Valence, Mike Hamburg, Trevor Perrin, Taylor R. Campbell and others.
 
