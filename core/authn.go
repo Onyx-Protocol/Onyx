@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/hex"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -21,6 +22,7 @@ type apiAuthn struct {
 	// alternative authentication mechanism,
 	// used when no basic auth creds are provided.
 	// alt is ignored if nil.
+	// this will be removed once ACLs are in place.
 	alt func(*http.Request) bool
 
 	tokenMu  sync.Mutex // protects the following
@@ -34,23 +36,42 @@ type tokenResult struct {
 
 func (a *apiAuthn) handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		token, err := a.auth(req)
-		if err != nil {
-			errorFormatter.Write(req.Context(), rw, err)
-			return
+		token, err0 := a.tokenAuth(req)
+		ctx := req.Context()
+		if err0 != nil {
+			// if this request was successfully authenticated, pass the token along
+			if token != "" {
+				ctx = context.WithValue(ctx, "token", token)
+			}
 		}
 
-		// if this request was successfully authenticated, pass the token along
-		ctx := req.Context()
-		if token != "" {
-			ctx = context.WithValue(ctx, "token", token)
+		err1 := a.localhostAuth(req)
+		if err1 == nil {
+			ctx = context.WithValue(ctx, "localhost", true)
 		}
+
+		if err0 != nil && err1 != nil {
+			errorFormatter.Write(ctx, rw, err0) // doesn't really matter which error we write
+		}
+
 		next.ServeHTTP(rw, req.WithContext(ctx))
 	})
 }
 
-func (a *apiAuthn) auth(req *http.Request) (string, error) {
+func (a *apiAuthn) localhostAuth(req *http.Request) error {
+	h, _, err := net.SplitHostPort(req.RemoteAddr)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	if !net.ParseIP(h).IsLoopback() {
+		return errNotAuthenticated
+	}
+	return nil
+}
+
+func (a *apiAuthn) tokenAuth(req *http.Request) (string, error) {
 	user, pw, ok := req.BasicAuth()
+	// TODO(tessr): remove the following clause once ACLs are in place
 	if !ok && a.alt != nil && a.alt(req) {
 		return "", nil
 	}
