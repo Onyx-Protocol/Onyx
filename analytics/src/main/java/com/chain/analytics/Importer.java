@@ -36,6 +36,8 @@ public class Importer {
   private static final String TRUE = "1";
   private static final String FALSE = "0";
   private static final long DEFAULT_TIMEOUT_MILLIS = 60 * 1000; // 60 seconds
+  private static final String SQL_MARK_SPENT_QUERY =
+      "UPDATE transaction_outputs SET spent = ? WHERE output_id = ?";
 
   private static final Logger logger = LogManager.getLogger();
   private static final Gson gson = new Gson();
@@ -248,7 +250,8 @@ public class Importer {
     try (Connection conn = mDataSource.getConnection();
         PreparedStatement psTx = conn.prepareStatement(insertTxQ);
         PreparedStatement psIn = conn.prepareStatement(insertInputQ);
-        PreparedStatement psOut = conn.prepareStatement(insertOutputQ)) {
+        PreparedStatement psOut = conn.prepareStatement(insertOutputQ);
+        PreparedStatement psSpent = conn.prepareStatement(SQL_MARK_SPENT_QUERY)) {
 
       // Manage our own SQL transactions so we can make this whole
       // blockchain transaction atomic.
@@ -276,6 +279,7 @@ public class Importer {
           psTx.addBatch();
 
           // Insert each of the inputs.
+          boolean spentOutput = false;
           for (int i = 0; i < tx.inputs.size(); i++) {
             final Transaction.Input input = tx.inputs.get(i);
 
@@ -297,6 +301,13 @@ public class Importer {
             psIn.setString(16, input.spentOutputId);
 
             psIn.addBatch();
+
+            if (input.spentOutputId != null && !"".equals(input.spentOutputId)) {
+              spentOutput = true;
+              psSpent.setString(1, TRUE);
+              psSpent.setString(2, input.spentOutputId);
+              psSpent.addBatch();
+            }
           }
 
           // Insert each of the outputs.
@@ -329,6 +340,9 @@ public class Importer {
           psTx.executeBatch();
           psIn.executeBatch();
           psOut.executeBatch();
+          if (spentOutput) {
+            psSpent.executeBatch();
+          }
           conn.commit();
         } catch (SQLException ex) {
           // We can hit a unique constraint violation (ORA-00001)
