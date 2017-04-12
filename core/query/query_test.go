@@ -93,7 +93,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{asset1.String()},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
+				{bc.AssetAmount{AssetId: &asset1, Amount: 867}, acct1},
 			},
 		},
 		{
@@ -101,14 +101,14 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{"USD"},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
+				{bc.AssetAmount{AssetId: &asset1, Amount: 867}, acct1},
 			},
 		},
 		{
 			filter: "asset_tags.message = 'สวัสดีชาวโลก'",
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
+				{bc.AssetAmount{AssetId: &asset1, Amount: 867}, acct1},
 			},
 		},
 		{
@@ -116,7 +116,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{"สวัสดีชาวโลก"},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
+				{bc.AssetAmount{AssetId: &asset1, Amount: 867}, acct1},
 			},
 		},
 		{
@@ -129,7 +129,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{asset2.String()},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset2, Amount: 100}, acct1},
+				{bc.AssetAmount{AssetId: &asset2, Amount: 100}, acct1},
 			},
 		},
 		{
@@ -143,8 +143,8 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{acct1},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset2, Amount: 100}, acct1},
-				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
+				{bc.AssetAmount{AssetId: &asset2, Amount: 100}, acct1},
+				{bc.AssetAmount{AssetId: &asset1, Amount: 867}, acct1},
 			},
 		},
 		{
@@ -164,7 +164,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{asset1.String(), acct1},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{AssetID: asset1, Amount: 867}, acct1},
+				{bc.AssetAmount{AssetId: &asset1, Amount: 867}, acct1},
 			},
 		},
 		{
@@ -186,7 +186,7 @@ func TestQueryOutputs(t *testing.T) {
 		for j, w := range tc.want {
 			var found bool
 			for _, output := range outputs {
-				if w.AssetID == output.AssetID && w.Amount == output.Amount && w.AccountID == output.AccountID {
+				if *w.AssetId == output.AssetID && w.Amount == output.Amount && w.AccountID == output.AccountID {
 					found = true
 					break
 				}

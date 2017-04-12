@@ -125,7 +125,7 @@ func (reg *Registry) Define(ctx context.Context, xpubs []chainkd.XPub, quorum in
 		VMVersion:        vmver,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: reg.initialBlockHash,
-		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, vmver, defhash),
+		AssetID:          bc.ComputeAssetID(issuanceProgram, &reg.initialBlockHash, vmver, &defhash),
 		Signer:           assetSigner,
 		Tags:             tags,
 	}

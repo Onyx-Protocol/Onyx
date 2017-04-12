@@ -25,14 +25,14 @@ import (
 type testAction bc.AssetAmount
 
 func (t testAction) Build(ctx context.Context, b *TemplateBuilder) error {
-	in := bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), t.AssetID, t.Amount, 0, nil, bc.Hash{}, nil)
+	in := bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), *t.AssetId, t.Amount, 0, nil, bc.Hash{}, nil)
 	tplIn := &SigningInstruction{}
 
 	err := b.AddInput(in, tplIn)
 	if err != nil {
 		return err
 	}
-	return b.AddOutput(bc.NewTxOutput(t.AssetID, t.Amount, []byte("change"), nil))
+	return b.AddOutput(bc.NewTxOutput(*t.AssetId, t.Amount, []byte("change"), nil))
 }
 
 func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *controlProgramAction {
@@ -45,9 +45,12 @@ func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *controlPro
 func TestBuild(t *testing.T) {
 	ctx := context.Background()
 
+	assetID1 := bc.NewAssetID([32]byte{1})
+	assetID2 := bc.NewAssetID([32]byte{2})
+
 	actions := []Action{
-		newControlProgramAction(bc.AssetAmount{AssetID: bc.NewAssetID([32]byte{2}), Amount: 6}, []byte("dest")),
-		testAction(bc.AssetAmount{AssetID: bc.NewAssetID([32]byte{1}), Amount: 5}),
+		newControlProgramAction(bc.AssetAmount{AssetId: &assetID2, Amount: 6}, []byte("dest")),
+		testAction(bc.AssetAmount{AssetId: &assetID1, Amount: 5}),
 		&setTxRefDataAction{Data: []byte("xyz")},
 	}
 	expiryTime := time.Now().Add(time.Minute)
@@ -61,11 +64,11 @@ func TestBuild(t *testing.T) {
 			Version: 1,
 			MaxTime: bc.Millis(expiryTime),
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.NewAssetID([32]byte{1}), 5, 0, nil, bc.Hash{}, nil),
+				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), assetID1, 5, 0, nil, bc.Hash{}, nil),
 			},
 			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(bc.NewAssetID([32]byte{2}), 6, []byte("dest"), nil),
-				bc.NewTxOutput(bc.NewAssetID([32]byte{1}), 5, []byte("change"), nil),
+				bc.NewTxOutput(assetID2, 6, []byte("dest"), nil),
+				bc.NewTxOutput(assetID1, 5, []byte("change"), nil),
 			},
 			ReferenceData: []byte("xyz"),
 		}),
@@ -104,7 +107,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 		t.Fatal(err)
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	assetID := bc.ComputeAssetID(issuanceProg, &initialBlockHash, 1, &bc.EmptyStringHash)
 	nonce := []byte{1}
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := bc.NewTx(bc.TxData{
@@ -173,7 +176,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		t.Fatal(err)
 	}
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	assetID := bc.ComputeAssetID(issuanceProg, &initialBlockHash, 1, &bc.EmptyStringHash)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := bc.NewTx(bc.TxData{
 		Version: 1,
@@ -262,7 +265,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	var initialBlockHash bc.Hash
 
 	issuanceProg := []byte{byte(vm.OP_TRUE)}
-	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1, bc.EmptyStringHash)
+	assetID := bc.ComputeAssetID(issuanceProg, &initialBlockHash, 1, &bc.EmptyStringHash)
 
 	// all-issuance input tx should fail if none of the inputs commit to the tx signature
 	tx := bc.NewTx(bc.TxData{
@@ -298,7 +301,7 @@ func TestTxSighashCommitment(t *testing.T) {
 				AssetVersion: 1,
 				OutputCommitment: bc.OutputCommitment{
 					AssetAmount: bc.AssetAmount{
-						AssetID: assetID,
+						AssetId: &assetID,
 						Amount:  2,
 					},
 					VMVersion:      1,
@@ -320,7 +323,7 @@ func TestTxSighashCommitment(t *testing.T) {
 		TypedInput: &bc.SpendInput{
 			SpendCommitment: bc.SpendCommitment{
 				AssetAmount: bc.AssetAmount{
-					AssetID: assetID,
+					AssetId: &assetID,
 					Amount:  2,
 				},
 				VMVersion:      1,
@@ -339,7 +342,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	spendInput := &bc.SpendInput{
 		SpendCommitment: bc.SpendCommitment{
 			AssetAmount: bc.AssetAmount{
-				AssetID: assetID,
+				AssetId: &assetID,
 				Amount:  3,
 			},
 			VMVersion:      1,
@@ -367,7 +370,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	spendInput = &bc.SpendInput{
 		SpendCommitment: bc.SpendCommitment{
 			AssetAmount: bc.AssetAmount{
-				AssetID: assetID,
+				AssetId: &assetID,
 				Amount:  4,
 			},
 			VMVersion:      1,
@@ -396,7 +399,7 @@ func TestTxSighashCommitment(t *testing.T) {
 	spendInput = &bc.SpendInput{
 		SpendCommitment: bc.SpendCommitment{
 			AssetAmount: bc.AssetAmount{
-				AssetID: assetID,
+				AssetId: &assetID,
 				Amount:  5,
 			},
 			VMVersion:      1,

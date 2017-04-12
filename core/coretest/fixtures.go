@@ -52,11 +52,11 @@ func CreateAsset(ctx context.Context, t testing.TB, assets *asset.Registry, def 
 }
 
 func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, assets *asset.Registry, accounts *account.Manager, assetID bc.AssetID, amount uint64, accountID string) (*bc.TxOutput, *bc.Output, bc.Hash) {
-	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
+	assetAmount := bc.AssetAmount{AssetId: &assetID, Amount: amount}
 
 	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
 		assets.NewIssueAction(assetAmount, nil), // does not support reference data
-		accounts.NewControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil),
+		accounts.NewControlAction(assetAmount, accountID, nil),
 	}, time.Now().Add(time.Hour))
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -69,7 +69,9 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 		testutil.FatalErr(t, err)
 	}
 
-	return tpl.Transaction.Outputs[0], tpl.Transaction.Results[0].(*bc.Output), tpl.Transaction.OutputID(0)
+	outID0 := tpl.Transaction.OutputID(0)
+	out0 := tpl.Transaction.Entries[*outID0].(*bc.Output)
+	return tpl.Transaction.Outputs[0], out0, *outID0
 }
 
 func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, actions []txbuilder.Action) *bc.Tx {

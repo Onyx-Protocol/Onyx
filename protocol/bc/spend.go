@@ -30,7 +30,7 @@ func NewSpendInput(arguments [][]byte, sourceID Hash, assetID AssetID, amount ui
 	)
 	sc := SpendCommitment{
 		AssetAmount: AssetAmount{
-			AssetID: assetID,
+			AssetId: &assetID,
 			Amount:  amount,
 		},
 		SourceID:       sourceID,
@@ -73,7 +73,7 @@ func (sc *SpendCommitment) writeContents(w io.Writer, suffix []byte, assetVersio
 		if err != nil {
 			return errors.Wrap(err, "writing source id")
 		}
-		err = sc.AssetAmount.writeTo(w)
+		_, err = sc.AssetAmount.WriteTo(w)
 		if err != nil {
 			return errors.Wrap(err, "writing asset amount")
 		}
@@ -110,7 +110,7 @@ func (sc *SpendCommitment) readFrom(r io.Reader, assetVersion uint64) (suffix []
 			if err != nil {
 				return errors.Wrap(err, "reading source id")
 			}
-			_, err = sc.AssetAmount.readFrom(r)
+			_, err = sc.AssetAmount.ReadFrom(r)
 			if err != nil {
 				return errors.Wrap(err, "reading asset+amount")
 			}

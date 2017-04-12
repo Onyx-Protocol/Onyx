@@ -48,7 +48,7 @@ func TestSighashCheck(t *testing.T) {
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset,
+		AssetId: &info.asset,
 		Amount:  1,
 	}
 	spendAction1 := info.NewSpendAction(assetAmount, info.acctA, nil, nil)
@@ -117,7 +117,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	<-info.pinStore.PinWaiter(account.PinName, info.Chain.Height())
 
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset,
+		AssetId: &info.asset,
 		Amount:  10,
 	}
 	spendAction := info.NewSpendAction(assetAmount, info.acctA, nil, nil)
@@ -376,7 +376,7 @@ func bootdb(ctx context.Context, db pg.DB, t testing.TB) (*testInfo, error) {
 
 func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset,
+		AssetId: &info.asset,
 		Amount:  amount,
 	}
 	issueTx, err := Build(ctx, nil, []Action{
@@ -392,7 +392,7 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destA
 
 func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset,
+		AssetId: &info.asset,
 		Amount:  amount,
 	}
 	source := info.NewSpendAction(assetAmount, srcAcctID, nil, nil)

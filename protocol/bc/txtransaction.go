@@ -13,6 +13,7 @@ import (
 type TxEntries struct {
 	*TxHeader
 	ID         Hash
+	Entries    map[Hash]Entry
 	TxInputs   []Entry // 1:1 correspondence with TxData.Inputs
 	TxInputIDs []Hash  // 1:1 correspondence with TxData.Inputs
 
@@ -40,12 +41,12 @@ func ComputeOutputID(sc *SpendCommitment) (h Hash, err error) {
 			err = r
 		}
 	}()
-	src := ValueSource{
-		Ref:      sc.SourceID,
-		Value:    sc.AssetAmount,
+	src := &ValueSource{
+		Ref:      &sc.SourceID,
+		Value:    &sc.AssetAmount,
 		Position: sc.SourcePosition,
 	}
-	o := NewOutput(src, Program{VMVersion: sc.VMVersion, Code: sc.ControlProgram}, sc.RefDataHash, 0)
+	o := NewOutput(src, &Program{VmVersion: sc.VMVersion, Code: sc.ControlProgram}, &sc.RefDataHash, 0)
 
 	h = EntryID(o)
 	return h, nil
@@ -68,6 +69,7 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 	txEntries = &TxEntries{
 		TxHeader:   header,
 		ID:         txid,
+		Entries:    entries,
 		TxInputs:   make([]Entry, len(oldTx.Inputs)),
 		TxInputIDs: make([]Hash, len(oldTx.Inputs)),
 	}
@@ -79,15 +81,22 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 	)
 
 	for id, e := range entries {
+		var ord uint64
 		switch e := e.(type) {
 		case *Issuance:
-			if _, ok := e.Anchor.(*Nonce); ok {
-				nonceIDs[e.Body.AnchorID] = true
+			anchor, ok := entries[*e.Body.AnchorId]
+			if !ok {
+				return nil, fmt.Errorf("entry for anchor ID %x not found", e.Body.AnchorId.Bytes())
 			}
+			if _, ok := anchor.(*Nonce); ok {
+				nonceIDs[*e.Body.AnchorId] = true
+			}
+			ord = e.Ordinal
 			// resume below after the switch
 
 		case *Spend:
-			spentOutputIDs[e.Body.SpentOutputID] = true
+			spentOutputIDs[*e.Body.SpentOutputId] = true
+			ord = e.Ordinal
 			// resume below after the switch
 
 		case *Output:
@@ -97,8 +106,7 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 		default:
 			continue
 		}
-		ord := e.Ordinal()
-		if ord < 0 || ord >= len(oldTx.Inputs) {
+		if ord >= uint64(len(oldTx.Inputs)) {
 			return nil, fmt.Errorf("%T entry has out-of-range ordinal %d", e, ord)
 		}
 		txEntries.TxInputs[ord] = e
@@ -116,4 +124,35 @@ func MapTx(oldTx *TxData) (txEntries *TxEntries, err error) {
 	}
 
 	return txEntries, nil
+}
+
+// Convenience routines for accessing entries of specific types by ID.
+
+var (
+	ErrEntryType    = errors.New("invalid entry type")
+	ErrMissingEntry = errors.New("missing entry")
+)
+
+func (tx *TxEntries) TimeRange(id Hash) (*TimeRange, error) {
+	e, ok := tx.Entries[id]
+	if !ok {
+		return nil, errors.Wrapf(ErrMissingEntry, "id %x", id.Bytes())
+	}
+	tr, ok := e.(*TimeRange)
+	if !ok {
+		return nil, errors.Wrapf(ErrEntryType, "entry %x has unexpected type %T", id.Bytes(), e)
+	}
+	return tr, nil
+}
+
+func (tx *TxEntries) Output(id Hash) (*Output, error) {
+	e, ok := tx.Entries[id]
+	if !ok {
+		return nil, errors.Wrapf(ErrMissingEntry, "id %x", id.Bytes())
+	}
+	o, ok := e.(*Output)
+	if !ok {
+		return nil, errors.Wrapf(ErrEntryType, "entry %x has unexpected type %T", id.Bytes(), e)
+	}
+	return o, nil
 }

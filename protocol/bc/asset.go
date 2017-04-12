@@ -25,12 +25,6 @@ func (a AssetID) WriteTo(w io.Writer) (int64, error)   { return Hash(a).WriteTo(
 func (a *AssetID) ReadFrom(r io.Reader) (int64, error) { return (*Hash)(a).ReadFrom(r) }
 func (a *AssetID) IsZero() bool                        { return (*Hash)(a).IsZero() }
 
-type AssetDefinition struct {
-	InitialBlockID  Hash
-	IssuanceProgram Program
-	Data            Hash
-}
-
 func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
@@ -39,11 +33,11 @@ func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
 	return assetID
 }
 
-func ComputeAssetID(prog []byte, initialBlockID Hash, vmVersion uint64, data Hash) AssetID {
+func ComputeAssetID(prog []byte, initialBlockID *Hash, vmVersion uint64, data *Hash) AssetID {
 	def := &AssetDefinition{
-		InitialBlockID: initialBlockID,
-		IssuanceProgram: Program{
-			VMVersion: vmVersion,
+		InitialBlockId: initialBlockID,
+		IssuanceProgram: &Program{
+			VmVersion: vmVersion,
 			Code:      prog,
 		},
 		Data: data,
@@ -51,26 +45,27 @@ func ComputeAssetID(prog []byte, initialBlockID Hash, vmVersion uint64, data Has
 	return def.ComputeAssetID()
 }
 
-type AssetAmount struct {
-	AssetID AssetID `json:"asset_id"`
-	Amount  uint64  `json:"amount"`
-}
-
-func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
-	n1, err := a.AssetID.ReadFrom(r)
+func (a *AssetAmount) ReadFrom(r io.Reader) (int64, error) {
+	var assetID AssetID
+	n, err := assetID.ReadFrom(r)
 	if err != nil {
-		return int(n1), err
+		return n, err
 	}
+	a.AssetId = &assetID
 	var n2 int
 	a.Amount, n2, err = blockchain.ReadVarint63(r)
-	return int(n1) + n2, err
+	return n + int64(n2), err
 }
 
-func (a *AssetAmount) writeTo(w io.Writer) error {
-	_, err := a.AssetID.WriteTo(w)
+func (a AssetAmount) WriteTo(w io.Writer) (int64, error) {
+	n, err := a.AssetId.WriteTo(w)
 	if err != nil {
-		return err
+		return n, err
 	}
-	_, err = blockchain.WriteVarint63(w, a.Amount)
-	return err
+	n2, err := blockchain.WriteVarint63(w, a.Amount)
+	return n + int64(n2), err
+}
+
+func (a AssetAmount) Equal(other *AssetAmount) bool {
+	return a.Amount == other.Amount && *a.AssetId == *other.AssetId
 }

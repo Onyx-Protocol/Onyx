@@ -17,14 +17,14 @@ func newBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *vm.C
 		Arguments: args,
 
 		BlockHash:            &blockHash,
-		BlockTimeMS:          &block.Body.TimestampMS,
+		BlockTimeMS:          &block.Body.TimestampMs,
 		NextConsensusProgram: &block.Body.NextConsensusProgram,
 	}
 }
 
-func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]byte) *vm.Context {
+func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog *bc.Program, args [][]byte) *vm.Context {
 	var (
-		numResults = uint64(len(tx.Results))
+		numResults = uint64(len(tx.Body.ResultIds))
 		txData     = tx.Body.Data.Bytes()
 		entryID    = bc.EntryID(entry) // TODO(bobg): pass this in, don't recompute it
 
@@ -38,30 +38,32 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 
 	switch e := entry.(type) {
 	case *bc.Nonce:
-		if iss, ok := e.Anchored.(*bc.Issuance); ok {
-			a1 := iss.Body.Value.AssetID.Bytes()
+		anchored := tx.Entries[*e.Witness.AnchoredId]
+		if iss, ok := anchored.(*bc.Issuance); ok {
+			a1 := iss.Body.Value.AssetId.Bytes()
 			assetID = &a1
 			amount = &iss.Body.Value.Amount
 		}
 
 	case *bc.Issuance:
-		a1 := e.Body.Value.AssetID.Bytes()
+		a1 := e.Body.Value.AssetId.Bytes()
 		assetID = &a1
 		amount = &e.Body.Value.Amount
 		destPos = &e.Witness.Destination.Position
 		d := e.Body.Data.Bytes()
 		entryData = &d
-		a2 := e.Body.AnchorID.Bytes()
+		a2 := e.Body.AnchorId.Bytes()
 		anchorID = &a2
 
 	case *bc.Spend:
-		a1 := e.SpentOutput.Body.Source.Value.AssetID.Bytes()
+		spentOutput := tx.Entries[*e.Body.SpentOutputId].(*bc.Output)
+		a1 := spentOutput.Body.Source.Value.AssetId.Bytes()
 		assetID = &a1
-		amount = &e.SpentOutput.Body.Source.Value.Amount
+		amount = &spentOutput.Body.Source.Value.Amount
 		destPos = &e.Witness.Destination.Position
 		d := e.Body.Data.Bytes()
 		entryData = &d
-		s := e.Body.SpentOutputID.Bytes()
+		s := e.Body.SpentOutputId.Bytes()
 		spentOutputID = &s
 
 	case *bc.Output:
@@ -79,8 +81,8 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 			hasher := sha3pool.Get256()
 			defer sha3pool.Put256(hasher)
 
-			hasher.Write(entryID.Bytes())
-			hasher.Write(tx.ID.Bytes())
+			entryID.WriteTo(hasher)
+			tx.ID.WriteTo(hasher)
 
 			var hash bc.Hash
 			hash.ReadFrom(hasher)
@@ -90,8 +92,13 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 		return *txSigHash
 	}
 
+	ec := &entryContext{
+		entry:   entry,
+		entries: tx.Entries,
+	}
+
 	result := &vm.Context{
-		VMVersion: prog.VMVersion,
+		VMVersion: prog.VmVersion,
 		Code:      prog.Code,
 		Arguments: args,
 
@@ -103,29 +110,30 @@ func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog bc.Program, args [][]
 		NumResults:    &numResults,
 		AssetID:       assetID,
 		Amount:        amount,
-		MinTimeMS:     &tx.Body.MinTimeMS,
-		MaxTimeMS:     &tx.Body.MaxTimeMS,
+		MinTimeMS:     &tx.Body.MinTimeMs,
+		MaxTimeMS:     &tx.Body.MaxTimeMs,
 		EntryData:     entryData,
 		TxData:        &txData,
 		DestPos:       destPos,
 		AnchorID:      anchorID,
 		SpentOutputID: spentOutputID,
-		CheckOutput:   (&entryContext{entry: entry}).checkOutput,
+		CheckOutput:   ec.checkOutput,
 	}
 
 	return result
 }
 
 type entryContext struct {
-	entry bc.Entry
+	entry   bc.Entry
+	entries map[bc.Hash]bc.Entry
 }
 
-func (tc *entryContext) checkOutput(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte, expansion bool) (bool, error) {
+func (ec *entryContext) checkOutput(index uint64, data []byte, amount uint64, assetID []byte, vmVersion uint64, code []byte, expansion bool) (bool, error) {
 	checkEntry := func(e bc.Entry) (bool, error) {
-		check := func(prog bc.Program, value bc.AssetAmount, dataHash bc.Hash) bool {
-			return (prog.VMVersion == vmVersion &&
+		check := func(prog *bc.Program, value *bc.AssetAmount, dataHash *bc.Hash) bool {
+			return (prog.VmVersion == vmVersion &&
 				bytes.Equal(prog.Code, code) &&
-				bytes.Equal(value.AssetID.Bytes(), assetID) &&
+				bytes.Equal(value.AssetId.Bytes(), assetID) &&
 				value.Amount == amount &&
 				(len(data) == 0 || bytes.Equal(dataHash.Bytes(), data)))
 		}
@@ -144,7 +152,7 @@ func (tc *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 				// (The spec always requires prog.VmVersion to be zero.)
 				prog.Code = code
 			}
-			return check(prog, e.Body.Source.Value, e.Body.Data), nil
+			return check(&prog, e.Body.Source.Value, e.Body.Data), nil
 		}
 
 		return false, vm.ErrContext
@@ -154,30 +162,43 @@ func (tc *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 		if index >= uint64(len(m.Witness.Destinations)) {
 			return false, errors.Wrapf(vm.ErrBadValue, "index %d >= %d", index, len(m.Witness.Destinations))
 		}
-		return checkEntry(m.Witness.Destinations[index].Entry)
+		eID := m.Witness.Destinations[index].Ref
+		e, ok := ec.entries[*eID]
+		if !ok {
+			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for mux destination %d, id %x, not found", index, eID.Bytes())
+		}
+		return checkEntry(e)
 	}
 
-	switch e := tc.entry.(type) {
+	switch e := ec.entry.(type) {
 	case *bc.Mux:
 		return checkMux(e)
 
 	case *bc.Issuance:
-		if m, ok := e.Witness.Destination.Entry.(*bc.Mux); ok {
+		d, ok := ec.entries[*e.Witness.Destination.Ref]
+		if !ok {
+			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for issuance destination %x not found", e.Witness.Destination.Ref.Bytes())
+		}
+		if m, ok := d.(*bc.Mux); ok {
 			return checkMux(m)
 		}
 		if index != 0 {
 			return false, errors.Wrapf(vm.ErrBadValue, "index %d >= 1", index)
 		}
-		return checkEntry(e.Witness.Destination.Entry)
+		return checkEntry(d)
 
 	case *bc.Spend:
-		if m, ok := e.Witness.Destination.Entry.(*bc.Mux); ok {
+		d, ok := ec.entries[*e.Witness.Destination.Ref]
+		if !ok {
+			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for spend destination %x not found", e.Witness.Destination.Ref.Bytes())
+		}
+		if m, ok := d.(*bc.Mux); ok {
 			return checkMux(m)
 		}
 		if index != 0 {
 			return false, errors.Wrapf(vm.ErrBadValue, "index %d >= 1", index)
 		}
-		return checkEntry(e.Witness.Destination.Entry)
+		return checkEntry(d)
 	}
 
 	return false, vm.ErrContext

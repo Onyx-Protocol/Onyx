@@ -26,7 +26,7 @@ func (oc *OutputCommitment) writeExtensibleString(w io.Writer, suffix []byte, as
 
 func (oc *OutputCommitment) writeContents(w io.Writer, suffix []byte, assetVersion uint64) (err error) {
 	if assetVersion == 1 {
-		err = oc.AssetAmount.writeTo(w)
+		_, err = oc.AssetAmount.WriteTo(w)
 		if err != nil {
 			return errors.Wrap(err, "writing asset amount")
 		}
@@ -51,7 +51,7 @@ func (oc *OutputCommitment) writeContents(w io.Writer, suffix []byte, assetVersi
 func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint64) (suffix []byte, n int, err error) {
 	return blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		if assetVersion == 1 {
-			_, err := oc.AssetAmount.readFrom(r)
+			_, err := oc.AssetAmount.ReadFrom(r)
 			if err != nil {
 				return errors.Wrap(err, "reading asset+amount")
 			}

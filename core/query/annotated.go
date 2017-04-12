@@ -155,7 +155,7 @@ func buildAnnotatedInput(tx *bc.Tx, i uint32) *AnnotatedInput {
 	if sp, ok := tx.TxEntries.TxInputs[i].(*bc.Spend); ok {
 		in.Type = "spend"
 		in.ControlProgram = orig.ControlProgram()
-		in.SpentOutputID = &sp.Body.SpentOutputID
+		in.SpentOutputID = sp.Body.SpentOutputId
 	} else {
 		in.Type = "issue"
 		in.IssuanceProgram = orig.IssuanceProgram()
@@ -167,9 +167,9 @@ func buildAnnotatedOutput(tx *bc.Tx, idx int) *AnnotatedOutput {
 	orig := tx.Outputs[idx]
 	outid := tx.OutputID(idx)
 	out := &AnnotatedOutput{
-		OutputID:        outid,
+		OutputID:        *outid,
 		Position:        idx,
-		AssetID:         orig.AssetID,
+		AssetID:         *orig.AssetId,
 		AssetDefinition: &emptyJSONObject,
 		AssetTags:       &emptyJSONObject,
 		Amount:          orig.Amount,

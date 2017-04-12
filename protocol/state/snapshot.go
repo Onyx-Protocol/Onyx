@@ -59,7 +59,7 @@ func Empty() *Snapshot {
 
 // ApplyBlock updates s in place.
 func (s *Snapshot) ApplyBlock(block *bc.BlockEntries) error {
-	s.PruneNonces(block.Body.TimestampMS)
+	s.PruneNonces(block.Body.TimestampMs)
 	for i, tx := range block.Transactions {
 		err := s.ApplyTx(tx)
 		if err != nil {
@@ -74,10 +74,10 @@ func (s *Snapshot) ApplyTx(tx *bc.TxEntries) error {
 	for _, n := range tx.NonceIDs {
 		// Add new nonces. They must not conflict with nonces already
 		// present.
-		if s.Nonces[n] >= tx.Body.MaxTimeMS {
+		if s.Nonces[n] >= tx.Body.MaxTimeMs {
 			return fmt.Errorf("conflicting nonce %x", n.Bytes())
 		}
-		s.Nonces[n] = tx.Body.MaxTimeMS
+		s.Nonces[n] = tx.Body.MaxTimeMs
 	}
 
 	// Remove spent outputs. Each output must be present.
