@@ -30,3 +30,4 @@ RUN yum -y update \
     && go get -u google.golang.org/grpc \
     && yum remove -y autoconf automake libtool gcc-c++ unzip \
     && yum clean all
+
