@@ -7,6 +7,7 @@ import (
 
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 func NewBuilder(maxTime time.Time) *TemplateBuilder {
@@ -14,9 +15,9 @@ func NewBuilder(maxTime time.Time) *TemplateBuilder {
 }
 
 type TemplateBuilder struct {
-	base                *bc.TxData
-	inputs              []*bc.TxInput
-	outputs             []*bc.TxOutput
+	base                *legacy.TxData
+	inputs              []*legacy.TxInput
+	outputs             []*legacy.TxOutput
 	signingInstructions []*SigningInstruction
 	minTime             time.Time
 	maxTime             time.Time
@@ -25,7 +26,7 @@ type TemplateBuilder struct {
 	callbacks           []func() error
 }
 
-func (b *TemplateBuilder) AddInput(in *bc.TxInput, sigInstruction *SigningInstruction) error {
+func (b *TemplateBuilder) AddInput(in *legacy.TxInput, sigInstruction *SigningInstruction) error {
 	if in.Amount() > math.MaxInt64 {
 		return errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", in.Amount())
 	}
@@ -34,7 +35,7 @@ func (b *TemplateBuilder) AddInput(in *bc.TxInput, sigInstruction *SigningInstru
 	return nil
 }
 
-func (b *TemplateBuilder) AddOutput(o *bc.TxOutput) error {
+func (b *TemplateBuilder) AddOutput(o *legacy.TxOutput) error {
 	if o.Amount > math.MaxInt64 {
 		return errors.WithDetailf(ErrBadAmount, "amount %d exceeds maximum value 2^63", o.Amount)
 	}
@@ -92,7 +93,7 @@ func (b *TemplateBuilder) rollback() {
 	}
 }
 
-func (b *TemplateBuilder) Build() (*Template, *bc.TxData, error) {
+func (b *TemplateBuilder) Build() (*Template, *legacy.TxData, error) {
 	// Run any building callbacks.
 	for _, cb := range b.callbacks {
 		err := cb()
@@ -104,8 +105,8 @@ func (b *TemplateBuilder) Build() (*Template, *bc.TxData, error) {
 	tpl := &Template{}
 	tx := b.base
 	if tx == nil {
-		tx = &bc.TxData{
-			Version: bc.CurrentTransactionVersion,
+		tx = &legacy.TxData{
+			Version: 1,
 		}
 		tpl.Local = true
 	}
@@ -138,6 +139,6 @@ func (b *TemplateBuilder) Build() (*Template, *bc.TxData, error) {
 		tpl.SigningInstructions = append(tpl.SigningInstructions, instruction)
 		tx.Inputs = append(tx.Inputs, in)
 	}
-	tpl.Transaction = bc.NewTx(*tx)
+	tpl.Transaction = legacy.NewTx(*tx)
 	return tpl, tx, nil
 }

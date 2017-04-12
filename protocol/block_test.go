@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
@@ -15,7 +16,7 @@ import (
 func TestGetBlock(t *testing.T) {
 	ctx := context.Background()
 
-	b1 := &bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
+	b1 := &legacy.Block{BlockHeader: legacy.BlockHeader{Height: 1}}
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
 	oneBlock.SaveBlock(ctx, b1)
@@ -23,7 +24,7 @@ func TestGetBlock(t *testing.T) {
 
 	cases := []struct {
 		store   Store
-		want    *bc.Block
+		want    *legacy.Block
 		wantErr bool
 	}{
 		{noBlocks, nil, true},
@@ -131,34 +132,34 @@ func TestGenerateBlock(t *testing.T) {
 	initialBlockHash := b1.Hash()
 	assetID := bc.ComputeAssetID(nil, &initialBlockHash, 1, &bc.EmptyStringHash)
 
-	txs := []*bc.Tx{
-		bc.NewTx(bc.TxData{
+	txs := []*legacy.Tx{
+		legacy.NewTx(legacy.TxData{
 			Version: 1,
 			MinTime: 233400000000,
 			MaxTime: 233400000001,
-			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput([]byte{1}, 50, nil, initialBlockHash, nil, [][]byte{
+			Inputs: []*legacy.TxInput{
+				legacy.NewIssuanceInput([]byte{1}, 50, nil, initialBlockHash, nil, [][]byte{
 					nil,
 					mustDecodeHex("30450221009037e1d39b7d59d24eba8012baddd5f4ab886a51b46f52b7c479ddfa55eeb5c5022076008409243475b25dfba6db85e15cf3d74561a147375941e4830baa69769b5101"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae")}, nil),
 			},
-			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(assetID, 50, mustDecodeHex("a9145881cd104f8d64635751ac0f3c0decf9150c110687"), nil),
+			Outputs: []*legacy.TxOutput{
+				legacy.NewTxOutput(assetID, 50, mustDecodeHex("a9145881cd104f8d64635751ac0f3c0decf9150c110687"), nil),
 			},
 		}),
-		bc.NewTx(bc.TxData{
+		legacy.NewTx(legacy.TxData{
 			Version: 1,
 			MinTime: 233400000000,
 			MaxTime: 233400000001,
-			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput([]byte{2}, 50, nil, initialBlockHash, nil, [][]byte{
+			Inputs: []*legacy.TxInput{
+				legacy.NewIssuanceInput([]byte{2}, 50, nil, initialBlockHash, nil, [][]byte{
 					nil,
 					mustDecodeHex("3045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e01"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
 				}, nil),
 			},
-			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(assetID, 50, mustDecodeHex("a914c171e443e05b953baa7b7d834028ed91e47b4d0b87"), nil),
+			Outputs: []*legacy.TxOutput{
+				legacy.NewTxOutput(assetID, 50, mustDecodeHex("a914c171e443e05b953baa7b7d834028ed91e47b4d0b87"), nil),
 			},
 		}),
 	}
@@ -172,13 +173,13 @@ func TestGenerateBlock(t *testing.T) {
 	wantTxRoot := mustDecodeHash("ab5f5f111beb1e6b49da8334360589c7da3aac1cdd61067ea9a55bec47cb745c")
 	wantAssetsRoot := mustDecodeHash("a31a9b5f71a6d6fa0c87361db4a98c9a82f603f9d9ff584f6613b9d56ccf5ebd")
 
-	want := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:           bc.NewBlockVersion,
+	want := &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
+			Version:           1,
 			Height:            2,
 			PreviousBlockHash: b1.Hash(),
 			TimestampMS:       bc.Millis(now),
-			BlockCommitment: bc.BlockCommitment{
+			BlockCommitment: legacy.BlockCommitment{
 				TransactionsMerkleRoot: wantTxRoot,
 				AssetsMerkleRoot:       wantAssetsRoot,
 				ConsensusProgram:       b1.ConsensusProgram,
@@ -213,7 +214,7 @@ func TestValidateBlockForSig(t *testing.T) {
 // newTestChain returns a new Chain using memstore for storage,
 // along with an initial block b1 (with a 0/0 multisig program).
 // It commits b1 before returning.
-func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
+func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *legacy.Block) {
 	ctx := context.Background()
 
 	var err error

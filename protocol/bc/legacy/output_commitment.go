@@ -1,4 +1,4 @@
-package bc
+package legacy
 
 import (
 	"fmt"
@@ -7,12 +7,13 @@ import (
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 // OutputCommitment contains the commitment data for a transaction
 // output (which also appears in the spend input of that output).
 type OutputCommitment struct {
-	AssetAmount
+	bc.AssetAmount
 	VMVersion      uint64
 	ControlProgram []byte
 }
@@ -69,7 +70,7 @@ func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint64) (suffix [
 	})
 }
 
-func (oc *OutputCommitment) Hash(suffix []byte, assetVersion uint64) (outputhash Hash) {
+func (oc *OutputCommitment) Hash(suffix []byte, assetVersion uint64) (outputhash bc.Hash) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 	oc.writeExtensibleString(h, suffix, assetVersion) // TODO(oleg): get rid of this assetVersion parameter to actually write all the bytes

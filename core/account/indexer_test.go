@@ -6,6 +6,7 @@ import (
 
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -18,8 +19,8 @@ func TestLoadAccountInfo(t *testing.T) {
 	acc := m.createTestAccount(ctx, t, "", nil)
 	acp := m.createTestControlProgram(ctx, t, acc.ID).controlProgram
 
-	to1 := bc.NewTxOutput(bc.AssetID{}, 0, acp, nil)
-	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
+	to1 := legacy.NewTxOutput(bc.AssetID{}, 0, acp, nil)
+	to2 := legacy.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
 
 	outs := []*rawOutput{{
 		AssetAmount:    to1.AssetAmount,
@@ -46,13 +47,13 @@ func TestDeleteUTXOs(t *testing.T) {
 
 	assetID := bc.AssetID{}
 	acp := m.createTestControlProgram(ctx, t, "").controlProgram
-	tx := bc.NewTx(bc.TxData{
-		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(assetID, 1, acp, nil),
+	tx := legacy.NewTx(legacy.TxData{
+		Outputs: []*legacy.TxOutput{
+			legacy.NewTxOutput(assetID, 1, acp, nil),
 		},
 	})
 
-	block1 := &bc.Block{Transactions: []*bc.Tx{tx}}
+	block1 := &legacy.Block{Transactions: []*legacy.Tx{tx}}
 	err := m.indexAccountUTXOs(ctx, block1)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -63,10 +64,10 @@ func TestDeleteUTXOs(t *testing.T) {
 	}
 
 	out0 := tx.Entries[*tx.Body.ResultIds[0]].(*bc.Output)
-	block2 := &bc.Block{Transactions: []*bc.Tx{
-		bc.NewTx(bc.TxData{
-			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, *out0.Body.Source.Ref, assetID, 1, out0.Body.Source.Position, acp, *out0.Body.Data, nil),
+	block2 := &legacy.Block{Transactions: []*legacy.Tx{
+		legacy.NewTx(legacy.TxData{
+			Inputs: []*legacy.TxInput{
+				legacy.NewSpendInput(nil, *out0.Body.Source.Ref, assetID, 1, out0.Body.Source.Position, acp, *out0.Body.Data, nil),
 			},
 		}),
 	}}

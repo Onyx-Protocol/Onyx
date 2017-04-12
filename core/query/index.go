@@ -12,6 +12,7 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 const (
@@ -57,7 +58,7 @@ func (ind *Indexer) ProcessBlocks(ctx context.Context) {
 
 // IndexTransactions is registered as a block callback on the Chain. It
 // saves all annotated transactions to the database.
-func (ind *Indexer) IndexTransactions(ctx context.Context, b *bc.Block) error {
+func (ind *Indexer) IndexTransactions(ctx context.Context, b *legacy.Block) error {
 	<-ind.pinStore.PinWaiter("asset", b.Height)
 	<-ind.pinStore.PinWaiter("account", b.Height)
 	<-ind.pinStore.PinWaiter(TxPinName, b.Height-1)
@@ -78,7 +79,7 @@ func (ind *Indexer) IndexTransactions(ctx context.Context, b *bc.Block) error {
 	return err
 }
 
-func (ind *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {
+func (ind *Indexer) insertBlock(ctx context.Context, b *legacy.Block) error {
 	const q = `
 		INSERT INTO query_blocks (height, timestamp) VALUES($1, $2)
 		ON CONFLICT (height) DO NOTHING
@@ -87,7 +88,7 @@ func (ind *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {
 	return errors.Wrap(err, "inserting block timestamp")
 }
 
-func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*AnnotatedTx, error) {
+func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *legacy.Block) ([]*AnnotatedTx, error) {
 	var (
 		hashes           = pq.ByteaArray(make([][]byte, 0, len(b.Transactions)))
 		positions        = make([]uint32, 0, len(b.Transactions))
@@ -138,7 +139,7 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*Ann
 	return annotatedTxs, nil
 }
 
-func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *bc.Block, annotatedTxs []*AnnotatedTx) error {
+func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *legacy.Block, annotatedTxs []*AnnotatedTx) error {
 	var (
 		inputTxHashes         pq.ByteaArray
 		inputIndexes          pq.Int64Array
@@ -204,7 +205,7 @@ func (ind *Indexer) insertAnnotatedInputs(ctx context.Context, b *bc.Block, anno
 	return errors.Wrap(err, "batch inserting annotated inputs")
 }
 
-func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annotatedTxs []*AnnotatedTx) error {
+func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *legacy.Block, annotatedTxs []*AnnotatedTx) error {
 	var (
 		outputIDs              pq.ByteaArray
 		outputTxPositions      []uint32

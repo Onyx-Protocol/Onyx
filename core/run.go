@@ -23,7 +23,7 @@ import (
 	"chain/database/raft"
 	"chain/log"
 	"chain/protocol"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 const (
@@ -43,7 +43,7 @@ func AlternateAuth(authFn func(*http.Request) bool) RunOption {
 // BlockSigner configures the Core to use signFn to handle block-signing
 // requests. In production, this will be a function to call out to signerd
 // and its HSM. In development, it'll use the MockHSM.
-func BlockSigner(signFn func(context.Context, *bc.Block) ([]byte, error)) RunOption {
+func BlockSigner(signFn func(context.Context, *legacy.Block) ([]byte, error)) RunOption {
 	return func(a *API) { a.signer = signFn }
 }
 

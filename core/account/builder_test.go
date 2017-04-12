@@ -16,6 +16,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -60,7 +61,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(nil, *outEntry.Body.Source.Ref, *txOut.AssetId, txOut.Amount, outEntry.Body.Source.Position, txOut.ControlProgram, *outEntry.Body.Data, nil)}
+	wantTxIns := []*legacy.TxInput{legacy.NewSpendInput(nil, *outEntry.Body.Source.Ref, *txOut.AssetId, txOut.Amount, outEntry.Body.Source.Position, txOut.ControlProgram, *outEntry.Body.Data, nil)}
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
@@ -111,7 +112,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*bc.TxInput{bc.NewSpendInput(nil, *outEntry.Body.Source.Ref, *txOut.AssetId, txOut.Amount, outEntry.Body.Source.Position, txOut.ControlProgram, *outEntry.Body.Data, nil)}
+	wantTxIns := []*legacy.TxInput{legacy.NewSpendInput(nil, *outEntry.Body.Source.Ref, *txOut.AssetId, txOut.Amount, outEntry.Body.Source.Position, txOut.ControlProgram, *outEntry.Body.Data, nil)}
 
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
@@ -158,7 +159,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	prottest.MakeBlock(t, c, g.PendingTxs())
 	<-pinStore.PinWaiter(account.PinName, c.Height())
 
-	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
+	reserveFunc := func(source txbuilder.Action) []*legacy.TxInput {
 		builder := txbuilder.NewBuilder(time.Now().Add(5 * time.Minute))
 
 		err := source.Build(ctx, builder)

@@ -7,6 +7,7 @@ import (
 
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/validation"
 	. "chain/protocol/vm"
 	"chain/testutil"
@@ -102,10 +103,10 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 	nonceBytes := []byte{36, 37, 38}
 	issuanceProgram := []byte("issueprog")
 	assetID := bc.ComputeAssetID(issuanceProgram, &zeroHash, 1, &bc.EmptyStringHash)
-	tx := bc.NewTx(bc.TxData{
-		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(nil, bc.Hash{}, assetID, 5, 0, []byte("spendprog"), bc.Hash{}, []byte("ref")),
-			bc.NewIssuanceInput(nonceBytes, 6, nil, zeroHash, issuanceProgram, nil, nil),
+	tx := legacy.NewTx(legacy.TxData{
+		Inputs: []*legacy.TxInput{
+			legacy.NewSpendInput(nil, bc.Hash{}, assetID, 5, 0, []byte("spendprog"), bc.Hash{}, []byte("ref")),
+			legacy.NewIssuanceInput(nonceBytes, 6, nil, zeroHash, issuanceProgram, nil, nil),
 		},
 	})
 	outputID, err := tx.Inputs[0].SpentOutputID()
@@ -182,18 +183,18 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 }
 
 func TestIntrospectionOps(t *testing.T) {
-	tx := bc.NewTx(bc.TxData{
+	tx := legacy.NewTx(legacy.TxData{
 		ReferenceData: []byte("txref"),
-		Inputs: []*bc.TxInput{
-			bc.NewSpendInput(nil, bc.Hash{}, bc.NewAssetID([32]byte{1}), 5, 1, []byte("spendprog"), bc.Hash{}, []byte("ref")),
-			bc.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil, nil),
+		Inputs: []*legacy.TxInput{
+			legacy.NewSpendInput(nil, bc.Hash{}, bc.NewAssetID([32]byte{1}), 5, 1, []byte("spendprog"), bc.Hash{}, []byte("ref")),
+			legacy.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil, nil),
 		},
-		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(bc.NewAssetID([32]byte{3}), 8, []byte("wrongprog"), nil),
-			bc.NewTxOutput(bc.NewAssetID([32]byte{3}), 8, []byte("controlprog"), nil),
-			bc.NewTxOutput(bc.NewAssetID([32]byte{2}), 8, []byte("controlprog"), nil),
-			bc.NewTxOutput(bc.NewAssetID([32]byte{2}), 7, []byte("controlprog"), nil),
-			bc.NewTxOutput(bc.NewAssetID([32]byte{2}), 7, []byte("controlprog"), []byte("outref")),
+		Outputs: []*legacy.TxOutput{
+			legacy.NewTxOutput(bc.NewAssetID([32]byte{3}), 8, []byte("wrongprog"), nil),
+			legacy.NewTxOutput(bc.NewAssetID([32]byte{3}), 8, []byte("controlprog"), nil),
+			legacy.NewTxOutput(bc.NewAssetID([32]byte{2}), 8, []byte("controlprog"), nil),
+			legacy.NewTxOutput(bc.NewAssetID([32]byte{2}), 7, []byte("controlprog"), nil),
+			legacy.NewTxOutput(bc.NewAssetID([32]byte{2}), 7, []byte("controlprog"), []byte("outref")),
 		},
 		MinTime: 0,
 		MaxTime: 20,

@@ -9,6 +9,7 @@ import (
 	"chain/crypto/ed25519/chainkd"
 	chainjson "chain/encoding/json"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/vmutil"
 )
 
@@ -112,7 +113,7 @@ func (b *Bool) UnmarshalJSON(raw []byte) error {
 
 var emptyJSONObject = json.RawMessage(`{}`)
 
-func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *AnnotatedTx {
+func buildAnnotatedTransaction(orig *legacy.Tx, b *legacy.Block, indexInBlock uint32) *AnnotatedTx {
 	tx := &AnnotatedTx{
 		ID:            orig.ID,
 		Timestamp:     b.Time(),
@@ -137,7 +138,7 @@ func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *A
 	return tx
 }
 
-func buildAnnotatedInput(tx *bc.Tx, i uint32) *AnnotatedInput {
+func buildAnnotatedInput(tx *legacy.Tx, i uint32) *AnnotatedInput {
 	orig := tx.Inputs[i]
 	in := &AnnotatedInput{
 		AssetID:         orig.AssetID(),
@@ -163,7 +164,7 @@ func buildAnnotatedInput(tx *bc.Tx, i uint32) *AnnotatedInput {
 	return in
 }
 
-func buildAnnotatedOutput(tx *bc.Tx, idx int) *AnnotatedOutput {
+func buildAnnotatedOutput(tx *legacy.Tx, idx int) *AnnotatedOutput {
 	orig := tx.Outputs[idx]
 	outid := tx.OutputID(idx)
 	out := &AnnotatedOutput{

@@ -44,6 +44,7 @@ import (
 	"chain/net/http/reqid"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 const (
@@ -367,10 +368,10 @@ type remoteHSM struct {
 	Client *rpc.Client
 }
 
-func (h *remoteHSM) Sign(ctx context.Context, pk ed25519.PublicKey, bh *bc.BlockHeader) (signature []byte, err error) {
+func (h *remoteHSM) Sign(ctx context.Context, pk ed25519.PublicKey, bh *legacy.BlockHeader) (signature []byte, err error) {
 	body := struct {
-		Block *bc.BlockHeader `json:"block"`
-		Pub   json.HexBytes   `json:"pubkey"`
+		Block *legacy.BlockHeader `json:"block"`
+		Pub   json.HexBytes       `json:"pubkey"`
 	}{bh, json.HexBytes(pk[:])}
 	err = h.Client.Call(ctx, "/sign-block", body, &signature)
 	return
@@ -405,7 +406,7 @@ type remoteSigner struct {
 	Key    ed25519.PublicKey
 }
 
-func (s *remoteSigner) SignBlock(ctx context.Context, b *bc.Block) (signature []byte, err error) {
+func (s *remoteSigner) SignBlock(ctx context.Context, b *legacy.Block) (signature []byte, err error) {
 	// TODO(kr): We might end up serializing b multiple
 	// times in multiple calls to different remoteSigners.
 	// Maybe optimize that if it makes a difference.

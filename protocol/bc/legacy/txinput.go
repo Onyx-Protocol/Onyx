@@ -1,4 +1,4 @@
-package bc
+package legacy
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 
 	"chain/encoding/blockchain"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 type (
@@ -27,10 +28,10 @@ type (
 
 var errBadAssetID = errors.New("asset ID does not match other issuance parameters")
 
-func (t *TxInput) AssetAmount() AssetAmount {
+func (t *TxInput) AssetAmount() bc.AssetAmount {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
 		assetID := ii.AssetID()
-		return AssetAmount{
+		return bc.AssetAmount{
 			AssetId: &assetID,
 			Amount:  ii.Amount,
 		}
@@ -39,7 +40,7 @@ func (t *TxInput) AssetAmount() AssetAmount {
 	return si.AssetAmount
 }
 
-func (t *TxInput) AssetID() AssetID {
+func (t *TxInput) AssetID() bc.AssetID {
 	if ii, ok := t.TypedInput.(*IssuanceInput); ok {
 		return ii.AssetID()
 	}
@@ -97,7 +98,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 	var (
 		ii      *IssuanceInput
 		si      *SpendInput
-		assetID AssetID
+		assetID bc.AssetID
 	)
 
 	t.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
@@ -293,7 +294,7 @@ func (t *TxInput) writeInputWitness(w io.Writer) error {
 	return nil
 }
 
-func (t *TxInput) SpentOutputID() (o Hash, err error) {
+func (t *TxInput) SpentOutputID() (o bc.Hash, err error) {
 	if si, ok := t.TypedInput.(*SpendInput); ok {
 		o, err = ComputeOutputID(&si.SpendCommitment)
 	}

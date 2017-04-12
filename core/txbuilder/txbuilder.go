@@ -10,6 +10,7 @@ import (
 	"chain/errors"
 	"chain/math/checked"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 var (
@@ -27,7 +28,7 @@ var (
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Time) (*Template, error) {
+func Build(ctx context.Context, tx *legacy.TxData, actions []Action, maxTime time.Time) (*Template, error) {
 	builder := TemplateBuilder{
 		base:    tx,
 		maxTime: maxTime,
@@ -77,7 +78,7 @@ func Sign(ctx context.Context, tpl *Template, xpubs []chainkd.XPub, signFn SignF
 	return materializeWitnesses(tpl)
 }
 
-func checkBlankCheck(tx *bc.TxData) error {
+func checkBlankCheck(tx *legacy.TxData) error {
 	assetMap := make(map[bc.AssetID]int64)
 	var ok bool
 	for _, in := range tx.Inputs {

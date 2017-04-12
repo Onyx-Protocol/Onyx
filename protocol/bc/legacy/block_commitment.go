@@ -1,21 +1,22 @@
-package bc
+package legacy
 
 import (
 	"io"
 
 	"chain/encoding/blockchain"
+	"chain/protocol/bc"
 )
 
 type BlockCommitment struct {
 	// TransactionsMerkleRoot is the root hash of the Merkle binary hash
 	// tree formed by the hashes of all transactions included in the
 	// block.
-	TransactionsMerkleRoot Hash
+	TransactionsMerkleRoot bc.Hash
 
 	// AssetsMerkleRoot is the root hash of the Merkle Patricia Tree of
 	// the set of unspent outputs with asset version 1 after applying
 	// the block.
-	AssetsMerkleRoot Hash
+	AssetsMerkleRoot bc.Hash
 
 	// ConsensusProgram is the predicate for validating the next block.
 	ConsensusProgram []byte

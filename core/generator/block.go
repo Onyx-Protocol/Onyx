@@ -13,6 +13,7 @@ import (
 	"chain/log"
 	"chain/metrics"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
 	"chain/protocol/vmutil"
 )
@@ -37,7 +38,7 @@ func recordSince(t0 time.Time) {
 	latency.RecordSince(t0)
 }
 
-// makeBlock generates a new bc.Block, collects the required signatures
+// makeBlock generates a new legacy.Block, collects the required signatures
 // and commits the block to the blockchain.
 func (g *Generator) makeBlock(ctx context.Context) error {
 	t0 := time.Now()
@@ -63,7 +64,7 @@ func (g *Generator) makeBlock(ctx context.Context) error {
 	return g.commitBlock(ctx, b, s)
 }
 
-func (g *Generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snapshot) error {
+func (g *Generator) commitBlock(ctx context.Context, b *legacy.Block, s *state.Snapshot) error {
 	err := g.getAndAddBlockSignatures(ctx, b, g.latestBlock)
 	if err != nil {
 		return errors.Wrap(err, "sign")
@@ -79,7 +80,7 @@ func (g *Generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snaps
 	return nil
 }
 
-func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
+func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *legacy.Block) error {
 	if prevBlock == nil && b.Height == 1 {
 		return nil // no signatures needed for initial block
 	}
@@ -135,7 +136,7 @@ func indexKey(keys []ed25519.PublicKey, msg, sig []byte) int {
 	return -1
 }
 
-func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, sig *[]byte, i int, done chan int) {
+func getSig(ctx context.Context, signer BlockSigner, b *legacy.Block, sig *[]byte, i int, done chan int) {
 	var err error
 	*sig, err = signer.SignBlock(ctx, b)
 	if err != nil && ctx.Err() != context.Canceled {
@@ -154,9 +155,9 @@ func nonNilSigs(a [][]byte) (b [][]byte) {
 }
 
 // getPendingBlock retrieves the generated, uncommitted block if it exists.
-func getPendingBlock(ctx context.Context, db pg.DB) (*bc.Block, error) {
+func getPendingBlock(ctx context.Context, db pg.DB) (*legacy.Block, error) {
 	const q = `SELECT data FROM generator_pending_block`
-	var block bc.Block
+	var block legacy.Block
 	err := db.QueryRow(ctx, q).Scan(&block)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -169,7 +170,7 @@ func getPendingBlock(ctx context.Context, db pg.DB) (*bc.Block, error) {
 // savePendingBlock persists a pending, uncommitted block to the database.
 // The generator should save a pending block *before* asking signers to
 // sign the block.
-func savePendingBlock(ctx context.Context, db pg.DB, b *bc.Block) error {
+func savePendingBlock(ctx context.Context, db pg.DB, b *legacy.Block) error {
 	const q = `
 		INSERT INTO generator_pending_block (data) VALUES($1)
 		ON CONFLICT (singleton) DO UPDATE SET data = $1;

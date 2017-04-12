@@ -10,6 +10,7 @@ import (
 
 	"chain/crypto/ed25519"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
@@ -23,7 +24,7 @@ func TestBadMaxIssuanceWindow(t *testing.T) {
 
 	issueTx, _, _ := issue(t, nil, nil, 1)
 
-	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), time.Now(), []*bc.Tx{issueTx})
+	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), time.Now(), []*legacy.Tx{issueTx})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +47,7 @@ func newDest(t testing.TB) *testDest {
 	}
 }
 
-func (d *testDest) sign(t testing.TB, tx *bc.Tx, index uint32) {
+func (d *testDest) sign(t testing.TB, tx *legacy.Tx, index uint32) {
 	txsighash := tx.SigHash(index)
 	prog, _ := vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", txsighash.Bytes()))
 	h := sha3.Sum256(prog)
@@ -76,7 +77,7 @@ func newAsset(t testing.TB) *testAsset {
 	}
 }
 
-func issue(t testing.TB, asset *testAsset, dest *testDest, amount uint64) (*bc.Tx, *testAsset, *testDest) {
+func issue(t testing.TB, asset *testAsset, dest *testDest, amount uint64) (*legacy.Tx, *testAsset, *testDest) {
 	if asset == nil {
 		asset = newAsset(t)
 	}
@@ -85,13 +86,13 @@ func issue(t testing.TB, asset *testAsset, dest *testDest, amount uint64) (*bc.T
 	}
 	assetCP, _ := asset.controlProgram()
 	destCP, _ := dest.controlProgram()
-	tx := bc.NewTx(bc.TxData{
-		Version: bc.CurrentTransactionVersion,
-		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput([]byte{1}, amount, nil, bc.Hash{}, assetCP, nil, nil),
+	tx := legacy.NewTx(legacy.TxData{
+		Version: 1,
+		Inputs: []*legacy.TxInput{
+			legacy.NewIssuanceInput([]byte{1}, amount, nil, bc.Hash{}, assetCP, nil, nil),
 		},
-		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(asset.AssetID, amount, destCP, nil),
+		Outputs: []*legacy.TxOutput{
+			legacy.NewTxOutput(asset.AssetID, amount, destCP, nil),
 		},
 		MinTime: bc.Millis(time.Now()),
 		MaxTime: bc.Millis(time.Now().Add(time.Hour)),

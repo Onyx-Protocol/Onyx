@@ -1,4 +1,4 @@
-package bc
+package legacy
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
+	"chain/protocol/bc"
 	"chain/testutil"
 )
 
@@ -23,7 +24,7 @@ func TestMarshalBlock(t *testing.T) {
 			NewTx(TxData{
 				Version: 1,
 				Outputs: []*TxOutput{
-					NewTxOutput(AssetID{}, 1, nil, nil),
+					NewTxOutput(bc.AssetID{}, 1, nil, nil),
 				},
 			}),
 		}}
@@ -89,7 +90,7 @@ func TestMarshalBlock(t *testing.T) {
 func TestEmptyBlock(t *testing.T) {
 	block := Block{
 		BlockHeader: BlockHeader{
-			Version: NewBlockVersion,
+			Version: 1,
 			Height:  1,
 		},
 	}
@@ -143,7 +144,7 @@ func TestEmptyBlock(t *testing.T) {
 func TestSmallBlock(t *testing.T) {
 	block := Block{
 		BlockHeader: BlockHeader{
-			Version: NewBlockVersion,
+			Version: 1,
 			Height:  1,
 		},
 		Transactions: []*Tx{NewTx(TxData{Version: CurrentTransactionVersion})},

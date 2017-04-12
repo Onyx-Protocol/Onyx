@@ -1,4 +1,4 @@
-package bc
+package legacy
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 // SpendInput satisfies the TypedInput interface and represents a spend transaction.
@@ -23,13 +24,13 @@ type SpendInput struct {
 
 func (si *SpendInput) IsIssuance() bool { return false }
 
-func NewSpendInput(arguments [][]byte, sourceID Hash, assetID AssetID, amount uint64, sourcePos uint64, controlProgram []byte, outRefDataHash Hash, referenceData []byte) *TxInput {
+func NewSpendInput(arguments [][]byte, sourceID bc.Hash, assetID bc.AssetID, amount uint64, sourcePos uint64, controlProgram []byte, outRefDataHash bc.Hash, referenceData []byte) *TxInput {
 	const (
 		vmver    = 1
 		assetver = 1
 	)
 	sc := SpendCommitment{
-		AssetAmount: AssetAmount{
+		AssetAmount: bc.AssetAmount{
 			AssetId: &assetID,
 			Amount:  amount,
 		},
@@ -52,12 +53,12 @@ func NewSpendInput(arguments [][]byte, sourceID Hash, assetID AssetID, amount ui
 // SpendCommitment contains the commitment data for a transaction
 // output (which also appears in the spend input of that output).
 type SpendCommitment struct {
-	AssetAmount
-	SourceID       Hash
+	bc.AssetAmount
+	SourceID       bc.Hash
 	SourcePosition uint64
 	VMVersion      uint64
 	ControlProgram []byte
-	RefDataHash    Hash
+	RefDataHash    bc.Hash
 }
 
 func (sc *SpendCommitment) writeExtensibleString(w io.Writer, suffix []byte, assetVersion uint64) error {
@@ -139,7 +140,7 @@ func (sc *SpendCommitment) readFrom(r io.Reader, assetVersion uint64) (suffix []
 	})
 }
 
-func (sc *SpendCommitment) Hash(suffix []byte, assetVersion uint64) (spendhash Hash) {
+func (sc *SpendCommitment) Hash(suffix []byte, assetVersion uint64) (spendhash bc.Hash) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 	sc.writeExtensibleString(h, suffix, assetVersion) // TODO(oleg): get rid of this assetVersion parameter to actually write all the bytes

@@ -10,6 +10,7 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 func (m *Manager) NewSpendAction(amt bc.AssetAmount, accountID string, refData chainjson.Map, clientToken *string) txbuilder.Action {
@@ -85,7 +86,7 @@ func (a *spendAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder) e
 		// Don't insert the control program until callbacks are executed.
 		a.accounts.insertControlProgramDelayed(ctx, b, acp)
 
-		err = b.AddOutput(bc.NewTxOutput(*a.AssetId, res.Change, acp.controlProgram, nil))
+		err = b.AddOutput(legacy.NewTxOutput(*a.AssetId, res.Change, acp.controlProgram, nil))
 		if err != nil {
 			return errors.Wrap(err, "adding change output")
 		}
@@ -147,11 +148,11 @@ func canceler(ctx context.Context, m *Manager, rid uint64) func() {
 }
 
 func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData []byte) (
-	*bc.TxInput,
+	*legacy.TxInput,
 	*txbuilder.SigningInstruction,
 	error,
 ) {
-	txInput := bc.NewSpendInput(nil, u.SourceID, u.AssetID, u.Amount, u.SourcePos, u.ControlProgram, u.RefDataHash, refData)
+	txInput := legacy.NewSpendInput(nil, u.SourceID, u.AssetID, u.Amount, u.SourcePos, u.ControlProgram, u.RefDataHash, refData)
 
 	sigInst := &txbuilder.SigningInstruction{
 		AssetAmount: bc.AssetAmount{
@@ -207,7 +208,7 @@ func (a *controlAction) Build(ctx context.Context, b *txbuilder.TemplateBuilder)
 	}
 	a.accounts.insertControlProgramDelayed(ctx, b, acp)
 
-	return b.AddOutput(bc.NewTxOutput(*a.AssetId, a.Amount, acp.controlProgram, a.ReferenceData))
+	return b.AddOutput(legacy.NewTxOutput(*a.AssetId, a.Amount, acp.controlProgram, a.ReferenceData))
 }
 
 // insertControlProgramDelayed takes a template builder and an account

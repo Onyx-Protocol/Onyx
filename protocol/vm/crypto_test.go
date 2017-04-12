@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/validation"
 	. "chain/protocol/vm"
 	"chain/testutil"
@@ -93,9 +94,9 @@ func TestCheckSig(t *testing.T) {
 }
 
 func TestCryptoOps(t *testing.T) {
-	tx := bc.NewTx(bc.TxData{
-		Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
-		Outputs: []*bc.TxOutput{},
+	tx := legacy.NewTx(legacy.TxData{
+		Inputs:  []*legacy.TxInput{legacy.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
+		Outputs: []*legacy.TxOutput{},
 	})
 
 	type testStruct struct {

@@ -8,6 +8,7 @@ import (
 	"chain/crypto/sha3pool"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
 	"chain/testutil"
 
@@ -180,7 +181,7 @@ func TestTxValidation(t *testing.T) {
 				// to. That entry must be added to the first tx's Entries map.
 				fixture.txOutputs[0].ReferenceData = []byte{1}
 				fixture2 := sample(t, fixture)
-				tx2 := bc.NewTx(*fixture2.tx).TxEntries
+				tx2 := legacy.NewTx(*fixture2.tx).TxEntries
 				out2ID := tx2.Body.ResultIds[0]
 				out2 := tx2.Entries[*out2ID].(*bc.Output)
 				tx.Entries[*out2ID] = out2
@@ -333,7 +334,7 @@ func TestTxValidation(t *testing.T) {
 		t.Logf("case %d", i)
 
 		fixture = sample(t, nil)
-		tx = bc.NewTx(*fixture.tx).TxEntries
+		tx = legacy.NewTx(*fixture.tx).TxEntries
 		vs = &validationState{
 			blockchainID: fixture.initialBlockID,
 			tx:           tx,
@@ -401,11 +402,11 @@ type txFixture struct {
 	assetDef             []byte
 	assetID              bc.AssetID
 	txVersion            uint64
-	txInputs             []*bc.TxInput
-	txOutputs            []*bc.TxOutput
+	txInputs             []*legacy.TxInput
+	txOutputs            []*legacy.TxOutput
 	txMinTime, txMaxTime uint64
 	txRefData            []byte
-	tx                   *bc.TxData
+	tx                   *legacy.TxData
 }
 
 // Produces a sample transaction in a txFixture object (see above). A
@@ -470,10 +471,10 @@ func sample(tb testing.TB, in *txFixture) *txFixture {
 		}
 		args2 := [][]byte{[]byte{6}, []byte{7}}
 
-		result.txInputs = []*bc.TxInput{
-			bc.NewIssuanceInput([]byte{3}, 10, []byte{4}, result.initialBlockID, result.issuanceProg.Code, result.issuanceArgs, result.assetDef),
-			bc.NewSpendInput(args1, *newHash(5), result.assetID, 20, 0, cp1, *newHash(6), []byte{7}),
-			bc.NewSpendInput(args2, *newHash(8), result.assetID, 40, 0, cp2, *newHash(9), []byte{10}),
+		result.txInputs = []*legacy.TxInput{
+			legacy.NewIssuanceInput([]byte{3}, 10, []byte{4}, result.initialBlockID, result.issuanceProg.Code, result.issuanceArgs, result.assetDef),
+			legacy.NewSpendInput(args1, *newHash(5), result.assetID, 20, 0, cp1, *newHash(6), []byte{7}),
+			legacy.NewSpendInput(args2, *newHash(8), result.assetID, 40, 0, cp2, *newHash(9), []byte{10}),
 		}
 	}
 	if len(result.txOutputs) == 0 {
@@ -486,9 +487,9 @@ func sample(tb testing.TB, in *txFixture) *txFixture {
 			tb.Fatal(err)
 		}
 
-		result.txOutputs = []*bc.TxOutput{
-			bc.NewTxOutput(result.assetID, 25, cp1, []byte{11}),
-			bc.NewTxOutput(result.assetID, 45, cp2, []byte{12}),
+		result.txOutputs = []*legacy.TxOutput{
+			legacy.NewTxOutput(result.assetID, 25, cp1, []byte{11}),
+			legacy.NewTxOutput(result.assetID, 45, cp2, []byte{12}),
 		}
 	}
 	if result.txMinTime == 0 {
@@ -501,7 +502,7 @@ func sample(tb testing.TB, in *txFixture) *txFixture {
 		result.txRefData = []byte{13}
 	}
 
-	result.tx = &bc.TxData{
+	result.tx = &legacy.TxData{
 		Version:       result.txVersion,
 		Inputs:        result.txInputs,
 		Outputs:       result.txOutputs,

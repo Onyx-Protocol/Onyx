@@ -6,6 +6,7 @@ import (
 
 	"chain/encoding/json"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 )
@@ -44,7 +45,7 @@ func (a *controlReceiverAction) Build(ctx context.Context, b *TemplateBuilder) e
 	}
 
 	b.RestrictMaxTime(a.Receiver.ExpiresAt)
-	out := bc.NewTxOutput(*a.AssetId, a.Amount, a.Receiver.ControlProgram, a.ReferenceData)
+	out := legacy.NewTxOutput(*a.AssetId, a.Amount, a.Receiver.ControlProgram, a.ReferenceData)
 	return b.AddOutput(out)
 }
 
@@ -72,7 +73,7 @@ func (a *controlProgramAction) Build(ctx context.Context, b *TemplateBuilder) er
 		return MissingFieldsError(missing...)
 	}
 
-	out := bc.NewTxOutput(*a.AssetId, a.Amount, a.Program, a.ReferenceData)
+	out := legacy.NewTxOutput(*a.AssetId, a.Amount, a.Program, a.ReferenceData)
 	return b.AddOutput(out)
 }
 
@@ -116,6 +117,6 @@ func (a *retireAction) Build(ctx context.Context, b *TemplateBuilder) error {
 		return MissingFieldsError(missing...)
 	}
 
-	out := bc.NewTxOutput(*a.AssetId, a.Amount, retirementProgram, a.ReferenceData)
+	out := legacy.NewTxOutput(*a.AssetId, a.Amount, retirementProgram, a.ReferenceData)
 	return b.AddOutput(out)
 }

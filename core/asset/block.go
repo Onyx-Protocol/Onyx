@@ -12,6 +12,7 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/vmutil"
 )
 
@@ -100,7 +101,7 @@ func (reg *Registry) ProcessBlocks(ctx context.Context) {
 }
 
 // indexAssets is run on every block and indexes all non-local assets.
-func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
+func (reg *Registry) indexAssets(ctx context.Context, b *legacy.Block) error {
 	var (
 		assetIDs         pq.ByteaArray
 		definitions      pq.StringArray
@@ -117,7 +118,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 			if seen[assetID] {
 				continue
 			}
-			if ii, ok := in.TypedInput.(*bc.IssuanceInput); ok {
+			if ii, ok := in.TypedInput.(*legacy.IssuanceInput); ok {
 				definition := ii.AssetDefinition
 				seen[assetID] = true
 				assetIDs = append(assetIDs, assetID.Bytes())

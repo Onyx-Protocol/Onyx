@@ -1,9 +1,11 @@
-package bc
+package bc_test
 
 import (
 	"testing"
 	"time"
 
+	. "chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
 )
 
@@ -49,11 +51,11 @@ func TestMerkleRoot(t *testing.T) {
 	for _, c := range cases {
 		var txs []*TxEntries
 		for _, wit := range c.witnesses {
-			txs = append(txs, NewTx(TxData{
-				Inputs: []*TxInput{
-					&TxInput{
+			txs = append(txs, legacy.NewTx(legacy.TxData{
+				Inputs: []*legacy.TxInput{
+					&legacy.TxInput{
 						AssetVersion: 1,
-						TypedInput: &SpendInput{
+						TypedInput: &legacy.SpendInput{
 							Arguments: wit,
 						},
 					},
@@ -78,10 +80,10 @@ func TestDuplicateLeaves(t *testing.T) {
 	txs := make([]*TxEntries, 6)
 	for i := uint64(0); i < 6; i++ {
 		now := []byte(time.Now().String())
-		txs[i] = NewTx(TxData{
+		txs[i] = legacy.NewTx(legacy.TxData{
 			Version: 1,
-			Inputs:  []*TxInput{NewIssuanceInput(now, i, nil, initialBlockHash, trueProg, nil, nil)},
-			Outputs: []*TxOutput{NewTxOutput(assetID, i, trueProg, nil)},
+			Inputs:  []*legacy.TxInput{legacy.NewIssuanceInput(now, i, nil, initialBlockHash, trueProg, nil, nil)},
+			Outputs: []*legacy.TxOutput{legacy.NewTxOutput(assetID, i, trueProg, nil)},
 		}).TxEntries
 	}
 
@@ -109,12 +111,12 @@ func TestAllDuplicateLeaves(t *testing.T) {
 	trueProg := []byte{byte(vm.OP_TRUE)}
 	assetID := ComputeAssetID(trueProg, &initialBlockHash, 1, &EmptyStringHash)
 	now := []byte(time.Now().String())
-	issuanceInp := NewIssuanceInput(now, 1, nil, initialBlockHash, trueProg, nil, nil)
+	issuanceInp := legacy.NewIssuanceInput(now, 1, nil, initialBlockHash, trueProg, nil, nil)
 
-	tx := NewTx(TxData{
+	tx := legacy.NewTx(legacy.TxData{
 		Version: 1,
-		Inputs:  []*TxInput{issuanceInp},
-		Outputs: []*TxOutput{NewTxOutput(assetID, 1, trueProg, nil)},
+		Inputs:  []*legacy.TxInput{issuanceInp},
+		Outputs: []*legacy.TxOutput{legacy.NewTxOutput(assetID, 1, trueProg, nil)},
 	}).TxEntries
 	tx1, tx2, tx3, tx4, tx5, tx6 := tx, tx, tx, tx, tx, tx
 
@@ -135,4 +137,12 @@ func TestAllDuplicateLeaves(t *testing.T) {
 	if root1 == root2 {
 		t.Error("forged merkle tree with all duplicate leaves")
 	}
+}
+
+func mustDecodeHash(s string) (h Hash) {
+	err := h.UnmarshalText([]byte(s))
+	if err != nil {
+		panic(err)
+	}
+	return h
 }

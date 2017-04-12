@@ -1,10 +1,11 @@
-package bc
+package legacy
 
 import (
 	"io"
 
 	"chain/encoding/blockchain"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 // TODO(bobg): Review serialization/deserialization logic for
@@ -21,11 +22,11 @@ type TxOutput struct {
 	ReferenceData []byte
 }
 
-func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxOutput {
+func NewTxOutput(assetID bc.AssetID, amount uint64, controlProgram, referenceData []byte) *TxOutput {
 	return &TxOutput{
 		AssetVersion: 1,
 		OutputCommitment: OutputCommitment{
-			AssetAmount: AssetAmount{
+			AssetAmount: bc.AssetAmount{
 				AssetId: &assetID,
 				Amount:  amount,
 			},
@@ -86,6 +87,25 @@ func (to *TxOutput) WriteCommitment(w io.Writer) error {
 	return to.OutputCommitment.writeExtensibleString(w, to.CommitmentSuffix, to.AssetVersion)
 }
 
-func (to *TxOutput) CommitmentHash() Hash {
+func (to *TxOutput) CommitmentHash() bc.Hash {
 	return to.OutputCommitment.Hash(to.CommitmentSuffix, to.AssetVersion)
+}
+
+// ComputeOutputID assembles an output entry given a spend commitment
+// and computes and returns its corresponding entry ID.
+func ComputeOutputID(sc *SpendCommitment) (h bc.Hash, err error) {
+	defer func() {
+		if r, ok := recover().(error); ok {
+			err = r
+		}
+	}()
+	src := &bc.ValueSource{
+		Ref:      &sc.SourceID,
+		Value:    &sc.AssetAmount,
+		Position: sc.SourcePosition,
+	}
+	o := bc.NewOutput(src, &bc.Program{VmVersion: sc.VMVersion, Code: sc.ControlProgram}, &sc.RefDataHash, 0)
+
+	h = bc.EntryID(o)
+	return h, nil
 }

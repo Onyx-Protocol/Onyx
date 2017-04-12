@@ -1,4 +1,4 @@
-package bc
+package legacy
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
+	"chain/protocol/bc"
 	"chain/testutil"
 )
 
@@ -38,7 +39,7 @@ func TestMapTx(t *testing.T) {
 
 	for i, oldOut := range oldOuts {
 		if resultEntry, ok := entryMap[*header.Body.ResultIds[i]]; ok {
-			if newOut, ok := resultEntry.(*Output); ok {
+			if newOut, ok := resultEntry.(*bc.Output); ok {
 				if *newOut.Body.Source.Value != oldOut.AssetAmount {
 					t.Errorf("header.Body.ResultIds[%d].(*output).Body.Source is %v, expected %v", i, newOut.Body.Source.Value, oldOut.AssetAmount)
 				}

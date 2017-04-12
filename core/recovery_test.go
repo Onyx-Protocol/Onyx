@@ -25,6 +25,7 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 )
 
@@ -217,7 +218,7 @@ func TestRecovery(t *testing.T) {
 	}
 }
 
-func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.Time, poolTxs []*bc.Tx) error {
+func generateBlock(ctx context.Context, t testing.TB, db pg.DB, timestamp time.Time, poolTxs []*legacy.Tx) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

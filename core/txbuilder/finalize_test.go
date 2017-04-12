@@ -17,6 +17,7 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
@@ -307,7 +308,7 @@ func benchGenBlock(b *testing.B) {
 		testutil.FatalErr(b, err)
 	}
 
-	var tx1, tx2 bc.Tx
+	var tx1, tx2 legacy.Tx
 	err = tx1.UnmarshalText([]byte(tx1hex))
 	if err != nil {
 		b.Fatal(err)
@@ -374,7 +375,7 @@ func bootdb(ctx context.Context, db pg.DB, t testing.TB) (*testInfo, error) {
 	return info, nil
 }
 
-func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destAcctID string, amount uint64) (*bc.Tx, error) {
+func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destAcctID string, amount uint64) (*legacy.Tx, error) {
 	assetAmount := bc.AssetAmount{
 		AssetId: &info.asset,
 		Amount:  amount,
@@ -390,7 +391,7 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destA
 	return issueTx.Transaction, FinalizeTx(ctx, info.Chain, s, issueTx.Transaction)
 }
 
-func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
+func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, srcAcctID, destAcctID string, amount uint64) (*legacy.Tx, error) {
 	assetAmount := bc.AssetAmount{
 		AssetId: &info.asset,
 		Amount:  amount,
