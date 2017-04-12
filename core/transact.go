@@ -16,6 +16,7 @@ import (
 	"chain/net/http/httperror"
 	"chain/net/http/reqid"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 var defaultTxTTL = 5 * time.Minute
@@ -250,7 +251,7 @@ func (a *API) finalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template
 	return nil
 }
 
-func (a *API) waitForTxInBlock(ctx context.Context, tx *bc.Tx, height uint64) (uint64, error) {
+func (a *API) waitForTxInBlock(ctx context.Context, tx *legacy.Tx, height uint64) (uint64, error) {
 	for {
 		height++
 		select {

@@ -8,11 +8,12 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 // Template represents a partially- or fully-signed transaction.
 type Template struct {
-	Transaction         *bc.Tx                `json:"raw_transaction"`
+	Transaction         *legacy.Tx            `json:"raw_transaction"`
 	SigningInstructions []*SigningInstruction `json:"signing_instructions"`
 
 	// Local indicates that all inputs to the transaction are signed

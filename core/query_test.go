@@ -11,6 +11,7 @@ import (
 	"chain/core/query"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 )
 
@@ -36,13 +37,13 @@ func TestQueryWithClockSkew(t *testing.T) {
 	indexer := query.NewIndexer(db, c, pinStore)
 	api := &API{db: db, chain: c, indexer: indexer}
 
-	tx := bc.NewTx(bc.TxData{})
-	block := &bc.Block{
-		BlockHeader: bc.BlockHeader{
+	tx := legacy.NewTx(legacy.TxData{})
+	block := &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
 			Height:      100,
 			TimestampMS: bc.Millis(time.Now().Add(time.Hour)),
 		},
-		Transactions: []*bc.Tx{tx},
+		Transactions: []*legacy.Tx{tx},
 	}
 	err = indexer.IndexTransactions(ctx, block)
 	if err != nil {

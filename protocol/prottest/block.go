@@ -8,6 +8,7 @@ import (
 
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
@@ -59,7 +60,7 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store, outputIDs ...bc.Ha
 // MakeBlock always makes a block;
 // if there are no transactions in txs,
 // it makes an empty block.
-func MakeBlock(tb testing.TB, c *protocol.Chain, txs []*bc.Tx) *bc.Block {
+func MakeBlock(tb testing.TB, c *protocol.Chain, txs []*legacy.Tx) *legacy.Block {
 	ctx := context.Background()
 	curBlock, err := c.GetBlock(ctx, c.Height())
 	if err != nil {

@@ -7,7 +7,7 @@ import (
 	"chain/core/rpc"
 	"chain/errors"
 	"chain/protocol"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
 )
 
@@ -22,13 +22,13 @@ var (
 // Submitter submits a transaction to the generator so that it may
 // be confirmed in a block.
 type Submitter interface {
-	Submit(ctx context.Context, tx *bc.Tx) error
+	Submit(ctx context.Context, tx *legacy.Tx) error
 }
 
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
-func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *bc.Tx) error {
+func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *legacy.Tx) error {
 	err := checkTxSighashCommitment(tx)
 	if err != nil {
 		return err
@@ -67,15 +67,15 @@ var (
 	ErrTxSignatureFailure = errors.New("tx signature was attempted but failed")
 )
 
-func checkTxSighashCommitment(tx *bc.Tx) error {
+func checkTxSighashCommitment(tx *legacy.Tx) error {
 	var lastError error
 
 	for i, inp := range tx.Inputs {
 		var args [][]byte
 		switch t := inp.TypedInput.(type) {
-		case *bc.SpendInput:
+		case *legacy.SpendInput:
 			args = t.Arguments
-		case *bc.IssuanceInput:
+		case *legacy.IssuanceInput:
 			args = t.Arguments
 		}
 		// Note: These numbers will need to change if more args are added such that the minimum length changes
@@ -121,7 +121,7 @@ type RemoteGenerator struct {
 	Peer *rpc.Client
 }
 
-func (rg *RemoteGenerator) Submit(ctx context.Context, tx *bc.Tx) error {
+func (rg *RemoteGenerator) Submit(ctx context.Context, tx *legacy.Tx) error {
 	err := rg.Peer.Call(ctx, "/rpc/submit", tx, nil)
 	err = errors.Wrap(err, "generator transaction notice")
 	return err

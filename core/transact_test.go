@@ -15,6 +15,7 @@ import (
 	"chain/core/txbuilder"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -99,9 +100,9 @@ func TestRecordSubmittedTxs(t *testing.T) {
 	}
 }
 
-type submitterFunc func(context.Context, *bc.Tx) error
+type submitterFunc func(context.Context, *legacy.Tx) error
 
-func (f submitterFunc) Submit(ctx context.Context, tx *bc.Tx) error {
+func (f submitterFunc) Submit(ctx context.Context, tx *legacy.Tx) error {
 	return f(ctx, tx)
 }
 
@@ -110,7 +111,7 @@ func TestWaitForTxInBlock(t *testing.T) {
 	submittedTx := prottest.NewIssuanceTx(t, c)
 	a := &API{
 		chain: c,
-		submitter: submitterFunc(func(context.Context, *bc.Tx) error {
+		submitter: submitterFunc(func(context.Context, *legacy.Tx) error {
 			return nil
 		}),
 	}
@@ -128,13 +129,13 @@ func TestWaitForTxInBlock(t *testing.T) {
 
 	// Make a block with some transactions but not the transaction
 	// that we're looking for.
-	_ = prottest.MakeBlock(t, c, []*bc.Tx{
+	_ = prottest.MakeBlock(t, c, []*legacy.Tx{
 		prottest.NewIssuanceTx(t, c),
 		prottest.NewIssuanceTx(t, c),
 	})
 	// Make a block with a few transactions, including the one
 	// we're waiting for.
-	b := prottest.MakeBlock(t, c, []*bc.Tx{
+	b := prottest.MakeBlock(t, c, []*legacy.Tx{
 		prottest.NewIssuanceTx(t, c),
 		submittedTx, // bingo
 		prottest.NewIssuanceTx(t, c),
@@ -157,7 +158,7 @@ func TestWaitForTxInBlockResubmits(t *testing.T) {
 	// Record every time the Submit function is called.
 	var wg sync.WaitGroup
 	wg.Add(timesToResubmit)
-	a.submitter = submitterFunc(func(_ context.Context, tx *bc.Tx) error {
+	a.submitter = submitterFunc(func(_ context.Context, tx *legacy.Tx) error {
 		if orig.ID != tx.ID {
 			t.Errorf("got tx %s, want tx %s", tx.ID, orig.ID)
 		}
@@ -174,7 +175,7 @@ func TestWaitForTxInBlockResubmits(t *testing.T) {
 	// that we're looking for. The tx should be resubmitted
 	// to the generator each time.
 	for i := 0; i < timesToResubmit; i++ {
-		prottest.MakeBlock(t, c, []*bc.Tx{})
+		prottest.MakeBlock(t, c, []*legacy.Tx{})
 	}
 
 	done := make(chan struct{})

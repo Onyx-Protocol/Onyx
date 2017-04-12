@@ -9,21 +9,21 @@ import (
 	"fmt"
 	"sync"
 
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
 )
 
 // MemStore satisfies the Store interface.
 type MemStore struct {
 	mu          sync.Mutex
-	Blocks      map[uint64]*bc.Block
+	Blocks      map[uint64]*legacy.Block
 	State       *state.Snapshot
 	StateHeight uint64
 }
 
 // New returns a new MemStore
 func New() *MemStore {
-	return &MemStore{Blocks: make(map[uint64]*bc.Block)}
+	return &MemStore{Blocks: make(map[uint64]*legacy.Block)}
 }
 
 func (m *MemStore) Height(context.Context) (uint64, error) {
@@ -33,7 +33,7 @@ func (m *MemStore) Height(context.Context) (uint64, error) {
 	return uint64(len(m.Blocks)), nil
 }
 
-func (m *MemStore) SaveBlock(ctx context.Context, b *bc.Block) error {
+func (m *MemStore) SaveBlock(ctx context.Context, b *legacy.Block) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -54,7 +54,7 @@ func (m *MemStore) SaveSnapshot(ctx context.Context, height uint64, snapshot *st
 	return nil
 }
 
-func (m *MemStore) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
+func (m *MemStore) GetBlock(ctx context.Context, height uint64) (*legacy.Block, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	b, ok := m.Blocks[height]

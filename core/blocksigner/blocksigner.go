@@ -10,7 +10,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 // ErrConsensusChange is returned from ValidateAndSignBlock
@@ -26,7 +26,7 @@ var ErrInvalidKey = errors.New("misconfigured signer public key")
 // Signer provides the interface for computing the block signature. It's
 // implemented by the MockHSM and our signerd client.
 type Signer interface {
-	Sign(context.Context, ed25519.PublicKey, *bc.BlockHeader) ([]byte, error)
+	Sign(context.Context, ed25519.PublicKey, *legacy.BlockHeader) ([]byte, error)
 }
 
 // BlockSigner validates and signs blocks.
@@ -50,7 +50,7 @@ func New(pub ed25519.PublicKey, hsm Signer, db pg.DB, c *protocol.Chain) *BlockS
 
 // SignBlock computes the signature for the block using
 // the private key in s.  It does not validate the block.
-func (s *BlockSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (s *BlockSigner) SignBlock(ctx context.Context, b *legacy.Block) ([]byte, error) {
 	sig, err := s.hsm.Sign(ctx, s.Pub, &b.BlockHeader)
 	if err != nil {
 		return nil, errors.Sub(ErrInvalidKey, err)
@@ -68,7 +68,7 @@ func (s *BlockSigner) String() string {
 //
 // This function fails if this node has ever signed a different block at the
 // same height as b.
-func (s *BlockSigner) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (s *BlockSigner) ValidateAndSignBlock(ctx context.Context, b *legacy.Block) ([]byte, error) {
 	err := <-s.c.BlockSoonWaiter(ctx, b.Height-1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", b.Height-1)
@@ -100,7 +100,7 @@ func (s *BlockSigner) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]
 // lockBlockHeight records a signer's intention to sign a given block
 // at a given height.  It's an error if a different block at the same
 // height has previously been signed.
-func lockBlockHeight(ctx context.Context, db pg.DB, b *bc.Block) error {
+func lockBlockHeight(ctx context.Context, db pg.DB, b *legacy.Block) error {
 	const q = `
 		INSERT INTO signed_blocks (block_height, block_hash)
 		SELECT $1, $2

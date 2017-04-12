@@ -9,6 +9,7 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
 	"chain/protocol/validation"
 	"chain/protocol/vmutil"
@@ -37,7 +38,7 @@ var (
 
 // GetBlock returns the block at the given height, if there is one,
 // otherwise it returns an error.
-func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
+func (c *Chain) GetBlock(ctx context.Context, height uint64) (*legacy.Block, error) {
 	return c.store.GetBlock(ctx, height)
 }
 
@@ -47,7 +48,7 @@ func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) 
 //
 // After generating the block, the pending transaction pool will be
 // empty.
-func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time, txs []*bc.Tx) (*bc.Block, *state.Snapshot, error) {
+func (c *Chain) GenerateBlock(ctx context.Context, prev *legacy.Block, snapshot *state.Snapshot, now time.Time, txs []*legacy.Tx) (*legacy.Block, *state.Snapshot, error) {
 	// TODO(kr): move this into a lower-level package (e.g. chain/protocol/bc)
 	// so that other packages (e.g. chain/protocol/validation) unit tests can
 	// call this function.
@@ -61,13 +62,13 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 	newSnapshot := state.Copy(c.state.snapshot)
 	newSnapshot.PruneNonces(timestampMS)
 
-	b := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:           bc.NewBlockVersion,
+	b := &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
+			Version:           1,
 			Height:            prev.Height + 1,
 			PreviousBlockHash: prev.Hash(),
 			TimestampMS:       timestampMS,
-			BlockCommitment: bc.BlockCommitment{
+			BlockCommitment: legacy.BlockCommitment{
 				ConsensusProgram: prev.ConsensusProgram,
 			},
 		},
@@ -113,9 +114,9 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 // ValidateBlock validates an incoming block in advance of applying it
 // to a snapshot (with ApplyValidBlock) and committing it to the
 // blockchain (with CommitAppliedBlock).
-func (c *Chain) ValidateBlock(block, prev *bc.Block) error {
-	blockEnts := bc.MapBlock(block)
-	prevEnts := bc.MapBlock(prev)
+func (c *Chain) ValidateBlock(block, prev *legacy.Block) error {
+	blockEnts := legacy.MapBlock(block)
+	prevEnts := legacy.MapBlock(prev)
 	err := validation.ValidateBlock(blockEnts, prevEnts, c.InitialBlockHash, c.ValidateTx)
 	if err != nil {
 		return errors.Sub(ErrBadBlock, err)
@@ -128,9 +129,9 @@ func (c *Chain) ValidateBlock(block, prev *bc.Block) error {
 
 // ApplyValidBlock creates an updated snapshot without validating the
 // block.
-func (c *Chain) ApplyValidBlock(block *bc.Block) (*state.Snapshot, error) {
+func (c *Chain) ApplyValidBlock(block *legacy.Block) (*state.Snapshot, error) {
 	newSnapshot := state.Copy(c.state.snapshot)
-	err := newSnapshot.ApplyBlock(bc.MapBlock(block))
+	err := newSnapshot.ApplyBlock(legacy.MapBlock(block))
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +152,7 @@ func (c *Chain) ApplyValidBlock(block *bc.Block) (*state.Snapshot, error) {
 // are triggered.
 //
 // TODO(bobg): rename to CommitAppliedBlock for clarity (deferred from https://github.com/chain/chain/pull/788)
-func (c *Chain) CommitAppliedBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
+func (c *Chain) CommitAppliedBlock(ctx context.Context, block *legacy.Block, snapshot *state.Snapshot) error {
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
 	// else can be derived from that block.
@@ -214,8 +215,8 @@ func (c *Chain) setHeight(h uint64) {
 // ValidateBlockForSig performs validation on an incoming _unsigned_
 // block in preparation for signing it. By definition it does not
 // execute the consensus program.
-func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
-	var prev *bc.Block
+func (c *Chain) ValidateBlockForSig(ctx context.Context, block *legacy.Block) error {
+	var prev *legacy.Block
 
 	if block.Height > 1 {
 		var err error
@@ -225,11 +226,11 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 		}
 	}
 
-	err := validation.ValidateBlock(bc.MapBlock(block), bc.MapBlock(prev), c.InitialBlockHash, c.ValidateTx)
+	err := validation.ValidateBlock(legacy.MapBlock(block), legacy.MapBlock(prev), c.InitialBlockHash, c.ValidateTx)
 	return errors.Sub(ErrBadBlock, err)
 }
 
-func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
+func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*legacy.Block, error) {
 	// TODO(kr): move this into a lower-level package (e.g. chain/protocol/bc)
 	// so that other packages (e.g. chain/protocol/validation) unit tests can
 	// call this function.
@@ -244,12 +245,12 @@ func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 		return nil, errors.Wrap(err, "calculating zero value of tx merkle root")
 	}
 
-	b := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:     bc.NewBlockVersion,
+	b := &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
+			Version:     1,
 			Height:      1,
 			TimestampMS: bc.Millis(timestamp),
-			BlockCommitment: bc.BlockCommitment{
+			BlockCommitment: legacy.BlockCommitment{
 				TransactionsMerkleRoot: root,
 				ConsensusProgram:       script,
 			},

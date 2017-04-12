@@ -8,7 +8,7 @@ import (
 	"chain/crypto/ed25519"
 	"chain/database/pg/pgtest"
 	"chain/protocol"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 	"chain/protocol/state"
 	"chain/testutil"
@@ -111,7 +111,7 @@ type testSigner struct {
 	privKey ed25519.PrivateKey
 }
 
-func (s testSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (s testSigner) SignBlock(ctx context.Context, b *legacy.Block) ([]byte, error) {
 	hash := b.Hash()
 	return ed25519.Sign(s.privKey, hash.Bytes()), nil
 }

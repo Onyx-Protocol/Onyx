@@ -10,18 +10,19 @@ import (
 
 	chainjson "chain/encoding/json"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
 	"chain/testutil"
 )
 
 func TestInferConstraints(t *testing.T) {
 	tpl := &Template{
-		Transaction: bc.NewTx(bc.TxData{
-			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 123, 0, nil, bc.Hash{}, []byte{1}),
+		Transaction: legacy.NewTx(legacy.TxData{
+			Inputs: []*legacy.TxInput{
+				legacy.NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 123, 0, nil, bc.Hash{}, []byte{1}),
 			},
-			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(bc.AssetID{}, 123, []byte{10, 11, 12}, nil),
+			Outputs: []*legacy.TxOutput{
+				legacy.NewTxOutput(bc.AssetID{}, 123, []byte{10, 11, 12}, nil),
 			},
 			MinTime: 1,
 			MaxTime: 2,

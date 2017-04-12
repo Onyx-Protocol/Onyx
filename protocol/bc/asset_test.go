@@ -35,3 +35,11 @@ func BenchmarkComputeAssetID(b *testing.B) {
 		assetIDSink = ComputeAssetID(issuanceScript, &initialBlockHash, 1, &EmptyStringHash)
 	}
 }
+
+func mustDecodeHash(s string) (h Hash) {
+	err := h.UnmarshalText([]byte(s))
+	if err != nil {
+		panic(err)
+	}
+	return h
+}

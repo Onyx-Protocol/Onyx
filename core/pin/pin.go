@@ -10,7 +10,7 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/protocol"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 const processorWorkers = 10
@@ -32,7 +32,7 @@ func NewStore(db pg.DB) *Store {
 	return s
 }
 
-func (s *Store) ProcessBlocks(ctx context.Context, c *protocol.Chain, pinName string, cb func(context.Context, *bc.Block) error) {
+func (s *Store) ProcessBlocks(ctx context.Context, c *protocol.Chain, pinName string, cb func(context.Context, *legacy.Block) error) {
 	p := <-s.pin(pinName)
 	height := p.getHeight()
 	for {
@@ -203,7 +203,7 @@ func (p *pin) getHeight() uint64 {
 	return p.height
 }
 
-func (p *pin) processBlock(ctx context.Context, c *protocol.Chain, height uint64, cb func(context.Context, *bc.Block) error) {
+func (p *pin) processBlock(ctx context.Context, c *protocol.Chain, height uint64, cb func(context.Context, *legacy.Block) error) {
 	defer func() { <-p.sem }()
 	for {
 		block, err := c.GetBlock(ctx, height)

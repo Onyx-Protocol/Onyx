@@ -1,6 +1,9 @@
-package bc
+package legacy
 
-import "chain/crypto/sha3pool"
+import (
+	"chain/crypto/sha3pool"
+	"chain/protocol/bc"
+)
 
 type IssuanceInput struct {
 	// Commitment
@@ -18,12 +21,12 @@ type IssuanceInput struct {
 
 func (ii *IssuanceInput) IsIssuance() bool { return true }
 
-func (ii *IssuanceInput) AssetID() AssetID {
+func (ii *IssuanceInput) AssetID() bc.AssetID {
 	defhash := ii.AssetDefinitionHash()
-	return ComputeAssetID(ii.IssuanceProgram, &ii.InitialBlock, ii.VMVersion, &defhash)
+	return bc.ComputeAssetID(ii.IssuanceProgram, &ii.InitialBlock, ii.VMVersion, &defhash)
 }
 
-func (ii *IssuanceInput) AssetDefinitionHash() (defhash Hash) {
+func (ii *IssuanceInput) AssetDefinitionHash() (defhash bc.Hash) {
 	sha := sha3pool.Get256()
 	defer sha3pool.Put256(sha)
 	sha.Write(ii.AssetDefinition)
@@ -35,7 +38,7 @@ func NewIssuanceInput(
 	nonce []byte,
 	amount uint64,
 	referenceData []byte,
-	initialBlock Hash,
+	initialBlock bc.Hash,
 	issuanceProgram []byte,
 	arguments [][]byte,
 	assetDefinition []byte,
