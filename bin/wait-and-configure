@@ -1,0 +1,9 @@
+#!/bin/sh
+
+while ! `curl -s http://localhost:1999 | grep -q Found`
+do
+  sleep 0.5
+  echo "waiting..."
+done
+
+corectl config-generator
