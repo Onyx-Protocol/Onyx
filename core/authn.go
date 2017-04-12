@@ -50,8 +50,9 @@ func (a *apiAuthn) handler(next http.Handler) http.Handler {
 			ctx = context.WithValue(ctx, "localhost", true)
 		}
 
-		if err0 != nil && err1 != nil {
-			errorFormatter.Write(ctx, rw, err0) // doesn't really matter which error we write
+		// TODO(tessr): move this to authz as part of ACL work
+		if err0 != nil {
+			errorFormatter.Write(ctx, rw, err0)
 		}
 
 		next.ServeHTTP(rw, req.WithContext(ctx))
