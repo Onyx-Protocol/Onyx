@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/core/account"
+	"chain/core/asset"
 	"chain/core/coretest"
 	"chain/core/pin"
 	"chain/core/query"
@@ -15,28 +15,25 @@ import (
 	"chain/testutil"
 )
 
-func TestUpdateAccountTags(t *testing.T) {
+func TestUpdateAssetTags(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	c := prottest.NewChain(t)
 	pinStore := pin.NewStore(db)
 	indexer := query.NewIndexer(db, c, pinStore)
-	accounts := account.NewManager(db, c, pinStore)
-	accounts.IndexAccounts(indexer)
-	api := &API{db: db, chain: c, accounts: accounts, indexer: indexer}
+	assets := asset.NewRegistry(db, c, pinStore)
+	assets.IndexAssets(indexer)
+	api := &API{db: db, chain: c, assets: assets, indexer: indexer}
 
 	alias := "test-alias"
-	id := coretest.CreateAccount(ctx, t, accounts, alias, map[string]interface{}{
-		"test_tag": "v0",
-	})
+	aid := coretest.CreateAsset(ctx, t, assets, nil, alias, map[string]interface{}{"test_tag": "v0"})
+	id := aid.String()
 
 	// Update by ID
 
-	wantTags := map[string]interface{}{
-		"test_tag": "v1",
-	}
+	wantTags := map[string]interface{}{"test_tag": "v1"}
 
-	api.updateAccountTags(ctx, []struct {
+	api.updateAssetTags(ctx, []struct {
 		ID    *string
 		Alias *string
 		Tags  map[string]interface{} `json:"tags"`
@@ -49,7 +46,7 @@ func TestUpdateAccountTags(t *testing.T) {
 
 	// Lookup via ID and ensure tag was changed
 
-	page, err := api.listAccounts(ctx, requestQuery{
+	page, err := api.listAssets(ctx, requestQuery{
 		Filter:       "id=$1",
 		FilterParams: []interface{}{id},
 	})
@@ -57,7 +54,7 @@ func TestUpdateAccountTags(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	items := page.Items.([]*query.AnnotatedAccount)
+	items := page.Items.([]*query.AnnotatedAsset)
 	if len(items) < 1 {
 		t.Fatal("result empty")
 	}
@@ -74,7 +71,7 @@ func TestUpdateAccountTags(t *testing.T) {
 
 	// Lookup via updated tag
 
-	page, err = api.listAccounts(ctx, requestQuery{
+	page, err = api.listAssets(ctx, requestQuery{
 		Filter:       "tags.test_tag=$1",
 		FilterParams: []interface{}{"v1"},
 	})
@@ -82,22 +79,20 @@ func TestUpdateAccountTags(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	items = page.Items.([]*query.AnnotatedAccount)
+	items = page.Items.([]*query.AnnotatedAsset)
 	if len(items) < 1 {
 		t.Fatal("result empty")
 	}
 
-	if items[0].ID != id {
-		t.Fatalf("id:\ngot:  %v\nwant: %v", items[0].ID, id)
+	if items[0].ID.String() != id {
+		t.Fatalf("id:\ngot:  %v\nwant: %v", items[0].ID.String(), id)
 	}
 
 	// Update by alias
 
-	wantTags = map[string]interface{}{
-		"test_tag": "v2",
-	}
+	wantTags = map[string]interface{}{"test_tag": "v2"}
 
-	api.updateAccountTags(ctx, []struct {
+	api.updateAssetTags(ctx, []struct {
 		ID    *string
 		Alias *string
 		Tags  map[string]interface{} `json:"tags"`
@@ -110,7 +105,7 @@ func TestUpdateAccountTags(t *testing.T) {
 
 	// Lookup via updated tag
 
-	page, err = api.listAccounts(ctx, requestQuery{
+	page, err = api.listAssets(ctx, requestQuery{
 		Filter:       "tags.test_tag=$1",
 		FilterParams: []interface{}{"v2"},
 	})
@@ -118,12 +113,12 @@ func TestUpdateAccountTags(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	items = page.Items.([]*query.AnnotatedAccount)
+	items = page.Items.([]*query.AnnotatedAsset)
 	if len(items) < 1 {
 		t.Fatal("result empty")
 	}
 
-	if items[0].ID != id {
-		t.Fatalf("id:\ngot:  %v\nwant: %v", items[0].ID, id)
+	if items[0].ID.String() != id {
+		t.Fatalf("id:\ngot:  %v\nwant: %v", items[0].ID.String(), id)
 	}
 }

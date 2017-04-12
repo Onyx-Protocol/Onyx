@@ -6,6 +6,7 @@ import (
 
 	"chain/core/asset"
 	"chain/crypto/ed25519/chainkd"
+	"chain/net/http/httpjson"
 	"chain/net/http/reqid"
 )
 
@@ -57,4 +58,33 @@ func (a *API) createAsset(ctx context.Context, ins []struct {
 
 	wg.Wait()
 	return responses, nil
+}
+
+// POST /update-asset-tags
+func (a *API) updateAssetTags(ctx context.Context, ins []struct {
+	ID    *string
+	Alias *string
+	Tags  map[string]interface{} `json:"tags"`
+}) interface{} {
+	responses := make([]interface{}, len(ins))
+	var wg sync.WaitGroup
+	wg.Add(len(responses))
+
+	for i := range responses {
+		go func(i int) {
+			subctx := reqid.NewSubContext(ctx, reqid.New())
+			defer wg.Done()
+			defer batchRecover(subctx, &responses[i])
+
+			err := a.assets.UpdateTags(subctx, ins[i].ID, ins[i].Alias, ins[i].Tags)
+			if err != nil {
+				responses[i] = err
+			} else {
+				responses[i] = httpjson.DefaultResponse
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	return responses
 }

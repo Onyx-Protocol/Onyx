@@ -28,7 +28,10 @@ import (
 
 const maxAssetCache = 1000
 
-var ErrDuplicateAlias = errors.New("duplicate asset alias")
+var (
+	ErrDuplicateAlias = errors.New("duplicate asset alias")
+	ErrBadIdentifier  = errors.New("either ID or alias must be specified, and not both")
+)
 
 func NewRegistry(db pg.DB, chain *protocol.Chain, pinStore *pin.Store) *Registry {
 	return &Registry{
@@ -149,6 +152,63 @@ func (reg *Registry) Define(ctx context.Context, xpubs []chainkd.XPub, quorum in
 	}
 
 	return asset, nil
+}
+
+// UpdateTags modifies the tags of the specified asset. The asset may be
+// identified either by id or alias, but not both.
+func (reg *Registry) UpdateTags(ctx context.Context, id, alias *string, tags map[string]interface{}) error {
+	if (id == nil) == (alias == nil) {
+		return errors.Wrap(ErrBadIdentifier)
+	}
+
+	// Fetch the existing asset
+
+	var (
+		asset *Asset
+		err   error
+	)
+
+	if id != nil {
+		var aid bc.AssetID
+		err = aid.UnmarshalText([]byte(*id))
+		if err != nil {
+			return errors.Wrap(err, "deserialize asset ID")
+		}
+
+		asset, err = reg.findByID(ctx, aid)
+		if err != nil {
+			return errors.Wrap(err, "find asset by ID")
+		}
+	} else {
+		asset, err = reg.FindByAlias(ctx, *alias)
+		if err != nil {
+			return errors.Wrap(err, "find asset by alias")
+		}
+	}
+
+	// Revise tags in-memory
+
+	asset.Tags = tags
+
+	// Perform persistent updates
+
+	err = insertAssetTags(ctx, reg.db, asset.AssetID, asset.Tags)
+	if err != nil {
+		return errors.Wrap(err, "inserting asset tags")
+	}
+
+	err = reg.indexAnnotatedAsset(ctx, asset)
+	if err != nil {
+		return errors.Wrap(err, "update asset index")
+	}
+
+	// Revise cache
+
+	reg.cacheMu.Lock()
+	reg.cache.Add(asset.AssetID, asset)
+	reg.cacheMu.Unlock()
+
+	return nil
 }
 
 // findByID retrieves an Asset record along with its signer, given an assetID.
