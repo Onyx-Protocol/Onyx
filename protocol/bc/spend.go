@@ -5,7 +5,7 @@ package bc
 //
 // (Not to be confused with the deprecated type SpendInput.)
 
-func (Spend) Type() string         { return "spend1" }
+func (Spend) typ() string          { return "spend1" }
 func (s *Spend) body() interface{} { return s.Body }
 
 func (s *Spend) SetDestination(id *Hash, val *AssetAmount, pos uint64) {

@@ -4,7 +4,7 @@ package bc
 // otherwise-identical issuances (when used as those issuances'
 // "anchors"). It satisfies the Entry interface.
 
-func (Nonce) Type() string         { return "nonce1" }
+func (Nonce) typ() string          { return "nonce1" }
 func (n *Nonce) body() interface{} { return n.Body }
 
 // NewNonce creates a new Nonce.
