@@ -87,7 +87,28 @@ const tryCallback = (promise, cb) => {
   })
 }
 
+const batchRequest = (client, path, params, cb) => {
+  return tryCallback(
+    client.request(path, params).then(resp => new BatchResponse(resp)),
+    cb
+  )
+}
+
 module.exports = {
+  batchRequest,
+
+  singletonBatchRequest: (client, path, params = {}, cb) => {
+    return tryCallback(
+      batchRequest(client, path, [params]).then(batch => {
+        if (batch.errors[0]) {
+          throw errors.newBatchError(batch.errors[0])
+        }
+        return batch.successes[0]
+      }),
+      cb
+    )
+  },
+
   create: (client, path, params = {}, opts = {}) => {
     const object = Object.assign({ clientToken: uuid.v4() }, params)
     let body = object

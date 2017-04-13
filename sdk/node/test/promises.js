@@ -157,6 +157,222 @@ describe('Promise style', () => {
       assert.deepEqual([batchResponse.errors[0], batchResponse.errors[2]], [null, null])
     })
 
+    // Account tag updates
+
+    .then(() => {
+      return expect(
+        client.accounts.create({
+          alias: `test-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {x: 0},
+        })
+      ).to.be.fulfilled
+    }).then(account => {
+        return expect(
+          client.accounts.updateTags({
+            id: account.id,
+            tags: {x: 1},
+          }).then(() => {
+            return account
+          })
+        ).to.be.fulfilled
+    }).then(account => {
+      return expect(
+        client.accounts.query({
+          filter: `id='${account.id}'`
+        })
+      ).to.be.fulfilled
+    }).then(page => {
+      assert.deepEqual(page.items[0].tags, {x: 1})
+    })
+
+    // Account tag update error
+
+    .then(() => {
+      return expect(
+        client.accounts.updateTags({
+          // ID intentionally omitted
+          tags: {x: 1},
+        })
+      ).to.be.rejectedWith('CH051')
+    })
+
+    // Batch account tag updates
+
+    .then(() => {
+      return expect(
+        client.accounts.createBatch([{
+          alias: `x-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {x: 0},
+        }, {
+          alias: `y-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {y: 0},
+        }])
+      ).to.be.fulfilled
+    }).then(batch => {
+      return expect(
+        client.accounts.updateTagsBatch([{
+          id: batch.successes[0].id,
+          tags: {x: 1},
+        }, {
+          id: batch.successes[1].id,
+          tags: {y: 1},
+        }]).then(() => {
+          return batch
+        })
+      ).to.be.fulfilled
+    }).then(batch => {
+      return expect(
+        client.accounts.query({
+          filter: `id='${batch.successes[0].id}' OR id='${batch.successes[1].id}'`
+        })
+      ).to.be.fulfilled
+    }).then(page => {
+      assert.deepEqual(page.items.find(i => i.alias.match(/^x-/)).tags, {x: 1})
+      assert.deepEqual(page.items.find(i => i.alias.match(/^y-/)).tags, {y: 1})
+    })
+
+    // Batch account tag update with errors
+
+    .then(() => {
+      return expect(
+        client.accounts.createBatch([{
+          alias: `x-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {x: 0},
+        }])
+      ).to.be.fulfilled
+    }).then(batch => {
+      return expect(
+        client.accounts.updateTagsBatch([{
+          id: batch.successes[0].id,
+          tags: {x: 1},
+        }, {
+          // ID intentionally omitted
+          tags: {y: 1},
+        }])
+      ).to.be.fulfilled
+    }).then(batch => {
+      assert(batch.successes[0])
+      assert(!batch.successes[1])
+      assert(!batch.errors[0])
+      assert(batch.errors[1])
+    })
+
+    // Asset tag updates
+
+    .then(() => {
+      return expect(
+        client.assets.create({
+          alias: `test-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {x: 0},
+        })
+      ).to.be.fulfilled
+    }).then(asset => {
+        return expect(
+          client.assets.updateTags({
+            id: asset.id,
+            tags: {x: 1},
+          }).then(() => {
+            return asset
+          })
+        ).to.be.fulfilled
+    }).then(asset => {
+      return expect(
+        client.assets.query({
+          filter: `id='${asset.id}'`
+        })
+      ).to.be.fulfilled
+    }).then(page => {
+      assert.deepEqual(page.items[0].tags, {x: 1})
+    })
+
+    // Asset tag update error
+
+    .then(() => {
+      return expect(
+        client.assets.updateTags({
+          // ID intentionally omitted
+          tags: {x: 1},
+        })
+      ).to.be.rejectedWith('CH051')
+    })
+
+    // Batch asset tag updates
+
+    .then(() => {
+      return expect(
+        client.assets.createBatch([{
+          alias: `x-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {x: 0},
+        }, {
+          alias: `y-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {y: 0},
+        }])
+      ).to.be.fulfilled
+    }).then(batch => {
+      return expect(
+        client.assets.updateTagsBatch([{
+          id: batch.successes[0].id,
+          tags: {x: 1},
+        }, {
+          id: batch.successes[1].id,
+          tags: {y: 1},
+        }]).then(() => {
+          return batch
+        })
+      ).to.be.fulfilled
+    }).then(batch => {
+      return expect(
+        client.assets.query({
+          filter: `id='${batch.successes[0].id}' OR id='${batch.successes[1].id}'`
+        })
+      ).to.be.fulfilled
+    }).then(page => {
+      assert.deepEqual(page.items.find(i => i.alias.match(/^x-/)).tags, {x: 1})
+      assert.deepEqual(page.items.find(i => i.alias.match(/^y-/)).tags, {y: 1})
+    })
+
+    // Batch asset tag update with errors
+
+    .then(() => {
+      return expect(
+        client.assets.createBatch([{
+          alias: `x-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {x: 0},
+        }])
+      ).to.be.fulfilled
+    }).then(batch => {
+      return expect(
+        client.assets.updateTagsBatch([{
+          id: batch.successes[0].id,
+          tags: {x: 1},
+        }, {
+          // ID intentionally omitted
+          tags: {y: 1},
+        }])
+      ).to.be.fulfilled
+    }).then(batch => {
+      assert(batch.successes[0])
+      assert(!batch.successes[1])
+      assert(!batch.errors[0])
+      assert(batch.errors[1])
+    })
+
     // Basic issuance
 
     .then(() =>
