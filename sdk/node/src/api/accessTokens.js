@@ -73,7 +73,7 @@ const accessTokens = (client) => {
      *
      * @param {String} id - Access token ID.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Status of deleted object.
+     * @returns {Promise<Object>} Success message or error.
      */
     delete: (id, cb) => shared.tryCallback(
       client.request('/delete-access-token', {id: id}),

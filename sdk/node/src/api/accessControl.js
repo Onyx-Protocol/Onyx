@@ -39,7 +39,7 @@ const accessControl = (client) => ({
    * @param {Object} params.guard_data - Object containing data needed to identify the incoming credential.
    * @param {String} params.policy - Authorization polciy to attach to specific grant. See {@link Grant} for a list of available policiies.
    * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-   * @returns {Promise} Status of created object.
+   * @returns {Promise<Object>} Success message or error.
    */
   create: (params , cb) =>
     shared.create(client, '/create-acl-grant', params, {skipArray: true, cb}),
@@ -52,7 +52,7 @@ const accessControl = (client) => ({
    * @param {Object} params.guard_data - Object containing data needed to identify the credential to be removed.
    * @param {String} params.policy - Authorization policy to remove. See {@link Grant} for a list of available policiies.
    * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-   * @returns {Promise} Status of deleted object.
+   * @returns {Promise<Object>} Success message or error.
    */
   delete: (params, cb) => shared.tryCallback(
     client.request('/revoke-acl-grant', params),
