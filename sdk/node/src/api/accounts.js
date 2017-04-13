@@ -67,6 +67,19 @@ const accountsAPI = (client) => {
    */
 
   /**
+   * @typedef {Object} updateTagsRequest
+   *
+   * @property {String} [id]
+   * The account ID. Either the ID or alias must be specified, but not both.
+   *
+   * @property {String} [alias]
+   * The account alias. Either the ID or alias must be specified, but not both.
+   *
+   * @property {Object} [tags]
+   * A new set of tags, which will replace the existing tags.
+   */
+
+  /**
    * @typedef {Object} createReceiverRequest
    *
    * @property {String} [accountAlias]
@@ -100,6 +113,24 @@ const accountsAPI = (client) => {
      * @returns {Promise<BatchResponse<Account>>} Newly created accounts.
      */
     createBatch: (params, cb) => shared.createBatch(client, '/create-account', params, {cb}),
+
+    /**
+     * Update account tags.
+     *
+     * @param {module:AccountsApi~updateTagsRequest} params - Parameters for updating account tags.
+     * @param {objectCallback} [cb] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<Object>} Success message.
+     */
+    updateTags: (params, cb) => shared.singletonBatchRequest(client, '/update-account-tags', params, cb),
+
+    /**
+     * Update tags for multiple assets.
+     *
+     * @param {module:AccountsApi~updateTagsRequest[]} params - Parameters for updating account tags.
+     * @param {batchCallback} [cb] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<BatchResponse<Object>>} A batch of success responses and/or errors.
+     */
+    updateTagsBatch: (params, cb) => shared.batchRequest(client, '/update-account-tags', params, cb),
 
     /**
      * Get one page of accounts matching the specified query.

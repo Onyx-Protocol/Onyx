@@ -63,6 +63,19 @@ const assetsAPI = (client) => {
    * User-specified, arbitrary/unstructured data visible across blockchain networks.
    */
 
+  /**
+   * @typedef {Object} updateTagsRequest
+   *
+   * @property {String} [id]
+   * The asset ID. Either the ID or alias must be specified, but not both.
+   *
+   * @property {String} [alias]
+   * The asset alias. Either the ID or alias must be specified, but not both.
+   *
+   * @property {Object} [tags]
+   * A new set of tags, which will replace the existing tags.
+   */
+
   return {
     /**
      * Create a new asset.
@@ -81,6 +94,24 @@ const assetsAPI = (client) => {
      * @returns {Promise<BatchResponse<Asset>>} Newly created assets.
      */
     createBatch: (params, cb) => shared.createBatch(client, '/create-asset', params, {cb}),
+
+    /**
+     * Update asset tags.
+     *
+     * @param {module:AssetsApi~updateTagsRequest} params - Parameters for updating asset tags.
+     * @param {objectCallback} [cb] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<Object>} Success message.
+     */
+    update: (params, cb) => shared.singletonBatchRequest(client, '/update-asset-tags', params, cb),
+
+    /**
+     * Update tags for multiple assets.
+     *
+     * @param {module:AssetsApi~updateTagsRequest[]} params - Parameters for updating asset tags.
+     * @param {batchCallback} [cb] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<BatchResponse<Object>>} A batch of success responses and/or errors.
+     */
+    updateBatch: (params, cb) => shared.batchRequest(client, '/update-asset-tags', params, cb),
 
     /**
      * Get one page of assets matching the specified query.

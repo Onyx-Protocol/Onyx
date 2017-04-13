@@ -157,6 +157,76 @@ describe('Promise style', () => {
       assert.deepEqual([batchResponse.errors[0], batchResponse.errors[2]], [null, null])
     })
 
+    // Account tag updates
+
+    .then(() => {
+      return expect(
+        client.accounts.create({
+          alias: `test-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {x: 0},
+        })
+      ).to.be.fulfilled
+    }).then(account => {
+        return expect(
+          client.accounts.updateTags({
+            id: account.id,
+            tags: {x: 1},
+          }).then(() => {
+            return account
+          })
+        ).to.be.fulfilled
+    }).then(account => {
+      return expect(
+        client.accounts.query({
+          filter: `id='${account.id}'`
+        })
+      ).to.be.fulfilled
+    }).then(page => {
+      assert.deepEqual(page.items[0].tags, {x: 1})
+    })
+
+    // Batch account tag updates
+
+    .then(() => {
+      return expect(
+        client.accounts.createBatch([{
+          alias: `x-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {x: 0},
+        }, {
+          alias: `y-${uuid.v4()}`,
+          rootXpubs: [otherKey.xpub],
+          quorum: 1,
+          tags: {y: 0},
+        }])
+      ).to.be.fulfilled
+    }).then(batch => {
+      return expect(
+        client.accounts.updateTagsBatch([{
+          id: batch.successes[0].id,
+          tags: {x: 1},
+        }, {
+          id: batch.successes[1].id,
+          tags: {y: 1},
+        }]).then(() => {
+          return batch
+        })
+      ).to.be.fulfilled
+    }).then(batch => {
+      return expect(
+        client.accounts.query({
+          filter: `id='${batch.successes[0].id}' OR id='${batch.successes[1].id}'`
+        })
+      ).to.be.fulfilled
+    }).then(page => {
+      // Results returned in reverse chronological order
+      assert.deepEqual(page.items.find(i => i.alias.match(/^x-/)).tags, {x: 1})
+      assert.deepEqual(page.items.find(i => i.alias.match(/^y-/)).tags, {y: 1})
+    })
+
     // Basic issuance
 
     .then(() =>
