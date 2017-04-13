@@ -187,11 +187,6 @@ func runServer() {
 	// we call it.
 	go func() {
 		if config.TLS {
-			caPool := loadRootCAs(*rootCAs)
-			http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-				RootCAs: caPool,
-			}
-
 			cert, err := loadX509KeyPair(*tlsCrt, *tlsKey)
 			if err != nil {
 				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
@@ -200,7 +195,7 @@ func runServer() {
 			server.TLSConfig = &tls.Config{
 				Certificates: []tls.Certificate{cert},
 				ClientAuth:   tls.VerifyClientCertIfGiven,
-				ClientCAs:    caPool,
+				ClientCAs:    loadRootCAs(*rootCAs),
 			}
 			err = server.ListenAndServeTLS("", "") // uses TLS certs from above
 			if err != nil {
@@ -234,6 +229,12 @@ func runServer() {
 	}
 
 	// Initialize internode rpc clients.
+	if config.TLS {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+			RootCAs: loadRootCAs(*rootCAs),
+		}
+	}
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
