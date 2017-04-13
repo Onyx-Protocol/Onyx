@@ -42,7 +42,7 @@ const accessControl = (client) => ({
    * @returns {Promise} Status of created object.
    */
   create: (params , cb) =>
-    shared.create(client, '/create-acl-grant', params, {skipArray: true}, cb),
+    shared.create(client, '/create-acl-grant', params, {skipArray: true, cb}),
 
   /**
    * Delete the specfiied access grant.
