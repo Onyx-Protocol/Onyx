@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -eo pipefail
+cd /
+
+url=https://s3.amazonaws.com/chain-qa/CodeSafe-linux64-dev-12.10.01.tar.gz
+
+(
+	cd /tmp
+	curl -o CodeSafe.tar.gz "$url"
+	gunzip CodeSafe.tar.gz
+	sha256sum -c - <<-EOF
+	7c77b2c07749b19b3cc11f213f31753d1ec88c69ceb5a33c995152bf0b19b7df  CodeSafe.tar
+	EOF
+	tar xf CodeSafe.tar
+	rm CodeSafe.tar
+)
+
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/csd/agg.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/csdref/agg.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/ctls/agg.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/devref/agg.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/dsserv/user.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/gccsrc/ppcdev.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/hwcrhk/user.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/hwsp/agg.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/javasp/agg.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/jcecsp/user.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/jd/agg.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/ncsnmp/user.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/nhfw/agg.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/pkcs11/user.tar
+tar xf /tmp/CodeSafe-linux64/linux/libc6_11/amd64/nfast/ratls/agg.tar
+rm -rf /tmp/CodeSafe-linux64

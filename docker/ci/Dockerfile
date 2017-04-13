@@ -1,5 +1,11 @@
 FROM centos:6
 
+# Do this in its own "layer" before everything else
+# because it will change rarely and it is huge (about 1.5GB).
+# This way it will be cached separately.
+COPY install/install-codesafe /tmp
+RUN /tmp/install-codesafe && rm -f /tmp/install-codesafe
+
 ENV CHAIN="/go/src/chain" \
     BUNDLE_APP_CONFIG="/usr/local/bundle" \
     GEM_HOME="/usr/local/bundle" \
@@ -8,7 +14,7 @@ ENV CHAIN="/go/src/chain" \
     JAVA_HOME="/opt/jdk1.7.0_79" \
     JRE_HOME="/opt/jdk1.7.0_79/jre" \
     MAVEN_HOME="/usr/share/maven" \
-    PATH="$PATH:/go/src/chain/docker/ci/bin/:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin"
+    PATH="$PATH:/go/src/chain/docker/ci/bin/:/usr/local/bundle/bin:/go/bin:/usr/local/go/bin:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin:/opt/nfast/bin"
 
 ADD install /usr/bin
 
