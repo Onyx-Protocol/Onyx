@@ -13,7 +13,7 @@ const MAX_BLOCK_HEIGHT = '9223372036854775807'
  * @class
  * A single transaction feed that can be consumed. See {@link TransactionFeeds}
  * for actions to create TransactionFeed objects.
- * <br/><br/>
+ *
  * More info: {@link https://chain.com/docs/core/build-applications/real-time-transaction-processing}
  *
  * @property {String} id
@@ -179,7 +179,7 @@ class TransactionFeed {
  * You can use transaction feeds to process transactions as they arrive on the
  * blockchain. This is helpful for real-time applications such as notifications
  * or live-updating interfaces.
- * <br/><br/>
+ * 
  * More info: {@link https://chain.com/docs/core/build-applications/real-time-transaction-processing}
  * @module TransactionFeedsApi
  */

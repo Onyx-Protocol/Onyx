@@ -12,5 +12,6 @@
     "systemName": "Chain Node.js SDK",
     "theme": "cosmo",
     "linenums": true
-  }
+  },
+  "plugins": ["plugins/markdown"]
 }
