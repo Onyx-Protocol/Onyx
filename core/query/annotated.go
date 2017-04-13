@@ -153,14 +153,18 @@ func buildAnnotatedInput(tx *legacy.Tx, i uint32) *AnnotatedInput {
 		in.ReferenceData = &referenceData
 	}
 
-	if sp, ok := tx.Tx.TxInputs[i].(*bc.Spend); ok {
+	id := tx.Tx.InputIDs[i]
+	e := tx.Entries[id]
+	switch e := e.(type) {
+	case *bc.Spend:
 		in.Type = "spend"
 		in.ControlProgram = orig.ControlProgram()
-		in.SpentOutputID = sp.Body.SpentOutputId
-	} else {
+		in.SpentOutputID = e.Body.SpentOutputId
+	case *bc.Issuance:
 		in.Type = "issue"
 		in.IssuanceProgram = orig.IssuanceProgram()
 	}
+
 	return in
 }
 

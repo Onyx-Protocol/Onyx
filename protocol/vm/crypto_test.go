@@ -382,11 +382,11 @@ func TestCryptoOps(t *testing.T) {
 		op: OP_TXSIGHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 50000,
-			Context:  validation.NewTxVMContext(tx.Tx, tx.Tx.TxInputs[0], &bc.Program{VmVersion: 1}, nil),
+			Context:  validation.NewTxVMContext(tx.Tx, tx.Tx.Entries[tx.Tx.InputIDs[0]], &bc.Program{VmVersion: 1}, nil),
 		},
 		wantVM: &VirtualMachine{
 			RunLimit: 49704,
-			Context:  validation.NewTxVMContext(tx.Tx, tx.Tx.TxInputs[0], &bc.Program{VmVersion: 1}, nil),
+			Context:  validation.NewTxVMContext(tx.Tx, tx.Tx.Entries[tx.Tx.InputIDs[0]], &bc.Program{VmVersion: 1}, nil),
 			DataStack: [][]byte{{
 				47, 0, 60, 221, 100, 66, 123, 94,
 				237, 214, 204, 181, 133, 71, 2, 11,
@@ -398,7 +398,7 @@ func TestCryptoOps(t *testing.T) {
 		op: OP_TXSIGHASH,
 		startVM: &VirtualMachine{
 			RunLimit: 0,
-			Context:  validation.NewTxVMContext(tx.Tx, tx.Tx.TxInputs[0], &bc.Program{VmVersion: 1}, nil),
+			Context:  validation.NewTxVMContext(tx.Tx, tx.Tx.Entries[tx.Tx.InputIDs[0]], &bc.Program{VmVersion: 1}, nil),
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
