@@ -67,11 +67,11 @@ func TestValidateBlockSig2Err(t *testing.T) {
 	}
 }
 
-func dummyValidateTx(*bc.TxEntries) error {
+func dummyValidateTx(*bc.Tx) error {
 	return nil
 }
 
-func newInitialBlock(tb testing.TB) *bc.BlockEntries {
+func newInitialBlock(tb testing.TB) *bc.Block {
 	script, err := vmutil.BlockMultiSigProgram(nil, 0)
 	if err != nil {
 		tb.Fatal(err)
@@ -96,7 +96,7 @@ func newInitialBlock(tb testing.TB) *bc.BlockEntries {
 	return legacy.MapBlock(b)
 }
 
-func generate(tb testing.TB, prev *bc.BlockEntries) *bc.BlockEntries {
+func generate(tb testing.TB, prev *bc.Block) *bc.Block {
 	b := &legacy.Block{
 		BlockHeader: legacy.BlockHeader{
 			Version:           1,

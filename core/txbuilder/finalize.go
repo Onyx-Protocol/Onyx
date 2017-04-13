@@ -38,7 +38,7 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, s Submitter, tx *legacy.
 	// finalize a tx before the initial block has landed
 	<-c.BlockWaiter(1)
 
-	err = c.ValidateTx(tx.TxEntries)
+	err = c.ValidateTx(tx.Tx)
 	if errors.Root(err) == protocol.ErrBadTx {
 		return errors.Sub(ErrRejected, err)
 	}

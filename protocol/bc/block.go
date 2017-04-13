@@ -1,7 +1,7 @@
 package bc
 
-type BlockEntries struct {
-	*BlockHeaderEntry
+type Block struct {
+	*BlockHeader
 	ID           Hash
-	Transactions []*TxEntries
+	Transactions []*Tx
 }

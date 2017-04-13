@@ -58,7 +58,7 @@ func Empty() *Snapshot {
 }
 
 // ApplyBlock updates s in place.
-func (s *Snapshot) ApplyBlock(block *bc.BlockEntries) error {
+func (s *Snapshot) ApplyBlock(block *bc.Block) error {
 	s.PruneNonces(block.Body.TimestampMs)
 	for i, tx := range block.Transactions {
 		err := s.ApplyTx(tx)
@@ -70,7 +70,7 @@ func (s *Snapshot) ApplyBlock(block *bc.BlockEntries) error {
 }
 
 // ApplyTx updates s in place.
-func (s *Snapshot) ApplyTx(tx *bc.TxEntries) error {
+func (s *Snapshot) ApplyTx(tx *bc.Tx) error {
 	for _, n := range tx.NonceIDs {
 		// Add new nonces. They must not conflict with nonces already
 		// present.

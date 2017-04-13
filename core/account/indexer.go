@@ -168,7 +168,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *legacy.Block) error 
 
 func prevoutDBKeys(txs ...*legacy.Tx) (outputIDs pq.ByteaArray) {
 	for _, tx := range txs {
-		for _, inp := range tx.TxEntries.TxInputs {
+		for _, inp := range tx.Tx.TxInputs {
 			if sp, ok := inp.(*bc.Spend); ok {
 				outputIDs = append(outputIDs, sp.Body.SpentOutputId.Bytes())
 			}
