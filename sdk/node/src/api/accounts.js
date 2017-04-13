@@ -75,7 +75,7 @@ const accountsAPI = (client) => {
    * @property {String} [alias]
    * The account alias. Either the ID or alias must be specified, but not both.
    *
-   * @property {Object} [tags]
+   * @property {Object} tags
    * A new set of tags, which will replace the existing tags.
    */
 
