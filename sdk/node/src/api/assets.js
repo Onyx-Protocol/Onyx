@@ -102,7 +102,7 @@ const assetsAPI = (client) => {
      * @param {objectCallback} [cb] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<Object>} Success message.
      */
-    update: (params, cb) => shared.singletonBatchRequest(client, '/update-asset-tags', params, cb),
+    updateTags: (params, cb) => shared.singletonBatchRequest(client, '/update-asset-tags', params, cb),
 
     /**
      * Update tags for multiple assets.
@@ -111,7 +111,7 @@ const assetsAPI = (client) => {
      * @param {batchCallback} [cb] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<BatchResponse<Object>>} A batch of success responses and/or errors.
      */
-    updateBatch: (params, cb) => shared.batchRequest(client, '/update-asset-tags', params, cb),
+    updateTagsBatch: (params, cb) => shared.batchRequest(client, '/update-asset-tags', params, cb),
 
     /**
      * Get one page of assets matching the specified query.

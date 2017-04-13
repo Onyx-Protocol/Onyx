@@ -170,6 +170,49 @@ describe('Callback style', () => {
         next()
       }),
 
+      // Account tag updates
+      // This just tests that the callback is engaged correctly. Behavior is
+      // tested in the promises test.
+
+      (next) => client.accounts.updateTags(
+        {}, // intentionally blank
+        err => {
+          assert(err)
+          next()
+        }
+      ),
+
+      (next) => client.accounts.updateTagsBatch(
+        [{}, {}], // intentionally blank
+        (err, batch) => {
+          assert(!err)
+          assert(batch.errors[0])
+          assert(batch.errors[1])
+          next()
+        }
+      ),
+
+      // Asset tag updates
+      // This just tests that the callback is engaged correctly. Behavior is
+      // tested in the promises test.
+
+      (next) => client.assets.updateTags(
+        {}, // intentionally blank
+        err => {
+          assert(err)
+          next()
+        }
+      ),
+
+      (next) => client.assets.updateTagsBatch(
+        [{}, {}], // intentionally blank
+        (err, batch) => {
+          assert(!err)
+          assert(batch.errors[0])
+          assert(batch.errors[1])
+          next()
+        }
+      ),
 
       // Basic issuance
 
