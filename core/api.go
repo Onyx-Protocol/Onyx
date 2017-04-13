@@ -5,6 +5,7 @@ import (
 	"context"
 	"expvar"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/pprof"
 	"sync"
@@ -28,6 +29,7 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/generated/dashboard"
+	"chain/net/authz"
 	"chain/net/http/authn"
 	"chain/net/http/gzip"
 	"chain/net/http/httpjson"
@@ -185,8 +187,8 @@ func (a *API) buildHandler() {
 		m.ServeHTTP(w, req)
 	})
 
-	handler := a.authnHandler(latencyHandler)
-	// handler = authzHandler(handler)
+	handler := authzHandler(latencyHandler)
+	handler = a.authnHandler(handler)
 	handler = maxBytes(handler) // TODO(tessr): consider moving this to non-core specific mux
 	handler = webAssetsHandler(handler)
 	handler = healthHandler(handler)
@@ -251,6 +253,18 @@ func (a *API) authnHandler(handler http.Handler) http.Handler {
 		}).Authenticate(req)
 
 		handler.ServeHTTP(rw, req)
+	})
+}
+
+func authzHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if authz.Authorized(req.Context()) {
+			log.Printf("SUCCESS")
+			handler.ServeHTTP(rw, req)
+		} else {
+			log.Printf("FAILURE")
+			errorFormatter.Write(req.Context(), rw, errNotAuthenticated) // perhaps should have different error?
+		}
 	})
 }
 

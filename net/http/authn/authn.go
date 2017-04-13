@@ -3,6 +3,7 @@ package authn
 import (
 	"context"
 	"encoding/hex"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -11,9 +12,8 @@ import (
 
 	"chain/core/accesstoken"
 	"chain/errors"
+	"chain/net/authz"
 )
-
-var errNotAuthenticated = errors.New("not authenticated")
 
 const tokenExpiry = time.Minute * 5
 
@@ -30,30 +30,6 @@ type TokenResult struct {
 	lastLookup time.Time
 }
 
-// func (a *API) Handler(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-// 		token, err0 := a.tokenAuth(req)
-// 		ctx := req.Context()
-// 		if err0 == nil && token != "" {
-// 			// if this request was successfully authenticated, pass the token along
-// 			ctx = context.WithValue(ctx, "token", token)
-// 		}
-
-// 		err1 := a.localhostAuth(req)
-// 		if err1 == nil {
-// 			ctx = context.WithValue(ctx, "localhost", true)
-// 		}
-
-// 		// TODO(tessr): move this to authz as part of ACL work
-// 		if err0 != nil {
-// 			errorFormatter.Write(ctx, rw, err0)
-// 			return
-// 		}
-
-// 		next.ServeHTTP(rw, req.WithContext(ctx))
-// 	})
-// }
-
 // Authenticate returns the request, with added tokens and/or localhost
 // flags in the context, as appropriate.
 func (a *API) Authenticate(req *http.Request) *http.Request {
@@ -61,12 +37,15 @@ func (a *API) Authenticate(req *http.Request) *http.Request {
 	token, err := a.tokenAuthn(req)
 	if err == nil && token != "" {
 		// if this request was successfully authenticated with a token, pass the token along
-		ctx = context.WithValue(ctx, "token", token)
+		ctx = authz.NewContextWithToken(ctx, token)
 	}
 
 	local := a.localhostAuthn(req)
 	if local {
-		ctx = context.WithValue(ctx, "localhost", true)
+		log.Println("authenticated as local connection")
+		ctx = authz.NewContextWithLocalhost(ctx)
+	} else {
+		log.Println("not a local connection")
 	}
 
 	return req.WithContext(ctx)
@@ -87,7 +66,7 @@ func (a *API) localhostAuthn(req *http.Request) bool {
 func (a *API) tokenAuthn(req *http.Request) (string, error) {
 	user, pw, ok := req.BasicAuth()
 	if !ok {
-		return "", errNotAuthenticated // doesn't really matter what error we return here
+		return "", errors.New("no token")
 	}
 	typ := "client"
 	if strings.HasPrefix(req.URL.Path, a.NetworkRPCPrefix) {
@@ -119,7 +98,7 @@ func (a *API) cachedTokenAuthnCheck(ctx context.Context, typ, user, pw string) e
 		a.tokenMu.Unlock()
 	}
 	if !res.valid {
-		return errNotAuthenticated
+		return errors.New("invalid token")
 	}
 	return nil
 }
