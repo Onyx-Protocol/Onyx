@@ -34,12 +34,6 @@ const (
 // RunOption describes a runtime configuration option.
 type RunOption func(*API)
 
-// AlternateAuth configures the Core to use authFn to authenticate
-// incoming requests in addition to the default access token authentication.
-func AlternateAuth(authFn func(*http.Request) bool) RunOption {
-	return func(a *API) { a.altAuth = authFn }
-}
-
 // BlockSigner configures the Core to use signFn to handle block-signing
 // requests. In production, this will be a function to call out to signerd
 // and its HSM. In development, it'll use the MockHSM.

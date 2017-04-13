@@ -2,6 +2,8 @@
 // credentials.
 package accesstoken
 
+// TODO(tessr): merge this package into chain/net/http/authn
+
 import (
 	"context"
 	"crypto/rand"

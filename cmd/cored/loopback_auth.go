@@ -2,17 +2,9 @@
 
 package main
 
-import (
-	"chain/core/config"
-	"net"
-	"net/http"
-)
+import "chain/core/config"
 
+// See $CHAIN/net/http/authz/loopback_authz.go for the implementation.
 func init() {
 	config.BuildConfig.LoopbackAuth = true
-	loopbackAuth = func(req *http.Request) bool {
-		// Allow connections from the local host.
-		a, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)
-		return err == nil && a.IP.IsLoopback()
-	}
 }
