@@ -33,7 +33,7 @@ func NewAPI(tokens *accesstoken.CredentialStore, networkPrefix string) *API {
 	return &API{
 		tokens:           tokens,
 		networkRPCPrefix: networkPrefix,
-		tokenMap:         make(map[string]authn.TokenResult),
+		tokenMap:         make(map[string]tokenResult),
 	}
 }
 
@@ -73,7 +73,7 @@ func (a *API) tokenAuthn(req *http.Request) (string, error) {
 		return "", errors.New("no token")
 	}
 	typ := "client"
-	if strings.HasPrefix(req.URL.Path, a.NetworkRPCPrefix) {
+	if strings.HasPrefix(req.URL.Path, a.networkRPCPrefix) {
 		typ = "network"
 	}
 	return user, a.cachedTokenAuthnCheck(req.Context(), typ, user, pw)
@@ -84,21 +84,21 @@ func (a *API) tokenAuthnCheck(ctx context.Context, typ, user, pw string) (bool, 
 	if err != nil {
 		return false, nil
 	}
-	return a.Tokens.Check(ctx, user, typ, pwBytes)
+	return a.tokens.Check(ctx, user, typ, pwBytes)
 }
 
 func (a *API) cachedTokenAuthnCheck(ctx context.Context, typ, user, pw string) error {
 	a.tokenMu.Lock()
-	res, ok := a.TokenMap[typ+user+pw]
+	res, ok := a.tokenMap[typ+user+pw]
 	a.tokenMu.Unlock()
 	if !ok || time.Now().After(res.lastLookup.Add(tokenExpiry)) {
 		valid, err := a.tokenAuthnCheck(ctx, typ, user, pw)
 		if err != nil {
 			return errors.Wrap(err)
 		}
-		res = TokenResult{valid: valid, lastLookup: time.Now()}
+		res = tokenResult{valid: valid, lastLookup: time.Now()}
 		a.tokenMu.Lock()
-		a.TokenMap[typ+user+pw] = res
+		a.tokenMap[typ+user+pw] = res
 		a.tokenMu.Unlock()
 	}
 	if !res.valid {
