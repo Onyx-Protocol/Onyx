@@ -27,7 +27,7 @@ func (c *Chain) ValidateTx(tx *bc.TxEntries) error {
 		err = validation.ValidateTx(tx, c.InitialBlockHash)
 		c.prevalidated.cache(tx.ID, err)
 	}
-	return err
+	return errors.Sub(ErrBadTx, err)
 }
 
 type prevalidatedTxsCache struct {
