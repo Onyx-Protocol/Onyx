@@ -3,10 +3,14 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -26,8 +30,12 @@ import (
 
 // config vars
 var (
-	dbURL   = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
-	coreURL = env.String("CORE_URL", "http://localhost:1999")
+	dbURL       = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
+	coreURL     = env.String("CORE_URL", "http://localhost:1999")
+	accessToken = env.String("CLIENT_ACCESS_TOKEN", "")
+	tlsCrt      = env.String("TLSCRT", "")
+	tlsKey      = env.String("TLSKEY", "")
+	rootCAs     = env.String("ROOT_CA_CERTS", "")
 
 	// build vars; initialized by the linker
 	buildTag    = "?"
@@ -69,6 +77,22 @@ func main() {
 		fmt.Printf("build-commit: %v\n", buildCommit)
 		fmt.Printf("build-date: %v\n", buildDate)
 		return
+	}
+
+	if *rootCAs != "" {
+		tlsConfig := &tls.Config{
+			RootCAs: loadRootCAs(*rootCAs),
+		}
+
+		// using client auth on server
+		if *tlsCrt != "" && *tlsKey != "" {
+			cert, err := loadX509KeyPair(*tlsCrt, *tlsKey)
+			if err != nil {
+				fatalln("loading client cert", err)
+			}
+			tlsConfig.Certificates = []tls.Certificate{cert}
+		}
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = tlsConfig
 	}
 
 	db, err := sql.Open("hapg", *dbURL)
@@ -201,7 +225,8 @@ func configGenerator(db *sql.DB, args []string) {
 
 	// TODO(tessr): TLS everywhere?
 	client := &rpc.Client{
-		BaseURL: *coreURL,
+		BaseURL:     *coreURL,
+		AccessToken: *accessToken,
 	}
 
 	err = client.Call(ctx, "/configure", conf, nil)
@@ -296,8 +321,9 @@ func configNongenerator(db *sql.DB, args []string) {
 
 	// TODO(tessr): TLS everywhere?
 	client := &rpc.Client{
-		BlockchainID: blockchainID.String(),
+		AccessToken:  *accessToken,
 		BaseURL:      *coreURL,
+		BlockchainID: blockchainID.String(),
 	}
 
 	err = client.Call(ctx, "/configure", conf, nil)
@@ -334,7 +360,8 @@ func reset(db *sql.DB, args []string) {
 
 	// TODO(tessr): TLS everywhere?
 	client := &rpc.Client{
-		BaseURL: *coreURL,
+		BaseURL:     *coreURL,
+		AccessToken: *accessToken,
 	}
 
 	req := map[string]bool{
@@ -363,4 +390,33 @@ func help(w io.Writer) {
 	fmt.Fprint(w, "\nFlags:\n")
 	fmt.Fprintln(w, "\t-version   print version information")
 	fmt.Fprintln(w)
+}
+
+// loadRootCAs reads a list of PEM-encoded X.509 certificates from name
+func loadRootCAs(name string) *x509.CertPool {
+	pem, err := ioutil.ReadFile(name)
+	if err != nil {
+		fatalln("reading root ca certs file", err)
+	}
+	pool := x509.NewCertPool()
+	ok := pool.AppendCertsFromPEM(pem)
+	if !ok {
+		fatalln("error: no certs found in " + name)
+	}
+	return pool
+}
+
+// loadX509KeyPair reads a PEM-encoded X.509 certificate and
+// corresponding, RSA private key from provided file paths
+func loadX509KeyPair(cName, kName string) (tls.Certificate, error) {
+	cBytes, err := ioutil.ReadFile(cName)
+	if err != nil {
+		fatalln("reading client cert file", err)
+	}
+
+	kBytes, err := ioutil.ReadFile(kName)
+	if err != nil {
+		fatalln("reading key file", err)
+	}
+	return tls.X509KeyPair(cBytes, kBytes)
 }
