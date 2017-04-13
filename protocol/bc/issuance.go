@@ -5,7 +5,7 @@ package bc
 //
 // (Not to be confused with the deprecated type IssuanceInput.)
 
-func (Issuance) Type() string           { return "issuance1" }
+func (Issuance) typ() string            { return "issuance1" }
 func (iss *Issuance) body() interface{} { return iss.Body }
 
 func (iss *Issuance) SetDestination(id *Hash, val *AssetAmount, pos uint64) {

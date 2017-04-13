@@ -2,7 +2,7 @@ package bc
 
 // TimeRange denotes a time range. It satisfies the Entry interface.
 
-func (TimeRange) Type() string          { return "timerange1" }
+func (TimeRange) typ() string           { return "timerange1" }
 func (tr *TimeRange) body() interface{} { return tr.Body }
 
 // NewTimeRange creates a new TimeRange.

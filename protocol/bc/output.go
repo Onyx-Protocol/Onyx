@@ -6,7 +6,7 @@ package bc
 //
 // (Not to be confused with the deprecated type TxOutput.)
 
-func (Output) Type() string         { return "output1" }
+func (Output) typ() string          { return "output1" }
 func (o *Output) body() interface{} { return o.Body }
 
 // NewOutput creates a new Output.

@@ -20,7 +20,7 @@ type Entry interface {
 
 	// Type produces a short human-readable string uniquely identifying
 	// the type of this entry.
-	Type() string
+	typ() string
 
 	// Body produces the entry's body, which is used as input to
 	// EntryID.
@@ -46,7 +46,7 @@ func EntryID(e Entry) (hash Hash) {
 	defer sha3pool.Put256(hasher)
 
 	hasher.Write([]byte("entryid:"))
-	hasher.Write([]byte(e.Type()))
+	hasher.Write([]byte(e.typ()))
 	hasher.Write([]byte{':'})
 
 	bh := sha3pool.Get256()

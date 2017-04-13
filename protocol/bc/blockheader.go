@@ -3,7 +3,7 @@ package bc
 // BlockHeader contains the header information for a blockchain
 // block. It satisfies the Entry interface.
 
-func (BlockHeader) Type() string          { return "blockheader" }
+func (BlockHeader) typ() string           { return "blockheader" }
 func (bh *BlockHeader) body() interface{} { return bh.Body }
 
 // NewBlockHeader creates a new BlockHeader and populates

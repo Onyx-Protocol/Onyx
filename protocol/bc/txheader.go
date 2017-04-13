@@ -5,7 +5,7 @@ package bc
 // of the TxHeader is the ID of the transaction. TxHeader satisfies
 // the Entry interface.
 
-func (TxHeader) Type() string         { return "txheader" }
+func (TxHeader) typ() string          { return "txheader" }
 func (h *TxHeader) body() interface{} { return h.Body }
 
 // NewTxHeader creates an new TxHeader.

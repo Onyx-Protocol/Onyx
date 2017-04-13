@@ -4,7 +4,7 @@ package bc
 // blockchain. The value it contains can never be obtained by later
 // entries. Retirement satisfies the Entry interface.
 
-func (Retirement) Type() string         { return "retirement1" }
+func (Retirement) typ() string          { return "retirement1" }
 func (r *Retirement) body() interface{} { return r.Body }
 
 // NewRetirement creates a new Retirement.

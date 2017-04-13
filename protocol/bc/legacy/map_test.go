@@ -57,7 +57,7 @@ func TestMapTx(t *testing.T) {
 					t.Errorf("header.Body.ResultIds[%d].(*output).Body.ExtHash is %x, expected zero", i, newOut.Body.ExtHash.Bytes())
 				}
 			} else {
-				t.Errorf("header.Body.ResultIds[%d] has type %s, expected output1", i, resultEntry.Type())
+				t.Errorf("header.Body.ResultIds[%d] has type %T, expected *Output", i, resultEntry)
 			}
 		} else {
 			t.Errorf("entryMap contains nothing for header.Body.ResultIds[%d] (%x)", i, header.Body.ResultIds[i].Bytes())
