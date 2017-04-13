@@ -20,6 +20,7 @@ import (
 	"chain/protocol/prottest"
 	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
+	"chain/protocol/vm"
 	"chain/testutil"
 )
 
@@ -159,6 +160,49 @@ func TestConflictingTxsInPool(t *testing.T) {
 	dumpBlocks(ctx, t, db)
 	if len(b.Transactions) != 1 {
 		t.Errorf("got block.Transactions = %#v\n, want exactly one tx", b.Transactions)
+	}
+}
+
+func TestInvalidTx(t *testing.T) {
+	c := prottest.NewChain(t)
+	ctx := context.Background()
+	prog := [...]byte{
+		byte(vm.OP_DATA_32),
+		0x34, 0x0a, 0x71, 0x56, 0x84, 0xc9, 0x83, 0x27, 0xf4, 0xa6, 0x1e, 0x7d, 0xdc, 0x54, 0xd1, 0xcd,
+		0x06, 0xab, 0x7b, 0x26, 0x65, 0x78, 0xbb, 0x16, 0x20, 0xc5, 0x45, 0xad, 0x1d, 0x31, 0x73, 0x7d,
+		byte(vm.OP_TXSIGHASH), byte(vm.OP_EQUAL),
+	}
+	badTx := bc.NewTx(bc.TxData{
+		Version: 1,
+		Inputs: []*bc.TxInput{
+			&bc.TxInput{
+				AssetVersion: 1,
+				TypedInput: &bc.SpendInput{
+					SpendCommitment: bc.SpendCommitment{
+						AssetAmount: bc.AssetAmount{
+							AssetId: &bc.AssetID{},
+							Amount:  1,
+						},
+						VMVersion:      1,
+						ControlProgram: []byte{byte(vm.OP_TRUE)},
+					},
+					Arguments: [][]byte{
+						{},
+						{},
+						prog[:],
+					},
+				},
+			},
+		},
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput(bc.AssetID{}, 2, nil, nil),
+		},
+		MinTime: 1,
+		MaxTime: 2,
+	})
+	err := FinalizeTx(ctx, c, nil, badTx)
+	if errors.Root(err) != ErrRejected {
+		t.Errorf("got error %s, want %s", err, ErrRejected)
 	}
 }
 
