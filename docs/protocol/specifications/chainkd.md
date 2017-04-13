@@ -10,6 +10,8 @@
   * [Derive non-hardened extended public key](#derive-non-hardened-extended-public-key)
   * [Extract public key](#extract-public-key)
   * [Extract signing key](#extract-signing-key)
+  * [Prune root scalar](#prune-root-scalar)
+  * [Prune intermediate scalar](#prune-intermediate-scalar)
   * [Encode public key](#encode-public-key)
 * [Design rationale](#design-rationale)
 * [Security](#security)
@@ -66,11 +68,7 @@ Limitations:
 **Output:** `xprv`, a root extended private key.
 
 1. Compute the 64-byte string `xprv = HMAC-SHA512(key: "Root", data: seed)`.
-2. Prune the first 32 bytes of `xprv` to produce a valid scalar:
-    1. the lowest 3 bits of the first byte are cleared,
-    2. the highest bit of the last byte is cleared,
-    3. the second highest bit of the last byte is set,
-    4. the third highest bit of the last byte is cleared.
+2. [Prune the root scalar](#prune-root-scalar) defined by the first 32 bytes of `xprv`.
 3. Return `xprv`.
 
 
@@ -97,11 +95,7 @@ Limitations:
 
 1. Split `xprv` in two halves: 32-byte scalar `s` and 32-byte derivation key `dk`.
 2. Compute `xprv’ = HMAC-SHA512(key: dk, data: "H" || s || selector)`.
-3. Prune the first 32 bytes of `xprv’` to produce a valid scalar:
-    1. the lowest 3 bits of the first byte are cleared,
-    2. the highest bit of the last byte is cleared,
-    3. the second highest bit of the last byte is set,
-    4. the third highest bit of the last byte is cleared.
+3. [Prune the root scalar](#prune-root-scalar) defined by the first 32 bytes of `xprv’`.
 4. Return `xprv’`.
 
 
@@ -118,7 +112,7 @@ Limitations:
 2. Split `xpub` into two halves: a 32-byte pubkey `P` and a 32-byte derivation key `dk`.
 3. Compute `F = HMAC-SHA512(key: dk, data: "N" || P || selector)`.
 4. Split `F` into two halves: a 32-byte `fbuffer` and a 32-byte `dk’`.
-5. Clear the lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
+5. [Prune intermediate scalar](#prune-intermediate-scalar) `fbuffer` and interpret it as a scalar `f` using little-endian notation.
 6. Compute derived secret scalar `s’ = s + f` (without reducing the result modulo the subgroup order).
 7. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
 8. Return `xprv’ = privkey’ || dk’`.
@@ -136,7 +130,7 @@ Limitations:
 1. Split `xpub` into two halves: a 32-byte pubkey `P` and a 32-byte derivation key `dk`.
 2. Compute `F = HMAC-SHA512(key: dk, data: "N" || P || selector)`.
 3. Split `F` into two halves: a 32-byte `fbuffer` and a 32-byte `dk’`.
-4. Clear the lowest 3 bits and highest 23 bits of `fbuffer` and interpret it as a scalar `f` using little-endian notation.
+4. [Prune intermediate scalar](#prune-intermediate-scalar) `fbuffer` and interpret it as a scalar `f` using little-endian notation.
 5. Perform a fixed-base scalar multiplication `F = f·B` where `B` is a base point of Ed25519.
 6. Decode point `P` from `pubkey` according to EdDSA.
 7. Perform point addition `P’ = P + F`.
@@ -167,6 +161,40 @@ The resulting 32-byte public key can be used to verify an EdDSA signature create
 4. Return the 64-byte signing key `sk = privkey || ext`.
 
 The resulting 64-byte signing key can be used to create an EdDSA signature verifiable by the corresponding [EdDSA public key](#extract-public-key).
+
+### Prune root scalar
+
+**Input:** `s`, a 32-byte string
+
+**Output:** `s’`, a 32-byte pruned scalar
+
+1. Clear the lowest 3 bits of the first byte.
+2. Clear the highest bit of the last byte.
+3. Set the second highest bit of the last byte.
+4. Clear the third highest bit of the last byte.
+
+Example:
+
+        s[0]  &= 248
+        s[31] &= 31
+        s[31] |= 64
+
+
+### Prune intermediate scalar
+
+**Input:** `f`, a 32-byte string
+
+**Output:** `f’`, a 32-byte pruned scalar
+
+1. Clear the lowest 3 bits of the first byte.
+2. Clear the highest 23 bits of the last 3 bytes.
+
+Example:
+
+	    f[0]  &= 248
+	    f[29] &= 1
+	    f[30]  = 0
+	    f[31]  = 0
 
 
 ### Encode public key

@@ -11,11 +11,17 @@ import (
 )
 
 const (
+	// XPubSize is the size, in bytes, of extended public keys.
 	XPubSize = 64
+
+	// XPrvSize is the size, in bytes, of extended public keys.
 	XPrvSize = 64
 )
 
+// XPrv is an opaque type representing an extended private key
 type XPrv struct{ data [64]byte }
+
+// XPub is an opaque type representing an extended public key
 type XPub struct{ data [64]byte }
 
 // NewXPrv takes a source of random bytes and produces a new XPrv.
@@ -32,15 +38,16 @@ func NewXPrv(r io.Reader) (xprv XPrv, err error) {
 	return RootXPrv(entropy[:]), nil
 }
 
-// RootXPrv takes a seed binary string and produces a new XPrv.
+// RootXPrv takes a seed binary string and produces a new xprv.
 func RootXPrv(seed []byte) (xprv XPrv) {
 	h := hmac.New(sha512.New, []byte("Root"))
 	h.Write(seed)
 	h.Sum(xprv.data[:0])
-	modifyRootScalar(xprv.data[:32])
+	pruneRootScalar(xprv.data[:32])
 	return
 }
 
+// XPub derives an extended public key from a given xprv.
 func (xprv XPrv) XPub() (xpub XPub) {
 	var buf [32]byte
 	copy(buf[:], xprv.data[:32])
@@ -55,6 +62,10 @@ func (xprv XPrv) XPub() (xpub XPub) {
 	return
 }
 
+// Child derives a child xprv based on `selector` string and `hardened` flag.
+// If `hardened` is false, child xpub can be derived independently
+// from the parent xpub without using the parent xprv.
+// If `hardened` is true, child key can only be derived from the parent xprv.
 func (xprv XPrv) Child(sel []byte, hardened bool) XPrv {
 	if hardened {
 		return xprv.hardenedChild(sel)
@@ -69,7 +80,7 @@ func (xprv XPrv) hardenedChild(sel []byte) (res XPrv) {
 	h.Write(xprv.data[32:])
 	h.Write(sel)
 	h.Sum(res.data[:0])
-	modifyRootScalar(res.data[:32])
+	pruneRootScalar(res.data[:32])
 	return
 }
 
@@ -82,7 +93,7 @@ func (xprv XPrv) nonhardenedChild(sel []byte) (res XPrv) {
 	h.Write(sel)
 	h.Sum(res.data[:0])
 
-	modifyFactorScalar(res.data[:32])
+	pruneIntermediateScalar(res.data[:32])
 
 	var carry int
 	carry = 0
@@ -97,6 +108,9 @@ func (xprv XPrv) nonhardenedChild(sel []byte) (res XPrv) {
 	return
 }
 
+// Child derives a child xpub based on `selector` string.
+// The corresponding child xprv can be derived from the parent xprv
+// using non-hardened derivation: `parentxprv.Child(sel, false)`.
 func (xpub XPub) Child(sel []byte) (res XPub) {
 	var f [32]byte
 	var F edwards25519.ExtendedGroupElement
@@ -107,7 +121,7 @@ func (xpub XPub) Child(sel []byte) (res XPub) {
 	h.Write(sel)
 	h.Sum(res.data[:0])
 
-	modifyFactorScalar(res.data[:32])
+	pruneIntermediateScalar(res.data[:32])
 
 	copy(f[:], res.data[:32])
 	edwards25519.GeScalarMultBase(&F, &f)
@@ -135,6 +149,9 @@ func (xpub XPub) Child(sel []byte) (res XPub) {
 	return res
 }
 
+// Derive generates a child xprv by recursively deriving
+// non-hardened child xprvs over the list of selectors:
+// `Derive([a,b,c,...]) == Child(a).Child(b).Child(c)...`
 func (xprv XPrv) Derive(path [][]byte) XPrv {
 	res := xprv
 	for _, p := range path {
@@ -143,6 +160,9 @@ func (xprv XPrv) Derive(path [][]byte) XPrv {
 	return res
 }
 
+// Derive generates a child xpub by recursively deriving
+// non-hardened child xpubs over the list of selectors:
+// `Derive([a,b,c,...]) == Child(a).Child(b).Child(c)...`
 func (xpub XPub) Derive(path [][]byte) XPub {
 	res := xpub
 	for _, p := range path {
@@ -151,14 +171,22 @@ func (xpub XPub) Derive(path [][]byte) XPub {
 	return res
 }
 
+// Sign creates an EdDSA signature using expanded private key
+// derived from the xprv.
 func (xprv XPrv) Sign(msg []byte) []byte {
 	return Ed25519InnerSign(xprv.ExpandedPrivateKey(), msg)
 }
 
+// Verify checks an EdDSA signature using public key
+// extracted from the first 32 bytes of the xpub.
 func (xpub XPub) Verify(msg []byte, sig []byte) bool {
 	return ed25519.Verify(xpub.PublicKey(), msg, sig)
 }
 
+// ExpandedPrivateKey generates a 64-byte key where
+// the first half is the scalar copied from xprv,
+// and the second half is the `prefix` is generated via PRF
+// from the xprv.
 func (xprv XPrv) ExpandedPrivateKey() ExpandedPrivateKey {
 	var res [64]byte
 	h := hmac.New(sha512.New, []byte("Expand"))
@@ -176,14 +204,14 @@ func (xpub XPub) PublicKey() ed25519.PublicKey {
 // s must be >= 32 bytes long and gets rewritten in place.
 // This is NOT the same pruning as in Ed25519: it additionally clears the third
 // highest bit to ensure subkeys do not overflow the second highest bit.
-func modifyRootScalar(s []byte) {
+func pruneRootScalar(s []byte) {
 	s[0] &= 248
 	s[31] &= 31 // clear top 3 bits
 	s[31] |= 64 // set second highest bit
 }
 
 // Clears lowest 3 bits and highest 23 bits of `f`.
-func modifyFactorScalar(f []byte) {
+func pruneIntermediateScalar(f []byte) {
 	f[0] &= 248 // clear bottom 3 bits
 	f[29] &= 1  // clear 7 high bits
 	f[30] = 0   // clear 8 bits

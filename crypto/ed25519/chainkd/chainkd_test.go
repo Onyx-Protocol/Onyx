@@ -96,6 +96,20 @@ func TestVectors2(t *testing.T) {
 		"7d152694a55b166f7038aa4aee0f5865c8e777caec8778c41b95d8997754f80343388d06e53716a83060d4df1cdccfe8364029cfdb9422d5bffc31732fdca243")
 }
 
+func TestExpandedPrivateKey(t *testing.T) {
+	root := RootXPrv([]byte{0xca, 0xfe})
+	verifyTestVector(t, "Root(cafe).xprv", root.hex(),
+		"a0cde08fd2ea06e16dd5d21e64ca0609fa1d719b79fed4245a5b8ada0242464cebbc2b9e1e989aca72d9766efd9b63ebcfc968027ef27cb786babb7897f9248a")
+	verifyTestVector(t, "Root(cafe).xprv.expandedkey", root.ExpandedPrivateKey().hex(),
+		"a0cde08fd2ea06e16dd5d21e64ca0609fa1d719b79fed4245a5b8ada0242464c1437c8234e21e43eb9c79df0ce370dc82d4c7a952ef317e716b0762146bb61a0")
+
+	child := root.Child([]byte{0xbe, 0xef}, false)
+	verifyTestVector(t, "Root(cafe)/beef.xprv", child.hex(),
+		"08ca6b5820a20538374f5df660ee1b2c9b500a2e34cca641122456340243464ce8429c561af4946ac63665e9dd6ca228070efdcbe6214040bcdbf86d1f671f38")
+	verifyTestVector(t, "Root(cafe)/beef.xprv.expandedkey", child.ExpandedPrivateKey().hex(),
+		"08ca6b5820a20538374f5df660ee1b2c9b500a2e34cca641122456340243464cfc608ae645b04ad0f0185d7930b4cf72f43d061649f7791b4d00052eb9f0374a")
+}
+
 func TestChildKeys(t *testing.T) {
 	rootXPrv, err := NewXPrv(nil)
 	if err != nil {
@@ -220,6 +234,12 @@ func (xpub XPub) hex() []byte {
 func (xprv XPrv) hex() []byte {
 	s, _ := xprv.MarshalText()
 	return s
+}
+
+func (key ExpandedPrivateKey) hex() []byte {
+	hexBytes := make([]byte, hex.EncodedLen(len(key[:])))
+	hex.Encode(hexBytes, key[:])
+	return hexBytes
 }
 
 func TestBits(t *testing.T) {
