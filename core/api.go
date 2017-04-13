@@ -181,6 +181,7 @@ func (a *API) buildHandler() {
 	m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	latencyHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		log.Println("hello it's me the latency handler")
 		if l := latency(m, req); l != nil {
 			defer l.RecordSince(time.Now())
 		}
