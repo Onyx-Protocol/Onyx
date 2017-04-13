@@ -2,13 +2,9 @@
 
 package authz
 
-import (
-	"context"
-	"log"
-)
+import "context"
 
 // Authorized returns false if this request is unauthorized.
 func Authorized(ctx context.Context) bool {
-	log.Println("non loopback auth")
 	return authzToken(ctx)
 }

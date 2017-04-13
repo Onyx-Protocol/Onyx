@@ -1,9 +1,6 @@
 package authz
 
-import (
-	"context"
-	"log"
-)
+import "context"
 
 type key int
 
@@ -43,7 +40,6 @@ func NewContextWithLocalhost(ctx context.Context) context.Context {
 // LocalhostFromContext returns true if the localhost flag has been set.
 func LocalhostFromContext(ctx context.Context) bool {
 	l, ok := ctx.Value(localhostKey).(bool)
-	log.Printf("ok: %t, l: %t", ok, l)
 	if ok && l {
 		return true
 	}

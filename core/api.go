@@ -5,7 +5,6 @@ import (
 	"context"
 	"expvar"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/pprof"
 	"sync"
@@ -181,7 +180,6 @@ func (a *API) buildHandler() {
 	m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	latencyHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		log.Println("hello it's me the latency handler")
 		if l := latency(m, req); l != nil {
 			defer l.RecordSince(time.Now())
 		}
@@ -260,10 +258,8 @@ func (a *API) authnHandler(handler http.Handler) http.Handler {
 func authzHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if authz.Authorized(req.Context()) {
-			log.Printf("SUCCESS")
 			handler.ServeHTTP(rw, req)
 		} else {
-			log.Printf("FAILURE")
 			errorFormatter.Write(req.Context(), rw, errNotAuthenticated) // perhaps should have different error?
 		}
 	})
