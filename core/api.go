@@ -28,6 +28,7 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/generated/dashboard"
+	"chain/net/http/authn"
 	"chain/net/http/gzip"
 	"chain/net/http/httpjson"
 	"chain/net/http/limit"
@@ -44,9 +45,10 @@ const (
 const networkRPCPrefix = "/rpc/"
 
 var (
-	errNotFound       = errors.New("not found")
-	errRateLimited    = errors.New("request limit exceeded")
-	errLeaderElection = errors.New("no leader; pending election")
+	errNotFound         = errors.New("not found")
+	errRateLimited      = errors.New("request limit exceeded")
+	errLeaderElection   = errors.New("no leader; pending election")
+	errNotAuthenticated = errors.New("not authenticated")
 )
 
 // API serves the Chain HTTP API
@@ -183,11 +185,8 @@ func (a *API) buildHandler() {
 		m.ServeHTTP(w, req)
 	})
 
-	var handler = (&apiAuthn{
-		tokens:   a.accessTokens,
-		tokenMap: make(map[string]tokenResult),
-		alt:      a.altAuth,
-	}).handler(latencyHandler)
+	handler := a.authnHandler(latencyHandler)
+	// handler = authzHandler(handler)
 	handler = maxBytes(handler) // TODO(tessr): consider moving this to non-core specific mux
 	handler = webAssetsHandler(handler)
 	handler = healthHandler(handler)
@@ -241,6 +240,18 @@ type page struct {
 	Items    interface{}  `json:"items"`
 	Next     requestQuery `json:"next"`
 	LastPage bool         `json:"last_page"`
+}
+
+func (a *API) authnHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		req = (&authn.API{
+			Tokens:           a.accessTokens,
+			TokenMap:         make(map[string]authn.TokenResult),
+			NetworkRPCPrefix: networkRPCPrefix,
+		}).Authenticate(req)
+
+		handler.ServeHTTP(rw, req)
+	})
 }
 
 // timeoutContextHandler propagates the timeout, if any, provided as a header
