@@ -1,8 +1,9 @@
 package math
 
 import (
-	"chain-stealth/crypto/ed25519/edwards25519"
 	"crypto/subtle"
+
+	"chain/crypto/ed25519/internal/edwards25519"
 )
 
 // Uint256le is a 256-bit little-endian scalar.
