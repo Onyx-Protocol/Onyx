@@ -11,6 +11,7 @@ import java.beans.PropertyVetoException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.Logger;
@@ -74,7 +75,14 @@ public class Application {
       ds.setJdbcUrl(databaseUrl);
       ds.setTestConnectionOnCheckout(true);
 
-      importer = Importer.connect(client, ds, DEFAULT_FEED_ALIAS);
+      Config config = new Config();
+      config.transactionColumns.add(
+          new Config.CustomColumn(
+              "acc_id",
+              new Schema.Varchar2(64),
+              new JsonPath(Arrays.asList("reference_data", "account", "id"))));
+
+      importer = Importer.connect(client, ds, DEFAULT_FEED_ALIAS, config);
     } catch (BadURLException ex) {
       logger.fatal("Unable to parse the Chain Core URL provided \"{}\".", chainUrl, ex);
       System.exit(1);

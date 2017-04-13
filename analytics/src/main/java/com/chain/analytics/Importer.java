@@ -43,6 +43,7 @@ public class Importer {
   private static final Gson gson = new Gson();
 
   private Client mChain;
+  private Config mConfig;
   private DataSource mDataSource;
   private Transaction.Feed mFeed;
   private Schema mTransactionsTbl;
@@ -58,7 +59,8 @@ public class Importer {
    * @param feedAlias the alias of the transaction feed to use
    * @return          the initialized transaction importer
    */
-  public static Importer connect(final Client client, final DataSource ds, final String feedAlias)
+  public static Importer connect(
+      final Client client, final DataSource ds, final String feedAlias, final Config config)
       throws ChainException, SQLException {
     // Create or load the transaction feed for the provided alias.
     try {
@@ -77,20 +79,22 @@ public class Importer {
     logger.info("Using transaction feed {} starting at cursor {}", feed.id, feed.after);
 
     // Initialize the schema based on the configuration.
-    final Importer importer = new Importer(client, ds, feed);
+    final Importer importer = new Importer(client, ds, feed, config);
     importer.initializeSchema();
     return importer;
   }
 
-  private Importer(final Client client, final DataSource ds, final Transaction.Feed feed) {
+  private Importer(
+      final Client client, final DataSource ds, final Transaction.Feed feed, final Config config) {
     mChain = client;
+    mConfig = config;
     mDataSource = ds;
     mFeed = feed;
   }
 
   void initializeSchema() throws SQLException {
 
-    mTransactionsTbl =
+    Schema.Builder transactionsBuilder =
         new Schema.Builder("transactions")
             .setPrimaryKey(Arrays.asList("id"))
             .addColumn("id", new Schema.Varchar2(64))
@@ -99,10 +103,12 @@ public class Importer {
             .addColumn("position", new Schema.Integer())
             .addColumn("local", new Schema.Boolean())
             .addColumn("reference_data", new Schema.Blob())
-            .addColumn("data", new Schema.Blob())
-            .build();
+            .addColumn("data", new Schema.Blob());
+    for (Config.CustomColumn col : mConfig.transactionColumns) {
+      transactionsBuilder.addColumn(col.name, col.type);
+    }
 
-    mTransactionInputsTbl =
+    Schema.Builder inputsBuilder =
         new Schema.Builder("transaction_inputs")
             .setPrimaryKey(Arrays.asList("transaction_id", "index"))
             .addColumn("transaction_id", new Schema.Varchar2(64))
@@ -120,10 +126,12 @@ public class Importer {
             .addColumn("issuance_program", new Schema.Clob())
             .addColumn("reference_data", new Schema.Blob())
             .addColumn("local", new Schema.Boolean())
-            .addColumn("spent_output_id", new Schema.Varchar2(64))
-            .build();
+            .addColumn("spent_output_id", new Schema.Varchar2(64));
+    for (Config.CustomColumn col : mConfig.inputColumns) {
+      inputsBuilder.addColumn(col.name, col.type);
+    }
 
-    mTransactionOutputsTbl =
+    Schema.Builder outputsBuilder =
         new Schema.Builder("transaction_outputs")
             .setPrimaryKey(Arrays.asList("output_id"))
             .addUniqueConstraint(Arrays.asList("transaction_id", "index"))
@@ -144,8 +152,14 @@ public class Importer {
             .addColumn("control_program", new Schema.Clob())
             .addColumn("reference_data", new Schema.Blob())
             .addColumn("local", new Schema.Boolean())
-            .addColumn("spent", new Schema.Boolean())
-            .build();
+            .addColumn("spent", new Schema.Boolean());
+    for (Config.CustomColumn col : mConfig.outputColumns) {
+      inputsBuilder.addColumn(col.name, col.type);
+    }
+
+    mTransactionsTbl = transactionsBuilder.build();
+    mTransactionInputsTbl = inputsBuilder.build();
+    mTransactionOutputsTbl = outputsBuilder.build();
 
     try (Connection conn = mDataSource.getConnection()) {
       createTableIfNotExists(conn, mTransactionsTbl.getDDLStatement());
@@ -270,6 +284,11 @@ public class Importer {
           psTx.setString(5, "yes".equals(tx.isLocal) ? TRUE : FALSE);
           psTx.setBlob(6, asJsonBlob(tx.referenceData));
           psTx.setBlob(7, asJsonBlob(tx));
+          for (int j = 0; j < mConfig.transactionColumns.size(); j++) {
+            Config.CustomColumn col = mConfig.transactionColumns.get(j);
+            Object value = col.jsonPath.extract(tx);
+            psTx.setObject(8 + j, value, col.type.getType());
+          }
 
           // TODO(jackson): We can't use addBatch in Oracle
           // earlier than 12.1. If customers need support for
@@ -299,6 +318,11 @@ public class Importer {
             psIn.setBlob(14, asJsonBlob(input.referenceData));
             psIn.setString(15, "yes".equals(input.isLocal) ? TRUE : FALSE);
             psIn.setString(16, input.spentOutputId);
+            for (int j = 0; j < mConfig.inputColumns.size(); j++) {
+              Config.CustomColumn col = mConfig.inputColumns.get(j);
+              Object value = col.jsonPath.extract(input);
+              psTx.setObject(17 + j, value, col.type.getType());
+            }
 
             psIn.addBatch();
 
@@ -332,6 +356,11 @@ public class Importer {
             psOut.setBlob(16, asJsonBlob(output.referenceData));
             psOut.setString(17, "yes".equals(output.isLocal) ? TRUE : FALSE);
             psOut.setString(18, FALSE);
+            for (int j = 0; j < mConfig.outputColumns.size(); j++) {
+              Config.CustomColumn col = mConfig.outputColumns.get(j);
+              Object value = col.jsonPath.extract(output);
+              psTx.setObject(19 + j, value, col.type.getType());
+            }
 
             psOut.addBatch();
           }
