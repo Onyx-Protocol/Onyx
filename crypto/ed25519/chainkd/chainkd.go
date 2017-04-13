@@ -40,7 +40,7 @@ func NewXPrv(r io.Reader) (xprv XPrv, err error) {
 
 // RootXPrv takes a seed binary string and produces a new xprv.
 func RootXPrv(seed []byte) (xprv XPrv) {
-	h := hmac.New(sha512.New, []byte("Root"))
+	h := hmac.New(sha512.New, []byte{'R', 'o', 'o', 't'})
 	h.Write(seed)
 	h.Sum(xprv.data[:0])
 	pruneRootScalar(xprv.data[:32])
@@ -75,9 +75,9 @@ func (xprv XPrv) Child(sel []byte, hardened bool) XPrv {
 }
 
 func (xprv XPrv) hardenedChild(sel []byte) (res XPrv) {
-	h := hmac.New(sha512.New, xprv.data[:32])
-	h.Write([]byte("H"))
-	h.Write(xprv.data[32:])
+	h := hmac.New(sha512.New, xprv.data[32:])
+	h.Write([]byte{'H'})
+	h.Write(xprv.data[:32])
 	h.Write(sel)
 	h.Sum(res.data[:0])
 	pruneRootScalar(res.data[:32])
@@ -88,8 +88,8 @@ func (xprv XPrv) nonhardenedChild(sel []byte) (res XPrv) {
 	xpub := xprv.XPub()
 
 	h := hmac.New(sha512.New, xpub.data[32:])
-	h.Write([]byte("N"))
-	h.Write(xpub.data[32:])
+	h.Write([]byte{'N'})
+	h.Write(xpub.data[:32])
 	h.Write(sel)
 	h.Sum(res.data[:0])
 
@@ -112,17 +112,18 @@ func (xprv XPrv) nonhardenedChild(sel []byte) (res XPrv) {
 // The corresponding child xprv can be derived from the parent xprv
 // using non-hardened derivation: `parentxprv.Child(sel, false)`.
 func (xpub XPub) Child(sel []byte) (res XPub) {
-	var f [32]byte
-	var F edwards25519.ExtendedGroupElement
-
 	h := hmac.New(sha512.New, xpub.data[32:])
-	h.Write([]byte("N"))
-	h.Write(xpub.data[32:])
+	h.Write([]byte{'N'})
+	h.Write(xpub.data[:32])
 	h.Write(sel)
 	h.Sum(res.data[:0])
 
 	pruneIntermediateScalar(res.data[:32])
 
+	var (
+		f [32]byte
+		F edwards25519.ExtendedGroupElement
+	)
 	copy(f[:], res.data[:32])
 	edwards25519.GeScalarMultBase(&F, &f)
 
@@ -189,7 +190,7 @@ func (xpub XPub) Verify(msg []byte, sig []byte) bool {
 // from the xprv.
 func (xprv XPrv) ExpandedPrivateKey() ExpandedPrivateKey {
 	var res [64]byte
-	h := hmac.New(sha512.New, []byte("Expand"))
+	h := hmac.New(sha512.New, []byte{'E', 'x', 'p', 'a', 'n', 'd'})
 	h.Write(xprv.data[:])
 	h.Sum(res[:0])
 	copy(res[:32], xprv.data[:32])

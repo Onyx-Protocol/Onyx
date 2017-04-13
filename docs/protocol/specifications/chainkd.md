@@ -113,9 +113,10 @@ Limitations:
 3. Compute `F = HMAC-SHA512(key: dk, data: "N" || P || selector)`.
 4. Split `F` into two halves: a 32-byte `fbuffer` and a 32-byte `dk’`.
 5. [Prune intermediate scalar](#prune-intermediate-scalar) `fbuffer` and interpret it as a scalar `f` using little-endian notation.
-6. Compute derived secret scalar `s’ = s + f` (without reducing the result modulo the subgroup order).
-7. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
-8. Return `xprv’ = privkey’ || dk’`.
+6. Split `xprv` in two halves: a 32-byte scalar `s` and a 32-byte `dk`.
+7. Compute derived secret scalar `s’ = s + f` (without reducing the result modulo the subgroup order).
+8. Let `privkey’` be a 32-byte string encoding scalar `s’` using little-endian convention.
+9. Return `xprv’ = privkey’ || dk’`.
 
 
 ### Derive non-hardened extended public key
@@ -132,10 +133,9 @@ Limitations:
 3. Split `F` into two halves: a 32-byte `fbuffer` and a 32-byte `dk’`.
 4. [Prune intermediate scalar](#prune-intermediate-scalar) `fbuffer` and interpret it as a scalar `f` using little-endian notation.
 5. Perform a fixed-base scalar multiplication `F = f·B` where `B` is a base point of Ed25519.
-6. Decode point `P` from `pubkey` according to EdDSA.
-7. Perform point addition `P’ = P + F`.
-8. [Encode](#encode-public-key) point `P’` as `pubkey’`.
-9. Return `xpub’ = pubkey’ || dk’`.
+6. Perform point addition `P’ = P + F`.
+7. [Encode](#encode-public-key) point `P’` as `pubkey’`.
+8. Return `xpub’ = pubkey’ || dk’`.
 
 
 ### Extract public key
@@ -383,28 +383,28 @@ All values use hexadecimal encoding.
 
     Root/010203(H):
         selector: 010203
-        xprv:     98bd4126e9040d7dfcf6c4d1ceb674db0569e7f21266eebf3dc9a469bab1ab45200bd2d6a956e819c68134a40be13e2653ccdcbaab92f7fd492626886884f832
-        xpub:     696809f6ac24c8b70dde8778a8a0db26f642388be12b6323f12a97fcc3cbccbb200bd2d6a956e819c68134a40be13e2653ccdcbaab92f7fd492626886884f832
+        xprv:     6023c8e7633a9353a59bd930ea6dc397e400b1088b86b4a15d8de8567554df5574274bc1a0bd93b4494cb68e45c5ec5aefc1eed4d0c3bfd53b0b4e679ce52028
+        xpub:     eabebab4184c63f8df07efe31fb588a0ae222318087458b4936bf0b0feab015074274bc1a0bd93b4494cb68e45c5ec5aefc1eed4d0c3bfd53b0b4e679ce52028
 
     Root/010203(N):
         selector: 010203
-        xprv:     30837f155673a659f5c659045b598b175ceea3724c07dc53910e8392df7b0748d40ba49ebee85271fd1d53a45bfbb228623e98c43227fd1484f17139736f2f39
-        xpub:     2e457bd3bd135cbe5bd46821588ad82b74e8b9cb256e3a956d72322df61b51acd40ba49ebee85271fd1d53a45bfbb228623e98c43227fd1484f17139736f2f39
+        xprv:     705afd25a0e242b7333105d77cbb0ec15e667154916bbed5084c355dba7b0748b0faca523928f42e685ee6deb0cb3d41a09617783c87e9a161a04f2207ad4d2f
+        xpub:     c0bbd87142e7bf90abfbb3d0cccc210c6d7eb3f912c35f205302c86ae9ef6eefb0faca523928f42e685ee6deb0cb3d41a09617783c87e9a161a04f2207ad4d2f
 
     Root/010203(H)/""(N):
         selector: (empty string)
-        xprv:     0889925d37b9664af32c78cb8225022b5854586c08f8a9a7ed3a657279b2ab45ae8c6d29a2d80e7dc8a141058ff68c257e59c45daba3184b100456828ed9ade8
-        xpub:     6b45415a0638feb47a5eab07961883fafe476b637de7004111317a2454465ae2ae8c6d29a2d80e7dc8a141058ff68c257e59c45daba3184b100456828ed9ade8
+        xprv:     7023f9877813348ca8e67b29d551baf98a43cfb76cdff538f3ff97074a55df5560e3aa7fb600f61a84317a981dc9d1f7e8df2e8a3f8b544a21d2404e0b4e480a
+        xpub:     4e44c9ab8a45b9d1c3daab5c09d73b01209220ea704808f04feaa3614c7c7ba760e3aa7fb600f61a84317a981dc9d1f7e8df2e8a3f8b544a21d2404e0b4e480a
 
     Root/010203(N)/""(H):
         selector: (empty string)
-        xprv:     b8b626e7ce7e86c7e673e5652de643b98631771bb1602136bdb154863e606e5c360b2aee72cb1b1d62eccba447c164629ea956758982ccbb0a1a26fc991b7fd2
-        xpub:     174eba73de14f9af2693c63c16e3466577ffc4e780846c8ff81f69fd0346af83360b2aee72cb1b1d62eccba447c164629ea956758982ccbb0a1a26fc991b7fd2
+        xprv:     90b60b007e866dacc4b1f844089a805ffd78a295f5b0544034116ace354c58523410b1e6a3c557ca90c322f6ff4b5e547242965eaed8c34767765f0e05ed0e4f
+        xpub:     ca97ec34ef30aa08ebd19b9848b11ebadf9c0ad3a0be6b11d33d9558573aca633410b1e6a3c557ca90c322f6ff4b5e547242965eaed8c34767765f0e05ed0e4f
 
     Root/010203(N)/""(N):
         selector: (empty string)
-        xprv:     484148c20a28b663bc71d72e5f84df77e11ae9ac128d450b311635e6cd7c0748e70c8fb4062f4e8b4829ab1788d4a2ca71e056044503d6adfa75b229fb03d877
-        xpub:     5786f826e7e09d17d6c1928952653275d81ad5fba728a16b5d0b04bd1ed9ee35e70c8fb4062f4e8b4829ab1788d4a2ca71e056044503d6adfa75b229fb03d877
+        xprv:     d81ba3ab554a7d09bfd8bda5089363399b7f4b19d4f1806ca0c35feabf7b074856648f55e21bec3aa5df0bce0236aea88a4cc5c395c896df63676f095154bb7b
+        xpub:     28279bcb06aee9e5c0302f4e1db879ac7f5444ec07266a736dd571c21961427b56648f55e21bec3aa5df0bce0236aea88a4cc5c395c896df63676f095154bb7b
 
 
 ### ChainKD test vector 2
@@ -416,28 +416,28 @@ All values use hexadecimal encoding.
 
     Root/0(N):
         selector: 00
-        xprv:     b0d0dcae67caf04caca70eae5da892f862ffda71a12eeef0c857250c7e024e49ccb779405d72758d7fd6a562a221bdd30c430424d0b6871bbb54dd070fbbe477
-        xpub:     ef490a29370687a02e1915ddd583e13210b37882befb4381cc9dc14a488309acccb779405d72758d7fd6a562a221bdd30c430424d0b6871bbb54dd070fbbe477
+        xprv:     883e65e6e86499bdd170c14d67e62359dd020dd63056a75ff75983a682024e49e8cc52d8e74c5dfd75b0b326c8c97ca7397b7f954ad0b655b8848bfac666f09f
+        xpub:     f48b7e641d119b8ddeaf97aca104ee6e6a780ab550d40534005443550ef7e7d8e8cc52d8e74c5dfd75b0b326c8c97ca7397b7f954ad0b655b8848bfac666f09f
 
     Root/0(N)/2147483647(H):
         selector: ffffff7f
-        xprv:     787b2712f7dc8674040b212d0ef171dd96aa5c0c3df0104cf2bae8b224d442541c19a82372e94016d103187267ce952a988f80a371b061e4493619a52025ff01
-        xpub:     d807d625e9b55c3c099a7d43853f80429146f6f02b53469c1182a6bd45836d021c19a82372e94016d103187267ce952a988f80a371b061e4493619a52025ff01
+        xprv:     5048fa4498bf65e2b10d26e6c99cc43556ecfebf8b9fddf8bd2150ba29d63154044ef557a3aa4cb6ae8b61e87cb977a929bc4a170e4faafc2661231f5f3f78e8
+        xpub:     a8555c5ee5054ad03c6c6661968d66768fa081103bf576ea63a26c00ca7eab69044ef557a3aa4cb6ae8b61e87cb977a929bc4a170e4faafc2661231f5f3f78e8
 
     Root/0(N)/2147483647(H)/1(N):
         selector: 01
-        xprv:     a87166b647dceaac5723eebfdb3fde90007b38a60fd9de3d771ba9ef9ed442542f1ad730181f2a2c1160437dfcd71004c1a8cced671e7c9b772e35e1d47e0ae0
-        xpub:     794473aa11f7148b634e94444332f3ccafbfcb43617bd2751fc113218b1999af2f1ad730181f2a2c1160437dfcd71004c1a8cced671e7c9b772e35e1d47e0ae0
+        xprv:     480f6aa25f7c9f4a569896f06614303a697f00ee8d240c6277605d44e0d63154174c386ad6ae01e54acd7bb422243c6055058f4231e250050134283a76de8eff
+        xpub:     7385ab0b06eacc226c8035bab1ff9bc6972c7700d1caede26fe2b4d57b208bd0174c386ad6ae01e54acd7bb422243c6055058f4231e250050134283a76de8eff
 
     Root/0(N)/2147483647(H)/1(N)/2147483646(H):
         selector: feffff7f
-        xprv:     d8abfb1acd80058f7c2590d92b4a4fac6d031fc73ec0229e326921df97987644d246e0ccb91215621d68b74b418ebdaece8b52b0d13fb1e47922910d8c30493f
-        xpub:     11aa4807361528e2bca0f26914b570d84cee26f8603378aa4c36fd1b76ec78ead246e0ccb91215621d68b74b418ebdaece8b52b0d13fb1e47922910d8c30493f
+        xprv:     386014c6dfeb8dadf62f0e5acacfbf7965d5746c8b9011df155a31df7be0fb59986c923d979d89310acd82171dbaa7b73b20b2033ac6819d7f309212ff3fbabd
+        xpub:     9f66aa8019427a825dd72a13ce982454d99f221c8d4874db59f52c2945cbcabd986c923d979d89310acd82171dbaa7b73b20b2033ac6819d7f309212ff3fbabd
 
     Root/0(N)/2147483647(H)/1(N)/2147483646(H)/2(N):
         selector: 02
-        xprv:     281e8c4aff2fdeb0018ef283b64755f99baf993e3acccee4d87484f21f99764443388d06e53716a83060d4df1cdccfe8364029cfdb9422d5bffc31732fdca243
-        xpub:     7d152694a55b166f7038aa4aee0f5865c8e777caec8778c41b95d8997754f80343388d06e53716a83060d4df1cdccfe8364029cfdb9422d5bffc31732fdca243
+        xprv:     08c3772f5c0eee42f40d00f4faff9e4c84e5db3c4e7f28ecb446945a1de1fb59ef9d0a352f3252ea673e8b6bd31ac97218e019e845bdc545c268cd52f7af3f5d
+        xpub:     67388f59a7b62644c3c6148575770e56969d77244530263bc9659b8563d7ff81ef9d0a352f3252ea673e8b6bd31ac97218e019e845bdc545c268cd52f7af3f5d
 
 
 ## Acknowledgements
