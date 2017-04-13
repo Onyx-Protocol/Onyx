@@ -11,7 +11,6 @@ import (
 
 	"chain/core/accesstoken"
 	"chain/errors"
-	"chain/net/authz"
 )
 
 const tokenExpiry = time.Minute * 5
@@ -44,12 +43,12 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 	token, err := a.tokenAuthn(req)
 	if err == nil && token != "" {
 		// if this request was successfully authenticated with a token, pass the token along
-		ctx = authz.NewContextWithToken(ctx, token)
+		ctx = newContextWithToken(ctx, token)
 	}
 
 	local := a.localhostAuthn(req)
 	if local {
-		ctx = authz.NewContextWithLocalhost(ctx)
+		ctx = newContextWithLocalhost(ctx)
 	}
 
 	if err != nil && !local {

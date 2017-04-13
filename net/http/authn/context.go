@@ -1,4 +1,4 @@
-package authz
+package authn
 
 import "context"
 
@@ -9,19 +9,8 @@ const (
 	localhostKey
 )
 
-func authzToken(ctx context.Context) bool {
-	// TODO(tessr): compare against Policies
-	_, ok := TokenFromContext(ctx)
-	return ok
-}
-
-func authzLocalhost(ctx context.Context) bool {
-	// TODO(tessr): compare against Policies
-	return LocalhostFromContext(ctx)
-}
-
-// NewContextWithToken sets the token in a new context and returns the context.
-func NewContextWithToken(ctx context.Context, token string) context.Context {
+// newContextWithToken sets the token in a new context and returns the context.
+func newContextWithToken(ctx context.Context, token string) context.Context {
 	return context.WithValue(ctx, tokenKey, token)
 }
 
@@ -31,9 +20,9 @@ func TokenFromContext(ctx context.Context) (string, bool) {
 	return t, ok
 }
 
-// NewContextWithLocalhost sets the localhost flag to `true` in a new context
+// newContextWithLocalhost sets the localhost flag to `true` in a new context
 // and returns that context.
-func NewContextWithLocalhost(ctx context.Context) context.Context {
+func newContextWithLocalhost(ctx context.Context) context.Context {
 	return context.WithValue(ctx, localhostKey, true)
 }
 

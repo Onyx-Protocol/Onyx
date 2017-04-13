@@ -28,8 +28,8 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/generated/dashboard"
-	"chain/net/authz"
 	"chain/net/http/authn"
+	"chain/net/http/authz"
 	"chain/net/http/gzip"
 	"chain/net/http/httpjson"
 	"chain/net/http/limit"
@@ -259,6 +259,7 @@ func authzHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if !authz.Authorized(req.Context()) {
 			errorFormatter.Write(req.Context(), rw, errNotAuthorized)
+			return
 		}
 		handler.ServeHTTP(rw, req)
 	})
