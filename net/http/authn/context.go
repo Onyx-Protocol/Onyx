@@ -14,10 +14,13 @@ func newContextWithToken(ctx context.Context, token string) context.Context {
 	return context.WithValue(ctx, tokenKey, token)
 }
 
-// TokenFromContext returns the token stored in the context, if there is one.
-func TokenFromContext(ctx context.Context) (string, bool) {
+// Token returns the token stored in the context, if there is one.
+func Token(ctx context.Context) string {
 	t, ok := ctx.Value(tokenKey).(string)
-	return t, ok
+	if !ok {
+		return ""
+	}
+	return t
 }
 
 // newContextWithLocalhost sets the localhost flag to `true` in a new context
@@ -26,8 +29,8 @@ func newContextWithLocalhost(ctx context.Context) context.Context {
 	return context.WithValue(ctx, localhostKey, true)
 }
 
-// LocalhostFromContext returns true if the localhost flag has been set.
-func LocalhostFromContext(ctx context.Context) bool {
+// Localhost returns true if the localhost flag has been set.
+func Localhost(ctx context.Context) bool {
 	l, ok := ctx.Value(localhostKey).(bool)
 	if ok && l {
 		return true

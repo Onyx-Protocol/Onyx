@@ -51,6 +51,8 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 		ctx = newContextWithLocalhost(ctx)
 	}
 
+	// if there is no authentication at all, we return an "unauthenticated" error,
+	// which may be helpful when debugging
 	if err != nil && !local {
 		return req, errors.New("unauthenticated")
 	}
