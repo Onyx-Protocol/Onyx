@@ -39,7 +39,7 @@ func NewAPI(tokens *accesstoken.CredentialStore, networkPrefix string) *API {
 
 // Authenticate returns the request, with added tokens and/or localhost
 // flags in the context, as appropriate.
-func (a *API) Authenticate(req *http.Request) *http.Request {
+func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 	ctx := req.Context()
 	token, err := a.tokenAuthn(req)
 	if err == nil && token != "" {
@@ -52,7 +52,11 @@ func (a *API) Authenticate(req *http.Request) *http.Request {
 		ctx = authz.NewContextWithLocalhost(ctx)
 	}
 
-	return req.WithContext(ctx)
+	if err != nil && !local {
+		return req, errors.New("unauthenticated")
+	}
+
+	return req.WithContext(ctx), nil
 }
 
 // returns true if this request is coming from a loopback address

@@ -50,6 +50,7 @@ var (
 	errRateLimited      = errors.New("request limit exceeded")
 	errLeaderElection   = errors.New("no leader; pending election")
 	errNotAuthenticated = errors.New("not authenticated")
+	errNotAuthorized    = errors.New("not authorized")
 )
 
 // API serves the Chain HTTP API
@@ -246,18 +247,20 @@ type page struct {
 func (a *API) authnHandler(handler http.Handler) http.Handler {
 	auth := authn.NewAPI(a.accessTokens, networkRPCPrefix)
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		req = auth.Authenticate(req)
+		req, err := auth.Authenticate(req)
+		if err != nil {
+			errorFormatter.Write(req.Context(), rw, errNotAuthenticated)
+		}
 		handler.ServeHTTP(rw, req)
 	})
 }
 
 func authzHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if authz.Authorized(req.Context()) {
-			handler.ServeHTTP(rw, req)
-		} else {
-			errorFormatter.Write(req.Context(), rw, errNotAuthenticated) // perhaps should have different error?
+		if !authz.Authorized(req.Context()) {
+			errorFormatter.Write(req.Context(), rw, errNotAuthorized)
 		}
+		handler.ServeHTTP(rw, req)
 	})
 }
 
