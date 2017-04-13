@@ -13,15 +13,16 @@ import (
 )
 
 type AnnotatedTx struct {
-	ID            bc.Hash            `json:"id"`
-	Timestamp     time.Time          `json:"timestamp"`
-	BlockID       bc.Hash            `json:"block_id"`
-	BlockHeight   uint64             `json:"block_height"`
-	Position      uint32             `json:"position"`
-	ReferenceData *json.RawMessage   `json:"reference_data"`
-	IsLocal       Bool               `json:"is_local"`
-	Inputs        []*AnnotatedInput  `json:"inputs"`
-	Outputs       []*AnnotatedOutput `json:"outputs"`
+	ID                     bc.Hash            `json:"id"`
+	Timestamp              time.Time          `json:"timestamp"`
+	BlockID                bc.Hash            `json:"block_id"`
+	BlockHeight            uint64             `json:"block_height"`
+	Position               uint32             `json:"position"`
+	BlockTransactionsCount uint32             `json:"block_transactions_count,omitempty"`
+	ReferenceData          *json.RawMessage   `json:"reference_data"`
+	IsLocal                Bool               `json:"is_local"`
+	Inputs                 []*AnnotatedInput  `json:"inputs"`
+	Outputs                []*AnnotatedOutput `json:"outputs"`
 }
 
 type AnnotatedInput struct {
@@ -114,14 +115,15 @@ var emptyJSONObject = json.RawMessage(`{}`)
 
 func buildAnnotatedTransaction(orig *bc.Tx, b *bc.Block, indexInBlock uint32) *AnnotatedTx {
 	tx := &AnnotatedTx{
-		ID:            orig.ID,
-		Timestamp:     b.Time(),
-		BlockID:       b.Hash(),
-		BlockHeight:   b.Height,
-		Position:      indexInBlock,
-		ReferenceData: &emptyJSONObject,
-		Inputs:        make([]*AnnotatedInput, 0, len(orig.Inputs)),
-		Outputs:       make([]*AnnotatedOutput, 0, len(orig.Outputs)),
+		ID:                     orig.ID,
+		Timestamp:              b.Time(),
+		BlockID:                b.Hash(),
+		BlockHeight:            b.Height,
+		Position:               indexInBlock,
+		BlockTransactionsCount: uint32(len(b.Transactions)),
+		ReferenceData:          &emptyJSONObject,
+		Inputs:                 make([]*AnnotatedInput, 0, len(orig.Inputs)),
+		Outputs:                make([]*AnnotatedOutput, 0, len(orig.Outputs)),
 	}
 	if len(orig.ReferenceData) > 0 {
 		referenceData := json.RawMessage(orig.ReferenceData)
