@@ -3,7 +3,6 @@ package authn
 import (
 	"context"
 	"encoding/hex"
-	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -42,10 +41,7 @@ func (a *API) Authenticate(req *http.Request) *http.Request {
 
 	local := a.localhostAuthn(req)
 	if local {
-		log.Println("authenticated as local connection")
 		ctx = authz.NewContextWithLocalhost(ctx)
-	} else {
-		log.Println("not a local connection")
 	}
 
 	return req.WithContext(ctx)
