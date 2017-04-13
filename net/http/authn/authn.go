@@ -17,16 +17,24 @@ import (
 const tokenExpiry = time.Minute * 5
 
 type API struct {
-	Tokens           *accesstoken.CredentialStore
-	NetworkRPCPrefix string
+	tokens           *accesstoken.CredentialStore
+	networkRPCPrefix string
 
 	tokenMu  sync.Mutex // protects the following
-	TokenMap map[string]TokenResult
+	tokenMap map[string]tokenResult
 }
 
-type TokenResult struct {
+type tokenResult struct {
 	valid      bool
 	lastLookup time.Time
+}
+
+func NewAPI(tokens *accesstoken.CredentialStore, networkPrefix string) *API {
+	return &API{
+		tokens:           tokens,
+		networkRPCPrefix: networkPrefix,
+		tokenMap:         make(map[string]authn.TokenResult),
+	}
 }
 
 // Authenticate returns the request, with added tokens and/or localhost

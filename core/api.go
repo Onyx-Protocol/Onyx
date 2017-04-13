@@ -244,13 +244,9 @@ type page struct {
 }
 
 func (a *API) authnHandler(handler http.Handler) http.Handler {
+	auth := authn.NewAPI(a.accessTokens, networkRPCPrefix)
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		req = (&authn.API{
-			Tokens:           a.accessTokens,
-			TokenMap:         make(map[string]authn.TokenResult),
-			NetworkRPCPrefix: networkRPCPrefix,
-		}).Authenticate(req)
-
+		req = auth.Authenticate(req)
 		handler.ServeHTTP(rw, req)
 	})
 }
