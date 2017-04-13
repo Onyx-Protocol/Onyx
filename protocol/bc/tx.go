@@ -12,10 +12,9 @@ type Tx struct {
 	*TxHeader
 	ID       Hash
 	Entries  map[Hash]Entry
-	TxInputs []Entry // 1:1 correspondence with TxData.Inputs
-	InputIDs []Hash  // 1:1 correspondence with TxData.Inputs
+	InputIDs []Hash // 1:1 correspondence with TxData.Inputs
 
-	// IDs of reachable entries of various kinds to speed up Apply
+	// IDs of reachable entries of various kinds
 	NonceIDs       []Hash
 	SpentOutputIDs []Hash
 	OutputIDs      []Hash
@@ -60,4 +59,28 @@ func (tx *Tx) Output(id Hash) (*Output, error) {
 		return nil, errors.Wrapf(ErrEntryType, "entry %x has unexpected type %T", id.Bytes(), e)
 	}
 	return o, nil
+}
+
+func (tx *Tx) Spend(id Hash) (*Spend, error) {
+	e, ok := tx.Entries[id]
+	if !ok {
+		return nil, errors.Wrapf(ErrMissingEntry, "id %x", id.Bytes())
+	}
+	sp, ok := e.(*Spend)
+	if !ok {
+		return nil, errors.Wrapf(ErrEntryType, "entry %x has unexpected type %T", id.Bytes(), e)
+	}
+	return sp, nil
+}
+
+func (tx *Tx) Issuance(id Hash) (*Issuance, error) {
+	e, ok := tx.Entries[id]
+	if !ok {
+		return nil, errors.Wrapf(ErrMissingEntry, "id %x", id.Bytes())
+	}
+	iss, ok := e.(*Issuance)
+	if !ok {
+		return nil, errors.Wrapf(ErrEntryType, "entry %x has unexpected type %T", id.Bytes(), e)
+	}
+	return iss, nil
 }

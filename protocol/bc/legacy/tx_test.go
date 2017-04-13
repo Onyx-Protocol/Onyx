@@ -28,8 +28,8 @@ func TestTxHashes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(txEntries.TxInputs) != len(c.txdata.Inputs) {
-			t.Errorf("case %d: len(txEntries.TxInputs) = %d, want %d", i, len(txEntries.TxInputs), len(c.txdata.Inputs))
+		if len(txEntries.InputIDs) != len(c.txdata.Inputs) {
+			t.Errorf("case %d: len(txEntries.InputIDs) = %d, want %d", i, len(txEntries.InputIDs), len(c.txdata.Inputs))
 		}
 		if c.hash != txEntries.ID {
 			t.Errorf("case %d: got txid %x, want %x. txEntries is:\n%s", i, txEntries.ID.Bytes(), c.hash.Bytes(), spew.Sdump(txEntries))

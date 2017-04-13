@@ -151,7 +151,8 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 		minTimeMS: tpl.Transaction.MinTime,
 		maxTimeMS: tpl.Transaction.MaxTime,
 	})
-	if sp, ok := tpl.Transaction.Tx.TxInputs[index].(*bc.Spend); ok {
+	id := tpl.Transaction.Tx.InputIDs[index]
+	if sp, err := tpl.Transaction.Tx.Spend(id); err == nil {
 		constraints = append(constraints, outputIDConstraint(*sp.Body.SpentOutputId))
 	}
 

@@ -28,7 +28,6 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 		TxHeader: header,
 		ID:       txid,
 		Entries:  entries,
-		TxInputs: make([]bc.Entry, len(oldTx.Inputs)),
 		InputIDs: make([]bc.Hash, len(oldTx.Inputs)),
 	}
 
@@ -67,7 +66,6 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 		if ord >= uint64(len(oldTx.Inputs)) {
 			return nil, fmt.Errorf("%T entry has out-of-range ordinal %d", e, ord)
 		}
-		txEntries.TxInputs[ord] = e
 		txEntries.InputIDs[ord] = id
 	}
 

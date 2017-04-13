@@ -30,7 +30,7 @@ func TestCheckOutput(t *testing.T) {
 	})
 
 	txCtx := &entryContext{
-		entry:   tx.Tx.TxInputs[0],
+		entry:   tx.Tx.Entries[tx.Tx.InputIDs[0]],
 		entries: tx.Tx.Entries,
 	}
 

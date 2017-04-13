@@ -40,7 +40,9 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 // SetInputArguments sets the Arguments field in input n.
 func (tx *Tx) SetInputArguments(n uint32, args [][]byte) {
 	tx.Inputs[n].SetArguments(args)
-	switch e := tx.Tx.TxInputs[n].(type) {
+	id := tx.Tx.InputIDs[n]
+	e := tx.Entries[id]
+	switch e := e.(type) {
 	case *bc.Issuance:
 		e.Witness.Arguments = args
 	case *bc.Spend:
