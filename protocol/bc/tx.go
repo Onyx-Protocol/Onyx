@@ -8,12 +8,12 @@ import (
 // TxEntries is a wrapper for the entries-based representation of a
 // transaction.  When we no longer need the legacy Tx and TxData
 // types, this will be renamed Tx.
-type TxEntries struct {
+type Tx struct {
 	*TxHeader
-	ID         Hash
-	Entries    map[Hash]Entry
-	TxInputs   []Entry // 1:1 correspondence with TxData.Inputs
-	TxInputIDs []Hash  // 1:1 correspondence with TxData.Inputs
+	ID       Hash
+	Entries  map[Hash]Entry
+	TxInputs []Entry // 1:1 correspondence with TxData.Inputs
+	InputIDs []Hash  // 1:1 correspondence with TxData.Inputs
 
 	// IDs of reachable entries of various kinds to speed up Apply
 	NonceIDs       []Hash
@@ -21,11 +21,11 @@ type TxEntries struct {
 	OutputIDs      []Hash
 }
 
-func (tx *TxEntries) SigHash(n uint32) (hash Hash) {
+func (tx *Tx) SigHash(n uint32) (hash Hash) {
 	hasher := sha3pool.Get256()
 	defer sha3pool.Put256(hasher)
 
-	tx.TxInputIDs[n].WriteTo(hasher)
+	tx.InputIDs[n].WriteTo(hasher)
 	tx.ID.WriteTo(hasher)
 	hash.ReadFrom(hasher)
 	return hash
@@ -38,7 +38,7 @@ var (
 	ErrMissingEntry = errors.New("missing entry")
 )
 
-func (tx *TxEntries) TimeRange(id Hash) (*TimeRange, error) {
+func (tx *Tx) TimeRange(id Hash) (*TimeRange, error) {
 	e, ok := tx.Entries[id]
 	if !ok {
 		return nil, errors.Wrapf(ErrMissingEntry, "id %x", id.Bytes())
@@ -50,7 +50,7 @@ func (tx *TxEntries) TimeRange(id Hash) (*TimeRange, error) {
 	return tr, nil
 }
 
-func (tx *TxEntries) Output(id Hash) (*Output, error) {
+func (tx *Tx) Output(id Hash) (*Output, error) {
 	e, ok := tx.Entries[id]
 	if !ok {
 		return nil, errors.Wrapf(ErrMissingEntry, "id %x", id.Bytes())

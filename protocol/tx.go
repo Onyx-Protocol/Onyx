@@ -16,7 +16,7 @@ var ErrBadTx = errors.New("invalid transaction")
 // ValidateTx validates the given transaction. A cache holds
 // per-transaction validation results and is consulted before
 // performing full validation.
-func (c *Chain) ValidateTx(tx *bc.TxEntries) error {
+func (c *Chain) ValidateTx(tx *bc.Tx) error {
 	err := c.checkIssuanceWindow(tx)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (c *prevalidatedTxsCache) cache(txID bc.Hash, err error) {
 	c.mu.Unlock()
 }
 
-func (c *Chain) checkIssuanceWindow(tx *bc.TxEntries) error {
+func (c *Chain) checkIssuanceWindow(tx *bc.Tx) error {
 	if c.MaxIssuanceWindow == 0 {
 		return nil
 	}

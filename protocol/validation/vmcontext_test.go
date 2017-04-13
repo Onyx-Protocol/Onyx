@@ -30,8 +30,8 @@ func TestCheckOutput(t *testing.T) {
 	})
 
 	txCtx := &entryContext{
-		entry:   tx.TxEntries.TxInputs[0],
-		entries: tx.TxEntries.Entries,
+		entry:   tx.Tx.TxInputs[0],
+		entries: tx.Tx.Entries,
 	}
 
 	cases := []struct {

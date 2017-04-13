@@ -155,7 +155,7 @@ func buildAnnotatedInput(tx *legacy.Tx, i uint32) *AnnotatedInput {
 		in.ReferenceData = &referenceData
 	}
 
-	if sp, ok := tx.TxEntries.TxInputs[i].(*bc.Spend); ok {
+	if sp, ok := tx.Tx.TxInputs[i].(*bc.Spend); ok {
 		in.Type = "spend"
 		in.ControlProgram = orig.ControlProgram()
 		in.SpentOutputID = sp.Body.SpentOutputId

@@ -49,7 +49,7 @@ message ValueDestination {
   uint64      position = 3;
 }
 
-message BlockHeaderEntry {
+message BlockHeader {
   message Body {
     uint64 version                = 1;
     uint64 height                 = 2;

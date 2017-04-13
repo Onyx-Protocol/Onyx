@@ -22,7 +22,7 @@ func init() {
 
 func TestTxValidation(t *testing.T) {
 	var (
-		tx      *bc.TxEntries
+		tx      *bc.Tx
 		vs      *validationState
 		fixture *txFixture
 
@@ -181,7 +181,7 @@ func TestTxValidation(t *testing.T) {
 				// to. That entry must be added to the first tx's Entries map.
 				fixture.txOutputs[0].ReferenceData = []byte{1}
 				fixture2 := sample(t, fixture)
-				tx2 := legacy.NewTx(*fixture2.tx).TxEntries
+				tx2 := legacy.NewTx(*fixture2.tx).Tx
 				out2ID := tx2.Body.ResultIds[0]
 				out2 := tx2.Entries[*out2ID].(*bc.Output)
 				tx.Entries[*out2ID] = out2
@@ -334,7 +334,7 @@ func TestTxValidation(t *testing.T) {
 		t.Logf("case %d", i)
 
 		fixture = sample(t, nil)
-		tx = legacy.NewTx(*fixture.tx).TxEntries
+		tx = legacy.NewTx(*fixture.tx).Tx
 		vs = &validationState{
 			blockchainID: fixture.initialBlockID,
 			tx:           tx,
@@ -355,10 +355,10 @@ func TestTxValidation(t *testing.T) {
 }
 
 func TestBlockHeaderValid(t *testing.T) {
-	base := bc.NewBlockHeaderEntry(1, 1, &bc.Hash{}, 1, &bc.Hash{}, &bc.Hash{}, nil)
+	base := bc.NewBlockHeader(1, 1, &bc.Hash{}, 1, &bc.Hash{}, &bc.Hash{}, nil)
 	baseBytes, _ := proto.Marshal(base)
 
-	var bh bc.BlockHeaderEntry
+	var bh bc.BlockHeader
 
 	cases := []struct {
 		f   func()

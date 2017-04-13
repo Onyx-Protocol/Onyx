@@ -9,7 +9,7 @@ import (
 	"chain/protocol/vm"
 )
 
-func newBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *vm.Context {
+func newBlockVMContext(block *bc.Block, prog []byte, args [][]byte) *vm.Context {
 	blockHash := block.ID.Bytes()
 	return &vm.Context{
 		VMVersion: 1,
@@ -22,7 +22,7 @@ func newBlockVMContext(block *bc.BlockEntries, prog []byte, args [][]byte) *vm.C
 	}
 }
 
-func NewTxVMContext(tx *bc.TxEntries, entry bc.Entry, prog *bc.Program, args [][]byte) *vm.Context {
+func NewTxVMContext(tx *bc.Tx, entry bc.Entry, prog *bc.Program, args [][]byte) *vm.Context {
 	var (
 		numResults = uint64(len(tx.Body.ResultIds))
 		txData     = tx.Body.Data.Bytes()

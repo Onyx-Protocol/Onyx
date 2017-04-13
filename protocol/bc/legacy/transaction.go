@@ -20,7 +20,7 @@ const CurrentTransactionVersion = 1
 // Tx holds a transaction along with its hash.
 type Tx struct {
 	TxData
-	*bc.TxEntries `json:"-"`
+	*bc.Tx `json:"-"`
 }
 
 func (tx *Tx) UnmarshalText(p []byte) error {
@@ -33,14 +33,14 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 		return errors.Wrap(err)
 	}
 
-	tx.TxEntries = txEntries
+	tx.Tx = txEntries
 	return nil
 }
 
 // SetInputArguments sets the Arguments field in input n.
 func (tx *Tx) SetInputArguments(n uint32, args [][]byte) {
 	tx.Inputs[n].SetArguments(args)
-	switch e := tx.TxEntries.TxInputs[n].(type) {
+	switch e := tx.Tx.TxInputs[n].(type) {
 	case *bc.Issuance:
 		e.Witness.Arguments = args
 	case *bc.Spend:
@@ -49,7 +49,7 @@ func (tx *Tx) SetInputArguments(n uint32, args [][]byte) {
 }
 
 func (tx *Tx) IssuanceHash(n int) bc.Hash {
-	return tx.TxEntries.TxInputIDs[n]
+	return tx.Tx.InputIDs[n]
 }
 
 func (tx *Tx) OutputID(outputIndex int) *bc.Hash {
@@ -66,8 +66,8 @@ func NewTx(data TxData) *Tx {
 	}
 
 	return &Tx{
-		TxData:    data,
-		TxEntries: txEntries,
+		TxData: data,
+		Tx:     txEntries,
 	}
 }
 
