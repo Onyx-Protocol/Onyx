@@ -202,7 +202,7 @@ func TestInvalidTx(t *testing.T) {
 	})
 	err := FinalizeTx(ctx, c, nil, badTx)
 	if errors.Root(err) != ErrRejected {
-		t.Errorf("got error %s, want %s", err, protocol.ErrBadTx)
+		t.Errorf("got error %s, want %s", err, ErrRejected)
 	}
 }
 
