@@ -22,11 +22,12 @@ class Client {
    *
    * @param {String} baseUrl - Chain Core URL.
    * @param {String} token - Chain Core client token for API access.
+   * @param {Object} agent - https.Agent used to provide TLS configuration to the client
    * @returns {Client}
    */
-  constructor(baseUrl, token = '') {
+  constructor(baseUrl, token = '', agent = {}) {
     baseUrl = baseUrl || 'http://localhost:1999'
-    this.connection = new Connection(baseUrl, token)
+    this.connection = new Connection(baseUrl, token, agent)
 
     /**
      * API actions for access tokens
@@ -64,7 +65,7 @@ class Client {
      */
     this.mockHsm = {
       keys: mockHsmKeysAPI(this),
-      signerConnection: new Connection(`${baseUrl}/mockhsm`, token)
+      signerConnection: new Connection(`${baseUrl}/mockhsm`, token, agent)
     }
 
     /**
