@@ -67,7 +67,7 @@ func (z *Point) ScMulAdd(a *Point, x, y *Uint256le) *Point {
 
 	var buf [32]byte
 	p.ToBytes(&buf)
-	(*edwards25519.ExtendedGroupElement)(z).FromBytes(&buf) // xxx don't need to check return val, right?
+	(*edwards25519.ExtendedGroupElement)(z).FromBytes(&buf)
 	return z
 }
 
