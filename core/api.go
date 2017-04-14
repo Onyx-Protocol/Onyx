@@ -187,7 +187,7 @@ func (a *API) buildHandler() {
 		m.ServeHTTP(w, req)
 	})
 
-	handler := authzHandler(latencyHandler)
+	handler := a.authzHandler(latencyHandler)
 	handler = a.authnHandler(handler)
 	handler = maxBytes(handler) // TODO(tessr): consider moving this to non-core specific mux
 	handler = webAssetsHandler(handler)
@@ -255,9 +255,21 @@ func (a *API) authnHandler(handler http.Handler) http.Handler {
 	})
 }
 
-func authzHandler(handler http.Handler) http.Handler {
+func (a *API) authzHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if !authz.Authorized(req.Context()) {
+		policies := policyByRoute[req.RequestURI]
+		if policies == nil {
+			errorFormatter.Write(req.Context, rw, errors.Wrap(errNotAuthorized, "missing policy on this route"))
+		}
+
+		grants, err := grantsByPolicies(req.Context(), a.raftDB, policies)
+		if err != nil {
+			errorFormatter.Write(req.Context(), rw, err)
+		}
+
+		// todo: check if grant list is empty
+
+		if !authz.Authorized(req.Context(), grants) {
 			errorFormatter.Write(req.Context(), rw, errNotAuthorized)
 			return
 		}

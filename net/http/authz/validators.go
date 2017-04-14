@@ -15,3 +15,11 @@ func authzLocalhost(ctx context.Context) bool {
 	// TODO(tessr): compare against Policies
 	return authn.Localhost(ctx)
 }
+
+func accessTokenGuardData(grant Grant) string {
+	// retrives id
+}
+
+func x509GuardData(grant Grant) map[string]string {
+	// retrieves subject map
+}
