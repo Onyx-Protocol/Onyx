@@ -151,7 +151,7 @@ func (a *API) revokeGrant(ctx context.Context, x struct {
 	}
 
 	grants := grantList.GetGrants()
-	var toRemove = -1
+	toRemove := -1
 	for index, existing := range grants {
 		if existing.GuardType == x.GuardType && bytes.Equal(existing.GuardData, guardData) {
 			toRemove = index
