@@ -13,5 +13,6 @@ func authzToken(ctx context.Context) bool {
 
 func authzLocalhost(ctx context.Context) bool {
 	// TODO(tessr): compare against Policies
+	// TODO(boymanjor): check if core is configured (add to the context earlier)
 	return authn.Localhost(ctx)
 }

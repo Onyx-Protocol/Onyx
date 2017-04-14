@@ -244,10 +244,7 @@ func runServer() {
 		h = launchConfiguredCore(ctx, raftDB, db, conf, processID)
 	} else {
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		var opts []core.RunOption
-		opts = append(opts, core.AlternateAuth(loopbackAuth))
-		opts = append(opts, enableMockHSM(db)...)
-		h = core.RunUnconfigured(ctx, db, raftDB, opts...)
+		h = core.RunUnconfigured(ctx, db, raftDB, enableMockHSM(db)...)
 	}
 	mux.Handle("/", h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
