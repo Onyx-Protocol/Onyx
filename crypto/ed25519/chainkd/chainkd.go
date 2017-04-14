@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/internal/edwards25519"
+	"chain/crypto/ed25519/ecmath"
 )
 
 const (
@@ -49,12 +49,12 @@ func RootXPrv(seed []byte) (xprv XPrv) {
 
 // XPub derives an extended public key from a given xprv.
 func (xprv XPrv) XPub() (xpub XPub) {
-	var buf [32]byte
-	copy(buf[:], xprv.data[:32])
+	var scalar ecmath.Scalar
+	copy(scalar[:], xprv.data[:32])
 
-	var P edwards25519.ExtendedGroupElement
-	edwards25519.GeScalarMultBase(&P, &buf)
-	P.ToBytes(&buf)
+	var P ecmath.Point
+	P.ScMulBase(&scalar)
+	buf := P.Encode()
 
 	copy(xpub.data[:32], buf[:])
 	copy(xpub.data[32:], xprv.data[32:])
@@ -95,6 +95,7 @@ func (xprv XPrv) nonhardenedChild(sel []byte) (res XPrv) {
 
 	pruneIntermediateScalar(res.data[:32])
 
+	// TODO: unroll this loop manually
 	var carry int
 	carry = 0
 	for i := 0; i < 32; i++ {
@@ -121,33 +122,27 @@ func (xpub XPub) Child(sel []byte) (res XPub) {
 	pruneIntermediateScalar(res.data[:32])
 
 	var (
-		f [32]byte
-		F edwards25519.ExtendedGroupElement
+		f ecmath.Scalar
+		F ecmath.Point
 	)
 	copy(f[:], res.data[:32])
-	edwards25519.GeScalarMultBase(&F, &f)
+	F.ScMulBase(&f)
 
 	var (
 		pubkey [32]byte
-		P      edwards25519.ExtendedGroupElement
+		P      ecmath.Point
 	)
 	copy(pubkey[:], xpub.data[:32])
-	P.FromBytes(&pubkey)
+	_, ok := P.Decode(pubkey)
+	if !ok {
+		panic("XPub should have been validated on initialization")
+	}
 
-	var (
-		P2 edwards25519.ExtendedGroupElement
-		R  edwards25519.CompletedGroupElement
-		Fc edwards25519.CachedGroupElement
-	)
-	F.ToCached(&Fc)
-	edwards25519.GeAdd(&R, &P, &Fc)
-	R.ToExtended(&P2)
-
-	P2.ToBytes(&pubkey)
-
+	P.Add(&P, &F)
+	pubkey = P.Encode()
 	copy(res.data[:32], pubkey[:])
 
-	return res
+	return
 }
 
 // Derive generates a child xprv by recursively deriving

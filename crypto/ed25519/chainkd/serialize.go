@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"strconv"
+
+	"chain/crypto/ed25519/ecmath"
 )
 
 var (
@@ -16,8 +18,8 @@ func XPrvFromBytes(data []byte) (res XPrv) {
 	return
 }
 
-func XPubFromBytes(data []byte) (res XPub) {
-	res.SetBytes(data)
+func XPubFromBytes(data []byte) (res XPub, ok bool) {
+	ok = res.SetBytes(data)
 	return
 }
 
@@ -31,11 +33,21 @@ func (xpub XPub) Bytes() []byte {
 	return xpub.data[:]
 }
 
-func (xpub *XPub) SetBytes(data []byte) {
+func (xpub *XPub) SetBytes(data []byte) bool {
 	if l := len(data); l != XPubSize {
 		panic("chainkd: bad xpub length: " + strconv.Itoa(l))
 	}
+	var (
+		pubkey [32]byte
+		P      ecmath.Point
+	)
+	copy(pubkey[:], data[:32])
+	_, ok := P.Decode(pubkey)
+	if !ok {
+		return false
+	}
 	copy(xpub.data[:], data[:])
+	return true
 }
 
 func (xprv XPrv) MarshalText() ([]byte, error) {
@@ -57,6 +69,9 @@ func (xprv *XPrv) SetBytes(data []byte) {
 
 func (xpub *XPub) UnmarshalText(inp []byte) error {
 	if len(inp) != 2*XPubSize {
+		return ErrBadKeyLen
+	}
+	if !xpub.SetBytes(inp) {
 		return ErrBadKeyStr
 	}
 	_, err := hex.Decode(xpub.data[:], inp)
@@ -69,7 +84,7 @@ func (xpub XPub) String() string {
 
 func (xprv *XPrv) UnmarshalText(inp []byte) error {
 	if len(inp) != 2*XPrvSize {
-		return ErrBadKeyStr
+		return ErrBadKeyLen
 	}
 	_, err := hex.Decode(xprv.data[:], inp)
 	return err
