@@ -119,7 +119,55 @@ func (a *API) listGrants(ctx context.Context, x requestQuery) (map[string][]apiG
 	}, nil
 }
 
-func (a *API) revokeGrant(ctx context.Context, x struct{ ID string }) error {
-	// TODO replace with DB call
+func (a *API) revokeGrant(ctx context.Context, x struct {
+	GuardType string   `json:"guard_type"`
+	GuardData json.Map `json:"guard_data"`
+	Policy    string
+}) error {
+	guardData, err := x.GuardData.MarshalJSON()
+	if err != nil {
+		// json.Map implementation means this should never happen ¯\_(ツ)_/¯
+		return errors.Wrap(err)
+	}
+
+	data, err := a.raftDB.Get(ctx, grantPrefix+x.Policy)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	// If there's nothing to revoke, return success
+	if data == nil {
+		return nil
+	}
+
+	grantList := new(authz.GrantList)
+	err = proto.Unmarshal(data, grantList)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	grants := grantList.GetGrants()
+	var toRemove = -1
+	for index, existing := range grants {
+		if existing.GuardType == x.GuardType && bytes.Equal(existing.GuardData, guardData) {
+			toRemove = index
+		}
+	}
+
+	// If there's no matching grant, return success
+	if toRemove == -1 {
+		return nil
+	}
+
+	grants = append(grants[:toRemove], grants[toRemove+1:]...)
+	gList := &authz.GrantList{Grants: grants}
+	val, err := proto.Marshal(gList)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	err = a.raftDB.Set(ctx, grantPrefix+x.Policy, val)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
 	return nil
 }
