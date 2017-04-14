@@ -80,7 +80,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 	return nil
 }
 
-func (a *API) listGrants(ctx context.Context, x requestQuery) (map[string][]apiGrant, error) {
+func (a *API) listGrants(ctx context.Context) (map[string][]apiGrant, error) {
 	var grants []apiGrant
 	for _, p := range policies {
 		// perhaps could denormalize the data in storage to speed this up,
