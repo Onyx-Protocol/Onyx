@@ -2,6 +2,7 @@ package authz
 
 import (
 	"context"
+	"encoding/json"
 
 	"chain/net/http/authn"
 )
@@ -27,7 +28,15 @@ func authzLocalhost(ctx context.Context, grants []*Grant) bool {
 }
 
 func accessTokenGuardData(grant *Grant) string {
-	// retrives id
+	var data map[string]string
+	err := json.Unmarshal(grant.GuardData, &data)
+	if err != nil {
+		return ""
+	}
+	token, ok := data["id"]
+	if ok {
+		return token
+	}
 	return ""
 }
 
