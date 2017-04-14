@@ -6,15 +6,10 @@ import (
 	"chain/crypto/ed25519/internal/edwards25519"
 )
 
-type (
-	// Point is a point on the ed25519 curve.
-	Point edwards25519.ExtendedGroupElement
+// Point is a point on the ed25519 curve.
+type Point edwards25519.ExtendedGroupElement
 
-	// EncodedPoint is a serialized representation of a point.
-	EncodedPoint [32]byte
-)
-
-// ZeroPoint is the zero point on the ed25519 curve.
+// ZeroPoint is the zero point on the ed25519 curve (not the zero value of Point).
 var ZeroPoint Point
 
 // Add adds the points in x and y, storing the result in z and
@@ -67,16 +62,20 @@ func (z *Point) ScMulAdd(a *Point, x, y *Uint256le) *Point {
 
 	var buf [32]byte
 	p.ToBytes(&buf)
+	// TODO(bobg): double-check that it's OK to ignore the return value
+	// from ExtendedGroupElement.FromBytes here. (It's a bool indicating
+	// that its input represented a legal value.)
 	(*edwards25519.ExtendedGroupElement)(z).FromBytes(&buf)
 	return z
 }
 
-func (z *Point) Encode() (e EncodedPoint) {
+func (z *Point) Encode() [32]byte {
+	var e [32]byte
 	(*edwards25519.ExtendedGroupElement)(z).ToBytes((*[32]byte)(&e))
 	return e
 }
 
-func (z *Point) Decode(e EncodedPoint) (*Point, bool) {
+func (z *Point) Decode(e [32]byte) (*Point, bool) {
 	ok := (*edwards25519.ExtendedGroupElement)(z).FromBytes((*[32]byte)(&e))
 	return z, ok
 }
