@@ -71,12 +71,12 @@ func (z *Point) ScMulAdd(a *Point, x, y *Uint256le) *Point {
 
 func (z *Point) Encode() [32]byte {
 	var e [32]byte
-	(*edwards25519.ExtendedGroupElement)(z).ToBytes((*[32]byte)(&e))
+	(*edwards25519.ExtendedGroupElement)(z).ToBytes(&e)
 	return e
 }
 
 func (z *Point) Decode(e [32]byte) (*Point, bool) {
-	ok := (*edwards25519.ExtendedGroupElement)(z).FromBytes((*[32]byte)(&e))
+	ok := (*edwards25519.ExtendedGroupElement)(z).FromBytes(&e)
 	return z, ok
 }
 
