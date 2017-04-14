@@ -1,4 +1,4 @@
-package vm_test
+package vm
 
 import (
 	"testing"
@@ -6,7 +6,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/errors"
-	. "chain/protocol/vm"
 	"chain/testutil"
 )
 
@@ -19,12 +18,12 @@ func TestNextProgram(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	vm := &VirtualMachine{
-		RunLimit: 50000,
-		Program:  prog,
-		Context:  context,
+	vm := &virtualMachine{
+		runLimit: 50000,
+		program:  prog,
+		context:  context,
 	}
-	_, err = vm.Run()
+	err = vm.run()
 	if err != nil {
 		t.Errorf("got error %s, expected none", err)
 	}
@@ -33,13 +32,13 @@ func TestNextProgram(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	vm = &VirtualMachine{
-		RunLimit: 50000,
-		Program:  prog,
-		Context:  context,
+	vm = &virtualMachine{
+		runLimit: 50000,
+		program:  prog,
+		context:  context,
 	}
-	_, err = vm.Run()
-	if err == nil && vm.FalseResult() {
+	err = vm.run()
+	if err == nil && vm.falseResult() {
 		err = ErrFalseVMResult
 	}
 	switch err {
@@ -54,35 +53,35 @@ func TestNextProgram(t *testing.T) {
 
 func TestBlockTime(t *testing.T) {
 	var blockTimeMS uint64 = 3263826
-	context := &Context{
-		BlockTimeMS: &blockTimeMS,
-	}
 
-	prog, err := Assemble("BLOCKTIME 3263827 NUMEQUAL")
+	prog, err := Assemble("BLOCKTIME 3263826 NUMEQUAL")
 	if err != nil {
 		t.Fatal(err)
 	}
-	vm := &VirtualMachine{
-		RunLimit: 50000,
-		Program:  prog,
-		Context:  context,
+	vm := &virtualMachine{
+		runLimit: 50000,
+		program:  prog,
+		context:  &Context{BlockTimeMS: &blockTimeMS},
 	}
-	_, err = vm.Run()
+	err = vm.run()
 	if err != nil {
 		t.Errorf("got error %s, expected none", err)
 	}
+	if vm.falseResult() {
+		t.Error("result is false, want success")
+	}
 
-	prog, err = Assemble("BLOCKTIME 3263826 NUMEQUAL")
+	prog, err = Assemble("BLOCKTIME 3263827 NUMEQUAL")
 	if err != nil {
 		t.Fatal(err)
 	}
-	vm = &VirtualMachine{
-		RunLimit: 50000,
-		Program:  prog,
-		Context:  context,
+	vm = &virtualMachine{
+		runLimit: 50000,
+		program:  prog,
+		context:  &Context{BlockTimeMS: &blockTimeMS},
 	}
-	_, err = vm.Run()
-	if err == nil && vm.FalseResult() {
+	err = vm.run()
+	if err == nil && vm.falseResult() {
 		err = ErrFalseVMResult
 	}
 	switch err {
@@ -101,57 +100,59 @@ func TestOutputIDAndNonceOp(t *testing.T) {
 	nonceID := mustDecodeHex("c4a6e6256debfca379595e444b91af56846397e8007ea87c40c622170dd13ff7")
 
 	prog := []byte{uint8(OP_OUTPUTID)}
-	vm := &VirtualMachine{
-		RunLimit: 50000,
-		Program:  prog,
-		Context:  &Context{SpentOutputID: &outputID},
+	vm := &virtualMachine{
+		runLimit: 50000,
+		program:  prog,
+		context:  &Context{SpentOutputID: &outputID},
 	}
-	gotVM, err := vm.Step()
+	err := vm.step()
 	if err != nil {
 		t.Fatal(err)
 	}
+	gotVM := vm
 
 	expectedStack := [][]byte{outputID}
-	if !testutil.DeepEqual(gotVM.DataStack, expectedStack) {
-		t.Errorf("expected stack %v, got %v; vm is:\n%s", expectedStack, gotVM.DataStack, spew.Sdump(vm))
+	if !testutil.DeepEqual(gotVM.dataStack, expectedStack) {
+		t.Errorf("expected stack %v, got %v; vm is:\n%s", expectedStack, gotVM.dataStack, spew.Sdump(vm))
 	}
 
 	prog = []byte{uint8(OP_OUTPUTID)}
-	vm = &VirtualMachine{
-		RunLimit: 50000,
-		Program:  prog,
-		Context:  &Context{SpentOutputID: nil},
+	vm = &virtualMachine{
+		runLimit: 50000,
+		program:  prog,
+		context:  &Context{SpentOutputID: nil},
 	}
-	_, err = vm.Step()
+	err = vm.step()
 	if err != ErrContext {
 		t.Errorf("expected ErrContext, got %v", err)
 	}
 
 	prog = []byte{uint8(OP_NONCE)}
-	vm = &VirtualMachine{
-		RunLimit: 50000,
-		Program:  prog,
-		Context:  &Context{AnchorID: nil},
+	vm = &virtualMachine{
+		runLimit: 50000,
+		program:  prog,
+		context:  &Context{AnchorID: nil},
 	}
-	_, err = vm.Step()
+	err = vm.step()
 	if err != ErrContext {
 		t.Errorf("expected ErrContext, got %v", err)
 	}
 
 	prog = []byte{uint8(OP_NONCE)}
-	vm = &VirtualMachine{
-		RunLimit: 50000,
-		Program:  prog,
-		Context:  &Context{AnchorID: &nonceID},
+	vm = &virtualMachine{
+		runLimit: 50000,
+		program:  prog,
+		context:  &Context{AnchorID: &nonceID},
 	}
-	gotVM, err = vm.Step()
+	err = vm.step()
 	if err != nil {
 		t.Fatal(err)
 	}
+	gotVM = vm
 
 	expectedStack = [][]byte{nonceID}
-	if !testutil.DeepEqual(gotVM.DataStack, expectedStack) {
-		t.Errorf("expected stack %v, got %v", expectedStack, gotVM.DataStack)
+	if !testutil.DeepEqual(gotVM.dataStack, expectedStack) {
+		t.Errorf("expected stack %v, got %v", expectedStack, gotVM.dataStack)
 	}
 }
 
@@ -164,14 +165,14 @@ func TestIntrospectionOps(t *testing.T) {
 
 	type testStruct struct {
 		op      Op
-		startVM *VirtualMachine
+		startVM *virtualMachine
 		wantErr error
-		wantVM  *VirtualMachine
+		wantVM  *virtualMachine
 	}
 	cases := []testStruct{{
 		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
-			DataStack: [][]byte{
+		startVM: &virtualMachine{
+			dataStack: [][]byte{
 				{0},
 				[]byte{},
 				{1},
@@ -179,21 +180,21 @@ func TestIntrospectionOps(t *testing.T) {
 				{1},
 				[]byte("missingprog"),
 			},
-			Context: &Context{
+			context: &Context{
 				CheckOutput: func(uint64, []byte, uint64, []byte, uint64, []byte, bool) (bool, error) {
 					return false, nil
 				},
 			},
 		},
-		wantVM: &VirtualMachine{
-			RunLimit:     50070,
-			DeferredCost: -86,
-			DataStack:    [][]byte{{}},
+		wantVM: &virtualMachine{
+			runLimit:     50070,
+			deferredCost: -86,
+			dataStack:    [][]byte{{}},
 		},
 	}, {
 		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
-			DataStack: [][]byte{
+		startVM: &virtualMachine{
+			dataStack: [][]byte{
 				{4},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				{7},
@@ -201,13 +202,13 @@ func TestIntrospectionOps(t *testing.T) {
 				Int64Bytes(-1),
 				[]byte("controlprog"),
 			},
-			Context: &Context{},
+			context: &Context{},
 		},
 		wantErr: ErrBadValue,
 	}, {
 		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
-			DataStack: [][]byte{
+		startVM: &virtualMachine{
+			dataStack: [][]byte{
 				{4},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				Int64Bytes(-1),
@@ -215,13 +216,13 @@ func TestIntrospectionOps(t *testing.T) {
 				{1},
 				[]byte("controlprog"),
 			},
-			Context: &Context{},
+			context: &Context{},
 		},
 		wantErr: ErrBadValue,
 	}, {
 		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
-			DataStack: [][]byte{
+		startVM: &virtualMachine{
+			dataStack: [][]byte{
 				Int64Bytes(-1),
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				{7},
@@ -229,13 +230,13 @@ func TestIntrospectionOps(t *testing.T) {
 				{1},
 				[]byte("controlprog"),
 			},
-			Context: &Context{},
+			context: &Context{},
 		},
 		wantErr: ErrBadValue,
 	}, {
 		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
-			DataStack: [][]byte{
+		startVM: &virtualMachine{
+			dataStack: [][]byte{
 				{5},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				{7},
@@ -243,7 +244,7 @@ func TestIntrospectionOps(t *testing.T) {
 				{1},
 				[]byte("controlprog"),
 			},
-			Context: &Context{
+			context: &Context{
 				CheckOutput: func(uint64, []byte, uint64, []byte, uint64, []byte, bool) (bool, error) {
 					return false, ErrBadValue
 				},
@@ -252,9 +253,9 @@ func TestIntrospectionOps(t *testing.T) {
 		wantErr: ErrBadValue,
 	}, {
 		op: OP_CHECKOUTPUT,
-		startVM: &VirtualMachine{
-			RunLimit: 0,
-			DataStack: [][]byte{
+		startVM: &virtualMachine{
+			runLimit: 0,
+			dataStack: [][]byte{
 				{4},
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				{7},
@@ -262,111 +263,111 @@ func TestIntrospectionOps(t *testing.T) {
 				{1},
 				[]byte("controlprog"),
 			},
-			Context: &Context{},
+			context: &Context{},
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
 		op: OP_ASSET,
-		startVM: &VirtualMachine{
-			Context: &Context{AssetID: &assetID},
+		startVM: &virtualMachine{
+			context: &Context{AssetID: &assetID},
 		},
-		wantVM: &VirtualMachine{
-			RunLimit:     49959,
-			DeferredCost: 40,
-			DataStack:    [][]byte{assetID},
+		wantVM: &virtualMachine{
+			runLimit:     49959,
+			deferredCost: 40,
+			dataStack:    [][]byte{assetID},
 		},
 	}, {
 		op: OP_AMOUNT,
-		startVM: &VirtualMachine{
-			Context: &Context{Amount: uint64ptr(5)},
+		startVM: &virtualMachine{
+			context: &Context{Amount: uint64ptr(5)},
 		},
-		wantVM: &VirtualMachine{
-			RunLimit:     49990,
-			DeferredCost: 9,
-			DataStack:    [][]byte{{5}},
-		},
-	}, {
-		op: OP_PROGRAM,
-		startVM: &VirtualMachine{
-			Program: []byte("spendprog"),
-			Context: &Context{Code: []byte("spendprog")},
-		},
-		wantVM: &VirtualMachine{
-			RunLimit:     49982,
-			DeferredCost: 17,
-			DataStack:    [][]byte{[]byte("spendprog")},
+		wantVM: &virtualMachine{
+			runLimit:     49990,
+			deferredCost: 9,
+			dataStack:    [][]byte{{5}},
 		},
 	}, {
 		op: OP_PROGRAM,
-		startVM: &VirtualMachine{
-			Program:  []byte("issueprog"),
-			RunLimit: 50000,
-			Context:  &Context{Code: []byte("issueprog")},
+		startVM: &virtualMachine{
+			program: []byte("spendprog"),
+			context: &Context{Code: []byte("spendprog")},
 		},
-		wantVM: &VirtualMachine{
-			RunLimit:     49982,
-			DeferredCost: 17,
-			DataStack:    [][]byte{[]byte("issueprog")},
+		wantVM: &virtualMachine{
+			runLimit:     49982,
+			deferredCost: 17,
+			dataStack:    [][]byte{[]byte("spendprog")},
+		},
+	}, {
+		op: OP_PROGRAM,
+		startVM: &virtualMachine{
+			program:  []byte("issueprog"),
+			runLimit: 50000,
+			context:  &Context{Code: []byte("issueprog")},
+		},
+		wantVM: &virtualMachine{
+			runLimit:     49982,
+			deferredCost: 17,
+			dataStack:    [][]byte{[]byte("issueprog")},
 		},
 	}, {
 		op: OP_MINTIME,
-		startVM: &VirtualMachine{
-			Context: &Context{MinTimeMS: new(uint64)},
+		startVM: &virtualMachine{
+			context: &Context{MinTimeMS: new(uint64)},
 		},
-		wantVM: &VirtualMachine{
-			RunLimit:     49991,
-			DeferredCost: 8,
-			DataStack:    [][]byte{[]byte{}},
+		wantVM: &virtualMachine{
+			runLimit:     49991,
+			deferredCost: 8,
+			dataStack:    [][]byte{[]byte{}},
 		},
 	}, {
 		op: OP_MAXTIME,
-		startVM: &VirtualMachine{
-			Context: &Context{MaxTimeMS: uint64ptr(20)},
+		startVM: &virtualMachine{
+			context: &Context{MaxTimeMS: uint64ptr(20)},
 		},
-		wantVM: &VirtualMachine{
-			RunLimit:     49990,
-			DeferredCost: 9,
-			DataStack:    [][]byte{{20}},
+		wantVM: &virtualMachine{
+			runLimit:     49990,
+			deferredCost: 9,
+			dataStack:    [][]byte{{20}},
 		},
 	}, {
 		op: OP_TXDATA,
-		startVM: &VirtualMachine{
-			Context: &Context{TxData: &txData},
+		startVM: &virtualMachine{
+			context: &Context{TxData: &txData},
 		},
-		wantVM: &VirtualMachine{
-			RunLimit:     49959,
-			DeferredCost: 40,
-			DataStack:    [][]byte{txData},
+		wantVM: &virtualMachine{
+			runLimit:     49959,
+			deferredCost: 40,
+			dataStack:    [][]byte{txData},
 		},
 	}, {
 		op: OP_ENTRYDATA,
-		startVM: &VirtualMachine{
-			Context: &Context{EntryData: &entryData},
+		startVM: &virtualMachine{
+			context: &Context{EntryData: &entryData},
 		},
-		wantVM: &VirtualMachine{
-			RunLimit:     49959,
-			DeferredCost: 40,
-			DataStack:    [][]byte{entryData},
+		wantVM: &virtualMachine{
+			runLimit:     49959,
+			deferredCost: 40,
+			dataStack:    [][]byte{entryData},
 		},
 	}, {
 		op: OP_INDEX,
-		startVM: &VirtualMachine{
-			Context: &Context{DestPos: new(uint64)},
+		startVM: &virtualMachine{
+			context: &Context{DestPos: new(uint64)},
 		},
-		wantVM: &VirtualMachine{
-			RunLimit:     49991,
-			DeferredCost: 8,
-			DataStack:    [][]byte{[]byte{}},
+		wantVM: &virtualMachine{
+			runLimit:     49991,
+			deferredCost: 8,
+			dataStack:    [][]byte{[]byte{}},
 		},
 	}, {
 		op: OP_ENTRYID,
-		startVM: &VirtualMachine{
-			Context: &Context{EntryID: entryID},
+		startVM: &virtualMachine{
+			context: &Context{EntryID: entryID},
 		},
-		wantVM: &VirtualMachine{
-			RunLimit:     49959,
-			DeferredCost: 40,
-			DataStack:    [][]byte{entryID},
+		wantVM: &virtualMachine{
+			runLimit:     49959,
+			deferredCost: 40,
+			dataStack:    [][]byte{entryID},
 		},
 	}}
 
@@ -379,9 +380,9 @@ func TestIntrospectionOps(t *testing.T) {
 	for _, op := range txops {
 		cases = append(cases, testStruct{
 			op: op,
-			startVM: &VirtualMachine{
-				RunLimit: 0,
-				Context:  &Context{},
+			startVM: &virtualMachine{
+				runLimit: 0,
+				context:  &Context{},
 			},
 			wantErr: ErrRunLimitExceeded,
 		})
@@ -392,29 +393,30 @@ func TestIntrospectionOps(t *testing.T) {
 		prog := []byte{byte(c.op)}
 		vm := c.startVM
 		if c.wantErr != ErrRunLimitExceeded {
-			vm.RunLimit = 50000
+			vm.runLimit = 50000
 		}
-		vm.Program = prog
-		gotVM, err := vm.Run()
+		vm.program = prog
+		err := vm.run()
 		switch errors.Root(err) {
 		case c.wantErr:
 			// ok
 		case nil:
-			t.Errorf("case %d, op %s: got no error, want %v", i, OpName(c.op), c.wantErr)
+			t.Errorf("case %d, op %s: got no error, want %v", i, ops[c.op].name, c.wantErr)
 		default:
-			t.Errorf("case %d, op %s: got err = %v want %v", i, OpName(c.op), err, c.wantErr)
+			t.Errorf("case %d, op %s: got err = %v want %v", i, ops[c.op].name, err, c.wantErr)
 		}
 		if c.wantErr != nil {
 			continue
 		}
+		gotVM := vm
 
-		c.wantVM.Program = prog
-		c.wantVM.PC = 1
-		c.wantVM.NextPC = 1
-		c.wantVM.Context = gotVM.Context
+		c.wantVM.program = prog
+		c.wantVM.pc = 1
+		c.wantVM.nextPC = 1
+		c.wantVM.context = gotVM.context
 
 		if !testutil.DeepEqual(gotVM, c.wantVM) {
-			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\nstartVM is:\n%s", i, OpName(c.op), gotVM, c.wantVM, spew.Sdump(c.startVM))
+			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\nstartVM is:\n%s", i, ops[c.op].name, gotVM, c.wantVM, spew.Sdump(c.startVM))
 		}
 	}
 }
