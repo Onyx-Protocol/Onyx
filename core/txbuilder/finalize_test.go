@@ -173,13 +173,13 @@ func TestInvalidTx(t *testing.T) {
 		0x06, 0xab, 0x7b, 0x26, 0x65, 0x78, 0xbb, 0x16, 0x20, 0xc5, 0x45, 0xad, 0x1d, 0x31, 0x73, 0x7d,
 		byte(vm.OP_TXSIGHASH), byte(vm.OP_EQUAL),
 	}
-	badTx := bc.NewTx(bc.TxData{
+	badTx := legacy.NewTx(legacy.TxData{
 		Version: 1,
-		Inputs: []*bc.TxInput{
-			&bc.TxInput{
+		Inputs: []*legacy.TxInput{
+			&legacy.TxInput{
 				AssetVersion: 1,
-				TypedInput: &bc.SpendInput{
-					SpendCommitment: bc.SpendCommitment{
+				TypedInput: &legacy.SpendInput{
+					SpendCommitment: legacy.SpendCommitment{
 						AssetAmount: bc.AssetAmount{
 							AssetId: &bc.AssetID{},
 							Amount:  1,
@@ -195,8 +195,8 @@ func TestInvalidTx(t *testing.T) {
 				},
 			},
 		},
-		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(bc.AssetID{}, 2, nil, nil),
+		Outputs: []*legacy.TxOutput{
+			legacy.NewTxOutput(bc.AssetID{}, 2, nil, nil),
 		},
 		MinTime: 1,
 		MaxTime: 2,
