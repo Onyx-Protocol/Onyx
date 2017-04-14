@@ -1,7 +1,7 @@
 import React from 'react'
 import FieldLabel from './FieldLabel/FieldLabel'
 import pick from 'lodash/pick'
-var ReactMarkdown = require('react-markdown')
+import ReactMarkdown from 'react-markdown'
 
 const SELECT_FIELD_PROPS = [
   'value',
