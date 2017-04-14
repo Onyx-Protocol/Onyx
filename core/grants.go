@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"context"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 
@@ -16,6 +17,7 @@ type apiGrant struct {
 	GuardType string   `json:"guard_type"`
 	GuardData json.Map `json:"guard_data"`
 	Policy    string   `json:"policy"`
+	CreatedAt string   `json:"created_at"`
 }
 
 func (a *API) createGrant(ctx context.Context, x apiGrant) error {
@@ -28,6 +30,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 		GuardType: x.GuardType,
 		GuardData: guardData,
 		Policy:    x.Policy,
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 
 	data, err := a.raftDB.Get(ctx, grantPrefix+x.Policy)
@@ -109,6 +112,7 @@ func (a *API) listGrants(ctx context.Context) (map[string][]apiGrant, error) {
 				GuardType: g.GuardType,
 				GuardData: data,
 				Policy:    g.Policy,
+				CreatedAt: g.CreatedAt,
 			}
 			grants = append(grants, grant)
 		}
