@@ -365,4 +365,84 @@ context 'Chain SDK integration test' do
     ).to eq(['spends'])
   end
 
+  example 'account tag updates' do
+    chain = Chain::Client.new
+    k = chain.mock_hsm.keys.create
+    acc1 = chain.accounts.create(root_xpubs: [k.xpub], quorum: 1, tags: {x: 'one'})
+    acc2 = chain.accounts.create(root_xpubs: [k.xpub], quorum: 1, tags: {y: 'one'})
+
+    # Account tag update
+    chain.accounts.update_tags(id: acc1.id, tags: {x: 'two'})
+    expect(
+      chain.accounts.query(filter: "id='#{acc1.id}'").first.tags
+    ).to eq('x' => 'two')
+
+    expect {
+      chain.accounts.update_tags(tags: {x: 'three'}) # ID intentionally omitted
+    }.to raise_error(Chain::APIError)
+
+    # Batch account tag update
+
+    chain.accounts.update_tags_batch([
+      {id: acc1.id, tags: {x: 'four'}},
+      {id: acc2.id, tags: {y: 'four'}},
+    ])
+    expect(
+      chain.accounts.query(
+        filter: "id=$1 OR id=$2",
+        filter_params: [acc1.id, acc2.id]
+      ).all.map(&:tags).reverse
+    ).to eq([
+      {'x' => 'four'},
+      {'y' => 'four'},
+    ])
+
+    expect(
+      chain.accounts.update_tags_batch([
+        {id: acc1.id, alias: :redundant_alias, tags: {x: 'five'}},
+        {tags: {y: 'five'}}, # ID intentionally omitted
+      ]).errors.size
+    ).to eq(2)
+  end
+
+  example 'asset tag updates' do
+    chain = Chain::Client.new
+    k = chain.mock_hsm.keys.create
+    asset1 = chain.assets.create(root_xpubs: [k.xpub], quorum: 1, tags: {x: 'one'})
+    asset2 = chain.assets.create(root_xpubs: [k.xpub], quorum: 1, tags: {y: 'one'})
+
+    # Account tag update
+    chain.assets.update_tags(id: asset1.id, tags: {x: 'two'})
+    expect(
+      chain.assets.query(filter: "id='#{asset1.id}'").first.tags
+    ).to eq('x' => 'two')
+
+    expect {
+      chain.assets.update_tags(tags: {x: 'three'}) # ID intentionally omitted
+    }.to raise_error(Chain::APIError)
+
+    # Batch asset tag update
+
+    chain.assets.update_tags_batch([
+      {id: asset1.id, tags: {x: 'four'}},
+      {id: asset2.id, tags: {y: 'four'}},
+    ])
+    expect(
+      chain.assets.query(
+        filter: "id=$1 OR id=$2",
+        filter_params: [asset1.id, asset2.id]
+      ).all.map(&:tags).reverse
+    ).to eq([
+      {'x' => 'four'},
+      {'y' => 'four'},
+    ])
+
+    expect(
+      chain.assets.update_tags_batch([
+        {id: asset1.id, alias: :redundant_alias, tags: {x: 'five'}},
+        {tags: {y: 'five'}}, # ID intentionally omitted
+      ]).errors.size
+    ).to eq(2)
+  end
+
 end

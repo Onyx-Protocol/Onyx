@@ -57,7 +57,11 @@ module Chain
         if !!item['code']
           errors[i] = APIError.new(item, response)
         else
-          successes[i] = translate.call(item)
+          if translate
+            successes[i] = translate.call(item)
+          else
+            successes[i] = item
+          end
         end
       end
 
