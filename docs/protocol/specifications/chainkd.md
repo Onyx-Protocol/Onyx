@@ -245,7 +245,7 @@ integer- and string-based indexing, you could prepend a type byte or use a stand
 encoding such as [Protocol Buffers](https://developers.google.com/protocol-buffers/) 
 or [JSON](http://www.json.org).
 
-### Torsion point safety and compatibility
+### Torsion point safety and scalar compatibility
 
 The Edwards curve 25519 allows small-subgroup attacks when secret scalars are used for 
 Diffie-Hellman key exchange. To prevent leaking a few bits of the scalar, the Curve25519
