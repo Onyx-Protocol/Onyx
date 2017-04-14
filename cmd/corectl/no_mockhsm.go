@@ -2,8 +2,8 @@
 
 package main
 
-import "chain/database/sql"
+import "chain/core/rpc"
 
-func createBlockKeyPair(db *sql.DB, args []string) {
-	fatalln("error: create-block-keypair disabled in prod build")
+func createBlockKeyPair(*rpc.Client, []string) {
+	fatalln("error: create-block-keypair disabled in no_mockhsm build")
 }
