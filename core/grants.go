@@ -3,11 +3,12 @@ package core
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 
-	"chain/encoding/json"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/authz"
 	"chain/net/http/httpjson"
@@ -15,18 +16,33 @@ import (
 
 // an api-friendly representation of a grant
 type apiGrant struct {
-	GuardType string   `json:"guard_type"`
-	GuardData json.Map `json:"guard_data"`
-	Policy    string   `json:"policy"`
-	CreatedAt string   `json:"created_at"`
+	GuardType string        `json:"guard_type"`
+	GuardData chainjson.Map `json:"guard_data"`
+	Policy    string        `json:"policy"`
+	CreatedAt string        `json:"created_at"`
 }
+
+// ErrMissingTokenID is returned when a token does not exist.
+var errMissingTokenID = errors.New("id does not exist")
 
 func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 	guardData, err := x.GuardData.MarshalJSON()
 	if err != nil {
-		// json.Map implementation means this should never happen ¯\_(ツ)_/¯
+		// chainjson.Map implementation means this should never happen ¯\_(ツ)_/¯
 		return errors.Wrap(err)
 	}
+
+	// before we go any further, make sure this token is real
+	var gd map[string]string
+	err = json.Unmarshal(guardData, &gd)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	id, ok := gd["id"]
+	if !ok || !a.accessTokens.CheckID(ctx, id) {
+		return errMissingTokenID
+	}
+
 	g := authz.Grant{
 		GuardType: x.GuardType,
 		GuardData: guardData,
@@ -103,7 +119,7 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 			return nil, errors.Wrap(err)
 		}
 		for _, g := range grantList.GetGrants() {
-			var data json.Map
+			var data chainjson.Map
 			err = data.UnmarshalJSON(g.GuardData)
 			if err != nil {
 				return nil, errors.Wrap(err)
@@ -125,13 +141,13 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 }
 
 func (a *API) revokeGrant(ctx context.Context, x struct {
-	GuardType string   `json:"guard_type"`
-	GuardData json.Map `json:"guard_data"`
+	GuardType string        `json:"guard_type"`
+	GuardData chainjson.Map `json:"guard_data"`
 	Policy    string
 }) error {
 	guardData, err := x.GuardData.MarshalJSON()
 	if err != nil {
-		// json.Map implementation means this should never happen ¯\_(ツ)_/¯
+		// chainjson.Map implementation means this should never happen ¯\_(ツ)_/¯
 		return errors.Wrap(err)
 	}
 

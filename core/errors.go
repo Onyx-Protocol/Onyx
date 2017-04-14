@@ -95,6 +95,7 @@ var errorFormatter = httperror.Formatter{
 		accesstoken.ErrBadID:       {400, "CH300", "Malformed or empty access token id"},
 		accesstoken.ErrBadType:     {400, "CH301", "Access tokens must be type client or network"},
 		accesstoken.ErrDuplicateID: {400, "CH302", "Access token id is already in use"},
+		errMissingTokenID:          {400, "CH303", "Access token id does not exist"},
 		errCurrentToken:            {400, "CH310", "The access token used to authenticate this request cannot be deleted"},
 
 		// Query error namespace (6xx)

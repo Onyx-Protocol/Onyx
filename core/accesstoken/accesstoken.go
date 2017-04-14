@@ -108,6 +108,17 @@ func (cs *CredentialStore) Check(ctx context.Context, id, typ string, secret []b
 	return valid, nil
 }
 
+// CheckID returns whether an id is part of a valid access token. It does not validate a secret.
+func (cs *CredentialStore) CheckID(ctx context.Context, id string) bool {
+	const q = `SELECT EXISTS(SELECT 1 FROM access_tokens WHERE id=$1)`
+	var valid bool
+	err := cs.DB.QueryRow(ctx, q, id).Scan(&valid)
+	if err != nil {
+		return false
+	}
+	return valid
+}
+
 // List lists all access tokens.
 func (cs *CredentialStore) List(ctx context.Context, typ, after string, limit int) ([]*Token, string, error) {
 	if limit == 0 {
