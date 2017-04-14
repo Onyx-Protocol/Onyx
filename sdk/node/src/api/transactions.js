@@ -97,12 +97,6 @@ function checkForError(resp) {
  *
  * @property {Boolean} isLocal
  * A flag indicating if the input is local.
- *
- * @property {String} [inputWitness]
- * DEPRECATED (as of version 1.1) Do not use this field.
- *
- * @property {String} [controlProgram]
- * DEPRECATED (as of version 1.1) Do not use this field.
  */
 
 /**
@@ -234,22 +228,6 @@ class TransactionBuilder {
    */
   controlWithReceiver(params) {
     this.actions.push(Object.assign({}, params, {type: 'control_receiver'}))
-  }
-
-  /**
-   * @deprecated as of version 1.1. Use {@link #controlWithReceiver} instead.
-   * Add an action that controls assets with a control program.
-   *
-   * @param {Object} params - Action parameters.
-   * @param {String} params.assetId - Asset ID specifying the asset to be controlled.
-   *                                   You must specify either an ID or an alias.
-   * @param {String} params.assetAlias - Asset alias specifying the asset to be controlled.
-   *                                   You must specify either an ID or an alias.
-   * @param {String} params.controlProgram - The control program to be used.
-   * @param {Number} params.amount - Amount of the asset to be controlled.
-   */
-  controlWithProgram(params) {
-    this.actions.push(Object.assign({}, params, {type: 'control_program'}))
   }
 
   /**

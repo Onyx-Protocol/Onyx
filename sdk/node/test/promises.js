@@ -613,45 +613,6 @@ describe('Promise style', () => {
       })).to.be.fulfilled)
     .then(issuance => expect(signer.sign(issuance)).to.be.fulfilled)
     .then(signed => expect(client.transactions.submit(signed)).to.be.fulfilled)
-
-    // Control program creation (deprecated)
-
-    .then(() =>
-      expect(client.accounts.createControlProgram({alias: aliceAlias})).to.be.fulfilled)
-    .then((cp) => assert(cp.controlProgram))
-
-    .then(() =>
-      expect(client.accounts.createControlProgram({id: aliceId})).to.be.fulfilled)
-    .then((cp) => assert(cp.controlProgram))
-
-    .then(() =>
-      // Empty alias/id
-      expect(client.accounts.createControlProgram({}))
-      .to.be.rejectedWith('CH003'))
-
-    .then(() =>
-      // Non-existent alias
-      expect(client.accounts.createControlProgram({alias: 'unobtalias'}))
-      .to.be.rejectedWith('CH002'))
-
-    // Pay to control program (deprecated)
-
-    .then(() =>
-      expect(client.accounts.createControlProgram({alias: aliceAlias})).to.be.fulfilled)
-    .then((cp) =>
-      expect(client.transactions.build(builder => {
-        builder.issue({
-          assetAlias: goldAlias,
-          amount: 1
-        })
-        builder.controlWithProgram({
-          assetAlias: goldAlias,
-          amount: 1,
-          controlProgram: cp.controlProgram
-        })
-      })).to.be.fulfilled)
-    .then((issuance) => expect(signer.sign(issuance)).to.be.fulfilled)
-    .then((signed) => expect(client.transactions.submit(signed)).to.be.fulfilled)
   })
 
   it('loads all results in `queryAll` requests', () => {

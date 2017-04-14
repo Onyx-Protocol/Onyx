@@ -464,47 +464,6 @@ describe('Callback style', () => {
         next()
       }),
 
-      // Control program creation (deprecated)
-
-      (next) => client.accounts.createControlProgram({alias: aliceAlias}, (err, cp) => {
-        assert(cp.controlProgram)
-        next()
-      }),
-      (next) => client.accounts.createControlProgram({id: aliceId}, (err, cp) => {
-        assert(cp.controlProgram)
-        next()
-      }),
-      (next) => client.accounts.createControlProgram({}, (err) => {
-        expect(err.code).to.equal('CH003')
-        next()
-      }),
-      (next) => client.accounts.createControlProgram({alias: 'unobtalias'}, (err) => {
-        expect(err.code).to.equal('CH002')
-        next()
-      }),
-
-      // Pay to control program (deprecated)
-
-      (next) => async.waterfall([
-        cb => client.accounts.createControlProgram({alias: aliceAlias}, cb),
-        (cp, cb) => client.transactions.build(builder => {
-          builder.issue({
-            assetAlias: goldAlias,
-            amount: 1
-          })
-          builder.controlWithProgram({
-            assetAlias: goldAlias,
-            amount: 1,
-            controlProgram: cp.controlProgram
-          })
-        }, cb),
-        (issuance, cb) => signer.sign(issuance, cb),
-        (signed, cb) => client.transactions.submit(signed, cb),
-      ], (err, submitted) => {
-        assert(submitted.id)
-        next()
-      }),
-
       () => done()
     ])
   })

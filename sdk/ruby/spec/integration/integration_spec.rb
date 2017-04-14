@@ -230,30 +230,6 @@ context 'Chain SDK integration test' do
 
     chain.transactions.submit(signer.sign(tx))
 
-    # Control program creation (deprecated)
-
-    cp = chain.accounts.create_control_program(alias: :alice)
-    expect(cp.control_program).not_to be_empty
-
-    cp = chain.accounts.create_control_program(id: alice.id)
-    expect(cp.control_program).not_to be_empty
-
-    expect {
-      # Bad parameters
-      chain.accounts.create_control_program()
-    }.to raise_error(Chain::APIError)
-
-    # Pay to control program (deprecated)
-
-    cp = chain.accounts.create_control_program(alias: :alice)
-
-    tx = chain.transactions.build do |b|
-      b.issue asset_alias: :gold, amount: 1
-      b.control_with_program asset_alias: :gold, amount: 1, control_program: cp.control_program
-    end
-
-    chain.transactions.submit(signer.sign(tx))
-
     # Transaction feed
 
     chain.transaction_feeds.create(alias: :issuances, filter: "inputs(type='issue')")
