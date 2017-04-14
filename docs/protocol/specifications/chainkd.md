@@ -24,14 +24,13 @@
 
 Features:
 
-1. Fully deterministic and allows producing complex hierarchies of keys from a single high-entropy seed.
-2. Can derive private keys from extended private keys using “hardened derivation.”
-3. Can derive public keys independently from private keys using “non-hardened derivation.”
-4. Hardened and non-hardened public keys and signatures are compatible with the [EdDSA](https://tools.ietf.org/html/rfc8032) specification. Signing keys are 64-byte strings, the format used in the [NaCl](https://nacl.cr.yp.to/sign.html) function `crypto_sign`.
-5. Derivation with variable-length string selectors instead of fixed-length 31-bit integer indices.
+1. Produce complex hierarchies of keys from a single high-entropy seed.
+2. Derive private keys from extended private keys using “hardened derivation.”
+3. Derive public keys independently from private keys using “non-hardened derivation.”
+4. Hardened and non-hardened public keys and signatures are compatible with the [EdDSA](https://tools.ietf.org/html/rfc8032) specification.
+5. String selectors instead of fixed-length 31-bit integer indices.
 6. Short 64-byte extended public and private keys without special encoding.
-7. No metadata: an extended key carries only an additional 32-byte salt that allows sharing a public key without revealing its child public keys.
-8. Privacy: extended key does not reveal neither its place in the hierarchy, nor the manner of derivation (hardened or non-hardened).
+7. No metadata: extended key does not reveal neither its place in the hierarchy, nor the manner of derivation (hardened or non-hardened).
 
 Limitations:
 
