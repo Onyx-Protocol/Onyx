@@ -18,7 +18,14 @@ const shared = require('../shared')
  * Type of credential, either 'access_token' or 'x509'.
  *
  * @property {Object} guard_data
- * Object containing data needed to identify the incoming credential.
+ * Data used by the guard to identity incoming credentials.
+ *
+ * If guard_type is 'access_token', you should provide an instance of
+ * {@link module:AccessControlApi~AccessTokenGuardData}, which identifies access tokens by ID.
+ *
+ * If guard_type is 'x509', you should provide an instance of {@link module:AccessControlApi~X509GuardData},
+ * which identifies x509 certificates based on kev-value pairs in specified
+ * certificate fields.
  *
  * @property {String} policy
  * Authorization single polciy to attach to specific grant.
@@ -31,6 +38,30 @@ const shared = require('../shared')
  * @module AccessControlApi
  */
 const accessControl = (client) => ({
+  /**
+   * @typedef {Object} AccessTokenGuardData
+   *
+   * @property {String} id
+   * Unique identifier of an access token
+   */
+
+  /**
+   * @typedef {Object} X509GuardData
+   * x509 certificates can be identified by any field. As an example, the
+   * properties on this type document the `subject` field below:
+   *
+   * ```
+   * CN=Alice, OU=Engineering
+   * ```
+   *
+   * Fields other than `subject`, and keys other than `cn` and `ou`, can
+   * be addressed in a similar manner.
+   *
+   * @property {Object} subject - Object identifying key-value pairs in the subject field.
+   * @property {String} subject.cn - "Common Name" to match against.
+   * @property {String} subject.ou - "Organizational Unit" to match against.
+   */
+
   /**
    * Create a new access grant.
    *
