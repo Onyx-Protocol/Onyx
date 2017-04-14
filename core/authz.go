@@ -1,15 +1,16 @@
 package core
 
 import (
-	"context"
+	"github.com/golang/protobuf/proto"
 
-	"chain/core/grant"
 	"chain/database/raft"
+	"chain/errors"
+	"chain/net/http/authz"
 )
 
 const grantPrefix = "/core/grant/"
 
-const policyByRoute = map[string][]string{
+var policyByRoute = map[string][]string{
 	"/create-account":          []string{"client-readwrite"},
 	"/create-asset":            []string{"client-readwrite"},
 	"/update-account-tags":     []string{"client-readwrite"},
@@ -53,17 +54,17 @@ const policyByRoute = map[string][]string{
 	"/raft/msg":  []string{"internal"},
 }
 
-func grantsByPolicies(ctx context.Context, raftDB *raft.Service, policies []string) ([]*grant.Grant, error) {
-	var grants []*grant.Grant
+func grantsByPolicies(raftDB *raft.Service, policies []string) ([]*authz.Grant, error) {
+	var grants []*authz.Grant
 	for _, p := range policies {
-		data := raftDB.Stale().Get(ctx, grantPrefix+p)
+		data := raftDB.Stale().Get(grantPrefix + p)
 		if data != nil {
-			grantList := new(grant.GrantList)
-			err = proto.Unmarshal(data, grantList)
+			grantList := new(authz.GrantList)
+			err := proto.Unmarshal(data, grantList)
 			if err != nil {
 				return nil, errors.Wrap(err)
 			}
-			grants = append(grants, grantList.GetGrants())
+			grants = append(grants, grantList.GetGrants()...)
 		}
 	}
 	return grants, nil

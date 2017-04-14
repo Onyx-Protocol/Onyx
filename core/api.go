@@ -262,10 +262,10 @@ func (a *API) authzHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		policies := policyByRoute[req.RequestURI]
 		if policies == nil {
-			errorFormatter.Write(req.Context, rw, errors.Wrap(errNotAuthorized, "missing policy on this route"))
+			errorFormatter.Write(req.Context(), rw, errors.Wrap(errNotAuthorized, "missing policy on this route"))
 		}
 
-		grants, err := grantsByPolicies(req.Context(), a.raftDB, policies)
+		grants, err := grantsByPolicies(a.raftDB, policies)
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, err)
 		}

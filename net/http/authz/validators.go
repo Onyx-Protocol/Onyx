@@ -18,8 +18,10 @@ func authzLocalhost(ctx context.Context) bool {
 
 func accessTokenGuardData(grant Grant) string {
 	// retrives id
+	return ""
 }
 
 func x509GuardData(grant Grant) map[string]string {
 	// retrieves subject map
+	return nil
 }
