@@ -84,6 +84,22 @@ public class Asset {
   }
 
   /**
+   * Updates tags for multiple assets in a single API call.
+   * <strong>Note:</strong> this method will not throw an exception APIException. Each builder's response object must be checked for error.
+   * @param client client object that makes requests to the core
+   * @param builders list of tag update parameters, one per asset
+   * @return a batch response containing success messages and/or error objects
+   * @throws BadURLException This exception wraps java.net.MalformedURLException.
+   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+   * @throws HTTPException This exception is raised when errors occur making http requests.
+   * @throws JSONException This exception is raised due to malformed json requests or responses.
+   */
+  public static BatchResponse<SuccessMessage> updateTagsBatch(Client client, List<TagUpdateBuilder> builders)
+      throws ChainException {
+    return client.batchRequest("update-asset-tags", builders, SuccessMessage.class, APIException.class);
+  }
+
+  /**
    * A class storing information about the keys associated with the asset.
    */
   public static class Key {
@@ -306,6 +322,66 @@ public class Asset {
     public Builder setRootXpubs(List<String> xpubs) {
       this.rootXpubs = new ArrayList<>(xpubs);
       return this;
+    }
+  }
+
+  /**
+   * Use this class to update an asset's tags.
+   */
+  public static class TagUpdateBuilder {
+    @SerializedName("alias")
+    public String alias;
+
+    @SerializedName("id")
+    public String id;
+
+    public Map<String, Object> tags;
+
+    /**
+     * Specifies the asset under which the receiver is created. You must use
+     * this method or @{link TagUpdateBuilder#forAlias}, but not both.
+     *
+     * @param id the unique ID of the asset
+     * @return this TagUpdateBuilder object
+     */
+    public TagUpdateBuilder forId(String id) {
+      this.id = id;
+      return this;
+    }
+
+    /**
+     * Specifies the asset whose tags will be updated. You must use
+     * this method or @{link TagUpdateBuilder#forId}, but not both.
+     *
+     * @param alias the unique alias of the asset
+     * @return this TagUpdateBuilder object
+     */
+    public TagUpdateBuilder forAlias(String alias) {
+      this.alias = alias;
+      return this;
+    }
+
+    /**
+     * Specifies the new tags, which will replace the asset's existing tags.
+     * @param tags asset tags object
+     * @return updated builder object
+     */
+    public TagUpdateBuilder setTags(Map<String, Object> tags) {
+      this.tags = tags;
+      return this;
+    }
+
+    /**
+     * Updates an asset's tags.
+     * @param client client object that makes request to the core
+     * @throws APIException This exception is raised if the api returns errors while creating the asset.
+     * @throws BadURLException This exception wraps java.net.MalformedURLException.
+     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+     * @throws HTTPException This exception is raised when errors occur making http requests.
+     * @throws JSONException This exception is raised due to malformed json requests or responses.
+     */
+    public void update(Client client) throws ChainException {
+      client.singletonBatchRequest("update-asset-tags", Arrays.asList(this), SuccessMessage.class, APIException.class);
     }
   }
 }
