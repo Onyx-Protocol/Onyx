@@ -124,7 +124,7 @@ func (tx *TxData) UnmarshalText(p []byte) error {
 	if err != nil {
 		return err
 	}
-	return tx.readFrom(bytes.NewReader(b))
+	return tx.ReadFrom(bytes.NewReader(b))
 }
 
 func (tx *TxData) Scan(val interface{}) error {
@@ -132,7 +132,7 @@ func (tx *TxData) Scan(val interface{}) error {
 	if !ok {
 		return errors.New("Scan must receive a byte slice")
 	}
-	return tx.readFrom(bytes.NewReader(b))
+	return tx.ReadFrom(bytes.NewReader(b))
 }
 
 func (tx *TxData) Value() (driver.Value, error) {
@@ -144,7 +144,7 @@ func (tx *TxData) Value() (driver.Value, error) {
 	return b.Bytes(), nil
 }
 
-func (tx *TxData) readFrom(r io.Reader) error {
+func (tx *TxData) ReadFrom(r io.Reader) error {
 	var serflags [1]byte
 	_, err := io.ReadFull(r, serflags[:])
 	if err != nil {

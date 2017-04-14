@@ -84,7 +84,7 @@ func (b *Block) readFrom(r io.Reader) error {
 		}
 		for ; n > 0; n-- {
 			var data TxData
-			err = data.readFrom(r)
+			err = data.ReadFrom(r)
 			if err != nil {
 				return errors.Wrapf(err, "reading transaction %d", len(b.Transactions))
 			}
