@@ -1,18 +1,80 @@
 package core
 
 import (
-	"chain/encoding/json"
-	"chain/net/http/httpjson"
 	"context"
+	"reflect"
+
+	"github.com/golang/protobuf/proto"
+
+	"chain/encoding/json"
+	"chain/errors"
+	"chain/net/http/authz"
+	"chain/net/http/httpjson"
 )
 
 func (a *API) createGrant(ctx context.Context, x struct {
 	GuardType string   `json:"guard_type"`
 	GuardData json.Map `json:"guard_data"`
 	Policy    string
-
-	ClientToken string `json:"client_token"`
 }) error {
+	data, err := a.raftDB.Get(ctx, grantPrefix+x.Policy)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	if data == nil {
+		// if there aren't any grants associated with this policy, go ahead
+		// and chuck this into raftdb
+		g := authz.Grant{
+			GuardType: x.GuardType,
+			GuardData: x.GuardData,
+			Policy:    x.Policy,
+		}
+		gList := &authz.GrantList{
+			Grants: []*authz.Grant{&g},
+		}
+		val, err := proto.Marshal(gList)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+		err = a.raftDB.Set(ctx, grantPrefix+x.Policy, val)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+		return nil
+	}
+
+	grantList := new(authz.GrantList)
+	err = proto.Unmarshal(data, grantList)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	grants := grantList.GetGrants()
+	for _, existing := range grants {
+		if existing.GuardType == x.GuardType && reflect.DeepEqual(existing.GuardData, x.GuardData) { // sus
+			// this grant already exists, return for idempotency
+			return nil
+		}
+	}
+
+	// create new grant and append to
+	g := authz.Grant{
+		GuardType: x.GuardType,
+		GuardData: x.GuardData,
+		Policy:    x.Policy,
+	}
+	grants = append(grants, &g)
+	gList := &authz.GrantList{Grants: grants}
+	val, err := proto.Marshal(gList)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	err = a.raftDB.Set(ctx, grantPrefix+x.Policy, val)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
 	return nil
 }
 
