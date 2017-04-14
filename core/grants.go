@@ -10,6 +10,7 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/authz"
+	"chain/net/http/httpjson"
 )
 
 // an api-friendly representation of a grant
@@ -83,7 +84,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 	return nil
 }
 
-func (a *API) listGrants(ctx context.Context) (map[string][]apiGrant, error) {
+func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 	var grants []apiGrant
 	for _, p := range policies {
 		// perhaps could denormalize the data in storage to speed this up,
@@ -118,8 +119,8 @@ func (a *API) listGrants(ctx context.Context) (map[string][]apiGrant, error) {
 		}
 	}
 
-	return map[string][]apiGrant{
-		"items": grants,
+	return map[string]interface{}{
+		"items": httpjson.Array(grants),
 	}, nil
 }
 
