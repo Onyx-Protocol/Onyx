@@ -87,8 +87,7 @@ func (tx *Tx) Issuance(id Hash) (*Issuance, error) {
 	return iss, nil
 }
 
-// MarshalBinary implements the encoding.BinaryMarshaler interface.
-func (tx Tx) MarshalBinary() ([]byte, error) {
+func (tx Tx) Proto() *ProtoTx {
 	p := &ProtoTx{Header: tx.TxHeader}
 	for _, e := range tx.Entries {
 		switch e := e.(type) {
@@ -108,7 +107,12 @@ func (tx Tx) MarshalBinary() ([]byte, error) {
 			p.Spends = append(p.Spends, e)
 		}
 	}
-	return proto.Marshal(p)
+	return p
+}
+
+// MarshalBinary implements the encoding.BinaryMarshaler interface.
+func (tx Tx) MarshalBinary() ([]byte, error) {
+	return proto.Marshal(tx.Proto())
 }
 
 // MarshalBinary implements the encoding.BinaryUnmarshaler interface.
