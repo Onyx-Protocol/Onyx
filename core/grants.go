@@ -1,8 +1,8 @@
 package core
 
 import (
+	"bytes"
 	"context"
-	"reflect"
 
 	"github.com/golang/protobuf/proto"
 
@@ -17,19 +17,24 @@ func (a *API) createGrant(ctx context.Context, x struct {
 	GuardData json.Map `json:"guard_data"`
 	Policy    string
 }) error {
+	guardData, err := x.GuardData.MarshalJSON()
+	if err != nil {
+		// json.Map implementation means this should never happen ¯\_(ツ)_/¯
+		return errors.Wrap(err)
+	}
+	g := authz.Grant{
+		GuardType: x.GuardType,
+		GuardData: guardData,
+		Policy:    x.Policy,
+	}
+
 	data, err := a.raftDB.Get(ctx, grantPrefix+x.Policy)
 	if err != nil {
 		return errors.Wrap(err)
 	}
-
 	if data == nil {
 		// if there aren't any grants associated with this policy, go ahead
 		// and chuck this into raftdb
-		g := authz.Grant{
-			GuardType: x.GuardType,
-			GuardData: x.GuardData,
-			Policy:    x.Policy,
-		}
 		gList := &authz.GrantList{
 			Grants: []*authz.Grant{&g},
 		}
@@ -52,18 +57,13 @@ func (a *API) createGrant(ctx context.Context, x struct {
 
 	grants := grantList.GetGrants()
 	for _, existing := range grants {
-		if existing.GuardType == x.GuardType && reflect.DeepEqual(existing.GuardData, x.GuardData) { // sus
+		if existing.GuardType == x.GuardType && bytes.Equal(existing.GuardData, guardData) {
 			// this grant already exists, return for idempotency
 			return nil
 		}
 	}
 
 	// create new grant and append to
-	g := authz.Grant{
-		GuardType: x.GuardType,
-		GuardData: x.GuardData,
-		Policy:    x.Policy,
-	}
 	grants = append(grants, &g)
 	gList := &authz.GrantList{Grants: grants}
 	val, err := proto.Marshal(gList)

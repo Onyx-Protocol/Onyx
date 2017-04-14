@@ -38,6 +38,9 @@ var policyByRoute = map[string][]string{
 	networkRPCPrefix + "signer/sign-block": []string{"network"},
 	networkRPCPrefix + "block-height":      []string{"network"},
 
+	"/list-acl-grants":     []string{"client-readwrite", "client-readonly"},
+	"/create-acl-grant":    []string{"client-readwrite"},
+	"/revoke-acl-grant":    []string{"client-readwrite"},
 	"/create-access-token": []string{"client-readwrite"},
 	"/list-access-tokens":  []string{"client-readwrite", "client-readonly"},
 	"/delete-access-token": []string{"client-readwrite"},

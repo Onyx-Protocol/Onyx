@@ -253,6 +253,7 @@ func (a *API) authnHandler(handler http.Handler) http.Handler {
 		req, err := auth.Authenticate(req)
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, errNotAuthenticated)
+			return
 		}
 		handler.ServeHTTP(rw, req)
 	})
@@ -263,11 +264,13 @@ func (a *API) authzHandler(handler http.Handler) http.Handler {
 		policies := policyByRoute[req.RequestURI]
 		if policies == nil {
 			errorFormatter.Write(req.Context(), rw, errors.Wrap(errNotAuthorized, "missing policy on this route"))
+			return
 		}
 
 		grants, err := grantsByPolicies(a.raftDB, policies)
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, err)
+			return
 		}
 
 		// todo: check if grant list is empty
