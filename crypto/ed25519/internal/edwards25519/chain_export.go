@@ -1,3 +1,6 @@
 package edwards25519
 
-var GeAdd = geAdd
+var (
+	GeAdd = geAdd
+	GeSub = geSub
+)
