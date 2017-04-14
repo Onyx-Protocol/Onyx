@@ -132,7 +132,7 @@ public class OracleTypes {
   }
 
   public static class Varchar2 implements Schema.SQLType {
-    private int mLength;
+    private final int mLength;
 
     public Varchar2(final int maxLength) {
       mLength = maxLength;

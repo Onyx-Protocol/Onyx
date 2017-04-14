@@ -8,17 +8,17 @@ import java.util.*;
  * constructed, a Schema is immutable.
  */
 public class Schema {
-  String mName;
-  List<Column> mColumns;
-  List<String> mPrimaryKey;
-  List<List<String>> mUniqueConstraints;
+  private String mName;
+  private List<Column> mColumns;
+  private List<String> mPrimaryKey;
+  private List<List<String>> mUniqueConstraints;
 
   /**
    * Column represents a single column in a table.
    */
   public static class Column {
-    String name;
-    SQLType type;
+    final String name;
+    final SQLType type;
 
     public Column(final String name, final SQLType type) {
       this.name = name;
@@ -42,10 +42,10 @@ public class Schema {
    * Builder implements the builder pattern for a Schema.
    */
   public static class Builder {
-    private String mName;
-    private List<Column> mColumns;
+    private final String mName;
+    private final List<Column> mColumns;
     private List<String> mPrimaryKey;
-    private List<List<String>> mUniqueConstraints;
+    private final List<List<String>> mUniqueConstraints;
 
     /**
      * Constructor for a builder.

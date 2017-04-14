@@ -1,22 +1,22 @@
 package com.chain.analytics;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import javax.sql.DataSource;
 
 public class Config {
   private static final String SQL_SELECT_CUSTOM_COLUMNS =
       "SELECT \"TABLE\", \"NAME\", \"TYPE\", \"PATH\" FROM custom_columns";
 
-  List<CustomColumn> transactionColumns;
-  List<CustomColumn> inputColumns;
-  List<CustomColumn> outputColumns;
+  final List<CustomColumn> transactionColumns;
+  final List<CustomColumn> inputColumns;
+  final List<CustomColumn> outputColumns;
 
-  public Config() {
+  private Config() {
     transactionColumns = new ArrayList<>();
     inputColumns = new ArrayList<>();
     outputColumns = new ArrayList<>();
@@ -71,9 +71,9 @@ public class Config {
   }
 
   public static class CustomColumn {
-    String name;
-    Schema.SQLType type;
-    JsonPath jsonPath;
+    final String name;
+    final Schema.SQLType type;
+    final JsonPath jsonPath;
 
     public CustomColumn(String name, Schema.SQLType type, JsonPath jsonPath) {
       this.name = name;

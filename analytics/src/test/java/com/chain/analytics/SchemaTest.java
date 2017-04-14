@@ -1,23 +1,26 @@
 package com.chain.analytics;
 
-import java.util.Arrays;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
+
 import static junit.framework.TestCase.assertEquals;
 
 public class SchemaTest {
 
-  static final Schema oneColumn =
+  private static final Schema oneColumn =
       new Schema.Builder("transactions")
           .addColumn("id", new OracleTypes.Varchar2(32))
-          .setPrimaryKey(Arrays.asList("id"))
+          .setPrimaryKey(Collections.singletonList("id"))
           .build();
-  static final Schema multipleColumns =
+  private static final Schema multipleColumns =
       new Schema.Builder("transaction_outputs")
           .addColumn("transaction_id", new OracleTypes.Varchar2(32))
           .addColumn("index", new OracleTypes.BigInteger())
           .addColumn("output_id", new OracleTypes.Varchar2(32))
           .addUniqueConstraint(Arrays.asList("transaction_id", "index"))
-          .setPrimaryKey(Arrays.asList("output_id"))
+          .setPrimaryKey(Collections.singletonList("output_id"))
           .build();
 
   @Test

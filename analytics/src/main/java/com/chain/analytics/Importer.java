@@ -1,31 +1,21 @@
 package com.chain.analytics;
 
-import com.chain.http.Client;
-import com.chain.api.PagedItems;
-import com.chain.api.Query;
 import com.chain.api.Transaction;
 import com.chain.api.Transaction.QueryBuilder;
 import com.chain.exception.APIException;
 import com.chain.exception.ChainException;
+import com.chain.http.Client;
 import com.google.gson.Gson;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
+import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.SQLSyntaxErrorException;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import javax.sql.DataSource;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.ThreadContext;
+import java.sql.*;
+import java.util.*;
 
 /**
  * Importer is responsible for reading transactions from a Chain Core
@@ -42,9 +32,9 @@ public class Importer {
   private static final Logger logger = LogManager.getLogger();
   private static final Gson gson = new Gson();
 
-  private Client mChain;
-  private Config mConfig;
-  private DataSource mDataSource;
+  private final Client mChain;
+  private final Config mConfig;
+  private final DataSource mDataSource;
   private Transaction.Feed mFeed;
   private Schema mTransactionsTbl;
   private Schema mTransactionInputsTbl;
@@ -56,15 +46,13 @@ public class Importer {
    * does not begin syncing yet.
    * @param client    a client for the Chain Core
    * @param ds        the database to populate
-   * @param feedAlias the alias of the transaction feed to use
    * @return          the initialized transaction importer
    */
-  public static Importer connect(
-      final Client client, final DataSource ds, final String feedAlias, final Config config)
+  public static Importer connect(final Client client, final DataSource ds, final Config config)
       throws ChainException, SQLException {
     // Create or load the transaction feed for the provided alias.
     try {
-      Transaction.Feed.create(client, feedAlias, "");
+      Transaction.Feed.create(client, Application.DEFAULT_FEED_ALIAS, "");
     } catch (APIException ex) {
       // CH050 means the transaction feed already existed. If that's
       // the case, ignore the exception because we'll retrieve the
@@ -73,9 +61,10 @@ public class Importer {
         logger.catching(ex);
         throw ex;
       }
-      logger.info("Transaction feed {} already exists", feedAlias);
+      logger.info("Transaction feed {} already exists", Application.DEFAULT_FEED_ALIAS);
     }
-    final Transaction.Feed feed = Transaction.Feed.getByAlias(client, feedAlias);
+    final Transaction.Feed feed =
+        Transaction.Feed.getByAlias(client, Application.DEFAULT_FEED_ALIAS);
     logger.info("Using transaction feed {} starting at cursor {}", feed.id, feed.after);
 
     // Initialize the schema based on the configuration.
@@ -92,11 +81,11 @@ public class Importer {
     mFeed = feed;
   }
 
-  void initializeSchema() throws SQLException {
+  private void initializeSchema() throws SQLException {
 
     Schema.Builder transactionsBuilder =
         new Schema.Builder("transactions")
-            .setPrimaryKey(Arrays.asList("id"))
+            .setPrimaryKey(Collections.singletonList("id"))
             .addColumn("id", new OracleTypes.Varchar2(64))
             .addColumn("block_height", new OracleTypes.BigInteger())
             .addColumn("timestamp", new OracleTypes.Timestamp())
@@ -133,7 +122,7 @@ public class Importer {
 
     Schema.Builder outputsBuilder =
         new Schema.Builder("transaction_outputs")
-            .setPrimaryKey(Arrays.asList("output_id"))
+            .setPrimaryKey(Collections.singletonList("output_id"))
             .addUniqueConstraint(Arrays.asList("transaction_id", "index"))
             .addColumn("transaction_id", new OracleTypes.Varchar2(64))
             .addColumn("index", new OracleTypes.BigInteger())
@@ -256,7 +245,7 @@ public class Importer {
   // gets trickier. We might be able to write a PL/SQL function that ignores
   // the ORA-00001 exception in Oracle instead of client-side to get around
   // that.
-  void processBatch(final List<Transaction> transactions) throws SQLException {
+  private void processBatch(final List<Transaction> transactions) throws SQLException {
     final String insertTxQ = mTransactionsTbl.getInsertStatement();
     final String insertInputQ = mTransactionInputsTbl.getInsertStatement();
     final String insertOutputQ = mTransactionOutputsTbl.getInsertStatement();

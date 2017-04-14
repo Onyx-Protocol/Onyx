@@ -12,8 +12,8 @@ import java.util.Map;
  *
  * TODO(jackson): Do we need to support indexing into arrays?
  */
-public class JsonPath {
-  private List<String> mPath;
+class JsonPath {
+  private final List<String> mPath;
 
   public JsonPath(final List<String> path) {
     mPath = Collections.unmodifiableList(path);
