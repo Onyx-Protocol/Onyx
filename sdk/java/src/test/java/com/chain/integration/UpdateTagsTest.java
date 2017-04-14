@@ -17,16 +17,10 @@ public class UpdateTagsTest {
     Client client = TestUtils.generateClient();
     MockHsm.Key key = MockHsm.Key.create(client);
 
-    Account account1 = new Account.Builder()
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .addTag("x", "zero")
-      .create(client);
-    Account account2 = new Account.Builder()
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .addTag("y", "zero")
-      .create(client);
+    Account account1 =
+        new Account.Builder().addRootXpub(key.xpub).setQuorum(1).addTag("x", "zero").create(client);
+    Account account2 =
+        new Account.Builder().addRootXpub(key.xpub).setQuorum(1).addTag("y", "zero").create(client);
 
     Map<String, Object> update1, update2;
 
@@ -35,15 +29,13 @@ public class UpdateTagsTest {
     update1 = new HashMap<>();
     update1.put("x", "one");
 
-    new Account.TagUpdateBuilder()
-      .forId(account1.id)
-      .setTags(update1)
-      .update(client);
+    new Account.TagUpdateBuilder().forId(account1.id).setTags(update1).update(client);
 
-    Account.Items accounts = new Account.QueryBuilder()
-      .setFilter("id=$1")
-      .addFilterParameter(account1.id)
-      .execute(client);
+    Account.Items accounts =
+        new Account.QueryBuilder()
+            .setFilter("id=$1")
+            .addFilterParameter(account1.id)
+            .execute(client);
 
     while (accounts.hasNext()) {
       assertEquals(accounts.next().tags.get("x"), "one");
@@ -56,9 +48,9 @@ public class UpdateTagsTest {
       update1.put("x", "two");
 
       new Account.TagUpdateBuilder()
-        // ID intentionally omitted
-        .setTags(update1)
-        .update(client);
+          // ID intentionally omitted
+          .setTags(update1)
+          .update(client);
     } catch (APIException e) {
       assertTrue(e.toString().contains("CH051"));
     }
@@ -70,25 +62,21 @@ public class UpdateTagsTest {
     update2 = new HashMap<>();
     update2.put("y", "three");
 
-    BatchResponse<SuccessMessage> batch = Account.updateTagsBatch(
-      client,
-      Arrays.asList(
-        new Account.TagUpdateBuilder()
-          .forId(account1.id)
-          .setTags(update1),
-        new Account.TagUpdateBuilder()
-          .forId(account2.id)
-          .setTags(update2)
-      )
-    );
+    BatchResponse<SuccessMessage> batch =
+        Account.updateTagsBatch(
+            client,
+            Arrays.asList(
+                new Account.TagUpdateBuilder().forId(account1.id).setTags(update1),
+                new Account.TagUpdateBuilder().forId(account2.id).setTags(update2)));
 
     assertEquals(batch.errorsByIndex().size(), 0);
 
-    accounts = new Account.QueryBuilder()
-      .setFilter("id=$1 OR id=$2")
-      .addFilterParameter(account1.id)
-      .addFilterParameter(account2.id)
-      .execute(client);
+    accounts =
+        new Account.QueryBuilder()
+            .setFilter("id=$1 OR id=$2")
+            .addFilterParameter(account1.id)
+            .addFilterParameter(account2.id)
+            .execute(client);
 
     List<Account> accountList = new ArrayList<>();
     while (accounts.hasNext()) {
@@ -105,17 +93,14 @@ public class UpdateTagsTest {
     update2 = new HashMap<>();
     update2.put("y", "four");
 
-    batch = Account.updateTagsBatch(
-      client,
-      Arrays.asList(
-        new Account.TagUpdateBuilder()
-          .forId(account1.id)
-          .setTags(update1),
-        new Account.TagUpdateBuilder()
-          // ID intentionally omitted
-          .setTags(update2)
-      )
-    );
+    batch =
+        Account.updateTagsBatch(
+            client,
+            Arrays.asList(
+                new Account.TagUpdateBuilder().forId(account1.id).setTags(update1),
+                new Account.TagUpdateBuilder()
+                    // ID intentionally omitted
+                    .setTags(update2)));
 
     assertTrue(batch.isSuccess(0));
     assertTrue(batch.isError(1));
@@ -126,16 +111,10 @@ public class UpdateTagsTest {
     Client client = TestUtils.generateClient();
     MockHsm.Key key = MockHsm.Key.create(client);
 
-    Asset asset1 = new Asset.Builder()
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .addTag("x", "zero")
-      .create(client);
-    Asset asset2 = new Asset.Builder()
-      .addRootXpub(key.xpub)
-      .setQuorum(1)
-      .addTag("y", "zero")
-      .create(client);
+    Asset asset1 =
+        new Asset.Builder().addRootXpub(key.xpub).setQuorum(1).addTag("x", "zero").create(client);
+    Asset asset2 =
+        new Asset.Builder().addRootXpub(key.xpub).setQuorum(1).addTag("y", "zero").create(client);
 
     Map<String, Object> update1, update2;
 
@@ -144,15 +123,10 @@ public class UpdateTagsTest {
     update1 = new HashMap<>();
     update1.put("x", "one");
 
-    new Asset.TagUpdateBuilder()
-      .forId(asset1.id)
-      .setTags(update1)
-      .update(client);
+    new Asset.TagUpdateBuilder().forId(asset1.id).setTags(update1).update(client);
 
-    Asset.Items assets = new Asset.QueryBuilder()
-      .setFilter("id=$1")
-      .addFilterParameter(asset1.id)
-      .execute(client);
+    Asset.Items assets =
+        new Asset.QueryBuilder().setFilter("id=$1").addFilterParameter(asset1.id).execute(client);
 
     while (assets.hasNext()) {
       assertEquals(assets.next().tags.get("x"), "one");
@@ -165,9 +139,9 @@ public class UpdateTagsTest {
       update1.put("x", "two");
 
       new Asset.TagUpdateBuilder()
-        // ID intentionally omitted
-        .setTags(update1)
-        .update(client);
+          // ID intentionally omitted
+          .setTags(update1)
+          .update(client);
     } catch (APIException e) {
       assertTrue(e.toString().contains("CH051"));
     }
@@ -179,25 +153,21 @@ public class UpdateTagsTest {
     update2 = new HashMap<>();
     update2.put("y", "three");
 
-    BatchResponse<SuccessMessage> batch = Asset.updateTagsBatch(
-      client,
-      Arrays.asList(
-        new Asset.TagUpdateBuilder()
-          .forId(asset1.id)
-          .setTags(update1),
-        new Asset.TagUpdateBuilder()
-          .forId(asset2.id)
-          .setTags(update2)
-      )
-    );
+    BatchResponse<SuccessMessage> batch =
+        Asset.updateTagsBatch(
+            client,
+            Arrays.asList(
+                new Asset.TagUpdateBuilder().forId(asset1.id).setTags(update1),
+                new Asset.TagUpdateBuilder().forId(asset2.id).setTags(update2)));
 
     assertEquals(batch.errorsByIndex().size(), 0);
 
-    assets = new Asset.QueryBuilder()
-      .setFilter("id=$1 OR id=$2")
-      .addFilterParameter(asset1.id)
-      .addFilterParameter(asset2.id)
-      .execute(client);
+    assets =
+        new Asset.QueryBuilder()
+            .setFilter("id=$1 OR id=$2")
+            .addFilterParameter(asset1.id)
+            .addFilterParameter(asset2.id)
+            .execute(client);
 
     List<Asset> assetList = new ArrayList<>();
     while (assets.hasNext()) {
@@ -214,17 +184,14 @@ public class UpdateTagsTest {
     update2 = new HashMap<>();
     update2.put("y", "four");
 
-    batch = Asset.updateTagsBatch(
-      client,
-      Arrays.asList(
-        new Asset.TagUpdateBuilder()
-          .forId(asset1.id)
-          .setTags(update1),
-        new Asset.TagUpdateBuilder()
-          // ID intentionally omitted
-          .setTags(update2)
-      )
-    );
+    batch =
+        Asset.updateTagsBatch(
+            client,
+            Arrays.asList(
+                new Asset.TagUpdateBuilder().forId(asset1.id).setTags(update1),
+                new Asset.TagUpdateBuilder()
+                    // ID intentionally omitted
+                    .setTags(update2)));
 
     assertTrue(batch.isSuccess(0));
     assertTrue(batch.isError(1));

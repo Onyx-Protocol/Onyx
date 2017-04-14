@@ -89,9 +89,10 @@ public class Account {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static BatchResponse<SuccessMessage> updateTagsBatch(Client client, List<TagUpdateBuilder> builders)
-      throws ChainException {
-    return client.batchRequest("update-account-tags", builders, SuccessMessage.class, APIException.class);
+  public static BatchResponse<SuccessMessage> updateTagsBatch(
+      Client client, List<TagUpdateBuilder> builders) throws ChainException {
+    return client.batchRequest(
+        "update-account-tags", builders, SuccessMessage.class, APIException.class);
   }
 
   /**
@@ -321,7 +322,8 @@ public class Account {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public void update(Client client) throws ChainException {
-      client.singletonBatchRequest("update-account-tags", Arrays.asList(this), SuccessMessage.class, APIException.class);
+      client.singletonBatchRequest(
+          "update-account-tags", Arrays.asList(this), SuccessMessage.class, APIException.class);
     }
   }
 
