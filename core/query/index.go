@@ -125,13 +125,14 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]*Ann
 	// Save the annotated txs to the database.
 	const insertQ = `
 		INSERT INTO annotated_txs(block_height, block_id, timestamp,
-			tx_pos, tx_hash, data, local, reference_data)
+			tx_pos, tx_hash, data, local, reference_data, block_tx_count)
 		SELECT $1, $2, $3, unnest($4::integer[]), unnest($5::bytea[]),
-			unnest($6::jsonb[]), unnest($7::boolean[]), unnest($8::jsonb[])
+			unnest($6::jsonb[]), unnest($7::boolean[]), unnest($8::jsonb[]), $9
 		ON CONFLICT (block_height, tx_pos) DO NOTHING;
 	`
 	_, err := ind.db.Exec(ctx, insertQ, b.Height, b.Hash(), b.Time(),
-		pq.Array(positions), hashes, annotatedTxBlobs, locals, referenceDatas)
+		pq.Array(positions), hashes, annotatedTxBlobs, locals,
+		referenceDatas, len(b.Transactions))
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting annotated_txs to db")
 	}

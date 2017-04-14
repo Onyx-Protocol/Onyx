@@ -57,4 +57,7 @@ var migrations = []migration{
 		ALTER TABLE account_utxos ALTER COLUMN change SET NOT NULL;
 		COMMIT;
 	`},
+	{Name: `2017-04-13.0.query.block-transactions-count.sql`, SQL: `
+		ALTER TABLE annotated_txs ADD COLUMN block_tx_count INTEGER;
+	`},
 }

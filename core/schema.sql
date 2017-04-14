@@ -307,7 +307,8 @@ CREATE TABLE annotated_txs (
     "timestamp" timestamp with time zone NOT NULL,
     block_id bytea NOT NULL,
     local boolean NOT NULL,
-    reference_data jsonb NOT NULL
+    reference_data jsonb NOT NULL,
+    block_tx_count integer
 );
 
 
@@ -901,3 +902,4 @@ insert into migrations (filename, hash) values ('2017-02-16.0.query.spent-output
 insert into migrations (filename, hash) values ('2017-02-28.0.core.remove-outpoints.sql', '067638e2a826eac70d548f2d6bb234660f3200064072baf42db741456ecf8deb');
 insert into migrations (filename, hash) values ('2017-03-02.0.core.add-output-source-info.sql', 'f44c7cfbff346f6f797d497910c0a76f2a7600ca8b5be4fe4e4a04feaf32e0df');
 insert into migrations (filename, hash) values ('2017-03-09.0.core.account-utxos-change.sql', 'a99e0e41be3da126a8c47151454098669334bf7e30de6cd539ba535add4e85d1');
+insert into migrations (filename, hash) values ('2017-04-13.0.query.block-transactions-count.sql', '7cb17e05596dbfdf75e347e43ccab110e393f41ea86f70697e59cf0c32c3a564');
