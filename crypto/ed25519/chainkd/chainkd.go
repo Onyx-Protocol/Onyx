@@ -95,14 +95,115 @@ func (xprv XPrv) nonhardenedChild(sel []byte) (res XPrv) {
 
 	pruneIntermediateScalar(res.data[:32])
 
-	// TODO: unroll this loop manually
-	var carry int
-	carry = 0
-	for i := 0; i < 32; i++ {
-		sum := int(xprv.data[i]) + int(res.data[i]) + carry
-		res.data[i] = byte(sum & 0xff)
-		carry = (sum >> 8)
-	}
+	// Unrolled the following loop:
+	// var carry int
+	// carry = 0
+	// for i := 0; i < 32; i++ {
+	//         sum := int(xprv.data[i]) + int(res.data[i]) + carry
+	//         res.data[i] = byte(sum & 0xff)
+	//         carry = (sum >> 8)
+	// }
+
+	carry := int(0)
+	sum := int(0)
+
+	sum = int(xprv.data[0]) + int(res.data[0]) + carry
+	res.data[0] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[1]) + int(res.data[1]) + carry
+	res.data[1] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[2]) + int(res.data[2]) + carry
+	res.data[2] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[3]) + int(res.data[3]) + carry
+	res.data[3] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[4]) + int(res.data[4]) + carry
+	res.data[4] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[5]) + int(res.data[5]) + carry
+	res.data[5] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[6]) + int(res.data[6]) + carry
+	res.data[6] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[7]) + int(res.data[7]) + carry
+	res.data[7] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[8]) + int(res.data[8]) + carry
+	res.data[8] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[9]) + int(res.data[9]) + carry
+	res.data[9] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[10]) + int(res.data[10]) + carry
+	res.data[10] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[11]) + int(res.data[11]) + carry
+	res.data[11] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[12]) + int(res.data[12]) + carry
+	res.data[12] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[13]) + int(res.data[13]) + carry
+	res.data[13] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[14]) + int(res.data[14]) + carry
+	res.data[14] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[15]) + int(res.data[15]) + carry
+	res.data[15] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[16]) + int(res.data[16]) + carry
+	res.data[16] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[17]) + int(res.data[17]) + carry
+	res.data[17] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[18]) + int(res.data[18]) + carry
+	res.data[18] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[19]) + int(res.data[19]) + carry
+	res.data[19] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[20]) + int(res.data[20]) + carry
+	res.data[20] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[21]) + int(res.data[21]) + carry
+	res.data[21] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[22]) + int(res.data[22]) + carry
+	res.data[22] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[23]) + int(res.data[23]) + carry
+	res.data[23] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[24]) + int(res.data[24]) + carry
+	res.data[24] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[25]) + int(res.data[25]) + carry
+	res.data[25] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[26]) + int(res.data[26]) + carry
+	res.data[26] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[27]) + int(res.data[27]) + carry
+	res.data[27] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[28]) + int(res.data[28]) + carry
+	res.data[28] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[29]) + int(res.data[29]) + carry
+	res.data[29] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[30]) + int(res.data[30]) + carry
+	res.data[30] = byte(sum & 0xff)
+	carry = (sum >> 8)
+	sum = int(xprv.data[31]) + int(res.data[31]) + carry
+	res.data[31] = byte(sum & 0xff)
+	carry = (sum >> 8)
+
 	if carry != 0 {
 		panic("sum does not fit in 256-bit int")
 	}
