@@ -1,6 +1,7 @@
 import React from 'react'
 import FieldLabel from './FieldLabel/FieldLabel'
 import pick from 'lodash/pick'
+var ReactMarkdown = require('react-markdown')
 
 const SELECT_FIELD_PROPS = [
   'value',
@@ -17,6 +18,7 @@ class SelectField extends React.Component {
     const labelKey = this.props.labelKey || 'label'
 
     const fieldProps = pick(this.props.fieldProps, SELECT_FIELD_PROPS)
+    const {touched, error} = this.props.fieldProps
 
     return(
       <div className='form-group'>
@@ -32,7 +34,8 @@ class SelectField extends React.Component {
             </option>)}
         </select>
 
-        {this.props.hint && <span className='help-block'>{this.props.hint}</span>}
+        {touched && error && <span className='text-danger'><strong>{error}</strong></span>}
+        {this.props.hint && <span className='help-block'><ReactMarkdown source={this.props.hint} /></span>}
       </div>
     )
   }

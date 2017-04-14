@@ -26,7 +26,7 @@ import Section from './Section/Section'
 import SelectField from './SelectField'
 import SubmitIndicator from './SubmitIndicator/SubmitIndicator'
 import TableList from './TableList/TableList'
-import TextField from './TextField/TextField'
+import TextField from './TextField'
 import XpubField from './XpubField/XpubField'
 
 export {
