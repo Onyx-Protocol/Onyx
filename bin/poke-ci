@@ -1,0 +1,4 @@
+#!/bin/sh
+
+git commit --allow-empty -m 'poke CI'
+git push
