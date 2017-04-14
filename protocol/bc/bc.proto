@@ -170,3 +170,19 @@ message Spend {
   Witness witness = 2;
   uint64  ordinal = 3;
 }
+
+message ProtoTx {
+  TxHeader            header      = 1;
+  repeated Mux        muxes       = 2;
+  repeated Nonce      nonces      = 3;
+  repeated Output     outputs     = 4;
+  repeated Retirement retirements = 5;
+  repeated TimeRange  timeranges  = 6;
+  repeated Issuance   issuances   = 7;
+  repeated Spend      spends      = 8;
+}
+
+message ProtoBlock {
+  BlockHeader      header = 1;
+  repeated ProtoTx transactions = 2;
+}
