@@ -1,5 +1,14 @@
 package core
 
+import (
+	"context"
+
+	"chain/core/grant"
+	"chain/database/raft"
+)
+
+const grantPrefix = "/core/grant/"
+
 const policyByRoute = map[string][]string{
 	"/create-account":          []string{"client-readwrite"},
 	"/create-asset":            []string{"client-readwrite"},
@@ -42,4 +51,20 @@ const policyByRoute = map[string][]string{
 
 	"/raft/join": []string{"internal"},
 	"/raft/msg":  []string{"internal"},
+}
+
+func grantsByPolicies(ctx context.Context, raftDB *raft.Service, policies []string) ([]*grant.Grant, error) {
+	var grants []*grant.Grant
+	for _, p := range policies {
+		data := raftDB.Stale().Get(ctx, grantPrefix+p)
+		if data != nil {
+			grantList := new(grant.GrantList)
+			err = proto.Unmarshal(data, grantList)
+			if err != nil {
+				return nil, errors.Wrap(err)
+			}
+			grants = append(grants, grantList.GetGrants())
+		}
+	}
+	return grants, nil
 }
