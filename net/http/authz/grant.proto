@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package grant;
+package authz;
 
 message GrantList {  
   repeated Grant grants = 1;
