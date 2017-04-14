@@ -330,12 +330,8 @@ public class Asset {
    * Use this class to update an asset's tags.
    */
   public static class TagUpdateBuilder {
-    @SerializedName("alias")
     public String alias;
-
-    @SerializedName("id")
     public String id;
-
     public Map<String, Object> tags;
 
     /**

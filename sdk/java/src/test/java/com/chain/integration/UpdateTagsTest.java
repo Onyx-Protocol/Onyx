@@ -83,6 +83,7 @@ public class UpdateTagsTest {
       accountList.add(accounts.next());
     }
 
+    // Results from a query are returned in reverse-chronological order by creation time.
     assertEquals(accountList.get(0).tags.get("y"), "three");
     assertEquals(accountList.get(1).tags.get("x"), "three");
 
@@ -174,6 +175,7 @@ public class UpdateTagsTest {
       assetList.add(assets.next());
     }
 
+    // Results from a query are returned in reverse-chronological order by creation time.
     assertEquals(assetList.get(0).tags.get("y"), "three");
     assertEquals(assetList.get(1).tags.get("x"), "three");
 

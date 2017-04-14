@@ -270,12 +270,8 @@ public class Account {
    * Use this class to update an account's tags.
    */
   public static class TagUpdateBuilder {
-    @SerializedName("alias")
     public String alias;
-
-    @SerializedName("id")
     public String id;
-
     public Map<String, Object> tags;
 
     /**
