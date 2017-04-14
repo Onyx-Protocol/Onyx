@@ -20,16 +20,15 @@ export default (store) => {
   })
 
   const existingOnEnter = routes.indexRoute.onEnter
-  const existingOnChange = routes.indexRoute.onChange
-
   routes.indexRoute.onEnter = (nextState, replace) => {
     checkParams(nextState, replace)
     existingOnEnter(nextState, replace)
   }
 
+  // Since we load everything at once, there's no need to use the existing
+  // `onChange` call that refreshes the API response.
   routes.indexRoute.onChange = (_, nextState, replace) => {
     checkParams(nextState, replace)
-    existingOnChange(_, nextState, replace)
   }
 
   routes.childRoutes.push({
