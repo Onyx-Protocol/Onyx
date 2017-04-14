@@ -13,7 +13,7 @@
   * [Ring Signature](#ring-signature)
   * [Borromean Ring Signature](#borromean-ring-signature)
 * [Keys](#keys)
-  * [Extended Key Pair](#extended-key-pair)
+  * [2D Key](#2d-key)
   * [Record Encryption Key](#record-encryption-key)
   * [Intermediate Encryption Key](#intermediate-encryption-key)
   * [Asset ID Encryption Key](#asset-id-encryption-key)
@@ -522,58 +522,49 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 
 ## Keys
 
-### Extended Key Pair
+### 2D key
 
-*Extended key pair* (EKP) is a pair of [ChainKD](chainkd.md) extended public keys (xpubs):
+*Two-dimensional key* (“2D key” or “2DK”) is a pair of 32-byte secret strings:
 
-    {xpub1, xpub2}
+    {x, y}
 
-EKP is encoded as a 128-byte concatenation of the corresponding extended public keys (64 bytes each):
+2DK is encoded as a 64-byte concatenation of the corresponding secret strings (32 bytes each):
 
-    EKP = xpub1 || xpub2
+    2dk = x || y
 
-EKPs allows “two-dimensional” key derivation by deriving from one key and leaving the other one unchanged, therefore allowing “vertical” derivation from [Record Encryption Keys](#record-encryption-key) to [Intermediate Encryption Keys](#intermediate-encryption-key), [Asset ID Encryption Keys](#asset-id-encryption-key) and [Value Encryption Keys](#value-encryption-key) and “horizontal” derivation from a root key pair associated with a user’s account to per-transaction and per-output key pairs.
-
-Note that EKPs use extended _public_ keys to enable selective “read access” to authorized parties by sharing keys in certain points in the hierarchy, not to actually make them widely public.
+2DKs allows “two-dimensional” key derivation by deriving from one key and leaving the other one unchanged, therefore allowing “vertical” derivation from [Record Encryption Keys](#record-encryption-key) to [Intermediate Encryption Keys](#intermediate-encryption-key), [Asset ID Encryption Keys](#asset-id-encryption-key) and [Value Encryption Keys](#value-encryption-key) and “horizontal” derivation from a root key pair associated with a user’s account to per-transaction and per-output key pairs.
 
 
 ### Record Encryption Key
 
-Record encryption key (REK or `rek`) is an [extended key pair](#extended-key-pair):
+Record encryption key (REK or `rek`) is a [2D key](#2d-key):
 
-    REK = {xpub1, xpub2}
+    rek = {x, y}
 
 It is used to decrypt the payload data from the [value range proof](#value-range-proof), and derive [asset ID encryption key](#asset-id-encryption-key) and [value encryption key](#value-encryption-key).
 
-The first `xpub1` is used to derive more specific keys as described below that all share the same second key `xpub2`.
-The second `xpub2` is used to derive the entire hierarchies of encryption keys, so that a [REK](#record-encryption-key), or [IEK](#intermediate-encryption-key) could be shared for the entire account instead of per-transaction.
+The `y` is used to derive more specific keys as described below that all share the same second key `x`.
+The `x` is used to derive the entire hierarchies of encryption keys, so that a [REK](#record-encryption-key), or [IEK](#intermediate-encryption-key) could be shared for the entire account instead of per-transaction.
 
 
 ### Intermediate Encryption Key
 
-Intermediate encryption key (IEK or `iek`) is an [extended key pair](#extended-key-pair) that allows decrypting the asset ID and the value in the output commitment. It is derived from the [record encryption key](#record-encryption-key) as follows:
+Intermediate encryption key (IEK or `iek`) is a [2D key](#2d-key) that allows decrypting the asset ID and the value in the output commitment. It is derived from the [record encryption key](#record-encryption-key) as follows:
 
-    IEK = {ND(REK.xpub1, "IEK"), REK.xpub2}
-
-where `ND` is non-hardened derivation as defined by [ChainKD](chainkd.md#derive-non-hardened-extended-public-key).
-
+    iek = {x: rek.x, y: Hash256("IEK", rek.y)}
 
 ### Asset ID Encryption Key
 
-Asset ID encryption key (AEK or `aek`) is an [extended key pair](#extended-key-pair) that allows decrypting the asset ID in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
+Asset ID encryption key (AEK or `aek`) is a [2D key](#2d-key) that allows decrypting the asset ID in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
 
-    AEK = {ND(IEK.xpub1, "AEK"), IEK.xpub2}
-
-where `ND` is non-hardened derivation as defined by [ChainKD](chainkd.md#derive-non-hardened-extended-public-key).
-
+    aek = {x: iek.x, y: Hash256("AEK", iek.y)}
 
 ### Value Encryption Key
 
-Value encryption key (VEK or `vek`) is an [extended key pair](#extended-key-pair) that allows decrypting the amount in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
+Value encryption key (VEK or `vek`) is a [2D key](#2d-key) that allows decrypting the amount in the output commitment. It is derived from the [intermediate encryption key](#intermediate-encryption-key) as follows:
 
-    VEK = {ND(IEK.xpub1, "VEK"), IEK.xpub2}
+    vek = {x: iek.x, y: Hash256("VEK", iek.y)}
 
-where `ND` is non-hardened derivation as defined by [ChainKD](chainkd.md#derive-non-hardened-extended-public-key).
 
 
 ### Asset ID Blinding Factor
