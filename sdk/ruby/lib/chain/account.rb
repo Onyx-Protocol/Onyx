@@ -53,6 +53,21 @@ module Chain
         client.conn.batch_request('create-account', opts) { |item| Account.new(item) }
       end
 
+      # @param [Hash] opts Options hash specifiying account creation details.
+      # @option opts [String] id The ID of the account. Either an ID or alias should be provided, but not both.
+      # @option opts [String] alias The alias of the account. Either an ID or alias should be provided, but not both.
+      # @option opts [Hash] tags A new set of tags, which will replace the existing tags.
+      # @return [Hash] a success message.
+      def update_tags(opts)
+        client.conn.singleton_batch_request('update-account-tags', [opts])
+      end
+
+      # @param [Array<Hash>] opts An array of options hashes. See {#update_tags} for a description of the hash structure.
+      # @return [BatchResponse<Hash>]
+      def update_tags_batch(opts)
+        client.conn.batch_request('update-account-tags', opts)
+      end
+
       # @deprecated (as of version 1.1) Use {#create_receiver} instead.
       # @param [Hash] opts
       # @return [ControlProgram]
