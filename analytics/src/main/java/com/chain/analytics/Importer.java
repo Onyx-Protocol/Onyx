@@ -1,4 +1,4 @@
-package analytics;
+package com.chain.analytics;
 
 import com.chain.http.Client;
 import com.chain.api.PagedItems;
@@ -97,13 +97,13 @@ public class Importer {
     Schema.Builder transactionsBuilder =
         new Schema.Builder("transactions")
             .setPrimaryKey(Arrays.asList("id"))
-            .addColumn("id", new Schema.Varchar2(64))
-            .addColumn("block_height", new Schema.Integer())
-            .addColumn("timestamp", new Schema.Timestamp())
-            .addColumn("position", new Schema.Integer())
-            .addColumn("local", new Schema.Boolean())
-            .addColumn("reference_data", new Schema.Blob())
-            .addColumn("data", new Schema.Blob());
+            .addColumn("id", new OracleTypes.Varchar2(64))
+            .addColumn("block_height", new OracleTypes.BigInteger())
+            .addColumn("timestamp", new OracleTypes.Timestamp())
+            .addColumn("position", new OracleTypes.BigInteger())
+            .addColumn("local", new OracleTypes.Boolean())
+            .addColumn("reference_data", new OracleTypes.Blob())
+            .addColumn("data", new OracleTypes.Blob());
     for (Config.CustomColumn col : mConfig.transactionColumns) {
       transactionsBuilder.addColumn(col.name, col.type);
     }
@@ -111,22 +111,22 @@ public class Importer {
     Schema.Builder inputsBuilder =
         new Schema.Builder("transaction_inputs")
             .setPrimaryKey(Arrays.asList("transaction_id", "index"))
-            .addColumn("transaction_id", new Schema.Varchar2(64))
-            .addColumn("index", new Schema.Integer())
-            .addColumn("type", new Schema.Varchar2(64))
-            .addColumn("asset_id", new Schema.Varchar2(64))
-            .addColumn("asset_alias", new Schema.Varchar2(2000))
-            .addColumn("asset_definition", new Schema.Blob())
-            .addColumn("asset_tags", new Schema.Blob())
-            .addColumn("local_asset", new Schema.Boolean())
-            .addColumn("amount", new Schema.Integer())
-            .addColumn("account_id", new Schema.Varchar2(64))
-            .addColumn("account_alias", new Schema.Varchar2(2000))
-            .addColumn("account_tags", new Schema.Blob())
-            .addColumn("issuance_program", new Schema.Clob())
-            .addColumn("reference_data", new Schema.Blob())
-            .addColumn("local", new Schema.Boolean())
-            .addColumn("spent_output_id", new Schema.Varchar2(64));
+            .addColumn("transaction_id", new OracleTypes.Varchar2(64))
+            .addColumn("index", new OracleTypes.BigInteger())
+            .addColumn("type", new OracleTypes.Varchar2(64))
+            .addColumn("asset_id", new OracleTypes.Varchar2(64))
+            .addColumn("asset_alias", new OracleTypes.Varchar2(2000))
+            .addColumn("asset_definition", new OracleTypes.Blob())
+            .addColumn("asset_tags", new OracleTypes.Blob())
+            .addColumn("local_asset", new OracleTypes.Boolean())
+            .addColumn("amount", new OracleTypes.BigInteger())
+            .addColumn("account_id", new OracleTypes.Varchar2(64))
+            .addColumn("account_alias", new OracleTypes.Varchar2(2000))
+            .addColumn("account_tags", new OracleTypes.Blob())
+            .addColumn("issuance_program", new OracleTypes.Clob())
+            .addColumn("reference_data", new OracleTypes.Blob())
+            .addColumn("local", new OracleTypes.Boolean())
+            .addColumn("spent_output_id", new OracleTypes.Varchar2(64));
     for (Config.CustomColumn col : mConfig.inputColumns) {
       inputsBuilder.addColumn(col.name, col.type);
     }
@@ -135,24 +135,24 @@ public class Importer {
         new Schema.Builder("transaction_outputs")
             .setPrimaryKey(Arrays.asList("output_id"))
             .addUniqueConstraint(Arrays.asList("transaction_id", "index"))
-            .addColumn("transaction_id", new Schema.Varchar2(64))
-            .addColumn("index", new Schema.Integer())
-            .addColumn("output_id", new Schema.Varchar2(64))
-            .addColumn("type", new Schema.Varchar2(64))
-            .addColumn("purpose", new Schema.Varchar2(64))
-            .addColumn("asset_id", new Schema.Varchar2(64))
-            .addColumn("asset_alias", new Schema.Varchar2(2000))
-            .addColumn("asset_definition", new Schema.Blob())
-            .addColumn("asset_tags", new Schema.Blob())
-            .addColumn("local_asset", new Schema.Boolean())
-            .addColumn("amount", new Schema.Integer())
-            .addColumn("account_id", new Schema.Varchar2(64))
-            .addColumn("account_alias", new Schema.Varchar2(2000))
-            .addColumn("account_tags", new Schema.Blob())
-            .addColumn("control_program", new Schema.Clob())
-            .addColumn("reference_data", new Schema.Blob())
-            .addColumn("local", new Schema.Boolean())
-            .addColumn("spent", new Schema.Boolean());
+            .addColumn("transaction_id", new OracleTypes.Varchar2(64))
+            .addColumn("index", new OracleTypes.BigInteger())
+            .addColumn("output_id", new OracleTypes.Varchar2(64))
+            .addColumn("type", new OracleTypes.Varchar2(64))
+            .addColumn("purpose", new OracleTypes.Varchar2(64))
+            .addColumn("asset_id", new OracleTypes.Varchar2(64))
+            .addColumn("asset_alias", new OracleTypes.Varchar2(2000))
+            .addColumn("asset_definition", new OracleTypes.Blob())
+            .addColumn("asset_tags", new OracleTypes.Blob())
+            .addColumn("local_asset", new OracleTypes.Boolean())
+            .addColumn("amount", new OracleTypes.BigInteger())
+            .addColumn("account_id", new OracleTypes.Varchar2(64))
+            .addColumn("account_alias", new OracleTypes.Varchar2(2000))
+            .addColumn("account_tags", new OracleTypes.Blob())
+            .addColumn("control_program", new OracleTypes.Clob())
+            .addColumn("reference_data", new OracleTypes.Blob())
+            .addColumn("local", new OracleTypes.Boolean())
+            .addColumn("spent", new OracleTypes.Boolean());
     for (Config.CustomColumn col : mConfig.outputColumns) {
       inputsBuilder.addColumn(col.name, col.type);
     }

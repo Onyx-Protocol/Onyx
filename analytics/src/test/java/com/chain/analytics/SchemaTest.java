@@ -1,4 +1,4 @@
-package analytics;
+package com.chain.analytics;
 
 import java.util.Arrays;
 import org.junit.Test;
@@ -8,14 +8,14 @@ public class SchemaTest {
 
   static final Schema oneColumn =
       new Schema.Builder("transactions")
-          .addColumn("id", new Schema.Varchar2(32))
+          .addColumn("id", new OracleTypes.Varchar2(32))
           .setPrimaryKey(Arrays.asList("id"))
           .build();
   static final Schema multipleColumns =
       new Schema.Builder("transaction_outputs")
-          .addColumn("transaction_id", new Schema.Varchar2(32))
-          .addColumn("index", new Schema.Integer())
-          .addColumn("output_id", new Schema.Varchar2(32))
+          .addColumn("transaction_id", new OracleTypes.Varchar2(32))
+          .addColumn("index", new OracleTypes.BigInteger())
+          .addColumn("output_id", new OracleTypes.Varchar2(32))
           .addUniqueConstraint(Arrays.asList("transaction_id", "index"))
           .setPrimaryKey(Arrays.asList("output_id"))
           .build();

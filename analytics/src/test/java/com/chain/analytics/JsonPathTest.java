@@ -1,4 +1,4 @@
-package analytics;
+package com.chain.analytics;
 
 import com.chain.api.Transaction;
 

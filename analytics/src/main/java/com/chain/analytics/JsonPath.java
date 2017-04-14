@@ -1,7 +1,8 @@
-package analytics;
+package com.chain.analytics;
 
 import com.chain.api.Transaction;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,10 @@ public class JsonPath {
 
   public JsonPath(final List<String> path) {
     mPath = Collections.unmodifiableList(path);
+  }
+
+  public JsonPath(final String serializedPath) {
+    mPath = Collections.unmodifiableList(Arrays.asList(serializedPath.split("[.]{1}")));
   }
 
   public String toString() {

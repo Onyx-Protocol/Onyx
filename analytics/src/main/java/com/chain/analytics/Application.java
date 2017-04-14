@@ -1,4 +1,4 @@
-package analytics;
+package com.chain.analytics;
 
 import com.chain.exception.BadURLException;
 import com.chain.exception.ChainException;
@@ -22,8 +22,6 @@ import org.apache.logging.log4j.LogManager;
  * importing service.
  */
 public class Application {
-  // TODO(jackson): Allow configuration of custom columns.
-
   // Environment variable key to find the Chain Core's URL.
   public static final String ENV_CHAIN_URL = "CHAIN_URL";
 
@@ -56,6 +54,10 @@ public class Application {
       System.exit(1);
     }
 
+    // TODO(jackson): Provide a tool for saving a configuration instead
+    // of requiring the operator to manually populate the database with
+    // a configuration.
+
     //
     // Setup the importer. The majority of connectivity and
     // configuration errors should be caught here.
@@ -75,12 +77,12 @@ public class Application {
       ds.setJdbcUrl(databaseUrl);
       ds.setTestConnectionOnCheckout(true);
 
-      Config config = new Config();
-      config.transactionColumns.add(
-          new Config.CustomColumn(
-              "acc_id",
-              new Schema.Varchar2(64),
-              new JsonPath(Arrays.asList("reference_data", "account", "id"))));
+      // Load the configuration from the Oracle database.
+      final Config config = Config.load(ds);
+      if (config == null) {
+        logger.fatal("Missing Chain Analytics configuration. Have you configured it yet?");
+        System.exit(1);
+      }
 
       importer = Importer.connect(client, ds, DEFAULT_FEED_ALIAS, config);
     } catch (BadURLException ex) {
@@ -95,6 +97,9 @@ public class Application {
               + "Double check that the URL is correct and reachable.",
           chainUrl,
           ex);
+      System.exit(1);
+    } catch (Config.InvalidConfigException ex) {
+      logger.fatal("Unable to load stored configuration.", ex);
       System.exit(1);
     } catch (ChainException | SQLException ex) {
       logger.fatal("Unable to initialize importer.", ex);
