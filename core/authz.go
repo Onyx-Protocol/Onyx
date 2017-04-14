@@ -34,11 +34,12 @@ const policyByRoute = map[string][]string{
 	"/configure":           []string{"client-readwrite"},
 	"/info":                []string{"client-readwrite", "client-readonly"}, // also network, maybe?
 
-	"/debug/vars":          []string{"monitoring"},
+	"/debug/vars":          []string{"monitoring"}, // should monitoring endpoints also be available to any other policy-holders?
 	"/debug/pprof":         []string{"monitoring"},
 	"/debug/pprof/profile": []string{"monitoring"},
 	"/debug/pprof/symbol":  []string{"monitoring"},
 	"/debug/pprof/trace":   []string{"monitoring"},
 
-	"/raft/*": []string{"internal"}, // tktk no regex probs
+	"/raft/join": []string{"internal"},
+	"/raft/msg":  []string{"internal"},
 }
