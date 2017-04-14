@@ -168,8 +168,11 @@ func (a *API) buildHandler() {
 		}
 	}))
 
-	m.Handle("/create-access-token", jsonHandler(a.createAccessToken))
+	m.Handle("/list-acl-grants", jsonHandler(a.listGrants))
+	m.Handle("/create-acl-grant", jsonHandler(a.createGrant))
+	m.Handle("/revoke-acl-grant", jsonHandler(a.revokeGrant))
 	m.Handle("/list-access-tokens", jsonHandler(a.listAccessTokens))
+	m.Handle("/create-access-token", jsonHandler(a.createAccessToken))
 	m.Handle("/delete-access-token", jsonHandler(a.deleteAccessToken))
 	m.Handle("/configure", jsonHandler(a.configure))
 	m.Handle("/info", jsonHandler(a.info))
