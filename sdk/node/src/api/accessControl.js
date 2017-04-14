@@ -96,7 +96,7 @@ const accessControl = (client) => ({
    * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
    * @returns {Promise<Array<Grant>>} Requested page of results.
    */
-  query: (cb) =>
+  list: (cb) =>
     shared.query(client, 'accessTokens', '/list-acl-grants', {}, {cb}),
 })
 
