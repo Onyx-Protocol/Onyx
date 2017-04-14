@@ -143,7 +143,10 @@ func (m *Manager) UpdateTags(ctx context.Context, id, alias *string, tags map[st
 		return errors.Wrap(err, "convert tags")
 	}
 
-	var signer *signers.Signer
+	var (
+		signer   *signers.Signer
+		aliasStr string
+	)
 
 	if id != nil {
 		signer, err = m.findByID(ctx, *id)
@@ -155,14 +158,17 @@ func (m *Manager) UpdateTags(ctx context.Context, id, alias *string, tags map[st
 		// complex function, so in the interest of not making a near-duplicate,
 		// we'll satisfy its contract and provide an alias.
 		const q = `SELECT alias FROM accounts WHERE account_id = $1`
-		var a string
+		var a stdsql.NullString
 		err := m.db.QueryRow(ctx, q, *id).Scan(&a)
 		if err != nil {
 			return errors.Wrap(err, "alias lookup")
 		}
-		alias = &a
-	} else {
-		signer, err = m.FindByAlias(ctx, *alias)
+		if a.Valid {
+			aliasStr = a.String
+		}
+	} else { // alias is guaranteed to be not nil due to bad identifier check
+		aliasStr = *alias
+		signer, err = m.FindByAlias(ctx, aliasStr)
 		if err != nil {
 			return errors.Wrap(err, "get account by alias")
 		}
@@ -180,7 +186,7 @@ func (m *Manager) UpdateTags(ctx context.Context, id, alias *string, tags map[st
 
 	return errors.Wrap(m.indexAnnotatedAccount(ctx, &Account{
 		Signer: signer,
-		Alias:  *alias,
+		Alias:  aliasStr,
 		Tags:   tags,
 	}), "update account index")
 }
