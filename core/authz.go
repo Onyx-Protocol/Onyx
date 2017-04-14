@@ -10,6 +10,14 @@ import (
 
 const grantPrefix = "/core/grant/"
 
+var policies = []string{
+	"client-readwrite",
+	"client-readonly",
+	"network",
+	"monitoring",
+	"internal",
+}
+
 var policyByRoute = map[string][]string{
 	"/create-account":          []string{"client-readwrite"},
 	"/create-asset":            []string{"client-readwrite"},

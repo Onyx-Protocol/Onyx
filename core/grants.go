@@ -9,14 +9,16 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/authz"
-	"chain/net/http/httpjson"
 )
 
-func (a *API) createGrant(ctx context.Context, x struct {
+// an api-friendly representation of a grant
+type apiGrant struct {
 	GuardType string   `json:"guard_type"`
 	GuardData json.Map `json:"guard_data"`
-	Policy    string
-}) error {
+	Policy    string   `json:"policy"`
+}
+
+func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 	guardData, err := x.GuardData.MarshalJSON()
 	if err != nil {
 		// json.Map implementation means this should never happen ¯\_(ツ)_/¯
@@ -78,46 +80,42 @@ func (a *API) createGrant(ctx context.Context, x struct {
 	return nil
 }
 
-func (a *API) listGrants(ctx context.Context, x requestQuery) (*page, error) {
-	limit := x.PageSize
-	if limit == 0 {
-		limit = defGenericPageSize
+func (a *API) listGrants(ctx context.Context, x requestQuery) (map[string][]apiGrant, error) {
+	var grants []apiGrant
+	for _, p := range policies {
+		// perhaps could denormalize the data in storage to speed this up,
+		// but for now assume a small number of grants
+		data, err := a.raftDB.Get(ctx, grantPrefix+p)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		if data == nil {
+			continue
+		}
+
+		grantList := new(authz.GrantList)
+		err = proto.Unmarshal(data, grantList)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		for _, g := range grantList.GetGrants() {
+			var data json.Map
+			err = data.UnmarshalJSON(g.GuardData)
+			if err != nil {
+				return nil, errors.Wrap(err)
+			}
+
+			grant := apiGrant{
+				GuardType: g.GuardType,
+				GuardData: data,
+				Policy:    g.Policy,
+			}
+			grants = append(grants, grant)
+		}
 	}
 
-	// TODO: replace stubbed data with DB call
-	grants := [...]map[string]interface{}{
-		{
-			"guard_type": "access_token",
-			"guard_data": map[string]string{
-				"id": "test-token",
-			},
-			"policy": "client-readwrite",
-		},
-		{
-			"guard_type": "access_token",
-			"guard_data": map[string]string{
-				"id": "test-token",
-			},
-			"policy": "network",
-		},
-		{
-			"guard_type": "x509",
-			"guard_data": map[string]interface{}{
-				"subject": map[string]string{
-					"CN": "example.com",
-				},
-			},
-			"policy": "network",
-		},
-	}
-
-	outQuery := x
-	// outQuery.After = next
-
-	return &page{
-		Items:    httpjson.Array(grants),
-		LastPage: len(grants) < limit,
-		Next:     outQuery,
+	return map[string][]apiGrant{
+		"items": grants,
 	}, nil
 }
 
