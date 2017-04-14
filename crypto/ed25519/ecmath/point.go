@@ -1,4 +1,4 @@
-package math
+package ecmath
 
 import (
 	"crypto/subtle"
@@ -40,20 +40,20 @@ func (z *Point) Sub(x, y *Point) *Point {
 
 // ScMul multiplies the EC point x by the scalar y, placing the result
 // in z and returning that. X and z may be the same pointer.
-func (z *Point) ScMul(x *Point, y *Uint256le) *Point {
+func (z *Point) ScMul(x *Point, y *Scalar) *Point {
 	return z.ScMulAdd(x, y, &Zero)
 }
 
 // ScMulBase multiplies the ed25519 base point by x and places the
 // result in z, returning that.
-func (z *Point) ScMulBase(x *Uint256le) *Point {
+func (z *Point) ScMulBase(x *Scalar) *Point {
 	edwards25519.GeScalarMultBase((*edwards25519.ExtendedGroupElement)(z), (*[32]byte)(x))
 	return z
 }
 
 // ScMulAdd computes xa+yB, where B is the ed25519 base point, and
 // places the result in z, returning that.
-func (z *Point) ScMulAdd(a *Point, x, y *Uint256le) *Point {
+func (z *Point) ScMulAdd(a *Point, x, y *Scalar) *Point {
 	// TODO: replace with constant-time implementation to avoid
 	// sidechannel attacks
 
