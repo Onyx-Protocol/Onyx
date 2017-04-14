@@ -1,11 +1,6 @@
 package com.chain.api;
 
-import com.chain.exception.APIException;
-import com.chain.exception.BadURLException;
-import com.chain.exception.ChainException;
-import com.chain.exception.ConnectivityException;
-import com.chain.exception.HTTPException;
-import com.chain.exception.JSONException;
+import com.chain.exception.*;
 import com.chain.http.*;
 import com.google.gson.annotations.SerializedName;
 
@@ -81,6 +76,23 @@ public class Account {
       builder.clientToken = UUID.randomUUID().toString();
     }
     return client.batchRequest("create-account", builders, Account.class, APIException.class);
+  }
+
+  /**
+   * Updates tags for multiple accounts in a single API call.
+   * <strong>Note:</strong> this method will not throw an exception APIException. Each builder's response object must be checked for error.
+   * @param client client object that makes requests to the core
+   * @param builders list of tag update parameters, one per account
+   * @return a batch response containing success messages and/or error objects
+   * @throws BadURLException This exception wraps java.net.MalformedURLException.
+   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+   * @throws HTTPException This exception is raised when errors occur making http requests.
+   * @throws JSONException This exception is raised due to malformed json requests or responses.
+   */
+  public static BatchResponse<SuccessMessage> updateTagsBatch(
+      Client client, List<TagUpdateBuilder> builders) throws ChainException {
+    return client.batchRequest(
+        "update-account-tags", builders, SuccessMessage.class, APIException.class);
   }
 
   /**
@@ -251,6 +263,63 @@ public class Account {
     public Builder setTags(Map<String, Object> tags) {
       this.tags = tags;
       return this;
+    }
+  }
+
+  /**
+   * Use this class to update an account's tags.
+   */
+  public static class TagUpdateBuilder {
+    public String alias;
+    public String id;
+    public Map<String, Object> tags;
+
+    /**
+     * Specifies the account under which the receiver is created. You must use
+     * this method or @{link TagUpdateBuilder#forAlias}, but not both.
+     *
+     * @param id the unique ID of the account
+     * @return this TagUpdateBuilder object
+     */
+    public TagUpdateBuilder forId(String id) {
+      this.id = id;
+      return this;
+    }
+
+    /**
+     * Specifies the account whose tags will be updated. You must use
+     * this method or @{link TagUpdateBuilder#forId}, but not both.
+     *
+     * @param alias the unique alias of the account
+     * @return this TagUpdateBuilder object
+     */
+    public TagUpdateBuilder forAlias(String alias) {
+      this.alias = alias;
+      return this;
+    }
+
+    /**
+     * Specifies the new tags, which will replace the account's existing tags.
+     * @param tags account tags object
+     * @return updated builder object
+     */
+    public TagUpdateBuilder setTags(Map<String, Object> tags) {
+      this.tags = tags;
+      return this;
+    }
+
+    /**
+     * Updates an account's tags.
+     * @param client client object that makes request to the core
+     * @throws APIException This exception is raised if the api returns errors while creating the account.
+     * @throws BadURLException This exception wraps java.net.MalformedURLException.
+     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+     * @throws HTTPException This exception is raised when errors occur making http requests.
+     * @throws JSONException This exception is raised due to malformed json requests or responses.
+     */
+    public void update(Client client) throws ChainException {
+      client.singletonBatchRequest(
+          "update-account-tags", Arrays.asList(this), SuccessMessage.class, APIException.class);
     }
   }
 
