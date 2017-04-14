@@ -1,6 +1,7 @@
 package analytics;
 
 import java.util.*;
+import java.sql.Types;
 
 /**
  * Schema represents the schema of an Oracle database table. Schemas
@@ -32,6 +33,8 @@ public class Schema {
    */
   public interface SQLType {
     String toString();
+
+    int getType();
   }
 
   /**
@@ -173,11 +176,19 @@ public class Schema {
     public String toString() {
       return "BLOB";
     }
+
+    public int getType() {
+      return Types.BLOB;
+    }
   }
 
   public static class Boolean implements SQLType {
     public String toString() {
       return "CHAR(1)";
+    }
+
+    public int getType() {
+      return Types.CHAR;
     }
   }
 
@@ -185,17 +196,29 @@ public class Schema {
     public String toString() {
       return "CLOB";
     }
+
+    public int getType() {
+      return Types.CLOB;
+    }
   }
 
   public static class Integer implements SQLType {
     public String toString() {
       return "NUMBER(20)";
     }
+
+    public int getType() {
+      return Types.BIGINT;
+    }
   }
 
   public static class Timestamp implements SQLType {
     public String toString() {
       return "TIMESTAMP WITH TIME ZONE";
+    }
+
+    public int getType() {
+      return Types.TIMESTAMP_WITH_TIMEZONE;
     }
   }
 
@@ -208,6 +231,10 @@ public class Schema {
 
     public String toString() {
       return String.format("VARCHAR2(%d)", mLength);
+    }
+
+    public int getType() {
+      return Types.VARCHAR;
     }
   }
 }
