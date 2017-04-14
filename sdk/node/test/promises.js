@@ -804,4 +804,62 @@ describe('Promise style', () => {
       assert.deepEqual(feedSpends, submittedSpends)
     })
   })
+
+  describe('access control', () => {
+    let tokenName
+    let tokenGrant
+
+    before('set up grant data', () => {
+      tokenName = uuid.v4()
+      return client.accessTokens.create({type: 'client', id: tokenName}).then(resp => {
+        tokenGrant = {
+          guard_data: { id: resp.id },
+          guard_type: 'access_token',
+          policy: 'client-readwrite'
+        }
+      })
+    })
+
+    it('can create access grants', () => {
+      return Promise.resolve().then(() =>
+        expect(client.accessControl.create(tokenGrant)).to.be.fulfilled
+      ).then(resp => {
+        expect(resp.message == 'ok')
+      })
+    })
+
+    it('can list access grants', () => {
+      return Promise.resolve().then(() =>
+        expect(client.accessControl.create(tokenGrant)).to.be.fulfilled
+      ).then(() =>
+        expect(client.accessControl.list()).to.be.fulfilled
+      ).then(list => {
+        let matched = false
+        list.items.forEach((item) => {
+          if (item.guardData.id == tokenName) {
+            matched = true
+          }
+        })
+        assert(matched)
+      })
+    })
+
+    it('can revoke access grants', () => {
+      return Promise.resolve().then(() =>
+        expect(client.accessControl.create(tokenGrant)).to.be.fulfilled
+      ).then(() =>
+        expect(client.accessControl.delete(tokenGrant)).to.be.fulfilled
+      ).then(() =>
+        expect(client.accessControl.list()).to.be.fulfilled
+      ).then(list => {
+        let missing = true
+        list.items.forEach((item) => {
+          if (item.guardData.id == tokenName) {
+            missing = false
+          }
+        })
+        assert(missing)
+      })
+    })
+  })
 })

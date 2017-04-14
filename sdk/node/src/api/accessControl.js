@@ -8,7 +8,6 @@ const shared = require('../shared')
  * * **client-readonly**: access to read-only Client endpoints
  * * **network**: access to the Network API
  * * **monitoring**: access to monitoring-specific endpoints
- * * **internal**: access to multi-process synchronization endpoints (Raft, etc.)
  *
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
  * @typedef {Object} Grant
