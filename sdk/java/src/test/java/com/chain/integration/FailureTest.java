@@ -23,7 +23,6 @@ public class FailureTest {
     testCreateKey();
     testCreateAccount();
     testCreateAsset();
-    testCreateControlProgram();
     testBuildTransaction();
     testSignTransaction();
     testSubmitTransaction();
@@ -52,16 +51,6 @@ public class FailureTest {
     client = TestUtils.generateClient();
     try {
       new Asset.Builder().create(client);
-    } catch (APIException e) {
-      return;
-    }
-    throw new Exception("expecting APIException");
-  }
-
-  public void testCreateControlProgram() throws Exception {
-    client = TestUtils.generateClient();
-    try {
-      new ControlProgram.Builder().create(client);
     } catch (APIException e) {
       return;
     }
