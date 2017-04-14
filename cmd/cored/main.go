@@ -53,9 +53,9 @@ const (
 
 var (
 	// config vars
-	tlsCrt        = env.String("TLSCRT", "")
-	tlsKey        = env.String("TLSKEY", "")
-	rootCAs       = env.String("ROOT_CA_CERTS", "")
+	tlsCrt        = env.String("TLSCRT", "")        // file path
+	tlsKey        = env.String("TLSKEY", "")        // file path
+	rootCAs       = env.String("ROOT_CA_CERTS", "") // file path
 	listenAddr    = env.String("LISTEN", ":1999")
 	dbURL         = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
 	splunkAddr    = os.Getenv("SPLUNKADDR")
