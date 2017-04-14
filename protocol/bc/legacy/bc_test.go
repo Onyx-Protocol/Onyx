@@ -1,9 +1,11 @@
-package bc
+package legacy
 
 import (
 	"bytes"
 	"io"
 	"testing"
+
+	"chain/protocol/bc"
 )
 
 func serialize(t *testing.T, wt io.WriterTo) []byte {
@@ -15,7 +17,7 @@ func serialize(t *testing.T, wt io.WriterTo) []byte {
 	return b.Bytes()
 }
 
-func mustDecodeHash(s string) (h Hash) {
+func mustDecodeHash(s string) (h bc.Hash) {
 	err := h.UnmarshalText([]byte(s))
 	if err != nil {
 		panic(err)

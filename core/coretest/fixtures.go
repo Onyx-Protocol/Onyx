@@ -14,6 +14,7 @@ import (
 	"chain/crypto/ed25519/chainkd"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/testutil"
 )
 
@@ -51,7 +52,7 @@ func CreateAsset(ctx context.Context, t testing.TB, assets *asset.Registry, def 
 	return asset.AssetID
 }
 
-func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, assets *asset.Registry, accounts *account.Manager, assetID bc.AssetID, amount uint64, accountID string) (*bc.TxOutput, *bc.Output, bc.Hash) {
+func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, assets *asset.Registry, accounts *account.Manager, assetID bc.AssetID, amount uint64, accountID string) (*legacy.TxOutput, *bc.Output, bc.Hash) {
 	assetAmount := bc.AssetAmount{AssetId: &assetID, Amount: amount}
 
 	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
@@ -74,7 +75,7 @@ func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuild
 	return tpl.Transaction.Outputs[0], out0, *outID0
 }
 
-func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, actions []txbuilder.Action) *bc.Tx {
+func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.Submitter, actions []txbuilder.Action) *legacy.Tx {
 	template, err := txbuilder.Build(ctx, nil, actions, time.Now().Add(time.Hour))
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -82,7 +83,7 @@ func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, s txbuilder.
 
 	SignTxTemplate(t, ctx, template, &testutil.TestXPrv)
 
-	tx := bc.NewTx(template.Transaction.TxData)
+	tx := legacy.NewTx(template.Transaction.TxData)
 	err = txbuilder.FinalizeTx(ctx, c, s, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)

@@ -10,9 +10,6 @@ import (
 	"io"
 
 	"golang.org/x/crypto/sha3"
-
-	"chain/crypto/sha3pool"
-	"chain/encoding/blockchain"
 )
 
 // Hash represents a 256-bit hash.
@@ -101,17 +98,6 @@ func (h *Hash) Scan(v interface{}) error {
 	copy(buf[:], b)
 	*h = NewHash(buf)
 	return nil
-}
-
-func writeFastHash(w io.Writer, d []byte) error {
-	if len(d) == 0 {
-		_, err := blockchain.WriteVarstr31(w, nil)
-		return err
-	}
-	var h [32]byte
-	sha3pool.Sum256(h[:], d)
-	_, err := blockchain.WriteVarstr31(w, h[:])
-	return err
 }
 
 // WriteTo satisfies the io.WriterTo interface.

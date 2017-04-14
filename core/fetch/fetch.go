@@ -13,7 +13,7 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/protocol"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
 )
 
@@ -46,7 +46,7 @@ func Init(ctx context.Context, peer *rpc.Client) {
 // It returns when its context is canceled.
 // After each attempt to fetch and apply a block, it calls health
 // to report either an error or nil to indicate success.
-func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error), prevBlock *bc.Block, prevSnapshot *state.Snapshot) {
+func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error), prevBlock *legacy.Block, prevSnapshot *state.Snapshot) {
 	var height uint64
 	if prevBlock != nil {
 		height = prevBlock.Height
@@ -95,8 +95,8 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 // and the other for reading errors. Progress will halt unless callers are
 // reading from both. DownloadBlocks will continue even if it encounters errors,
 // until its context is done.
-func DownloadBlocks(ctx context.Context, peer *rpc.Client, height uint64) (chan *bc.Block, chan error) {
-	blockch := make(chan *bc.Block)
+func DownloadBlocks(ctx context.Context, peer *rpc.Client, height uint64) (chan *legacy.Block, chan error) {
+	blockch := make(chan *legacy.Block)
 	errch := make(chan error)
 	go func() {
 		var nfailures uint // for backoff
@@ -161,7 +161,7 @@ func updateGeneratorHeight(ctx context.Context, peer *rpc.Client) {
 	generatorHeightFetchedAt = time.Now()
 }
 
-func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot, prev *bc.Block, block *bc.Block) (*state.Snapshot, *bc.Block, error) {
+func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot, prev *legacy.Block, block *legacy.Block) (*state.Snapshot, *legacy.Block, error) {
 	err := c.ValidateBlock(block, prev)
 	if err != nil {
 		return prevSnap, prev, err
@@ -196,11 +196,11 @@ func timeoutBackoffDur(n uint) time.Duration {
 
 // getBlock sends a get-block RPC request to another Core
 // for the next block.
-func getBlock(ctx context.Context, peer *rpc.Client, height uint64, timeout time.Duration) (*bc.Block, error) {
+func getBlock(ctx context.Context, peer *rpc.Client, height uint64, timeout time.Duration) (*legacy.Block, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var block *bc.Block
+	var block *legacy.Block
 	err := peer.Call(ctx, "/rpc/get-block", height, &block)
 	if ctx.Err() == context.DeadlineExceeded {
 		return nil, nil

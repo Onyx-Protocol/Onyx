@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"chain/database/pg/pgtest"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -106,7 +106,7 @@ func TestProcessBlocks(t *testing.T) {
 	}
 
 	var blockHeights []uint64
-	go store.ProcessBlocks(ctx, c, "example", func(ctx context.Context, b *bc.Block) error {
+	go store.ProcessBlocks(ctx, c, "example", func(ctx context.Context, b *legacy.Block) error {
 		// Wait for previous blocks to be processed.
 		<-store.PinWaiter("example", b.Height-1)
 

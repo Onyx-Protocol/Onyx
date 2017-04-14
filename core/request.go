@@ -5,7 +5,7 @@ import (
 
 	"chain/encoding/json"
 	"chain/errors"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 var (
@@ -15,7 +15,7 @@ var (
 )
 
 type buildRequest struct {
-	Tx      *bc.TxData               `json:"base_transaction"`
+	Tx      *legacy.TxData           `json:"base_transaction"`
 	Actions []map[string]interface{} `json:"actions"`
 	TTL     json.Duration            `json:"ttl"`
 }

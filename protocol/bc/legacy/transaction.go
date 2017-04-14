@@ -1,4 +1,4 @@
-package bc
+package legacy
 
 import (
 	"bytes"
@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 
+	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 // CurrentTransactionVersion is the current latest
@@ -18,7 +20,7 @@ const CurrentTransactionVersion = 1
 // Tx holds a transaction along with its hash.
 type Tx struct {
 	TxData
-	*TxEntries `json:"-"`
+	*bc.TxEntries `json:"-"`
 }
 
 func (tx *Tx) UnmarshalText(p []byte) error {
@@ -39,18 +41,18 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 func (tx *Tx) SetInputArguments(n uint32, args [][]byte) {
 	tx.Inputs[n].SetArguments(args)
 	switch e := tx.TxEntries.TxInputs[n].(type) {
-	case *Issuance:
+	case *bc.Issuance:
 		e.Witness.Arguments = args
-	case *Spend:
+	case *bc.Spend:
 		e.Witness.Arguments = args
 	}
 }
 
-func (tx *Tx) IssuanceHash(n int) Hash {
+func (tx *Tx) IssuanceHash(n int) bc.Hash {
 	return tx.TxEntries.TxInputIDs[n]
 }
 
-func (tx *Tx) OutputID(outputIndex int) *Hash {
+func (tx *Tx) OutputID(outputIndex int) *bc.Hash {
 	return tx.Body.ResultIds[outputIndex]
 }
 
@@ -294,4 +296,15 @@ func writeRefData(w io.Writer, data []byte, serflags byte) error {
 		return err
 	}
 	return writeFastHash(w, data)
+}
+
+func writeFastHash(w io.Writer, d []byte) error {
+	if len(d) == 0 {
+		_, err := blockchain.WriteVarstr31(w, nil)
+		return err
+	}
+	var h [32]byte
+	sha3pool.Sum256(h[:], d)
+	_, err := blockchain.WriteVarstr31(w, h[:])
+	return err
 }

@@ -7,6 +7,7 @@ import (
 
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
 	"chain/testutil"
 )
@@ -67,18 +68,18 @@ func TestGetRawBlock(t *testing.T) {
 	ctx := context.Background()
 	dbtx := pgtest.NewTx(t)
 
-	block := &bc.Block{
-		BlockHeader: bc.BlockHeader{
+	block := &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
 			Version:           1,
 			Height:            10,
 			PreviousBlockHash: bc.NewHash([32]byte{0x09}),
 			TimestampMS:       123456,
-			BlockCommitment: bc.BlockCommitment{
+			BlockCommitment: legacy.BlockCommitment{
 				TransactionsMerkleRoot: bc.NewHash([32]byte{0x01}),
 				AssetsMerkleRoot:       bc.NewHash([32]byte{0x02}),
 				ConsensusProgram:       []byte{0xc0, 0x01},
 			},
-			BlockWitness: bc.BlockWitness{
+			BlockWitness: legacy.BlockWitness{
 				Witness: [][]byte{[]byte{0xbe, 0xef}},
 			},
 		},
@@ -144,23 +145,23 @@ func TestGetBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
-	want := &bc.Block{
-		BlockHeader: bc.BlockHeader{
+	want := &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
 			Version:           1,
 			Height:            1,
 			PreviousBlockHash: bc.NewHash([32]byte{'1', '2', '3'}),
 			TimestampMS:       100,
-			BlockCommitment: bc.BlockCommitment{
+			BlockCommitment: legacy.BlockCommitment{
 				TransactionsMerkleRoot: bc.NewHash([32]byte{'A', 'B', 'C'}),
 				AssetsMerkleRoot:       bc.NewHash([32]byte{'X', 'Y', 'Z'}),
 				ConsensusProgram:       []byte("test-output-script"),
 			},
-			BlockWitness: bc.BlockWitness{
+			BlockWitness: legacy.BlockWitness{
 				Witness: [][]byte{[]byte("test-sig-script")},
 			},
 		},
-		Transactions: []*bc.Tx{
-			bc.NewTx(bc.TxData{Version: 1, ReferenceData: []byte("test-tx")}),
+		Transactions: []*legacy.Tx{
+			legacy.NewTx(legacy.TxData{Version: 1, ReferenceData: []byte("test-tx")}),
 		},
 	}
 
@@ -172,16 +173,16 @@ func TestGetBlock(t *testing.T) {
 func TestInsertBlock(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
-	blk := &bc.Block{
-		BlockHeader: bc.BlockHeader{
+	blk := &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
 			Version: 1,
 			Height:  1,
 		},
-		Transactions: []*bc.Tx{
-			bc.NewTx(bc.TxData{
+		Transactions: []*legacy.Tx{
+			legacy.NewTx(legacy.TxData{
 				ReferenceData: []byte("a"),
 			}),
-			bc.NewTx(bc.TxData{
+			legacy.NewTx(legacy.TxData{
 				ReferenceData: []byte("b"),
 			}),
 		},

@@ -9,7 +9,7 @@ import (
 	"chain/crypto/ed25519"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/testutil"
 )
 
@@ -68,7 +68,7 @@ func TestMockHSMEd25519Keys(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	bh := bc.BlockHeader{}
+	bh := legacy.BlockHeader{}
 	msg := bh.Hash()
 	sig, err := hsm.Sign(ctx, pub.Pub, &bh)
 	if err != nil {

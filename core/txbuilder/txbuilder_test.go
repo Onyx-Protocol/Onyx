@@ -17,6 +17,7 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 	"chain/testutil"
@@ -25,14 +26,14 @@ import (
 type testAction bc.AssetAmount
 
 func (t testAction) Build(ctx context.Context, b *TemplateBuilder) error {
-	in := bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), *t.AssetId, t.Amount, 0, nil, bc.Hash{}, nil)
+	in := legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), *t.AssetId, t.Amount, 0, nil, bc.Hash{}, nil)
 	tplIn := &SigningInstruction{}
 
 	err := b.AddInput(in, tplIn)
 	if err != nil {
 		return err
 	}
-	return b.AddOutput(bc.NewTxOutput(*t.AssetId, t.Amount, []byte("change"), nil))
+	return b.AddOutput(legacy.NewTxOutput(*t.AssetId, t.Amount, []byte("change"), nil))
 }
 
 func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *controlProgramAction {
@@ -60,15 +61,15 @@ func TestBuild(t *testing.T) {
 	}
 
 	want := &Template{
-		Transaction: bc.NewTx(bc.TxData{
+		Transaction: legacy.NewTx(legacy.TxData{
 			Version: 1,
 			MaxTime: bc.Millis(expiryTime),
-			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), assetID1, 5, 0, nil, bc.Hash{}, nil),
+			Inputs: []*legacy.TxInput{
+				legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), assetID1, 5, 0, nil, bc.Hash{}, nil),
 			},
-			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(assetID2, 6, []byte("dest"), nil),
-				bc.NewTxOutput(assetID1, 5, []byte("change"), nil),
+			Outputs: []*legacy.TxOutput{
+				legacy.NewTxOutput(assetID2, 6, []byte("dest"), nil),
+				legacy.NewTxOutput(assetID1, 5, []byte("change"), nil),
 			},
 			ReferenceData: []byte("xyz"),
 		}),
@@ -110,13 +111,13 @@ func TestMaterializeWitnesses(t *testing.T) {
 	assetID := bc.ComputeAssetID(issuanceProg, &initialBlockHash, 1, &bc.EmptyStringHash)
 	nonce := []byte{1}
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
-	unsigned := bc.NewTx(bc.TxData{
+	unsigned := legacy.NewTx(legacy.TxData{
 		Version: 1,
-		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(nonce, 5, nil, initialBlockHash, issuanceProg, nil, nil),
+		Inputs: []*legacy.TxInput{
+			legacy.NewIssuanceInput(nonce, 5, nil, initialBlockHash, issuanceProg, nil, nil),
 		},
-		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(assetID, 5, outscript, nil),
+		Outputs: []*legacy.TxOutput{
+			legacy.NewTxOutput(assetID, 5, outscript, nil),
 		},
 	})
 
@@ -178,13 +179,13 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
 	assetID := bc.ComputeAssetID(issuanceProg, &initialBlockHash, 1, &bc.EmptyStringHash)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
-	unsigned := bc.NewTx(bc.TxData{
+	unsigned := legacy.NewTx(legacy.TxData{
 		Version: 1,
-		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput([]byte{1}, 100, nil, initialBlockHash, issuanceProg, nil, nil),
+		Inputs: []*legacy.TxInput{
+			legacy.NewIssuanceInput([]byte{1}, 100, nil, initialBlockHash, issuanceProg, nil, nil),
 		},
-		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(assetID, 100, outscript, nil),
+		Outputs: []*legacy.TxOutput{
+			legacy.NewTxOutput(assetID, 100, outscript, nil),
 		},
 	})
 
@@ -268,15 +269,15 @@ func TestTxSighashCommitment(t *testing.T) {
 	assetID := bc.ComputeAssetID(issuanceProg, &initialBlockHash, 1, &bc.EmptyStringHash)
 
 	// all-issuance input tx should fail if none of the inputs commit to the tx signature
-	tx := bc.NewTx(bc.TxData{
+	tx := legacy.NewTx(legacy.TxData{
 		Version: 1,
-		Inputs: []*bc.TxInput{
+		Inputs: []*legacy.TxInput{
 			{
 				AssetVersion: 1,
-				TypedInput: &bc.IssuanceInput{
+				TypedInput: &legacy.IssuanceInput{
 					Nonce:  []byte{1},
 					Amount: 1,
-					IssuanceWitness: bc.IssuanceWitness{
+					IssuanceWitness: legacy.IssuanceWitness{
 						InitialBlock:    initialBlockHash,
 						VMVersion:       1,
 						IssuanceProgram: issuanceProg,
@@ -285,10 +286,10 @@ func TestTxSighashCommitment(t *testing.T) {
 			},
 			{
 				AssetVersion: 1,
-				TypedInput: &bc.IssuanceInput{
+				TypedInput: &legacy.IssuanceInput{
 					Nonce:  []byte{2},
 					Amount: 1,
-					IssuanceWitness: bc.IssuanceWitness{
+					IssuanceWitness: legacy.IssuanceWitness{
 						InitialBlock:    initialBlockHash,
 						VMVersion:       1,
 						IssuanceProgram: issuanceProg,
@@ -296,10 +297,10 @@ func TestTxSighashCommitment(t *testing.T) {
 				},
 			},
 		},
-		Outputs: []*bc.TxOutput{
+		Outputs: []*legacy.TxOutput{
 			{
 				AssetVersion: 1,
-				OutputCommitment: bc.OutputCommitment{
+				OutputCommitment: legacy.OutputCommitment{
 					AssetAmount: bc.AssetAmount{
 						AssetId: &assetID,
 						Amount:  2,
@@ -318,10 +319,10 @@ func TestTxSighashCommitment(t *testing.T) {
 	}
 
 	// Tx with any spend inputs, none committing to the txsighash, is not OK
-	tx.Inputs = append(tx.Inputs, &bc.TxInput{
+	tx.Inputs = append(tx.Inputs, &legacy.TxInput{
 		AssetVersion: 1,
-		TypedInput: &bc.SpendInput{
-			SpendCommitment: bc.SpendCommitment{
+		TypedInput: &legacy.SpendInput{
+			SpendCommitment: legacy.SpendCommitment{
 				AssetAmount: bc.AssetAmount{
 					AssetId: &assetID,
 					Amount:  2,
@@ -332,15 +333,15 @@ func TestTxSighashCommitment(t *testing.T) {
 		},
 	})
 	tx.Outputs[0].Amount = 4
-	tx = bc.NewTx(tx.TxData) // recompute the tx hash
+	tx = legacy.NewTx(tx.TxData) // recompute the tx hash
 	err = checkTxSighashCommitment(tx)
 	if err != ErrNoTxSighashAttempt {
 		t.Errorf("no spend inputs committing to txsighash: got error %s, want ErrNoTxSighashAttempt", err)
 	}
 
 	// Tx with a spend input committing to the wrong txsighash is not OK
-	spendInput := &bc.SpendInput{
-		SpendCommitment: bc.SpendCommitment{
+	spendInput := &legacy.SpendInput{
+		SpendCommitment: legacy.SpendCommitment{
 			AssetAmount: bc.AssetAmount{
 				AssetId: &assetID,
 				Amount:  3,
@@ -349,12 +350,12 @@ func TestTxSighashCommitment(t *testing.T) {
 			ControlProgram: []byte{byte(vm.OP_TRUE)},
 		},
 	}
-	tx.Inputs = append(tx.Inputs, &bc.TxInput{
+	tx.Inputs = append(tx.Inputs, &legacy.TxInput{
 		AssetVersion: 1,
 		TypedInput:   spendInput,
 	})
 	tx.Outputs[0].Amount = 7
-	tx = bc.NewTx(tx.TxData) // recompute the tx hash
+	tx = legacy.NewTx(tx.TxData) // recompute the tx hash
 	spendInput.Arguments = make([][]byte, 3)
 	prog, err := vm.Assemble("0x0000000000000000000000000000000000000000000000000000000000000000 TXSIGHASH EQUAL")
 	if err != nil {
@@ -367,8 +368,8 @@ func TestTxSighashCommitment(t *testing.T) {
 	}
 
 	// Tx with a spend input committing to the right txsighash is OK
-	spendInput = &bc.SpendInput{
-		SpendCommitment: bc.SpendCommitment{
+	spendInput = &legacy.SpendInput{
+		SpendCommitment: legacy.SpendCommitment{
 			AssetAmount: bc.AssetAmount{
 				AssetId: &assetID,
 				Amount:  4,
@@ -377,12 +378,12 @@ func TestTxSighashCommitment(t *testing.T) {
 			ControlProgram: []byte{byte(vm.OP_TRUE)},
 		},
 	}
-	tx.Inputs = append(tx.Inputs, &bc.TxInput{
+	tx.Inputs = append(tx.Inputs, &legacy.TxInput{
 		AssetVersion: 1,
 		TypedInput:   spendInput,
 	})
 	tx.Outputs[0].Amount = 11
-	tx = bc.NewTx(tx.TxData) // recompute the tx hash
+	tx = legacy.NewTx(tx.TxData) // recompute the tx hash
 	spendInput.Arguments = make([][]byte, 3)
 	h := tx.SigHash(4)
 	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h.Bytes()))
@@ -396,8 +397,8 @@ func TestTxSighashCommitment(t *testing.T) {
 	}
 
 	//Tx with a spend input missing signature argument is not OK
-	spendInput = &bc.SpendInput{
-		SpendCommitment: bc.SpendCommitment{
+	spendInput = &legacy.SpendInput{
+		SpendCommitment: legacy.SpendCommitment{
 			AssetAmount: bc.AssetAmount{
 				AssetId: &assetID,
 				Amount:  5,
@@ -406,12 +407,12 @@ func TestTxSighashCommitment(t *testing.T) {
 			ControlProgram: []byte{byte(vm.OP_TRUE)},
 		},
 	}
-	tx.Inputs = append(tx.Inputs, &bc.TxInput{
+	tx.Inputs = append(tx.Inputs, &legacy.TxInput{
 		AssetVersion: 1,
 		TypedInput:   spendInput,
 	})
 	tx.Outputs[0].Amount = 16
-	tx = bc.NewTx(tx.TxData) // recompute the tx hash
+	tx = legacy.NewTx(tx.TxData) // recompute the tx hash
 	spendInput.Arguments = make([][]byte, 2)
 	h = tx.SigHash(5)
 	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h.Bytes()))
@@ -427,60 +428,60 @@ func TestTxSighashCommitment(t *testing.T) {
 
 func TestCheckBlankCheck(t *testing.T) {
 	cases := []struct {
-		tx   *bc.TxData
+		tx   *legacy.TxData
 		want error
 	}{{
-		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
+		tx: &legacy.TxData{
+			Inputs: []*legacy.TxInput{legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
-		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{}, 3, nil, nil)},
+		tx: &legacy.TxData{
+			Inputs:  []*legacy.TxInput{legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
+			Outputs: []*legacy.TxOutput{legacy.NewTxOutput(bc.AssetID{}, 3, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
-		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil),
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.NewAssetID([32]byte{1}), 5, 0, nil, bc.Hash{}, nil),
+		tx: &legacy.TxData{
+			Inputs: []*legacy.TxInput{
+				legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil),
+				legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.NewAssetID([32]byte{1}), 5, 0, nil, bc.Hash{}, nil),
 			},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{}, 5, nil, nil)},
+			Outputs: []*legacy.TxOutput{legacy.NewTxOutput(bc.AssetID{}, 5, nil, nil)},
 		},
 		want: ErrBlankCheck,
 	}, {
-		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
-			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(bc.AssetID{}, math.MaxInt64, nil, nil),
-				bc.NewTxOutput(bc.AssetID{}, 7, nil, nil),
-			},
-		},
-		want: ErrBadAmount,
-	}, {
-		tx: &bc.TxData{
-			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil),
-				bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, math.MaxInt64, 0, nil, bc.Hash{}, nil),
+		tx: &legacy.TxData{
+			Inputs: []*legacy.TxInput{legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
+			Outputs: []*legacy.TxOutput{
+				legacy.NewTxOutput(bc.AssetID{}, math.MaxInt64, nil, nil),
+				legacy.NewTxOutput(bc.AssetID{}, 7, nil, nil),
 			},
 		},
 		want: ErrBadAmount,
 	}, {
-		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{}, 5, nil, nil)},
+		tx: &legacy.TxData{
+			Inputs: []*legacy.TxInput{
+				legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil),
+				legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, math.MaxInt64, 0, nil, bc.Hash{}, nil),
+			},
+		},
+		want: ErrBadAmount,
+	}, {
+		tx: &legacy.TxData{
+			Inputs:  []*legacy.TxInput{legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
+			Outputs: []*legacy.TxOutput{legacy.NewTxOutput(bc.AssetID{}, 5, nil, nil)},
 		},
 		want: nil,
 	}, {
-		tx: &bc.TxData{
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.AssetID{}, 5, nil, nil)},
+		tx: &legacy.TxData{
+			Outputs: []*legacy.TxOutput{legacy.NewTxOutput(bc.AssetID{}, 5, nil, nil)},
 		},
 		want: nil,
 	}, {
-		tx: &bc.TxData{
-			Inputs:  []*bc.TxInput{bc.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
-			Outputs: []*bc.TxOutput{bc.NewTxOutput(bc.NewAssetID([32]byte{1}), 5, nil, nil)},
+		tx: &legacy.TxData{
+			Inputs:  []*legacy.TxInput{legacy.NewSpendInput(nil, bc.NewHash([32]byte{0xff}), bc.AssetID{}, 5, 0, nil, bc.Hash{}, nil)},
+			Outputs: []*legacy.TxOutput{legacy.NewTxOutput(bc.NewAssetID([32]byte{1}), 5, nil, nil)},
 		},
 		want: nil,
 	}}

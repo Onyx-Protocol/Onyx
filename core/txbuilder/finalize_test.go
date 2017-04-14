@@ -17,6 +17,7 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
@@ -172,13 +173,13 @@ func TestInvalidTx(t *testing.T) {
 		0x06, 0xab, 0x7b, 0x26, 0x65, 0x78, 0xbb, 0x16, 0x20, 0xc5, 0x45, 0xad, 0x1d, 0x31, 0x73, 0x7d,
 		byte(vm.OP_TXSIGHASH), byte(vm.OP_EQUAL),
 	}
-	badTx := bc.NewTx(bc.TxData{
+	badTx := legacy.NewTx(legacy.TxData{
 		Version: 1,
-		Inputs: []*bc.TxInput{
-			&bc.TxInput{
+		Inputs: []*legacy.TxInput{
+			&legacy.TxInput{
 				AssetVersion: 1,
-				TypedInput: &bc.SpendInput{
-					SpendCommitment: bc.SpendCommitment{
+				TypedInput: &legacy.SpendInput{
+					SpendCommitment: legacy.SpendCommitment{
 						AssetAmount: bc.AssetAmount{
 							AssetId: &bc.AssetID{},
 							Amount:  1,
@@ -194,8 +195,8 @@ func TestInvalidTx(t *testing.T) {
 				},
 			},
 		},
-		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(bc.AssetID{}, 2, nil, nil),
+		Outputs: []*legacy.TxOutput{
+			legacy.NewTxOutput(bc.AssetID{}, 2, nil, nil),
 		},
 		MinTime: 1,
 		MaxTime: 2,
@@ -351,7 +352,7 @@ func benchGenBlock(b *testing.B) {
 		testutil.FatalErr(b, err)
 	}
 
-	var tx1, tx2 bc.Tx
+	var tx1, tx2 legacy.Tx
 	err = tx1.UnmarshalText([]byte(tx1hex))
 	if err != nil {
 		b.Fatal(err)
@@ -418,7 +419,7 @@ func bootdb(ctx context.Context, db pg.DB, t testing.TB) (*testInfo, error) {
 	return info, nil
 }
 
-func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destAcctID string, amount uint64) (*bc.Tx, error) {
+func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destAcctID string, amount uint64) (*legacy.Tx, error) {
 	assetAmount := bc.AssetAmount{
 		AssetId: &info.asset,
 		Amount:  amount,
@@ -434,7 +435,7 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, s Submitter, destA
 	return issueTx.Transaction, FinalizeTx(ctx, info.Chain, s, issueTx.Transaction)
 }
 
-func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
+func transfer(ctx context.Context, t testing.TB, info *testInfo, s Submitter, srcAcctID, destAcctID string, amount uint64) (*legacy.Tx, error) {
 	assetAmount := bc.AssetAmount{
 		AssetId: &info.asset,
 		Amount:  amount,

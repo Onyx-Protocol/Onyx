@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
@@ -56,19 +57,19 @@ func TestRecoverSnapshotNoAdditionalBlocks(t *testing.T) {
 	}
 }
 
-func createEmptyBlock(block *bc.Block, snapshot *state.Snapshot) *bc.Block {
+func createEmptyBlock(block *legacy.Block, snapshot *state.Snapshot) *legacy.Block {
 	root, err := bc.MerkleRoot(nil)
 	if err != nil {
 		log.Fatalf("calculating empty merkle root: %s", err)
 	}
 
-	return &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:           bc.NewBlockVersion,
+	return &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
+			Version:           1,
 			Height:            block.Height + 1,
 			PreviousBlockHash: block.Hash(),
 			TimestampMS:       bc.Millis(time.Now()),
-			BlockCommitment: bc.BlockCommitment{
+			BlockCommitment: legacy.BlockCommitment{
 				TransactionsMerkleRoot: root,
 				AssetsMerkleRoot:       snapshot.Tree.RootHash(),
 				ConsensusProgram:       block.ConsensusProgram,

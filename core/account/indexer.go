@@ -12,6 +12,7 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 const (
@@ -101,11 +102,11 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 	if m.pinStore == nil {
 		return
 	}
-	go m.pinStore.ProcessBlocks(ctx, m.chain, ExpirePinName, func(ctx context.Context, b *bc.Block) error {
+	go m.pinStore.ProcessBlocks(ctx, m.chain, ExpirePinName, func(ctx context.Context, b *legacy.Block) error {
 		<-m.pinStore.PinWaiter(PinName, b.Height)
 		return m.expireControlPrograms(ctx, b)
 	})
-	go m.pinStore.ProcessBlocks(ctx, m.chain, DeleteSpentsPinName, func(ctx context.Context, b *bc.Block) error {
+	go m.pinStore.ProcessBlocks(ctx, m.chain, DeleteSpentsPinName, func(ctx context.Context, b *legacy.Block) error {
 		<-m.pinStore.PinWaiter(PinName, b.Height)
 		<-m.pinStore.PinWaiter(query.TxPinName, b.Height)
 		return m.deleteSpentOutputs(ctx, b)
@@ -113,14 +114,14 @@ func (m *Manager) ProcessBlocks(ctx context.Context) {
 	m.pinStore.ProcessBlocks(ctx, m.chain, PinName, m.indexAccountUTXOs)
 }
 
-func (m *Manager) expireControlPrograms(ctx context.Context, b *bc.Block) error {
+func (m *Manager) expireControlPrograms(ctx context.Context, b *legacy.Block) error {
 	// Delete expired account control programs.
 	const deleteQ = `DELETE FROM account_control_programs WHERE expires_at IS NOT NULL AND expires_at < $1`
 	_, err := m.db.Exec(ctx, deleteQ, b.Time())
 	return err
 }
 
-func (m *Manager) deleteSpentOutputs(ctx context.Context, b *bc.Block) error {
+func (m *Manager) deleteSpentOutputs(ctx context.Context, b *legacy.Block) error {
 	// Delete consumed account UTXOs.
 	delOutputIDs := prevoutDBKeys(b.Transactions...)
 	const delQ = `
@@ -131,7 +132,7 @@ func (m *Manager) deleteSpentOutputs(ctx context.Context, b *bc.Block) error {
 	return errors.Wrap(err, "deleting spent account utxos")
 }
 
-func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
+func (m *Manager) indexAccountUTXOs(ctx context.Context, b *legacy.Block) error {
 	// Upsert any UTXOs belonging to accounts managed by this Core.
 	outs := make([]*rawOutput, 0, len(b.Transactions))
 	blockPositions := make(map[bc.Hash]uint32, len(b.Transactions))
@@ -165,7 +166,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	return errors.Wrap(err, "upserting confirmed account utxos")
 }
 
-func prevoutDBKeys(txs ...*bc.Tx) (outputIDs pq.ByteaArray) {
+func prevoutDBKeys(txs ...*legacy.Tx) (outputIDs pq.ByteaArray) {
 	for _, tx := range txs {
 		for _, inp := range tx.TxEntries.TxInputs {
 			if sp, ok := inp.(*bc.Spend); ok {
@@ -219,7 +220,7 @@ func (m *Manager) loadAccountInfo(ctx context.Context, outs []*rawOutput) ([]*ac
 // upsertConfirmedAccountOutputs records the account data for confirmed utxos.
 // If the account utxo already exists (because it's from a local tx), the
 // block confirmation data will in the row will be updated.
-func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*accountOutput, pos map[bc.Hash]uint32, block *bc.Block) error {
+func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*accountOutput, pos map[bc.Hash]uint32, block *legacy.Block) error {
 	var (
 		outputID  pq.ByteaArray
 		assetID   pq.ByteaArray

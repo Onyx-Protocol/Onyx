@@ -27,7 +27,7 @@ import (
 	"chain/net/http/httperror"
 	"chain/net/http/httpjson"
 	"chain/protocol"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 var (
@@ -161,7 +161,7 @@ type blockCache struct {
 	gz *gzip.Writer
 }
 
-func (c *blockCache) save(ctx context.Context, id string, height uint64, block *bc.Block) error {
+func (c *blockCache) save(ctx context.Context, id string, height uint64, block *legacy.Block) error {
 	buf := new(bytes.Buffer)
 	c.gz.Reset(buf)
 	err := json.NewEncoder(c.gz).Encode(block)
@@ -278,7 +278,7 @@ func cacheBlocks(cache *blockCache, peer *rpc.Client) {
 }
 
 func getBlockchainID(peer *rpc.Client) (string, error) {
-	var block *bc.Block
+	var block *legacy.Block
 	err := peer.Call(context.Background(), "/rpc/get-block", 1, &block)
 	if err != nil {
 		return "", err

@@ -11,6 +11,7 @@ import (
 	"chain/crypto/ed25519/chainkd"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 	"chain/testutil"
@@ -22,7 +23,7 @@ import (
 //
 // The asset issued is created from randomly-generated keys. The resulting
 // transaction is finalized (signed with a TXSIGHASH commitment).
-func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
+func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *legacy.Tx {
 	ctx := context.Background()
 	b1, err := c.GetBlock(ctx, 1)
 	if err != nil {
@@ -52,15 +53,15 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *bc.Tx {
 		testutil.FatalErr(tb, err)
 	}
 	assetdef := []byte(`{"type": "prottest issuance"}`)
-	txin := bc.NewIssuanceInput(nonce[:], 100, nil, b1.Hash(), issuanceProgram, nil, assetdef)
+	txin := legacy.NewIssuanceInput(nonce[:], 100, nil, b1.Hash(), issuanceProgram, nil, assetdef)
 
-	tx := bc.NewTx(bc.TxData{
-		Version: bc.CurrentTransactionVersion,
+	tx := legacy.NewTx(legacy.TxData{
+		Version: 1,
 		MinTime: bc.Millis(time.Now().Add(-5 * time.Minute)),
 		MaxTime: bc.Millis(time.Now().Add(5 * time.Minute)),
-		Inputs:  []*bc.TxInput{txin},
-		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(txin.AssetID(), 100, []byte{0xbe, 0xef}, nil),
+		Inputs:  []*legacy.TxInput{txin},
+		Outputs: []*legacy.TxOutput{
+			legacy.NewTxOutput(txin.AssetID(), 100, []byte{0xbe, 0xef}, nil),
 		},
 	})
 

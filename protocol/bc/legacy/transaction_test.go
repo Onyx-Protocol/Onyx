@@ -1,4 +1,4 @@
-package bc
+package legacy
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/errors"
+	"chain/protocol/bc"
 	"chain/testutil"
 )
 
@@ -18,12 +19,12 @@ func TestTransaction(t *testing.T) {
 	initialBlockHashHex := "03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"
 	initialBlockHash := mustDecodeHash(initialBlockHashHex)
 
-	assetID := ComputeAssetID(issuanceScript, &initialBlockHash, 1, &EmptyStringHash)
+	assetID := bc.ComputeAssetID(issuanceScript, &initialBlockHash, 1, &bc.EmptyStringHash)
 
 	cases := []struct {
 		tx   *Tx
 		hex  string
-		hash Hash
+		hash bc.Hash
 	}{
 		{
 			tx: NewTx(TxData{
@@ -52,7 +53,7 @@ func TestTransaction(t *testing.T) {
 					NewIssuanceInput([]byte{10, 9, 8}, 1000000000000, []byte("input"), initialBlockHash, issuanceScript, [][]byte{[]byte{1, 2, 3}}, nil),
 				},
 				Outputs: []*TxOutput{
-					NewTxOutput(AssetID{}, 1000000000000, []byte{1}, []byte("output")),
+					NewTxOutput(bc.AssetID{}, 1000000000000, []byte{1}, []byte("output")),
 				},
 				MinTime:       0,
 				MaxTime:       0,
@@ -98,7 +99,7 @@ func TestTransaction(t *testing.T) {
 			tx: NewTx(TxData{
 				Version: 1,
 				Inputs: []*TxInput{
-					NewSpendInput(nil, mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), AssetID{}, 1000000000000, 1, []byte{1}, Hash{}, []byte("input")),
+					NewSpendInput(nil, mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), bc.AssetID{}, 1000000000000, 1, []byte{1}, bc.Hash{}, []byte("input")),
 				},
 				Outputs: []*TxOutput{
 					NewTxOutput(assetID, 600000000000, []byte{1}, nil),
@@ -209,7 +210,7 @@ func TestTransaction(t *testing.T) {
 			t.Errorf("test %d: error unmarshaling tx from json: %s", i, err)
 		}
 		if !testutil.DeepEqual(test.tx.TxData, txFromJSON.TxData) {
-			t.Errorf("test %d: bc.TxData -> json -> bc.TxData: got:\n%s\nwant:\n%s", i, spew.Sdump(txFromJSON.TxData), spew.Sdump(test.tx.TxData))
+			t.Errorf("test %d: legacy.TxData -> json -> legacy.TxData: got:\n%s\nwant:\n%s", i, spew.Sdump(txFromJSON.TxData), spew.Sdump(test.tx.TxData))
 		}
 
 		tx1 := new(TxData)
@@ -228,21 +229,21 @@ func TestHasIssuance(t *testing.T) {
 		want bool
 	}{{
 		tx: &TxData{
-			Inputs: []*TxInput{NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil, nil)},
+			Inputs: []*TxInput{NewIssuanceInput(nil, 0, nil, bc.Hash{}, nil, nil, nil)},
 		},
 		want: true,
 	}, {
 		tx: &TxData{
 			Inputs: []*TxInput{
-				NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil),
-				NewIssuanceInput(nil, 0, nil, Hash{}, nil, nil, nil),
+				NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 0, 0, nil, bc.Hash{}, nil),
+				NewIssuanceInput(nil, 0, nil, bc.Hash{}, nil, nil, nil),
 			},
 		},
 		want: true,
 	}, {
 		tx: &TxData{
 			Inputs: []*TxInput{
-				NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil),
+				NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 0, 0, nil, bc.Hash{}, nil),
 			},
 		},
 		want: false,
@@ -318,8 +319,8 @@ func BenchmarkTxWriteToFalse(b *testing.B) {
 func BenchmarkTxWriteToTrue200(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < 200; i++ {
-		tx.Inputs = append(tx.Inputs, NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil))
-		tx.Outputs = append(tx.Outputs, NewTxOutput(AssetID{}, 0, nil, nil))
+		tx.Inputs = append(tx.Inputs, NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 0, 0, nil, bc.Hash{}, nil))
+		tx.Outputs = append(tx.Outputs, NewTxOutput(bc.AssetID{}, 0, nil, nil))
 	}
 	for i := 0; i < b.N; i++ {
 		tx.writeTo(ioutil.Discard, 0)
@@ -329,8 +330,8 @@ func BenchmarkTxWriteToTrue200(b *testing.B) {
 func BenchmarkTxWriteToFalse200(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < 200; i++ {
-		tx.Inputs = append(tx.Inputs, NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil))
-		tx.Outputs = append(tx.Outputs, NewTxOutput(AssetID{}, 0, nil, nil))
+		tx.Inputs = append(tx.Inputs, NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 0, 0, nil, bc.Hash{}, nil))
+		tx.Outputs = append(tx.Outputs, NewTxOutput(bc.AssetID{}, 0, nil, nil))
 	}
 	for i := 0; i < b.N; i++ {
 		tx.writeTo(ioutil.Discard, serRequired)
@@ -338,7 +339,7 @@ func BenchmarkTxWriteToFalse200(b *testing.B) {
 }
 
 func BenchmarkTxInputWriteToTrue(b *testing.B) {
-	input := NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil)
+	input := NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 0, 0, nil, bc.Hash{}, nil)
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		input.writeTo(ew, 0)
@@ -346,7 +347,7 @@ func BenchmarkTxInputWriteToTrue(b *testing.B) {
 }
 
 func BenchmarkTxInputWriteToFalse(b *testing.B) {
-	input := NewSpendInput(nil, Hash{}, AssetID{}, 0, 0, nil, Hash{}, nil)
+	input := NewSpendInput(nil, bc.Hash{}, bc.AssetID{}, 0, 0, nil, bc.Hash{}, nil)
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		input.writeTo(ew, serRequired)
@@ -354,7 +355,7 @@ func BenchmarkTxInputWriteToFalse(b *testing.B) {
 }
 
 func BenchmarkTxOutputWriteToTrue(b *testing.B) {
-	output := NewTxOutput(AssetID{}, 0, nil, nil)
+	output := NewTxOutput(bc.AssetID{}, 0, nil, nil)
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		output.writeTo(ew, 0)
@@ -362,7 +363,7 @@ func BenchmarkTxOutputWriteToTrue(b *testing.B) {
 }
 
 func BenchmarkTxOutputWriteToFalse(b *testing.B) {
-	output := NewTxOutput(AssetID{}, 0, nil, nil)
+	output := NewTxOutput(bc.AssetID{}, 0, nil, nil)
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		output.writeTo(ew, serRequired)
@@ -370,7 +371,7 @@ func BenchmarkTxOutputWriteToFalse(b *testing.B) {
 }
 
 func BenchmarkAssetAmountWriteTo(b *testing.B) {
-	aa := AssetAmount{}
+	aa := bc.AssetAmount{}
 	for i := 0; i < b.N; i++ {
 		aa.WriteTo(ioutil.Discard)
 	}

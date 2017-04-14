@@ -1,7 +1,9 @@
-package bc
+package legacy
 
 import (
 	"testing"
+
+	"chain/protocol/bc"
 
 	"github.com/davecgh/go-spew/spew"
 )
@@ -9,7 +11,7 @@ import (
 func TestTxHashes(t *testing.T) {
 	cases := []struct {
 		txdata *TxData
-		hash   Hash
+		hash   bc.Hash
 	}{
 		{
 			txdata: &TxData{},
@@ -57,12 +59,12 @@ func BenchmarkHashNonemptyTx(b *testing.B) {
 
 func sampleTx() *TxData {
 	initialBlockHash := mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d")
-	assetID := ComputeAssetID([]byte{1}, &initialBlockHash, 1, &EmptyStringHash)
+	assetID := bc.ComputeAssetID([]byte{1}, &initialBlockHash, 1, &bc.EmptyStringHash)
 	return &TxData{
 		Version: 1,
 		Inputs: []*TxInput{
-			NewSpendInput(nil, mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), assetID, 1000000000000, 1, []byte{1}, Hash{}, []byte("input")),
-			NewSpendInput(nil, NewHash([32]byte{0x11}), assetID, 1, 1, []byte{2}, Hash{}, []byte("input2")),
+			NewSpendInput(nil, mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), assetID, 1000000000000, 1, []byte{1}, bc.Hash{}, []byte("input")),
+			NewSpendInput(nil, bc.NewHash([32]byte{0x11}), assetID, 1, 1, []byte{2}, bc.Hash{}, []byte("input2")),
 		},
 		Outputs: []*TxOutput{
 			NewTxOutput(assetID, 600000000000, []byte{1}, nil),

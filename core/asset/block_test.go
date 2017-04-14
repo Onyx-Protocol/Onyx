@@ -9,6 +9,7 @@ import (
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -42,19 +43,19 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b := &bc.Block{
-		BlockHeader: bc.BlockHeader{
+	b := &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
 			Height: 22,
 		},
-		Transactions: []*bc.Tx{
+		Transactions: []*legacy.Tx{
 			{
-				TxData: bc.TxData{
-					Inputs: []*bc.TxInput{
+				TxData: legacy.TxData{
+					Inputs: []*legacy.TxInput{
 						{ // non-local asset
 							AssetVersion: 1,
-							TypedInput: &bc.IssuanceInput{
+							TypedInput: &legacy.IssuanceInput{
 								Amount: 10000,
-								IssuanceWitness: bc.IssuanceWitness{
+								IssuanceWitness: legacy.IssuanceWitness{
 									InitialBlock:    r.initialBlockHash,
 									AssetDefinition: []byte(rawdef),
 									IssuanceProgram: issuanceProgram,
@@ -64,9 +65,9 @@ func TestIndexNonLocalAssets(t *testing.T) {
 						},
 						{ // non-local asset, non-JSON asset definition
 							AssetVersion: 1,
-							TypedInput: &bc.IssuanceInput{
+							TypedInput: &legacy.IssuanceInput{
 								Amount: 10000,
-								IssuanceWitness: bc.IssuanceWitness{
+								IssuanceWitness: legacy.IssuanceWitness{
 									InitialBlock:    r.initialBlockHash,
 									AssetDefinition: []byte(notJSON),
 									IssuanceProgram: issuanceProgram,
@@ -76,9 +77,9 @@ func TestIndexNonLocalAssets(t *testing.T) {
 						},
 						{ // local asset
 							AssetVersion: 1,
-							TypedInput: &bc.IssuanceInput{
+							TypedInput: &legacy.IssuanceInput{
 								Amount: 10000,
-								IssuanceWitness: bc.IssuanceWitness{
+								IssuanceWitness: legacy.IssuanceWitness{
 									InitialBlock:    r.initialBlockHash,
 									AssetDefinition: localdef,
 									IssuanceProgram: local.IssuanceProgram,

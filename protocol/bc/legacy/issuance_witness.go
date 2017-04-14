@@ -1,7 +1,9 @@
-package bc
+package legacy
+
+import "chain/protocol/bc"
 
 type IssuanceWitness struct {
-	InitialBlock    Hash
+	InitialBlock    bc.Hash
 	AssetDefinition []byte
 	VMVersion       uint64
 	IssuanceProgram []byte

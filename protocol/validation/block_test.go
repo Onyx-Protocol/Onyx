@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 )
@@ -81,28 +82,28 @@ func newInitialBlock(tb testing.TB) *bc.BlockEntries {
 		tb.Fatal(err)
 	}
 
-	b := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:     bc.NewBlockVersion,
+	b := &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
+			Version:     1,
 			Height:      1,
 			TimestampMS: bc.Millis(time.Now()),
-			BlockCommitment: bc.BlockCommitment{
+			BlockCommitment: legacy.BlockCommitment{
 				TransactionsMerkleRoot: root,
 				ConsensusProgram:       script,
 			},
 		},
 	}
-	return bc.MapBlock(b)
+	return legacy.MapBlock(b)
 }
 
 func generate(tb testing.TB, prev *bc.BlockEntries) *bc.BlockEntries {
-	b := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:           bc.NewBlockVersion,
+	b := &legacy.Block{
+		BlockHeader: legacy.BlockHeader{
+			Version:           1,
 			Height:            prev.Body.Height + 1,
 			PreviousBlockHash: prev.ID,
 			TimestampMS:       prev.Body.TimestampMs + 1,
-			BlockCommitment: bc.BlockCommitment{
+			BlockCommitment: legacy.BlockCommitment{
 				ConsensusProgram: prev.Body.NextConsensusProgram,
 			},
 		},
@@ -114,5 +115,5 @@ func generate(tb testing.TB, prev *bc.BlockEntries) *bc.BlockEntries {
 		tb.Fatal(err)
 	}
 
-	return bc.MapBlock(b)
+	return legacy.MapBlock(b)
 }

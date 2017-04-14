@@ -13,6 +13,7 @@ import (
 	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
 )
 
@@ -21,7 +22,7 @@ type BlockSigner interface {
 	// SignBlock returns an ed25519 signature over the block's sighash.
 	// See also the Chain Protocol spec for the complete required behavior
 	// of a block signer.
-	SignBlock(context.Context, *bc.Block) (signature []byte, err error)
+	SignBlock(context.Context, *legacy.Block) (signature []byte, err error)
 }
 
 // Generator collects pending transactions and produces new blocks on
@@ -33,14 +34,14 @@ type Generator struct {
 	signers []BlockSigner
 
 	mu         sync.Mutex
-	pool       []*bc.Tx // in topological order
+	pool       []*legacy.Tx // in topological order
 	poolHashes map[bc.Hash]bool
 
 	// latestBlock and latestSnapshot are current as long as this
 	// process remains the leader process. If the process is demoted,
 	// generator.Generate() should return and this struct should be
 	// garbage collected.
-	latestBlock    *bc.Block
+	latestBlock    *legacy.Block
 	latestSnapshot *state.Snapshot
 }
 
@@ -60,17 +61,17 @@ func New(
 
 // PendingTxs returns all of the pendings txs that will be
 // included in the generator's next block.
-func (g *Generator) PendingTxs() []*bc.Tx {
+func (g *Generator) PendingTxs() []*legacy.Tx {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	txs := make([]*bc.Tx, len(g.pool))
+	txs := make([]*legacy.Tx, len(g.pool))
 	copy(txs, g.pool)
 	return txs
 }
 
 // Submit adds a new pending tx to the pending tx pool.
-func (g *Generator) Submit(ctx context.Context, tx *bc.Tx) error {
+func (g *Generator) Submit(ctx context.Context, tx *legacy.Tx) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -92,7 +93,7 @@ func (g *Generator) Generate(
 	ctx context.Context,
 	period time.Duration,
 	health func(error),
-	recoveredBlock *bc.Block,
+	recoveredBlock *legacy.Block,
 	recoveredSnapshot *state.Snapshot,
 ) {
 	g.latestBlock, g.latestSnapshot = recoveredBlock, recoveredSnapshot
@@ -106,7 +107,7 @@ func (g *Generator) Generate(
 	}
 	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
 		s := state.Copy(g.latestSnapshot)
-		err := s.ApplyBlock(bc.MapBlock(b))
+		err := s.ApplyBlock(legacy.MapBlock(b))
 		if err != nil {
 			log.Fatalkv(ctx, log.KeyError, err)
 		}

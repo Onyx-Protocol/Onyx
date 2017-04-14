@@ -35,7 +35,7 @@ import (
 	"chain/net/http/limit"
 	"chain/net/http/static"
 	"chain/protocol"
-	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 )
 
 const (
@@ -72,7 +72,7 @@ type API struct {
 	leader          leaderProcess
 	addr            string
 	altAuth         func(*http.Request) bool
-	signer          func(context.Context, *bc.Block) ([]byte, error)
+	signer          func(context.Context, *legacy.Block) ([]byte, error)
 	requestLimits   []requestLimit
 	generator       *generator.Generator
 	remoteGenerator *rpc.Client
@@ -154,7 +154,7 @@ func (a *API) buildHandler() {
 	m.Handle("/list-unspent-outputs", needConfig(a.listUnspentOutputs))
 	m.Handle("/reset", resetAllowed(needConfig(a.reset)))
 
-	m.Handle(networkRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *bc.Tx) error {
+	m.Handle(networkRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *legacy.Tx) error {
 		return a.submitter.Submit(ctx, tx)
 	}))
 	m.Handle(networkRPCPrefix+"get-block", needConfig(a.getBlockRPC))
@@ -309,8 +309,8 @@ func webAssetsHandler(next http.Handler) http.Handler {
 	})
 }
 
-func (a *API) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, error)) func(context.Context, *bc.Block) ([]byte, error) {
-	return func(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (a *API) leaderSignHandler(f func(context.Context, *legacy.Block) ([]byte, error)) func(context.Context, *legacy.Block) ([]byte, error) {
+	return func(ctx context.Context, b *legacy.Block) ([]byte, error) {
 		if f == nil {
 			return nil, errNotFound // TODO(kr): is this really the right error here?
 		}

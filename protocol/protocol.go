@@ -50,6 +50,7 @@ import (
 	"chain/errors"
 	"chain/log"
 	"chain/protocol/bc"
+	"chain/protocol/bc/legacy"
 	"chain/protocol/state"
 )
 
@@ -71,10 +72,10 @@ var (
 // from storage and persist validated data.
 type Store interface {
 	Height(context.Context) (uint64, error)
-	GetBlock(context.Context, uint64) (*bc.Block, error)
+	GetBlock(context.Context, uint64) (*legacy.Block, error)
 	LatestSnapshot(context.Context) (*state.Snapshot, uint64, error)
 
-	SaveBlock(context.Context, *bc.Block) error
+	SaveBlock(context.Context, *legacy.Block) error
 	FinalizeBlock(context.Context, uint64) error
 	SaveSnapshot(context.Context, uint64, *state.Snapshot) error
 }
@@ -90,7 +91,7 @@ type Chain struct {
 	state struct {
 		cond     sync.Cond // protects height, block, snapshot
 		height   uint64
-		block    *bc.Block       // current only if leader
+		block    *legacy.Block   // current only if leader
 		snapshot *state.Snapshot // current only if leader
 	}
 	store Store
@@ -160,13 +161,13 @@ func (c *Chain) Height() uint64 {
 // State returns the most recent state available. It will not be current
 // unless the current process is the leader. Callers should examine the
 // returned block header's height if they need to verify the current state.
-func (c *Chain) State() (*bc.Block, *state.Snapshot) {
+func (c *Chain) State() (*legacy.Block, *state.Snapshot) {
 	c.state.cond.L.Lock()
 	defer c.state.cond.L.Unlock()
 	return c.state.block, c.state.snapshot
 }
 
-func (c *Chain) setState(b *bc.Block, s *state.Snapshot) {
+func (c *Chain) setState(b *legacy.Block, s *state.Snapshot) {
 	c.state.cond.L.Lock()
 	defer c.state.cond.L.Unlock()
 	c.state.block = b
