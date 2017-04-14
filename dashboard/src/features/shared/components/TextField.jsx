@@ -1,5 +1,4 @@
 import React from 'react'
-import styles from './TextField.scss'
 import pick from 'lodash/pick'
 import { FieldLabel } from 'features/shared/components'
 import disableAutocomplete from 'utility/disableAutocomplete'
@@ -20,16 +19,11 @@ class TextField extends React.Component {
 
   render() {
     const fieldProps = pick(this.props.fieldProps, TEXT_FIELD_PROPS)
-
-    const inputClasses = ['form-control']
-    const error = this.props.fieldProps.error
-    if (error) {
-      inputClasses.push(styles.errorInput)
-    }
+    const {touched, error} = this.props.fieldProps
 
     return(
       <div className='form-group'>
-        {this.props.title && <FieldLabel className={styles.title}>{this.props.title}</FieldLabel>}
+        {this.props.title && <FieldLabel>{this.props.title}</FieldLabel>}
         <input className='form-control'
           type={this.state.type}
           placeholder={this.props.placeholder}
@@ -37,8 +31,8 @@ class TextField extends React.Component {
           {...disableAutocomplete}
           {...fieldProps} />
 
+        {touched && error && <span className='text-danger'><strong>{error}</strong></span>}
         {this.props.hint && <span className='help-block'>{this.props.hint}</span>}
-        {error && <span className={styles.errorText}>{error}</span>}
       </div>
     )
   }
