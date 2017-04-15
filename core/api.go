@@ -263,7 +263,10 @@ func (a *API) authzHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		err := auth.Authorize(req)
 		if err != nil {
-			errorFormatter.Write(req.Context(), rw, err)
+			// TODO(tessr/dominic): Switch the following to:
+			// errorFormatter.Write(req.Context(), rw, err)
+			// once dashboard can handle ErrNotAuthorized as well as errNotAuthenticated
+			errorFormatter.Write(req.Context(), rw, errNotAuthenticated)
 			return
 		}
 		handler.ServeHTTP(rw, req)

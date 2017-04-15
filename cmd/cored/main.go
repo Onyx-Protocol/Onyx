@@ -153,6 +153,7 @@ func runServer() {
 	// cored functionality, and add the rest of the core routes to the serve mux.
 	// That is the second phase.
 	mux := http.NewServeMux()
+	// TODO(tessr): authenticate raft endpoints
 	mux.Handle("/raft/", raftDB)
 
 	var handler http.Handler = mux
