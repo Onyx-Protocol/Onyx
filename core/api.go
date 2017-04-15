@@ -265,9 +265,10 @@ func (a *API) authzHandler(handler http.Handler) http.Handler {
 		if errors.Root(err) == authz.ErrNotAuthorized {
 			// TODO(tessr/dominic): remove this substitution
 			// once dashboard can handle ErrNotAuthorized.
-			err = errors.Sub(errNotAuthenticated, err)
+			err = errNotAuthenticated
 		}
 		if err != nil {
+			log.Println("bah")
 			errorFormatter.Write(req.Context(), rw, err)
 			return
 		}
