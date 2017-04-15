@@ -16,31 +16,28 @@ import (
 
 // an api-friendly representation of a grant
 type apiGrant struct {
-	GuardType string        `json:"guard_type"`
-	GuardData chainjson.Map `json:"guard_data"`
-	Policy    string        `json:"policy"`
-	CreatedAt string        `json:"created_at"`
+	GuardType string                 `json:"guard_type"`
+	GuardData map[string]interface{} `json:"guard_data"`
+	Policy    string                 `json:"policy"`
+	CreatedAt string                 `json:"created_at"`
 }
 
 // ErrMissingTokenID is returned when a token does not exist.
 var errMissingTokenID = errors.New("id does not exist")
 
 func (a *API) createGrant(ctx context.Context, x apiGrant) error {
-	guardData, err := x.GuardData.MarshalJSON()
-	if err != nil {
-		// chainjson.Map implementation means this should never happen ¯\_(ツ)_/¯
-		return errors.Wrap(err)
+	id, ok := x.GuardData["id"]
+	if ok {
+		if strID, ok := id.(string); !ok || !a.accessTokens.Exists(ctx, strID) {
+			return errMissingTokenID
+		}
+	} else {
+		return errMissingTokenID
 	}
 
-	// before we go any further, make sure this token is real
-	var gd map[string]string
-	err = json.Unmarshal(guardData, &gd)
+	guardData, err := json.Marshal(x.GuardData)
 	if err != nil {
 		return errors.Wrap(err)
-	}
-	id, ok := gd["id"]
-	if !ok || !a.accessTokens.Exists(ctx, id) {
-		return errMissingTokenID
 	}
 
 	g := authz.Grant{
@@ -119,8 +116,8 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 			return nil, errors.Wrap(err)
 		}
 		for _, g := range grantList.GetGrants() {
-			var data chainjson.Map
-			err = data.UnmarshalJSON(g.GuardData)
+			var data map[string]interface{}
+			err = json.Unmarshal(g.GuardData, &data)
 			if err != nil {
 				return nil, errors.Wrap(err)
 			}
