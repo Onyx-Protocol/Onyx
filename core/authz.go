@@ -1,13 +1,5 @@
 package core
 
-import (
-	"github.com/golang/protobuf/proto"
-
-	"chain/database/raft"
-	"chain/errors"
-	"chain/net/http/authz"
-)
-
 const grantPrefix = "/core/grant/"
 
 var policies = []string{
@@ -68,20 +60,4 @@ var policyByRoute = map[string][]string{
 
 	"/raft/join": []string{"internal"},
 	"/raft/msg":  []string{"internal"},
-}
-
-func grantsByPolicies(raftDB *raft.Service, policies []string) ([]*authz.Grant, error) {
-	var grants []*authz.Grant
-	for _, p := range policies {
-		data := raftDB.Stale().Get(grantPrefix + p)
-		if data != nil {
-			grantList := new(authz.GrantList)
-			err := proto.Unmarshal(data, grantList)
-			if err != nil {
-				return nil, errors.Wrap(err)
-			}
-			grants = append(grants, grantList.GetGrants()...)
-		}
-	}
-	return grants, nil
 }
