@@ -2,6 +2,7 @@ import AccessControlList from './components/AccessControlList'
 import NewToken from './components/NewToken'
 import NewCertificate from './components/NewCertificate'
 import { makeRoutes } from 'features/shared'
+import actions from './actions'
 
 const checkParams = (nextState, replace) => {
   if (!['token', 'certificate'].includes(nextState.location.query.type)) {
@@ -10,7 +11,9 @@ const checkParams = (nextState, replace) => {
       search: '?type=token',
       state: {preserveFlash: true}
     })
+    return false
   }
+  return true
 }
 
 export default (store) => {
@@ -19,14 +22,12 @@ export default (store) => {
     name: 'Access control'
   })
 
-  const existingOnEnter = routes.indexRoute.onEnter
   routes.indexRoute.onEnter = (nextState, replace) => {
-    checkParams(nextState, replace)
-    existingOnEnter(nextState, replace)
+    if (checkParams(nextState, replace)) {
+      store.dispatch(actions.fetchItems())
+    }
   }
 
-  // Since we load everything at once, there's no need to use the existing
-  // `onChange` call that refreshes the API response.
   routes.indexRoute.onChange = (_, nextState, replace) => {
     checkParams(nextState, replace)
   }

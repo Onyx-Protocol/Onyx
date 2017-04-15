@@ -5,10 +5,27 @@ import { actions as appActions } from 'features/app'
 import { push } from 'react-router-redux'
 import TokenCreateModal from './components/TokenCreateModal'
 
+const baseActions = baseListActions('accessControl', {
+  clientApi: () => chainClient().accessControl
+})
+
 export default {
-  ...baseListActions('accessControl', {
-    clientApi: () => chainClient().accessControl
-  }),
+  fetchItems: () => {
+    return (dispatch) => {
+      const promise = chainClient().accessControl.list()
+
+      promise.then(
+        (param) => dispatch({
+          type: 'RECEIVED_ACCESSCONTROL_ITEMS',
+          param,
+        })
+      )
+
+      return promise
+    }
+  },
+
+  deleteItem: baseActions.deleteItem,
 
   submitTokenForm: data => {
     const body = {...data}
