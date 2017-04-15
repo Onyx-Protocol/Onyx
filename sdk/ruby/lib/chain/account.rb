@@ -1,5 +1,4 @@
 require_relative './client_module'
-require_relative './control_program'
 require_relative './errors'
 require_relative './query'
 require_relative './receiver'
@@ -66,22 +65,6 @@ module Chain
       # @return [BatchResponse<Hash>]
       def update_tags_batch(opts)
         client.conn.batch_request('update-account-tags', opts)
-      end
-
-      # @deprecated (as of version 1.1) Use {#create_receiver} instead.
-      # @param [Hash] opts
-      # @return [ControlProgram]
-      def create_control_program(opts = {})
-        # We don't use keyword params here because 'alias' is a Ruby reserverd
-        # word.
-        params = {}
-        params[:account_alias] = opts[:alias] if opts.key?(:alias)
-        params[:account_id] = opts[:id] if opts.key?(:id)
-
-        client.conn.singleton_batch_request(
-          'create-control-program',
-          [{type: :account, params: params}]
-        ) { |item| ControlProgram.new(item) }
       end
 
       # Creates a new receiver under the specified account.

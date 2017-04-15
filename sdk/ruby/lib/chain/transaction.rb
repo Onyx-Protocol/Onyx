@@ -181,21 +181,11 @@ module Chain
       # @return [String]
       attrib :account_tags
 
-      # @deprecated (as of version 1.1) Do not use this field.
-      # @!attribute [r] input_witness
-      # @return [String]
-      attrib :input_witness
-
       # @!attribute [r] issuance_program
       # A program specifying a predicate for issuing an asset (possibly null
       # if input is not an issuance).
       # @return [String]
       attrib :issuance_program
-
-      # @deprecated (as of version 1.1) Do not use this field.
-      # @!attribute [r] control_program
-      # @return [String]
-      attrib :control_program
 
       # @!attribute [r] reference_data
       # User specified, unstructured data embedded within an input
@@ -432,20 +422,6 @@ module Chain
       # @return [Builder]
       def control_with_receiver(params)
         add_action(params.merge(type: :control_receiver))
-      end
-
-      # @deprecated (as of version 1.1) Use {#control_with_receiver} instead.
-      # Add a control action taken on a control program.
-      # @param [Hash] params Action parameters
-      # @option params [String] :asset_id Asset ID specifying the asset to be controlled.
-      #                                   You must specify either an ID or an alias.
-      # @option params [String] :asset_alias Asset alias specifying the asset to be controlled.
-      #                                   You must specify either an ID or an alias.
-      # @option params [String] :control_program The control program to be used
-      # @option params [Integer] :amount amount of the asset to be controlled.
-      # @return [Builder]
-      def control_with_program(params)
-        add_action(params.merge(type: :control_program))
       end
 
       # Add a retire action.

@@ -12,8 +12,8 @@ import com.google.gson.annotations.SerializedName;
  * cores. They contain a control program and an expiration date. In the future,
  * more payment-related metadata may be placed here.
  * <p>
- * This class supersedes the {@link ControlProgram} class. Receivers are
- * typically created under accounts via the {@link Account.ReceiverBuilder} class.
+ * Receivers are typically created under accounts via the
+ * {@link Account.ReceiverBuilder} class.
  */
 public class Receiver {
   /**

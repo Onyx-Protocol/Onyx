@@ -160,32 +160,6 @@ const accountsAPI = (client) => {
     queryAll: (params, processor, cb) => shared.queryAll(client, 'accounts', params, processor, cb),
 
     /**
-     * @deprecated as of version 1.1. Use {@link #createReceiver} instead.
-     * Create a new control program, specifying either an account ID or account
-     * alias to indicate the controlling party.
-     * <br/><br/>
-     * More info: {@link https://chain.com/docs/core/build-applications/control-programs#account-control-programs}
-     *
-     * @param {Object} params - Object containing either alias or ID identifying
-     *                      account to create control program for.
-     * @param {String} [params.alias] - An account alias. Either this or `id` is required.
-     * @param {String} [params.id] - An account ID. Either this or `alias` is required.
-     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Newly created control program.
-     */
-    createControlProgram: (params, cb) => {
-      const body = {type: 'account'}
-
-      if (params.alias) body.params = { accountAlias: params.alias }
-      if (params.id)    body.params = { accountId: params.id }
-
-      return shared.tryCallback(
-        shared.create(client, '/create-control-program', body),
-        cb
-      )
-    },
-
-    /**
      * Create a new receiver under the specified account.
      *
      * @param {module:AccountsApi~createReceiverRequest} params - Parameters for receiver creation.
