@@ -2,6 +2,8 @@
 
 package main
 
+import "chain/core/config"
+
 /*
 
 The secureheader package redirects requests made with http to the
@@ -13,5 +15,5 @@ connect to a chain core without a needing a TLS cert.
 */
 
 func init() {
-	httpsRedirect = false
+	config.BuildConfig.PlainHTTP = true
 }

@@ -46,12 +46,14 @@ var (
 	// This is the default, Chain development configuration.
 	// These options can be updated with build tags.
 	BuildConfig = struct {
-		LoopbackAuth bool `json:"is_loopback_auth"`
 		MockHSM      bool `json:"is_mockhsm"`
+		LoopbackAuth bool `json:"is_loopback_auth"`
+		PlainHTTP    bool `json:"plain_http"`
 		Reset        bool `json:"is_reset"`
 	}{
-		LoopbackAuth: false,
 		MockHSM:      true,
+		LoopbackAuth: false,
+		PlainHTTP:    false,
 		Reset:        false,
 	}
 )

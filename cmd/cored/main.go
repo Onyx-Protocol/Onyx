@@ -76,8 +76,7 @@ var (
 	buildCommit = "?"
 	buildDate   = "?"
 
-	race          []interface{} // initialized in race.go
-	httpsRedirect = true        // initialized in plain_http.go
+	race []interface{} // initialized in race.go
 
 	// By default, a core is not able to reset its data.
 	// This feature can be turned on with the reset build tag.
@@ -161,8 +160,7 @@ func runServer() {
 	var handler http.Handler = mux
 	handler = reqid.Handler(handler)
 
-	secureheader.DefaultConfig.PermitClearLoopback = !httpsRedirect
-	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
+	secureheader.DefaultConfig.HTTPSRedirect = !config.BuildConfig.PlainHTTP
 	secureheader.DefaultConfig.Next = handler
 
 	server := &http.Server{
