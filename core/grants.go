@@ -8,7 +8,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/authz"
 	"chain/net/http/httpjson"
@@ -137,14 +136,9 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 	}, nil
 }
 
-func (a *API) revokeGrant(ctx context.Context, x struct {
-	GuardType string        `json:"guard_type"`
-	GuardData chainjson.Map `json:"guard_data"`
-	Policy    string
-}) error {
-	guardData, err := x.GuardData.MarshalJSON()
+func (a *API) revokeGrant(ctx context.Context, x apiGrant) error {
+	guardData, err := json.Marshal(x.GuardData)
 	if err != nil {
-		// chainjson.Map implementation means this should never happen ¯\_(ツ)_/¯
 		return errors.Wrap(err)
 	}
 
