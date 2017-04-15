@@ -171,8 +171,8 @@ func (a *API) buildHandler() {
 	m.Handle("/list-acl-grants", jsonHandler(a.listGrants))
 	m.Handle("/create-acl-grant", jsonHandler(a.createGrant))
 	m.Handle("/revoke-acl-grant", jsonHandler(a.revokeGrant))
-	m.Handle("/list-access-tokens", jsonHandler(a.listAccessTokens))
 	m.Handle("/create-access-token", jsonHandler(a.createAccessToken))
+	m.Handle("/list-access-tokens", jsonHandler(a.listAccessTokens))
 	m.Handle("/delete-access-token", jsonHandler(a.deleteAccessToken))
 	m.Handle("/configure", jsonHandler(a.configure))
 	m.Handle("/info", jsonHandler(a.info))
@@ -260,8 +260,8 @@ func (a *API) authnHandler(handler http.Handler) http.Handler {
 }
 
 func (a *API) authzHandler(handler http.Handler) http.Handler {
+	auth := authz.NewAuthorizer(a.raftDB, grantPrefix, policyByRoute)
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		auth := authz.NewAuthorizer(a.raftDB, grantPrefix, policyByRoute)
 		err := auth.Authorize(req)
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, errNotAuthorized)

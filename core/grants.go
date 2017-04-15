@@ -39,7 +39,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 		return errors.Wrap(err)
 	}
 	id, ok := gd["id"]
-	if !ok || !a.accessTokens.CheckID(ctx, id) {
+	if !ok || !a.accessTokens.Exists(ctx, id) {
 		return errMissingTokenID
 	}
 
