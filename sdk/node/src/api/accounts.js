@@ -4,7 +4,6 @@ const shared = require('../shared')
  * An account is an object in Chain Core that tracks ownership of assets on a
  * blockchain by creating and tracking control programs.
  *
- * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/accounts}
  * @typedef {Object} Account
  * @global
@@ -45,7 +44,6 @@ const shared = require('../shared')
 /**
  * API for interacting with {@link Account accounts}.
  *
- * <br/><br/>
  * More info: {@link https://chain.com/docs/core/build-applications/accounts}
  * @module AccountsApi
  */

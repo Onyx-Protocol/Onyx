@@ -6,7 +6,7 @@ const shared = require('./shared')
  * created in Chain Core and sent to the HSM for signing. The HSM signs the
  * transaction without ever revealing the private key. Once signed, the
  * transaction can be submitted to the blockchain successfully.
- * <br/><br/>
+ * 
  * More info: {@link https://chain.com/docs/core/build-applications/keys}
  */
 class HsmSigner {

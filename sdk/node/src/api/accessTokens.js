@@ -1,10 +1,10 @@
 const shared = require('../shared')
 
 /**
- * There are two APIs in Chain Core: the client API and the network API. Each
- * API is authenticated using access tokens with HTTP Basic Authentication.
+ * Access tokens are `name:secret-token` pairs that can be granted one or more
+ * policies for accessing Chain Core features. See {@link module:AccessControlApi the
+ * access control API} for more info.
  *
- * <br/><br/>
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
  * @typedef {Object} AccessToken
  * @global
@@ -15,17 +15,16 @@ const shared = require('../shared')
  * @property {String} token
  * Only returned in the response from {@link AccessTokensApi~create}.
  *
- * @property {String} type
- * Either 'client' or 'network'.
- *
  * @property {String} createdAt
  * Timestamp of token creation, RFC3339 formatted.
+ *
+ * @property {String} type
+ * DEPRECATED. Do not use in 1.2 or later. Either 'client' or 'network'.
  */
 
 /**
  * API for interacting with {@link AccessToken access tokens}.
  *
- * <br/><br/>
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
  * @module AccessTokensApi
  */
@@ -36,7 +35,7 @@ const accessTokens = (client) => {
      *
      * @param {Object} params - Parameters for access token creation.
      * @param {String} params.id - User specified, unique identifier.
-     * @param {String} params.type - Either 'client' or 'network'.
+     * @param {String} params.type - DEPRECATED. Do not use in 1.2 or later. Either 'client' or 'network'.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
      * @returns {Promise<AccessToken>} Newly created access token.
      */
@@ -74,7 +73,7 @@ const accessTokens = (client) => {
      *
      * @param {String} id - Access token ID.
      * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-     * @returns {Promise<Object>} Status of deleted object.
+     * @returns {Promise<Object>} Success message or error.
      */
     delete: (id, cb) => shared.tryCallback(
       client.request('/delete-access-token', {id: id}),

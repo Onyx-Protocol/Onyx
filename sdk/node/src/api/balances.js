@@ -5,7 +5,7 @@ const shared = require('../shared')
  * Unlike other queries in Chain Core, balance queries do not return Chain Core
  * objects, only simple sums over the amount fields in a specified list of
  * unspent output objects
- * <br/><br/>
+ *
  * More info: {@link https://chain.com/docs/core/build-applications/queries}
  * @typedef {Object} Balance
  * @global
@@ -19,7 +19,7 @@ const shared = require('../shared')
 
 /**
 * API for interacting with {@link Balance balances}.
- * <br/><br/>
+ * 
  * More info: {@link https://chain.com/docs/core/build-applications/queries}
  * @module BalancesApi
  */

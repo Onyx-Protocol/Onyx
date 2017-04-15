@@ -5,7 +5,7 @@ const shared = require('../shared')
  * creates others. An output is considered unspent when it has not yet been used
  * as an input to a new transaction. All asset units on a blockchain exist in
  * the unspent output set.
- * <br/><br/>
+ *
  * More info: {@link https://chain.com/docs/core/build-applications/unspent-outputs}
  * @typedef {Object} UnspentOutput
  * @global
@@ -64,7 +64,7 @@ const shared = require('../shared')
 
 /**
  * API for interacting with {@link UnspentOutput unspent outputs}.
- * <br/><br/>
+ * 
  * More info: {@link https://chain.com/docs/core/build-applications/unspent-outputs}
  * @module UnspentOutputsApi
  */

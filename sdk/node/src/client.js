@@ -1,4 +1,5 @@
 const Connection = require('./connection')
+const accessControlAPI = require('./api/accessControl')
 const accessTokensAPI = require('./api/accessTokens')
 const accountsAPI = require('./api/accounts')
 const assetsAPI = require('./api/assets')
@@ -33,6 +34,12 @@ class Client {
      * @type {module:AccessTokensApi}
      */
     this.accessTokens = accessTokensAPI(this)
+
+    /**
+     * API actions for access control grants
+     * @type {module:AccessControlApi}
+     */
+    this.accessControl = accessControlAPI(this)
 
     /**
      * API actions for accounts

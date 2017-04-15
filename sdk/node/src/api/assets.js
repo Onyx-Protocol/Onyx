@@ -4,7 +4,7 @@ const shared = require('../shared')
  * An asset is a type of value that can be issued on a blockchain. All units of
  * a given asset are fungible. Units of an asset can be transacted directly
  * between parties without the involvement of the issuer.
- * <br/><br/>
+ *
  * More info: {@link https://chain.com/docs/core/build-applications/assets}
  * @typedef {Object} Asset
  * @global
@@ -39,7 +39,7 @@ const shared = require('../shared')
 
 /**
  * API for interacting with {@link Asset assets}.
- * <br/><br/>
+ * 
  * More info: {@link https://chain.com/docs/core/build-applications/assets}
  * @module AssetsApi
  */

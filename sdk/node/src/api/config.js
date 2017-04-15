@@ -3,7 +3,7 @@ const shared = require('../shared')
 /**
  * Basic information about the configuration of Chain Core, as well as any
  * errors encountered when updating the local state of the blockchain
- * <br/><br/>
+ *
  * More info: {@link https://chain.com/docs/core/get-started/configure}
  * @typedef {Object} CoreInfo
  *
@@ -69,7 +69,7 @@ const shared = require('../shared')
 /**
  * Chain Core can be configured as a new blockchain network, or as a node in an
  * existing blockchain network.
- * <br/><br/>
+ * 
  * More info: {@link https://chain.com/docs/core/get-started/configure}
  * @module ConfigApi
  */

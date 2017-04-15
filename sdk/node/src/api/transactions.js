@@ -16,7 +16,7 @@ function checkForError(resp) {
 /**
  * A blockchain consists of an immutable set of cryptographically linked
  * transactions. Each transaction contains one or more actions.
- * <br/><br/>
+ *
  * More info: {@link https://chain.com/docs/core/build-applications/transaction-basics}
  * @typedef {Object} Transaction
  * @global
@@ -104,7 +104,7 @@ function checkForError(resp) {
  * creates others. An output is considered unspent when it has not yet been used
  * as an input to a new transaction. All asset units on a blockchain exist in
  * the unspent output set.
- * <br/><br/>
+ * 
  * More info: {@link https://chain.com/docs/core/build-applications/unspent-outputs}
  * @typedef {Object} TransactionOutput
  * @global
@@ -289,7 +289,7 @@ class TransactionBuilder {
 
 /**
  * API for interacting with {@link Transaction transactions}.
- * <br/><br/>
+ *
  * More info: {@link https://chain.com/docs/core/build-applications/transaction-basics}
  * @module TransactionsApi
  */
