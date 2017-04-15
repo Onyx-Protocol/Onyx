@@ -50,7 +50,6 @@ var (
 	errRateLimited      = errors.New("request limit exceeded")
 	errLeaderElection   = errors.New("no leader; pending election")
 	errNotAuthenticated = errors.New("not authenticated")
-	errNotAuthorized    = errors.New("not authorized")
 )
 
 // API serves the Chain HTTP API
@@ -264,7 +263,7 @@ func (a *API) authzHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		err := auth.Authorize(req)
 		if err != nil {
-			errorFormatter.Write(req.Context(), rw, errNotAuthorized)
+			errorFormatter.Write(req.Context(), rw, err)
 			return
 		}
 		handler.ServeHTTP(rw, req)

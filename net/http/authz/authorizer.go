@@ -12,7 +12,7 @@ import (
 	"chain/net/http/authn"
 )
 
-const grantPrefix = "/core/grant/"
+var ErrNotAuthorized = errors.New("not authorized")
 
 type Authorizer struct {
 	raftDB        *raft.Service
@@ -30,11 +30,11 @@ func NewAuthorizer(rdb *raft.Service, prefix string, policyMap map[string][]stri
 
 func (a *Authorizer) Authorize(req *http.Request) error {
 	policies := a.policyByRoute[req.RequestURI]
-	if policies == nil {
+	if policies == nil || len(policies) == 0 {
 		return errors.New("missing policy on this route")
 	}
 
-	grants, err := grantsByPolicies(a.raftDB, policies)
+	grants, err := a.grantsByPolicies(policies)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -48,10 +48,8 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 
 func authzToken(ctx context.Context, grants []*Grant) bool {
 	for _, g := range grants {
-		if g.GuardType == "access_token" {
-			if accessTokenGuardData(g) == authn.Token(ctx) {
-				return true
-			}
+		if g.GuardType == "access_token" && accessTokenGuardData(g) == authn.Token(ctx) {
+			return true
 		}
 	}
 	return false
@@ -67,22 +65,15 @@ func authzLocalhost(ctx context.Context, grants []*Grant) bool {
 }
 
 func accessTokenGuardData(grant *Grant) string {
-	var data map[string]string
-	err := json.Unmarshal(grant.GuardData, &data)
-	if err != nil {
-		return ""
-	}
-	token, ok := data["id"]
-	if ok {
-		return token
-	}
-	return ""
+	var v struct{ ID string }
+	json.Unmarshal(grant.GuardData, &v) // ignore error, returns "" on failure
+	return v.ID
 }
 
-func grantsByPolicies(raftDB *raft.Service, policies []string) ([]*Grant, error) {
+func (a *Authorizer) grantsByPolicies(policies []string) ([]*Grant, error) {
 	var grants []*Grant
 	for _, p := range policies {
-		data := raftDB.Stale().Get(grantPrefix + p)
+		data := a.raftDB.Stale().Get(a.raftPrefix + p)
 		if data != nil {
 			grantList := new(GrantList)
 			err := proto.Unmarshal(data, grantList)
