@@ -705,4 +705,65 @@ describe('Callback style', () => {
       () => done()
     ])
   })
+
+  describe('access control', () => {
+    let tokenName
+    let tokenGrant
+
+    before('set up grant data', (done) => {
+      tokenName = uuid.v4()
+      async.series([
+        (next) => client.accessTokens.create({type: 'client', id: tokenName}, (err, resp) => {
+          tokenGrant = {
+            guard_data: { id: resp.id },
+            guard_type: 'access_token',
+            policy: 'client-readwrite'
+          }
+          next()
+        }),
+        () => done()
+      ])
+    })
+
+    it('can create access grants', (done) => {
+      client.accessControl.create(tokenGrant, (err, resp) => {
+        expect(resp.message == 'ok')
+        done()
+      })
+    })
+
+    it('can list access grants', (done) => {
+      async.series([
+        (next) => client.accessControl.create(tokenGrant, () => next()),
+        (next) => client.accessControl.list((err, list) => {
+            let matched = false
+            list.items.forEach((item) => {
+              if (item.guardData.id == tokenName) {
+                matched = true
+              }
+            })
+            assert(matched)
+            done()
+        })
+      ])
+    })
+
+
+    it('can revoke access grants', (done) => {
+      async.series([
+        (next) => client.accessControl.create(tokenGrant, () => next()),
+        (next) => client.accessControl.delete(tokenGrant, () => next()),
+        (next) => client.accessControl.list((err, list) => {
+          let missing = true
+          list.items.forEach((item) => {
+            if (item.guardData.id == tokenName) {
+              missing = false
+            }
+          })
+          assert(missing)
+          done()
+        })
+      ])
+    })
+  })
 })
