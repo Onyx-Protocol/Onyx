@@ -156,7 +156,7 @@ func configGenerator(client *rpc.Client, args []string) {
 		}
 	}
 
-	conf := &config.Config{
+	conf := config.Config{
 		IsGenerator:         true,
 		Quorum:              quorum,
 		Signers:             signers,
@@ -191,9 +191,14 @@ func createToken(client *rpc.Client, args []string) {
 		fatalln(usage)
 	}
 
+	req := struct {
+		ID, Type string
+	}{
+		ID:   args[0],
+		Type: map[bool]string{true: "network", false: "client"}[*flagNet],
+	}
 	var tok accesstoken.Token
-	typ := map[bool]string{true: "network", false: "client"}[*flagNet]
-	err := client.Call(context.Background(), "/create-access-token", struct{ ID, Type string }{ID: args[0], Type: typ}, &tok)
+	err := client.Call(context.Background(), "/create-access-token", req, &tok)
 	if err != nil {
 		fatalln("error:", err)
 	}
@@ -243,15 +248,15 @@ func configNongenerator(client *rpc.Client, args []string) {
 		}
 	}
 
-	var conf config.Config
-	conf.BlockchainId = &blockchainID
-	conf.GeneratorUrl = args[1]
-	conf.GeneratorAccessToken = *flagT
-	conf.IsSigner = *flagK != ""
-	conf.BlockPub = blockPub
-	conf.BlockHsmUrl = *flagHSMURL
-	conf.BlockHsmAccessToken = *flagHSMToken
-
+	conf := config.Config{
+		BlockchainId:         &blockchainID,
+		GeneratorUrl:         args[1],
+		GeneratorAccessToken: *flagT,
+		IsSigner:             *flagK != "",
+		BlockPub:             blockPub,
+		BlockHsmUrl:          *flagHSMURL,
+		BlockHsmAccessToken:  *flagHSMToken,
+	}
 	client.BlockchainID = blockchainID.String()
 	err = client.Call(context.Background(), "/configure", conf, nil)
 	if err != nil {
