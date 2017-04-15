@@ -60,7 +60,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 		if err != nil {
 			return errors.Wrap(err)
 		}
-		err = a.raftDB.Set(ctx, grantPrefix+x.Policy, val)
+		err = a.raftDB.Insert(ctx, grantPrefix+x.Policy, val)
 		if err != nil {
 			return errors.Wrap(err)
 		}
@@ -81,13 +81,15 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 		}
 	}
 
-	// create new grant and append to
+	// create new grant and it append to the list of grants associated with this policy
 	grants = append(grants, &g)
 	gList := &authz.GrantList{Grants: grants}
 	val, err := proto.Marshal(gList)
 	if err != nil {
 		return errors.Wrap(err)
 	}
+	// TODO(tessr): Make this safe for concurrent updates. Will likely require a
+	// conditional write operation for raftDB
 	err = a.raftDB.Set(ctx, grantPrefix+x.Policy, val)
 	if err != nil {
 		return errors.Wrap(err)
