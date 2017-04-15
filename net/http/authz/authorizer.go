@@ -40,7 +40,7 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 	}
 
 	if !authorized(req.Context(), grants) {
-		return errors.New("not authorized")
+		return ErrNotAuthorized
 	}
 
 	return nil

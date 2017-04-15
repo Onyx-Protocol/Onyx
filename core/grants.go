@@ -25,15 +25,13 @@ type apiGrant struct {
 var errMissingTokenID = errors.New("id does not exist")
 
 func (a *API) createGrant(ctx context.Context, x apiGrant) error {
-	id, ok := x.GuardData["id"]
-	if ok {
-		if strID, ok := id.(string); !ok || !a.accessTokens.Exists(ctx, strID) {
-			return errMissingTokenID
-		}
-	} else {
+	if id, _ := x.GuardData["id"].(string); !a.accessTokens.Exists(ctx, id) {
 		return errMissingTokenID
 	}
 
+	// NOTE: package json produces consistent serialization output,
+	// effectively an ad hoc canonical form. We rely on this to
+	// grant data for equality.
 	guardData, err := json.Marshal(x.GuardData)
 	if err != nil {
 		return errors.Wrap(err)
@@ -116,7 +114,7 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-		for _, g := range grantList.GetGrants() {
+		for _, g := range grantList.Grants {
 			var data map[string]interface{}
 			err = json.Unmarshal(g.GuardData, &data)
 			if err != nil {
