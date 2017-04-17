@@ -128,10 +128,7 @@ func main() {
 	}
 
 	fmt.Printf("\n")
-	runServer()
-}
 
-func runServer() {
 	maybeMonitorIfOnWindows() // special-case windows
 
 	ctx := context.Background()
