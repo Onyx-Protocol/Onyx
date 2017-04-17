@@ -55,6 +55,8 @@ const (
 
 var (
 	// config vars
+	tlsCrt        = env.String("TLSCRT", "")        // deprecated
+	tlsKey        = env.String("TLSKEY", "")        // deprecated
 	rootCAs       = env.String("ROOT_CA_CERTS", "") // file path
 	listenAddr    = env.String("LISTEN", ":1999")
 	dbURL         = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
@@ -255,8 +257,8 @@ func maybeUseTLS(ln net.Listener) (net.Listener, error) {
 
 	_, certErr := os.Lstat(certFile)
 	_, keyErr := os.Lstat(keyFile)
-	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) {
-		return ln, nil // files don't exist; don't want TLS
+	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) && *tlsCrt == "" && *tlsKey == "" {
+		return ln, nil // files & env vars don't exist; don't want TLS
 	}
 
 	config := &tls.Config{
@@ -267,7 +269,11 @@ func maybeUseTLS(ln net.Listener) (net.Listener, error) {
 	}
 	var err error
 	config.Certificates = make([]tls.Certificate, 1)
-	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) {
+		config.Certificates[0], err = tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
+	} else {
+		config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	}
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
