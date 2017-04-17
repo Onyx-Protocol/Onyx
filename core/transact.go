@@ -142,7 +142,7 @@ func (a *API) submitSingle(ctx context.Context, tpl *txbuilder.Template, waitUnt
 
 	err := a.finalizeTxWait(ctx, tpl, waitUntil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "tx %s", tpl.Transaction.ID)
+		return nil, errors.Wrapf(err, "tx %s", tpl.Transaction.ID.String())
 	}
 
 	return map[string]string{"id": tpl.Transaction.ID.String()}, nil
