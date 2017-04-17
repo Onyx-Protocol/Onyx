@@ -31,7 +31,7 @@ class SecondaryNavigation extends React.Component {
           </li>
           <li>
             <Link to='/access-control' activeClassName={styles.active}>
-              {navIcon('feed', styles)}
+              {navIcon('network', styles)}
               Access Control
             </Link>
           </li>
