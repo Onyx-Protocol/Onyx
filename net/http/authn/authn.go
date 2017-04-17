@@ -46,7 +46,6 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 		ctx = newContextWithToken(ctx, token)
 	}
 
-	// TODO(tessr): Remove this in favor of localhost grants.
 	local := a.localhostAuthn(req)
 	if local {
 		ctx = newContextWithLocalhost(ctx)
