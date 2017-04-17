@@ -136,12 +136,10 @@ func runServer() {
 	ctx := context.Background()
 	env.Parse()
 
-	if *tlsCrt == "" && *tlsKey == "" && *rootCAs == "" {
-		if httpsRedirect {
-			err := generatePKIX(ctx, tlsCrt, tlsKey, rootCAs)
-			if err != nil {
-				chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-			}
+	if *tlsCrt == "" && *tlsKey == "" && *rootCAs == "" && httpsRedirect {
+		err := generatePKIX(ctx, tlsCrt, tlsKey, rootCAs)
+		if err != nil {
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
 	}
 
