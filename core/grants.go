@@ -157,21 +157,19 @@ func (a *API) revokeGrant(ctx context.Context, x apiGrant) error {
 		return errors.Wrap(err)
 	}
 
-	grants := grantList.GetGrants()
-	toRemove := -1
-	for index, existing := range grants {
-		if existing.GuardType == x.GuardType && bytes.Equal(existing.GuardData, guardData) {
-			toRemove = index
+	var keep []*authz.Grant
+	for _, g := range grantList.Grants {
+		if g.GuardType != x.GuardType || !bytes.Equal(g.GuardData, guardData) {
+			keep = append(keep, g)
 		}
 	}
 
-	// If there's no matching grant, return success
-	if toRemove == -1 {
+	// We didn't match any grants, don't need to do an update. Return success
+	if len(keep) == len(grantList.Grants) {
 		return nil
 	}
 
-	grants = append(grants[:toRemove], grants[toRemove+1:]...)
-	gList := &authz.GrantList{Grants: grants}
+	gList := &authz.GrantList{Grants: keep}
 	val, err := proto.Marshal(gList)
 	if err != nil {
 		return errors.Wrap(err)
