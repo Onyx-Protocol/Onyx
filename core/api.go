@@ -263,13 +263,7 @@ func (a *API) authzHandler(handler http.Handler) http.Handler {
 	auth := authz.NewAuthorizer(a.raftDB, grantPrefix, policyByRoute)
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		err := auth.Authorize(req)
-		if errors.Root(err) == authz.ErrNotAuthorized {
-			// TODO(tessr/dominic): remove this substitution
-			// once dashboard can handle ErrNotAuthorized.
-			err = errNotAuthenticated
-		}
 		if err != nil {
-			log.Println("bah")
 			errorFormatter.Write(req.Context(), rw, err)
 			return
 		}
