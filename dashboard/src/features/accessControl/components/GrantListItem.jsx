@@ -10,14 +10,14 @@ class GrantListItem extends React.Component {
       desc = item.guardData.id
     } else {
       desc = <div>
-        {Object.keys(item.guardData).map(field => <p>
+        {Object.keys(item.guardData).map(field => <div key={field}>
           {field}:
           <ul>
-            {Object.keys(item.guardData[field]).map(key => <li>
+            {Object.keys(item.guardData[field]).map(key => <li key={key}>
               {key}: {item.guardData[field][key]}
             </li>)}
           </ul>
-        </p>)}
+        </div>)}
       </div>
     }
     return(

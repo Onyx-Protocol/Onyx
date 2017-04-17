@@ -1,5 +1,5 @@
 import React from 'react'
-import { BaseNew, FormContainer, FormSection, TextField, SelectField, CheckboxField } from 'features/shared/components'
+import { BaseNew, FormContainer, FormSection, TextField, CheckboxField } from 'features/shared/components'
 import { policyOptions } from 'features/accessControl/constants'
 import { reduxForm } from 'redux-form'
 import { actions } from 'features/accessControl'

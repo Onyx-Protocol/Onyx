@@ -9,10 +9,25 @@ const baseActions = baseListActions('accessControl', {
   clientApi: () => chainClient().accessControl
 })
 
-const setPolicies = (policies) => {
+// Given a list of policies, create a grant for
+// all policies that are truthy, and revoke any
+// outstanding grants for policies that are not.
+const setPolicies = (body, policies) => {
   const promises = []
 
-  return Promise.all()
+  for (var key in policies) {
+    const grant = {
+      ...body,
+      policy: key
+    }
+
+    promises.push(policies[key] ?
+      chainClient().accessControl.create(grant) :
+      chainClient().accessControl.delete(grant)
+    )
+  }
+
+  return Promise.all(promises)
 }
 
 export default {
@@ -34,16 +49,17 @@ export default {
   deleteItem: baseActions.deleteItem,
 
   submitTokenForm: data => {
-    const body = {...data}
+    const body = {
+      guardType: 'access_token',
+      guardData: data.guardData
+    }
 
-    body.guardType = 'access_token'
-
-    return function(dispatch) {
+    return dispatch => {
       return chainClient().accessTokens.create({
         id: body.guardData.id,
         type: 'client', // TODO: remove me when deprecated!
-      }).then(tokenResp => {
-        chainClient().accessControl.create(body).then(grantResp => {
+      }).then(tokenResp =>
+        setPolicies(body, data.policies).then(grantResp => {
           dispatch(appActions.showModal(
             <TokenCreateModal token={tokenResp.token}/>,
             appActions.hideModal
@@ -57,29 +73,24 @@ export default {
             state: {preserveFlash: true},
           }))
         })
-      }).catch(err => Promise.reject({_error: err}))
+      ).catch(err => Promise.reject({_error: err}))
     }
   },
 
   submitCertificateForm: data => {
-    const subject = data.subject
-    delete data.subject
-
     const body = {
       guardType: 'x509',
       guardData: {subject: {}},
-      policy: 'monitoring'
+      policy: 'client-readwrite'
     }
 
-    for (var index in subject) {
-      const field = subject[index]
+    for (var index in data.subject) {
+      const field = data.subject[index]
       body.guardData.subject[field.key] = field.value
     }
 
-    console.log(body);
-
-    return function(dispatch) {
-      return chainClient().accessControl.create(body).then(resp => {
+    return dispatch => {
+      return setPolicies(body, data.policies).then(resp => {
         dispatch({ type: 'CREATED_ACCESSX509', resp })
         dispatch(push({
           pathname: '/access-control',
