@@ -1,3 +1,12 @@
-.base {
-  background: red;
+.label {
+  input {
+    margin-right: 8px;
+  }
+
+  user-select: none;
+}
+
+.hint {
+  color: $text-light-color;
+  margin-left: $gutter-size/2;
 }

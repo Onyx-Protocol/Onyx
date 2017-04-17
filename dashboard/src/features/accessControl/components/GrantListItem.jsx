@@ -1,12 +1,13 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { isAccessToken, getPolicyNamesString } from 'features/accessControl/selectors'
 
 class GrantListItem extends React.Component {
   render() {
     const item = this.props.item
 
     let desc
-    if (item.guardType == 'access_token') {
+    if (isAccessToken(item)) {
       desc = item.guardData.id
     } else {
       desc = <div>
@@ -23,11 +24,15 @@ class GrantListItem extends React.Component {
     return(
       <tr>
         <td>{desc}</td>
-        <td>{item.policy}</td>
+        <td>{getPolicyNamesString(item)}</td>
         <td>
-          <button className='btn btn-danger btn-xs' onClick={this.props.delete.bind(this, item)}>
-            Delete
+          <button className='btn btn-link btn-sm' onClick={this.props.showEdit.bind(this, item)}>
+            Edit
           </button>
+
+          {isAccessToken(item) && <button className='btn btn-link btn-sm' onClick={this.props.delete.bind(this, item)}>
+            Delete
+          </button>}
         </td>
       </tr>
     )

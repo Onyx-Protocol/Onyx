@@ -1,4 +1,4 @@
-import { actions as accessControl } from 'features/accessControl'
+import accessControl from 'features/accessControl/actions'
 import { actions as account } from 'features/accounts'
 import { actions as app } from 'features/app'
 import { actions as asset } from 'features/assets'

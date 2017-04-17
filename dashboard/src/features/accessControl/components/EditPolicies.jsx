@@ -1,13 +1,13 @@
 import React from 'react'
-import { BaseNew, FormContainer, FormSection, TextField, CheckboxField } from 'features/shared/components'
+import { BaseNew, FormContainer, FormSection, CheckboxField } from 'features/shared/components'
 import { policyOptions } from 'features/accessControl/constants'
 import { reduxForm } from 'redux-form'
 import actions from 'features/accessControl/actions'
 
-class NewToken extends React.Component {
+class EditPolicies extends React.Component {
   render() {
     const {
-      fields: { guardData, policies },
+      fields: { policies },
       error,
       handleSubmit,
       submitting
@@ -16,13 +16,10 @@ class NewToken extends React.Component {
     return(
       <FormContainer
         error={error}
-        label='New access token'
+        label='Edit policies'
         onSubmit={handleSubmit(this.props.submitForm)}
         submitting={submitting} >
 
-        <FormSection title='Token information'>
-          <TextField title='Token Name' fieldProps={guardData.id} autoFocus={true} />
-        </FormSection>
         <FormSection title='Policy'>
           {policyOptions.map(option => {
             return <CheckboxField key={option.label}
@@ -38,30 +35,39 @@ class NewToken extends React.Component {
 }
 
 const mapDispatchToProps = (dispatch) => ({
-  submitForm: (data) => dispatch(actions.submitTokenForm(data))
+  submitForm: (data) => { /* todo */ }
 })
+
+const initialValues = (state, ownProps) => {
+  const item = state.accessControl.items[ownProps.params.id]
+  if (!item) { return {} }
+
+  const policies = item.policies
+  const fields = {
+    initialValues: {
+      policies: {
+        ['client-readwrite']: policies.indexOf('client-readwrite') >= 0,
+        ['client-readonly']: policies.indexOf('client-readonly') >= 0,
+        network: policies.indexOf('network') >= 0,
+        monitoring: policies.indexOf('monitoring') >= 0,
+      }
+    }
+  }
+  console.log(fields);
+
+  return fields
+}
 
 export default BaseNew.connect(
   BaseNew.mapStateToProps('accessControl'),
   mapDispatchToProps,
   reduxForm({
-    form: 'newAccessGrantForm',
+    form: 'editPoliciesForm',
     fields: [
-      'guardType',
-      'guardData.id',
       'policies.client-readwrite',
       'policies.client-readonly',
       'policies.network',
       'policies.monitoring',
     ],
-    validate: values => {
-      const errors = {}
-
-      if (!values.guardData.id) {
-        errors.guardData = {id: 'Token name is required'}
-      }
-
-      return errors
-    }
-  })(NewToken)
+  }, initialValues)(EditPolicies)
 )

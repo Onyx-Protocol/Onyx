@@ -1,13 +1,8 @@
 import React from 'react'
 import { chainClient } from 'utility/environment'
-import { baseListActions } from 'features/shared/actions'
 import { actions as appActions } from 'features/app'
 import { push } from 'react-router-redux'
 import TokenCreateModal from './components/TokenCreateModal'
-
-const baseActions = baseListActions('accessControl', {
-  clientApi: () => chainClient().accessControl
-})
 
 // Given a list of policies, create a grant for
 // all policies that are truthy, and delete any
@@ -32,17 +27,21 @@ const setPolicies = (body, policies) => {
 
 export default {
   fetchItems: () => {
-    return (dispatch) =>
-      chainClient().accessControl.list()
-      .then(
-        (param) => dispatch({
-          type: 'RECEIVED_ACCESSCONTROL_ITEMS',
-          param,
-        })
-      )
-  },
+    return (dispatch) => {
+      const tokens = []
 
-  deleteItem: baseActions.deleteItem,
+      return Promise.all([
+        chainClient().accessControl.list(),
+        chainClient().accessTokens.queryAll({}, (token, next) => {
+          tokens.push(token)
+          next()
+        })
+      ]).then(result => {
+        const grants = result[0].items
+        return dispatch({ type: 'RECEIVED_ACCESS_GRANTS', grants, tokens })
+      })
+    }
+  },
 
   submitTokenForm: data => {
     const body = {
@@ -65,7 +64,7 @@ export default {
             appActions.hideModal
           ))
 
-          dispatch({ type: 'CREATED_ACCESSTOKEN', grantResp })
+          dispatch({ type: 'CREATED_TOKEN_WITH_GRANT', grantResp })
 
           dispatch(push({
             pathname: '/access-control',
@@ -95,7 +94,7 @@ export default {
       }
 
       return setPolicies(body, data.policies).then(resp => {
-        dispatch({ type: 'CREATED_ACCESSX509', resp })
+        dispatch({ type: 'CREATED_X509_GRANT', resp })
         dispatch(push({
           pathname: '/access-control',
           search: '?type=certificate',
@@ -105,17 +104,18 @@ export default {
     }
   },
 
-  deleteGrant: grant => {
-    if (!window.confirm('Really delete access grant?')) {
+  deleteToken: grant => {
+    const id = grant.guardData.id
+    if (!window.confirm(`Really delete access token "${id}"?`)) {
       return
     }
 
-    return dispatch => chainClient().accessControl.delete(grant)
+    return dispatch => chainClient().accessTokens.delete(id)
       .then(() => {
         dispatch({
-          type: 'DELETE_ACCESSCONTROL',
+          type: 'DELETE_ACCESS_TOKEN',
           id: grant.id,
-          message: 'Grant deleted.'
+          message: 'Token deleted.'
         })
       }).catch(err => dispatch({
         type: 'ERROR', payload: err

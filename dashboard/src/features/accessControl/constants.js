@@ -1,22 +1,22 @@
 export const policyOptions = [
   {
-    label: 'client-readwrite',
+    label: 'Client read/write',
     value: 'client-readwrite',
-    hint: 'full access to the Client API'
+    hint: 'Full access to the Client API'
   },
   {
-    label: 'client-readonly',
+    label: 'Client read-only',
     value: 'client-readonly',
-    hint: 'access to read-only Client endpoints'
+    hint: 'Access to read-only Client endpoints'
   },
   {
-    label: 'network',
+    label: 'Network',
     value: 'network',
-    hint: 'access to the Network API'
+    hint: 'Access to the Network API'
   },
   {
-    label: 'monitoring',
+    label: 'Monitoring',
     value: 'monitoring',
-    hint: 'access to monitoring-specific endpoints'
+    hint: 'Access to monitoring-specific endpoints'
   },
 ]

@@ -1,6 +1,7 @@
 import AccessControlList from './components/AccessControlList'
 import NewToken from './components/NewToken'
 import NewCertificate from './components/NewCertificate'
+import EditPolicies from './components/EditPolicies'
 import { makeRoutes } from 'features/shared'
 import actions from './actions'
 
@@ -17,15 +18,15 @@ const checkParams = (nextState, replace) => {
 }
 
 export default (store) => {
+  const loadGrants = () => store.dispatch(actions.fetchItems())
+
   const routes = makeRoutes(store, 'accessControl', AccessControlList, null, null, null, {
     path: 'access-control',
     name: 'Access control'
   })
 
   routes.indexRoute.onEnter = (nextState, replace) => {
-    if (checkParams(nextState, replace)) {
-      store.dispatch(actions.fetchItems())
-    }
+    if (checkParams(nextState, replace)) { loadGrants() }
   }
 
   routes.indexRoute.onChange = (_, nextState, replace) => {
@@ -40,6 +41,12 @@ export default (store) => {
   routes.childRoutes.push({
     path: 'add-certificate',
     component: NewCertificate
+  })
+
+  routes.childRoutes.push({
+    path: ':id/edit',
+    component: EditPolicies,
+    onEnter: (nextState, replace) => loadGrants()
   })
 
   return routes
