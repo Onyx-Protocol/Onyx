@@ -16,6 +16,7 @@ import (
 	"chain/core/txfeed"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/net/http/authz"
 	"chain/net/http/httperror"
 	"chain/net/http/httpjson"
 	"chain/protocol"
@@ -60,7 +61,7 @@ var errorFormatter = httperror.Formatter{
 		errLeaderElection:          {503, "CH008", "Electing a new leader for the core; try again soon"},
 		errNotAuthenticated:        {401, "CH009", "Request could not be authenticated"},
 		txbuilder.ErrMissingFields: {400, "CH010", "One or more fields are missing"},
-		errNotAuthorized:           {403, "CH011", "Request is unauthorized"},
+		authz.ErrNotAuthorized:     {403, "CH011", "Request is unauthorized"},
 		asset.ErrDuplicateAlias:    {400, "CH050", "Alias already exists"},
 		account.ErrDuplicateAlias:  {400, "CH050", "Alias already exists"},
 		txfeed.ErrDuplicateAlias:   {400, "CH050", "Alias already exists"},
@@ -95,6 +96,7 @@ var errorFormatter = httperror.Formatter{
 		accesstoken.ErrBadID:       {400, "CH300", "Malformed or empty access token id"},
 		accesstoken.ErrBadType:     {400, "CH301", "Access tokens must be type client or network"},
 		accesstoken.ErrDuplicateID: {400, "CH302", "Access token id is already in use"},
+		errMissingTokenID:          {400, "CH303", "Access token id does not exist"},
 		errCurrentToken:            {400, "CH310", "The access token used to authenticate this request cannot be deleted"},
 
 		// Query error namespace (6xx)

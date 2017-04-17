@@ -4,7 +4,9 @@ package authz
 
 import "context"
 
-// Authorized returns false if this request is unauthorized.
-func Authorized(ctx context.Context) bool {
-	return authzToken(ctx) || authzLocalhost(ctx)
+// TODO(tessr): Remove this file in favor of localhost grants.
+
+// authorized returns false if this request is unauthorized.
+func authorized(ctx context.Context, grants []*Grant) bool {
+	return authzToken(ctx, grants) || authzLocalhost(ctx, grants)
 }

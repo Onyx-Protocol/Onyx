@@ -50,7 +50,6 @@ var (
 	errRateLimited      = errors.New("request limit exceeded")
 	errLeaderElection   = errors.New("no leader; pending election")
 	errNotAuthenticated = errors.New("not authenticated")
-	errNotAuthorized    = errors.New("not authorized")
 )
 
 // API serves the Chain HTTP API
@@ -168,6 +167,9 @@ func (a *API) buildHandler() {
 		}
 	}))
 
+	m.Handle("/list-acl-grants", jsonHandler(a.listGrants))
+	m.Handle("/create-acl-grant", jsonHandler(a.createGrant))
+	m.Handle("/revoke-acl-grant", jsonHandler(a.revokeGrant))
 	m.Handle("/create-access-token", jsonHandler(a.createAccessToken))
 	m.Handle("/list-access-tokens", jsonHandler(a.listAccessTokens))
 	m.Handle("/delete-access-token", jsonHandler(a.deleteAccessToken))
@@ -187,7 +189,7 @@ func (a *API) buildHandler() {
 		m.ServeHTTP(w, req)
 	})
 
-	handler := authzHandler(latencyHandler)
+	handler := a.authzHandler(latencyHandler)
 	handler = a.authnHandler(handler)
 	handler = maxBytes(handler) // TODO(tessr): consider moving this to non-core specific mux
 	handler = webAssetsHandler(handler)
@@ -250,15 +252,18 @@ func (a *API) authnHandler(handler http.Handler) http.Handler {
 		req, err := auth.Authenticate(req)
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, errNotAuthenticated)
+			return
 		}
 		handler.ServeHTTP(rw, req)
 	})
 }
 
-func authzHandler(handler http.Handler) http.Handler {
+func (a *API) authzHandler(handler http.Handler) http.Handler {
+	auth := authz.NewAuthorizer(a.raftDB, grantPrefix, policyByRoute)
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if !authz.Authorized(req.Context()) {
-			errorFormatter.Write(req.Context(), rw, errNotAuthorized)
+		err := auth.Authorize(req)
+		if err != nil {
+			errorFormatter.Write(req.Context(), rw, err)
 			return
 		}
 		handler.ServeHTTP(rw, req)
