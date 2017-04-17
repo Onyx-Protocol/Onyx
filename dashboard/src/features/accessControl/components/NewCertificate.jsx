@@ -1,5 +1,5 @@
 import React from 'react'
-import { BaseNew, FormContainer, FormSection, TextField, SelectField } from 'features/shared/components'
+import { BaseNew, FormContainer, FormSection, TextField, SelectField, CheckboxField } from 'features/shared/components'
 import { policyOptions } from 'features/accessControl/constants'
 import { reduxForm } from 'redux-form'
 import { actions } from 'features/accessControl'
@@ -13,7 +13,7 @@ class NewCertificate extends React.Component {
 
   render() {
     const {
-      fields: { subject, policy },
+      fields: { subject, policies },
       error,
       handleSubmit,
       submitting
@@ -50,16 +50,13 @@ class NewCertificate extends React.Component {
           </button>
         </FormSection>
         <FormSection title='Policy'>
-          <SelectField options={policyOptions}
-            title='Policy'
-            hint='Available policies are:
-* `client-readwrite`: full access to the Client API
-* `client-readonly`: access to read-only Client endpoints
-* `network`: access to the Network API
-* `monitoring`: access to monitoring-specific endpoints'
-            fieldProps={policy} />
+          {policyOptions.map(option => {
+            return <CheckboxField key={option.label}
+              title={option.label}
+              hint={option.hint}
+              fieldProps={policies[option.value]} />
+          })}
         </FormSection>
-
       </FormContainer>
     )
   }
@@ -69,15 +66,18 @@ const fields = [
   'guardType',
   'subject[].key',
   'subject[].value',
-  'policy',
+  'policies.client-readwrite',
+  'policies.client-readonly',
+  'policies.network',
+  'policies.monitoring',
 ]
 
 const validate = values => {
   const errors = {}
 
-  if (!values.policy) {
-    errors.policy = 'Policy is required'
-  }
+  // if (!values.policy) {
+  //   errors.policy = 'Policy is required'
+  // }
 
   return errors
 }

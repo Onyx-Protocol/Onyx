@@ -9,6 +9,12 @@ const baseActions = baseListActions('accessControl', {
   clientApi: () => chainClient().accessControl
 })
 
+const setPolicies = (policies) => {
+  const promises = []
+
+  return Promise.all()
+}
+
 export default {
   fetchItems: () => {
     return (dispatch) => {
@@ -59,13 +65,18 @@ export default {
     const subject = data.subject
     delete data.subject
 
-    const body = {...data}
-    body.guardType = 'x509'
-    body.guardData = {subject: {}}
+    const body = {
+      guardType: 'x509',
+      guardData: {subject: {}},
+      policy: 'monitoring'
+    }
+
     for (var index in subject) {
       const field = subject[index]
       body.guardData.subject[field.key] = field.value
     }
+
+    console.log(body);
 
     return function(dispatch) {
       return chainClient().accessControl.create(body).then(resp => {
