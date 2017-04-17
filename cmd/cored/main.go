@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -54,8 +55,6 @@ const (
 
 var (
 	// config vars
-	tlsCrt        = env.String("TLSCRT", "")
-	tlsKey        = env.String("TLSKEY", "")
 	rootCAs       = env.String("ROOT_CA_CERTS", "") // file path
 	listenAddr    = env.String("LISTEN", ":1999")
 	dbURL         = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
@@ -135,10 +134,20 @@ func runServer() {
 
 	ctx := context.Background()
 	env.Parse()
+	warnCompat(ctx)
+
+	listener, err := net.Listen("tcp", *listenAddr)
+	if err != nil {
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+	}
+	listener, useTLS, err := maybeUseTLS(listener)
+	if err != nil {
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+	}
 
 	raftDir := filepath.Join(*dataDir, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
-	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, *tlsCrt != "")
+	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, useTLS)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
@@ -164,7 +173,6 @@ func runServer() {
 	secureheader.DefaultConfig.Next = handler
 
 	server := &http.Server{
-		Addr:         *listenAddr,
 		Handler:      secureheader.DefaultConfig,
 		ReadTimeout:  httpReadTimeout,
 		WriteTimeout: httpWriteTimeout,
@@ -174,29 +182,12 @@ func runServer() {
 		TLSNextProto: map[string]func(*http.Server, *tls.Conn, http.Handler){},
 	}
 
-	// The `ListenAndServe` call has to happen in its own goroutine because
+	// The `Serve` call has to happen in its own goroutine because
 	// it's blocking and we need to proceed to the rest of the core setup after
 	// we call it.
 	go func() {
-		if *tlsCrt != "" {
-			cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
-			if err != nil {
-				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
-			}
-
-			server.TLSConfig = &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			}
-			err = server.ListenAndServeTLS("", "") // uses TLS certs from above
-			if err != nil {
-				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
-			}
-		} else {
-			err = server.ListenAndServe()
-			if err != nil {
-				chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
-			}
-		}
+		err := server.Serve(listener)
+		chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "Serve"))
 	}()
 
 	if *rootCAs != "" {
@@ -253,6 +244,31 @@ func runServer() {
 	// block forever without using any resources so this process won't quit while
 	// the goroutine containing ListenAndServe is still working
 	select {}
+}
+
+// maybeUseTLS loads the TLS cert and key (if so configured)
+// and wraps ln in a TLS listener.
+func maybeUseTLS(ln net.Listener) (net.Listener, bool, error) {
+	certFile := filepath.Join(*dataDir, "tls.crt")
+	keyFile := filepath.Join(*dataDir, "tls.key")
+
+	_, certErr := os.Lstat(certFile)
+	_, keyErr := os.Lstat(keyFile)
+	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) {
+		return ln, false, nil // files don't exist; don't want TLS
+	}
+
+	config := &tls.Config{
+		NextProtos: []string{"http/1.1", "h2"},
+	}
+	var err error
+	config.Certificates = make([]tls.Certificate, 1)
+	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, false, errors.Wrap(err)
+	}
+	ln = tls.NewListener(ln, config)
+	return ln, true, nil
 }
 
 func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string) http.Handler {
