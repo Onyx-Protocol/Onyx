@@ -25,8 +25,10 @@ type apiGrant struct {
 var errMissingTokenID = errors.New("id does not exist")
 
 func (a *API) createGrant(ctx context.Context, x apiGrant) error {
-	if id, _ := x.GuardData["id"].(string); !a.accessTokens.Exists(ctx, id) {
-		return errMissingTokenID
+	if x.GuardType == "access_token" {
+		if id, _ := x.GuardData["id"].(string); !a.accessTokens.Exists(ctx, id) {
+			return errMissingTokenID
+		}
 	}
 
 	// NOTE: package json produces consistent serialization output,
