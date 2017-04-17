@@ -1,6 +1,6 @@
 import React from 'react'
 import { BaseList, TableList, EmptyContent } from 'features/shared/components'
-import Item from  './ListItem'
+import Item from  'features/accessTokens/components/ListItem'
 import actions from 'actions'
 
 const commonProps = {

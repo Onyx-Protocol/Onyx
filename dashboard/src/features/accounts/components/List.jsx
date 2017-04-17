@@ -1,6 +1,6 @@
 import React from 'react'
 import { BaseList, TableList } from 'features/shared/components'
-import ListItem from './ListItem'
+import ListItem from 'features/accounts/components/ListItem'
 
 const type = 'account'
 
