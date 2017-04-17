@@ -48,7 +48,7 @@ class AccessControlList extends React.Component {
           <button
             className={`btn btn-primary ${styles.newBtn}`}
             onClick={this.props.showAddCertificate}>
-              + Add certificate
+              + Register certificate
           </button>
 
           {certList}

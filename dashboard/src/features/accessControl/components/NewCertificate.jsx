@@ -62,26 +62,6 @@ class NewCertificate extends React.Component {
   }
 }
 
-const fields = [
-  'guardType',
-  'subject[].key',
-  'subject[].value',
-  'policies.client-readwrite',
-  'policies.client-readonly',
-  'policies.network',
-  'policies.monitoring',
-]
-
-const validate = values => {
-  const errors = {}
-
-  // if (!values.policy) {
-  //   errors.policy = 'Policy is required'
-  // }
-
-  return errors
-}
-
 const mapDispatchToProps = (dispatch) => ({
   submitForm: (data) => dispatch(actions.submitCertificateForm(data))
 })
@@ -91,7 +71,14 @@ export default BaseNew.connect(
   mapDispatchToProps,
   reduxForm({
     form: 'newAccessGrantForm',
-    fields,
-    validate
+    fields: [
+      'guardType',
+      'subject[].key',
+      'subject[].value',
+      'policies.client-readwrite',
+      'policies.client-readonly',
+      'policies.network',
+      'policies.monitoring',
+    ],
   })(NewCertificate)
 )

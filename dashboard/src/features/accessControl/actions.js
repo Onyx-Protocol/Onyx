@@ -15,7 +15,7 @@ const baseActions = baseListActions('accessControl', {
 const setPolicies = (body, policies) => {
   const promises = []
 
-  for (var key in policies) {
+  for (let key in policies) {
     const grant = {
       ...body,
       policy: key
@@ -55,6 +55,10 @@ export default {
     }
 
     return dispatch => {
+      if (!Object.values(data.policies).some(policy => policy == true)) {
+        return Promise.reject({_error: 'You must specify one or more policies'})
+      }
+
       return chainClient().accessTokens.create({
         id: body.guardData.id,
         type: 'client', // TODO: remove me when deprecated!
@@ -73,7 +77,7 @@ export default {
             state: {preserveFlash: true},
           }))
         })
-      ).catch(err => Promise.reject({_error: err}))
+      ).catch(err => { throw {_error: err} })
     }
   },
 
@@ -84,12 +88,16 @@ export default {
       policy: 'client-readwrite'
     }
 
-    for (var index in data.subject) {
+    for (let index in data.subject) {
       const field = data.subject[index]
       body.guardData.subject[field.key] = field.value
     }
 
     return dispatch => {
+      if (!Object.values(data.policies).some(policy => policy == true)) {
+        return Promise.reject({_error: 'You must specify one or more policies'})
+      }
+
       return setPolicies(body, data.policies).then(resp => {
         dispatch({ type: 'CREATED_ACCESSX509', resp })
         dispatch(push({
@@ -97,7 +105,7 @@ export default {
           search: '?type=certificate',
           state: {preserveFlash: true},
         }))
-      }, err => Promise.reject({_error: err}))
+      }, err => { throw {_error: err} })
     }
   },
 
