@@ -57,11 +57,7 @@ func authzToken(ctx context.Context, grants []*Grant) bool {
 }
 
 func authzLocalhost(ctx context.Context, grants []*Grant) bool {
-	for _, g := range grants {
-		if g.GuardType == "localhost" {
-			return true
-		}
-	}
+	// TODO(tessr): Check grants here, once we combine loopback_auth with policies.
 	return authn.Localhost(ctx)
 }
 
