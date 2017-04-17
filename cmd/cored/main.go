@@ -140,14 +140,15 @@ func runServer() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	listener, useTLS, err := maybeUseTLS(listener)
+	listener, err = maybeUseTLS(listener)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
+	_, useTCP := listener.(*net.TCPListener) // no TLS?
 
 	raftDir := filepath.Join(*dataDir, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
-	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, useTLS)
+	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, !useTCP)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
@@ -248,14 +249,14 @@ func runServer() {
 
 // maybeUseTLS loads the TLS cert and key (if so configured)
 // and wraps ln in a TLS listener.
-func maybeUseTLS(ln net.Listener) (net.Listener, bool, error) {
+func maybeUseTLS(ln net.Listener) (net.Listener, error) {
 	certFile := filepath.Join(*dataDir, "tls.crt")
 	keyFile := filepath.Join(*dataDir, "tls.key")
 
 	_, certErr := os.Lstat(certFile)
 	_, keyErr := os.Lstat(keyFile)
 	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) {
-		return ln, false, nil // files don't exist; don't want TLS
+		return ln, nil // files don't exist; don't want TLS
 	}
 
 	config := &tls.Config{
@@ -265,10 +266,10 @@ func maybeUseTLS(ln net.Listener) (net.Listener, bool, error) {
 	config.Certificates = make([]tls.Certificate, 1)
 	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return nil, false, errors.Wrap(err)
+		return nil, errors.Wrap(err)
 	}
 	ln = tls.NewListener(ln, config)
-	return ln, true, nil
+	return ln, nil
 }
 
 func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string) http.Handler {
