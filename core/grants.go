@@ -60,7 +60,9 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 		if err != nil {
 			return errors.Wrap(err)
 		}
-		err = a.raftDB.Insert(ctx, grantPrefix+x.Policy, val)
+		// TODO(tessr): Make this safe for concurrent updates. Will likely require a
+		// conditional write operation for raftDB
+		err = a.raftDB.Set(ctx, grantPrefix+x.Policy, val)
 		if err != nil {
 			return errors.Wrap(err)
 		}
