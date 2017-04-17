@@ -25,6 +25,7 @@ RUN yum -y update \
     && install-java && rm -f /usr/bin/install-java \
     && install-maven && rm -f /usr/bin/install-maven \
     && install-ruby && rm -f /usr/bin/install-ruby \
+    && install-rust && rm -f /usr/bin/install-rust \
     && install-protobuf && rm -f /usr/bin/install-protobuf \
     && install-gas && rm -f /usr/bin/install-gas \
     && go get -u google.golang.org/grpc \
