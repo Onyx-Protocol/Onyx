@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 
@@ -29,7 +30,7 @@ func NewAuthorizer(rdb *raft.Service, prefix string, policyMap map[string][]stri
 }
 
 func (a *Authorizer) Authorize(req *http.Request) error {
-	policies := a.policyByRoute[req.RequestURI]
+	policies := a.policyByRoute[strings.TrimRight(req.RequestURI, "/")]
 	if policies == nil || len(policies) == 0 {
 		return errors.New("missing policy on this route")
 	}
