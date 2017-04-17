@@ -125,7 +125,7 @@ class Connection {
         throw errors.create(
           errors.types.NO_REQUEST_ID,
           'Chain-Request-Id header is missing. There may be an issue with your proxy or network configuration.',
-          {response: resp}
+          {response: resp, status: resp.status}
         )
       }
 
