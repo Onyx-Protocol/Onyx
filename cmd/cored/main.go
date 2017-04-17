@@ -260,6 +260,9 @@ func maybeUseTLS(ln net.Listener) (net.Listener, error) {
 	}
 
 	config := &tls.Config{
+		// This is the default set of protocols for package http.
+		// ListenAndServeTLS sets this automatically, but since
+		// we're using Serve instead, we have to set it here.
 		NextProtos: []string{"http/1.1", "h2"},
 	}
 	var err error
