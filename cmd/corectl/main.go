@@ -216,7 +216,7 @@ func configGenerator(db *sql.DB, args []string) {
 func createToken(db *sql.DB, args []string) {
 	const usage = "usage: corectl create-token [-net] [name]"
 	var flags flag.FlagSet
-	flagNet := flags.Bool("net", false, "create a network token instead of client")
+	flagNet := flags.Bool("net", false, "DEPRECATED. create a network token instead of client")
 	flags.Usage = func() {
 		fmt.Println(usage)
 		flags.PrintDefaults()
@@ -231,12 +231,15 @@ func createToken(db *sql.DB, args []string) {
 	ctx := context.Background()
 	migrateIfMissingSchema(ctx, db)
 	accessTokens := &accesstoken.CredentialStore{DB: db}
-	typ := map[bool]string{true: "network", false: "client"}[*flagNet]
-	tok, err := accessTokens.Create(ctx, args[0], typ)
+	tok, err := accessTokens.Create(ctx, args[0])
 	if err != nil {
 		fatalln("error:", err)
 	}
 	fmt.Println(tok.Token)
+
+	if *flagNet {
+		fmt.Println("warning: the network flag is deprecated")
+	}
 }
 
 func configNongenerator(db *sql.DB, args []string) {

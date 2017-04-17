@@ -30,7 +30,7 @@ func TestCreate(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		_, err := cs.Create(ctx, c.id, c.net)
+		_, err := cs.Create(ctx, c.id)
 		if errors.Root(err) != c.want {
 			t.Errorf("Create(%s, %s) error = %s want %s", c.id, c.net, err, c.want)
 		}
@@ -40,9 +40,9 @@ func TestCreate(t *testing.T) {
 func TestList(t *testing.T) {
 	ctx := context.Background()
 	cs := &CredentialStore{DB: pgtest.NewTx(t)}
-	a := mustCreateToken(t, ctx, cs, "a", "client")
-	b := mustCreateToken(t, ctx, cs, "b", "network")
-	c := mustCreateToken(t, ctx, cs, "c", "client")
+	a := mustCreateToken(t, ctx, cs, "a")
+	b := mustCreateToken(t, ctx, cs, "b")
+	c := mustCreateToken(t, ctx, cs, "c")
 	for _, token := range []*Token{a, b, c} {
 		token.Token = ""
 	}
@@ -106,7 +106,7 @@ func TestCheck(t *testing.T) {
 	ctx := context.Background()
 	cs := &CredentialStore{DB: pgtest.NewTx(t)}
 
-	token := mustCreateToken(t, ctx, cs, "x", "client")
+	token := mustCreateToken(t, ctx, cs, "x")
 
 	tokenParts := strings.Split(token.Token, ":")
 	tokenID := tokenParts[0]
@@ -115,7 +115,7 @@ func TestCheck(t *testing.T) {
 		t.Fatal("bad token secret")
 	}
 
-	valid, err := cs.Check(ctx, tokenID, token.Type, tokenSecret)
+	valid, err := cs.Check(ctx, tokenID, tokenSecret)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestCheck(t *testing.T) {
 		t.Fatal("expected token and secret to be valid")
 	}
 
-	valid, err = cs.Check(ctx, "x", "client", []byte("badsecret"))
+	valid, err = cs.Check(ctx, "x", []byte("badsecret"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,15 +136,15 @@ func TestDelete(t *testing.T) {
 	ctx := context.Background()
 	cs := &CredentialStore{DB: pgtest.NewTx(t)}
 
-	token := mustCreateToken(t, ctx, cs, "x", "client")
+	token := mustCreateToken(t, ctx, cs, "x")
 	err := cs.Delete(ctx, token.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func mustCreateToken(t *testing.T, ctx context.Context, cs *CredentialStore, id, typ string) *Token {
-	token, err := cs.Create(ctx, id, typ)
+func mustCreateToken(t *testing.T, ctx context.Context, cs *CredentialStore, id string) *Token {
+	token, err := cs.Create(ctx, id)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 
+	"chain/database/raft"
 	"chain/errors"
 	"chain/net/http/authz"
 	"chain/net/http/httpjson"
@@ -43,10 +45,17 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 		GuardType: x.GuardType,
 		GuardData: guardData,
 		Policy:    x.Policy,
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 
-	data, err := a.raftDB.Get(ctx, grantPrefix+x.Policy)
+	return storeGrant(ctx, a.raftDB, g)
+}
+
+func storeGrant(ctx context.Context, raftDB *raft.Service, grant authz.Grant) error {
+	key := grantPrefix + grant.Policy
+	if grant.CreatedAt == "" {
+		grant.CreatedAt = time.Now().UTC().Format(time.RFC3339)
+	}
+	data, err := raftDB.Get(ctx, key)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -54,7 +63,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 		// if there aren't any grants associated with this policy, go ahead
 		// and chuck this into raftdb
 		gList := &authz.GrantList{
-			Grants: []*authz.Grant{&g},
+			Grants: []*authz.Grant{&grant},
 		}
 		val, err := proto.Marshal(gList)
 		if err != nil {
@@ -62,8 +71,9 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 		}
 		// TODO(tessr): Make this safe for concurrent updates. Will likely require a
 		// conditional write operation for raftDB
-		err = a.raftDB.Set(ctx, grantPrefix+x.Policy, val)
+		err = a.raftDB.Set(ctx, key, val)
 		if err != nil {
+			log.Println("yeah this is the error")
 			return errors.Wrap(err)
 		}
 		return nil
@@ -75,16 +85,16 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 		return errors.Wrap(err)
 	}
 
-	grants := grantList.GetGrants()
+	grants := grantList.Grants
 	for _, existing := range grants {
-		if existing.GuardType == x.GuardType && bytes.Equal(existing.GuardData, guardData) {
+		if existing.GuardType == grant.GuardType && bytes.Equal(existing.GuardData, grant.GuardData) {
 			// this grant already exists, return for idempotency
 			return nil
 		}
 	}
 
 	// create new grant and it append to the list of grants associated with this policy
-	grants = append(grants, &g)
+	grants = append(grants, &grant)
 	gList := &authz.GrantList{Grants: grants}
 	val, err := proto.Marshal(gList)
 	if err != nil {
@@ -92,7 +102,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 	}
 	// TODO(tessr): Make this safe for concurrent updates. Will likely require a
 	// conditional write operation for raftDB
-	err = a.raftDB.Set(ctx, grantPrefix+x.Policy, val)
+	err = raftDB.Set(ctx, grantPrefix+grant.Policy, val)
 	if err != nil {
 		return errors.Wrap(err)
 	}

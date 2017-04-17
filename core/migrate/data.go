@@ -60,4 +60,7 @@ var migrations = []migration{
 	{Name: `2017-04-13.0.query.block-transactions-count.sql`, SQL: `
 		ALTER TABLE annotated_txs ADD COLUMN block_tx_count INTEGER;
 	`},
+	{Name: `2017-04-17.0.core.null-token-type.sql`, SQL: `
+		ALTER TABLE access_tokens ALTER COLUMN type DROP NOT NULL;
+	`},
 }
