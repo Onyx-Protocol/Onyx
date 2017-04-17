@@ -1,4 +1,5 @@
 import Autocomplete from './Autocomplete'
+import BaseUpdate from './BaseUpdate'
 import BaseList from './BaseList/BaseList'
 import BaseNew from './BaseNew'
 import BaseShow from './BaseShow'
@@ -31,6 +32,7 @@ import XpubField from './XpubField/XpubField'
 
 export {
   Autocomplete,
+  BaseUpdate,
   BaseList,
   BaseNew,
   BaseShow,

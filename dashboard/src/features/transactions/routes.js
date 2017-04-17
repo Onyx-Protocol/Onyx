@@ -8,6 +8,7 @@ export default (store) => {
     List,
     New,
     Show,
+    null,
     {
       childRoutes: [
         {

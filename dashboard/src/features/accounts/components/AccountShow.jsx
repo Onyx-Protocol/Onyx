@@ -47,6 +47,8 @@ class AccountShow extends BaseShow {
 
         <PageContent>
           <KeyValueTable
+            id={item.id}
+            object='account'
             title='Details'
             actions={[
               <button key='show-txs' className='btn btn-link' onClick={this.props.showTransactions.bind(this, item)}>Transactions</button>,
@@ -56,7 +58,7 @@ class AccountShow extends BaseShow {
             items={[
               {label: 'ID', value: item.id},
               {label: 'Alias', value: item.alias},
-              {label: 'Tags', value: item.tags},
+              {label: 'Tags', value: item.tags, editUrl: `/accounts/${item.id}/tags`},
               {label: 'Keys', value: item.keys.length},
               {label: 'Quorum', value: item.quorum},
             ]}

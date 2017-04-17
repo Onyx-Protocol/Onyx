@@ -13,13 +13,13 @@ export default (store) => {
       makeRoutes(
         store,
         'clientAccessToken',
-        ClientTokenList, NewClientToken, null,
+        ClientTokenList, NewClientToken, null, null,
         { path: 'client', skipFilter: true, name: 'Client access tokens' }
       ),
       makeRoutes(
         store,
         'networkAccessToken',
-        NetworkTokenList, NewNetworkToken, null,
+        NetworkTokenList, NewNetworkToken, null, null,
         { path: 'network', skipFilter: true, name: 'Network access tokens' }
       ),
     ]

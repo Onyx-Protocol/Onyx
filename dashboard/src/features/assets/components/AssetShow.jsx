@@ -24,6 +24,8 @@ class AssetShow extends BaseShow {
 
         <PageContent>
           <KeyValueTable
+            id={item.id}
+            object='asset'
             title='Details'
             actions={[
               <button key='show-circulation' className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
@@ -34,7 +36,7 @@ class AssetShow extends BaseShow {
             items={[
               {label: 'ID', value: item.id},
               {label: 'Alias', value: item.alias},
-              {label: 'Tags', value: item.tags},
+              {label: 'Tags', value: item.tags, editUrl: `/assets/${item.id}/tags`},
               {label: 'Definition', value: item.definition},
               {label: 'Keys', value: item.keys.length},
               {label: 'Quorum', value: item.quorum},
