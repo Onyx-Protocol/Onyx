@@ -62,7 +62,7 @@ export const flashMessages = (state = {}, action) => {
 
     case 'CREATED_ACCESSX509': {
       return newSuccess(state, <p>
-        Created X509 grant. <Link to='access-control/add-certificate'>Create another?</Link>
+        Granted policy to X509 certificate. <Link to='access-control/add-certificate'>Create another?</Link>
       </p>)
     }
 
