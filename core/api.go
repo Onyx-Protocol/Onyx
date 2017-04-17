@@ -262,6 +262,11 @@ func (a *API) authzHandler(handler http.Handler) http.Handler {
 	auth := authz.NewAuthorizer(a.raftDB, grantPrefix, policyByRoute)
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		err := auth.Authorize(req)
+		if errors.Root(err) == authz.ErrNotAuthorized {
+			// TODO(kr): remove this workaround once dashboard
+			// knows how to handle ErrNotAuthorized (CH011).
+			err = errors.Sub(errNotAuthenticated, err)
+		}
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, err)
 			return
