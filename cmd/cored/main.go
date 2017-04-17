@@ -274,6 +274,10 @@ func maybeUseTLS(ln net.Listener) (net.Listener, error) {
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
+	if *rootCAs != "" {
+		config.ClientAuth = tls.VerifyClientCertIfGiven
+		config.ClientCAs = loadRootCAs(*rootCAs)
+	}
 	ln = tls.NewListener(ln, config)
 	return ln, nil
 }

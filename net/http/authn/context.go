@@ -7,7 +7,23 @@ type key int
 const (
 	tokenKey key = iota
 	localhostKey
+	certDataKey
 )
+
+// newContextWithCertData sets the certificate guard data in a new context
+// and returns that context
+func newContextWithCertData(ctx context.Context, sn *CertGuardData) context.Context {
+	return context.WithValue(ctx, certDataKey, sn)
+}
+
+// CertData returns the certificate guard data stored in the context, if it exists.
+func CertData(ctx context.Context) *CertGuardData {
+	s, ok := ctx.Value(certDataKey).(*CertGuardData)
+	if !ok {
+		return &CertGuardData{}
+	}
+	return s
+}
 
 // newContextWithToken sets the token in a new context and returns the context.
 func newContextWithToken(ctx context.Context, token string) context.Context {

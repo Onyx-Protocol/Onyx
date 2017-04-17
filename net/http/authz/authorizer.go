@@ -28,7 +28,6 @@ func NewAuthorizer(rdb *raft.Service, prefix string, policyMap map[string][]stri
 		policyByRoute: policyMap,
 	}
 }
-
 func (a *Authorizer) Authorize(req *http.Request) error {
 	policies := a.policyByRoute[strings.TrimRight(req.RequestURI, "/")]
 	if policies == nil || len(policies) == 0 {
@@ -54,6 +53,10 @@ func authzGrants(ctx context.Context, grants []*Grant) bool {
 			if accessTokenGuardData(g) == authn.Token(ctx) {
 				return true
 			}
+		case "x509":
+			if x509GuardData(g).Equals(authn.CertData(ctx)) {
+				return true
+			}
 		case "localhost":
 			if authn.Localhost(ctx) {
 				return true
@@ -67,6 +70,12 @@ func accessTokenGuardData(grant *Grant) string {
 	var v struct{ ID string }
 	json.Unmarshal(grant.GuardData, &v) // ignore error, returns "" on failure
 	return v.ID
+}
+
+func x509GuardData(grant *Grant) *authn.CertGuardData {
+	sn := &authn.CertGuardData{}
+	json.Unmarshal(grant.GuardData, sn)
+	return sn
 }
 
 func (a *Authorizer) grantsByPolicies(policies []string) ([]*Grant, error) {
