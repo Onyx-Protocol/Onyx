@@ -295,6 +295,9 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 
 	opts = append(opts, core.IndexTransactions(*indexTxs))
 	opts = append(opts, enableMockHSM(db)...)
+	if *tlsCrt != "" {
+		opts = append(opts, core.ForwardUsingTLS)
+	}
 	// Add any configured API request rate limits.
 	if *rpsToken > 0 {
 		opts = append(opts, core.RateLimit(limit.AuthUserID, 2*(*rpsToken), *rpsToken))
