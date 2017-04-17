@@ -32,18 +32,14 @@ const setPolicies = (body, policies) => {
 
 export default {
   fetchItems: () => {
-    return (dispatch) => {
-      const promise = chainClient().accessControl.list()
-
-      promise.then(
+    return (dispatch) =>
+      chainClient().accessControl.list()
+      .then(
         (param) => dispatch({
           type: 'RECEIVED_ACCESSCONTROL_ITEMS',
           param,
         })
       )
-
-      return promise
-    }
   },
 
   deleteItem: baseActions.deleteItem,

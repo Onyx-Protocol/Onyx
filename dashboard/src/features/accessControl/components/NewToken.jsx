@@ -37,28 +37,6 @@ class NewToken extends React.Component {
   }
 }
 
-const fields = [
-  'guardType',
-  'guardData.id',
-  'policies.client-readwrite',
-  'policies.client-readonly',
-  'policies.network',
-  'policies.monitoring',
-]
-
-const validate = values => {
-  const errors = {}
-
-  // if (!values.policy) {
-  //   errors.policy = 'Policy is required'
-  // }
-  if (!values.guardData.id) {
-    errors.guardData = {id: 'Token name is required'}
-  }
-
-  return errors
-}
-
 const mapDispatchToProps = (dispatch) => ({
   submitForm: (data) => dispatch(actions.submitTokenForm(data))
 })
@@ -68,7 +46,22 @@ export default BaseNew.connect(
   mapDispatchToProps,
   reduxForm({
     form: 'newAccessGrantForm',
-    fields,
-    validate
+    fields: [
+      'guardType',
+      'guardData.id',
+      'policies.client-readwrite',
+      'policies.client-readonly',
+      'policies.network',
+      'policies.monitoring',
+    ],
+    validate: values => {
+      const errors = {}
+
+      if (!values.guardData.id) {
+        errors.guardData = {id: 'Token name is required'}
+      }
+
+      return errors
+    }
   })(NewToken)
 )
