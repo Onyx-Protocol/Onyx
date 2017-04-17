@@ -12,7 +12,7 @@ import (
 
 // MapTx converts a legacy TxData object into its entries-based
 // representation.
-func MapTx(oldTx *TxData) (txEntries *bc.TxEntries, err error) {
+func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 	defer func() {
 		if r, ok := recover().(error); ok {
 			err = r
@@ -24,12 +24,11 @@ func MapTx(oldTx *TxData) (txEntries *bc.TxEntries, err error) {
 		return nil, errors.Wrap(err, "mapping old transaction to new")
 	}
 
-	txEntries = &bc.TxEntries{
-		TxHeader:   header,
-		ID:         txid,
-		Entries:    entries,
-		TxInputs:   make([]bc.Entry, len(oldTx.Inputs)),
-		TxInputIDs: make([]bc.Hash, len(oldTx.Inputs)),
+	txEntries = &bc.Tx{
+		TxHeader: header,
+		ID:       txid,
+		Entries:  entries,
+		InputIDs: make([]bc.Hash, len(oldTx.Inputs)),
 	}
 
 	var (
@@ -67,8 +66,7 @@ func MapTx(oldTx *TxData) (txEntries *bc.TxEntries, err error) {
 		if ord >= uint64(len(oldTx.Inputs)) {
 			return nil, fmt.Errorf("%T entry has out-of-range ordinal %d", e, ord)
 		}
-		txEntries.TxInputs[ord] = e
-		txEntries.TxInputIDs[ord] = id
+		txEntries.InputIDs[ord] = id
 	}
 
 	for id := range nonceIDs {
@@ -293,21 +291,21 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 	return headerID, h, entryMap, nil
 }
 
-func mapBlockHeader(old *BlockHeader) (bhID bc.Hash, bh *bc.BlockHeaderEntry) {
-	bh = bc.NewBlockHeaderEntry(old.Version, old.Height, &old.PreviousBlockHash, old.TimestampMS, &old.TransactionsMerkleRoot, &old.AssetsMerkleRoot, old.ConsensusProgram)
+func mapBlockHeader(old *BlockHeader) (bhID bc.Hash, bh *bc.BlockHeader) {
+	bh = bc.NewBlockHeader(old.Version, old.Height, &old.PreviousBlockHash, old.TimestampMS, &old.TransactionsMerkleRoot, &old.AssetsMerkleRoot, old.ConsensusProgram)
 	bh.Witness.Arguments = old.Witness
 	bhID = bc.EntryID(bh)
 	return
 }
 
-func MapBlock(old *Block) *bc.BlockEntries {
+func MapBlock(old *Block) *bc.Block {
 	if old == nil {
 		return nil // if old is nil, so should new be
 	}
-	b := new(bc.BlockEntries)
-	b.ID, b.BlockHeaderEntry = mapBlockHeader(&old.BlockHeader)
+	b := new(bc.Block)
+	b.ID, b.BlockHeader = mapBlockHeader(&old.BlockHeader)
 	for _, oldTx := range old.Transactions {
-		b.Transactions = append(b.Transactions, oldTx.TxEntries)
+		b.Transactions = append(b.Transactions, oldTx.Tx)
 	}
 	return b
 }

@@ -74,7 +74,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *legacy.Block, snapshot 
 		},
 	}
 
-	var txEntries []*bc.TxEntries
+	var txEntries []*bc.Tx
 
 	for _, tx := range txs {
 		if len(b.Transactions) >= maxBlockTxs {
@@ -82,21 +82,21 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *legacy.Block, snapshot 
 		}
 
 		// Filter out transactions that are not well-formed.
-		err := c.ValidateTx(tx.TxEntries)
+		err := c.ValidateTx(tx.Tx)
 		if err != nil {
 			// TODO(bobg): log this?
 			continue
 		}
 
 		// Filter out double-spends etc.
-		err = newSnapshot.ApplyTx(tx.TxEntries)
+		err = newSnapshot.ApplyTx(tx.Tx)
 		if err != nil {
 			// TODO(bobg): log this?
 			continue
 		}
 
 		b.Transactions = append(b.Transactions, tx)
-		txEntries = append(txEntries, tx.TxEntries)
+		txEntries = append(txEntries, tx.Tx)
 	}
 
 	var err error

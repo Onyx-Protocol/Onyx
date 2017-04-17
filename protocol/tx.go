@@ -16,7 +16,7 @@ var ErrBadTx = errors.New("invalid transaction")
 // ValidateTx validates the given transaction. A cache holds
 // per-transaction validation results and is consulted before
 // performing full validation.
-func (c *Chain) ValidateTx(tx *bc.TxEntries) error {
+func (c *Chain) ValidateTx(tx *bc.Tx) error {
 	err := c.checkIssuanceWindow(tx)
 	if err != nil {
 		return err
@@ -54,12 +54,12 @@ func (c *prevalidatedTxsCache) cache(txID bc.Hash, err error) {
 	c.mu.Unlock()
 }
 
-func (c *Chain) checkIssuanceWindow(tx *bc.TxEntries) error {
+func (c *Chain) checkIssuanceWindow(tx *bc.Tx) error {
 	if c.MaxIssuanceWindow == 0 {
 		return nil
 	}
-	for _, entry := range tx.TxInputs {
-		if _, ok := entry.(*bc.Issuance); ok {
+	for _, entryID := range tx.InputIDs {
+		if _, err := tx.Issuance(entryID); err == nil {
 			if tx.Body.MinTimeMs+bc.DurationMillis(c.MaxIssuanceWindow) < tx.Body.MaxTimeMs {
 				return errors.WithDetailf(ErrBadTx, "issuance input's time window is larger than the network maximum (%s)", c.MaxIssuanceWindow)
 			}

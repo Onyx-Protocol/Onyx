@@ -16,7 +16,7 @@ type validationState struct {
 	blockchainID bc.Hash
 
 	// The enclosing transaction object
-	tx *bc.TxEntries
+	tx *bc.Tx
 
 	// The ID of the nearest enclosing entry
 	entryID bc.Hash
@@ -294,7 +294,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 	return nil
 }
 
-func checkValidBlockHeader(bh *bc.BlockHeaderEntry) error {
+func checkValidBlockHeader(bh *bc.BlockHeader) error {
 	if bh.Body.Version == 1 && !bh.Body.ExtHash.IsZero() {
 		return errNonemptyExtHash
 	}
@@ -397,7 +397,7 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 }
 
 // ValidateBlockSig runs the consensus program prog on b.
-func ValidateBlockSig(b *bc.BlockEntries, prog []byte) error {
+func ValidateBlockSig(b *bc.Block, prog []byte) error {
 	vmContext := newBlockVMContext(b, prog, b.Witness.Arguments)
 	err := vm.Verify(vmContext)
 	return errors.Wrap(err, "evaluating previous block's next consensus program")
@@ -405,7 +405,7 @@ func ValidateBlockSig(b *bc.BlockEntries, prog []byte) error {
 
 // ValidateBlock validates a block and the transactions within.
 // It does not run the consensus program; for that, see ValidateBlockSig.
-func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, validateTx func(*bc.TxEntries) error) error {
+func ValidateBlock(b, prev *bc.Block, initialBlockID bc.Hash, validateTx func(*bc.Tx) error) error {
 	if b.Body.Height > 1 {
 		if prev == nil {
 			return errors.WithDetailf(errNoPrevBlock, "height %d", b.Body.Height)
@@ -416,7 +416,7 @@ func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, validateTx 
 		}
 	}
 
-	err := checkValidBlockHeader(b.BlockHeaderEntry)
+	err := checkValidBlockHeader(b.BlockHeader)
 	if err != nil {
 		return errors.Wrap(err, "checking block header")
 	}
@@ -450,7 +450,7 @@ func ValidateBlock(b, prev *bc.BlockEntries, initialBlockID bc.Hash, validateTx 
 	return nil
 }
 
-func validateBlockAgainstPrev(b, prev *bc.BlockEntries) error {
+func validateBlockAgainstPrev(b, prev *bc.Block) error {
 	if b.Body.Version < prev.Body.Version {
 		return errors.WithDetailf(errVersionRegression, "previous block verson %d, current block version %d", prev.Body.Version, b.Body.Version)
 	}
@@ -467,7 +467,7 @@ func validateBlockAgainstPrev(b, prev *bc.BlockEntries) error {
 }
 
 // ValidateTx validates a transaction.
-func ValidateTx(tx *bc.TxEntries, initialBlockID bc.Hash) error {
+func ValidateTx(tx *bc.Tx, initialBlockID bc.Hash) error {
 	vs := &validationState{
 		blockchainID: initialBlockID,
 		tx:           tx,
