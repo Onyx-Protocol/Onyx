@@ -47,18 +47,20 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 	return nil
 }
 
-func authzToken(ctx context.Context, grants []*Grant) bool {
+func authzGrants(ctx context.Context, grants []*Grant) bool {
 	for _, g := range grants {
-		if g.GuardType == "access_token" && accessTokenGuardData(g) == authn.Token(ctx) {
-			return true
+		switch g.GuardType {
+		case "access_token":
+			if accessTokenGuardData(g) == authn.Token(ctx) {
+				return true
+			}
+		case "localhost":
+			if authn.Localhost(ctx) {
+				return true
+			}
 		}
 	}
 	return false
-}
-
-func authzLocalhost(ctx context.Context, grants []*Grant) bool {
-	// TODO(tessr): Check grants here, once we combine loopback_auth with policies.
-	return authn.Localhost(ctx)
 }
 
 func accessTokenGuardData(grant *Grant) string {

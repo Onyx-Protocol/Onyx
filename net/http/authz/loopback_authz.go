@@ -2,11 +2,13 @@
 
 package authz
 
-import "context"
+import (
+	"context"
 
-// TODO(tessr): Remove this file in favor of localhost grants.
+	"chain/net/http/authn"
+)
 
 // authorized returns false if this request is unauthorized.
 func authorized(ctx context.Context, grants []*Grant) bool {
-	return authzToken(ctx, grants) || authzLocalhost(ctx, grants)
+	return authn.Localhost(ctx) || authzGrants(ctx, grants)
 }
