@@ -1,3 +1,4 @@
+import CheckboxField from './CheckboxField/CheckboxField'
 import Autocomplete from './Autocomplete'
 import BaseUpdate from './BaseUpdate'
 import BaseList from './BaseList/BaseList'
@@ -31,6 +32,7 @@ import TextField from './TextField'
 import XpubField from './XpubField/XpubField'
 
 export {
+  CheckboxField,
   Autocomplete,
   BaseUpdate,
   BaseList,

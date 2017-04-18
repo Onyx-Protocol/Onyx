@@ -43,7 +43,8 @@
     panels: true,
     close: true,
     utilities: true,
-    responsive-utilities: true
+    responsive-utilities: true,
+    button-groups: true
   },
 
   // Bootstrap scripts

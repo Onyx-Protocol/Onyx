@@ -1,0 +1,28 @@
+.newBtn {
+  position: absolute;
+  right: $gutter-size;
+  top: $gutter-size;
+  vertical-align: baseline;
+}
+
+.btnGroup {
+  margin-bottom: $gutter-size;
+}
+
+.btn {
+  color: $highlight-default;
+
+  &:hover, &:active, &:hover:active, &:active:focus, &:focus {
+    color: $highlight-default;
+  }
+
+  &:focus {
+    background: white;
+  }
+}
+
+.active, .active:focus, .active:hover, .active:active:focus {
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.25);
+  border-color: $border-strong-color;
+  background: $background-emphasis-color;
+}

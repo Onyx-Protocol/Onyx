@@ -1,0 +1,11 @@
+.subjectField {
+  display: flex;
+  align-items: center;
+
+  :global {
+    .form-group {
+      flex: 1;
+      margin-right: $gutter-size;
+    }
+  }
+}
