@@ -166,6 +166,7 @@ func main() {
 	// That is the second phase.
 	mux := http.NewServeMux()
 	// TODO(tessr): authenticate raft endpoints
+	mux.Handle("/raft/", raftDB)
 
 	var handler http.Handler = mux
 	handler = reqid.Handler(handler)
