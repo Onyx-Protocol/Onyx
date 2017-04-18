@@ -45,7 +45,7 @@ func TestForwardToLeader(t *testing.T) {
 
 	// Setup a core.API so that it's a follower and leader.Address will
 	// return the fake HTTPS server created above. Also, include its
-	// certs in an internalClient so that it trusts the test server's
+	// certs in an internal httpClient so that it trusts the test server's
 	// certs.
 	u, err := url.Parse(ts.URL)
 	if err != nil {
@@ -55,7 +55,7 @@ func TestForwardToLeader(t *testing.T) {
 		config:          &config.Config{},
 		leader:          alwaysFollower{leaderAddress: u.Host},
 		forwardUsingTLS: true,
-		internalClient: &http.Client{
+		httpClient: &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
 					RootCAs: certpool,
