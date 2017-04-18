@@ -70,7 +70,6 @@ type API struct {
 	handler         http.Handler
 	leader          leaderProcess
 	addr            string
-	altAuth         func(*http.Request) bool
 	signer          func(context.Context, *legacy.Block) ([]byte, error)
 	requestLimits   []requestLimit
 	generator       *generator.Generator
