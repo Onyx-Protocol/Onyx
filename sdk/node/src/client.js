@@ -21,13 +21,26 @@ class Client {
    * constructor - create a new Chain client object capable of interacting with
    * the specified Chain Core.
    *
-   * @param {String} baseUrl - Chain Core URL.
-   * @param {String} token - Chain Core client token for API access.
+   * Passing a configuration object is the preferred way of calling this constructor.
+   * However, to support code written for 1.1 and older, the constructor supports passing
+   * in a string URL and an optional string token as the first and second parameter, respectively.
+   *
+   * @param {Object} opts - Plain JS object containing configuration options.
+   * @param {String} opts.baseUrl - Chain Core URL.
+   * @param {String} opts.token - Chain Core client token for API access.
    * @returns {Client}
    */
-  constructor(baseUrl, token = '') {
-    baseUrl = baseUrl || 'http://localhost:1999'
-    this.connection = new Connection(baseUrl, token)
+  constructor(opts = {}) {
+    // If the first argument is a string,
+    // support the deprecated constructor params.
+    if (typeof opts === 'string') {
+      opts = {
+        baseUrl: arguments[0],
+        token: arguments[1] || ''
+      }
+    }
+    opts.baseUrl = opts.baseUrl || 'http://localhost:1999'
+    this.connection = new Connection(opts.baseUrl, opts.token)
 
     /**
      * API actions for access tokens
@@ -71,7 +84,7 @@ class Client {
      */
     this.mockHsm = {
       keys: mockHsmKeysAPI(this),
-      signerConnection: new Connection(`${baseUrl}/mockhsm`, token)
+      signerConnection: new Connection(`${opts.baseUrl}/mockhsm`, opts.token)
     }
 
     /**

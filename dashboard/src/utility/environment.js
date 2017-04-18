@@ -15,10 +15,10 @@ if (process.env.NODE_ENV === 'production') {
   basename = ''
 }
 
-export const chainClient = () => new chainSdk.Client(
-  apiHost,
-  store.getState().core.clientToken
-)
+export const chainClient = () => new chainSdk.Client({
+  baseUrl: apiHost,
+  token: store.getState().core.clientToken
+})
 
 export const chainSigner = () => new chainSdk.HsmSigner(
   apiHost,
