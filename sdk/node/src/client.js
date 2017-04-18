@@ -40,7 +40,7 @@ class Client {
       }
     }
     opts.baseUrl = opts.baseUrl || 'http://localhost:1999'
-    this.connection = new Connection(opts.baseUrl, opts.token)
+    this.connection = new Connection(opts.baseUrl, opts.token, opts.agent)
 
     /**
      * API actions for access tokens
@@ -84,7 +84,7 @@ class Client {
      */
     this.mockHsm = {
       keys: mockHsmKeysAPI(this),
-      signerConnection: new Connection(`${opts.baseUrl}/mockhsm`, opts.token)
+      signerConnection: new Connection(`${opts.baseUrl}/mockhsm`, opts.token, opts.agent)
     }
 
     /**
