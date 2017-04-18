@@ -239,8 +239,12 @@ func main() {
 	if conf != nil {
 		h = launchConfiguredCore(ctx, raftDB, db, conf, processID)
 	} else {
+		var opts []core.RunOption
+		if useTLS {
+			opts = append(opts, core.ForwardUsingTLS)
+		}
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		h = core.RunUnconfigured(ctx, db, raftDB)
+		h = core.RunUnconfigured(ctx, db, raftDB, opts...)
 	}
 	mux.Handle("/", h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
