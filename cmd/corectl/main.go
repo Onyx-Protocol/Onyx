@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -359,7 +360,8 @@ func mustRPCClient() *rpc.Client {
 	_, certErr := os.Lstat(certFile)
 	_, keyErr := os.Lstat(keyFile)
 	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) {
-		return nil // files & env vars don't exist; don't want TLS
+		// files don't exist; don't want TLS
+		return &rpc.Client{BaseURL: *coreURL}
 	}
 
 	config := &tls.Config{
@@ -388,12 +390,21 @@ func mustRPCClient() *rpc.Client {
 	}
 	config.RootCAs.AddCert(x509Cert)
 
-	t := new(http.Transport)
-	*t = *http.DefaultTransport.(*http.Transport)
-	t.TLSClientConfig = config
+	t := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSClientConfig:       config,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
 
 	url := *coreURL
-	if t.TLSClientConfig != nil && strings.HasPrefix(url, "http:") {
+	if strings.HasPrefix(url, "http:") {
 		url = "https:" + url[5:]
 	}
 
