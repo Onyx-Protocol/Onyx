@@ -79,6 +79,7 @@ var (
 
 	race          []interface{} // initialized in race.go
 	httpsRedirect = true        // initialized in plain_http.go
+	useTLS        = false
 
 	// By default, a core is not able to reset its data.
 	// This feature can be turned on with the reset build tag.
@@ -139,15 +140,15 @@ func main() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	listener, err = maybeUseTLS(listener)
+	listener, cert, err := maybeUseTLS(listener)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	_, useTCP := listener.(*net.TCPListener) // no TLS?
+	useTLS = cert != nil
 
 	raftDir := filepath.Join(*dataDir, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
-	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, !useTCP)
+	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, useTLS)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
@@ -190,9 +191,10 @@ func main() {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "Serve"))
 	}()
 
-	if *rootCAs != "" {
+	if useTLS {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-			RootCAs: loadRootCAs(*rootCAs),
+			Certificates: []tls.Certificate{*cert},
+			RootCAs:      loadRootCAs(*rootCAs),
 		}
 	}
 
@@ -236,7 +238,7 @@ func main() {
 		h = launchConfiguredCore(ctx, raftDB, db, conf, processID)
 	} else {
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		h = core.RunUnconfigured(ctx, db, raftDB)
+		h = core.RunUnconfigured(ctx, db, raftDB, core.ForwardUsingTLS(useTLS))
 	}
 	mux.Handle("/", h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
@@ -247,15 +249,17 @@ func main() {
 }
 
 // maybeUseTLS loads the TLS cert and key (if so configured)
-// and wraps ln in a TLS listener.
-func maybeUseTLS(ln net.Listener) (net.Listener, error) {
+// and wraps ln in a TLS listener. If using TLS the generated
+// cert will be returned. Otherwise the second return arg will
+// be nil.
+func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Certificate, error) {
 	certFile := filepath.Join(*dataDir, "tls.crt")
 	keyFile := filepath.Join(*dataDir, "tls.key")
 
 	_, certErr := os.Lstat(certFile)
 	_, keyErr := os.Lstat(keyFile)
 	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) && *tlsCrt == "" && *tlsKey == "" {
-		return ln, nil // files & env vars don't exist; don't want TLS
+		return ln, nil, nil // files & env vars don't exist; don't want TLS
 	}
 
 	config := &tls.Config{
@@ -272,14 +276,15 @@ func maybeUseTLS(ln net.Listener) (net.Listener, error) {
 		config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
 	}
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return nil, nil, errors.Wrap(err)
 	}
+
 	if *rootCAs != "" {
 		config.ClientAuth = tls.VerifyClientCertIfGiven
 		config.ClientCAs = loadRootCAs(*rootCAs)
 	}
 	ln = tls.NewListener(ln, config)
-	return ln, nil
+	return ln, &config.Certificates[0], nil
 }
 
 func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string) http.Handler {
@@ -299,6 +304,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 
 	opts = append(opts, core.IndexTransactions(*indexTxs))
 	opts = append(opts, enableMockHSM(db)...)
+	opts = append(opts, core.ForwardUsingTLS(useTLS))
 	// Add any configured API request rate limits.
 	if *rpsToken > 0 {
 		opts = append(opts, core.RateLimit(limit.AuthUserID, 2*(*rpsToken), *rpsToken))

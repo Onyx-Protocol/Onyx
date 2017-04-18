@@ -76,6 +76,8 @@ type API struct {
 	generator       *generator.Generator
 	remoteGenerator *rpc.Client
 	indexTxs        bool
+	forwardUsingTLS bool
+	httpClient      *http.Client // normally nil; only set in tests
 
 	downloadingSnapshotMu sync.Mutex
 	downloadingSnapshot   *fetch.SnapshotProgress
@@ -350,9 +352,14 @@ func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}
 		return errLeaderElection
 	}
 
-	// TODO(jackson): If using TLS, use https:// here.
 	l := &rpc.Client{
 		BaseURL: "http://" + addr,
+		// If internalClient is nil,
+		// http.DefaultClient will be used.
+		Client: a.httpClient,
+	}
+	if a.forwardUsingTLS {
+		l.BaseURL = "https://" + addr
 	}
 
 	// Forward the request credentials if we have them.

@@ -34,6 +34,12 @@ const (
 // RunOption describes a runtime configuration option.
 type RunOption func(*API)
 
+// ForwardUsingTLS configures the Core to use TLS when communicating between
+// Core processes.
+func ForwardUsingTLS(useTLS bool) RunOption {
+	return func(a *API) { a.forwardUsingTLS = useTLS }
+}
+
 // BlockSigner configures the Core to use signFn to handle block-signing
 // requests. In production, this will be a function to call out to signerd
 // and its HSM. In development, it'll use the MockHSM.
