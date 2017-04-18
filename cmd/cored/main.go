@@ -4,12 +4,10 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"expvar"
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -55,8 +53,6 @@ const (
 
 var (
 	// config vars
-	tlsCrt        = env.String("TLSCRT", "")        // deprecated
-	tlsKey        = env.String("TLSKEY", "")        // deprecated
 	rootCAs       = env.String("ROOT_CA_CERTS", "") // file path
 	listenAddr    = env.String("LISTEN", ":1999")
 	dbURL         = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
@@ -140,11 +136,11 @@ func main() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	listener, cert, err := maybeUseTLS(listener)
+	listener, tlsConfig, err := maybeUseTLS(listener)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	useTLS = cert != nil
+	useTLS = tlsConfig != nil
 
 	raftDir := filepath.Join(*dataDir, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
@@ -191,12 +187,7 @@ func main() {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "Serve"))
 	}()
 
-	if useTLS {
-		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-			Certificates: []tls.Certificate{*cert},
-			RootCAs:      loadRootCAs(*rootCAs),
-		}
-	}
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = tlsConfig
 
 	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("hapg", *dbURL)
@@ -249,42 +240,22 @@ func main() {
 }
 
 // maybeUseTLS loads the TLS cert and key (if so configured)
-// and wraps ln in a TLS listener. If using TLS the generated
-// cert will be returned. Otherwise the second return arg will
+// and wraps ln in a TLS listener. If using TLS the config
+// will be returned. Otherwise the second return arg will
 // be nil.
-func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Certificate, error) {
-	certFile := filepath.Join(*dataDir, "tls.crt")
-	keyFile := filepath.Join(*dataDir, "tls.key")
-
-	_, certErr := os.Lstat(certFile)
-	_, keyErr := os.Lstat(keyFile)
-	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) && *tlsCrt == "" && *tlsKey == "" {
+func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
+	config, err := core.TLSConfig(
+		filepath.Join(*dataDir, "tls.crt"),
+		filepath.Join(*dataDir, "tls.key"),
+		*rootCAs,
+	)
+	if err == core.ErrNoTLS {
 		return ln, nil, nil // files & env vars don't exist; don't want TLS
-	}
-
-	config := &tls.Config{
-		// This is the default set of protocols for package http.
-		// ListenAndServeTLS sets this automatically, but since
-		// we're using Serve instead, we have to set it here.
-		NextProtos: []string{"http/1.1", "h2"},
-	}
-	var err error
-	config.Certificates = make([]tls.Certificate, 1)
-	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) {
-		config.Certificates[0], err = tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
-	} else {
-		config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
-	}
-	if err != nil {
-		return nil, nil, errors.Wrap(err)
-	}
-
-	if *rootCAs != "" {
-		config.ClientAuth = tls.VerifyClientCertIfGiven
-		config.ClientCAs = loadRootCAs(*rootCAs)
+	} else if err != nil {
+		return nil, nil, err
 	}
 	ln = tls.NewListener(ln, config)
-	return ln, &config.Certificates[0], nil
+	return ln, config, nil
 }
 
 func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string) http.Handler {
@@ -472,18 +443,4 @@ func (w *errlog) Write(p []byte) (int, error) {
 		w.t = time.Now()
 	}
 	return len(p), nil // report success for the MultiWriter
-}
-
-// loadRootCAs reads a list of PEM-encoded X.509 certificates from name
-func loadRootCAs(name string) *x509.CertPool {
-	pem, err := ioutil.ReadFile(name)
-	if err != nil {
-		chainlog.Fatalkv(context.Background(), chainlog.KeyError, err)
-	}
-	pool := x509.NewCertPool()
-	ok := pool.AppendCertsFromPEM(pem)
-	if !ok {
-		chainlog.Fatalkv(context.Background(), chainlog.KeyError, "no certs found in "+name)
-	}
-	return pool
 }
