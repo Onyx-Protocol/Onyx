@@ -71,7 +71,7 @@ func storeGrant(ctx context.Context, raftDB *raft.Service, grant authz.Grant) er
 		}
 		// TODO(tessr): Make this safe for concurrent updates. Will likely require a
 		// conditional write operation for raftDB
-		err = a.raftDB.Set(ctx, key, val)
+		err = raftDB.Set(ctx, key, val)
 		if err != nil {
 			log.Println("yeah this is the error")
 			return errors.Wrap(err)
