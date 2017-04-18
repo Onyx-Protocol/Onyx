@@ -18,7 +18,7 @@ func newContextWithSubjectName(ctx context.Context, name *pkix.Name) context.Con
 	return context.WithValue(ctx, subjectNameKey, name)
 }
 
-// SubjectName returns the certificate stored in the context, if it exists.
+// SubjectName returns the cert subject name stored in the context, if it exists.
 func SubjectName(ctx context.Context) *pkix.Name {
 	n, ok := ctx.Value(subjectNameKey).(*pkix.Name)
 	if !ok {
