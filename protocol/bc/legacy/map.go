@@ -143,17 +143,10 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 
 			var (
 				anchorID    bc.Hash
-				setAnchored func(*bc.Hash)
+				setAnchored = func(*bc.Hash) {}
 			)
 
-			if len(oldIss.Nonce) == 0 {
-				if firstSpend == nil {
-					err = fmt.Errorf("nonce-less issuance in transaction with no spends")
-					return
-				}
-				anchorID = firstSpendID
-				setAnchored = firstSpend.SetAnchored
-			} else {
+			if len(oldIss.Nonce) > 0 {
 				tr := bc.NewTimeRange(tx.MinTime, tx.MaxTime)
 				var trID bc.Hash
 				trID, err = addEntry(tr)
@@ -177,6 +170,9 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 				}
 				anchorID = nonceID
 				setAnchored = nonce.SetAnchored
+			} else if firstSpend != nil {
+				anchorID = firstSpendID
+				setAnchored = firstSpend.SetAnchored
 			}
 
 			val := inp.AssetAmount()
