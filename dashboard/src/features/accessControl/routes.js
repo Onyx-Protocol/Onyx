@@ -17,7 +17,7 @@ const checkParams = (nextState, replace) => {
 }
 
 export default (store) => {
-  const routes = makeRoutes(store, 'accessControl', AccessControlList, null, null, {
+  const routes = makeRoutes(store, 'accessControl', AccessControlList, null, null, null, {
     path: 'access-control',
     name: 'Access control'
   })
