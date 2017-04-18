@@ -2,7 +2,6 @@ package authn
 
 import (
 	"context"
-	"crypto/x509/pkix"
 	"encoding/hex"
 	"net"
 	"net/http"
@@ -39,11 +38,7 @@ func NewAPI(tokens *accesstoken.CredentialStore, networkPrefix string) *API {
 // Authenticate returns the request, with added tokens and/or localhost
 // flags in the context, as appropriate.
 func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
-	ctx := req.Context()
-	name, err := a.certAuthn(req)
-	if err == nil {
-		return req.WithContext(newContextWithSubjectName(ctx, name)), nil
-	}
+	ctx := a.certAuthn(req)
 
 	token, err := a.tokenAuthn(req)
 	if err == nil && token != "" {
@@ -58,18 +53,20 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 
 	// if there is no authentication at all, we return an "unauthenticated" error,
 	// which may be helpful when debugging
-	if err != nil && !local {
+	if len(X509Certs(ctx)) < 1 && err != nil && !local {
 		return req, errors.New("unauthenticated")
 	}
 
 	return req.WithContext(ctx), nil
 }
 
-func (a *API) certAuthn(req *http.Request) (*pkix.Name, error) {
+// checks the request for a valid client cert list.
+// If found, it is added to the request's context.
+func (a *API) certAuthn(req *http.Request) context.Context {
 	if req.TLS != nil && len(req.TLS.PeerCertificates) > 0 {
-		return &req.TLS.PeerCertificates[0].Subject, nil
+		return context.WithValue(req.Context(), x509CertsKey, req.TLS.PeerCertificates)
 	}
-	return nil, errors.New("could not parse certificate subject name")
+	return req.Context()
 }
 
 // returns true if this request is coming from a loopback address

@@ -55,7 +55,8 @@ func authzGrants(ctx context.Context, grants []*Grant) bool {
 				return true
 			}
 		case "x509":
-			if validateX509GuardData(x509GuardData(g), *authn.SubjectName(ctx)) {
+			certs := authn.X509Certs(ctx)
+			if (len(certs) > 0) && equalX509Name(x509GuardData(g), certs[0].Subject) {
 				return true
 			}
 		case "localhost":
@@ -87,7 +88,7 @@ func x509GuardData(grant *Grant) pkix.Name {
 	}
 }
 
-func validateX509GuardData(a, b pkix.Name) bool {
+func equalX509Name(a, b pkix.Name) bool {
 	if a.CommonName != b.CommonName {
 		return false
 	}

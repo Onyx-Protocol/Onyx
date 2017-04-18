@@ -2,7 +2,7 @@ package authn
 
 import (
 	"context"
-	"crypto/x509/pkix"
+	"crypto/x509"
 )
 
 type key int
@@ -10,21 +10,16 @@ type key int
 const (
 	tokenKey key = iota
 	localhostKey
-	subjectNameKey
+	x509CertsKey
 )
 
-// newContextWithSubjectName sets the cert subject name in a new context and returns that context
-func newContextWithSubjectName(ctx context.Context, name *pkix.Name) context.Context {
-	return context.WithValue(ctx, subjectNameKey, name)
-}
-
-// SubjectName returns the cert subject name stored in the context, if it exists.
-func SubjectName(ctx context.Context) *pkix.Name {
-	n, ok := ctx.Value(subjectNameKey).(*pkix.Name)
+// X509Certs returns the cert stored in the context, if it exists.
+func X509Certs(ctx context.Context) []*x509.Certificate {
+	c, ok := ctx.Value(x509CertsKey).([]*x509.Certificate)
 	if !ok {
-		return &pkix.Name{}
+		return []*x509.Certificate{}
 	}
-	return n
+	return c
 }
 
 // newContextWithToken sets the token in a new context and returns the context.
