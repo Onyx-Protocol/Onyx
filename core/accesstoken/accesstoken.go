@@ -36,7 +36,7 @@ var (
 type Token struct {
 	ID      string    `json:"id"`
 	Token   string    `json:"token,omitempty"`
-	Type    string    `json:"type"`
+	Type    string    `json:"type,omitempty"` // deprecated in 1.2
 	Created time.Time `json:"created_at"`
 	sortID  string
 }
@@ -49,10 +49,6 @@ type CredentialStore struct {
 func (cs *CredentialStore) Create(ctx context.Context, id, typ string) (*Token, error) {
 	if !validIDRegexp.MatchString(id) {
 		return nil, errors.WithDetailf(ErrBadID, "invalid id %q", id)
-	}
-
-	if typ != "client" && typ != "network" {
-		return nil, errors.WithDetailf(ErrBadType, "unknown type %q", typ)
 	}
 
 	var secret [tokenSize]byte
@@ -90,7 +86,7 @@ func (cs *CredentialStore) Create(ctx context.Context, id, typ string) (*Token, 
 }
 
 // Check returns whether or not an id-secret pair is a valid access token.
-func (cs *CredentialStore) Check(ctx context.Context, id, typ string, secret []byte) (bool, error) {
+func (cs *CredentialStore) Check(ctx context.Context, id string, secret []byte) (bool, error) {
 	var (
 		toHash [tokenSize]byte
 		hashed [32]byte
@@ -98,9 +94,9 @@ func (cs *CredentialStore) Check(ctx context.Context, id, typ string, secret []b
 	copy(toHash[:], secret)
 	sha3pool.Sum256(hashed[:], toHash[:])
 
-	const q = `SELECT EXISTS(SELECT 1 FROM access_tokens WHERE id=$1 AND type=$2 AND hashed_secret=$3)`
+	const q = `SELECT EXISTS(SELECT 1 FROM access_tokens WHERE id=$1 AND hashed_secret=$2)`
 	var valid bool
-	err := cs.DB.QueryRow(ctx, q, id, typ, hashed[:]).Scan(&valid)
+	err := cs.DB.QueryRow(ctx, q, id, hashed[:]).Scan(&valid)
 	if err != nil {
 		return false, err
 	}

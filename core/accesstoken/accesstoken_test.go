@@ -25,7 +25,6 @@ func TestCreate(t *testing.T) {
 		{"b", "network", nil},
 		{"", "client", ErrBadID},
 		{"bad:id", "client", ErrBadID},
-		{"c", "badtype", ErrBadType},
 		{"a", "network", ErrDuplicateID}, // this aborts the transaction, so no tests can follow
 	}
 
@@ -115,7 +114,7 @@ func TestCheck(t *testing.T) {
 		t.Fatal("bad token secret")
 	}
 
-	valid, err := cs.Check(ctx, tokenID, token.Type, tokenSecret)
+	valid, err := cs.Check(ctx, tokenID, tokenSecret)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +122,7 @@ func TestCheck(t *testing.T) {
 		t.Fatal("expected token and secret to be valid")
 	}
 
-	valid, err = cs.Check(ctx, "x", "client", []byte("badsecret"))
+	valid, err = cs.Check(ctx, "x", []byte("badsecret"))
 	if err != nil {
 		t.Fatal(err)
 	}

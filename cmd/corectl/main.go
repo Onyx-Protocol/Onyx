@@ -216,7 +216,7 @@ func configGenerator(db *sql.DB, args []string) {
 func createToken(db *sql.DB, args []string) {
 	const usage = "usage: corectl create-token [-net] [name]"
 	var flags flag.FlagSet
-	flagNet := flags.Bool("net", false, "create a network token instead of client")
+	flagNet := flags.Bool("net", false, "DEPRECATED. create a network token instead of client")
 	flags.Usage = func() {
 		fmt.Println(usage)
 		flags.PrintDefaults()
@@ -237,6 +237,10 @@ func createToken(db *sql.DB, args []string) {
 		fatalln("error:", err)
 	}
 	fmt.Println(tok.Token)
+
+	if *flagNet {
+		fmt.Fprintln(os.Stderr, "warning: the network flag is deprecated")
+	}
 }
 
 func configNongenerator(db *sql.DB, args []string) {

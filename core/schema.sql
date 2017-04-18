@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.6
--- Dumped by pg_dump version 9.5.6
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -152,7 +152,7 @@ SET default_with_oids = false;
 CREATE TABLE access_tokens (
     id text NOT NULL,
     sort_id text DEFAULT next_chain_id('at'::text),
-    type access_token_type NOT NULL,
+    type access_token_type,
     hashed_secret bytea NOT NULL,
     created timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -903,3 +903,4 @@ insert into migrations (filename, hash) values ('2017-02-28.0.core.remove-outpoi
 insert into migrations (filename, hash) values ('2017-03-02.0.core.add-output-source-info.sql', 'f44c7cfbff346f6f797d497910c0a76f2a7600ca8b5be4fe4e4a04feaf32e0df');
 insert into migrations (filename, hash) values ('2017-03-09.0.core.account-utxos-change.sql', 'a99e0e41be3da126a8c47151454098669334bf7e30de6cd539ba535add4e85d1');
 insert into migrations (filename, hash) values ('2017-04-13.0.query.block-transactions-count.sql', '7cb17e05596dbfdf75e347e43ccab110e393f41ea86f70697e59cf0c32c3a564');
+insert into migrations (filename, hash) values ('2017-04-17.0.core.null-token-type.sql', '185942cec464c12a2573f19ae386153389328f8e282af071024706e105e37eeb');
