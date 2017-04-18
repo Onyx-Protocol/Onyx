@@ -139,7 +139,6 @@ func (s *State) Apply(data []byte, index uint64) (satisfied bool, err error) {
 
 // Provisional read operation.
 func (s *State) Get(key string) (value []byte) {
-	log.Printf(context.Background(), "here's the state: %+v", s.state)
 	return s.state[key]
 }
 

@@ -13,7 +13,7 @@ import (
 var errCurrentToken = errors.New("token cannot delete itself")
 
 func (a *API) createAccessToken(ctx context.Context, x struct{ ID, Type string }) (*accesstoken.Token, error) {
-	token, err := a.accessTokens.Create(ctx, x.ID)
+	token, err := a.accessTokens.Create(ctx, x.ID, x.Type)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

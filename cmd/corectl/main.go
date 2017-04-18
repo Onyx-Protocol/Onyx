@@ -231,7 +231,8 @@ func createToken(db *sql.DB, args []string) {
 	ctx := context.Background()
 	migrateIfMissingSchema(ctx, db)
 	accessTokens := &accesstoken.CredentialStore{DB: db}
-	tok, err := accessTokens.Create(ctx, args[0])
+	typ := map[bool]string{true: "network", false: "client"}[*flagNet]
+	tok, err := accessTokens.Create(ctx, args[0], typ)
 	if err != nil {
 		fatalln("error:", err)
 	}

@@ -25,12 +25,11 @@ func TestCreate(t *testing.T) {
 		{"b", "network", nil},
 		{"", "client", ErrBadID},
 		{"bad:id", "client", ErrBadID},
-		{"c", "badtype", ErrBadType},
 		{"a", "network", ErrDuplicateID}, // this aborts the transaction, so no tests can follow
 	}
 
 	for _, c := range cases {
-		_, err := cs.Create(ctx, c.id)
+		_, err := cs.Create(ctx, c.id, c.net)
 		if errors.Root(err) != c.want {
 			t.Errorf("Create(%s, %s) error = %s want %s", c.id, c.net, err, c.want)
 		}
@@ -40,9 +39,9 @@ func TestCreate(t *testing.T) {
 func TestList(t *testing.T) {
 	ctx := context.Background()
 	cs := &CredentialStore{DB: pgtest.NewTx(t)}
-	a := mustCreateToken(t, ctx, cs, "a")
-	b := mustCreateToken(t, ctx, cs, "b")
-	c := mustCreateToken(t, ctx, cs, "c")
+	a := mustCreateToken(t, ctx, cs, "a", "client")
+	b := mustCreateToken(t, ctx, cs, "b", "network")
+	c := mustCreateToken(t, ctx, cs, "c", "client")
 	for _, token := range []*Token{a, b, c} {
 		token.Token = ""
 	}
@@ -106,7 +105,7 @@ func TestCheck(t *testing.T) {
 	ctx := context.Background()
 	cs := &CredentialStore{DB: pgtest.NewTx(t)}
 
-	token := mustCreateToken(t, ctx, cs, "x")
+	token := mustCreateToken(t, ctx, cs, "x", "client")
 
 	tokenParts := strings.Split(token.Token, ":")
 	tokenID := tokenParts[0]
@@ -136,15 +135,15 @@ func TestDelete(t *testing.T) {
 	ctx := context.Background()
 	cs := &CredentialStore{DB: pgtest.NewTx(t)}
 
-	token := mustCreateToken(t, ctx, cs, "x")
+	token := mustCreateToken(t, ctx, cs, "x", "client")
 	err := cs.Delete(ctx, token.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func mustCreateToken(t *testing.T, ctx context.Context, cs *CredentialStore, id string) *Token {
-	token, err := cs.Create(ctx, id)
+func mustCreateToken(t *testing.T, ctx context.Context, cs *CredentialStore, id, typ string) *Token {
+	token, err := cs.Create(ctx, id, typ)
 	if err != nil {
 		t.Fatal(err)
 	}

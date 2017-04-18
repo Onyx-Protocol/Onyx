@@ -46,7 +46,7 @@ type CredentialStore struct {
 }
 
 // Create generates a new access token with the given ID.
-func (cs *CredentialStore) Create(ctx context.Context, id string) (*Token, error) {
+func (cs *CredentialStore) Create(ctx context.Context, id, typ string) (*Token, error) {
 	if !validIDRegexp.MatchString(id) {
 		return nil, errors.WithDetailf(ErrBadID, "invalid id %q", id)
 	}
@@ -60,15 +60,15 @@ func (cs *CredentialStore) Create(ctx context.Context, id string) (*Token, error
 	sha3pool.Sum256(hashedSecret[:], secret[:])
 
 	const q = `
-		INSERT INTO access_tokens (id, hashed_secret)
-		VALUES($1, $2)
+		INSERT INTO access_tokens (id, type, hashed_secret)
+		VALUES($1, $2, $3)
 		RETURNING created, sort_id
 	`
 	var (
 		created time.Time
 		sortID  string
 	)
-	err = cs.DB.QueryRow(ctx, q, id, hashedSecret[:]).Scan(&created, &sortID)
+	err = cs.DB.QueryRow(ctx, q, id, typ, hashedSecret[:]).Scan(&created, &sortID)
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetailf(ErrDuplicateID, "id %q already in use", id)
 	}
@@ -79,6 +79,7 @@ func (cs *CredentialStore) Create(ctx context.Context, id string) (*Token, error
 	return &Token{
 		ID:      id,
 		Token:   fmt.Sprintf("%s:%x", id, secret),
+		Type:    typ,
 		Created: created,
 		sortID:  sortID,
 	}, nil
