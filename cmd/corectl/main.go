@@ -3,17 +3,22 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"chain/core/accesstoken"
 	"chain/core/config"
+	"chain/core/fileutil"
 	"chain/core/migrate"
 	"chain/core/rpc"
 	"chain/crypto/ed25519"
@@ -26,6 +31,7 @@ import (
 
 // config vars
 var (
+	dataDir = env.String("CORED_DATA_DIR", fileutil.DefaultDir())
 	dbURL   = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
 	coreURL = env.String("CORE_URL", "http://localhost:1999")
 
@@ -199,11 +205,7 @@ func configGenerator(db *sql.DB, args []string) {
 	ctx := context.Background()
 	migrateIfMissingSchema(ctx, db)
 
-	// TODO(tessr): TLS everywhere?
-	client := &rpc.Client{
-		BaseURL: *coreURL,
-	}
-
+	client := mustRPCClient()
 	err = client.Call(ctx, "/configure", conf, nil)
 	if err != nil {
 		fatalln("rpc error:", err)
@@ -298,12 +300,8 @@ func configNongenerator(db *sql.DB, args []string) {
 	ctx := context.Background()
 	migrateIfMissingSchema(ctx, db)
 
-	// TODO(tessr): TLS everywhere?
-	client := &rpc.Client{
-		BlockchainID: blockchainID.String(),
-		BaseURL:      *coreURL,
-	}
-
+	client := mustRPCClient()
+	client.BlockchainID = blockchainID.String()
 	err = client.Call(ctx, "/configure", conf, nil)
 	if err != nil {
 		fatalln("rpc error:", err)
@@ -336,11 +334,7 @@ func reset(db *sql.DB, args []string) {
 		fatalln("error: reset takes no args")
 	}
 
-	// TODO(tessr): TLS everywhere?
-	client := &rpc.Client{
-		BaseURL: *coreURL,
-	}
-
+	client := mustRPCClient()
 	req := map[string]bool{
 		"Everything": true,
 	}
@@ -349,6 +343,63 @@ func reset(db *sql.DB, args []string) {
 	err := client.Call(ctx, "/reset", req, nil)
 	if err != nil {
 		fatalln("rpc error:", err)
+	}
+}
+
+func mustRPCClient() *rpc.Client {
+	// TODO(kr): refactor some of this cert-loading logic into chain/core
+	// and use it from cored as well.
+	// Note that this function, unlike maybeUseTLS in cored,
+	// does not load the cert and key from env vars,
+	// only from the filesystem.
+
+	certFile := filepath.Join(*dataDir, "tls.crt")
+	keyFile := filepath.Join(*dataDir, "tls.key")
+
+	_, certErr := os.Lstat(certFile)
+	_, keyErr := os.Lstat(keyFile)
+	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) {
+		return nil // files & env vars don't exist; don't want TLS
+	}
+
+	config := &tls.Config{
+		// This is the default set of protocols for package http.
+		// DefaultTransport sets this automatically when its
+		// TLSClientConfig is nil, but since we're providing an
+		// explicit config, we have to set it here.
+		NextProtos: []string{"http/1.1", "h2"},
+		RootCAs:    x509.NewCertPool(), // do not use the system roots
+	}
+
+	var err error
+	config.Certificates = make([]tls.Certificate, 1)
+	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		fatalln("error: loading TLS cert:", err)
+	}
+
+	// We require the server to present the same cert as us,
+	// so pin to our own cert.
+	// For some reason, LoadX509KeyPair doesn't keep a copy of the leaf cert.
+	// We need to parse it again so we can trust it.
+	x509Cert, err := x509.ParseCertificate(config.Certificates[0].Certificate[0])
+	if err != nil {
+		fatalln("error: loading TLS cert:", err)
+	}
+	config.RootCAs.AddCert(x509Cert)
+
+	t := new(http.Transport)
+	*t = *http.DefaultTransport.(*http.Transport)
+	t.TLSClientConfig = config
+
+	url := *coreURL
+	if t.TLSClientConfig != nil && strings.HasPrefix(url, "http:") {
+		url = "https:" + url[5:]
+	}
+
+	return &rpc.Client{
+		BaseURL: url,
+		Client:  &http.Client{Transport: t},
 	}
 }
 
