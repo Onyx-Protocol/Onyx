@@ -237,12 +237,8 @@ func main() {
 	if conf != nil {
 		h = launchConfiguredCore(ctx, raftDB, db, conf, processID)
 	} else {
-		var opts []core.RunOption
-		if useTLS {
-			opts = append(opts, core.ForwardUsingTLS)
-		}
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		h = core.RunUnconfigured(ctx, db, raftDB, opts...)
+		h = core.RunUnconfigured(ctx, db, raftDB, core.ForwardUsingTLS(useTLS))
 	}
 	mux.Handle("/", h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
@@ -309,9 +305,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 
 	opts = append(opts, core.IndexTransactions(*indexTxs))
 	opts = append(opts, enableMockHSM(db)...)
-	if useTLS {
-		opts = append(opts, core.ForwardUsingTLS)
-	}
+	opts = append(opts, core.ForwardUsingTLS(useTLS))
 	// Add any configured API request rate limits.
 	if *rpsToken > 0 {
 		opts = append(opts, core.RateLimit(limit.AuthUserID, 2*(*rpsToken), *rpsToken))

@@ -36,7 +36,9 @@ type RunOption func(*API)
 
 // ForwardUsingTLS configures the Core to use TLS when communicating between
 // Core processes.
-var ForwardUsingTLS RunOption = func(a *API) { a.forwardUsingTLS = true }
+func ForwardUsingTLS(useTLS bool) RunOption {
+	return func(a *API) { a.forwardUsingTLS = useTLS }
+}
 
 // BlockSigner configures the Core to use signFn to handle block-signing
 // requests. In production, this will be a function to call out to signerd
