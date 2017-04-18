@@ -7,18 +7,18 @@ type CertGuardData struct {
 	}
 }
 
-func (sn *CertGuardData) Equals(other *CertGuardData) bool {
+func (c *CertGuardData) Equals(other *CertGuardData) bool {
 	if other == nil {
 		return false
 	}
-	if sn.Subject.CommonName != other.Subject.CommonName {
+	if c.Subject.CommonName != other.Subject.CommonName {
 		return false
 	}
-	if len(sn.Subject.OrganizationalUnit) != len(other.Subject.OrganizationalUnit) {
+	if len(c.Subject.OrganizationalUnit) != len(other.Subject.OrganizationalUnit) {
 		return false
 	}
-	for i := range sn.Subject.OrganizationalUnit {
-		if sn.Subject.OrganizationalUnit[i] != other.Subject.OrganizationalUnit[i] {
+	for i := range c.Subject.OrganizationalUnit {
+		if c.Subject.OrganizationalUnit[i] != other.Subject.OrganizationalUnit[i] {
 			return false
 		}
 	}

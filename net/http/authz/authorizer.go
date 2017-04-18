@@ -73,9 +73,9 @@ func accessTokenGuardData(grant *Grant) string {
 }
 
 func x509GuardData(grant *Grant) *authn.CertGuardData {
-	sn := &authn.CertGuardData{}
-	json.Unmarshal(grant.GuardData, sn)
-	return sn
+	data := &authn.CertGuardData{}
+	json.Unmarshal(grant.GuardData, data)
+	return data
 }
 
 func (a *Authorizer) grantsByPolicies(policies []string) ([]*Grant, error) {

@@ -12,17 +12,17 @@ const (
 
 // newContextWithCertData sets the certificate guard data in a new context
 // and returns that context
-func newContextWithCertData(ctx context.Context, sn *CertGuardData) context.Context {
-	return context.WithValue(ctx, certDataKey, sn)
+func newContextWithCertData(ctx context.Context, data *CertGuardData) context.Context {
+	return context.WithValue(ctx, certDataKey, data)
 }
 
 // CertData returns the certificate guard data stored in the context, if it exists.
 func CertData(ctx context.Context) *CertGuardData {
-	s, ok := ctx.Value(certDataKey).(*CertGuardData)
+	c, ok := ctx.Value(certDataKey).(*CertGuardData)
 	if !ok {
 		return &CertGuardData{}
 	}
-	return s
+	return c
 }
 
 // newContextWithToken sets the token in a new context and returns the context.
