@@ -193,10 +193,6 @@ func main() {
 
 	if useTLS {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-			// This is the default set of protocols for package http.
-			// DefaultTransport sets this automatically if TLSClientConfig
-			// is null. Since we are defining our own config, we must set it.
-			NextProtos:   []string{"http/1.1", "h2"},
 			Certificates: []tls.Certificate{*cert},
 			RootCAs:      loadRootCAs(*rootCAs),
 		}
