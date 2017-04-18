@@ -195,3 +195,54 @@ func (a *API) revokeGrant(ctx context.Context, x apiGrant) error {
 
 	return nil
 }
+
+func (a *API) revokeGrantsByAccessToken(ctx context.Context, token string) error {
+	for _, p := range policies {
+		data, err := a.raftDB.Get(ctx, grantPrefix+p)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+
+		if data == nil {
+			continue
+		}
+
+		grantList := new(authz.GrantList)
+		err = proto.Unmarshal(data, grantList)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+
+		var keep []*authz.Grant
+		for _, g := range grantList.Grants {
+			if g.GuardType != "access_token" {
+				keep = append(keep, g)
+			}
+			var data map[string]interface{}
+			err = json.Unmarshal(g.GuardData, &data)
+			if err != nil {
+				return errors.Wrap(err)
+			}
+
+			if id, _ := data["id"].(string); id != token {
+				keep = append(keep, g)
+			}
+		}
+
+		// We didn't match any grants, don't need to do an update. Return success
+		if len(keep) == len(grantList.Grants) {
+			continue
+		}
+
+		gList := &authz.GrantList{Grants: keep}
+		val, err := proto.Marshal(gList)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+		err = a.raftDB.Set(ctx, grantPrefix+p, val)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+	}
+	return nil
+}
