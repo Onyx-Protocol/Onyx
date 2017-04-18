@@ -144,9 +144,7 @@ func main() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	if cert != nil {
-		useTLS = true
-	}
+	useTLS = cert != nil
 
 	raftDir := filepath.Join(*dataDir, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
@@ -275,22 +273,23 @@ func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Certificate, error) {
 		NextProtos: []string{"http/1.1", "h2"},
 	}
 	var err error
-	var cert tls.Certificate
+	config.Certificates = make([]tls.Certificate, 1)
 	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) {
-		cert, err = tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
+		config.Certificates[0], err = tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
 	} else {
-		cert, err = tls.LoadX509KeyPair(certFile, keyFile)
+		config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
 	}
 	if err != nil {
 		return nil, nil, errors.Wrap(err)
 	}
+
 	config.Certificates = []tls.Certificate{cert}
 	if *rootCAs != "" {
 		config.ClientAuth = tls.VerifyClientCertIfGiven
 		config.ClientCAs = loadRootCAs(*rootCAs)
 	}
 	ln = tls.NewListener(ln, config)
-	return ln, &cert, nil
+	return ln, &config.Certificates[0], nil
 }
 
 func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string) http.Handler {
