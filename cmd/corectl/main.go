@@ -239,7 +239,7 @@ func createToken(db *sql.DB, args []string) {
 	fmt.Println(tok.Token)
 
 	if *flagNet {
-		fmt.Println("warning: the network flag is deprecated")
+		fmt.Fprintln(os.Stderr, "warning: the network flag is deprecated")
 	}
 }
 
