@@ -1,28 +1,30 @@
 package authn
 
-import "context"
+import (
+	"context"
+	"crypto/x509/pkix"
+)
 
 type key int
 
 const (
 	tokenKey key = iota
 	localhostKey
-	certDataKey
+	subjectNameKey
 )
 
-// newContextWithCertData sets the certificate guard data in a new context
-// and returns that context
-func newContextWithCertData(ctx context.Context, data *CertGuardData) context.Context {
-	return context.WithValue(ctx, certDataKey, data)
+// newContextWithSubjectName sets the cert subject name in a new context and returns that context
+func newContextWithSubjectName(ctx context.Context, name *pkix.Name) context.Context {
+	return context.WithValue(ctx, subjectNameKey, name)
 }
 
-// CertData returns the certificate guard data stored in the context, if it exists.
-func CertData(ctx context.Context) *CertGuardData {
-	c, ok := ctx.Value(certDataKey).(*CertGuardData)
+// SubjectName returns the certificate stored in the context, if it exists.
+func SubjectName(ctx context.Context) *pkix.Name {
+	n, ok := ctx.Value(subjectNameKey).(*pkix.Name)
 	if !ok {
-		return &CertGuardData{}
+		return &pkix.Name{}
 	}
-	return c
+	return n
 }
 
 // newContextWithToken sets the token in a new context and returns the context.

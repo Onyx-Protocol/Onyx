@@ -2,6 +2,7 @@ package authz
 
 import (
 	"context"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -54,7 +55,7 @@ func authzGrants(ctx context.Context, grants []*Grant) bool {
 				return true
 			}
 		case "x509":
-			if x509GuardData(g).Equals(authn.CertData(ctx)) {
+			if validateX509GuardData(x509GuardData(g), *authn.SubjectName(ctx)) {
 				return true
 			}
 		case "localhost":
@@ -72,10 +73,33 @@ func accessTokenGuardData(grant *Grant) string {
 	return v.ID
 }
 
-func x509GuardData(grant *Grant) *authn.CertGuardData {
-	data := &authn.CertGuardData{}
-	json.Unmarshal(grant.GuardData, data)
-	return data
+func x509GuardData(grant *Grant) pkix.Name {
+	var v struct {
+		Subject struct {
+			CommonName         string   `json:"cn"`
+			OrganizationalUnit []string `json:"ou"`
+		}
+	}
+	json.Unmarshal(grant.GuardData, &v)
+	return pkix.Name{
+		CommonName:         v.Subject.CommonName,
+		OrganizationalUnit: v.Subject.OrganizationalUnit,
+	}
+}
+
+func validateX509GuardData(a, b pkix.Name) bool {
+	if a.CommonName != b.CommonName {
+		return false
+	}
+	if len(a.OrganizationalUnit) != len(b.OrganizationalUnit) {
+		return false
+	}
+	for i := range a.OrganizationalUnit {
+		if a.OrganizationalUnit[i] != b.OrganizationalUnit[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (a *Authorizer) grantsByPolicies(policies []string) ([]*Grant, error) {

@@ -2,6 +2,7 @@ package authn
 
 import (
 	"context"
+	"crypto/x509/pkix"
 	"encoding/hex"
 	"net"
 	"net/http"
@@ -39,9 +40,9 @@ func NewAPI(tokens *accesstoken.CredentialStore, networkPrefix string) *API {
 // flags in the context, as appropriate.
 func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 	ctx := req.Context()
-	data, err := a.certAuthn(req)
+	name, err := a.certAuthn(req)
 	if err == nil {
-		return req.WithContext(newContextWithCertData(ctx, data)), nil
+		return req.WithContext(newContextWithSubjectName(ctx, name)), nil
 	}
 
 	token, err := a.tokenAuthn(req)
@@ -64,21 +65,11 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 	return req.WithContext(ctx), nil
 }
 
-func (a *API) certAuthn(req *http.Request) (*CertGuardData, error) {
-	cs := req.TLS
-	if cs == nil {
-		return nil, errors.New("non tls connection")
+func (a *API) certAuthn(req *http.Request) (*pkix.Name, error) {
+	if req.TLS != nil && len(req.TLS.PeerCertificates) > 0 {
+		return &req.TLS.PeerCertificates[0].Subject, nil
 	}
-	if len(cs.PeerCertificates) > 0 && len(cs.VerifiedChains) > 0 {
-		sn := cs.PeerCertificates[0].Subject
-		if sn.CommonName != "" && len(sn.OrganizationalUnit) > 0 {
-			data := &CertGuardData{}
-			data.Subject.CommonName = sn.CommonName
-			data.Subject.OrganizationalUnit = sn.OrganizationalUnit
-			return data, nil
-		}
-	}
-	return nil, errors.New("cannot parse certificate subject name fields")
+	return nil, errors.New("could not parse certificate subject name")
 }
 
 // returns true if this request is coming from a loopback address
