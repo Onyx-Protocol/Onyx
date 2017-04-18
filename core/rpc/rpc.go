@@ -37,6 +37,9 @@ type Client struct {
 	BuildTag     string
 	BlockchainID string
 	CoreID       string
+
+	// If set, Client is used for outgoing requests.
+	Client *http.Client
 }
 
 func (c Client) userAgent() string {
@@ -117,7 +120,11 @@ func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) 
 		req.Header.Set(HeaderTimeout, deadline.Sub(time.Now()).String())
 	}
 
-	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	client := c.Client
+	if client == nil {
+		client = http.DefaultClient
+	}
+	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil && ctx.Err() != nil { // check if it timed out
 		return nil, errors.Wrap(ctx.Err())
 	} else if err != nil {
