@@ -164,7 +164,6 @@ func Start(laddr, dir, bootURL string, requireTLS bool) (*Service, error) {
 	// TODO(kr): grpc
 	sv.mux.HandleFunc("/raft/join", sv.serveJoin)
 	sv.mux.HandleFunc("/raft/msg", sv.serveMsg)
-	sv.mux.HandleFunc("/raft/debug", sv.serveDebug)
 
 	walobj, err := sv.recover()
 	if err != nil {
@@ -459,7 +458,6 @@ func (sv *Service) allocNodeID(ctx context.Context) (uint64, error) {
 // This can be slow; for faster but possibly stale reads, see Stale.
 func (sv *Service) Get(ctx context.Context, key string) ([]byte, error) {
 	for {
-		log.Printf(ctx, "about to get key %s", key)
 		resp, err := sv.get(ctx, key)
 		if isTimeout(err) {
 			continue
@@ -568,15 +566,6 @@ func (sv *Service) serveMsg(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	sv.raftNode.Step(req.Context(), m)
-}
-
-func (sv *Service) serveDebug(w http.ResponseWriter, req *http.Request) {
-	data, n, err := sv.state.Snapshot()
-	if err != nil {
-		http.Error(w, "cannot read state snapshot: "+err.Error(), 500)
-	}
-	log.Printf(req.Context(), "data %s", data)
-	log.Printf(req.Context(), "whatever this is %d", n)
 }
 
 func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
