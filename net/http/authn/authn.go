@@ -38,7 +38,8 @@ func NewAPI(tokens *accesstoken.CredentialStore, networkPrefix string) *API {
 // Authenticate returns the request, with added tokens and/or localhost
 // flags in the context, as appropriate.
 func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
-	ctx := req.Context()
+	ctx := a.certAuthn(req)
+
 	token, err := a.tokenAuthn(req)
 	if err == nil && token != "" {
 		// if this request was successfully authenticated with a token, pass the token along
@@ -52,11 +53,20 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 
 	// if there is no authentication at all, we return an "unauthenticated" error,
 	// which may be helpful when debugging
-	if err != nil && !local {
+	if len(X509Certs(ctx)) < 1 && err != nil && !local {
 		return req, errors.New("unauthenticated")
 	}
 
 	return req.WithContext(ctx), nil
+}
+
+// checks the request for a valid client cert list.
+// If found, it is added to the request's context.
+func (a *API) certAuthn(req *http.Request) context.Context {
+	if req.TLS != nil && len(req.TLS.PeerCertificates) > 0 {
+		return context.WithValue(req.Context(), x509CertsKey, req.TLS.PeerCertificates)
+	}
+	return req.Context()
 }
 
 // returns true if this request is coming from a loopback address

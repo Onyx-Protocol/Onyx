@@ -1,13 +1,23 @@
 package authn
 
-import "context"
+import (
+	"context"
+	"crypto/x509"
+)
 
 type key int
 
 const (
 	tokenKey key = iota
 	localhostKey
+	x509CertsKey
 )
+
+// X509Certs returns the cert stored in the context, if it exists.
+func X509Certs(ctx context.Context) []*x509.Certificate {
+	c, _ := ctx.Value(x509CertsKey).([]*x509.Certificate)
+	return c
+}
 
 // newContextWithToken sets the token in a new context and returns the context.
 func newContextWithToken(ctx context.Context, token string) context.Context {
