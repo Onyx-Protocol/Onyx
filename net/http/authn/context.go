@@ -15,10 +15,7 @@ const (
 
 // X509Certs returns the cert stored in the context, if it exists.
 func X509Certs(ctx context.Context) []*x509.Certificate {
-	c, ok := ctx.Value(x509CertsKey).([]*x509.Certificate)
-	if !ok {
-		return []*x509.Certificate{}
-	}
+	c, _ := ctx.Value(x509CertsKey).([]*x509.Certificate)
 	return c
 }
 

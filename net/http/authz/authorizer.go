@@ -75,6 +75,8 @@ func accessTokenGuardData(grant *Grant) string {
 }
 
 func x509GuardData(grant *Grant) pkix.Name {
+	// TODO(boymanjor): We should support the standard X.500 attributes for Subjects.
+	// One idea is to map the json to a pkix.Name.
 	var v struct {
 		Subject struct {
 			CommonName         string   `json:"cn"`
