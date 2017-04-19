@@ -22,7 +22,7 @@ type Authorizer struct {
 	raftDB        *raft.Service
 	raftPrefix    string
 	policyByRoute map[string][]string
-	extraGrants   map[string][]*Grant
+	extraGrants   map[string][]*Grant // by policy
 }
 
 func NewAuthorizer(rdb *raft.Service, prefix string, policyMap map[string][]string) *Authorizer {
