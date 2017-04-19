@@ -34,7 +34,9 @@ func TLSConfig(certFile, keyFile, rootCAs string) (*tls.Config, error) {
 		// ListenAndServeTLS and Transport set this automatically,
 		// but since we're supplying our own TLS config,
 		// we have to set it here.
-		NextProtos: []string{"http/1.1", "h2"},
+		// TODO(kr): disabled for now; consider adding h2 support here.
+		// See also the comment on TLSNextProto in $CHAIN/cmd/cored/main.go.
+		//NextProtos: []string{"http/1.1", "h2"},
 		ClientAuth: tls.VerifyClientCertIfGiven,
 	}
 
