@@ -52,7 +52,7 @@ third argument:
 
 1. The path to your `.pfx` certificate.
 2. The password for the above certificate.
-3. The version label of the Chain Core executable (optional).
+3. The version label of the Chain Core executable (optional, defaults to "Latest").
 
 `buildChainExe.bat` must be run from inside the `installer/windows` directory.
 
