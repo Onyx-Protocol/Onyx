@@ -170,6 +170,8 @@ func main() {
 	secureheader.DefaultConfig.Next = handler
 
 	server := &http.Server{
+		// Note: we should not set TLSConfig here;
+		// we took care of TLS with the listener in maybeUseTLS.
 		Handler:      secureheader.DefaultConfig,
 		ReadTimeout:  httpReadTimeout,
 		WriteTimeout: httpWriteTimeout,
