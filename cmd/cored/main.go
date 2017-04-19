@@ -75,7 +75,6 @@ var (
 
 	race          []interface{} // initialized in race.go
 	httpsRedirect = true        // initialized in plain_http.go
-	useTLS        = false
 
 	// By default, a core is not able to reset its data.
 	// This feature can be turned on with the reset build tag.
@@ -140,11 +139,10 @@ func main() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	useTLS = tlsConfig != nil
 
 	raftDir := filepath.Join(*dataDir, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
-	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, useTLS)
+	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, tlsConfig != nil)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
@@ -189,8 +187,6 @@ func main() {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "Serve"))
 	}()
 
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = tlsConfig
-
 	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("hapg", *dbURL)
 	if err != nil {
@@ -228,10 +224,10 @@ func main() {
 
 	var h http.Handler
 	if conf != nil {
-		h = launchConfiguredCore(ctx, raftDB, db, conf, processID)
+		h = launchConfiguredCore(ctx, raftDB, db, conf, processID, core.UseTLS(tlsConfig))
 	} else {
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
-		h = core.RunUnconfigured(ctx, db, raftDB, core.ForwardUsingTLS(useTLS))
+		h = core.RunUnconfigured(ctx, db, raftDB, core.UseTLS(tlsConfig))
 	}
 	mux.Handle("/", h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
@@ -260,7 +256,7 @@ func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
 	return ln, config, nil
 }
 
-func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string) http.Handler {
+func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string, opts ...core.RunOption) http.Handler {
 	// Initialize the protocol.Chain.
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
@@ -273,11 +269,9 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 	}
 
 	var localSigner *blocksigner.BlockSigner
-	var opts []core.RunOption
 
 	opts = append(opts, core.IndexTransactions(*indexTxs))
 	opts = append(opts, enableMockHSM(db)...)
-	opts = append(opts, core.ForwardUsingTLS(useTLS))
 	// Add any configured API request rate limits.
 	if *rpsToken > 0 {
 		opts = append(opts, core.RateLimit(limit.AuthUserID, 2*(*rpsToken), *rpsToken))

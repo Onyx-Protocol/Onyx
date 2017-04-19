@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"net"
 	"net/http"
 	"time"
 
@@ -34,10 +36,26 @@ const (
 // RunOption describes a runtime configuration option.
 type RunOption func(*API)
 
-// ForwardUsingTLS configures the Core to use TLS when communicating between
-// Core processes.
-func ForwardUsingTLS(useTLS bool) RunOption {
-	return func(a *API) { a.forwardUsingTLS = useTLS }
+// UseTLS configures the Core to use TLS with the given config
+// when communicating between Core processes.
+// If c is nil, TLS is disabled.
+func UseTLS(c *tls.Config) RunOption {
+	return func(a *API) {
+		a.forwardUsingTLS = c != nil
+		a.httpClient = new(http.Client)
+		a.httpClient.Transport = &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSClientConfig:       c,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}
+	}
 }
 
 // BlockSigner configures the Core to use signFn to handle block-signing
