@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"net"
 	"net/http"
@@ -55,6 +56,13 @@ func UseTLS(c *tls.Config) RunOption {
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		}
+
+		// TODO(kr): set Leaf in TLSConfig and use that here.
+		x509Cert, err := x509.ParseCertificate(c.Certificates[0].Certificate[0])
+		if err != nil {
+			panic(err)
+		}
+		a.internalSubj = x509Cert.Subject
 	}
 }
 
