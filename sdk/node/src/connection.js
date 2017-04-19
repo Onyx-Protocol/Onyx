@@ -66,11 +66,13 @@ class Connection {
    *
    * @param {String} baseUrl Chain Core URL.
    * @param {String} token   Chain Core client token for API access.
+   * @param {String} agent   https.Agent used to provide TLS config.
    * @returns {Client}
    */
-  constructor(baseUrl, token = '') {
+  constructor(baseUrl, token = '', agent) {
     this.baseUrl = baseUrl
     this.token = token || ''
+    this.agent = agent
   }
 
   /**
@@ -111,6 +113,10 @@ class Connection {
 
     if (this.token) {
       req.headers['Authorization'] = `Basic ${btoa(this.token)}`
+    }
+
+    if (this.agent) {
+      req.agent = this.agent
     }
 
     return fetch(this.baseUrl + path, req).catch((err) => {
