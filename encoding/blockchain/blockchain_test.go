@@ -213,6 +213,22 @@ func TestVarstrList(t *testing.T) {
 	}
 }
 
+// TestTooLongVarstrList tests decoding a VarstrList that has a leading
+// element count much longer than the actual list. Reading such a
+// varstrlist shouldn't try to allocate more memory than feasible.
+func TestTooLongVarstrList(t *testing.T) {
+	var buf bytes.Buffer
+	WriteVarint31(&buf, math.MaxInt32)
+	WriteVarstr31(&buf, []byte{0x01})
+	WriteVarstr31(&buf, []byte{0x02})
+	WriteVarstr31(&buf, []byte{0x03})
+
+	_, _, err := ReadVarstrList(bytes.NewReader(buf.Bytes()))
+	if err != io.EOF {
+		t.Errorf("got %s, expected io.EOF", err)
+	}
+}
+
 func TestExtensibleString(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		// make a string of length i+1

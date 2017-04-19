@@ -122,7 +122,7 @@ func ReadVarstrList(r io.Reader) ([][]byte, int, error) {
 	if nelts == 0 {
 		return nil, n, nil
 	}
-	result := make([][]byte, 0, nelts)
+	var result [][]byte
 	for ; nelts > 0; nelts-- {
 		s, n2, err := ReadVarstr31(r)
 		n += n2
