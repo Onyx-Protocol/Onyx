@@ -46,28 +46,27 @@ Make sure you have the 64-bit versions. Chain Core Windows does not support 32-b
 
 ### Using the build script
 
-Create a copy of the sample batch file `buildChainExe.bat.sample` inside the
-`installer/windows` directory. In this case, we'll call it `buildChainExe.bat`.
+Run `buildChainExe.bat` to compile a signed Chain Core Windows installer. The
+batch file takes three required positional arguments, and an optional
+third argument:
 
-Open `buildChainExe.bat` in your editor of choice and make the following changes:
+1. The path to your `.pfx` certificate.
+2. The password for the above certificate.
+3. The version label of the Chain Core executable (optional).
 
-* Replace all instances of `Z:\PATH\TO\CERT` with the path to your `.pfx`
-certificate for signing binaries.
-* Replace all instances of `CERT_PASSWORD` with the password for your `.pfx` certificate.
-* Replace `VERSION` in `Chain_Core_VERSION.exe` with the `x.y.z` version of the
-Windows installer that you intend to build.
+`buildChainExe.bat` must be run from inside the `installer/windows` directory.
 
-From inside the `installer/windows` directory, run:
+Example usage:
 
 ```
-buildChainExe.bat
+buildChainExe.bat Z:\path\to\cert my-strong-password 1.1.0
 ```
 
 The resulting binary will be available at `ChainBundle/Chain_Core_[your-version].exe`.
 
 ### Manual
 
-🚧 Hang on. Only go down here if you know what you're doing 🚧
+🚧 Hang on. Only go down here if you know what you're doing. The above script is equivalent to running these instructions.
 
 ---
 
