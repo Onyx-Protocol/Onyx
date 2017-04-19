@@ -16,19 +16,28 @@ import (
 
 var ErrNotAuthorized = errors.New("not authorized")
 
+var builtinGrants []*Grant // initialized in loopback_authz.go
+
 type Authorizer struct {
 	raftDB        *raft.Service
 	raftPrefix    string
 	policyByRoute map[string][]string
+	extraGrants   map[string][]*Grant
 }
 
 func NewAuthorizer(rdb *raft.Service, prefix string, policyMap map[string][]string) *Authorizer {
-	return &Authorizer{
+	a := &Authorizer{
 		raftDB:        rdb,
 		raftPrefix:    prefix,
 		policyByRoute: policyMap,
+		extraGrants:   make(map[string][]*Grant),
 	}
+	for _, g := range builtinGrants {
+		a.extraGrants[g.Policy] = append(a.extraGrants[g.Policy], g)
+	}
+	return a
 }
+
 func (a *Authorizer) Authorize(req *http.Request) error {
 	policies := a.policyByRoute[strings.TrimRight(req.RequestURI, "/")]
 	if policies == nil || len(policies) == 0 {
@@ -47,7 +56,7 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 	return nil
 }
 
-func authzGrants(ctx context.Context, grants []*Grant) bool {
+func authorized(ctx context.Context, grants []*Grant) bool {
 	for _, g := range grants {
 		switch g.GuardType {
 		case "access_token":
@@ -108,6 +117,7 @@ func equalX509Name(a, b pkix.Name) bool {
 func (a *Authorizer) grantsByPolicies(policies []string) ([]*Grant, error) {
 	var grants []*Grant
 	for _, p := range policies {
+		grants = append(grants, a.extraGrants[p]...)
 		data := a.raftDB.Stale().Get(a.raftPrefix + p)
 		if data != nil {
 			grantList := new(GrantList)
