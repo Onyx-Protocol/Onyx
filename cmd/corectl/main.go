@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/x509"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -361,16 +360,6 @@ func mustRPCClient() *rpc.Client {
 	} else if err != nil {
 		fatalln("error: loading TLS cert:", err)
 	}
-
-	// We require the server to present the same cert as us,
-	// so pin to our own cert.
-	// For some reason, LoadX509KeyPair doesn't keep a copy of the leaf cert.
-	// We need to parse it again so we can trust it.
-	x509Cert, err := x509.ParseCertificate(config.Certificates[0].Certificate[0])
-	if err != nil {
-		fatalln("error: loading TLS cert:", err)
-	}
-	config.RootCAs.AddCert(x509Cert)
 
 	t := &http.Transport{
 		DialContext: (&net.Dialer{

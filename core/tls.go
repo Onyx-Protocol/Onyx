@@ -60,15 +60,34 @@ func TLSConfig(certFile, keyFile, rootCAs string) (*tls.Config, error) {
 		return nil, errors.Wrap(err)
 	}
 
-	if rootCAs != "" {
-		config.RootCAs, err = loadRootCAs(rootCAs)
+	config.RootCAs, err = loadRootCAs(rootCAs)
+	if err != nil {
+		return nil, errors.Wrap(err)
 	}
+
+	// This TLS config is used by cored peers to dial each other,
+	// and by corectl to dial cored.
+	// All those processes have the same identity,
+	// so we automatically trust the local cert,
+	// with the expectation that the peer will also be using it.
+	// This makes misconfiguation impossible.
+	// (For some reason, X509KeyPair doesn't keep a copy of the leaf cert,
+	// so we need to parse it again here.)
+	x509Cert, err := x509.ParseCertificate(config.Certificates[0].Certificate[0])
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	config.RootCAs.AddCert(x509Cert)
 	config.ClientCAs = config.RootCAs
 	return config, err
 }
 
-// loadRootCAs reads a list of PEM-encoded X.509 certificates from name
+// loadRootCAs reads a list of PEM-encoded X.509 certificates from name.
+// If name is the empty string, it returns a new, empty cert pool.
 func loadRootCAs(name string) (*x509.CertPool, error) {
+	if name == "" {
+		return x509.NewCertPool(), nil
+	}
 	pem, err := ioutil.ReadFile(name)
 	if err != nil {
 		return nil, errors.Wrap(err)
