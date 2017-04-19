@@ -203,10 +203,6 @@ func (a *API) revokeGrantsByAccessToken(ctx context.Context, token string) error
 			return errors.Wrap(err)
 		}
 
-		if data == nil {
-			continue
-		}
-
 		grantList := new(authz.GrantList)
 		err = proto.Unmarshal(data, grantList)
 		if err != nil {
