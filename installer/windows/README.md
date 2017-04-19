@@ -4,8 +4,7 @@
 
 To install Chain Core Developer Edition for Windows, please visit [our downloads page](https://chain.com/docs/core/get-started/install).
 
-## Building the Windows Installer
-### Dependencies
+## Dependencies
 
 These instructions assume that your PATH includes the wix tools binary. My wix tools binary is located at `C:\Program Files (x86)\WiX Toolset v3.10\bin`.
 
@@ -43,7 +42,34 @@ The VC++ Redistributable can be downloaded from https://www.microsoft.com/en-us/
 
 Make sure you have the 64-bit versions. Chain Core Windows does not support 32-bit. Do not actually run these installers, just provide them.
 
-### Build
+## Building the Windows installer
+
+### Using the build script
+
+Run `buildChainExe.bat` to compile a signed Chain Core Windows installer. The
+batch file takes three required positional arguments, and an optional
+third argument:
+
+1. The path to your `.pfx` certificate.
+2. The password for the above certificate.
+3. The version label of the Chain Core executable (optional, defaults to "Latest").
+
+`buildChainExe.bat` must be run from inside the `installer/windows` directory.
+
+Example usage:
+
+```
+buildChainExe.bat Z:\path\to\cert my-strong-password 1.1.0
+```
+
+The resulting binary will be available at `ChainBundle/Chain_Core_[your-version].exe`.
+
+### Manual
+
+🚧 Hang on. Only go down here if you know what you're doing. The above script
+runs exactly these instructions. 🚧
+
+---
 
 The chain bundler is capable of building multiple .msi's and .exe's into a single installer .exe.
 
@@ -85,7 +111,7 @@ light Bundle.wixobj -ext WixBalExtension
 
 This generates Bundle.exe in your current working directory.
 
-### Code Signing
+#### Code Signing
 
 In order for Chain to appear as the publisher, some of the files inside the installer need to be signed with the private key of Chain's code signing certificate.
 
