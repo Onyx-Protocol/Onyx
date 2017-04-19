@@ -2,13 +2,12 @@
 
 package authz
 
-import (
-	"context"
-
-	"chain/net/http/authn"
-)
-
-// authorized returns false if this request is unauthorized.
-func authorized(ctx context.Context, grants []*Grant) bool {
-	return authn.Localhost(ctx) || authzGrants(ctx, grants)
+func init() {
+	builtinGrants = append(builtinGrants,
+		&Grant{GuardType: "localhost", Policy: "client-readwrite"},
+		&Grant{GuardType: "localhost", Policy: "client-readonly"},
+		&Grant{GuardType: "localhost", Policy: "monitoring"},
+		&Grant{GuardType: "localhost", Policy: "network"},
+		&Grant{GuardType: "localhost", Policy: "internal"},
+	)
 }
