@@ -80,7 +80,6 @@ export default {
     const body = {
       guardType: 'x509',
       guardData: {subject: {}},
-      policy: 'client-readwrite'
     }
 
     for (let index in data.subject) {
@@ -102,6 +101,24 @@ export default {
         }))
       }, err => { throw {_error: err} })
     }
+  },
+
+  editPolicies: data => {
+    const body = {
+      guardType: data.grant.guardType,
+      guardData: data.grant.guardData,
+    }
+    const policies = data.policies
+
+    return dispatch =>
+      setPolicies(body, policies).then(resp => {
+        dispatch({ type: 'EDITED_POLICIES', grant: body, policies })
+        dispatch(push({
+          pathname: '/access-control',
+          search: '?type=' + (body.guardType == 'access_token' ? 'token' : 'certificate'),
+          state: {preserveFlash: true},
+        }))
+      }, err => { throw {_error: err} })
   },
 
   deleteToken: grant => {

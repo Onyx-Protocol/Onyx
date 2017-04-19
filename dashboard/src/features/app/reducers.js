@@ -66,6 +66,10 @@ export const flashMessages = (state = {}, action) => {
       </p>)
     }
 
+    case 'EDITED_POLICIES': {
+      return newSuccess(state, <p>Policies successfully updated.</p>)
+    }
+
     case 'DELETE_ACCESS_TOKEN':
     case 'DELETE_TRANSACTIONFEED': {
       return newFlash(state, flash(action.message, null, 'info'))

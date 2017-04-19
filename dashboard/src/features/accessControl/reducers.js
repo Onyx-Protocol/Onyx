@@ -12,6 +12,7 @@ export default (state = {ids: [], items: {}}, action) => {
       const id = createHash('sha256').update(JSON.stringify(tokenGuard), 'utf8').digest('hex')
       newObjects[id] = {
         id: id,
+        name: token.id,
         guardType: 'access_token',
         guardData: tokenGuard,
         policies: [],
