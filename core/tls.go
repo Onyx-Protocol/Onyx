@@ -65,8 +65,8 @@ func TLSConfig(certFile, keyFile, rootCAs string) (*tls.Config, error) {
 		return nil, errors.Wrap(err)
 	}
 
-	// This TLS config is used by cored peers to talk to each other,
-	// and by corectl to talk to cored.
+	// This TLS config is used by cored peers to dial each other,
+	// and by corectl to dial cored.
 	// All those processes have the same identity,
 	// so we automatically trust the local cert,
 	// with the expectation that the peer will also be using it.
