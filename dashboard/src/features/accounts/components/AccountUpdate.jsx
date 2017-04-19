@@ -48,13 +48,10 @@ class Form extends React.Component {
     </span>
 
     // TODO: add link to documentation to further educate on tags and updating tags
-    const tagChangeWarning = <div>
-      <p>Updating tags will overwrite existing tags.</p>
-      <p>
-        Account tags are used to annotate transactions where relevant. Changing the tags will only be reflected for future transactions,
-        and will not affect annotations for transactions that already exist.
-      </p>
-    </div>
+    const tagChangeWarning = <p>
+      Updated tags will only apply to new transactions. Existing transactions
+      will reflect the tags that were present when the transaction was created.
+    </p>
 
     const tagsString = Object.keys(item.tags).length === 0 ? '{\n\t\n}' : JSON.stringify(item.tags, null, 1)
     const tagLines = tagsString.split(/\r\n|\r|\n/).length
@@ -75,10 +72,10 @@ class Form extends React.Component {
       submitting={submitting} >
 
       <FormSection title='Account Tags'>
+        {tagChangeWarning}
         <JsonField
           height={JsonFieldHeight}
           fieldProps={tags} />
-        {tagChangeWarning}
       </FormSection>
     </FormContainer>
   }
