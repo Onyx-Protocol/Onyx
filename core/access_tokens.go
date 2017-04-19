@@ -96,6 +96,8 @@ func (a *API) deleteAccessToken(ctx context.Context, x struct{ ID string }) erro
 	err = a.revokeGrantsByAccessToken(ctx, x.ID)
 	if err != nil {
 		// well, technically we did delete the access token, so don't return the error
+		// TODO(tessr): make this whole operation atomic, such that we either delete
+		// both the access token and its grants, or we return a failure.
 		log.Printkv(ctx, log.KeyError, "revoking grants for access token %s", x.ID)
 	}
 	return nil
