@@ -6,6 +6,7 @@ import (
 
 	"chain/core/accesstoken"
 	"chain/errors"
+	"chain/log"
 	"chain/net/http/authz"
 	"chain/net/http/httpjson"
 )
@@ -87,6 +88,15 @@ func (a *API) deleteAccessToken(ctx context.Context, x struct{ ID string }) erro
 	if currentID == x.ID {
 		return errCurrentToken
 	}
-	return a.accessTokens.Delete(ctx, x.ID)
-	// TODO(tessr): delete any associated grants, as well
+	err := a.accessTokens.Delete(ctx, x.ID)
+	if err != nil {
+		return err
+	}
+
+	err = a.revokeGrantsByAccessToken(ctx, x.ID)
+	if err != nil {
+		// well, technically we did delete the access token, so don't return the error
+		log.Printkv(ctx, log.KeyError, "revoking grants for access token %s", x.ID)
+	}
+	return nil
 }
