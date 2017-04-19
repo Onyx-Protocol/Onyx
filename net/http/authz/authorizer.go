@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 
@@ -46,6 +47,7 @@ func (a *Authorizer) GrantInternal(subj pkix.Name) {
 		Policy:    "internal",
 		GuardType: "x509",
 		GuardData: encodeX509GuardData(subj),
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 	})
 }
 
