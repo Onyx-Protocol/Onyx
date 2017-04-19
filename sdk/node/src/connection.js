@@ -69,10 +69,10 @@ class Connection {
    * @param {String} agent   https.Agent used to provide TLS config.
    * @returns {Client}
    */
-  constructor(baseUrl, token = '', agent = {}) {
+  constructor(baseUrl, token = '', agent) {
     this.baseUrl = baseUrl
     this.token = token || ''
-    this.agent = agent || {}
+    this.agent = agent
   }
 
   /**
@@ -115,7 +115,7 @@ class Connection {
       req.headers['Authorization'] = `Basic ${btoa(this.token)}`
     }
 
-    if (Object.keys(this.agent).length !== 0) {
+    if (this.agent) {
       req.agent = this.agent
     }
 
