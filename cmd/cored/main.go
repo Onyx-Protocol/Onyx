@@ -252,7 +252,6 @@ func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
 	} else if err != nil {
 		return nil, nil, err
 	}
-
 	ln = tls.NewListener(ln, config)
 	return ln, config, nil
 }
