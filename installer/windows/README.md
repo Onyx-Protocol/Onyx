@@ -66,7 +66,8 @@ The resulting binary will be available at `ChainBundle/Chain_Core_[your-version]
 
 ### Manual
 
-🚧 Hang on. Only go down here if you know what you're doing. The above script is equivalent to running these instructions.
+🚧 Hang on. Only go down here if you know what you're doing. The above script
+runs exactly these instructions. 🚧
 
 ---
 
