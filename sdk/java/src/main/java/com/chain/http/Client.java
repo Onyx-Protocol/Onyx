@@ -56,7 +56,7 @@ public class Client {
   }
 
   public Client(Builder builder) {
-    List<URL> urls = new ArrayList<URL>(builder.urls);
+    List<URL> urls = new ArrayList<>(builder.urls);
     if (urls.isEmpty()) {
       try {
         urls.add(new URL("http://localhost:1999"));
@@ -379,19 +379,24 @@ public class Client {
   }
 
   private OkHttpClient buildHttpClient(Builder builder) {
-    OkHttpClient httpClient = new OkHttpClient();
+    OkHttpClient httpClient = builder.httpClient.clone();
+    httpClient.setFollowRedirects(false);
 
     if (builder.sslSocketFactory != null) {
       httpClient.setSslSocketFactory(builder.sslSocketFactory);
     }
-
-    httpClient.setFollowRedirects(false);
-    httpClient.setReadTimeout(builder.readTimeout, builder.readTimeoutUnit);
-    httpClient.setWriteTimeout(builder.writeTimeout, builder.writeTimeoutUnit);
-    httpClient.setConnectTimeout(builder.connectTimeout, builder.connectTimeoutUnit);
-
-    httpClient.setConnectionPool(builder.pool);
-
+    if (builder.readTimeoutUnit != null) {
+      httpClient.setReadTimeout(builder.readTimeout, builder.readTimeoutUnit);
+    }
+    if (builder.writeTimeoutUnit != null) {
+      httpClient.setWriteTimeout(builder.writeTimeout, builder.writeTimeoutUnit);
+    }
+    if (builder.connectTimeoutUnit != null) {
+      httpClient.setConnectTimeout(builder.connectTimeout, builder.connectTimeoutUnit);
+    }
+    if (builder.pool != null) {
+      httpClient.setConnectionPool(builder.pool);
+    }
     if (builder.proxy != null) {
       httpClient.setProxy(builder.proxy);
     }
@@ -526,6 +531,7 @@ public class Client {
    * A builder class for creating client objects
    */
   public static class Builder {
+    private OkHttpClient httpClient;
     private List<URL> urls;
     private String accessToken;
     private CertificatePinner cp;
@@ -539,11 +545,18 @@ public class Client {
     private Proxy proxy;
     private ConnectionPool pool;
     private OutputStream logger;
-    private LoggingInterceptor.Level logLevel = LoggingInterceptor.Level.ERRORS;
+    private LoggingInterceptor.Level logLevel;
 
     public Builder() {
-      this.urls = new ArrayList<URL>();
+      this.httpClient = new OkHttpClient();
+      this.urls = new ArrayList<>();
       this.setDefaults();
+    }
+
+    public Builder(Client client) {
+      this.httpClient = client.httpClient.clone();
+      this.urls = new ArrayList<>(client.urls);
+      this.accessToken = client.accessToken;
     }
 
     private void setDefaults() {
@@ -551,6 +564,7 @@ public class Client {
       this.setWriteTimeout(30, TimeUnit.SECONDS);
       this.setConnectTimeout(30, TimeUnit.SECONDS);
       this.setConnectionPool(50, 2, TimeUnit.MINUTES);
+      this.logLevel = LoggingInterceptor.Level.ERRORS;
     }
 
     /**
@@ -595,7 +609,17 @@ public class Client {
      * @param url the URL of the Chain Core or HSM
      */
     public Builder setURL(URL url) {
-      this.urls = new ArrayList<URL>(Arrays.asList(url));
+      this.urls = new ArrayList<>(Arrays.asList(url));
+      return this;
+    }
+
+    /**
+     * Sets the list of URLs for the client. It replaces all existing Chain Core
+     * URLs with the provided URLs.
+     * @param urls the URLs of the Chain Cores or HSMs
+     */
+    public Builder setURLs(List<URL> urls) {
+      this.urls = new ArrayList<>(urls);
       return this;
     }
 
