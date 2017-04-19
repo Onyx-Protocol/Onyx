@@ -7,6 +7,7 @@ package accesstoken
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"fmt"
 	"regexp"
 	"time"
@@ -65,10 +66,11 @@ func (cs *CredentialStore) Create(ctx context.Context, id, typ string) (*Token, 
 		RETURNING created, sort_id
 	`
 	var (
-		created time.Time
-		sortID  string
+		created   time.Time
+		sortID    string
+		maybeType = sql.NullString{String: typ, Valid: typ != ""}
 	)
-	err = cs.DB.QueryRow(ctx, q, id, typ, hashedSecret[:]).Scan(&created, &sortID)
+	err = cs.DB.QueryRow(ctx, q, id, maybeType, hashedSecret[:]).Scan(&created, &sortID)
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetailf(ErrDuplicateID, "id %q already in use", id)
 	}
@@ -127,13 +129,14 @@ func (cs *CredentialStore) List(ctx context.Context, typ, after string, limit in
 		LIMIT $3
 	`
 	var tokens []*Token
-	err := pg.ForQueryRows(ctx, cs.DB, q, typ, after, limit, func(id, typ, sortID string, created time.Time) {
-		tokens = append(tokens, &Token{
+	err := pg.ForQueryRows(ctx, cs.DB, q, typ, after, limit, func(id string, maybeType sql.NullString, sortID string, created time.Time) {
+		t := Token{
 			ID:      id,
-			Type:    typ,
 			Created: created,
+			Type:    maybeType.String,
 			sortID:  sortID,
-		})
+		}
+		tokens = append(tokens, &t)
 	})
 	if err != nil {
 		return nil, "", errors.Wrap(err)
