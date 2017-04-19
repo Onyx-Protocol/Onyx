@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
 	"flag"
@@ -17,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"chain/core"
 	"chain/core/accesstoken"
 	"chain/core/config"
 	"chain/core/fileutil"
@@ -353,30 +353,12 @@ func mustRPCClient() *rpc.Client {
 	// Note that this function, unlike maybeUseTLS in cored,
 	// does not load the cert and key from env vars,
 	// only from the filesystem.
-
 	certFile := filepath.Join(*dataDir, "tls.crt")
 	keyFile := filepath.Join(*dataDir, "tls.key")
-
-	_, certErr := os.Lstat(certFile)
-	_, keyErr := os.Lstat(keyFile)
-	if os.IsNotExist(certErr) && os.IsNotExist(keyErr) {
-		// files don't exist; don't want TLS
+	config, err := core.TLSConfig(certFile, keyFile, "")
+	if err == core.ErrNoTLS {
 		return &rpc.Client{BaseURL: *coreURL}
-	}
-
-	config := &tls.Config{
-		// This is the default set of protocols for package http.
-		// DefaultTransport sets this automatically when its
-		// TLSClientConfig is nil, but since we're providing an
-		// explicit config, we have to set it here.
-		NextProtos: []string{"http/1.1", "h2"},
-		RootCAs:    x509.NewCertPool(), // do not use the system roots
-	}
-
-	var err error
-	config.Certificates = make([]tls.Certificate, 1)
-	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
+	} else if err != nil {
 		fatalln("error: loading TLS cert:", err)
 	}
 

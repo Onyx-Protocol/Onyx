@@ -15,9 +15,9 @@ var ErrNoTLS = errors.New("no TLS configuration available")
 // as a Chain Core client and server.
 // It reads a PEM-encoded X.509 certificate and private key
 // from certFile and keyFile.
-// If rootCAs is given, it reads a list of trusted root CA certs
-// from the filesystem;
-// otherwise it uses the system cert pool.
+// If rootCAs is given,
+// it should name a file containing a list of trusted root CA certs,
+// otherwise the returned config uses the system cert pool.
 //
 // For compatibility, it attempts to read the cert and key
 // from the environment if certFile and keyFile both
