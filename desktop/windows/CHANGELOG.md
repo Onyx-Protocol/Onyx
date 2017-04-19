@@ -1,4 +1,4 @@
-# Chain Core Windows Installer changelog
+# Chain Core for Windows changelog
 
 ## 1.1.1 (March 8, 2017)
 

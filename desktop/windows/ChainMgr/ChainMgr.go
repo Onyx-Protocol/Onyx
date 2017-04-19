@@ -14,7 +14,7 @@ import (
 // This file is used to initialize and configure a Postgres database that
 // Chain Core can use on Windows.
 // It can be cross-compiled using
-// `GOOS=windows GOARCH=amd64 go build chain/installer/windows/ChainMgr`
+// `GOOS=windows GOARCH=amd64 go build chain/desktop/windows/ChainMgr`
 
 const (
 
