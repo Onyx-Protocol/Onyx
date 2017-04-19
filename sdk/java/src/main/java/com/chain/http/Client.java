@@ -379,8 +379,7 @@ public class Client {
   }
 
   private OkHttpClient buildHttpClient(Builder builder) {
-    OkHttpClient httpClient = builder.httpClient.clone();
-    httpClient.setFollowRedirects(false);
+    OkHttpClient httpClient = builder.baseHttpClient.clone();
 
     if (builder.sslSocketFactory != null) {
       httpClient.setSslSocketFactory(builder.sslSocketFactory);
@@ -531,7 +530,7 @@ public class Client {
    * A builder class for creating client objects
    */
   public static class Builder {
-    private OkHttpClient httpClient;
+    private OkHttpClient baseHttpClient;
     private List<URL> urls;
     private String accessToken;
     private CertificatePinner cp;
@@ -548,13 +547,14 @@ public class Client {
     private LoggingInterceptor.Level logLevel;
 
     public Builder() {
-      this.httpClient = new OkHttpClient();
+      this.baseHttpClient = new OkHttpClient();
+      this.baseHttpClient.setFollowRedirects(false);
       this.urls = new ArrayList<>();
       this.setDefaults();
     }
 
     public Builder(Client client) {
-      this.httpClient = client.httpClient.clone();
+      this.baseHttpClient = client.httpClient.clone();
       this.urls = new ArrayList<>(client.urls);
       this.accessToken = client.accessToken;
     }
