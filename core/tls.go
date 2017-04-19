@@ -71,7 +71,7 @@ func TLSConfig(certFile, keyFile, rootCAs string) (*tls.Config, error) {
 	// so we automatically trust the local cert,
 	// with the expectation that the peer will also be using it.
 	// This makes misconfiguation impossible.
-	// (For some reason, LoadX509KeyPair doesn't keep a copy of the leaf cert,
+	// (For some reason, X509KeyPair doesn't keep a copy of the leaf cert,
 	// so we need to parse it again here.)
 	x509Cert, err := x509.ParseCertificate(config.Certificates[0].Certificate[0])
 	if err != nil {
