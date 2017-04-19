@@ -3,6 +3,8 @@ package core
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"crypto/x509/pkix"
 	"expvar"
 	"fmt"
@@ -250,24 +252,35 @@ type page struct {
 	LastPage bool         `json:"last_page"`
 }
 
-func (a *API) authnHandler(handler http.Handler) http.Handler {
-	auth := authn.NewAPI(a.accessTokens, networkRPCPrefix)
+func AuthHandler(mux *http.ServeMux, handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, tlsConfig *tls.Config) http.Handler {
+	authenticator := authn.NewAPI(accessTokens, networkRPCPrefix)
+	authorizer := authz.NewAuthorizer(rDB, grantPrefix, policyByRoute)
+
+	var (
+		x509Cert *x509.Certificate
+		err      error
+	)
+	if tlsConfig != nil {
+		// TODO(kr): set Leaf in TLSConfig and use that here. [tktk: do I keep this todo?]
+		x509Cert, err = x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		req, err := auth.Authenticate(req)
+		// TODO(tessr): check that this path exists; return early if this path isn't legit
+		req, err := authenticator.Authenticate(req)
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, errNotAuthenticated)
 			return
 		}
-		handler.ServeHTTP(rw, req)
-	})
-}
 
-func (a *API) authzHandler(mux *http.ServeMux, handler http.Handler) http.Handler {
-	auth := authz.NewAuthorizer(a.raftDB, grantPrefix, policyByRoute)
-	auth.GrantInternal(a.internalSubj)
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		// TODO(tessr): check that this path exists; return early if this path isn't legit
-		err := auth.Authorize(req)
+		if x509Cert != nil {
+			authorizer.GrantInternal(x509Cert.Subject)
+		}
+
+		err = authorizer.Authorize(req)
 		if errors.Root(err) == authz.ErrNotAuthorized {
 			// TODO(kr): remove this workaround once dashboard
 			// knows how to handle ErrNotAuthorized (CH011).
