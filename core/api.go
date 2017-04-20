@@ -190,7 +190,7 @@ func (a *API) buildHandler() {
 		m.ServeHTTP(w, req)
 	})
 
-	handler := a.authzHandler(latencyHandler)
+	handler := a.authzHandler(m, latencyHandler)
 	handler = a.authnHandler(handler)
 	handler = maxBytes(handler) // TODO(tessr): consider moving this to non-core specific mux
 	handler = webAssetsHandler(handler)
@@ -259,9 +259,14 @@ func (a *API) authnHandler(handler http.Handler) http.Handler {
 	})
 }
 
-func (a *API) authzHandler(handler http.Handler) http.Handler {
+func (a *API) authzHandler(mux *http.ServeMux, handler http.Handler) http.Handler {
 	auth := authz.NewAuthorizer(a.raftDB, grantPrefix, policyByRoute)
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// return failure early if this path isn't legit
+		if _, pat := mux.Handler(req); pat != req.URL.Path {
+			errorFormatter.Write(req.Context(), rw, errNotFound)
+			return
+		}
 		err := auth.Authorize(req)
 		if errors.Root(err) == authz.ErrNotAuthorized {
 			// TODO(kr): remove this workaround once dashboard
