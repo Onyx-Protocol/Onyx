@@ -96,7 +96,7 @@ const accessControl = (client) => ({
    * @returns {Promise<Array<Grant>>} Requested page of results.
    */
   list: (cb) =>
-    shared.query(client, 'accessTokens', '/list-authorization-grant', {}, {cb}),
+    shared.query(client, 'accessTokens', '/list-authorization-grants', {}, {cb}),
 })
 
 module.exports = accessControl

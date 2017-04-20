@@ -44,7 +44,7 @@ var policyByRoute = map[string][]string{
 	networkRPCPrefix + "signer/sign-block": {"network"},
 	networkRPCPrefix + "block-height":      {"network"},
 
-	"/list-authorization-grant":   {"client-readwrite", "client-readonly"},
+	"/list-authorization-grants":  {"client-readwrite", "client-readonly"},
 	"/create-authorization-grant": {"client-readwrite"},
 	"/delete-authorization-grant": {"client-readwrite"},
 	"/create-access-token":        {"client-readwrite"},
