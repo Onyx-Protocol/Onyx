@@ -71,7 +71,9 @@ func Load(ctx context.Context, db pg.DB, rDB *raft.Service) (*Config, error) {
 			return nil, errors.Wrap(err)
 		}
 
-		// If we were able to find a config in Postgres, store it in Raft
+		// If we were able to find a config in Postgres, store it in Raft.
+		// This also means that we are running this core with raft for the first time
+		// which means that we will also migrate access tokens.
 		if config != nil {
 			val, err := proto.Marshal(config)
 			if err != nil {
@@ -86,8 +88,8 @@ func Load(ctx context.Context, db pg.DB, rDB *raft.Service) (*Config, error) {
 				// If we got this far but failed to delete from PG, it's really NBD. Just
 				// log the failure and carry on.
 				log.Error(ctx, err, "failed to delete config from postgres")
-
 			}
+			err = migrateAccessTokens(ctx, db, rDB)
 			return config, nil
 		}
 		return nil, nil
@@ -280,4 +282,22 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) er
 	}
 
 	return nil
+}
+
+// this almost certainly should live in another package
+func migrateAccessTokens(ctx context.Context, db *pg.DB, rDB *raft.Service) error {
+	const q = `SELECT id, type, sort_id, created FROM access_tokens`
+	var tokens []*accesstoken.Token
+	err := pg.ForQueryRows(ctx, cs.DB, q, func(id string, maybeType sql.NullString, sortID string, created time.Time) {
+		t := Token{
+			ID:      id,
+			Created: created,
+			Type:    maybeType.String,
+			sortID:  sortID,
+		}
+		tokens = append(tokens, &t)
+	})
+	if err != nil {
+		return nil, "", errors.Wrap(err)
+	}
 }
