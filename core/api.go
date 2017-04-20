@@ -170,9 +170,9 @@ func (a *API) buildHandler() {
 		}
 	}))
 
-	m.Handle("/list-acl-grants", jsonHandler(a.listGrants))
-	m.Handle("/create-acl-grant", jsonHandler(a.createGrant))
-	m.Handle("/revoke-acl-grant", jsonHandler(a.revokeGrant))
+	m.Handle("/list-authorization-grant", jsonHandler(a.listGrants))
+	m.Handle("/create-authorization-grant", jsonHandler(a.createGrant))
+	m.Handle("/delete-authorization-grant", jsonHandler(a.deleteGrant))
 	m.Handle("/create-access-token", jsonHandler(a.createAccessToken))
 	m.Handle("/list-access-tokens", jsonHandler(a.listAccessTokens))
 	m.Handle("/delete-access-token", jsonHandler(a.deleteAccessToken))

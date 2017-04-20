@@ -44,14 +44,14 @@ var policyByRoute = map[string][]string{
 	networkRPCPrefix + "signer/sign-block": {"network"},
 	networkRPCPrefix + "block-height":      {"network"},
 
-	"/list-acl-grants":     {"client-readwrite", "client-readonly"},
-	"/create-acl-grant":    {"client-readwrite"},
-	"/revoke-acl-grant":    {"client-readwrite"},
-	"/create-access-token": {"client-readwrite"},
-	"/list-access-tokens":  {"client-readwrite", "client-readonly"},
-	"/delete-access-token": {"client-readwrite"},
-	"/configure":           {"client-readwrite"},
-	"/info":                {"client-readwrite", "client-readonly", "network", "monitoring"},
+	"/list-authorization-grant":   {"client-readwrite", "client-readonly"},
+	"/create-authorization-grant": {"client-readwrite"},
+	"/delete-authorization-grant": {"client-readwrite"},
+	"/create-access-token":        {"client-readwrite"},
+	"/list-access-tokens":         {"client-readwrite", "client-readonly"},
+	"/delete-access-token":        {"client-readwrite"},
+	"/configure":                  {"client-readwrite"},
+	"/info":                       {"client-readwrite", "client-readonly", "network", "monitoring"},
 
 	"/debug/vars":          {"client-readwrite", "client-readonly", "monitoring"}, // should monitoring endpoints also be available to any other policy-holders?
 	"/debug/pprof":         {"client-readwrite", "client-readonly", "monitoring"},

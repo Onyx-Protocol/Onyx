@@ -749,7 +749,7 @@ describe('Callback style', () => {
     })
 
 
-    it('can revoke access grants', (done) => {
+    it('can delete access grants', (done) => {
       async.series([
         (next) => client.accessControl.create(tokenGrant, () => next()),
         (next) => client.accessControl.delete(tokenGrant, () => next()),

@@ -10,7 +10,7 @@ const baseActions = baseListActions('accessControl', {
 })
 
 // Given a list of policies, create a grant for
-// all policies that are truthy, and revoke any
+// all policies that are truthy, and delete any
 // outstanding grants for policies that are not.
 const setPolicies = (body, policies) => {
   const promises = []
@@ -105,7 +105,7 @@ export default {
     }
   },
 
-  revokeGrant: grant => {
+  deleteGrant: grant => {
     if (!window.confirm('Really delete access grant?')) {
       return
     }
@@ -115,7 +115,7 @@ export default {
         dispatch({
           type: 'DELETE_ACCESSCONTROL',
           id: grant.id,
-          message: 'Grant revoked.'
+          message: 'Grant deleted.'
         })
       }).catch(err => dispatch({
         type: 'ERROR', payload: err
