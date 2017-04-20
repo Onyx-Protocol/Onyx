@@ -54,7 +54,7 @@ func (a *Authorizer) GrantInternal(subj pkix.Name) {
 func (a *Authorizer) Authorize(req *http.Request) error {
 	policies := a.policyByRoute[strings.TrimRight(req.RequestURI, "/")]
 	if policies == nil || len(policies) == 0 {
-		return ErrMissingPolicy
+		return errors.New("missing policy on this route")
 	}
 
 	grants, err := a.grantsByPolicies(policies)
@@ -63,7 +63,7 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 	}
 
 	if !authorized(req.Context(), grants) {
-		return errors.New("missing policy on this route")
+		return ErrNotAuthorized
 	}
 
 	return nil
