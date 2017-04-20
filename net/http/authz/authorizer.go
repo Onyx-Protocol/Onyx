@@ -114,8 +114,10 @@ func x509GuardData(grant *Grant) pkix.Name {
 
 func encodeX509GuardData(subj pkix.Name) []byte {
 	d, _ := json.Marshal(map[string]interface{}{
-		"cn": subj.CommonName,
-		"ou": subj.OrganizationalUnit,
+		"subject": map[string]interface{}{
+			"cn": subj.CommonName,
+			"ou": subj.OrganizationalUnit,
+		},
 	})
 	return d
 }
