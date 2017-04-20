@@ -262,7 +262,7 @@ func (a *API) authnHandler(handler http.Handler) http.Handler {
 func (a *API) authzHandler(mux *http.ServeMux, handler http.Handler) http.Handler {
 	auth := authz.NewAuthorizer(a.raftDB, grantPrefix, policyByRoute)
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		// return failure ealy if this path isn't legit
+		// return failure early if this path isn't legit
 		if _, pat := mux.Handler(req); pat != req.URL.Path {
 			errorFormatter.Write(req.Context(), rw, errNotFound)
 			return
