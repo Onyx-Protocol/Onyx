@@ -65,7 +65,7 @@ var (
 	rpsToken      = env.Int("RATELIMIT_TOKEN", 0)       // reqs/sec
 	rpsRemoteAddr = env.Int("RATELIMIT_REMOTE_ADDR", 0) // reqs/sec
 	indexTxs      = env.Bool("INDEX_TRANSACTIONS", true)
-	dataDir       = env.String("CORED_DATA_DIR", fileutil.DefaultDir())
+	dataDir       = env.String("DATA_DIR", fileutil.DefaultDir())
 	bootURL       = env.String("BOOTURL", "")
 
 	// build vars; initialized by the linker

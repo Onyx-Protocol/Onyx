@@ -31,7 +31,7 @@ import (
 
 // config vars
 var (
-	dataDir = env.String("CORED_DATA_DIR", fileutil.DefaultDir())
+	dataDir = env.String("DATA_DIR", fileutil.DefaultDir())
 	dbURL   = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
 	coreURL = env.String("CORE_URL", "http://localhost:1999")
 

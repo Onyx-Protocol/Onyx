@@ -9,20 +9,20 @@ build:
 
 run0:
 	LISTEN=127.0.0.1:1999 \
-	CORED_DATA_DIR=$(HOME)/Library/Application\ Support/Chain\ Core/.cored0 \
+	DATA_DIR=$(HOME)/Library/Application\ Support/Chain\ Core/.cored0 \
 	DATABASE_URL=postgres:///core0?sslmode=disable \
 	cored
 
 run1:
 	LISTEN=127.0.0.1:1998 \
-	CORED_DATA_DIR=$(HOME)/Library/Application\ Support/Chain\ Core/.cored1 \	
+	DATA_DIR=$(HOME)/Library/Application\ Support/Chain\ Core/.cored1 \	
 	BOOTURL=http://127.0.0.1:1999/ \
 	DATABASE_URL=postgres:///core0?sslmode=disable \
 	cored
 
 run2:
 	LISTEN=127.0.0.1:1997 \
-	CORED_DATA_DIR=$(HOME)/Library/Application\ Support/Chain\ Core/.cored2 \	
+	DATA_DIR=$(HOME)/Library/Application\ Support/Chain\ Core/.cored2 \	
 	BOOTURL=http://127.0.0.1:1999/ \
 	DATABASE_URL=postgres:///core0?sslmode=disable \
 	cored
