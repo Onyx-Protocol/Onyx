@@ -57,7 +57,6 @@ var errorFormatter = httperror.Formatter{
 		pg.ErrUserInputNotFound:    {400, "CH002", "Not found"},
 		httpjson.ErrBadRequest:     {400, "CH003", "Invalid request body"},
 		errNotFound:                {404, "CH006", "Not found"},
-		authz.ErrMissingPolicy:     {404, "CH006", "Not found"},
 		errRateLimited:             {429, "CH007", "Request limit exceeded"},
 		errLeaderElection:          {503, "CH008", "Electing a new leader for the core; try again soon"},
 		errNotAuthenticated:        {401, "CH009", "Request could not be authenticated"},
