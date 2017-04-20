@@ -35,7 +35,7 @@ func NewReader(b []byte) *Reader {
 // It implements the io.ByteReader interface.
 func (r *Reader) ReadByte() (byte, error) {
 	if len(r.buf) == 0 {
-		return 0, io.ErrUnexpectedEOF
+		return 0, io.EOF
 	}
 
 	b := r.buf[0]
