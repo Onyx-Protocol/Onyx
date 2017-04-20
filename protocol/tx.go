@@ -60,7 +60,7 @@ func (c *Chain) checkIssuanceWindow(tx *bc.Tx) error {
 	}
 	for _, entryID := range tx.InputIDs {
 		if _, err := tx.Issuance(entryID); err == nil {
-			if tx.Body.MinTimeMs+bc.DurationMillis(c.MaxIssuanceWindow) < tx.Body.MaxTimeMs {
+			if tx.MinTimeMs+bc.DurationMillis(c.MaxIssuanceWindow) < tx.MaxTimeMs {
 				return errors.WithDetailf(ErrBadTx, "issuance input's time window is larger than the network maximum (%s)", c.MaxIssuanceWindow)
 			}
 		}

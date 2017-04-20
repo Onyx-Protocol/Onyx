@@ -41,69 +41,69 @@ func TestTxValidation(t *testing.T) {
 		{
 			desc: "failing mux program",
 			f: func() {
-				mux.Body.Program.Code = []byte{byte(vm.OP_FALSE)}
+				mux.Program.Code = []byte{byte(vm.OP_FALSE)}
 			},
 			err: vm.ErrFalseVMResult,
 		},
 		{
 			desc: "unbalanced mux amounts",
 			f: func() {
-				mux.Body.Sources[0].Value.Amount++
-				iss := tx.Entries[*mux.Body.Sources[0].Ref].(*bc.Issuance)
-				iss.Witness.Destination.Value.Amount++
+				mux.Sources[0].Value.Amount++
+				iss := tx.Entries[*mux.Sources[0].Ref].(*bc.Issuance)
+				iss.WitnessDestination.Value.Amount++
 			},
 			err: errUnbalanced,
 		},
 		{
 			desc: "overflowing mux source amounts",
 			f: func() {
-				mux.Body.Sources[0].Value.Amount = math.MaxInt64
-				iss := tx.Entries[*mux.Body.Sources[0].Ref].(*bc.Issuance)
-				iss.Witness.Destination.Value.Amount = math.MaxInt64
+				mux.Sources[0].Value.Amount = math.MaxInt64
+				iss := tx.Entries[*mux.Sources[0].Ref].(*bc.Issuance)
+				iss.WitnessDestination.Value.Amount = math.MaxInt64
 			},
 			err: errOverflow,
 		},
 		{
 			desc: "underflowing mux destination amounts",
 			f: func() {
-				mux.Witness.Destinations[0].Value.Amount = math.MaxInt64
-				out := tx.Entries[*mux.Witness.Destinations[0].Ref].(*bc.Output)
-				out.Body.Source.Value.Amount = math.MaxInt64
-				mux.Witness.Destinations[1].Value.Amount = math.MaxInt64
-				out = tx.Entries[*mux.Witness.Destinations[1].Ref].(*bc.Output)
-				out.Body.Source.Value.Amount = math.MaxInt64
+				mux.WitnessDestinations[0].Value.Amount = math.MaxInt64
+				out := tx.Entries[*mux.WitnessDestinations[0].Ref].(*bc.Output)
+				out.Source.Value.Amount = math.MaxInt64
+				mux.WitnessDestinations[1].Value.Amount = math.MaxInt64
+				out = tx.Entries[*mux.WitnessDestinations[1].Ref].(*bc.Output)
+				out.Source.Value.Amount = math.MaxInt64
 			},
 			err: errOverflow,
 		},
 		{
 			desc: "unbalanced mux assets",
 			f: func() {
-				mux.Body.Sources[1].Value.AssetId = newAssetID(255)
-				sp := tx.Entries[*mux.Body.Sources[1].Ref].(*bc.Spend)
-				sp.Witness.Destination.Value.AssetId = newAssetID(255)
+				mux.Sources[1].Value.AssetId = newAssetID(255)
+				sp := tx.Entries[*mux.Sources[1].Ref].(*bc.Spend)
+				sp.WitnessDestination.Value.AssetId = newAssetID(255)
 			},
 			err: errUnbalanced,
 		},
 		{
 			desc: "nonempty mux exthash",
 			f: func() {
-				mux.Body.ExtHash = newHash(1)
+				mux.ExtHash = newHash(1)
 			},
 			err: errNonemptyExtHash,
 		},
 		{
 			desc: "nonempty mux exthash, but that's OK",
 			f: func() {
-				tx.Body.Version = 2
-				mux.Body.ExtHash = newHash(1)
+				tx.Version = 2
+				mux.ExtHash = newHash(1)
 			},
 		},
 		{
 			desc: "failing nonce program",
 			f: func() {
 				iss := txIssuance(t, tx, 0)
-				nonce := tx.Entries[*iss.Body.AnchorId].(*bc.Nonce)
-				nonce.Body.Program.Code = []byte{byte(vm.OP_FALSE)}
+				nonce := tx.Entries[*iss.AnchorId].(*bc.Nonce)
+				nonce.Program.Code = []byte{byte(vm.OP_FALSE)}
 			},
 			err: vm.ErrFalseVMResult,
 		},
@@ -111,27 +111,27 @@ func TestTxValidation(t *testing.T) {
 			desc: "nonce exthash nonempty",
 			f: func() {
 				iss := txIssuance(t, tx, 0)
-				nonce := tx.Entries[*iss.Body.AnchorId].(*bc.Nonce)
-				nonce.Body.ExtHash = newHash(1)
+				nonce := tx.Entries[*iss.AnchorId].(*bc.Nonce)
+				nonce.ExtHash = newHash(1)
 			},
 			err: errNonemptyExtHash,
 		},
 		{
 			desc: "nonce exthash nonempty, but that's OK",
 			f: func() {
-				tx.Body.Version = 2
+				tx.Version = 2
 				iss := txIssuance(t, tx, 0)
-				nonce := tx.Entries[*iss.Body.AnchorId].(*bc.Nonce)
-				nonce.Body.ExtHash = newHash(1)
+				nonce := tx.Entries[*iss.AnchorId].(*bc.Nonce)
+				nonce.ExtHash = newHash(1)
 			},
 		},
 		{
 			desc: "nonce timerange misordered",
 			f: func() {
 				iss := txIssuance(t, tx, 0)
-				nonce := tx.Entries[*iss.Body.AnchorId].(*bc.Nonce)
-				tr := tx.Entries[*nonce.Body.TimeRangeId].(*bc.TimeRange)
-				tr.Body.MinTimeMs = tr.Body.MaxTimeMs + 1
+				nonce := tx.Entries[*iss.AnchorId].(*bc.Nonce)
+				tr := tx.Entries[*nonce.TimeRangeId].(*bc.TimeRange)
+				tr.MinTimeMs = tr.MaxTimeMs + 1
 			},
 			err: errBadTimeRange,
 		},
@@ -139,9 +139,9 @@ func TestTxValidation(t *testing.T) {
 			desc: "nonce timerange disagrees with tx timerange",
 			f: func() {
 				iss := txIssuance(t, tx, 0)
-				nonce := tx.Entries[*iss.Body.AnchorId].(*bc.Nonce)
-				tr := tx.Entries[*nonce.Body.TimeRangeId].(*bc.TimeRange)
-				tr.Body.MaxTimeMs = tx.Body.MaxTimeMs - 1
+				nonce := tx.Entries[*iss.AnchorId].(*bc.Nonce)
+				tr := tx.Entries[*nonce.TimeRangeId].(*bc.TimeRange)
+				tr.MaxTimeMs = tx.MaxTimeMs - 1
 			},
 			err: errBadTimeRange,
 		},
@@ -149,26 +149,26 @@ func TestTxValidation(t *testing.T) {
 			desc: "nonce timerange exthash nonempty",
 			f: func() {
 				iss := txIssuance(t, tx, 0)
-				nonce := tx.Entries[*iss.Body.AnchorId].(*bc.Nonce)
-				tr := tx.Entries[*nonce.Body.TimeRangeId].(*bc.TimeRange)
-				tr.Body.ExtHash = newHash(1)
+				nonce := tx.Entries[*iss.AnchorId].(*bc.Nonce)
+				tr := tx.Entries[*nonce.TimeRangeId].(*bc.TimeRange)
+				tr.ExtHash = newHash(1)
 			},
 			err: errNonemptyExtHash,
 		},
 		{
 			desc: "nonce timerange exthash nonempty, but that's OK",
 			f: func() {
-				tx.Body.Version = 2
+				tx.Version = 2
 				iss := txIssuance(t, tx, 0)
-				nonce := tx.Entries[*iss.Body.AnchorId].(*bc.Nonce)
-				tr := tx.Entries[*nonce.Body.TimeRangeId].(*bc.TimeRange)
-				tr.Body.ExtHash = newHash(1)
+				nonce := tx.Entries[*iss.AnchorId].(*bc.Nonce)
+				tr := tx.Entries[*nonce.TimeRangeId].(*bc.TimeRange)
+				tr.ExtHash = newHash(1)
 			},
 		},
 		{
 			desc: "mismatched output source / mux dest position",
 			f: func() {
-				tx.Entries[*tx.Body.ResultIds[0]].(*bc.Output).Body.Source.Position = 1
+				tx.Entries[*tx.ResultIds[0]].(*bc.Output).Source.Position = 1
 			},
 			err: errMismatchedPosition,
 		},
@@ -182,80 +182,80 @@ func TestTxValidation(t *testing.T) {
 				fixture.txOutputs[0].ReferenceData = []byte{1}
 				fixture2 := sample(t, fixture)
 				tx2 := legacy.NewTx(*fixture2.tx).Tx
-				out2ID := tx2.Body.ResultIds[0]
+				out2ID := tx2.ResultIds[0]
 				out2 := tx2.Entries[*out2ID].(*bc.Output)
 				tx.Entries[*out2ID] = out2
-				mux.Witness.Destinations[0].Ref = out2ID
+				mux.WitnessDestinations[0].Ref = out2ID
 			},
 			err: errMismatchedReference,
 		},
 		{
 			desc: "invalid mux destinaton position",
 			f: func() {
-				mux.Witness.Destinations[0].Position = 1
+				mux.WitnessDestinations[0].Position = 1
 			},
 			err: errPosition,
 		},
 		{
 			desc: "mismatched mux dest value / output source value",
 			f: func() {
-				outID := tx.Body.ResultIds[0]
+				outID := tx.ResultIds[0]
 				out := tx.Entries[*outID].(*bc.Output)
-				mux.Witness.Destinations[0].Value = &bc.AssetAmount{
-					AssetId: out.Body.Source.Value.AssetId,
-					Amount:  out.Body.Source.Value.Amount + 1,
+				mux.WitnessDestinations[0].Value = &bc.AssetAmount{
+					AssetId: out.Source.Value.AssetId,
+					Amount:  out.Source.Value.Amount + 1,
 				}
-				mux.Body.Sources[0].Value.Amount++ // the mux must still balance
+				mux.Sources[0].Value.Amount++ // the mux must still balance
 			},
 			err: errMismatchedValue,
 		},
 		{
 			desc: "output exthash nonempty",
 			f: func() {
-				tx.Entries[*tx.Body.ResultIds[0]].(*bc.Output).Body.ExtHash = newHash(1)
+				tx.Entries[*tx.ResultIds[0]].(*bc.Output).ExtHash = newHash(1)
 			},
 			err: errNonemptyExtHash,
 		},
 		{
 			desc: "output exthash nonempty, but that's OK",
 			f: func() {
-				tx.Body.Version = 2
-				tx.Entries[*tx.Body.ResultIds[0]].(*bc.Output).Body.ExtHash = newHash(1)
+				tx.Version = 2
+				tx.Entries[*tx.ResultIds[0]].(*bc.Output).ExtHash = newHash(1)
 			},
 		},
 		{
 			desc: "misordered tx time range",
 			f: func() {
-				tx.Body.MinTimeMs = tx.Body.MaxTimeMs + 1
+				tx.MinTimeMs = tx.MaxTimeMs + 1
 			},
 			err: errBadTimeRange,
 		},
 		{
 			desc: "empty tx results",
 			f: func() {
-				tx.Body.ResultIds = nil
+				tx.ResultIds = nil
 			},
 			err: errEmptyResults,
 		},
 		{
 			desc: "empty tx results, but that's OK",
 			f: func() {
-				tx.Body.Version = 2
-				tx.Body.ResultIds = nil
+				tx.Version = 2
+				tx.ResultIds = nil
 			},
 		},
 		{
 			desc: "tx header exthash nonempty",
 			f: func() {
-				tx.Body.ExtHash = newHash(1)
+				tx.ExtHash = newHash(1)
 			},
 			err: errNonemptyExtHash,
 		},
 		{
 			desc: "tx header exthash nonempty, but that's OK",
 			f: func() {
-				tx.Body.Version = 2
-				tx.Body.ExtHash = newHash(1)
+				tx.Version = 2
+				tx.ExtHash = newHash(1)
 			},
 		},
 		{
@@ -269,7 +269,7 @@ func TestTxValidation(t *testing.T) {
 			desc: "issuance asset ID mismatch",
 			f: func() {
 				iss := txIssuance(t, tx, 0)
-				iss.Body.Value.AssetId = newAssetID(1)
+				iss.Value.AssetId = newAssetID(1)
 			},
 			err: errMismatchedAssetID,
 		},
@@ -277,7 +277,7 @@ func TestTxValidation(t *testing.T) {
 			desc: "issuance program failure",
 			f: func() {
 				iss := txIssuance(t, tx, 0)
-				iss.Witness.Arguments[0] = []byte{}
+				iss.WitnessArguments[0] = []byte{}
 			},
 			err: vm.ErrFalseVMResult,
 		},
@@ -285,23 +285,23 @@ func TestTxValidation(t *testing.T) {
 			desc: "issuance exthash nonempty",
 			f: func() {
 				iss := txIssuance(t, tx, 0)
-				iss.Body.ExtHash = newHash(1)
+				iss.ExtHash = newHash(1)
 			},
 			err: errNonemptyExtHash,
 		},
 		{
 			desc: "issuance exthash nonempty, but that's OK",
 			f: func() {
-				tx.Body.Version = 2
+				tx.Version = 2
 				iss := txIssuance(t, tx, 0)
-				iss.Body.ExtHash = newHash(1)
+				iss.ExtHash = newHash(1)
 			},
 		},
 		{
 			desc: "spend control program failure",
 			f: func() {
 				spend := txSpend(t, tx, 1)
-				spend.Witness.Arguments[0] = []byte{}
+				spend.WitnessArguments[0] = []byte{}
 			},
 			err: vm.ErrFalseVMResult,
 		},
@@ -309,10 +309,10 @@ func TestTxValidation(t *testing.T) {
 			desc: "mismatched spent source/witness value",
 			f: func() {
 				spend := txSpend(t, tx, 1)
-				spentOutput := tx.Entries[*spend.Body.SpentOutputId].(*bc.Output)
-				spentOutput.Body.Source.Value = &bc.AssetAmount{
-					AssetId: spend.Witness.Destination.Value.AssetId,
-					Amount:  spend.Witness.Destination.Value.Amount + 1,
+				spentOutput := tx.Entries[*spend.SpentOutputId].(*bc.Output)
+				spentOutput.Source.Value = &bc.AssetAmount{
+					AssetId: spend.WitnessDestination.Value.AssetId,
+					Amount:  spend.WitnessDestination.Value.Amount + 1,
 				}
 			},
 			err: errMismatchedValue,
@@ -321,16 +321,16 @@ func TestTxValidation(t *testing.T) {
 			desc: "spend exthash nonempty",
 			f: func() {
 				spend := txSpend(t, tx, 1)
-				spend.Body.ExtHash = newHash(1)
+				spend.ExtHash = newHash(1)
 			},
 			err: errNonemptyExtHash,
 		},
 		{
 			desc: "spend exthash nonempty, but that's OK",
 			f: func() {
-				tx.Body.Version = 2
+				tx.Version = 2
 				spend := txSpend(t, tx, 1)
-				spend.Body.ExtHash = newHash(1)
+				spend.ExtHash = newHash(1)
 			},
 		},
 	}
@@ -345,8 +345,8 @@ func TestTxValidation(t *testing.T) {
 			tx:           tx,
 			entryID:      tx.ID,
 		}
-		out := tx.Entries[*tx.Body.ResultIds[0]].(*bc.Output)
-		muxID := out.Body.Source.Ref
+		out := tx.Entries[*tx.ResultIds[0]].(*bc.Output)
+		muxID := out.Source.Ref
 		mux = tx.Entries[*muxID].(*bc.Mux)
 
 		if c.f != nil {
@@ -372,12 +372,12 @@ func TestBlockHeaderValid(t *testing.T) {
 		{},
 		{
 			f: func() {
-				bh.Body.Version = 2
+				bh.Version = 2
 			},
 		},
 		{
 			f: func() {
-				bh.Body.ExtHash = newHash(1)
+				bh.ExtHash = newHash(1)
 			},
 			err: errNonemptyExtHash,
 		},

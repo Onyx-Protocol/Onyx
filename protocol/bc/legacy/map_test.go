@@ -24,43 +24,43 @@ func TestMapTx(t *testing.T) {
 
 	t.Log(spew.Sdump(entryMap))
 
-	if header.Body.Version != 1 {
-		t.Errorf("header.Body.Version is %d, expected 1", header.Body.Version)
+	if header.Version != 1 {
+		t.Errorf("header.Version is %d, expected 1", header.Version)
 	}
-	if header.Body.MinTimeMs != oldTx.MinTime {
-		t.Errorf("header.Body.MinTimeMs is %d, expected %d", header.Body.MinTimeMs, oldTx.MinTime)
+	if header.MinTimeMs != oldTx.MinTime {
+		t.Errorf("header.MinTimeMs is %d, expected %d", header.MinTimeMs, oldTx.MinTime)
 	}
-	if header.Body.MaxTimeMs != oldTx.MaxTime {
-		t.Errorf("header.Body.MaxTimeMs is %d, expected %d", header.Body.MaxTimeMs, oldTx.MaxTime)
+	if header.MaxTimeMs != oldTx.MaxTime {
+		t.Errorf("header.MaxTimeMs is %d, expected %d", header.MaxTimeMs, oldTx.MaxTime)
 	}
-	if len(header.Body.ResultIds) != len(oldOuts) {
-		t.Errorf("header.Body.ResultIds contains %d item(s), expected %d", len(header.Body.ResultIds), len(oldOuts))
+	if len(header.ResultIds) != len(oldOuts) {
+		t.Errorf("header.ResultIds contains %d item(s), expected %d", len(header.ResultIds), len(oldOuts))
 	}
 
 	for i, oldOut := range oldOuts {
-		if resultEntry, ok := entryMap[*header.Body.ResultIds[i]]; ok {
+		if resultEntry, ok := entryMap[*header.ResultIds[i]]; ok {
 			if newOut, ok := resultEntry.(*bc.Output); ok {
-				if *newOut.Body.Source.Value != oldOut.AssetAmount {
-					t.Errorf("header.Body.ResultIds[%d].(*output).Body.Source is %v, expected %v", i, newOut.Body.Source.Value, oldOut.AssetAmount)
+				if *newOut.Source.Value != oldOut.AssetAmount {
+					t.Errorf("header.ResultIds[%d].(*output).Source is %v, expected %v", i, newOut.Source.Value, oldOut.AssetAmount)
 				}
-				if newOut.Body.ControlProgram.VmVersion != 1 {
-					t.Errorf("header.Body.ResultIds[%d].(*output).Body.ControlProgram.VMVersion is %d, expected 1", i, newOut.Body.ControlProgram.VmVersion)
+				if newOut.ControlProgram.VmVersion != 1 {
+					t.Errorf("header.ResultIds[%d].(*output).ControlProgram.VMVersion is %d, expected 1", i, newOut.ControlProgram.VmVersion)
 				}
-				if !bytes.Equal(newOut.Body.ControlProgram.Code, oldOut.ControlProgram) {
-					t.Errorf("header.Body.ResultIds[%d].(*output).Body.ControlProgram.Code is %x, expected %x", i, newOut.Body.ControlProgram.Code, oldOut.ControlProgram)
+				if !bytes.Equal(newOut.ControlProgram.Code, oldOut.ControlProgram) {
+					t.Errorf("header.ResultIds[%d].(*output).ControlProgram.Code is %x, expected %x", i, newOut.ControlProgram.Code, oldOut.ControlProgram)
 				}
-				if *newOut.Body.Data != hashData(oldOut.ReferenceData) {
+				if *newOut.Data != hashData(oldOut.ReferenceData) {
 					want := hashData(oldOut.ReferenceData)
-					t.Errorf("header.Body.ResultIds[%d].(*output).Body.Data is %x, expected %x", i, newOut.Body.Data.Bytes(), want.Bytes())
+					t.Errorf("header.ResultIds[%d].(*output).Data is %x, expected %x", i, newOut.Data.Bytes(), want.Bytes())
 				}
-				if !newOut.Body.ExtHash.IsZero() {
-					t.Errorf("header.Body.ResultIds[%d].(*output).Body.ExtHash is %x, expected zero", i, newOut.Body.ExtHash.Bytes())
+				if !newOut.ExtHash.IsZero() {
+					t.Errorf("header.ResultIds[%d].(*output).ExtHash is %x, expected zero", i, newOut.ExtHash.Bytes())
 				}
 			} else {
-				t.Errorf("header.Body.ResultIds[%d] has type %T, expected *Output", i, resultEntry)
+				t.Errorf("header.ResultIds[%d] has type %T, expected *Output", i, resultEntry)
 			}
 		} else {
-			t.Errorf("entryMap contains nothing for header.Body.ResultIds[%d] (%x)", i, header.Body.ResultIds[i].Bytes())
+			t.Errorf("entryMap contains nothing for header.ResultIds[%d] (%x)", i, header.ResultIds[i].Bytes())
 		}
 	}
 }

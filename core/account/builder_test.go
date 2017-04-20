@@ -61,7 +61,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*legacy.TxInput{legacy.NewSpendInput(nil, *outEntry.Body.Source.Ref, *txOut.AssetId, txOut.Amount, outEntry.Body.Source.Position, txOut.ControlProgram, *outEntry.Body.Data, nil)}
+	wantTxIns := []*legacy.TxInput{legacy.NewSpendInput(nil, *outEntry.Source.Ref, *txOut.AssetId, txOut.Amount, outEntry.Source.Position, txOut.ControlProgram, *outEntry.Data, nil)}
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)
 	}
@@ -112,7 +112,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantTxIns := []*legacy.TxInput{legacy.NewSpendInput(nil, *outEntry.Body.Source.Ref, *txOut.AssetId, txOut.Amount, outEntry.Body.Source.Position, txOut.ControlProgram, *outEntry.Body.Data, nil)}
+	wantTxIns := []*legacy.TxInput{legacy.NewSpendInput(nil, *outEntry.Source.Ref, *txOut.AssetId, txOut.Amount, outEntry.Source.Position, txOut.ControlProgram, *outEntry.Data, nil)}
 
 	if !testutil.DeepEqual(tx.Inputs, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", tx.Inputs, wantTxIns)

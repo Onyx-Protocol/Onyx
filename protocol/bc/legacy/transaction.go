@@ -44,9 +44,9 @@ func (tx *Tx) SetInputArguments(n uint32, args [][]byte) {
 	e := tx.Entries[id]
 	switch e := e.(type) {
 	case *bc.Issuance:
-		e.Witness.Arguments = args
+		e.WitnessArguments = args
 	case *bc.Spend:
-		e.Witness.Arguments = args
+		e.WitnessArguments = args
 	}
 }
 
@@ -55,7 +55,7 @@ func (tx *Tx) IssuanceHash(n int) bc.Hash {
 }
 
 func (tx *Tx) OutputID(outputIndex int) *bc.Hash {
-	return tx.Body.ResultIds[outputIndex]
+	return tx.ResultIds[outputIndex]
 }
 
 // NewTx returns a new Tx containing data and its hash.
