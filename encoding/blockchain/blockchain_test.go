@@ -7,6 +7,9 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"testing/quick"
+
+	"chain/testutil"
 )
 
 func BenchmarkReadVarint31(b *testing.B) {
@@ -308,5 +311,65 @@ func TestExtensibleString(t *testing.T) {
 		if !bytes.Equal(str, suffix) {
 			t.Errorf("got suffix %x, want %x", suffix, str)
 		}
+	}
+}
+
+func TestReadWriteVarint31(t *testing.T) {
+	f := func(x uint32) bool {
+		var buf bytes.Buffer
+		_, err := WriteVarint31(&buf, uint64(x))
+		if err == ErrRange {
+			return x > math.MaxInt32
+		}
+		v, err := ReadVarint31(NewReader(buf.Bytes()))
+		return uint32(v) == x && err == nil
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestReadWriteVarint63(t *testing.T) {
+	f := func(x uint64) bool {
+		var buf bytes.Buffer
+		_, err := WriteVarint63(&buf, x)
+		if err == ErrRange {
+			return x > math.MaxInt64
+		}
+		v, err := ReadVarint63(NewReader(buf.Bytes()))
+		return v == x && err == nil
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestReadWriteVarstr31(t *testing.T) {
+	f := func(x []byte) bool {
+		var buf bytes.Buffer
+		_, err := WriteVarstr31(&buf, x)
+		if err != nil {
+			return false
+		}
+		got, err := ReadVarstr31(NewReader(buf.Bytes()))
+		return bytes.Equal(got, x) && err == nil
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestReadWriteVarstrList(t *testing.T) {
+	f := func(x [][]byte) bool {
+		var buf bytes.Buffer
+		_, err := WriteVarstrList(&buf, x)
+		if err != nil {
+			return false
+		}
+		got, err := ReadVarstrList(NewReader(buf.Bytes()))
+		return testutil.DeepEqual(got, x) && err == nil
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
 	}
 }
