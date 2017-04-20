@@ -15,7 +15,10 @@ import (
 	"chain/net/http/authn"
 )
 
-var ErrNotAuthorized = errors.New("not authorized")
+var (
+	ErrNotAuthorized = errors.New("not authorized")
+	ErrMissingPolicy = errors.New("missing policy on this route")
+)
 
 var builtinGrants []*Grant // initialized in loopback_authz.go
 
@@ -54,7 +57,7 @@ func (a *Authorizer) GrantInternal(subj pkix.Name) {
 func (a *Authorizer) Authorize(req *http.Request) error {
 	policies := a.policyByRoute[strings.TrimRight(req.RequestURI, "/")]
 	if policies == nil || len(policies) == 0 {
-		return errors.New("missing policy on this route")
+		return ErrMissingPolicy
 	}
 
 	grants, err := a.grantsByPolicies(policies)
