@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 
@@ -36,6 +37,18 @@ func NewAuthorizer(rdb *raft.Service, prefix string, policyMap map[string][]stri
 		a.extraGrants[g.Policy] = append(a.extraGrants[g.Policy], g)
 	}
 	return a
+}
+
+// GrantInternal grants access for subj to policy internal.
+// This grant is not stored in raft and applies only for
+// the current process.
+func (a *Authorizer) GrantInternal(subj pkix.Name) {
+	a.extraGrants["internal"] = append(a.extraGrants["internal"], &Grant{
+		Policy:    "internal",
+		GuardType: "x509",
+		GuardData: encodeX509GuardData(subj),
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+	})
 }
 
 func (a *Authorizer) Authorize(req *http.Request) error {
@@ -97,6 +110,14 @@ func x509GuardData(grant *Grant) pkix.Name {
 		CommonName:         v.Subject.CommonName,
 		OrganizationalUnit: v.Subject.OrganizationalUnit,
 	}
+}
+
+func encodeX509GuardData(subj pkix.Name) []byte {
+	d, _ := json.Marshal(map[string]interface{}{
+		"cn": subj.CommonName,
+		"ou": subj.OrganizationalUnit,
+	})
+	return d
 }
 
 func equalX509Name(a, b pkix.Name) bool {
