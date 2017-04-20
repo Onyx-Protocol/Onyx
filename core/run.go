@@ -57,12 +57,14 @@ func UseTLS(c *tls.Config) RunOption {
 			ExpectContinueTimeout: 1 * time.Second,
 		}
 
-		// TODO(kr): set Leaf in TLSConfig and use that here.
-		x509Cert, err := x509.ParseCertificate(c.Certificates[0].Certificate[0])
-		if err != nil {
-			panic(err)
+		if c != nil {
+			// TODO(kr): set Leaf in TLSConfig and use that here.
+			x509Cert, err := x509.ParseCertificate(c.Certificates[0].Certificate[0])
+			if err != nil {
+				panic(err)
+			}
+			a.internalSubj = x509Cert.Subject
 		}
-		a.internalSubj = x509Cert.Subject
 	}
 }
 
