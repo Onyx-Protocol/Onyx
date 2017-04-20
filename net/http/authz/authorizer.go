@@ -100,15 +100,13 @@ func x509GuardData(grant *Grant) pkix.Name {
 	// TODO(boymanjor): We should support the standard X.500 attributes for Subjects.
 	// One idea is to map the json to a pkix.Name.
 	var v struct {
-		Subject struct {
-			CommonName         string   `json:"cn"`
-			OrganizationalUnit []string `json:"ou"`
-		}
+		CommonName         string   `json:"cn"`
+		OrganizationalUnit []string `json:"ou"`
 	}
 	json.Unmarshal(grant.GuardData, &v)
 	return pkix.Name{
-		CommonName:         v.Subject.CommonName,
-		OrganizationalUnit: v.Subject.OrganizationalUnit,
+		CommonName:         v.CommonName,
+		OrganizationalUnit: v.OrganizationalUnit,
 	}
 }
 
