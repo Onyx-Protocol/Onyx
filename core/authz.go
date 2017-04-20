@@ -25,6 +25,7 @@ var policyByRoute = map[string][]string{
 	"/update-transaction-feed":  {"client-readwrite"},
 	"/delete-transaction-feed":  {"client-readwrite"},
 	"/mockhsm":                  {"client-readwrite"},
+	"/mockhsm/create-block-key": {"internal"},
 	"/mockhsm/create-key":       {"client-readwrite"},
 	"/mockhsm/list-keys":        {"client-readwrite", "client-readonly"},
 	"/mockhsm/delkey":           {"client-readwrite"},

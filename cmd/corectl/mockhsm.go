@@ -10,17 +10,15 @@ import (
 	"chain/database/sql"
 )
 
-func createBlockKeyPair(db *sql.DB, args []string) {
+func createBlockKeyPair(_ *sql.DB, args []string) {
 	if len(args) != 0 {
 		fatalln("error: create-block-keypair takes no args")
 	}
-	ctx := context.Background()
-	migrateIfMissingSchema(ctx, db)
-	hsm := mockhsm.New(db)
-	pub, err := hsm.Create(ctx, "block_key")
+	var pub mockhsm.Pub
+	client := mustRPCClient()
+	err := client.Call(context.Background(), "/mockhsm/create-block-key", nil, &pub)
 	if err != nil {
-		fatalln("error:", err)
+		fatalln("rpc error:", err)
 	}
-
 	fmt.Printf("%x\n", pub.Pub)
 }

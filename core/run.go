@@ -121,7 +121,7 @@ func RateLimit(keyFn func(*http.Request) string, burst, perSecond int) RunOption
 // used for Chain Core Developer Edition to expose the configuration UI
 // in the dashboard. API authentication still applies to an unconfigured
 // Chain Core.
-func RunUnconfigured(ctx context.Context, db pg.DB, raftDB *raft.Service, opts ...RunOption) *API {
+func RunUnconfigured(ctx context.Context, db pg.DB, raftDB *raft.Service, opts []RunOption) *API {
 	a := &API{
 		db:           db,
 		raftDB:       raftDB,
