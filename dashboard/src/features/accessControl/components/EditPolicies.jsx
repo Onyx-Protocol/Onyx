@@ -1,52 +1,31 @@
 import React from 'react'
-import { BaseNew, FormContainer, FormSection, CheckboxField } from 'features/shared/components'
+import { BaseNew, CheckboxField } from 'features/shared/components'
 import { policyOptions } from 'features/accessControl/constants'
 import { reduxForm } from 'redux-form'
 import actions from 'features/accessControl/actions'
-import { isAccessToken } from 'features/accessControl/selectors'
+import styles from './EditPolicies.scss'
 
 class EditPolicies extends React.Component {
   render() {
-    const item = this.props.item
     const {
       fields: { policies },
-      error,
       handleSubmit,
-      submitting
     } = this.props
 
-    const label = <span>Edit {isAccessToken(item) ? <code>{item.name}</code> : 'certificate'}</span>
-
     return(
-      <FormContainer
-        error={error}
-        label={label}
-        onSubmit={handleSubmit(this.props.submitForm)}
-        submitting={submitting} >
+      <div className={styles.main}>
+        {policyOptions.map(option => {
+          return <CheckboxField key={option.label}
+            title={option.label}
+            hint={option.hint}
+            fieldProps={policies[option.value]} />
+        })}
 
-        {!isAccessToken(item) && <FormSection title='Certificate Info'>
-          <pre>
-            {JSON.stringify(item.guardData, '  ', 2)}
-          </pre>
-        </FormSection>}
-
-        <FormSection title='Policy'>
-          {policyOptions.map(option => {
-            return <CheckboxField key={option.label}
-              title={option.label}
-              hint={option.hint}
-              fieldProps={policies[option.value]} />
-          })}
-        </FormSection>
-
-      </FormContainer>
+        <button className='btn btn-primary' onClick={handleSubmit(this.props.submitForm)}>Save</button>
+      </div>
     )
   }
 }
-
-const mapStateToProps = (state, ownProps) => ({
-  item: state.accessControl.items[ownProps.params.id]
-})
 
 const mapDispatchToProps = (dispatch) => ({
   submitForm: (data) => dispatch(actions.editPolicies(data))
@@ -73,7 +52,7 @@ const initialValues = (state, ownProps) => {
 }
 
 export default BaseNew.connect(
-  mapStateToProps,
+  () => ({}),
   mapDispatchToProps,
   reduxForm({
     form: 'editPoliciesForm',

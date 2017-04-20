@@ -16,7 +16,7 @@ export default (state = {ids: [], items: {}}, action) => {
         guardType: 'access_token',
         guardData: tokenGuard,
         policies: [],
-        latestGrant: '0000'
+        createdAt: token.createdAt
       }
     })
 
@@ -25,8 +25,8 @@ export default (state = {ids: [], items: {}}, action) => {
 
       if (newObjects[id]) {
         newObjects[id].policies.push(grant.policy)
-        if (newObjects[id].latestGrant.localeCompare(grant.createdAt) < 0) {
-          newObjects[id].latestGrant = grant.createdAt
+        if (newObjects[id].createdAt.localeCompare(grant.createdAt) > 0) {
+          newObjects[id].createdAt = grant.createdAt
         }
       } else {
         newObjects[id] = {
@@ -34,18 +34,45 @@ export default (state = {ids: [], items: {}}, action) => {
           guardType: grant.guardType,
           guardData: grant.guardData,
           policies: [grant.policy],
-          latestGrant: grant.createdAt
+          createdAt: grant.createdAt
         }
       }
     })
 
     const newIds = Object.values(newObjects)
-      .sort((a, b) => b.latestGrant.localeCompare(a.latestGrant))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map(object => object.id)
 
     return {
       ids: newIds,
       items: newObjects
+    }
+  } else if (action.type == 'BEGIN_POLICY_EDITING') {
+    const id = action.id
+    const item = {...state.items[id]}
+    item.isEditing = true
+
+    return {
+      ids: state.ids,
+      items: {
+        ...state.items,
+        [id]: item
+      }
+    }
+  } else if (action.type == 'END_POLICY_EDITING') {
+    const id = action.id
+    const item = {...state.items[id]}
+    item.isEditing = false
+    if (action.policies) {
+      item.policies = Object.keys(action.policies).filter(policy => action.policies[policy])
+    }
+
+    return {
+      ids: state.ids,
+      items: {
+        ...state.items,
+        [id]: item
+      }
     }
   } else if (action.type == 'DELETE_ACCESS_TOKEN') {
     const ids = [...state.ids]

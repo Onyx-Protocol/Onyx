@@ -19,10 +19,10 @@ class CheckboxField extends React.Component {
       <div>
         <label className={styles.label}>
           <input type='checkbox' {...fieldProps} />
-          {this.props.title}
-        </label>
+          <span className={styles.title}>{this.props.title}</span>
 
-        {this.props.hint && <span className={styles.hint}>{this.props.hint}</span>}
+          {this.props.hint && <div className={styles.hint}>{this.props.hint}</div>}
+        </label>
       </div>
     )
   }

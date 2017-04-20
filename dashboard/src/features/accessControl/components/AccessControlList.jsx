@@ -9,7 +9,7 @@ import styles from './AccessControlList.scss'
 class AccessControlList extends React.Component {
   render() {
     const itemProps = {
-      showEdit: this.props.showEdit,
+      beginEditing: this.props.beginEditing,
       delete: this.props.delete,
     }
     const tokenList = <TableList titles={['Token Name', 'Policies']}>
@@ -83,7 +83,7 @@ const mapDispatchToProps = (dispatch) => ({
   showCertificates: () => dispatch(replace('/access-control?type=certificate')),
   showTokenCreate: () => dispatch(push('/access-control/create-token')),
   showAddCertificate: () => dispatch(push('/access-control/add-certificate')),
-  showEdit: (item) => dispatch(push(`/access-control/${item.id}/edit`)),
+  beginEditing: (id) => dispatch(actions.beginEditing(id)),
 })
 
 export default connect(

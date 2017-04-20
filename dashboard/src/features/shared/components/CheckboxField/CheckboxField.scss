@@ -1,6 +1,9 @@
 .label {
-  input {
-    margin-right: 8px;
+  position: relative;
+
+  .title {
+    position: absolute;
+    left: 20px;
   }
 
   user-select: none;
@@ -8,5 +11,5 @@
 
 .hint {
   color: $text-light-color;
-  margin-left: $gutter-size/2;
+  margin-left: 20px;
 }

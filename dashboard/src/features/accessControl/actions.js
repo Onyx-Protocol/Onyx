@@ -50,10 +50,6 @@ export default {
     }
 
     return dispatch => {
-      if (!Object.values(data.policies).some(policy => policy == true)) {
-        return Promise.reject({_error: 'You must specify one or more policies'})
-      }
-
       return chainClient().accessTokens.create({
         id: body.guardData.id,
         type: 'client', // TODO: remove me when deprecated!
@@ -103,6 +99,11 @@ export default {
     }
   },
 
+  beginEditing: id => ({
+    type: 'BEGIN_POLICY_EDITING',
+    id: id
+  }),
+
   editPolicies: data => {
     const body = {
       guardType: data.grant.guardType,
@@ -111,13 +112,8 @@ export default {
     const policies = data.policies
 
     return dispatch =>
-      setPolicies(body, policies).then(resp => {
-        dispatch({ type: 'EDITED_POLICIES', grant: body, policies })
-        dispatch(push({
-          pathname: '/access-control',
-          search: '?type=' + (body.guardType == 'access_token' ? 'token' : 'certificate'),
-          state: {preserveFlash: true},
-        }))
+      setPolicies(body, policies).then(() => {
+        dispatch({ type: 'END_POLICY_EDITING', id: data.grant.id, policies })
       }, err => { throw {_error: err} })
   },
 

@@ -1,7 +1,6 @@
 import AccessControlList from './components/AccessControlList'
 import NewToken from './components/NewToken'
 import NewCertificate from './components/NewCertificate'
-import EditPolicies from './components/EditPolicies'
 import { makeRoutes } from 'features/shared'
 import actions from './actions'
 
@@ -41,12 +40,6 @@ export default (store) => {
   routes.childRoutes.push({
     path: 'add-certificate',
     component: NewCertificate
-  })
-
-  routes.childRoutes.push({
-    path: ':id/edit',
-    component: EditPolicies,
-    onEnter: (nextState, replace) => loadGrants()
   })
 
   return routes
