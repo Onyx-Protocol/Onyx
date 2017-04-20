@@ -254,6 +254,7 @@ func (a *API) authnHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		req, err := auth.Authenticate(req)
 		if err != nil {
+			panic(err)
 			errorFormatter.Write(req.Context(), rw, errNotAuthenticated)
 			return
 		}
@@ -266,10 +267,10 @@ func (a *API) authzHandler(mux *http.ServeMux, handler http.Handler) http.Handle
 	auth.GrantInternal(a.internalSubj)
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// return failure early if this path isn't legit
-		if _, pat := mux.Handler(req); pat != req.URL.Path {
-			errorFormatter.Write(req.Context(), rw, errNotFound)
-			return
-		}
+		// if _, pat := mux.Handler(req); pat != req.URL.Path {
+		// 	errorFormatter.Write(req.Context(), rw, errNotFound)
+		// 	return
+		// }
 		err := auth.Authorize(req)
 		if errors.Root(err) == authz.ErrNotAuthorized {
 			// TODO(kr): remove this workaround once dashboard

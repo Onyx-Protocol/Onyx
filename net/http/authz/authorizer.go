@@ -85,6 +85,8 @@ func authorized(ctx context.Context, grants []*Grant) bool {
 			if authn.Localhost(ctx) {
 				return true
 			}
+		case "any":
+			return true
 		}
 	}
 	return false
