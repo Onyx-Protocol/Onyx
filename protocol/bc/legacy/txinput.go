@@ -89,8 +89,8 @@ func (t *TxInput) SetArguments(args [][]byte) {
 	}
 }
 
-func (t *TxInput) readFrom(r io.Reader) (err error) {
-	t.AssetVersion, _, err = blockchain.ReadVarint63(r)
+func (t *TxInput) readFrom(r *blockchain.Reader) (err error) {
+	t.AssetVersion, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 		assetID bc.AssetID
 	)
 
-	t.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
+	t.CommitmentSuffix, err = blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) error {
 		if t.AssetVersion == 1 {
 			var icType [1]byte
 			_, err = io.ReadFull(r, icType[:])
@@ -112,7 +112,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 			case 0:
 				ii = new(IssuanceInput)
 
-				ii.Nonce, _, err = blockchain.ReadVarstr31(r)
+				ii.Nonce, err = blockchain.ReadVarstr31(r)
 				if err != nil {
 					return err
 				}
@@ -120,14 +120,14 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 				if err != nil {
 					return err
 				}
-				ii.Amount, _, err = blockchain.ReadVarint63(r)
+				ii.Amount, err = blockchain.ReadVarint63(r)
 				if err != nil {
 					return err
 				}
 
 			case 1:
 				si = new(SpendInput)
-				si.SpendCommitmentSuffix, _, err = si.SpendCommitment.readFrom(r, 1)
+				si.SpendCommitmentSuffix, err = si.SpendCommitment.readFrom(r, 1)
 				if err != nil {
 					return err
 				}
@@ -142,12 +142,12 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 		return err
 	}
 
-	t.ReferenceData, _, err = blockchain.ReadVarstr31(r)
+	t.ReferenceData, err = blockchain.ReadVarstr31(r)
 	if err != nil {
 		return err
 	}
 
-	t.WitnessSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
+	t.WitnessSuffix, err = blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) error {
 		// TODO(bobg): test that serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
 		if ii != nil {
 			// read IssuanceInput witness
@@ -156,17 +156,17 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 				return err
 			}
 
-			ii.AssetDefinition, _, err = blockchain.ReadVarstr31(r)
+			ii.AssetDefinition, err = blockchain.ReadVarstr31(r)
 			if err != nil {
 				return err
 			}
 
-			ii.VMVersion, _, err = blockchain.ReadVarint63(r)
+			ii.VMVersion, err = blockchain.ReadVarint63(r)
 			if err != nil {
 				return err
 			}
 
-			ii.IssuanceProgram, _, err = blockchain.ReadVarstr31(r)
+			ii.IssuanceProgram, err = blockchain.ReadVarstr31(r)
 			if err != nil {
 				return err
 			}
@@ -175,7 +175,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 				return errBadAssetID
 			}
 		}
-		args, _, err := blockchain.ReadVarstrList(r)
+		args, err := blockchain.ReadVarstrList(r)
 		if err != nil {
 			return err
 		}

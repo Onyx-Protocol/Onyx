@@ -3,11 +3,9 @@
 package blockchain
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
-	"io/ioutil"
 	"math"
 	"sync"
 
@@ -15,53 +13,128 @@ import (
 )
 
 var bufPool = sync.Pool{New: func() interface{} { return new([9]byte) }}
-var readerPool = sync.Pool{New: func() interface{} { return new(byteReader) }}
-
-func getReader(r io.Reader) *byteReader {
-	br := readerPool.Get().(*byteReader)
-	br.reset(r)
-	return br
-}
 
 var ErrRange = errors.New("value out of range")
 
-func ReadVarint31(r io.Reader) (uint32, int, error) {
-	br := getReader(r)
-	defer readerPool.Put(br)
-	val, err := binary.ReadUvarint(br)
+// Reader wraps a buffer and provides utilities for decoding
+// data primitives in blockchain structures. Its various read
+// calls may return a slice of the underlying buffer.
+type Reader struct {
+	buf []byte
+	pos int
+}
+
+// NewReader constructs a new reader with the provided bytes. It
+// does not create a copy of the bytes, so the caller is responsible
+// for copying the bytes if necessary.
+func NewReader(b []byte) *Reader {
+	return &Reader{buf: b}
+}
+
+// ReadByte reads and returns the next byte from the input.
+//
+// It implements the io.ByteReader interface.
+func (r *Reader) ReadByte() (byte, error) {
+	if r.pos >= len(r.buf) {
+		return 0, io.ErrUnexpectedEOF
+	}
+
+	b := r.buf[r.pos]
+	r.pos++
+	return b, nil
+}
+
+// Read reads up to len(p) bytes into p. It implements
+// the io.Reader interface.
+func (r *Reader) Read(p []byte) (n int, err error) {
+	if r.pos >= len(r.buf) {
+		return 0, io.EOF
+	}
+	n = len(p)
+	if (len(r.buf) - r.pos) < n {
+		n = len(r.buf) - r.pos
+	}
+	copy(p, r.buf[r.pos:r.pos+n])
+	r.pos += n
+	return n, nil
+}
+
+func ReadVarint31(r *Reader) (uint32, error) {
+	val, err := binary.ReadUvarint(r)
 	if err != nil {
-		return 0, br.n, err
+		return 0, err
 	}
 	if val > math.MaxInt32 {
-		return 0, br.n, ErrRange
+		return 0, ErrRange
 	}
-	return uint32(val), br.n, nil
+	return uint32(val), nil
 }
 
-func ReadVarint63(r io.Reader) (uint64, int, error) {
-	br := getReader(r)
-	defer readerPool.Put(br)
-	val, err := binary.ReadUvarint(br)
+func ReadVarint63(r *Reader) (uint64, error) {
+	val, err := binary.ReadUvarint(r)
 	if err != nil {
-		return 0, br.n, err
+		return 0, err
 	}
 	if val > math.MaxInt64 {
-		return 0, br.n, ErrRange
+		return 0, ErrRange
 	}
-	return val, br.n, nil
+	return val, nil
 }
 
-func ReadVarstr31(r io.Reader) ([]byte, int, error) {
-	len, n, err := ReadVarint31(r)
+func ReadVarstr31(r *Reader) ([]byte, error) {
+	l, err := ReadVarint31(r)
 	if err != nil {
-		return nil, n, err
+		return nil, err
 	}
-	if len == 0 {
-		return nil, n, nil
+	if l == 0 {
+		return nil, nil
 	}
-	buf := make([]byte, len)
-	n2, err := io.ReadFull(r, buf)
-	return buf, n + n2, err
+	length := int(l)
+	if length > (len(r.buf) - r.pos) {
+		return nil, io.ErrUnexpectedEOF
+	}
+	str := r.buf[r.pos : r.pos+length]
+	r.pos += length
+	return str, nil
+}
+
+// ReadVarstrList reads a varint31 length prefix followed by
+// that many varstrs.
+func ReadVarstrList(r *Reader) ([][]byte, error) {
+	nelts, err := ReadVarint31(r)
+	if err != nil {
+		return nil, err
+	}
+	if nelts == 0 {
+		return nil, nil
+	}
+
+	var result [][]byte
+	for ; nelts > 0; nelts-- {
+		s, err := ReadVarstr31(r)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, s)
+	}
+	return result, nil
+}
+
+// ReadExtensibleString reads a varint31 length prefix and that many
+// bytes from r. It then calls the given function to consume those
+// bytes, returning any unconsumed suffix.
+func ReadExtensibleString(r *Reader, f func(*Reader) error) (suffix []byte, err error) {
+	s, err := ReadVarstr31(r)
+	if err != nil {
+		return nil, err
+	}
+
+	sr := &Reader{buf: s, pos: 0}
+	err = f(sr)
+	if err != nil {
+		return nil, err
+	}
+	return sr.buf[sr.pos:], nil
 }
 
 func WriteVarint31(w io.Writer, val uint64) (int, error) {
@@ -112,28 +185,6 @@ func WriteVarstrList(w io.Writer, l [][]byte) (int, error) {
 	return n, err
 }
 
-// ReadVarstrList reads a varint31 length prefix followed by that many
-// varstrs.
-func ReadVarstrList(r io.Reader) ([][]byte, int, error) {
-	nelts, n, err := ReadVarint31(r)
-	if err != nil {
-		return nil, n, err
-	}
-	if nelts == 0 {
-		return nil, n, nil
-	}
-	var result [][]byte
-	for ; nelts > 0; nelts-- {
-		s, n2, err := ReadVarstr31(r)
-		n += n2
-		if err != nil {
-			return nil, n, err
-		}
-		result = append(result, s)
-	}
-	return result, n, nil
-}
-
 // WriteExtensibleString sends the output of the given function, plus
 // the given suffix, to w, together with a varint31 length prefix.
 func WriteExtensibleString(w io.Writer, suffix []byte, f func(io.Writer) error) (int, error) {
@@ -150,51 +201,4 @@ func WriteExtensibleString(w io.Writer, suffix []byte, f func(io.Writer) error) 
 		}
 	}
 	return WriteVarstr31(w, buf.Bytes())
-}
-
-// ReadExtensibleString reads a varint31 length prefix and that many
-// bytes from r. It then calls the given function to consume those
-// bytes, returning any unconsumed suffix.
-func ReadExtensibleString(r io.Reader, f func(io.Reader) error) (suffix []byte, n int, err error) {
-	s, n, err := ReadVarstr31(r)
-	if err != nil {
-		return nil, n, err
-	}
-	sr := bytes.NewReader(s)
-	err = f(sr)
-	if err != nil {
-		return nil, n, err
-	}
-	suffix, err = ioutil.ReadAll(sr)
-	return suffix, n, err
-}
-
-// byteReader wraps io.Reader, satisfies io.ByteReader, keeps a
-// count of the number of bytes read, and has sticky errors
-type byteReader struct {
-	n int
-	r io.Reader
-	e error
-	b [1]byte
-}
-
-func (r *byteReader) reset(reader io.Reader) {
-	*r = byteReader{n: 0, r: reader, e: nil}
-}
-
-func (r *byteReader) ReadByte() (byte, error) {
-	if r.e != nil {
-		return 0, r.e
-	}
-	n, err := r.r.Read(r.b[:])
-	if n > 0 {
-		// If there was an error, don't return it now, to prevent the
-		// caller from ignoring the valid byte. Hold onto the error and
-		// return it on the next call.
-		// (See https://github.com/chain/chain/pull/1911#discussion_r80809872)
-		r.e = err
-		r.n++
-		return r.b[0], nil
-	}
-	return 0, err
 }

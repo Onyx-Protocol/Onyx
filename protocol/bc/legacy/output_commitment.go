@@ -49,21 +49,21 @@ func (oc *OutputCommitment) writeContents(w io.Writer, suffix []byte, assetVersi
 	return nil
 }
 
-func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint64) (suffix []byte, n int, err error) {
-	return blockchain.ReadExtensibleString(r, func(r io.Reader) error {
+func (oc *OutputCommitment) readFrom(r *blockchain.Reader, assetVersion uint64) (suffix []byte, err error) {
+	return blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) error {
 		if assetVersion == 1 {
-			_, err := oc.AssetAmount.ReadFrom(r)
+			err := oc.AssetAmount.ReadFrom(r)
 			if err != nil {
 				return errors.Wrap(err, "reading asset+amount")
 			}
-			oc.VMVersion, _, err = blockchain.ReadVarint63(r)
+			oc.VMVersion, err = blockchain.ReadVarint63(r)
 			if err != nil {
 				return errors.Wrap(err, "reading VM version")
 			}
 			if oc.VMVersion != 1 {
 				return fmt.Errorf("unrecognized VM version %d for asset version 1", oc.VMVersion)
 			}
-			oc.ControlProgram, _, err = blockchain.ReadVarstr31(r)
+			oc.ControlProgram, err = blockchain.ReadVarstr31(r)
 			return errors.Wrap(err, "reading control program")
 		}
 		return nil

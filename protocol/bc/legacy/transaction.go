@@ -124,15 +124,17 @@ func (tx *TxData) UnmarshalText(p []byte) error {
 	if err != nil {
 		return err
 	}
-	return tx.readFrom(bytes.NewReader(b))
+	return tx.readFrom(blockchain.NewReader(b))
 }
 
 func (tx *TxData) Scan(val interface{}) error {
-	b, ok := val.([]byte)
+	driverBuf, ok := val.([]byte)
 	if !ok {
 		return errors.New("Scan must receive a byte slice")
 	}
-	return tx.readFrom(bytes.NewReader(b))
+	buf := make([]byte, len(driverBuf))
+	copy(buf[:], driverBuf)
+	return tx.readFrom(blockchain.NewReader(buf))
 }
 
 func (tx *TxData) Value() (driver.Value, error) {
@@ -144,7 +146,7 @@ func (tx *TxData) Value() (driver.Value, error) {
 	return b.Bytes(), nil
 }
 
-func (tx *TxData) readFrom(r io.Reader) error {
+func (tx *TxData) readFrom(r *blockchain.Reader) error {
 	var serflags [1]byte
 	_, err := io.ReadFull(r, serflags[:])
 	if err != nil {
@@ -154,18 +156,18 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		return fmt.Errorf("unsupported serflags %#x", serflags[0])
 	}
 
-	tx.Version, _, err = blockchain.ReadVarint63(r)
+	tx.Version, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return errors.Wrap(err, "reading transaction version")
 	}
 
 	// Common fields
-	tx.CommonFieldsSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
-		tx.MinTime, _, err = blockchain.ReadVarint63(r)
+	tx.CommonFieldsSuffix, err = blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) error {
+		tx.MinTime, err = blockchain.ReadVarint63(r)
 		if err != nil {
 			return errors.Wrap(err, "reading transaction mintime")
 		}
-		tx.MaxTime, _, err = blockchain.ReadVarint63(r)
+		tx.MaxTime, err = blockchain.ReadVarint63(r)
 		return errors.Wrap(err, "reading transaction maxtime")
 	})
 	if err != nil {
@@ -173,12 +175,12 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	}
 
 	// Common witness
-	tx.CommonWitnessSuffix, _, err = blockchain.ReadExtensibleString(r, tx.readCommonWitness)
+	tx.CommonWitnessSuffix, err = blockchain.ReadExtensibleString(r, tx.readCommonWitness)
 	if err != nil {
 		return errors.Wrap(err, "reading transaction common witness")
 	}
 
-	n, _, err := blockchain.ReadVarint31(r)
+	n, err := blockchain.ReadVarint31(r)
 	if err != nil {
 		return errors.Wrap(err, "reading number of transaction inputs")
 	}
@@ -191,7 +193,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		tx.Inputs = append(tx.Inputs, ti)
 	}
 
-	n, _, err = blockchain.ReadVarint31(r)
+	n, err = blockchain.ReadVarint31(r)
 	if err != nil {
 		return errors.Wrap(err, "reading number of transaction outputs")
 	}
@@ -204,12 +206,12 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		tx.Outputs = append(tx.Outputs, to)
 	}
 
-	tx.ReferenceData, _, err = blockchain.ReadVarstr31(r)
+	tx.ReferenceData, err = blockchain.ReadVarstr31(r)
 	return errors.Wrap(err, "reading transaction reference data")
 }
 
 // does not read the enclosing extensible string
-func (tx *TxData) readCommonWitness(r io.Reader) error {
+func (tx *TxData) readCommonWitness(r *blockchain.Reader) error {
 	return nil
 }
 

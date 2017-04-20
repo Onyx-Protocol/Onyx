@@ -45,11 +45,13 @@ func (bh *BlockHeader) Time() time.Time {
 }
 
 func (bh *BlockHeader) Scan(val interface{}) error {
-	buf, ok := val.([]byte)
+	driverBuf, ok := val.([]byte)
 	if !ok {
 		return errors.New("Scan must receive a byte slice")
 	}
-	_, err := bh.readFrom(bytes.NewReader(buf))
+	buf := make([]byte, len(driverBuf))
+	copy(buf[:], driverBuf)
+	_, err := bh.readFrom(blockchain.NewReader(buf))
 	return err
 }
 
@@ -91,11 +93,11 @@ func (bh *BlockHeader) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
-	_, err = bh.readFrom(bytes.NewReader(decoded))
+	_, err = bh.readFrom(blockchain.NewReader(decoded))
 	return err
 }
 
-func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
+func (bh *BlockHeader) readFrom(r *blockchain.Reader) (uint8, error) {
 	var serflags [1]byte
 	io.ReadFull(r, serflags[:])
 	switch serflags[0] {
@@ -106,12 +108,12 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 
 	var err error
 
-	bh.Version, _, err = blockchain.ReadVarint63(r)
+	bh.Version, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return 0, err
 	}
 
-	bh.Height, _, err = blockchain.ReadVarint63(r)
+	bh.Height, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return 0, err
 	}
@@ -121,19 +123,19 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 		return 0, err
 	}
 
-	bh.TimestampMS, _, err = blockchain.ReadVarint63(r)
+	bh.TimestampMS, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return 0, err
 	}
 
-	bh.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, bh.BlockCommitment.readFrom)
+	bh.CommitmentSuffix, err = blockchain.ReadExtensibleString(r, bh.BlockCommitment.readFrom)
 	if err != nil {
 		return 0, err
 	}
 
 	if serflags[0]&SerBlockWitness == SerBlockWitness {
-		bh.WitnessSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) (err error) {
-			bh.Witness, _, err = blockchain.ReadVarstrList(r)
+		bh.WitnessSuffix, err = blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) (err error) {
+			bh.Witness, err = blockchain.ReadVarstrList(r)
 			return err
 		})
 		if err != nil {

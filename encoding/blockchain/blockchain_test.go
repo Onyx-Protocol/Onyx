@@ -11,18 +11,18 @@ import (
 
 func BenchmarkReadVarint31(b *testing.B) {
 	data := []byte{0xff, 0xff, 0xff, 0xff, 0x01}
-	r := bytes.NewReader(data)
+	r := NewReader(data)
 	for i := 0; i < b.N; i++ {
-		r.Reset(data)
+		r.pos = 0
 		ReadVarint31(r)
 	}
 }
 
 func BenchmarkReadVarint63(b *testing.B) {
 	data := []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01}
-	r := bytes.NewReader(data)
+	r := NewReader(data)
 	for i := 0; i < b.N; i++ {
-		r.Reset(data)
+		r.pos = 0
 		ReadVarint63(r)
 	}
 }
@@ -77,12 +77,9 @@ func TestVarint31(t *testing.T) {
 		if !bytes.Equal(c.want, b.Bytes()) {
 			t.Errorf("WriteVarint31(%d): got %x, want %x", c.n, b.Bytes(), c.want)
 		}
-		v, n, err := ReadVarint31(bytes.NewReader(b.Bytes()))
+		v, err := ReadVarint31(NewReader(b.Bytes()))
 		if err != nil {
 			t.Fatal(err)
-		}
-		if n != len(c.want) {
-			t.Errorf("ReadVarint31 [c.n = %d] got %d bytes, want %d", c.n, n, len(c.want))
 		}
 		if uint64(v) != c.n {
 			t.Errorf("ReadVarint31 got %d, want %d", v, c.n)
@@ -130,12 +127,9 @@ func TestVarint63(t *testing.T) {
 		if !bytes.Equal(c.want, b.Bytes()) {
 			t.Errorf("WriteVarint63(%d): got %x, want %x", c.n, b.Bytes(), c.want)
 		}
-		v, n, err := ReadVarint63(bytes.NewReader(b.Bytes()))
+		v, err := ReadVarint63(NewReader(b.Bytes()))
 		if err != nil {
 			t.Fatal(err)
-		}
-		if n != len(c.want) {
-			t.Errorf("ReadVarint63 [c.n = %d] got %d bytes, want %d", c.n, n, len(c.want))
 		}
 		if uint64(v) != c.n {
 			t.Errorf("ReadVarint63 got %d, want %d", v, c.n)
@@ -154,7 +148,7 @@ func TestVarstring31(t *testing.T) {
 	if !bytes.Equal(b.Bytes(), want) {
 		t.Errorf("got %x, want %x", b.Bytes(), want)
 	}
-	s, _, err = ReadVarstr31(bytes.NewReader(want))
+	s, err = ReadVarstr31(NewReader(want))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,14 +170,27 @@ func TestEmptyVarstring31(t *testing.T) {
 		t.Errorf("got %x, want %x", b.Bytes(), want)
 	}
 
-	b = bytes.NewBuffer(want)
-	s, _, err = ReadVarstr31(b)
+	s, err = ReadVarstr31(NewReader(want))
 	if err != nil {
 		t.Fatal(err)
 	}
 	want = nil // we deliberately return nil for empty strings to avoid unnecessary byteslice allocation
 	if !bytes.Equal(s, want) {
 		t.Errorf("got %x, expected %x", s, want)
+	}
+}
+
+// TestTooLongVarstring31 tests decoding a varstring31 with a leading
+// length too long to fit in memory. Reading such a varstring31 should
+// not try to allocate more memory than feasible.
+func TestTooLongVarstring31(t *testing.T) {
+	var buf bytes.Buffer
+	WriteVarint31(&buf, 0x7fffffff)
+	buf.Write([]byte{0x01, 0x02, 0x03})
+
+	_, err := ReadVarstr31(NewReader(buf.Bytes()))
+	if err != io.ErrUnexpectedEOF {
+		t.Errorf("got %s, want io.ErrUnexpectedEOF", err)
 	}
 }
 
@@ -203,7 +210,7 @@ func TestVarstrList(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		strs2, _, err := ReadVarstrList(bytes.NewReader(buf.Bytes()))
+		strs2, err := ReadVarstrList(NewReader(buf.Bytes()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -223,8 +230,8 @@ func TestTooLongVarstrList(t *testing.T) {
 	WriteVarstr31(&buf, []byte{0x02})
 	WriteVarstr31(&buf, []byte{0x03})
 
-	_, _, err := ReadVarstrList(bytes.NewReader(buf.Bytes()))
-	if err != io.EOF {
+	_, err := ReadVarstrList(NewReader(buf.Bytes()))
+	if err != io.ErrUnexpectedEOF {
 		t.Errorf("got %s, expected io.EOF", err)
 	}
 }
@@ -246,7 +253,7 @@ func TestExtensibleString(t *testing.T) {
 		}
 		var str2 []byte
 		b := buf.Bytes()
-		suffix, _, err := ReadExtensibleString(bytes.NewReader(b), func(r io.Reader) error {
+		suffix, err := ReadExtensibleString(NewReader(b), func(r *Reader) error {
 			str2, err = ioutil.ReadAll(r)
 			return err
 		})
@@ -259,7 +266,7 @@ func TestExtensibleString(t *testing.T) {
 		if !bytes.Equal(str, str2) {
 			t.Errorf("got %x, want %x", str2, str)
 		}
-		_, _, err = ReadExtensibleString(bytes.NewReader(b[:i]), func(r io.Reader) error {
+		_, err = ReadExtensibleString(NewReader(b[:i]), func(r *Reader) error {
 			return nil
 		})
 		switch err {
@@ -269,13 +276,13 @@ func TestExtensibleString(t *testing.T) {
 		default:
 			t.Errorf("got error %s, want io.EOF", err)
 		}
-		_, _, err = ReadExtensibleString(bytes.NewReader(b), func(r io.Reader) error {
+		_, err = ReadExtensibleString(NewReader(b), func(r *Reader) error {
 			return nil
 		})
 		if err != nil {
 			t.Error(err)
 		}
-		suffix, _, err = ReadExtensibleString(bytes.NewReader(b), func(r io.Reader) error {
+		suffix, err = ReadExtensibleString(NewReader(b), func(r *Reader) error {
 			return nil
 		})
 		if err != nil {
