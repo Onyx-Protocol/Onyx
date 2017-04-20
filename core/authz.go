@@ -35,7 +35,7 @@ var policyByRoute = map[string][]string{
 	"/list-transactions":      {"client-readwrite", "client-readonly"},
 	"/list-balances":          {"client-readwrite", "client-readonly"},
 	"/list-unspent-outputs":   {"client-readwrite", "client-readonly"},
-	"/reset":                  {"client-readwrite"},
+	"/reset":                  {"client-readwrite", "internal"},
 	"/submit":                 {"client-readwrite"},
 
 	networkRPCPrefix + "get-block":         {"network"},
@@ -50,7 +50,7 @@ var policyByRoute = map[string][]string{
 	"/create-access-token":        {"client-readwrite"},
 	"/list-access-tokens":         {"client-readwrite", "client-readonly"},
 	"/delete-access-token":        {"client-readwrite"},
-	"/configure":                  {"client-readwrite"},
+	"/configure":                  {"client-readwrite", "internal"},
 	"/info":                       {"client-readwrite", "client-readonly", "network", "monitoring"},
 
 	"/debug/vars":          {"client-readwrite", "client-readonly", "monitoring"}, // should monitoring endpoints also be available to any other policy-holders?
