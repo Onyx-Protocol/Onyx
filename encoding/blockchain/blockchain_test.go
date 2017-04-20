@@ -220,6 +220,23 @@ func TestVarstrList(t *testing.T) {
 	}
 }
 
+func TestVarstrListWithEOF(t *testing.T) {
+	var buf bytes.Buffer
+	WriteVarint31(&buf, 3)
+	WriteVarstr31(&buf, []byte{0x01})
+	WriteVarstr31(&buf, []byte{0x02})
+	WriteVarstr31(&buf, []byte{0x03})
+
+	want := [][]byte{[]byte{0x01}, []byte{0x02}, []byte{0x03}}
+	got, err := ReadVarstrList(NewReader(buf.Bytes()))
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %#v, want %#v", got, want)
+	}
+	if err != nil && err != io.EOF {
+		t.Errorf("got %s want nil or io.EOF", err)
+	}
+}
+
 // TestTooLongVarstrList tests decoding a VarstrList that has a leading
 // element count much longer than the actual list. Reading such a
 // varstrlist shouldn't try to allocate more memory than feasible.

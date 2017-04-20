@@ -94,7 +94,7 @@ func ReadVarstr31(r *Reader) ([]byte, error) {
 
 // ReadVarstrList reads a varint31 length prefix followed by
 // that many varstrs.
-func ReadVarstrList(r *Reader) ([][]byte, error) {
+func ReadVarstrList(r *Reader) (result [][]byte, err error) {
 	nelts, err := ReadVarint31(r)
 	if err != nil {
 		return nil, err
@@ -103,15 +103,15 @@ func ReadVarstrList(r *Reader) ([][]byte, error) {
 		return nil, nil
 	}
 
-	var result [][]byte
-	for ; nelts > 0; nelts-- {
-		s, err := ReadVarstr31(r)
-		if err != nil {
-			return nil, err
-		}
+	for ; nelts > 0 && err == nil; nelts-- {
+		var s []byte
+		s, err = ReadVarstr31(r)
 		result = append(result, s)
 	}
-	return result, nil
+	if len(result) < int(nelts) {
+		err = io.ErrUnexpectedEOF
+	}
+	return result, err
 }
 
 // ReadExtensibleString reads a varint31 length prefix and that many
