@@ -150,7 +150,7 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 	}, nil
 }
 
-func (a *API) revokeGrant(ctx context.Context, x apiGrant) error {
+func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 	guardData, err := json.Marshal(x.GuardData)
 	if err != nil {
 		return errors.Wrap(err)
@@ -160,7 +160,7 @@ func (a *API) revokeGrant(ctx context.Context, x apiGrant) error {
 	if err != nil {
 		return errors.Wrap(err)
 	}
-	// If there's nothing to revoke, return success
+	// If there's nothing to delete, return success
 	if data == nil {
 		return nil
 	}
@@ -196,7 +196,7 @@ func (a *API) revokeGrant(ctx context.Context, x apiGrant) error {
 	return nil
 }
 
-func (a *API) revokeGrantsByAccessToken(ctx context.Context, token string) error {
+func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error {
 	for _, p := range policies {
 		data, err := a.raftDB.Get(ctx, grantPrefix+p)
 		if err != nil {

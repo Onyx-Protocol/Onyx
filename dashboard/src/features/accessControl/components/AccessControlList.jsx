@@ -74,7 +74,7 @@ const mapStateToProps = (state, ownProps) => {
 }
 
 const mapDispatchToProps = (dispatch) => ({
-  delete: (grant) => dispatch(actions.revokeGrant(grant)),
+  delete: (grant) => dispatch(actions.deleteGrant(grant)),
   showTokens: () => dispatch(replace('/access-control?type=token')),
   showCertificates: () => dispatch(replace('/access-control?type=certificate')),
   showTokenCreate: () => dispatch(push('/access-control/create-token')),

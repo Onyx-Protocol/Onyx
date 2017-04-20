@@ -844,7 +844,7 @@ describe('Promise style', () => {
       })
     })
 
-    it('can revoke access grants', () => {
+    it('can delete access grants', () => {
       return Promise.resolve().then(() =>
         expect(client.accessControl.create(tokenGrant)).to.be.fulfilled
       ).then(() =>

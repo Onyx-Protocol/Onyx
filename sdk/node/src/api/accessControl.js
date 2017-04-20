@@ -72,7 +72,7 @@ const accessControl = (client) => ({
    * @returns {Promise<Object>} Success message or error.
    */
   create: (params , cb) =>
-    shared.create(client, '/create-acl-grant', params, {skipArray: true, cb}),
+    shared.create(client, '/create-authorization-grant', params, {skipArray: true, cb}),
 
   /**
    * Delete the specfiied access grant.
@@ -85,7 +85,7 @@ const accessControl = (client) => ({
    * @returns {Promise<Object>} Success message or error.
    */
   delete: (params, cb) => shared.tryCallback(
-    client.request('/revoke-acl-grant', params),
+    client.request('/delete-authorization-grant', params),
     cb
   ),
 
@@ -96,7 +96,7 @@ const accessControl = (client) => ({
    * @returns {Promise<Array<Grant>>} Requested page of results.
    */
   list: (cb) =>
-    shared.query(client, 'accessTokens', '/list-acl-grants', {}, {cb}),
+    shared.query(client, 'accessTokens', '/list-authorization-grant', {}, {cb}),
 })
 
 module.exports = accessControl
