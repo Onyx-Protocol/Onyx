@@ -41,18 +41,18 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 		var ord uint64
 		switch e := e.(type) {
 		case *bc.Issuance:
-			anchor, ok := entries[*e.Body.AnchorId]
+			anchor, ok := entries[*e.AnchorId]
 			if !ok {
-				return nil, fmt.Errorf("entry for anchor ID %x not found", e.Body.AnchorId.Bytes())
+				return nil, fmt.Errorf("entry for anchor ID %x not found", e.AnchorId.Bytes())
 			}
 			if _, ok := anchor.(*bc.Nonce); ok {
-				nonceIDs[*e.Body.AnchorId] = true
+				nonceIDs[*e.AnchorId] = true
 			}
 			ord = e.Ordinal
 			// resume below after the switch
 
 		case *bc.Spend:
-			spentOutputIDs[*e.Body.SpentOutputId] = true
+			spentOutputIDs[*e.SpentOutputId] = true
 			ord = e.Ordinal
 			// resume below after the switch
 
@@ -125,7 +125,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 			}
 			refdatahash := hashData(inp.ReferenceData)
 			sp := bc.NewSpend(&prevoutID, &refdatahash, uint64(i))
-			sp.Witness.Arguments = oldSp.Arguments
+			sp.WitnessArguments = oldSp.Arguments
 			var id bc.Hash
 			id, err = addEntry(sp)
 			if err != nil {
@@ -193,7 +193,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 			refdatahash := hashData(inp.ReferenceData)
 			assetdefhash := hashData(oldIss.AssetDefinition)
 			iss := bc.NewIssuance(&anchorID, &val, &refdatahash, uint64(i))
-			iss.Witness.AssetDefinition = &bc.AssetDefinition{
+			iss.WitnessAssetDefinition = &bc.AssetDefinition{
 				InitialBlockId: &oldIss.InitialBlock,
 				Data:           &assetdefhash,
 				IssuanceProgram: &bc.Program{
@@ -201,7 +201,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 					Code:      oldIss.IssuanceProgram,
 				},
 			}
-			iss.Witness.Arguments = oldIss.Arguments
+			iss.WitnessArguments = oldIss.Arguments
 			var issID bc.Hash
 			issID, err = addEntry(iss)
 			if err != nil {
@@ -228,11 +228,11 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 	}
 
 	for _, sp := range spends {
-		spentOutput := entryMap[*sp.Body.SpentOutputId].(*bc.Output)
-		sp.SetDestination(&muxID, spentOutput.Body.Source.Value, sp.Ordinal)
+		spentOutput := entryMap[*sp.SpentOutputId].(*bc.Output)
+		sp.SetDestination(&muxID, spentOutput.Source.Value, sp.Ordinal)
 	}
 	for _, iss := range issuances {
-		iss.SetDestination(&muxID, iss.Body.Value, iss.Ordinal)
+		iss.SetDestination(&muxID, iss.Value, iss.Ordinal)
 	}
 
 	var resultIDs []*bc.Hash
@@ -277,7 +277,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 			}
 		}
 		dest.Value = src.Value
-		mux.Witness.Destinations = append(mux.Witness.Destinations, dest)
+		mux.WitnessDestinations = append(mux.WitnessDestinations, dest)
 	}
 
 	refdatahash := hashData(tx.ReferenceData)
@@ -293,7 +293,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 
 func mapBlockHeader(old *BlockHeader) (bhID bc.Hash, bh *bc.BlockHeader) {
 	bh = bc.NewBlockHeader(old.Version, old.Height, &old.PreviousBlockHash, old.TimestampMS, &old.TransactionsMerkleRoot, &old.AssetsMerkleRoot, old.ConsensusProgram)
-	bh.Witness.Arguments = old.Witness
+	bh.WitnessArguments = old.Witness
 	bhID = bc.EntryID(bh)
 	return
 }

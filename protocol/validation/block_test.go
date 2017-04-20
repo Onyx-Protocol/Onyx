@@ -21,7 +21,7 @@ func TestValidateBlock1(t *testing.T) {
 func TestValidateBlock1Err(t *testing.T) {
 	b1 := newInitialBlock(t)
 	transactionsRoot := bc.NewHash([32]byte{1})
-	b1.Body.TransactionsRoot = &transactionsRoot // make b1 be invalid
+	b1.TransactionsRoot = &transactionsRoot // make b1 be invalid
 	err := ValidateBlock(b1, nil, b1.ID, dummyValidateTx)
 	if err == nil {
 		t.Errorf("ValidateBlock(%v, nil) = nil, want error", b1)
@@ -41,7 +41,7 @@ func TestValidateBlock2Err(t *testing.T) {
 	b1 := newInitialBlock(t)
 	b2 := generate(t, b1)
 	transactionsRoot := bc.NewHash([32]byte{1})
-	b2.Body.TransactionsRoot = &transactionsRoot // make b2 be invalid
+	b2.TransactionsRoot = &transactionsRoot // make b2 be invalid
 	err := ValidateBlock(b2, b1, b2.ID, dummyValidateTx)
 	if err == nil {
 		t.Errorf("ValidateBlock(%v, %v) = nil, want error", b2, b1)
@@ -51,7 +51,7 @@ func TestValidateBlock2Err(t *testing.T) {
 func TestValidateBlockSig2(t *testing.T) {
 	b1 := newInitialBlock(t)
 	b2 := generate(t, b1)
-	err := ValidateBlockSig(b2, b1.Body.NextConsensusProgram)
+	err := ValidateBlockSig(b2, b1.NextConsensusProgram)
 	if err != nil {
 		t.Errorf("ValidateBlockSig(%v, %v) = %v, want nil", b2, b1, err)
 	}
@@ -100,11 +100,11 @@ func generate(tb testing.TB, prev *bc.Block) *bc.Block {
 	b := &legacy.Block{
 		BlockHeader: legacy.BlockHeader{
 			Version:           1,
-			Height:            prev.Body.Height + 1,
+			Height:            prev.Height + 1,
 			PreviousBlockHash: prev.ID,
-			TimestampMS:       prev.Body.TimestampMs + 1,
+			TimestampMS:       prev.TimestampMs + 1,
 			BlockCommitment: legacy.BlockCommitment{
-				ConsensusProgram: prev.Body.NextConsensusProgram,
+				ConsensusProgram: prev.NextConsensusProgram,
 			},
 		},
 	}

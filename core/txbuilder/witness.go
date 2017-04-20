@@ -153,7 +153,7 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 	})
 	id := tpl.Transaction.Tx.InputIDs[index]
 	if sp, err := tpl.Transaction.Tx.Spend(id); err == nil {
-		constraints = append(constraints, outputIDConstraint(*sp.Body.SpentOutputId))
+		constraints = append(constraints, outputIDConstraint(*sp.SpentOutputId))
 	}
 
 	// Commitment to the tx-level refdata is conditional on it being

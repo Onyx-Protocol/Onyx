@@ -50,123 +50,82 @@ message ValueDestination {
 }
 
 message BlockHeader {
-  message Body {
-    uint64 version                = 1;
-    uint64 height                 = 2;
-    Hash   previous_block_id      = 3;
-    uint64 timestamp_ms           = 4;
-    Hash   transactions_root      = 5;
-    Hash   assets_root            = 6;
-    bytes  next_consensus_program = 7;
-    Hash   ext_hash               = 8;
-  }
-  message Witness {
-    repeated bytes arguments = 1;
-  }
-  Body    body    = 1;
-  Witness witness = 2;
+  uint64 version                   = 1;
+  uint64 height                    = 2;
+  Hash   previous_block_id         = 3;
+  uint64 timestamp_ms              = 4;
+  Hash   transactions_root         = 5;
+  Hash   assets_root               = 6;
+  bytes  next_consensus_program    = 7;
+  Hash   ext_hash                  = 8;
+
+  repeated bytes witness_arguments = 9;
 }
 
 message TxHeader {
-  message Body {
-    uint64        version     = 1;
-    repeated Hash result_ids  = 2;
-    Hash          data        = 3;
-    uint64        min_time_ms = 4;
-    uint64        max_time_ms = 5;
-    Hash          ext_hash    = 6;
-  }
-  Body body = 1;
+  uint64        version     = 1;
+  repeated Hash result_ids  = 2;
+  Hash          data        = 3;
+  uint64        min_time_ms = 4;
+  uint64        max_time_ms = 5;
+  Hash          ext_hash    = 6;
 }
 
 message Mux {
-  message Body {
-    repeated ValueSource sources  = 1; // issuances, spends, and muxes
-    Program              program  = 2;
-    Hash                 ext_hash = 3;
-  }
-  message Witness {
-    repeated ValueDestination destinations = 1; // outputs, retirements, and muxes
-    repeated bytes            arguments    = 2;
-  }
-  Body    body    = 1;
-  Witness witness = 2;
+  repeated ValueSource      sources              = 1; // issuances, spends, and muxes
+  Program                   program              = 2;
+  Hash                      ext_hash             = 3;
+  repeated ValueDestination witness_destinations = 4; // outputs, retirements, and muxes
+  repeated bytes            witness_arguments    = 5;
 }
 
 message Nonce {
-  message Body {
-    Program program       = 1;
-    Hash    time_range_id = 2;
-    Hash    ext_hash      = 3;
-  }
-  message Witness {
-    repeated bytes arguments   = 1;
-    Hash           anchored_id = 2;
-  }
-  Body    body    = 1;
-  Witness witness = 2;
+  Program        program             = 1;
+  Hash           time_range_id       = 2;
+  Hash           ext_hash            = 3;
+  repeated bytes witness_arguments   = 4;
+  Hash           witness_anchored_id = 5;
 }
 
 message Output {
-  message Body {
-    ValueSource source          = 1;
-    Program     control_program = 2;
-    Hash        data            = 3;
-    Hash        ext_hash        = 4;
-  }
-  Body   body    = 1;
-  uint64 ordinal = 2;
+  ValueSource source          = 1;
+  Program     control_program = 2;
+  Hash        data            = 3;
+  Hash        ext_hash        = 4;
+  uint64      ordinal         = 5;
 }
 
 message Retirement {
-  message Body {
-    ValueSource source   = 1;
-    Hash        data     = 2;
-    Hash        ext_hash = 3;
-  }
-  Body   body    = 1;
-  uint64 ordinal = 2;
+  ValueSource source   = 1;
+  Hash        data     = 2;
+  Hash        ext_hash = 3;
+  uint64      ordinal  = 4;
 }
 
 message TimeRange {
-  message Body {
-    uint64    min_time_ms = 1;
-    uint64    max_time_ms = 2;
-    Hash      ext_hash    = 3;
-  }
-  Body body = 1;
+  uint64    min_time_ms = 1;
+  uint64    max_time_ms = 2;
+  Hash      ext_hash    = 3;
 }
 
 message Issuance {
-  message Body {
-    Hash        anchor_id = 1;
-    AssetAmount value     = 2;
-    Hash        data      = 3;
-    Hash        ext_hash  = 4;
-  }
-  message Witness {
-    ValueDestination destination      = 1;
-    AssetDefinition  asset_definition = 2;
-    repeated bytes   arguments        = 3;
-    Hash             anchored_id      = 4;
-  }
-  Body    body    = 1;
-  Witness witness = 2;
-  uint64  ordinal = 3;
+  Hash             anchor_id                = 1;
+  AssetAmount      value                    = 2;
+  Hash             data                     = 3;
+  Hash             ext_hash                 = 4;
+  ValueDestination witness_destination      = 5;
+  AssetDefinition  witness_asset_definition = 6;
+  repeated bytes   witness_arguments        = 7;
+  Hash             witness_anchored_id      = 8;
+  uint64           ordinal                  = 9;
 }
 
 message Spend {
-  message Body {
-    Hash spent_output_id = 1;
-    Hash data            = 2;
-    Hash ext_hash        = 3;
-  }
-  message Witness {
-    ValueDestination destination = 1;
-    repeated bytes   arguments   = 2;
-    Hash             anchored_id = 3;
-  }
-  Body    body    = 1;
-  Witness witness = 2;
-  uint64  ordinal = 3;
+  Hash             spent_output_id     = 1;
+  Hash             data                = 2;
+  Hash             ext_hash            = 3;
+  ValueDestination witness_destination = 4;
+  repeated bytes   witness_arguments   = 5;
+  Hash             witness_anchored_id = 6;
+  uint64           ordinal             = 7;
 }

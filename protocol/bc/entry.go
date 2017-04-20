@@ -18,13 +18,12 @@ import (
 type Entry interface {
 	proto.Message
 
-	// Type produces a short human-readable string uniquely identifying
+	// type produces a short human-readable string uniquely identifying
 	// the type of this entry.
 	typ() string
 
-	// Body produces the entry's body, which is used as input to
-	// EntryID.
-	body() interface{}
+	// writeForHash writes the entry's body for hashing.
+	writeForHash(w io.Writer)
 }
 
 var errInvalidValue = errors.New("invalid value")
@@ -52,10 +51,7 @@ func EntryID(e Entry) (hash Hash) {
 	bh := sha3pool.Get256()
 	defer sha3pool.Put256(bh)
 
-	err := writeForHash(bh, e.body())
-	if err != nil {
-		panic(err)
-	}
+	e.writeForHash(bh)
 
 	var innerHash [32]byte
 	bh.Read(innerHash[:])
@@ -68,13 +64,20 @@ func EntryID(e Entry) (hash Hash) {
 
 var byte32zero [32]byte
 
-// writeForHash serializes the object c to the writer w, from which
+// mustWriteForHash serializes the object c to the writer w, from which
 // presumably a hash can be extracted.
 //
-// This function may propagate an error from the underlying writer,
+// This function may panic with an error from the underlying writer,
 // and may produce errors of its own if passed objects whose
 // hash-serialization formats are not specified. It MUST NOT produce
 // errors in other cases.
+func mustWriteForHash(w io.Writer, c interface{}) {
+	err := writeForHash(w, c)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func writeForHash(w io.Writer, c interface{}) error {
 	switch v := c.(type) {
 	case byte:

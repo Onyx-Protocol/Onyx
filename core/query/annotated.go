@@ -161,7 +161,7 @@ func buildAnnotatedInput(tx *legacy.Tx, i uint32) *AnnotatedInput {
 	case *bc.Spend:
 		in.Type = "spend"
 		in.ControlProgram = orig.ControlProgram()
-		in.SpentOutputID = e.Body.SpentOutputId
+		in.SpentOutputID = e.SpentOutputId
 	case *bc.Issuance:
 		in.Type = "issue"
 		in.IssuanceProgram = orig.IssuanceProgram()

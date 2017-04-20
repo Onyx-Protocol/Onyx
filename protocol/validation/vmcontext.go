@@ -17,15 +17,15 @@ func newBlockVMContext(block *bc.Block, prog []byte, args [][]byte) *vm.Context 
 		Arguments: args,
 
 		BlockHash:            &blockHash,
-		BlockTimeMS:          &block.Body.TimestampMs,
-		NextConsensusProgram: &block.Body.NextConsensusProgram,
+		BlockTimeMS:          &block.TimestampMs,
+		NextConsensusProgram: &block.NextConsensusProgram,
 	}
 }
 
 func NewTxVMContext(tx *bc.Tx, entry bc.Entry, prog *bc.Program, args [][]byte) *vm.Context {
 	var (
-		numResults = uint64(len(tx.Body.ResultIds))
-		txData     = tx.Body.Data.Bytes()
+		numResults = uint64(len(tx.ResultIds))
+		txData     = tx.Data.Bytes()
 		entryID    = bc.EntryID(entry) // TODO(bobg): pass this in, don't recompute it
 
 		assetID       *[]byte
@@ -38,40 +38,40 @@ func NewTxVMContext(tx *bc.Tx, entry bc.Entry, prog *bc.Program, args [][]byte) 
 
 	switch e := entry.(type) {
 	case *bc.Nonce:
-		anchored := tx.Entries[*e.Witness.AnchoredId]
+		anchored := tx.Entries[*e.WitnessAnchoredId]
 		if iss, ok := anchored.(*bc.Issuance); ok {
-			a1 := iss.Body.Value.AssetId.Bytes()
+			a1 := iss.Value.AssetId.Bytes()
 			assetID = &a1
-			amount = &iss.Body.Value.Amount
+			amount = &iss.Value.Amount
 		}
 
 	case *bc.Issuance:
-		a1 := e.Body.Value.AssetId.Bytes()
+		a1 := e.Value.AssetId.Bytes()
 		assetID = &a1
-		amount = &e.Body.Value.Amount
-		destPos = &e.Witness.Destination.Position
-		d := e.Body.Data.Bytes()
+		amount = &e.Value.Amount
+		destPos = &e.WitnessDestination.Position
+		d := e.Data.Bytes()
 		entryData = &d
-		a2 := e.Body.AnchorId.Bytes()
+		a2 := e.AnchorId.Bytes()
 		anchorID = &a2
 
 	case *bc.Spend:
-		spentOutput := tx.Entries[*e.Body.SpentOutputId].(*bc.Output)
-		a1 := spentOutput.Body.Source.Value.AssetId.Bytes()
+		spentOutput := tx.Entries[*e.SpentOutputId].(*bc.Output)
+		a1 := spentOutput.Source.Value.AssetId.Bytes()
 		assetID = &a1
-		amount = &spentOutput.Body.Source.Value.Amount
-		destPos = &e.Witness.Destination.Position
-		d := e.Body.Data.Bytes()
+		amount = &spentOutput.Source.Value.Amount
+		destPos = &e.WitnessDestination.Position
+		d := e.Data.Bytes()
 		entryData = &d
-		s := e.Body.SpentOutputId.Bytes()
+		s := e.SpentOutputId.Bytes()
 		spentOutputID = &s
 
 	case *bc.Output:
-		d := e.Body.Data.Bytes()
+		d := e.Data.Bytes()
 		entryData = &d
 
 	case *bc.Retirement:
-		d := e.Body.Data.Bytes()
+		d := e.Data.Bytes()
 		entryData = &d
 	}
 
@@ -104,14 +104,14 @@ func NewTxVMContext(tx *bc.Tx, entry bc.Entry, prog *bc.Program, args [][]byte) 
 
 		EntryID: entryID.Bytes(),
 
-		TxVersion: &tx.Body.Version,
+		TxVersion: &tx.Version,
 
 		TxSigHash:     txSigHashFn,
 		NumResults:    &numResults,
 		AssetID:       assetID,
 		Amount:        amount,
-		MinTimeMS:     &tx.Body.MinTimeMs,
-		MaxTimeMS:     &tx.Body.MaxTimeMs,
+		MinTimeMS:     &tx.MinTimeMs,
+		MaxTimeMS:     &tx.MaxTimeMs,
 		EntryData:     entryData,
 		TxData:        &txData,
 		DestPos:       destPos,
@@ -140,7 +140,7 @@ func (ec *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 
 		switch e := e.(type) {
 		case *bc.Output:
-			return check(e.Body.ControlProgram, e.Body.Source.Value, e.Body.Data), nil
+			return check(e.ControlProgram, e.Source.Value, e.Data), nil
 
 		case *bc.Retirement:
 			var prog bc.Program
@@ -152,17 +152,17 @@ func (ec *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 				// (The spec always requires prog.VmVersion to be zero.)
 				prog.Code = code
 			}
-			return check(&prog, e.Body.Source.Value, e.Body.Data), nil
+			return check(&prog, e.Source.Value, e.Data), nil
 		}
 
 		return false, vm.ErrContext
 	}
 
 	checkMux := func(m *bc.Mux) (bool, error) {
-		if index >= uint64(len(m.Witness.Destinations)) {
-			return false, errors.Wrapf(vm.ErrBadValue, "index %d >= %d", index, len(m.Witness.Destinations))
+		if index >= uint64(len(m.WitnessDestinations)) {
+			return false, errors.Wrapf(vm.ErrBadValue, "index %d >= %d", index, len(m.WitnessDestinations))
 		}
-		eID := m.Witness.Destinations[index].Ref
+		eID := m.WitnessDestinations[index].Ref
 		e, ok := ec.entries[*eID]
 		if !ok {
 			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for mux destination %d, id %x, not found", index, eID.Bytes())
@@ -175,9 +175,9 @@ func (ec *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 		return checkMux(e)
 
 	case *bc.Issuance:
-		d, ok := ec.entries[*e.Witness.Destination.Ref]
+		d, ok := ec.entries[*e.WitnessDestination.Ref]
 		if !ok {
-			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for issuance destination %x not found", e.Witness.Destination.Ref.Bytes())
+			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for issuance destination %x not found", e.WitnessDestination.Ref.Bytes())
 		}
 		if m, ok := d.(*bc.Mux); ok {
 			return checkMux(m)
@@ -188,9 +188,9 @@ func (ec *entryContext) checkOutput(index uint64, data []byte, amount uint64, as
 		return checkEntry(d)
 
 	case *bc.Spend:
-		d, ok := ec.entries[*e.Witness.Destination.Ref]
+		d, ok := ec.entries[*e.WitnessDestination.Ref]
 		if !ok {
-			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for spend destination %x not found", e.Witness.Destination.Ref.Bytes())
+			return false, errors.Wrapf(bc.ErrMissingEntry, "entry for spend destination %x not found", e.WitnessDestination.Ref.Bytes())
 		}
 		if m, ok := d.(*bc.Mux); ok {
 			return checkMux(m)
