@@ -13,7 +13,7 @@ func BenchmarkReadVarint31(b *testing.B) {
 	data := []byte{0xff, 0xff, 0xff, 0xff, 0x01}
 	r := NewReader(data)
 	for i := 0; i < b.N; i++ {
-		r.pos = 0
+		r.buf = data
 		ReadVarint31(r)
 	}
 }
@@ -22,7 +22,7 @@ func BenchmarkReadVarint63(b *testing.B) {
 	data := []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01}
 	r := NewReader(data)
 	for i := 0; i < b.N; i++ {
-		r.pos = 0
+		r.buf = data
 		ReadVarint63(r)
 	}
 }

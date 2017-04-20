@@ -21,7 +21,6 @@ var ErrRange = errors.New("value out of range")
 // calls may return a slice of the underlying buffer.
 type Reader struct {
 	buf []byte
-	pos int
 }
 
 // NewReader constructs a new reader with the provided bytes. It
@@ -35,28 +34,24 @@ func NewReader(b []byte) *Reader {
 //
 // It implements the io.ByteReader interface.
 func (r *Reader) ReadByte() (byte, error) {
-	if r.pos >= len(r.buf) {
+	if len(r.buf) == 0 {
 		return 0, io.ErrUnexpectedEOF
 	}
 
-	b := r.buf[r.pos]
-	r.pos++
+	b := r.buf[0]
+	r.buf = r.buf[1:]
 	return b, nil
 }
 
 // Read reads up to len(p) bytes into p. It implements
 // the io.Reader interface.
 func (r *Reader) Read(p []byte) (n int, err error) {
-	if r.pos >= len(r.buf) {
-		return 0, io.EOF
+	n = copy(p, r.buf)
+	r.buf = r.buf[n:]
+	if len(r.buf) == 0 {
+		err = io.EOF
 	}
-	n = len(p)
-	if (len(r.buf) - r.pos) < n {
-		n = len(r.buf) - r.pos
-	}
-	copy(p, r.buf[r.pos:r.pos+n])
-	r.pos += n
-	return n, nil
+	return
 }
 
 func ReadVarint31(r *Reader) (uint32, error) {
@@ -89,12 +84,11 @@ func ReadVarstr31(r *Reader) ([]byte, error) {
 	if l == 0 {
 		return nil, nil
 	}
-	length := int(l)
-	if length > (len(r.buf) - r.pos) {
+	if int(l) > len(r.buf) {
 		return nil, io.ErrUnexpectedEOF
 	}
-	str := r.buf[r.pos : r.pos+length]
-	r.pos += length
+	str := r.buf[:l]
+	r.buf = r.buf[l:]
 	return str, nil
 }
 
@@ -129,12 +123,12 @@ func ReadExtensibleString(r *Reader, f func(*Reader) error) (suffix []byte, err 
 		return nil, err
 	}
 
-	sr := &Reader{buf: s, pos: 0}
+	sr := NewReader(s)
 	err = f(sr)
 	if err != nil {
 		return nil, err
 	}
-	return sr.buf[sr.pos:], nil
+	return sr.buf, nil
 }
 
 func WriteVarint31(w io.Writer, val uint64) (int, error) {
