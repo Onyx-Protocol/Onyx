@@ -215,6 +215,21 @@ func configGenerator(db *sql.DB, args []string) {
 	// endpoint return the BlockchainId before it execs itself.
 }
 
+func createBlockKeyPair(_ *sql.DB, args []string) {
+	if len(args) != 0 {
+		fatalln("error: create-block-keypair takes no args")
+	}
+	pub := struct {
+		Pub ed25519.PublicKey `json:"pub"`
+	}{}
+	client := mustRPCClient()
+	err := client.Call(context.Background(), "/mockhsm/create-block-key", nil, &pub)
+	if err != nil {
+		fatalln("rpc error:", err)
+	}
+	fmt.Printf("%x\n", pub.Pub)
+}
+
 func createToken(db *sql.DB, args []string) {
 	const usage = "usage: corectl create-token [-net] [name]"
 	var flags flag.FlagSet
