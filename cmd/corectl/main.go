@@ -18,7 +18,6 @@ import (
 	"chain/core"
 	"chain/core/accesstoken"
 	"chain/core/config"
-	"chain/core/fileutil"
 	"chain/core/rpc"
 	"chain/crypto/ed25519"
 	"chain/env"
@@ -29,7 +28,7 @@ import (
 
 // config vars
 var (
-	dataDir = env.String("CORED_DATA_DIR", fileutil.DefaultDir())
+	dataDir = core.DataDirFromEnvironment()
 	coreURL = env.String("CORE_URL", "http://localhost:1999")
 
 	// build vars; initialized by the linker
@@ -304,8 +303,8 @@ func mustRPCClient() *rpc.Client {
 	// Note that this function, unlike maybeUseTLS in cored,
 	// does not load the cert and key from env vars,
 	// only from the filesystem.
-	certFile := filepath.Join(*dataDir, "tls.crt")
-	keyFile := filepath.Join(*dataDir, "tls.key")
+	certFile := filepath.Join(dataDir, "tls.crt")
+	keyFile := filepath.Join(dataDir, "tls.key")
 	config, err := core.TLSConfig(certFile, keyFile, "")
 	if err == core.ErrNoTLS {
 		return &rpc.Client{BaseURL: *coreURL}
