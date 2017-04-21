@@ -8,6 +8,7 @@ package config
 import (
 	"context"
 	"crypto/rand"
+	libsql "database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"net/url"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"chain/core/accesstoken"
 	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
@@ -285,19 +287,16 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) er
 }
 
 // this almost certainly should live in another package
-func migrateAccessTokens(ctx context.Context, db *pg.DB, rDB *raft.Service) error {
-	const q = `SELECT id, type, sort_id, created FROM access_tokens`
+func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error {
+	const q = `SELECT id, type, created FROM access_tokens`
 	var tokens []*accesstoken.Token
-	err := pg.ForQueryRows(ctx, cs.DB, q, func(id string, maybeType sql.NullString, sortID string, created time.Time) {
-		t := Token{
+	err := pg.ForQueryRows(ctx, db, q, func(id string, maybeType libsql.NullString, created time.Time) {
+		t := accesstoken.Token{
 			ID:      id,
 			Created: created,
 			Type:    maybeType.String,
-			sortID:  sortID,
 		}
 		tokens = append(tokens, &t)
 	})
-	if err != nil {
-		return nil, "", errors.Wrap(err)
-	}
+	return err
 }
