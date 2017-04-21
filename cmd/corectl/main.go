@@ -220,7 +220,7 @@ func createBlockKeyPair(_ *sql.DB, args []string) {
 		fatalln("error: create-block-keypair takes no args")
 	}
 	pub := struct {
-		Pub ed25519.PublicKey `json:"pub"`
+		Pub ed25519.PublicKey
 	}{}
 	client := mustRPCClient()
 	err := client.Call(context.Background(), "/mockhsm/create-block-key", nil, &pub)
