@@ -120,7 +120,6 @@ func (a *Authorizer) policiesByRoute(route string) ([]string, error) {
 	var (
 		n        = 0
 		policies []string
-		pat      string
 	)
 	for pattern, pol := range a.policies {
 		if !pathMatch(pattern, route) {
@@ -129,13 +128,9 @@ func (a *Authorizer) policiesByRoute(route string) ([]string, error) {
 		if len(policies) == 0 || len(pattern) > n {
 			n = len(pattern)
 			policies = pol
-			pat = pattern
 		}
 	}
-	if pat == "/" {
-		// special case, we didn't find any policy
-		return nil, errors.New("missing policy")
-	}
+
 	return policies, nil
 }
 
