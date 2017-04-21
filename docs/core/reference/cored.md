@@ -1,6 +1,6 @@
-# corectl Tool
+# cored Command
 
--- about corectl --
+-- about cored --
 
 ## Installation
 

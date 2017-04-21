@@ -5,7 +5,7 @@ Chain Core allows control of which entities have access to certain features of t
 1. Access tokens using HTTP Basic Authentication
 2. x509 client certificates
 
-These authentication objects can be created and managed via the Chain Core Dashboard, SDKs, or the [`corectl`](corectl) command line tool.
+These authentication objects can be created and managed via the Chain Core Dashboard, SDKs, or the [`corectl`](../reference/corectl) command line tool.
 
 For convenience, in all pre-packaged installations of Chain Core **access from localhost does not require authentication**.
 
@@ -28,7 +28,7 @@ When deploying Chain Core to a non-local environment, you will not be able to ac
 
 [sidenote]
 
-Before proceeding, make sure you have `corectl` installed on your system. If it's not already present,  see [installing `corectl`](corectl#installation).
+Before proceeding, make sure you have `corectl` installed on your system. If it's not already present,  see [installing `corectl`](../reference/corectl#installation).
 
 [/sidenote]
 
@@ -44,4 +44,4 @@ The command will return your access token:
 <name>:<secret>
 ```
 
-Anywhere Chain Core asks for this token, it's important to provide the entire value, both name and secret, in the format returned by this command.
+Anywhere that Chain Core asks for this token, it's important to provide the entire value, both name and secret, in the format returned by this command.
