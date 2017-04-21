@@ -726,7 +726,7 @@ describe('Callback style', () => {
     })
 
     it('can create access grants', (done) => {
-      client.accessControl.create(tokenGrant, (err, resp) => {
+      client.authorizationGrants.create(tokenGrant, (err, resp) => {
         expect(resp.message == 'ok')
         done()
       })
@@ -734,8 +734,8 @@ describe('Callback style', () => {
 
     it('can list access grants', (done) => {
       async.series([
-        (next) => client.accessControl.create(tokenGrant, () => next()),
-        (next) => client.accessControl.list((err, list) => {
+        (next) => client.authorizationGrants.create(tokenGrant, () => next()),
+        (next) => client.authorizationGrants.list((err, list) => {
             let matched = false
             list.items.forEach((item) => {
               if (item.guardData.id == tokenName) {
@@ -751,9 +751,9 @@ describe('Callback style', () => {
 
     it('can delete access grants', (done) => {
       async.series([
-        (next) => client.accessControl.create(tokenGrant, () => next()),
-        (next) => client.accessControl.delete(tokenGrant, () => next()),
-        (next) => client.accessControl.list((err, list) => {
+        (next) => client.authorizationGrants.create(tokenGrant, () => next()),
+        (next) => client.authorizationGrants.delete(tokenGrant, () => next()),
+        (next) => client.authorizationGrants.list((err, list) => {
           let missing = true
           list.items.forEach((item) => {
             if (item.guardData.id == tokenName) {

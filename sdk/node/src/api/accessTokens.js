@@ -2,7 +2,7 @@ const shared = require('../shared')
 
 /**
  * Access tokens are `name:secret-token` pairs that can be granted one or more
- * policies for accessing Chain Core features. See {@link module:AccessControlApi the
+ * policies for accessing Chain Core features. See {@link module:AuthorizationGrantsApi the
  * access control API} for more info.
  *
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
