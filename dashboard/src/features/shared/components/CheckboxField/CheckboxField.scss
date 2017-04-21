@@ -1,3 +1,15 @@
-.base {
-  background: red;
+.label {
+  position: relative;
+
+  .title {
+    position: absolute;
+    left: 20px;
+  }
+
+  user-select: none;
+}
+
+.hint {
+  color: $text-light-color;
+  margin-left: 20px;
 }

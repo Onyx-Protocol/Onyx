@@ -3,17 +3,21 @@ import GrantListItem from './GrantListItem'
 import { connect } from 'react-redux'
 import { TableList, PageTitle, PageContent } from 'features/shared/components'
 import { push, replace } from 'react-router-redux'
-import { actions } from 'features/accessControl'
+import actions from 'features/accessControl/actions'
 import styles from './AccessControlList.scss'
 
 class AccessControlList extends React.Component {
   render() {
-    const tokenList = <TableList titles={['ID', 'Policy']}>
-      {this.props.tokens.map(item => <GrantListItem key={item.id} item={item} delete={this.props.delete} />)}
+    const itemProps = {
+      beginEditing: this.props.beginEditing,
+      delete: this.props.delete,
+    }
+    const tokenList = <TableList titles={['Token Name', 'Policies']}>
+      {this.props.tokens.map(item => <GrantListItem key={item.id} item={item} {...itemProps} />)}
     </TableList>
 
-    const certList = <TableList titles={['Certificate', 'Policy']}>
-      {this.props.certs.map(item => <GrantListItem key={item.id} item={item} delete={this.props.delete} />)}
+    const certList = <TableList titles={['Certificate', 'Policies']}>
+      {this.props.certs.map(item => <GrantListItem key={item.id} item={item} {...itemProps} />)}
     </TableList>
 
     return (<div>
@@ -59,7 +63,7 @@ class AccessControlList extends React.Component {
 }
 
 const mapStateToProps = (state, ownProps) => {
-  const items = Object.values(state.accessControl.items)
+  const items = state.accessControl.ids.map(id => state.accessControl.items[id])
   const tokensSelected = ownProps.location.query.type == 'token'
   const certificatesSelected = ownProps.location.query.type != 'token'
 
@@ -74,11 +78,12 @@ const mapStateToProps = (state, ownProps) => {
 }
 
 const mapDispatchToProps = (dispatch) => ({
-  delete: (grant) => dispatch(actions.deleteGrant(grant)),
+  delete: (grant) => dispatch(actions.deleteToken(grant)),
   showTokens: () => dispatch(replace('/access-control?type=token')),
   showCertificates: () => dispatch(replace('/access-control?type=certificate')),
   showTokenCreate: () => dispatch(push('/access-control/create-token')),
   showAddCertificate: () => dispatch(push('/access-control/add-certificate')),
+  beginEditing: (id) => dispatch(actions.beginEditing(id)),
 })
 
 export default connect(

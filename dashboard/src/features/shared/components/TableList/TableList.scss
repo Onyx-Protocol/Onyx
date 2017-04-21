@@ -17,6 +17,7 @@
     text-overflow: ellipsis;
     color: $text-color;
     line-height: 20px;
+    vertical-align: top;
   }
 
   th {
@@ -27,7 +28,7 @@
   }
 
   td, th  {
-    padding: 10px $gutter-size 10px 0;
+    padding: 13px $gutter-size 13px 0;
   }
   th, td {
 
@@ -37,6 +38,14 @@
 
     &:last-child {
       text-align: right;
+    }
+  }
+
+  :global {
+    .btn-link {
+      padding-top: 0;
+      padding-bottom: 0;
+      line-height: 1;
     }
   }
 }

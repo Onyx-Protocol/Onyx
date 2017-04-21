@@ -28,6 +28,9 @@ const shared = require('../shared')
  *
  * @property {String} policy
  * Authorization single polciy to attach to specific grant.
+ *
+ * @property {String} createdAt
+ * Time of grant creation, RFC3339 formatted.
  */
 
 /**

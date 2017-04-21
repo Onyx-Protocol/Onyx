@@ -2,7 +2,7 @@ import React from 'react'
 import { BaseNew, FormContainer, FormSection, TextField, CheckboxField } from 'features/shared/components'
 import { policyOptions } from 'features/accessControl/constants'
 import { reduxForm } from 'redux-form'
-import { actions } from 'features/accessControl'
+import actions from 'features/accessControl/actions'
 
 class NewToken extends React.Component {
   render() {

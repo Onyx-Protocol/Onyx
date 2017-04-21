@@ -7,7 +7,8 @@ const CHECKBOX_FIELD_PROPS = [
   'onBlur',
   'onChange',
   'onFocus',
-  'name'
+  'name',
+  'checked'
 ]
 
 class CheckboxField extends React.Component {
@@ -16,12 +17,12 @@ class CheckboxField extends React.Component {
 
     return (
       <div>
-        <label>
+        <label className={styles.label}>
           <input type='checkbox' {...fieldProps} />
-          {this.props.title}
-        </label>
+          <span className={styles.title}>{this.props.title}</span>
 
-        {this.props.hint && <span className='help-block'>{this.props.hint}</span>}
+          {this.props.hint && <div className={styles.hint}>{this.props.hint}</div>}
+        </label>
       </div>
     )
   }

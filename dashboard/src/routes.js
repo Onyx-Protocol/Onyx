@@ -1,6 +1,6 @@
 import { Container } from 'features/app/components'
 import { NotFound } from 'features/shared/components'
-import { routes as accessControl } from 'features/accessControl'
+import accessControl from 'features/accessControl/routes'
 import { routes as accounts } from 'features/accounts'
 import { routes as assets } from 'features/assets'
 import { routes as balances } from 'features/balances'

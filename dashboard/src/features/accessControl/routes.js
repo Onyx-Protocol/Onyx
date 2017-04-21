@@ -17,15 +17,15 @@ const checkParams = (nextState, replace) => {
 }
 
 export default (store) => {
+  const loadGrants = () => store.dispatch(actions.fetchItems())
+
   const routes = makeRoutes(store, 'accessControl', AccessControlList, null, null, null, {
     path: 'access-control',
     name: 'Access control'
   })
 
   routes.indexRoute.onEnter = (nextState, replace) => {
-    if (checkParams(nextState, replace)) {
-      store.dispatch(actions.fetchItems())
-    }
+    if (checkParams(nextState, replace)) { loadGrants() }
   }
 
   routes.indexRoute.onChange = (_, nextState, replace) => {
