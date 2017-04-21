@@ -28,7 +28,7 @@ import (
 
 // config vars
 var (
-	dataDir = core.DataDirFromEnvironment()
+	home    = core.HomeDirFromEnvironment()
 	coreURL = env.String("CORE_URL", "http://localhost:1999")
 
 	// build vars; initialized by the linker
@@ -303,8 +303,8 @@ func mustRPCClient() *rpc.Client {
 	// Note that this function, unlike maybeUseTLS in cored,
 	// does not load the cert and key from env vars,
 	// only from the filesystem.
-	certFile := filepath.Join(dataDir, "tls.crt")
-	keyFile := filepath.Join(dataDir, "tls.key")
+	certFile := filepath.Join(home, "tls.crt")
+	keyFile := filepath.Join(home, "tls.key")
 	config, err := core.TLSConfig(certFile, keyFile, "")
 	if err == core.ErrNoTLS {
 		return &rpc.Client{BaseURL: *coreURL}
