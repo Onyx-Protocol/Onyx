@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql/driver"
 	"encoding/hex"
+	"fmt"
 	"io"
 
 	"chain/encoding/blockchain"
@@ -50,7 +51,18 @@ func (b *Block) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
-	return b.readFrom(blockchain.NewReader(decoded))
+
+	r := blockchain.NewReader(decoded)
+	err = b.readFrom(r)
+	if err != nil {
+		return err
+	}
+
+	// Disallow trailing garbage.
+	if trailing := r.Remaining(); len(trailing) > 0 {
+		return fmt.Errorf("expected EOF, got %x", trailing)
+	}
+	return nil
 }
 
 // Scan fulfills the sql.Scanner interface.
@@ -61,7 +73,17 @@ func (b *Block) Scan(val interface{}) error {
 	}
 	buf := make([]byte, len(driverBuf))
 	copy(buf[:], driverBuf)
-	return b.readFrom(blockchain.NewReader(buf))
+	r := blockchain.NewReader(buf)
+	err := b.readFrom(r)
+	if err != nil {
+		return err
+	}
+
+	// Disallow trailing garbage.
+	if trailing := r.Remaining(); len(trailing) > 0 {
+		return fmt.Errorf("expected EOF, got %x", trailing)
+	}
+	return nil
 }
 
 // Value fulfills the sql.driver.Valuer interface.

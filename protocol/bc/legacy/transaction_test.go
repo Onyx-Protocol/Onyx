@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -13,6 +14,23 @@ import (
 	"chain/protocol/bc"
 	"chain/testutil"
 )
+
+func TestTransactionTrailingGarbage(t *testing.T) {
+	const validTxHex = `07010700d0929893b92b00000101270eac870dfde1e0feaa4fac6693dee38da2afe7f5cc83ce2b024f04a2400fd6e20a0104deadbeef027b7d0000`
+
+	var validTx Tx
+	err := validTx.UnmarshalText([]byte(validTxHex))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	invalidTxHex := validTxHex + strings.Repeat("beef", 10)
+	var invalidTx Tx
+	err = invalidTx.UnmarshalText([]byte(invalidTxHex))
+	if err == nil {
+		t.Fatal("expected error with trailing garbage but got nil")
+	}
+}
 
 func TestTransaction(t *testing.T) {
 	issuanceScript := []byte{1}

@@ -30,6 +30,11 @@ func NewReader(b []byte) *Reader {
 	return &Reader{buf: b}
 }
 
+// Remaining returns the rest of the unread bytes.
+func (r *Reader) Remaining() []byte {
+	return r.buf
+}
+
 // ReadByte reads and returns the next byte from the input.
 //
 // It implements the io.ByteReader interface.
