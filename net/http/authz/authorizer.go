@@ -17,7 +17,7 @@ import (
 
 var ErrNotAuthorized = errors.New("not authorized")
 
-var builtinGrants []*Grant = []*Grant{&Grant{GuardType: "any", Policy: "public"}}
+var builtinGrants = []*Grant{{GuardType: "any", Policy: "public"}}
 
 type Authorizer struct {
 	raftDB        *raft.Service
