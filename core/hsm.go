@@ -25,6 +25,7 @@ func MockHSM(hsm *mockhsm.HSM) RunOption {
 		h := &mockHSMHandler{MockHSM: hsm}
 
 		needConfig := a.needConfig()
+		a.mux.Handle("/mockhsm/create-block-key", jsonHandler(h.mockhsmCreateBlockKey))
 		a.mux.Handle("/mockhsm/create-key", needConfig(h.mockhsmCreateKey))
 		a.mux.Handle("/mockhsm/list-keys", needConfig(h.mockhsmListKeys))
 		a.mux.Handle("/mockhsm/delkey", needConfig(h.mockhsmDelKey))
@@ -34,6 +35,10 @@ func MockHSM(hsm *mockhsm.HSM) RunOption {
 
 type mockHSMHandler struct {
 	MockHSM *mockhsm.HSM
+}
+
+func (h *mockHSMHandler) mockhsmCreateBlockKey(ctx context.Context) (result *mockhsm.Pub, err error) {
+	return h.MockHSM.Create(ctx, "block_key")
 }
 
 func (h *mockHSMHandler) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {
