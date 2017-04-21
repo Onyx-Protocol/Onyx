@@ -1,5 +1,5 @@
 const Connection = require('./connection')
-const accessControlAPI = require('./api/accessControl')
+const authorizationGrantsAPI = require('./api/authorizationGrants')
 const accessTokensAPI = require('./api/accessTokens')
 const accountsAPI = require('./api/accounts')
 const assetsAPI = require('./api/assets')
@@ -50,9 +50,9 @@ class Client {
 
     /**
      * API actions for access control grants
-     * @type {module:AccessControlApi}
+     * @type {module:AuthorizationGrantsApi}
      */
-    this.accessControl = accessControlAPI(this)
+    this.authorizationGrants = authorizationGrantsAPI(this)
 
     /**
      * API actions for accounts

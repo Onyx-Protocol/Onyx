@@ -822,7 +822,7 @@ describe('Promise style', () => {
 
     it('can create access grants', () => {
       return Promise.resolve().then(() =>
-        expect(client.accessControl.create(tokenGrant)).to.be.fulfilled
+        expect(client.authorizationGrants.create(tokenGrant)).to.be.fulfilled
       ).then(resp => {
         expect(resp.message == 'ok')
       })
@@ -830,9 +830,9 @@ describe('Promise style', () => {
 
     it('can list access grants', () => {
       return Promise.resolve().then(() =>
-        expect(client.accessControl.create(tokenGrant)).to.be.fulfilled
+        expect(client.authorizationGrants.create(tokenGrant)).to.be.fulfilled
       ).then(() =>
-        expect(client.accessControl.list()).to.be.fulfilled
+        expect(client.authorizationGrants.list()).to.be.fulfilled
       ).then(list => {
         let matched = false
         list.items.forEach((item) => {
@@ -846,11 +846,11 @@ describe('Promise style', () => {
 
     it('can delete access grants', () => {
       return Promise.resolve().then(() =>
-        expect(client.accessControl.create(tokenGrant)).to.be.fulfilled
+        expect(client.authorizationGrants.create(tokenGrant)).to.be.fulfilled
       ).then(() =>
-        expect(client.accessControl.delete(tokenGrant)).to.be.fulfilled
+        expect(client.authorizationGrants.delete(tokenGrant)).to.be.fulfilled
       ).then(() =>
-        expect(client.accessControl.list()).to.be.fulfilled
+        expect(client.authorizationGrants.list()).to.be.fulfilled
       ).then(list => {
         let missing = true
         list.items.forEach((item) => {

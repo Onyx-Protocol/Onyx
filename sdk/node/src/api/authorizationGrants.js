@@ -1,7 +1,7 @@
 const shared = require('../shared')
 
 /**
- * Grants provide a mapping from guard objects (access tokens or X509
+ * Authorization grants provide a mapping from guard objects (access tokens or X509
  * certificates) to a list of predefined Chain Core access policies.
  *
  * * **client-readwrite**: full access to the Client API
@@ -10,7 +10,7 @@ const shared = require('../shared')
  * * **monitoring**: access to monitoring-specific endpoints
  *
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
- * @typedef {Object} Grant
+ * @typedef {Object} AuthorizationGrant
  * @global
  *
  * @property {String} guard_type
@@ -20,9 +20,9 @@ const shared = require('../shared')
  * Data used by the guard to identity incoming credentials.
  *
  * If guard_type is 'access_token', you should provide an instance of
- * {@link module:AccessControlApi~AccessTokenGuardData}, which identifies access tokens by ID.
+ * {@link module:AuthorizationGrantsApi~AccessTokenGuardData}, which identifies access tokens by ID.
  *
- * If guard_type is 'x509', you should provide an instance of {@link module:AccessControlApi~X509GuardData},
+ * If guard_type is 'x509', you should provide an instance of {@link module:AuthorizationGrantsApi~X509GuardData},
  * which identifies x509 certificates based on kev-value pairs in specified
  * certificate fields.
  *
@@ -34,12 +34,12 @@ const shared = require('../shared')
  */
 
 /**
- * API for interacting with {@link Grant access grants}.
+ * API for interacting with {@link AuthorizationGrant access grants}.
  *
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
- * @module AccessControlApi
+ * @module AuthorizationGrantsApi
  */
-const accessControl = (client) => ({
+const authorizationGrants = (client) => ({
   /**
    * @typedef {Object} AccessTokenGuardData
    *
@@ -70,7 +70,7 @@ const accessControl = (client) => ({
    * @param {Object} params - Parameters for access grant creation.
    * @param {String} params.guard_type - Type of credential to guard with, either 'access_token' or 'x509'.
    * @param {Object} params.guard_data - Object containing data needed to identify the incoming credential.
-   * @param {String} params.policy - Authorization polciy to attach to specific grant. See {@link Grant} for a list of available policiies.
+   * @param {String} params.policy - Authorization polciy to attach to specific grant. See {@link AuthorizationGrant} for a list of available policiies.
    * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
    * @returns {Promise<Object>} Success message or error.
    */
@@ -83,7 +83,7 @@ const accessControl = (client) => ({
    * @param {Object} params - Parameters for access grant deletion.
    * @param {String} params.guard_type - Type of credential to delete, either 'access_token' or 'x509'.
    * @param {Object} params.guard_data - Object containing data needed to identify the credential to be removed.
-   * @param {String} params.policy - Authorization policy to remove. See {@link Grant} for a list of available policiies.
+   * @param {String} params.policy - Authorization policy to remove. See {@link AuthorizationGrant} for a list of available policiies.
    * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
    * @returns {Promise<Object>} Success message or error.
    */
@@ -96,10 +96,10 @@ const accessControl = (client) => ({
    * Get all access grants.
    *
    * @param {pageCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
-   * @returns {Promise<Array<Grant>>} Requested page of results.
+   * @returns {Promise<Array<AuthorizationGrant>>} Requested page of results.
    */
   list: (cb) =>
     shared.query(client, 'accessTokens', '/list-authorization-grants', {}, {cb}),
 })
 
-module.exports = accessControl
+module.exports = authorizationGrants
