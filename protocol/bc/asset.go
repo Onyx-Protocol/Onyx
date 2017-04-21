@@ -67,5 +67,8 @@ func (a AssetAmount) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (a AssetAmount) Equal(other *AssetAmount) bool {
+	if a.AssetId == nil || other.AssetId == nil {
+		return false
+	}
 	return a.Amount == other.Amount && *a.AssetId == *other.AssetId
 }
