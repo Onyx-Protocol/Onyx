@@ -148,6 +148,24 @@ public class Client {
   }
 
   /**
+   * Perform a single HTTP POST request against the API for a specific action,
+   * ignoring the body of the response.
+   *
+   * @param action The requested API action
+   * @param body Body payload sent to the API as JSON
+   * @throws ChainException
+   */
+  public void request(String action, Object body) throws ChainException {
+    ResponseCreator<Object> rc =
+        new ResponseCreator<Object>() {
+          public Object create(Response response, Gson deserializer) throws IOException {
+            return null;
+          }
+        };
+    post(action, body, rc);
+  }
+
+  /**
    * Perform a single HTTP POST request against the API for a specific action.
    * Use this method if you want batch semantics, i.e., the endpoint response
    * is an array of valid objects interleaved with arrays, once corresponding to
