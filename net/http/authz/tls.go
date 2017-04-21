@@ -7,15 +7,15 @@ import (
 
 // Same as crypto/x509/pkix.Name but with JSON tags.
 type pkixDN struct {
-	Country            []string `json:"C"`
-	Organization       []string `json:"O"`
-	OrganizationalUnit []string `json:"OU"`
-	Locality           []string `json:"L"`
-	Province           []string `json:"ST"`
-	StreetAddress      []string `json:"STREET"`
-	PostalCode         []string `json:"POSTALCODE"`
-	SerialNumber       string   `json:"SERIALNUMBER"`
-	CommonName         string   `json:"CN"`
+	Country            []string `json:"C,omitempty"`
+	Organization       []string `json:"O,omitempty"`
+	OrganizationalUnit []string `json:"OU,omitempty"`
+	Locality           []string `json:"L,omitempty"`
+	Province           []string `json:"ST,omitempty"`
+	StreetAddress      []string `json:"STREET,omitempty"`
+	PostalCode         []string `json:"POSTALCODE,omitempty"`
+	SerialNumber       string   `json:"SERIALNUMBER,omitempty"`
+	CommonName         string   `json:"CN,omitempty"`
 
 	Names      []pkix.AttributeTypeAndValue `json:"-"`
 	ExtraNames []pkix.AttributeTypeAndValue `json:"-"`
