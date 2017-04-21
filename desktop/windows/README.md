@@ -33,7 +33,7 @@ You will want to put them into this directory like this:
 
 ```
 GOOS=windows GOARCH=amd64 go build chain/cmd/cored
-GOOS=windows GOARCH=amd64 go build chain/installer/windows/ChainMgr
+GOOS=windows GOARCH=amd64 go build chain/desktop/windows/ChainMgr
 ```
 
 The Postgres Installer can be downloaded from http://www.enterprisedb.com/products-services-training/pgdownload
@@ -54,7 +54,7 @@ third argument:
 2. The password for the above certificate.
 3. The version label of the Chain Core executable (optional, defaults to "Latest").
 
-`buildChainExe.bat` must be run from inside the `installer/windows` directory.
+`buildChainExe.bat` must be run from inside the `desktop/windows` directory.
 
 Example usage:
 
@@ -73,7 +73,7 @@ runs exactly these instructions. 🚧
 
 The chain bundler is capable of building multiple .msi's and .exe's into a single installer .exe.
 
-First, build the chain core msi. To do this, from inside of `installer/windows` run:
+First, build the chain core msi. To do this, from inside of `desktop/windows` run:
 
 ```
 cd ChainPackage

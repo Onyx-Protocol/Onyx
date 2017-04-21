@@ -1,4 +1,4 @@
-# Chain Core Mac Installer changelog
+# Chain Core for Mac changelog
 
 ## 1.1.1 (March 8, 2017)
 
