@@ -16,7 +16,7 @@ class ChainCore: NSObject {
     }
 
     var homeDir: String {
-        return NSProcessInfo().environment["HOME"] + "/Library/Application Support/Chain Core"
+        return NSHomeDirectory() + "/Library/Application Support/Chain Core"
     }
 
     var corectlPath: String {
