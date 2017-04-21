@@ -1,5 +1,7 @@
 # Authentication and Authorization
 
+## Authentication
+
 Chain Core allows control of which entities have access to certain features of the system. There are two methods available for limiting access:
 
 1. Access tokens using HTTP Basic Authentication
@@ -17,12 +19,14 @@ The client API is used by the SDKs and the dashboard to communicate with Chain C
 
 There are four policies available to grant an individual authentication method access to one or both APIs:
 
-* **Client read/write**: Full access to the Client API.
-* **Client read-only**: Access to read-only Client endpoints. This is a strict subset of the "client read/write" policy.
-* **Monitoring**: Access to monitoring-specific endpoints. This is a strict subset of the "client read-only" policy.
-* **Network**: Access to the Network API.
+* **client-readwrite**: Full access to the Client API.
+* **client-readonly**: Access to read-only Client endpoints. This is a strict subset of the `client-readwrite` policy.
+* **monitoring**: Access to monitoring-specific endpoints. This is a strict subset of the `client-readonly` policy.
+* **network**: Access to the Network API.
 
 ## Setting Up
+
+###
 
 When deploying Chain Core to a non-local environment, you will not be able to access the Dashboard or APIs to create authorization grants. Therefore, you must use the `corectl` command line tool to create your first authorization grant. After that, you can use that token or certificate to create additional authorizations via the Dashboard or SDKs.
 
@@ -46,7 +50,7 @@ The command will return your access token:
 
 [sidenote]
 
-Anywhere that Chain Core asks for a token, provide the entire value, name and secret, in the format returned by this command.
+Anywhere that Chain Core asks for a token, make sure to provide the entire value, name and secret, in the format returned by this command.
 
 [/sidenote]
 
