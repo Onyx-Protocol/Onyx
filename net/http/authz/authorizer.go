@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/x509/pkix"
 	"encoding/json"
-	"log"
 	"net/http"
 	"path"
 	"time"
@@ -135,7 +134,6 @@ func (a *Authorizer) policiesByRoute(route string) ([]string, error) {
 	}
 	if pat == "/" {
 		// special case, we didn't find any policy
-		log.Println("whoa nelly")
 		return nil, errors.New("missing policy")
 	}
 	return policies, nil
