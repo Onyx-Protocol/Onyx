@@ -67,6 +67,15 @@ chain.assets.query(
 end
 # endsnippet
 
+# snippet update-asset-tags
+chain.assets.update_tags(
+  alias: 'acme_common',
+  tags: {
+    internal_rating: '3'
+  }
+)
+# endsnippet
+
 # snippet build-issue
 issuance_tx = chain.transactions.build do |b|
   b.issue asset_alias: 'acme_common', amount: 1000

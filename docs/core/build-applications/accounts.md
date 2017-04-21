@@ -23,6 +23,7 @@ This guide will walk you through the basic functions of an account:
 * [Transfer asset units to an external party](#transfer-asset-units-to-an-external-party)
 * [List account transactions](#list-account-transactions)
 * [List account balances](#list-account-balances)
+* [Update tags on existing accounts](#update-tags-on-existing-accounts)
 
 This guide assumes you know the basic functions presented in the [5-Minute Guide](../get-started/five-minute-guide.md).
 
@@ -103,3 +104,9 @@ $code list-account-balances ../examples/java/Accounts.java ../examples/ruby/acco
 To list all the unspent outputs that comprise the balance of gold in Alice’s account, we build an unspent outputs query, filtering on Alice’s account alias and the gold asset alias.
 
 $code list-account-unspent-outputs ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
+
+## Update tags on existing accounts
+
+Updated tags will only apply to new transactions. Existing transactions will reflect the tags that were present when the transaction was created.
+
+$code update-account-tags ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js

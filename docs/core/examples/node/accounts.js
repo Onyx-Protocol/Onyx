@@ -65,6 +65,18 @@ Promise.all([
   })
   // endsnippet
 ).then(() =>
+  // snippet update-account-tags
+  client.accounts.updateTags({
+    alias: 'alice',
+    tags: {
+      type: 'money market',
+      first_name: 'Alice',
+      last_name: 'Jones',
+      user_id: '12345',
+    },
+  })
+  // endsnippet
+).then(() =>
   client.transactions.build(builder => {
     builder.issue({ assetAlias: 'gold', amount: 100 })
     builder.issue({ assetAlias: 'silver', amount: 100 })

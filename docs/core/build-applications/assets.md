@@ -21,6 +21,7 @@ This guide will walk you through the basic functions of an asset:
 * [Retire asset units](#retire-asset-units)
 * [List transactions](#list-asset-transactions) (for issuance, transfer, and retirement)
 * [Get asset circulation](#get-asset-circulation)
+* [Update tags on existing assets](#update-tags-on-existing-assets)
 
 This guide assumes you know the basic functions presented in the [5-Minute Guide](../get-started/five-minute-guide.md).
 
@@ -138,3 +139,9 @@ $code list-acme-balance ../examples/java/Assets.java ../examples/ruby/assets.rb 
 To list all the unspent outputs that hold a portion of the circulation of Acme Common stock, we build an unspent outputs query, filtering on the Acme Common stock `asset_alias`.
 
 $code list-acme-common-unspents ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
+
+## Update tags on existing assets
+
+Updated tags will only apply to new transactions. Existing transactions will reflect the tags that were present when the transaction was created.
+
+$code update-asset-tags ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js

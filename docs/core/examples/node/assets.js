@@ -73,6 +73,15 @@ Promise.all([
     next()
   })
   // endsnippet
+).then(() =>
+  // snippet update-asset-tags
+  client.accounts.updateTags({
+    alias: 'acme_common',
+    tags: {
+      internalRating: '3',
+    },
+  })
+  // endsnippet
 ).then(() => {
   // snippet build-issue
   const issuePromise = client.transactions.build(builder => {
