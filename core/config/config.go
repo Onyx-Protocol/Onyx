@@ -25,6 +25,7 @@ import (
 	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
+	"chain/net/http/authz"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -32,6 +33,7 @@ import (
 
 const (
 	autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
+	grantPrefix       = "/core/grant/" // this is also hardcoded in core/authz.go. meh.
 )
 
 var (
@@ -291,12 +293,44 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error
 	const q = `SELECT id, type, created FROM access_tokens`
 	var tokens []*accesstoken.Token
 	err := pg.ForQueryRows(ctx, db, q, func(id string, maybeType libsql.NullString, created time.Time) {
-		t := accesstoken.Token{
+		t := &accesstoken.Token{
 			ID:      id,
 			Created: created,
 			Type:    maybeType.String,
 		}
-		tokens = append(tokens, &t)
+		tokens = append(tokens, t)
 	})
+
+	for _, token := range tokens {
+		data := map[string]interface{}{
+			"id": token.ID,
+		}
+		guardData, err := json.Marshal(data)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+
+		var grant authz.Grant
+		switch token.Type {
+		case "client":
+			grant = authz.Grant{
+				GuardType: "access_token",
+				GuardData: guardData,
+				Policy:    "client-readwrite",
+				CreatedAt: token.Created.Format(time.RFC3339),
+			}
+		case "network":
+			grant = authz.Grant{
+				GuardType: "access_token",
+				GuardData: guardData,
+				Policy:    "network",
+				CreatedAt: token.Created.Format(time.RFC3339),
+			}
+		}
+		err = authz.StoreGrant(ctx, rDB, grant, grantPrefix)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+	}
 	return err
 }
