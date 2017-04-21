@@ -77,8 +77,9 @@ func authorized(ctx context.Context, grants []*Grant) bool {
 				return true
 			}
 		case "x509":
+			pattern := x509GuardData(g.GuardData)
 			certs := authn.X509Certs(ctx)
-			if (len(certs) > 0) && equalX509Name(x509GuardData(g), certs[0].Subject) {
+			if len(certs) > 0 && matchesX509(pattern, certs[0].Subject) {
 				return true
 			}
 		case "localhost":
@@ -96,47 +97,6 @@ func accessTokenGuardData(grant *Grant) string {
 	var v struct{ ID string }
 	json.Unmarshal(grant.GuardData, &v) // ignore error, returns "" on failure
 	return v.ID
-}
-
-func x509GuardData(grant *Grant) pkix.Name {
-	// TODO(boymanjor): We should support the standard X.500 attributes for Subjects.
-	// One idea is to map the json to a pkix.Name.
-	var v struct {
-		Subject struct {
-			CommonName         string   `json:"cn"`
-			OrganizationalUnit []string `json:"ou"`
-		}
-	}
-	json.Unmarshal(grant.GuardData, &v)
-	return pkix.Name{
-		CommonName:         v.Subject.CommonName,
-		OrganizationalUnit: v.Subject.OrganizationalUnit,
-	}
-}
-
-func encodeX509GuardData(subj pkix.Name) []byte {
-	d, _ := json.Marshal(map[string]interface{}{
-		"subject": map[string]interface{}{
-			"cn": subj.CommonName,
-			"ou": subj.OrganizationalUnit,
-		},
-	})
-	return d
-}
-
-func equalX509Name(a, b pkix.Name) bool {
-	if a.CommonName != b.CommonName {
-		return false
-	}
-	if len(a.OrganizationalUnit) != len(b.OrganizationalUnit) {
-		return false
-	}
-	for i := range a.OrganizationalUnit {
-		if a.OrganizationalUnit[i] != b.OrganizationalUnit[i] {
-			return false
-		}
-	}
-	return true
 }
 
 func (a *Authorizer) grantsByPolicies(policies []string) ([]*Grant, error) {
