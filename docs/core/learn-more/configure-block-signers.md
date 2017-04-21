@@ -4,7 +4,7 @@
 
 The Chain Core dashboard does not yet support block signer configuration. However, you can use a Chain Core command line tool to manually configure a blockchain with block signers.
 
-### Initialize Corectl
+### Initialize corectl
 
 In the Chain Core Mac app, visit the `Developer` menu and select `Open Terminal`. This will initialize the `corectl` command line tool.
 
@@ -16,7 +16,7 @@ In this example, we configure a blockchain with a Chain Core as a block generato
 
 ### Signer
 
-Note: We do not yet configure the Chain Core.
+**Note**: We do not yet configure the Chain Core.
 
 On the machine that will host the block-signing core, we first create a block-signing key in the Mock HSM and a network token so the generator can submit blocks to the signer’s network API for signing.
 
@@ -60,17 +60,27 @@ Block signer Chain Core URL with network token: https://foo:25f658b749f154a790c8
 
 #### Configure Chain Core
 
-On the machine that will host the block generator, configure Chain Core to require two signatures on each block: its own, plus one from the separate block signer:
+On the machine that will host the block generator, generate a block signing key,
+using the same method as the signer:
+
+```
+$ corectl create-block-keypair
+45ad1f1617d4c6fb8ae5119c524c6266595f0f551c5210dd9f5892b4b39f011f
+```
+
+Now, configure Chain Core to require two signatures on each block: its own, plus one from the separate block signer:
 
 ```bash
-corectl config-generator -s <quorum> <signer1-pubkey> <signer1-url-with-network-token>
+corectl config-generator -k <generator-pubkey> <quorum> <signer1-pubkey> <signer1-url-with-network-token>
 ```
 
 ```bash
-corectl config-generator -s 2 cce1791bf3d8bb5e506ec7159bad6a696740712197894336c027dec9fbfb9313 https://foo:25f658b749f154a790c8a3aeb57ea98968f51a991c4771fb072fcbb2fa63b6f7@<signer-host>:<signer-port>
+corectl config-generator -k 45ad1f1617d4c6fb8ae5119c524c6266595f0f551c5210dd9f5892b4b39f011f 2 cce1791bf3d8bb5e506ec7159bad6a696740712197894336c027dec9fbfb9313 https://foo:25f658b749f154a790c8a3aeb57ea98968f51a991c4771fb072fcbb2fa63b6f7@<signer-host>:<signer-port>
 ```
 
-The `-s` flag means this generator is also a block signer. The quorum value, 2, means both signatures are required on every block.
+The `-k` flag means this generator is also a block signer, and will provide its
+own signing key. The quorum value, 2, means both signatures are required
+on every block.
 
 This prints out the blockchain id
 
@@ -100,6 +110,12 @@ Network token: signer:ea8b749f154a790c8a3aeb57bb2fa98968f51a991c4771fb072fc25f65
 Blockchain ID: ec95cfab939d7b8dde46e7e1dcd7cb0a7c0cea37148addd70a4a4a5aaab9616c
 ```
 
+---
+
+**Note**: If the generator's `cored` process was running during configuration,
+it will need to be restarted to pick up the configuration changes made
+with `corectl`.
+
 ### Signer
 
 #### Configure Chain Core
@@ -122,6 +138,8 @@ corectl config\
     https://<generator-host>:<generator-port>
 ```
 
-At this point it may be necessary to quit and restart the Chain Core Mac app in order to pick up the configuration changes made with `corectl`.
+**Note**: If the signer's `cored` process was running during configuration,
+it will need to be restarted to pick up the configuration changes made
+with `corectl`.
 
 Once the configured cores are running, the block signer will download the initial block from the block generator, and then automatically validate and sign new blocks as the block generator delivers them.
