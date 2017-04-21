@@ -1,7 +1,6 @@
 import React from 'react'
 import FieldLabel from './FieldLabel/FieldLabel'
 import pick from 'lodash/pick'
-import ReactMarkdown from 'react-markdown'
 
 const SELECT_FIELD_PROPS = [
   'value',
@@ -35,7 +34,7 @@ class SelectField extends React.Component {
         </select>
 
         {touched && error && <span className='text-danger'><strong>{error}</strong></span>}
-        {this.props.hint && <span className='help-block'><ReactMarkdown source={this.props.hint} /></span>}
+        {this.props.hint && <span className='help-block'>{this.props.hint}</span>}
       </div>
     )
   }
