@@ -17,8 +17,8 @@ const setPolicies = (body, policies) => {
     }
 
     promises.push(policies[key] ?
-      chainClient().accessControl.create(grant) :
-      chainClient().accessControl.delete(grant)
+      chainClient().authorizationGrants.create(grant) :
+      chainClient().authorizationGrants.delete(grant)
     )
   }
 
@@ -31,7 +31,7 @@ export default {
       const tokens = []
 
       return Promise.all([
-        chainClient().accessControl.list(),
+        chainClient().authorizationGrants.list(),
         chainClient().accessTokens.queryAll({}, (token, next) => {
           tokens.push(token)
           next()
