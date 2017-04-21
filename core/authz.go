@@ -8,6 +8,7 @@ var policies = []string{
 	"network",
 	"monitoring",
 	"internal",
+	"public",
 }
 
 var policyByRoute = map[string][]string{
@@ -61,4 +62,25 @@ var policyByRoute = map[string][]string{
 
 	"/raft/join": {"internal"},
 	"/raft/msg":  {"internal"},
+
+	"/":                                       {"public"},
+	"/dashboard":                              {"public"},
+	"/dashboard/core":                         {"public"},
+	"/dashboard/access_tokens/client":         {"public"},
+	"/dashboard/access_tokens/client/create":  {"public"},
+	"/dashboard/access_tokens/network":        {"public"},
+	"/dashboard/access_tokens/network/create": {"public"},
+	"/dashboard/transactions":                 {"public"},
+	"/dashboard/transactions/create":          {"public"},
+	"/dashboard/accounts":                     {"public"},
+	"/dashboard/accounts/create":              {"public"},
+	"/dashboard/assets":                       {"public"},
+	"/dashboard/assets/create":                {"public"},
+	"/dashboard/balances":                     {"public"},
+	"/dashboard/unspents":                     {"public"},
+	"/dashboard/mockhsms":                     {"public"},
+	"/dashboard/transaction-feeds":            {"public"},
+	"/dashboard/transaction-feeds/create":     {"public"},
+
+	"/docs": {"public"},
 }
