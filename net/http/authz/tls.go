@@ -3,6 +3,7 @@ package authz
 import (
 	"crypto/x509/pkix"
 	"encoding/json"
+	"strings"
 )
 
 // Same as crypto/x509/pkix.Name but with JSON tags.
@@ -19,6 +20,22 @@ type pkixDN struct {
 
 	Names      []pkix.AttributeTypeAndValue `json:"-"`
 	ExtraNames []pkix.AttributeTypeAndValue `json:"-"`
+}
+
+var x509FieldNames = map[string]bool{
+	"C":            true,
+	"O":            true,
+	"OU":           true,
+	"L":            true,
+	"ST":           true,
+	"STREET":       true,
+	"POSTALCODE":   true,
+	"SERIALNUMBER": true,
+	"CN":           true,
+}
+
+func ValidX509SubjectField(s string) bool {
+	return x509FieldNames[strings.ToUpper(s)]
 }
 
 func x509GuardData(data []byte) pkix.Name {
