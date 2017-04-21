@@ -120,14 +120,6 @@ func TestAuthz(t *testing.T) {
 			"internal":         false,
 			"public":           false,
 		},
-		// "/raft/msg": map[string]bool{
-		// 	"client-readwrite": false,
-		// 	"client-readonly":  false,
-		// 	"network":          false,
-		// 	"monitoring":       false,
-		// 	"internal":         true,
-		// 	"public":           false,
-		// },
 		"/docs": map[string]bool{ // public is open to all
 			"client-readwrite": true,
 			"client-readonly":  true,
