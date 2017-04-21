@@ -19,10 +19,8 @@ import (
 	"chain/core/accesstoken"
 	"chain/core/config"
 	"chain/core/fileutil"
-	"chain/core/migrate"
 	"chain/core/rpc"
 	"chain/crypto/ed25519"
-	"chain/database/sql"
 	"chain/env"
 	"chain/generated/rev"
 	"chain/log"
@@ -32,7 +30,6 @@ import (
 // config vars
 var (
 	dataDir = env.String("CORED_DATA_DIR", fileutil.DefaultDir())
-	dbURL   = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
 	coreURL = env.String("CORE_URL", "http://localhost:1999")
 
 	// build vars; initialized by the linker
@@ -46,7 +43,7 @@ var (
 var logbuf bytes.Buffer
 
 type command struct {
-	f func(*sql.DB, []string)
+	f func(*rpc.Client, []string)
 }
 
 var commands = map[string]*command{
@@ -54,7 +51,6 @@ var commands = map[string]*command{
 	"create-block-keypair": {createBlockKeyPair},
 	"create-token":         {createToken},
 	"config":               {configNongenerator},
-	"migrate":              {runMigrations},
 	"reset":                {reset},
 }
 
@@ -77,12 +73,6 @@ func main() {
 		return
 	}
 
-	db, err := sql.Open("hapg", *dbURL)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
-		os.Exit(2)
-	}
-
 	if len(os.Args) < 2 {
 		help(os.Stdout)
 		os.Exit(0)
@@ -93,36 +83,10 @@ func main() {
 		help(os.Stderr)
 		os.Exit(1)
 	}
-	cmd.f(db, os.Args[2:])
+	cmd.f(mustRPCClient(), os.Args[2:])
 }
 
-func runMigrations(db *sql.DB, args []string) {
-	const usage = "usage: corectl migrate [-status]"
-
-	var flags flag.FlagSet
-	flagStatus := flags.Bool("status", false, "print all migrations and their status")
-	flags.Usage = func() {
-		fmt.Println(usage)
-		flags.PrintDefaults()
-		os.Exit(1)
-	}
-	flags.Parse(args)
-	if len(flags.Args()) != 0 {
-		fatalln("error: migrate takes no args")
-	}
-
-	var err error
-	if *flagStatus {
-		err = migrate.PrintStatus(db)
-	} else {
-		err = migrate.Run(db)
-	}
-	if err != nil {
-		fatalln("error: ", err)
-	}
-}
-
-func configGenerator(db *sql.DB, args []string) {
+func configGenerator(client *rpc.Client, args []string) {
 	const usage = "usage: corectl config-generator [flags] [quorum] [pubkey url]..."
 	var (
 		quorum  uint32
@@ -202,11 +166,7 @@ func configGenerator(db *sql.DB, args []string) {
 		BlockHsmAccessToken: *flagHSMToken,
 	}
 
-	ctx := context.Background()
-	migrateIfMissingSchema(ctx, db)
-
-	client := mustRPCClient()
-	err = client.Call(ctx, "/configure", conf, nil)
+	err = client.Call(context.Background(), "/configure", conf, nil)
 	if err != nil {
 		fatalln("rpc error:", err)
 	}
@@ -215,14 +175,13 @@ func configGenerator(db *sql.DB, args []string) {
 	// endpoint return the BlockchainId before it execs itself.
 }
 
-func createBlockKeyPair(_ *sql.DB, args []string) {
+func createBlockKeyPair(client *rpc.Client, args []string) {
 	if len(args) != 0 {
 		fatalln("error: create-block-keypair takes no args")
 	}
 	pub := struct {
 		Pub ed25519.PublicKey
 	}{}
-	client := mustRPCClient()
 	err := client.Call(context.Background(), "/mockhsm/create-block-key", nil, &pub)
 	if err != nil {
 		fatalln("rpc error:", err)
@@ -230,7 +189,7 @@ func createBlockKeyPair(_ *sql.DB, args []string) {
 	fmt.Printf("%x\n", pub.Pub)
 }
 
-func createToken(db *sql.DB, args []string) {
+func createToken(client *rpc.Client, args []string) {
 	const usage = "usage: corectl create-token [-net] [name]"
 	var flags flag.FlagSet
 	flagNet := flags.Bool("net", false, "DEPRECATED. create a network token instead of client")
@@ -245,13 +204,16 @@ func createToken(db *sql.DB, args []string) {
 		fatalln(usage)
 	}
 
-	ctx := context.Background()
-	migrateIfMissingSchema(ctx, db)
-	accessTokens := &accesstoken.CredentialStore{DB: db}
-	typ := map[bool]string{true: "network", false: "client"}[*flagNet]
-	tok, err := accessTokens.Create(ctx, args[0], typ)
+	req := struct {
+		ID, Type string
+	}{
+		ID:   args[0],
+		Type: map[bool]string{true: "network", false: "client"}[*flagNet],
+	}
+	var tok accesstoken.Token
+	err := client.Call(context.Background(), "/create-access-token", req, &tok)
 	if err != nil {
-		fatalln("error:", err)
+		fatalln("rpc error:", err)
 	}
 	fmt.Println(tok.Token)
 
@@ -260,7 +222,7 @@ func createToken(db *sql.DB, args []string) {
 	}
 }
 
-func configNongenerator(db *sql.DB, args []string) {
+func configNongenerator(client *rpc.Client, args []string) {
 	const usage = "usage: corectl config [flags] [blockchain-id] [generator-url]"
 	var flags flag.FlagSet
 	flagT := flags.String("t", "", "generator access `token`")
@@ -312,50 +274,25 @@ func configNongenerator(db *sql.DB, args []string) {
 	conf.BlockHsmUrl = *flagHSMURL
 	conf.BlockHsmAccessToken = *flagHSMToken
 
-	ctx := context.Background()
-	migrateIfMissingSchema(ctx, db)
-
-	client := mustRPCClient()
 	client.BlockchainID = blockchainID.String()
-	err = client.Call(ctx, "/configure", conf, nil)
+	err = client.Call(context.Background(), "/configure", conf, nil)
 	if err != nil {
 		fatalln("rpc error:", err)
 	}
 }
 
-// migrateIfMissingSchema will migrate the provided database only
-// if the database is blank without any migrations.
-func migrateIfMissingSchema(ctx context.Context, db *sql.DB) {
-	const q = `SELECT to_regclass('migrations') IS NOT NULL`
-	var initialized bool
-	err := db.QueryRow(ctx, q).Scan(&initialized)
-	if err != nil {
-		fatalln("initializing schema", err)
-	}
-	if initialized {
-		return
-	}
-
-	err = migrate.Run(db)
-	if err != nil {
-		fatalln("initializing schema", err)
-	}
-}
-
 // reset will attempt a reset rpc call on a remote core. If the
 // core is not configured with reset capabilities an error is returned.
-func reset(db *sql.DB, args []string) {
+func reset(client *rpc.Client, args []string) {
 	if len(args) != 0 {
 		fatalln("error: reset takes no args")
 	}
 
-	client := mustRPCClient()
 	req := map[string]bool{
 		"Everything": true,
 	}
 
-	ctx := context.Background()
-	err := client.Call(ctx, "/reset", req, nil)
+	err := client.Call(context.Background(), "/reset", req, nil)
 	if err != nil {
 		fatalln("rpc error:", err)
 	}
