@@ -132,7 +132,7 @@ func TestAuthz(t *testing.T) {
 
 	for path, policyMap := range pathTokenMap {
 		for policy, want := range policyMap {
-			got := tryEndpoint(t, server.URL, path, tokens[policy])
+			got := tryRPC(t, server.URL, path, tokens[policy])
 			if got != want {
 				t.Errorf("auth(%s, %s) = %t want %t", path, policy, got, want)
 			}
@@ -140,7 +140,7 @@ func TestAuthz(t *testing.T) {
 	}
 }
 
-func tryEndpoint(t testing.TB, baseURL, path string, token *accesstoken.Token) bool {
+func tryRPC(t testing.TB, baseURL, path string, token *accesstoken.Token) bool {
 	req, err := http.NewRequest("POST", baseURL+path, bytes.NewReader([]byte("{}")))
 	if err != nil {
 		t.Fatal("unexpected error", err)
