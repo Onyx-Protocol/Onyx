@@ -192,10 +192,11 @@ func (a *API) buildHandler() {
 		m.ServeHTTP(w, req)
 	})
 
-	handler := a.authzHandler(m, latencyHandler)
-	handler = a.authnHandler(handler)
-	handler = maxBytes(handler) // TODO(tessr): consider moving this to non-core specific mux
+	handler := maxBytes(latencyHandler) // TODO(tessr): consider moving this to non-core specific mux
 	handler = webAssetsHandler(handler)
+	handler = a.authzHandler(m, handler)
+	handler = a.authnHandler(handler)
+	handler = redirectHandler(handler)
 	handler = healthHandler(handler)
 	for _, l := range a.requestLimits {
 		handler = limit.Handler(handler, alwaysError(errRateLimited), l.perSecond, l.burst, l.key)
@@ -265,11 +266,7 @@ func (a *API) authzHandler(mux *http.ServeMux, handler http.Handler) http.Handle
 	auth := authz.NewAuthorizer(a.raftDB, grantPrefix, policyByRoute)
 	auth.GrantInternal(a.internalSubj)
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		// return failure early if this path isn't legit
-		if _, pat := mux.Handler(req); pat != req.URL.Path {
-			errorFormatter.Write(req.Context(), rw, errNotFound)
-			return
-		}
+		// TODO(tessr): check that this path exists; return early if this path isn't legit
 		err := auth.Authorize(req)
 		if errors.Root(err) == authz.ErrNotAuthorized {
 			// TODO(kr): remove this workaround once dashboard
@@ -310,6 +307,16 @@ func blockchainIDHandler(handler http.Handler, blockchainID string) http.Handler
 	})
 }
 
+func redirectHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/" {
+			http.Redirect(w, req, "/dashboard/", http.StatusFound)
+			return
+		}
+		next.ServeHTTP(w, req)
+	})
+}
+
 func webAssetsHandler(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/dashboard/", http.StripPrefix("/dashboard/", static.Handler{
@@ -318,14 +325,7 @@ func webAssetsHandler(next http.Handler) http.Handler {
 	}))
 	mux.Handle("/", next)
 
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/" {
-			http.Redirect(w, req, "/dashboard/", http.StatusFound)
-			return
-		}
-
-		mux.ServeHTTP(w, req)
-	})
+	return mux
 }
 
 func (a *API) leaderSignHandler(f func(context.Context, *legacy.Block) ([]byte, error)) func(context.Context, *legacy.Block) ([]byte, error) {

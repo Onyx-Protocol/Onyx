@@ -5,7 +5,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"net/http"
-	"strings"
+	"path"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -20,18 +20,18 @@ var ErrNotAuthorized = errors.New("not authorized")
 var builtinGrants = []*Grant{{GuardType: "any", Policy: "public"}}
 
 type Authorizer struct {
-	raftDB        *raft.Service
-	raftPrefix    string
-	policyByRoute map[string][]string
-	extraGrants   map[string][]*Grant // by policy
+	raftDB      *raft.Service
+	raftPrefix  string
+	policies    map[string][]string // by route
+	extraGrants map[string][]*Grant // by policy
 }
 
 func NewAuthorizer(rdb *raft.Service, prefix string, policyMap map[string][]string) *Authorizer {
 	a := &Authorizer{
-		raftDB:        rdb,
-		raftPrefix:    prefix,
-		policyByRoute: policyMap,
-		extraGrants:   make(map[string][]*Grant),
+		raftDB:      rdb,
+		raftPrefix:  prefix,
+		policies:    policyMap,
+		extraGrants: make(map[string][]*Grant),
 	}
 	for _, g := range builtinGrants {
 		a.extraGrants[g.Policy] = append(a.extraGrants[g.Policy], g)
@@ -52,9 +52,9 @@ func (a *Authorizer) GrantInternal(subj pkix.Name) {
 }
 
 func (a *Authorizer) Authorize(req *http.Request) error {
-	policies := a.policyByRoute[strings.TrimRight(req.RequestURI, "/")]
-	if policies == nil || len(policies) == 0 {
-		return errors.New("missing policy on this route")
+	policies, err := a.policiesByRoute(req.RequestURI)
+	if err != nil {
+		return errors.Wrap(err)
 	}
 
 	grants, err := a.grantsByPolicies(policies)
@@ -114,4 +114,53 @@ func (a *Authorizer) grantsByPolicies(policies []string) ([]*Grant, error) {
 		}
 	}
 	return grants, nil
+}
+
+func (a *Authorizer) policiesByRoute(route string) ([]string, error) {
+	var (
+		n        = 0
+		policies []string
+	)
+	for pattern, pol := range a.policies {
+		if !pathMatch(pattern, route) {
+			continue
+		}
+		if len(policies) == 0 || len(pattern) > n {
+			n = len(pattern)
+			policies = pol
+		}
+	}
+
+	return policies, nil
+}
+
+// Return the canonical path for p, eliminating . and .. elements.
+// From the stdlib net/http package.
+func cleanPath(p string) string {
+	if p == "" {
+		return "/"
+	}
+	if p[0] != '/' {
+		p = "/" + p
+	}
+	np := path.Clean(p)
+	// path.Clean removes trailing slash except for root;
+	// put the trailing slash back if necessary.
+	if p[len(p)-1] == '/' && np != "/" {
+		np += "/"
+	}
+	return np
+}
+
+// From the stdlib net/http package.
+func pathMatch(pattern, path string) bool {
+	if len(pattern) == 0 {
+		// should not happen
+		return false
+	}
+	n := len(pattern)
+	if pattern[n-1] != '/' {
+		return pattern == path
+	}
+	return len(path) >= n && path[0:n] == pattern
 }
