@@ -406,8 +406,15 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 			err = ErrShortProgram
 			return
 		}
+		inst.Len += 4
+
 		n := binary.LittleEndian.Uint32(prog[pc+1 : pc+5])
-		inst.Len += 4 + n
+		var ok bool
+		inst.Len, ok = checked.AddUint32(inst.Len, n)
+		if !ok {
+			err = errors.WithDetail(checked.ErrOverflow, "data length exceeds max program size")
+			return
+		}
 		end, ok := checked.AddUint32(pc, inst.Len)
 		if !ok {
 			err = errors.WithDetail(checked.ErrOverflow, "data length exceeds max program size")
