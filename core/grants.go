@@ -31,11 +31,19 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 		if id, _ := x.GuardData["id"].(string); !a.accessTokens.Exists(ctx, id) {
 			return errMissingTokenID
 		}
+	} else if x.GuardType == "x509" {
+		for k := range x.GuardData {
+			if !authz.ValidX509SubjectField(k) {
+				return errors.WithDetail(httpjson.ErrBadRequest, "bad subject field "+k)
+			}
+		}
 	}
 
 	// NOTE: package json produces consistent serialization output,
 	// effectively an ad hoc canonical form. We rely on this to
 	// grant data for equality.
+	// TODO(kr): x509 subject field names are case-insensitive,
+	// so we should do our equality comparisons accordingly.
 	guardData, err := json.Marshal(x.GuardData)
 	if err != nil {
 		return errors.Wrap(err)
