@@ -290,6 +290,7 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) er
 
 // this almost certainly should live in another package
 func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error {
+	log.Printf(ctx, "MIGRATING ACCESS TOKENS")
 	const q = `SELECT id, type, created FROM access_tokens`
 	var tokens []*accesstoken.Token
 	err := pg.ForQueryRows(ctx, db, q, func(id string, maybeType libsql.NullString, created time.Time) {
