@@ -6,7 +6,6 @@ import (
 	"crypto/x509/pkix"
 	"expvar"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/pprof"
 	"sync"
@@ -326,10 +325,7 @@ func webAssetsHandler(next http.Handler) http.Handler {
 	}))
 	mux.Handle("/", next)
 
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		log.Println("handling req: ", req.RequestURI)
-		mux.ServeHTTP(w, req)
-	})
+	return mux
 }
 
 func (a *API) leaderSignHandler(f func(context.Context, *legacy.Block) ([]byte, error)) func(context.Context, *legacy.Block) ([]byte, error) {
