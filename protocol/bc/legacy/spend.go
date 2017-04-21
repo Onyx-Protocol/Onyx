@@ -104,29 +104,29 @@ func (sc *SpendCommitment) writeContents(w io.Writer, suffix []byte, assetVersio
 	return nil
 }
 
-func (sc *SpendCommitment) readFrom(r io.Reader, assetVersion uint64) (suffix []byte, n int, err error) {
-	return blockchain.ReadExtensibleString(r, func(r io.Reader) error {
+func (sc *SpendCommitment) readFrom(r *blockchain.Reader, assetVersion uint64) (suffix []byte, err error) {
+	return blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) error {
 		if assetVersion == 1 {
 			_, err := sc.SourceID.ReadFrom(r)
 			if err != nil {
 				return errors.Wrap(err, "reading source id")
 			}
-			_, err = sc.AssetAmount.ReadFrom(r)
+			err = sc.AssetAmount.ReadFrom(r)
 			if err != nil {
 				return errors.Wrap(err, "reading asset+amount")
 			}
-			sc.SourcePosition, _, err = blockchain.ReadVarint63(r)
+			sc.SourcePosition, err = blockchain.ReadVarint63(r)
 			if err != nil {
 				return errors.Wrap(err, "reading source position")
 			}
-			sc.VMVersion, _, err = blockchain.ReadVarint63(r)
+			sc.VMVersion, err = blockchain.ReadVarint63(r)
 			if err != nil {
 				return errors.Wrap(err, "reading VM version")
 			}
 			if sc.VMVersion != 1 {
 				return fmt.Errorf("unrecognized VM version %d for asset version 1", sc.VMVersion)
 			}
-			sc.ControlProgram, _, err = blockchain.ReadVarstr31(r)
+			sc.ControlProgram, err = blockchain.ReadVarstr31(r)
 			if err != nil {
 				return errors.Wrap(err, "reading control program")
 			}

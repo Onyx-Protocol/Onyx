@@ -29,8 +29,9 @@ func (ad *AssetDefinition) ComputeAssetID() (assetID AssetID) {
 	h := sha3pool.Get256()
 	defer sha3pool.Put256(h)
 	writeForHash(h, *ad) // error is impossible
-	assetID.ReadFrom(h)
-	return assetID
+	var b [32]byte
+	h.Read(b[:]) // error is impossible
+	return NewAssetID(b)
 }
 
 func ComputeAssetID(prog []byte, initialBlockID *Hash, vmVersion uint64, data *Hash) AssetID {
@@ -45,16 +46,15 @@ func ComputeAssetID(prog []byte, initialBlockID *Hash, vmVersion uint64, data *H
 	return def.ComputeAssetID()
 }
 
-func (a *AssetAmount) ReadFrom(r io.Reader) (int64, error) {
+func (a *AssetAmount) ReadFrom(r *blockchain.Reader) error {
 	var assetID AssetID
-	n, err := assetID.ReadFrom(r)
+	_, err := assetID.ReadFrom(r)
 	if err != nil {
-		return n, err
+		return err
 	}
 	a.AssetId = &assetID
-	var n2 int
-	a.Amount, n2, err = blockchain.ReadVarint63(r)
-	return n + int64(n2), err
+	a.Amount, err = blockchain.ReadVarint63(r)
+	return err
 }
 
 func (a AssetAmount) WriteTo(w io.Writer) (int64, error) {

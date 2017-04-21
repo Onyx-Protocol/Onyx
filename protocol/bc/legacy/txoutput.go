@@ -37,24 +37,24 @@ func NewTxOutput(assetID bc.AssetID, amount uint64, controlProgram, referenceDat
 	}
 }
 
-func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
-	to.AssetVersion, _, err = blockchain.ReadVarint63(r)
+func (to *TxOutput) readFrom(r *blockchain.Reader, txVersion uint64) (err error) {
+	to.AssetVersion, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return errors.Wrap(err, "reading asset version")
 	}
 
-	to.CommitmentSuffix, _, err = to.OutputCommitment.readFrom(r, to.AssetVersion)
+	to.CommitmentSuffix, err = to.OutputCommitment.readFrom(r, to.AssetVersion)
 	if err != nil {
 		return errors.Wrap(err, "reading output commitment")
 	}
 
-	to.ReferenceData, _, err = blockchain.ReadVarstr31(r)
+	to.ReferenceData, err = blockchain.ReadVarstr31(r)
 	if err != nil {
 		return errors.Wrap(err, "reading reference data")
 	}
 
 	// read and ignore the (empty) output witness
-	_, _, err = blockchain.ReadVarstr31(r)
+	_, err = blockchain.ReadVarstr31(r)
 
 	return errors.Wrap(err, "reading output witness")
 }

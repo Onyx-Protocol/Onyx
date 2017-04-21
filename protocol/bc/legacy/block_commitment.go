@@ -22,7 +22,7 @@ type BlockCommitment struct {
 	ConsensusProgram []byte
 }
 
-func (bc *BlockCommitment) readFrom(r io.Reader) error {
+func (bc *BlockCommitment) readFrom(r *blockchain.Reader) error {
 	_, err := bc.TransactionsMerkleRoot.ReadFrom(r)
 	if err != nil {
 		return err
@@ -31,7 +31,7 @@ func (bc *BlockCommitment) readFrom(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	bc.ConsensusProgram, _, err = blockchain.ReadVarstr31(r)
+	bc.ConsensusProgram, err = blockchain.ReadVarstr31(r)
 	return err
 }
 

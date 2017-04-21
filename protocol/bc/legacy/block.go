@@ -50,16 +50,18 @@ func (b *Block) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
-	return b.readFrom(bytes.NewReader(decoded))
+	return b.readFrom(blockchain.NewReader(decoded))
 }
 
 // Scan fulfills the sql.Scanner interface.
 func (b *Block) Scan(val interface{}) error {
-	buf, ok := val.([]byte)
+	driverBuf, ok := val.([]byte)
 	if !ok {
 		return errors.New("Scan must receive a byte slice")
 	}
-	return b.readFrom(bytes.NewReader(buf))
+	buf := make([]byte, len(driverBuf))
+	copy(buf[:], driverBuf)
+	return b.readFrom(blockchain.NewReader(buf))
 }
 
 // Value fulfills the sql.driver.Valuer interface.
@@ -72,13 +74,13 @@ func (b *Block) Value() (driver.Value, error) {
 	return buf.Bytes(), nil
 }
 
-func (b *Block) readFrom(r io.Reader) error {
+func (b *Block) readFrom(r *blockchain.Reader) error {
 	serflags, err := b.BlockHeader.readFrom(r)
 	if err != nil {
 		return err
 	}
 	if serflags&SerBlockTransactions == SerBlockTransactions {
-		n, _, err := blockchain.ReadVarint31(r)
+		n, err := blockchain.ReadVarint31(r)
 		if err != nil {
 			return errors.Wrap(err, "reading number of transactions")
 		}
