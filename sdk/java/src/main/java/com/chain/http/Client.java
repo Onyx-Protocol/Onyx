@@ -50,13 +50,9 @@ public class Client {
   private String accessToken;
   private OkHttpClient httpClient;
 
-  private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-  private static final String PKCS1_HEADER = "-----BEGIN RSA PRIVATE KEY-----\n";
-  private static final String PKCS1_FOOTER = "-----END RSA PRIVATE KEY-----\n";
-  private static final String PKCS8_HEADER = "-----BEGIN PRIVATE KEY-----\n";
-  private static final String PKCS8_FOOTER = "-----END PRIVATE KEY-----\n";
   // Used to create empty, in-memory key stores.
   private static final char[] DEFAULT_KEYSTORE_PASSWORD = "password".toCharArray();
+  private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
   private static String version = "dev"; // updated in the static initializer
 
   private static class BuildProperties {
