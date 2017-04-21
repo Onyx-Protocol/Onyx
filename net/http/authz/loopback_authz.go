@@ -9,6 +9,5 @@ func init() {
 		&Grant{GuardType: "localhost", Policy: "monitoring"},
 		&Grant{GuardType: "localhost", Policy: "network"},
 		&Grant{GuardType: "localhost", Policy: "internal"},
-		&Grant{GuardType: "any", Policy: "public"},
 	)
 }
