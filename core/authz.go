@@ -49,7 +49,7 @@ var policyByRoute = map[string][]string{
 	"/list-authorization-grants":  {"client-readwrite", "client-readonly"},
 	"/create-authorization-grant": {"client-readwrite"},
 	"/delete-authorization-grant": {"client-readwrite"},
-	"/create-access-token":        {"client-readwrite"},
+	"/create-access-token":        {"client-readwrite", "internal"},
 	"/list-access-tokens":         {"client-readwrite", "client-readonly"},
 	"/delete-access-token":        {"client-readwrite"},
 	"/configure":                  {"client-readwrite", "internal"},
