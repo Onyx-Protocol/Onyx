@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 )
 
+// Format formats n as UTF-8 text.
 func Format(n pkix.Name) (string, error) {
 	b := new(bytes.Buffer)
 	seq := n.ToRDNSequence()

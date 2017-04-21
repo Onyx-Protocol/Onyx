@@ -21,6 +21,9 @@ func (p posError) Error() string {
 	return fmt.Sprintf("pos %d: %v: parsing %q", p.i, p.err, p.s)
 }
 
+// Parse parses dn as an X.509 Distinguished Name.
+// The supported fields are those of pkix.Name.
+// Unsupported fields are silently discarded.
 func Parse(dn string) (name pkix.Name, err error) {
 	r := strings.NewReader(dn)
 	defer func() {
