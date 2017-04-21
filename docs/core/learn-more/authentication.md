@@ -44,4 +44,12 @@ The command will return your access token:
 <name>:<secret>
 ```
 
-Anywhere that Chain Core asks for this token, it's important to provide the entire value, both name and secret, in the format returned by this command.
+[sidenote]
+
+Anywhere that Chain Core asks for a token, provide the entire value, name and secret, in the format returned by this command.
+
+[/sidenote]
+
+This access token can now be used to create additional tokens and authorizations via the Dashboard, or in the Chain SDK. For example, the following code snippet connects to Chain Core with an existing access token, creates a new access token, and give it the `client-readonly` policy:
+
+$code create-read-only ../examples/java/AccessToken.java ../examples/ruby/access_token.rb ../examples/node/accessToken.js
