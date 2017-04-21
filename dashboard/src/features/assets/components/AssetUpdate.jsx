@@ -47,10 +47,12 @@ class Form extends React.Component {
       <code>{item.alias ? item.alias :item.id}</code>
     </span>
 
-    // TODO: add link to documentation to further educate on tags and updating tags
     const tagChangeWarning = <p>
       Updated tags will only apply to new transactions. Existing transactions
-      will reflect the tags that were present when the transaction was created.
+      will reflect the tags that were present when the transaction was
+      created.  <a href='/docs/core/build-applications/assets#update-tags-on-existing-assets' target='_blank'>
+        Learn more →
+      </a>
     </p>
 
     const tagsString = Object.keys(item.tags).length === 0 ? '{\n\t\n}' : JSON.stringify(item.tags, null, 1)
