@@ -5,7 +5,6 @@ import com.chain.common.*;
 
 import java.io.*;
 import java.lang.reflect.Type;
-import java.math.BigInteger;
 import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -17,7 +16,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPrivateCrtKeySpec;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,9 +31,9 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
-import sun.misc.BASE64Decoder;
-import sun.security.util.DerInputStream;
-import sun.security.util.DerValue;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
 
 import javax.net.ssl.*;
 
@@ -659,68 +657,32 @@ public class Client {
 
     /**
      * Sets the client's certificate and key for TLS client authentication.
-     * @param certPath filepath to pem encoded X.509 certificate
-     * @param keyPath filepath to pem encoded X.509 private key
+     * @param certStream input stream of pem encoded X.509 certificate
+     * @param keyStream input stream of pem encoded private key
      */
-    public Builder setX509KeyPair(String certPath, String keyPath) throws HTTPException {
-      try (InputStream pemStream =
-          new ByteArrayInputStream(Files.readAllBytes(Paths.get(certPath)))) {
-        // parse certificate
+    public Builder setX509KeyPair(InputStream certStream, InputStream keyStream)
+        throws HTTPException {
+      try (PEMParser parser = new PEMParser(new InputStreamReader(keyStream))) {
+        // Extract certs from PEM-encoded input.
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
-        X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemStream);
+        X509Certificate certificate = (X509Certificate) factory.generateCertificate(certStream);
 
-        // The PKCS standard used by the private key must be determined.
-        // Currently, Chain Core supports PKCS#1 and PKCS#8.
-        // In both cases, the header and footer ascii characters must be stripped and the remaining
-        // Base64 data decoded to DER encoded bytes. In the case of PKCS#8, the standard library
-        // provides a class representation that accepts these bytes as inputs.
-        // For PKCS#1 we must parse these bytes for specific integer values representing
-        // the ASN.1 RSAPrivateKey: https://tools.ietf.org/html/rfc3447#appendix-A.1.2
-        byte[] keyBytes = Files.readAllBytes(Paths.get(keyPath));
-        byte[] decoded;
-        String key = new String(keyBytes, "ASCII");
-        BASE64Decoder b64 = new BASE64Decoder();
-        KeySpec spec;
-        if (key.contains(PKCS1_HEADER)) {
-          key = key.replace(PKCS1_HEADER, "").replace(PKCS1_FOOTER, "").replaceAll("\\s", "");
-          decoded = b64.decodeBuffer(new ByteArrayInputStream(key.getBytes()));
-          DerInputStream derReader = new DerInputStream(decoded);
-          DerValue[] seq = derReader.getSequence(0);
-
-          if (seq.length < 9) {
-            // The ASN.1 type RSAPrivateKey specifies 9 required fields
-            throw new HTTPException("Unable to parse PKCS#1 private key");
-          }
-
-          // The first field (seq[0]) is a version identifier
-          BigInteger modulus = seq[1].getBigInteger();
-          BigInteger publicExponent = seq[2].getBigInteger();
-          BigInteger privateExponent = seq[3].getBigInteger();
-          BigInteger primeP = seq[4].getBigInteger();
-          BigInteger primeQ = seq[5].getBigInteger();
-          BigInteger primeExponentP = seq[6].getBigInteger();
-          BigInteger primeExponentQ = seq[7].getBigInteger();
-          BigInteger crtCoefficient = seq[8].getBigInteger();
-
-          spec =
-              new RSAPrivateCrtKeySpec(
-                  modulus,
-                  publicExponent,
-                  privateExponent,
-                  primeP,
-                  primeQ,
-                  primeExponentP,
-                  primeExponentQ,
-                  crtCoefficient);
-        } else if (key.contains(PKCS8_HEADER)) {
-          key = key.replace(PKCS8_HEADER, "").replace(PKCS8_FOOTER, "").replaceAll("\\s", "");
-          decoded = b64.decodeBuffer(new ByteArrayInputStream(key.getBytes()));
-          spec = new PKCS8EncodedKeySpec(decoded);
+        // Parse the private key from PEM-encoded input.
+        Object obj = parser.readObject();
+        PrivateKeyInfo info;
+        if (obj instanceof PEMKeyPair) {
+          // PKCS#1 Private Key found.
+          PEMKeyPair kp = (PEMKeyPair) obj;
+          info = kp.getPrivateKeyInfo();
+        } else if (obj instanceof PrivateKeyInfo) {
+          // PKCS#8 Private Key found.
+          info = (PrivateKeyInfo) obj;
         } else {
-          throw new HTTPException("Unsupported RSA private key provided.");
+          throw new HTTPException("Unsupported private key provided.");
         }
 
-        // create a new key store including pair
+        // Create a new key store and input the pair.
+        KeySpec spec = new PKCS8EncodedKeySpec(info.getEncoded());
         KeyFactory kf = KeyFactory.getInstance("RSA");
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null, DEFAULT_KEYSTORE_PASSWORD);
@@ -730,12 +692,31 @@ public class Client {
             kf.generatePrivate(spec),
             DEFAULT_KEYSTORE_PASSWORD,
             new X509Certificate[] {certificate});
+
+        // Use key store to build a key manager.
         KeyManagerFactory keyManagerFactory =
             KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         keyManagerFactory.init(keyStore, DEFAULT_KEYSTORE_PASSWORD);
+
         this.keyManagers = keyManagerFactory.getKeyManagers();
         return this;
       } catch (GeneralSecurityException | IOException ex) {
+        throw new HTTPException("Unable to store X.509 cert/key pair", ex);
+      }
+    }
+
+    /**
+     * Sets the client's certificate and key for TLS client authentication.
+     * @param certPath file path to pem encoded X.509 certificate
+     * @param keyPath file path to pem encoded private key
+     */
+    public Builder setX509KeyPair(String certPath, String keyPath) throws HTTPException {
+      try (InputStream certStream =
+              new ByteArrayInputStream(Files.readAllBytes(Paths.get(certPath)));
+          InputStream keyStream =
+              new ByteArrayInputStream(Files.readAllBytes(Paths.get(keyPath)))) {
+        return setX509KeyPair(certStream, keyStream);
+      } catch (IOException ex) {
         throw new HTTPException("Unable to store X509 cert/key pair", ex);
       }
     }
@@ -743,23 +724,21 @@ public class Client {
     /**
      * Trusts the given CA certs, and no others. Use this if you are running
      * your own CA, or are using a self-signed server certificate.
-     * @param path The path of a file containing certificates to trust, in PEM format.
+     * @param is input stream of the certificates to trust, in PEM format.
      */
-    public Builder setTrustedCerts(String path) throws HTTPException {
-      try (InputStream pemStream = new FileInputStream(path)) {
+    public Builder setTrustedCerts(InputStream is) throws HTTPException {
+      try {
         // Extract certs from PEM-encoded input.
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
         Collection<? extends Certificate> certificates =
-            certificateFactory.generateCertificates(pemStream);
+            certificateFactory.generateCertificates(is);
         if (certificates.isEmpty()) {
           throw new IllegalArgumentException("expected non-empty set of trusted certificates");
         }
 
-        // Create empty key store.
+        // Create a new key store and input the cert.
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null, DEFAULT_KEYSTORE_PASSWORD);
-
-        // Load certs into key store.
         int index = 0;
         for (Certificate certificate : certificates) {
           String certificateAlias = Integer.toString(index++);
@@ -778,9 +757,23 @@ public class Client {
           throw new IllegalStateException(
               "Unexpected default trust managers:" + Arrays.toString(trustManagers));
         }
+
         this.trustManagers = trustManagers;
         return this;
       } catch (GeneralSecurityException | IOException ex) {
+        throw new HTTPException("Unable to configure trusted CA certs", ex);
+      }
+    }
+
+    /**
+     * Trusts the given CA certs, and no others. Use this if you are running
+     * your own CA, or are using a self-signed server certificate.
+     * @param path The path of a file containing certificates to trust, in PEM format.
+     */
+    public Builder setTrustedCerts(String path) throws HTTPException {
+      try (InputStream is = new FileInputStream(path)) {
+        return setTrustedCerts(is);
+      } catch (IOException ex) {
         throw new HTTPException("Unable to configure trusted CA certs", ex);
       }
     }
