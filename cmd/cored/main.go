@@ -140,6 +140,13 @@ func main() {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
+	if *tlsCrt == "" && *tlsKey == "" && *rootCAs == "" && httpsRedirect {
+		err := generatePKIX(ctx, tlsCrt, tlsKey, rootCAs)
+		if err != nil {
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+		}
+	}
+
 	raftDir := filepath.Join(*dataDir, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
 	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, tlsConfig != nil)
