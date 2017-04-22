@@ -102,39 +102,40 @@ func (t *TxInput) readFrom(r *blockchain.Reader) (err error) {
 	)
 
 	t.CommitmentSuffix, err = blockchain.ReadExtensibleString(r, func(r *blockchain.Reader) error {
-		if t.AssetVersion == 1 {
-			var icType [1]byte
-			_, err = io.ReadFull(r, icType[:])
+		if t.AssetVersion != 1 {
+			return nil
+		}
+		var icType [1]byte
+		_, err = io.ReadFull(r, icType[:])
+		if err != nil {
+			return errors.Wrap(err, "reading input commitment type")
+		}
+		switch icType[0] {
+		case 0:
+			ii = new(IssuanceInput)
+
+			ii.Nonce, err = blockchain.ReadVarstr31(r)
 			if err != nil {
-				return errors.Wrap(err, "reading input commitment type")
+				return err
 			}
-			switch icType[0] {
-			case 0:
-				ii = new(IssuanceInput)
-
-				ii.Nonce, err = blockchain.ReadVarstr31(r)
-				if err != nil {
-					return err
-				}
-				_, err = assetID.ReadFrom(r)
-				if err != nil {
-					return err
-				}
-				ii.Amount, err = blockchain.ReadVarint63(r)
-				if err != nil {
-					return err
-				}
-
-			case 1:
-				si = new(SpendInput)
-				si.SpendCommitmentSuffix, err = si.SpendCommitment.readFrom(r, 1)
-				if err != nil {
-					return err
-				}
-
-			default:
-				return fmt.Errorf("unsupported input type %d", icType[0])
+			_, err = assetID.ReadFrom(r)
+			if err != nil {
+				return err
 			}
+			ii.Amount, err = blockchain.ReadVarint63(r)
+			if err != nil {
+				return err
+			}
+
+		case 1:
+			si = new(SpendInput)
+			si.SpendCommitmentSuffix, err = si.SpendCommitment.readFrom(r, 1)
+			if err != nil {
+				return err
+			}
+
+		default:
+			return fmt.Errorf("unsupported input type %d", icType[0])
 		}
 		return nil
 	})
@@ -231,69 +232,71 @@ func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
 }
 
 func (t *TxInput) WriteInputCommitment(w io.Writer, serflags uint8) error {
-	if t.AssetVersion == 1 {
-		switch inp := t.TypedInput.(type) {
-		case *IssuanceInput:
-			_, err := w.Write([]byte{0}) // issuance type
-			if err != nil {
-				return err
-			}
-			_, err = blockchain.WriteVarstr31(w, inp.Nonce)
-			if err != nil {
-				return err
-			}
-			assetID := t.AssetID()
-			_, err = assetID.WriteTo(w)
-			if err != nil {
-				return err
-			}
-			_, err = blockchain.WriteVarint63(w, inp.Amount)
-			return err
-
-		case *SpendInput:
-			_, err := w.Write([]byte{1}) // spend type
-			if err != nil {
-				return err
-			}
-			if serflags&SerPrevout != 0 {
-				err = inp.SpendCommitment.writeExtensibleString(w, inp.SpendCommitmentSuffix, t.AssetVersion)
-			} else {
-				prevouthash := inp.SpendCommitment.Hash(inp.SpendCommitmentSuffix, t.AssetVersion)
-				_, err = prevouthash.WriteTo(w)
-			}
+	if t.AssetVersion != 1 {
+		return nil
+	}
+	switch inp := t.TypedInput.(type) {
+	case *IssuanceInput:
+		_, err := w.Write([]byte{0}) // issuance type
+		if err != nil {
 			return err
 		}
+		_, err = blockchain.WriteVarstr31(w, inp.Nonce)
+		if err != nil {
+			return err
+		}
+		assetID := t.AssetID()
+		_, err = assetID.WriteTo(w)
+		if err != nil {
+			return err
+		}
+		_, err = blockchain.WriteVarint63(w, inp.Amount)
+		return err
+
+	case *SpendInput:
+		_, err := w.Write([]byte{1}) // spend type
+		if err != nil {
+			return err
+		}
+		if serflags&SerPrevout != 0 {
+			err = inp.SpendCommitment.writeExtensibleString(w, inp.SpendCommitmentSuffix, t.AssetVersion)
+		} else {
+			prevouthash := inp.SpendCommitment.Hash(inp.SpendCommitmentSuffix, t.AssetVersion)
+			_, err = prevouthash.WriteTo(w)
+		}
+		return err
 	}
 	return nil
 }
 
 func (t *TxInput) writeInputWitness(w io.Writer) error {
-	if t.AssetVersion == 1 {
-		switch inp := t.TypedInput.(type) {
-		case *IssuanceInput:
-			_, err := inp.InitialBlock.WriteTo(w)
-			if err != nil {
-				return err
-			}
-			_, err = blockchain.WriteVarstr31(w, inp.AssetDefinition)
-			if err != nil {
-				return err
-			}
-			_, err = blockchain.WriteVarint63(w, inp.VMVersion)
-			if err != nil {
-				return err
-			}
-			_, err = blockchain.WriteVarstr31(w, inp.IssuanceProgram)
-			if err != nil {
-				return err
-			}
-			_, err = blockchain.WriteVarstrList(w, inp.Arguments)
-			return err
-
-		case *SpendInput:
-			_, err := blockchain.WriteVarstrList(w, inp.Arguments)
+	if t.AssetVersion != 1 {
+		return nil
+	}
+	switch inp := t.TypedInput.(type) {
+	case *IssuanceInput:
+		_, err := inp.InitialBlock.WriteTo(w)
+		if err != nil {
 			return err
 		}
+		_, err = blockchain.WriteVarstr31(w, inp.AssetDefinition)
+		if err != nil {
+			return err
+		}
+		_, err = blockchain.WriteVarint63(w, inp.VMVersion)
+		if err != nil {
+			return err
+		}
+		_, err = blockchain.WriteVarstr31(w, inp.IssuanceProgram)
+		if err != nil {
+			return err
+		}
+		_, err = blockchain.WriteVarstrList(w, inp.Arguments)
+		return err
+
+	case *SpendInput:
+		_, err := blockchain.WriteVarstrList(w, inp.Arguments)
+		return err
 	}
 	return nil
 }
