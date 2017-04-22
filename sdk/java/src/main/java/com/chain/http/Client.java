@@ -67,7 +67,7 @@ public class Client {
     }
   }
 
-  public Client(Builder builder) throws HTTPException {
+  public Client(Builder builder) throws ConfigurationException {
     List<URL> urls = new ArrayList<>(builder.urls);
     if (urls.isEmpty()) {
       try {
@@ -104,7 +104,7 @@ public class Client {
    *
    * @param url the URL of the Chain Core or HSM
    */
-  public Client(URL url) throws HTTPException {
+  public Client(URL url) throws ConfigurationException {
     this(new Builder().setURL(url));
   }
 
@@ -368,7 +368,7 @@ public class Client {
         // The OkHttp library already performs retries for some
         // I/O-related errors, but we've hit this case in a leader
         // failover, so do our own retries too.
-        exception = new HTTPException(ex.getMessage());
+        exception = new ConfigurationException(ex.getMessage());
       } catch (ConnectivityException ex) {
         // This URL's process might be unhealthy; move to the next.
         this.nextURL(idx);
@@ -390,7 +390,7 @@ public class Client {
     throw exception;
   }
 
-  private OkHttpClient buildHttpClient(Builder builder) throws HTTPException {
+  private OkHttpClient buildHttpClient(Builder builder) throws ConfigurationException {
     OkHttpClient httpClient = builder.baseHttpClient.clone();
 
     try {
@@ -400,7 +400,7 @@ public class Client {
         httpClient.setSslSocketFactory(sslContext.getSocketFactory());
       }
     } catch (GeneralSecurityException ex) {
-      throw new HTTPException("Unable to configure TLS", ex);
+      throw new ConfigurationException("Unable to configure TLS", ex);
     }
     if (builder.readTimeoutUnit != null) {
       httpClient.setReadTimeout(builder.readTimeout, builder.readTimeoutUnit);
@@ -657,7 +657,7 @@ public class Client {
      * @param keyStream input stream of pem encoded private key
      */
     public Builder setX509KeyPair(InputStream certStream, InputStream keyStream)
-        throws HTTPException {
+        throws ConfigurationException {
       try (PEMParser parser = new PEMParser(new InputStreamReader(keyStream))) {
         // Extract certs from PEM-encoded input.
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
@@ -674,7 +674,7 @@ public class Client {
           // PKCS#8 Private Key found.
           info = (PrivateKeyInfo) obj;
         } else {
-          throw new HTTPException("Unsupported private key provided.");
+          throw new ConfigurationException("Unsupported private key provided.");
         }
 
         // Create a new key store and input the pair.
@@ -697,7 +697,7 @@ public class Client {
         this.keyManagers = keyManagerFactory.getKeyManagers();
         return this;
       } catch (GeneralSecurityException | IOException ex) {
-        throw new HTTPException("Unable to store X.509 cert/key pair", ex);
+        throw new ConfigurationException("Unable to store X.509 cert/key pair", ex);
       }
     }
 
@@ -706,14 +706,14 @@ public class Client {
      * @param certPath file path to pem encoded X.509 certificate
      * @param keyPath file path to pem encoded private key
      */
-    public Builder setX509KeyPair(String certPath, String keyPath) throws HTTPException {
+    public Builder setX509KeyPair(String certPath, String keyPath) throws ConfigurationException {
       try (InputStream certStream =
               new ByteArrayInputStream(Files.readAllBytes(Paths.get(certPath)));
           InputStream keyStream =
               new ByteArrayInputStream(Files.readAllBytes(Paths.get(keyPath)))) {
         return setX509KeyPair(certStream, keyStream);
       } catch (IOException ex) {
-        throw new HTTPException("Unable to store X509 cert/key pair", ex);
+        throw new ConfigurationException("Unable to store X509 cert/key pair", ex);
       }
     }
 
@@ -722,7 +722,7 @@ public class Client {
      * your own CA, or are using a self-signed server certificate.
      * @param is input stream of the certificates to trust, in PEM format.
      */
-    public Builder setTrustedCerts(InputStream is) throws HTTPException {
+    public Builder setTrustedCerts(InputStream is) throws ConfigurationException {
       try {
         // Extract certs from PEM-encoded input.
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
@@ -757,7 +757,7 @@ public class Client {
         this.trustManagers = trustManagers;
         return this;
       } catch (GeneralSecurityException | IOException ex) {
-        throw new HTTPException("Unable to configure trusted CA certs", ex);
+        throw new ConfigurationException("Unable to configure trusted CA certs", ex);
       }
     }
 
@@ -766,11 +766,11 @@ public class Client {
      * your own CA, or are using a self-signed server certificate.
      * @param path The path of a file containing certificates to trust, in PEM format.
      */
-    public Builder setTrustedCerts(String path) throws HTTPException {
+    public Builder setTrustedCerts(String path) throws ConfigurationException {
       try (InputStream is = new FileInputStream(path)) {
         return setTrustedCerts(is);
       } catch (IOException ex) {
-        throw new HTTPException("Unable to configure trusted CA certs", ex);
+        throw new ConfigurationException("Unable to configure trusted CA certs", ex);
       }
     }
 
@@ -858,7 +858,7 @@ public class Client {
     /**
      * Builds a client with all of the provided parameters.
      */
-    public Client build() throws HTTPException {
+    public Client build() throws ConfigurationException {
       return new Client(this);
     }
   }
