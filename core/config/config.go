@@ -308,7 +308,7 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error
 		}
 		guardData, err := json.Marshal(data)
 		if err != nil {
-			return errors.Wrap(err)
+			panic(err) // should never get here
 		}
 
 		var grant authz.Grant
