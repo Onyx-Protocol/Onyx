@@ -15,6 +15,10 @@ class ChainCore: NSObject {
         return "postgres://localhost:\(dbPort)/core?sslmode=disable"
     }
 
+    var homeDir: String {
+        return NSHomeDirectory() + "/Library/Application Support/Chain Core"
+    }
+
     var corectlPath: String {
         return Bundle.main.path(forResource: "corectl", ofType: nil)!
     }
@@ -127,12 +131,13 @@ class ChainCore: NSObject {
         task.launchPath = Bundle.main.path(forResource: "cored", ofType: nil)
         task.arguments = []
         task.environment = [
-            "DATABASE_URL": databaseURL,
-            "LISTEN":       ":\(port)",
-            "LOGFILE":      self.logURL.path,
+            "DATABASE_URL":    databaseURL,
+            "CHAIN_CORE_HOME": homeDir,
+            "LISTEN":          ":\(port)",
+            "LOGFILE":         self.logURL.path,
 
             // FIXME: cored binaries built with bin/build-cored-release have trouble acquiring a default user for Postgres connections. This ensures the current user's login name is always available in the environment.
-            "USER":         NSUserName(),
+            "USER":            NSUserName(),
         ]
         //task.standardOutput = Pipe()
         //task.standardError = Pipe()

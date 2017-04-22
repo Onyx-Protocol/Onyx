@@ -23,7 +23,6 @@ import (
 	"chain/core"
 	"chain/core/blocksigner"
 	"chain/core/config"
-	"chain/core/fileutil"
 	"chain/core/generator"
 	"chain/core/migrate"
 	"chain/core/rpc"
@@ -65,7 +64,7 @@ var (
 	rpsToken      = env.Int("RATELIMIT_TOKEN", 0)       // reqs/sec
 	rpsRemoteAddr = env.Int("RATELIMIT_REMOTE_ADDR", 0) // reqs/sec
 	indexTxs      = env.Bool("INDEX_TRANSACTIONS", true)
-	dataDir       = env.String("CORED_DATA_DIR", fileutil.DefaultDir())
+	home          = core.HomeDirFromEnvironment()
 	bootURL       = env.String("BOOTURL", "")
 
 	// build vars; initialized by the linker
@@ -140,7 +139,7 @@ func main() {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
-	raftDir := filepath.Join(*dataDir, "raft") // TODO(kr): better name for this
+	raftDir := filepath.Join(home, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
 	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, tlsConfig != nil)
 	if err != nil {
@@ -246,8 +245,8 @@ func main() {
 // be nil.
 func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
 	config, err := core.TLSConfig(
-		filepath.Join(*dataDir, "tls.crt"),
-		filepath.Join(*dataDir, "tls.key"),
+		filepath.Join(home, "tls.crt"),
+		filepath.Join(home, "tls.key"),
 		*rootCAs,
 	)
 	if err == core.ErrNoTLS {

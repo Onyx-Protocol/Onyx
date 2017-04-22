@@ -59,10 +59,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SUUpdaterDelegate {
 
     func openInTerminalApp(_ appname: String) {
         let routine = "open_\(appname)"
-        let param = String(format: "alias corectl='%@'; export DATABASE_URL='%@';",
+        let param = String(format: "alias corectl='%@'; export CHAIN_CORE_HOME='%@';",
                            arguments: [
                             ChainCore.shared.corectlPath.replacingOccurrences(of: " ", with: "\\ "),
-                            ChainCore.shared.databaseURL
+                            ChainCore.shared.homeDir
                             ])
 
         let launcher = ClientLauncher()
