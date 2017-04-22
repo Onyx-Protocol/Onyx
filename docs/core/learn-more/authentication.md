@@ -15,24 +15,43 @@ For convenience, in all pre-packaged installations of Chain Core **access from l
 
 There are two APIs in Chain Core: the **client API** and the **network API**.
 
-The client API is used by the SDKs and the dashboard to communicate with Chain Core. The network API is used by [network operators](blockchain-operators.md).
+The client API is used by the SDKs and the dashboard to communicate with Chain
+Core. The network API is used by [network operators](blockchain-operators.md).
 
-There are four policies available to grant an individual authentication method access to one or both APIs:
+There are four policies available to grant an individual authentication method
+access to one or both APIs:
 
 * **client-readwrite**: Full access to the Client API.
-* **client-readonly**: Access to read-only Client endpoints. This is a strict subset of the `client-readwrite` policy.
-* **monitoring**: Access to monitoring-specific endpoints. This is a strict subset of the `client-readonly` policy.
+* **client-readonly**: Access to read-only Client endpoints. This is a strict
+subset of the `client-readwrite` policy.
+* **monitoring**: Access to monitoring-specific endpoints. This is a strict
+subset of the `client-readonly` policy.
 * **network**: Access to the Network API.
 
 ## Setting Up
 
-###
+### Mac, Windows and Docker
 
-When deploying Chain Core to a non-local environment, you will not be able to access the Dashboard or APIs to create authorization grants. Therefore, you must use the `corectl` command line tool to create your first authorization grant. After that, you can use that token or certificate to create additional authorizations via the Dashboard or SDKs.
+Chain Core Developer Edition is distributed with a flag automatically permitting
+all requests from localhost without configuring an authorization method.
+
+If you are accessing a Chain Core DE server from an external URL, you can
+follow the instructions below. Otherwise, skip ahead to
+[granting access](#granting-access).
+
+### Remote Server
+
+When deploying Chain Core to a non-local environment, you will not be able to
+access the Dashboard or APIs to create authorization grants. Therefore, you
+must use the `corectl` command line tool to create your first authorization
+grant. After that, you can use that token or certificate to create additional
+authorizations via the Dashboard or SDKs.
 
 [sidenote]
 
-Before proceeding, make sure you have `corectl` installed on your system. If it's not already present,  see [installing `corectl`](../reference/corectl#installation).
+Before proceeding, make sure you have `corectl` installed on your system. If
+it's not already present, see
+[installing `corectl`](../reference/corectl#installation).
 
 [/sidenote]
 
@@ -50,10 +69,22 @@ The command will return your access token:
 
 [sidenote]
 
-Anywhere that Chain Core asks for a token, make sure to provide the entire value, name and secret, in the format returned by this command.
+Anywhere that Chain Core asks for a token, make sure to provide the entire
+value, name and secret, in the format returned by this command.
 
 [/sidenote]
 
-This access token can now be used to create additional tokens and authorizations via the Dashboard, or in the Chain SDK. For example, the following code snippet connects to Chain Core with an existing access token, creates a new access token, and give it the `client-readonly` policy:
+This access token can now be used to create additional tokens and authorizations
+via the Dashboard, or in the Chain SDK. To connect to a remote Chain Core
+with a token from the SDK, you can pass parameters to the client constructor:
+
+$code connect-with-token ../examples/java/AccessToken.java ../examples/ruby/access_token.rb ../examples/node/accessToken.js
+
+## Granting Access
+
+This access token can now be used to create additional tokens and authorizations
+via the Dashboard, or in the Chain SDK. For example, the following code snippet
+connects to Chain Core with an existing access token, creates a new access
+token, and give it the `client-readonly` policy:
 
 $code create-read-only ../examples/java/AccessToken.java ../examples/ruby/access_token.rb ../examples/node/accessToken.js
