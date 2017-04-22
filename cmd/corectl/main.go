@@ -1,3 +1,4 @@
+// Command corectl provides miscellaneous control functions for a Chain Core.
 package main
 
 import (
