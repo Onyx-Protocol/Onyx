@@ -3,6 +3,7 @@ package com.chain.integration;
 import com.chain.TestUtils;
 import com.chain.api.*;
 import com.chain.exception.APIException;
+import com.chain.exception.ConfigurationException;
 import com.chain.exception.HTTPException;
 import com.chain.http.Client;
 import com.chain.signing.HsmSigner;
@@ -31,7 +32,7 @@ public class FailureTest {
   public void testCreateKey() throws Exception {
     try {
       MockHsm.Key.create(new Client(new URL("http://wrong")));
-    } catch (HTTPException e) {
+    } catch (ConfigurationException e) {
       return;
     }
     throw new Exception("expecting APIException");
