@@ -5,11 +5,11 @@
 Chain Core allows control of which entities have access to certain features of the system. There are two methods available for limiting access:
 
 1. Access tokens using HTTP Basic Authentication
-2. x509 client certificates
+2. X.509 client certificates
 
 These authentication objects can be created and managed via the Chain Core Dashboard, SDKs, or the [`corectl`](../reference/corectl) command line tool.
 
-For convenience, in all pre-packaged installations of Chain Core **access from localhost does not require authentication**.
+For convenience, in all desktop installations of Chain Core **access from localhost does not require authentication**.
 
 ## Authorization
 
@@ -87,7 +87,7 @@ authorization grant is made up of:
 
 1. A `guard_type`, either `access_token` or `x509`.
 2. A `guard_data` object, identifying a specific token, or set of fields in an
-x509 certificate.
+X.509 certificate.
 3. A `policy` field specifying the policy to attach.
 
 For example, to grant access to a new party that wants to read blockchain data,
