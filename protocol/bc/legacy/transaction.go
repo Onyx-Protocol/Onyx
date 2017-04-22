@@ -2,7 +2,6 @@ package legacy
 
 import (
 	"bytes"
-	"database/sql/driver"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -125,25 +124,6 @@ func (tx *TxData) UnmarshalText(p []byte) error {
 		return err
 	}
 	return tx.readFrom(blockchain.NewReader(b))
-}
-
-func (tx *TxData) Scan(val interface{}) error {
-	driverBuf, ok := val.([]byte)
-	if !ok {
-		return errors.New("Scan must receive a byte slice")
-	}
-	buf := make([]byte, len(driverBuf))
-	copy(buf[:], driverBuf)
-	return tx.readFrom(blockchain.NewReader(buf))
-}
-
-func (tx *TxData) Value() (driver.Value, error) {
-	b := new(bytes.Buffer)
-	_, err := tx.WriteTo(b)
-	if err != nil {
-		return nil, err
-	}
-	return b.Bytes(), nil
 }
 
 func (tx *TxData) readFrom(r *blockchain.Reader) error {
