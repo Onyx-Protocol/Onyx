@@ -82,9 +82,16 @@ $code connect-with-token ../examples/java/AccessToken.java ../examples/ruby/acce
 
 ## Granting Access
 
-This access token can now be used to create additional tokens and authorizations
-via the Dashboard, or in the Chain SDK. For example, the following code snippet
-connects to Chain Core with an existing access token, creates a new access
-token, and give it the `client-readonly` policy:
+Authorization grants map authentication methods to access policies. An
+authorization grant is made up of:
+
+1. A `guard_type`, either `access_token` or `x509`.
+2. A `guard_data` object, identifying a specific token, or set of fields in an
+x509 certificate.
+3. A `policy` field specifying the policy to attach.
+
+For example, to grant access to a new party that wants to read blockchain data,
+we can create a new access token, and give it the `client-readonly` policy
+via an authorization grant:
 
 $code create-read-only ../examples/java/AccessToken.java ../examples/ruby/access_token.rb ../examples/node/accessToken.js
