@@ -23,20 +23,20 @@ type apiGrant struct {
 // ErrMissingTokenID is returned when a token does not exist.
 var errMissingTokenID = errors.New("id does not exist")
 
-func (a *API) createGrant(ctx context.Context, x apiGrant) error {
+func (a *API) createGrant(ctx context.Context, x apiGrant) (*authz.Grant, error) {
 	if x.GuardType == "access_token" {
 		if id, _ := x.GuardData["id"].(string); !a.accessTokens.Exists(ctx, id) {
-			return errMissingTokenID
+			return nil, errMissingTokenID
 		}
 	} else if x.GuardType == "x509" {
 		if subj, ok := x.GuardData["subject"].(map[string]interface{}); ok {
 			for k := range subj {
 				if !authz.ValidX509SubjectField(k) {
-					return errors.WithDetail(httpjson.ErrBadRequest, "bad subject field "+k)
+					return nil, errors.WithDetail(httpjson.ErrBadRequest, "bad subject field "+k)
 				}
 			}
 		} else {
-			return errors.WithDetail(httpjson.ErrBadRequest, "map of subject fields required")
+			return nil, errors.WithDetail(httpjson.ErrBadRequest, "map of subject fields required")
 		}
 	}
 
@@ -47,7 +47,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 	// so we should do our equality comparisons accordingly.
 	guardData, err := json.Marshal(x.GuardData)
 	if err != nil {
-		return errors.Wrap(err)
+		return nil, errors.Wrap(err)
 	}
 
 	g := authz.Grant{
