@@ -30,6 +30,11 @@ func NewReader(b []byte) *Reader {
 	return &Reader{buf: b}
 }
 
+// Len returns the number of unread bytes.
+func (r *Reader) Len() int {
+	return len(r.buf)
+}
+
 // ReadByte reads and returns the next byte from the input.
 //
 // It implements the io.ByteReader interface.

@@ -123,7 +123,16 @@ func (tx *TxData) UnmarshalText(p []byte) error {
 	if err != nil {
 		return err
 	}
-	return tx.readFrom(blockchain.NewReader(b))
+
+	r := blockchain.NewReader(b)
+	err = tx.readFrom(r)
+	if err != nil {
+		return err
+	}
+	if trailing := r.Len(); trailing > 0 {
+		return fmt.Errorf("trailing garbage (%d bytes)", trailing)
+	}
+	return nil
 }
 
 func (tx *TxData) readFrom(r *blockchain.Reader) error {
