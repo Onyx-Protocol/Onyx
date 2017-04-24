@@ -39,6 +39,7 @@ var (
 	errMismatchedValue       = errors.New("mismatched value")
 	errMisorderedBlockHeight = errors.New("misordered block height")
 	errMisorderedBlockTime   = errors.New("misordered block time")
+	errMissingField          = errors.New("missing required field")
 	errNoPrevBlock           = errors.New("no previous block")
 	errNoSource              = errors.New("no source for value")
 	errNonemptyExtHash       = errors.New("non-empty extension hash")
@@ -78,7 +79,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 				return errEmptyResults
 			}
 
-			if !e.ExtHash.IsZero() {
+			if e.ExtHash != nil && !e.ExtHash.IsZero() {
 				return errNonemptyExtHash
 			}
 		}
@@ -97,7 +98,6 @@ func checkValid(vs *validationState, e bc.Entry) error {
 				return errors.Wrapf(err, "checking mux source %d", i)
 			}
 		}
-
 		for i, dest := range e.WitnessDestinations {
 			vs2 := *vs
 			vs2.destPos = uint64(i)
@@ -135,7 +135,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			}
 		}
 
-		if vs.tx.Version == 1 && !e.ExtHash.IsZero() {
+		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
@@ -159,7 +159,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errZeroTime
 		}
 
-		if vs.tx.Version == 1 && !e.ExtHash.IsZero() {
+		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
@@ -171,7 +171,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.Wrap(err, "checking output source")
 		}
 
-		if vs.tx.Version == 1 && !e.ExtHash.IsZero() {
+		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
@@ -183,7 +183,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.Wrap(err, "checking retirement source")
 		}
 
-		if vs.tx.Version == 1 && !e.ExtHash.IsZero() {
+		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
@@ -194,7 +194,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 		if e.MaxTimeMs > 0 && e.MaxTimeMs < vs.tx.MaxTimeMs {
 			return errBadTimeRange
 		}
-		if vs.tx.Version == 1 && !e.ExtHash.IsZero() {
+		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
@@ -251,11 +251,14 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.Wrap(err, "checking issuance destination")
 		}
 
-		if vs.tx.Version == 1 && !e.ExtHash.IsZero() {
+		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
 	case *bc.Spend:
+		if e.SpentOutputId == nil {
+			return errors.Wrap(errMissingField, "spend without spent output ID")
+		}
 		spentOutput, err := vs.tx.Output(*e.SpentOutputId)
 		if err != nil {
 			return errors.Wrap(err, "getting spend prevout")
@@ -265,7 +268,11 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.Wrap(err, "checking control program")
 		}
 
-		if !spentOutput.Source.Value.Equal(e.WitnessDestination.Value) {
+		eq, err := spentOutput.Source.Value.Equal(e.WitnessDestination.Value)
+		if err != nil {
+			return err
+		}
+		if !eq {
 			return errors.WithDetailf(
 				errMismatchedValue,
 				"previous output is for %d unit(s) of %x, spend wants %d unit(s) of %x",
@@ -283,7 +290,7 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.Wrap(err, "checking spend destination")
 		}
 
-		if vs.tx.Version == 1 && !e.ExtHash.IsZero() {
+		if vs.tx.Version == 1 && e.ExtHash != nil && !e.ExtHash.IsZero() {
 			return errNonemptyExtHash
 		}
 
@@ -295,13 +302,23 @@ func checkValid(vs *validationState, e bc.Entry) error {
 }
 
 func checkValidBlockHeader(bh *bc.BlockHeader) error {
-	if bh.Version == 1 && !bh.ExtHash.IsZero() {
+	if bh.Version == 1 && bh.ExtHash != nil && !bh.ExtHash.IsZero() {
 		return errNonemptyExtHash
 	}
 	return nil
 }
 
 func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
+	if vs == nil {
+		return errors.Wrap(errMissingField, "empty value source")
+	}
+	if vs.Ref == nil {
+		return errors.Wrap(errMissingField, "missing ref on value source")
+	}
+	if vs.Value == nil || vs.Value.AssetId == nil {
+		return errors.Wrap(errMissingField, "missing value on value source")
+	}
+
 	e, ok := vstate.tx.Entries[*vs.Ref]
 	if !ok {
 		return errors.Wrapf(bc.ErrMissingEntry, "entry for value source %x not found", vs.Ref.Bytes())
@@ -337,7 +354,7 @@ func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 		return errors.Wrapf(bc.ErrEntryType, "value source is %T, should be issuance, spend, or mux", e)
 	}
 
-	if *dest.Ref != vstate.entryID {
+	if dest.Ref == nil || *dest.Ref != vstate.entryID {
 		return errors.Wrapf(errMismatchedReference, "value source for %x has disagreeing destination %x", vstate.entryID.Bytes(), dest.Ref.Bytes())
 	}
 
@@ -345,7 +362,11 @@ func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 		return errors.Wrapf(errMismatchedPosition, "value source position %d disagrees with %d", dest.Position, vstate.sourcePos)
 	}
 
-	if !dest.Value.Equal(vs.Value) {
+	eq, err := dest.Value.Equal(vs.Value)
+	if err != nil {
+		return errors.Sub(errMissingField, err)
+	}
+	if !eq {
 		return errors.Wrapf(errMismatchedValue, "source value %v disagrees with %v", dest.Value, vs.Value)
 	}
 
@@ -353,6 +374,16 @@ func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 }
 
 func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
+	if vd == nil {
+		return errors.Wrap(errMissingField, "empty value destination")
+	}
+	if vd.Ref == nil {
+		return errors.Wrap(errMissingField, "missing ref on value destination")
+	}
+	if vd.Value == nil || vd.Value.AssetId == nil {
+		return errors.Wrap(errMissingField, "missing value on value source")
+	}
+
 	e, ok := vs.tx.Entries[*vd.Ref]
 	if !ok {
 		return errors.Wrapf(bc.ErrMissingEntry, "entry for value destination %x not found", vd.Ref.Bytes())
@@ -381,7 +412,7 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 		return errors.Wrapf(bc.ErrEntryType, "value destination is %T, should be output, retirement, or mux", e)
 	}
 
-	if *src.Ref != vs.entryID {
+	if src.Ref == nil || *src.Ref != vs.entryID {
 		return errors.Wrapf(errMismatchedReference, "value destination for %x has disagreeing source %x", vs.entryID.Bytes(), src.Ref.Bytes())
 	}
 
@@ -389,7 +420,11 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 		return errors.Wrapf(errMismatchedPosition, "value destination position %d disagrees with %d", src.Position, vs.destPos)
 	}
 
-	if !src.Value.Equal(vd.Value) {
+	eq, err := src.Value.Equal(vd.Value)
+	if err != nil {
+		return errors.Sub(errMissingField, err)
+	}
+	if !eq {
 		return errors.Wrapf(errMismatchedValue, "destination value %v disagrees with %v", src.Value, vd.Value)
 	}
 
