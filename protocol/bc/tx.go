@@ -5,9 +5,7 @@ import (
 	"chain/errors"
 )
 
-// Tx is a wrapper for the entries-based representation of a
-// transaction.  When we no longer need the legacy Tx and TxData
-// types, this will be renamed Tx.
+// Tx is a wrapper for the entries-based representation of a transaction.
 type Tx struct {
 	*TxHeader
 	ID       Hash
