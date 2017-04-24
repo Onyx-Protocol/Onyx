@@ -17,15 +17,11 @@ import (
 // `GOOS=windows GOARCH=amd64 go build chain/desktop/windows/ChainMgr`
 
 const (
-
 	// The Chain Core executable itself.
-	chainCoreExe = `C:/Program Files (x86)/Chain/cored.exe`
-
-	// Data directory for Postgres to store all of its stuff for a specific db.
-	pgDataDir = `C:/Program Files (x86)/Chain/data`
+	chainCoreExe = `C:\Program Files (x86)\Chain\cored.exe`
 
 	// Path for all the Postgres binaries.
-	pg = `C:/Program Files (x86)/Chain/Postgres/bin/`
+	pg = `C:\Program Files (x86)\Chain\Postgres\bin\`
 
 	// Port this db will listen on. Also the year I started kindergarten.
 	pgPort = "1998"
@@ -35,13 +31,27 @@ const (
 	dbName = "core"
 )
 
-func main() {
-	// Set up chain core logging
-	cclog := log.New(os.Stdout, "app=core-manager ", log.Ldate|log.Ltime)
-	cclog.Println("Please wait while we check Postgres...")
+var home = oneOf(
+	os.Getenv("CHAIN_CORE_HOME"),
+	filepath.Join(appData(), `Chain Core`),
+)
 
+var (
+	pgDataDir = filepath.Join(home, "Postgres")
+	pgLogFile = filepath.Join(home, "postgres.log")
+)
+
+func main() {
+	cclog := log.New(os.Stdout, "app=core-manager ", log.Ldate|log.Ltime)
+
+	err := os.MkdirAll(home, 0666) // #nosec
+	if err != nil {
+		cclog.Fatalln("error:", err)
+	}
+
+	cclog.Println("Please wait while we check Postgres...")
 	// Set up postgres logging
-	f, err := os.OpenFile(`C:/Program Files (x86)/Chain/postgres.log`, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666) // #nosec
+	f, err := os.OpenFile(pgLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666) // #nosec
 	if err != nil {
 		cclog.Fatal("Error opening postgres.log file: " + err.Error())
 	}
@@ -115,7 +125,10 @@ func main() {
 	}
 
 	pglog.Println("Postgres configured. About to start chain core")
-	env := []string{`DATABASE_URL=postgres://localhost:1998/core?sslmode=disable`}
+	env := []string{
+		`DATABASE_URL=postgres://localhost:1998/core?sslmode=disable`,
+		"CHAIN_CORE_HOME=" + home,
+	}
 	ccCmd := exec.Command(chainCoreExe)
 	ccCmd.Env = mergeEnvLists(os.Environ(), env)
 	ccCmd.Stdout = os.Stdout
@@ -160,7 +173,7 @@ func main() {
 
 // append to the config file
 func rewriteConfig() error {
-	c := pgDataDir + "/postgresql.conf"
+	c := pgDataDir + `\postgresql.conf`
 	f, err := os.OpenFile(c, os.O_APPEND, 0666) // #nosec
 	if err != nil {
 		return errors.New("could not open postgresql.conf: " + err.Error())
@@ -194,6 +207,10 @@ func blockUntilReady(pglog *log.Logger) {
 	}
 }
 
+func appData() string {
+	return oneOf(os.Getenv("LOCALAPPDATA"), os.Getenv("APPDATA"))
+}
+
 // mergeEnvLists merges the two environment lists such that
 // variables with the same name in "in" replace those in "out".
 // Pulled straight outta chain core.
@@ -210,4 +227,14 @@ NextVar:
 		out = append(out, inkv)
 	}
 	return out
+}
+
+// oneOf returns the first nonempty string in a.
+func oneOf(a ...string) string {
+	for _, s := range a {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }
