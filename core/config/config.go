@@ -8,6 +8,7 @@ package config
 import (
 	"context"
 	"crypto/rand"
+	libsql "database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"net/url"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"chain/core/accesstoken"
 	"chain/core/rpc"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
@@ -23,6 +25,7 @@ import (
 	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
+	"chain/net/http/authz"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -30,6 +33,7 @@ import (
 
 const (
 	autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
+	grantPrefix       = "/core/grant/" // this is also hardcoded in core/authz.go. meh.
 )
 
 var (
@@ -71,7 +75,9 @@ func Load(ctx context.Context, db pg.DB, rDB *raft.Service) (*Config, error) {
 			return nil, errors.Wrap(err)
 		}
 
-		// If we were able to find a config in Postgres, store it in Raft
+		// If we were able to find a config in Postgres, store it in Raft.
+		// This also means that we are running this core with raft for the first time
+		// which means that we will also migrate access tokens.
 		if config != nil {
 			val, err := proto.Marshal(config)
 			if err != nil {
@@ -86,7 +92,10 @@ func Load(ctx context.Context, db pg.DB, rDB *raft.Service) (*Config, error) {
 				// If we got this far but failed to delete from PG, it's really NBD. Just
 				// log the failure and carry on.
 				log.Error(ctx, err, "failed to delete config from postgres")
-
+			}
+			err = migrateAccessTokens(ctx, db, rDB)
+			if err != nil {
+				panic(err)
 			}
 			return config, nil
 		}
@@ -280,4 +289,46 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) er
 	}
 
 	return nil
+}
+
+// TODO(tessr): make all of this atomic in raft, so we don't get halfway through
+// a postgres->raft migration and fail, losing the second half of the migration
+func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error {
+	const q = `SELECT id, type, created FROM access_tokens`
+	var tokens []*accesstoken.Token
+	err := pg.ForQueryRows(ctx, db, q, func(id string, maybeType libsql.NullString, created time.Time) {
+		t := &accesstoken.Token{
+			ID:      id,
+			Created: created,
+			Type:    maybeType.String,
+		}
+		tokens = append(tokens, t)
+	})
+
+	for _, token := range tokens {
+		data := map[string]interface{}{
+			"id": token.ID,
+		}
+		guardData, err := json.Marshal(data)
+		if err != nil {
+			panic(err) // should never get here
+		}
+
+		grant := authz.Grant{
+			GuardType: "access_token",
+			GuardData: guardData,
+			CreatedAt: token.Created.Format(time.RFC3339),
+		}
+		switch token.Type {
+		case "client":
+			grant.Policy = "client-readwrite"
+		case "network":
+			grant.Policy = "network"
+		}
+		err = authz.StoreGrant(ctx, rDB, grant, grantPrefix)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+	}
+	return err
 }
