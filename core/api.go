@@ -196,8 +196,6 @@ func (a *API) buildHandler() {
 
 	handler := maxBytes(latencyHandler) // TODO(tessr): consider moving this to non-core specific mux
 	handler = webAssetsHandler(handler)
-	handler = a.authzHandler(m, handler)
-	handler = a.authnHandler(handler)
 	handler = redirectHandler(handler)
 	handler = healthHandler(handler)
 	for _, l := range a.requestLimits {

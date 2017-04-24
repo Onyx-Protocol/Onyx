@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -37,13 +38,20 @@ func TestAuthz(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/raft/", raftDB)
+
+	var handler http.Handler = mux
+	handler = AuthHandler(mux, handler, raftDB, accessTokens, nil)
+
 	api := &API{
 		mux:          http.NewServeMux(),
 		raftDB:       raftDB,
 		accessTokens: accessTokens,
 	}
 	api.buildHandler()
-	server := httptest.NewServer(api)
+	server := httptest.NewServer(handler)
 	defer server.Close()
 
 	testPolicies := []string{
@@ -141,6 +149,7 @@ func TestAuthz(t *testing.T) {
 }
 
 func tryRPC(t testing.TB, baseURL, path string, token *accesstoken.Token) bool {
+	log.Printf("trying RPC %s", baseURL+path)
 	req, err := http.NewRequest("POST", baseURL+path, bytes.NewReader([]byte("{}")))
 	if err != nil {
 		t.Fatal("unexpected error", err)
@@ -156,6 +165,8 @@ func tryRPC(t testing.TB, baseURL, path string, token *accesstoken.Token) bool {
 	if resp.StatusCode == 500 {
 		t.Fatal("unexpected 500 error")
 	}
+	log.Printf("got status code %d", resp.StatusCode)
 
-	return resp.StatusCode != http.StatusUnauthorized
+	// return resp.StatusCode != http.StatusUnauthorized
+	return resp.StatusCode == http.StatusOK
 }
