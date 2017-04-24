@@ -41,7 +41,9 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 		case *bc.Issuance:
 			anchor, ok := entries[*e.AnchorId]
 			if !ok {
-				return nil, fmt.Errorf("entry for anchor ID %x not found", e.AnchorId.Bytes())
+				// this tx will be invalid because this issuance is
+				// missing an anchor
+				continue
 			}
 			if _, ok := anchor.(*bc.Nonce); ok {
 				nonceIDs[*e.AnchorId] = true
