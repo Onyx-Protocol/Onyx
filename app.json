@@ -1,7 +1,7 @@
 {
   "name": "Chain Core 1.1",
   "description": "Enterprise Blockchain",
-  "repository": "https://github.com/chain/chain/tree/1.1-stable",
+  "repository": "https://github.com/chain/chain",
   "logo": "https://chain.com/chain-meta-image.png",
   "keywords": ["blockchain", "chain"],
   "success_url": "/dashboard",
