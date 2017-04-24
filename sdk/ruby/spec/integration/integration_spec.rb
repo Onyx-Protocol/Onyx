@@ -1,4 +1,5 @@
 require 'chain'
+require 'securerandom'
 
 def balance_by_asset_alias(balances)
   balances.reduce({}) do |memo, b|
@@ -419,6 +420,70 @@ context 'Chain SDK integration test' do
         {tags: {y: 'five'}}, # ID intentionally omitted
       ]).errors.size
     ).to eq(2)
+  end
+
+  example 'authorization grants' do
+    chain = Chain::Client.new
+
+    # setup: delete all existing guards
+    chain.authorization_grants.list_all.each do |g|
+      chain.authorization_grants.delete g
+    end
+
+
+    t = chain.access_tokens.create(id: SecureRandom.hex(8))
+
+    g = chain.authorization_grants.create(
+      guard_type: 'access_token',
+      guard_data: {'id' => t.id},
+      policy: 'client-readwrite'
+    )
+
+    expect(g.guard_type).to eq('access_token')
+    expect(g.guard_data).to eq('id' => t.id)
+    expect(g.policy).to eq('client-readwrite')
+
+    guards = chain.authorization_grants.list_all
+    expect(guards.size).to eq(1)
+    g = guards.first
+
+    expect(g.guard_type).to eq('access_token')
+    expect(g.guard_data).to eq('id' => t.id)
+    expect(g.policy).to eq('client-readwrite')
+
+    chain.authorization_grants.create(
+      guard_type: 'x509',
+      guard_data: {
+        'subject' => {
+          'CN' => 'test-cn',
+          'OU' => 'test-ou',
+        }
+      },
+      policy: 'network'
+    )
+
+    guards = chain.authorization_grants.list_all
+    expect(guards.size).to eq(2)
+    g = guards.first # most recently-created grant is at the front of the list
+
+    expect(g.guard_type).to eq('x509')
+    expect(g.guard_data).to eq('subject' => {
+      'CN' => 'test-cn',
+      'OU' => 'test-ou',
+    })
+    expect(g.policy).to eq('network')
+
+    chain.authorization_grants.delete(
+      guard_type: 'access_token',
+      guard_data: {'id' => 'foobar'},
+      policy: 'client-readwrite'
+    )
+
+    guards = chain.authorization_grants.list_all
+    expect(guards.size).to eq(1)
+    g = guards.first
+
+    expect(g.guard_type).to eq('x509')
   end
 
 end

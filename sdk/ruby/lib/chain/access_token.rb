@@ -15,8 +15,9 @@ module Chain
     # @return [String]
     attrib :token
 
+    # @deprecated.
     # @!attribute [r] type
-    # Either 'client' or 'network'.
+    # Either 'client' or 'network'. Ignore in 1.2 or greater.
     # @return [String]
     attrib :type
 
@@ -29,10 +30,9 @@ module Chain
 
       # Create client/network access token.
       # @param [Hash] opts
-      # @option opts [String] :type Type specifiying the type of access token to be created.
-      #                                   You must specify either 'client' or 'network'.
       # @option opts [String] :id ID specifying the ID of newly created access token.
       #                                   You must specify a unique ID for access token.
+      # @option opts [String] :type DEPRECATED. Do not use in 1.2 or greater.
       # @return [AccessToken]
       def create(opts = {})
         AccessToken.new(client.conn.request('create-access-token', opts))
@@ -41,7 +41,7 @@ module Chain
       # Get all access tokens sorted by descending creation time,
       # optionally filtered by type.
       # @param [Hash] opts Filtering information
-      # @option opts [String] :type Type of access tokens to return; either 'client' or 'network'.
+      # @option opts [String] :type DEPRECATED. Do not use in 1.2 or greater.
       # @return [Query]
       def query(opts = {})
         Query.new(client, opts)
@@ -53,7 +53,6 @@ module Chain
       # @return [void]
       def delete(id)
         client.conn.request('delete-access-token', {id: id})
-        return
       end
 
       class Query < Chain::Query
