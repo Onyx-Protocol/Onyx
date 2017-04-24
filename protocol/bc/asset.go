@@ -2,6 +2,7 @@ package bc
 
 import (
 	"database/sql/driver"
+	"errors"
 	"io"
 
 	"chain/crypto/sha3pool"
@@ -66,9 +67,12 @@ func (a AssetAmount) WriteTo(w io.Writer) (int64, error) {
 	return n + int64(n2), err
 }
 
-func (a AssetAmount) Equal(other *AssetAmount) bool {
-	if a.AssetId == nil || other.AssetId == nil {
-		return false
+func (a *AssetAmount) Equal(other *AssetAmount) (eq bool, err error) {
+	if a == nil || other == nil {
+		return false, errors.New("empty asset amount")
 	}
-	return a.Amount == other.Amount && *a.AssetId == *other.AssetId
+	if a.AssetId == nil || other.AssetId == nil {
+		return false, errors.New("empty asset id")
+	}
+	return a.Amount == other.Amount && *a.AssetId == *other.AssetId, nil
 }

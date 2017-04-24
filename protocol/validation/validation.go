@@ -268,7 +268,11 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.Wrap(err, "checking control program")
 		}
 
-		if !spentOutput.Source.Value.Equal(e.WitnessDestination.Value) {
+		eq, err := spentOutput.Source.Value.Equal(e.WitnessDestination.Value)
+		if err != nil {
+			return err
+		}
+		if !eq {
 			return errors.WithDetailf(
 				errMismatchedValue,
 				"previous output is for %d unit(s) of %x, spend wants %d unit(s) of %x",
@@ -358,7 +362,11 @@ func checkValidSrc(vstate *validationState, vs *bc.ValueSource) error {
 		return errors.Wrapf(errMismatchedPosition, "value source position %d disagrees with %d", dest.Position, vstate.sourcePos)
 	}
 
-	if !dest.Value.Equal(vs.Value) {
+	eq, err := dest.Value.Equal(vs.Value)
+	if err != nil {
+		return errors.Sub(errMissingField, err)
+	}
+	if !eq {
 		return errors.Wrapf(errMismatchedValue, "source value %v disagrees with %v", dest.Value, vs.Value)
 	}
 
@@ -412,7 +420,11 @@ func checkValidDest(vs *validationState, vd *bc.ValueDestination) error {
 		return errors.Wrapf(errMismatchedPosition, "value destination position %d disagrees with %d", src.Position, vs.destPos)
 	}
 
-	if !src.Value.Equal(vd.Value) {
+	eq, err := src.Value.Equal(vd.Value)
+	if err != nil {
+		return errors.Sub(errMissingField, err)
+	}
+	if !eq {
 		return errors.Wrapf(errMismatchedValue, "destination value %v disagrees with %v", src.Value, vd.Value)
 	}
 
