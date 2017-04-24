@@ -2,14 +2,15 @@
 
 ## Authentication
 
-Chain Core allows control of which entities have access to certain features of the system. There are two methods available for limiting access:
+There are two types of credentials that can be used to authenticate requests
+to Chain Core:
 
 1. Access tokens using HTTP Basic Authentication
 2. X.509 client certificates
 
-These authentication objects can be created and managed via the Chain Core Dashboard, SDKs, or the [`corectl`](../reference/corectl) command line tool.
+Credentials can be managed via the Chain Core Dashboard, SDKs, or the [`corectl`](../reference/corectl) command line tool.
 
-For convenience, in all desktop installations of Chain Core **access from localhost does not require authentication**.
+For convenience, in all desktop installations of Chain Core Developer Edition **access from localhost does not require authentication**.
 
 ## Authorization
 
@@ -18,11 +19,11 @@ There are two APIs in Chain Core: the **client API** and the **network API**.
 The client API is used by the SDKs and the dashboard to communicate with Chain
 Core. The network API is used by [network operators](blockchain-operators.md).
 
-There are four policies available to grant an individual authentication method
+There are four policies available to grant an individual credential
 access to one or both APIs:
 
 * **client-readwrite**: Full access to the Client API.
-* **client-readonly**: Access to read-only Client endpoints. This is a strict
+* **client-readonly**: Access to read-only Client API endpoints. This is a strict
 subset of the `client-readwrite` policy.
 * **monitoring**: Access to monitoring-specific endpoints. This is a strict
 subset of the `client-readonly` policy.
@@ -32,8 +33,9 @@ subset of the `client-readonly` policy.
 
 ### Mac, Windows and Docker
 
-Chain Core Developer Edition is distributed with a flag automatically permitting
-all requests from localhost without configuring an authorization method.
+For convenience, Chain Core Developer Edition permits all API requests
+originating from the same host (i.e., localhost) without the need
+for credentials.
 
 If you are accessing a Chain Core DE server from an external URL, you can
 follow the instructions below. Otherwise, skip ahead to
@@ -82,8 +84,8 @@ $code connect-with-token ../examples/java/AccessToken.java ../examples/ruby/acce
 
 ## Granting Access
 
-Authorization grants map authentication methods to access policies. An
-authorization grant is made up of:
+Authorization grants map credentials to access policies. An authorization grant
+is made up of:
 
 1. A `guard_type`, either `access_token` or `x509`.
 2. A `guard_data` object, identifying a specific token, or set of fields in an
