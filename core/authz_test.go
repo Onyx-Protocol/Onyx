@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -128,7 +127,15 @@ func TestAuthz(t *testing.T) {
 			"internal":         false,
 			"public":           false,
 		},
-		"/docs": map[string]bool{ // public is open to all
+		"/raft/msg": map[string]bool{
+			"client-readwrite": false,
+			"client-readonly":  false,
+			"network":          false,
+			"monitoring":       false,
+			"internal":         true,
+			"public":           false,
+		},
+		"/dashboard": map[string]bool{ // public is open to all
 			"client-readwrite": true,
 			"client-readonly":  true,
 			"network":          true,
@@ -149,7 +156,6 @@ func TestAuthz(t *testing.T) {
 }
 
 func tryRPC(t testing.TB, baseURL, path string, token *accesstoken.Token) bool {
-	log.Printf("trying RPC %s", baseURL+path)
 	req, err := http.NewRequest("POST", baseURL+path, bytes.NewReader([]byte("{}")))
 	if err != nil {
 		t.Fatal("unexpected error", err)
@@ -165,8 +171,6 @@ func tryRPC(t testing.TB, baseURL, path string, token *accesstoken.Token) bool {
 	if resp.StatusCode == 500 {
 		t.Fatal("unexpected 500 error")
 	}
-	log.Printf("got status code %d", resp.StatusCode)
 
-	// return resp.StatusCode != http.StatusUnauthorized
-	return resp.StatusCode == http.StatusOK
+	return resp.StatusCode != http.StatusUnauthorized
 }
