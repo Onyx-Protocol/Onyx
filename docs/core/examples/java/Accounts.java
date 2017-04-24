@@ -67,10 +67,10 @@ class Accounts {
 
     // snippet update-account-tags
     tagUpdate = new HashMap<>();
-    tagUpdate.put("type", "money market")
-    tagUpdate.put("first_name", "Alice")
-    tagUpdate.put("last_name", "Jones")
-    tagUpdate.put("user_id", "12345")
+    tagUpdate.put("type", "money market");
+    tagUpdate.put("first_name", "Alice");
+    tagUpdate.put("last_name", "Jones");
+    tagUpdate.put("user_id", "12345");
 
     new Account.TagUpdateBuilder()
       .forAlias('alice')

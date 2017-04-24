@@ -74,7 +74,7 @@ class Assets {
 
     // snippet update-asset-tags
     tagUpdate = new HashMap<>();
-    tagUpdate.put("internal_rating", "3")
+    tagUpdate.put("internal_rating", "3");
 
     new Asset.TagUpdateBuilder()
       .forAlias('acme_common')

@@ -69,7 +69,7 @@ chain.accounts.update_tags(
     first_name: 'Alice',
     last_name: 'Jones',
     user_id: '12345',
-  }
+  },
 )
 # endsnippet
 

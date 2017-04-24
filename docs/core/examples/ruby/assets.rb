@@ -71,8 +71,8 @@ end
 chain.assets.update_tags(
   alias: 'acme_common',
   tags: {
-    internal_rating: '3'
-  }
+    internal_rating: '3',
+  },
 )
 # endsnippet
 

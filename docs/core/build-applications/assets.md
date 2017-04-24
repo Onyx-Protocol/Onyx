@@ -142,6 +142,6 @@ $code list-acme-common-unspents ../examples/java/Assets.java ../examples/ruby/as
 
 ## Update tags on existing assets
 
-Updated tags will only apply to new transactions. Existing transactions will reflect the tags that were present when the transaction was created.
+Updated tags will only apply to new transactions which effects querying thereafter. Querying assets by tags utilizes most recently updated tags. Querying transactions by asset tags will reflect transactions that were created while said asset tag had been present. In turn, unspent outputs and balances queried by asset tags will be displayed based off of transactions that were created with given asset tag.
 
 $code update-asset-tags ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
