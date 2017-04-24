@@ -653,8 +653,9 @@ public class Client {
 
     /**
      * Sets the client's certificate and key for TLS client authentication.
-     * @param certStream input stream of pem encoded X.509 certificate
-     * @param keyStream input stream of pem encoded private key
+     * PEM-encoded, RSA private keys adhering to PKCS#1 or PKCS#8 are supported.
+     * @param certStream input stream of PEM-encoded X.509 certificate
+     * @param keyStream input stream of PEM-encoded private key
      */
     public Builder setX509KeyPair(InputStream certStream, InputStream keyStream)
         throws ConfigurationException {
@@ -703,8 +704,8 @@ public class Client {
 
     /**
      * Sets the client's certificate and key for TLS client authentication.
-     * @param certPath file path to pem encoded X.509 certificate
-     * @param keyPath file path to pem encoded private key
+     * @param certPath file path to PEM-encoded X.509 certificate
+     * @param keyPath file path to PEM-encoded private key
      */
     public Builder setX509KeyPair(String certPath, String keyPath) throws ConfigurationException {
       try (InputStream certStream =
