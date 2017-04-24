@@ -109,6 +109,10 @@ List all transactions involving Alice’s account:
 
 $code list-alice-transactions ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
+List all transactions involving accounts with `checking` as the `type` in the account tags:
+
+$code list-checking-transactions ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
+
 List all transactions involving the local Core:
 
 $code list-local-transactions ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
@@ -135,6 +139,10 @@ List all unspent outputs controlled by Alice’s account:
 
 $code list-alice-unspents ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
+List all unspent outputs with `checking` as the `type` in the account tags:
+
+$code list-checking-unspents ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
+
 ## Balances
 
 List the asset IOU balances in Bank1’s account:
@@ -148,3 +156,7 @@ $code usd-iou-circulation ../examples/java/Queries.java ../examples/ruby/queries
 List the asset IOU balances in Bank1’s account, summed by currency:
 
 $code account-balance-sum-by-currency ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
+
+List balances of accounts with `checking` as the `type` in the account tags, summed by currency:
+
+$code checking-accounts-balance ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js

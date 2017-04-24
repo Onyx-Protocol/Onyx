@@ -1,4 +1,5 @@
-const chain = require('chain-sdk')
+// const chain = require('chain-sdk')
+const chain = require('../../../../sdk/node/dist/index.js')
 
 const client = new chain.Client()
 const signer = new chain.HsmSigner()
@@ -175,6 +176,31 @@ Promise.all([
 
 ).then(() =>
 
+  // snippet list-checking-transactions
+  client.transactions.queryAll({
+    filter: 'inputs(account_tags.type=$1) OR outputs(account_tags.type=$1)',
+    filterParams: ['checking'],
+  }, (tx, next, done) => {
+    console.log("Checking account transaction: " + tx.id)
+
+    tx.inputs.forEach(input => {
+      console.log('-' + input.amount + ' ' + input.assetAlias)
+    })
+
+    tx.outputs.forEach(output => {
+      console.log('+' + output.amount + ' ' + output.assetAlias)
+    })
+
+    // next() moves to the next item.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
+    next()
+  })
+  // endsnippet
+
+).then(() =>
+
   // snippet list-local-transactions
   client.transactions.queryAll({
     filter: 'is_local=$1',
@@ -260,12 +286,46 @@ Promise.all([
 
 ).then(() =>
 
+  // snippet list-checking-unspents
+  client.unspentOutputs.queryAll({
+    filter: 'account_tags.type=$1',
+    filterParams: ['checking']
+  }, (utxo, next, done) => {
+    console.log("Checking account unspent output: " + utxo.amount + ' ' + utxo.assetAlias)
+
+    // next() moves to the next item.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
+    next()
+  })
+  // endsnippet
+
+).then(() =>
+
   // snippet account-balance
   client.balances.queryAll({
     filter: 'account_alias=$1',
     filterParams: ['bank1']
   }, (balance, next, done) => {
     console.log('Bank 1 balance of ' + balance.sumBy.assetAlias + ': ' + balance.amount)
+
+    // next() moves to the next item.
+    // done() terminates the loop early, and causes the
+    //   query promise to resolve. Passing an error will reject
+    //   the promise.
+    next()
+  })
+  // endsnippet
+
+).then(() =>
+
+  // snippet checking-accounts-balance
+  client.balances.queryAll({
+    filter: 'account_tags.type=$1',
+    filterParams: ['checking']
+  }, (balance, next, done) => {
+    console.log('Checking accounts balance of ' + balance.sumBy.assetAlias + ': ' + balance.amount)
 
     // next() moves to the next item.
     // done() terminates the loop early, and causes the
@@ -298,7 +358,7 @@ Promise.all([
   client.balances.queryAll({
     filter: 'account_alias=$1',
     filterParams: ['bank1'],
-    sumBy: ['assetDefinition.currency']
+    sumBy: ['asset_definition.currency']
   }, (balance, next, done) => {
     var denom = balance.sumBy['assetDefinition.currency']
     console.log('Bank 1 balance of ' + denom + '-denominated currencies: ' + balance.amount)

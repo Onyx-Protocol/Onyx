@@ -60,6 +60,23 @@ alice_txs = chain.transactions.query(
 end
 # endsnippet
 
+# snippet list-checking-transactions
+checkings_txs = chain.transactions.query(
+  filter: 'inputs(account_tags.type=$1) OR outputs(account_tags.type=$1)',
+  filter_params: ['checking'],
+).each do |tx|
+  puts "Checking account transaction: #{tx.id}"
+
+  tx.inputs.each do |input|
+    puts "-#{input.amount} #{input.asset_alias}"
+  end
+
+  tx.outputs.each do |output|
+    puts "+#{output.amount} #{output.asset_alias}"
+  end
+end
+# endsnippet
+
 # snippet list-local-transactions
 chain.transactions.query(
   filter: 'is_local=$1',
@@ -105,12 +122,30 @@ chain.unspent_outputs.query(
 end
 # endsnippet
 
+# snippet list-checking-unspents
+chain.unspent_outputs.query(
+  filter: 'account_tags.type=$1',
+  filter_params: ['checking'],
+).each do |utxo|
+  puts "Checking account unspent output: #{utxo.amount} #{utxo.asset_alias}"
+end
+# endsnippet
+
 # snippet account-balance
 chain.balances.query(
   filter: 'account_alias=$1',
   filter_params: ['bank1'],
 ).each do |b|
   puts "Bank 1 balance of #{b.sum_by['asset_alias']}: #{b.amount}"
+end
+# endsnippet
+
+# snippet checking-accounts-balance
+chain.balances.query(
+  filter: 'account_tags.type=$1',
+  filter_params: ['checking'],
+).each do |b|
+  puts "Checking accounts balance of #{b.sum_by['asset_alias']}: #{b.amount}"
 end
 # endsnippet
 

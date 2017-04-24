@@ -19,12 +19,34 @@ class Queries {
       Transaction transaction = aliceTransactions.next();
       System.out.println("Alice's transaction " + transaction.id);
       for (Transaction.Input input: transaction.inputs) {
-        if (input.accountAlias != null && input.accountAlias.equals("alice")) {
+        if (input.accountAlias != null) {
           System.out.println("  -" + input.amount + " " + input.assetAlias);
         }
       }
       for (Transaction.Output output: transaction.outputs) {
-        if (output.accountAlias != null && output.accountAlias.equals("alice")) {
+        if (output.accountAlias != null) {
+          System.out.println("  +" + output.amount + " " + output.assetAlias);
+        }
+      }
+    }
+    // endsnippet
+
+    // snippet list-checking-transactions
+    Transaction.Items checkingTransactions = new Transaction.QueryBuilder()
+      .setFilter("inputs(account_tags.type=$1) OR outputs(account_tags.type=$1)")
+      .addFilterParameter("checking")
+      .execute(client);
+
+    while (checkingTransactions.hasNext()) {
+      Transaction transaction = checkingTransactions.next();
+      System.out.println("Checking account transaction " + transaction.id);
+      for (Transaction.Input input: transaction.inputs) {
+        if (input.accountAlias != null) {
+          System.out.println("  -" + input.amount + " " + input.assetAlias);
+        }
+      }
+      for (Transaction.Output output: transaction.outputs) {
+        if (output.accountAlias != null) {
           System.out.println("  +" + output.amount + " " + output.assetAlias);
         }
       }
@@ -91,6 +113,18 @@ class Queries {
     }
     // endsnippet
 
+    // snippet list-checking-unspents
+    UnspentOutput.Items checkingUnspentOuputs = new UnspentOutput.QueryBuilder()
+      .setFilter("account_tags.type=$1")
+      .addFilterParameter("checking")
+      .execute(client);
+
+    while (checkingUnspentOuputs.hasNext()) {
+      UnspentOutput utxo = checkingUnspentOuputs.next();
+      System.out.println("Checking account unspent output: " + utxo.amount + " " + utxo.assetAlias);
+    }
+    // endsnippet
+
     // snippet account-balance
     Balance.Items bank1Balances = new Balance.QueryBuilder()
       .setFilter("account_alias=$1")
@@ -101,6 +135,21 @@ class Queries {
       Balance b = bank1Balances.next();
       System.out.println(
         "Bank 1 balance of " + b.sumBy.get("asset_alias") +
+        ": " + b.amount
+      );
+    }
+    // endsnippet
+
+    // snippet checking-accounts-balance
+    Balance.Items checkingBalances = new Balance.QueryBuilder()
+      .setFilter("account_tags.type=$1")
+      .addFilterParameter("checking")
+      .execute(client);
+
+    while (checkingBalances.hasNext()) {
+      Balance b = checkingBalances.next();
+      System.out.println(
+        "Checking account balance of " + b.sumBy.get("asset_alias") +
         ": " + b.amount
       );
     }
