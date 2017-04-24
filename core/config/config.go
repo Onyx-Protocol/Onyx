@@ -94,6 +94,9 @@ func Load(ctx context.Context, db pg.DB, rDB *raft.Service) (*Config, error) {
 				log.Error(ctx, err, "failed to delete config from postgres")
 			}
 			err = migrateAccessTokens(ctx, db, rDB)
+			if err != nil {
+				panic(err)
+			}
 			return config, nil
 		}
 		return nil, nil
@@ -311,22 +314,16 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error
 			panic(err) // should never get here
 		}
 
-		var grant authz.Grant
+		grant := authz.Grant{
+			GuardType: "access_token",
+			GuardData: guardData,
+			CreatedAt: token.Created.Format(time.RFC3339),
+		}
 		switch token.Type {
 		case "client":
-			grant = authz.Grant{
-				GuardType: "access_token",
-				GuardData: guardData,
-				Policy:    "client-readwrite",
-				CreatedAt: token.Created.Format(time.RFC3339),
-			}
+			grant.Policy = "client-readwrite"
 		case "network":
-			grant = authz.Grant{
-				GuardType: "access_token",
-				GuardData: guardData,
-				Policy:    "network",
-				CreatedAt: token.Created.Format(time.RFC3339),
-			}
+			grant.Policy = "netowrk"
 		}
 		err = authz.StoreGrant(ctx, rDB, grant, grantPrefix)
 		if err != nil {
