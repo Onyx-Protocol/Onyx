@@ -323,7 +323,7 @@ func migrateAccessTokens(ctx context.Context, db pg.DB, rDB *raft.Service) error
 		case "client":
 			grant.Policy = "client-readwrite"
 		case "network":
-			grant.Policy = "netowrk"
+			grant.Policy = "network"
 		}
 		err = authz.StoreGrant(ctx, rDB, grant, grantPrefix)
 		if err != nil {
