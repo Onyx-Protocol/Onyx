@@ -29,10 +29,14 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) error {
 			return errMissingTokenID
 		}
 	} else if x.GuardType == "x509" {
-		for k := range x.GuardData {
-			if !authz.ValidX509SubjectField(k) {
-				return errors.WithDetail(httpjson.ErrBadRequest, "bad subject field "+k)
+		if subj, ok := x.GuardData["subject"].(map[string]interface{}); ok {
+			for k := range subj {
+				if !authz.ValidX509SubjectField(k) {
+					return errors.WithDetail(httpjson.ErrBadRequest, "bad subject field "+k)
+				}
 			}
+		} else {
+			return errors.WithDetail(httpjson.ErrBadRequest, "map of subject fields required")
 		}
 	}
 
