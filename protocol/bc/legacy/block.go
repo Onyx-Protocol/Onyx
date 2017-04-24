@@ -57,10 +57,8 @@ func (b *Block) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
-
-	// Disallow trailing garbage.
-	if trailing := r.Remaining(); len(trailing) > 0 {
-		return fmt.Errorf("expected EOF, got %x", trailing)
+	if trailing := r.Len(); trailing > 0 {
+		return fmt.Errorf("trailing garbage (%d bytes)", trailing)
 	}
 	return nil
 }
@@ -78,10 +76,8 @@ func (b *Block) Scan(val interface{}) error {
 	if err != nil {
 		return err
 	}
-
-	// Disallow trailing garbage.
-	if trailing := r.Remaining(); len(trailing) > 0 {
-		return fmt.Errorf("expected EOF, got %x", trailing)
+	if trailing := r.Len(); trailing > 0 {
+		return fmt.Errorf("trailing gatbage (%d bytes)", trailing)
 	}
 	return nil
 }

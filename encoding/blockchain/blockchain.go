@@ -31,8 +31,8 @@ func NewReader(b []byte) *Reader {
 }
 
 // Remaining returns the rest of the unread bytes.
-func (r *Reader) Remaining() []byte {
-	return r.buf
+func (r *Reader) Len() int {
+	return len(r.buf)
 }
 
 // ReadByte reads and returns the next byte from the input.
