@@ -5,7 +5,7 @@ import (
 	"chain/errors"
 )
 
-// TxEntries is a wrapper for the entries-based representation of a
+// Tx is a wrapper for the entries-based representation of a
 // transaction.  When we no longer need the legacy Tx and TxData
 // types, this will be renamed Tx.
 type Tx struct {
@@ -15,9 +15,8 @@ type Tx struct {
 	InputIDs []Hash // 1:1 correspondence with TxData.Inputs
 
 	// IDs of reachable entries of various kinds
-	NonceIDs        []Hash
-	SpentOutputIDs  []Hash
-	ResultOutputIDs []Hash
+	NonceIDs       []Hash
+	SpentOutputIDs []Hash
 }
 
 func (tx *Tx) SigHash(n uint32) (hash Hash) {
