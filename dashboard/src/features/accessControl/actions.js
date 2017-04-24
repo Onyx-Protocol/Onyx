@@ -2,6 +2,7 @@ import React from 'react'
 import { chainClient } from 'utility/environment'
 import { actions as appActions } from 'features/app'
 import { push } from 'react-router-redux'
+import { subjectFieldOptions } from 'features/accessControl/constants'
 import TokenCreateModal from './components/TokenCreateModal'
 
 // Given a list of policies, create a grant for
@@ -73,14 +74,27 @@ export default {
   },
 
   submitCertificateForm: data => {
+    const fieldInfo = {}
+    for (let index in subjectFieldOptions) {
+      const option = subjectFieldOptions[index]
+      fieldInfo[option.value] = option
+    }
+
     const body = {
       guardType: 'x509',
-      guardData: {subject: {}},
+      guardData: {},
     }
 
     for (let index in data.subject) {
       const field = data.subject[index]
-      body.guardData.subject[field.key] = field.value
+
+      if (fieldInfo[field.key].array) {
+        const values = body.guardData[field.key] || []
+        values.push(field.value)
+        body.guardData[field.key] = values
+      } else {
+        body.guardData[field.key] = field.value
+      }
     }
 
     return dispatch => {

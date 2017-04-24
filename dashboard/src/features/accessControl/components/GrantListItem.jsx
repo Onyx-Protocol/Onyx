@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { isAccessToken, getPolicyNamesString } from 'features/accessControl/selectors'
 import EditPolicies from './EditPolicies'
+import { isArray } from 'lodash'
 
 class GrantListItem extends React.Component {
   render() {
@@ -14,14 +15,10 @@ class GrantListItem extends React.Component {
       desc = <div>
         {Object.keys(item.guardData).map(field =>
           <div key={field}>
-            {field}:
-            <ul>
-              {Object.keys(item.guardData[field]).map(key =>
-                <li key={key}>
-                  {key}: {item.guardData[field][key]}
-                </li>
-              )}
-            </ul>
+            {field.toUpperCase()} :
+            {isArray(item.guardData[field])
+              ? item.guardData[field].join(', ')
+              : item.guardData[field]}
           </div>
         )}
       </div>
