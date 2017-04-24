@@ -25,7 +25,7 @@ public class MockHsm {
    * @return new client object
    * @throws BadURLException
    */
-  public static Client getSignerClient(Client client) throws BadURLException {
+  public static Client getSignerClient(Client client) throws ChainException {
     try {
       List<URL> urls = new ArrayList<>();
       for (URL url : client.urls()) {

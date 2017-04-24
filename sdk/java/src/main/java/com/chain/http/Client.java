@@ -6,10 +6,16 @@ import com.chain.common.*;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,6 +31,10 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+
 import javax.net.ssl.*;
 
 /**
@@ -35,11 +45,13 @@ import javax.net.ssl.*;
  * to an HSM server.
  */
 public class Client {
-
   private AtomicInteger urlIndex;
   private List<URL> urls;
   private String accessToken;
   private OkHttpClient httpClient;
+
+  // Used to create empty, in-memory key stores.
+  private static final char[] DEFAULT_KEYSTORE_PASSWORD = "password".toCharArray();
   private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
   private static String version = "dev"; // updated in the static initializer
 
@@ -55,7 +67,7 @@ public class Client {
     }
   }
 
-  public Client(Builder builder) {
+  public Client(Builder builder) throws ConfigurationException {
     List<URL> urls = new ArrayList<>(builder.urls);
     if (urls.isEmpty()) {
       try {
@@ -74,7 +86,7 @@ public class Client {
   /**
    * Create a new http Client object using the default development host URL.
    */
-  public Client() {
+  public Client() throws ChainException {
     this(new Builder());
   }
 
@@ -83,7 +95,7 @@ public class Client {
    *
    * @param url the URL of the Chain Core or HSM
    */
-  public Client(String url) throws BadURLException {
+  public Client(String url) throws ChainException {
     this(new Builder().setURL(url));
   }
 
@@ -92,7 +104,7 @@ public class Client {
    *
    * @param url the URL of the Chain Core or HSM
    */
-  public Client(URL url) {
+  public Client(URL url) throws ConfigurationException {
     this(new Builder().setURL(url));
   }
 
@@ -102,7 +114,7 @@ public class Client {
    * @param url the URL of the Chain Core or HSM
    * @param accessToken a Client API access token
    */
-  public Client(String url, String accessToken) throws BadURLException {
+  public Client(String url, String accessToken) throws ChainException {
     this(new Builder().setURL(url).setAccessToken(accessToken));
   }
 
@@ -112,7 +124,7 @@ public class Client {
    * @param url the URL of the Chain Core or HSM
    * @param accessToken a Client API access token
    */
-  public Client(URL url, String accessToken) {
+  public Client(URL url, String accessToken) throws ChainException {
     this(new Builder().setURL(url).setAccessToken(accessToken));
   }
 
@@ -356,7 +368,7 @@ public class Client {
         // The OkHttp library already performs retries for some
         // I/O-related errors, but we've hit this case in a leader
         // failover, so do our own retries too.
-        exception = new HTTPException(ex.getMessage());
+        exception = new ConfigurationException(ex.getMessage());
       } catch (ConnectivityException ex) {
         // This URL's process might be unhealthy; move to the next.
         this.nextURL(idx);
@@ -378,11 +390,17 @@ public class Client {
     throw exception;
   }
 
-  private OkHttpClient buildHttpClient(Builder builder) {
+  private OkHttpClient buildHttpClient(Builder builder) throws ConfigurationException {
     OkHttpClient httpClient = builder.baseHttpClient.clone();
 
-    if (builder.sslSocketFactory != null) {
-      httpClient.setSslSocketFactory(builder.sslSocketFactory);
+    try {
+      if (builder.trustManagers != null) {
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(builder.keyManagers, builder.trustManagers, null);
+        httpClient.setSslSocketFactory(sslContext.getSocketFactory());
+      }
+    } catch (GeneralSecurityException ex) {
+      throw new ConfigurationException("Unable to configure TLS", ex);
     }
     if (builder.readTimeoutUnit != null) {
       httpClient.setReadTimeout(builder.readTimeout, builder.readTimeoutUnit);
@@ -534,7 +552,8 @@ public class Client {
     private List<URL> urls;
     private String accessToken;
     private CertificatePinner cp;
-    private SSLSocketFactory sslSocketFactory;
+    private KeyManager[] keyManagers;
+    private TrustManager[] trustManagers;
     private long connectTimeout;
     private TimeUnit connectTimeoutUnit;
     private long readTimeout;
@@ -633,28 +652,90 @@ public class Client {
     }
 
     /**
+     * Sets the client's certificate and key for TLS client authentication.
+     * PEM-encoded, RSA private keys adhering to PKCS#1 or PKCS#8 are supported.
+     * @param certStream input stream of PEM-encoded X.509 certificate
+     * @param keyStream input stream of PEM-encoded private key
+     */
+    public Builder setX509KeyPair(InputStream certStream, InputStream keyStream)
+        throws ConfigurationException {
+      try (PEMParser parser = new PEMParser(new InputStreamReader(keyStream))) {
+        // Extract certs from PEM-encoded input.
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        X509Certificate certificate = (X509Certificate) factory.generateCertificate(certStream);
+
+        // Parse the private key from PEM-encoded input.
+        Object obj = parser.readObject();
+        PrivateKeyInfo info;
+        if (obj instanceof PEMKeyPair) {
+          // PKCS#1 Private Key found.
+          PEMKeyPair kp = (PEMKeyPair) obj;
+          info = kp.getPrivateKeyInfo();
+        } else if (obj instanceof PrivateKeyInfo) {
+          // PKCS#8 Private Key found.
+          info = (PrivateKeyInfo) obj;
+        } else {
+          throw new ConfigurationException("Unsupported private key provided.");
+        }
+
+        // Create a new key store and input the pair.
+        KeySpec spec = new PKCS8EncodedKeySpec(info.getEncoded());
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        keyStore.load(null, DEFAULT_KEYSTORE_PASSWORD);
+        keyStore.setCertificateEntry("cert", certificate);
+        keyStore.setKeyEntry(
+            "key",
+            kf.generatePrivate(spec),
+            DEFAULT_KEYSTORE_PASSWORD,
+            new X509Certificate[] {certificate});
+
+        // Use key store to build a key manager.
+        KeyManagerFactory keyManagerFactory =
+            KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keyStore, DEFAULT_KEYSTORE_PASSWORD);
+
+        this.keyManagers = keyManagerFactory.getKeyManagers();
+        return this;
+      } catch (GeneralSecurityException | IOException ex) {
+        throw new ConfigurationException("Unable to store X.509 cert/key pair", ex);
+      }
+    }
+
+    /**
+     * Sets the client's certificate and key for TLS client authentication.
+     * @param certPath file path to PEM-encoded X.509 certificate
+     * @param keyPath file path to PEM-encoded private key
+     */
+    public Builder setX509KeyPair(String certPath, String keyPath) throws ConfigurationException {
+      try (InputStream certStream =
+              new ByteArrayInputStream(Files.readAllBytes(Paths.get(certPath)));
+          InputStream keyStream =
+              new ByteArrayInputStream(Files.readAllBytes(Paths.get(keyPath)))) {
+        return setX509KeyPair(certStream, keyStream);
+      } catch (IOException ex) {
+        throw new ConfigurationException("Unable to store X509 cert/key pair", ex);
+      }
+    }
+
+    /**
      * Trusts the given CA certs, and no others. Use this if you are running
      * your own CA, or are using a self-signed server certificate.
-     * @param path The path of a file containing certificates to trust, in PEM format.
+     * @param is input stream of the certificates to trust, in PEM format.
      */
-    public Builder setTrustedCerts(String path) throws HTTPException {
-      // Extract certs from PEM-encoded input.
-      try (InputStream pemStream = new FileInputStream(path)) {
+    public Builder setTrustedCerts(InputStream is) throws ConfigurationException {
+      try {
+        // Extract certs from PEM-encoded input.
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
         Collection<? extends Certificate> certificates =
-            certificateFactory.generateCertificates(pemStream);
+            certificateFactory.generateCertificates(is);
         if (certificates.isEmpty()) {
           throw new IllegalArgumentException("expected non-empty set of trusted certificates");
         }
 
-        // Create empty key store.
+        // Create a new key store and input the cert.
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        char[] password =
-            "password"
-                .toCharArray(); // The password is unimportant as long as it used consistently.
-        keyStore.load(null, password);
-
-        // Load certs into key store.
+        keyStore.load(null, DEFAULT_KEYSTORE_PASSWORD);
         int index = 0;
         for (Certificate certificate : certificates) {
           String certificateAlias = Integer.toString(index++);
@@ -664,7 +745,7 @@ public class Client {
         // Use key store to build an X509 trust manager.
         KeyManagerFactory keyManagerFactory =
             KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keyStore, password);
+        keyManagerFactory.init(keyStore, DEFAULT_KEYSTORE_PASSWORD);
         TrustManagerFactory trustManagerFactory =
             TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keyStore);
@@ -674,13 +755,23 @@ public class Client {
               "Unexpected default trust managers:" + Arrays.toString(trustManagers));
         }
 
-        // Finally, configure the socket factory.
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(null, trustManagers, null);
-        sslSocketFactory = sslContext.getSocketFactory();
+        this.trustManagers = trustManagers;
         return this;
       } catch (GeneralSecurityException | IOException ex) {
-        throw new HTTPException("Unable to configure trusted CA certs", ex);
+        throw new ConfigurationException("Unable to configure trusted CA certs", ex);
+      }
+    }
+
+    /**
+     * Trusts the given CA certs, and no others. Use this if you are running
+     * your own CA, or are using a self-signed server certificate.
+     * @param path The path of a file containing certificates to trust, in PEM format.
+     */
+    public Builder setTrustedCerts(String path) throws ConfigurationException {
+      try (InputStream is = new FileInputStream(path)) {
+        return setTrustedCerts(is);
+      } catch (IOException ex) {
+        throw new ConfigurationException("Unable to configure trusted CA certs", ex);
       }
     }
 
@@ -768,7 +859,7 @@ public class Client {
     /**
      * Builds a client with all of the provided parameters.
      */
-    public Client build() {
+    public Client build() throws ConfigurationException {
       return new Client(this);
     }
   }
