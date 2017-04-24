@@ -30,7 +30,7 @@ func NewReader(b []byte) *Reader {
 	return &Reader{buf: b}
 }
 
-// Remaining returns the rest of the unread bytes.
+// Remaining returns the number of unread bytes.
 func (r *Reader) Len() int {
 	return len(r.buf)
 }
