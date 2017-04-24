@@ -89,7 +89,7 @@ func (s *Snapshot) ApplyTx(tx *bc.Tx) error {
 	}
 
 	// Add new outputs. They must not yet be present.
-	for _, o := range tx.OutputIDs {
+	for _, o := range tx.ResultOutputIDs {
 		err := s.Tree.Insert(o.Bytes())
 		if err != nil {
 			return err

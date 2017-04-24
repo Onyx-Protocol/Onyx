@@ -15,9 +15,9 @@ type Tx struct {
 	InputIDs []Hash // 1:1 correspondence with TxData.Inputs
 
 	// IDs of reachable entries of various kinds
-	NonceIDs       []Hash
-	SpentOutputIDs []Hash
-	OutputIDs      []Hash
+	NonceIDs        []Hash
+	SpentOutputIDs  []Hash
+	ResultOutputIDs []Hash
 }
 
 func (tx *Tx) SigHash(n uint32) (hash Hash) {

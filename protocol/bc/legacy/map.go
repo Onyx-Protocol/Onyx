@@ -31,12 +31,16 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 		InputIDs: make([]bc.Hash, len(oldTx.Inputs)),
 	}
 
-	var (
-		nonceIDs       = make(map[bc.Hash]bool)
-		spentOutputIDs = make(map[bc.Hash]bool)
-		outputIDs      = make(map[bc.Hash]bool)
-	)
+	var results = make(map[bc.Hash]bool)
+	for _, h := range header.ResultIds {
+		results[*h] = true
+	}
 
+	var (
+		nonceIDs        = make(map[bc.Hash]bool)
+		spentOutputIDs  = make(map[bc.Hash]bool)
+		resultOutputIDs = make(map[bc.Hash]bool)
+	)
 	for id, e := range entries {
 		var ord uint64
 		switch e := e.(type) {
@@ -57,7 +61,9 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 			// resume below after the switch
 
 		case *bc.Output:
-			outputIDs[id] = true
+			if _, ok := results[id]; ok {
+				resultOutputIDs[id] = true
+			}
 			continue
 
 		default:
@@ -75,8 +81,8 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 	for id := range spentOutputIDs {
 		txEntries.SpentOutputIDs = append(txEntries.SpentOutputIDs, id)
 	}
-	for id := range outputIDs {
-		txEntries.OutputIDs = append(txEntries.OutputIDs, id)
+	for id := range resultOutputIDs {
+		txEntries.ResultOutputIDs = append(txEntries.ResultOutputIDs, id)
 	}
 
 	return txEntries, nil
