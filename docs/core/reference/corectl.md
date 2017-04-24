@@ -39,7 +39,7 @@ _The instructions in this section require having the Go programming environment 
 Install the `corectl` command line tool:
 
 ```
-$ go install ./cmd/corectl
+$ go install chain/cmd/corectl
 ```
 
 ## Commands
