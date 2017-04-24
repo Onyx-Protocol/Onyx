@@ -110,6 +110,10 @@ func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 	}
 
 	hashForSig := b.Hash()
+	marshalledBlock, err := b.MarshalText()
+	if err != nil {
+		return errors.Wrap(err, "marshalling block")
+	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -118,7 +122,7 @@ func (g *Generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 	replies := make([][]byte, len(g.signers))
 	done := make(chan int, len(g.signers))
 	for i, signer := range g.signers {
-		go getSig(ctx, signer, b, &replies[i], i, done)
+		go getSig(ctx, signer, marshalledBlock, &replies[i], i, done)
 	}
 
 	nready := 0
@@ -152,9 +156,9 @@ func indexKey(keys []ed25519.PublicKey, msg, sig []byte) int {
 	return -1
 }
 
-func getSig(ctx context.Context, signer BlockSigner, b *legacy.Block, sig *[]byte, i int, done chan int) {
+func getSig(ctx context.Context, signer BlockSigner, marshalledBlock []byte, sig *[]byte, i int, done chan int) {
 	var err error
-	*sig, err = signer.SignBlock(ctx, b)
+	*sig, err = signer.SignBlock(ctx, marshalledBlock)
 	if err != nil && ctx.Err() != context.Canceled {
 		log.Printkv(ctx, "error", err, "signer", signer)
 	}

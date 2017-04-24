@@ -53,8 +53,13 @@ func New(pub ed25519.PublicKey, hsm Signer, db pg.DB, c *protocol.Chain) *BlockS
 //
 // This function fails if this node has ever signed a different
 // block at the same height as b.
-func (s *BlockSigner) SignBlock(ctx context.Context, b *legacy.Block) ([]byte, error) {
-	err := lockBlockHeight(ctx, s.db, b)
+func (s *BlockSigner) SignBlock(ctx context.Context, marshalledBlock []byte) ([]byte, error) {
+	var b legacy.Block
+	err := b.UnmarshalText(marshalledBlock)
+	if err != nil {
+		return nil, err
+	}
+	err = lockBlockHeight(ctx, s.db, &b)
 	if err != nil {
 		return nil, errors.Wrap(err, "lock block height")
 	}
@@ -94,7 +99,17 @@ func (s *BlockSigner) ValidateAndSignBlock(ctx context.Context, b *legacy.Block)
 	if err != nil {
 		return nil, errors.Wrap(err, "validating block for signature")
 	}
-	return s.SignBlock(ctx, b)
+
+	err = lockBlockHeight(ctx, s.db, b)
+	if err != nil {
+		return nil, errors.Wrap(err, "lock block height")
+	}
+
+	sig, err := s.hsm.Sign(ctx, s.Pub, &b.BlockHeader)
+	if err != nil {
+		return nil, errors.Sub(ErrInvalidKey, err)
+	}
+	return sig, nil
 }
 
 // lockBlockHeight records a signer's intention to sign a given block

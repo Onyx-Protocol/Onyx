@@ -439,11 +439,8 @@ type remoteSigner struct {
 	Key    ed25519.PublicKey
 }
 
-func (s *remoteSigner) SignBlock(ctx context.Context, b *legacy.Block) (signature []byte, err error) {
-	// TODO(kr): We might end up serializing b multiple
-	// times in multiple calls to different remoteSigners.
-	// Maybe optimize that if it makes a difference.
-	err = s.Client.Call(ctx, "/rpc/signer/sign-block", b, &signature)
+func (s *remoteSigner) SignBlock(ctx context.Context, marshalledBlock []byte) (signature []byte, err error) {
+	err = s.Client.Call(ctx, "/rpc/signer/sign-block", string(marshalledBlock), &signature)
 	return
 }
 

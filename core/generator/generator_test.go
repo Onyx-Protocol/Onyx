@@ -140,11 +140,17 @@ type testSigner struct {
 	privKey ed25519.PrivateKey
 }
 
-func (s testSigner) SignBlock(ctx context.Context, b *legacy.Block) ([]byte, error) {
+func (s testSigner) SignBlock(ctx context.Context, marshalledBlock []byte) ([]byte, error) {
 	if s.before != nil {
 		if err := s.before(); err != nil {
 			return nil, err
 		}
+	}
+
+	var b legacy.Block
+	err := b.UnmarshalText(marshalledBlock)
+	if err != nil {
+		return nil, err
 	}
 
 	hash := b.Hash()

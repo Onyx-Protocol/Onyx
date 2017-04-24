@@ -21,7 +21,7 @@ type BlockSigner interface {
 	// SignBlock returns an ed25519 signature over the block's sighash.
 	// See also the Chain Protocol spec for the complete required behavior
 	// of a block signer.
-	SignBlock(context.Context, *legacy.Block) (signature []byte, err error)
+	SignBlock(ctx context.Context, marshalledBlock []byte) (signature []byte, err error)
 }
 
 // Generator collects pending transactions and produces new blocks on
