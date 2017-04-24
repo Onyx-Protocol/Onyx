@@ -259,7 +259,8 @@ func AuthHandler(mux *http.ServeMux, handler http.Handler, rDB *raft.Service, ac
 		err      error
 	)
 	if tlsConfig != nil {
-		// TODO(kr): set Leaf in TLSConfig and use that here. [tktk: do I keep this todo?]
+		// TODO(kr): set Leaf in TLSConfig and use that here.
+		// TODO(tessr): ^ do I keep this TODO?
 		x509Cert, err = x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
 		if err != nil {
 			panic(err)
