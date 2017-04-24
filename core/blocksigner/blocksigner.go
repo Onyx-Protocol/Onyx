@@ -51,6 +51,10 @@ func New(pub ed25519.PublicKey, hsm Signer, db pg.DB, c *protocol.Chain) *BlockS
 // SignBlock computes the signature for the block using
 // the private key in s.  It does not validate the block.
 func (s *BlockSigner) SignBlock(ctx context.Context, b *legacy.Block) ([]byte, error) {
+	err := lockBlockHeight(ctx, s.db, b)
+	if err != nil {
+		return nil, errors.Wrap(err, "lock block height")
+	}
 	sig, err := s.hsm.Sign(ctx, s.Pub, &b.BlockHeader)
 	if err != nil {
 		return nil, errors.Sub(ErrInvalidKey, err)
@@ -89,10 +93,6 @@ func (s *BlockSigner) ValidateAndSignBlock(ctx context.Context, b *legacy.Block)
 	err = s.c.ValidateBlockForSig(ctx, b)
 	if err != nil {
 		return nil, errors.Wrap(err, "validating block for signature")
-	}
-	err = lockBlockHeight(ctx, s.db, b)
-	if err != nil {
-		return nil, errors.Wrap(err, "lock block height")
 	}
 	return s.SignBlock(ctx, b)
 }
