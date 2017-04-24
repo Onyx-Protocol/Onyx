@@ -89,8 +89,15 @@ func (s *Snapshot) ApplyTx(tx *bc.Tx) error {
 	}
 
 	// Add new outputs. They must not yet be present.
-	for _, o := range tx.OutputIDs {
-		err := s.Tree.Insert(o.Bytes())
+	for _, id := range tx.TxHeader.ResultIds {
+		// Ensure that this result is an output. It could be a retirement
+		// which should not be inserted into the state tree.
+		e := tx.Entries[*id]
+		if _, ok := e.(*bc.Output); !ok {
+			continue
+		}
+
+		err := s.Tree.Insert(id.Bytes())
 		if err != nil {
 			return err
 		}

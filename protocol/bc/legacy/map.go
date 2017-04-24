@@ -34,9 +34,7 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 	var (
 		nonceIDs       = make(map[bc.Hash]bool)
 		spentOutputIDs = make(map[bc.Hash]bool)
-		outputIDs      = make(map[bc.Hash]bool)
 	)
-
 	for id, e := range entries {
 		var ord uint64
 		switch e := e.(type) {
@@ -56,10 +54,6 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 			ord = e.Ordinal
 			// resume below after the switch
 
-		case *bc.Output:
-			outputIDs[id] = true
-			continue
-
 		default:
 			continue
 		}
@@ -74,9 +68,6 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 	}
 	for id := range spentOutputIDs {
 		txEntries.SpentOutputIDs = append(txEntries.SpentOutputIDs, id)
-	}
-	for id := range outputIDs {
-		txEntries.OutputIDs = append(txEntries.OutputIDs, id)
 	}
 
 	return txEntries, nil
