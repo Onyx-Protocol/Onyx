@@ -53,6 +53,7 @@ module Chain
       # @return [void]
       def delete(id)
         client.conn.request('delete-access-token', {id: id})
+        nil
       end
 
       class Query < Chain::Query

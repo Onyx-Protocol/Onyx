@@ -426,10 +426,12 @@ context 'Chain SDK integration test' do
     chain = Chain::Client.new
 
     # setup: delete all existing guards
+
     chain.authorization_grants.list_all.each do |g|
       chain.authorization_grants.delete g
     end
 
+    # Access token grant
 
     t = chain.access_tokens.create(id: SecureRandom.hex(8))
 
@@ -443,6 +445,8 @@ context 'Chain SDK integration test' do
     expect(g.guard_data).to eq('id' => t.id)
     expect(g.policy).to eq('client-readwrite')
 
+    # Listing
+
     guards = chain.authorization_grants.list_all
     expect(guards.size).to eq(1)
     g = guards.first
@@ -450,6 +454,8 @@ context 'Chain SDK integration test' do
     expect(g.guard_type).to eq('access_token')
     expect(g.guard_data).to eq('id' => t.id)
     expect(g.policy).to eq('client-readwrite')
+
+    # X509 grant
 
     chain.authorization_grants.create(
       guard_type: 'x509',
@@ -464,18 +470,19 @@ context 'Chain SDK integration test' do
 
     guards = chain.authorization_grants.list_all
     expect(guards.size).to eq(2)
-    g = guards.first # most recently-created grant is at the front of the list
+    g = guards.find { |item| item.guard_type == 'x509' }
 
-    expect(g.guard_type).to eq('x509')
     expect(g.guard_data).to eq('subject' => {
       'CN' => 'test-cn',
-      'OU' => 'test-ou',
+      'OU' => ['test-ou'], # sanitizer properly array-ifies attributes
     })
     expect(g.policy).to eq('network')
 
+    # Deletion
+
     chain.authorization_grants.delete(
       guard_type: 'access_token',
-      guard_data: {'id' => 'foobar'},
+      guard_data: {'id' => t.id},
       policy: 'client-readwrite'
     )
 
