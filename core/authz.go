@@ -43,7 +43,7 @@ var policyByRoute = map[string][]string{
 	networkRPCPrefix + "get-block":         {"crosscore-readonly"},
 	networkRPCPrefix + "get-snapshot-info": {"crosscore-readonly"},
 	networkRPCPrefix + "get-snapshot":      {"crosscore-readonly"},
-	networkRPCPrefix + "signer/sign-block": {"crosscore-readonly"},
+	networkRPCPrefix + "signer/sign-block": {"crosscore-readonly"}, // TODO(tessr): make this crosscore-signblock
 	networkRPCPrefix + "block-height":      {"crosscore-readonly"},
 
 	"/list-authorization-grants":  {"client-readwrite", "client-readonly"},
