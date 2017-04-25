@@ -126,12 +126,22 @@ corectl create-block-keypair
 
 ### `create-token`
 
-Generates a new access token with the given name. Flag -net means to create a network token,
-otherwise it will create a client token.
+Generates a new access token with the given name
+and grants it access to the named policy.
 
 ```
-corectl create-token [-net] [name]
+corectl create-token [-net] [name] [policy]
 ```
+
+If no policy is given,
+it grants access to policy `client-readwrite`.
+This form is deprecated;
+please provide a policy by name.
+
+Flag `-net` grants access to the policy `network`
+for the new token.
+This flag is deprecated;
+please provide a policy by name instead.
 
 ### `reset`
 
