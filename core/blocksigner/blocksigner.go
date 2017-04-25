@@ -50,7 +50,14 @@ func New(pub ed25519.PublicKey, hsm Signer, db pg.DB, c *protocol.Chain) *BlockS
 
 // SignBlock computes the signature for the block using
 // the private key in s.  It does not validate the block.
+//
+// This function fails if this node has ever signed a different
+// block at the same height as b.
 func (s *BlockSigner) SignBlock(ctx context.Context, b *legacy.Block) ([]byte, error) {
+	err := lockBlockHeight(ctx, s.db, b)
+	if err != nil {
+		return nil, errors.Wrap(err, "lock block height")
+	}
 	sig, err := s.hsm.Sign(ctx, s.Pub, &b.BlockHeader)
 	if err != nil {
 		return nil, errors.Sub(ErrInvalidKey, err)
@@ -65,9 +72,6 @@ func (s *BlockSigner) String() string {
 // ValidateAndSignBlock validates the given block against the current blockchain
 // and, if valid, computes and returns a signature for the block.  It
 // is used as the httpjson handler for /rpc/signer/sign-block.
-//
-// This function fails if this node has ever signed a different block at the
-// same height as b.
 func (s *BlockSigner) ValidateAndSignBlock(ctx context.Context, b *legacy.Block) ([]byte, error) {
 	err := <-s.c.BlockSoonWaiter(ctx, b.Height-1)
 	if err != nil {
@@ -89,10 +93,6 @@ func (s *BlockSigner) ValidateAndSignBlock(ctx context.Context, b *legacy.Block)
 	err = s.c.ValidateBlockForSig(ctx, b)
 	if err != nil {
 		return nil, errors.Wrap(err, "validating block for signature")
-	}
-	err = lockBlockHeight(ctx, s.db, b)
-	if err != nil {
-		return nil, errors.Wrap(err, "lock block height")
 	}
 	return s.SignBlock(ctx, b)
 }
