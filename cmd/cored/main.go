@@ -172,7 +172,6 @@ func main() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	resetIfAllowedAndRequested(db, raftDB)
 
 	accessTokens := &accesstoken.CredentialStore{DB: db}
 
@@ -215,6 +214,7 @@ func main() {
 		err := server.Serve(listener)
 		chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "Serve"))
 	}()
+	resetIfAllowedAndRequested(db, raftDB)
 
 	conf, err := config.Load(ctx, db, raftDB)
 	if err != nil {
