@@ -7,7 +7,7 @@ func init() {
 		&Grant{GuardType: "localhost", Policy: "client-readwrite"},
 		&Grant{GuardType: "localhost", Policy: "client-readonly"},
 		&Grant{GuardType: "localhost", Policy: "monitoring"},
-		&Grant{GuardType: "localhost", Policy: "network"},
+		&Grant{GuardType: "localhost", Policy: "crosscore-readonly"},
 		&Grant{GuardType: "localhost", Policy: "internal"},
 	)
 }

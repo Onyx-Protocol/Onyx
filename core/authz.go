@@ -5,7 +5,7 @@ const grantPrefix = "/core/grant/"
 var policies = []string{
 	"client-readwrite",
 	"client-readonly",
-	"network",
+	"crosscore-readonly",
 	"monitoring",
 	"internal",
 	"public",
@@ -40,11 +40,11 @@ var policyByRoute = map[string][]string{
 	"/reset":                  {"client-readwrite", "internal"},
 	"/submit":                 {"client-readwrite"},
 
-	networkRPCPrefix + "get-block":         {"network"},
-	networkRPCPrefix + "get-snapshot-info": {"network"},
-	networkRPCPrefix + "get-snapshot":      {"network"},
-	networkRPCPrefix + "signer/sign-block": {"network"},
-	networkRPCPrefix + "block-height":      {"network"},
+	networkRPCPrefix + "get-block":         {"crosscore-readonly"},
+	networkRPCPrefix + "get-snapshot-info": {"crosscore-readonly"},
+	networkRPCPrefix + "get-snapshot":      {"crosscore-readonly"},
+	networkRPCPrefix + "signer/sign-block": {"crosscore-readonly"}, // TODO(tessr): make this crosscore-signblock
+	networkRPCPrefix + "block-height":      {"crosscore-readonly"},
 
 	"/list-authorization-grants":  {"client-readwrite", "client-readonly"},
 	"/create-authorization-grant": {"client-readwrite"},
@@ -53,7 +53,7 @@ var policyByRoute = map[string][]string{
 	"/list-access-tokens":         {"client-readwrite", "client-readonly"},
 	"/delete-access-token":        {"client-readwrite"},
 	"/configure":                  {"client-readwrite", "internal"},
-	"/info":                       {"client-readwrite", "client-readonly", "network", "monitoring"},
+	"/info":                       {"client-readwrite", "client-readonly", "crosscore-readonly", "monitoring"},
 
 	"/debug/vars":          {"client-readwrite", "client-readonly", "monitoring"}, // should monitoring endpoints also be available to any other policy-holders?
 	"/debug/pprof":         {"client-readwrite", "client-readonly", "monitoring"},
