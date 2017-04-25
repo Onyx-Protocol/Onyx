@@ -17,6 +17,7 @@ var policyByRoute = map[string][]string{
 	"/update-account-tags":      {"client-readwrite"},
 	"/update-asset-tags":        {"client-readwrite"},
 	"/build-transaction":        {"client-readwrite"},
+	"/validate-transaction":     {"client-readwrite", "client-readonly"},
 	"/submit-transaction":       {"client-readwrite"},
 	"/create-control-program":   {"client-readwrite"},
 	"/create-account-receiver":  {"client-readwrite"},
