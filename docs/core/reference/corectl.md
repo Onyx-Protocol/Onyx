@@ -173,7 +173,8 @@ It must take one of three forms:
    * `token=[name]` to affect an access token
    * `CN=[name]` to affect an X.509 Common Name
    * `OU=[name]` to affect an X.509 Organizational Unit
-The type of guard (before the = sign) is case-insensitive.
+
+   The type of guard (before the = sign) is case-insensitive.
 
 ### `revoke`
 
@@ -192,5 +193,5 @@ It must take one of three forms:
    * `token=[name]` to affect an access token
    * `CN=[name]` to affect an X.509 Common Name
    * `OU=[name]` to affect an X.509 Organizational Unit
-The type of guard (before the = sign) is case-insensitive.
 
+   The type of guard (before the = sign) is case-insensitive.
