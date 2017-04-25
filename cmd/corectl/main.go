@@ -190,7 +190,7 @@ func createBlockKeyPair(client *rpc.Client, args []string) {
 }
 
 func createToken(client *rpc.Client, args []string) {
-	const usage = "usage: corectl create-token [-net] [name]"
+	const usage = "usage: corectl create-token [-net] [name] [policy]"
 	var flags flag.FlagSet
 	flagNet := flags.Bool("net", false, "DEPRECATED. create a network token instead of client")
 	flags.Usage = func() {
@@ -200,25 +200,40 @@ func createToken(client *rpc.Client, args []string) {
 	}
 	flags.Parse(args)
 	args = flags.Args()
-	if len(args) < 1 {
+	if len(args) == 2 && *flagNet || len(args) < 1 || len(args) > 2 {
 		fatalln(usage)
 	}
 
-	req := struct {
-		ID, Type string
-	}{
-		ID:   args[0],
-		Type: map[bool]string{true: "network", false: "client"}[*flagNet],
-	}
+	req := struct{ ID string }{args[0]}
 	var tok accesstoken.Token
+	// TOOD(kr): find a way to make this atomic with the grant below
 	err := client.Call(context.Background(), "/create-access-token", req, &tok)
 	if err != nil {
 		fatalln("rpc error:", err)
 	}
 	fmt.Println(tok.Token)
 
-	if *flagNet {
+	grant := struct {
+		GuardType string      `json:"guard_type"`
+		GuardData interface{} `json:"guard_data"`
+		Policy    string
+	}{
+		GuardType: "access_token",
+		GuardData: map[string]string{"id": tok.ID},
+	}
+	switch {
+	case len(args) == 2:
+		grant.Policy = args[1]
+	case *flagNet:
+		grant.Policy = "network"
 		fmt.Fprintln(os.Stderr, "warning: the network flag is deprecated")
+	default:
+		grant.Policy = "client-readwrite"
+		fmt.Fprintln(os.Stderr, "warning: implicit policy name is deprecated")
+	}
+	err = client.Call(context.Background(), "/create-authorization-grant", grant, nil)
+	if err != nil {
+		fatalln("rpc error:", err)
 	}
 }
 
