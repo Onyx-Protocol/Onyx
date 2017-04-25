@@ -26,16 +26,13 @@ func TestApplyTxSpend(t *testing.T) {
 	snap := Empty()
 	snap.Tree.Insert(spentOutputID.Bytes())
 
-	tx, err := legacy.MapTx(&legacy.TxData{
+	tx := legacy.MapTx(&legacy.TxData{
 		Version: 1,
 		Inputs: []*legacy.TxInput{
 			legacy.NewSpendInput(nil, sourceID, assetID, 100, 0, nil, bc.Hash{}, nil),
 		},
 		Outputs: []*legacy.TxOutput{},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Apply the spend transaction.
 	err = snap.ApplyTx(tx)

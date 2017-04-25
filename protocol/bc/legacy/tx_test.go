@@ -24,10 +24,7 @@ func TestTxHashes(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		txEntries, err := MapTx(c.txdata)
-		if err != nil {
-			t.Fatal(err)
-		}
+		txEntries := MapTx(c.txdata)
 		if len(txEntries.InputIDs) != len(c.txdata.Inputs) {
 			t.Errorf("case %d: len(txEntries.InputIDs) = %d, want %d", i, len(txEntries.InputIDs), len(c.txdata.Inputs))
 		}
@@ -40,20 +37,14 @@ func TestTxHashes(t *testing.T) {
 func BenchmarkHashEmptyTx(b *testing.B) {
 	tx := &TxData{}
 	for i := 0; i < b.N; i++ {
-		_, err := MapTx(tx)
-		if err != nil {
-			b.Fatal(err)
-		}
+		_ = MapTx(tx)
 	}
 }
 
 func BenchmarkHashNonemptyTx(b *testing.B) {
 	tx := sampleTx()
 	for i := 0; i < b.N; i++ {
-		_, err := MapTx(tx)
-		if err != nil {
-			b.Fatal(err)
-		}
+		_ = MapTx(tx)
 	}
 }
 

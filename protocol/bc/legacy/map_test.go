@@ -7,7 +7,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/protocol/bc"
-	"chain/testutil"
 )
 
 func TestMapTx(t *testing.T) {
@@ -17,11 +16,7 @@ func TestMapTx(t *testing.T) {
 	oldTx := sampleTx()
 	oldOuts := oldTx.Outputs
 
-	_, header, entryMap, err := mapTx(oldTx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
+	_, header, entryMap := mapTx(oldTx)
 	t.Log(spew.Sdump(entryMap))
 
 	if header.Version != 1 {
