@@ -339,7 +339,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
 4. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
-5. `{B[i,u]}`: `n·M` base [points](#point) to validate the signature.
+5. `{B[u]}`: `M` base [points](#point) to validate the signature.
 6. `{P[i,j,u]}`: `n·m·M` [points](#point) representing public keys.
 7. `{p[i]}`: the list of `n` [scalars](#scalar) representing private keys.
 8. `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[i,j] == p[i]·B[i]`.
@@ -366,7 +366,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
     6. Calculate the initial e-value for the ring:
         1. Let `j’ = j+1 mod m`.
         2. For each `u` from 0 to `M-1`:
-            1. Calculate `R[t,j’,u]` as the point `k[t]·B[t,u]`.
+            1. Calculate `R[t,j’,u]` as the point `k[t]·B[u]`.
         3. Calculate `e[t,j’] = ScalarHash("e" || byte(cnt), R[t,j’,0] || ... || R[t,j’,M-1] || msghash || uint64le(t) || uint64le(j’) || w[t,j])` where `t` and `j’` are encoded as 64-bit little-endian integers.
     7. If `j ≠ m-1`, then for `i` from `j+1` to `m-1`:
         1. Calculate the forged s-value: `s[t,i] = r[m·t + i]`.
@@ -374,7 +374,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
         5. For each `u` from 0 to `M-1`:
-            1. Calculate point `R[t,i’,u] = z[t,i]·B[t,u] - e[t,i]·P[t,i,u]`.
+            1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]`.
         6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt), R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
 7. Calculate the shared e-value `e0` for all the rings:
     1. Calculate `E` as concatenation of all `e[t,0]` values encoded as 32-byte little-endian integers: `E = e[0,0] || ... || e[n-1,0]`.
@@ -389,7 +389,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         3. Define `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         4. Let `i’ = i+1 mod m`.
         5. For each `u` from 0 to `M-1`:
-            1. Calculate point `R[t,i’,u] = z[t,i]·B[t,u] - e[t,i]·P[t,i,u]`. If `i` is zero, use `e0` in place of `e[t,0]`.
+            1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]`. If `i` is zero, use `e0` in place of `e[t,0]`.
         6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt), R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     4. Calculate the non-forged `z[t,j] = k[t] + p[t]·e[t,j] mod L` and encode it as a 32-byte little-endian integer.
     5. If `z[t,j]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from step 3. The chance of this happening is below 1 in 2<sup>124</sup>.
@@ -408,7 +408,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 2. `n`: number of rings.
 3. `m`: number of signatures in each ring.
 4. `M`: number of discrete logarithms to prove per signature (1 for normal signature, 2 for dlog equality proof).
-5. `{B[i,u]}`: `n·M` base [points](#point) to validate the signature.
+5. `{B[u]}`: `n·M` base [points](#point) to validate the signature.
 6. `{P[i,j,u]}`: `n·m·M` [points](#point) representing public keys.
 7. `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 
@@ -427,7 +427,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
         2. Calculate `w[t,i]` as a most significant byte of `s[t,i]` with lower 4 bits set to zero: `w[t,i] = s[t,i][31] & 0xf0`.
         3. Let `i’ = i+1 mod m`.
         5. For each `u` from 0 to `M-1`:
-            1. Calculate point `R[t,i’,u] = z[t,i]·B[t,u] - e[t,i]·P[t,i,u]`. Use `e0` instead of `e[t,0]` in each ring.
+            1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]`. Use `e0` instead of `e[t,0]` in each ring.
         6. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt) || R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 6. Calculate `e’ = ScalarHash(E)`.
@@ -475,7 +475,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
             1. Set `payload[m·t + i] = o[m·t + i] XOR s[t,i]`.
         5. Let `i’ = i+1 mod m`.
         6. For each `u` from 0 to `M-1`:
-            1. Calculate point `R[t,i’,u] = z[t,i]·B[t,u] - e[t,i]·P[t,i,u]` and encode it as a 32-byte [public key](#point). Use `e0` instead of `e[t,0]` in each ring.
+            1. Calculate point `R[t,i’,u] = z[t,i]·B[u] - e[t,i]·P[t,i,u]` and encode it as a 32-byte [public key](#point). Use `e0` instead of `e[t,0]` in each ring.
         7. Calculate `e[t,i’] = ScalarHash("e" || byte(cnt) || R[t,i’,0] || ... || R[t,i’,M-1] || msghash || uint64le(t) || uint64le(i’) || w[t,i])` where `t` and `i’` are encoded as 64-bit little-endian integers.
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 8. Calculate `e’ = ScalarHash(E)`.
@@ -1286,8 +1286,8 @@ In case of failure, returns `nil` instead of the range proof.
     * `msghash` as the message to sign.
     * `n`: number of rings.
     * `m = base`: number of signatures per ring.
-    * `M = 2`
-    * `{(G, J)·n}`: `2·n` base points.
+    * `M = 2`.
+    * `{G, J}`: 2 base points.
     * `{(P[i,j], Q[i,j])}`: `2·n·m` [points](#point).
     * `{f}`: the blinding factor `f` repeated `n` times.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G`.
@@ -1342,8 +1342,8 @@ In case of failure, returns `nil` instead of the range proof.
     * `msghash`: the 32-byte string being verified.
     * `n`: number of rings.
     * `m=base`: number of signatures in each ring.
-    * `M = 2`
-    * `{(G, J)·n}`: `2·n` base points.
+    * `M = 2`.
+    * `{G, J}`: 2 base points.
     * `{(P[i,j], Q[i,j])}`: `2·n·m` public keys, [points](#point) on the elliptic curve.
     * `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 8. Return `true` if verification succeeded, or `false` otherwise.
@@ -1393,8 +1393,8 @@ In case of failure, returns `nil` instead of the range proof.
     * `msghash`: the 32-byte string to be signed.
     * `n=N/2`: number of rings.
     * `m=base`: number of signatures in each ring.
-    * `M = 2`
-    * `{(G, J)·n}`: `2·n` base points.
+    * `M = 2`.
+    * `{G, J}`: 2 base points.
     * `{(P[i,j], Q[i,j])}`: `2·n·m` public keys, [points](#point) on the elliptic curve.
     * `{f}`: the blinding factor `f` repeated `n` times.
     * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G`.
