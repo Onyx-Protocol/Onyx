@@ -385,6 +385,17 @@ const transactionsAPI = (client) => {
     },
 
     /**
+     * Validate a signed transaction without submitting to the blockchain.
+     *
+     * @param {Object} signed - A fully signed transaction template.
+     * @returns {Promise<Object>} No content if the transaction was valid, or error.
+     */
+    validate: (signed, cb) => shared.tryCallback(
+      client.request('/validate-transaction', signed),
+      cb
+    ),
+
+    /**
      * Submit a signed transaction to the blockchain.
      *
      * @param {Object} signed - A fully signed transaction template.
