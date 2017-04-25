@@ -216,6 +216,7 @@ func stackCost(stack [][]byte) int64 {
 	return result
 }
 
+// Error satisfies the errors.WrappedError interface.
 type Error struct {
 	Err  error
 	Prog []byte
@@ -234,6 +235,10 @@ func (e Error) Error() string {
 	}
 
 	return fmt.Sprintf("%s [prog %x = %s; args %s]", e.Err.Error(), e.Prog, dis, strings.Join(args, " "))
+}
+
+func (e Error) Wrapped() error {
+	return e.Err
 }
 
 func wrapErr(err error, vm *virtualMachine, args [][]byte) error {
