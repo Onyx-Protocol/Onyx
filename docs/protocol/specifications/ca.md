@@ -1197,13 +1197,13 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 
 
 
-### Value Range Proof WIP
+### Value Range Proof
 
 Value range proof demonstrates that a [value commitment](#value-commitment) encodes a value between 0 and 2<sup>63</sup>–1. The 63-bit limit is chosen for consistency with the numeric limits defined for the asset version 1 outputs and VM version 1 [numbers](vm1.md#vm-number).
 
 Value range proof can be [non-confidential](#non-confidential-value-range-proof) or [confidential](#confidential-value-range-proof).
 
-#### Non-Confidential Value Range Proof WIP
+#### Non-Confidential Value Range Proof
 
 A non-confidential range proof demonstrates the non-encrypted amount and allows efficient verification that a given [value commitment](#value-commitment) commits to that amount.
 
@@ -1212,7 +1212,7 @@ Field                        | Type      | Description
 Type                         | byte      | Contains value 0x00 to indicate the commitment is not blinded.
 Amount                       | varint63  | Amount
 
-#### Confidential Value Range Proof WIP
+#### Confidential Value Range Proof
 
 A confidential range proof proves that a given [value commitment](#value-commitment) commits to an amount in a valid range (between 0 and 2<sup>63</sup>–1) without revealing the exact value.
 
@@ -1224,18 +1224,18 @@ Value range proof allows a space-privacy tradeoff by making a smaller number of 
 
 Where d<sub>i</sub> is the i’th digit in a m-digit mantissa (that has either 2·m–1 or 2·m bits). Exponent `exp` and the minimum value `vmin` are public and by default set to zero by the user creating the transaction.
 
-Field                     | Type      | Description
---------------------------|-----------|------------------
-Type                      | byte      | Contains value 0x01 to indicate the commitment is blinded.
-Number of bits            | byte      | Integer `n` indicating number of confidential mantissa bits between 1 and 63.
-Exponent                  | byte      | Integer `exp` indicating the decimal exponent from 0 to 10.
-Minimum value             | varint63  | Minimum value `vmin` from 0 to 2<sup>63</sup>–1.
-Digit commitments         | [pubkey]  | List of `(n+1)/2 – 1` individual digit pedersen commitments where `n` is the number of mantissa bits.
+Field                     | Type        | Description
+--------------------------|-------------|------------------
+Type                      | byte        | Contains value 0x01 to indicate the commitment is blinded.
+Number of bits            | byte        | Integer `n` indicating number of confidential mantissa bits between 1 and 63.
+Exponent                  | byte        | Integer `exp` indicating the decimal exponent from 0 to 10.
+Minimum value             | varint63    | Minimum value `vmin` from 0 to 2<sup>63</sup>–1.
+Digit commitments         | [PointPair] | List of `(n+1)/2 – 1` individual digit commitments where `n` is the number of mantissa bits.
 Borromean Ring Signature  | [Borromean Ring Signature](#borromean-ring-signature) | List of all 32-byte elements comprising all ring signatures proving the value of each digit.
 
 The total number of elements in the [Borromean Ring Signature](#borromean-ring-signature) is `1 + 4·n/2` where `n` is number of bits and `n/2` is a number of rings.
 
-#### Create Value Range Proof WIP
+#### Create Value Range Proof
 
 **Inputs:**
 
@@ -1255,7 +1255,7 @@ Note: this version of the signing algorithm does not use decimal exponent or min
 * `N`: number of blinded bits (equals to `2·n`),
 * `exp`: exponent (zero),
 * `vmin`: minimum value (zero),
-* `{D[t]}`: `n-1` digit commitments encoded as [points](#point) (excluding the last digit commitment),
+* `{D[t],B[t]}`: `n-1` digit commitments encoded as [point pairs](#point-pair) (excluding the last digit commitment),
 * `{e,s[t,j]}`: `1 + 4·n` 32-byte elements representing a [borromean ring signature](#borromean-ring-signature),
 
 In case of failure, returns `nil` instead of the range proof.
@@ -1271,39 +1271,40 @@ In case of failure, returns `nil` instead of the range proof.
 7. Calculate payload encryption key unique to this payload and the value: `pek = Hash256("pek" || msghash || rek || f)`.
 8. Let number of digits `n = N/2`.
 9. [Encrypt the payload](#encrypt-payload) using `pek` as a key and `2·N-1` 32-byte plaintext elements to get `2·N` 32-byte ciphertext elements: `{ct[i]} = EncryptPayload({pt[i]}, pek)`.
-10. For `t` from `0` to `n-1` (each digit):
-    1. Calculate generator `G’[t]`:
-        1. If `t` is less than `n-1`: set `G’[t] = G[t]`, where `G[t]` is a [tertiary generator](#generators) at index `t`.
-        2. If `t` equals `n-1`: set `G’[t] = G - ∑G[i]` for all `i` from `0` to `n-2`.
-    2. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
-    3. Calculate `D[t] = digit[t]·H + f·G’[t]`.
+10. Calculate 64-byte digit blinding factors for all but last digit: `{b[t]} = StreamHash("VRP.b" || msghash || f, 64·(n-1))`.
+11. Interpret each 64-byte `b[t]` (`t` from 0 to `n-2`) is interpreted as a little-endian integer and reduce modulo `L` to a 32-byte scalar.
+12. Calculate the last digit blinding factor: `b[n-1] = f - ∑b[t] mod L`, where `t` is from 0 to `n-2`.
+13. For `t` from `0` to `n-1` (each digit):
+    1. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
+    2. Calculate `D[t] = digit[t]·H + b[t]·G`.
+    3. Calculate `B[t] = digit[t]·C + b[t]·J`.
     4. Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
-11. For `t` from `0` to `n-1` (each digit):
-    1. Calculate base points: `Bs[t] = (G’[t], J)`.
-    2. For `i` from `0` to `base-1` (each digit’s value):
+    5. For `i` from `0` to `base-1` (each digit’s value):
         1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`.
-        2. Calculate point `Q[t,i] = F[t] - i·(base^t)·C`.
+        2. Calculate point `Q[t,i] = B[t] - i·(base^t)·C`.
 12. [Create Borromean Ring Signature](#create-borromean-ring-signature) `brs` with the following inputs:
     * `msghash` as the message to sign.
     * `n`: number of rings.
     * `m = base`: number of signatures per ring.
     * `M = 2`
-    * `{(G’[t], J)}`: `2·n` base points where `J` is reused for each `G’[t]`.
+    * `{(G, J)·n}`: `2·n` base points.
     * `{(P[i,j], Q[i,j])}`: `2·n·m` [points](#point).
     * `{f}`: the blinding factor `f` repeated `n` times.
-    * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G’[t]`.
+    * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G`.
     * `{r[i]} = {ct[i]}`: random string consisting of `n·m` 32-byte ciphertext elements.
 13. If failed to create borromean ring signature `brs`, return nil. The chance of this happening is below 1 in 2<sup>124</sup>. In case of failure, retry [creating blinded value commitment](#create-blinded-value-commitment) with incremented counter. This would yield a new blinding factor `f` that will produce different digit blinding keys in this algorithm.
 14. Return the [value range proof](#value-range-proof):
     * `N`:  number of blinded bits (equals to `2·n`),
     * `exp`: exponent (zero),
     * `vmin`: minimum value (zero),
-    * `{D[t]}`: `n-1` digit commitments encoded as [public keys](#point) (excluding the last digit commitment),
+    * `{D[t],B[t]}`: `n-1` digit commitments encoded as [public keys](#point) (excluding the last digit commitment),
     * `{e,s[t,j]}`: `1 + n·4` 32-byte elements representing a [borromean ring signature](#borromean-ring-signature),
 
 
 
-#### Validate Value Range Proof WIP
+
+
+#### Validate Value Range Proof
 
 **Inputs:**
 
@@ -1313,7 +1314,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `N`: the number of bits in blinded mantissa (8-bit integer, `N = 2·n`).
     * `exp`: the decimal exponent (8-bit integer).
     * `vmin`: the minimum amount (64-bit integer).
-    * `{D[t]}`: the list of `n-1` digit commitments encoded as [points](#point) (excluding the last digit commitment).
+    * `{D[t],B[t]}`: `n-1` digit commitments encoded as [point pairs](#point-pair) (excluding the last digit commitment),
     * `{e0, s[i,j]...}`: the [borromean ring signature](#borromean-ring-signature) encoded as a sequence of `1 + 4·n` 32-byte integers.
 4. `message`: a variable-length string.
 
@@ -1334,25 +1335,22 @@ In case of failure, returns `nil` instead of the range proof.
 4. Calculate the message to validate: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 5. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 6. For `t` from `0` to `n-1` (each digit):
-    1. Calculate generator `G’[t]`:
-        1. If `t` is less than `n-1`: set `G’[t] = G[t]`, where `G[t]` is a [tertiary generator](#generators) at index `t`.
-        2. If `t` equals `n-1`: set `G’[t] = G - ∑G[i]` for all `i` from `0` to `n-2`.
-    2. For `i` from `0` to `base-1` (each digit’s value):
-        1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`. For efficiency perform recursive point addition of `-(base^t)·H` instead of scalar multiplication.
+    1. For `i` from `0` to `base-1` (each digit’s value):
+        1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`. For efficiency perform iterative point addition of `-(base^t)·H` instead of scalar multiplication.
         2. Calculate point `Q[t,i] = F[t] - i·(base^t)·C`. For efficiency perform iterative point addition of `-(base^t)·C` instead of scalar multiplication.
 7. [Validate Borromean Ring Signature](#validate-borromean-ring-signature) with the following inputs:
     * `msghash`: the 32-byte string being verified.
     * `n`: number of rings.
     * `m=base`: number of signatures in each ring.
     * `M = 2`
-    * `{(G’[t], J)}`: `2·n` base points.
+    * `{(G, J)·n}`: `2·n` base points.
     * `{(P[i,j], Q[i,j])}`: `2·n·m` public keys, [points](#point) on the elliptic curve.
     * `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 8. Return `true` if verification succeeded, or `false` otherwise.
 
 
 
-#### Recover Payload From Value Range Proof WIP
+#### Recover Payload From Value Range Proof
 
 **Inputs:**
 
@@ -1362,7 +1360,7 @@ In case of failure, returns `nil` instead of the range proof.
     * `N`: the number of bits in blinded mantissa (8-bit integer, `N = 2·n`).
     * `exp`: the decimal exponent (8-bit integer).
     * `vmin`: the minimum amount (64-bit integer).
-    * `{D[t]}`: the list of `n-1` digit commitments encoded as [points](#point) (excluding the last digit commitment).
+    * `{D[t],B[t]}`: the list of `n-1` digit commitments encoded as [point pairs](#point-pair) (excluding the last digit commitment).
     * `{e0, s[i,j]...}`: the [borromean ring signature](#borromean-ring-signature) encoded as a sequence of `1 + 4·n` 32-byte integers.
 4. `value`: the 64-bit amount being encrypted and blinded.
 5. `f`: the [value blinding factor](#value-blinding-factor).
@@ -1386,23 +1384,20 @@ In case of failure, returns `nil` instead of the range proof.
 4. Calculate the message to validate: `msghash = Hash256("VRP" || AC || VC || uint64le(N) || uint64le(exp) || uint64le(vmin) || message)` where `N`, `exp`, `vmin` are encoded as 64-bit little-endian integers.
 5. Calculate last digit commitment `D[n-1] = (10^(-exp))·(VC.V - vmin·AC.H) - ∑(D[t])`, where `∑(D[t])` is a sum of all but the last digit commitment specified in the input to this algorithm.
 6. For `t` from `0` to `n-1` (each digit):
-    1. Calculate generator `G’[t]`:
-        1. If `t` is less than `n-1`: set `G’[t] = G[t]`, where `G[t]` is a [tertiary generator](#generators) at index `t`.
-        2. If `t` equals `n-1`: set `G’[t] = G - ∑G[i]` for all `i` from `0` to `n-2`.
-    2. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
-    3. Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
-    4. For `i` from `0` to `base-1` (each digit’s value):
-        1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`. For efficiency perform recursive point addition of `-(base^t)·H` instead of scalar multiplication.
+    1. Calculate `digit[t] = value & (0x03 << 2·t)` where `<<` denotes a bitwise left shift.
+    32 Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
+    43 For `i` from `0` to `base-1` (each digit’s value):
+        1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`. For efficiency perform iterative point addition of `-(base^t)·H` instead of scalar multiplication.
         2. Calculate point `Q[t,i] = F[t] - i·(base^t)·C`. For efficiency perform iterative point addition of `-(base^t)·C` instead of scalar multiplication.
 7. [Recover Payload From Borromean Ring Signature](#recover-payload-from-borromean-ring-signature): compute an array of `2·N` 32-byte chunks `{ct[i]}` using the following inputs (halt and return `nil` if decryption fails):
     * `msghash`: the 32-byte string to be signed.
     * `n=N/2`: number of rings.
     * `m=base`: number of signatures in each ring.
     * `M = 2`
-    * `{(G’[t], J)}`: `2·n` base points.
+    * `{(G, J)·n}`: `2·n` base points.
     * `{(P[i,j], Q[i,j])}`: `2·n·m` public keys, [points](#point) on the elliptic curve.
     * `{f}`: the blinding factor `f` repeated `n` times.
-    * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G’[t]`.
+    * `{j[i]}`: the list of `n` indexes of the designated public keys within each ring, so that `P[t,j[t]] == f·G`.
     * `{e0, s[0,0], ..., s[i,j], ..., s[n-1,m-1]}`: the [borromean ring signature](#borromean-ring-signature), `n·m+1` 32-byte elements.
 8. Derive payload encryption key unique to this payload and the value: `pek = Hash256("VRP.pek" || rek || f || VC)`.
 9. [Decrypt payload](#decrypt-payload): compute an array of `2·N-1` 32-byte chunks: `{pt[i]} = DecryptPayload({ct[i]}, pek)`. If decryption fails, halt and return `nil`.
