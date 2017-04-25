@@ -53,6 +53,16 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store, outputIDs ...bc.Ha
 	return c
 }
 
+// Initial returns the provided Chain's initial block.
+func Initial(tb testing.TB, c *protocol.Chain) *legacy.Block {
+	ctx := context.Background()
+	b1, err := c.GetBlock(ctx, 1)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	return b1
+}
+
 // MakeBlock makes a new block from txs, commits it, and returns it.
 // It assumes c's consensus program requires 0 signatures.
 // (This is true for chains returned by NewChain.)

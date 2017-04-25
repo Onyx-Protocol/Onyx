@@ -15,6 +15,7 @@ import (
 	"chain/core/txbuilder"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/bc/bctest"
 	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 	"chain/testutil"
@@ -108,7 +109,7 @@ func (f submitterFunc) Submit(ctx context.Context, tx *legacy.Tx) error {
 
 func TestWaitForTxInBlock(t *testing.T) {
 	c := prottest.NewChain(t)
-	submittedTx := prottest.NewIssuanceTx(t, c)
+	submittedTx := bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash())
 	a := &API{
 		chain: c,
 		submitter: submitterFunc(func(context.Context, *legacy.Tx) error {
@@ -130,15 +131,15 @@ func TestWaitForTxInBlock(t *testing.T) {
 	// Make a block with some transactions but not the transaction
 	// that we're looking for.
 	_ = prottest.MakeBlock(t, c, []*legacy.Tx{
-		prottest.NewIssuanceTx(t, c),
-		prottest.NewIssuanceTx(t, c),
+		bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash()),
+		bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash()),
 	})
 	// Make a block with a few transactions, including the one
 	// we're waiting for.
 	b := prottest.MakeBlock(t, c, []*legacy.Tx{
-		prottest.NewIssuanceTx(t, c),
+		bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash()),
 		submittedTx, // bingo
-		prottest.NewIssuanceTx(t, c),
+		bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash()),
 	})
 
 	// Make sure that the goroutine found the tx and at the right height.
@@ -152,7 +153,7 @@ func TestWaitForTxInBlockResubmits(t *testing.T) {
 	const timesToResubmit = 5
 
 	c := prottest.NewChain(t)
-	orig := prottest.NewIssuanceTx(t, c)
+	orig := bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash())
 	a := &API{chain: c}
 
 	// Record every time the Submit function is called.
