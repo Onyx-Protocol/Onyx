@@ -376,7 +376,7 @@ func editAuthzEntry(client *rpc.Client, action string, req grantReq) (ok bool) {
 	}[action]
 	err := client.Call(context.Background(), path, req, nil)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error: %s %v: %v\n", action, req, err)
+		fmt.Fprintf(os.Stderr, "error: %s %v: %v\n", action, req, err)
 	}
 	return err == nil
 }
