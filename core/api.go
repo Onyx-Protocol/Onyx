@@ -214,6 +214,13 @@ func (a *API) buildHandler() {
 func anyCORSHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "content-type")
+		w.Header().Set("Access-Control-Expose-Headers", "Chain-Request-Id")
+		println("reached this", req.URL.Path)
+		if req.Method == "OPTIONS" {
+			println("detected OPTIONS")
+    	return
+		}
 		handler.ServeHTTP(w, req)
 	})
 }
