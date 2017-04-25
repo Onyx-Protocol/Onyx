@@ -38,7 +38,7 @@ func NewAPI(tokens *accesstoken.CredentialStore, networkPrefix string) *API {
 // Authenticate returns the request, with added tokens and/or localhost
 // flags in the context, as appropriate.
 func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
-	ctx := CertAuthn(req)
+	ctx := certAuthn(req)
 
 	token, err := a.tokenAuthn(req)
 	if err == nil && token != "" {
@@ -62,9 +62,7 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 
 // checks the request for a valid client cert list.
 // If found, it is added to the request's context.
-// This function is exported so it can be used when
-// a full API is not available.
-func CertAuthn(req *http.Request) context.Context {
+func certAuthn(req *http.Request) context.Context {
 	if req.TLS != nil && len(req.TLS.PeerCertificates) > 0 {
 		return context.WithValue(req.Context(), x509CertsKey, req.TLS.PeerCertificates)
 	}
