@@ -60,7 +60,8 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 		return nil, err
 	}
 
-	// De-serialize for consistency.
+	// The guard data comes directly from request input, but go ahead and
+	// de-serialize for consistency.
 	var data map[string]interface{}
 	err = json.Unmarshal(g.GuardData, &data)
 	if err != nil {
