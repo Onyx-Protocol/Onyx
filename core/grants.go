@@ -23,7 +23,7 @@ type apiGrant struct {
 // ErrMissingTokenID is returned when a token does not exist.
 var errMissingTokenID = errors.New("id does not exist")
 
-func (a *API) createGrant(ctx context.Context, x apiGrant) (*authz.Grant, error) {
+func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 	if x.GuardType == "access_token" {
 		if id, _ := x.GuardData["id"].(string); !a.accessTokens.Exists(ctx, id) {
 			return nil, errMissingTokenID
@@ -50,13 +50,30 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*authz.Grant, error)
 		return nil, errors.Wrap(err)
 	}
 
-	g := authz.Grant{
+	params := authz.Grant{
 		GuardType: x.GuardType,
 		GuardData: guardData,
 		Policy:    x.Policy,
 	}
+	g, err := authz.StoreGrant(ctx, a.raftDB, params, grantPrefix)
+	if err != nil {
+		return nil, err
+	}
 
-	return authz.StoreGrant(ctx, a.raftDB, g, grantPrefix)
+	// The guard data comes directly from request input, but go ahead and
+	// de-serialize for consistency.
+	var data map[string]interface{}
+	err = json.Unmarshal(g.GuardData, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &apiGrant{
+		GuardType: g.GuardType,
+		GuardData: data,
+		Policy:    g.Policy,
+		CreatedAt: g.CreatedAt,
+	}, nil
 }
 
 func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
