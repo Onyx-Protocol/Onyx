@@ -194,8 +194,6 @@ func (a *API) buildHandler() {
 
 	handler := maxBytes(latencyHandler) // TODO(tessr): consider moving this to non-core specific mux
 	handler = webAssetsHandler(handler)
-	handler = a.authzHandler(m, handler)
-	handler = a.authnHandler(handler)
 	handler = redirectHandler(handler)
 	handler = healthHandler(handler)
 	for _, l := range a.requestLimits {
@@ -250,24 +248,22 @@ type page struct {
 	LastPage bool         `json:"last_page"`
 }
 
-func (a *API) authnHandler(handler http.Handler) http.Handler {
-	auth := authn.NewAPI(a.accessTokens, networkRPCPrefix)
+func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, internalDN *pkix.Name) http.Handler {
+	authenticator := authn.NewAPI(accessTokens, networkRPCPrefix)
+	authorizer := authz.NewAuthorizer(rDB, grantPrefix, policyByRoute)
+	if internalDN != nil {
+		authorizer.GrantInternal(*internalDN)
+	}
+
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		req, err := auth.Authenticate(req)
+		// TODO(tessr): check that this path exists; return early if this path isn't legit
+		req, err := authenticator.Authenticate(req)
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, errNotAuthenticated)
 			return
 		}
-		handler.ServeHTTP(rw, req)
-	})
-}
 
-func (a *API) authzHandler(mux *http.ServeMux, handler http.Handler) http.Handler {
-	auth := authz.NewAuthorizer(a.raftDB, grantPrefix, policyByRoute)
-	auth.GrantInternal(a.internalSubj)
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		// TODO(tessr): check that this path exists; return early if this path isn't legit
-		err := auth.Authorize(req)
+		err = authorizer.Authorize(req)
 		if errors.Root(err) == authz.ErrNotAuthorized {
 			// TODO(kr): remove this workaround once dashboard
 			// knows how to handle ErrNotAuthorized (CH011).
