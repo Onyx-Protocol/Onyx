@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"expvar"
 	"flag"
 	"fmt"
@@ -140,12 +141,16 @@ func main() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
-	var x509Cert *x509.Certificate
+	var (
+		x509Cert   *x509.Certificate
+		internalDN *pkix.Name
+	)
 	if tlsConfig != nil {
 		x509Cert, err = x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
 		if err != nil {
 			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
+		internalDN = &x509Cert.Subject
 	}
 
 	raftDir := filepath.Join(home, "raft") // TODO(kr): better name for this
@@ -184,7 +189,7 @@ func main() {
 	mux.Handle("/raft/", raftDB)
 
 	var handler http.Handler = mux
-	handler = core.AuthHandler(handler, raftDB, accessTokens, &x509Cert.Subject)
+	handler = core.AuthHandler(handler, raftDB, accessTokens, internalDN)
 	handler = reqid.Handler(handler)
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
