@@ -160,21 +160,31 @@ Command grant grants access to a policy
 for the described credentials.
 
 ```
-corectl grant [-cn name] [-ou name] [-t token] [policy]"
+corectl grant [-cn name] [-ou name] [-t token] [policy]
 ```
 
-Flag -cn grants access to any valid X.509 certificate
+Flags:
+
+ * **-cn \<name>**: Common Name;
+this grants access to any valid X.509 certificate
 with the given Common Name.
 
-Flag -ou grants access to any valid X.509 certificate
-with the given Organizational Unit
+ * **-ou \<name>**: Organizational Unit;
+this grants access to any valid X.509 certificate
+with the given Organizational Unit.
 
-Flag -t grants access to the specified access token.
+ * **-t \<token>**: Token;
+this grants access to the specified access token.
 
 If multiple flags are given,
 they will each take effect individually.
 That is, three separate grants will occur,
 not one grant with three restrictions on it.
+
+Arguments:
+
+ * **policy**: the policy to grant access to.
+See [XXX](#) for a list of policies and their meaning.
 
 ### `revoke`
 
@@ -182,16 +192,25 @@ Command revoke revokes access to a policy
 for the described credentials.
 
 ```
-corectl revoke [-cn name] [-ou name] [-t token] [policy]"
+corectl revoke [-cn name] [-ou name] [-t token] [policy]
 ```
 
-Flag -cn revokes access to any valid X.509 certificate
+Flags:
+
+ * **-cn \<name>**: Common Name;
+this revokes access for any valid X.509 certificate
 with the given Common Name.
 
-Flag -ou revokes access to any valid X.509 certificate
-with the given Organizational Unit
+ * **-ou \<name>**: Organizational Unit;
+this revokes access for any valid X.509 certificate
+with the given Organizational Unit.
 
-Flag -t revokes access to the specified access token.
+ * **-t \<token>**: Token;
+this revokes access for the specified access token.
 
 If multiple flags are given,
 they will each take effect individually.
+
+Arguments:
+
+ * **policy**: the policy to revoke access from.
