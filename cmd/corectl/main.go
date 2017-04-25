@@ -324,9 +324,9 @@ func revoke(client *rpc.Client, args []string) {
 }
 
 type grantReq struct {
-	Policy     string
-	Grant_Type string
-	Grant_Data interface{}
+	Policy    string
+	GrantType string      `json:"grant_type"`
+	GrantData interface{} `json:"grant_data"`
 }
 
 func editAuthz(client *rpc.Client, args []string, action string) {
@@ -350,18 +350,18 @@ func editAuthz(client *rpc.Client, args []string, action string) {
 	req := grantReq{Policy: args[0]}
 	ok := true
 	if *flagT != "" {
-		req.Grant_Type = "access_token"
-		req.Grant_Data = map[string]interface{}{"id": *flagT}
+		req.GrantType = "access_token"
+		req.GrantData = map[string]interface{}{"id": *flagT}
 		ok = ok && editAuthzEntry(client, action, req)
 	}
 	if *flagCN != "" {
-		req.Grant_Type = "x509"
-		req.Grant_Data = map[string]interface{}{"subject": map[string]string{"CN": *flagCN}}
+		req.GrantType = "x509"
+		req.GrantData = map[string]interface{}{"subject": map[string]string{"CN": *flagCN}}
 		ok = ok && editAuthzEntry(client, action, req)
 	}
 	if *flagOU != "" {
-		req.Grant_Type = "x509"
-		req.Grant_Data = map[string]interface{}{"subject": map[string]string{"OU": *flagOU}}
+		req.GrantType = "x509"
+		req.GrantData = map[string]interface{}{"subject": map[string]string{"OU": *flagOU}}
 		ok = ok && editAuthzEntry(client, action, req)
 	}
 	if !ok {
