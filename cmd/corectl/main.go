@@ -212,21 +212,23 @@ func createToken(client *rpc.Client, args []string) {
 	}
 	fmt.Println(tok.Token)
 
-	if len(args) == 2 || *flagNet {
-		req := struct{ Guard_Type, Guard_Data, Policy string }{
-			"access_token",
-			tok.ID,
-			"network", // in case of *flagNet
-		}
-		if len(args) == 2 {
-			req.Policy = args[1]
-		}
-		err = client.Call(context.Background(), "/create-authorization-grant", req, nil)
-		if err != nil {
-			fatalln("rpc error:", err)
-		}
-	} else if *flagNet {
+	req := struct{ Guard_Type, Guard_Data, Policy string }{
+		Guard_Type: "access_token",
+		Guard_Data: tok.ID,
+	}
+	switch {
+	case len(args) == 2:
+		req.Policy = args[1]
+	case *flagNet:
+		req.Policy = "network"
 		fmt.Fprintln(os.Stderr, "warning: the network flag is deprecated")
+	default:
+		req.Policy = "client-readwrite"
+		fmt.Fprintln(os.Stderr, "warning: implicit policy name is deprecated")
+	}
+	err = client.Call(context.Background(), "/create-authorization-grant", req, nil)
+	if err != nil {
+		fatalln("rpc error:", err)
 	}
 }
 

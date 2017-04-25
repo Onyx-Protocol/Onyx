@@ -133,6 +133,11 @@ and grants it access to the named policy.
 corectl create-token [-net] [name] [policy]
 ```
 
+If no policy is given,
+it grants access to policy `client-readwrite`.
+This form is deprecated;
+please provide a policy by name.
+
 Flag `-net` grants access to the policy `network`
 for the new token.
 This flag is deprecated;
