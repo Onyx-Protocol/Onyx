@@ -250,7 +250,7 @@ type page struct {
 	LastPage bool         `json:"last_page"`
 }
 
-func AuthHandler(mux *http.ServeMux, handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, tlsConfig *tls.Config) http.Handler {
+func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, tlsConfig *tls.Config) http.Handler {
 	authenticator := authn.NewAPI(accessTokens, networkRPCPrefix)
 	authorizer := authz.NewAuthorizer(rDB, grantPrefix, policyByRoute)
 

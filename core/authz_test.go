@@ -42,7 +42,7 @@ func TestAuthz(t *testing.T) {
 	mux.Handle("/raft/", raftDB)
 
 	var handler http.Handler = mux
-	handler = AuthHandler(mux, handler, raftDB, accessTokens, nil)
+	handler = AuthHandler(handler, raftDB, accessTokens, nil)
 
 	api := &API{
 		mux:          http.NewServeMux(),
@@ -50,6 +50,7 @@ func TestAuthz(t *testing.T) {
 		accessTokens: accessTokens,
 	}
 	api.buildHandler()
+	mux.Handle("/", api)
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
