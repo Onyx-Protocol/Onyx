@@ -193,6 +193,7 @@ func (a *API) buildHandler() {
 	})
 
 	handler := maxBytes(latencyHandler) // TODO(tessr): consider moving this to non-core specific mux
+	handler = anyCORSHandler(handler)
 	handler = webAssetsHandler(handler)
 	handler = a.authzHandler(m, handler)
 	handler = a.authnHandler(handler)
@@ -208,6 +209,13 @@ func (a *API) buildHandler() {
 		handler = blockchainIDHandler(handler, a.config.BlockchainId.String())
 	}
 	a.handler = handler
+}
+
+func anyCORSHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		handler.ServeHTTP(w, req)
+	})
 }
 
 // Used as a request object for api queries
