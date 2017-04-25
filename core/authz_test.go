@@ -37,13 +37,21 @@ func TestAuthz(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/raft/", raftDB)
+
+	var handler http.Handler = mux
+	handler = AuthHandler(handler, raftDB, accessTokens, nil)
+
 	api := &API{
 		mux:          http.NewServeMux(),
 		raftDB:       raftDB,
 		accessTokens: accessTokens,
 	}
 	api.buildHandler()
-	server := httptest.NewServer(api)
+	mux.Handle("/", api)
+	server := httptest.NewServer(handler)
 	defer server.Close()
 
 	testPolicies := []string{
@@ -120,7 +128,15 @@ func TestAuthz(t *testing.T) {
 			"internal":         false,
 			"public":           false,
 		},
-		"/docs": map[string]bool{ // public is open to all
+		"/raft/msg": map[string]bool{
+			"client-readwrite": false,
+			"client-readonly":  false,
+			"network":          false,
+			"monitoring":       false,
+			"internal":         true,
+			"public":           false,
+		},
+		"/dashboard": map[string]bool{ // public is open to all
 			"client-readwrite": true,
 			"client-readonly":  true,
 			"network":          true,

@@ -4,6 +4,8 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"expvar"
 	"flag"
 	"fmt"
@@ -21,6 +23,7 @@ import (
 	"github.com/kr/secureheader"
 
 	"chain/core"
+	"chain/core/accesstoken"
 	"chain/core/blocksigner"
 	"chain/core/config"
 	"chain/core/generator"
@@ -139,12 +142,36 @@ func main() {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
+	var internalDN *pkix.Name
+	if tlsConfig != nil {
+		x509Cert, err := x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
+		if err != nil {
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+		}
+		internalDN = &x509Cert.Subject
+	}
+
 	raftDir := filepath.Join(home, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
 	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, tlsConfig != nil)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
+
+	sql.EnableQueryLogging(*logQueries)
+	db, err := sql.Open("hapg", *dbURL)
+	if err != nil {
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+	}
+	db.SetMaxOpenConns(*maxDBConns)
+	db.SetMaxIdleConns(*maxDBConns)
+
+	err = migrate.Run(db)
+	if err != nil {
+		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+	}
+
+	accessTokens := &accesstoken.CredentialStore{DB: db}
 
 	// We add handlers to our serve mux in two phases. In the first phase, we start
 	// listening on the raft routes (`/raft`). This allows us to do things like
@@ -156,10 +183,10 @@ func main() {
 	// cored functionality, and add the rest of the core routes to the serve mux.
 	// That is the second phase.
 	mux := http.NewServeMux()
-	// TODO(tessr): authenticate raft endpoints
 	mux.Handle("/raft/", raftDB)
 
 	var handler http.Handler = mux
+	handler = core.AuthHandler(handler, raftDB, accessTokens, internalDN)
 	handler = reqid.Handler(handler)
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
@@ -185,19 +212,6 @@ func main() {
 		err := server.Serve(listener)
 		chainlog.Fatalkv(ctx, chainlog.KeyError, errors.Wrap(err, "Serve"))
 	}()
-
-	sql.EnableQueryLogging(*logQueries)
-	db, err := sql.Open("hapg", *dbURL)
-	if err != nil {
-		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-	}
-	db.SetMaxOpenConns(*maxDBConns)
-	db.SetMaxIdleConns(*maxDBConns)
-
-	err = migrate.Run(db)
-	if err != nil {
-		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-	}
 	resetIfAllowedAndRequested(db, raftDB)
 
 	conf, err := config.Load(ctx, db, raftDB)
