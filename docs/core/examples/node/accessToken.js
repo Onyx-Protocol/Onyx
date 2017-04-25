@@ -1,3 +1,5 @@
+const chain = require('chain-sdk')
+
 // snippet connect-with-token
 const client = new chain.Client({
   url: 'https://remote-server-url:1999',

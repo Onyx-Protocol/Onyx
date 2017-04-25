@@ -1,3 +1,9 @@
+import java.util.*;
+
+import com.chain.api.*;
+import com.chain.http.*;
+import com.chain.signing.*;
+
 // snippet connect-with-token
 Client client = new Client(
   "https://remote-server-url:1999",

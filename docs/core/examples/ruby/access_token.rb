@@ -1,3 +1,5 @@
+require 'chain'
+
 # snippet connect-with-token
 client = Chain::Client.new({
   url: 'https://remote-server-url:1999'
