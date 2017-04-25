@@ -1,3 +1,5 @@
+// Package bctest provides utilities for constructing blockchain data
+// structures.
 package bctest
 
 import (
