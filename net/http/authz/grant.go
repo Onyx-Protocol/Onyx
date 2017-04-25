@@ -15,8 +15,7 @@ import (
 //go:generate protoc -I. -I$CHAIN/.. --go_out=. grant.proto
 
 // StoreGrant stores a new grant in the provided raft store
-func StoreGrant(ctx context.Context, raftDB *raft.Service, in Grant, grantPrefix string) (*Grant, error) {
-	grant := in
+func StoreGrant(ctx context.Context, raftDB *raft.Service, grant Grant, grantPrefix string) (*Grant, error) {
 	key := grantPrefix + grant.Policy
 	if grant.CreatedAt == "" {
 		grant.CreatedAt = time.Now().UTC().Format(time.RFC3339)
