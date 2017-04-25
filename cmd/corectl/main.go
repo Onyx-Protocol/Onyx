@@ -212,25 +212,25 @@ func createToken(client *rpc.Client, args []string) {
 	}
 	fmt.Println(tok.Token)
 
-	req := struct {
+	grant := struct {
 		Guard_Type string
 		Guard_Data interface{}
 		Policy     string
 	}{
 		Guard_Type: "access_token",
-		Guard_Data: map[string]string{"id", tok.ID},
+		Guard_Data: map[string]string{"id": tok.ID},
 	}
 	switch {
 	case len(args) == 2:
-		req.Policy = args[1]
+		grant.Policy = args[1]
 	case *flagNet:
-		req.Policy = "network"
+		grant.Policy = "network"
 		fmt.Fprintln(os.Stderr, "warning: the network flag is deprecated")
 	default:
-		req.Policy = "client-readwrite"
+		grant.Policy = "client-readwrite"
 		fmt.Fprintln(os.Stderr, "warning: implicit policy name is deprecated")
 	}
-	err = client.Call(context.Background(), "/create-authorization-grant", req, nil)
+	err = client.Call(context.Background(), "/create-authorization-grant", grant, nil)
 	if err != nil {
 		fatalln("rpc error:", err)
 	}
