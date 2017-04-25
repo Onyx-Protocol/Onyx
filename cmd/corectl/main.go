@@ -351,17 +351,17 @@ The type of guard (before the = sign) is case-insensitive.
 		GrantData interface{} `json:"grant_data"`
 	}{Policy: args[0]}
 
-	switch upper := strings.ToUpper(args[1]); {
-	case strings.HasPrefix(upper, "TOKEN="):
-		id := args[1][len("TOKEN="):]
+	switch i := strings.Index(args[1], "="); strings.ToUpper(args[1][:i+1]) {
+	case "TOKEN=":
+		id := args[1][i+1:]
 		req.GrantType = "access_token"
 		req.GrantData = map[string]interface{}{"id": id}
-	case strings.HasPrefix(upper, "CN="):
-		cn := args[1][len("CN="):]
+	case "CN=":
+		cn := args[1][i+1:]
 		req.GrantType = "x509"
 		req.GrantData = map[string]interface{}{"subject": map[string]string{"CN": cn}}
-	case strings.HasPrefix(upper, "OU="):
-		ou := args[1][len("OU="):]
+	case "OU=":
+		ou := args[1][i+1:]
 		req.GrantType = "x509"
 		req.GrantData = map[string]interface{}{"subject": map[string]string{"OU": ou}}
 	default:
