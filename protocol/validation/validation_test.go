@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -336,26 +337,26 @@ func TestTxValidation(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		t.Logf("case %d", i)
+		t.Run(c.desc, func(t *testing.T) {
+			fixture = sample(t, nil)
+			tx = legacy.NewTx(*fixture.tx).Tx
+			vs = &validationState{
+				blockchainID: fixture.initialBlockID,
+				tx:           tx,
+				entryID:      tx.ID,
+			}
+			out := tx.Entries[*tx.ResultIds[0]].(*bc.Output)
+			muxID := out.Source.Ref
+			mux = tx.Entries[*muxID].(*bc.Mux)
 
-		fixture = sample(t, nil)
-		tx = legacy.NewTx(*fixture.tx).Tx
-		vs = &validationState{
-			blockchainID: fixture.initialBlockID,
-			tx:           tx,
-			entryID:      tx.ID,
-		}
-		out := tx.Entries[*tx.ResultIds[0]].(*bc.Output)
-		muxID := out.Source.Ref
-		mux = tx.Entries[*muxID].(*bc.Mux)
-
-		if c.f != nil {
-			c.f()
-		}
-		err := checkValid(vs, tx.TxHeader)
-		if rootErr(err) != c.err {
-			t.Errorf("case %d (%s): got error %s, want %s; validationState is:\n%s", i, c.desc, err, c.err, spew.Sdump(vs))
-		}
+			if c.f != nil {
+				c.f()
+			}
+			err := checkValid(vs, tx.TxHeader)
+			if rootErr(err) != c.err {
+				t.Errorf("case %d (%s): got error %s, want %s; validationState is:\n%s", i, c.desc, err, c.err, spew.Sdump(vs))
+			}
+		})
 	}
 }
 
@@ -384,15 +385,16 @@ func TestBlockHeaderValid(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		t.Logf("case %d", i)
-		proto.Unmarshal(baseBytes, &bh)
-		if c.f != nil {
-			c.f()
-		}
-		err := checkValidBlockHeader(&bh)
-		if err != c.err {
-			t.Errorf("case %d: got error %s, want %s; bh is:\n%s", i, err, c.err, spew.Sdump(bh))
-		}
+		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+			proto.Unmarshal(baseBytes, &bh)
+			if c.f != nil {
+				c.f()
+			}
+			err := checkValidBlockHeader(&bh)
+			if err != c.err {
+				t.Errorf("case %d: got error %s, want %s; bh is:\n%s", i, err, c.err, spew.Sdump(bh))
+			}
+		})
 	}
 }
 
