@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"chain/database/pg/pgtest"
+	"chain/protocol/bc/bctest"
 	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
 )
@@ -17,8 +18,8 @@ func TestAnnotatedTxs(t *testing.T) {
 	indexer := NewIndexer(db, c, nil)
 	b := &legacy.Block{
 		Transactions: []*legacy.Tx{
-			prottest.NewIssuanceTx(t, c),
-			prottest.NewIssuanceTx(t, c),
+			bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash()),
+			bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash()),
 		},
 	}
 	txs, err := indexer.insertAnnotatedTxs(ctx, b)

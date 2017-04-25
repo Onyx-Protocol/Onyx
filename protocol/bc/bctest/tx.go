@@ -1,7 +1,6 @@
-package prottest
+package bctest
 
 import (
-	"context"
 	"crypto/rand"
 	"testing"
 	"time"
@@ -9,7 +8,6 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519/chainkd"
-	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
@@ -23,13 +21,7 @@ import (
 //
 // The asset issued is created from randomly-generated keys. The resulting
 // transaction is finalized (signed with a TXSIGHASH commitment).
-func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *legacy.Tx {
-	ctx := context.Background()
-	b1, err := c.GetBlock(ctx, 1)
-	if err != nil {
-		testutil.FatalErr(tb, err)
-	}
-
+func NewIssuanceTx(tb testing.TB, initial bc.Hash) *legacy.Tx {
 	// Generate a random key pair for the asset being issued.
 	xprv, xpub, err := chainkd.NewXKeys(nil)
 	if err != nil {
@@ -53,7 +45,7 @@ func NewIssuanceTx(tb testing.TB, c *protocol.Chain) *legacy.Tx {
 		testutil.FatalErr(tb, err)
 	}
 	assetdef := []byte(`{"type": "prottest issuance"}`)
-	txin := legacy.NewIssuanceInput(nonce[:], 100, nil, b1.Hash(), issuanceProgram, nil, assetdef)
+	txin := legacy.NewIssuanceInput(nonce[:], 100, nil, initial, issuanceProgram, nil, assetdef)
 
 	tx := legacy.NewTx(legacy.TxData{
 		Version: 1,
