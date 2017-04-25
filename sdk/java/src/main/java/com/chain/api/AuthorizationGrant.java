@@ -14,7 +14,7 @@ import com.google.gson.annotations.SerializedName;
  * <p>
  * There are two types of guards: {@link AccessTokenGuard}, which matches against
  * access tokens by ID, and {@link X509Guard}, which matches against X.509 client
- * certificates that match a set of fields.
+ * certificates that match a set of attributes.
  * <p>
  * Currently, there are four policies exposed through the API:
  * <p><ul>
@@ -60,12 +60,11 @@ public class AuthorizationGrant {
 
   /**
    * A guard that will provide access for X.509 certificates whose Subject
-   * field matches a specified list of components. If a certificate's
-   * Subject contains all of the component values specified in the guard,
-   * the guard will produce a positive match.
+   * attribute matches a specified list of sub-attributes, such as CN or OU.
+   * If a certificate's Subject contains all of the sub-attribute values
+   * specified in the guard, the guard will produce a positive match.
    */
   public static class X509Guard {
-
     public static class Subject {
       @SerializedName("C")
       List<String> country;
@@ -102,8 +101,8 @@ public class AuthorizationGrant {
     }
 
     /**
-     * Specifies a value for the Country component. Multiple values can be specified.
-     * @param s value for Country component
+     * Specifies a value for the Country attribute. Multiple values can be specified.
+     * @param s value for Country attribute
      * @return updated guard object
      */
     public X509Guard addCountry(String s) {
@@ -115,8 +114,8 @@ public class AuthorizationGrant {
     }
 
     /**
-     * Specifies a value for the Organization component. Multiple values can be specified.
-     * @param s value for Organization component
+     * Specifies a value for the Organization attribute. Multiple values can be specified.
+     * @param s value for Organization attribute
      * @return updated guard object
      */
     public X509Guard addOrganization(String s) {
@@ -128,8 +127,8 @@ public class AuthorizationGrant {
     }
 
     /**
-     * Specifies a value for the Organizational Unit component. Multiple values can be specified.
-     * @param s value for Organizational Unit component
+     * Specifies a value for the Organizational Unit attribute. Multiple values can be specified.
+     * @param s value for Organizational Unit attribute
      * @return updated guard object
      */
     public X509Guard addOrganizationalUnit(String s) {
@@ -141,8 +140,8 @@ public class AuthorizationGrant {
     }
 
     /**
-     * Specifies a value for the Locality component. Multiple values can be specified.
-     * @param s value for Locality component
+     * Specifies a value for the Locality attribute. Multiple values can be specified.
+     * @param s value for Locality attribute
      * @return updated guard object
      */
     public X509Guard addLocality(String s) {
@@ -154,8 +153,8 @@ public class AuthorizationGrant {
     }
 
     /**
-     * Specifies a value for the State/Province component. Multiple values can be specified.
-     * @param s value for State/Province component
+     * Specifies a value for the State/Province attribute. Multiple values can be specified.
+     * @param s value for State/Province attribute
      * @return updated guard object
      */
     public X509Guard addStateOrProvince(String s) {
@@ -167,8 +166,8 @@ public class AuthorizationGrant {
     }
 
     /**
-     * Specifies a value for the Street Address component. Multiple values can be specified.
-     * @param s value for Street Address component
+     * Specifies a value for the Street Address attribute. Multiple values can be specified.
+     * @param s value for Street Address attribute
      * @return updated guard object
      */
     public X509Guard addStreetAddress(String s) {
@@ -180,8 +179,8 @@ public class AuthorizationGrant {
     }
 
     /**
-     * Specifies a value for the Postal Code component. Multiple values can be specified.
-     * @param s value for Postal Code component
+     * Specifies a value for the Postal Code attribute. Multiple values can be specified.
+     * @param s value for Postal Code attribute
      * @return updated guard object
      */
     public X509Guard addPostalCode(String s) {
@@ -193,8 +192,8 @@ public class AuthorizationGrant {
     }
 
     /**
-     * Specifies a value for the Serial Number component.
-     * @param s value for Serial Number component
+     * Specifies a value for the Serial Number attribute.
+     * @param s value for Serial Number attribute
      * @return updated guard object
      */
     public X509Guard setSerialNumber(String s) {
@@ -203,8 +202,8 @@ public class AuthorizationGrant {
     }
 
     /**
-     * Specifies a value for the Common Name component.
-     * @param s value for Common Name component
+     * Specifies a value for the Common Name attribute.
+     * @param s value for Common Name attribute
      * @return updated guard object
      */
     public X509Guard setCommonName(String s) {
