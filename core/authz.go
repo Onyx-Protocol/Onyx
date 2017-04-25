@@ -82,6 +82,4 @@ var policyByRoute = map[string][]string{
 	"/dashboard/mockhsms":                     {"public"},
 	"/dashboard/transaction-feeds":            {"public"},
 	"/dashboard/transaction-feeds/create":     {"public"},
-
-	"/docs": {"public"},
 }
