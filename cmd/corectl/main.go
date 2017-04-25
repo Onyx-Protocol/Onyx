@@ -212,9 +212,13 @@ func createToken(client *rpc.Client, args []string) {
 	}
 	fmt.Println(tok.Token)
 
-	req := struct{ Guard_Type, Guard_Data, Policy string }{
+	req := struct {
+		Guard_Type string
+		Guard_Data interface{}
+		Policy     string
+	}{
 		Guard_Type: "access_token",
-		Guard_Data: tok.ID,
+		Guard_Data: map[string]string{"id", tok.ID},
 	}
 	switch {
 	case len(args) == 2:
