@@ -23,7 +23,7 @@ import (
 //
 // The asset issued is created from randomly-generated keys. The resulting
 // transaction is finalized (signed with a TXSIGHASH commitment).
-func NewIssuanceTx(tb testing.TB, initial bc.Hash) *legacy.Tx {
+func NewIssuanceTx(tb testing.TB, initial bc.Hash, opts ...func(*legacy.Tx)) *legacy.Tx {
 	// Generate a random key pair for the asset being issued.
 	xprv, xpub, err := chainkd.NewXKeys(nil)
 	if err != nil {
@@ -58,6 +58,10 @@ func NewIssuanceTx(tb testing.TB, initial bc.Hash) *legacy.Tx {
 			legacy.NewTxOutput(txin.AssetID(), 100, []byte{0xbe, 0xef}, nil),
 		},
 	})
+
+	for _, opt := range opts {
+		opt(tx)
+	}
 
 	// Sign with a simple TXSIGHASH signature.
 	builder = vmutil.NewBuilder()
