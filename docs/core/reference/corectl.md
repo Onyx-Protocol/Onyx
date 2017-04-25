@@ -151,3 +151,45 @@ other configuration will be deleted.
 ```
 corectl reset
 ```
+
+### `grant`
+
+Command grant grants access to a policy
+for the described credentials.
+
+```
+corectl grant [-cn name] [-ou name] [-t token] [policy]"
+```
+
+Flag -cn grants access to any valid X.509 certificate
+with the given Common Name.
+
+Flag -ou grants access to any valid X.509 certificate
+with the given Organizational Unit
+
+Flag -t grants access to the specified access token.
+
+If multiple flags are given,
+they will each take effect individually.
+That is, three separate grants will occur,
+not one grant with three restrictions on it.
+
+### `revoke`
+
+Command revoke revokes access to a policy
+for the described credentials.
+
+```
+corectl revoke [-cn name] [-ou name] [-t token] [policy]"
+```
+
+Flag -cn revokes access to any valid X.509 certificate
+with the given Common Name.
+
+Flag -ou revokes access to any valid X.509 certificate
+with the given Organizational Unit
+
+Flag -t revokes access to the specified access token.
+
+If multiple flags are given,
+they will each take effect individually.

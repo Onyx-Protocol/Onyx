@@ -52,6 +52,8 @@ var commands = map[string]*command{
 	"create-token":         {createToken},
 	"config":               {configNongenerator},
 	"reset":                {reset},
+	"grant":                {grant},
+	"revoke":               {revoke},
 }
 
 func main() {
@@ -311,6 +313,72 @@ func reset(client *rpc.Client, args []string) {
 	if err != nil {
 		fatalln("rpc error:", err)
 	}
+}
+
+func grant(client *rpc.Client, args []string) {
+	editAuthz(client, args, "grant")
+}
+
+func revoke(client *rpc.Client, args []string) {
+	editAuthz(client, args, "revoke")
+}
+
+type grantReq struct {
+	Policy     string
+	Grant_Type string
+	Grant_Data interface{}
+}
+
+func editAuthz(client *rpc.Client, args []string, action string) {
+	usage := "usage: corectl " + action + " [-cn name] [-ou name] [-t token] [policy]"
+	var flags flag.FlagSet
+	flagT := flags.String("t", "", action+" `access-token` access")
+	flagCN := flags.String("cn", "", action+" X.509 `Common Name` access")
+	flagOU := flags.String("ou", "", action+" X.509 `Organizational Unit` access")
+
+	flags.Usage = func() {
+		fmt.Println(usage)
+		flags.PrintDefaults()
+		os.Exit(1)
+	}
+	flags.Parse(args)
+	args = flags.Args()
+	if len(args) < 2 {
+		fatalln(usage)
+	}
+
+	req := grantReq{Policy: args[0]}
+	ok := true
+	if *flagT != "" {
+		req.Grant_Type = "access_token"
+		req.Grant_Data = map[string]interface{}{"id": *flagT}
+		ok = ok && editAuthzEntry(client, action, req)
+	}
+	if *flagCN != "" {
+		req.Grant_Type = "x509"
+		req.Grant_Data = map[string]interface{}{"subject": map[string]string{"CN": *flagCN}}
+		ok = ok && editAuthzEntry(client, action, req)
+	}
+	if *flagOU != "" {
+		req.Grant_Type = "x509"
+		req.Grant_Data = map[string]interface{}{"subject": map[string]string{"OU": *flagOU}}
+		ok = ok && editAuthzEntry(client, action, req)
+	}
+	if !ok {
+		os.Exit(1)
+	}
+}
+
+func editAuthzEntry(client *rpc.Client, action string, req grantReq) (ok bool) {
+	path := map[string]string{
+		"grant":  "/create-authorization-grant",
+		"revoke": "/delete-authorization-grant",
+	}[action]
+	err := client.Call(context.Background(), path, req, nil)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error: %s %v: %v\n", action, req, err)
+	}
+	return err == nil
 }
 
 func mustRPCClient() *rpc.Client {
