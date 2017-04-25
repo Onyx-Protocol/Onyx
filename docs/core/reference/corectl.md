@@ -50,6 +50,8 @@ $ go install chain/cmd/corectl
 * [create-block-keypair](#create-block-keypair)
 * [create-token](#create-token)
 * [reset](#reset)
+* [grant](#grant)
+* [revoke](#revoke)
 
 ### `migrate`
 
