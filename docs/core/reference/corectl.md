@@ -160,32 +160,20 @@ Command grant grants access to a policy
 for the described credentials.
 
 ```
-corectl grant [-cn name] [-ou name] [-t token] [policy]
+corectl grant [policy] [guard]
 ```
-
-Flags:
-
- * **-cn \<name>**: Common Name;
-this grants access to any valid X.509 certificate
-with the given Common Name.
-
- * **-ou \<name>**: Organizational Unit;
-this grants access to any valid X.509 certificate
-with the given Organizational Unit.
-
- * **-t \<token>**: Token;
-this grants access to the specified access token.
-
-If multiple flags are given,
-they will each take effect individually.
-That is, three separate grants will occur,
-not one grant with three restrictions on it.
 
 Arguments:
 
  * **policy**: the policy to grant access to.
 See [Authentication and Authorization](../learn-more/authentication)
 for a list of policies and their meaning.
+ * **guard**: indicates what authentication credentials to require.
+It must take one of three forms:
+   * `token=[name]` to affect an access token
+   * `CN=[name]` to affect an X.509 Common Name
+   * `OU=[name]` to affect an X.509 Organizational Unit
+The type of guard (before the = sign) is case-insensitive.
 
 ### `revoke`
 
@@ -193,25 +181,16 @@ Command revoke revokes access to a policy
 for the described credentials.
 
 ```
-corectl revoke [-cn name] [-ou name] [-t token] [policy]
+corectl revoke [policy] [guard]
 ```
-
-Flags:
-
- * **-cn \<name>**: Common Name;
-this revokes access for any valid X.509 certificate
-with the given Common Name.
-
- * **-ou \<name>**: Organizational Unit;
-this revokes access for any valid X.509 certificate
-with the given Organizational Unit.
-
- * **-t \<token>**: Token;
-this revokes access for the specified access token.
-
-If multiple flags are given,
-they will each take effect individually.
 
 Arguments:
 
  * **policy**: the policy to revoke access from.
+ * **guard**: indicates what authentication credentials to affect.
+It must take one of three forms:
+   * `token=[name]` to affect an access token
+   * `CN=[name]` to affect an X.509 Common Name
+   * `OU=[name]` to affect an X.509 Organizational Unit
+The type of guard (before the = sign) is case-insensitive.
+

@@ -323,63 +323,59 @@ func revoke(client *rpc.Client, args []string) {
 	editAuthz(client, args, "revoke")
 }
 
-type grantReq struct {
-	Policy    string
-	GrantType string      `json:"grant_type"`
-	GrantData interface{} `json:"grant_data"`
-}
-
 func editAuthz(client *rpc.Client, args []string, action string) {
-	usage := "usage: corectl " + action + " [-cn name] [-ou name] [-t token] [policy]"
+	usage := "usage: corectl " + action + " [policy] [guard]"
 	var flags flag.FlagSet
-	flagT := flags.String("t", "", action+" `access-token` access")
-	flagCN := flags.String("cn", "", action+" X.509 `Common Name` access")
-	flagOU := flags.String("ou", "", action+" X.509 `Organizational Unit` access")
 
 	flags.Usage = func() {
-		fmt.Println(usage)
-		fmt.Println("\nAt least one flag must be provided:")
-		flags.PrintDefaults()
+		fmt.Fprintln(os.Stderr, usage)
+		fmt.Fprintln(os.Stderr, `
+Where guard is one of:
+  token=[name]   to affect an access token
+  CN=[name]      to affect an X.509 Common Name
+  OU=[name]      to affect an X.509 Organizational Unit
+
+The type of guard (before the = sign) is case-insensitive.
+`)
 		os.Exit(1)
 	}
 	flags.Parse(args)
 	args = flags.Args()
-	if len(args) != 1 || *flagT == "" && *flagCN == "" && *flagOU == "" {
+	if len(args) != 2 {
 		fatalln(usage)
 	}
 
-	req := grantReq{Policy: args[0]}
-	ok := true
-	if *flagT != "" {
-		req.GrantType = "access_token"
-		req.GrantData = map[string]interface{}{"id": *flagT}
-		ok = ok && editAuthzEntry(client, action, req)
-	}
-	if *flagCN != "" {
-		req.GrantType = "x509"
-		req.GrantData = map[string]interface{}{"subject": map[string]string{"CN": *flagCN}}
-		ok = ok && editAuthzEntry(client, action, req)
-	}
-	if *flagOU != "" {
-		req.GrantType = "x509"
-		req.GrantData = map[string]interface{}{"subject": map[string]string{"OU": *flagOU}}
-		ok = ok && editAuthzEntry(client, action, req)
-	}
-	if !ok {
-		os.Exit(1)
-	}
-}
+	req := struct {
+		Policy    string
+		GrantType string      `json:"grant_type"`
+		GrantData interface{} `json:"grant_data"`
+	}{Policy: args[0]}
 
-func editAuthzEntry(client *rpc.Client, action string, req grantReq) (ok bool) {
+	switch upper := strings.ToUpper(args[1]); {
+	case strings.HasPrefix(upper, "TOKEN="):
+		id := args[1][len("TOKEN="):]
+		req.GrantType = "access_token"
+		req.GrantData = map[string]interface{}{"id": id}
+	case strings.HasPrefix(upper, "CN="):
+		cn := args[1][len("CN="):]
+		req.GrantType = "x509"
+		req.GrantData = map[string]interface{}{"subject": map[string]string{"CN": cn}}
+	case strings.HasPrefix(upper, "OU="):
+		ou := args[1][len("OU="):]
+		req.GrantType = "x509"
+		req.GrantData = map[string]interface{}{"subject": map[string]string{"OU": ou}}
+	default:
+		fatalln(usage)
+	}
+
 	path := map[string]string{
 		"grant":  "/create-authorization-grant",
 		"revoke": "/delete-authorization-grant",
 	}[action]
 	err := client.Call(context.Background(), path, req, nil)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s %v: %v\n", action, req, err)
+		fatalln("error:", action, fmt.Sprintf("%+v:", req), err)
 	}
-	return err == nil
 }
 
 func mustRPCClient() *rpc.Client {
