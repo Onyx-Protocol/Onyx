@@ -184,7 +184,8 @@ not one grant with three restrictions on it.
 Arguments:
 
  * **policy**: the policy to grant access to.
-See [XXX](#) for a list of policies and their meaning.
+See [Authentication and Authorization](../learn-more/authentication)
+for a list of policies and their meaning.
 
 ### `revoke`
 
