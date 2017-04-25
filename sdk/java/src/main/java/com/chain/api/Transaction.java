@@ -390,17 +390,6 @@ public class Transaction {
      */
     public static class SigningInstruction {
       /**
-       * The id of the asset being issued or spent.
-       */
-      @SerializedName("asset_id")
-      public String assetID;
-
-      /**
-       * The number of units of the asset being issued or spent.
-       */
-      public long amount;
-
-      /**
        * The input's position in a transaction's list of inputs.
        */
       public int position;
