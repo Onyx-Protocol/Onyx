@@ -3,8 +3,6 @@ package core
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"crypto/x509/pkix"
 	"expvar"
 	"fmt"
@@ -250,12 +248,11 @@ type page struct {
 	LastPage bool         `json:"last_page"`
 }
 
-func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, internalDN pkix.Name) http.Handler {
+func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, internalDN *pkix.Name) http.Handler {
 	authenticator := authn.NewAPI(accessTokens, networkRPCPrefix)
 	authorizer := authz.NewAuthorizer(rDB, grantPrefix, policyByRoute)
-
 	if internalDN != nil {
-		authorizer.GrantInternal(internalDN)
+		authorizer.GrantInternal(*internalDN)
 	}
 
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
