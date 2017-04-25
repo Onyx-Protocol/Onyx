@@ -295,6 +295,11 @@ type submitArg struct {
 	WaitUntil    string `json:"wait_until"` // values none, confirmed, processed. default: processed
 }
 
+// POST /validate-transaction
+func (a *API) validate(ctx context.Context, tx *legacy.Tx) error {
+	return a.chain.ValidateTx(tx.Tx)
+}
+
 // POST /submit-transaction
 func (a *API) submit(ctx context.Context, x submitArg) (interface{}, error) {
 	if a.leader.State() != leader.Leading {
