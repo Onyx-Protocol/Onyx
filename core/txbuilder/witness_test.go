@@ -47,12 +47,7 @@ func TestInferConstraints(t *testing.T) {
 }
 
 func TestWitnessJSON(t *testing.T) {
-	assetID := bc.NewAssetID([32]byte{0xff})
 	si := &SigningInstruction{
-		AssetAmount: bc.AssetAmount{
-			AssetId: &assetID,
-			Amount:  21,
-		},
 		Position: 17,
 		SignatureWitnesses: []*signatureWitness{
 			&signatureWitness{

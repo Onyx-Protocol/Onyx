@@ -154,12 +154,7 @@ func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxo, refData
 ) {
 	txInput := legacy.NewSpendInput(nil, u.SourceID, u.AssetID, u.Amount, u.SourcePos, u.ControlProgram, u.RefDataHash, refData)
 
-	sigInst := &txbuilder.SigningInstruction{
-		AssetAmount: bc.AssetAmount{
-			AssetId: &u.AssetID,
-			Amount:  u.Amount,
-		},
-	}
+	sigInst := &txbuilder.SigningInstruction{}
 
 	path := signers.Path(account, signers.AccountKeySpace, u.ControlProgramIndex)
 	sigInst.AddWitnessKeys(account.XPubs, path, account.Quorum)
