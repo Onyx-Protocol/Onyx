@@ -250,21 +250,12 @@ type page struct {
 	LastPage bool         `json:"last_page"`
 }
 
-func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, tlsConfig *tls.Config) http.Handler {
+func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, internalDN pkix.Name) http.Handler {
 	authenticator := authn.NewAPI(accessTokens, networkRPCPrefix)
 	authorizer := authz.NewAuthorizer(rDB, grantPrefix, policyByRoute)
 
-	if tlsConfig != nil {
-		// TODO(kr): set Leaf in TLSConfig and use that here.
-		// TODO(tessr): ^ do I keep this TODO?
-		x509Cert, err := x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
-		if err != nil {
-			panic(err)
-		}
-
-		if x509Cert != nil {
-			authorizer.GrantInternal(x509Cert.Subject)
-		}
+	if internalDN != nil {
+		authorizer.GrantInternal(internalDN)
 	}
 
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {

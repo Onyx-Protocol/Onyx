@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"expvar"
 	"flag"
 	"fmt"
@@ -139,6 +140,13 @@ func main() {
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
+	var x509Cert *x509.Certificate
+	if tlsConfig != nil {
+		x509Cert, err = x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
+		if err != nil {
+			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
+		}
+	}
 
 	raftDir := filepath.Join(home, "raft") // TODO(kr): better name for this
 	// TODO(tessr): remove tls param once we have tls everywhere
@@ -176,7 +184,7 @@ func main() {
 	mux.Handle("/raft/", raftDB)
 
 	var handler http.Handler = mux
-	handler = core.AuthHandler(handler, raftDB, accessTokens, tlsConfig)
+	handler = core.AuthHandler(handler, raftDB, accessTokens, x509Cert.Subject)
 	handler = reqid.Handler(handler)
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
