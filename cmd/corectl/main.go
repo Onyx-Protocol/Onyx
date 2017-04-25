@@ -351,19 +351,16 @@ The type of guard (before the = sign) is case-insensitive.
 		GrantData interface{} `json:"grant_data"`
 	}{Policy: args[0]}
 
-	switch i := strings.Index(args[1], "="); strings.ToUpper(args[1][:i+1]) {
+	switch typ, data := splitAfter2(args[1], "="); typ {
 	case "TOKEN=":
-		id := args[1][i+1:]
 		req.GrantType = "access_token"
-		req.GrantData = map[string]interface{}{"id": id}
+		req.GrantData = map[string]interface{}{"id": data}
 	case "CN=":
-		cn := args[1][i+1:]
 		req.GrantType = "x509"
-		req.GrantData = map[string]interface{}{"subject": map[string]string{"CN": cn}}
+		req.GrantData = map[string]interface{}{"subject": map[string]string{"CN": data}}
 	case "OU=":
-		ou := args[1][i+1:]
 		req.GrantType = "x509"
-		req.GrantData = map[string]interface{}{"subject": map[string]string{"OU": ou}}
+		req.GrantData = map[string]interface{}{"subject": map[string]string{"OU": data}}
 	default:
 		fatalln(usage)
 	}
@@ -432,4 +429,12 @@ func help(w io.Writer) {
 	fmt.Fprint(w, "\nFlags:\n")
 	fmt.Fprintln(w, "\t-version   print version information")
 	fmt.Fprintln(w)
+}
+
+// splitAfter2 is like strings.SplitAfterN with n=2.
+// If sep is not in s, it returns a="" and b=s.
+func splitAfter2(s, sep string) (a, b string) {
+	i := strings.Index(s, sep)
+	k := i + len(sep)
+	return s[:k], s[k:]
 }
