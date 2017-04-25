@@ -206,6 +206,7 @@ func createToken(client *rpc.Client, args []string) {
 
 	req := struct{ ID string }{args[0]}
 	var tok accesstoken.Token
+	// TOOD(kr): find a way to make this atomic with the grant below
 	err := client.Call(context.Background(), "/create-access-token", req, &tok)
 	if err != nil {
 		fatalln("rpc error:", err)
@@ -213,12 +214,12 @@ func createToken(client *rpc.Client, args []string) {
 	fmt.Println(tok.Token)
 
 	grant := struct {
-		Guard_Type string
-		Guard_Data interface{}
-		Policy     string
+		GuardType string      `json:"guard_type"`
+		GuardData interface{} `json:"guard_data"`
+		Policy    string
 	}{
-		Guard_Type: "access_token",
-		Guard_Data: map[string]string{"id": tok.ID},
+		GuardType: "access_token",
+		GuardData: map[string]string{"id": tok.ID},
 	}
 	switch {
 	case len(args) == 2:
