@@ -145,6 +145,7 @@ func (a *API) buildHandler() {
 	m.Handle("/update-account-tags", needConfig(a.updateAccountTags))
 	m.Handle("/update-asset-tags", needConfig(a.updateAssetTags))
 	m.Handle("/build-transaction", needConfig(a.build))
+	m.Handle("/validate-transaction", needConfig(a.validate))
 	m.Handle("/submit-transaction", needConfig(a.submit))
 	m.Handle("/create-control-program", needConfig(a.createControlProgram)) // DEPRECATED
 	m.Handle("/create-account-pubkey", needConfig(a.createAccountPubkey))
