@@ -61,7 +61,7 @@ func TestAuthz(t *testing.T) {
 			t.Fatal(err)
 		}
 		tokens[policies[i]] = token
-		err = api.createGrant(ctx, apiGrant{
+		_, err = api.createGrant(ctx, apiGrant{
 			GuardType: "access_token",
 			GuardData: map[string]interface{}{"id": token.ID},
 			Policy:    policies[i],

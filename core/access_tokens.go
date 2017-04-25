@@ -52,7 +52,7 @@ func (a *API) createAccessToken(ctx context.Context, x struct{ ID, Type string }
 		// We've already returned if x.Type wasn't specified, so this must be a bad type.
 		return nil, accesstoken.ErrBadType
 	}
-	err = authz.StoreGrant(ctx, a.raftDB, grant, grantPrefix)
+	_, err = authz.StoreGrant(ctx, a.raftDB, grant, grantPrefix)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
