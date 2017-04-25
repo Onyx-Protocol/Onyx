@@ -343,7 +343,7 @@ func editAuthz(client *rpc.Client, args []string, action string) {
 	}
 	flags.Parse(args)
 	args = flags.Args()
-	if len(args) < 2 {
+	if len(args) != 1 {
 		fatalln(usage)
 	}
 
