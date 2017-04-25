@@ -338,12 +338,13 @@ func editAuthz(client *rpc.Client, args []string, action string) {
 
 	flags.Usage = func() {
 		fmt.Println(usage)
+		fmt.Println("\nAt least one flag must be provided:")
 		flags.PrintDefaults()
 		os.Exit(1)
 	}
 	flags.Parse(args)
 	args = flags.Args()
-	if len(args) != 1 {
+	if len(args) != 1 || *flagT == "" && *flagCN == "" && *flagOU == "" {
 		fatalln(usage)
 	}
 
