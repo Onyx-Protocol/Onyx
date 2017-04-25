@@ -44,7 +44,9 @@
   * [Encrypt Issuance](#encrypt-issuance)
   * [Encrypt Output](#encrypt-output)
   * [Decrypt Output](#decrypt-output)
+* [Security](#security)
 * [Test vectors](#test-vectors)
+* [Glossary](#glossary)
 
 
 
@@ -132,7 +134,9 @@ In this section we will provide a brief overview of various ways to use confiden
 
 **The elliptic curve** is edwards25519 as defined by [[RFC7748](https://tools.ietf.org/html/rfc7748)].
 
-`L` is the **order of edwards25519** as defined by \[[RFC8032](https://tools.ietf.org/html/rfc8032)\] (i.e. 2<sup>252</sup>+27742317777372353535851937790883648493).
+`L` is the **order of edwards25519** as defined by \[[RFC8032](https://tools.ietf.org/html/rfc8032)\]. 
+
+L = 2<sup>252</sup>+27742317777372353535851937790883648493.
 
 ### Scalar
 
@@ -191,44 +195,6 @@ Generator `G` has the following 32-byte encoding:
 Generator `J` has the following 32-byte encoding:
 
     J = 0x00c774b875ed4e395ebb0782b4d93db838d3c4c0840bc970570517555ca71b77
-
-**Tertiary generator points** (`G[i]`) are 31 elliptic curve points defined as decoded hash of the primary generator `G`:
-
-    G[i] = 8·Decode(SHA3-256(byte(i) || Encode(G) || int64le(cnt[i])))
-
-Counter `cnt[i]` is chosen to be the smallest positive integer starting with 0 that yields a valid edwards25519 point for a given index `i`.
-
-    G[0]  = 0xe68528ab16b201331fc980c33eef08f7d114554715d370a2c614182ef296dab3   cnt = 0
-    G[1]  = 0x32011e4f5c29bbc20d5c96500e87e2303a004687895b2d6d944ff687d0dbefad   cnt = 3
-    G[2]  = 0x0d688b311df06d633ced925c1561bea9608f305781c1ab32c55944628181cd1e   cnt = 0
-    G[3]  = 0xe17522742ed8bd11aa5d1f2e341400eb1c6f85b47c46817ea0e90b5d5510b420   cnt = 1
-    G[4]  = 0x67454d0f02d3962508b89d4209996943825dbf261e7e6e07a842d45b33b2baad   cnt = 0
-    G[5]  = 0xc7f0c5eebcb5f37194b7ab96af66e79e0aa37a6cdbde5fbd6af13637b6f05cab   cnt = 2
-    G[6]  = 0xc572d7c6f3ef692efbd13928dad208c4572ffe371d88f70a763af3a11cac8709   cnt = 2
-    G[7]  = 0xe450cc93f07e0c18a79c1f0572a6971da37bfa81c6003835acf68a8afc1ca33b   cnt = 1
-    G[8]  = 0x409ae3e34c0ff3929bceaf7b934923809b461038a1d31c7a0928c8c7ab707604   cnt = 5
-    G[9]  = 0xc43d0400219b6745b95ff81176dfbbd5d33b9cc869e171411fff96656273b96c   cnt = 3
-    G[10] = 0xd1eeee54b75cc277bf8a6454accce6086ab24750b0d58a11fb7cad35eba42ff6   cnt = 4
-    G[11] = 0x2446b2efa69fb26a4268037909c466c9b5083bfecf3c2ab3a420114a6f91f0eb   cnt = 1
-    G[12] = 0xd0c4ee744ac129d0282a1554ca7a339e3d9db740826d365eefe984c0e5023969   cnt = 0
-    G[13] = 0xe1d621717a876830e0c7c1bf8e7e674cf5cbe3aa1e71885d7d347854277aa6ca   cnt = 0
-    G[14] = 0x6e95425b9481a70aa553f1e7d30b8182ef659f94ec4e446bc61058615460cbcc   cnt = 2
-    G[15] = 0x4200e80a3976d66f392c7998aa889e6a9efdc65abb6d39575ee8fd8b295008ad   cnt = 3
-    G[16] = 0x3e3e626d2c051c82de750847ced96e1f6af5f4a706703512914c0e334c3cf76e   cnt = 6
-    G[17] = 0xb98d0b73da8ae83754bc61c550c2c6ad76f78ba66e601c3876aea38e086552ae   cnt = 1
-    G[18] = 0x90128059cb3b5baa3b1230e2ef211257253d477490e182bcb60c89bae43752fe   cnt = 0
-    G[19] = 0xb04be209278413859ad51cf6d4a7f15bc2dea9f71c34f71945469705c3885b27   cnt = 0
-    G[20] = 0xfda85012a00938e6f12f4da3cb1642cd1963295d3b089dcb0ee81e73e1b14050   cnt = 1
-    G[21] = 0x73f1392e664fa1687983fcb1c7397b89876f6da8357ee8b07cb44534bc160644   cnt = 0
-    G[22] = 0x0f347deffff466dec1af40197d39e97933112af29d6f305734dc7a4c6e2aceaf   cnt = 0
-    G[23] = 0xc9c779f2644195546a17991a455a6d16a446305f80605e8466f5cd0861a6cb48   cnt = 0
-    G[24] = 0x56614c7cbd1f4b27100d84bd76b4e472237e09ad0970745da252ef0b197291b1   cnt = 4
-    G[25] = 0x4b266eaac77da3229fd884b4fc8163d8fae10a914334805a80b93da1ea8cb7ab   cnt = 0
-    G[26] = 0xe1b33961996a81b591fd54b72b67fe23c3bfac82223713865a39e9802c8a393e   cnt = 0
-    G[27] = 0xf1a19594ea8a6caa753c03d3e63a545ad8dc5ee331647bfeb7a9ac5b21cc04d8   cnt = 1
-    G[28] = 0x60f79007f42376ed140fe7efd43218106613546d8cb3bd06a5cef2e73b02fad7   cnt = 0
-    G[29] = 0xe9cb7b6fd3bb865dac6cff479bc2e3ce98ab95e4a6a57d81ae6d6cb032375f4a   cnt = 2
-    G[30] = 0x7ee2183153687344e093278bc692c4915761ada87a51a778b605e88078d9902a   cnt = 1
 
 
 ### Hash functions
@@ -578,9 +544,9 @@ The asset ID blinding factor is created by [Create Blinded Asset ID Commitment](
 
 ### Value Blinding Factor
 
-An [scalar](#scalar) `f` used to produce a [value commitment](#value-commitment) out of the [asset ID commitment](#asset-id-commitment) `(H, Ba)`:
+An [scalar](#scalar) `f` used to produce a [value commitment](#value-commitment) out of the [asset ID commitment](#asset-id-commitment) `(H, C)`:
 
-    VC = (value·H + f·G, value·Ba + f·J)
+    VC = (value·H + f·G, value·C + f·J)
 
 The value blinding factors are created by [Create Blinded Value Commitment](#create-blinded-value-commitment) algorithm.
 
@@ -621,23 +587,15 @@ It is defined as follows:
 5. Calculate point `A = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
 6. Return `A`.
 
-#### Denial of service risks
-
-Since the amount of computations it takes to compute an Asset ID point is variable, malicious prover may find an `assetID` by brute force that would require the verifier to perform arbitrary amount of computations.
-
-However, mounting an attack to force a non-negligible amount of work on a verifier is computationally infeasible. For `N` hash computations to be performed by a verifier, a malicious prover would have to perform an order of `2^N` hash computations.
-
-The alternative solution is to have creators of asset identifiers to choose an issuance program (that defines the asset ID) so that their asset ID always hashes to a valid point. Unfortunately, this approach rejects roughly half of existing asset IDs created on the blockchains deployed before the extension to _Confidential Assets_. We consider that to preserve asset ID compatibility at the risk of an infeasible denial of service attack is an acceptable tradeoff.
-
 
 ### Asset ID Commitment
 
 An asset ID commitment `AC` is an ElGamal commitment represented by a [point pair](#point-pair):
 
-    AC = (H, Ba)
+    AC = (H, C)
 
     H  = A + c·G
-    Ba = c·J
+    C  = c·J
 
 where:
 
@@ -651,7 +609,7 @@ The asset ID commitment can either be nonblinded or blinded.
 
 **Input:** `assetID`: the cleartext asset ID.
 
-**Output:**  `(H,O)`: the nonblinded [asset ID commitment](#asset-id-commitment).
+**Output:**  `(A,O)`: the nonblinded [asset ID commitment](#asset-id-commitment).
 
 **Algorithm:**
 
@@ -671,8 +629,8 @@ The asset ID commitment can either be nonblinded or blinded.
 
 **Outputs:**
 
-1. `(H,Ba)`: the blinded [asset ID commitment](#asset-id-commitment).
-2. `c`: the [blinding factor](#asset-id-blinding-factor) such that `H == A + c·G, Ba = c·J`.
+1. `(H,C)`: the blinded [asset ID commitment](#asset-id-commitment).
+2. `c`: the [blinding factor](#asset-id-blinding-factor) such that `H == A + c·G, C = c·J`.
 
 **Algorithm:**
 
@@ -686,9 +644,9 @@ The asset ID commitment can either be nonblinded or blinded.
 
 3. Compute an [asset ID commitment](#asset-id-commitment):
 
-        AC = (H, Ba)
+        AC = (H, C)
         H  = A + c·G
-        Ba = c·J
+        C  = c·J
 
 4. Return `(AC, c)`.
 
@@ -697,14 +655,14 @@ The asset ID commitment can either be nonblinded or blinded.
 
 A value commitment `VC` is an ElGamal commitment represented by a [point pair](#point-pair):
 
-    VC = (V, Bv)
+    VC = (V, F)
 
-    V  = v·H  + f·G
-    Bv = v·Ba + f·J
+    V  = v·H + f·G
+    F  = v·C + f·J
 
 where:
 
-* `(H, Ba)` is an [asset ID commitment](#asset-id-commitment).
+* `(H, C)` is an [asset ID commitment](#asset-id-commitment).
 * `v` is an amount being committed.
 * `f` is a blinding [scalar](#scalar) for the amount.
 * `G`, `J` are [generator points](#generators).
@@ -716,13 +674,13 @@ The asset ID commitment can either be _nonblinded_ or _blinded_:
 **Inputs:**
 
 1. `value`: the cleartext amount,
-2. `(H,Ba)`: the [asset ID commitment](#asset-id-commitment).
+2. `(H,C)`: the [asset ID commitment](#asset-id-commitment).
 
 **Output:** the value commitment `VC` represented by a [point pair](#point-pair).
 
 **Algorithm:**
 
-1. Calculate [point pair](#point-pair) `VC = value·(H, Ba)`.
+1. Calculate [point pair](#point-pair) `VC = value·(H, C)`.
 2. Return `VC`.
 
 
@@ -732,7 +690,7 @@ The asset ID commitment can either be _nonblinded_ or _blinded_:
 
 1. `vek`: the [value encryption key](#value-encryption-key) for the given output,
 2. `value`: the amount to be blinded in the output,
-3. `(H,Ba)`: the [asset ID commitment](#asset-id-commitment).
+3. `(H,C)`: the [asset ID commitment](#asset-id-commitment).
 
 **Output:** `(VC, f)`: the pair of a [value commitment](#value-commitment) and its blinding factor.
 
@@ -740,15 +698,16 @@ The asset ID commitment can either be _nonblinded_ or _blinded_:
 
 1. Calculate `f = ScalarHash("VC.f" || uint64le(value) || vek)`.
 2. Calculate point `V = value·H + f·G`.
-3. Calculate point `Bv = value·Ba + f·J`.
-4. Create a [point pair](#point-pair): `VC = (V, Bv)`.
+3. Calculate point `F = value·C + f·J`.
+4. Create a [point pair](#point-pair): `VC = (V, F)`.
 5. Return `(VC, f)`.
 
 
 
 ### Excess Factor
 
-Excess factor is a [scalar](#scalar) representing a net difference between input and output blinding factors. It is computed by [balancing blinding factors](#balance-blinding-factors) and used to create an [Excess Commitment](#excess-commitment).
+Excess factor is a [scalar](#scalar) representing a net difference between input and output blinding factors. 
+It is computed by [balancing blinding factors](#balance-blinding-factors) and used to create an [Excess Commitment](#excess-commitment).
 
 #### Balance Blinding Factors
 
@@ -795,12 +754,29 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 **Algorithm:**
 
-1. Calculate a [point pair](#point-pair) `QG = q·G, QJ = q·J`.
-2. Calculate the nonce `k = ScalarHash("k" || G || J || QG || QJ || q || message)`.
-3. Calculate points `R1 = k·G`, `R2 = k·J`.
-4. Calculate scalar `e = ScalarHash("EC" || G || J || QG || QJ || R1 || R2 || message)`.
-5. Calculate scalar `s = k + q·e mod L`.
-6. Return `(s,e)`.
+1. Calculate a [point pair](#point-pair):
+        
+        QG = q·G
+        QJ = q·J
+
+2. Calculate the nonce:
+
+        r = ScalarHash("r" || QG || QJ || q || message)
+
+3. Calculate points:
+    
+        R1 = r·G
+        R2 = r·J
+
+4. Calculate Schnorr challenge scalar:
+
+        e = ScalarHash("EC" || QG || QJ || R1 || R2 || message)
+
+5. Calculate Schnorr response scalar:
+
+        s = k + q·e mod L
+
+6. Return pair of scalars `(s,e)`.
 
 
 #### Validate Excess Commitment
@@ -815,10 +791,17 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 **Algorithm:**
 
-1. Calculate point `R1 = s·G - e·QG`.
-2. Calculate point `R2 = s·J - e·QJ`.
-3. Calculate scalar `e’ = ScalarHash("EC" || G || J || QG || QJ || R1 || R2 || message)`.
+1. Calculate points:
+
+        R1 = s·G - e·QG
+        R2 = s·J - e·QJ
+
+2. Calculate Schnorr challenge:
+
+        e’ = ScalarHash("EC" || QG || QJ || R1 || R2 || message)
+
 4. Return `true` if `e’ == e`, otherwise return `false`.
+
 
 ### Validate Value Commitments Balance
 
@@ -833,12 +816,19 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 **Algorithm:**
 
 1. [Validate](#validate-excess-commitment) each of `k` [excess commitments](#excess-commitment); if any is not valid, halt and return `false`.
-2. Calculate the sum of input value commitments: `Ti = ∑(VC[i], j from 0 to n-1)`.
-3. Calculate the sum of output value commitments: `To = ∑(VC’[i], i from 0 to m-1)`.
-4. Calculate the sum of excess commitments: `Tq = ∑[(QG[i], QJ[i]), i from 0 to k-1]`.
+2. Calculate the sum of input value commitments:
+        
+        Ti = ∑(VC[i], j from 0 to n-1)
+
+3. Calculate the sum of output value commitments:
+
+        To = ∑(VC’[i], i from 0 to m-1)
+
+4. Calculate the sum of excess commitments:
+
+        Tq = ∑[(QG[i], QJ[i]), i from 0 to k-1]
+
 5. Return `true` if `Ti == To + Tq`, otherwise return `false`.
-
-
 
 
 
@@ -850,7 +840,7 @@ Excess pair `(q·G, q·J)` is used to [validate balance of value commitments](#v
 
 ### Asset Range Proof
 
-The asset range proof demonstrates that a given [asset ID commitment](#asset-id-commitment) commits to one of the asset IDs specified in the transaction inputs. A [whole-transaction validation procedure](#validate-assets-flow) makes sure that all of the declared asset ID commitments in fact belong to the transaction inputs.
+The asset range proof (ARP) demonstrates that a given [asset ID commitment](#asset-id-commitment) commits to one of the asset IDs specified in the transaction inputs. A [whole-transaction validation procedure](#validate-assets-flow) makes sure that all of the declared asset ID commitments in fact belong to the transaction inputs.
 
 Asset range proof can be [non-confidential](#non-confidential-asset-range-proof) or [confidential](#confidential-asset-range-proof).
 
@@ -859,7 +849,14 @@ Asset range proof can be [non-confidential](#non-confidential-asset-range-proof)
 Field                        | Type      | Description
 -----------------------------|-----------|------------------
 Type                         | byte      | Contains value 0x00 to indicate the commitment is not blinded.
-Asset ID                     | [AssetID](blockchain.md#asset-id)   | 32-byte asset identifier.
+Asset ID Commitments         | [List](blockchain.md#list)\<[Asset ID Commitment](#asset-id-commitment)\> | List of asset ID commitments from the transaction inputs used in the range proof.
+Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signature proving that the asset ID committed in the output belongs to the set of declared input commitments.
+Asset ID                     | [AssetID](blockchain.md#asset-id) | 32-byte asset identifier.
+
+Note: non-confidential asset range proof exposes the asset ID, but
+still needs to prove that it belongs to the set of the admissible
+asset IDs in order to provide soundness guarantees.
+
 
 #### Confidential Asset Range Proof
 
@@ -868,6 +865,7 @@ Field                        | Type      | Description
 Type                         | byte      | Contains value 0x01 to indicate the commitment is blinded.
 Asset ID Commitments         | [List](blockchain.md#list)\<[Asset ID Commitment](#asset-id-commitment)\> | List of asset ID commitments from the transaction inputs used in the range proof.
 Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signature proving that the asset ID committed in the output belongs to the set of declared input commitments.
+
 
 #### Create Asset Range Proof
 
@@ -891,13 +889,15 @@ Asset Ring Signature         | [Ring Signature](#ring-signature) | A ring signat
 2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
 
         P[i] = AC’.H - AC[i].H
-        Q[i] = AC’.Ba - AC[i].Ba
+        Q[i] = AC’.C - AC[i].C
 
 3. Calculate the private key: `p = c’ - c mod L`.
 4. [Create a ring signature](#create-ring-signature) using `msghash`, [generators](#generators) `(G,J)`, `{(P[i], Q[i])}`, `j`, and `p`.
 5. Return the list of asset ID commitments `{AC[i]}` and the ring signature `e[0], s[0], ... s[n-1]`.
 
-Note: unlike the [value range proof](#value-range-proof), this ring signature is not used to store encrypted payload data because decrypting it would reveal the asset ID of one of the inputs to the recipient.
+Note: unlike the [value range proof](#value-range-proof), this ring signature
+is not used to store encrypted payload data because decrypting it would reveal
+the asset ID of one of the inputs to the recipient.
 
 
 #### Validate Asset Range Proof
@@ -906,74 +906,77 @@ Note: unlike the [value range proof](#value-range-proof), this ring signature is
 
 1. `AC’`: the target [asset ID commitment](#asset-id-commitment).
 2. One of the two [asset range proofs](#asset-range-proof):
-    * A _non-confidential_ asset range proof consisting of an [asset ID](blockchain.md#asset-id).
     * A _confidential_ asset range proof consisting of:
         1. `{AC[i]}`: `n` input [asset ID commitments](#asset-id-commitment).
         2. `e[0], s[0], ... s[n-1]`: the ring signature.
-        3. Provided separately:
-            * `message`: a variable-length string.
+    * A _non-confidential_ asset range proof consisting of:
+        1. `{AC[i]}`: `n` input [asset ID commitments](#asset-id-commitment).
+        2. `e[0], s[0], ... s[n-1]`: the ring signature.
+        3. An [asset ID](blockchain.md#asset-id).
+3. Provided separately:
+    * `message`: a variable-length string.
 
 **Output:** `true` if the verification succeeded, `false` otherwise.
 
 **Algorithm:**
 
-1. If the asset range proof is non-confidential:
+1. Calculate the message hash to sign:
+
+        msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1] || message)
+
+2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
+
+        P[i] = AC’.H - AC[i].H
+        Q[i] = AC’.C - AC[i].C
+
+3. [Validate the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with `msg`, [generators](#generators) `(G,J)` and `{(P[i],Q[i])}`.
+4. If verification was unsuccessful, return `false`.
+5. If the asset range proof is non-confidential:
     1. Compute [asset ID point](#asset-id-point): `A’ = 8·Hash256(assetID || counter)`.
     2. Verify that [point pair](#point-pair) `(A’,O)` equals `AC’`.
-2. If the asset range proof is confidential:
-    1. Calculate the message hash to sign:
-
-            msghash = Hash256("ARP" || AC’ || AC[0] || ... || AC[n-1] || message)
-
-    2. Calculate the set of public keys for the ring signature from the set of input asset ID commitments:
-
-            P[i] = AC’.H - AC[i].H
-            Q[i] = AC’.Ba - AC[i].Ba
-
-    3. [Validate the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with `msg`, [generators](#generators) `(G,J)` and `{(P[i],Q[i])}`.
-3. Return true if verification was successful, and false otherwise.
+6. Return `true`.
 
 
 
 
 
-### Issuance Asset Range Proof
+### Issuance Asset Range Proof WIP
 
-The issuance asset range proof demonstrates that a given [confidential issuance](#confidential-issuance) commits to one of the asset IDs specified in the transaction inputs. It contains a ring signature. The other inputs to the [validation procedure](#validate-issuance-asset-range-proof) are computed from other elements in the confidential issuance witness, as part of the [issuance validation procedure](blockchain.md#issuance-2-validation).
+The issuance asset range proof demonstrates that a given [confidential issuance](#confidential-issuance)
+commits to one of the asset IDs specified in the transaction inputs.
+Some inputs to the [validation procedure](#validate-issuance-asset-range-proof) are computed 
+from other elements in the confidential issuance witness, as part of the [issuance validation procedure](blockchain.md#issuance-2-validation).
 
-The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`) are derived from `n` [asset issuance choices](blockchain.md#asset-issuance-choice) specified outside the range proof.
+The size of the ring signature (`n+1` 32-byte elements) and the number of issuance keys (`n`)
+are derived from `n` [asset issuance choices](blockchain.md#asset-issuance-choice) specified outside the range proof.
 
 The proof also contains a _tracing point_ that that lets any issuer to prove or disprove whether the issuance is performed by their issuance key.
 
-#### Non-Confidential Issuance Asset Range Proof
+#### Non-Confidential Issuance Asset Range Proof WIP
 
 Field                        | Type      | Description
 -----------------------------|-----------|------------------
 Type                         | byte      | Contains value 0x00 to indicate the commitment is not blinded.
 Asset ID                     | [AssetID](blockchain.md#asset-id)   | 32-byte asset identifier.
 
-#### Confidential Issuance Asset Range Proof
+#### Confidential Issuance Asset Range Proof WIP
 
 Field                           | Type             | Description
 --------------------------------|------------------|------------------
 Type                            | byte             | Contains value 0x01 to indicate the commitment is blinded.
 Issuance Keys                   | [List](blockchain.md#list)\<[Point](#point)\> | Keys to be used to calculate the public key for the corresponding index in the ring signature.
 Tracing Point                   | [Point](#point)  | A point that lets any issuer to prove or disprove if this issuance is done by them.
-Blinded Marker Point            | [Point](#point)  | A blinding factor commitment using a marker point (used together with the tracing point).
-Marker Signature                | 64 bytes         | A pair of [scalars](#scalar) representing a single Schnorr signature for the marker and tracing points.
 Issuance Ring Signature         | [Ring Signature](#ring-signature)   | A ring signature proving that the issuer of an encrypted asset ID approved the issuance.
 
-TBD: modify the confidential proof to allow "watch keys" (will require change of `{Y}` to `{(Y,W)}` and a pair of tracing points).
 
-
-#### Create Issuance Asset Range Proof
+#### Create Issuance Asset Range Proof WIP
 
 When creating a confidential issuance, the first step is to construct the rest of the input commitment and input witness, including an asset issuance choice for each asset that one wants to include in the anonymity set. The issuance key for each asset should be extracted from the [issuance programs](blockchain.md#program). (Issuance programs that support confidential issuance should have a branch that checks use of the correct issuance key using `ISSUANCEKEY` instruction.)
 
 **Inputs:**
 
 1. `AC`: the [asset ID commitment](#asset-id-commitment).
-2. `c`: the [blinding factor](#asset-id-blinding-factor) for commitment `AC` such that: `AC.H == A[j] + c·G`, `AC.Ba == c·J`.
+2. `c`: the [blinding factor](#asset-id-blinding-factor) for commitment `AC` such that: `AC.H == A[j] + c·G`, `AC.C == c·J`.
 3. `{a[i]}`: `n` 32-byte unencrypted [asset IDs](blockchain.md#asset-id).
 4. `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
 5. `message`: a variable-length string,
@@ -985,8 +988,6 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
 * `T`: tracing [point](#point),
-* `Bm`: blinded marker [point](#point),
-* `ms = (e’,s’)`: the marker signature,
 * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature.
 
 
@@ -1002,7 +1003,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 3. Calculate the tracing point: `T = y·(J + M)`.
 4. Calculate the blinded marker using the blinding factor used by commitment `AC`: `Bm = c·M`.
 5. Calculate a 32-byte message hash to sign: `msghash = Hash256("msg" || basehash || M || T || Bm)`.
-6. Create proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
+6. Create proof that the discrete log `Bm/M` is equal to the discrete log `AC.C/J`:
     1. Calculate the nonce `k = ScalarHash("k" || msghash || c)`.
     2. Calculate points `R1 = k·M` and `R2 = k·J`.
     3. Calculate scalar `e’ = ScalarHash("e" || msghash || R1 || R2)`.
@@ -1013,7 +1014,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
         h = ScalarHash("h" || msghash)
 
-9. Calculate point `Q = Ba + Bm + h·T`.
+9. Calculate point `Q = C + Bm + h·T`.
 10. Calculate points `{P[i]}` for `n` pairs of asset ID points and corresponding issuance keys `A[i], Y[i]`:
 
         P[i] = AC.H — A[i] + h·Y[i]
@@ -1035,7 +1036,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 
 
-#### Validate Issuance Asset Range Proof
+#### Validate Issuance Asset Range Proof WIP
 
 **Inputs:**
 
@@ -1070,9 +1071,9 @@ When creating a confidential issuance, the first step is to construct the rest o
         4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
         5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
     3. Calculate a 32-byte message hash to sign: `msghash = Hash256("msg" || basehash || M || T || Bm)`.
-    4. Validate proof that the discrete log `Bm/M` is equal to the discrete log `AC.Ba/J`:
+    4. Validate proof that the discrete log `Bm/M` is equal to the discrete log `AC.C/J`:
         1. Calculate point `R1 = s’·M - e’·Bm`.
-        2. Calculate point `R2 = s’·J - e’·AC.Ba`.
+        2. Calculate point `R2 = s’·J - e’·AC.C`.
         3. Calculate scalar `e” = ScalarHash("e" || msghash || R1 || R2)`.
         4. Verify that `e”` is equal to `e’`.
     5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
@@ -1080,7 +1081,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
             h = ScalarHash("h" || msghash)
 
-    7. Calculate point `Q = Ba + Bm + h·T`.
+    7. Calculate point `Q = C + Bm + h·T`.
     8. Calculate points `{P[i]}` for `n` pairs of asset ID points and corresponding issuance keys `A[i], Y[i]`:
 
             P[i] = AC.H — A[i] + h·Y[i]
@@ -1103,7 +1104,7 @@ Signature 1                     | 64 bytes         | A pair of [scalars](#scalar
 Signature 2                     | 64 bytes         | A pair of [scalars](#scalar) representing a single Schnorr signature.
 
 
-#### Create Issuance Proof
+#### Create Issuance Proof WIP
 
 **Inputs:**
 
@@ -1152,7 +1153,7 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 9. Return points `(X, Z, Z’)`, signature `(e1,s1)` and signature `(e2,s2)`.
 
 
-#### Validate Issuance Proof
+#### Validate Issuance Proof WIP
 
 **Inputs:**
 
@@ -1196,13 +1197,13 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 
 
 
-### Value Range Proof
+### Value Range Proof WIP
 
 Value range proof demonstrates that a [value commitment](#value-commitment) encodes a value between 0 and 2<sup>63</sup>–1. The 63-bit limit is chosen for consistency with the numeric limits defined for the asset version 1 outputs and VM version 1 [numbers](vm1.md#vm-number).
 
 Value range proof can be [non-confidential](#non-confidential-value-range-proof) or [confidential](#confidential-value-range-proof).
 
-#### Non-Confidential Value Range Proof
+#### Non-Confidential Value Range Proof WIP
 
 A non-confidential range proof demonstrates the non-encrypted amount and allows efficient verification that a given [value commitment](#value-commitment) commits to that amount.
 
@@ -1211,7 +1212,7 @@ Field                        | Type      | Description
 Type                         | byte      | Contains value 0x00 to indicate the commitment is not blinded.
 Amount                       | varint63  | Amount
 
-#### Confidential Value Range Proof
+#### Confidential Value Range Proof WIP
 
 A confidential range proof proves that a given [value commitment](#value-commitment) commits to an amount in a valid range (between 0 and 2<sup>63</sup>–1) without revealing the exact value.
 
@@ -1234,7 +1235,7 @@ Borromean Ring Signature  | [Borromean Ring Signature](#borromean-ring-signature
 
 The total number of elements in the [Borromean Ring Signature](#borromean-ring-signature) is `1 + 4·n/2` where `n` is number of bits and `n/2` is a number of rings.
 
-#### Create Value Range Proof
+#### Create Value Range Proof WIP
 
 **Inputs:**
 
@@ -1281,7 +1282,7 @@ In case of failure, returns `nil` instead of the range proof.
     1. Calculate base points: `Bs[t] = (G’[t], J)`.
     2. For `i` from `0` to `base-1` (each digit’s value):
         1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`.
-        2. Calculate point `Q[t,i] = Bv[t] - i·(base^t)·Ba`.
+        2. Calculate point `Q[t,i] = F[t] - i·(base^t)·C`.
 12. [Create Borromean Ring Signature](#create-borromean-ring-signature) `brs` with the following inputs:
     * `msghash` as the message to sign.
     * `n`: number of rings.
@@ -1302,7 +1303,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-#### Validate Value Range Proof
+#### Validate Value Range Proof WIP
 
 **Inputs:**
 
@@ -1338,7 +1339,7 @@ In case of failure, returns `nil` instead of the range proof.
         2. If `t` equals `n-1`: set `G’[t] = G - ∑G[i]` for all `i` from `0` to `n-2`.
     2. For `i` from `0` to `base-1` (each digit’s value):
         1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`. For efficiency perform recursive point addition of `-(base^t)·H` instead of scalar multiplication.
-        2. Calculate point `Q[t,i] = Bv[t] - i·(base^t)·Ba`. For efficiency perform iterative point addition of `-(base^t)·Ba` instead of scalar multiplication.
+        2. Calculate point `Q[t,i] = F[t] - i·(base^t)·C`. For efficiency perform iterative point addition of `-(base^t)·C` instead of scalar multiplication.
 7. [Validate Borromean Ring Signature](#validate-borromean-ring-signature) with the following inputs:
     * `msghash`: the 32-byte string being verified.
     * `n`: number of rings.
@@ -1351,7 +1352,7 @@ In case of failure, returns `nil` instead of the range proof.
 
 
 
-#### Recover Payload From Value Range Proof
+#### Recover Payload From Value Range Proof WIP
 
 **Inputs:**
 
@@ -1392,7 +1393,7 @@ In case of failure, returns `nil` instead of the range proof.
     3. Calculate `j[t] = digit[t] >> 2·t` where `>>` denotes a bitwise right shift.
     4. For `i` from `0` to `base-1` (each digit’s value):
         1. Calculate point `P[t,i] = D[t] - i·(base^t)·H`. For efficiency perform recursive point addition of `-(base^t)·H` instead of scalar multiplication.
-        2. Calculate point `Q[t,i] = Bv[t] - i·(base^t)·Ba`. For efficiency perform iterative point addition of `-(base^t)·Ba` instead of scalar multiplication.
+        2. Calculate point `Q[t,i] = F[t] - i·(base^t)·C`. For efficiency perform iterative point addition of `-(base^t)·C` instead of scalar multiplication.
 7. [Recover Payload From Borromean Ring Signature](#recover-payload-from-borromean-ring-signature): compute an array of `2·N` 32-byte chunks `{ct[i]}` using the following inputs (halt and return `nil` if decryption fails):
     * `msghash`: the 32-byte string to be signed.
     * `n=N/2`: number of rings.
@@ -1802,6 +1803,343 @@ In case of failure, returns `nil` instead of the items listed above.
 
 
 
+
+
+
+
+
+
+## Security
+
+### Asset Point denial of service risk
+
+Since the amount of computations it takes to compute an [Asset ID point](#asset-id-point) is variable,
+malicious prover may find an `assetID` by brute force that would require the verifier
+to perform arbitrary amount of computations.
+
+However, mounting an attack to force a non-negligible amount of work on a verifier is 
+computationally infeasible. For `N` hash computations to be performed by a verifier,
+a malicious prover would have to perform an order of `2^N` hash computations.
+
+The alternative solution is to have creators of asset identifiers to choose an issuance
+program (that defines the asset ID) so that their asset ID always hashes to a valid point.
+Unfortunately, this approach rejects roughly half of existing asset IDs created on
+the blockchains deployed before the extension to _Confidential Assets_. 
+We consider that to preserve asset ID compatibility at the risk of an infeasible 
+denial of service attack is an acceptable tradeoff.
+
+
+
+
+TBD: security theorems and proofs
+
+
+
+### Asset Commitment (AC)
+
+    A = PointHash(assetid)
+
+Non-blinded asset commitment:
+
+    (A, O)
+
+Blinded asset commitment:
+
+    (A + f*G, f*J)
+
+### Issuance Asset Range Proof (IARP) - WIP
+
+    M = rand    - unique marker point
+
+    x - blinding factor
+    y - blinding factor
+
+    H = A + x*G - blinded commitment
+    B = x*J     - blinding commitment
+    T = y*M     - tracing point
+    Y = y*G     - issuance key
+
+Verifier:
+
+    Need to prove knowledge of `y` and `x`.
+
+    1. Receive e,sx,sy,M,H,B,Bm,T,Y
+    2. Compute R1 = sx*G - e*(H-A)
+    3. Compute R2 = sx*J - e*B
+    4. Compute R3 = sy*M - e*T
+    5. Compute R4 = sy*G - e*Y
+    6. Compute e' = Hash(R1||R2||R3||R4)
+    7. Verify e' == e
+
+Signer:
+
+    1. Choose kx = random
+    2. Choose ky = random
+    3. Compute R1 = kx*G
+    4. Compute R2 = kx*J
+    5. Compute R3 = ky*M
+    6. Compute R4 = ky*G
+    7. Compute e = Hash(R1||R2||R3||R4)
+    8. Compute sx = kx + e*x
+    9. Compute sy = ky + e*y
+    10. Return (e,sx,sy)
+
+Proof of soundness:
+
+    let R_i = r_i*G
+    let J = j*G
+    let M = m*G
+    let T = t*G
+    etc.
+
+    Need to prove:
+
+        1. b == (h - a)*j
+        2. t == y*m
+    
+    1. Factor out `sx` from R1, R2, R3, R4 definitions:
+
+        sx = r1 + e*(h - a)
+        j*sx = r2 + e*b
+
+    2. Factor out `sy` from R1, R2, R3, R4 definition:
+
+        sy = r4 + e*y
+        m*sy = r3 + e*t
+
+    3. Equality must hold for any value of `e` (since it's determined after all vars except sy/sx).
+       Therefore (placing definition of sx and sy from the first equation to the second equation):
+
+        m*y == t
+        j*(h-a) == b
+
+        QED.
+
+Proof of issuance:
+
+    The proof above proves simultaneously the knowledge of `y` and commitment to a blinding factor for asset `A`.
+    Provided Y is associated with A, this makes sure that the holder of `y` is blinding the `A`.
+
+Proof of tracing:
+
+    The binding property guarantees that T is `y*M`, meaning a multiplication of a public marker point
+    is done by the issuance private key (same key as in `Y = y*G`).
+
+Proof of safety of issuance:
+
+    Proof of issuance cannot be replayed as all proofs of knowledge are tied to a given transaction.
+
+Proof of safety of tracing:
+
+    Tracing point cannot be replayed since proofs are tied to a given transaction.
+    Two tracing points from different transactions cannot be linked since points M are unique and tied to a transaction.
+
+
+Proof of blinding:
+
+    1. To link tracing point T to an issuance key Y, one needs to break either ECDLP or DDH:
+
+        ECDLP: extract all the dlogs and check if `t == m*y`
+        DDH:   verify e(Y,M) == e(G,T) (using pairing e(xG,yG) -> e(xyG,G))
+
+    2. To link tracing point to other tracing points `T' = y*M'`, one must break ECDLP to DDH
+       since the points M are unique for each transaction:
+
+        ECDLP: extract all the dlogs and check if `t == m*y && t' == m'*y`
+        DDH:   verify e(Y,M) == e(G,T) && e(Y,M') == e(G,T')
+
+    3. To link A to (B,H) one also needs to break either ECDLP or DDH.
+
+        ECDLP: extract all dlogs, and check if j*(h-a) == b
+        DDH:   verify e(H-A,J) == e(G,B)
+
+Ring version:
+
+    1. Iterate (A,Y) pairs.
+    2. Compute a chain of e0 -> e1 -> ... e0'
+    3. Verify e0' == e0
+
+    At least one `{R_i}` tuple in the ring will have to be defined before its 
+    factor `e` is determined, allowing application of the proof of soundness.
+
+    Since the ring is perfectly symmetrical, the proof of blinding is reduced 
+    to the set of the elements in the ring, without revealing to which element
+    the commitment is bound to.
+
+
+
+### Asset Range Proof (ARP)
+
+Verifier:
+
+    Needs to verify:
+
+       H2 = H1 + x*G
+       B2 = B1 + x*J
+
+    1. Receive e, s, H1, H2, B1, B2
+    2. Compute R1 = s*G - e*(H2 - H1)
+    3. Compute R2 = s*J - e*(B2 - B1)
+    4. Compute e' = Hash(R1||R2)
+    5. Verify e' == e
+
+Signer:
+
+    1. Choose k = random
+    2. Compute R1 = k*G
+    3. Compute R2 = k*J
+    4. Compute e = Hash(R1||R2)
+    5. Compute s = k + e*x
+    6. Return (e,s)
+
+Proof of soundness:
+
+    let R1 = r1*G
+    let R2 = r2*G
+    let J  = j*G
+    let H1 = h1*G
+    let H2 = h2*G
+    let B1 = b1*G
+    let B2 = b2*G
+
+    Need to prove that (x can be any value):
+
+       b2 == b1 + x*j
+       h2 == h1 + x
+
+       In other words: 
+       b2 - b1 == (h2 - h2)*j
+
+    1. Factor out `s` from R1 and R2 definitions:
+     
+        s = r1 + e*(h2 - h1)
+        j*s = r2 + e*(b2 - b1)
+    
+    2. Equality must hold for any value of `e` (since it's determined after r1,r2,h1,h2,b1,b2).
+       Therefore:
+
+        j*(h2-h1) == b2 - b1
+
+       which is what we are looking for
+
+Proof of blinding:
+
+    Given H1,B1,H2,B2 determine if H2 is a blinded H1 with the same factor as B2 in respect to B1.
+    In this proof we assume absence of the signature that proves the binding.
+
+    Let X = x*G = H2 - H1
+    Let Y = y*J = B2 - B1
+
+    Testing whether x == y requires either breaking ECDLP or DDH:
+
+    ECDLP: 
+    
+        If j is known (such that J = j*G), then (j^-1)*Y = y*G and can be compared with X.
+
+    DDH:
+    
+        If we can decide whether Y is DH of (X,J), then we can prove link between H1 and H2:
+
+        DH(x*G, j*G) =?= x*j*G
+
+        E.g. with pairings:
+
+        e(X,J) =?= e(G,Y)
+
+    Neither ECDLP nor DDH are tractable for Ed25519.
+
+Ring version:
+
+    1. Iterate (H1,B1) pairs.
+    2. Compute a chain of e0 -> e1 -> ... e0'
+    3. Verify e0' == e0
+
+    At least one `{R_i}` tuple in the ring will have to be defined before its 
+    factor `e` is determined, allowing application of the proof of soundness.
+
+    Since the ring is perfectly symmetrical, the proof of blinding is reduced 
+    to the set of the elements in the ring, without revealing to which element
+    the commitment is bound to.
+
+
+### Value Commitment (VC)
+
+
+Non-blinded value commitment:
+
+    (v*H, B)
+
+Blinded value commitment:
+
+    (v*H + f*G, v*B + f*J)
+
+
+### Value Range Proof
+
+Given:
+
+    Asset commitment:
+        H = a*G + c*G
+        B = c*J
+
+    Value commitment:
+        V = v*H + f*G
+        D = v*B + f*J
+
+Need to verify:
+
+    (V,D) commit to value `v` using asset commitment (H,B)
+
+Verifier:
+
+    Needs to verify (f could be anything, v chosen by verifier):
+
+       V = v*H + f*G
+       D = v*B + f*J
+
+    1. Receive e, s, v, H, B, V, D
+    2. Compute R1 = s*G - e*(V - v*H)
+    3. Compute R2 = s*J - e*(D - v*B)
+    4. Compute e' = Hash(R1||R2)
+    5. Verify e' == e
+
+Signer:
+
+    1. Choose k = random
+    2. Compute R1 = k*G
+    3. Compute R2 = k*J
+    4. Compute e = Hash(R1||R2)
+    5. Compute s = k + e*f
+    6. Return (e,s)
+
+Proof of balance:
+
+    Provided:
+        Sum(V_i) == 0
+        Sum(D_i) == 0
+    
+    Need:
+        Sum(v_j)*A == 0 for each A
+
+    1. Sum(D_i) == Sum[(v_i*c_i + f_i)*j*G] == 0
+    2. Sum(V_i) == Sum[(v_i*a_i + v_i*c_i + f_i)*G] == 0
+    3. Therefore: Sum[v_i*a_i] == 0
+    4. What would be the probability of having v1*a1 == v2*a2 provided a1 != a2, and v1,v2 in 62-bit range?
+    5. We assume a1 is given, v1,v2 could be tweaked to match a2. 
+    6. The space of v1/v2 is 2^124 combinations.
+    7. Both a1 and a2 are proven to be carried over since issuance where a1,a2 are 
+       pseudo-randomly generated from Hash(assetid) with space 2^252.
+    8. Therefore, chance that a2/a1 falls into one of possible 2^124 states for v1/v2 is:
+    9. P = 2^124 / 2^252 = 2^128.
+    10. Meaning, attacker is expected to perform 2^128 hashing operations to find a2 that allows morphing to/from a1.
+    11. 
+
+
+
+
+
+
+
 ## Test vectors
 
 TBD: Hash256, StreamHash, ScalarHash.
@@ -1811,4 +2149,49 @@ TBD: RS, BRS.
 TBD: AC, VC, excess commitments.
 
 TBD: ARP, IARP, VRP.
+
+
+## Glossary
+
+Term             | Description
+-----------------|---------------------------------------------------------------------------------------
+A                | [Asset point](#asset-id-point)
+a                | Unknown discrete log of [Asset point](#asset-id-point) in respect to [generator G](#generators)
+B                | TBD
+b                | TBD
+C                | Blinding factor half of the [asset ID commitment](#asset-id-commitment) (c·J)
+c                | [Asset ID blinding factor](#asset-id-blinding-factor)
+D                | digit commitment v·H+f·J
+E                | TBD
+e                | fiat-shamir challenge in Schnorr protocol
+F                | TBD
+f                | value blinding factor
+G                | primary generator
+H                | TBD
+h                | secondary fiat-shamir challenge
+I                | TBD
+i                | index
+J                | secondary generator
+K                | TBD
+L                | [Order](#elliptic-curve) of the generator on curve Ed25519.
+l                | 
+M                | TBD
+m                | TBD
+N                | TBD
+n                | TBD
+O                | Point at infinity
+P                | TBD
+Q                | TBD
+R                | Commitment to a random nonce in the Schnorr protocol
+r                | Random nonce for the Schnorr protocol
+S                | TBD
+T                | TBD
+U                | TBD
+V                | [Value commitment](#value-commitment)
+v                | Amount scalar blinded using [value commitment](#value-commitment)
+W                | TBD
+X                | TBD
+Y                | TBD
+Z                | TBD
+
 
