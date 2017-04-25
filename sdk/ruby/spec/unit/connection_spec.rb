@@ -20,8 +20,12 @@ describe Chain::Connection do
     expect {
       Chain::Connection.new(url: 'http://foo.test').request('bar')
       Chain::Connection.new(url: 'http://foo.test').request('/bar')
+      Chain::Connection.new(url: 'http://foo.test/').request('bar')
+      Chain::Connection.new(url: 'http://foo.test/').request('/bar')
       Chain::Connection.new(url: 'http://foo.test/bar').request('baz')
       Chain::Connection.new(url: 'http://foo.test/bar').request('/baz')
+      Chain::Connection.new(url: 'http://foo.test/bar/').request('baz')
+      Chain::Connection.new(url: 'http://foo.test/bar/').request('/baz')
     }.not_to raise_exception
   end
 
