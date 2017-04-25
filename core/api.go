@@ -254,16 +254,16 @@ func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accessto
 	authenticator := authn.NewAPI(accessTokens, networkRPCPrefix)
 	authorizer := authz.NewAuthorizer(rDB, grantPrefix, policyByRoute)
 
-	var (
-		x509Cert *x509.Certificate
-		err      error
-	)
 	if tlsConfig != nil {
 		// TODO(kr): set Leaf in TLSConfig and use that here.
 		// TODO(tessr): ^ do I keep this TODO?
-		x509Cert, err = x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
+		x509Cert, err := x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
 		if err != nil {
 			panic(err)
+		}
+
+		if x509Cert != nil {
+			authorizer.GrantInternal(x509Cert.Subject)
 		}
 	}
 
@@ -273,10 +273,6 @@ func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accessto
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, errNotAuthenticated)
 			return
-		}
-
-		if x509Cert != nil {
-			authorizer.GrantInternal(x509Cert.Subject)
 		}
 
 		err = authorizer.Authorize(req)
