@@ -50,23 +50,17 @@ func TestGeneratorRecovery(t *testing.T) {
 }
 
 func TestGetAndAddBlockSignatures(t *testing.T) {
-	ctx := context.Background()
-
-	c := prottest.NewChain(t)
-	b1, err := c.GetBlock(ctx, 1)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
 	pubKey, privKey, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
+	c := prottest.NewChain(t)
 	g := New(c, []BlockSigner{testSigner{pubKey, privKey}}, nil)
-	g.latestBlock = b1
+	g.latestBlock = prottest.Initial(t, c)
 	g.latestSnapshot = state.Empty()
 
+	ctx := context.Background()
 	tip, snapshot, err := c.Recover(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)

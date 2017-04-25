@@ -347,13 +347,9 @@ func benchGenBlock(b *testing.B) {
 	ctx := context.Background()
 	c := prottest.NewChainWithStorage(b, memstore.New())
 	g := generator.New(c, nil, pgtest.NewTx(b))
-	initialBlock, err := c.GetBlock(ctx, 1)
-	if err != nil {
-		testutil.FatalErr(b, err)
-	}
 
 	var tx1, tx2 legacy.Tx
-	err = tx1.UnmarshalText([]byte(tx1hex))
+	err := tx1.UnmarshalText([]byte(tx1hex))
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -372,7 +368,7 @@ func benchGenBlock(b *testing.B) {
 
 	now := time.Now()
 	b.StartTimer()
-	_, _, err = c.GenerateBlock(ctx, initialBlock, state.Empty(), now, g.PendingTxs())
+	_, _, err = c.GenerateBlock(ctx, prottest.Initial(b, c), state.Empty(), now, g.PendingTxs())
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)
