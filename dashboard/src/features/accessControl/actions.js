@@ -82,7 +82,7 @@ export default {
 
     const body = {
       guardType: 'x509',
-      guardData: {},
+      guardData: {subject: {}},
     }
 
     for (let index in data.subject) {
@@ -91,9 +91,9 @@ export default {
       if (fieldInfo[field.key].array) {
         const values = body.guardData[field.key] || []
         values.push(field.value)
-        body.guardData[field.key] = values
+        body.guardData.subject[field.key] = values
       } else {
-        body.guardData[field.key] = field.value
+        body.guardData.subject[field.key] = field.value
       }
     }
 
