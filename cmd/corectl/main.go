@@ -190,7 +190,7 @@ func createBlockKeyPair(client *rpc.Client, args []string) {
 }
 
 func createToken(client *rpc.Client, args []string) {
-	const usage = "usage: corectl create-token [-net] [name]"
+	const usage = "usage: corectl create-token [-net] [name] [policy]"
 	var flags flag.FlagSet
 	flagNet := flags.Bool("net", false, "DEPRECATED. create a network token instead of client")
 	flags.Usage = func() {
@@ -200,16 +200,11 @@ func createToken(client *rpc.Client, args []string) {
 	}
 	flags.Parse(args)
 	args = flags.Args()
-	if len(args) < 1 {
+	if len(args) == 2 && *flagNet || len(args) < 1 || len(args) > 2 {
 		fatalln(usage)
 	}
 
-	req := struct {
-		ID, Type string
-	}{
-		ID:   args[0],
-		Type: map[bool]string{true: "network", false: "client"}[*flagNet],
-	}
+	req := struct{ ID string }{args[0]}
 	var tok accesstoken.Token
 	err := client.Call(context.Background(), "/create-access-token", req, &tok)
 	if err != nil {
@@ -217,7 +212,20 @@ func createToken(client *rpc.Client, args []string) {
 	}
 	fmt.Println(tok.Token)
 
-	if *flagNet {
+	if len(args) == 2 || *flagNet {
+		req := struct{ Guard_Type, Guard_Data, Policy string }{
+			"access_token",
+			tok.ID,
+			"network", // in case of *flagNet
+		}
+		if len(args) == 2 {
+			req.Policy = args[1]
+		}
+		err = client.Call(context.Background(), "/create-authorization-grant", req, nil)
+		if err != nil {
+			fatalln("rpc error:", err)
+		}
+	} else if *flagNet {
 		fmt.Fprintln(os.Stderr, "warning: the network flag is deprecated")
 	}
 }
