@@ -103,7 +103,7 @@ public class AuthTest {
 
       Object subject = g.guardData.get("subject");
       if (!(subject instanceof Map)) continue;
-      Map<String, Object> subjectMap = (Map<String, Object>)subject;
+      Map<String, Object> subjectMap = (Map<String, Object>) subject;
 
       Object cn = subjectMap.get("CN");
       if (!(cn instanceof String)) continue;
