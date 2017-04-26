@@ -512,21 +512,21 @@ Ring signature over public keys P and Q:
 
 #### Notation
 
-Term              | Description
-------------------|---------------------
-Statement         | An equation in terms of `l` secrets in form of `f(x0,x1...) == F` where `f(x0,x1,...) = A0*x0 + A1*x1 + ...`.
-Statement set     | A set of `m` statements that must all be true for a set to be true: `f0(x) == F0 && f1(x) == F1 && ...`
-Statement ring    | A collection of `n` statement sets, where at list one must be true in order for the ring to be valid.
-`l`               | Number of secret scalars subject to proof-of-knowledge.
-`m`               | Number of statements in each statement set (equations in per ring item).
-`n`               | Number of statement sets (ring items).
-`k`               | Index `0..l-1` of secret scalar.
-`j`               | Index `0..m-1` of a statement in each statement set.
-`i`               | Index `0..n-1` of a statement set (ring item).
-`î`               | Index `0..n-1` of a statement set that is true (non-forged ring item).
-`x[k]`            | Secret scalar at index `k`.
-`f[i,j]({x[k]})`  | Linear function over `l` secrets at index `j` within set `i`.
-`F[i,j]`          | Commitment for a function value `f[i,j]` at index `j` within set `i`.
+Term                 | Description
+---------------------|---------------------
+Statement            | An equation in terms of `l` secrets in form of `f(x0,x1...) == F` where `f(x0,x1,...) = A0*x0 + A1*x1 + ...`.
+Statement set        | A set of `m` statements that must all be true for a set to be true: `f0(x) == F0 && f1(x) == F1 && ...`
+Statement ring       | A collection of `n` statement sets, where at list one must be true in order for the ring to be valid.
+`l`                  | Number of secret scalars subject to proof-of-knowledge.
+`m`                  | Number of statements in each statement set (equations in per ring item).
+`n`                  | Number of statement sets (ring items).
+`k`                  | Index `0..l-1` of secret scalar.
+`j`                  | Index `0..m-1` of a statement in each statement set.
+`i`                  | Index `0..n-1` of a statement set (ring item).
+`î`                  | Index `0..n-1` of a statement set that is true (non-forged ring item).
+`x[k]`               | Secret scalar at index `k`.
+`f[i,j]({x[k]})`     | Linear function over `l` secrets at index `j` within set `i`.
+`F[i,j]`             | Commitment for a function value `f[i,j]` at index `j` within set `i`.
 
 
 #### Create OLEG-ZKP
@@ -540,7 +540,7 @@ Statement ring    | A collection of `n` statement sets, where at list one must b
 4. `{F[i,j]}`: `n·m` commitments for functions `{f[i,j]}`.
 5. `î`: the index of the position in a ring, so that `F[î,j] == f[î,j]({x[k]})` for all `j` from 0 to `m-1`.
 
-**Output:** `e0, {s[i,k]}`: the Σ-protocol commitment response scalars: total `1+n·l` 32-byte elements.
+**Output:** `e0, {s[i,k]}`: a starting commitment and response scalars, total `1+n·l` 32-byte elements.
 
 **Algorithm:**
 
@@ -555,7 +555,11 @@ Statement ring    | A collection of `n` statement sets, where at list one must b
 
 3. Calculate a sequence of: `(n-1)·l` 32-byte random values `{S[i,k]}`, `l` 64-byte nonces `r[k]` and `l` 1-byte `mask[k]`:
 
-    {S[i,k], r[k], mask[k]} = StreamHash(uint64le(counter) || msghash || x[0] || ... || x[l-1] || uint64le(j), 32·(n-1)·l + 64·l + l)
+        {S[i,k], r[k], mask[k]} = StreamHash(uint64le(counter) ||
+                                             msghash ||
+                                             x[0] || ... || x[l-1] ||
+                                             uint64le(j),
+                                             32·(n-1)·l + 64·l + l)
 
 4. Reduce each `r[k]` modulo `L`.
 5. Calculate the initial challenge (e-value), let `i’ = î+1 mod n`:
@@ -563,7 +567,7 @@ Statement ring    | A collection of `n` statement sets, where at list one must b
         1. Calculate [point](#point) `R[i’,j] = f[î,j]({r[k]})`.
     2. For each `k=0..l-1`:
         1. Define `w[î,k]` as `mask[k]` with lower 4 bits set to zero: `w[î,k] = mask[k] & 0xf0`.
-    3. Calculate challenge:
+    3. Calculate the challenge:
 
             e[i’] = ScalarHash("e" ||
                                msghash || uint64le(i’) ||
@@ -579,7 +583,7 @@ Statement ring    | A collection of `n` statement sets, where at list one must b
     3. Let `i’ = i+1 mod n`.
     4. For each `j=0..m-1`:
         1. Calculate point `R[i’,j] = f[i,j](z[i,0],...,z[i,l-1]) - e[i]·F[i,j]`.
-    5. Calculate challenge:
+    5. Calculate the challenge:
 
             e[i’] = ScalarHash("e" ||
                                msghash || uint64le(i’) ||
@@ -599,7 +603,43 @@ Statement ring    | A collection of `n` statement sets, where at list one must b
 
 #### Validate OLEG-ZKP
 
+**Inputs:**
 
+1. `msg`: the string to be signed.
+2. `{f[i,j]({x[k]})}`: `n·m` functions over `l` secrets.
+3. `{F[i,j]}`: `n·m` commitments for functions `{f[i,j]}`.
+4. `e0, {s[i,k]}`: a starting commitment and response scalars, total `1+n·l` 32-byte elements.
+
+
+**Output:** `true` if the verification succeeded, `false` otherwise.
+
+**Algorithm:**
+
+1. Let the `msghash` be a hash of the input non-secret data:
+
+        msghash = Hash256("OLEG-ZKP" || uint64le(n) || uint64le(m) || uint64le(l) ||
+                          F[0,0]   || ... || F[0,m-1]   ||
+                          ...
+                          F[n-1,0] || ... || F[n-1,m-1] ||
+                          msg)
+
+2. For each `i=0..n-1`:
+    1. Let `i’ = i+1 mod L`.
+    2. For each `k=0..l-1`:
+        1. Define `z[i,k]` as `s[i,k]` with the most significant 4 bits set to zero (see note below).
+        2. Define `w[i,k]` as a most significant byte of `s[i,k]` with lower 4 bits set to zero: `w[i,k] = s[i,k][31] & 0xf0`.
+    3. For each `j=0..m-1`:
+        1. Calculate point `R[i’,j] = f[i,j](z[i,0],...,z[i,l-1]) - e[i]·F[i,j]`.
+    4. Calculate the challenge:
+
+            e[i+1] = ScalarHash("e" ||
+                                msghash || uint64le(i’) ||
+                                R[i’,0] || ... || R[i’,m-1] ||
+                                w[i,0]  || ... || w[i,l-1])
+
+3. Return true if `e[0]` equals `e[n]`, otherwise return false.
+
+Note: when the s-values are decoded as little-endian integers we must set their 4 most significant bits to zero in order to restore the original scalar as produced while [creating the range proof](#create-asset-range-proof). During signing the non-forged s-value has its 4 most significant bits set to random bits to make it indistinguishable from the forged s-values.
 
 
 
