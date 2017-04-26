@@ -1,10 +1,7 @@
 package legacy
 
 import (
-	"fmt"
-
 	"chain/crypto/sha3pool"
-	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
@@ -12,19 +9,10 @@ import (
 
 // MapTx converts a legacy TxData object into its entries-based
 // representation.
-func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
-	defer func() {
-		if r, ok := recover().(error); ok {
-			err = r
-		}
-	}()
+func MapTx(oldTx *TxData) *bc.Tx {
+	txid, header, entries := mapTx(oldTx)
 
-	txid, header, entries, err := mapTx(oldTx)
-	if err != nil {
-		return nil, errors.Wrap(err, "mapping old transaction to new")
-	}
-
-	txEntries = &bc.Tx{
+	tx := &bc.Tx{
 		TxHeader: header,
 		ID:       txid,
 		Entries:  entries,
@@ -41,7 +29,9 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 		case *bc.Issuance:
 			anchor, ok := entries[*e.AnchorId]
 			if !ok {
-				return nil, fmt.Errorf("entry for anchor ID %x not found", e.AnchorId.Bytes())
+				// this tx will be invalid because this issuance is
+				// missing an anchor
+				continue
 			}
 			if _, ok := anchor.(*bc.Nonce); ok {
 				nonceIDs[*e.AnchorId] = true
@@ -58,33 +48,27 @@ func MapTx(oldTx *TxData) (txEntries *bc.Tx, err error) {
 			continue
 		}
 		if ord >= uint64(len(oldTx.Inputs)) {
-			return nil, fmt.Errorf("%T entry has out-of-range ordinal %d", e, ord)
+			continue // poorly-formed transaction
 		}
-		txEntries.InputIDs[ord] = id
+		tx.InputIDs[ord] = id
 	}
 
 	for id := range nonceIDs {
-		txEntries.NonceIDs = append(txEntries.NonceIDs, id)
+		tx.NonceIDs = append(tx.NonceIDs, id)
 	}
 	for id := range spentOutputIDs {
-		txEntries.SpentOutputIDs = append(txEntries.SpentOutputIDs, id)
+		tx.SpentOutputIDs = append(tx.SpentOutputIDs, id)
 	}
-
-	return txEntries, nil
+	return tx
 }
 
-func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash]bc.Entry, err error) {
+func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash]bc.Entry) {
 	entryMap = make(map[bc.Hash]bc.Entry)
 
-	addEntry := func(e bc.Entry) (id bc.Hash, err error) {
-		defer func() {
-			if pErr, ok := recover().(error); ok {
-				err = pErr
-			}
-		}()
-		id = bc.EntryID(e)
+	addEntry := func(e bc.Entry) bc.Hash {
+		id := bc.EntryID(e)
 		entryMap[id] = e
-		return id, err
+		return id
 	}
 
 	// Loop twice over tx.Inputs, once for spends and once for
@@ -108,21 +92,11 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 				Position: oldSp.SourcePosition,
 			}
 			out := bc.NewOutput(src, prog, &oldSp.RefDataHash, 0) // ordinal doesn't matter for prevouts, only for result outputs
-			var prevoutID bc.Hash
-			prevoutID, err = addEntry(out)
-			if err != nil {
-				err = errors.Wrapf(err, "adding prevout entry for input %d", i)
-				return
-			}
+			prevoutID := addEntry(out)
 			refdatahash := hashData(inp.ReferenceData)
 			sp := bc.NewSpend(&prevoutID, &refdatahash, uint64(i))
 			sp.WitnessArguments = oldSp.Arguments
-			var id bc.Hash
-			id, err = addEntry(sp)
-			if err != nil {
-				err = errors.Wrapf(err, "adding spend entry for input %d", i)
-				return
-			}
+			id := addEntry(sp)
 			muxSources[i] = &bc.ValueSource{
 				Ref:   &id,
 				Value: &oldSp.AssetAmount,
@@ -143,25 +117,12 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 
 			var (
 				anchorID    bc.Hash
-				setAnchored func(*bc.Hash)
+				setAnchored = func(*bc.Hash) {}
 			)
 
-			if len(oldIss.Nonce) == 0 {
-				if firstSpend == nil {
-					err = fmt.Errorf("nonce-less issuance in transaction with no spends")
-					return
-				}
-				anchorID = firstSpendID
-				setAnchored = firstSpend.SetAnchored
-			} else {
+			if len(oldIss.Nonce) > 0 {
 				tr := bc.NewTimeRange(tx.MinTime, tx.MaxTime)
-				var trID bc.Hash
-				trID, err = addEntry(tr)
-				if err != nil {
-					err = errors.Wrapf(err, "adding timerange entry for input %d", i)
-					return
-				}
-
+				trID := addEntry(tr)
 				assetID := oldIss.AssetID()
 
 				builder := vmutil.NewBuilder()
@@ -169,14 +130,11 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 				builder.AddOp(vm.OP_ASSET).AddData(assetID.Bytes()).AddOp(vm.OP_EQUAL)
 
 				nonce := bc.NewNonce(&bc.Program{VmVersion: 1, Code: builder.Program}, &trID)
-				var nonceID bc.Hash
-				nonceID, err = addEntry(nonce)
-				if err != nil {
-					err = errors.Wrapf(err, "adding nonce entry for input %d", i)
-					return
-				}
-				anchorID = nonceID
+				anchorID = addEntry(nonce)
 				setAnchored = nonce.SetAnchored
+			} else if firstSpend != nil {
+				anchorID = firstSpendID
+				setAnchored = firstSpend.SetAnchored
 			}
 
 			val := inp.AssetAmount()
@@ -193,13 +151,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 				},
 			}
 			iss.WitnessArguments = oldIss.Arguments
-			var issID bc.Hash
-			issID, err = addEntry(iss)
-			if err != nil {
-				err = errors.Wrapf(err, "adding issuance entry for input %d", i)
-				return
-			}
-
+			issID := addEntry(iss)
 			setAnchored(&issID)
 
 			muxSources[i] = &bc.ValueSource{
@@ -211,12 +163,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 	}
 
 	mux := bc.NewMux(muxSources, &bc.Program{VmVersion: 1, Code: []byte{byte(vm.OP_TRUE)}})
-	var muxID bc.Hash
-	muxID, err = addEntry(mux)
-	if err != nil {
-		err = errors.Wrap(err, "adding mux entry")
-		return
-	}
+	muxID := addEntry(mux)
 
 	for _, sp := range spends {
 		spentOutput := entryMap[*sp.SpentOutputId].(*bc.Output)
@@ -239,12 +186,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 			// retirement
 			refdatahash := hashData(out.ReferenceData)
 			r := bc.NewRetirement(src, &refdatahash, uint64(i))
-			var rID bc.Hash
-			rID, err = addEntry(r)
-			if err != nil {
-				err = errors.Wrapf(err, "adding retirement entry for output %d", i)
-				return
-			}
+			rID := addEntry(r)
 			resultIDs = append(resultIDs, &rID)
 			dest = &bc.ValueDestination{
 				Ref:      &rID,
@@ -255,12 +197,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 			prog := &bc.Program{out.VMVersion, out.ControlProgram}
 			refdatahash := hashData(out.ReferenceData)
 			o := bc.NewOutput(src, prog, &refdatahash, uint64(i))
-			var oID bc.Hash
-			oID, err = addEntry(o)
-			if err != nil {
-				err = errors.Wrapf(err, "adding output entry for output %d", i)
-				return
-			}
+			oID := addEntry(o)
 			resultIDs = append(resultIDs, &oID)
 			dest = &bc.ValueDestination{
 				Ref:      &oID,
@@ -273,13 +210,9 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 
 	refdatahash := hashData(tx.ReferenceData)
 	h := bc.NewTxHeader(tx.Version, resultIDs, &refdatahash, tx.MinTime, tx.MaxTime)
-	headerID, err = addEntry(h)
-	if err != nil {
-		err = errors.Wrap(err, "adding header entry")
-		return
-	}
+	headerID = addEntry(h)
 
-	return headerID, h, entryMap, nil
+	return headerID, h, entryMap
 }
 
 func mapBlockHeader(old *BlockHeader) (bhID bc.Hash, bh *bc.BlockHeader) {

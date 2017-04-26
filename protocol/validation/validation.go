@@ -208,14 +208,14 @@ func checkValid(vs *validationState, e bc.Entry) error {
 			return errors.WithDetailf(errMismatchedAssetID, "asset ID is %x, issuance wants %x", computedAssetID.Bytes(), e.Value.AssetId.Bytes())
 		}
 
-		err := vm.Verify(NewTxVMContext(vs.tx, e, e.WitnessAssetDefinition.IssuanceProgram, e.WitnessArguments))
-		if err != nil {
-			return errors.Wrap(err, "checking issuance program")
-		}
-
 		anchor, ok := vs.tx.Entries[*e.AnchorId]
 		if !ok {
 			return errors.Wrapf(bc.ErrMissingEntry, "entry for issuance anchor %x not found", e.AnchorId.Bytes())
+		}
+
+		err := vm.Verify(NewTxVMContext(vs.tx, e, e.WitnessAssetDefinition.IssuanceProgram, e.WitnessArguments))
+		if err != nil {
+			return errors.Wrap(err, "checking issuance program")
 		}
 
 		var anchored *bc.Hash

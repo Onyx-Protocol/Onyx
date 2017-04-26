@@ -9,6 +9,7 @@ import (
 	"chain/crypto/sha3pool"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/bc/bctest"
 	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
 	"chain/testutil"
@@ -357,6 +358,18 @@ func TestTxValidation(t *testing.T) {
 				t.Errorf("got error %s, want %s; validationState is:\n%s", err, c.err, spew.Sdump(vs))
 			}
 		})
+	}
+}
+
+func TestNoncelessIssuance(t *testing.T) {
+	tx := bctest.NewIssuanceTx(t, bc.EmptyStringHash, func(tx *legacy.Tx) {
+		// Remove the issuance nonce.
+		tx.Inputs[0].TypedInput.(*legacy.IssuanceInput).Nonce = nil
+	})
+
+	err := ValidateTx(legacy.MapTx(&tx.TxData), bc.EmptyStringHash)
+	if errors.Root(err) != bc.ErrMissingEntry {
+		t.Fatalf("got %s, want %s", err, bc.ErrMissingEntry)
 	}
 }
 
