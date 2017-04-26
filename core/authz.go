@@ -6,6 +6,7 @@ var policies = []string{
 	"client-readwrite",
 	"client-readonly",
 	"crosscore",
+	"crosscore-signblock"
 	"monitoring",
 	"internal",
 	"public",
@@ -43,7 +44,7 @@ var policyByRoute = map[string][]string{
 	networkRPCPrefix + "get-block":         {"crosscore"},
 	networkRPCPrefix + "get-snapshot-info": {"crosscore"},
 	networkRPCPrefix + "get-snapshot":      {"crosscore"},
-	networkRPCPrefix + "signer/sign-block": {"crosscore"}, // TODO(tessr): make this crosscore-signblock
+	networkRPCPrefix + "signer/sign-block": {"crosscore-signblock"}, 
 	networkRPCPrefix + "block-height":      {"crosscore"},
 
 	"/list-authorization-grants":  {"client-readwrite", "client-readonly"},
@@ -53,7 +54,7 @@ var policyByRoute = map[string][]string{
 	"/list-access-tokens":         {"client-readwrite", "client-readonly"},
 	"/delete-access-token":        {"client-readwrite"},
 	"/configure":                  {"client-readwrite", "internal"},
-	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "monitoring"},
+	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "crosscore-signblock", "monitoring"},
 
 	"/debug/vars":          {"client-readwrite", "client-readonly", "monitoring"}, // should monitoring endpoints also be available to any other policy-holders?
 	"/debug/pprof":         {"client-readwrite", "client-readonly", "monitoring"},
