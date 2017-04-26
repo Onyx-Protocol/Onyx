@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/kr/secureheader"
@@ -182,8 +183,14 @@ func main() {
 	// Once this node is able to read the config value, it can set up the remaining
 	// cored functionality, and add the rest of the core routes to the serve mux.
 	// That is the second phase.
+	//
+	// The waitHandler accepts incoming requests, but blocks until its underlying
+	// handler is set, when the second phase is complete.
+	var coreHandler waitHandler
+	coreHandler.wg.Add(1)
 	mux := http.NewServeMux()
 	mux.Handle("/raft/", raftDB)
+	mux.Handle("/", &coreHandler)
 
 	var handler http.Handler = mux
 	handler = core.AuthHandler(handler, raftDB, accessTokens, internalDN)
@@ -245,7 +252,7 @@ func main() {
 		chainlog.Printf(ctx, "Launching as unconfigured Core.")
 		h = core.RunUnconfigured(ctx, db, raftDB, opts...)
 	}
-	mux.Handle("/", h)
+	coreHandler.Set(h)
 	chainlog.Printf(ctx, "Chain Core online and listening at %s", *listenAddr)
 
 	// block forever without using any resources so this process won't quit while
@@ -455,4 +462,19 @@ func (w *errlog) Write(p []byte) (int, error) {
 		w.t = time.Now()
 	}
 	return len(p), nil // report success for the MultiWriter
+}
+
+type waitHandler struct {
+	h  http.Handler
+	wg sync.WaitGroup
+}
+
+func (wh *waitHandler) Set(h http.Handler) {
+	wh.h = h
+	wh.wg.Done()
+}
+
+func (wh *waitHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	wh.wg.Wait()
+	wh.h.ServeHTTP(w, req)
 }
