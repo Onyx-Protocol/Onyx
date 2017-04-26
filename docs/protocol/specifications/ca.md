@@ -12,6 +12,7 @@
   * [Hash functions](#hash-functions)
   * [Ring Signature](#ring-signature)
   * [Borromean Ring Signature](#borromean-ring-signature)
+  * [OLEG-ZKP](#oleg-zkp)
 * [Keys](#keys)
   * [2D Key](#2d-key)
   * [Record Encryption Key](#record-encryption-key)
@@ -480,6 +481,125 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
     3. Append `e[t,0]` to `E`: `E = E || e[t,0]`, where `e[t,0]` is encoded as a 32-byte little-endian integer.
 8. Calculate `e’ = ScalarHash(E)`.
 9. Return `payload` if `e’` equals to `e0`. Otherwise, return `nil`.
+
+
+
+### OLEG-ZKP
+
+OLEG-ZKP stands for “Ring Linear-Equation Generalized Zero Knowledge Proof”.
+`OLEG-ZKP({x,y,z...}, (s1 OR s2 OR s3 OR...)` a non-interactive proof of knowledge
+of secrets `x,y,z...` that statisfy one of statements `s1,s2,s3...` in zero-knowledge.
+
+OLEG-ZKP is a construct facilitating concrete statements and cannot provide binding and
+soundness guarantees in abstract. For proof of security refer to description of a
+concrete instance of OLEG-ZKP that uses concrete statements.
+
+**Examples:**
+
+Ordinary Schnorr signature created by `x` and verifiable by public key `P`:
+
+    OLEG-ZKP(msg, {x}, P = x·G)
+
+Ring signature over public keys P and Q:
+
+    OLEG-ZKP(msg, {x}, P = x·G OR Q = x·G)
+
+[Asset range proof](#asset-range-proof) for ElGamal commitment `H,C` over assets `A1,A2`:
+
+    OLEG-ZKP(msg, {c}, (H-A1 = c·G AND C = c·J) OR (H-A2 = c·G AND C = c·J))
+
+
+#### Notation
+
+Term              | Description
+------------------|---------------------
+Statement         | An equation in terms of `l` secrets in form of `f(x0,x1...) == F` where `f(x0,x1,...) = A0*x0 + A1*x1 + ...`.
+Statement set     | A set of `m` statements that must all be true for a set to be true: `f0(x) == F0 && f1(x) == F1 && ...`
+Statement ring    | A collection of `n` statement sets, where at list one must be true in order for the ring to be valid.
+`l`               | Number of secret scalars subject to proof-of-knowledge.
+`m`               | Number of statements in each statement set (equations in per ring item).
+`n`               | Number of statement sets (ring items).
+`k`               | Index `0..l-1` of secret scalar.
+`j`               | Index `0..m-1` of a statement in each statement set.
+`i`               | Index `0..n-1` of a statement set (ring item).
+`î`               | Index `0..n-1` of a statement set that is true (non-forged ring item).
+`x[k]`            | Secret scalar at index `k`.
+`f[i,j]({x[k]})`  | Linear function over `l` secrets at index `j` within set `i`.
+`F[i,j]`          | Commitment for a function value `f[i,j]` at index `j` within set `i`.
+
+
+#### Create OLEG-ZKP
+
+
+**Inputs:**
+
+1. `msg`: the string to be signed.
+2. `{x[k]}`: the `l` secret [scalars](#scalar).
+3. `{f[i,j]({x[k]})}`: `n·m` functions over `l` secrets.
+4. `{F[i,j]}`: `n·m` commitments for functions `{f[i,j]}`.
+5. `î`: the index of the position in a ring, so that `F[î,j] == f[î,j]({x[k]})` for all `j` from 0 to `m-1`.
+
+**Output:** `e0, {s[i,k]}`: the Σ-protocol commitment response scalars: total `1+n·l` 32-byte elements.
+
+**Algorithm:**
+
+1. Let `counter = 0`.
+2. Let the `msghash` be a hash of the input non-secret data:
+
+        msghash = Hash256("OLEG-ZKP" || uint64le(n) || uint64le(m) || uint64le(l) ||
+                          F[0,0]   || ... || F[0,m-1]   ||
+                          ...
+                          F[n-1,0] || ... || F[n-1,m-1] ||
+                          msg)
+
+3. Calculate a sequence of: `(n-1)·l` 32-byte random values `{S[i,k]}`, `l` 64-byte nonces `r[k]` and `l` 1-byte `mask[k]`:
+
+    {S[i,k], r[k], mask[k]} = StreamHash(uint64le(counter) || msghash || x[0] || ... || x[l-1] || uint64le(j), 32·(n-1)·l + 64·l + l)
+
+4. Reduce each `r[k]` modulo `L`.
+5. Calculate the initial challenge (e-value), let `i’ = î+1 mod n`:
+    1. For each `j=0..m-1`:
+        1. Calculate [point](#point) `R[i’,j] = f[î,j]({r[k]})`.
+    2. For each `k=0..l-1`:
+        1. Define `w[î,k]` as `mask[k]` with lower 4 bits set to zero: `w[î,k] = mask[k] & 0xf0`.
+    3. Calculate challenge:
+
+            e[i’] = ScalarHash("e" ||
+                               msghash || uint64le(i’) ||
+                               R[i’,0] || ... || R[i’,m-1] ||
+                               w[î,0]  || ... || w[î,l-1])
+
+6. For `step` from `1` to `n-1` (these steps are skipped if `n` equals 1):
+    1. Let `i = (î + step) mod n`.
+    2. For each `k=0..l-1`:
+        1. Calculate the forged s-values `s[i,k] = S[step-1,k]`.
+        2. Define `z[i,k]` as `s[i,k]` with the most significant 4 bits set to zero.
+        3. Define `w[i,k]` as a most significant byte of `s[i,k]` with lower 4 bits set to zero: `w[i,k] = s[i,k][31] & 0xf0`.
+    3. Let `i’ = i+1 mod n`.
+    4. For each `j=0..m-1`:
+        1. Calculate point `R[i’,j] = f[i,j](z[i,0],...,z[i,l-1]) - e[i]·F[i,j]`.
+    5. Calculate challenge:
+
+            e[i’] = ScalarHash("e" ||
+                               msghash || uint64le(i’) ||
+                               R[i’,0] || ... || R[i’,m-1] ||
+                               w[i,0]  || ... || w[i,l-1])
+
+7. Calculate the non-forged responses for each `k=0..l-1`:
+    1. Calculate response scalar:
+
+        z[î,k] = r[k] + x[k]·e[î] mod L
+
+    2. If `z[î,k]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
+    3. Define `s[î,k]` as `z[î,k]` with 4 high bits set to high 4 bits of the `mask[k]`.
+8. Return the proof `e[0], {s[i,k]}`, total `1+n·l` 32-byte elements.
+
+
+
+#### Validate OLEG-ZKP
+
+
+
 
 
 
@@ -988,7 +1108,7 @@ When creating a confidential issuance, the first step is to construct the rest o
 
 * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
 * `T`: tracing [point](#point),
-* `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature.
+* `rs = {e[0], (s[0], w), ... s[2·n-1]}`: the issuance ring signature.
 
 
 **Algorithm:**
