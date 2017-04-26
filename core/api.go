@@ -264,11 +264,6 @@ func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accessto
 		}
 
 		err = authorizer.Authorize(req)
-		if errors.Root(err) == authz.ErrNotAuthorized {
-			// TODO(kr): remove this workaround once dashboard
-			// knows how to handle ErrNotAuthorized (CH011).
-			err = errors.Sub(errNotAuthenticated, err)
-		}
 		if err != nil {
 			errorFormatter.Write(req.Context(), rw, err)
 			return
