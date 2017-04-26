@@ -91,6 +91,15 @@ func TestCreatGrantValidation(t *testing.T) {
 			Policy: "client-readwrite",
 		},
 
+		// invalid token data
+		{
+			GuardType: "access_token",
+			GuardData: map[string]interface{}{
+				"invalid": "invalid",
+			},
+			Policy: "client-readwrite",
+		},
+
 		// invalid policy
 		{
 			GuardType: "access_token",
