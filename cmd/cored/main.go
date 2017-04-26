@@ -76,8 +76,7 @@ var (
 	buildCommit = "?"
 	buildDate   = "?"
 
-	race          []interface{} // initialized in race.go
-	httpsRedirect = true        // initialized in plain_http.go
+	race []interface{} // initialized in race.go
 
 	// By default, a core is not able to reset its data.
 	// This feature can be turned on with the reset build tag.
@@ -121,6 +120,7 @@ func main() {
 	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
 	fmt.Printf("loopback-auth: %t\n", config.BuildConfig.LoopbackAuth)
 	fmt.Printf("reset: %t\n", config.BuildConfig.Reset)
+	fmt.Printf("plain_http: %t\n", config.BuildConfig.PlainHTTP)
 
 	if *v {
 		return
@@ -198,7 +198,7 @@ func main() {
 	handler = reqid.Handler(handler)
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
-	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
+	secureheader.DefaultConfig.HTTPSRedirect = false
 	secureheader.DefaultConfig.Next = handler
 
 	server := &http.Server{
@@ -266,18 +266,18 @@ func main() {
 // will be returned. Otherwise the second return arg will
 // be nil.
 func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
-	config, err := core.TLSConfig(
+	c, err := core.TLSConfig(
 		filepath.Join(home, "tls.crt"),
 		filepath.Join(home, "tls.key"),
 		*rootCAs,
 	)
-	if err == core.ErrNoTLS {
+	if err == core.ErrNoTLS && config.BuildConfig.PlainHTTP {
 		return ln, nil, nil // files & env vars don't exist; don't want TLS
 	} else if err != nil {
 		return nil, nil, err
 	}
-	ln = tls.NewListener(ln, config)
-	return ln, config, nil
+	ln = tls.NewListener(ln, c)
+	return ln, c, nil
 }
 
 func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string, opts ...core.RunOption) http.Handler {
