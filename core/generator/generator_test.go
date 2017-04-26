@@ -116,6 +116,37 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 	}
 }
 
+// TestGetAndAddBlockSignaturesRace tests a scenario where all necessary
+// signatures are obtained quickly, but a slow signer is still signing.
+func TestGetAndAddBlockSignaturesRace(t *testing.T) {
+	c := prottest.NewChain(t)
+	pubkey, privkey, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	g := New(c, []BlockSigner{testSigner{nil, pubkey, privkey}}, nil)
+	g.latestBlock, g.latestSnapshot = c.State()
+
+	ctx := context.Background()
+	tip, snapshot, err := c.Recover(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	block, _, err := c.GenerateBlock(ctx, tip, snapshot, time.Now().Add(time.Minute), nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	err = g.getAndAddBlockSignatures(ctx, block, tip)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	err = c.ValidateBlock(block, tip)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+}
+
 func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
 	ctx := context.Background()
 
@@ -152,9 +183,7 @@ func (s testSigner) SignBlock(ctx context.Context, marshalledBlock []byte) ([]by
 	if err != nil {
 		return nil, err
 	}
-
-	hash := b.Hash()
-	return ed25519.Sign(s.privKey, hash.Bytes()), nil
+	return ed25519.Sign(s.privKey, b.Hash().Bytes()), nil
 }
 
 func (s testSigner) String() string {
