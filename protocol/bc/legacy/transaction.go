@@ -27,12 +27,7 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 		return err
 	}
 
-	txEntries, err := MapTx(&tx.TxData)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	tx.Tx = txEntries
+	tx.Tx = MapTx(&tx.TxData)
 	return nil
 }
 
@@ -61,14 +56,9 @@ func (tx *Tx) OutputID(outputIndex int) *bc.Hash {
 // If you have already computed the hash, use struct literal
 // notation to make a Tx object directly.
 func NewTx(data TxData) *Tx {
-	txEntries, err := MapTx(&data)
-	if err != nil {
-		panic(err)
-	}
-
 	return &Tx{
 		TxData: data,
-		Tx:     txEntries,
+		Tx:     MapTx(&data),
 	}
 }
 
