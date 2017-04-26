@@ -24,20 +24,37 @@ type apiGrant struct {
 var errMissingTokenID = errors.New("id does not exist")
 
 func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
+	var found bool
+	for _, p := range policies {
+		if p == x.Policy {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, errors.WithDetail(httpjson.ErrBadRequest, "invalid policy: "+x.Policy)
+	}
+
 	if x.GuardType == "access_token" {
 		if id, _ := x.GuardData["id"].(string); !a.accessTokens.Exists(ctx, id) {
 			return nil, errMissingTokenID
+		} else if len(x.GuardData) != 1 {
+			return nil, errors.WithDetail(httpjson.ErrBadRequest, `guard data should contain exactly one field, "id"`)
 		}
 	} else if x.GuardType == "x509" {
-		if subj, ok := x.GuardData["subject"].(map[string]interface{}); ok {
+		if len(x.GuardData) != 1 {
+			return nil, errors.WithDetail(httpjson.ErrBadRequest, `guard data should contain exactly one field, "subject"`)
+		} else if subj, ok := x.GuardData["subject"].(map[string]interface{}); ok {
 			for k := range subj {
 				if !authz.ValidX509SubjectField(k) {
 					return nil, errors.WithDetail(httpjson.ErrBadRequest, "bad subject field "+k)
 				}
 			}
 		} else {
-			return nil, errors.WithDetail(httpjson.ErrBadRequest, "map of subject fields required")
+			return nil, errors.WithDetail(httpjson.ErrBadRequest, "map of subject attributes required")
 		}
+	} else {
+		return nil, errors.WithDetail(httpjson.ErrBadRequest, "invalid guard type: "+x.GuardType)
 	}
 
 	// NOTE: package json produces consistent serialization output,
