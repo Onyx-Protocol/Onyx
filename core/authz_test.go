@@ -173,5 +173,5 @@ func tryRPC(t testing.TB, baseURL, path string, token *accesstoken.Token) bool {
 		t.Fatal("unexpected 500 error")
 	}
 
-	return resp.StatusCode != http.StatusUnauthorized
+	return resp.StatusCode != http.StatusForbidden
 }
