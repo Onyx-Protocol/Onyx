@@ -46,7 +46,7 @@ func (a *API) createAccessToken(ctx context.Context, x struct{ ID, Type string }
 		grant = authz.Grant{
 			GuardType: "access_token",
 			GuardData: guardData,
-			Policy:    "crosscore-readonly",
+			Policy:    "crosscore",
 		}
 	default:
 		// We've already returned if x.Type wasn't specified, so this must be a bad type.
