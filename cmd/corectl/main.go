@@ -351,7 +351,7 @@ The type of guard (before the = sign) is case-insensitive.
 		GrantData interface{} `json:"grant_data"`
 	}{Policy: args[0]}
 
-	switch typ, data := splitAfter2(args[1], "="); typ {
+	switch typ, data := splitAfter2(args[1], "="); strings.ToUpper(typ) {
 	case "TOKEN=":
 		req.GrantType = "access_token"
 		req.GrantData = map[string]interface{}{"id": data}
@@ -362,6 +362,7 @@ The type of guard (before the = sign) is case-insensitive.
 		req.GrantType = "x509"
 		req.GrantData = map[string]interface{}{"subject": map[string]string{"OU": data}}
 	default:
+		fmt.Fprintln(os.Stderr, "unknown guard type", typ)
 		fatalln(usage)
 	}
 
