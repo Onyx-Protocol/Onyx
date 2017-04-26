@@ -41,7 +41,7 @@ func TestRecovery(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	store := txdb.NewStore(db)
-	c := prottest.NewChainWithStorage(t, store)
+	c := prottest.NewChain(t, prottest.WithStore(store))
 	g := generator.New(c, nil, db)
 	pinStore := pin.NewStore(db)
 	coretest.CreatePins(ctx, t, pinStore)
