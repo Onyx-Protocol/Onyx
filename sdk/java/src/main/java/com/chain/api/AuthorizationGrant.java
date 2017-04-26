@@ -24,8 +24,9 @@ import com.google.gson.annotations.SerializedName;
  *   data in Chain Core, such as account creation, are not permitted.
  * <li>monitoring: read-only access to monitoring endpoints, such as fetching
  *   the Chain Core configuration.
- * <li>network: full access to the Network API, which allows two instances of
- *   Chain Core to connect to each other.
+ * <li>crosscore: access to the cross-core API, including fetching blocks and
+ *   submitting transactions, but not including block signing.
+ * <li>crosscore-signblock: access to the cross-core API's block-signing API call.
  * </ul>
  */
 public class AuthorizationGrant {
