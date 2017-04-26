@@ -47,9 +47,9 @@ var policyByRoute = map[string][]string{
 	networkRPCPrefix + "signer/sign-block": {"crosscore-signblock"},
 	networkRPCPrefix + "block-height":      {"crosscore", "crosscore-signblock"},
 
-	"/list-authorization-grants":  {"client-readwrite", "client-readonly"},
-	"/create-authorization-grant": {"client-readwrite"},
-	"/delete-authorization-grant": {"client-readwrite"},
+	"/list-authorization-grants":  {"client-readwrite", "client-readonly", "internal"},
+	"/create-authorization-grant": {"client-readwrite", "internal"},
+	"/delete-authorization-grant": {"client-readwrite", "internal"},
 	"/create-access-token":        {"client-readwrite", "internal"},
 	"/list-access-tokens":         {"client-readwrite", "client-readonly"},
 	"/delete-access-token":        {"client-readwrite"},
