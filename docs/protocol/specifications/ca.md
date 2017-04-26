@@ -587,9 +587,9 @@ Statement ring    | A collection of `n` statement sets, where at list one must b
                                w[i,0]  || ... || w[i,l-1])
 
 7. Calculate the non-forged responses for each `k=0..l-1`:
-    1. Calculate response scalar:
+    1. Calculate a response scalar:
 
-        z[î,k] = r[k] + x[k]·e[î] mod L
+            z[î,k] = r[k] + x[k]·e[î] mod L
 
     2. If `z[î,k]` is greater than 2<sup>252</sup>–1, then increment the `counter` and try again from the beginning. The chance of this happening is below 1 in 2<sup>124</sup>.
     3. Define `s[î,k]` as `z[î,k]` with 4 high bits set to high 4 bits of the `mask[k]`.
