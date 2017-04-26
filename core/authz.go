@@ -38,8 +38,8 @@ var policyByRoute = map[string][]string{
 	"/list-balances":          {"client-readwrite", "client-readonly"},
 	"/list-unspent-outputs":   {"client-readwrite", "client-readonly"},
 	"/reset":                  {"client-readwrite", "internal"},
-	"/submit":                 {"client-readwrite"},
 
+	networkRPCPrefix + "submit":            {"crosscore-readonly"},
 	networkRPCPrefix + "get-block":         {"crosscore-readonly"},
 	networkRPCPrefix + "get-snapshot-info": {"crosscore-readonly"},
 	networkRPCPrefix + "get-snapshot":      {"crosscore-readonly"},
