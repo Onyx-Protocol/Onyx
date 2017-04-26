@@ -193,6 +193,7 @@ func main() {
 	mux.Handle("/", &coreHandler)
 
 	var handler http.Handler = mux
+	handler = core.RedirectHandler(handler)
 	handler = core.AuthHandler(handler, raftDB, accessTokens, internalDN)
 	handler = reqid.Handler(handler)
 

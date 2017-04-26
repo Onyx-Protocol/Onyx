@@ -194,7 +194,6 @@ func (a *API) buildHandler() {
 
 	handler := maxBytes(latencyHandler) // TODO(tessr): consider moving this to non-core specific mux
 	handler = webAssetsHandler(handler)
-	handler = redirectHandler(handler)
 	handler = healthHandler(handler)
 	for _, l := range a.requestLimits {
 		handler = limit.Handler(handler, alwaysError(errRateLimited), l.perSecond, l.burst, l.key)
@@ -298,7 +297,8 @@ func blockchainIDHandler(handler http.Handler, blockchainID string) http.Handler
 	})
 }
 
-func redirectHandler(next http.Handler) http.Handler {
+// RedirectHandler redirects / to /dashboard/.
+func RedirectHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/" {
 			http.Redirect(w, req, "/dashboard/", http.StatusFound)
