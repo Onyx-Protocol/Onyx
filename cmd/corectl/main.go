@@ -52,6 +52,8 @@ var commands = map[string]*command{
 	"create-token":         {createToken},
 	"config":               {configNongenerator},
 	"reset":                {reset},
+	"grant":                {grant},
+	"revoke":               {revoke},
 }
 
 func main() {
@@ -313,6 +315,66 @@ func reset(client *rpc.Client, args []string) {
 	}
 }
 
+func grant(client *rpc.Client, args []string) {
+	editAuthz(client, args, "grant")
+}
+
+func revoke(client *rpc.Client, args []string) {
+	editAuthz(client, args, "revoke")
+}
+
+func editAuthz(client *rpc.Client, args []string, action string) {
+	usage := "usage: corectl " + action + " [policy] [guard]"
+	var flags flag.FlagSet
+
+	flags.Usage = func() {
+		fmt.Fprintln(os.Stderr, usage)
+		fmt.Fprintln(os.Stderr, `
+Where guard is one of:
+  token=[id]   to affect an access token
+  CN=[name]    to affect an X.509 Common Name
+  OU=[name]    to affect an X.509 Organizational Unit
+
+The type of guard (before the = sign) is case-insensitive.
+`)
+		os.Exit(1)
+	}
+	flags.Parse(args)
+	args = flags.Args()
+	if len(args) != 2 {
+		fatalln(usage)
+	}
+
+	req := struct {
+		Policy    string
+		GrantType string      `json:"grant_type"`
+		GrantData interface{} `json:"grant_data"`
+	}{Policy: args[0]}
+
+	switch typ, data := splitAfter2(args[1], "="); typ {
+	case "TOKEN=":
+		req.GrantType = "access_token"
+		req.GrantData = map[string]interface{}{"id": data}
+	case "CN=":
+		req.GrantType = "x509"
+		req.GrantData = map[string]interface{}{"subject": map[string]string{"CN": data}}
+	case "OU=":
+		req.GrantType = "x509"
+		req.GrantData = map[string]interface{}{"subject": map[string]string{"OU": data}}
+	default:
+		fatalln(usage)
+	}
+
+	path := map[string]string{
+		"grant":  "/create-authorization-grant",
+		"revoke": "/delete-authorization-grant",
+	}[action]
+	err := client.Call(context.Background(), path, req, nil)
+	if err != nil {
+		fatalln("error:", action, fmt.Sprintf("%+v:", req), err)
+	}
+}
+
 func mustRPCClient() *rpc.Client {
 	// TODO(kr): refactor some of this cert-loading logic into chain/core
 	// and use it from cored as well.
@@ -367,4 +429,12 @@ func help(w io.Writer) {
 	fmt.Fprint(w, "\nFlags:\n")
 	fmt.Fprintln(w, "\t-version   print version information")
 	fmt.Fprintln(w)
+}
+
+// splitAfter2 is like strings.SplitAfterN with n=2.
+// If sep is not in s, it returns a="" and b=s.
+func splitAfter2(s, sep string) (a, b string) {
+	i := strings.Index(s, sep)
+	k := i + len(sep)
+	return s[:k], s[k:]
 }

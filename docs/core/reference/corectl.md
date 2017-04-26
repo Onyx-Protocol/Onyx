@@ -50,6 +50,8 @@ $ go install chain/cmd/corectl
 * [create-block-keypair](#create-block-keypair)
 * [create-token](#create-token)
 * [reset](#reset)
+* [grant](#grant)
+* [revoke](#revoke)
 
 ### `migrate`
 
@@ -151,3 +153,45 @@ other configuration will be deleted.
 ```
 corectl reset
 ```
+
+### `grant`
+
+Command grant grants access to a policy
+for the described credentials.
+
+```
+corectl grant [policy] [guard]
+```
+
+Arguments:
+
+ * **policy**: the policy to grant access to.
+See [Authentication and Authorization](../learn-more/authentication)
+for a list of policies and their meaning.
+ * **guard**: indicates what authentication credentials to require.
+It must take one of three forms:
+   * `token=[name]` to affect an access token
+   * `CN=[name]` to affect an X.509 Common Name
+   * `OU=[name]` to affect an X.509 Organizational Unit
+
+   The type of guard (before the = sign) is case-insensitive.
+
+### `revoke`
+
+Command revoke revokes access to a policy
+for the described credentials.
+
+```
+corectl revoke [policy] [guard]
+```
+
+Arguments:
+
+ * **policy**: the policy to revoke access from.
+ * **guard**: indicates what authentication credentials to affect.
+It must take one of three forms:
+   * `token=[name]` to affect an access token
+   * `CN=[name]` to affect an X.509 Common Name
+   * `OU=[name]` to affect an X.509 Organizational Unit
+
+   The type of guard (before the = sign) is case-insensitive.
