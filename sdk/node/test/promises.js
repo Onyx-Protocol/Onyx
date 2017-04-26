@@ -861,5 +861,34 @@ describe('Promise style', () => {
         assert(missing)
       })
     })
+
+    it('sanitizes X509 guard data', () =>
+      expect(
+        client.authorizationGrants.create({
+          guardType: 'x509',
+          guardData: {
+            subject: {
+              cn: tokenName,
+              ou: 'test-ou',
+            },
+          },
+          policy: 'client-readwrite'
+        })
+      ).to.be.fulfilled
+      .then(g => {
+        delete g.createdAt // ignore timestamp
+
+        expect(g).deep.equals({
+          guardType: 'x509',
+          guardData: {
+            subject: {
+              cn: tokenName,
+              ou: ['test-ou'],
+            }
+          },
+          policy: 'client-readwrite'
+        })
+      })
+    )
   })
 })
