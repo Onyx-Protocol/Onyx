@@ -92,7 +92,7 @@ module Chain
         nil
       end
 
-      SUBJECT_COMPONENTS = {
+      SUBJECT_ATTRIBUTES = {
         'C' => {array: true},
         'O' => {array: true},
         'OU' => {array: true},
@@ -112,12 +112,12 @@ module Chain
 
         res = {}
         res[first_key] = guard_data.values.first.reduce({}) do |memo, (k, v)|
-          component = SUBJECT_COMPONENTS[k.to_s.upcase]
-          raise ArgumentError.new("Invalid subject component: #{k}") unless component
+          attrib = SUBJECT_ATTRIBUTES[k.to_s.upcase]
+          raise ArgumentError.new("Invalid subject attrib: #{k}") unless attrib
 
-          if component[:array] && !v.is_a?(Array)
+          if attrib[:array] && !v.is_a?(Array)
             memo[k] = [v]
-          elsif !component[:array] && v.is_a?(Array)
+          elsif !attrib[:array] && v.is_a?(Array)
             raise ArgumentError.new("Invalid array value for #{k}: #{v}")
           else
             memo[k] = v

@@ -4,7 +4,7 @@ describe Chain::AuthorizationGrant::ClientModule do
 
   describe 'sanitize_x509' do
 
-    example 'arrayification of components' do
+    example 'arrayification of attributes' do
 
       expect(
         Chain::AuthorizationGrant::ClientModule.sanitize_x509(
@@ -38,7 +38,7 @@ describe Chain::AuthorizationGrant::ClientModule do
 
     describe 'error cases' do
 
-      example 'multiple-top-level fields' do
+      example 'multiple-top-level attributes' do
         expect {
           Chain::AuthorizationGrant::ClientModule.sanitize_x509(
             'subject' => {},
@@ -47,7 +47,7 @@ describe Chain::AuthorizationGrant::ClientModule do
         }.to raise_error(ArgumentError)
       end
 
-      example 'non-subject top-level field' do
+      example 'non-subject top-level attribute' do
         expect {
           Chain::AuthorizationGrant::ClientModule.sanitize_x509(
             'foobar' => {},
@@ -55,7 +55,7 @@ describe Chain::AuthorizationGrant::ClientModule do
         }.to raise_error(ArgumentError)
       end
 
-      example 'bad component names' do
+      example 'bad attribute names' do
         expect {
           Chain::AuthorizationGrant::ClientModule.sanitize_x509(
             'subject' => {
@@ -66,7 +66,7 @@ describe Chain::AuthorizationGrant::ClientModule do
         }.to raise_error(ArgumentError)
       end
 
-      example 'invalid array components' do
+      example 'invalid array attributes' do
         expect {
           Chain::AuthorizationGrant::ClientModule.sanitize_x509(
             'subject' => {
