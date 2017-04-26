@@ -32,6 +32,7 @@ context 'Chain SDK integration test' do
     toks = chain.access_tokens.query(type: :client).map(&:id)
     expect(toks).to eq(['foobar'])
 
+    # DEPRECATED
     toks = chain.access_tokens.query(type: :network).all
     expect(toks).to eq([])
 
@@ -465,7 +466,7 @@ context 'Chain SDK integration test' do
           'OU' => 'test-ou',
         }
       },
-      policy: 'network'
+      policy: 'crosscore'
     )
 
     guards = chain.authorization_grants.list_all
@@ -476,7 +477,7 @@ context 'Chain SDK integration test' do
       'CN' => 'test-cn',
       'OU' => ['test-ou'], # sanitizer properly array-ifies attributes
     })
-    expect(g.policy).to eq('network')
+    expect(g.policy).to eq('crosscore')
 
     # Deletion
 

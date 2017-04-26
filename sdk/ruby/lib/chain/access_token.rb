@@ -28,7 +28,7 @@ module Chain
 
     class ClientModule < Chain::ClientModule
 
-      # Create client/network access token.
+      # Create an access token.
       # @param [Hash] opts
       # @option opts [String] :id ID specifying the ID of newly created access token.
       #                                   You must specify a unique ID for access token.

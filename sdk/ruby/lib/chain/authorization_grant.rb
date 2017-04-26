@@ -59,8 +59,10 @@ module Chain
       #   - "client-readonly": read-only access to the Client API.
       #   - "monitoring": read-only access to diagnostic components of the API,
       #      including fetching configuration info.
-      #   - "network": access to the cross-core API, including fetching blocks
-      #      and submitting transactions.
+      #   - "crosscore": access to the cross-core API, including fetching blocks
+      #      and submitting transactions, but not including block signing.
+      #   - "crosscore-signblock": access to the cross-core API's block-signing
+      #      API call.
       # @return [AuthorizationGrant]
       def create(opts)
         # Copy input and stringify keys
