@@ -20,6 +20,11 @@ const snakeize = (object) => {
     let value = object[key]
     let newKey = key
 
+    // Skip all-caps keys
+    if (/^[A-Z]+$/.test(key)) {
+      continue
+    }
+
     if (/[A-Z]/.test(key)) {
       newKey = key.replace(/([A-Z])/g, v => `_${v.toLowerCase()}`)
       delete object[key]

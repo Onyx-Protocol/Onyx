@@ -35,6 +35,18 @@ describe('camelizer', () => {
     expect(camelized.referenceData.dont_convert).equals(2)
     expect(camelized.referenceData.dontConvert).equals(undefined)
   })
+
+  it('does not convert all-caps keys', () => {
+    expect(
+      Connection.camelize({
+        convert_me: 1,
+        DONTCONVERTME: 1,
+      })
+    ).deep.equals({
+      convertMe: 1,
+      DONTCONVERTME: 1,
+    })
+  })
 })
 
 describe('snakeizer', () => {
@@ -66,5 +78,17 @@ describe('snakeizer', () => {
     expect(snakeized.test_leaf).equals(1)
     expect(snakeized.reference_data.dontConvert).equals(2)
     expect(snakeized.reference_data.dont_Convert).equals(undefined)
+  })
+
+  it('does not convert all-caps keys', () => {
+    expect(
+      Connection.snakeize({
+        convertMe: 1,
+        DONTCONVERTME: 1,
+      })
+    ).deep.equals({
+      convert_me: 1,
+      DONTCONVERTME: 1,
+    })
   })
 })
