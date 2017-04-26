@@ -227,7 +227,7 @@ func createToken(client *rpc.Client, args []string) {
 	case len(args) == 2:
 		grant.Policy = args[1]
 	case *flagNet:
-		grant.Policy = "crosscore-readonly"
+		grant.Policy = "crosscore"
 		fmt.Fprintln(os.Stderr, "warning: the network flag is deprecated")
 	default:
 		grant.Policy = "client-readwrite"
