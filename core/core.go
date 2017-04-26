@@ -92,10 +92,15 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		}
 	}
 
+	var (
+		configuredAtSecs  int64 = int64(a.config.ConfiguredAt / 1000)
+		configuredAtNSecs int64 = int64((a.config.ConfiguredAt % 1000) * 1e6)
+	)
+
 	m := map[string]interface{}{
 		"state":                             a.leader.State().String(),
 		"is_configured":                     true,
-		"configured_at":                     a.config.ConfiguredAt,
+		"configured_at":                     time.Unix(configuredAtSecs, configuredAtNSecs).UTC(),
 		"is_signer":                         a.config.IsSigner,
 		"is_generator":                      a.config.IsGenerator,
 		"generator_url":                     a.config.GeneratorUrl,
