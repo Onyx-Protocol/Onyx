@@ -19,34 +19,48 @@ var (
 	states = make(map[*protocol.Chain]*state.Snapshot)
 )
 
-// NewChain makes a new Chain using memstore for storage,
-// along with an initial block using a 0/0 multisig program.
-// It commits the initial block before returning the Chain.
-func NewChain(tb testing.TB) *protocol.Chain {
-	return NewChainWithStorage(tb, memstore.New())
+type Option func(*config)
+
+func WithStore(store protocol.Store) Option {
+	return func(conf *config) { conf.store = store }
 }
 
-// NewChainWithStorage makes a new Chain using store for storage, along
-// with an initial block using a 0/0 multisig program.
+func WithOutputIDs(outputIDs ...bc.Hash) Option {
+	return func(conf *config) {
+		for _, oid := range outputIDs {
+			conf.initialState.Tree.Insert(oid.Bytes())
+		}
+	}
+}
+
+type config struct {
+	store        protocol.Store
+	initialState *state.Snapshot
+}
+
+// NewChain makes a new Chain. By default it uses a memstore for
+// storage and creates an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
-func NewChainWithStorage(tb testing.TB, store protocol.Store, outputIDs ...bc.Hash) *protocol.Chain {
+//
+// Its defaults may be overriden by providing Options.
+func NewChain(tb testing.TB, opts ...Option) *protocol.Chain {
+	conf := config{store: memstore.New(), initialState: state.Empty()}
+	for _, opt := range opts {
+		opt(&conf)
+	}
+
 	ctx := context.Background()
 	b1, err := protocol.NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	c, err := protocol.NewChain(ctx, b1.Hash(), store, nil)
+	c, err := protocol.NewChain(ctx, b1.Hash(), conf.store, nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
 	c.MaxIssuanceWindow = 48 * time.Hour // TODO(tessr): consider adding MaxIssuanceWindow to NewChain
 
-	s := state.Empty()
-	for _, outputID := range outputIDs {
-		s.Tree.Insert(outputID.Bytes())
-	}
-
-	err = c.CommitAppliedBlock(ctx, b1, s)
+	err = c.CommitAppliedBlock(ctx, b1, conf.initialState)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

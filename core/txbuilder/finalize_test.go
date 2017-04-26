@@ -19,7 +19,6 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
-	"chain/protocol/prottest/memstore"
 	"chain/protocol/state"
 	"chain/protocol/vm"
 	"chain/testutil"
@@ -345,7 +344,7 @@ func benchGenBlock(b *testing.B) {
 	b.StopTimer()
 
 	ctx := context.Background()
-	c := prottest.NewChainWithStorage(b, memstore.New())
+	c := prottest.NewChain(b)
 	g := generator.New(c, nil, pgtest.NewTx(b))
 
 	var tx1, tx2 legacy.Tx

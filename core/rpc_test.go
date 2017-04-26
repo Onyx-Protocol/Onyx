@@ -15,7 +15,7 @@ func TestGetBlock(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := context.Background()
 	store := txdb.NewStore(db)
-	chain := prottest.NewChainWithStorage(t, store)
+	chain := prottest.NewChain(t, prottest.WithStore(store))
 	api := &API{chain: chain, store: store}
 
 	block, err := api.getBlockRPC(ctx, 1)

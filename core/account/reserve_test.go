@@ -8,7 +8,6 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
-	"chain/protocol/prottest/memstore"
 )
 
 const sampleAccountUTXOs = `
@@ -37,7 +36,7 @@ func TestCancelReservation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := prottest.NewChainWithStorage(t, memstore.New(), outid)
+	c := prottest.NewChain(t, prottest.WithOutputIDs(outid))
 
 	utxoDB := newReserver(db, c, nil)
 	res, err := utxoDB.ReserveUTXO(ctx, outid, nil, time.Now())
