@@ -6,7 +6,7 @@ var policies = []string{
 	"client-readwrite",
 	"client-readonly",
 	"crosscore",
-	"crosscore-signblock"
+	"crosscore-signblock",
 	"monitoring",
 	"internal",
 	"public",
@@ -40,12 +40,12 @@ var policyByRoute = map[string][]string{
 	"/list-unspent-outputs":   {"client-readwrite", "client-readonly"},
 	"/reset":                  {"client-readwrite", "internal"},
 
-	networkRPCPrefix + "submit":            {"crosscore"},
-	networkRPCPrefix + "get-block":         {"crosscore"},
-	networkRPCPrefix + "get-snapshot-info": {"crosscore"},
-	networkRPCPrefix + "get-snapshot":      {"crosscore"},
-	networkRPCPrefix + "signer/sign-block": {"crosscore-signblock"}, 
-	networkRPCPrefix + "block-height":      {"crosscore"},
+	networkRPCPrefix + "submit":            {"crosscore", "crosscore-signblock"},
+	networkRPCPrefix + "get-block":         {"crosscore", "crosscore-signblock"},
+	networkRPCPrefix + "get-snapshot-info": {"crosscore", "crosscore-signblock"},
+	networkRPCPrefix + "get-snapshot":      {"crosscore", "crosscore-signblock"},
+	networkRPCPrefix + "signer/sign-block": {"crosscore-signblock"},
+	networkRPCPrefix + "block-height":      {"crosscore", "crosscore-signblock"},
 
 	"/list-authorization-grants":  {"client-readwrite", "client-readonly"},
 	"/create-authorization-grant": {"client-readwrite"},
