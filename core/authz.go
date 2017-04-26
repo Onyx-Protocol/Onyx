@@ -5,7 +5,7 @@ const grantPrefix = "/core/grant/"
 var policies = []string{
 	"client-readwrite",
 	"client-readonly",
-	"crosscore-readonly",
+	"crosscore",
 	"monitoring",
 	"internal",
 	"public",
@@ -39,12 +39,12 @@ var policyByRoute = map[string][]string{
 	"/list-unspent-outputs":   {"client-readwrite", "client-readonly"},
 	"/reset":                  {"client-readwrite", "internal"},
 
-	networkRPCPrefix + "submit":            {"crosscore-readonly"},
-	networkRPCPrefix + "get-block":         {"crosscore-readonly"},
-	networkRPCPrefix + "get-snapshot-info": {"crosscore-readonly"},
-	networkRPCPrefix + "get-snapshot":      {"crosscore-readonly"},
-	networkRPCPrefix + "signer/sign-block": {"crosscore-readonly"}, // TODO(tessr): make this crosscore-signblock
-	networkRPCPrefix + "block-height":      {"crosscore-readonly"},
+	networkRPCPrefix + "submit":            {"crosscore"},
+	networkRPCPrefix + "get-block":         {"crosscore"},
+	networkRPCPrefix + "get-snapshot-info": {"crosscore"},
+	networkRPCPrefix + "get-snapshot":      {"crosscore"},
+	networkRPCPrefix + "signer/sign-block": {"crosscore"}, // TODO(tessr): make this crosscore-signblock
+	networkRPCPrefix + "block-height":      {"crosscore"},
 
 	"/list-authorization-grants":  {"client-readwrite", "client-readonly"},
 	"/create-authorization-grant": {"client-readwrite"},
@@ -53,7 +53,7 @@ var policyByRoute = map[string][]string{
 	"/list-access-tokens":         {"client-readwrite", "client-readonly"},
 	"/delete-access-token":        {"client-readwrite"},
 	"/configure":                  {"client-readwrite", "internal"},
-	"/info":                       {"client-readwrite", "client-readonly", "crosscore-readonly", "monitoring"},
+	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "monitoring"},
 
 	"/debug/vars":          {"client-readwrite", "client-readonly", "monitoring"}, // should monitoring endpoints also be available to any other policy-holders?
 	"/debug/pprof":         {"client-readwrite", "client-readonly", "monitoring"},
