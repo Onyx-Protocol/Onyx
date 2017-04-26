@@ -64,7 +64,7 @@ var policyByRoute = map[string][]string{
 	"/raft/join": {"internal"},
 	"/raft/msg":  {"internal"},
 
-	"/":           {"public"},
+	"/":           {"public"}, // TODO(kr): remove this line dashboard redirect happens outside authz
 	"/dashboard":  {"public"},
 	"/dashboard/": {"public"},
 }
