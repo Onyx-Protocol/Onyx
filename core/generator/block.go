@@ -40,27 +40,47 @@ func recordSince(t0 time.Time) {
 
 // makeBlock generates a new legacy.Block, collects the required signatures
 // and commits the block to the blockchain.
-func (g *Generator) makeBlock(ctx context.Context) error {
+func (g *Generator) makeBlock(ctx context.Context) (err error) {
 	t0 := time.Now()
 	defer recordSince(t0)
 
-	g.mu.Lock()
-	txs := g.pool
-	g.pool = nil
-	g.poolHashes = make(map[bc.Hash]bool)
-	g.mu.Unlock()
+	var b *legacy.Block
+	var s *state.Snapshot
 
-	b, s, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now(), txs)
+	// Check to see if we already have a pending, generated block.
+	// This can happen if the leader process exits between generating
+	// the block and committing the signed block to the blockchain.
+	b, err = getPendingBlock(ctx, g.db)
 	if err != nil {
-		return errors.Wrap(err, "generate")
+		return errors.Wrap(err, "retrieving the pending block")
 	}
-	if len(b.Transactions) == 0 {
-		return nil // don't bother making an empty block
+	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
+		s = state.Copy(g.latestSnapshot)
+		err = s.ApplyBlock(legacy.MapBlock(b))
+		if err != nil {
+			log.Fatalkv(ctx, log.KeyError, err)
+		}
+	} else {
+		g.mu.Lock()
+		txs := g.pool
+		g.pool = nil
+		g.poolHashes = make(map[bc.Hash]bool)
+		g.mu.Unlock()
+
+		b, s, err = g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now(), txs)
+		if err != nil {
+			return errors.Wrap(err, "generate")
+		}
+		if len(b.Transactions) == 0 {
+			return nil // don't bother making an empty block
+		}
+		err = savePendingBlock(ctx, g.db, b)
+		if err != nil {
+			return errors.Wrap(err, "saving pending block")
+		}
 	}
-	err = savePendingBlock(ctx, g.db, b)
-	if err != nil {
-		return err
-	}
+
+	// g.commitBlock will update g.latestBlock and g.latestSnapshot.
 	return g.commitBlock(ctx, b, s)
 }
 

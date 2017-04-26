@@ -2,15 +2,17 @@ package generator
 
 import (
 	"context"
+	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"chain/crypto/ed25519"
 	"chain/database/pg/pgtest"
 	"chain/protocol"
+	"chain/protocol/bc/bctest"
 	"chain/protocol/bc/legacy"
 	"chain/protocol/prottest"
-	"chain/protocol/state"
 	"chain/testutil"
 )
 
@@ -35,7 +37,7 @@ func TestGeneratorRecovery(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	go New(c, nil, dbtx).Generate(ctx, time.Second, func(error) {}, b, s)
+	go New(c, nil, dbtx).Generate(ctx, 50*time.Millisecond, func(error) {}, b, s)
 
 	// Wait for the block to land, and then make sure it's the same block
 	// that was pending before we ran Generate.
@@ -49,16 +51,49 @@ func TestGeneratorRecovery(t *testing.T) {
 	}
 }
 
-func TestGetAndAddBlockSignatures(t *testing.T) {
-	pubKey, privKey, err := ed25519.GenerateKey(nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
+func TestGeneratorSignatureFailures(t *testing.T) {
+	ctx := context.Background()
+	c := prottest.NewChain(t, prottest.WithBlockSigners(1, 1))
+	pubkeys, privkeys := prottest.BlockKeyPairs(c)
 
-	c := prottest.NewChain(t)
-	g := New(c, []BlockSigner{testSigner{pubKey, privKey}}, nil)
-	g.latestBlock = prottest.Initial(t, c)
-	g.latestSnapshot = state.Empty()
+	// Use a signer that fails to sign the first 3 times then succeeds.
+	failuresRemaining := int64(3)
+	signers := []BlockSigner{testSigner{
+		before: func() error {
+			if v := atomic.AddInt64(&failuresRemaining, -1); v >= 0 {
+				return fmt.Errorf("error %d", v)
+			}
+			return nil
+		},
+		pubKey:  pubkeys[0],
+		privKey: privkeys[0],
+	}}
+
+	g := New(c, signers, pgtest.NewTx(t))
+	tx := bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash())
+	g.pool = append(g.pool, tx)
+
+	b, s := c.State()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go g.Generate(ctx, 50*time.Millisecond, func(err error) { t.Logf("%s\n", err) }, b, s)
+
+	<-c.BlockWaiter(b.Height + 1)
+	block, err := c.GetBlock(ctx, b.Height+1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if block.Transactions[0].ID != tx.ID {
+		t.Errorf("got tx %s want %s", block.Transactions[0].ID, tx.ID)
+	}
+}
+
+func TestGetAndAddBlockSignatures(t *testing.T) {
+	c := prottest.NewChain(t, prottest.WithBlockSigners(1, 1))
+	pubkeys, privkeys := prottest.BlockKeyPairs(c)
+
+	g := New(c, []BlockSigner{testSigner{nil, pubkeys[0], privkeys[0]}}, nil)
+	g.latestBlock, g.latestSnapshot = c.State()
 
 	ctx := context.Background()
 	tip, snapshot, err := c.Recover(ctx)
@@ -101,11 +136,18 @@ func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
 }
 
 type testSigner struct {
+	before  func() error
 	pubKey  ed25519.PublicKey
 	privKey ed25519.PrivateKey
 }
 
 func (s testSigner) SignBlock(ctx context.Context, b *legacy.Block) ([]byte, error) {
+	if s.before != nil {
+		if err := s.before(); err != nil {
+			return nil, err
+		}
+	}
+
 	hash := b.Hash()
 	return ed25519.Sign(s.privKey, hash.Bytes()), nil
 }
