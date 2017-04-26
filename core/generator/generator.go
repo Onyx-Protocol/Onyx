@@ -98,27 +98,6 @@ func (g *Generator) Generate(
 ) {
 	g.latestBlock, g.latestSnapshot = recoveredBlock, recoveredSnapshot
 
-	// Check to see if we already have a pending, generated block.
-	// This can happen if the leader process exits between generating
-	// the block and committing the signed block to the blockchain.
-	b, err := getPendingBlock(ctx, g.db)
-	if err != nil {
-		log.Fatalkv(ctx, log.KeyError, err)
-	}
-	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
-		s := state.Copy(g.latestSnapshot)
-		err := s.ApplyBlock(legacy.MapBlock(b))
-		if err != nil {
-			log.Fatalkv(ctx, log.KeyError, err)
-		}
-
-		// g.commitBlock will update g.latestBlock and g.latestSnapshot.
-		err = g.commitBlock(ctx, b, s)
-		if err != nil {
-			log.Fatalkv(ctx, log.KeyError, err)
-		}
-	}
-
 	ticks := time.Tick(period)
 	for {
 		select {
