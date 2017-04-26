@@ -53,12 +53,12 @@ var (
 		LoopbackAuth bool `json:"is_localhost_auth"`
 		MockHSM      bool `json:"is_mockhsm"`
 		Reset        bool `json:"is_reset"`
-		PlainHTTP    bool `json:"is_plain_http"`
+		HTTPOk       bool `json:"is_http_ok"`
 	}{
 		LoopbackAuth: false,
 		MockHSM:      true,
 		Reset:        false,
-		PlainHTTP:    false,
+		HTTPOk:       false,
 	}
 )
 

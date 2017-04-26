@@ -118,7 +118,7 @@ func main() {
 	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
 	fmt.Printf("localhost_auth: %t\n", config.BuildConfig.LoopbackAuth)
 	fmt.Printf("reset: %t\n", config.BuildConfig.Reset)
-	fmt.Printf("plain_http: %t\n", config.BuildConfig.PlainHTTP)
+	fmt.Printf("http_ok: %t\n", config.BuildConfig.HTTPOk)
 
 	if *v {
 		return
@@ -280,7 +280,7 @@ func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
 		filepath.Join(home, "tls.key"),
 		*rootCAs,
 	)
-	if err == core.ErrNoTLS && config.BuildConfig.PlainHTTP {
+	if err == core.ErrNoTLS && config.BuildConfig.HTTPOk {
 		return ln, nil, nil // files & env vars don't exist; don't want TLS
 	} else if err != nil {
 		return nil, nil, err

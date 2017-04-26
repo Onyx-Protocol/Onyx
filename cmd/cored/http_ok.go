@@ -1,4 +1,4 @@
-//+build plain_http
+//+build http_ok
 
 package main
 
@@ -12,5 +12,5 @@ chain core without a needing a TLS cert.
 */
 
 func init() {
-	config.BuildConfig.PlainHTTP = true
+	config.BuildConfig.HTTPOk = true
 }
