@@ -486,7 +486,7 @@ Example: a [value range proof](#value-range-proof) for a 4-bit mantissa has 9 el
 
 ### OLEG-ZKP
 
-OLEG-ZKP stands for “Ring Linear-Equation Generalized Zero Knowledge Proof”.
+OLEG-ZKP is an acronym for “Ring Linear-Equation Generalized Zero Knowledge Proof” (“O” stands for “ring”).
 `OLEG-ZKP({x,y,z...}, (s1 OR s2 OR s3 OR...)` a non-interactive proof of knowledge
 of secrets `x,y,z...` that statisfy one of statements `s1,s2,s3...` in zero-knowledge.
 
@@ -597,6 +597,7 @@ Statement ring    | A collection of `n` statement sets, where at list one must b
 
 
 #### Validate OLEG-ZKP
+
 
 
 
