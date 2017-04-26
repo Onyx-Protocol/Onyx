@@ -8,9 +8,9 @@ import java.util.*;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * An authorization grant provides provides granular access to resources exposed
- * by the Chain Core API. It maps guards (predicates that match against credentials
- * provided by clients) to policies (lists of resources).
+ * An authorization grant provides access to resources in the Chain Core API.
+ * It maps guards (predicates that match against credentials provided by
+ * clients) to policies (lists of resources).
  * <p>
  * There are two types of guards: {@link AccessTokenGuard}, which matches against
  * access tokens by ID, and {@link X509Guard}, which matches against X.509 client
