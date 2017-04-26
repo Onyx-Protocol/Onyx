@@ -39,7 +39,7 @@ var policyByRoute = map[string][]string{
 	"/list-unspent-outputs":   {"client-readwrite", "client-readonly"},
 	"/reset":                  {"client-readwrite", "internal"},
 
-	networkRPCPrefix + "submit":            {"crosscore-readonly"}, // TODO(tessr): make this crosscore-signblock (???)
+	networkRPCPrefix + "submit":            {"crosscore-readonly"},
 	networkRPCPrefix + "get-block":         {"crosscore-readonly"},
 	networkRPCPrefix + "get-snapshot-info": {"crosscore-readonly"},
 	networkRPCPrefix + "get-snapshot":      {"crosscore-readonly"},
