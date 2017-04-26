@@ -2,16 +2,15 @@
 
 package main
 
+import "chain/core/config"
+
 /*
-
-The secureheader package redirects requests made with http to the
-equivalent https URL. This file exposes a build tag to turn
-that functionality off. The functionality will stay on by default. This
-will be useful for chain core developer edition. Users will be able to
-connect to a chain core without a needing a TLS cert.
-
+This file exposes a build tag to permit plaintext (non-TLS) HTTP.
+TLS will be required by default. Disabling TLS will be useful for
+chain core developer edition. Users will be able to connect to a
+chain core without a needing a TLS cert.
 */
 
 func init() {
-	httpsRedirect = false
+	config.BuildConfig.PlainHTTP = true
 }
