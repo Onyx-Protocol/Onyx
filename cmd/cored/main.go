@@ -266,7 +266,7 @@ func main() {
 // will be returned. Otherwise the second return arg will
 // be nil.
 func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
-	config, err := core.TLSConfig(
+	c, err := core.TLSConfig(
 		filepath.Join(home, "tls.crt"),
 		filepath.Join(home, "tls.key"),
 		*rootCAs,
@@ -276,8 +276,8 @@ func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
 	} else if err != nil {
 		return nil, nil, err
 	}
-	ln = tls.NewListener(ln, config)
-	return ln, config, nil
+	ln = tls.NewListener(ln, c)
+	return ln, c, nil
 }
 
 func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string, opts ...core.RunOption) http.Handler {
