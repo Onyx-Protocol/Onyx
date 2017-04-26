@@ -27,13 +27,15 @@ func WithStore(store protocol.Store) Option {
 
 func WithOutputIDs(outputIDs ...bc.Hash) Option {
 	return func(conf *config) {
-		conf.outputIDs = append(conf.outputIDs, outputIDs...)
+		for _, oid := range outputIDs {
+			conf.initialState.Tree.Insert(oid.Bytes())
+		}
 	}
 }
 
 type config struct {
-	store     protocol.Store
-	outputIDs []bc.Hash
+	store        protocol.Store
+	initialState *state.Snapshot
 }
 
 // NewChain makes a new Chain. By default it uses a memstore for
@@ -42,7 +44,7 @@ type config struct {
 //
 // Its defaults may be overriden by providing Options.
 func NewChain(tb testing.TB, opts ...Option) *protocol.Chain {
-	conf := config{store: memstore.New()}
+	conf := config{store: memstore.New(), initialState: state.Empty()}
 	for _, opt := range opts {
 		opt(&conf)
 	}
@@ -58,12 +60,7 @@ func NewChain(tb testing.TB, opts ...Option) *protocol.Chain {
 	}
 	c.MaxIssuanceWindow = 48 * time.Hour // TODO(tessr): consider adding MaxIssuanceWindow to NewChain
 
-	s := state.Empty()
-	for _, outputID := range conf.outputIDs {
-		s.Tree.Insert(outputID.Bytes())
-	}
-
-	err = c.CommitAppliedBlock(ctx, b1, s)
+	err = c.CommitAppliedBlock(ctx, b1, conf.initialState)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
