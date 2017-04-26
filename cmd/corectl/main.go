@@ -331,9 +331,9 @@ func editAuthz(client *rpc.Client, args []string, action string) {
 		fmt.Fprintln(os.Stderr, usage)
 		fmt.Fprintln(os.Stderr, `
 Where guard is one of:
-  token=[name]   to affect an access token
-  CN=[name]      to affect an X.509 Common Name
-  OU=[name]      to affect an X.509 Organizational Unit
+  token=[id]   to affect an access token
+  CN=[name]    to affect an X.509 Common Name
+  OU=[name]    to affect an X.509 Organizational Unit
 
 The type of guard (before the = sign) is case-insensitive.
 `)
