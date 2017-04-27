@@ -96,14 +96,14 @@ public class CoreConfig {
   }
 
   public static void resetEverything(Client client) throws ChainException {
-    Map<String, Boolean> params = new HashMap<>();
+    Map<String, boolean> params = new HashMap<>();
     params.put("everything", true);
     client.request("reset", params, SuccessMessage.class);
   }
 
   public static class Builder {
     @SerializedName("is_generator")
-    private Boolean isGenerator;
+    private boolean isGenerator;
 
     @SerializedName("generator_url")
     private String generatorUrl;
@@ -114,7 +114,7 @@ public class CoreConfig {
     @SerializedName("blockchain_id")
     private String blockchainId;
 
-    public Builder setIsGenerator(Boolean isGenerator) {
+    public Builder setIsGenerator(boolean isGenerator) {
       this.isGenerator = isGenerator;
       return this;
     }
