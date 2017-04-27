@@ -144,9 +144,19 @@ type Getter interface {
 // for the whole cluster, if one exists.
 // An empty bootURL means to start a fresh empty cluster.
 // It is ignored when recovering from existing state in dir.
+//
+// The returned *Service will use httpClient for outbound
+// connections to peers.
 func Start(laddr, dir, bootURL string, httpClient *http.Client) (*Service, error) {
 	ctx := context.Background()
 
+	// We advertise laddr as the way for peers to reach this process.
+	// Make sure our own TLS cert is valid for our own name.
+	// (By convention, we use the same cert as a server and client
+	// when acting as a raft peer, so we use our *client* cert here.)
+	if err := verifyTLSName(laddr, httpClient); err != nil {
+		return nil, errors.Wrap(err, "advertised name does not match TLS cert")
+	}
 	sv := &Service{
 		dir:         dir,
 		mux:         http.NewServeMux(),
@@ -761,7 +771,7 @@ func (sv *Service) send(msgs []raftpb.Message) {
 // best effort. if it fails, oh well -- that's why we're using raft.
 func sendmsg(addr string, data []byte, client *http.Client) {
 	url := "http://" + addr + "/raft/msg"
-	if hasTLS(client) {
+	if clientTLS(client) != nil {
 		url = "https://" + addr + "/raft/msg"
 	}
 	resp, err := client.Post(url, contentType, bytes.NewReader(data))
@@ -926,9 +936,4 @@ func isTimeout(err error) bool {
 	}
 
 	return err == context.DeadlineExceeded
-}
-
-func hasTLS(c *http.Client) bool {
-	t, ok := c.Transport.(*http.Transport)
-	return ok && t.TLSClientConfig != nil
 }
