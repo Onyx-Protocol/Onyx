@@ -144,6 +144,9 @@ type Getter interface {
 // for the whole cluster, if one exists.
 // An empty bootURL means to start a fresh empty cluster.
 // It is ignored when recovering from existing state in dir.
+//
+// The returned *Service will use httpClient for outbound
+// connections to peers.
 func Start(laddr, dir, bootURL string, httpClient *http.Client) (*Service, error) {
 	ctx := context.Background()
 
