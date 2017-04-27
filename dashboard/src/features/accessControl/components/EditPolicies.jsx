@@ -35,16 +35,13 @@ const initialValues = (state, ownProps) => {
   const item = ownProps.item
   if (!item) { return {} }
 
-  const policies = item.policies
   const fields = {
     initialValues: {
       grant: item,
-      policies: {
-        ['client-readwrite']: policies.indexOf('client-readwrite') >= 0,
-        ['client-readonly']: policies.indexOf('client-readonly') >= 0,
-        network: policies.indexOf('network') >= 0,
-        monitoring: policies.indexOf('monitoring') >= 0,
-      }
+      policies: policyOptions.reduce((memo, p) => {
+        memo[p.value] = item.policies.indexOf(p.value) >= 0
+        return memo
+      }, {}),
     }
   }
 
@@ -56,12 +53,6 @@ export default BaseNew.connect(
   mapDispatchToProps,
   reduxForm({
     form: 'editPoliciesForm',
-    fields: [
-      'grant',
-      'policies.client-readwrite',
-      'policies.client-readonly',
-      'policies.network',
-      'policies.monitoring',
-    ],
+    fields: ['grant'].concat(policyOptions.map(p => `policies.${p.value}`)),
   }, initialValues)(EditPolicies)
 )

@@ -49,11 +49,9 @@ export default BaseNew.connect(
     fields: [
       'guardType',
       'guardData.id',
-      'policies.client-readwrite',
-      'policies.client-readonly',
-      'policies.network',
-      'policies.monitoring',
-    ],
+    ].concat(
+      policyOptions.map(p => `policies.${p.value}`)
+    ),
     validate: values => {
       const errors = {}
 

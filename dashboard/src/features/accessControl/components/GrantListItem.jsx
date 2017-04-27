@@ -11,14 +11,16 @@ class GrantListItem extends React.Component {
     let desc
     if (isAccessToken(item)) {
       desc = item.guardData.id
-    } else {
+    } else { // x509
+      const subject = item.guardData.subject
       desc = <div>
-        {Object.keys(item.guardData).map(field =>
+        {Object.keys(subject).map(field =>
           <div key={field}>
-            {field.toUpperCase()} :
-            {isArray(item.guardData[field])
-              ? item.guardData[field].join(', ')
-              : item.guardData[field]}
+            {field.toUpperCase()}:
+            {' '}
+            {isArray(subject[field])
+              ? subject[field].join(', ')
+              : subject[field]}
           </div>
         )}
       </div>

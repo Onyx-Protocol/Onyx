@@ -74,11 +74,9 @@ export default BaseNew.connect(
     fields: [
       'guardType',
       'subject[].key',
-      'subject[].value',
-      'policies.client-readwrite',
-      'policies.client-readonly',
-      'policies.network',
-      'policies.monitoring',
-    ],
+      'subject[].value'
+    ].concat(
+      policyOptions.map(p => `policies.${p.value}`)
+    ),
   })(NewCertificate)
 )
