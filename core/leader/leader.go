@@ -4,6 +4,7 @@ package leader
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -38,6 +39,10 @@ func (ps ProcessState) String() string {
 	}
 }
 
+// ErrNoLeader is returned from Address when no process is
+// currently leader.
+var ErrNoLeader = errors.New("no leader process")
+
 // Leader provides access to the Core leader process.
 type Leader struct {
 	state atomic.Value
@@ -54,7 +59,9 @@ type Leader struct {
 func (l *Leader) Address(ctx context.Context) (string, error) {
 	var addr string
 	err := l.db.QueryRow(ctx, `SELECT address FROM leader`).Scan(&addr)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return "", ErrNoLeader
+	} else if err != nil {
 		return "", errors.Wrap(err, "could not fetch leader address")
 	}
 	return addr, nil
