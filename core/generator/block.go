@@ -83,8 +83,8 @@ func (g *Generator) makeBlock(ctx context.Context) (err error) {
 	return g.commitBlock(ctx, b, s, latestBlock)
 }
 
-func (g *Generator) commitBlock(ctx context.Context, b *legacy.Block, s *state.Snapshot, latestBlock *legacy.Block) error {
-	err := g.getAndAddBlockSignatures(ctx, b, latestBlock)
+func (g *Generator) commitBlock(ctx context.Context, b *legacy.Block, s *state.Snapshot, prevBlock *legacy.Block) error {
+	err := g.getAndAddBlockSignatures(ctx, b, prevBlock)
 	if err != nil {
 		return errors.Wrap(err, "sign")
 	}
