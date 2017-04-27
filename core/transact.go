@@ -296,8 +296,8 @@ type submitArg struct {
 }
 
 // POST /validate-transaction
-func (a *API) validate(ctx context.Context, tx *legacy.Tx) error {
-	return a.chain.ValidateTx(tx.Tx)
+func (a *API) validate(ctx context.Context, tx txbuilder.Template) error {
+	return a.chain.ValidateTx(tx.Transaction.Tx)
 }
 
 // POST /submit-transaction
