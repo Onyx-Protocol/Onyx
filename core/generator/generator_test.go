@@ -126,7 +126,6 @@ func TestGetAndAddBlockSignaturesRace(t *testing.T) {
 	}
 
 	g := New(c, []BlockSigner{testSigner{nil, pubkey, privkey}}, nil)
-	g.latestBlock, g.latestSnapshot = c.State()
 
 	ctx := context.Background()
 	tip, snapshot, err := c.Recover(ctx)
