@@ -343,6 +343,7 @@ CREATE TABLE config (
 CREATE TABLE generator_pending_block (
     singleton boolean DEFAULT true NOT NULL,
     data bytea NOT NULL,
+    height bigint,
     CONSTRAINT generator_pending_block_singleton CHECK (singleton)
 );
 
@@ -664,3 +665,4 @@ insert into migrations (filename, hash) values ('2017-03-02.0.core.add-output-so
 insert into migrations (filename, hash) values ('2017-03-09.0.core.account-utxos-change.sql', 'a99e0e41be3da126a8c47151454098669334bf7e30de6cd539ba535add4e85d1');
 insert into migrations (filename, hash) values ('2017-04-13.0.query.block-transactions-count.sql', '7cb17e05596dbfdf75e347e43ccab110e393f41ea86f70697e59cf0c32c3a564');
 insert into migrations (filename, hash) values ('2017-04-17.0.core.null-token-type.sql', '185942cec464c12a2573f19ae386153389328f8e282af071024706e105e37eeb');
+insert into migrations (filename, hash) values ('2017-04-27.0.generator.pending-block-height.sql', 'bfe4fe5eec143e4367a91fd952cb5e3879f1c311f649ec13bfe95b202e94d4ec');
