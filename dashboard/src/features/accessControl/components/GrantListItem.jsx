@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { isAccessToken, getPolicyNamesString } from 'features/accessControl/selectors'
 import EditPolicies from './EditPolicies'
+import { isArray } from 'lodash'
 
 class GrantListItem extends React.Component {
   render() {
@@ -10,18 +11,16 @@ class GrantListItem extends React.Component {
     let desc
     if (isAccessToken(item)) {
       desc = item.guardData.id
-    } else {
+    } else { // x509
+      const subject = item.guardData.subject
       desc = <div>
-        {Object.keys(item.guardData).map(field =>
+        {Object.keys(subject).map(field =>
           <div key={field}>
-            {field}:
-            <ul>
-              {Object.keys(item.guardData[field]).map(key =>
-                <li key={key}>
-                  {key}: {item.guardData[field][key]}
-                </li>
-              )}
-            </ul>
+            {field.toUpperCase()}:
+            {' '}
+            {isArray(subject[field])
+              ? subject[field].join(', ')
+              : subject[field]}
           </div>
         )}
       </div>

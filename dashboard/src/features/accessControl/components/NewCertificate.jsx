@@ -1,6 +1,6 @@
 import React from 'react'
-import { BaseNew, FormContainer, FormSection, TextField, CheckboxField } from 'features/shared/components'
-import { policyOptions } from 'features/accessControl/constants'
+import { BaseNew, FormContainer, FormSection, SelectField, TextField, CheckboxField } from 'features/shared/components'
+import { policyOptions, subjectFieldOptions } from 'features/accessControl/constants'
 import { reduxForm } from 'redux-form'
 import actions from 'features/accessControl/actions'
 import styles from './NewCertificate.scss'
@@ -29,7 +29,7 @@ class NewCertificate extends React.Component {
         <FormSection title='Certificate subject'>
           {subject.map((line, index) =>
             <div key={index} className={styles.subjectField}>
-              <TextField title='Field Name' fieldProps={line.key} autoFocus={true} />
+              <SelectField title='Field Name' options={subjectFieldOptions} fieldProps={line.key} />
               <TextField title='Field Value' fieldProps={line.value} />
               <button
                 className='btn btn-danger btn-xs'
@@ -74,11 +74,9 @@ export default BaseNew.connect(
     fields: [
       'guardType',
       'subject[].key',
-      'subject[].value',
-      'policies.client-readwrite',
-      'policies.client-readonly',
-      'policies.network',
-      'policies.monitoring',
-    ],
+      'subject[].value'
+    ].concat(
+      policyOptions.map(p => `policies.${p.value}`)
+    ),
   })(NewCertificate)
 )

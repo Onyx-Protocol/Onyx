@@ -10,13 +10,30 @@ export const policyOptions = [
     hint: 'Access to read-only Client endpoints'
   },
   {
-    label: 'Network',
-    value: 'network',
-    hint: 'Access to the Network API'
-  },
-  {
     label: 'Monitoring',
     value: 'monitoring',
     hint: 'Access to monitoring-specific endpoints'
   },
+  {
+    label: 'Cross-core',
+    value: 'crosscore',
+    hint: 'Access to the cross-core API, not including block-signing. Necessary for connecting to the generator'
+  },
+  {
+    label: 'Cross-core block signing',
+    value: 'crosscore-signblock',
+    hint: 'Access to the cross-core API\'s block-signing functionality'
+  },
+]
+
+export const subjectFieldOptions = [
+  {label: 'CommonName', value: 'cn'},
+  {label: 'Country', value: 'c', array: true},
+  {label: 'Organization', value: 'o', array: true},
+  {label: 'OrganizationalUnit', value: 'ou', array: true},
+  {label: 'Locality', value: 'l', array: true},
+  {label: 'Province', value: 'st', array: true},
+  {label: 'StreetAddress', value: 'street', array: true},
+  {label: 'PostalCode', value: 'postalcode', array: true},
+  {label: 'SerialNumber', value: 'serialnumber'},
 ]
