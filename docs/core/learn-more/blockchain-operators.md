@@ -26,12 +26,14 @@ This guide will walk you through the basic functions of the blockchain operators
 
 To create a new blockchain, the blockchain operators must coordinate to create the initial consensus program and generate the first block (at height 0). The process is as follows:
 
-1. Each block signer initializes a Chain Core as a block signer, creating a network token and a private/public keypair.
-2. Each block signer distributes their block signer URL, network token, and public key to the block generator out of band.
-3. The block generator initializes a Chain Core as a block generator, creating a private/public keypair.
-4. The block generator configures the URL, network token, and public key for each block signer in Chain Core settings.
-5. The block generator creates the initial consensus program (from its public key and the public keys and quorum of the block signers) in Chain Core settings.
-6. The block generator creates the first block, including the initial consensus program, which is automatically distributed to each block signer.
+1. Each block signer generates a public/private keypair for blocksigning, as well as access credentials that the generator can use to send messages to the block signer's core.
+2. Out of band, each block signer sends its public key, access credentials, and core URL to the block generator.
+3. In most cases, the block generator creates its own public/private keypair for block signing.
+4. The block generator configures its core with each block signer's core URL, access credentials, and public keys.
+5. The block generator creates an initial consensus program (from the public keys and quorum of the block signers), and creates the first block, including the consensus program.
+6. The block generator generates access credentials for each block signer. Block signers can use these credentials to send requests to the block generator's core.
+7. Out of band, the block generator distributes access credentials and its core URL to all block signers. It also sends the hash of the initial block, known as the blockchain ID.
+8. Using the generator's access credentials, core URL, and blockchain ID, the block signers can finish configuring their cores.
 
 Note: The Chain Core dashboard does not yet support block signer configuration. However, you can use the Chain Core command line tools to configure block generator and block signers manually. See the [block signing guide](configure-block-signers.md).
 
@@ -60,7 +62,12 @@ Once the block generator has generated a proposed block, each block signer (up t
 
 ### Network permissions
 
-A blockchain can be configured to require network tokens in order to connect to the block generator to submit transactions and receive blocks. The block generator can create a unique network token for each participant that can be revoked at any time.
+Instances of Chain Core must be configured with the correct access credentials (either access tokens or X.509 client certificates) in order to communicate with each other. In particular:
+
+- All participants must make requests to the block generator using a credential that has access to the generator's `crosscore` policy.
+- The generator must make requests to block signers using credentials that have access to each signer's `crosscore-signblock` policy, respectively.
+
+The [Authentication and Authorization guide](authentication.md) contains more detail on how to create and configure credentials and policies.
 
 ### Adding/removing blockchain operators
 

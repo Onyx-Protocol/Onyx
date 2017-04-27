@@ -14,10 +14,10 @@ For convenience, in all desktop installations of Chain Core Developer Edition **
 
 ## Authorization
 
-There are two APIs in Chain Core: the **client API** and the **network API**.
+There are two APIs in Chain Core: the **client API** and the **cross-core API**.
 
 The client API is used by the SDKs and the dashboard to communicate with Chain
-Core. The network API is used by [network operators](blockchain-operators.md).
+Core. The cross-core API allows instances of Chain Core to communicate with each other.
 
 There are four policies available to grant an individual credential
 access to one or both APIs:
@@ -27,7 +27,8 @@ access to one or both APIs:
 subset of the `client-readwrite` policy.
 * **monitoring**: Access to monitoring-specific endpoints. This is a strict
 subset of the `client-readonly` policy.
-* **network**: Access to the Network API.
+* **crosscore**: Access to the cross-core API, including fetching blocks and submitting transactions to the [generator](blockchain-operators.md), but not including block signing. A core requires access to this policy when connecting to a generator.
+* **crosscore-signblock**: Access to the cross-core API's block signing endpoint. If your blockchain network uses multiple [block signers](blockchain-operators.md), they should provide the generator with access to this policy.
 
 ## Setting Up
 

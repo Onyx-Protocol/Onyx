@@ -1,145 +1,149 @@
-# Create blockchain with block signers
+# Setting up a blockchain with multiple block signers
 
-## Introduction
+This guide describes how to create a blockchain network with two Chain Cores in the consensus group, one core acting as the block generator, and the other acting as a block signer. A block must contain signatures from both parties for the block to be considered valid.
 
-The Chain Core dashboard does not yet support block signer configuration. However, you can use a Chain Core command line tool to manually configure a blockchain with block signers.
-
-### Initialize corectl
-
-In the Chain Core Mac app, visit the `Developer` menu and select `Open Terminal`. This will initialize the `corectl` command line tool.
-
-## Configuration
-
-The process of configuration takes a few back and forth steps between the block generator and the block signers.
-
-In this example, we configure a blockchain with a Chain Core as a block generator on one machine and another Chain Core as a block signer on another machine.
+Configuring the two cores requires use of [corectl](corectl.md), a command-line configuration tool distributed with Chain Core Developer Edition.
 
 ### Signer
 
-**Note**: We do not yet configure the Chain Core.
-
-On the machine that will host the block-signing core, we first create a block-signing key in the Mock HSM and a network token so the generator can submit blocks to the signer’s network API for signing.
+The block signing party should start with a running, *unconfigured* instance of Chain Core. Full configuration will be completed *after* the block generator is configured, but the block generator must first receive the block signer's public key and access credentials.
 
 #### Create a block signing key
 
-```bash
+The following command generates a new public/private keypair in the block signer's MockHSM:
+
+```
 corectl create-block-keypair
 ```
 
-This prints out the pubkey as a hex string.
+The output of this command is the new public key.
+
+##### Example
 
 ```
+signer-host$ corectl create-block-keypair
 cce1791bf3d8bb5e506ec7159bad6a696740712197894336c027dec9fbfb9313
 ```
 
-#### Create a network token
+#### Create an access token for the generator
 
-Note: `foo` is a user-supplied network token id
+The generator will make requests to the block signer's block signing API, which is protected by the `crosscore-signblock` policy.
 
-```bash
-corectl create-token -net foo
-```
-
-This prints out the network token, which can be included as basic auth in the URL when accessing the Chain Core network API.
+The following command will generate a new access token with access to the `crosscore-signblock` policy:
 
 ```
-foo:25f658b749f154a790c8a3aeb57ea98968f51a991c4771fb072fcbb2fa63b6f7
+corectl create-token <token ID> crosscore-signblock
+```
+
+The output of this command is a token with access to the `crosscore-signblock` policy on the block signer. This token can be used as HTTP Basic Auth credentials when making requests to the block signer.
+
+##### Example:
+
+```
+signer-host$ corectl create-token generatortoken crosscore-signblock
+generatortoken:25f658b749f154a790c8a3aeb57ea98968f51a991c4771fb072fcbb2fa63b6f7
 ```
 
 #### Send details to the block generator
 
-This happens out of band.
+Out of band, the following details should be sent to the block generator:
 
-```
-public key: cce1791bf3d8bb5e506ec7159bad6a696740712197894336c027dec9fbfb9313
-
-Block signer Chain Core URL with network token: https://foo:25f658b749f154a790c8a3aeb57ea98968f51a991c4771fb072fcbb2fa63b6f7@<signer-host>:<signer-port>
-```
+- The block signer's key: `cce1791bf3d8bb5e506ec7159bad6a696740712197894336c027dec9fbfb9313`
+- Block signer's core URL, with access token: `https://generatortoken:25f658b749f154a790c8a3aeb57ea98968f51a991c4771fb072fcbb2fa63b6f7@<signer-host>:<signer-port>`
 
 ### Generator
 
-#### Configure Chain Core
+#### Create the generator's block signing key
 
-On the machine that will host the block generator, generate a block signing key,
-using the same method as the signer:
+The block generator will also sign blocks. The following command generates a new public/private keypair in the block generator's MockHSM:
 
 ```
-$ corectl create-block-keypair
+corectl create-block-keypair
+```
+
+The output of this command is the new public key.
+
+##### Example
+
+```
+generator-host$ corectl create-block-keypair
 45ad1f1617d4c6fb8ae5119c524c6266595f0f551c5210dd9f5892b4b39f011f
 ```
 
-Now, configure Chain Core to require two signatures on each block: its own, plus one from the separate block signer:
+#### Configure Chain Core
 
-```bash
-corectl config-generator -k <generator-pubkey> <quorum> <signer1-pubkey> <signer1-url-with-network-token>
-```
-
-```bash
-corectl config-generator -k 45ad1f1617d4c6fb8ae5119c524c6266595f0f551c5210dd9f5892b4b39f011f 2 cce1791bf3d8bb5e506ec7159bad6a696740712197894336c027dec9fbfb9313 https://foo:25f658b749f154a790c8a3aeb57ea98968f51a991c4771fb072fcbb2fa63b6f7@<signer-host>:<signer-port>
-```
-
-The `-k` flag means this generator is also a block signer, and will provide its
-own signing key. The quorum value, 2, means both signatures are required
-on every block.
-
-This prints out the blockchain id
+Now, configure Chain Core to require two signatures on each block: its own, plus one from the block signer:
 
 ```
+corectl config-generator \
+    -k <generator-pubkey> \
+    <quorum> \
+    <signer1-pubkey> \
+    <signer1-url-with-access-token>
+```
+
+The `-k` flag means this generator is also a block signer, and will provide its own signing key. The quorum value indicates how many signatures must appear in a block for the block to be considered valid. With two signers, the quorum can either be 1 or 2.
+
+The output of this command is the blockchain ID, which is the hash of the first block.
+
+##### Example:
+
+```
+generator-host$ corectl config-generator \
+    -k 45ad1f1617d4c6fb8ae5119c524c6266595f0f551c5210dd9f5892b4b39f011f \
+    2 \
+    cce1791bf3d8bb5e506ec7159bad6a696740712197894336c027dec9fbfb9313 \
+    https://foo:25f658b749f154a790c8a3aeb57ea98968f51a991c4771fb072fcbb2fa63b6f7@<signer-host>:<signer-port>
 ec95cfab939d7b8dde46e7e1dcd7cb0a7c0cea37148addd70a4a4a5aaab9616c
 ```
 
 #### Create a network token for the signer
 
-```bash
-corectl create-token -net signer
-```
-
-This prints out the network token,  which can be included as basic auth in the URL when accessing the Chain Core network API.
+Like all other cores on the same network, the block signer will fetch blocks and submit transactions to the block generator's cross-core API, which is protected by the `crosscore-signblock` policy. To create an access token with access to this policy, run:
 
 ```
-signer:ea8b749f154a790c8a3aeb57bb2fa98968f51a991c4771fb072fc25f6563b6f7
+corectl create-token <token ID> crosscore
 ```
 
-###### Send details to signer
+This output of this command is token with access to the `crosscore` policy on the block generator. This token can be used as HTTP Basic Auth credentials when making requests to the block generator.
 
-This happens out of band.
+##### Example:
 
 ```
-Block generator Chain Core URL: https://<generator-url>
-Network token: signer:ea8b749f154a790c8a3aeb57bb2fa98968f51a991c4771fb072fc25f6563b6f7
-Blockchain ID: ec95cfab939d7b8dde46e7e1dcd7cb0a7c0cea37148addd70a4a4a5aaab9616c
+generator-host$ corectl create-token signertoken crosscore
+signertoken:ea8b749f154a790c8a3aeb57bb2fa98968f51a991c4771fb072fc25f6563b6f7
 ```
 
----
+#### Send details to signer
 
-**Note**: If the generator's `cored` process was running during configuration,
-it will need to be restarted to pick up the configuration changes made
-with `corectl`.
+Out of band, the following information should be sent to the block signer:
+
+- Block generator's core URL: `https://<generator-url>`
+- Generator access token: `signertoken:ea8b749f154a790c8a3aeb57bb2fa98968f51a991c4771fb072fc25f6563b6f7`
+- Blockchain ID: `ec95cfab939d7b8dde46e7e1dcd7cb0a7c0cea37148addd70a4a4a5aaab9616c`
 
 ### Signer
 
 #### Configure Chain Core
 
-Back on the first machine, configure Chain Core as block signer.
+The following command will configure the block signer's core to perform block signing:
 
-```bash
-corectl config\
-    -t <block generator network token> \
+```
+corectl config \
+    -t <block generator access token> \
     -k <block signing public key> \
     <blockchain id> \
     <block generator URL>
 ```
 
-```bash
-corectl config\
-    -t signer:ea8b749f154a790c8a3aeb57bb2fa98968f51a991c4771fb072fc25f6563b6f7 \
+Once the configured cores are running, the block signer will download the initial block from the block generator, and then automatically validate and sign new blocks as the block generator delivers them.
+
+##### Example:
+
+```
+signer-host$ corectl config \
+    -t signertoken:ea8b749f154a790c8a3aeb57bb2fa98968f51a991c4771fb072fc25f6563b6f7 \
     -k cce1791bf3d8bb5e506ec7159bad6a696740712197894336c027dec9fbfb9313 \
     ec95cfab939d7b8dde46e7e1dcd7cb0a7c0cea37148addd70a4a4a5aaab9616c \
     https://<generator-host>:<generator-port>
 ```
-
-**Note**: If the signer's `cored` process was running during configuration,
-it will need to be restarted to pick up the configuration changes made
-with `corectl`.
-
-Once the configured cores are running, the block signer will download the initial block from the block generator, and then automatically validate and sign new blocks as the block generator delivers them.
