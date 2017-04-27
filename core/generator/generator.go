@@ -14,7 +14,6 @@ import (
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/bc/legacy"
-	"chain/protocol/state"
 )
 
 // A BlockSigner signs blocks.
@@ -36,13 +35,6 @@ type Generator struct {
 	mu         sync.Mutex
 	pool       []*legacy.Tx // in topological order
 	poolHashes map[bc.Hash]bool
-
-	// latestBlock and latestSnapshot are current as long as this
-	// process remains the leader process. If the process is demoted,
-	// generator.Generate() should return and this struct should be
-	// garbage collected.
-	latestBlock    *legacy.Block
-	latestSnapshot *state.Snapshot
 }
 
 // New creates and initializes a new Generator.
@@ -93,11 +85,7 @@ func (g *Generator) Generate(
 	ctx context.Context,
 	period time.Duration,
 	health func(error),
-	recoveredBlock *legacy.Block,
-	recoveredSnapshot *state.Snapshot,
 ) {
-	g.latestBlock, g.latestSnapshot = recoveredBlock, recoveredSnapshot
-
 	ticks := time.Tick(period)
 	for {
 		select {

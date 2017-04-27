@@ -44,6 +44,7 @@ func (g *Generator) makeBlock(ctx context.Context) (err error) {
 	t0 := time.Now()
 	defer recordSince(t0)
 
+	latestBlock, latestSnapshot := g.chain.State()
 	var b *legacy.Block
 	var s *state.Snapshot
 
@@ -54,8 +55,8 @@ func (g *Generator) makeBlock(ctx context.Context) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "retrieving the pending block")
 	}
-	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
-		s = state.Copy(g.latestSnapshot)
+	if b != nil && (latestBlock == nil || b.Height == latestBlock.Height+1) {
+		s = state.Copy(latestSnapshot)
 		err = s.ApplyBlock(legacy.MapBlock(b))
 		if err != nil {
 			log.Fatalkv(ctx, log.KeyError, err)
@@ -67,7 +68,7 @@ func (g *Generator) makeBlock(ctx context.Context) (err error) {
 		g.poolHashes = make(map[bc.Hash]bool)
 		g.mu.Unlock()
 
-		b, s, err = g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now(), txs)
+		b, s, err = g.chain.GenerateBlock(ctx, latestBlock, latestSnapshot, time.Now(), txs)
 		if err != nil {
 			return errors.Wrap(err, "generate")
 		}
@@ -79,13 +80,11 @@ func (g *Generator) makeBlock(ctx context.Context) (err error) {
 			return errors.Wrap(err, "saving pending block")
 		}
 	}
-
-	// g.commitBlock will update g.latestBlock and g.latestSnapshot.
-	return g.commitBlock(ctx, b, s)
+	return g.commitBlock(ctx, b, s, latestBlock)
 }
 
-func (g *Generator) commitBlock(ctx context.Context, b *legacy.Block, s *state.Snapshot) error {
-	err := g.getAndAddBlockSignatures(ctx, b, g.latestBlock)
+func (g *Generator) commitBlock(ctx context.Context, b *legacy.Block, s *state.Snapshot, prevBlock *legacy.Block) error {
+	err := g.getAndAddBlockSignatures(ctx, b, prevBlock)
 	if err != nil {
 		return errors.Wrap(err, "sign")
 	}
@@ -94,9 +93,6 @@ func (g *Generator) commitBlock(ctx context.Context, b *legacy.Block, s *state.S
 	if err != nil {
 		return errors.Wrap(err, "commit")
 	}
-
-	g.latestBlock = b
-	g.latestSnapshot = s
 	return nil
 }
 

@@ -37,7 +37,7 @@ func TestGeneratorRecovery(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	go New(c, nil, dbtx).Generate(ctx, 50*time.Millisecond, func(error) {}, b, s)
+	go New(c, nil, dbtx).Generate(ctx, 50*time.Millisecond, func(error) {})
 
 	// Wait for the block to land, and then make sure it's the same block
 	// that was pending before we ran Generate.
@@ -73,13 +73,13 @@ func TestGeneratorSignatureFailures(t *testing.T) {
 	tx := bctest.NewIssuanceTx(t, prottest.Initial(t, c).Hash())
 	g.pool = append(g.pool, tx)
 
-	b, s := c.State()
+	height := c.Height()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	go g.Generate(ctx, 50*time.Millisecond, func(err error) { t.Logf("%s\n", err) }, b, s)
+	go g.Generate(ctx, 50*time.Millisecond, func(err error) { t.Logf("%s\n", err) })
 
-	<-c.BlockWaiter(b.Height + 1)
-	block, err := c.GetBlock(ctx, b.Height+1)
+	<-c.BlockWaiter(height + 1)
+	block, err := c.GetBlock(ctx, height+1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,6 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 	pubkeys, privkeys := prottest.BlockKeyPairs(c)
 
 	g := New(c, []BlockSigner{testSigner{nil, pubkeys[0], privkeys[0]}}, nil)
-	g.latestBlock, g.latestSnapshot = c.State()
 
 	ctx := context.Background()
 	tip, snapshot, err := c.Recover(ctx)
