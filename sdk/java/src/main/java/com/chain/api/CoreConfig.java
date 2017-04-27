@@ -96,7 +96,7 @@ public class CoreConfig {
   }
 
   public static void resetEverything(Client client) throws ChainException {
-    Map<String, boolean> params = new HashMap<>();
+    Map<String, Object> params = new HashMap<>();
     params.put("everything", true);
     client.request("reset", params, SuccessMessage.class);
   }
