@@ -42,6 +42,19 @@ const shared = require('../shared')
  */
 
 /**
+ * A pubkey is an object that represents an ed25519 public key derived from the root xpub
+ * associated with the account.
+ *
+ * <br/><br/>
+ * @typedef {Object} Pubkey
+ * @global
+ *
+ * @property {String} rootXpub
+ * @property {String} pubkey
+ * @property {String[]} pubkeyDerivationPath
+ */
+
+/**
  * API for interacting with {@link Account accounts}.
  *
  * More info: {@link https://chain.com/docs/core/build-applications/accounts}
@@ -91,6 +104,19 @@ const accountsAPI = (client) => {
    * @property {String} [expiresAt]
    * An RFC3339 timestamp indicating when the receiver will cease to be valid.
    * Defaults to 30 days in the future.
+   */
+
+  /**
+   * @typedef {Object} createPubkeyRequest
+   *
+   * @property {String} [accountAlias]
+   * The unique alias of the account. accountAlias or accountId must be
+   * provided.
+   *
+   * @property {String} [accountId]
+   * The unique ID of the account. accountAlias or accountId must be
+   * provided.
+   *
    */
 
   return {
@@ -174,6 +200,18 @@ const accountsAPI = (client) => {
      * @returns {Promise<BatchResponse<Receiver>>} Newly created receivers.
      */
     createReceiverBatch: (params, cb) => shared.createBatch(client, '/create-account-receiver', params, {cb}),
+
+    /**
+     * Create a new pubkey under the specified account.
+     *
+     * @param {module:AccountsApi~createAccountPubkeyRequest} params - Parameters for pubkey creation.
+     * @param {objectCallback} [callback] - Optional callback. Use instead of Promise return value as desired.
+     * @returns {Promise<Pubkey>} Newly created pubkey.
+     */
+    createPubkey: (params, cb) => shared.tryCallback(
+      client.request('/create-account-pubkey', params),
+      cb
+    ),
   }
 }
 
