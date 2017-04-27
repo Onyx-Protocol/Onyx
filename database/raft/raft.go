@@ -63,6 +63,7 @@ type Service struct {
 	rctxReq chan rctxReq
 	wctxReq chan wctxReq
 	donec   chan struct{}
+	client  *http.Client
 
 	errMu sync.Mutex
 	err   error
@@ -86,9 +87,6 @@ type Service struct {
 
 	// Current log position, accessed only from runUpdates goroutine
 	snapIndex uint64
-
-	// Hack until everything requires TLS.
-	tls bool
 }
 
 // rctxReq is a "read context" request.
@@ -146,7 +144,7 @@ type Getter interface {
 // for the whole cluster, if one exists.
 // An empty bootURL means to start a fresh empty cluster.
 // It is ignored when recovering from existing state in dir.
-func Start(laddr, dir, bootURL string, requireTLS bool) (*Service, error) {
+func Start(laddr, dir, bootURL string, httpClient *http.Client) (*Service, error) {
 	ctx := context.Background()
 
 	sv := &Service{
@@ -157,7 +155,7 @@ func Start(laddr, dir, bootURL string, requireTLS bool) (*Service, error) {
 		donec:       make(chan struct{}),
 		rctxReq:     make(chan rctxReq),
 		wctxReq:     make(chan wctxReq),
-		tls:         requireTLS,
+		client:      httpClient,
 	}
 	sv.stateCond.L = &sv.stateMu
 
@@ -756,17 +754,17 @@ func (sv *Service) send(msgs []raftpb.Message) {
 			log.Printkv(context.Background(), "no-addr-for-peer", msg.To)
 			continue
 		}
-		sendmsg(addr, data, sv.tls)
+		sendmsg(addr, data, sv.client)
 	}
 }
 
 // best effort. if it fails, oh well -- that's why we're using raft.
-func sendmsg(addr string, data []byte, tls bool) {
+func sendmsg(addr string, data []byte, client *http.Client) {
 	url := "http://" + addr + "/raft/msg"
-	if tls {
+	if hasTLS(client) {
 		url = "https://" + addr + "/raft/msg"
 	}
-	resp, err := http.Post(url, contentType, bytes.NewReader(data))
+	resp, err := client.Post(url, contentType, bytes.NewReader(data))
 	if err != nil {
 		log.Printkv(context.Background(), "warning", err)
 		return
@@ -928,4 +926,9 @@ func isTimeout(err error) bool {
 	}
 
 	return err == context.DeadlineExceeded
+}
+
+func hasTLS(c *http.Client) bool {
+	t, ok := c.Transport.(*http.Transport)
+	return ok && t.TLSClientConfig != nil
 }
