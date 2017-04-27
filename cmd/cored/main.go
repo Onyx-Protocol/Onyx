@@ -170,7 +170,6 @@ func main() {
 	}
 
 	raftDir := filepath.Join(home, "raft") // TODO(kr): better name for this
-	// TODO(tessr): remove tls param once we have tls everywhere
 	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, httpClient)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
