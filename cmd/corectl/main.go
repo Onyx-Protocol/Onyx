@@ -46,6 +46,12 @@ type command struct {
 	f func(*rpc.Client, []string)
 }
 
+type grantReq struct {
+	Policy    string      `json:"policy"`
+	GuardType string      `json:"guard_type"`
+	GuardData interface{} `json:"guard_data"`
+}
+
 var commands = map[string]*command{
 	"config-generator":     {configGenerator},
 	"create-block-keypair": {createBlockKeyPair},
@@ -215,11 +221,7 @@ func createToken(client *rpc.Client, args []string) {
 	}
 	fmt.Println(tok.Token)
 
-	grant := struct {
-		GuardType string      `json:"guard_type"`
-		GuardData interface{} `json:"guard_data"`
-		Policy    string
-	}{
+	grant := grantReq{
 		GuardType: "access_token",
 		GuardData: map[string]string{"id": tok.ID},
 	}
@@ -345,22 +347,18 @@ The type of guard (before the = sign) is case-insensitive.
 		fatalln(usage)
 	}
 
-	req := struct {
-		Policy    string
-		GrantType string      `json:"grant_type"`
-		GrantData interface{} `json:"grant_data"`
-	}{Policy: args[0]}
+	req := grantReq{Policy: args[0]}
 
 	switch typ, data := splitAfter2(args[1], "="); strings.ToUpper(typ) {
 	case "TOKEN=":
-		req.GrantType = "access_token"
-		req.GrantData = map[string]interface{}{"id": data}
+		req.GuardType = "access_token"
+		req.GuardData = map[string]interface{}{"id": data}
 	case "CN=":
-		req.GrantType = "x509"
-		req.GrantData = map[string]interface{}{"subject": map[string]string{"CN": data}}
+		req.GuardType = "x509"
+		req.GuardData = map[string]interface{}{"subject": map[string]string{"CN": data}}
 	case "OU=":
-		req.GrantType = "x509"
-		req.GrantData = map[string]interface{}{"subject": map[string]string{"OU": data}}
+		req.GuardType = "x509"
+		req.GuardData = map[string]interface{}{"subject": map[string]string{"OU": data}}
 	default:
 		fmt.Fprintln(os.Stderr, "unknown guard type", typ)
 		fatalln(usage)
