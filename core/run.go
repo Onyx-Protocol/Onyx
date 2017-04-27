@@ -239,7 +239,7 @@ func (a *API) lead(ctx context.Context) {
 
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
-	recoveredBlock, recoveredSnapshot, err := a.chain.Recover(ctx)
+	_, _, err := a.chain.Recover(ctx)
 	if err != nil {
 		log.Fatalkv(ctx, log.KeyError, err)
 	}
@@ -258,7 +258,7 @@ func (a *API) lead(ctx context.Context) {
 	}
 
 	if a.config.IsGenerator {
-		go a.generator.Generate(ctx, blockPeriod, a.healthSetter("generator"), recoveredBlock, recoveredSnapshot)
+		go a.generator.Generate(ctx, blockPeriod, a.healthSetter("generator"))
 	} else {
 		// Remove the downloading snapshot if there was one. The core
 		// has recovered and will now start syncing blocks.
@@ -266,7 +266,7 @@ func (a *API) lead(ctx context.Context) {
 		a.downloadingSnapshot = nil
 		a.downloadingSnapshotMu.Unlock()
 
-		go fetch.Fetch(ctx, a.chain, a.remoteGenerator, a.healthSetter("fetch"), recoveredBlock, recoveredSnapshot)
+		go fetch.Fetch(ctx, a.chain, a.remoteGenerator, a.healthSetter("fetch"))
 	}
 	go a.accounts.ProcessBlocks(ctx)
 	go a.assets.ProcessBlocks(ctx)

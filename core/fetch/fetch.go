@@ -46,13 +46,8 @@ func Init(ctx context.Context, peer *rpc.Client) {
 // It returns when its context is canceled.
 // After each attempt to fetch and apply a block, it calls health
 // to report either an error or nil to indicate success.
-func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error), prevBlock *legacy.Block, prevSnapshot *state.Snapshot) {
-	var height uint64
-	if prevBlock != nil {
-		height = prevBlock.Height
-	}
-
-	blockch, errch := DownloadBlocks(ctx, peer, height+1)
+func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error)) {
+	blockch, errch := DownloadBlocks(ctx, peer, c.Height()+1)
 
 	var err error
 	var nfailures uint
@@ -65,8 +60,9 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 			health(err)
 			logNetworkError(ctx, err)
 		case b := <-blockch:
+			prevBlock, prevSnapshot := c.State()
 			for {
-				prevSnapshot, prevBlock, err = applyBlock(ctx, c, prevSnapshot, prevBlock, b)
+				err = applyBlock(ctx, c, prevSnapshot, prevBlock, b)
 				if err == protocol.ErrBadBlock {
 					log.Fatalkv(ctx, log.KeyError, err)
 				} else if err != nil {
@@ -81,7 +77,6 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func
 				break
 			}
 
-			height++
 			health(nil)
 			nfailures = 0
 		}
@@ -161,20 +156,17 @@ func updateGeneratorHeight(ctx context.Context, peer *rpc.Client) {
 	generatorHeightFetchedAt = time.Now()
 }
 
-func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot, prev *legacy.Block, block *legacy.Block) (*state.Snapshot, *legacy.Block, error) {
+func applyBlock(ctx context.Context, c *protocol.Chain, prevSnap *state.Snapshot, prev *legacy.Block, block *legacy.Block) error {
 	err := c.ValidateBlock(block, prev)
 	if err != nil {
-		return prevSnap, prev, err
+		return errors.Wrap(err, "validating fetched block")
 	}
 	snap, err := c.ApplyValidBlock(block)
 	if err != nil {
-		return prevSnap, prev, err
+		return errors.Wrap(err, "applying fetched block")
 	}
 	err = c.CommitAppliedBlock(ctx, block, snap)
-	if err != nil {
-		return prevSnap, prev, err
-	}
-	return snap, block, nil
+	return errors.Wrap(err, "committing block")
 }
 
 func backoffDur(n uint) time.Duration {
