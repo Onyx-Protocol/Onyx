@@ -149,6 +149,8 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client) (*Service, error
 
 	// We advertise laddr as the way for peers to reach this process.
 	// Make sure our own TLS cert is valid for our own name.
+	// (By convention, we use the same cert as a server and client
+	// when acting as a raft peer, so we use our *client* cert here.)
 	if err := verifyTLSName(laddr, httpClient); err != nil {
 		return nil, errors.Wrap(err, "advertised name does not match TLS cert")
 	}
