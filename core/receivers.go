@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/chainkd"
 	chainjson "chain/encoding/json"
 	"chain/net/http/reqid"
@@ -18,7 +17,7 @@ type (
 	}
 	createAccountPubkeyResponse struct {
 		Root   chainkd.XPub         `json:"root_xpub"`
-		Pubkey ed25519.PublicKey    `json:"pubkey"`
+		Pubkey chainjson.HexBytes   `json:"pubkey"`
 		Path   []chainjson.HexBytes `json:"pubkey_derivation_path"`
 	}
 )
@@ -31,7 +30,7 @@ func (a *API) createAccountPubkey(ctx context.Context, req createAccountPubkeyRe
 	}
 	res := createAccountPubkeyResponse{
 		Root:   root,
-		Pubkey: pubkey,
+		Pubkey: chainjson.HexBytes(pubkey),
 	}
 	for _, p := range path {
 		res.Path = append(res.Path, chainjson.HexBytes(p))
