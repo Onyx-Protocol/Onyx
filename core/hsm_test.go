@@ -108,7 +108,7 @@ func inspectSigInst(t *testing.T, si *txbuilder.SigningInstruction, expectSig bo
 	if len(si.WitnessComponents) != 1 {
 		t.Fatalf("len(si.WitnessComponents) is %d, want 1", len(si.WitnessComponents))
 	}
-	s := si.WitnessComponents[0]
+	s := si.WitnessComponents[0].(*txbuilder.SignatureWitness)
 	if len(s.Sigs) != 1 {
 		t.Fatalf("len(s.Sigs) is %d, want 1", len(s.Sigs))
 	}
