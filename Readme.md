@@ -90,7 +90,7 @@ $ go test $(go list ./... | grep -v vendor)
 ### Updating the schema with migrations
 
 ```
-$ dumpschema
+$ go run cmd/dumpschema/main.go
 ```
 
 ### Dependencies

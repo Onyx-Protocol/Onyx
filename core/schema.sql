@@ -1,9 +1,4 @@
---
--- PostgreSQL database dump
---
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -13,23 +8,15 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET row_security = off;
 
---
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
---
 
 CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 
 
---
---
 
 
 
 SET search_path = public, pg_catalog;
 
---
--- Name: access_token_type; Type: TYPE; Schema: public; Owner: -
---
 
 CREATE TYPE access_token_type AS ENUM (
     'client',
@@ -37,9 +24,6 @@ CREATE TYPE access_token_type AS ENUM (
 );
 
 
---
--- Name: b32enc_crockford(bytea); Type: FUNCTION; Schema: public; Owner: -
---
 
 CREATE FUNCTION b32enc_crockford(src bytea) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
@@ -115,9 +99,6 @@ END;
 $$;
 
 
---
--- Name: next_chain_id(text); Type: FUNCTION; Schema: public; Owner: -
---
 
 CREATE FUNCTION next_chain_id(prefix text) RETURNS text
     LANGUAGE plpgsql
@@ -145,9 +126,6 @@ SET default_tablespace = '';
 
 SET default_with_oids = false;
 
---
--- Name: access_tokens; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE access_tokens (
     id text NOT NULL,
@@ -158,9 +136,6 @@ CREATE TABLE access_tokens (
 );
 
 
---
--- Name: account_control_program_seq; Type: SEQUENCE; Schema: public; Owner: -
---
 
 CREATE SEQUENCE account_control_program_seq
     START WITH 10001
@@ -170,9 +145,6 @@ CREATE SEQUENCE account_control_program_seq
     CACHE 1;
 
 
---
--- Name: account_control_programs; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE account_control_programs (
     signer_id text NOT NULL,
@@ -183,9 +155,6 @@ CREATE TABLE account_control_programs (
 );
 
 
---
--- Name: account_utxos; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE account_utxos (
     asset_id bytea NOT NULL,
@@ -202,9 +171,6 @@ CREATE TABLE account_utxos (
 );
 
 
---
--- Name: accounts; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE accounts (
     account_id text NOT NULL,
@@ -213,9 +179,6 @@ CREATE TABLE accounts (
 );
 
 
---
--- Name: annotated_accounts; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE annotated_accounts (
     id text NOT NULL,
@@ -226,9 +189,6 @@ CREATE TABLE annotated_accounts (
 );
 
 
---
--- Name: annotated_assets; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE annotated_assets (
     id bytea NOT NULL,
@@ -243,9 +203,6 @@ CREATE TABLE annotated_assets (
 );
 
 
---
--- Name: annotated_inputs; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE annotated_inputs (
     tx_hash bytea NOT NULL,
@@ -267,9 +224,6 @@ CREATE TABLE annotated_inputs (
 );
 
 
---
--- Name: annotated_outputs; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE annotated_outputs (
     block_height bigint NOT NULL,
@@ -295,9 +249,6 @@ CREATE TABLE annotated_outputs (
 );
 
 
---
--- Name: annotated_txs; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE annotated_txs (
     block_height bigint NOT NULL,
@@ -312,9 +263,6 @@ CREATE TABLE annotated_txs (
 );
 
 
---
--- Name: asset_tags; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE asset_tags (
     asset_id bytea NOT NULL,
@@ -322,9 +270,6 @@ CREATE TABLE asset_tags (
 );
 
 
---
--- Name: assets; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE assets (
     id bytea NOT NULL,
@@ -341,9 +286,6 @@ CREATE TABLE assets (
 );
 
 
---
--- Name: assets_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
---
 
 CREATE SEQUENCE assets_key_index_seq
     START WITH 1
@@ -353,9 +295,6 @@ CREATE SEQUENCE assets_key_index_seq
     CACHE 1;
 
 
---
--- Name: block_processors; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE block_processors (
     name text NOT NULL,
@@ -363,9 +302,6 @@ CREATE TABLE block_processors (
 );
 
 
---
--- Name: blocks; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE blocks (
     block_hash bytea NOT NULL,
@@ -375,9 +311,6 @@ CREATE TABLE blocks (
 );
 
 
---
--- Name: chain_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
 
 CREATE SEQUENCE chain_id_seq
     START WITH 1
@@ -387,9 +320,6 @@ CREATE SEQUENCE chain_id_seq
     CACHE 1;
 
 
---
--- Name: config; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE config (
     singleton boolean DEFAULT true NOT NULL,
@@ -409,9 +339,6 @@ CREATE TABLE config (
 );
 
 
---
--- Name: generator_pending_block; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE generator_pending_block (
     singleton boolean DEFAULT true NOT NULL,
@@ -420,9 +347,6 @@ CREATE TABLE generator_pending_block (
 );
 
 
---
--- Name: leader; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE leader (
     singleton boolean DEFAULT true NOT NULL,
@@ -433,9 +357,6 @@ CREATE TABLE leader (
 );
 
 
---
--- Name: migrations; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE migrations (
     filename text NOT NULL,
@@ -444,9 +365,6 @@ CREATE TABLE migrations (
 );
 
 
---
--- Name: mockhsm_sort_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
 
 CREATE SEQUENCE mockhsm_sort_id_seq
     START WITH 1
@@ -456,9 +374,6 @@ CREATE SEQUENCE mockhsm_sort_id_seq
     CACHE 1;
 
 
---
--- Name: mockhsm; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE mockhsm (
     pub bytea NOT NULL,
@@ -469,9 +384,6 @@ CREATE TABLE mockhsm (
 );
 
 
---
--- Name: query_blocks; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE query_blocks (
     height bigint NOT NULL,
@@ -479,9 +391,6 @@ CREATE TABLE query_blocks (
 );
 
 
---
--- Name: signed_blocks; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE signed_blocks (
     block_height bigint NOT NULL,
@@ -489,9 +398,6 @@ CREATE TABLE signed_blocks (
 );
 
 
---
--- Name: signers; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE signers (
     id text NOT NULL,
@@ -503,9 +409,6 @@ CREATE TABLE signers (
 );
 
 
---
--- Name: signers_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
---
 
 CREATE SEQUENCE signers_key_index_seq
     START WITH 1
@@ -515,16 +418,10 @@ CREATE SEQUENCE signers_key_index_seq
     CACHE 1;
 
 
---
--- Name: signers_key_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
 
 ALTER SEQUENCE signers_key_index_seq OWNED BY signers.key_index;
 
 
---
--- Name: snapshots; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE snapshots (
     height bigint NOT NULL,
@@ -533,9 +430,6 @@ CREATE TABLE snapshots (
 );
 
 
---
--- Name: submitted_txs; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE submitted_txs (
     tx_hash bytea NOT NULL,
@@ -544,9 +438,6 @@ CREATE TABLE submitted_txs (
 );
 
 
---
--- Name: txfeeds; Type: TABLE; Schema: public; Owner: -
---
 
 CREATE TABLE txfeeds (
     id text DEFAULT next_chain_id('cur'::text) NOT NULL,
@@ -557,344 +448,213 @@ CREATE TABLE txfeeds (
 );
 
 
---
--- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY signers ALTER COLUMN key_index SET DEFAULT nextval('signers_key_index_seq'::regclass);
 
 
---
--- Name: access_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY access_tokens
     ADD CONSTRAINT access_tokens_pkey PRIMARY KEY (id);
 
 
---
--- Name: account_control_programs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY account_control_programs
     ADD CONSTRAINT account_control_programs_pkey PRIMARY KEY (control_program);
 
 
---
--- Name: account_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY accounts
     ADD CONSTRAINT account_tags_pkey PRIMARY KEY (account_id);
 
 
---
--- Name: account_utxos_output_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_output_id_key UNIQUE (output_id);
 
 
---
--- Name: account_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_pkey PRIMARY KEY (output_id);
 
 
---
--- Name: accounts_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY accounts
     ADD CONSTRAINT accounts_alias_key UNIQUE (alias);
 
 
---
--- Name: annotated_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY annotated_accounts
     ADD CONSTRAINT annotated_accounts_pkey PRIMARY KEY (id);
 
 
---
--- Name: annotated_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY annotated_assets
     ADD CONSTRAINT annotated_assets_pkey PRIMARY KEY (id);
 
 
---
--- Name: annotated_inputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY annotated_inputs
     ADD CONSTRAINT annotated_inputs_pkey PRIMARY KEY (tx_hash, index);
 
 
---
--- Name: annotated_outputs_output_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY annotated_outputs
     ADD CONSTRAINT annotated_outputs_output_id_key UNIQUE (output_id);
 
 
---
--- Name: annotated_outputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY annotated_outputs
     ADD CONSTRAINT annotated_outputs_pkey PRIMARY KEY (block_height, tx_pos, output_index);
 
 
---
--- Name: annotated_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY annotated_txs
     ADD CONSTRAINT annotated_txs_pkey PRIMARY KEY (block_height, tx_pos);
 
 
---
--- Name: asset_tags_asset_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY asset_tags
     ADD CONSTRAINT asset_tags_asset_id_key UNIQUE (asset_id);
 
 
---
--- Name: assets_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY assets
     ADD CONSTRAINT assets_alias_key UNIQUE (alias);
 
 
---
--- Name: assets_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY assets
     ADD CONSTRAINT assets_client_token_key UNIQUE (client_token);
 
 
---
--- Name: assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY assets
     ADD CONSTRAINT assets_pkey PRIMARY KEY (id);
 
 
---
--- Name: block_processors_name_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY block_processors
     ADD CONSTRAINT block_processors_name_key UNIQUE (name);
 
 
---
--- Name: blocks_height_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY blocks
     ADD CONSTRAINT blocks_height_key UNIQUE (height);
 
 
---
--- Name: blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY blocks
     ADD CONSTRAINT blocks_pkey PRIMARY KEY (block_hash);
 
 
---
--- Name: config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY config
     ADD CONSTRAINT config_pkey PRIMARY KEY (singleton);
 
 
---
--- Name: generator_pending_block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY generator_pending_block
     ADD CONSTRAINT generator_pending_block_pkey PRIMARY KEY (singleton);
 
 
---
--- Name: leader_singleton_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY leader
     ADD CONSTRAINT leader_singleton_key UNIQUE (singleton);
 
 
---
--- Name: migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY migrations
     ADD CONSTRAINT migrations_pkey PRIMARY KEY (filename);
 
 
---
--- Name: mockhsm_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY mockhsm
     ADD CONSTRAINT mockhsm_alias_key UNIQUE (alias);
 
 
---
--- Name: mockhsm_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY mockhsm
     ADD CONSTRAINT mockhsm_pkey PRIMARY KEY (pub);
 
 
---
--- Name: query_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY query_blocks
     ADD CONSTRAINT query_blocks_pkey PRIMARY KEY (height);
 
 
---
--- Name: signers_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY signers
     ADD CONSTRAINT signers_client_token_key UNIQUE (client_token);
 
 
---
--- Name: signers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY signers
     ADD CONSTRAINT signers_pkey PRIMARY KEY (id);
 
 
---
--- Name: sort_id_index; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY mockhsm
     ADD CONSTRAINT sort_id_index UNIQUE (sort_id);
 
 
---
--- Name: state_trees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY snapshots
     ADD CONSTRAINT state_trees_pkey PRIMARY KEY (height);
 
 
---
--- Name: submitted_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY submitted_txs
     ADD CONSTRAINT submitted_txs_pkey PRIMARY KEY (tx_hash);
 
 
---
--- Name: txfeeds_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY txfeeds
     ADD CONSTRAINT txfeeds_alias_key UNIQUE (alias);
 
 
---
--- Name: txfeeds_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY txfeeds
     ADD CONSTRAINT txfeeds_client_token_key UNIQUE (client_token);
 
 
---
--- Name: txfeeds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
 
 ALTER TABLE ONLY txfeeds
     ADD CONSTRAINT txfeeds_pkey PRIMARY KEY (id);
 
 
---
--- Name: account_utxos_asset_id_account_id_confirmed_in_idx; Type: INDEX; Schema: public; Owner: -
---
 
 CREATE INDEX account_utxos_asset_id_account_id_confirmed_in_idx ON account_utxos USING btree (asset_id, account_id, confirmed_in);
 
 
---
--- Name: annotated_assets_sort_id; Type: INDEX; Schema: public; Owner: -
---
 
 CREATE INDEX annotated_assets_sort_id ON annotated_assets USING btree (sort_id);
 
 
---
--- Name: annotated_outputs_timespan_idx; Type: INDEX; Schema: public; Owner: -
---
 
 CREATE INDEX annotated_outputs_timespan_idx ON annotated_outputs USING gist (timespan);
 
 
---
--- Name: annotated_txs_data_idx; Type: INDEX; Schema: public; Owner: -
---
 
 CREATE INDEX annotated_txs_data_idx ON annotated_txs USING gin (data jsonb_path_ops);
 
 
---
--- Name: assets_sort_id; Type: INDEX; Schema: public; Owner: -
---
 
 CREATE INDEX assets_sort_id ON assets USING btree (sort_id);
 
 
---
--- Name: query_blocks_timestamp_idx; Type: INDEX; Schema: public; Owner: -
---
 
 CREATE INDEX query_blocks_timestamp_idx ON query_blocks USING btree ("timestamp");
 
 
---
--- Name: signed_blocks_block_height_idx; Type: INDEX; Schema: public; Owner: -
---
 
 CREATE UNIQUE INDEX signed_blocks_block_height_idx ON signed_blocks USING btree (block_height);
 
 
---
--- Name: signers_type_id_idx; Type: INDEX; Schema: public; Owner: -
---
 
 CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
 
 
---
--- PostgreSQL database dump complete
---
+
 
 insert into migrations (filename, hash) values ('2017-02-03.0.core.schema-snapshot.sql', '1d55668affe0be9f3c19ead9d67bc75cfd37ec430651434d0f2af2706d9f08cd');
 insert into migrations (filename, hash) values ('2017-02-07.0.query.non-null-alias.sql', '17028a0bdbc95911e299dc65fe641184e54c87a0d07b3c576d62d023b9a8defc');
