@@ -14,6 +14,7 @@ import (
 	"chain/core/pin"
 	"chain/core/signers"
 	"chain/core/txbuilder"
+	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
@@ -232,6 +233,22 @@ func (m *Manager) findByID(ctx context.Context, id string) (*signers.Signer, err
 	m.cache.Add(id, account)
 	m.cacheMu.Unlock()
 	return account, nil
+}
+
+func (m *Manager) createPubkey(ctx context.Context, accountID string) (rootXPub chainkd.XPub, pubkey ed25519.PublicKey, path [][]byte, err error) {
+	account, err := m.findByID(ctx, accountID)
+	if err != nil {
+		return
+	}
+	idx, err := m.nextIndex(ctx)
+	if err != nil {
+		return
+	}
+	rootXPub = account.XPubs[0]
+	path = signers.Path(account, signers.AccountKeySpace, idx)
+	derivedXPub := rootXPub.Derive(path)
+	pubkey = derivedXPub.PublicKey()
+	return
 }
 
 type controlProgram struct {
