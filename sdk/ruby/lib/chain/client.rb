@@ -1,4 +1,5 @@
 require_relative './access_token'
+require_relative './authorization_grant'
 require_relative './account'
 require_relative './asset'
 require_relative './balance'
@@ -29,6 +30,11 @@ module Chain
     # @return [AccessToken::ClientModule]
     def access_tokens
       @access_tokens ||= AccessToken::ClientModule.new(self)
+    end
+
+    # @return [AuthorizationGrant::ClientModule]
+    def authorization_grants
+      @authorization_grants ||= AuthorizationGrant::ClientModule.new(self)
     end
 
     # @return [Account::ClientModule]
