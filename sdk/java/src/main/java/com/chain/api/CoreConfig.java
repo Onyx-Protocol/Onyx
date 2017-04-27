@@ -12,16 +12,16 @@ public class CoreConfig {
     public String state;
 
     @SerializedName("is_configured")
-    public Boolean isConfigured;
+    public boolean isConfigured;
 
     @SerializedName("configured_at")
     public Date configuredAt;
 
     @SerializedName("is_signer")
-    public Boolean isSigner;
+    public boolean isSigner;
 
     @SerializedName("is_generator")
-    public Boolean isGenerator;
+    public boolean isGenerator;
 
     @SerializedName("generator_url")
     public String generatorUrl;
@@ -64,13 +64,13 @@ public class CoreConfig {
 
     public static class BuildConfig {
       @SerializedName("is_loopback_auth")
-      public Boolean isLoopbackAuth;
+      public boolean isLoopbackAuth;
 
       @SerializedName("is_mockhsm")
-      public Boolean isMockHsm;
+      public boolean isMockHsm;
 
       @SerializedName("is_reset")
-      public Boolean isReset;
+      public boolean isReset;
     }
 
     public static class Snapshot {
@@ -83,7 +83,7 @@ public class CoreConfig {
       public long downloaded;
 
       @SerializedName("in_progress")
-      public Boolean inProgress;
+      public boolean inProgress;
     }
   }
 
