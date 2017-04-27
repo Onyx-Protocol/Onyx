@@ -12,7 +12,7 @@ import (
 )
 
 type (
-	signatureWitness struct {
+	SignatureWitness struct {
 		// Quorum is the number of signatures required.
 		Quorum int `json:"quorum"`
 
@@ -47,7 +47,7 @@ var ErrEmptyProgram = errors.New("empty signature program")
 //  - the mintime and maxtime of the transaction (if non-zero)
 //  - the outputID and (if non-empty) reference data of the current input
 //  - the assetID, amount, control program, and (if non-empty) reference data of each output.
-func (sw *signatureWitness) sign(ctx context.Context, tpl *Template, index uint32, xpubs []chainkd.XPub, signFn SignFunc) error {
+func (sw *SignatureWitness) sign(ctx context.Context, tpl *Template, index uint32, xpubs []chainkd.XPub, signFn SignFunc) error {
 	// Compute the predicate to sign. This is either a
 	// txsighash program if tpl.AllowAdditional is false (i.e., the tx is complete
 	// and no further changes are allowed) or a program enforcing
@@ -96,7 +96,7 @@ func (sw *signatureWitness) sign(ctx context.Context, tpl *Template, index uint3
 	return nil
 }
 
-func (sw signatureWitness) materialize(args *[][]byte) error {
+func (sw SignatureWitness) materialize(args *[][]byte) error {
 	// This is the value of N for the CHECKPREDICATE call. The code
 	// assumes that everything already in the arg list before this call
 	// to Materialize is input to the signature program, so N is
@@ -114,7 +114,7 @@ func (sw signatureWitness) materialize(args *[][]byte) error {
 	return nil
 }
 
-func (sw signatureWitness) MarshalJSON() ([]byte, error) {
+func (sw SignatureWitness) MarshalJSON() ([]byte, error) {
 	obj := struct {
 		Type   string               `json:"type"`
 		Quorum int                  `json:"quorum"`

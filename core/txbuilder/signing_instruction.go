@@ -8,7 +8,7 @@ import (
 	"chain/errors"
 )
 
-// AddWitnessKeys adds a signatureWitness with the given quorum and
+// AddWitnessKeys adds a SignatureWitness with the given quorum and
 // list of keys derived by applying the derivation path to each of the
 // xpubs.
 func (si *SigningInstruction) AddWitnessKeys(xpubs []chainkd.XPub, path [][]byte, quorum int) {
@@ -22,7 +22,7 @@ func (si *SigningInstruction) AddWitnessKeys(xpubs []chainkd.XPub, path [][]byte
 		keyIDs = append(keyIDs, keyID{xpub, hexPath})
 	}
 
-	sw := &signatureWitness{
+	sw := &SignatureWitness{
 		Quorum: quorum,
 		Keys:   keyIDs,
 	}
@@ -38,7 +38,7 @@ type SigningInstruction struct {
 // witnessComponent is the abstract type for the parts of a
 // SigningInstruction.  Each witnessComponent produces one or more
 // arguments for a VM program via its materialize method. Concrete
-// witnessComponent types include signatureWitness and dataWitness.
+// witnessComponent types include SignatureWitness and dataWitness.
 type witnessComponent interface {
 	materialize(*[][]byte) error
 }
@@ -74,7 +74,7 @@ func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 			si.WitnessComponents = append(si.WitnessComponents, dataWitness(d.Value))
 
 		case "signature":
-			var s signatureWitness
+			var s SignatureWitness
 			err = json.Unmarshal(wc, &s)
 			if err != nil {
 				return errors.Wrapf(err, "unmarshaling error on witness component %d, type signature, input %s", i, wc)
