@@ -594,6 +594,8 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 
 	log.Printkv(req.Context(), "at", "join-id", "addr", x.Addr, "id", newID)
 
+	// TODO(tessr): confirm that this addr exists in the potential member list
+
 	err = sv.raftNode.ProposeConfChange(req.Context(), raftpb.ConfChange{
 		ID:      atomic.AddUint64(&sv.confChangeID, 1),
 		Type:    raftpb.ConfChangeAddNode,
