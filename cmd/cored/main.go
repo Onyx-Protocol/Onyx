@@ -158,6 +158,10 @@ func main() {
 	httpClient.Transport = &http.Transport{
 		TLSClientConfig: tlsConfig,
 
+		// The following fields are default values
+		// copied from DefaultTransport.
+		// (When you change them, be sure to move them
+		// above this line so this comment stays true.)
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
