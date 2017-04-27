@@ -4,11 +4,27 @@ import (
 	"context"
 	"time"
 
+	"chain/core/signers"
 	"chain/core/txbuilder"
+	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/errors"
 )
 
 const defaultReceiverExpiry = 30 * 24 * time.Hour // 30 days
+
+func (m *Manager) CreatePubkey(ctx context.Context, accID, accAlias string) (rootXPub chainkd.XPub, pubkey ed25519.PublicKey, path [][]byte, err error) {
+	if accAlias != "" {
+		var s *signers.Signer
+		s, err = m.FindByAlias(ctx, accAlias)
+		if err != nil {
+			return
+		}
+		accID = s.ID
+	}
+
+	return m.createPubkey(ctx, accID)
+}
 
 // CreateReceiver creates a new account receiver for an account
 // with the provided expiry. If a zero time is provided for the
