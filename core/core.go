@@ -25,7 +25,7 @@ var (
 )
 
 const (
-	networkRPCVersion = 3
+	crosscoreRPCVersion = 3
 )
 
 func (a *API) reset(ctx context.Context, req struct {
@@ -109,7 +109,8 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
-		"network_rpc_version":               networkRPCVersion,
+		"network_rpc_version":               crosscoreRPCVersion, // "Network" is legacy terminology for "Cross-core"
+		"crosscore_rpc_version":             crosscoreRPCPrefix,
 		"core_id":                           a.config.Id,
 		"version":                           config.Version,
 		"build_commit":                      config.BuildCommit,

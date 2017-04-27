@@ -40,12 +40,12 @@ var policyByRoute = map[string][]string{
 	"/list-unspent-outputs":   {"client-readwrite", "client-readonly"},
 	"/reset":                  {"client-readwrite", "internal"},
 
-	networkRPCPrefix + "submit":            {"crosscore", "crosscore-signblock"},
-	networkRPCPrefix + "get-block":         {"crosscore", "crosscore-signblock"},
-	networkRPCPrefix + "get-snapshot-info": {"crosscore", "crosscore-signblock"},
-	networkRPCPrefix + "get-snapshot":      {"crosscore", "crosscore-signblock"},
-	networkRPCPrefix + "signer/sign-block": {"crosscore-signblock"},
-	networkRPCPrefix + "block-height":      {"crosscore", "crosscore-signblock"},
+	crosscoreRPCPrefix + "submit":            {"crosscore", "crosscore-signblock"},
+	crosscoreRPCPrefix + "get-block":         {"crosscore", "crosscore-signblock"},
+	crosscoreRPCPrefix + "get-snapshot-info": {"crosscore", "crosscore-signblock"},
+	crosscoreRPCPrefix + "get-snapshot":      {"crosscore", "crosscore-signblock"},
+	crosscoreRPCPrefix + "signer/sign-block": {"crosscore-signblock"},
+	crosscoreRPCPrefix + "block-height":      {"crosscore", "crosscore-signblock"},
 
 	"/list-authorization-grants":  {"client-readwrite", "client-readonly", "internal"},
 	"/create-authorization-grant": {"client-readwrite", "internal"},

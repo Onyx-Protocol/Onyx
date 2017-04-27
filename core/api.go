@@ -43,8 +43,8 @@ const (
 	defGenericPageSize = 100
 )
 
-// TODO(kr): change this to "network" or something.
-const networkRPCPrefix = "/rpc/"
+// TODO(kr): change this to "crosscore" or something.
+const crosscoreRPCPrefix = "/rpc/"
 
 var (
 	errNotFound         = errors.New("not found")
@@ -107,7 +107,7 @@ func maxBytes(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// A block can easily be bigger than maxReqSize, but everything
 		// else should be pretty small.
-		if req.URL.Path != networkRPCPrefix+"signer/sign-block" {
+		if req.URL.Path != crosscoreRPCPrefix+"signer/sign-block" {
 			req.Body = http.MaxBytesReader(w, req.Body, maxReqSize)
 		}
 		h.ServeHTTP(w, req)
@@ -156,14 +156,14 @@ func (a *API) buildHandler() {
 	m.Handle("/list-unspent-outputs", needConfig(a.listUnspentOutputs))
 	m.Handle("/reset", resetAllowed(needConfig(a.reset)))
 
-	m.Handle(networkRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *legacy.Tx) error {
+	m.Handle(crosscoreRPCPrefix+"submit", needConfig(func(ctx context.Context, tx *legacy.Tx) error {
 		return a.submitter.Submit(ctx, tx)
 	}))
-	m.Handle(networkRPCPrefix+"get-block", needConfig(a.getBlockRPC))
-	m.Handle(networkRPCPrefix+"get-snapshot-info", needConfig(a.getSnapshotInfoRPC))
-	m.Handle(networkRPCPrefix+"get-snapshot", http.HandlerFunc(a.getSnapshotRPC))
-	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(a.leaderSignHandler(a.signer)))
-	m.Handle(networkRPCPrefix+"block-height", needConfig(func(ctx context.Context) map[string]uint64 {
+	m.Handle(crosscoreRPCPrefix+"get-block", needConfig(a.getBlockRPC))
+	m.Handle(crosscoreRPCPrefix+"get-snapshot-info", needConfig(a.getSnapshotInfoRPC))
+	m.Handle(crosscoreRPCPrefix+"get-snapshot", http.HandlerFunc(a.getSnapshotRPC))
+	m.Handle(crosscoreRPCPrefix+"signer/sign-block", needConfig(a.leaderSignHandler(a.signer)))
+	m.Handle(crosscoreRPCPrefix+"block-height", needConfig(func(ctx context.Context) map[string]uint64 {
 		h := a.chain.Height()
 		return map[string]uint64{
 			"block_height": h,
@@ -248,7 +248,7 @@ type page struct {
 }
 
 func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, internalDN *pkix.Name) http.Handler {
-	authenticator := authn.NewAPI(accessTokens, networkRPCPrefix)
+	authenticator := authn.NewAPI(accessTokens, crosscoreRPCPrefix)
 	authorizer := authz.NewAuthorizer(rDB, grantPrefix, policyByRoute)
 	if internalDN != nil {
 		authorizer.GrantInternal(*internalDN)
