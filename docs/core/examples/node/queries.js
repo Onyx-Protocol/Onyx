@@ -1,5 +1,4 @@
-// const chain = require('chain-sdk')
-const chain = require('../../../../sdk/node/dist/index.js')
+const chain = require('chain-sdk')
 
 const client = new chain.Client()
 const signer = new chain.HsmSigner()

@@ -75,7 +75,7 @@ Promise.all([
   // endsnippet
 ).then(() =>
   // snippet update-asset-tags
-  client.accounts.updateTags({
+  client.assets.updateTags({
     alias: 'acme_common',
     tags: {
       internalRating: '3',
