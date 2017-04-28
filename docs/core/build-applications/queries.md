@@ -89,11 +89,11 @@ Balance sums are totalled by `asset_id` and `asset_alias` by default, but it is 
 
 This guide will walk you through several examples of queries:
 
-* Transactions
-* Assets
-* Accounts
-* Unspent Outputs
-* Balances
+* [Transactions](#transactions)
+* [Assets](#assets)
+* [Accounts](#accounts)
+* [Unspent Outputs](#unspent-outputs)
+* [Balances](#balances)
 
 ### Sample Code
 
@@ -117,6 +117,12 @@ List all transactions involving the local Core:
 
 $code list-local-transactions ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
+### Transaction queries and tag updates
+
+You can query for transactions using asset and account tags. These queries use an internal index that is generated using the values of asset and account tags at the time each transaction was indexed.
+
+Asset and account tags can be updated, but these updates are not retroactively applied to the transaction query index. Transactions that are indexed after a tag update can be queried by the new value of the tags, but transactions indexed before the tag update must be queried by the old value.
+
 ## Assets
 
 List all assets created in the local Core:
@@ -127,11 +133,15 @@ List all assets with `USD` as the `currency` in the asset definition:
 
 $code list-usd-assets ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
 
+After [updating the value](assets.md#update-tags-on-existing-assets) of an asset's tag, you can query for that asset using the new value of the tag.
+
 ## Accounts
 
 List all accounts with `checking` as the `type` in the account tags:
 
 $code list-checking-accounts ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
+
+After [updating the value](accounts.md#update-tags-on-existing-accounts) of an account's tag, you can query for that account using the new value of the tag.
 
 ## Unspent Outputs
 
@@ -142,6 +152,12 @@ $code list-alice-unspents ../examples/java/Queries.java ../examples/ruby/queries
 List all unspent outputs with `checking` as the `type` in the account tags:
 
 $code list-checking-unspents ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
+
+### Unspent queries and tag updates
+
+You can query for unspent outputs using asset and account tags. These queries use an internal index that is generated using the values of asset and account tags at the time each unspent output was indexed.
+
+Asset and account tags can be updated, but these updates are not retroactively applied to the unspent output query index. Unspent outputs that are indexed after a tag update can be queried by the new value of the tags, but unspent outputs indexed before the tag update must be queried by the old value.
 
 ## Balances
 
@@ -160,3 +176,9 @@ $code account-balance-sum-by-currency ../examples/java/Queries.java ../examples/
 List balances of accounts with `checking` as the `type` in the account tags, summed by currency:
 
 $code checking-accounts-balance ../examples/java/Queries.java ../examples/ruby/queries.rb ../examples/node/queries.js
+
+### Balances and tag updates
+
+You can query for balances using asset and account tags. These queries use the unspent output index, which is generated using the values of asset and account tags at the time each unspent output was indexed.
+
+Asset and account tags can be updated, but these updates are not retroactively applied to the unspent output query index. Balance queries that rely on the new value of a tag will only reflect unspent outputs that were indexed after the tag was updated.
