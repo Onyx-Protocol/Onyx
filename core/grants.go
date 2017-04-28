@@ -182,7 +182,7 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 
 	var keep []*authz.Grant
 	for _, g := range grantList.Grants {
-		if authz.EqualGrants(*g, toDelete) {
+		if !authz.EqualGrants(*g, toDelete) {
 			keep = append(keep, g)
 		}
 	}
