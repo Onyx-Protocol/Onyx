@@ -78,6 +78,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 		GuardType: x.GuardType,
 		GuardData: guardData,
 		Policy:    x.Policy,
+		Protected: false, // grants created through the createGrant RPC cannot be protected
 	}
 	g, err := authz.StoreGrant(ctx, a.raftDB, params, grantPrefix)
 	if err != nil {
