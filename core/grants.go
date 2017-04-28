@@ -25,7 +25,7 @@ var (
 	errMissingTokenID = errors.New("id does not exist")
 
 	// errProtectedGrant is returned when a grant is protected and therefore cannot
-	// be directly modified or deleted by the user.
+	// be directly deleted by the user.
 	errProtectedGrant = errors.New("this grant is protected")
 )
 
