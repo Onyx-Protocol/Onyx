@@ -84,7 +84,7 @@ type API struct {
 	downloadingSnapshot   *fetch.SnapshotProgress
 
 	healthMu     sync.Mutex
-	healthErrors map[string]interface{}
+	healthErrors map[string]string
 }
 
 func (a *API) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
