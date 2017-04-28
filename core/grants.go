@@ -18,6 +18,7 @@ type apiGrant struct {
 	GuardData map[string]interface{} `json:"guard_data"`
 	Policy    string                 `json:"policy"`
 	CreatedAt string                 `json:"created_at"`
+	Protected bool                   `json:"protected"`
 }
 
 var (
@@ -96,6 +97,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 		GuardData: data,
 		Policy:    g.Policy,
 		CreatedAt: g.CreatedAt,
+		Protected: g.Protected,
 	}, nil
 }
 
@@ -124,15 +126,14 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 				return nil, errors.Wrap(err)
 			}
 
-			if !g.Protected { // is this right?
-				grant := apiGrant{
-					GuardType: g.GuardType,
-					GuardData: data,
-					Policy:    g.Policy,
-					CreatedAt: g.CreatedAt,
-				}
-				grants = append(grants, grant)
+			grant := apiGrant{
+				GuardType: g.GuardType,
+				GuardData: data,
+				Policy:    g.Policy,
+				CreatedAt: g.CreatedAt,
+				Protected: g.Protected,
 			}
+			grants = append(grants, grant)
 		}
 	}
 
