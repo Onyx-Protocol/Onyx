@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestPotentialMember(t *testing.T) {
+func TestAllowedMember(t *testing.T) {
 	currentDir, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -26,16 +26,16 @@ func TestPotentialMember(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = raftDB.AddPotentialMember(context.Background(), "1234")
+	err = raftDB.AddAllowedMember(context.Background(), "1234")
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
 
-	if !raftDB.isPotentialMember(context.Background(), "1234") {
+	if !raftDB.isAllowedMember(context.Background(), "1234") {
 		t.Fatal("expected 1234 to be a potential member")
 	}
 
-	if raftDB.isPotentialMember(context.Background(), "5678") {
+	if raftDB.isAllowedMember(context.Background(), "5678") {
 		t.Fatal("expected 5678 to not be a potential member")
 	}
 }

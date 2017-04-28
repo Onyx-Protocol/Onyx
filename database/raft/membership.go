@@ -2,19 +2,18 @@ package raft
 
 import "context"
 
-const potentialMemberPrefix = "potential"
+const allowedMemberPrefix = "/raft/allowed"
 
-// AddPotentialMember adds an address for a potential new member to the
-// list of potential cluster members.
-// An address must be listed as a potential cluster member before the node
+// AddAllowedMember adds an address for a member to the list of allowed cluster members.
+// An address must be listed as a allowed cluster member before the node
 // listening on that address can join the cluster.
-func (sv *Service) AddPotentialMember(ctx context.Context, addr string) error {
+func (sv *Service) AddAllowedMember(ctx context.Context, addr string) error {
 	dummyData := []byte{0x01}
-	return sv.Set(ctx, potentialMemberPrefix+"/"+addr, dummyData)
+	return sv.Set(ctx, allowedMemberPrefix+"/"+addr, dummyData)
 }
 
-func (sv *Service) isPotentialMember(ctx context.Context, addr string) bool {
-	data, err := sv.Get(ctx, potentialMemberPrefix+"/"+addr)
+func (sv *Service) isAllowedMember(ctx context.Context, addr string) bool {
+	data, err := sv.Get(ctx, allowedMemberPrefix+"/"+addr)
 	if err != nil {
 		return false
 	}
