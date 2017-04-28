@@ -1,2 +1,0 @@
-#!/bin/sh
-aws s3 cp $CHAIN/testnet/public-info.json s3://testnet-info.chain.com/index.json --acl public-read
