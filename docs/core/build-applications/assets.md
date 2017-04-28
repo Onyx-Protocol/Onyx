@@ -21,6 +21,7 @@ This guide will walk you through the basic functions of an asset:
 * [Retire asset units](#retire-asset-units)
 * [List transactions](#list-asset-transactions) (for issuance, transfer, and retirement)
 * [Get asset circulation](#get-asset-circulation)
+* [Update tags on existing assets](#update-tags-on-existing-assets)
 
 This guide assumes you know the basic functions presented in the [5-Minute Guide](../get-started/five-minute-guide.md).
 
@@ -53,7 +54,7 @@ $code create-asset-acme-preferred ../examples/java/Assets.java ../examples/ruby/
 
 Chain Core keeps a list of all assets in the blockchain, whether or not they were issued by the local Chain Core. Each asset can be locally annotated with an alias and tags to enable efficient actions and intelligent queries. Note: local data is not present in the blockchain, see: [Global vs Local Data](../learn-more/global-vs-local-data.md).
 
-To list all assets created in the local Core, we build an assets query, filtering on the `is_local` tag.
+To list all assets created in the local Core, we build an assets query, filtering on the `is_local` field.
 
 $code list-local-assets ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
 
@@ -138,3 +139,13 @@ $code list-acme-balance ../examples/java/Assets.java ../examples/ruby/assets.rb 
 To list all the unspent outputs that hold a portion of the circulation of Acme Common stock, we build an unspent outputs query, filtering on the Acme Common stock `asset_alias`.
 
 $code list-acme-common-unspents ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
+
+## Update tags on existing assets
+
+An asset's tags can be updated after the asset is created.
+
+$code update-asset-tags ../examples/java/Assets.java ../examples/ruby/assets.rb ../examples/node/assets.js
+
+After tags are updated, you can perform [queries for assets](#list-assets) based on the new values of the tags.
+
+Asset tag updates have a slightly different effect on transaction queries. Transactions are indexed by the assets they comprise, and can be queried using the relevant assets' tags. However, the transaction index is **not** updated retroactively based on asset tag updates. Transactions that are indexed after the tag update will reflect the new value of the tags, but transactions indexed prior to the tag update will continue to reflect the old tag values. The same is true for unspent output and balance queries, which both use the transaction index.

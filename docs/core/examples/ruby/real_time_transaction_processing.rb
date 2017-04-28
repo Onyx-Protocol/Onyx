@@ -1,4 +1,4 @@
-require "chain"
+require 'chain'
 
 chain = Chain::Client.new
 $chain = chain # global alias for thread funcs

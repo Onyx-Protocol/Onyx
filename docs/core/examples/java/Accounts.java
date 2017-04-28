@@ -65,6 +65,21 @@ class Accounts {
     }
     // endsnippet
 
+    // snippet update-account-tags
+    Map<String, Object> tagUpdate;
+    
+    tagUpdate = new HashMap<>();
+    tagUpdate.put("type", "money market");
+    tagUpdate.put("first_name", "Alice");
+    tagUpdate.put("last_name", "Jones");
+    tagUpdate.put("user_id", "12345");
+
+    new Account.TagUpdateBuilder()
+      .forAlias("alice")
+      .setTags(tagUpdate)
+      .update(client);
+    // endsnippet
+
     Transaction.Template fundAliceTransaction = new Transaction.Builder()
       .addAction(new Transaction.Action.Issue()
         .setAssetAlias("gold")

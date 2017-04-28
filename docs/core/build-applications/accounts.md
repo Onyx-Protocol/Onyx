@@ -23,6 +23,7 @@ This guide will walk you through the basic functions of an account:
 * [Transfer asset units to an external party](#transfer-asset-units-to-an-external-party)
 * [List account transactions](#list-account-transactions)
 * [List account balances](#list-account-balances)
+* [Update tags on existing accounts](#update-tags-on-existing-accounts)
 
 This guide assumes you know the basic functions presented in the [5-Minute Guide](../get-started/five-minute-guide.md).
 
@@ -103,3 +104,13 @@ $code list-account-balances ../examples/java/Accounts.java ../examples/ruby/acco
 To list all the unspent outputs that comprise the balance of gold in Alice’s account, we build an unspent outputs query, filtering on Alice’s account alias and the gold asset alias.
 
 $code list-account-unspent-outputs ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
+
+## Update tags on existing accounts
+
+An account's tags can be updated after the account is created.
+
+$code update-account-tags ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
+
+After tags are updated, you can perform [queries for accounts](#list-account-transactions) based on the new values of the tags.
+
+Account tag updates have a slightly different effect on transaction queries. Transactions are indexed by the accounts they comprise, and can be queried using the relevant accounts' tags. However, the transaction index is **not** updated retroactively based on account tag updates. Transactions that are indexed after the tag update will reflect the new value of the tags, but transactions indexed prior to the tag update will continue to reflect the old tag values. The same is true for unspent output and balance queries, which both use the transaction index.

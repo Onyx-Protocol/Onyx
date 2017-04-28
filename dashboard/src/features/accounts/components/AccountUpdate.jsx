@@ -47,15 +47,6 @@ class Form extends React.Component {
       <code>{item.alias ? item.alias :item.id}</code>
     </span>
 
-    // TODO: add link to documentation to further educate on tags and updating tags
-    const tagChangeWarning = <div>
-      <p>Updating tags will overwrite existing tags.</p>
-      <p>
-        Account tags are used to annotate transactions where relevant. Changing the tags will only be reflected for future transactions,
-        and will not affect annotations for transactions that already exist.
-      </p>
-    </div>
-
     const tagsString = Object.keys(item.tags).length === 0 ? '{\n\t\n}' : JSON.stringify(item.tags, null, 1)
     const tagLines = tagsString.split(/\r\n|\r|\n/).length
     let JsonFieldHeight
@@ -78,7 +69,11 @@ class Form extends React.Component {
         <JsonField
           height={JsonFieldHeight}
           fieldProps={tags} />
-        {tagChangeWarning}
+
+        <p>
+          Note: Account tags can be used for querying transactions, unspent outputs, and balances. Queries reflect the account tags that are present when transactions are submitted. Only new transaction activity will reflect the updated tags. <a href='/docs/core/build-applications/accounts#update-tags-on-existing-accounts' target='_blank' style={{whiteSpace: 'nowrap'}}>
+            Learn more →</a>
+        </p>
       </FormSection>
     </FormContainer>
   }

@@ -72,6 +72,18 @@ class Assets {
     }
     // endsnippet
 
+    // snippet update-asset-tags
+    Map<String, Object> tagUpdate;
+    
+    tagUpdate = new HashMap<>();
+    tagUpdate.put("internal_rating", "3");
+
+    new Asset.TagUpdateBuilder()
+      .forAlias("acme_common")
+      .setTags(tagUpdate)
+      .update(client);
+    // endsnippet
+
     // snippet build-issue
     Transaction.Template issuanceTransaction = new Transaction.Builder()
       .addAction(new Transaction.Action.Issue()
