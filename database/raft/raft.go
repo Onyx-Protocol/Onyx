@@ -509,8 +509,7 @@ func (sv *Service) get(ctx context.Context, key string) ([]byte, error) {
 		case <-time.After(dummyWriteTimeout):
 			err := sv.Set(ctx, "/dummyWrite", []byte(""))
 			if err != nil {
-				// TODO(tessr): should probably return this error
-				return
+				return // ok to ignore this error, it will retry
 			}
 		case <-cancelDummy:
 			// We're done waiting.
