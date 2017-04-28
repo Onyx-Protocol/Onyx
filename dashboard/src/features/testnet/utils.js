@@ -7,7 +7,7 @@ const isBlockchainMismatch = (state) => {
     state.core.blockchainId != state.testnet.blockchainId
 }
 
-const isNetworkMismatch = (state) => {
+const isCrosscoreRpcMismatch = (state) => {
   if (!state.core.onTestnet) {
     return false
   }
@@ -18,5 +18,5 @@ const isNetworkMismatch = (state) => {
 
 export default {
   isBlockchainMismatch,
-  isNetworkMismatch,
+  isCrosscoreRpcMismatch,
 }
