@@ -601,8 +601,6 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printkv(req.Context(), "at", "serveJoin", "addr", x.Addr, "id", newID)
-
 	snap := sv.getSnapshot()
 	snapData, err := encodeSnapshot(snap)
 	if err != nil {
