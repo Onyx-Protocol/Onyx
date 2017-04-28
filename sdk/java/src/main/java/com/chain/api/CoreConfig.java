@@ -58,7 +58,7 @@ public class CoreConfig {
     @SerializedName("build_config")
     public BuildConfig buildConfig;
 
-    public Map<String, Object> health;
+    public Health health;
 
     public Snapshot snapshot;
 
@@ -71,6 +71,10 @@ public class CoreConfig {
 
       @SerializedName("is_reset")
       public boolean isReset;
+    }
+
+    public static class Health {
+      public Map<String, String> errors;
     }
 
     public static class Snapshot {
