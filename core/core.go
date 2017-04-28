@@ -110,7 +110,7 @@ func (a *API) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
 		"network_rpc_version":               crosscoreRPCVersion, // "Network" is legacy terminology for "Cross-core"
-		"crosscore_rpc_version":             crosscoreRPCPrefix,
+		"crosscore_rpc_version":             crosscoreRPCVersion,
 		"core_id":                           a.config.Id,
 		"version":                           config.Version,
 		"build_commit":                      config.BuildCommit,
