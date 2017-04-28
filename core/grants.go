@@ -205,6 +205,9 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 	return nil
 }
 
+// deleteGrantsByAccessToken is invoked after an access token is deleted, and the
+// related grants need to be deleted. It will delete a grant even if that grant is
+// protected.
 func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error {
 	for _, p := range policies {
 		data, err := a.raftDB.Get(ctx, grantPrefix+p)
@@ -231,8 +234,6 @@ func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error
 
 			if id, _ := data["id"].(string); id != token {
 				keep = append(keep, g)
-			} else if g.Protected {
-				return errProtectedGrant
 			}
 		}
 
