@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 
@@ -144,6 +143,9 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 }
 
 func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
+	if x.Protected {
+		return errProtectedGrant
+	}
 	guardData, err := json.Marshal(x.GuardData)
 	if err != nil {
 		return errors.Wrap(err)
@@ -158,6 +160,12 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 		return nil
 	}
 
+	toDelete := authz.Grant{
+		GuardType: x.GuardType,
+		GuardData: guardData,
+		Protected: x.Protected, // should always be false
+	}
+
 	grantList := new(authz.GrantList)
 	err = proto.Unmarshal(data, grantList)
 	if err != nil {
@@ -166,10 +174,8 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 
 	var keep []*authz.Grant
 	for _, g := range grantList.Grants {
-		if g.GuardType != x.GuardType || !bytes.Equal(g.GuardData, guardData) {
+		if authz.EqualGrants(*g, toDelete) {
 			keep = append(keep, g)
-		} else if g.Protected {
-			return errProtectedGrant
 		}
 	}
 
