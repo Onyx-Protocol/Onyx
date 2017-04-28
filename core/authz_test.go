@@ -108,7 +108,7 @@ func TestAuthz(t *testing.T) {
 			"internal":            true,
 			"public":              false,
 		},
-		networkRPCPrefix + "get-block": map[string]bool{
+		crosscoreRPCPrefix + "get-block": map[string]bool{
 			"client-readwrite":    false,
 			"client-readonly":     false,
 			"crosscore":           true,
@@ -117,7 +117,7 @@ func TestAuthz(t *testing.T) {
 			"internal":            false,
 			"public":              false,
 		},
-		networkRPCPrefix + "signer/sign-block": map[string]bool{
+		crosscoreRPCPrefix + "signer/sign-block": map[string]bool{
 			"client-readwrite":    false,
 			"client-readonly":     false,
 			"crosscore":           false,

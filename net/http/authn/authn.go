@@ -15,8 +15,8 @@ import (
 const tokenExpiry = time.Minute * 5
 
 type API struct {
-	tokens           *accesstoken.CredentialStore
-	networkRPCPrefix string
+	tokens             *accesstoken.CredentialStore
+	crosscoreRPCPrefix string
 
 	tokenMu  sync.Mutex // protects the following
 	tokenMap map[string]tokenResult
@@ -27,11 +27,11 @@ type tokenResult struct {
 	lastLookup time.Time
 }
 
-func NewAPI(tokens *accesstoken.CredentialStore, networkPrefix string) *API {
+func NewAPI(tokens *accesstoken.CredentialStore, crosscorePrefix string) *API {
 	return &API{
-		tokens:           tokens,
-		networkRPCPrefix: networkPrefix,
-		tokenMap:         make(map[string]tokenResult),
+		tokens:             tokens,
+		crosscoreRPCPrefix: crosscorePrefix,
+		tokenMap:           make(map[string]tokenResult),
 	}
 }
 

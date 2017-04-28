@@ -15,9 +15,9 @@ var (
 	latencies = map[string]*metrics.RotatingLatency{}
 
 	latencyRange = map[string]time.Duration{
-		networkRPCPrefix + "get-block":         20 * time.Second,
-		networkRPCPrefix + "signer/sign-block": 5 * time.Second,
-		networkRPCPrefix + "get-snapshot":      30 * time.Second,
+		crosscoreRPCPrefix + "get-block":         20 * time.Second,
+		crosscoreRPCPrefix + "signer/sign-block": 5 * time.Second,
+		crosscoreRPCPrefix + "get-snapshot":      30 * time.Second,
 		// the rest have a default range
 	}
 )
