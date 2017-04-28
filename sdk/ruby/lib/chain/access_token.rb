@@ -15,7 +15,7 @@ module Chain
     # @return [String]
     attrib :token
 
-    # @deprecated.
+    # @deprecated
     # @!attribute [r] type
     # Either 'client' or 'network'. Ignore in 1.2 or greater.
     # @return [String]
