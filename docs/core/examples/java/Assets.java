@@ -7,6 +7,7 @@ import com.chain.signing.*;
 class Assets {
   public static void main(String[] args) throws Exception {
     Client client = new Client();
+    Map<String, Object> tagUpdate;
 
     MockHsm.Key assetKey = MockHsm.Key.create(client);
     HsmSigner.addKey(assetKey, MockHsm.getSignerClient(client));
