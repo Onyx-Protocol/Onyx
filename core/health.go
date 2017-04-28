@@ -11,19 +11,19 @@ func (a *API) setHealth(name string, err error) {
 	a.healthMu.Lock()
 	defer a.healthMu.Unlock()
 	if a.healthErrors == nil {
-		a.healthErrors = make(map[string]interface{})
+		a.healthErrors = make(map[string]string)
 	}
 	if err == nil {
-		a.healthErrors[name] = nil
+		delete(a.healthErrors, name)
 	} else {
 		a.healthErrors[name] = err.Error() // convert to immutable string
 	}
 }
 
 func (a *API) health() (x struct {
-	Errors map[string]interface{} `json:"errors"`
+	Errors map[string]string `json:"errors"`
 }) {
-	x.Errors = make(map[string]interface{})
+	x.Errors = make(map[string]string)
 	a.healthMu.Lock()
 	defer a.healthMu.Unlock()
 	for name, s := range a.healthErrors {
