@@ -175,6 +175,7 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*S
 
 	// TODO(kr): grpc
 	sv.mux.HandleFunc("/raft/join", sv.serveJoin)
+	sv.mux.HandleFunc("/raft/add-allowed-member", sv.serveAddAllowedMember)
 	sv.mux.HandleFunc("/raft/msg", sv.serveMsg)
 
 	walobj, err := sv.recover()
@@ -591,7 +592,10 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO(tessr): confirm that this addr exists in the potential member list
+	if clientTLS(sv.client) != nil && !sv.isAllowedMember(req.Context(), x.Addr) {
+		http.Error(w, "this address is not allowed. please add this address to the allowed member list", 400) // it's like a country club in here
+		return
+	}
 
 	err = sv.raftNode.ProposeConfChange(req.Context(), raftpb.ConfChange{
 		ID:      atomic.AddUint64(&sv.confChangeID, 1),
@@ -611,6 +615,23 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(nodeJoin{newID, snapData})
+}
+
+func (sv *Service) serveAddAllowedMember(w http.ResponseWriter, req *http.Request) {
+	var x struct{ Addr string }
+	err := json.NewDecoder(req.Body).Decode(&x)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+
+	err = sv.AddAllowedMember(req.Context(), x.Addr)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	json.NewEncoder(w).Encode("success") // ??
 }
 
 // join attempts to join the cluster.
