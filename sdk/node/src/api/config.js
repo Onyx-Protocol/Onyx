@@ -47,8 +47,11 @@ const shared = require('../shared')
  * @property {Boolean} isProduction
  * Whether the core is running in production mode.
  *
+ * @property {Number} crosscoreRpcVersion
+ * The cross-core API version supported by this core.
+ *
  * @property {Number} networkRpcVersion
- * The network version supported by this core.
+ * DEPRECATED. Do not use in 1.2 or greater. Superseded by {@link crosscoreRpcVersion}.
  *
  * @property {String} coreId
  * A random identifier for the core, generated during configuration.

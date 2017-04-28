@@ -63,8 +63,8 @@ export const generatorAccessToken = (state, action) =>
   coreConfigReducer('generatorAccessToken', state, false, action)
 export const blockchainId = (state, action) =>
   coreConfigReducer('blockchainId', state, 0, action)
-export const networkRpcVersion = (state, action) =>
-  coreConfigReducer('networkRpcVersion', state, 0, action)
+export const crosscoreRpcVersion = (state, action) =>
+  coreConfigReducer('crosscoreRpcVersion', state, 0, action)
 
 export const coreType = (state = '', action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
@@ -219,7 +219,7 @@ export default combineReducers({
   generatorUrl,
   loopback,
   mockhsm,
-  networkRpcVersion,
+  crosscoreRpcVersion,
   onTestnet,
   replicationLag,
   replicationLagClass,

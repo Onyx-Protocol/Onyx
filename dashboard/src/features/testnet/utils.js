@@ -12,8 +12,8 @@ const isNetworkMismatch = (state) => {
     return false
   }
 
-  return !!state.core.networkRpcVersion && !!state.testnet.rpcVersion &&
-    state.core.networkRpcVersion != state.testnet.rpcVersion
+  return !!state.core.crosscoreRpcVersion && !!state.testnet.crosscoreRpcVersion &&
+    state.core.crosscoreRpcVersion != state.testnet.crosscoreRpcVersion
 }
 
 export default {
