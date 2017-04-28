@@ -20,9 +20,9 @@ export const blockchainId = (state = 0, action) => {
   return state
 }
 
-export const rpcVersion = (state = 0, action) => {
+export const crosscoreRpcVersion = (state = 0, action) => {
   if (action.type == 'TESTNET_CONFIG') {
-    return action.data.network_rpc_version
+    return action.data.crosscore_rpc_version || action.data.network_rpc_version
   }
   return state
 }
@@ -37,6 +37,6 @@ export const testnetInfo = (state = { loading: true }, action) => {
 export default combineReducers({
   blockchainId,
   nextReset,
-  rpcVersion,
+  crosscoreRpcVersion,
   testnetInfo,
 })

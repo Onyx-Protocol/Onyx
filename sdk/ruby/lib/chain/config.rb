@@ -71,8 +71,14 @@ module Chain
       # @return [Boolean]
       attrib :is_production
 
+      # @!attribute [r] crosscore_rpc_version
+      # @return [Integer]
+      attrib :crosscore_rpc_version
+
+      # @deprecated
       # @!attribute [r] network_rpc_version
       # @return [Integer]
+      # Ignore in 1.2 or greater. Superseded by crosscore_rpc_version.
       attrib :network_rpc_version
 
       # @!attribute [r] core_id

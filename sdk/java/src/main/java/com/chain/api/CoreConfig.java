@@ -41,8 +41,8 @@ public class CoreConfig {
     @SerializedName("generator_block_height_fetched_at")
     public Date generatorBlockHeightFetchedAt;
 
-    @SerializedName("network_rpc_version")
-    public int networkRpcVersion;
+    @SerializedName("crosscore_rpc_version")
+    public int crosscoreRpcVersion;
 
     @SerializedName("core_id")
     public String coreId;

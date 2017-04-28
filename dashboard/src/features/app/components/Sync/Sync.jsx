@@ -81,7 +81,7 @@ export default connect(
     replicationLag: state.core.replicationLag,
     snapshot: state.core.snapshot,
     syncEstimates: state.core.syncEstimates,
-    testnetError: testnetUtils.isBlockchainMismatch(state) || testnetUtils.isNetworkMismatch(state),
+    testnetError: testnetUtils.isBlockchainMismatch(state) || testnetUtils.isCrosscoreRpcMismatch(state),
     testnetNextReset: state.testnet.nextReset,
   })
 )(Sync)
