@@ -7,7 +7,6 @@ import com.chain.signing.*;
 class Accounts {
   public static void main(String[] args) throws Exception {
     Client client = new Client();
-    Map<String, Object> tagUpdate;
 
     MockHsm.Key assetKey = MockHsm.Key.create(client);
     HsmSigner.addKey(assetKey, MockHsm.getSignerClient(client));
@@ -67,6 +66,8 @@ class Accounts {
     // endsnippet
 
     // snippet update-account-tags
+    Map<String, Object> tagUpdate;
+    
     tagUpdate = new HashMap<>();
     tagUpdate.put("type", "money market");
     tagUpdate.put("first_name", "Alice");
