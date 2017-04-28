@@ -56,7 +56,7 @@ func main() {
 	}))
 
 	must(db.Close())
-	must(run("dropdb", "--if-exists", temporaryDatabase))
+	must(run("dropdb", temporaryDatabase))
 }
 
 func run(name string, args ...string) error {
