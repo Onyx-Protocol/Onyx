@@ -51,7 +51,7 @@ func StoreGrant(ctx context.Context, raftDB *raft.Service, grant Grant, grantPre
 
 	grants := grantList.Grants
 	for _, existing := range grants {
-		if existing.GuardType == grant.GuardType && bytes.Equal(existing.GuardData, grant.GuardData) {
+		if EqualGrants(*existing, grant) {
 			// this grant already exists, return for idempotency
 			return existing, nil
 		}
@@ -72,4 +72,8 @@ func StoreGrant(ctx context.Context, raftDB *raft.Service, grant Grant, grantPre
 	}
 
 	return &grant, nil
+}
+
+func EqualGrants(a, b Grant) bool {
+	return a.GuardType == b.GuardType && bytes.Equal(a.GuardData, b.GuardData) && a.Protected == b.Protected
 }

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 
@@ -18,12 +17,27 @@ type apiGrant struct {
 	GuardData map[string]interface{} `json:"guard_data"`
 	Policy    string                 `json:"policy"`
 	CreatedAt string                 `json:"created_at"`
+	Protected bool                   `json:"protected"`
 }
 
-// ErrMissingTokenID is returned when a token does not exist.
-var errMissingTokenID = errors.New("id does not exist")
+var (
+	// errMissingTokenID is returned when a token does not exist.
+	errMissingTokenID = errors.New("id does not exist")
+
+	// errProtectedGrant is returned when a grant is protected and therefore cannot
+	// be directly deleted by the user.
+	errProtectedGrant = errors.New("this grant is protected")
+
+	// errCreateProtectedGrant is returned when a createGrant request is called with
+	// a protected grant.
+	errCreateProtectedGrant = errors.New("cannot manually create a protected grant")
+)
 
 func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
+	if x.Protected {
+		return nil, errCreateProtectedGrant
+	}
+
 	var found bool
 	for _, p := range policies {
 		if p == x.Policy {
@@ -71,6 +85,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 		GuardType: x.GuardType,
 		GuardData: guardData,
 		Policy:    x.Policy,
+		Protected: false, // grants created through the createGrant RPC cannot be protected
 	}
 	g, err := authz.StoreGrant(ctx, a.raftDB, params, grantPrefix)
 	if err != nil {
@@ -90,6 +105,7 @@ func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 		GuardData: data,
 		Policy:    g.Policy,
 		CreatedAt: g.CreatedAt,
+		Protected: g.Protected,
 	}, nil
 }
 
@@ -123,6 +139,7 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 				GuardData: data,
 				Policy:    g.Policy,
 				CreatedAt: g.CreatedAt,
+				Protected: g.Protected,
 			}
 			grants = append(grants, grant)
 		}
@@ -134,6 +151,9 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 }
 
 func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
+	if x.Protected {
+		return errProtectedGrant
+	}
 	guardData, err := json.Marshal(x.GuardData)
 	if err != nil {
 		return errors.Wrap(err)
@@ -148,6 +168,12 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 		return nil
 	}
 
+	toDelete := authz.Grant{
+		GuardType: x.GuardType,
+		GuardData: guardData,
+		Protected: x.Protected, // should always be false
+	}
+
 	grantList := new(authz.GrantList)
 	err = proto.Unmarshal(data, grantList)
 	if err != nil {
@@ -156,7 +182,7 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 
 	var keep []*authz.Grant
 	for _, g := range grantList.Grants {
-		if g.GuardType != x.GuardType || !bytes.Equal(g.GuardData, guardData) {
+		if !authz.EqualGrants(*g, toDelete) {
 			keep = append(keep, g)
 		}
 	}
@@ -179,6 +205,9 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 	return nil
 }
 
+// deleteGrantsByAccessToken is invoked after an access token is deleted, and the
+// related grants need to be deleted. It will delete a grant even if that grant is
+// protected.
 func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error {
 	for _, p := range policies {
 		data, err := a.raftDB.Get(ctx, grantPrefix+p)
