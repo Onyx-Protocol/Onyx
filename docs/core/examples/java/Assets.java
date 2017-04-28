@@ -77,7 +77,7 @@ class Assets {
     tagUpdate.put("internal_rating", "3");
 
     new Asset.TagUpdateBuilder()
-      .forAlias('acme_common')
+      .forAlias("acme_common")
       .setTags(tagUpdate)
       .update(client);
     // endsnippet

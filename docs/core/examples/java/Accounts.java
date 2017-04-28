@@ -73,7 +73,7 @@ class Accounts {
     tagUpdate.put("user_id", "12345");
 
     new Account.TagUpdateBuilder()
-      .forAlias('alice')
+      .forAlias("alice")
       .setTags(tagUpdate)
       .update(client);
     // endsnippet
