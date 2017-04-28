@@ -99,7 +99,7 @@ var errorFormatter = httperror.Formatter{
 		errMissingTokenID:          {400, "CH303", "Access token id does not exist"},
 		errCurrentToken:            {400, "CH310", "The access token used to authenticate this request cannot be deleted"},
 		errProtectedGrant:          {400, "CH320", "Protected grants cannot be manually deleted"},
-		errCreatedProtectedGrant:   {400, "CH321", "Protected grants cannot be manually created"},
+		errCreateProtectedGrant:    {400, "CH321", "Protected grants cannot be manually created"},
 
 		// Query error namespace (6xx)
 		query.ErrBadAfter:               {400, "CH600", "Malformed pagination parameter `after`"},

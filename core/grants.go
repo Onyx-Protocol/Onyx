@@ -35,7 +35,7 @@ var (
 
 func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 	if x.Protected {
-		return errCreateProtectedGrant
+		return nil, errCreateProtectedGrant
 	}
 
 	var found bool
