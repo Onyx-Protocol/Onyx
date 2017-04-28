@@ -20,8 +20,14 @@ type apiGrant struct {
 	CreatedAt string                 `json:"created_at"`
 }
 
-// ErrMissingTokenID is returned when a token does not exist.
-var errMissingTokenID = errors.New("id does not exist")
+var (
+	// errMissingTokenID is returned when a token does not exist.
+	errMissingTokenID = errors.New("id does not exist")
+
+	// errProtectedGrant is returned when a grant is protected and therefore cannot
+	// be directly modified or deleted by the user.
+	errProtectedGrant = errors.New("this grant is protected")
+)
 
 func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
 	var found bool
@@ -118,13 +124,15 @@ func (a *API) listGrants(ctx context.Context) (map[string]interface{}, error) {
 				return nil, errors.Wrap(err)
 			}
 
-			grant := apiGrant{
-				GuardType: g.GuardType,
-				GuardData: data,
-				Policy:    g.Policy,
-				CreatedAt: g.CreatedAt,
+			if !g.Protected { // is this right?
+				grant := apiGrant{
+					GuardType: g.GuardType,
+					GuardData: data,
+					Policy:    g.Policy,
+					CreatedAt: g.CreatedAt,
+				}
+				grants = append(grants, grant)
 			}
-			grants = append(grants, grant)
 		}
 	}
 
@@ -158,6 +166,8 @@ func (a *API) deleteGrant(ctx context.Context, x apiGrant) error {
 	for _, g := range grantList.Grants {
 		if g.GuardType != x.GuardType || !bytes.Equal(g.GuardData, guardData) {
 			keep = append(keep, g)
+		} else if g.Protected {
+			return errProtectedGrant
 		}
 	}
 
@@ -205,6 +215,8 @@ func (a *API) deleteGrantsByAccessToken(ctx context.Context, token string) error
 
 			if id, _ := data["id"].(string); id != token {
 				keep = append(keep, g)
+			} else if g.Protected {
+				return errProtectedGrant
 			}
 		}
 

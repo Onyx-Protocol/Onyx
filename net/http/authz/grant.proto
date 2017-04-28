@@ -11,6 +11,7 @@ message Grant {
   bytes guard_data = 2; 
   string policy = 3;
   string created_at = 4;
+  bool protected = 5;
 }
 
 

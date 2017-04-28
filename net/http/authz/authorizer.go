@@ -48,6 +48,7 @@ func (a *Authorizer) GrantInternal(subj pkix.Name) {
 		GuardType: "x509",
 		GuardData: encodeX509GuardData(subj),
 		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		Protected: true,
 	})
 }
 
