@@ -92,12 +92,14 @@ var errorFormatter = httperror.Formatter{
 		signers.ErrBadType:   {400, "CH203", "Retrieved type does not match expected type"},
 		signers.ErrDupeXPub:  {400, "CH204", "Root XPubs cannot contain the same key more than once"},
 
-		// Access token error namespace (3xx)
+		// Access token and grant error namespace (3xx)
 		accesstoken.ErrBadID:       {400, "CH300", "Malformed or empty access token id"},
 		accesstoken.ErrBadType:     {400, "CH301", "Access tokens must be type client or network"},
 		accesstoken.ErrDuplicateID: {400, "CH302", "Access token id is already in use"},
 		errMissingTokenID:          {400, "CH303", "Access token id does not exist"},
 		errCurrentToken:            {400, "CH310", "The access token used to authenticate this request cannot be deleted"},
+		errProtectedGrant:          {400, "CH320", "Protected grants cannot be manually deleted"},
+		errCreatedProtectedGrant:   {400, "CH321", "Protected grants cannot be manually created"},
 
 		// Query error namespace (6xx)
 		query.ErrBadAfter:               {400, "CH600", "Malformed pagination parameter `after`"},

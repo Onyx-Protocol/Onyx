@@ -27,9 +27,17 @@ var (
 	// errProtectedGrant is returned when a grant is protected and therefore cannot
 	// be directly deleted by the user.
 	errProtectedGrant = errors.New("this grant is protected")
+
+	// errCreateProtectedGrant is returned when a createGrant request is called with
+	// a protected grant.
+	errCreateProtectedGrant = errors.New("cannot manually create a protected grant")
 )
 
 func (a *API) createGrant(ctx context.Context, x apiGrant) (*apiGrant, error) {
+	if x.Protected {
+		return errCreateProtectedGrant
+	}
+
 	var found bool
 	for _, p := range policies {
 		if p == x.Policy {
