@@ -107,6 +107,10 @@ $code list-account-unspent-outputs ../examples/java/Accounts.java ../examples/ru
 
 ## Update tags on existing accounts
 
-Updated tags will only apply to new transactions. Existing transactions will reflect the tags that were present when the transaction was created.
+An account's tags can be updated after the account is created.
 
 $code update-account-tags ../examples/java/Accounts.java ../examples/ruby/accounts.rb ../examples/node/accounts.js
+
+After tags are updated, you can perform [queries for accounts](#list-account-transactions) based on the new values of the tags.
+
+Asset tag updates have a slightly different effect on transaction queries. Transactions are indexed by the accounts they comprise, and can be queried using the relevant accounts' tags. However, the transaction index is **not** updated retroactively based on account tag updates. Transactions that are indexed after the tag update will reflect the new value of the tags, but transactions indexed prior to the tag update will continue to reflect the old tag values. The same is true for unspent output and balance queries, which both use the transaction index.
