@@ -1102,7 +1102,7 @@ the asset ID of one of the inputs to the recipient.
 
 
 
-### Issuance Asset Range Proof WIP
+### Issuance Asset Range Proof
 
 The issuance asset range proof demonstrates that a given [confidential issuance](#confidential-issuance)
 commits to one of the asset IDs specified in the transaction inputs.
@@ -1114,24 +1114,24 @@ are derived from `n` [asset issuance choices](blockchain.md#asset-issuance-choic
 
 The proof also contains a _tracing point_ that that lets any issuer to prove or disprove whether the issuance is performed by their issuance key.
 
-#### Non-Confidential Issuance Asset Range Proof WIP
+#### Non-Confidential Issuance Asset Range Proof
 
 Field                        | Type      | Description
 -----------------------------|-----------|------------------
 Type                         | byte      | Contains value 0x00 to indicate the commitment is not blinded.
 Asset ID                     | [AssetID](blockchain.md#asset-id)   | 32-byte asset identifier.
 
-#### Confidential Issuance Asset Range Proof WIP
+#### Confidential Issuance Asset Range Proof
 
-Field                           | Type             | Description
---------------------------------|------------------|------------------
-Type                            | byte             | Contains value 0x01 to indicate the commitment is blinded.
+Field                           | Type                  | Description
+--------------------------------|-----------------------|------------------
+Type                            | byte                  | Contains value 0x01 to indicate the commitment is blinded.
 Issuance Keys                   | [List](blockchain.md#list)\<[Point](#point)\> | Keys to be used to calculate the public key for the corresponding index in the ring signature.
-Tracing Point                   | [Point](#point)  | A point that lets any issuer to prove or disprove if this issuance is done by them.
-Issuance Ring Signature         | [Ring Signature](#ring-signature)   | A ring signature proving that the issuer of an encrypted asset ID approved the issuance.
+Tracing Point                   | [Point](#point)       | A point that lets any issuer to prove or disprove if this issuance is done by them.
+Issuance ZKP                    | [OLEG-ZKP](#oleg-zkp) | An OLEG-ZKP proving that the issuer of an encrypted asset ID approved the issuance.
 
 
-#### Create Issuance Asset Range Proof WIP
+#### Create Issuance Asset Range Proof
 
 When creating a confidential issuance, the first step is to construct the rest of the input commitment and input witness, including an asset issuance choice for each asset that one wants to include in the anonymity set. The issuance key for each asset should be extracted from the [issuance programs](blockchain.md#program). (Issuance programs that support confidential issuance should have a branch that checks use of the correct issuance key using `ISSUANCEKEY` instruction.)
 
@@ -1143,62 +1143,67 @@ When creating a confidential issuance, the first step is to construct the rest o
 4. `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
 5. `message`: a variable-length string,
 6. `nonce`: unique 32-byte [string](blockchain.md#string) that makes the tracing point unique,
-7. `j`: the index of the asset being issued (such that `AC.H == A[j] + c·G`).
-8. `y`: the private key for the issuance key corresponding to the asset being issued: `Y[j] = y·G`.
+7. `î`: the index of the asset being issued (such that `AC.H == A[î] + c·G`).
+8. `y`: the private key for the issuance key corresponding to the asset being issued: `Y[î] = y·G`.
 
 **Output:** an [issuance asset range proof](#issuance-asset-range-proof) consisting of:
 
 * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
 * `T`: tracing [point](#point),
-* `rs = {e[0], (s[0], w), ... s[2·n-1]}`: the issuance ring signature.
+* `{e[0], {s[i,k]}`: the [OLEG-ZKP](#oleg-zkp).
 
 
 **Algorithm:**
 
-1. Calculate the base hash: `basehash = Hash256("IARP" || AC || uint64le(n) || a[0] || ... || a[n-1] || Y[0] || ... || Y[n-1] || nonce || message)` where `n` is encoded as a 64-bit unsigned little-endian integer.
+1. Calculate the base hash:
+
+        basehash = Hash256("IARP" || AC || uint64le(n) ||
+                           a[0] || ... || a[n-1] ||
+                           Y[0] || ... || Y[n-1] ||
+                           nonce || message)
+
 2. Calculate marker point `M`:
     1. Let `counter = 0`.
-    2. Calculate `Hash256("M" || basehash || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
+    2. Calculate `Hash256("M" || basehash || uint64le(counter))`.
     3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
     4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
     5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
-3. Calculate the tracing point: `T = y·(J + M)`.
-4. Calculate the blinded marker using the blinding factor used by commitment `AC`: `Bm = c·M`.
-5. Calculate a 32-byte message hash to sign: `msghash = Hash256("msg" || basehash || M || T || Bm)`.
-6. Create proof that the discrete log `Bm/M` is equal to the discrete log `AC.C/J`:
-    1. Calculate the nonce `k = ScalarHash("k" || msghash || c)`.
-    2. Calculate points `R1 = k·M` and `R2 = k·J`.
-    3. Calculate scalar `e’ = ScalarHash("e" || msghash || R1 || R2)`.
-    4. Calculate scalar `s’ = k + c·e mod L`.
-    5. Let the marker signature `ms = (e’,s’)`.
-7. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
-8. Calculate Fiat-Shamir challenge `h` for the issuance key:
+3. Calculate the tracing point: `T = y·M`.
+4. Calculate a 32-byte message hash to sign:
+
+        msghash = Hash256("msg" || basehash || M || T)
+
+5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
+6. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
         h = ScalarHash("h" || msghash)
 
-9. Calculate point `Q = C + Bm + h·T`.
-10. Calculate points `{P[i]}` for `n` pairs of asset ID points and corresponding issuance keys `A[i], Y[i]`:
+7. Create [OLEG-ZKP](#oleg-zkp) with the following parameters:
+    * `msg = msghash`, the string to be signed.
+    * `l = 2`, number of secrets.
+    * `m = 3`, number of statements. 
+    * `{x[k]} = {c,y}`, secret scalars — blinding factor and an issuance key.
+    * Statement sets (`i=0..n-1`):
+        
+            f[i,0](c,y) = (c + h·y)·G
+            f[i,1](c,y) = c·J
+            f[i,2](c,y) = y·M
 
-        P[i] = AC.H — A[i] + h·Y[i]
+    * Commitments (`i=0..n-1`):
 
-11. Create ring proof of discrete log equality for the pair `P[j]/G` and `Q/(J+M)`:
-    1. Calculate the signing key `x = c + h2·y`.
-    2. [Create a ring signature](#create-ring-signature) `rs` using:
-        * message `msghash`,
-        * base points `G, J+M`,
-        * public keys `{(P[i], Q)}`,
-        * secret index `j`,
-        * private key `x`.
+            F[i,0] = H - A[i] + h·Y[i]
+            F[i,1] = AC.C
+            F[i,2] = T
+
+    * `î`: the index of the non-forged item in a ring.
 12. Return [issuance asset range proof](#issuance-asset-range-proof) consisting of:
     * issuance keys `{Y[i]}`,
     * tracing point `T`,
-    * blinded marker point `Bm`,
-    * marker signature `ms`,
-    * ring signature `rs`.
+    * OLEG-ZKP `e0,{s[i,k]}`.
 
 
 
-#### Validate Issuance Asset Range Proof WIP
+#### Validate Issuance Asset Range Proof
 
 **Inputs:**
 
@@ -1208,9 +1213,7 @@ When creating a confidential issuance, the first step is to construct the rest o
     2. If the `IARP` is confidential:
         * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
         * `T`: tracing [point](#point),
-        * `Bm`: blinded marker [point](#point),
-        * `ms = (e’,s’)`: the marker signature,
-        * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
+        * `oleg-zkp = (e0, {s[i,k]})`: ring proof of issuance,
         * And provided separately from the range proof:
             * `{a[i]}`: `n` [asset IDs](blockchain.md#asset-id),
             * `message`: a variable-length string,
@@ -1225,33 +1228,44 @@ When creating a confidential issuance, the first step is to construct the rest o
     1. Compute [asset ID point](#asset-id-point): `A’ = 8·Decode(Hash256(assetID...))`.
     2. Verify that [point pair](#point-pair) `(A’,O)` equals `AC`.
 2. If the range proof is confidential:
-    1. Calculate the base hash: `basehash = Hash256("IARP" || AC || uint64le(n) || a[0] || ... || a[n-1] || Y[0] || ... || Y[n-1] || nonce || message)` where `n` is encoded as a 64-bit unsigned little-endian integer.
+    1. Calculate the base hash: 
+    
+            basehash = Hash256("IARP" || AC || uint64le(n) ||
+                           a[0] || ... || a[n-1] ||
+                           Y[0] || ... || Y[n-1] ||
+                           nonce || message)
+
     2. Calculate marker point `M`:
         1. Let `counter = 0`.
         2. Calculate `Hash256("M" || basehash || uint64le(counter))` where `counter` is encoded as a 64-bit unsigned integer using little-endian convention.
         3. Decode the resulting hash as a [point](#point) `P` on the elliptic curve.
         4. If the point is invalid, increment `counter` and go back to step 2. This will happen on average for half of the asset IDs.
         5. Calculate point `M = 8·P` (8 is a cofactor in edwards25519) which belongs to a subgroup [order](#elliptic-curve) `L`.
-    3. Calculate a 32-byte message hash to sign: `msghash = Hash256("msg" || basehash || M || T || Bm)`.
-    4. Validate proof that the discrete log `Bm/M` is equal to the discrete log `AC.C/J`:
-        1. Calculate point `R1 = s’·M - e’·Bm`.
-        2. Calculate point `R2 = s’·J - e’·AC.C`.
-        3. Calculate scalar `e” = ScalarHash("e" || msghash || R1 || R2)`.
-        4. Verify that `e”` is equal to `e’`.
-    5. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
-    6. Calculate Fiat-Shamir challenge `h` for the issuance key:
+    3. Calculate a 32-byte message hash to sign:
+    
+            msghash = Hash256("msg" || basehash || M || T || Bm)
+
+    4. Calculate [asset ID points](#asset-id-point) for each `{a[i]}`: `A[i] = 8·Decode(Hash256(a[i]...))`.
+    5. Calculate Fiat-Shamir challenge `h` for the issuance key:
 
             h = ScalarHash("h" || msghash)
 
-    7. Calculate point `Q = C + Bm + h·T`.
-    8. Calculate points `{P[i]}` for `n` pairs of asset ID points and corresponding issuance keys `A[i], Y[i]`:
+    6. Verify [OLEG-ZKP](#oleg-zkp) `(e0, {s[i,k]})` with the following parameters:
+        * `msg = msghash`, the string to be signed.
+        * `l = 2`, number of secrets.
+        * `m = 3`, number of statements. 
+        * Statement sets (`i=0..n-1`):
+            
+                f[i,0](c,y) = (c + h·y)·G
+                f[i,1](c,y) = c·J
+                f[i,2](c,y) = y·M
 
-            P[i] = AC.H — A[i] + h·Y[i]
+        * Commitments (`i=0..n-1`):
 
-    9. Validate ring proof of discrete log equality for one of the pairs `P[i]/G` and `Q/(J+M)` by [validating the ring signature](#validate-ring-signature) `e[0], s[0], ... s[n-1]` with:
-        * message `msghash`,
-        * base points `G, J+M`,
-        * public keys `{(P[i], Q)}`.
+                F[i,0] = H - A[i] + h·Y[i]
+                F[i,1] = AC.C
+                F[i,2] = T
+
 
 ### Issuance Proof
 
@@ -1259,14 +1273,14 @@ Issuance proof allows an issuer to prove whether a given confidential issuance i
 
 Field                           | Type             | Description
 --------------------------------|------------------|------------------
-Blinding factor commitment      | [Point](#point)  | A point `X = x·(J+M)` that commits to a blinding scalar `x` used in this proof.
+Blinding factor commitment      | [Point](#point)  | A point `X = x·M` that commits to a blinding scalar `x` used in this proof.
 Blinded suspect tracing point   | [Point](#point)  | A point `Z = x·T` that blinds a suspected tracing point (published in a given [IARP](#issuance-asset-range-proof)).
 Blinded actual tracing point    | [Point](#point)  | A point `Z’ = x·T’` that blinds a tracing point actually produced by the current issuer for the use in this proof.
 Signature 1                     | 64 bytes         | A pair of [scalars](#scalar) representing a single Schnorr signature.
 Signature 2                     | 64 bytes         | A pair of [scalars](#scalar) representing a single Schnorr signature.
 
 
-#### Create Issuance Proof WIP
+#### Create Issuance Proof
 
 **Inputs:**
 
@@ -1274,9 +1288,7 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 2. `IARP`: the to-be-verified [confidential issuance asset range proof](#confidential-issuance-asset-range-proof) consisting of:
     * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
     * `T`: tracing [point](#point),
-    * `Bm`: blinded marker [point](#point),
-    * `ms = (e’,s’)`: the marker signature,
-    * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
+    * `oleg-zkp = (e0, {s[i,k]})`: the issuance [OLEG-ZKP](#oleg-zkp),
     * And provided separately from the range proof:
         * `{a[i]}`: `n` [asset IDs](blockchain.md#asset-id),
         * `message`: a variable-length string,
@@ -1297,12 +1309,12 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
         x = ScalarHash("x" || AC || T || y || nonce || message)
 
 3. Blind the tracing point being tested: `Z = x·T`.
-4. Calculate commitment to the blinding key: `X = x·(J+M)`.
-5. Calculate and blind a tracing point corresponding to the issuance key pair `y,Y`: `Z’ = x·y·(J+M)`.
+4. Calculate commitment to the blinding key: `X = x·M`.
+5. Calculate and blind a tracing point corresponding to the issuance key pair `y,Y`: `Z’ = x·y·M`.
 6. Calculate a message hash: `msghash = Hash32("IP" || AC || T || X || Z || Z’)`.
-7. Create a proof that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/(J+M)` is equal to the discrete log `Z/T`):
+7. Create a proof that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/M` is equal to the discrete log `Z/T`):
     1. Calculate the nonce `k1 = ScalarHash("k1" || msghash || y || x)`.
-    2. Calculate point `R1 = k1·(J+M)`.
+    2. Calculate point `R1 = k1·M`.
     3. Calculate point `R2 = k1·T`.
     4. Calculate scalar `e1 = ScalarHash("e1" || msghash || R1 || R2)`.
     5. Calculate scalar `s1 = k1 + x·e1 mod L`.
@@ -1315,7 +1327,7 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 9. Return points `(X, Z, Z’)`, signature `(e1,s1)` and signature `(e2,s2)`.
 
 
-#### Validate Issuance Proof WIP
+#### Validate Issuance Proof
 
 **Inputs:**
 
@@ -1323,9 +1335,7 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 2. `IARP`: the to-be-verified [confidential issuance asset range proof](#confidential-issuance-asset-range-proof) consisting of:
     * `{Y[i]}`: `n` issuance keys encoded as [points](#point) corresponding to the asset IDs,
     * `T`: tracing [point](#point),
-    * `Bm`: blinded marker [point](#point),
-    * `ms = (e’,s’)`: the marker signature,
-    * `rs = {e[0], s[0], ... s[n-1]}`: the issuance ring signature,
+    * `oleg-zkp = (e0, {s[i,k]})`: the issuance [OLEG-ZKP](#oleg-zkp),
     * And provided separately from the range proof:
         * `{a[i]}`: `n` [asset IDs](blockchain.md#asset-id),
         * `message`: a variable-length string,
@@ -1343,18 +1353,19 @@ Signature 2                     | 64 bytes         | A pair of [scalars](#scalar
 
 **Algorithm:**
 
-1. Calculate a message hash: `msghash = Hash32("IP" || AC || T || X || Z || Z’)`.
-2. Verify that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/(J+M)` is equal to the discrete log `Z/T`):
-    1. Calculate point `R1 = s1·(J+M) - e1·X`.
+1. [Validate issuance asset range proof](#validate-issuance-asset-range-proof).
+2. Calculate a message hash: `msghash = Hash32("IP" || AC || T || X || Z || Z’)`.
+3. Verify that `Z` blinds tracing point `T` and `X` commits to that blinding factor (i.e. the discrete log `X/M` is equal to the discrete log `Z/T`):
+    1. Calculate point `R1 = s1·M - e1·X`.
     2. Calculate point `R2 = s1·T - e1·Z`.
     3. Calculate scalar `e’ = ScalarHash("e1" || msghash || R1 || R2)`.
     4. Verify that `e’` is equal to `e1`. If validation fails, halt and return `nil`.
-3. Verify that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
+4. Verify that `Z’` is a blinded tracing point corresponding to `Y[j]` (i.e. the discrete log `Z’/X` is equal to the discrete log `Y[j]/G`):
     1. Calculate point `R3 = s2·X - e2·Z’`.
     2. Calculate point `R4 = s2·G - e2·Y[j]`.
     3. Calculate scalar `e” = ScalarHash("e2" || msghash || R3 || R4)`.
     4. Verify that `e”` is equal to `e2`. If validation fails, halt and return `nil`.
-4. If `Z` is equal to `Z’` return `“yes”`. Otherwise, return `“no”`.
+5. If `Z` is equal to `Z’` return `“yes”`. Otherwise, return `“no”`.
 
 
 
