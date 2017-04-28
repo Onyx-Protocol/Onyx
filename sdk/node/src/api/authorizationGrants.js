@@ -7,8 +7,11 @@ const util = require('../util')
  *
  * * **client-readwrite**: full access to the Client API
  * * **client-readonly**: access to read-only Client endpoints
- * * **network**: access to the Network API
  * * **monitoring**: access to monitoring-specific endpoints
+ * * **crosscore**: access to the cross-core API, including fetching blocks and
+ *   submitting transactions to the generator, but not including block signing
+ * * **crosscore-signblock**: access to the cross-core API's block singing
+ *   functionality
  *
  * More info: {@link https://chain.com/docs/core/learn-more/authentication}
  * @typedef {Object} AuthorizationGrant
