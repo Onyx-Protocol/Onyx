@@ -47,14 +47,6 @@ class Form extends React.Component {
       <code>{item.alias ? item.alias :item.id}</code>
     </span>
 
-    const tagChangeWarning = <p>
-      Updated tags will only apply to new transactions. Existing transactions
-      will reflect the tags that were present when the transaction was
-      created.  <a href='/docs/core/build-applications/assets#update-tags-on-existing-assets' target='_blank'>
-        Learn more →
-      </a>
-    </p>
-
     const tagsString = Object.keys(item.tags).length === 0 ? '{\n\t\n}' : JSON.stringify(item.tags, null, 1)
     const tagLines = tagsString.split(/\r\n|\r|\n/).length
     let JsonFieldHeight
@@ -74,10 +66,14 @@ class Form extends React.Component {
       submitting={submitting} >
 
       <FormSection title='Asset Tags'>
-        {tagChangeWarning}
         <JsonField
           height={JsonFieldHeight}
           fieldProps={tags} />
+
+        <p>
+          Note: Asset tags can be used for querying transactions, unspent outputs, and balances. Queries reflect the account tags that are present when transactions are submitted. Only new transaction activity will reflect the updated tags. <a href='/docs/core/build-applications/assets#update-tags-on-existing-assets' target='_blank' style={{whiteSpace: 'nowrap'}}>
+            Learn more →</a>
+        </p>
       </FormSection>
     </FormContainer>
   }
