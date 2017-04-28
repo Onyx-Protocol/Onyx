@@ -58,7 +58,7 @@ public class CoreConfig {
     @SerializedName("build_config")
     public BuildConfig buildConfig;
 
-    public Map<String, Object> health;
+    public Health health;
 
     public Snapshot snapshot;
 
@@ -71,6 +71,34 @@ public class CoreConfig {
 
       @SerializedName("is_reset")
       public boolean isReset;
+    }
+
+    public static class Health {
+      private Map<String, Object> errors;
+
+      public boolean hasErrors() {
+        for (String k : errors.keySet()) {
+          if (errors.get(k) != null) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      public Map<String, String> getErrors() {
+        Map<String, String> res = new HashMap<>();
+
+        if (hasErrors()) {
+          for (String k : errors.keySet()) {
+            Object err = errors.get(k);
+            if (err != null) {
+              res.put(k, errors.get(k).toString());
+            }
+          }
+        }
+
+        return res;
+      }
     }
 
     public static class Snapshot {

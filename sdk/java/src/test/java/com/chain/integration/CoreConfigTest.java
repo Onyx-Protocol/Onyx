@@ -21,5 +21,7 @@ public class CoreConfigTest {
     new CoreConfig.Builder().setIsGenerator(true).configure(c);
     info = CoreConfig.getInfo(c);
     assertTrue(info.isConfigured);
+
+    assertFalse(info.health.hasErrors());
   }
 }
