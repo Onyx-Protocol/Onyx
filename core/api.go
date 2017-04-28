@@ -49,7 +49,6 @@ const crosscoreRPCPrefix = "/rpc/"
 var (
 	errNotFound         = errors.New("not found")
 	errRateLimited      = errors.New("request limit exceeded")
-	errLeaderElection   = errors.New("no leader; pending election")
 	errNotAuthenticated = errors.New("not authenticated")
 )
 
