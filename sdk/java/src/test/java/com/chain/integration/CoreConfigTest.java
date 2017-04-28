@@ -22,6 +22,6 @@ public class CoreConfigTest {
     info = CoreConfig.getInfo(c);
     assertTrue(info.isConfigured);
 
-    assertFalse(info.health.hasErrors());
+    assertTrue(info.health.errors.size() == 0);
   }
 }

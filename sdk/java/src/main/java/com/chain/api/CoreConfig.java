@@ -74,31 +74,7 @@ public class CoreConfig {
     }
 
     public static class Health {
-      private Map<String, Object> errors;
-
-      public boolean hasErrors() {
-        for (String k : errors.keySet()) {
-          if (errors.get(k) != null) {
-            return true;
-          }
-        }
-        return false;
-      }
-
-      public Map<String, String> getErrors() {
-        Map<String, String> res = new HashMap<>();
-
-        if (hasErrors()) {
-          for (String k : errors.keySet()) {
-            Object err = errors.get(k);
-            if (err != null) {
-              res.put(k, errors.get(k).toString());
-            }
-          }
-        }
-
-        return res;
-      }
+      public Map<String, String> errors;
     }
 
     public static class Snapshot {
