@@ -174,7 +174,7 @@ func main() {
 	}
 
 	raftDir := filepath.Join(home, "raft") // TODO(kr): better name for this
-	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, httpClient)
+	raftDB, err := raft.Start(*listenAddr, raftDir, *bootURL, httpClient, tlsConfig != nil)
 	if err != nil {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
