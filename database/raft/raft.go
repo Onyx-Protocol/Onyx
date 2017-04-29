@@ -65,6 +65,7 @@ type Service struct {
 	wctxReq chan wctxReq
 	donec   chan struct{}
 	client  *http.Client
+	useTLS  bool
 
 	errMu sync.Mutex
 	err   error
@@ -148,7 +149,8 @@ type Getter interface {
 //
 // The returned *Service will use httpClient for outbound
 // connections to peers.
-func Start(laddr, dir, bootURL string, httpClient *http.Client) (*Service, error) {
+func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*Service, error) {
+	// TODO(tessr): configure raft service using run options
 	ctx := context.Background()
 
 	// We advertise laddr as the way for peers to reach this process.
@@ -167,6 +169,7 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client) (*Service, error
 		rctxReq:     make(chan rctxReq),
 		wctxReq:     make(chan wctxReq),
 		client:      httpClient,
+		useTLS:      useTLS,
 	}
 	sv.stateCond.L = &sv.stateMu
 
@@ -746,14 +749,14 @@ func (sv *Service) send(msgs []raftpb.Message) {
 			log.Printkv(context.Background(), "no-addr-for-peer", msg.To)
 			continue
 		}
-		sendmsg(addr, data, sv.client)
+		sendmsg(addr, data, sv.client, sv.useTLS)
 	}
 }
 
 // best effort. if it fails, oh well -- that's why we're using raft.
-func sendmsg(addr string, data []byte, client *http.Client) {
+func sendmsg(addr string, data []byte, client *http.Client, useTLS bool) {
 	url := "http://" + addr + "/raft/msg"
-	if clientTLS(client) != nil {
+	if useTLS {
 		url = "https://" + addr + "/raft/msg"
 	}
 	resp, err := client.Post(url, contentType, bytes.NewReader(data))

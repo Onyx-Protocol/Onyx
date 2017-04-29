@@ -21,7 +21,7 @@ func TestAllowedMember(t *testing.T) {
 	}
 	defer os.RemoveAll(raftDir)
 
-	raftDB, err := Start("", raftDir, "", new(http.Client))
+	raftDB, err := Start("", raftDir, "", new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
