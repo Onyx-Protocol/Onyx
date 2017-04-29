@@ -26,7 +26,7 @@ This guide will walk you through the basic functions of the blockchain operators
 
 To create a new blockchain, the blockchain operators must coordinate to create the initial consensus program and generate the first block (at height 0). The process is as follows:
 
-1. Each block signer generates a public/private keypair for blocksigning, as well as access credentials that the generator can use to send messages to the block signer's core.
+1. Each block signer generates a public/private keypair for block signing, as well as access credentials that the generator can use to send messages to the block signer's core.
 2. Out of band, each block signer sends its public key, access credentials, and core URL to the block generator.
 3. In most cases, the block generator creates its own public/private keypair for block signing.
 4. The block generator configures its core with each block signer's core URL, access credentials, and public keys.

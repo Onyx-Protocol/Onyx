@@ -2,15 +2,17 @@
 
 This guide describes how to create a blockchain network with two Chain Cores in the consensus group, one core acting as the block generator, and the other acting as a block signer. A block must contain signatures from both parties for the block to be considered valid.
 
-Configuring the two cores requires use of [corectl](corectl.md), a command-line configuration tool distributed with Chain Core Developer Edition.
+Configuring the two cores requires use of [corectl](../reference/corectl.md), a command-line configuration tool distributed with Chain Core Developer Edition.
 
 ### Signer
 
-The block signing party should start with a running, *unconfigured* instance of Chain Core. Full configuration will be completed *after* the block generator is configured, but the block generator must first receive the block signer's public key and access credentials.
+The block signer should start with a running, *unconfigured* instance of Chain Core. We can still use the unconfigured core to generate MockHSM keys and access credentials.
+
+Full configuration of this core will be completed *after* the block generator is configured, but the block generator must first receive the block signer's public key and access credentials.
 
 #### Create a block signing key
 
-The following command generates a new public/private keypair in the block signer's MockHSM:
+Use the [create-block-keypair](../reference/corectl.md#create-block-keypair) command to generate a new public/private keypair in the block signer's MockHSM:
 
 ```
 corectl create-block-keypair
@@ -29,7 +31,7 @@ cce1791bf3d8bb5e506ec7159bad6a696740712197894336c027dec9fbfb9313
 
 The generator will make requests to the block signer's block signing API, which is protected by the `crosscore-signblock` policy.
 
-The following command will generate a new access token with access to the `crosscore-signblock` policy:
+Use the [create-token](../reference/corectl.md#create-token) command to generate a new access token with access to the `crosscore-signblock` policy:
 
 ```
 corectl create-token <token ID> crosscore-signblock
@@ -55,7 +57,7 @@ Out of band, the following details should be sent to the block generator:
 
 #### Create the generator's block signing key
 
-The block generator will also sign blocks. The following command generates a new public/private keypair in the block generator's MockHSM:
+The block generator will also sign blocks. Use the [create-block-keypair](../reference/corectl.md#create-block-keypair) to generate a new public/private keypair in the block generator's MockHSM:
 
 ```
 corectl create-block-keypair
@@ -72,7 +74,7 @@ generator-host$ corectl create-block-keypair
 
 #### Configure Chain Core
 
-Now, configure Chain Core to require two signatures on each block: its own, plus one from the block signer:
+Use the [config-generator](../reference/corectl.md#config-generator) command to configure Chain Core to require two signatures on each block, one representing from the generator, and one from the other block signer:
 
 ```
 corectl config-generator \
@@ -99,7 +101,9 @@ ec95cfab939d7b8dde46e7e1dcd7cb0a7c0cea37148addd70a4a4a5aaab9616c
 
 #### Create a network token for the signer
 
-Like all other cores on the same network, the block signer will fetch blocks and submit transactions to the block generator's cross-core API, which is protected by the `crosscore-signblock` policy. To create an access token with access to this policy, run:
+Like all other cores on the same network, the block signer will fetch blocks and submit transactions to the block generator's cross-core API, which is protected by the `crosscore-signblock` policy.
+
+Use the [create-token](../reference/corectl.md#create-token) command to create an access token with access to this policy, run:
 
 ```
 corectl create-token <token ID> crosscore
@@ -126,7 +130,7 @@ Out of band, the following information should be sent to the block signer:
 
 #### Configure Chain Core
 
-The following command will configure the block signer's core to perform block signing:
+Use the [config-generator](../reference/corectl.md#config-generator) command to configure the block signer's core to perform block signing:
 
 ```
 corectl config \
