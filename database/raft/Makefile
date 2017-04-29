@@ -2,7 +2,7 @@
 # our Raft packages. 
 
 build:
-	go install  -tags 'loopback_auth plain_http reset' -a chain/cmd/cored
+	go install  -tags 'loopback_auth plain_http reset' chain/cmd/cored
 	dropdb --if-exists core0
 	rm -rf $(HOME)/.chaincore{0,1,2}
 	createdb core0
