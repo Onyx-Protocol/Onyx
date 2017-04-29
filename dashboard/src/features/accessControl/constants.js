@@ -26,6 +26,8 @@ export const policyOptions = [
   },
 ]
 
+export const protectedSuffix = '-protected'
+
 export const subjectFieldOptions = [
   {label: 'CommonName', value: 'cn'},
   {label: 'Country', value: 'c', array: true},

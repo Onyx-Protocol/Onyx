@@ -1,12 +1,23 @@
 import { createSelector } from 'reselect'
-import { policyOptions } from './constants'
+import { policyOptions, protectedSuffix } from './constants'
 
 export const getPolicyNames = createSelector(
   item => item.policies,
   policies => policies.map(
-    policy => policyOptions.find(
-      elem => elem.value == policy
-    ).label
+    policy => {
+      let isProtected = false
+      if (policy.indexOf(protectedSuffix) >= 0) {
+        policy = policy.replace(protectedSuffix, '')
+        isProtected = true
+      }
+
+      const found = policyOptions.find(elem => elem.value == policy)
+      let label = found ? found.label : policy
+      if (isProtected) {
+        label = label + ' (Protected)'
+      }
+      return label
+    }
   )
 )
 

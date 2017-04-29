@@ -1,4 +1,11 @@
 import createHash from 'sha.js'
+import { protectedSuffix } from './constants'
+
+const grantPolicy = (grant) => {
+  let policy = grant.policy
+  if (grant.protected) policy = `${policy}${protectedSuffix}`
+  return policy
+}
 
 export default (state = {ids: [], items: {}}, action) => {
   // Grant list is always complete, so we rebuild state from scratch
@@ -24,7 +31,7 @@ export default (state = {ids: [], items: {}}, action) => {
       const id = createHash('sha256').update(JSON.stringify(grant.guardData), 'utf8').digest('hex')
 
       if (newObjects[id]) {
-        newObjects[id].policies.push(grant.policy)
+        newObjects[id].policies.push(grantPolicy(grant))
         if (newObjects[id].createdAt.localeCompare(grant.createdAt) > 0) {
           newObjects[id].createdAt = grant.createdAt
         }
@@ -33,7 +40,7 @@ export default (state = {ids: [], items: {}}, action) => {
           id: id,
           guardType: grant.guardType,
           guardData: grant.guardData,
-          policies: [grant.policy],
+          policies: [grantPolicy(grant)],
           createdAt: grant.createdAt
         }
       }
