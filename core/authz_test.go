@@ -33,7 +33,7 @@ func TestAuthz(t *testing.T) {
 	}
 	defer os.RemoveAll(raftDir)
 
-	raftDB, err := raft.Start("", raftDir, "", new(http.Client))
+	raftDB, err := raft.Start("", raftDir, "", new(http.Client), false)
 	if err != nil {
 		t.Fatal(err)
 	}
