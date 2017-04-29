@@ -150,6 +150,7 @@ type Getter interface {
 // The returned *Service will use httpClient for outbound
 // connections to peers.
 func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*Service, error) {
+	// TODO(tessr): configure raft service using run options
 	ctx := context.Background()
 
 	// We advertise laddr as the way for peers to reach this process.
