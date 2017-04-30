@@ -8,10 +8,9 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/bc/legacy"
 	"chain/protocol/vm"
-	"chain/protocol/vmutil"
 )
 
-var retirementProgram = vmutil.NewBuilder().AddOp(vm.OP_FAIL).Program
+var retirementProgram = []byte{byte(vm.OP_FAIL)}
 
 func DecodeControlReceiverAction(data []byte) (Action, error) {
 	a := new(controlReceiverAction)

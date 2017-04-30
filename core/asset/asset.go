@@ -419,7 +419,8 @@ func multisigIssuanceProgram(pubkeys []ed25519.PublicKey, nrequired int) (progra
 	}
 	builder := vmutil.NewBuilder()
 	builder.AddRawBytes(issuanceProg)
-	return builder.Program, 1, nil
+	prog, err := builder.Build()
+	return prog, 1, err
 }
 
 func mapToNullString(in map[string]interface{}) (*sql.NullString, error) {

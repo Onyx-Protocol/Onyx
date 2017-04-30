@@ -196,7 +196,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	builder := vmutil.NewBuilder()
 	builder.AddData(h.Bytes())
 	builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
-	prog := builder.Program
+	prog, _ := builder.Build()
 	msg := sha3.Sum256(prog)
 	sig1 := privkey1.Sign(msg[:])
 	sig2 := privkey2.Sign(msg[:])

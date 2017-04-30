@@ -38,7 +38,7 @@ func NewIssuanceTx(tb testing.TB, initial bc.Hash, opts ...func(*legacy.Tx)) *le
 	}
 	builder := vmutil.NewBuilder()
 	builder.AddRawBytes(sigProg)
-	issuanceProgram := builder.Program
+	issuanceProgram, _ := builder.Build()
 
 	// Create a transaction issuing this new asset.
 	var nonce [8]byte
@@ -68,7 +68,7 @@ func NewIssuanceTx(tb testing.TB, initial bc.Hash, opts ...func(*legacy.Tx)) *le
 	h := tx.SigHash(0)
 	builder.AddData(h.Bytes())
 	builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
-	sigprog := builder.Program
+	sigprog, _ := builder.Build()
 	sigproghash := sha3.Sum256(sigprog)
 	signature := xprv.Sign(sigproghash[:])
 
