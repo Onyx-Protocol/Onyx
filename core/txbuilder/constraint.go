@@ -41,7 +41,8 @@ func (t timeConstraint) code() []byte {
 		}
 		builder.AddOp(vm.OP_MAXTIME).AddInt64(int64(t.maxTimeMS)).AddOp(vm.OP_LESSTHANOREQUAL)
 	}
-	return builder.Program
+	prog, _ := builder.Build()
+	return prog
 }
 
 // outpointConstraint requires the outputID (and therefore, the outpoint) being spent to equal the
@@ -53,7 +54,8 @@ func (o outputIDConstraint) code() []byte {
 	builder.AddData(bc.Hash(o).Bytes())
 	builder.AddOp(vm.OP_OUTPUTID)
 	builder.AddOp(vm.OP_EQUAL)
-	return builder.Program
+	prog, _ := builder.Build()
+	return prog
 }
 
 // refdataConstraint requires the refdatahash of the transaction (if
@@ -75,7 +77,8 @@ func (r refdataConstraint) code() []byte {
 		builder.AddOp(vm.OP_ENTRYDATA)
 	}
 	builder.AddOp(vm.OP_EQUAL)
-	return builder.Program
+	prog, _ := builder.Build()
+	return prog
 }
 
 // PayConstraint requires the transaction to include a given output
@@ -97,5 +100,6 @@ func (p payConstraint) code() []byte {
 	}
 	builder.AddInt64(int64(p.Amount)).AddData(p.AssetId.Bytes()).AddInt64(1).AddData(p.Program)
 	builder.AddOp(vm.OP_CHECKOUTPUT)
-	return builder.Program
+	prog, _ := builder.Build()
+	return prog
 }

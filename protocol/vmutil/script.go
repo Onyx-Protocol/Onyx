@@ -31,7 +31,7 @@ func BlockMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, e
 		builder.AddData(key)
 	}
 	builder.AddInt64(int64(nrequired)).AddInt64(int64(len(pubkeys))).AddOp(vm.OP_CHECKMULTISIG)
-	return builder.Program, nil
+	return builder.Build()
 }
 
 func ParseBlockMultiSigProgram(script []byte) ([]ed25519.PublicKey, int, error) {
@@ -91,7 +91,7 @@ func P2SPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, er
 	builder.AddOp(vm.OP_CHECKMULTISIG).AddOp(vm.OP_VERIFY) // stack is now [... NARGS]
 	builder.AddOp(vm.OP_FROMALTSTACK)                      // stack is now [... NARGS PREDICATE]
 	builder.AddInt64(0).AddOp(vm.OP_CHECKPREDICATE)
-	return builder.Program, nil
+	return builder.Build()
 }
 
 func ParseP2SPMultiSigProgram(program []byte) ([]ed25519.PublicKey, int, error) {
