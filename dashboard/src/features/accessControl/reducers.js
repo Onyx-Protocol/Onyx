@@ -1,11 +1,4 @@
 import createHash from 'sha.js'
-import { protectedSuffix } from './constants'
-
-const grantPolicy = (grant) => {
-  let policy = grant.policy
-  if (grant.protected) policy = `${policy}${protectedSuffix}`
-  return policy
-}
 
 export default (state = {ids: [], items: {}}, action) => {
   // Grant list is always complete, so we rebuild state from scratch
@@ -22,7 +15,7 @@ export default (state = {ids: [], items: {}}, action) => {
         name: token.id,
         guardType: 'access_token',
         guardData: tokenGuard,
-        policies: [],
+        grants: [],
         createdAt: token.createdAt
       }
     })
@@ -31,7 +24,7 @@ export default (state = {ids: [], items: {}}, action) => {
       const id = createHash('sha256').update(JSON.stringify(grant.guardData), 'utf8').digest('hex')
 
       if (newObjects[id]) {
-        newObjects[id].policies.push(grantPolicy(grant))
+        newObjects[id].grants.push(grant)
         if (newObjects[id].createdAt.localeCompare(grant.createdAt) > 0) {
           newObjects[id].createdAt = grant.createdAt
         }
@@ -40,7 +33,7 @@ export default (state = {ids: [], items: {}}, action) => {
           id: id,
           guardType: grant.guardType,
           guardData: grant.guardData,
-          policies: [grantPolicy(grant)],
+          grants: [grant],
           createdAt: grant.createdAt
         }
       }
@@ -71,7 +64,12 @@ export default (state = {ids: [], items: {}}, action) => {
     const item = {...state.items[id]}
     item.isEditing = false
     if (action.policies) {
-      item.policies = Object.keys(action.policies).filter(policy => action.policies[policy])
+      item.grants = Object.keys(action.policies)
+        .filter(policy => action.policies[policy])
+        .map(policy => ({
+          ...item.grants.find(grant => grant.policy == policy),
+          policy: policy
+        }))
     }
 
     return {

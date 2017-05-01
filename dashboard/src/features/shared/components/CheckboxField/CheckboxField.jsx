@@ -8,7 +8,8 @@ const CHECKBOX_FIELD_PROPS = [
   'onChange',
   'onFocus',
   'name',
-  'checked'
+  'checked',
+  'disabled'
 ]
 
 class CheckboxField extends React.Component {

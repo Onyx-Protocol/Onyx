@@ -15,10 +15,14 @@ class EditPolicies extends React.Component {
     return(
       <div className={styles.main}>
         {policyOptions.map(option => {
+          const grant = this.props.item.grants.find(g => g.policy == option.value)
           return <CheckboxField key={option.label}
             title={option.label}
             hint={option.hint}
-            fieldProps={policies[option.value]} />
+            fieldProps={{
+              ...policies[option.value],
+              disabled: grant && grant.protected
+            }} />
         })}
 
         <button className='btn btn-primary' onClick={handleSubmit(this.props.submitForm)}>Save</button>
@@ -39,7 +43,8 @@ const initialValues = (state, ownProps) => {
     initialValues: {
       grant: item,
       policies: policyOptions.reduce((memo, p) => {
-        memo[p.value] = item.policies.indexOf(p.value) >= 0
+        const policyIndex = item.grants.findIndex(grant => grant.policy == p.value)
+        memo[p.value] = policyIndex >= 0
         return memo
       }, {}),
     }
