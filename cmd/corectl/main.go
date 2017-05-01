@@ -378,15 +378,16 @@ The type of guard (before the = sign) is case-insensitive.
 // allowRaftMember takes an address and adds it to the list of addresses that are
 // allowed for raft cluster members.
 func allowRaftMember(client *rpc.Client, args []string) {
-	if len(args) != 0 {
-		fatalln("error: reset takes no args")
+	usage := "usage: corectl allow-address [member address]"
+	if len(args) != 1 {
+		fatalln(usage)
 	}
 
 	req := map[string]string{
-		"addr": addr,
+		"addr": args[0],
 	}
 
-	err := client.Call(context.Background(), "/raft/add-allowed-member", req, nil)
+	err := client.Call(context.Background(), "/add-allowed-member", req, nil)
 	if err != nil {
 		fatalln("rpc error:", err)
 	}
