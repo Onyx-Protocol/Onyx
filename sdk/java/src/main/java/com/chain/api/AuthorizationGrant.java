@@ -38,6 +38,9 @@ public class AuthorizationGrant {
 
   public String policy;
 
+  @SerializedName("protected")
+  public boolean isProtected;
+
   @SerializedName("created_at")
   public Date createdAt;
 

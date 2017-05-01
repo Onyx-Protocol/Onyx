@@ -31,7 +31,10 @@ const util = require('../util')
  * certificate fields.
  *
  * @property {String} policy
- * Authorization single polciy to attach to specific grant.
+ * Authorization single policy to attach to specific grant.
+ *
+ * @property {Boolean} protected
+ * Whether the grant can be deleted. Only used for internal purposes.
  *
  * @property {String} createdAt
  * Time of grant creation, RFC3339 formatted.
