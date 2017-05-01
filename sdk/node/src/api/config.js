@@ -68,7 +68,7 @@ const shared = require('../shared')
  * @property {Object} buildConfig
  * Features enabled or disabled in this build of Chain Core.
  *
- * @property {Boolean} buildConfig.isLoopbackAuth
+ * @property {Boolean} buildConfig.isLocalhostAuth
  * Whether any request from the loopback device (localhost) should be
  * automatically authenticated and authorized, without additional
  * credentials.

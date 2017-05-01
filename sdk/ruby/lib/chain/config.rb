@@ -6,12 +6,12 @@ module Chain
 
     class Info < ResponseObject
       class BuildConfig < ResponseObject
-        # @!attribute [r] is_loopback_auth
+        # @!attribute [r] is_localhost_auth
         # @return [Boolean]
         # Whether any request from the loopback device (localhost) should be
         # automatically authenticated and authorized, without additional
         # credentials.
-        attrib :is_loopback_auth
+        attrib :is_localhost_auth
 
         # @!attribute [r] is_mockhsm
         # @return [Boolean]

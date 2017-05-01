@@ -1,4 +1,5 @@
 //+build loopback_auth
+// TODO: for consistent language, rename this build flag to localhost_auth
 
 package authz
 

@@ -63,8 +63,8 @@ public class CoreConfig {
     public Snapshot snapshot;
 
     public static class BuildConfig {
-      @SerializedName("is_loopback_auth")
-      public boolean isLoopbackAuth;
+      @SerializedName("is_localhost_auth")
+      public boolean isLocalhostAuth;
 
       @SerializedName("is_mockhsm")
       public boolean isMockHsm;
