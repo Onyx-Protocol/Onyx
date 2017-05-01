@@ -62,7 +62,7 @@ type config struct {
 // storage and creates an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
 //
-// Its defaults may be overriden by providing Options.
+// Its defaults may be overridden by providing Options.
 func NewChain(tb testing.TB, opts ...Option) *protocol.Chain {
 	conf := config{store: memstore.New(), initialState: state.Empty()}
 	for _, opt := range opts {

@@ -214,7 +214,7 @@ func createToken(client *rpc.Client, args []string) {
 
 	req := struct{ ID string }{args[0]}
 	var tok accesstoken.Token
-	// TOOD(kr): find a way to make this atomic with the grant below
+	// TODO(kr): find a way to make this atomic with the grant below
 	err := client.Call(context.Background(), "/create-access-token", req, &tok)
 	if err != nil {
 		fatalln("rpc error:", err)

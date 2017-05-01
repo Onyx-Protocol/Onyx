@@ -192,7 +192,7 @@ func TestTxValidation(t *testing.T) {
 			err: errMismatchedReference,
 		},
 		{
-			desc: "invalid mux destinaton position",
+			desc: "invalid mux destination position",
 			f: func() {
 				mux.WitnessDestinations[0].Position = 1
 			},

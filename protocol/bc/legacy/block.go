@@ -77,7 +77,7 @@ func (b *Block) Scan(val interface{}) error {
 		return err
 	}
 	if trailing := r.Len(); trailing > 0 {
-		return fmt.Errorf("trailing gatbage (%d bytes)", trailing)
+		return fmt.Errorf("trailing garbage (%d bytes)", trailing)
 	}
 	return nil
 }
