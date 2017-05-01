@@ -13,17 +13,17 @@ module Chain
         # credentials.
         attrib :is_loopback_auth
 
-        # @!attribute [r] is_loopback_auth
+        # @!attribute [r] is_mockhsm
         # @return [Boolean]
         # Whether the MockHSM API is enabled.
         attrib :is_mockhsm
 
-        # @!attribute [r] is_loopback_auth
+        # @!attribute [r] is_reset
         # @return [Boolean]
         # Whether the core reset API call is enabled.
         attrib :is_reset
 
-        # @!attribute [r] is_loopback_auth
+        # @!attribute [r] is_plain_http
         # @return [Boolean]
         # Whether non-TLS HTTP requests (http://...) are allowed.
         attrib :is_plain_http
