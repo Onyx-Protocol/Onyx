@@ -44,6 +44,8 @@ export const loopback = (state, action) =>
   buildConfigReducer('isLoopbackAuth', state, false, action)
 export const reset = (state, action) =>
   buildConfigReducer('isReset', state, false, action)
+export const plainHttp = (state, action) =>
+  buildConfigReducer('isPlainHttp', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
@@ -221,6 +223,7 @@ export default combineReducers({
   mockhsm,
   crosscoreRpcVersion,
   onTestnet,
+  plainHttp,
   replicationLag,
   replicationLagClass,
   requireClientToken,

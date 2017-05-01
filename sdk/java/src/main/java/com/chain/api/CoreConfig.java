@@ -71,6 +71,9 @@ public class CoreConfig {
 
       @SerializedName("is_reset")
       public boolean isReset;
+
+      @SerializedName("is_plain_http")
+      public boolean isPlainHttp;
     }
 
     public static class Health {
