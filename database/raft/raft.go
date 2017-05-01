@@ -636,7 +636,7 @@ func (sv *Service) join(addr, baseURL string) error {
 			return errors.Wrap(err, "could not parse response from boot server")
 		}
 		defer resp.Body.Close()
-		return errors.New(fmt.Sprintf("boot server responded with status %d: %s", resp.StatusCode, errmsg))
+		return fmt.Errorf("boot server responded with status %d: %s", resp.StatusCode, errmsg)
 	}
 
 	var x nodeJoin
