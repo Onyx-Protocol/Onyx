@@ -3,49 +3,10 @@ package vmutil
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"chain/protocol/vm"
 )
-
-func TestAddInt64(t *testing.T) {
-	cases := []struct {
-		num     int64
-		wantHex string
-	}{
-		{0, "00"},
-		{1, "51"},
-		{15, "5f"},
-		{16, "60"},
-		{17, "0111"},
-		{255, "01ff"},
-		{256, "020001"},
-		{258, "020201"},
-		{65535, "02ffff"},
-		{65536, "03000001"},
-		{-1, "08ffffffffffffffff"},
-		{-2, "08feffffffffffffff"},
-		{-65536, "080000ffffffffffff"},
-	}
-	for _, c := range cases {
-		t.Run(fmt.Sprintf("adding %d", c.num), func(t *testing.T) {
-			b := NewBuilder()
-			b.AddInt64(c.num)
-			prog, err := b.Build()
-			if err != nil {
-				t.Fatal(err)
-			}
-			want, err := hex.DecodeString(c.wantHex)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !bytes.Equal(prog, want) {
-				t.Errorf("got %x, want %x", prog, want)
-			}
-		})
-	}
-}
 
 func TestAddJump(t *testing.T) {
 	cases := []struct {
