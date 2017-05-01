@@ -5,8 +5,8 @@ export const getPolicyNames = createSelector(
   item => item.grants,
   grants => grants.map(
     grant => {
-      let isProtected = grant.protected
-      let policy = grant.policy
+      const isProtected = grant.protected
+      const policy = grant.policy
 
       const found = policyOptions.find(elem => elem.value == policy)
       let label = found ? found.label : policy

@@ -37,3 +37,6 @@ export const subjectFieldOptions = [
   {label: 'PostalCode', value: 'postalcode', array: true},
   {label: 'SerialNumber', value: 'serialnumber'},
 ]
+
+export const hasProtectedGrant = (grants, policy) =>
+  grants.find(grant => grant.protected && grant.policy == policy) != undefined
