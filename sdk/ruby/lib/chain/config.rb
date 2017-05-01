@@ -117,10 +117,6 @@ module Chain
       # @return [String]
       attrib :build_commit
 
-      # @!attribute [r] build_config
-      # @return [BuildConfig]
-      attrib(:build_config) { |raw| BuildConfig.new(raw) }
-
       # @!attribute [r] build_date
       # Date when the core binary was compiled.
       #
@@ -129,7 +125,9 @@ module Chain
       # @return [String]
       attrib :build_date
 
-      # @!
+      # @!attribute [r] build_config
+      # @return [BuildConfig]
+      attrib(:build_config) { |raw| BuildConfig.new(raw) }
 
       # @!attribute [r] health
       # @return [Hash]
