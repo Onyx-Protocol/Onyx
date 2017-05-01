@@ -593,7 +593,7 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !sv.isAllowedMember(req.Context(), x.Addr) {
-		http.Error(w, "this address is not allowed. please add this address to the allowed member list", 400) // it's like a country club in here
+		http.Error(w, "this address is not allowed. please add this address to the allowed member list", 400)
 		return
 	}
 
