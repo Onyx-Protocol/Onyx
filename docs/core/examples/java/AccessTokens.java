@@ -1,11 +1,10 @@
-/*
 import java.util.*;
 
 import com.chain.api.*;
 import com.chain.http.*;
 import com.chain.signing.*;
 
-class AccessToken {
+class AccessTokens {
   public static void main(String[] args) throws Exception {
     // snippet connect-with-token
     Client client = new Client(
@@ -14,8 +13,11 @@ class AccessToken {
     );
     // endsnippet
 
+    // Create client without fake token for next example
+    client = new Client();
+
     // snippet create-read-only
-    AccessToken *token = new AccessToken.Builder()
+    AccessToken token = new AccessToken.Builder()
       .setId("newAccessToken")
       .create(client);
 
@@ -28,4 +30,3 @@ class AccessToken {
     // endsnippet
   }
 }
-*/
