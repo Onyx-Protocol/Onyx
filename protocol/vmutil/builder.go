@@ -2,8 +2,8 @@ package vmutil
 
 import (
 	"encoding/binary"
-	"fmt"
 
+	"chain/errors"
 	"chain/protocol/vm"
 )
 
@@ -75,13 +75,8 @@ func (b *Builder) AddJumpIf(target int) *Builder {
 
 func (b *Builder) addJump(op vm.Op, target int) *Builder {
 	b.AddOp(op)
-	var addrBytes [4]byte
-	if addr, ok := b.jumpAddr[target]; ok {
-		binary.LittleEndian.PutUint32(addrBytes[:], addr)
-	} else {
-		b.jumpPlaceholders[target] = append(b.jumpPlaceholders[target], len(b.program))
-	}
-	b.AddRawBytes(addrBytes[:])
+	b.jumpPlaceholders[target] = append(b.jumpPlaceholders[target], len(b.program))
+	b.AddRawBytes([]byte{0, 0, 0, 0})
 	return b
 }
 
@@ -97,11 +92,19 @@ func (b *Builder) SetJumpTarget(target int) *Builder {
 	return b
 }
 
+var ErrUnresolvedJump = errors.New("unresolved jump target")
+
+// Build produces the bytecode of the program. It first resolves any
+// jumps in the program by filling in the addresses of their
+// targets. This requires SetJumpTarget to be called prior to Build
+// for each jump target used (in a call to AddJump or AddJumpIf). If
+// any target's address hasn't been set in this way, this function
+// produces ErrUnresolvedJump. There are no other error conditions.
 func (b *Builder) Build() ([]byte, error) {
 	for target, placeholders := range b.jumpPlaceholders {
 		addr, ok := b.jumpAddr[target]
 		if !ok {
-			return nil, fmt.Errorf("unresolved jump target %d", target)
+			return nil, errors.Wrapf(ErrUnresolvedJump, "target %d", target)
 		}
 		for _, placeholder := range placeholders {
 			binary.LittleEndian.PutUint32(b.program[placeholder:placeholder+4], addr)
