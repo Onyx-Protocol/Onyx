@@ -118,7 +118,7 @@ func main() {
 	fmt.Printf("build-commit: %v\n", config.BuildCommit)
 	fmt.Printf("build-date: %v\n", config.BuildDate)
 	fmt.Printf("mockhsm: %t\n", config.BuildConfig.MockHSM)
-	fmt.Printf("localhost_auth: %t\n", config.BuildConfig.LocalhostAuth)
+	fmt.Printf("localhost_auth: %t\n", config.BuildConfig.LoopbackAuth)
 	fmt.Printf("reset: %t\n", config.BuildConfig.Reset)
 	fmt.Printf("plain_http: %t\n", config.BuildConfig.PlainHTTP)
 
