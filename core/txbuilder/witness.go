@@ -144,7 +144,7 @@ func buildSigProgram(tpl *Template, index uint32) []byte {
 		builder := vmutil.NewBuilder()
 		builder.AddData(h.Bytes())
 		builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
-		prog, _ := builder.Build()
+		prog, _ := builder.Build() // error is impossible
 		return prog
 	}
 	constraints := make([]constraint, 0, 3+len(tpl.Transaction.Outputs))

@@ -41,7 +41,7 @@ func (t timeConstraint) code() []byte {
 		}
 		builder.AddOp(vm.OP_MAXTIME).AddInt64(int64(t.maxTimeMS)).AddOp(vm.OP_LESSTHANOREQUAL)
 	}
-	prog, _ := builder.Build()
+	prog, _ := builder.Build() // error is impossible
 	return prog
 }
 
@@ -54,7 +54,7 @@ func (o outputIDConstraint) code() []byte {
 	builder.AddData(bc.Hash(o).Bytes())
 	builder.AddOp(vm.OP_OUTPUTID)
 	builder.AddOp(vm.OP_EQUAL)
-	prog, _ := builder.Build()
+	prog, _ := builder.Build() // error is impossible
 	return prog
 }
 
@@ -77,7 +77,7 @@ func (r refdataConstraint) code() []byte {
 		builder.AddOp(vm.OP_ENTRYDATA)
 	}
 	builder.AddOp(vm.OP_EQUAL)
-	prog, _ := builder.Build()
+	prog, _ := builder.Build() // error is impossible
 	return prog
 }
 
@@ -100,6 +100,6 @@ func (p payConstraint) code() []byte {
 	}
 	builder.AddInt64(int64(p.Amount)).AddData(p.AssetId.Bytes()).AddInt64(1).AddData(p.Program)
 	builder.AddOp(vm.OP_CHECKOUTPUT)
-	prog, _ := builder.Build()
+	prog, _ := builder.Build() // error is impossible
 	return prog
 }

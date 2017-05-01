@@ -128,7 +128,7 @@ func mapTx(tx *TxData) (headerID bc.Hash, hdr *bc.TxHeader, entryMap map[bc.Hash
 				builder := vmutil.NewBuilder()
 				builder.AddData(oldIss.Nonce).AddOp(vm.OP_DROP)
 				builder.AddOp(vm.OP_ASSET).AddData(assetID.Bytes()).AddOp(vm.OP_EQUAL)
-				prog, _ := builder.Build()
+				prog, _ := builder.Build() // error is impossible
 
 				nonce := bc.NewNonce(&bc.Program{VmVersion: 1, Code: prog}, &trID)
 				anchorID = addEntry(nonce)
