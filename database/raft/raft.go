@@ -591,7 +591,10 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO(tessr): confirm that this addr exists in the potential member list
+	if !sv.isAllowedMember(req.Context(), x.Addr) {
+		http.Error(w, "this address is not allowed. please add this address to the allowed member list", 400)
+		return
+	}
 
 	err = sv.raftNode.ProposeConfChange(req.Context(), raftpb.ConfChange{
 		ID:      atomic.AddUint64(&sv.confChangeID, 1),
@@ -626,6 +629,15 @@ func (sv *Service) join(addr, baseURL string) error {
 		return errors.Wrap(err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errmsg, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return errors.Wrap(err, "could not parse response from boot server")
+		}
+		defer resp.Body.Close()
+		return fmt.Errorf("boot server responded with status %d: %s", resp.StatusCode, errmsg)
+	}
 
 	var x nodeJoin
 	err = json.NewDecoder(resp.Body).Decode(&x)
