@@ -62,8 +62,7 @@ var policyByRoute = map[string][]string{
 	"/debug/pprof/symbol":  {"client-readwrite", "client-readonly", "monitoring"},
 	"/debug/pprof/trace":   {"client-readwrite", "client-readonly", "monitoring"},
 
-	"/raft/join": {"internal"},
-	"/raft/msg":  {"internal"},
+	"/raft/": {"internal"},
 
 	"/dashboard":  {"public"},
 	"/dashboard/": {"public"},

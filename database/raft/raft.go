@@ -592,7 +592,7 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if clientTLS(sv.client) != nil && !sv.isAllowedMember(req.Context(), x.Addr) {
+	if !sv.isAllowedMember(req.Context(), x.Addr) {
 		http.Error(w, "this address is not allowed. please add this address to the allowed member list", 400) // it's like a country club in here
 		return
 	}
@@ -618,11 +618,17 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 }
 
 func (sv *Service) serveAddAllowedMember(w http.ResponseWriter, req *http.Request) {
-	var x struct{ Addr string }
+	var x struct {
+		Addr string `json:"addr"`
+	}
 	err := json.NewDecoder(req.Body).Decode(&x)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
+	}
+
+	if x.Addr == "" {
+		http.Error(w, "missing address", 400)
 	}
 
 	err = sv.AddAllowedMember(req.Context(), x.Addr)
@@ -647,6 +653,15 @@ func (sv *Service) join(addr, baseURL string) error {
 		return errors.Wrap(err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errmsg, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return errors.Wrap(err, "could not parse response from boot server")
+		}
+		defer resp.Body.Close()
+		return errors.New(fmt.Sprintf("boot server responded with status %d: %s", resp.StatusCode, errmsg))
+	}
 
 	var x nodeJoin
 	err = json.NewDecoder(resp.Body).Decode(&x)
