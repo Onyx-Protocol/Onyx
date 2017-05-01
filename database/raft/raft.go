@@ -182,13 +182,27 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*S
 		return nil, err
 	}
 
-	if walobj != nil {
+	recover := walobj != nil
+	if recover {
 		sv.id, err = readID(sv.dir)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
 	} else if bootURL != "" {
-		err = sv.join(laddr, bootURL) // sets sv.id and state
+		err = os.Remove(sv.walDir())
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		walobj, err = wal.Create(sv.walDir(), nil)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		err = sv.join(laddr, bootURL, walobj) // sets sv.id and state
+		if err != nil {
+			return nil, err
+		}
+		log.Printkv(ctx, "raftid", sv.id)
+		err = writeID(sv.dir, sv.id)
 		if err != nil {
 			return nil, err
 		}
@@ -208,23 +222,10 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*S
 		Logger:          &raft.DefaultLogger{Logger: stdlog.New(ioutil.Discard, "", 0)},
 	}
 
-	if walobj != nil {
+	if recover {
 		sv.raftNode = raft.RestartNode(c)
 		triggerElection(ctx, sv)
 	} else if bootURL != "" {
-		log.Printkv(ctx, "raftid", c.ID)
-		err = writeID(sv.dir, c.ID)
-		if err != nil {
-			return nil, err
-		}
-		err = os.Remove(sv.walDir())
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-		walobj, err = wal.Create(sv.walDir(), nil)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
 		sv.raftNode = raft.RestartNode(c)
 	} else {
 		log.Printkv(ctx, "raftid", c.ID)
@@ -621,7 +622,7 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 // adding the local process as a new member, then retrieves its new ID
 // and a snapshot of the cluster state and applies it to sv.
 // It also sets sv.id.
-func (sv *Service) join(addr, baseURL string) error {
+func (sv *Service) join(addr, baseURL string, wal *wal.WAL) error {
 	reqURL := strings.TrimRight(baseURL, "/") + "/raft/join"
 	b, _ := json.Marshal(struct{ Addr string }{addr})
 	resp, err := sv.client.Post(reqURL, contentType, bytes.NewReader(b))
@@ -658,6 +659,17 @@ func (sv *Service) join(addr, baseURL string) error {
 	}
 
 	if !raft.IsEmptySnap(raftSnap) {
+		err := sv.saveSnapshot(&raftSnap)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+		err = wal.SaveSnapshot(walpb.Snapshot{
+			Index: raftSnap.Metadata.Index,
+			Term:  raftSnap.Metadata.Term,
+		})
+		if err != nil {
+			return errors.Wrap(err)
+		}
 		err = sv.state.RestoreSnapshot(raftSnap.Data, raftSnap.Metadata.Index)
 		if err != nil {
 			return errors.Wrap(err)
