@@ -20,6 +20,11 @@ module Chain
     # @return [String]
     attrib :policy
 
+    # @!attribute [r] protected
+    # @return [Boolean]
+    # Whether the grant can be deleted. Only used for internal purposes.
+    attrib :protected
+
     # @!attribute [r] created_at
     # Timestamp of token creation.
     # @return [Time]
