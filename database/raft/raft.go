@@ -189,23 +189,11 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*S
 			return nil, errors.Wrap(err)
 		}
 	} else if bootURL != "" {
-		err = os.Remove(sv.walDir())
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-		walobj, err = wal.Create(sv.walDir(), nil)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-		err = sv.join(laddr, bootURL, walobj) // sets sv.id and state
+		walobj, err = sv.join(laddr, bootURL) // sets sv.id and state
 		if err != nil {
 			return nil, err
 		}
-		log.Printkv(ctx, "raftid", sv.id)
-		err = writeID(sv.dir, sv.id)
-		if err != nil {
-			return nil, err
-		}
+
 	} else {
 		// brand new cluster!
 		sv.id = 1
@@ -622,64 +610,80 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 // adding the local process as a new member, then retrieves its new ID
 // and a snapshot of the cluster state and applies it to sv.
 // It also sets sv.id.
-func (sv *Service) join(addr, baseURL string, wal *wal.WAL) error {
+func (sv *Service) join(addr, baseURL string) (*wal.WAL, error) {
+
 	reqURL := strings.TrimRight(baseURL, "/") + "/raft/join"
 	b, _ := json.Marshal(struct{ Addr string }{addr})
 	resp, err := sv.client.Post(reqURL, contentType, bytes.NewReader(b))
 	if err != nil {
-		return errors.Wrap(err)
+		return nil, errors.Wrap(err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		errmsg, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return errors.Wrap(err, "could not parse response from boot server")
+			return nil, errors.Wrap(err, "could not parse response from boot server")
 		}
 		defer resp.Body.Close()
-		return fmt.Errorf("boot server responded with status %d: %s", resp.StatusCode, errmsg)
+		return nil, fmt.Errorf("boot server responded with status %d: %s", resp.StatusCode, errmsg)
 	}
 
 	var x nodeJoin
 	err = json.NewDecoder(resp.Body).Decode(&x)
 	if err != nil {
-		return errors.Wrap(err)
+		return nil, errors.Wrap(err)
 	}
 	sv.id = x.ID
 	var raftSnap raftpb.Snapshot
 	err = decodeSnapshot(x.Snap, &raftSnap)
 	if err != nil {
-		return errors.Wrap(err)
+		return nil, errors.Wrap(err)
 	}
 
 	ctx := context.Background()
 	err = sv.raftStorage.ApplySnapshot(raftSnap)
 	if err != nil {
-		return errors.Wrap(err)
+		return nil, errors.Wrap(err)
+	}
+
+	log.Printkv(ctx, "raftid", sv.id)
+	err = writeID(sv.dir, sv.id)
+	if err != nil {
+		return nil, err
+	}
+
+	err = os.Remove(sv.walDir())
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	wal, err := wal.Create(sv.walDir(), nil)
+	if err != nil {
+		return nil, errors.Wrap(err)
 	}
 
 	if !raft.IsEmptySnap(raftSnap) {
 		err := sv.saveSnapshot(&raftSnap)
 		if err != nil {
-			return errors.Wrap(err)
+			return nil, errors.Wrap(err)
 		}
 		err = wal.SaveSnapshot(walpb.Snapshot{
 			Index: raftSnap.Metadata.Index,
 			Term:  raftSnap.Metadata.Term,
 		})
 		if err != nil {
-			return errors.Wrap(err)
+			return nil, errors.Wrap(err)
 		}
 		err = sv.state.RestoreSnapshot(raftSnap.Data, raftSnap.Metadata.Index)
 		if err != nil {
-			return errors.Wrap(err)
+			return nil, errors.Wrap(err)
 		}
 		sv.confState = raftSnap.Metadata.ConfState
 		sv.snapIndex = raftSnap.Metadata.Index
 	}
 	log.Printkv(ctx, "at", "joined", "appliedindex", raftSnap.Metadata.Index)
 
-	return nil
+	return wal, nil
 }
 
 func encodeSnapshot(snapshot *raftpb.Snapshot) ([]byte, error) {

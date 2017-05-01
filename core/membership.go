@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net"
 	"time"
 
@@ -27,7 +28,6 @@ func (a *API) addAllowedMember(ctx context.Context, x struct {
 	if err != nil {
 		return errors.Wrap(err)
 	}
-
 	data := map[string]interface{}{
 		"subject": map[string]string{
 			"CN": hostname,
@@ -46,6 +46,8 @@ func (a *API) addAllowedMember(ctx context.Context, x struct {
 		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 		Protected: true,
 	}
+
+	log.Printf("grant: %+v", grant)
 
 	_, err = authz.StoreGrant(ctx, a.raftDB, grant, grantPrefix)
 	return errors.Wrap(err)
