@@ -3,12 +3,14 @@ package raft
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"net"
 	"net/http"
 
 	"chain/errors"
 )
 
-func verifyTLSName(name string, client *http.Client) error {
+func verifyTLSName(addr string, client *http.Client) error {
+	hostname, _, _ := net.SplitHostPort(addr)
 	c := clientTLS(client)
 	if c == nil {
 		return nil
@@ -17,7 +19,7 @@ func verifyTLSName(name string, client *http.Client) error {
 	if err != nil {
 		return errors.Wrap(err)
 	}
-	return errors.Wrap(x509Cert.VerifyHostname(name))
+	return errors.Wrap(x509Cert.VerifyHostname(hostname))
 }
 
 func clientTLS(c *http.Client) *tls.Config {
