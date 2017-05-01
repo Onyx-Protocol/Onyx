@@ -85,6 +85,7 @@ var errorFormatter = httperror.Formatter{
 		config.ErrNoBlockHSMURL:        {400, "CH111", "Block HSM URL cannot be empty when configuring a non mockhsm signer"},
 		errNoClientTokens:              {400, "CH120", "Cannot enable client authentication with no client tokens"},
 		blocksigner.ErrConsensusChange: {400, "CH150", "Refuse to sign block with consensus change"},
+		errMissingAddr:                 {400, "CH160", "Address is missing"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: {400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},
