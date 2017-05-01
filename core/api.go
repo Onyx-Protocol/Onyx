@@ -49,7 +49,6 @@ const crosscoreRPCPrefix = "/rpc/"
 var (
 	errNotFound         = errors.New("not found")
 	errRateLimited      = errors.New("request limit exceeded")
-	errLeaderElection   = errors.New("no leader; pending election")
 	errNotAuthenticated = errors.New("not authenticated")
 )
 
@@ -347,7 +346,7 @@ func (a *API) forwardToLeader(ctx context.Context, path string, body interface{}
 	// This is possible if we just became the leader. The client should
 	// just retry.
 	if addr == a.addr {
-		return errLeaderElection
+		return leader.ErrNoLeader
 	}
 
 	l := &rpc.Client{

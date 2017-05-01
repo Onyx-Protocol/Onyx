@@ -8,6 +8,7 @@ import (
 	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/config"
+	"chain/core/leader"
 	"chain/core/query"
 	"chain/core/query/filter"
 	"chain/core/rpc"
@@ -58,7 +59,7 @@ var errorFormatter = httperror.Formatter{
 		httpjson.ErrBadRequest:     {400, "CH003", "Invalid request body"},
 		errNotFound:                {404, "CH006", "Not found"},
 		errRateLimited:             {429, "CH007", "Request limit exceeded"},
-		errLeaderElection:          {503, "CH008", "Electing a new leader for the core; try again soon"},
+		leader.ErrNoLeader:         {503, "CH008", "Electing a new leader for the core; try again soon"},
 		errNotAuthenticated:        {401, "CH009", "Request could not be authenticated"},
 		txbuilder.ErrMissingFields: {400, "CH010", "One or more fields are missing"},
 		authz.ErrNotAuthorized:     {403, "CH011", "Request is unauthorized"},
