@@ -53,6 +53,7 @@ var policyByRoute = map[string][]string{
 	"/create-access-token":        {"client-readwrite", "internal"},
 	"/list-access-tokens":         {"client-readwrite", "client-readonly"},
 	"/delete-access-token":        {"client-readwrite"},
+	"/add-allowed-member":         {"internal"},
 	"/configure":                  {"client-readwrite", "internal"},
 	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "crosscore-signblock", "monitoring"},
 

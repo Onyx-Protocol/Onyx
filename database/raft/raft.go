@@ -175,7 +175,6 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*S
 
 	// TODO(kr): grpc
 	sv.mux.HandleFunc("/raft/join", sv.serveJoin)
-	sv.mux.HandleFunc("/raft/add-allowed-member", sv.serveAddAllowedMember)
 	sv.mux.HandleFunc("/raft/msg", sv.serveMsg)
 
 	walobj, err := sv.recover()
@@ -615,29 +614,6 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(nodeJoin{newID, snapData})
-}
-
-func (sv *Service) serveAddAllowedMember(w http.ResponseWriter, req *http.Request) {
-	var x struct {
-		Addr string `json:"addr"`
-	}
-	err := json.NewDecoder(req.Body).Decode(&x)
-	if err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
-
-	if x.Addr == "" {
-		http.Error(w, "missing address", 400)
-	}
-
-	err = sv.AddAllowedMember(req.Context(), x.Addr)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	json.NewEncoder(w).Encode("success") // ??
 }
 
 // join attempts to join the cluster.
