@@ -44,7 +44,6 @@ $ go install chain/cmd/corectl
 
 ## Commands
 
-* [migrate](#migrate)
 * [config-generator](#config-generator)
 * [config](#config)
 * [create-block-keypair](#create-block-keypair)
@@ -53,35 +52,22 @@ $ go install chain/cmd/corectl
 * [grant](#grant)
 * [revoke](#revoke)
 
-### `migrate`
-
-Applies any pending database migrations, ensuring the database has an
-up-to-date schema.
-
-```
-corectl migrate [-status]
-```
-
-Flags:
-
-* **-status**: Print all migrations and their status.
-
 ### `config-generator`
 
 Configures a new core as a generator. You may optionally require multiple
 additional Chain Cores as signers for this generator.
 
 ```
-corectl config-generator [-s] [-w duration] [quorum] [pubkey url]...
+corectl config-generator [-k pubkey] [-w duration] [quorum] [pubkey url]...
 ```
 
 Flags:
 
-* **-k \<pubkey>**: Local pubkey for signing blocks; indicates that his core
+* **-k \<pubkey>**: Local pubkey for signing blocks; indicates that this core
 will be a signer. If **-k** is not given, the core will be a participant (not a generator or a signer).
- * **-w \<duration>**: The maximum issuance window duration for this generator (default 24h0m0s).
- * **-hsm-url \<url>**: HSM url for signing blocks (Mock HSM if empty).
- * **-hsm-token \<access-token>**:  HSM access-token for connecting to HSM.
+* **-w \<duration>**: The maximum issuance window duration for this generator (default 24h0m0s).
+* **-hsm-url \<url>**: HSM url for signing blocks (MockHSM if empty).
+* **-hsm-token \<access-token>**:  HSM access-token for connecting to HSM.
 
 Arguments:
 
@@ -105,11 +91,11 @@ corectl config [-t token] [-k pubkey] blockchain-id generator-url
 
 Flags:
 
- * **-k \<pubkey>**: Local pubkey for signing blocks; indicates that his core
+ * **-k \<pubkey>**: Local pubkey for signing blocks; indicates that this core
  will be a signer. If **-k** is not given, the core will be a participant (not a generator or a signer).
  * **-t \<token>**: Authentication token with access to the network API provided
 by the generator.
- * **-hsm-url \<url>**: HSM url for signing blocks (Mock HSM if empty).
+ * **-hsm-url \<url>**: HSM url for signing blocks (MockHSM if empty).
  * **-hsm-token \<access-token>**:  HSM access-token for connecting to HSM.
 
 Arguments:
@@ -147,7 +133,7 @@ please provide a policy by name instead.
 
 ### `reset`
 
-Resets the all Chain Core configuration. All blockchain data, access tokens, and
+Resets the Chain Core configuration. All blockchain data, access tokens, and
 other configuration will be deleted.
 
 ```
@@ -156,7 +142,7 @@ corectl reset
 
 ### `grant`
 
-Command grant grants access to a policy
+Grants access to a policy
 for the described credentials.
 
 ```
@@ -178,7 +164,7 @@ It must take one of three forms:
 
 ### `revoke`
 
-Command revoke revokes access to a policy
+Revokes access to a policy
 for the described credentials.
 
 ```
