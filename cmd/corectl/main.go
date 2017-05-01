@@ -60,6 +60,7 @@ var commands = map[string]*command{
 	"reset":                {reset},
 	"grant":                {grant},
 	"revoke":               {revoke},
+	"allow-address":        {allowRaftMember},
 }
 
 func main() {
@@ -371,6 +372,23 @@ The type of guard (before the = sign) is case-insensitive.
 	err := client.Call(context.Background(), path, req, nil)
 	if err != nil {
 		fatalln("error:", action, fmt.Sprintf("%+v:", req), err)
+	}
+}
+
+// allowRaftMember takes an address and adds it to the list of addresses that are
+// allowed for raft cluster members.
+func allowRaftMember(client *rpc.Client, args []string) {
+	if len(args) != 0 {
+		fatalln("error: reset takes no args")
+	}
+
+	req := map[string]string{
+		"addr": addr,
+	}
+
+	err := client.Call(context.Background(), "/raft/add-allowed-member", req, nil)
+	if err != nil {
+		fatalln("rpc error:", err)
 	}
 }
 
