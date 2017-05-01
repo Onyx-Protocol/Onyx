@@ -1069,7 +1069,7 @@ definitions:
         type: boolean
         description: Whether the core was compiled with the ability to reset
           the database.
-      is_loopback_auth:
+      is_localhost_auth:
         type: boolean
         description: Whether the core was compiled with the ability to make
           unauthenticated requests on the loopback interface.

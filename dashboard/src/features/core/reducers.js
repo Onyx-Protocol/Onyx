@@ -40,8 +40,8 @@ export const configuredAt = (state, action) => {
 
 export const mockhsm = (state, action) =>
   buildConfigReducer('isMockhsm', state, false, action)
-export const loopback = (state, action) =>
-  buildConfigReducer('isLoopbackAuth', state, false, action)
+export const localhostAuth = (state, action) =>
+  buildConfigReducer('isLocalhostAuth', state, false, action)
 export const reset = (state, action) =>
   buildConfigReducer('isReset', state, false, action)
 export const plainHttp = (state, action) =>
@@ -219,7 +219,7 @@ export default combineReducers({
   generatorAccessToken,
   generatorBlockHeight,
   generatorUrl,
-  loopback,
+  localhostAuth,
   mockhsm,
   crosscoreRpcVersion,
   onTestnet,
