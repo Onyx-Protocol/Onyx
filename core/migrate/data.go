@@ -63,4 +63,8 @@ var migrations = []migration{
 	{Name: `2017-04-17.0.core.null-token-type.sql`, SQL: `
 		ALTER TABLE access_tokens ALTER COLUMN type DROP NOT NULL;
 	`},
+	{Name: `2017-04-27.0.generator.pending-block-height.sql`, SQL: `
+		ALTER TABLE generator_pending_block
+			ADD COLUMN height bigint;
+	`},
 }

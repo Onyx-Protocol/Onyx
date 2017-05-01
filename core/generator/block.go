@@ -23,6 +23,8 @@ import (
 // signatures required.
 var errTooFewSigners = errors.New("too few signers")
 
+var errDuplicateBlock = errors.New("generator already committed to a block at that height")
+
 var (
 	once    sync.Once
 	latency *metrics.RotatingLatency
@@ -192,9 +194,21 @@ func getPendingBlock(ctx context.Context, db pg.DB) (*legacy.Block, error) {
 // sign the block.
 func savePendingBlock(ctx context.Context, db pg.DB, b *legacy.Block) error {
 	const q = `
-		INSERT INTO generator_pending_block (data) VALUES($1)
-		ON CONFLICT (singleton) DO UPDATE SET data = $1;
+		INSERT INTO generator_pending_block (data, height) VALUES($1, $2)
+		ON CONFLICT (singleton) DO UPDATE
+			SET data = excluded.data, height = excluded.height
+			WHERE COALESCE(generator_pending_block.height, 0) < excluded.height
 	`
-	_, err := db.Exec(ctx, q, b)
-	return errors.Wrap(err, "generator_pending_block insert query")
+	res, err := db.Exec(ctx, q, b, b.Height)
+	if err != nil {
+		return errors.Wrap(err, "generator_pending_block insert query")
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "generator_pending_block rows affected")
+	}
+	if affected == 0 {
+		return errDuplicateBlock
+	}
+	return nil
 }
