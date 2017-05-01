@@ -621,7 +621,7 @@ func (sv *Service) serveJoin(w http.ResponseWriter, req *http.Request) {
 func (sv *Service) join(addr, baseURL string) error {
 	reqURL := strings.TrimRight(baseURL, "/") + "/raft/join"
 	b, _ := json.Marshal(struct{ Addr string }{addr})
-	resp, err := http.Post(reqURL, contentType, bytes.NewReader(b))
+	resp, err := sv.client.Post(reqURL, contentType, bytes.NewReader(b))
 	if err != nil {
 		return errors.Wrap(err)
 	}
