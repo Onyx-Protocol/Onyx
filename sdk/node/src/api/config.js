@@ -13,7 +13,7 @@ const shared = require('../shared')
  * @property {Number} snapshot.size
  * @property {Number} snapshot.downloaded
  * @property {Boolean} snapshot.inProgress
-
+ *
  * @property {Boolean} isConfigured
  * Whether the core has been configured.
  *
@@ -65,6 +65,23 @@ const shared = require('../shared')
  * @property {String} buildDate
  * Unixtime (as string) of binary build.
  *
+ * @property {Object} buildConfig
+ * Features enabled or disabled in this build of Chain Core.
+ *
+ * @property {Boolean} buildConfig.isLoopbackAuth
+ * Whether any request from the loopback device (localhost) should be
+ * automatically authenticated and authorized, without additional
+ * credentials.
+ *
+ * @property {Boolean} buildConfig.isMockHsm
+ * Whether the MockHSM API is enabled.
+ *
+ * @property {Boolean} buildConfig.isReset
+ * Whether the core reset API call is enabled.
+ *
+ * @property {Boolean} buildConfig.isPlainHttp
+ * Whether non-TLS HTTP requests (http://...) are allowed.
+ *
  * @property {Object} health
  * Blockchain error information.
  */
@@ -72,7 +89,7 @@ const shared = require('../shared')
 /**
  * Chain Core can be configured as a new blockchain network, or as a node in an
  * existing blockchain network.
- * 
+ *
  * More info: {@link https://chain.com/docs/core/get-started/configure}
  * @module ConfigApi
  */

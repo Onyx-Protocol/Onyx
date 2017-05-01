@@ -5,6 +5,30 @@ module Chain
   module Config
 
     class Info < ResponseObject
+      class BuildConfig < ResponseObject
+        # @!attribute [r] is_loopback_auth
+        # @return [Boolean]
+        # Whether any request from the loopback device (localhost) should be
+        # automatically authenticated and authorized, without additional
+        # credentials.
+        attrib :is_loopback_auth
+
+        # @!attribute [r] is_loopback_auth
+        # @return [Boolean]
+        # Whether the MockHSM API is enabled.
+        attrib :is_mockhsm
+
+        # @!attribute [r] is_loopback_auth
+        # @return [Boolean]
+        # Whether the core reset API call is enabled.
+        attrib :is_reset
+
+        # @!attribute [r] is_loopback_auth
+        # @return [Boolean]
+        # Whether non-TLS HTTP requests (http://...) are allowed.
+        attrib :is_plain_http
+      end
+
       class Snapshot < ResponseObject
         # @!attribute [r] attempt
         # @return [Integer]
@@ -100,6 +124,10 @@ module Chain
       # so it is not converted into a Time object.
       # @return [String]
       attrib :build_date
+
+      # @!attribute [r] build_config
+      # @return [BuildConfig]
+      attrib(:build_config) { |raw| BuildConfig.new(raw) }
 
       # @!attribute [r] health
       # @return [Hash]

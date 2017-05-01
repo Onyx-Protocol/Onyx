@@ -87,6 +87,10 @@ class CoreIndex extends React.Component {
                 <td><code>{this.props.core.reset.toString()}</code></td>
               </tr>
               <tr>
+                <td className={styles.row_label}>Non-TLS HTTP requests enabled:</td>
+                <td><code>{this.props.core.plainHttp.toString()}</code></td>
+              </tr>
+              <tr>
                 <td colSpan={2}><hr /></td>
               </tr>
               <tr>
