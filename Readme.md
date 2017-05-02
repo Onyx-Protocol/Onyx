@@ -102,6 +102,14 @@ There are four build tags that change the behavior of the resulting binary:
   - `no_mockhsm`: disables the MockHSM provided for development
   - `plain_http`: allows plain HTTP requests
 
+The default build process creates a binary with three build tags enabled for a
+friendlier experience. To build from source with build tags, use the following
+command:
+
+> NOTE: when building from source, make sure to check out a specific  
+tag to build. The `main` branch is __not considered__ stable, and may
+contain in progress features or an inconsistent experience.
+
 ```sh
 $ go build -tags 'plain_http loopback_auth reset' chain/cmd/cored
 $ go build chain/cmd/corectl
