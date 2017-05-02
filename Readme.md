@@ -20,12 +20,18 @@ If you are interested in contributing to this code base, please read our [issue]
 
 ## Building from source
 
+The following software is needed to build Chain Core Developer Edition:
+
 * [Go](https://golang.org/doc/install) version 1.8, with $GOPATH set to your
   preferred directory
-* Postgres (we suggest [Postgres.app](http://postgresapp.com/)),
-  along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
 * [protoc](https://github.com/google/protobuf#protocol-compiler-installation),
   if you need to compile protos
+* [pigeon](https://github.com/mna/pigeon), if you need to change any .peg files: `go get -u github.com/mna/pigeon`
+
+The following software is needed to run Chain Core Developer Edition:
+
+* Postgres (for Mac OS X we suggest [Postgres.app](http://postgresapp.com/)),
+  along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
 
 ### Environment
 
