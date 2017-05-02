@@ -18,7 +18,7 @@ public class CoreConfig {
     public boolean isConfigured;
 
     /**
-     * RFC3339 timestamp reflecting when the core was configured.
+     * Date reflecting when the core was configured.
      */
     @SerializedName("configured_at")
     public Date configuredAt;
@@ -60,13 +60,13 @@ public class CoreConfig {
     public long blockHeight;
 
     /**
-     * Height of the blockchain in the generator
+     * Height of the blockchain in the generator.
      */
     @SerializedName("generator_block_height")
     public long generatorBlockHeight;
 
     /**
-     * RFC3339 timestamp reflecting the last time generator_block_height was updated.
+     * Date reflecting the last time generator_block_height was updated.
      */
     @SerializedName("generator_block_height_fetched_at")
     public Date generatorBlockHeightFetchedAt;
@@ -111,9 +111,6 @@ public class CoreConfig {
      */
     public Health health;
 
-    /**
-     *
-     */
     public Snapshot snapshot;
 
     public static class BuildConfig {
@@ -163,7 +160,7 @@ public class CoreConfig {
   }
 
   /**
-   * Get info on specified Chain Core.
+   * Gets info on specified Chain Core.
    * @param client client object that makes requests to the core
    * @return Info
    */
@@ -172,7 +169,7 @@ public class CoreConfig {
   }
 
   /**
-   * Reset specified Chain Core, preserving access tokens and MockHSM keys.
+   * Resets specified Chain Core, preserving access tokens and MockHSM keys.
    * @param client client object that makes requests to the core
    */
   public static void reset(Client client) throws ChainException {
@@ -180,7 +177,7 @@ public class CoreConfig {
   }
 
   /**
-   * Reset all data on the specified Chain Core, including access tokens
+   * Resets all data on the specified Chain Core, including access tokens
    * and MockHSM keys.
    * @param client client object that makes requests to the core
    */
@@ -256,7 +253,7 @@ public class CoreConfig {
     }
 
     /**
-     * Configure specified Chain Core.
+     * Configures specified Chain Core.
      * @param client client object that makes requests to the core
      */
     public void configure(Client client) throws ChainException {
