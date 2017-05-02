@@ -51,7 +51,8 @@ $ go install chain/cmd/corectl
 * [reset](#reset)
 * [grant](#grant)
 * [revoke](#revoke)
-* [wait][#wait]
+* [allow-address](#allow-address)
+* [wait](#wait)
 
 ### `config-generator`
 
@@ -182,6 +183,20 @@ It must take one of three forms:
    * `OU=[name]` to affect an X.509 Organizational Unit
 
    The type of guard (before the = sign) is case-insensitive.
+
+### `allow-address`
+
+Adds an address to the allowed members list and creates a grant with policy `internal` for this host. 
+
+`allow-address` should only be used for multiserver Chain Cores. 
+
+```
+corectl allow-address [address]
+```
+
+Argument:
+
+* **address**: The listen address, in `host:port` format, to be added to the allowed members list. 
 
 ### `wait`
 
