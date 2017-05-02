@@ -74,7 +74,7 @@ generator-host$ corectl create-block-keypair
 
 #### Configure Chain Core
 
-Use the [config-generator](../reference/corectl.md#config-generator) command to configure Chain Core to require two signatures on each block, one representing from the generator, and one from the other block signer:
+Use the [config-generator](../reference/corectl.md#config-generator) command to configure Chain Core to require two signatures on each block, one from the generator, and one from the other block signer:
 
 ```
 corectl config-generator \
@@ -95,7 +95,7 @@ generator-host$ corectl config-generator \
     -k 45ad1f1617d4c6fb8ae5119c524c6266595f0f551c5210dd9f5892b4b39f011f \
     2 \
     cce1791bf3d8bb5e506ec7159bad6a696740712197894336c027dec9fbfb9313 \
-    https://foo:25f658b749f154a790c8a3aeb57ea98968f51a991c4771fb072fcbb2fa63b6f7@<signer-host>:<signer-port>
+    https://generatortoken:25f658b749f154a790c8a3aeb57ea98968f51a991c4771fb072fcbb2fa63b6f7@<signer-host>:<signer-port>
 ec95cfab939d7b8dde46e7e1dcd7cb0a7c0cea37148addd70a4a4a5aaab9616c
 ```
 
@@ -109,7 +109,7 @@ Use the [create-token](../reference/corectl.md#create-token) command to create a
 corectl create-token <token ID> crosscore
 ```
 
-This output of this command is token with access to the `crosscore` policy on the block generator. This token can be used as HTTP Basic Auth credentials when making requests to the block generator.
+The output of this command is a token with access to the `crosscore` policy on the block generator. This token can be used as HTTP Basic Auth credentials when making requests to the block generator.
 
 ##### Example:
 
