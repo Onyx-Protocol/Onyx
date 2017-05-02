@@ -83,7 +83,7 @@ func TestRPCCallError(t *testing.T) {
 	defer server.Close()
 
 	client := &Client{BaseURL: server.URL}
-	wantErr := errStatusCode{URL: server.URL + "/error", StatusCode: 500}
+	wantErr := ErrStatusCode{URL: server.URL + "/error", StatusCode: 500}
 	err := client.Call(context.Background(), "/error", nil, nil)
 	if !testutil.DeepEqual(wantErr, err) {
 		t.Errorf("got=%#v; want=%#v", err, wantErr)

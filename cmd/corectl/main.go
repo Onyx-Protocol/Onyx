@@ -22,6 +22,7 @@ import (
 	"chain/core/rpc"
 	"chain/crypto/ed25519"
 	"chain/env"
+	"chain/errors"
 	"chain/generated/rev"
 	"chain/log"
 	"chain/protocol/bc"
@@ -61,6 +62,7 @@ var commands = map[string]*command{
 	"grant":                {grant},
 	"revoke":               {revoke},
 	"allow-address":        {allowRaftMember},
+	"wait":                 {wait},
 }
 
 func main() {
@@ -455,4 +457,23 @@ func splitAfter2(s, sep string) (a, b string) {
 	i := strings.Index(s, sep)
 	k := i + len(sep)
 	return s[:k], s[k:]
+}
+
+func wait(client *rpc.Client, args []string) {
+	if len(args) != 0 {
+		fatalln("error: wait takes no args")
+	}
+
+	for {
+		err := client.Call(context.Background(), "/info", nil, nil)
+		if err == nil {
+			break
+		}
+
+		if statusErr, ok := errors.Root(err).(rpc.ErrStatusCode); ok && statusErr.StatusCode/100 != 5 {
+			break
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
 }
