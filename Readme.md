@@ -47,19 +47,28 @@ You might want to open a new terminal window to pick up the change.
 
 ### Installation
 
-Build and install from source:
-
-There are four build tags that change the behavior of the resulting binary:
-  - `reset`: allows the core database to be reset through the api
-  - `loopback_auth`: allows unauthenticated requests on the loopback device (localhost)
-  - `no_mockhsm`: disables the MockHSM provided for development
-  - `plain_http`: allows plain HTTP requests
+Clone this repository to the path defined in `CHAIN`:
 
 ```
 $ git clone https://github.com/chain/chain $CHAIN
 $ cd $CHAIN
-$ go install ./cmd/...
 ```
+
+You can build Chain Core using the `build-cored-release` script.
+The build product allows connections over HTTP, unauthenticated
+requests from localhost, and the ability to reset the Chain Core.
+
+`build-cored-release` accepts a git tag for a Chain Core server release and
+an output directory:
+
+```
+$ ./bin/build-cored-release chain-core-server-1.1.4 .
+```
+
+This will create two binaries in the current directory:
+
+* [`cored`](https://chain.com/docs/core/reference/cored): the Chain Core daemon and API server
+* [`corectl`](https://chain.com/docs/core/reference/corectl): control functions for a Chain Core
 
 Set up the database:
 
@@ -70,7 +79,7 @@ $ createdb core
 Start Chain Core:
 
 ```
-$ cored
+$ ./cored
 ```
 
 Access the dashboard:
