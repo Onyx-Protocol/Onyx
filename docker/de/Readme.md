@@ -20,14 +20,11 @@ $ sh bin/build-docker-de
 $ docker run --rm -p 1999:1999 --name chaincore chaincore/developer
 ```
 
-#### Access core
-
-A client access token will be printed to your shell. The core and dashboard are listening on `http://localhost:1999`.
-
-**Note**: By default, once you stop a running a container, all data is lost. Chain Core stores data in three locations: a data directory, a separate Postgres database, and a log directory. To persist the data, create directories on your development machine and mount them to the container on `docker run`:
+By default, once you stop a running a container, all data is lost. Chain Core stores data in three locations: a data directory, a separate Postgres database, and a log directory. To persist the data, create directories on your development machine and mount them to the container on `docker run`:
 
 ```sh
-$ mkdir -p /path/to/store/db
+$ mkdir -p /path/to/store/datadir
+$ mkdir -p /path/to/store/postgres
 $ mkdir -p path/to/store/logs
 $ docker run --rm -p 1999:1999 \
     -v /path/to/store/datadir:/root/.chaincore \
@@ -36,6 +33,10 @@ $ docker run --rm -p 1999:1999 \
     --name chaincore \
     chaincore/developer
 ```
+
+#### Access core
+
+A client access token will be printed to your shell. The core and dashboard are listening on `http://localhost:1999`.
 
 #### Stop the container
 
