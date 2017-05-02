@@ -16,7 +16,7 @@ To update it, do:
 Then edit $CHAIN/wercker.yml to use the new tag.
 
 To install a dependency not found in a yum repository:
-- Add an install script to the `bin` directory
+- Add an install script to the `install` directory
 - From inside the Dockerfile:
   - run the script (located in `/usr/bin`)
   - delete the script

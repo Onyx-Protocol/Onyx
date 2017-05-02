@@ -6,8 +6,8 @@ import (
 )
 
 // builder is just like vmutil.Builder but it holds back any OP_VERIFY
-// unless/until something is added after it. An OP_VERIFY added at the
-// end is left off entirely.
+// instructions unless/until something is added after it. An OP_VERIFY
+// added at the end is left off entirely.
 type builder struct {
 	b             *vmutil.Builder
 	verifyPending bool
