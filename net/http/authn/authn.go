@@ -98,7 +98,10 @@ func certAuthn(req *http.Request, rootCAs *x509.CertPool) context.Context {
 		}
 		_, err := certs[0].Verify(opts)
 		if err != nil {
+			// crypto/tls treats this as an error:
 			// errors.New("tls: failed to verify client's certificate: " + err.Error())
+			// For us, it is ok; we want to treat it the same as if there
+			// were no client cert presented.
 			return req.Context()
 		}
 
