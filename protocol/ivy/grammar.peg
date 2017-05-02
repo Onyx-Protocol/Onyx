@@ -1,0 +1,155 @@
+{
+package ivy
+}
+
+Contract = ("contract" __ name:Identifier _ "(" _ params:Params _ ")" _ "{" _ clauses:Clauses _ "}") {
+  return mkContract(name, params, clauses)
+}
+
+Params = (first:Params1Type _ "," _ rest:Params) {
+  return prependParams(first, rest)
+} / only:Params1Type {
+  return only, nil
+} / Nothing {
+  return []*param{}, nil
+}
+
+Params1Type = (first:Identifier _ "," _ rest:Params1Type) {
+  return mkParams(first, rest)
+} / (only:Identifier _ ":" _ typ:Type) {
+  return mkParam(only, typ)
+}
+
+Type = ("String" / "Integer" / "Hash" / "AssetAmount" / "Program" / "Value") {
+  return string(c.text), nil
+}
+
+Clauses = (first:Clause _ rest:Clauses) {
+  return prependClause(first, rest)
+} / only:Clause {
+  return mkClauses(only)
+}
+
+Clause = ("clause" __ name:Identifier _ "(" _ params:Params _ ")" _ "{" _ statements:Statements _ "}") {
+  return mkClause(name, params, statements)
+}
+
+Statements = (first:Statement _ rest:Statements) {
+  return prependStatement(first, rest)
+} / only:Statement {
+  return mkStatements(only)
+}
+
+Statement = s:(VerifyStatement / OutputStatement / ReturnStatement) {
+  return s, nil
+}
+
+VerifyStatement = ("verify" __ expr:Expr) {
+  return mkVerify(expr)
+}
+
+OutputStatement = ("output" __ callExpr:Call) {
+  return mkOutput(callExpr)
+}
+
+ReturnStatement = ("return" __ expr:Expr) {
+  return mkReturn(expr)
+}
+
+Expr = e:(ComparisonExpr / Expr2) {
+  return e, nil
+}
+
+Expr2 = e:(BinaryExpr / Expr3) {
+  return e, nil
+}
+
+Expr3 = e:(UnaryExpr / Expr4) {
+  return e, nil
+}
+
+Expr4 = e:(Call / Literal / Ref) {
+  return e, nil
+} / ("(" _ e:Expr _ ")") {
+  return e, nil
+}
+
+Ref = (first:Identifier "." rest:Ref) {
+  return prependRef(first, rest)
+} / only:Identifier {
+  return mkRef(only)
+}
+
+// not associative
+ComparisonExpr = (left:Expr2 _ op:ComparisonOperator _ right:Expr2) {
+  return mkBinaryExpr(left, op, right)
+}
+
+ComparisonOperator = ("==" / "!=" / "<=" / ">=" / "<" / ">") {
+  return string(c.text), nil
+}
+
+// left-associative
+BinaryExpr = (partials:PartialBinaryExprs _ right:Expr3) {
+  return binaryExprFromPartials(partials, right.(expression))
+}
+
+PartialBinaryExprs = (first:PartialBinaryExpr _ rest:PartialBinaryExprs) {
+  return prependPartialBinaryExpr(first, rest)
+} / only:PartialBinaryExpr {
+  return mkPartialBinaryExprs(only)
+}
+
+PartialBinaryExpr = (expr:Expr3 _ op:BinaryOperator) {
+  return mkPartialBinaryExpr(expr, op)
+}
+
+BinaryOperator = ("+" / "-") {
+  return string(c.text), nil
+}
+
+UnaryExpr = (op:UnaryOperator expr:Expr4) {
+  return mkUnaryExpr(op, expr)
+}
+
+UnaryOperator = ("-" / "!") {
+  return string(c.text), nil
+}
+
+Call = (fn:Ref _ "(" _ args:Args _ ")") {
+  return mkCall(fn, args)
+}
+
+Args = (first:Expr _ "," _ rest:Args) {
+  return prependArg(first, rest)
+} / only:Expr {
+  return mkArgs(only)
+} / Nothing {
+  return []expression{}, nil
+}
+
+Literal = val:(Integer / Boolean) {
+  return val, nil
+}
+
+Integer = ("-"? [0-9]+) {
+  return mkInteger(c.text)
+}
+
+Boolean = ("true" / "false") {
+  return mkBoolean(c.text)
+}
+
+Identifier = [A-Za-z][A-Za-z0-9]* {
+  return string(c.text), nil
+}
+
+Whitespace = [ \t\n\r]+
+
+Comment = "#" [^\n\r]*
+
+_ = (Whitespace / Comment)*
+
+__ = (Whitespace / Comment)+
+
+Nothing = _
