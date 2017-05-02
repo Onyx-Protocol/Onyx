@@ -470,10 +470,8 @@ func wait(client *rpc.Client, args []string) {
 			break
 		}
 
-		if statusErr, ok := errors.Root(err).(rpc.ErrStatusCode); ok {
-			if statusErr.StatusCode/100 != 5 {
-				break
-			}
+		if statusErr, ok := errors.Root(err).(rpc.ErrStatusCode); ok && statusErr.StatusCode/100 != 5 {
+			break
 		}
 
 		time.Sleep(500 * time.Millisecond)
