@@ -11,6 +11,7 @@ import (
 	libsql "database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -186,7 +187,7 @@ func deleteFromPG(ctx context.Context, db pg.DB) error {
 // saves it, and assigns its hash to c.BlockchainId
 // Otherwise, c.IsGenerator is false, and Configure makes a test request
 // to GeneratorUrl to detect simple configuration mistakes.
-func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, c *Config) error {
+func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, httpClient *http.Client, c *Config) error {
 	var err error
 	if !c.IsGenerator {
 		blockchainID, err := c.BlockchainId.MarshalText()
@@ -195,6 +196,7 @@ func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, c *Config) erro
 			c.GeneratorUrl,
 			c.GeneratorAccessToken,
 			string(blockchainID),
+			httpClient,
 		)
 		if err != nil {
 			return err
@@ -272,11 +274,12 @@ func Configure(ctx context.Context, db pg.DB, rDB *raft.Service, c *Config) erro
 	return rDB.Insert(ctx, "/core/config", val)
 }
 
-func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) error {
+func tryGenerator(ctx context.Context, url, accessToken, blockchainID string, httpClient *http.Client) error {
 	client := &rpc.Client{
 		BaseURL:      url,
 		AccessToken:  accessToken,
 		BlockchainID: blockchainID,
+		Client:       httpClient,
 	}
 	var x struct {
 		BlockHeight uint64 `json:"block_height"`
