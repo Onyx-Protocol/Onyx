@@ -2,7 +2,8 @@ import React from 'react'
 import { chainClient } from 'utility/environment'
 import { actions as appActions } from 'features/app'
 import { push } from 'react-router-redux'
-import { subjectFieldOptions } from 'features/accessControl/constants'
+import { subjectFieldOptions } from './constants'
+import { hasProtectedGrant } from './selectors'
 import TokenCreateModal from './components/TokenCreateModal'
 
 // Given a list of policies, create a grant for
@@ -12,8 +13,11 @@ const setPolicies = (body, policies) => {
   const promises = []
 
   for (let key in policies) {
+    if (hasProtectedGrant(body.grants || [], key)) continue
+
     const grant = {
-      ...body,
+      guardData: body.guardData,
+      guardType: body.guardType,
       policy: key
     }
 
@@ -119,10 +123,7 @@ export default {
   }),
 
   editPolicies: data => {
-    const body = {
-      guardType: data.grant.guardType,
-      guardData: data.grant.guardData,
-    }
+    const body = data.grant
     const policies = data.policies
 
     return dispatch =>

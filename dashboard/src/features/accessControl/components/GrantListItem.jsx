@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { isAccessToken, getPolicyNamesString } from 'features/accessControl/selectors'
+import { isAccessToken, getPolicyNames } from 'features/accessControl/selectors'
 import EditPolicies from './EditPolicies'
 import { isArray } from 'lodash'
 
@@ -29,7 +29,9 @@ class GrantListItem extends React.Component {
       <tr>
         <td>{desc}</td>
         {!item.isEditing && <td>
-          {getPolicyNamesString(item)}
+          {getPolicyNames(item).map(name =>
+            <span key={name}>{name}<br /></span>
+          )}
         </td>}
         {!item.isEditing && <td>
           <button className='btn btn-link' onClick={this.props.beginEditing.bind(this, item.id)}>

@@ -15,7 +15,7 @@ export default (state = {ids: [], items: {}}, action) => {
         name: token.id,
         guardType: 'access_token',
         guardData: tokenGuard,
-        policies: [],
+        grants: [],
         createdAt: token.createdAt
       }
     })
@@ -24,7 +24,14 @@ export default (state = {ids: [], items: {}}, action) => {
       const id = createHash('sha256').update(JSON.stringify(grant.guardData), 'utf8').digest('hex')
 
       if (newObjects[id]) {
-        newObjects[id].policies.push(grant.policy)
+        const existingIndex = newObjects[id].grants.findIndex(g => g.policy == grant.policy)
+        if (existingIndex >= 0) {
+          const existing = newObjects[id].grants[existingIndex]
+          if (existing.protected) { return }
+          if (grant.protected) { newObjects[id].grants.splice(existingIndex, 1) }
+        }
+
+        newObjects[id].grants.push(grant)
         if (newObjects[id].createdAt.localeCompare(grant.createdAt) > 0) {
           newObjects[id].createdAt = grant.createdAt
         }
@@ -33,7 +40,7 @@ export default (state = {ids: [], items: {}}, action) => {
           id: id,
           guardType: grant.guardType,
           guardData: grant.guardData,
-          policies: [grant.policy],
+          grants: [grant],
           createdAt: grant.createdAt
         }
       }
@@ -64,7 +71,12 @@ export default (state = {ids: [], items: {}}, action) => {
     const item = {...state.items[id]}
     item.isEditing = false
     if (action.policies) {
-      item.policies = Object.keys(action.policies).filter(policy => action.policies[policy])
+      item.grants = Object.keys(action.policies)
+        .filter(policy => action.policies[policy])
+        .map(policy => ({
+          ...item.grants.find(grant => grant.policy == policy),
+          policy: policy
+        }))
     }
 
     return {

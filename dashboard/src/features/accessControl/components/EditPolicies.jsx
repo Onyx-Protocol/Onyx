@@ -1,6 +1,7 @@
 import React from 'react'
 import { BaseNew, CheckboxField } from 'features/shared/components'
 import { policyOptions } from 'features/accessControl/constants'
+import { hasProtectedGrant } from 'features/accessControl/selectors'
 import { reduxForm } from 'redux-form'
 import actions from 'features/accessControl/actions'
 import styles from './EditPolicies.scss'
@@ -15,10 +16,14 @@ class EditPolicies extends React.Component {
     return(
       <div className={styles.main}>
         {policyOptions.map(option => {
+          const isProtected = hasProtectedGrant(this.props.item.grants, option.value)
           return <CheckboxField key={option.label}
             title={option.label}
             hint={option.hint}
-            fieldProps={policies[option.value]} />
+            fieldProps={{
+              ...policies[option.value],
+              disabled: isProtected,
+            }} />
         })}
 
         <button className='btn btn-primary' onClick={handleSubmit(this.props.submitForm)}>Save</button>
@@ -39,7 +44,8 @@ const initialValues = (state, ownProps) => {
     initialValues: {
       grant: item,
       policies: policyOptions.reduce((memo, p) => {
-        memo[p.value] = item.policies.indexOf(p.value) >= 0
+        const policyIndex = item.grants.findIndex(grant => grant.policy == p.value)
+        memo[p.value] = policyIndex >= 0
         return memo
       }, {}),
     }
