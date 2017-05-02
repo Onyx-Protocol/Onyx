@@ -24,10 +24,15 @@ $ docker stop chaincore
 ```
 >**Note:** By default, once you stop a running a container, all data is lost. To persist the data, create directories on your development machine and mount them to the container on `docker run`
 
-```
+```sh
 $ mkdir -p /path/to/store/db
 $ mkdir -p path/to/store/logs
-$ docker run --rm -p 1999:1999 -v /path/to/store/db:/var/lib/postgresql/data -v /path/to/store/logs:/var/log/chain --name chaincore chaincore/developer
+$ docker run --rm -p 1999:1999 \
+    -v /path/to/store/postgres:/var/lib/postgresql/data \
+    -v /path/to/store/datadir:/root/.chaincore \
+    -v /path/to/store/logs:/var/log/chain \
+    --name chaincore \
+    chaincore/developer
 ```
 
 ##Other features
@@ -59,9 +64,16 @@ $ docker exec -it chaincore /bin/sh
 ```
 
 ####Check the logs of a stopped container
+
 If a container was exited prematurely, you can receive a command prompt from inside it by running:
-```
-$ docker run -it -v /path/to/store/db:/var/lib/postgresql/data -v /path/to/store/logs:/var/log/chain --entrypoint /bin/sh chaincore/developer
+
+```sh
+$ docker run -it \
+    -v /path/to/store/postgres:/var/lib/postgresql/data \
+    -v /path/to/store/datadir:/root/.chaincore \
+    -v /path/to/store/logs:/var/log/chain \
+    --entrypoint /bin/sh \
+    chaincore/developer
 ```
 >**Note:** this command creates a new container and should only be used when persisting the container data.
 
