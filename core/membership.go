@@ -12,9 +12,7 @@ import (
 
 var errMissingAddr = errors.New("missing address")
 
-func (a *API) addAllowedMember(ctx context.Context, x struct {
-	Addr string `json:"addr"`
-}) error {
+func (a *API) addAllowedMember(ctx context.Context, x struct{ Addr string }) error {
 	if x.Addr == "" {
 		return errMissingAddr
 	}

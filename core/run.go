@@ -121,7 +121,7 @@ func RateLimit(keyFn func(*http.Request) string, burst, perSecond int) RunOption
 // used for Chain Core Developer Edition to expose the configuration UI
 // in the dashboard. API authentication still applies to an unconfigured
 // Chain Core.
-func RunUnconfigured(ctx context.Context, db pg.DB, raftDB *raft.Service, opts ...RunOption) *API {
+func RunUnconfigured(ctx context.Context, db pg.DB, raftDB *raft.Service, routableAddress string, opts ...RunOption) *API {
 	a := &API{
 		db:           db,
 		raftDB:       raftDB,
@@ -131,6 +131,11 @@ func RunUnconfigured(ctx context.Context, db pg.DB, raftDB *raft.Service, opts .
 	for _, opt := range opts {
 		opt(a)
 	}
+	err := a.addAllowedMember(ctx, struct{ Addr string }{routableAddress})
+	if err != nil {
+		panic("failed to add self to member list: " + err.Error())
+	}
+
 	// Construct the complete http.Handler once.
 	a.buildHandler()
 	return a
@@ -210,6 +215,11 @@ func Run(
 	// When this cored becomes leader, run a.lead to perform
 	// leader-only Core duties.
 	a.leader = leader.Run(ctx, db, routableAddress, a.lead)
+
+	err = a.addAllowedMember(ctx, struct{ Addr string }{routableAddress})
+	if err != nil {
+		return nil, err
+	}
 
 	// Construct the complete http.Handler once.
 	a.buildHandler()
