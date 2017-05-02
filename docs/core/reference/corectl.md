@@ -183,6 +183,20 @@ It must take one of three forms:
 
    The type of guard (before the = sign) is case-insensitive.
 
+### `allow-address`
+
+Adds an address to the allowed members list and creates a grant with policy `internal` for this host. 
+
+`allow-address` should only be used for multiserver Chain Cores. 
+
+```
+corectl allow-address [address]
+```
+
+Argument:
+
+* **address**: The listen address, in `host:port` format, to be added to the allowed members list. 
+
 ### `wait`
 
 Blocks until the Chain Core server is available.
