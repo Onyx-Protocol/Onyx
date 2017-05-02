@@ -178,9 +178,7 @@ func configGenerator(client *rpc.Client, args []string) {
 	}
 
 	err = client.Call(context.Background(), "/configure", conf, nil)
-	if err != nil {
-		fatalln("rpc error:", err)
-	}
+	dieOnRPCError(err)
 
 	// TODO(tessr): print blockchain id. This will require making the /configure
 	// endpoint return the BlockchainId before it execs itself.
@@ -194,9 +192,7 @@ func createBlockKeyPair(client *rpc.Client, args []string) {
 		Pub ed25519.PublicKey
 	}{}
 	err := client.Call(context.Background(), "/mockhsm/create-block-key", nil, &pub)
-	if err != nil {
-		fatalln("rpc error:", err)
-	}
+	dieOnRPCError(err)
 	fmt.Printf("%x\n", pub.Pub)
 }
 
@@ -219,9 +215,7 @@ func createToken(client *rpc.Client, args []string) {
 	var tok accesstoken.Token
 	// TODO(kr): find a way to make this atomic with the grant below
 	err := client.Call(context.Background(), "/create-access-token", req, &tok)
-	if err != nil {
-		fatalln("rpc error:", err)
-	}
+	dieOnRPCError(err)
 	fmt.Println(tok.Token)
 
 	grant := grantReq{
@@ -239,9 +233,7 @@ func createToken(client *rpc.Client, args []string) {
 		fmt.Fprintln(os.Stderr, "warning: implicit policy name is deprecated")
 	}
 	err = client.Call(context.Background(), "/create-authorization-grant", grant, nil)
-	if err != nil {
-		fatalln("rpc error:", err)
-	}
+	dieOnRPCError(err, "Auth grant error:")
 }
 
 func configNongenerator(client *rpc.Client, args []string) {
@@ -298,9 +290,7 @@ func configNongenerator(client *rpc.Client, args []string) {
 
 	client.BlockchainID = blockchainID.String()
 	err = client.Call(context.Background(), "/configure", conf, nil)
-	if err != nil {
-		fatalln("rpc error:", err)
-	}
+	dieOnRPCError(err)
 }
 
 // reset will attempt a reset rpc call on a remote core. If the
@@ -315,9 +305,7 @@ func reset(client *rpc.Client, args []string) {
 	}
 
 	err := client.Call(context.Background(), "/reset", req, nil)
-	if err != nil {
-		fatalln("rpc error:", err)
-	}
+	dieOnRPCError(err)
 }
 
 func grant(client *rpc.Client, args []string) {
@@ -372,9 +360,7 @@ The type of guard (before the = sign) is case-insensitive.
 		"revoke": "/delete-authorization-grant",
 	}[action]
 	err := client.Call(context.Background(), path, req, nil)
-	if err != nil {
-		fatalln("error:", action, fmt.Sprintf("%+v:", req), err)
-	}
+	dieOnRPCError(err)
 }
 
 // allowRaftMember takes an address and adds it to the list of addresses that are
@@ -390,9 +376,7 @@ func allowRaftMember(client *rpc.Client, args []string) {
 	}
 
 	err := client.Call(context.Background(), "/add-allowed-member", req, nil)
-	if err != nil {
-		fatalln("rpc error:", err)
-	}
+	dieOnRPCError(err)
 }
 
 func mustRPCClient() *rpc.Client {
@@ -437,6 +421,29 @@ func mustRPCClient() *rpc.Client {
 func fatalln(v ...interface{}) {
 	io.Copy(os.Stderr, &logbuf)
 	fmt.Fprintln(os.Stderr, v...)
+	os.Exit(2)
+}
+
+func dieOnRPCError(err error, prefixes ...interface{}) {
+	if err == nil {
+		return
+	}
+
+	io.Copy(os.Stderr, &logbuf)
+
+	if len(prefixes) > 0 {
+		fmt.Fprintln(os.Stderr, prefixes...)
+	}
+
+	if msgErr, ok := errors.Root(err).(rpc.ErrStatusCode); ok && msgErr.ErrorData != nil {
+		fmt.Fprintln(os.Stderr, "RPC error:", msgErr.ErrorData.ChainCode, msgErr.ErrorData.Message)
+		if msgErr.ErrorData.Detail != "" {
+			fmt.Fprintln(os.Stderr, "Detail:", msgErr.ErrorData.Detail)
+		}
+	} else {
+		fmt.Fprintln(os.Stderr, "RPC error:", err)
+	}
+
 	os.Exit(2)
 }
 

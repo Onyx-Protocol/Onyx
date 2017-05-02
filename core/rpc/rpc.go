@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"chain/errors"
+	"chain/net/http/httperror"
 	"chain/net/http/reqid"
 )
 
@@ -53,6 +54,7 @@ func (c Client) userAgent() string {
 type ErrStatusCode struct {
 	URL        string
 	StatusCode int
+	ErrorData  *httperror.Response
 }
 
 func (e ErrStatusCode) Error() string {
@@ -138,12 +140,23 @@ func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) 
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		resp.Body.Close()
-		return nil, ErrStatusCode{
+		defer resp.Body.Close()
+
+		resErr := ErrStatusCode{
 			URL:        cleanedURLString(u),
 			StatusCode: resp.StatusCode,
 		}
+
+		// Attach formatted error message, if available
+		var errData httperror.Response
+		err := json.NewDecoder(resp.Body).Decode(&errData)
+		if err == nil && errData.ChainCode != "" {
+			resErr.ErrorData = &errData
+		}
+
+		return nil, resErr
 	}
+
 	return resp.Body, nil
 }
 
