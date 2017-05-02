@@ -47,14 +47,14 @@ func (c Client) userAgent() string {
 		c.Username, c.BuildTag, c.BlockchainID)
 }
 
-// errStatusCode is an error returned when an rpc fails with a non-200
+// ErrStatusCode is an error returned when an rpc fails with a non-200
 // response code.
-type errStatusCode struct {
+type ErrStatusCode struct {
 	URL        string
 	StatusCode int
 }
 
-func (e errStatusCode) Error() string {
+func (e ErrStatusCode) Error() string {
 	return fmt.Sprintf("Request to `%s` responded with %d %s",
 		e.URL, e.StatusCode, http.StatusText(e.StatusCode))
 }
@@ -138,7 +138,7 @@ func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) 
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		resp.Body.Close()
-		return nil, errStatusCode{
+		return nil, ErrStatusCode{
 			URL:        cleanedURLString(u),
 			StatusCode: resp.StatusCode,
 		}

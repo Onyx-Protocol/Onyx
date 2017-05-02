@@ -51,6 +51,7 @@ $ go install chain/cmd/corectl
 * [reset](#reset)
 * [grant](#grant)
 * [revoke](#revoke)
+* [wait][#wait]
 
 ### `config-generator`
 
@@ -181,3 +182,11 @@ It must take one of three forms:
    * `OU=[name]` to affect an X.509 Organizational Unit
 
    The type of guard (before the = sign) is case-insensitive.
+
+### `wait`
+
+Blocks until the Chain Core server is available.
+
+```
+corectl wait
+```
