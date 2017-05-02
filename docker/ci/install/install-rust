@@ -5,8 +5,17 @@ set -e
 # Pin to a specific nightly until we can get off nightly entirely
 RUST_VERSION="nightly-2017-04-16"
 
+# Pin to this version of rustfmt
+RUSTFMT_VERSION="0.8.3"
+
+# Pin to this version of clippy
+CLIPPY_VERSION="0.0.124"
+
+# Pin to this version of cargo-audiot
+CARGO_AUDIT_VERSION="0.2.0"
+
 curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${RUST_VERSION}
 
-~/.cargo/bin/cargo install rustfmt
-~/.cargo/bin/cargo install clippy
-~/.cargo/bin/cargo install cargo-audit
+~/.cargo/bin/cargo install rustfmt --vers ${RUSTFMT_VERSION}
+~/.cargo/bin/cargo install clippy --vers ${CLIPPY_VERSION}
+~/.cargo/bin/cargo install cargo-audit --vers ${CARGO_AUDIT_VERSION}
