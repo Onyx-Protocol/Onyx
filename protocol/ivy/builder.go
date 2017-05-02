@@ -17,25 +17,25 @@ func newBuilder() *builder {
 	return &builder{b: vmutil.NewBuilder()}
 }
 
-func (b *builder) AddInt64(n int64) *builder {
+func (b *builder) addInt64(n int64) *builder {
 	b.resolve()
 	b.b.AddInt64(n)
 	return b
 }
 
-func (b *builder) AddData(data []byte) *builder {
+func (b *builder) addData(data []byte) *builder {
 	b.resolve()
 	b.b.AddData(data)
 	return b
 }
 
-func (b *builder) AddRawBytes(data []byte) *builder {
+func (b *builder) addRawBytes(data []byte) *builder {
 	b.resolve()
 	b.b.AddRawBytes(data)
 	return b
 }
 
-func (b *builder) AddOp(op vm.Op) *builder {
+func (b *builder) addOp(op vm.Op) *builder {
 	b.resolve()
 	if op == vm.OP_VERIFY {
 		b.verifyPending = true
@@ -45,26 +45,26 @@ func (b *builder) AddOp(op vm.Op) *builder {
 	return b
 }
 
-func (b *builder) NewJumpTarget() int {
+func (b *builder) newJumpTarget() int {
 	return b.b.NewJumpTarget()
 }
 
-func (b *builder) SetJumpTarget(target int) *builder {
+func (b *builder) setJumpTarget(target int) *builder {
 	b.b.SetJumpTarget(target)
 	return b
 }
 
-func (b *builder) AddJump(target int) *builder {
+func (b *builder) addJump(target int) *builder {
 	b.b.AddJump(target)
 	return b
 }
 
-func (b *builder) AddJumpIf(target int) *builder {
+func (b *builder) addJumpIf(target int) *builder {
 	b.b.AddJumpIf(target)
 	return b
 }
 
-func (b *builder) Build() ([]byte, error) {
+func (b *builder) build() ([]byte, error) {
 	return b.b.Build()
 }
 
