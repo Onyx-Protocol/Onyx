@@ -55,7 +55,7 @@ var policyByRoute = map[string][]string{
 	"/delete-access-token":        {"client-readwrite"},
 	"/add-allowed-member":         {"internal"},
 	"/configure":                  {"client-readwrite", "internal"},
-	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "crosscore-signblock", "monitoring"},
+	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "crosscore-signblock", "monitoring", "internal"},
 
 	"/debug/vars":          {"client-readwrite", "client-readonly", "monitoring"}, // should monitoring endpoints also be available to any other policy-holders?
 	"/debug/pprof":         {"client-readwrite", "client-readonly", "monitoring"},
