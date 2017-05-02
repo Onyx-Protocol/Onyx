@@ -448,7 +448,7 @@ context 'Chain SDK integration test' do
 
     # Listing
 
-    g = chain.authorization_grants.list_all.find { |g| g.guard_data['id'] == t.id }
+    g = chain.authorization_grants.list_all.find { |g| g.guard_data['id'] == t.id && !g.protected }
     expect(g.guard_type).to eq('access_token')
     expect(g.policy).to eq('client-readwrite')
 
@@ -466,7 +466,7 @@ context 'Chain SDK integration test' do
     )
 
     guards = chain.authorization_grants.list_all
-    g = guards.find { |g| g.guard_type == 'x509' }
+    g = guards.find { |g| g.guard_type == 'x509' && !g.protected }
 
     expect(g.guard_data).to eq('subject' => {
       'CN' => 'test-cn',
