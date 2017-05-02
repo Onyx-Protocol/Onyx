@@ -1,5 +1,4 @@
 import createHash from 'sha.js'
-import { hasProtectedGrant } from './selectors'
 
 export default (state = {ids: [], items: {}}, action) => {
   // Grant list is always complete, so we rebuild state from scratch
@@ -25,7 +24,12 @@ export default (state = {ids: [], items: {}}, action) => {
       const id = createHash('sha256').update(JSON.stringify(grant.guardData), 'utf8').digest('hex')
 
       if (newObjects[id]) {
-        if (hasProtectedGrant(newObjects[id].grants, grant.policy)) return
+        const existingIndex = newObjects[id].grants.findIndex(g => g.policy == grant.policy)
+        if (existingIndex >= 0) {
+          const existing = newObjects[id].grants[existingIndex]
+          if (existing.protected) { return }
+          if (grant.protected) { newObjects[id].grants.splice(existingIndex, 1) }
+        }
 
         newObjects[id].grants.push(grant)
         if (newObjects[id].createdAt.localeCompare(grant.createdAt) > 0) {
