@@ -32,14 +32,14 @@ If you are interested in contributing to this code base, please read our [issue]
 Set the `CHAIN` environment variable, in `.profile` in your home
 directory, to point to the root of the Chain source code repo:
 
-```
+```sh
 export CHAIN=$(go env GOPATH)/src/chain
 ```
 
 You should also add `$CHAIN/bin` to your path (as well as
 `$(go env GOPATH)/bin`, if it isn’t already):
 
-```
+```sh
 PATH=$(go env GOPATH)/bin:$CHAIN/bin:$PATH
 ```
 
@@ -47,7 +47,54 @@ You might want to open a new terminal window to pick up the change.
 
 ### Installation
 
-Build and install from source:
+Clone this repository to `$CHAIN`:
+
+```sh
+$ git clone https://github.com/chain/chain $CHAIN
+$ cd $CHAIN
+```
+
+You can build Chain Core using the `build-cored-release` script.
+The build product allows connections over HTTP, unauthenticated
+requests from localhost, and the ability to reset the Chain Core.
+
+`build-cored-release` accepts a accepts a Git ref (branch, tag, or commit SHA)
+from the chain repository and an output directory:
+
+```sh
+$ ./bin/build-cored-release chain-core-server-1.1.4 .
+```
+
+This will create two binaries in the current directory:
+
+* [cored](https://chain.com/docs/core/reference/cored): the Chain Core daemon and API server
+* [corectl](https://chain.com/docs/core/reference/corectl): control functions for a Chain Core
+
+Set up the database:
+
+```sh
+$ createdb core
+```
+
+Start Chain Core:
+
+```sh
+$ ./cored
+```
+
+Access the dashboard:
+
+```sh
+$ open http://localhost:1999/
+```
+
+Run tests:
+
+```sh
+$ go test $(go list ./... | grep -v vendor)
+```
+
+### Building from source
 
 There are four build tags that change the behavior of the resulting binary:
   - `reset`: allows the core database to be reset through the api
@@ -55,41 +102,24 @@ There are four build tags that change the behavior of the resulting binary:
   - `no_mockhsm`: disables the MockHSM provided for development
   - `plain_http`: allows plain HTTP requests
 
-```
-$ git clone https://github.com/chain/chain $CHAIN
-$ cd $CHAIN
-$ go install ./cmd/...
-```
+The default build process creates a binary with three build tags enabled for a
+friendlier experience. To build from source with build tags, use the following
+command:
 
-Set up the database:
+> NOTE: when building from source, make sure to check out a specific  
+tag to build. The `main` branch is __not considered__ stable, and may
+contain in progress features or an inconsistent experience.
 
-```
-$ createdb core
-```
-
-Start Chain Core:
-
-```
-$ cored
-```
-
-Access the dashboard:
-
-```
-$ open http://localhost:1999/
-```
-
-Run tests:
-
-```
-$ go test $(go list ./... | grep -v vendor)
+```sh
+$ go build -tags 'plain_http loopback_auth reset' chain/cmd/cored
+$ go build chain/cmd/corectl
 ```
 
 ## Developing Chain Core
 
 ### Updating the schema with migrations
 
-```
+```sh
 $ go run cmd/dumpschema/main.go
 ```
 
@@ -101,7 +131,7 @@ Copy the code from the package's directory
 to `$CHAIN/vendor/x`. For example, to vendor the package
 `github.com/kr/pretty`, run
 
-```
+```sh
 $ mkdir -p $CHAIN/vendor/github.com/kr
 $ rm -r $CHAIN/vendor/github.com/kr/pretty
 $ cp -r $(go list -f {{.Dir}} github.com/kr/pretty) $CHAIN/vendor/github.com/kr/pretty
