@@ -3,6 +3,8 @@ package core
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"crypto/x509/pkix"
 	"expvar"
 	"fmt"
@@ -29,6 +31,7 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/generated/dashboard"
+	"chain/log"
 	"chain/net/http/authn"
 	"chain/net/http/authz"
 	"chain/net/http/gzip"
@@ -247,12 +250,21 @@ type page struct {
 	LastPage bool         `json:"last_page"`
 }
 
-func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, internalDN *pkix.Name) http.Handler {
-	authenticator := authn.NewAPI(accessTokens, crosscoreRPCPrefix)
+func AuthHandler(handler http.Handler, rDB *raft.Service, accessTokens *accesstoken.CredentialStore, tlsConfig *tls.Config) http.Handler {
 	authorizer := authz.NewAuthorizer(rDB, grantPrefix, policyByRoute)
-	if internalDN != nil {
-		authorizer.GrantInternal(*internalDN)
+
+	rootCAs := x509.NewCertPool()
+	if tlsConfig != nil {
+		x509Cert, err := x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
+		if err != nil {
+			log.Fatalkv(context.Background(), log.KeyError, err)
+		}
+
+		authorizer.GrantInternal(x509Cert.Subject)
+		rootCAs = tlsConfig.ClientCAs
 	}
+
+	authenticator := authn.NewAPI(accessTokens, crosscoreRPCPrefix, rootCAs)
 
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// TODO(tessr): check that this path exists; return early if this path isn't legit
