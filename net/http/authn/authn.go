@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +14,12 @@ import (
 )
 
 const tokenExpiry = time.Minute * 5
+
+// TODO(kr): This a hack. Please revisit this soon.
+// When compiled without loopback_auth, we want to avoid
+// running the loopback authenticator at all, except for
+// requests to /dashboard/, where we *do* want to run it.
+var loopbackOn = false
 
 type API struct {
 	tokens             *accesstoken.CredentialStore
@@ -51,9 +58,18 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 		ctx = newContextWithLocalhost(ctx)
 	}
 
+	// Temporary workaround. Dashboard is always ok.
+	// See loopbackOn comment above.
+	if strings.HasPrefix(req.URL.Path, "/dashboard/") || req.URL.Path == "/dashboard" {
+		return req.WithContext(ctx), nil
+	}
+	if loopbackOn && local {
+		return req.WithContext(ctx), nil
+	}
+
 	// if there is no authentication at all, we return an "unauthenticated" error,
 	// which may be helpful when debugging
-	if len(X509Certs(ctx)) < 1 && err != nil && !local {
+	if len(X509Certs(ctx)) < 1 && err != nil {
 		return req, errors.New("unauthenticated")
 	}
 
