@@ -20,12 +20,18 @@ If you are interested in contributing to this code base, please read our [issue]
 
 ## Building from source
 
+The following software is needed to build Chain Core Developer Edition:
+
 * [Go](https://golang.org/doc/install) version 1.8, with $GOPATH set to your
   preferred directory
-* Postgres (we suggest [Postgres.app](http://postgresapp.com/)),
-  along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
 * [protoc](https://github.com/google/protobuf#protocol-compiler-installation),
   if you need to compile protos
+* [pigeon](https://github.com/mna/pigeon), if you need to change any .peg files: `go get -u github.com/mna/pigeon`
+
+The following software is needed to run Chain Core Developer Edition:
+
+* Postgres (for Mac OS X we suggest [Postgres.app](http://postgresapp.com/)),
+  along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
 
 ### Environment
 
@@ -49,16 +55,22 @@ You might want to open a new terminal window to pick up the change.
 
 Build and install from source:
 
+```
+$ git clone https://github.com/chain/chain $CHAIN
+$ cd $CHAIN
+$ go install ./cmd/...
+```
+
 There are four build tags that change the behavior of the resulting binary:
   - `reset`: allows the core database to be reset through the api
   - `loopback_auth`: allows unauthenticated requests on the loopback device (localhost)
   - `no_mockhsm`: disables the MockHSM provided for development
   - `plain_http`: allows plain HTTP requests
 
+These tags are specified as part of the `go install` command, for example:
+
 ```
-$ git clone https://github.com/chain/chain $CHAIN
-$ cd $CHAIN
-$ go install ./cmd/...
+$ go install -tags 'loopback_auth plain_http' ./cmd/...
 ```
 
 Set up the database:
