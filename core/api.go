@@ -179,6 +179,8 @@ func (a *API) buildHandler() {
 	m.Handle("/configure", jsonHandler(a.configure))
 	m.Handle("/info", jsonHandler(a.info))
 
+	m.Handle("/compile", jsonHandler(compileIvy))
+
 	m.Handle("/debug/vars", expvar.Handler())
 	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
