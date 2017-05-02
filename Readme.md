@@ -32,14 +32,14 @@ If you are interested in contributing to this code base, please read our [issue]
 Set the `CHAIN` environment variable, in `.profile` in your home
 directory, to point to the root of the Chain source code repo:
 
-```
+```sh
 export CHAIN=$(go env GOPATH)/src/chain
 ```
 
 You should also add `$CHAIN/bin` to your path (as well as
 `$(go env GOPATH)/bin`, if it isn’t already):
 
-```
+```sh
 PATH=$(go env GOPATH)/bin:$CHAIN/bin:$PATH
 ```
 
@@ -49,7 +49,7 @@ You might want to open a new terminal window to pick up the change.
 
 Clone this repository to the path defined in `CHAIN`:
 
-```
+```sh
 $ git clone https://github.com/chain/chain $CHAIN
 $ cd $CHAIN
 ```
@@ -61,44 +61,57 @@ requests from localhost, and the ability to reset the Chain Core.
 `build-cored-release` accepts a git tag for a Chain Core server release and
 an output directory:
 
-```
+```sh
 $ ./bin/build-cored-release chain-core-server-1.1.4 .
 ```
 
 This will create two binaries in the current directory:
 
-* [`cored`](https://chain.com/docs/core/reference/cored): the Chain Core daemon and API server
-* [`corectl`](https://chain.com/docs/core/reference/corectl): control functions for a Chain Core
+* [cored](https://chain.com/docs/core/reference/cored): the Chain Core daemon and API server
+* [corectl](https://chain.com/docs/core/reference/corectl): control functions for a Chain Core
 
 Set up the database:
 
-```
+```sh
 $ createdb core
 ```
 
 Start Chain Core:
 
-```
+```sh
 $ ./cored
 ```
 
 Access the dashboard:
 
-```
+```sh
 $ open http://localhost:1999/
 ```
 
 Run tests:
 
-```
+```sh
 $ go test $(go list ./... | grep -v vendor)
+```
+
+### Building from source
+
+There are four build tags that change the behavior of the resulting binary:
+  - `reset`: allows the core database to be reset through the api
+  - `loopback_auth`: allows unauthenticated requests on the loopback device (localhost)
+  - `no_mockhsm`: disables the MockHSM provided for development
+  - `plain_http`: allows plain HTTP requests
+
+```sh
+$ go build -tags 'plain_http loopback_auth reset' chain/cmd/cored
+$ go build chain/cmd/corectl
 ```
 
 ## Developing Chain Core
 
 ### Updating the schema with migrations
 
-```
+```sh
 $ go run cmd/dumpschema/main.go
 ```
 
@@ -110,7 +123,7 @@ Copy the code from the package's directory
 to `$CHAIN/vendor/x`. For example, to vendor the package
 `github.com/kr/pretty`, run
 
-```
+```sh
 $ mkdir -p $CHAIN/vendor/github.com/kr
 $ rm -r $CHAIN/vendor/github.com/kr/pretty
 $ cp -r $(go list -f {{.Dir}} github.com/kr/pretty) $CHAIN/vendor/github.com/kr/pretty
