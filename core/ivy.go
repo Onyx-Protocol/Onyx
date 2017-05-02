@@ -5,6 +5,7 @@ import (
 
 	chainjson "chain/encoding/json"
 	"chain/protocol/ivy"
+	"chain/protocol/vm"
 )
 
 type (
@@ -13,21 +14,23 @@ type (
 	}
 
 	compileResp struct {
-		Program chainjson.HexBytes `json:"program"`
-		OK      bool
-		Error   string
+		Bytes   chainjson.HexBytes `json:"bytes"`
+		Opcodes string             `json:"opcodes"`
+		Error   string             `json:"error"`
 	}
 )
 
-func compileIvy(req compileReq) compileResp {
+func compileIvy(req compileReq) (compileResp, error) {
+	var resp compileResp
 	prog, err := ivy.Compile(strings.NewReader(req.Contract))
-	var errStr string
-	if err != nil {
-		errStr = err.Error()
+	if err == nil {
+		resp.Bytes = prog
+		resp.Opcodes, err = vm.Disassemble(prog)
+		if err != nil {
+			return resp, err
+		}
+	} else {
+		resp.Error = err.Error()
 	}
-	return compileResp{
-		Program: prog,
-		OK:      err == nil,
-		Error:   errStr,
-	}
+	return resp, nil
 }
