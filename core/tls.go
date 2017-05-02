@@ -37,7 +37,7 @@ func TLSConfig(certFile, keyFile, rootCAs string) (*tls.Config, error) {
 		// TODO(kr): disabled for now; consider adding h2 support here.
 		// See also the comment on TLSNextProto in $CHAIN/cmd/cored/main.go.
 		//NextProtos: []string{"http/1.1", "h2"},
-		ClientAuth: tls.VerifyClientCertIfGiven,
+		ClientAuth: tls.RequestClientCert,
 	}
 
 	cert, certErr := ioutil.ReadFile(certFile)

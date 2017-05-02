@@ -2,6 +2,7 @@ package authn
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/hex"
 	"net"
 	"net/http"
@@ -24,6 +25,7 @@ var loopbackOn = false
 type API struct {
 	tokens             *accesstoken.CredentialStore
 	crosscoreRPCPrefix string
+	rootCAs            *x509.CertPool
 
 	tokenMu  sync.Mutex // protects the following
 	tokenMap map[string]tokenResult
@@ -34,18 +36,19 @@ type tokenResult struct {
 	lastLookup time.Time
 }
 
-func NewAPI(tokens *accesstoken.CredentialStore, crosscorePrefix string) *API {
+func NewAPI(tokens *accesstoken.CredentialStore, crosscorePrefix string, rootCAs *x509.CertPool) *API {
 	return &API{
 		tokens:             tokens,
 		crosscoreRPCPrefix: crosscorePrefix,
 		tokenMap:           make(map[string]tokenResult),
+		rootCAs:            rootCAs,
 	}
 }
 
 // Authenticate returns the request, with added tokens and/or localhost
 // flags in the context, as appropriate.
 func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
-	ctx := certAuthn(req)
+	ctx := certAuthn(req, a.rootCAs)
 
 	token, err := a.tokenAuthn(req)
 	if err == nil && token != "" {
@@ -78,9 +81,28 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 
 // checks the request for a valid client cert list.
 // If found, it is added to the request's context.
-func certAuthn(req *http.Request) context.Context {
+func certAuthn(req *http.Request, rootCAs *x509.CertPool) context.Context {
 	if req.TLS != nil && len(req.TLS.PeerCertificates) > 0 {
-		return context.WithValue(req.Context(), x509CertsKey, req.TLS.PeerCertificates)
+		certs := req.TLS.PeerCertificates
+
+		// Same logic as serverHandshakeState.processCertsFromClient
+		// in $GOROOT/src/crypto/tls/handshake_server.go.
+		opts := x509.VerifyOptions{
+			Roots:         rootCAs,
+			CurrentTime:   time.Now(),
+			Intermediates: x509.NewCertPool(),
+			KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		}
+		for _, cert := range certs[1:] {
+			opts.Intermediates.AddCert(cert)
+		}
+		_, err := certs[0].Verify(opts)
+		if err != nil {
+			// errors.New("tls: failed to verify client's certificate: " + err.Error())
+			return req.Context()
+		}
+
+		return context.WithValue(req.Context(), x509CertsKey, certs)
 	}
 	return req.Context()
 }

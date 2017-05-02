@@ -143,15 +143,6 @@ func main() {
 		chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 	}
 
-	var internalDN *pkix.Name
-	if tlsConfig != nil {
-		x509Cert, err := x509.ParseCertificate(tlsConfig.Certificates[0].Certificate[0])
-		if err != nil {
-			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
-		}
-		internalDN = &x509Cert.Subject
-	}
-
 	// TODO(kr): make core.UseTLS take just an http client
 	// and use this object in it.
 	httpClient := new(http.Client)
@@ -213,7 +204,7 @@ func main() {
 	mux.Handle("/", &coreHandler)
 
 	var handler http.Handler = mux
-	handler = core.AuthHandler(handler, raftDB, accessTokens, internalDN)
+	handler = core.AuthHandler(handler, raftDB, accessTokens, tlsConfig)
 	handler = core.RedirectHandler(handler)
 	handler = reqid.Handler(handler)
 
