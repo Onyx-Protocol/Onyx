@@ -4,8 +4,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"expvar"
 	"flag"
 	"fmt"
