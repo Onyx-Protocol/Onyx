@@ -51,7 +51,8 @@ $ go install chain/cmd/corectl
 * [reset](#reset)
 * [grant](#grant)
 * [revoke](#revoke)
-* [wait][#wait]
+* [allow-address](#allow-address)
+* [wait](#wait)
 
 ### `config-generator`
 
