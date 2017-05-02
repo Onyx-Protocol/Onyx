@@ -132,7 +132,7 @@ func TestAuthz(t *testing.T) {
 			"crosscore":           true,
 			"crosscore-signblock": true,
 			"monitoring":          true,
-			"internal":            false,
+			"internal":            true,
 			"public":              false,
 		},
 		"/debug/pprof/symbol": map[string]bool{
