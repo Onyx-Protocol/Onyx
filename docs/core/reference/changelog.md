@@ -68,10 +68,10 @@ To authenticate your applications using client certificates, see the [Authentica
 <a name="1.2.0-authorization-grants"></a>
 #### Authorization grants
 
-Authorization grants allow your applications to use credentials that have limited access to the Chain Core API. For example, you may wish to grant read-only access to a particular client applications, or monitoring-only access for uptime reporting.
+Authorization grants allow your applications to use credentials that have limited access to the Chain Core API. For example, you may wish to grant read-only access to a particular client application, or monitoring-only access for uptime reporting.
 
 To learn more, see the [Authentication and Authorization guide](../learn-more/authentication.md#granting-access).
 
 #### Tag updating
 
-Account and asset tags can now be updated via the dashboard ansd SDKs. To learn more, see examples for [accounts](../build-applications/accounts.md#update-tags-on-existing-accounts) and [assets](../build-applications/assets.md#update-tags-on-existing-assets).
+Account and asset tags can now be updated via the dashboard and SDKs. To learn more, see examples for [accounts](../build-applications/accounts.md#update-tags-on-existing-accounts) and [assets](../build-applications/assets.md#update-tags-on-existing-assets).
