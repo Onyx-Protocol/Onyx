@@ -140,6 +140,8 @@ func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) 
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		defer resp.Body.Close()
+
 		resErr := ErrStatusCode{
 			URL:        cleanedURLString(u),
 			StatusCode: resp.StatusCode,
@@ -151,10 +153,10 @@ func (c *Client) CallRaw(ctx context.Context, path string, request interface{}) 
 		if err == nil && errData.ChainCode != "" {
 			resErr.ErrorData = &errData
 		}
-		resp.Body.Close()
 
 		return nil, resErr
 	}
+
 	return resp.Body, nil
 }
 
