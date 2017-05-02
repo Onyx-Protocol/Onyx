@@ -80,11 +80,15 @@ func checkHttpCall(f *File, node ast.Node) {
 	if !ok {
 		return
 	}
-	if obj.Pkg() == nil || obj.Pkg().Scope().Lookup(obj.Name()) != obj {
+	if !isPackageLevel(obj) {
 		return
 	}
 	if obj.Pkg().Path() != "net/http" || obj.Name() != "DefaultClient" {
 		return
 	}
 	f.Badf(call.Pos(), "use of net/http.DefaultClient.%s", fun.Name())
+}
+
+func isPackageLevel(obj types.Object) bool {
+	return obj.Pkg() != nil && obj.Pkg().Scope().Lookup(obj.Name()) == obj
 }
