@@ -1,5 +1,5 @@
 import createHash from 'sha.js'
-import { hasProtectedGrant } from './constants'
+import { hasProtectedGrant } from './selectors'
 
 export default (state = {ids: [], items: {}}, action) => {
   // Grant list is always complete, so we rebuild state from scratch

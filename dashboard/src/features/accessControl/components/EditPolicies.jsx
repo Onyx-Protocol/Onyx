@@ -1,6 +1,7 @@
 import React from 'react'
 import { BaseNew, CheckboxField } from 'features/shared/components'
-import { policyOptions, hasProtectedGrant } from 'features/accessControl/constants'
+import { policyOptions } from 'features/accessControl/constants'
+import { hasProtectedGrant } from 'features/accessControl/selectors'
 import { reduxForm } from 'redux-form'
 import actions from 'features/accessControl/actions'
 import styles from './EditPolicies.scss'

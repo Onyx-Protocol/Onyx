@@ -24,3 +24,6 @@ export const isAccessToken = createSelector(
   guardType,
   type => type == 'access_token'
 )
+
+export const hasProtectedGrant = (grants, policy) =>
+  grants.find(grant => grant.protected && grant.policy == policy) != undefined

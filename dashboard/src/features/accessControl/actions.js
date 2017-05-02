@@ -2,7 +2,8 @@ import React from 'react'
 import { chainClient } from 'utility/environment'
 import { actions as appActions } from 'features/app'
 import { push } from 'react-router-redux'
-import { subjectFieldOptions, hasProtectedGrant } from 'features/accessControl/constants'
+import { subjectFieldOptions } from './constants'
+import { hasProtectedGrant } from './selectors'
 import TokenCreateModal from './components/TokenCreateModal'
 
 // Given a list of policies, create a grant for
