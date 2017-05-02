@@ -43,54 +43,54 @@ func compile(contract *contract) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		return b.Build()
+		return b.build()
 	}
 
 	b := newBuilder()
-	endTarget := b.NewJumpTarget()
+	endTarget := b.newJumpTarget()
 	clauseTargets := make([]int, len(contract.clauses))
 	for i := range contract.clauses {
-		clauseTargets[i] = b.NewJumpTarget()
+		clauseTargets[i] = b.newJumpTarget()
 	}
 
 	if len(stack) > 0 {
 		// A clause selector is at the bottom of the stack. Roll it to the
 		// top.
-		b.AddInt64(int64(len(stack)))
-		b.AddOp(vm.OP_ROLL) // stack: [<clause params> <contract params> <clause selector>]
+		b.addInt64(int64(len(stack)))
+		b.addOp(vm.OP_ROLL) // stack: [<clause params> <contract params> <clause selector>]
 	}
 
 	// clauses 2..N-1
 	for i := len(contract.clauses) - 1; i >= 2; i-- {
-		b.AddOp(vm.OP_DUP)            // stack: [... <clause selector> <clause selector>]
-		b.AddInt64(int64(i))          // stack: [... <clause selector> <clause selector> <i>]
-		b.AddOp(vm.OP_NUMEQUAL)       // stack: [... <clause selector> <i == clause selector>]
-		b.AddJumpIf(clauseTargets[i]) // stack: [... <clause selector>]
+		b.addOp(vm.OP_DUP)            // stack: [... <clause selector> <clause selector>]
+		b.addInt64(int64(i))          // stack: [... <clause selector> <clause selector> <i>]
+		b.addOp(vm.OP_NUMEQUAL)       // stack: [... <clause selector> <i == clause selector>]
+		b.addJumpIf(clauseTargets[i]) // stack: [... <clause selector>]
 	}
 
 	// clause 1
-	b.AddJumpIf(clauseTargets[1])
+	b.addJumpIf(clauseTargets[1])
 
 	// no jump needed for clause 0
 
 	for i, clause := range contract.clauses {
-		b.SetJumpTarget(clauseTargets[i])
+		b.setJumpTarget(clauseTargets[i])
 		b2 := newBuilder()
 		err = compileClause(b2, stack, contract, clause)
 		if err != nil {
 			return nil, err
 		}
-		prog, err := b2.Build()
+		prog, err := b2.build()
 		if err != nil {
 			return nil, err
 		}
-		b.AddRawBytes(prog)
+		b.addRawBytes(prog)
 		if i < len(contract.clauses)-1 {
-			b.AddJump(endTarget)
+			b.addJump(endTarget)
 		}
 	}
-	b.SetJumpTarget(endTarget)
-	return b.Build()
+	b.setJumpTarget(endTarget)
+	return b.build()
 }
 
 func compileClause(b *builder, contractStack []stackEntry, contract *contract, clause *clause) error {
@@ -121,25 +121,25 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 			if err != nil {
 				return err
 			}
-			b.AddOp(vm.OP_VERIFY)
+			b.addOp(vm.OP_VERIFY)
 
 		case *outputStatement:
 			// index
-			b.AddInt64(stmt.index)
+			b.addInt64(stmt.index)
 			stack = append(stack, stackEntry{})
 
 			// refdatahash
-			b.AddData(nil)
+			b.addData(nil)
 			stack = append(stack, stackEntry{})
 
 			p := stmt.param
 			if p == nil {
 				// amount
-				b.AddOp(vm.OP_AMOUNT)
+				b.addOp(vm.OP_AMOUNT)
 				stack = append(stack, stackEntry{})
 
 				// asset
-				b.AddOp(vm.OP_ASSET)
+				b.addOp(vm.OP_ASSET)
 				stack = append(stack, stackEntry{})
 			} else {
 				// amount
@@ -162,7 +162,7 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 			}
 
 			// version
-			b.AddInt64(1)
+			b.addInt64(1)
 			stack = append(stack, stackEntry{})
 
 			// prog
@@ -171,8 +171,8 @@ func compileClause(b *builder, contractStack []stackEntry, contract *contract, c
 				return err
 			}
 
-			b.AddOp(vm.OP_CHECKOUTPUT)
-			b.AddOp(vm.OP_VERIFY)
+			b.addOp(vm.OP_CHECKOUTPUT)
+			b.addOp(vm.OP_VERIFY)
 
 		case *returnStatement:
 			if !exprReferencesParam(stmt.expr, contract.params[len(contract.params)-1]) {
@@ -197,22 +197,22 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		}
 		switch e.op {
 		case "==":
-			b.AddOp(vm.OP_EQUAL)
+			b.addOp(vm.OP_EQUAL)
 		case "!=":
-			b.AddOp(vm.OP_EQUAL)
-			b.AddOp(vm.OP_NOT)
+			b.addOp(vm.OP_EQUAL)
+			b.addOp(vm.OP_NOT)
 		case "<=":
-			b.AddOp(vm.OP_LESSTHANOREQUAL)
+			b.addOp(vm.OP_LESSTHANOREQUAL)
 		case ">=":
-			b.AddOp(vm.OP_GREATERTHANOREQUAL)
+			b.addOp(vm.OP_GREATERTHANOREQUAL)
 		case "<":
-			b.AddOp(vm.OP_LESSTHAN)
+			b.addOp(vm.OP_LESSTHAN)
 		case ">":
-			b.AddOp(vm.OP_GREATERTHAN)
+			b.addOp(vm.OP_GREATERTHAN)
 		case "+":
-			b.AddOp(vm.OP_ADD)
+			b.addOp(vm.OP_ADD)
 		case "-":
-			b.AddOp(vm.OP_SUB)
+			b.addOp(vm.OP_SUB)
 		default:
 			return fmt.Errorf("unknown operator %s", e.op)
 		}
@@ -223,9 +223,9 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 		}
 		switch e.op {
 		case "-":
-			b.AddOp(vm.OP_NEGATE)
+			b.addOp(vm.OP_NEGATE)
 		case "!":
-			b.AddOp(vm.OP_NOT)
+			b.addOp(vm.OP_NOT)
 		default:
 			return fmt.Errorf("unknown operator %s", e.op)
 		}
@@ -243,7 +243,7 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			}
 			stack = append(stack, stackEntry{})
 		}
-		b.AddRawBytes(e.fn.builtin.ops)
+		b.addRawBytes(e.fn.builtin.ops)
 	case *ref:
 		found := false
 		for i := len(stack) - 1; i >= 0; i-- {
@@ -252,12 +252,12 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 				depth := int64(len(stack) - 1 - i)
 				switch depth {
 				case 0:
-					b.AddOp(vm.OP_DUP)
+					b.addOp(vm.OP_DUP)
 				case 1:
-					b.AddOp(vm.OP_OVER)
+					b.addOp(vm.OP_OVER)
 				default:
-					b.AddInt64(depth)
-					b.AddOp(vm.OP_PICK)
+					b.addInt64(depth)
+					b.addOp(vm.OP_PICK)
 				}
 			}
 		}
@@ -265,12 +265,12 @@ func compileExpr(b *builder, stack []stackEntry, contract *contract, clause *cla
 			return fmt.Errorf("undefined reference %s", e.names[0])
 		}
 	case integerLiteral:
-		b.AddInt64(int64(e))
+		b.addInt64(int64(e))
 	case booleanLiteral:
 		if e {
-			b.AddOp(vm.OP_TRUE)
+			b.addOp(vm.OP_TRUE)
 		} else {
-			b.AddOp(vm.OP_FALSE)
+			b.addOp(vm.OP_FALSE)
 		}
 	}
 	return nil
