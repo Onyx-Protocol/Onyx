@@ -39,6 +39,7 @@ type Client struct {
 	CoreID       string
 
 	// If set, Client is used for outgoing requests.
+	// TODO(kr): make this required (crash on nil)
 	Client *http.Client
 }
 
