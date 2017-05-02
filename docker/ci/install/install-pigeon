@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+
+go get -u github.com/mna/pigeon
