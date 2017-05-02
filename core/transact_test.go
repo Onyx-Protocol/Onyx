@@ -161,7 +161,7 @@ func TestWaitForTxInBlockResubmits(t *testing.T) {
 	wg.Add(timesToResubmit)
 	a.submitter = submitterFunc(func(_ context.Context, tx *legacy.Tx) error {
 		if orig.ID != tx.ID {
-			t.Errorf("got tx %s, want tx %s", tx.ID, orig.ID)
+			t.Errorf("got tx %s, want tx %s", tx.ID.String(), orig.ID.String())
 		}
 		wg.Done()
 		return nil

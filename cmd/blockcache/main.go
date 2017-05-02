@@ -283,7 +283,8 @@ func getBlockchainID(peer *rpc.Client) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return block.Hash().HexString(), nil
+	h := block.Hash()
+	return h.String(), nil
 }
 
 func backoffDur(n uint) time.Duration {

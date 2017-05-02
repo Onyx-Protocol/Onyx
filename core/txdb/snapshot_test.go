@@ -105,7 +105,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 
 		for _, lookup := range changeset.lookups {
 			if !snapshot.Tree.Contains(lookup.Bytes()) {
-				t.Errorf("Lookup(%s, %s) = false, want true", lookup, lookup)
+				t.Errorf("Lookup(%s, %s) = false, want true", lookup.String(), lookup.String())
 			}
 		}
 
@@ -113,7 +113,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 			t.Fatalf("%d: state snapshot height got=%d want=%d", i, height, uint64(i))
 		}
 		if loadedSnapshot.Tree.RootHash() != snapshot.Tree.RootHash() {
-			t.Fatalf("%d: Wrote %s to db, read %s from db\n", i, snapshot.Tree.RootHash(), loadedSnapshot.Tree.RootHash())
+			t.Fatalf("%d: Wrote %x to db, read %x from db\n", i, snapshot.Tree.RootHash().Bytes(), loadedSnapshot.Tree.RootHash().Bytes())
 		}
 		if !testutil.DeepEqual(loadedSnapshot.Nonces, snapshot.Nonces) {
 			t.Fatalf("%d: Wrote %#v nonces to db, read %#v from db\n", i, snapshot.Nonces, loadedSnapshot.Nonces)

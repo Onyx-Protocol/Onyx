@@ -32,13 +32,6 @@ func (h Hash) Byte32() (b32 [32]byte) {
 	return b32
 }
 
-// HexString is a reader-friendlier alternative to the
-// protoc-generated String method.
-func (h Hash) HexString() string {
-	b, _ := h.MarshalText()
-	return string(b)
-}
-
 // MarshalText satisfies the TextMarshaler interface.
 // It returns the bytes of h encoded in hex,
 // for formats that can't hold arbitrary binary data.
