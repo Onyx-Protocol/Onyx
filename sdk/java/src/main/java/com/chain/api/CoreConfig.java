@@ -164,6 +164,7 @@ public class CoreConfig {
 
   /**
    * Get info on specified Chain Core.
+   * @param client client object that makes requests to the core
    * @return Info
    */
   public static Info getInfo(Client client) throws ChainException {
@@ -172,6 +173,7 @@ public class CoreConfig {
 
   /**
    * Reset specified Chain Core, preserving access tokens and MockHSM keys.
+   * @param client client object that makes requests to the core
    */
   public static void reset(Client client) throws ChainException {
     client.request("reset", null, SuccessMessage.class);
@@ -180,6 +182,7 @@ public class CoreConfig {
   /**
    * Reset all data on the specified Chain Core, including access tokens
    * and MockHSM keys.
+   * @param client client object that makes requests to the core
    */
   public static void resetEverything(Client client) throws ChainException {
     Map<String, Object> params = new HashMap<>();
@@ -254,6 +257,7 @@ public class CoreConfig {
 
     /**
      * Configure specified Chain Core.
+     * @param client client object that makes requests to the core
      */
     public void configure(Client client) throws ChainException {
       client.request("configure", this);
