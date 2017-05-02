@@ -303,16 +303,6 @@ This does not include other possible witnesses.
     }
 
 
-TBD: how delegations to nested programs stack up witnesses, with buildcode composing all calls to produce the witness.
-
-TBD: how nested clauses are handled
-
-
-
-
-
-
-
 ## Actions
 
 ### Build
@@ -379,6 +369,52 @@ TBD: how nested clauses are handled
         2. Client places the signature over TXSIGHASH in the entry inside the transaction.
 
 
+### Create Disclosure Import Key
+
+The Core that needs to import a disclosure must first generate a recipient key to ensure 
+that the document is encrypted in-transit (without assuming direct secure connection between two Cores).
+
+   import_key = client.disclosures.create_import_key()
+   import_key_serialized = import_key.to_json
+
+1. Core loads the `Root Import Key` — a ChainKD xpub.
+2. Core generates a unique blinding selector `b` (256 bits of entropy).
+3. Core derives one-time import pubkey: `IK = HD(RIKxpub, b)`.
+4. Core returns a pair of the import key and a blinding selector `IK,b` (total 64 bytes).
+
+
+### Export Disclosure
+
+Bob receives `import_key` from Alice and uses it to build a disclosure object:
+
+    disclosure = client.disclosures.build(import_key: import_key) do |d|
+      d.disclose_output(output_id: "fa0e8fb0ad...",          fields: {asset_id: true, amount: true, data: true})
+      d.disclose_transaction(transaction_id: "57ad0fea9...", fields: {asset_id: true, amount: true, data: true})
+      d.disclose_account(account_alias: "bob",               fields: {asset_id: true, amount: true, data: true})
+    end
+    disclosure_serialized = disclosure.to_json
+
+The resulting object is encrypted to an `import_key`, contains minimal metadata needed for decryption 
+and can be safely transmitted to the receiving Core for import.
+
+* `disclose_output` — adds proofs and decryption keys for a single output.
+* `disclose_transaction` — adds proofs and decryption keys for each output in the transaction (omits outputs not decrypted by this Core).
+* `disclose_account` — adds account xpubs, derivation path and root decryption keys for tracking all outputs for a given account.
+
+
+### Import Disclosure
+
+Alice receives `disclosure` object from Bob and attempts to import in the Core:
+
+    disclosure_description = client.disclosures.import(disclosure)
+
+Alice can decrypt and inspect the disclosure parameters without importing:
+
+    disclosure_description = client.disclosures.decrypt(disclosure)
+    disclosure_description.fields.asset_id # => true/false
+    disclosure_description.scope           # => 'output'/'transaction_id'/'account'
+
+TBD: querying all stored disclosures too?
 
 
 ## Encryption
@@ -394,22 +430,48 @@ Core is initialized with a **root secret key** `RK` which is stored in the Core'
 
     RK = random
 
+From that key, Core creates a **root import key** `RIK`, an xprv/xpub pair using RK as a seed:
+
+    RIK = ChainKD(seed: "RIK" || RK)
+
+For accounts and outputs Core creates **root confidentiality key** `RCK`:
+
+    RCK = SHAKE128("RCK" || RK , 32)
+
 For each access token there is a separate **access key** `AK`:
 
     AK = SHAKE128(RK || access_token, 32)
 
-For each account
+For each field, there's a separate root key:
 
-* Core derives per-output encryption keys using output control programs
-* Access is restricted within Core by acess tokens.
-* Lite Cores allow more precise control over private data (enc keys, account xpubs) by allowing many Lite Cores handle encryption keys while one bigger Core only verifies and slices the blockchain.
+    RDEK = SHAKE128("RDEK" || RCK, 32)   # Root Data Encryption Key
+    RAEK = SHAKE128("RAEK" || RCK, 32)   # Root Asset ID Encryption Key
+    RVEK = SHAKE128("RVEK" || RCK, 32)   # Root Value Encryption Key
+
+For each account a deterministic account selector is made that's used to generate per-account keys:
+    
+    account_selector = m,n,xpub1,xpub2,...
+
+    ADEK = SHAKE128("ADEK" || RDEK || accselector, 32)   # Account Data Encryption Key
+    AAEK = SHAKE128("AAEK" || RAEK || accselector, 32)   # Account Asset ID Encryption Key
+    AVEK = SHAKE128("AVEK" || RVEK || accselector, 32)   # Account Value Encryption Key
+
+For each output, a key is derived using control program as a selector:
+
+    ODEK = SHAKE128("ADEK" || ADEK || ctrlprog, 32)   # Output Data Encryption Key
+    OAEK = SHAKE128("AAEK" || AAEK || ctrlprog, 32)   # Output Asset ID Encryption Key
+    OVEK = SHAKE128("AVEK" || AVEK || ctrlprog, 32)   # Output Value Encryption Key
+
 
 TBD: figure how to encrypt with unique key a retirement entry.
+TBD: tweak the scheme to allow 2D derivation.
+
 
 ### Reference data encryption
 
 TBD: split data in 2 parts: for the value range proof and the remainder. 
-Encrypt the remainder and 
+
+TBD: Encrypt the remainder and supply it separately from range proof.
 
 
 ### Payload encryption
@@ -434,8 +496,6 @@ Encrypt the remainder and
 5. Compute keystream of the same length as ciphertext: `keystream = SHAKE128(EK, len(ciphertext))`
 6. Decrypt the payload by XORing keystream with the ciphertext: `payload = ct XOR keystream`.
 7. Return `payload`.
-
-
 
 
 ## Compatibility
