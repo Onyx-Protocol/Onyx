@@ -1,6 +1,6 @@
 import React from 'react'
 import { BaseNew, CheckboxField } from 'features/shared/components'
-import { policyOptions } from 'features/accessControl/constants'
+import { policyOptions, hasProtectedGrant } from 'features/accessControl/constants'
 import { reduxForm } from 'redux-form'
 import actions from 'features/accessControl/actions'
 import styles from './EditPolicies.scss'
@@ -15,13 +15,13 @@ class EditPolicies extends React.Component {
     return(
       <div className={styles.main}>
         {policyOptions.map(option => {
-          const grant = this.props.item.grants.find(g => g.policy == option.value)
+          const isProtected = hasProtectedGrant(this.props.item.grants, option.value)
           return <CheckboxField key={option.label}
             title={option.label}
             hint={option.hint}
             fieldProps={{
               ...policies[option.value],
-              disabled: grant && grant.protected
+              disabled: isProtected,
             }} />
         })}
 

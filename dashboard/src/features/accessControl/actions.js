@@ -12,7 +12,7 @@ const setPolicies = (body, policies) => {
   const promises = []
 
   for (let key in policies) {
-    if (body.grants && hasProtectedGrant(body.grants, key)) continue
+    if (hasProtectedGrant(body.grants || [], key)) continue
 
     const grant = {
       guardData: body.guardData,
