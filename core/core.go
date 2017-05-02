@@ -142,7 +142,7 @@ func (a *API) configure(ctx context.Context, x *config.Config) error {
 		x.MaxIssuanceWindowMs = bc.DurationMillis(24 * time.Hour)
 	}
 
-	err := config.Configure(ctx, a.db, a.raftDB, x)
+	err := config.Configure(ctx, a.db, a.raftDB, a.httpClient, x)
 	if err != nil {
 		return err
 	}
