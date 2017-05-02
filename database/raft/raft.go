@@ -66,7 +66,6 @@ type Service struct {
 	donec   chan struct{}
 	client  *http.Client
 	useTLS  bool
-	isNew   bool
 
 	errMu sync.Mutex
 	err   error
@@ -198,7 +197,6 @@ func Start(laddr, dir, bootURL string, httpClient *http.Client, useTLS bool) (*S
 	} else {
 		// brand new cluster!
 		sv.id = 1
-		sv.isNew = true
 	}
 
 	c := &raft.Config{
@@ -248,11 +246,6 @@ func triggerElection(ctx context.Context, sv *Service) {
 	if err != nil {
 		log.Error(ctx, err, "election failed")
 	}
-}
-
-// IsNew returns true if this process created a brand new raft cluster.
-func (sv *Service) IsNew() bool {
-	return sv.isNew
 }
 
 // Err returns a serious error preventing this process from
