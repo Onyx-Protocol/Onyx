@@ -58,8 +58,12 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 		ctx = newContextWithLocalhost(ctx)
 	}
 
-	// Temporary workaround. See loopbackOn comment above.
-	if want := loopbackOn || strings.HasPrefix(req.URL.Path, "/dashboard/"); want && local {
+	// Temporary workaround. Dashboard is always ok.
+	// See loopbackOn comment above.
+	if strings.HasPrefix(req.URL.Path, "/dashboard/") || req.URL.Path == "/dashboard" {
+		return req.WithContext(ctx), nil
+	}
+	if loopbackOn && local {
 		return req.WithContext(ctx), nil
 	}
 
