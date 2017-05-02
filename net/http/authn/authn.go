@@ -81,6 +81,9 @@ func (a *API) Authenticate(req *http.Request) (*http.Request, error) {
 
 // checks the request for a valid client cert list.
 // If found, it is added to the request's context.
+// Note that an *invalid* client cert is treated the
+// same as no client cert -- it is omitted from the
+// returned context, but the connection may proceed.
 func certAuthn(req *http.Request, rootCAs *x509.CertPool) context.Context {
 	if req.TLS != nil && len(req.TLS.PeerCertificates) > 0 {
 		certs := req.TLS.PeerCertificates
