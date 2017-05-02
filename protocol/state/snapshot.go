@@ -74,10 +74,20 @@ func (s *Snapshot) ApplyTx(tx *bc.Tx) error {
 	for _, n := range tx.NonceIDs {
 		// Add new nonces. They must not conflict with nonces already
 		// present.
-		if s.Nonces[n] >= tx.MaxTimeMs {
+		if _, ok := s.Nonces[n]; ok {
 			return fmt.Errorf("conflicting nonce %x", n.Bytes())
 		}
-		s.Nonces[n] = tx.MaxTimeMs
+
+		nonce, err := tx.Nonce(n)
+		if err != nil {
+			return errors.Wrap(err, "applying nonce")
+		}
+		tr, err := tx.TimeRange(*nonce.TimeRangeId)
+		if err != nil {
+			return errors.Wrap(err, "applying nonce")
+		}
+
+		s.Nonces[n] = tr.MaxTimeMs
 	}
 
 	// Remove spent outputs. Each output must be present.

@@ -81,3 +81,15 @@ func (tx *Tx) Issuance(id Hash) (*Issuance, error) {
 	}
 	return iss, nil
 }
+
+func (tx *Tx) Nonce(id Hash) (*Nonce, error) {
+	e, ok := tx.Entries[id]
+	if !ok || e == nil {
+		return nil, errors.Wrapf(ErrMissingEntry, "id %x", id.Bytes())
+	}
+	nonce, ok := e.(*Nonce)
+	if !ok {
+		return nil, errors.Wrapf(ErrEntryType, "entry %x has unexpected type %T", id.Bytes(), e)
+	}
+	return nonce, nil
+}
