@@ -265,7 +265,7 @@ func main() {
 
 	var h http.Handler
 	if conf != nil {
-		h = launchConfiguredCore(ctx, raftDB, db, conf, processID, core.UseTLS(tlsConfig))
+		h = launchConfiguredCore(ctx, raftDB, db, conf, processID, httpClient, core.UseTLS(tlsConfig))
 	} else {
 		var opts []core.RunOption
 		opts = append(opts, core.UseTLS(tlsConfig))
@@ -300,7 +300,7 @@ func maybeUseTLS(ln net.Listener) (net.Listener, *tls.Config, error) {
 	return ln, c, nil
 }
 
-func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string, opts ...core.RunOption) http.Handler {
+func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB, conf *config.Config, processID string, httpClient *http.Client, opts ...core.RunOption) http.Handler {
 	// Initialize the protocol.Chain.
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
@@ -325,7 +325,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 	}
 	// If the Core is configured as a block signer, add the sign-block RPC handler.
 	if conf.IsSigner {
-		localSigner, err = initializeLocalSigner(ctx, conf, db, c, processID)
+		localSigner, err = initializeLocalSigner(ctx, conf, db, c, processID, httpClient)
 		if err != nil {
 			chainlog.Fatalkv(ctx, chainlog.KeyError, err)
 		}
@@ -344,7 +344,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 		if localSigner != nil {
 			signers = append(signers, localSigner)
 		}
-		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainId.String(), conf) {
+		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, conf.BlockchainId.String(), conf, httpClient) {
 			signers = append(signers, signer)
 		}
 		c.MaxIssuanceWindow = bc.MillisDuration(conf.MaxIssuanceWindowMs)
@@ -371,7 +371,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 	return api
 }
 
-func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c *protocol.Chain, processID string) (*blocksigner.BlockSigner, error) {
+func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c *protocol.Chain, processID string, httpClient *http.Client) (*blocksigner.BlockSigner, error) {
 	var hsm blocksigner.Signer
 	if conf.BlockHsmUrl != "" {
 		// TODO(ameets): potential option to take only a password when configuring
@@ -383,6 +383,7 @@ func initializeLocalSigner(ctx context.Context, conf *config.Config, db pg.DB, c
 			CoreID:       conf.Id,
 			BuildTag:     buildTag,
 			BlockchainID: conf.BlockchainId.String(),
+			Client:       httpClient,
 		}}
 	} else {
 		var err error
@@ -410,7 +411,7 @@ func (h *remoteHSM) Sign(ctx context.Context, pk ed25519.PublicKey, bh *legacy.B
 	return
 }
 
-func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, conf *config.Config) (a []*remoteSigner) {
+func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, conf *config.Config, httpClient *http.Client) (a []*remoteSigner) {
 	for _, signer := range conf.Signers {
 		u, err := url.Parse(signer.Url)
 		if err != nil {
@@ -426,6 +427,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 			CoreID:       conf.Id,
 			BuildTag:     buildTag,
 			BlockchainID: blockchainID,
+			Client:       httpClient,
 		}
 		a = append(a, &remoteSigner{Client: client, Key: ed25519.PublicKey(signer.Pubkey)})
 	}
