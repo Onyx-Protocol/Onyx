@@ -59,6 +59,8 @@ var policyByRoute = map[string][]string{
 	"/configure":                  {"client-readwrite", "internal"},
 	"/info":                       {"client-readwrite", "client-readonly", "crosscore", "crosscore-signblock", "monitoring", "internal"},
 
+	"/compile": {"client-readwrite", "client-readonly"},
+
 	"/debug/": {"client-readwrite", "client-readonly", "monitoring"},
 
 	"/raft/": {"internal"},
