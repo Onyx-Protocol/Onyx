@@ -348,6 +348,7 @@ func launchConfiguredCore(ctx context.Context, raftDB *raft.Service, db *sql.DB,
 			CoreID:       conf.Id,
 			BuildTag:     buildTag,
 			BlockchainID: conf.BlockchainId.String(),
+			Client:       httpClient,
 		}))
 	}
 
