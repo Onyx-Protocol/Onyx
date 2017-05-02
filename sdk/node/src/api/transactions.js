@@ -386,6 +386,17 @@ const transactionsAPI = (client) => {
     ),
 
     /**
+     * Submit a signed transaction and wait for its confirmation on the blockchain.
+     *
+     * @param {Object} signed - A fully signed transaction template.
+     * @returns {Promise<Object>} Transaction ID of the successful transaction, or error.
+     */
+    submitAndWait: (signed, cb) => shared.tryCallback(
+      client.request('/submit-transaction', {transactions: [signed], waitUntil: 'confirmed'}).then(resp => checkForError(resp[0])),
+      cb
+    ),
+
+    /**
      * Submit multiple signed transactions to the blockchain.
      *
      * @param {Array<Object>} signed - An array of fully signed transaction templates.
