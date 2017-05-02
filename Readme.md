@@ -47,7 +47,7 @@ You might want to open a new terminal window to pick up the change.
 
 ### Installation
 
-Clone this repository to the path defined in `CHAIN`:
+Clone this repository to `$CHAIN`:
 
 ```sh
 $ git clone https://github.com/chain/chain $CHAIN
