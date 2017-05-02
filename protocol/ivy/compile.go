@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"chain/protocol/vm"
 )
 
@@ -38,8 +36,6 @@ func compile(contract *contract) ([]byte, error) {
 	}
 
 	stack := addParamsToStack(nil, contract.params)
-
-	fmt.Printf("* contract:\n%s", spew.Sdump(contract))
 
 	if len(contract.clauses) == 1 {
 		b := newBuilder()
