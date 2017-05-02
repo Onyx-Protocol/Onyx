@@ -180,8 +180,11 @@ func configGenerator(client *rpc.Client, args []string) {
 	err = client.Call(context.Background(), "/configure", conf, nil)
 	dieOnRPCError(err)
 
-	// TODO(tessr): print blockchain id. This will require making the /configure
-	// endpoint return the BlockchainId before it execs itself.
+	wait(client, nil)
+	var r map[string]interface{}
+	err = client.Call(context.Background(), "/info", nil, &r)
+	dieOnRPCError(err)
+	fmt.Println(r["blockchain_id"])
 }
 
 func createBlockKeyPair(client *rpc.Client, args []string) {
