@@ -429,7 +429,7 @@ context 'Chain SDK integration test' do
     # setup: delete all existing guards
 
     chain.authorization_grants.list_all.each do |g|
-      chain.authorization_grants.delete g
+      chain.authorization_grants.delete g unless g.protected
     end
 
     # Access token grant
@@ -448,12 +448,8 @@ context 'Chain SDK integration test' do
 
     # Listing
 
-    guards = chain.authorization_grants.list_all
-    expect(guards.size).to eq(1)
-    g = guards.first
-
+    g = chain.authorization_grants.list_all.find { |g| g.guard_data['id'] == t.id }
     expect(g.guard_type).to eq('access_token')
-    expect(g.guard_data).to eq('id' => t.id)
     expect(g.policy).to eq('client-readwrite')
 
     # X509 grant
@@ -470,8 +466,7 @@ context 'Chain SDK integration test' do
     )
 
     guards = chain.authorization_grants.list_all
-    expect(guards.size).to eq(2)
-    g = guards.find { |item| item.guard_type == 'x509' }
+    g = guards.find { |g| g.guard_type == 'x509' }
 
     expect(g.guard_data).to eq('subject' => {
       'CN' => 'test-cn',
@@ -487,11 +482,8 @@ context 'Chain SDK integration test' do
       policy: 'client-readwrite'
     )
 
-    guards = chain.authorization_grants.list_all
-    expect(guards.size).to eq(1)
-    g = guards.first
-
-    expect(g.guard_type).to eq('x509')
+    guards = chain.authorization_grants.list_all.select { |g| g.guard_type == 'access_token' }
+    expect(guards).to be_empty
   end
 
 end
