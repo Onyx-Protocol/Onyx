@@ -19,6 +19,8 @@ import Create from './contracts/components/create'
 import Contracts from './contracts/components/contracts'
 import Spend from './contracts/components/spend'
 
+require('./static/playground.css')
+
 interface ExtensionWindow extends Window {
   __REDUX_DEVTOOLS_EXTENSION_COMPOSE__: any
 }

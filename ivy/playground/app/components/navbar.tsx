@@ -1,6 +1,9 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import Reset from './reset'
+const logo = require('../../static/images/logo.png')
+
+console.log(logo)
 
 export default function Navbar() {
   return (
@@ -8,7 +11,7 @@ export default function Navbar() {
       <div className="container fixedcontainer">
         <div className="navbar-header">
           <a className="navbar-brand" href="/">
-            <img src="/images/logo.png"/>
+            <img src={logo} />
           </a>
         </div>
         <ul className="nav navbar-nav navbar-right">
