@@ -24,6 +24,11 @@ export const policyOptions = [
     value: 'crosscore-signblock',
     hint: 'Access to the cross-core API\'s block-signing functionality'
   },
+  {
+    label: 'Internal',
+    value: 'internal',
+    hidden: true,
+  },
 ]
 
 export const subjectFieldOptions = [
