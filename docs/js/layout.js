@@ -178,7 +178,6 @@ function loadVersionOptions() {
 	}
 
 	var versions = window.documentationVersions
-
 	versions.sort().reverse().forEach(function(version) {
 		var attributes = 'value = "' + version + '"'
 		if (currentVersion == version) {
