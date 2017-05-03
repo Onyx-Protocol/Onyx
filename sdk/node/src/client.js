@@ -84,7 +84,7 @@ class Client {
      */
     this.mockHsm = {
       keys: mockHsmKeysAPI(this),
-      signerConnection: new Connection(`${opts.baseUrl}/mockhsm`, opts.token, opts.agent)
+      signerConnection: new Connection(`${opts.url}/mockhsm`, opts.token, opts.agent)
     }
 
     /**
