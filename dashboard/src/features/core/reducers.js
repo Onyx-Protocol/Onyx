@@ -44,8 +44,8 @@ export const localhostAuth = (state, action) =>
   buildConfigReducer('isLocalhostAuth', state, false, action)
 export const reset = (state, action) =>
   buildConfigReducer('isReset', state, false, action)
-export const plainHttp = (state, action) =>
-  buildConfigReducer('isPlainHttp', state, false, action)
+export const httpOk = (state, action) =>
+  buildConfigReducer('isHttpOk', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('blockHeight', state, 0, action)
 export const generatorBlockHeight = (state, action) => {
@@ -223,7 +223,7 @@ export default combineReducers({
   mockhsm,
   crosscoreRpcVersion,
   onTestnet,
-  plainHttp,
+  httpOk,
   replicationLag,
   replicationLagClass,
   requireClientToken,
