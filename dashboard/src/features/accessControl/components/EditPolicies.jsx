@@ -16,6 +16,8 @@ class EditPolicies extends React.Component {
     return(
       <div className={styles.main}>
         {policyOptions.map(option => {
+          if (option.hidden) return
+
           const isProtected = hasProtectedGrant(this.props.item.grants, option.value)
           return <CheckboxField key={option.label}
             title={option.label}

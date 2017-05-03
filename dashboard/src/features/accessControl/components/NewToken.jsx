@@ -25,6 +25,8 @@ class NewToken extends React.Component {
         </FormSection>
         <FormSection title='Policy'>
           {policyOptions.map(option => {
+            if (option.hidden) return
+
             return <CheckboxField key={option.label}
               title={option.label}
               hint={option.hint}
