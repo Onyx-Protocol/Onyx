@@ -2,14 +2,14 @@
 
 Command `cored` provides the Chain Core daemon and API server.
 
-## Installation
-
-`cored` is included with all desktop installations of Chain Core
+`cored` is included with all official releases of Chain Core
 Developer Edition, and is run by default when starting Mac, Windows and Docker.
 
-### From source
+If you plan to make changes to the internals of Chain Core, you can find
+build instructions in our [GitHub readme](https://github.com/chain/chain/blob/main/Readme.md#building-from-source);
+if you want to _use_ chain core, please download one of our official releases.
 
-_The instructions in this section require having the Go programming environment installed and the PATH variable correctly configured. See the [Chain Core Readme file](https://github.com/chain/chain/blob/main/Readme.md#building-from-source) for details._
+### Build tags
 
 There are four build tags that change the behavior of the resulting binary:
 
@@ -18,13 +18,8 @@ There are four build tags that change the behavior of the resulting binary:
   - `no_mockhsm`: disables the MockHSM provided for development
   - `plain_http`: allows plain HTTP requests
 
-The default build process creates a binary with three build tags enabled for a
-friendlier experience. To build a binary from source with a set of build tags,
-use the following command:
-
-```sh
-go build -tags 'loopback_auth plain_http reset' chain/cmd/cored
-```
+Chain Core Developer Edition is built with `reset`, `loopback_auth` and
+`plain_http` enabled.
 
 ## Flags
 
@@ -33,7 +28,11 @@ go build -tags 'loopback_auth plain_http reset' chain/cmd/cored
 ## Environment Variables
 
 Many functions of Chain Core can be controlled by the presence of environment
-variables.
+variables. For example, to start a Chain Core that listens on a different port:
+
+```
+LISTEN=:9876 cored
+```
 
 ### Basic Functions
 
